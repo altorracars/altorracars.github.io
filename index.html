@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALTORRA CARS | Venta de Automóviles en Cartagena</title>
+    <meta name="description" content="ALTORRA CARS - Venta de automóviles nuevos y usados en Cartagena. Chevrolet, Renault, Nissan, Kia y todas las marcas.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header Component -->
+    <div id="header-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Tu Auto Ideal te Espera en Cartagena</h1>
+            <p class="hero-subtitle">Nuevos y Usados • Todas las Marcas • Financiación Disponible</p>
+            
+            <!-- Quick Action Buttons -->
+            <div class="hero-buttons">
+                <a href="vehiculos-nuevos.html" class="btn-hero btn-primary">Ver Nuevos</a>
+                <a href="vehiculos-usados.html" class="btn-hero btn-secondary">Ver Usados</a>
+                <a href="busqueda.html" class="btn-hero btn-outline">Búsqueda Avanzada</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Vehicles Section -->
+    <section class="featured-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Vehículos <span class="highlight">Destacados</span></h2>
+                <a href="vehiculos-usados.html" class="view-all">Ver todos →</a>
+            </div>
+            
+            <div class="vehicles-grid" id="featuredVehicles">
+                <!-- Vehicles will be loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="categories-section">
+        <div class="container">
+            <h2 class="section-title">Busca por <span class="highlight">Categoría</span></h2>
+            <div class="categories-grid">
+                <a href="vehiculos-sedan.html" class="category-card">
+                    <div class="category-image">
+                        <img src="multimedia/categories/sedan.jpg" alt="Sedán" loading="lazy">
+                    </div>
+                    <h3 class="category-name">Sedán</h3>
+                </a>
+                
+                <a href="vehiculos-suv.html" class="category-card">
+                    <div class="category-image">
+                        <img src="multimedia/categories/suv.jpg" alt="SUV" loading="lazy">
+                    </div>
+                    <h3 class="category-name">SUV</h3>
+                </a>
+                
+                <a href="vehiculos-camionetas.html" class="category-card">
+                    <div class="category-image">
+                        <img src="multimedia/categories/camioneta.jpg" alt="Camioneta" loading="lazy">
+                    </div>
+                    <h3 class="category-name">Camionetas</h3>
+                </a>
+                
+                <a href="vehiculos-hatchback.html" class="category-card">
+                    <div class="category-image">
+                        <img src="multimedia/categories/hatchback.jpg" alt="Hatchback" loading="lazy">
+                    </div>
+                    <h3 class="category-name">Hatchback</h3>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Popular Brands Section -->
+    <section class="brands-section">
+        <div class="container">
+            <h2 class="section-title">Marcas <span class="highlight">Populares</span></h2>
+            <div class="brands-grid">
+                <a href="marca.html?marca=chevrolet" class="brand-card">
+                    <div class="brand-name">Chevrolet</div>
+                </a>
+                <a href="marca.html?marca=nissan" class="brand-card">
+                    <div class="brand-name">Nissan</div>
+                </a>
+                <a href="marca.html?marca=renault" class="brand-card">
+                    <div class="brand-name">Renault</div>
+                </a>
+                <a href="marca.html?marca=kia" class="brand-card">
+                    <div class="brand-name">Kia</div>
+                </a>
+                <a href="marca.html?marca=mazda" class="brand-card">
+                    <div class="brand-name">Mazda</div>
+                </a>
+                <a href="marca.html?marca=toyota" class="brand-card">
+                    <div class="brand-name">Toyota</div>
+                </a>
+            </div>
+            <div class="text-center mt-3">
+                <a href="todas-marcas.html" class="btn-view-more">Ver todas las marcas →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us Section -->
+    <section class="why-us-section">
+        <div class="container">
+            <h2 class="section-title">¿Por qué elegir <span class="highlight">ALTORRA CARS?</span></h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <h3>Vehículos Certificados</h3>
+                    <p>Todos nuestros autos usados pasan por rigurosa inspección técnica.</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <h3>Garantía Extendida</h3>
+                    <p>Protección adicional para tu tranquilidad y seguridad.</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <h3>Financiación Flexible</h3>
+                    <p>Planes de pago ajustados a tu presupuesto.</p>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <h3>Asesoría Profesional</h3>
+                    <p>Equipo experto para ayudarte en tu decisión.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>¿Listo para encontrar tu auto ideal?</h2>
+                <p>Contáctanos ahora y recibe asesoría personalizada</p>
+                <div class="cta-buttons">
+                    <a href="contacto.html" class="btn-cta-primary">Contactar</a>
+                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20necesito%20información" class="btn-cta-whatsapp" target="_blank">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                        </svg>
+                        WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Component -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Scripts -->
+    <script src="js/components.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Load and display featured vehicles
+        async function loadFeatured() {
+            showLoading('featuredVehicles');
+            await vehicleDB.load();
+            const featured = vehicleDB.getFeatured();
+            renderVehicles(featured, 'featuredVehicles');
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', loadFeatured);
+    </script>
+</body>
+</html>

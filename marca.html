@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Marca | ALTORRA CARS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <section class="page-header" id="brandHeader">
+        <div class="container">
+            <h1 class="page-title" id="brandTitle">Cargando...</h1>
+            <p class="page-subtitle" id="brandDesc"></p>
+        </div>
+    </section>
+    <section class="catalog-section">
+        <div class="container">
+            <div class="catalog-layout">
+                <aside class="filters-sidebar">
+                    <div class="filters-header">
+                        <h3>Filtros</h3>
+                        <button id="clearFilters" class="btn-clear">Limpiar</button>
+                    </div>
+                    <form id="filtersForm" class="filters-form">
+                        <div class="filter-group">
+                            <label>Tipo</label>
+                            <select name="tipo" class="filter-select">
+                                <option value="">Todos</option>
+                                <option value="nuevo">Nuevo</option>
+                                <option value="usado">Usado</option>
+                                <option value="seminuevo">Seminuevo</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Precio</label>
+                            <div class="filter-inputs">
+                                <input type="number" name="precioMin" placeholder="Mínimo" class="filter-input">
+                                <span>-</span>
+                                <input type="number" name="precioMax" placeholder="Máximo" class="filter-input">
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Categoría</label>
+                            <select name="categoria" class="filter-select">
+                                <option value="">Todas</option>
+                                <option value="sedan">Sedán</option>
+                                <option value="suv">SUV</option>
+                                <option value="camioneta">Camioneta</option>
+                                <option value="hatchback">Hatchback</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-apply-filters">Aplicar</button>
+                    </form>
+                </aside>
+                <div class="catalog-main">
+                    <div class="results-header">
+                        <p><span id="resultsCount">0</span> vehículos</p>
+                        <select id="sortBy" class="sort-select">
+                            <option value="precio-asc">Precio ↑</option>
+                            <option value="precio-desc">Precio ↓</option>
+                            <option value="year-desc">Año ↓</option>
+                        </select>
+                    </div>
+                    <div class="vehicles-grid" id="vehiclesGrid"></div>
+                    <div id="pagination"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <div id="footer-placeholder"></div>
+    <script src="js/components.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const brandId = params.get('marca');
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let currentFilters = { marca: brandId };
+        let currentSort = 'precio-asc';
+        
+        async function loadVehicles() {
+            if (!brandId) {
+                window.location.href = 'todas-marcas.html';
+                return;
+            }
+            
+            await vehicleDB.load();
+            const brandInfo = vehicleDB.getBrandInfo(brandId);
+            
+            if (brandInfo) {
+                document.getElementById('pageTitle').textContent = brandInfo.nombre + ' | ALTORRA CARS';
+                document.getElementById('brandTitle').textContent = brandInfo.nombre;
+                document.getElementById('brandDesc').textContent = brandInfo.descripcion;
+            } else {
+                document.getElementById('brandTitle').textContent = capitalize(brandId);
+            }
+            
+            showLoading('vehiclesGrid');
+            let vehicles = vehicleDB.filter(currentFilters);
+            vehicles = vehicleDB.sort(vehicles, currentSort);
+            document.getElementById('resultsCount').textContent = vehicles.length;
+            const start = (currentPage - 1) * itemsPerPage;
+            renderVehicles(vehicles.slice(start, start + itemsPerPage), 'vehiclesGrid');
+            renderPagination(vehicles.length, currentPage, itemsPerPage, 'pagination');
+        }
+        
+        window.goToPage = p => { currentPage = p; loadVehicles(); scrollTo(0, 0); };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('filtersForm')?.addEventListener('submit', e => {
+                e.preventDefault();
+                currentFilters = { marca: brandId };
+                new FormData(e.target).forEach((v, k) => { if (v) currentFilters[k] = v; });
+                currentPage = 1;
+                loadVehicles();
+            });
+            document.getElementById('clearFilters')?.addEventListener('click', () => {
+                document.getElementById('filtersForm').reset();
+                currentFilters = { marca: brandId };
+                loadVehicles();
+            });
+            document.getElementById('sortBy')?.addEventListener('change', e => {
+                currentSort = e.target.value;
+                loadVehicles();
+            });
+            loadVehicles();
+        });
+    </script>
+</body>
+</html>

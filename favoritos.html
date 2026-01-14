@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favoritos | ALTORRA CARS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title">Mis Favoritos</h1>
+            <p class="page-subtitle">Vehículos que has guardado</p>
+        </div>
+    </section>
+    <section class="favorites-section">
+        <div class="container">
+            <div class="vehicles-grid" id="favoritesGrid">
+                <!-- Vehicles will be loaded here -->
+            </div>
+        </div>
+    </section>
+    <div id="footer-placeholder"></div>
+    <script src="js/components.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        async function loadFavorites() {
+            const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
+            const container = document.getElementById('favoritesGrid');
+            
+            if (favorites.length === 0) {
+                container.innerHTML = `
+                    <div class="no-favorites">
+                        <h2>No tienes vehículos favoritos</h2>
+                        <p>Explora nuestro catálogo y guarda los vehículos que te interesen</p>
+                        <a href="vehiculos-usados.html" class="btn-primary">Ver Catálogo</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            await vehicleDB.load();
+            const favoriteVehicles = favorites.map(id => vehicleDB.getVehicleById(id)).filter(v => v);
+            
+            if (favoriteVehicles.length === 0) {
+                container.innerHTML = `
+                    <div class="no-favorites">
+                        <h2>No se encontraron vehículos</h2>
+                        <a href="vehiculos-usados.html" class="btn-primary">Ver Catálogo</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            renderVehicles(favoriteVehicles, 'favoritesGrid');
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadFavorites);
+    </script>
+</body>
+</html>

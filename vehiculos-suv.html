@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUV | ALTORRA CARS</title>
+    <meta name="description" content="Catálogo de SUV nuevos y usados en Cartagena - ALTORRA CARS">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title">SUV</h1>
+            <p class="page-subtitle">Vehículos todoterreno y versátiles</p>
+        </div>
+    </section>
+    
+    <section class="catalog-section">
+        <div class="container">
+            <div class="catalog-layout">
+                <aside class="filters-sidebar">
+                    <div class="filters-header">
+                        <h3>Filtros</h3>
+                        <button id="clearFilters" class="btn-clear">Limpiar</button>
+                    </div>
+                    <form id="filtersForm" class="filters-form">
+                        <div class="filter-group">
+                            <label class="filter-label">Tipo</label>
+                            <select name="tipo" class="filter-select">
+                                <option value="">Todos</option>
+                                <option value="nuevo">Nuevo</option>
+                                <option value="usado">Usado</option>
+                                <option value="seminuevo">Seminuevo</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Precio</label>
+                            <div class="filter-inputs">
+                                <input type="number" name="precioMin" placeholder="Mínimo" class="filter-input">
+                                <span>-</span>
+                                <input type="number" name="precioMax" placeholder="Máximo" class="filter-input">
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Marca</label>
+                            <select name="marca" class="filter-select">
+                                <option value="">Todas</option>
+                                <option value="chevrolet">Chevrolet</option>
+                                <option value="nissan">Nissan</option>
+                                <option value="renault">Renault</option>
+                                <option value="kia">Kia</option>
+                                <option value="mazda">Mazda</option>
+                                <option value="toyota">Toyota</option>
+                                <option value="hyundai">Hyundai</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-apply-filters">Aplicar Filtros</button>
+                    </form>
+                </aside>
+                <div class="catalog-main">
+                    <div class="results-header">
+                        <div class="results-info">
+                            <p><span id="resultsCount">0</span> SUV disponibles</p>
+                        </div>
+                        <div class="results-sort">
+                            <label for="sortBy">Ordenar por:</label>
+                            <select id="sortBy" class="sort-select">
+                                <option value="precio-asc">Precio: Menor a Mayor</option>
+                                <option value="precio-desc">Precio: Mayor a Menor</option>
+                                <option value="year-desc">Año: Más Reciente</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="vehicles-grid" id="vehiclesGrid"></div>
+                    <div id="pagination"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <div id="footer-placeholder"></div>
+    
+    <script src="js/components.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let currentFilters = { categoria: 'suv' };
+        let currentSort = 'precio-asc';
+        
+        async function loadVehicles() {
+            showLoading('vehiclesGrid');
+            await vehicleDB.load();
+            let vehicles = vehicleDB.filter(currentFilters);
+            vehicles = vehicleDB.sort(vehicles, currentSort);
+            document.getElementById('resultsCount').textContent = vehicles.length;
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            renderVehicles(vehicles.slice(start, end), 'vehiclesGrid');
+            renderPagination(vehicles.length, currentPage, itemsPerPage, 'pagination');
+        }
+        
+        window.goToPage = function(page) {
+            currentPage = page;
+            loadVehicles();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('filtersForm')?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                currentFilters = { categoria: 'suv' };
+                formData.forEach((value, key) => { if (value) currentFilters[key] = value; });
+                currentPage = 1;
+                loadVehicles();
+            });
+            document.getElementById('clearFilters')?.addEventListener('click', () => {
+                document.getElementById('filtersForm').reset();
+                currentFilters = { categoria: 'suv' };
+                currentPage = 1;
+                loadVehicles();
+            });
+            document.getElementById('sortBy')?.addEventListener('change', (e) => {
+                currentSort = e.target.value;
+                loadVehicles();
+            });
+            loadVehicles();
+        });
+    </script>
+</body>
+</html>

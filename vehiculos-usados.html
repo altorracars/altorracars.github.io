@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehículos Usados | ALTORRA CARS</title>
+    <meta name="description" content="Catálogo completo de vehículos usados en Cartagena. Encuentra el auto ideal con ALTORRA CARS.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header Component -->
+    <div id="header-placeholder"></div>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title">Vehículos Usados</h1>
+            <p class="page-subtitle">Encuentra tu auto ideal certificado y con garantía</p>
+        </div>
+    </section>
+
+    <!-- Filters and Listing Section -->
+    <section class="catalog-section">
+        <div class="container">
+            <div class="catalog-layout">
+                <!-- Sidebar Filters -->
+                <aside class="filters-sidebar">
+                    <div class="filters-header">
+                        <h3>Filtros</h3>
+                        <button id="clearFilters" class="btn-clear">Limpiar</button>
+                    </div>
+
+                    <form id="filtersForm" class="filters-form">
+                        <!-- Price Range -->
+                        <div class="filter-group">
+                            <label class="filter-label">Precio</label>
+                            <div class="filter-inputs">
+                                <input type="number" name="precioMin" placeholder="Mínimo" class="filter-input">
+                                <span>-</span>
+                                <input type="number" name="precioMax" placeholder="Máximo" class="filter-input">
+                            </div>
+                        </div>
+
+                        <!-- Brand -->
+                        <div class="filter-group">
+                            <label class="filter-label">Marca</label>
+                            <select name="marca" class="filter-select">
+                                <option value="">Todas</option>
+                                <option value="chevrolet">Chevrolet</option>
+                                <option value="nissan">Nissan</option>
+                                <option value="renault">Renault</option>
+                                <option value="kia">Kia</option>
+                                <option value="mazda">Mazda</option>
+                                <option value="toyota">Toyota</option>
+                                <option value="hyundai">Hyundai</option>
+                                <option value="ford">Ford</option>
+                            </select>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="filter-group">
+                            <label class="filter-label">Categoría</label>
+                            <select name="categoria" class="filter-select">
+                                <option value="">Todas</option>
+                                <option value="sedan">Sedán</option>
+                                <option value="suv">SUV</option>
+                                <option value="camioneta">Camioneta</option>
+                                <option value="hatchback">Hatchback</option>
+                            </select>
+                        </div>
+
+                        <!-- Transmission -->
+                        <div class="filter-group">
+                            <label class="filter-label">Transmisión</label>
+                            <select name="transmision" class="filter-select">
+                                <option value="">Todas</option>
+                                <option value="automatica">Automática</option>
+                                <option value="mecanica">Mecánica</option>
+                            </select>
+                        </div>
+
+                        <!-- Year -->
+                        <div class="filter-group">
+                            <label class="filter-label">Año</label>
+                            <div class="filter-inputs">
+                                <input type="number" name="yearMin" placeholder="Desde" class="filter-input" min="2000" max="2025">
+                                <span>-</span>
+                                <input type="number" name="yearMax" placeholder="Hasta" class="filter-input" min="2000" max="2025">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-apply-filters">Aplicar Filtros</button>
+                    </form>
+                </aside>
+
+                <!-- Main Content -->
+                <div class="catalog-main">
+                    <!-- Results Header -->
+                    <div class="results-header">
+                        <div class="results-info">
+                            <p><span id="resultsCount">0</span> vehículos encontrados</p>
+                        </div>
+                        <div class="results-sort">
+                            <label for="sortBy">Ordenar por:</label>
+                            <select id="sortBy" class="sort-select">
+                                <option value="precio-asc">Precio: Menor a Mayor</option>
+                                <option value="precio-desc">Precio: Mayor a Menor</option>
+                                <option value="year-desc">Año: Más Reciente</option>
+                                <option value="year-asc">Año: Más Antiguo</option>
+                                <option value="km-asc">Kilometraje: Menor</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Vehicles Grid -->
+                    <div class="vehicles-grid" id="vehiclesGrid">
+                        <!-- Vehicles will be loaded here -->
+                    </div>
+
+                    <!-- Pagination -->
+                    <div id="pagination"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Component -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Scripts -->
+    <script src="js/components.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Page state
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let currentFilters = { tipo: 'usado' }; // Default to used vehicles
+        let currentSort = 'precio-asc';
+
+        // Load and display vehicles
+        async function loadVehicles() {
+            showLoading('vehiclesGrid');
+            await vehicleDB.load();
+
+            // Apply filters
+            let vehicles = vehicleDB.filter(currentFilters);
+
+            // Sort vehicles
+            vehicles = vehicleDB.sort(vehicles, currentSort);
+
+            // Update count
+            document.getElementById('resultsCount').textContent = vehicles.length;
+
+            // Paginate
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const paginatedVehicles = vehicles.slice(start, end);
+
+            // Render
+            renderVehicles(paginatedVehicles, 'vehiclesGrid');
+            renderPagination(vehicles.length, currentPage, itemsPerPage, 'pagination');
+        }
+
+        // Go to page
+        window.goToPage = function(page) {
+            currentPage = page;
+            loadVehicles();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // Handle filters form
+        document.addEventListener('DOMContentLoaded', () => {
+            const filtersForm = document.getElementById('filtersForm');
+            if (filtersForm) {
+                filtersForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(filtersForm);
+                    currentFilters = { tipo: 'usado' };
+
+                    formData.forEach((value, key) => {
+                        if (value) {
+                            currentFilters[key] = value;
+                        }
+                    });
+
+                    currentPage = 1;
+                    loadVehicles();
+                });
+            }
+
+            // Clear filters
+            document.getElementById('clearFilters')?.addEventListener('click', () => {
+                filtersForm.reset();
+                currentFilters = { tipo: 'usado' };
+                currentPage = 1;
+                loadVehicles();
+            });
+
+            // Sort change
+            document.getElementById('sortBy')?.addEventListener('change', (e) => {
+                currentSort = e.target.value;
+                loadVehicles();
+            });
+
+            // Initial load
+            loadVehicles();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búsqueda Avanzada | ALTORRA CARS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title">Búsqueda Avanzada</h1>
+            <p class="page-subtitle">Encuentra exactamente lo que buscas</p>
+        </div>
+    </section>
+    <section class="search-advanced-section">
+        <div class="container">
+            <form id="advancedSearchForm" class="advanced-search-form">
+                <div class="search-form-grid">
+                    <div class="form-group">
+                        <label>Tipo de Vehículo</label>
+                        <select name="tipo">
+                            <option value="">Todos</option>
+                            <option value="nuevo">Nuevo</option>
+                            <option value="usado">Usado</option>
+                            <option value="seminuevo">Seminuevo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Marca</label>
+                        <select name="marca">
+                            <option value="">Todas</option>
+                            <option value="chevrolet">Chevrolet</option>
+                            <option value="nissan">Nissan</option>
+                            <option value="renault">Renault</option>
+                            <option value="kia">Kia</option>
+                            <option value="mazda">Mazda</option>
+                            <option value="toyota">Toyota</option>
+                            <option value="hyundai">Hyundai</option>
+                            <option value="ford">Ford</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <select name="categoria">
+                            <option value="">Todas</option>
+                            <option value="sedan">Sedán</option>
+                            <option value="suv">SUV</option>
+                            <option value="camioneta">Camioneta</option>
+                            <option value="hatchback">Hatchback</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Transmisión</label>
+                        <select name="transmision">
+                            <option value="">Todas</option>
+                            <option value="automatica">Automática</option>
+                            <option value="mecanica">Mecánica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Mínimo</label>
+                        <input type="number" name="precioMin" placeholder="Ej: 40000000">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Máximo</label>
+                        <input type="number" name="precioMax" placeholder="Ej: 100000000">
+                    </div>
+                    <div class="form-group">
+                        <label>Año Desde</label>
+                        <input type="number" name="yearMin" min="2000" max="2025">
+                    </div>
+                    <div class="form-group">
+                        <label>Año Hasta</label>
+                        <input type="number" name="yearMax" min="2000" max="2025">
+                    </div>
+                </div>
+                <div class="search-actions">
+                    <button type="submit" class="btn-search-submit">Buscar Vehículos</button>
+                    <button type="button" id="clearSearch" class="btn-search-clear">Limpiar Búsqueda</button>
+                </div>
+            </form>
+        </div>
+    </section>
+    <section class="search-results-section">
+        <div class="container">
+            <div class="results-header">
+                <h2><span id="resultsCount">0</span> vehículos encontrados</h2>
+                <select id="sortBy" class="sort-select">
+                    <option value="precio-asc">Precio: Menor a Mayor</option>
+                    <option value="precio-desc">Precio: Mayor a Menor</option>
+                    <option value="year-desc">Año: Más Reciente</option>
+                    <option value="km-asc">Kilometraje: Menor</option>
+                </select>
+            </div>
+            <div class="vehicles-grid" id="searchResults"></div>
+            <div id="pagination"></div>
+        </div>
+    </section>
+    <div id="footer-placeholder"></div>
+    <script src="js/components.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let currentFilters = {};
+        let currentSort = 'precio-asc';
+        
+        async function performSearch() {
+            showLoading('searchResults');
+            await vehicleDB.load();
+            let vehicles = vehicleDB.filter(currentFilters);
+            vehicles = vehicleDB.sort(vehicles, currentSort);
+            document.getElementById('resultsCount').textContent = vehicles.length;
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            renderVehicles(vehicles.slice(start, end), 'searchResults');
+            renderPagination(vehicles.length, currentPage, itemsPerPage, 'pagination');
+        }
+        
+        window.goToPage = function(page) {
+            currentPage = page;
+            performSearch();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('advancedSearchForm')?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                currentFilters = {};
+                formData.forEach((value, key) => {
+                    if (value) currentFilters[key] = value;
+                });
+                currentPage = 1;
+                performSearch();
+            });
+            
+            document.getElementById('clearSearch')?.addEventListener('click', () => {
+                document.getElementById('advancedSearchForm').reset();
+                currentFilters = {};
+                currentPage = 1;
+                performSearch();
+            });
+            
+            document.getElementById('sortBy')?.addEventListener('change', (e) => {
+                currentSort = e.target.value;
+                performSearch();
+            });
+            
+            performSearch();
+        });
+    </script>
+</body>
+</html>

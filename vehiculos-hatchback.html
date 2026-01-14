@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hatchback | ALTORRA CARS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <section class="page-header"><div class="container"><h1 class="page-title">Hatchback</h1><p class="page-subtitle">Compactos y eficientes</p></div></section>
+    <section class="catalog-section"><div class="container"><div class="catalog-layout">
+        <aside class="filters-sidebar"><div class="filters-header"><h3>Filtros</h3><button id="clearFilters" class="btn-clear">Limpiar</button></div>
+            <form id="filtersForm" class="filters-form">
+                <div class="filter-group"><label>Tipo</label><select name="tipo" class="filter-select"><option value="">Todos</option><option value="nuevo">Nuevo</option><option value="usado">Usado</option></select></div>
+                <div class="filter-group"><label>Precio</label><div class="filter-inputs"><input type="number" name="precioMin" placeholder="Mínimo" class="filter-input"><span>-</span><input type="number" name="precioMax" placeholder="Máximo" class="filter-input"></div></div>
+                <div class="filter-group"><label>Marca</label><select name="marca" class="filter-select"><option value="">Todas</option><option value="chevrolet">Chevrolet</option><option value="renault">Renault</option><option value="kia">Kia</option></select></div>
+                <button type="submit" class="btn-apply-filters">Aplicar</button>
+            </form>
+        </aside>
+        <div class="catalog-main"><div class="results-header"><p><span id="resultsCount">0</span> hatchback</p><select id="sortBy" class="sort-select"><option value="precio-asc">Precio ↑</option><option value="precio-desc">Precio ↓</option></select></div>
+            <div class="vehicles-grid" id="vehiclesGrid"></div><div id="pagination"></div>
+        </div>
+    </div></div></section>
+    <div id="footer-placeholder"></div>
+    <script src="js/components.js"></script><script src="js/database.js"></script><script src="js/render.js"></script><script src="js/main.js"></script>
+    <script>
+        let currentPage=1,itemsPerPage=12,currentFilters={categoria:'hatchback'},currentSort='precio-asc';
+        async function loadVehicles(){showLoading('vehiclesGrid');await vehicleDB.load();let v=vehicleDB.filter(currentFilters);v=vehicleDB.sort(v,currentSort);document.getElementById('resultsCount').textContent=v.length;renderVehicles(v.slice((currentPage-1)*itemsPerPage,currentPage*itemsPerPage),'vehiclesGrid');renderPagination(v.length,currentPage,itemsPerPage,'pagination');}
+        window.goToPage=p=>{currentPage=p;loadVehicles();scrollTo(0,0);};
+        document.addEventListener('DOMContentLoaded',()=>{document.getElementById('filtersForm')?.addEventListener('submit',e=>{e.preventDefault();currentFilters={categoria:'hatchback'};new FormData(e.target).forEach((v,k)=>{if(v)currentFilters[k]=v;});currentPage=1;loadVehicles();});document.getElementById('clearFilters')?.addEventListener('click',()=>{document.getElementById('filtersForm').reset();currentFilters={categoria:'hatchback'};loadVehicles();});document.getElementById('sortBy')?.addEventListener('change',e=>{currentSort=e.target.value;loadVehicles();});loadVehicles();});
+    </script>
+</body>
+</html>

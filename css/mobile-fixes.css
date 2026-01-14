@@ -1,0 +1,270 @@
+/* ============================================
+   CORRECCIONES MÓVILES SEGURAS - ALTORRA CARS
+   Crear un archivo NUEVO: css/mobile-fixes.css
+   ============================================ */
+
+/* Solo aplicar en móviles */
+@media (max-width: 640px) {
+    
+    /* Prevenir desbordamiento horizontal */
+    html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+    
+    /* Container más ajustado */
+    .container {
+        padding: 0 1rem;
+    }
+    
+    /* Logo más pequeño */
+    #logo-img {
+        height: 55px;
+    }
+    
+    .logo-text {
+        font-size: 0.95rem;
+    }
+    
+    /* Hero más compacto */
+    .hero {
+        min-height: 450px;
+    }
+    
+    .hero-title {
+        font-size: 1.8rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+    
+    /* Botones del hero en columna */
+    .hero-buttons {
+        flex-direction: column;
+        width: 100%;
+        gap: 1rem;
+    }
+    
+    .btn-hero {
+        width: 100%;
+    }
+    
+    /* Grids de 1 columna */
+    .vehicles-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem;
+    }
+    
+    .categories-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .services-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .testimonials-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Brands en 2 columnas */
+    .brands-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    /* Section header en columna */
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    /* Contact grid en columna */
+    .contact-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* CTA buttons en columna */
+    .cta-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-cta-primary,
+    .btn-cta-whatsapp {
+        width: 100%;
+    }
+    
+    /* Footer en columna */
+    .footer-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* WhatsApp button más pequeño */
+    .whatsapp-float svg {
+        width: 50px;
+        height: 50px;
+    }
+    
+    /* Catalog layout */
+    .catalog-layout {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .filters-sidebar {
+        position: static !important;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Results header */
+    .results-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .sort-select {
+        width: 100%;
+    }
+    
+    /* Search form */
+    .search-form-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .search-actions {
+        flex-direction: column;
+    }
+    
+    .btn-search-submit,
+    .btn-search-clear {
+        width: 100%;
+    }
+    
+    /* Detail grid */
+    .detail-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .detail-specs-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .features-list {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .detail-actions {
+        flex-direction: column;
+    }
+    
+    /* Pagination */
+    .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .pagination-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Tablets */
+@media (min-width: 641px) and (max-width: 968px) {
+    
+    /* Logo ajustado */
+    #logo-img {
+        height: 60px;
+    }
+    
+    /* Grids de 2 columnas */
+    .vehicles-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    .categories-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    .services-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    /* Brands en 3 columnas */
+    .brands-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    
+    /* Contact grid en columna */
+    .contact-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Catalog layout */
+    .catalog-layout {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .filters-sidebar {
+        position: static !important;
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* Fix para el menú hamburguesa existente */
+@media (max-width: 968px) {
+    
+    /* Asegurar que el menú móvil funcione */
+    .nav-menu {
+        position: fixed;
+        top: 70px;
+        left: -100%;
+        width: 100%;
+        height: calc(100vh - 70px);
+        background: white;
+        flex-direction: column;
+        transition: left 0.3s ease;
+        overflow-y: auto;
+        z-index: 999;
+    }
+
+    .nav-menu.active {
+        left: 0;
+    }
+
+    .nav-list {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .nav-item {
+        width: 100%;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .nav-link {
+        display: block;
+        width: 100%;
+    }
+
+    /* Dropdown en móvil */
+    .dropdown-menu {
+        position: static;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        box-shadow: none;
+        background: rgba(184, 150, 88, 0.05);
+        padding-left: 1rem;
+    }
+}

@@ -1,4 +1,4 @@
-// Component Loader for ALTORRA CARS
+// Component Loader for ALTORRA CARS - VERSIÓN MEJORADA PARA MÓVIL
 // Loads header and footer snippets into pages
 
 async function loadComponent(elementId, componentPath) {
@@ -29,37 +29,105 @@ async function loadAllComponents() {
     initializeFavorites();
 }
 
-// Initialize header functionality
+// Initialize header functionality - MEJORADO PARA MÓVIL
 function initializeHeader() {
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.getElementById('navMenu');
     
     if (hamburger && navMenu) {
-        hamburger.addEventListener('click', () => {
+        // Toggle menu
+        hamburger.addEventListener('click', (e) => {
+            e.stopPropagation();
             navMenu.classList.toggle('active');
             hamburger.classList.toggle('active');
+            
+            // Prevenir scroll del body cuando el menú está abierto
+            if (navMenu.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Cerrar menú al hacer click fuera (solo en móvil)
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 968) {
+                if (!hamburger.contains(e.target) && !navMenu.contains(e.target)) {
+                    navMenu.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+        
+        // Cerrar menú al hacer click en un link (solo en móvil)
+        const navLinks = navMenu.querySelectorAll('a:not(.nav-link)');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 968) {
+                    navMenu.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+        
+        // Manejar redimensionamiento de ventana
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (window.innerWidth > 968) {
+                    navMenu.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }, 250);
         });
     }
     
     // Sticky header on scroll
+    let lastScroll = 0;
     window.addEventListener('scroll', () => {
         const header = document.getElementById('header');
         if (header) {
-            if (window.scrollY > 100) {
+            const currentScroll = window.pageYOffset;
+            
+            if (currentScroll > 100) {
                 header.classList.add('sticky');
             } else {
                 header.classList.remove('sticky');
             }
+            
+            lastScroll = currentScroll;
         }
     });
     
-    // Dropdown functionality
+    // Dropdown functionality - MEJORADO PARA MÓVIL
     document.querySelectorAll('.dropdown').forEach(dropdown => {
-        dropdown.addEventListener('mouseenter', () => {
-            dropdown.classList.add('active');
-        });
+        const navLink = dropdown.querySelector('.nav-link');
         
-        dropdown.addEventListener('mouseleave', () => {
+        if (window.innerWidth <= 968) {
+            // En móvil: toggle con click
+            navLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                dropdown.classList.toggle('active');
+            });
+        } else {
+            // En desktop: hover
+            dropdown.addEventListener('mouseenter', () => {
+                dropdown.classList.add('active');
+            });
+            
+            dropdown.addEventListener('mouseleave', () => {
+                dropdown.classList.remove('active');
+            });
+        }
+    });
+    
+    // Actualizar comportamiento de dropdown en resize
+    window.addEventListener('resize', () => {
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
             dropdown.classList.remove('active');
         });
     });

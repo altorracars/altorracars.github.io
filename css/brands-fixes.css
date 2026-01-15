@@ -1,0 +1,134 @@
+/* ============================================
+   CORRECCIÓN DEFINITIVA - MARCAS
+   Visualización mejorada de logos de marcas
+   ============================================ */
+
+.brands-section {
+    padding: var(--spacing-xl) 0;
+    background: #fafafa;
+}
+
+/* Grid de marcas mejorado - aprovechar espacio horizontal */
+.brands-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.brand-card {
+    background: white;
+    border: 2px solid #f0f0f0;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    transition: var(--transition);
+    min-height: 140px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.brand-card:hover {
+    border-color: var(--primary-gold);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(184, 150, 88, 0.2);
+    background: linear-gradient(135deg, #fafafa 0%, white 100%);
+}
+
+/* Logo de marca */
+.brand-logo {
+    width: 100%;
+    max-width: 120px;
+    height: 60px;
+    object-fit: contain;
+    transition: var(--transition);
+}
+
+.brand-card:hover .brand-logo {
+    transform: scale(1.1);
+}
+
+/* Nombre de marca */
+.brand-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+/* Botón "Ver todas las marcas" */
+.btn-view-more {
+    display: inline-block;
+    padding: 0.85rem 2.5rem;
+    background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-brown) 100%);
+    color: white;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 1rem;
+    transition: var(--transition);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.3);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-view-more:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(184, 150, 88, 0.4);
+}
+
+/* Responsive Tablets */
+@media (max-width: 968px) {
+    .brands-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: var(--spacing-sm);
+    }
+
+    .brand-card {
+        padding: var(--spacing-md);
+        min-height: 120px;
+    }
+
+    .brand-logo {
+        max-width: 100px;
+        height: 50px;
+    }
+
+    .brand-name {
+        font-size: 0.9rem;
+    }
+}
+
+/* Responsive Móvil */
+@media (max-width: 640px) {
+    .brands-grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 columnas en móvil */
+        gap: var(--spacing-sm);
+    }
+
+    .brand-card {
+        padding: var(--spacing-md);
+        min-height: 110px;
+    }
+
+    .brand-logo {
+        max-width: 90px;
+        height: 45px;
+    }
+
+    .brand-name {
+        font-size: 0.85rem;
+    }
+
+    .btn-view-more {
+        padding: 0.75rem 2rem;
+        font-size: 0.95rem;
+        width: 100%;
+        text-align: center;
+    }
+}

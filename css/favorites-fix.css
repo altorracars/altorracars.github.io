@@ -1,0 +1,54 @@
+/* ============================================
+   CORRECCIÓN DEFINITIVA - BOTÓN FAVORITOS MÓVIL
+   Eliminación total de efectos visuales problem áticos
+   ============================================ */
+
+@media (max-width: 968px) {
+    .favorites-link {
+        /* Eliminar TODOS los bordes y fondos */
+        border: none !important;
+        background: none !important;
+        background-color: transparent !important;
+
+        /* Eliminar TODAS las sombras */
+        box-shadow: none !important;
+        -webkit-box-shadow: none !important;
+        -moz-box-shadow: none !important;
+
+        /* Eliminar efectos de tap/click */
+        -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+        -webkit-tap-highlight-color: transparent !important;
+
+        /* Eliminar outlines */
+        outline: none !important;
+        outline-width: 0 !important;
+
+        /* Colores del texto */
+        color: var(--primary-dark) !important;
+
+        /* Sin transiciones que puedan causar efectos */
+        transition: none !important;
+    }
+
+    /* Eliminar hover, focus, active COMPLETAMENTE */
+    .favorites-link:hover,
+    .favorites-link:focus,
+    .favorites-link:active,
+    .favorites-link:visited {
+        border: none !important;
+        background: none !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        -webkit-box-shadow: none !important;
+        outline: none !important;
+        transform: none !important;
+    }
+
+    /* El contador badge */
+    .favorites-count {
+        background: var(--primary-gold) !important;
+        color: white !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+}

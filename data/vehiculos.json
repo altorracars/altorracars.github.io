@@ -393,6 +393,84 @@
       "nombre": "Ford",
       "logo": "multimedia/brands/ford.png",
       "descripcion": "Potencia y resistencia Ford."
+    },
+    {
+      "id": "honda",
+      "nombre": "Honda",
+      "logo": "multimedia/brands/honda.png",
+      "descripcion": "Ingeniería y confiabilidad Honda."
+    },
+    {
+      "id": "mitsubishi",
+      "nombre": "Mitsubishi",
+      "logo": "multimedia/brands/mitsubishi.png",
+      "descripcion": "Versatilidad y tecnología Mitsubishi."
+    },
+    {
+      "id": "volkswagen",
+      "nombre": "Volkswagen",
+      "logo": "multimedia/brands/volkswagen.png",
+      "descripcion": "Calidad alemana Volkswagen."
+    },
+    {
+      "id": "suzuki",
+      "nombre": "Suzuki",
+      "logo": "multimedia/brands/suzuki.png",
+      "descripcion": "Economía y rendimiento Suzuki."
+    },
+    {
+      "id": "fiat",
+      "nombre": "Fiat",
+      "logo": "multimedia/brands/fiat.png",
+      "descripcion": "Estilo italiano Fiat."
+    },
+    {
+      "id": "jeep",
+      "nombre": "Jeep",
+      "logo": "multimedia/brands/jeep.png",
+      "descripcion": "Aventura y capacidad todoterreno Jeep."
+    },
+    {
+      "id": "peugeot",
+      "nombre": "Peugeot",
+      "logo": "multimedia/brands/peugeot.png",
+      "descripcion": "Elegancia francesa Peugeot."
+    },
+    {
+      "id": "subaru",
+      "nombre": "Subaru",
+      "logo": "multimedia/brands/subaru.png",
+      "descripcion": "Seguridad y tracción Subaru."
+    },
+    {
+      "id": "volvo",
+      "nombre": "Volvo",
+      "logo": "multimedia/brands/volvo.png",
+      "descripcion": "Seguridad escandinava Volvo."
+    },
+    {
+      "id": "byd",
+      "nombre": "BYD",
+      "logo": "multimedia/brands/byd.png",
+      "descripcion": "Tecnología eléctrica e híbrida BYD."
+    },
+    {
+      "id": "mercedes-benz",
+      "nombre": "Mercedes-Benz",
+      "logo": "multimedia/brands/mercedes-benz.png",
+      "descripcion": "Lujo y prestigio Mercedes-Benz."
+    },
+    {
+      "id": "bmw",
+      "nombre": "BMW",
+      "logo": "multimedia/brands/bmw.png",
+      "descripcion": "Placer de conducir BMW."
+    },
+    {
+      "id": "audi",
+      "nombre": "Audi",
+      "logo": "multimedia/brands/audi.png",
+      "descripcion": "Tecnología premium Audi."
     }
   ]
 }

@@ -1,0 +1,532 @@
+/* ============================================
+   ALTORRA CARS - SIDEBAR DE FILTROS MODERNO
+   Navegación + Filtros + Flechas Carrusel
+   ============================================ */
+
+/* ===========================================
+   SECCIÓN 1: CONTENEDOR SIDEBAR
+   =========================================== */
+
+.filters-sidebar,
+.sidebar-filters,
+.catalog-filters {
+    background: linear-gradient(180deg, #1d1b19 0%, #2d2a28 100%);
+    border-radius: 20px;
+    padding: 1.5rem;
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.15),
+        0 8px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Scrollbar elegante para sidebar */
+.filters-sidebar::-webkit-scrollbar,
+.sidebar-filters::-webkit-scrollbar,
+.catalog-filters::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filters-sidebar::-webkit-scrollbar-track,
+.sidebar-filters::-webkit-scrollbar-track,
+.catalog-filters::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.filters-sidebar::-webkit-scrollbar-thumb,
+.sidebar-filters::-webkit-scrollbar-thumb,
+.catalog-filters::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #b89658 0%, #916652 100%);
+    border-radius: 10px;
+}
+
+/* ===========================================
+   SECCIÓN 2: HEADER DEL SIDEBAR
+   =========================================== */
+
+.filters-header,
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filters-title,
+.sidebar-title {
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filters-title::before,
+.sidebar-title::before {
+    content: "⚙️";
+    font-size: 1.1rem;
+}
+
+.btn-clear-filters,
+.clear-filters {
+    background: transparent;
+    border: 1px solid rgba(184, 150, 88, 0.5);
+    color: #b89658;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-clear-filters:hover,
+.clear-filters:hover {
+    background: rgba(184, 150, 88, 0.2);
+    border-color: #b89658;
+}
+
+/* ===========================================
+   SECCIÓN 3: GRUPOS DE FILTROS
+   =========================================== */
+
+.filter-group {
+    margin-bottom: 1.25rem;
+}
+
+.filter-group-title,
+.filter-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Iconos para categorías */
+.filter-group[data-filter="marca"] .filter-group-title::before,
+.filter-group[data-filter="brand"] .filter-group-title::before { content: "🚗"; }
+.filter-group[data-filter="modelo"] .filter-group-title::before,
+.filter-group[data-filter="model"] .filter-group-title::before { content: "📋"; }
+.filter-group[data-filter="año"] .filter-group-title::before,
+.filter-group[data-filter="year"] .filter-group-title::before { content: "📅"; }
+.filter-group[data-filter="precio"] .filter-group-title::before,
+.filter-group[data-filter="price"] .filter-group-title::before { content: "💰"; }
+.filter-group[data-filter="combustible"] .filter-group-title::before,
+.filter-group[data-filter="fuel"] .filter-group-title::before { content: "⛽"; }
+.filter-group[data-filter="transmision"] .filter-group-title::before,
+.filter-group[data-filter="transmission"] .filter-group-title::before { content: "⚙️"; }
+.filter-group[data-filter="kilometraje"] .filter-group-title::before,
+.filter-group[data-filter="mileage"] .filter-group-title::before { content: "🛣️"; }
+.filter-group[data-filter="color"] .filter-group-title::before { content: "🎨"; }
+.filter-group[data-filter="tipo"] .filter-group-title::before,
+.filter-group[data-filter="type"] .filter-group-title::before { content: "🏷️"; }
+
+/* ===========================================
+   SECCIÓN 4: INPUTS Y SELECTS
+   =========================================== */
+
+.filter-select,
+.filter-input,
+.filters-sidebar select,
+.filters-sidebar input,
+.sidebar-filters select,
+.sidebar-filters input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    color: white;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    appearance: none;
+}
+
+.filter-select:hover,
+.filter-input:hover,
+.filters-sidebar select:hover,
+.filters-sidebar input:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(184, 150, 88, 0.5);
+}
+
+.filter-select:focus,
+.filter-input:focus,
+.filters-sidebar select:focus,
+.filters-sidebar input:focus {
+    outline: none;
+    border-color: #b89658;
+    box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.2);
+}
+
+/* Flecha personalizada para selects */
+.filter-select,
+.filters-sidebar select,
+.sidebar-filters select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b89658' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
+/* Opciones del select */
+.filter-select option,
+.filters-sidebar select option,
+.sidebar-filters select option {
+    background: #2d2a28;
+    color: white;
+    padding: 0.5rem;
+}
+
+/* Placeholder */
+.filter-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* ===========================================
+   SECCIÓN 5: RANGO DE PRECIOS
+   =========================================== */
+
+.price-range-container,
+.filter-range {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.price-range-container input,
+.filter-range input {
+    flex: 1;
+    text-align: center;
+}
+
+.price-separator {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+
+/* Slider de rango */
+.range-slider {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    -webkit-appearance: none;
+    margin-top: 0.5rem;
+}
+
+.range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+/* ===========================================
+   SECCIÓN 6: CHECKBOXES PERSONALIZADOS
+   =========================================== */
+
+.filter-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+}
+
+.filter-checkbox:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.filter-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.filter-checkbox .checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.filter-checkbox input:checked + .checkmark {
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border-color: #b89658;
+}
+
+.filter-checkbox input:checked + .checkmark::after {
+    content: "✓";
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.filter-checkbox .checkbox-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+}
+
+/* ===========================================
+   SECCIÓN 7: BOTÓN APLICAR FILTROS
+   =========================================== */
+
+.btn-apply-filters,
+.apply-filters {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
+}
+
+.btn-apply-filters::before,
+.apply-filters::before {
+    content: "🔍";
+}
+
+.btn-apply-filters:hover,
+.apply-filters:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(184, 150, 88, 0.4);
+}
+
+.btn-apply-filters:active,
+.apply-filters:active {
+    transform: translateY(0);
+}
+
+/* ===========================================
+   SECCIÓN 8: FLECHAS DE NAVEGACIÓN CARRUSEL
+   =========================================== */
+
+.carousel-nav,
+.carousel-arrows {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.carousel-arrow,
+.nav-arrow {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #1d1b19 0%, #2d2a28 100%);
+    border: 2px solid rgba(184, 150, 88, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #b89658;
+    font-size: 1.2rem;
+}
+
+.carousel-arrow:hover,
+.nav-arrow:hover {
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border-color: #b89658;
+    color: white;
+    transform: scale(1.1);
+}
+
+.carousel-arrow.prev::before,
+.nav-arrow.prev::before {
+    content: "←";
+}
+
+.carousel-arrow.next::before,
+.nav-arrow.next::before {
+    content: "→";
+}
+
+/* Flechas flotantes en sección destacados */
+.featured-section {
+    position: relative;
+}
+
+.featured-section .carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.featured-section .carousel-arrow.prev {
+    left: -24px;
+}
+
+.featured-section .carousel-arrow.next {
+    right: -24px;
+}
+
+/* ===========================================
+   SECCIÓN 9: CONTADOR DE RESULTADOS
+   =========================================== */
+
+.results-count,
+.filter-results {
+    background: rgba(184, 150, 88, 0.15);
+    border: 1px solid rgba(184, 150, 88, 0.3);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.results-count span,
+.filter-results span {
+    color: #b89658;
+    font-weight: 600;
+}
+
+.results-count p,
+.filter-results p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* ===========================================
+   SECCIÓN 10: RESPONSIVE
+   =========================================== */
+
+@media (max-width: 1024px) {
+    .filters-sidebar,
+    .sidebar-filters,
+    .catalog-filters {
+        position: static;
+        max-height: none;
+        margin-bottom: 1.5rem;
+        border-radius: 16px;
+    }
+
+    .featured-section .carousel-arrow {
+        position: static;
+        transform: none;
+    }
+
+    .featured-section .carousel-arrows {
+        justify-content: center;
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .filters-sidebar,
+    .sidebar-filters,
+    .catalog-filters {
+        padding: 1.25rem;
+    }
+
+    .filter-group {
+        margin-bottom: 1rem;
+    }
+
+    .filter-select,
+    .filter-input {
+        padding: 0.65rem 0.9rem;
+        font-size: 0.85rem;
+    }
+
+    .btn-apply-filters,
+    .apply-filters {
+        padding: 0.85rem;
+        font-size: 0.95rem;
+    }
+
+    .carousel-arrow,
+    .nav-arrow {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+    }
+}
+
+/* ===========================================
+   SECCIÓN 11: FILTROS COLAPSABLES (MOBILE)
+   =========================================== */
+
+.filters-toggle {
+    display: none;
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #1d1b19 0%, #2d2a28 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filters-toggle::after {
+    content: "▼";
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.filters-toggle.active::after {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 768px) {
+    .filters-toggle {
+        display: flex;
+    }
+
+    .filters-sidebar.collapsed,
+    .sidebar-filters.collapsed,
+    .catalog-filters.collapsed {
+        display: none;
+    }
+
+    .filters-sidebar.expanded,
+    .sidebar-filters.expanded,
+    .catalog-filters.expanded {
+        display: block;
+    }
+}

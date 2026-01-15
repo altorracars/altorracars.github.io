@@ -59,7 +59,7 @@ body {
     .nav-actions {
         flex-shrink: 0;
     }
-    
+
     .favorites-link {
         padding: 0.4rem 0.75rem;
         font-size: 0.8rem;
@@ -67,8 +67,20 @@ body {
         border-width: 1.5px;
         min-width: auto;
         white-space: nowrap;
+        /* Eliminar efectos no deseados en móvil */
+        box-shadow: none !important;
+        -webkit-tap-highlight-color: transparent;
+        outline: none;
     }
-    
+
+    /* Eliminar efectos hover/active en móvil para favoritos */
+    .favorites-link:hover,
+    .favorites-link:focus,
+    .favorites-link:active {
+        box-shadow: none !important;
+        outline: none;
+    }
+
     .favorites-count {
         padding: 0.15rem 0.4rem;
         font-size: 0.7rem;

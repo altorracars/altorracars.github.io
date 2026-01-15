@@ -32,6 +32,37 @@ function getBadge(vehicle) {
     }
 }
 
+// Get all badges for a vehicle (FASE 2)
+function getVehicleBadges(vehicle) {
+    const badges = [];
+
+    // Badge de tipo (Nuevo, Seminuevo, Usado)
+    if (vehicle.tipo === 'nuevo') {
+        badges.push({ class: 'badge-nuevo', text: 'Nuevo' });
+    } else if (vehicle.tipo === 'seminuevo') {
+        badges.push({ class: 'badge-seminuevo', text: 'Seminuevo' });
+    } else {
+        badges.push({ class: 'badge-usado', text: 'Usado' });
+    }
+
+    // Badge de destacado
+    if (vehicle.destacado) {
+        badges.push({ class: 'badge-destacado', text: 'Destacado' });
+    }
+
+    // Badge de garantía (para nuevos y seminuevos)
+    if (vehicle.tipo === 'nuevo' || vehicle.tipo === 'seminuevo') {
+        badges.push({ class: 'badge-garantia', text: 'Garantía' });
+    }
+
+    // Badge de oferta (si tiene descuento o campo especial)
+    if (vehicle.oferta || vehicle.precioOferta) {
+        badges.push({ class: 'badge-oferta', text: 'Oferta' });
+    }
+
+    return badges;
+}
+
 // Check if vehicle is in favorites
 function isFavorite(vehicleId) {
     const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
@@ -40,23 +71,30 @@ function isFavorite(vehicleId) {
 
 // Render single vehicle card
 function renderVehicleCard(vehicle) {
-    const badge = getBadge(vehicle);
+    const badges = getVehicleBadges(vehicle);
     const favorite = isFavorite(vehicle.id);
     const heartIcon = favorite ? '♥' : '♡';
     const activeClass = favorite ? ' active' : '';
-    
+
+    // Generate badges HTML
+    const badgesHTML = badges.map(badge =>
+        `<span class="badge ${badge.class}">${badge.text}</span>`
+    ).join('');
+
     return `
         <div class="vehicle-card" data-id="${vehicle.id}">
             <div class="vehicle-image">
                 <img src="${vehicle.imagen}" alt="${vehicle.marca} ${vehicle.modelo}" loading="lazy" onerror="this.src='multimedia/vehicles/placeholder-car.jpg'">
                 <button class="favorite-btn${activeClass}" data-id="${vehicle.id}" aria-label="Añadir a favoritos">${heartIcon}</button>
-                <span class="badge ${badge.class}">${badge.text}</span>
+                <div class="vehicle-badges">
+                    ${badgesHTML}
+                </div>
             </div>
             <div class="vehicle-info">
                 <h3 class="vehicle-title">${capitalize(vehicle.marca)} ${vehicle.modelo} ${vehicle.year}</h3>
                 <p class="vehicle-specs">
-                    <span>${capitalize(vehicle.transmision)}</span> • 
-                    <span>${formatKm(vehicle.kilometraje)}</span> • 
+                    <span>${capitalize(vehicle.transmision)}</span> •
+                    <span>${formatKm(vehicle.kilometraje)}</span> •
                     <span>${capitalize(vehicle.categoria)}</span>
                 </p>
                 <div class="vehicle-footer">

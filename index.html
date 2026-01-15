@@ -39,7 +39,7 @@
                 <a href="vehiculos-usados.html" class="view-all">Ver todos →</a>
             </div>
 
-            <div class="carousel-container" data-autoplay="true" data-autoplay-delay="5000">
+            <div class="carousel-container" data-autoplay="false" data-autoplay-delay="5000">
                 <div class="carousel-wrapper" id="featuredVehicles">
                     <!-- Vehicles will be loaded dynamically -->
                 </div>
@@ -96,33 +96,63 @@
         </div>
     </section>
 
-    <!-- Why Choose Us Section - FASE 2: Mejorado -->
-    <section class="why-us-section">
+    <!-- Experts Section - FASE 1: Más comercial -->
+    <section class="experts-section">
         <div class="container">
-            <h2 class="section-title">¿Por qué elegir <span class="highlight">ALTORRA CARS?</span></h2>
-            <div class="features-grid">
-                <div class="feature-item">
-                    <div class="feature-icon">🔍</div>
-                    <h3>Vehículos Certificados</h3>
-                    <p>Todos nuestros autos usados pasan por rigurosa inspección técnica de más de 120 puntos.</p>
-                </div>
+            <div class="experts-header">
+                <h2 class="section-title">Somos Expertos en <span class="highlight">Carros en Cartagena</span></h2>
+                <p class="section-subtitle">Contamos con la mejor asesoría en nuestras vitrinas para comprar el carro de tus sueños de la manera más cómoda, segura y fácil</p>
+            </div>
 
-                <div class="feature-item">
-                    <div class="feature-icon">🛡️</div>
-                    <h3>Garantía Extendida</h3>
-                    <p>Protección adicional de 12 meses o 20.000 km para tu tranquilidad y seguridad.</p>
+            <!-- Garantía Destacada -->
+            <div class="guarantee-banner">
+                <div class="guarantee-icon">🛡️</div>
+                <div class="guarantee-content">
+                    <h3>Tu Garantía Está Cubierta</h3>
+                    <p class="guarantee-text">12 MESES o 20.000 KM</p>
+                    <p class="guarantee-note">*Aplican términos y condiciones</p>
                 </div>
+            </div>
 
-                <div class="feature-item">
-                    <div class="feature-icon">💳</div>
-                    <h3>Financiación Flexible</h3>
-                    <p>Planes de pago ajustados a tu presupuesto con las mejores tasas del mercado.</p>
+            <!-- Proceso de Compra en 3 Pasos -->
+            <div class="process-section">
+                <h3 class="process-title">Compra tu auto en <span class="highlight">3 sencillos pasos</span></h3>
+                <div class="process-grid">
+                    <div class="process-step">
+                        <div class="step-number">1</div>
+                        <h4>Busca y Elige</h4>
+                        <p>Explora nuestro catálogo y encuentra el auto perfecto para ti</p>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-number">2</div>
+                        <h4>Inspección Certificada</h4>
+                        <p>Todos nuestros vehículos pasan inspección de 120+ puntos</p>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-number">3</div>
+                        <h4>Financia y Llévalo</h4>
+                        <p>Te ayudamos con la financiación y trámites en minutos</p>
+                    </div>
                 </div>
+            </div>
 
-                <div class="feature-item">
-                    <div class="feature-icon">👨‍💼</div>
-                    <h3>Asesoría Profesional</h3>
-                    <p>Equipo experto con más de 10 años de experiencia para ayudarte en tu decisión.</p>
+            <!-- Beneficios -->
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <span class="benefit-icon">✓</span>
+                    <span>Vehículos Certificados</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">✓</span>
+                    <span>Financiación al Instante</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">✓</span>
+                    <span>Asesoría Experta</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">✓</span>
+                    <span>Mejores Precios</span>
                 </div>
             </div>
         </div>
@@ -173,7 +203,7 @@
         // FASE 2: Load popular brands dynamically
         async function loadPopularBrands() {
             await vehicleDB.load();
-            const brands = vehicleDB.data.marcas || [];
+            const brands = vehicleDB.getAllBrands(); // CORREGIDO: usar método correcto
 
             // Show first 12 brands
             const popularBrands = brands.slice(0, 12);
@@ -183,7 +213,7 @@
                 const html = popularBrands.map(brand => `
                     <a href="marca.html?marca=${brand.id}" class="brand-card">
                         <img src="${brand.logo}" alt="${brand.nombre}" class="brand-logo"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                             onerror="this.style.display='none'">
                         <div class="brand-name">${brand.nombre}</div>
                     </a>
                 `).join('');

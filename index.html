@@ -31,16 +31,18 @@
         </div>
     </section>
 
-    <!-- Featured Vehicles Section -->
+    <!-- Featured Vehicles Section - FASE 2: Con Carrusel -->
     <section class="featured-section">
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">Vehículos <span class="highlight">Destacados</span></h2>
                 <a href="vehiculos-usados.html" class="view-all">Ver todos →</a>
             </div>
-            
-            <div class="vehicles-grid" id="featuredVehicles">
-                <!-- Vehicles will be loaded dynamically -->
+
+            <div class="carousel-container" data-autoplay="true" data-autoplay-delay="5000">
+                <div class="carousel-wrapper" id="featuredVehicles">
+                    <!-- Vehicles will be loaded dynamically -->
+                </div>
             </div>
         </div>
     </section>
@@ -81,63 +83,46 @@
         </div>
     </section>
 
-    <!-- Popular Brands Section -->
+    <!-- Popular Brands Section - FASE 2: Con logos dinámicos -->
     <section class="brands-section">
         <div class="container">
             <h2 class="section-title">Marcas <span class="highlight">Populares</span></h2>
-            <div class="brands-grid">
-                <a href="marca.html?marca=chevrolet" class="brand-card">
-                    <div class="brand-name">Chevrolet</div>
-                </a>
-                <a href="marca.html?marca=nissan" class="brand-card">
-                    <div class="brand-name">Nissan</div>
-                </a>
-                <a href="marca.html?marca=renault" class="brand-card">
-                    <div class="brand-name">Renault</div>
-                </a>
-                <a href="marca.html?marca=kia" class="brand-card">
-                    <div class="brand-name">Kia</div>
-                </a>
-                <a href="marca.html?marca=mazda" class="brand-card">
-                    <div class="brand-name">Mazda</div>
-                </a>
-                <a href="marca.html?marca=toyota" class="brand-card">
-                    <div class="brand-name">Toyota</div>
-                </a>
+            <div class="brands-grid" id="popularBrands">
+                <!-- Brands will be loaded dynamically -->
             </div>
             <div class="text-center mt-3">
-                <a href="todas-marcas.html" class="btn-view-more">Ver todas las marcas →</a>
+                <a href="busqueda.html" class="btn-view-more">Ver todas las marcas →</a>
             </div>
         </div>
     </section>
 
-    <!-- Why Choose Us Section -->
+    <!-- Why Choose Us Section - FASE 2: Mejorado -->
     <section class="why-us-section">
         <div class="container">
             <h2 class="section-title">¿Por qué elegir <span class="highlight">ALTORRA CARS?</span></h2>
             <div class="features-grid">
                 <div class="feature-item">
-                    <div class="feature-icon">✓</div>
+                    <div class="feature-icon">🔍</div>
                     <h3>Vehículos Certificados</h3>
-                    <p>Todos nuestros autos usados pasan por rigurosa inspección técnica.</p>
+                    <p>Todos nuestros autos usados pasan por rigurosa inspección técnica de más de 120 puntos.</p>
                 </div>
-                
+
                 <div class="feature-item">
-                    <div class="feature-icon">✓</div>
+                    <div class="feature-icon">🛡️</div>
                     <h3>Garantía Extendida</h3>
-                    <p>Protección adicional para tu tranquilidad y seguridad.</p>
+                    <p>Protección adicional de 12 meses o 20.000 km para tu tranquilidad y seguridad.</p>
                 </div>
-                
+
                 <div class="feature-item">
-                    <div class="feature-icon">✓</div>
+                    <div class="feature-icon">💳</div>
                     <h3>Financiación Flexible</h3>
-                    <p>Planes de pago ajustados a tu presupuesto.</p>
+                    <p>Planes de pago ajustados a tu presupuesto con las mejores tasas del mercado.</p>
                 </div>
-                
+
                 <div class="feature-item">
-                    <div class="feature-icon">✓</div>
+                    <div class="feature-icon">👨‍💼</div>
                     <h3>Asesoría Profesional</h3>
-                    <p>Equipo experto para ayudarte en tu decisión.</p>
+                    <p>Equipo experto con más de 10 años de experiencia para ayudarte en tu decisión.</p>
                 </div>
             </div>
         </div>
@@ -169,18 +154,49 @@
     <script src="js/components.js"></script>
     <script src="js/database.js"></script>
     <script src="js/render.js"></script>
+    <script src="js/carousel.js"></script>
     <script src="js/main.js"></script>
     <script>
-        // Load and display featured vehicles
+        // FASE 2: Load featured vehicles and initialize carousel
         async function loadFeatured() {
             showLoading('featuredVehicles');
             await vehicleDB.load();
             const featured = vehicleDB.getFeatured();
             renderVehicles(featured, 'featuredVehicles');
+
+            // Initialize carousel after vehicles are loaded
+            setTimeout(() => {
+                initializeCarousels();
+            }, 100);
         }
-        
+
+        // FASE 2: Load popular brands dynamically
+        async function loadPopularBrands() {
+            await vehicleDB.load();
+            const brands = vehicleDB.data.marcas || [];
+
+            // Show first 12 brands
+            const popularBrands = brands.slice(0, 12);
+            const container = document.getElementById('popularBrands');
+
+            if (container) {
+                const html = popularBrands.map(brand => `
+                    <a href="marca.html?marca=${brand.id}" class="brand-card">
+                        <img src="${brand.logo}" alt="${brand.nombre}" class="brand-logo"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="brand-name">${brand.nombre}</div>
+                    </a>
+                `).join('');
+
+                container.innerHTML = html;
+            }
+        }
+
         // Initialize page
-        document.addEventListener('DOMContentLoaded', loadFeatured);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFeatured();
+            loadPopularBrands();
+        });
     </script>
 </body>
 </html>

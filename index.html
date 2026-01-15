@@ -37,19 +37,23 @@
         </div>
     </section>
 
-    <!-- Featured Vehicles Section - FASE 2: Con Carrusel -->
-    <section class="featured-section">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Vehículos <span class="highlight">Destacados</span></h2>
-                <a href="vehiculos-usados.html" class="view-all">Ver todos →</a>
-            </div>
+  <!-- Featured Vehicles Section - FASE 2: Con Carrusel -->
+<section class="featured-section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Vehículos <span class="highlight">Destacados</span></h2>
+      <a href="vehiculos-usados.html" class="view-all">Ver todos →</a>
+    </div>
 
-            <div class="vehicles-grid" id="featuredVehicles">
-                <!-- Vehicles will be loaded dynamically -->
-            </div>
-        </div>
-    </section>
+    <!-- Flechas del carrusel (van entre el header y el grid) -->
+    <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarousel(-1)">‹</button>
+    <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarousel(1)">›</button>
+
+    <div class="vehicles-grid" id="featuredVehicles">
+      <!-- Vehicles will be loaded dynamically -->
+    </div>
+  </div>
+</section>
 
     <!-- Categories Section -->
     <section class="categories-section">

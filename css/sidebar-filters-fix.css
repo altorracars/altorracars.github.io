@@ -390,14 +390,15 @@
     transform: translateY(-50%);
     z-index: 20;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
+
 
 .featured-section .carousel-arrow.prev {
-    left: -24px;
+    left: 8px;
 }
 
 .featured-section .carousel-arrow.next {
-    right: -24px;
+    right: 8px;
+}
 }
 
 /* ===========================================

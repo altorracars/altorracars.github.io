@@ -230,5 +230,15 @@
             loadPopularBrands();
         });
     </script>
+    <script>
+function scrollCarousel(direction) {
+    const grid = document.querySelector('.featured-section .vehicles-grid');
+    const cardWidth = 340;
+    grid.scrollBy({
+        left: direction * cardWidth,
+        behavior: 'smooth'
+    });
+}
+</script>
 </body>
 </html>

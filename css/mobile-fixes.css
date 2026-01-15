@@ -1,6 +1,6 @@
 /* ============================================
-   CORRECCIONES MÓVILES - ALTORRA CARS
-   Versión Final Optimizada para GitHub Pages
+   CORRECCIONES MÓVILES FINAL - ALTORRA CARS
+   Optimizado para iPhone y todos los móviles
    ============================================ */
 
 /* ===== PREVENCIÓN DE DESBORDAMIENTO ===== */
@@ -18,35 +18,118 @@ body {
 /* ===== MÓVILES (hasta 640px) ===== */
 @media (max-width: 640px) {
     
-    /* Container ajustado */
+    /* Container con padding seguro */
     .container {
         padding: 0 1rem;
         max-width: 100%;
     }
     
-    /* Logo más pequeño */
+    /* ===== HEADER MEJORADO ===== */
+    #header {
+        padding: 0.5rem 0;
+    }
+    
+    .navbar {
+        padding: 0.5rem 0;
+    }
+    
+    .nav-wrapper {
+        padding: 0 0.75rem;
+        gap: 0.5rem;
+    }
+    
+    /* Logo compacto pero visible */
     #logo-img {
-        height: 50px;
+        height: 45px;
+        width: auto;
+    }
+    
+    .logo {
+        gap: 8px;
+        flex-shrink: 0;
     }
     
     .logo-text {
-        font-size: 0.85rem;
-        line-height: 1.1;
+        font-size: 0.75rem;
+        line-height: 1;
+        letter-spacing: -0.3px;
     }
     
-    /* Hero compacto */
+    /* ===== BOTÓN FAVORITOS OPTIMIZADO ===== */
+    .nav-actions {
+        flex-shrink: 0;
+    }
+    
+    .favorites-link {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+        gap: 0.3rem;
+        border-width: 1.5px;
+        min-width: auto;
+        white-space: nowrap;
+    }
+    
+    .favorites-count {
+        padding: 0.15rem 0.4rem;
+        font-size: 0.7rem;
+        min-width: 18px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* ===== HAMBURGER MEJORADO ===== */
+    .hamburger {
+        width: 28px;
+        height: 28px;
+        padding: 4px;
+        gap: 4px;
+        margin-right: 0.25rem;
+        flex-shrink: 0;
+    }
+    
+    .hamburger span {
+        width: 100%;
+        height: 2.5px;
+        background: var(--primary-dark);
+        border-radius: 2px;
+    }
+    
+    /* ===== HERO SECTION OPTIMIZADO ===== */
     .hero {
-        min-height: 450px;
-        padding: 2rem 0;
+        min-height: 500px;
+        padding: 1.5rem 0;
+        margin-top: 60px;
+        background-position: center center;
+        background-size: cover;
+    }
+    
+    .hero-overlay {
+        background: linear-gradient(
+            135deg, 
+            rgba(29, 27, 25, 0.85) 0%, 
+            rgba(145, 102, 82, 0.75) 100%
+        );
+    }
+    
+    .hero-content {
+        padding: 1.5rem 1rem;
     }
     
     .hero-title {
-        font-size: 1.6rem !important;
-        margin-bottom: 0.5rem;
+        font-size: 1.5rem !important;
+        line-height: 1.2;
+        margin-bottom: 0.75rem;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+        word-wrap: break-word;
     }
     
     .hero-subtitle {
-        font-size: 0.95rem !important;
+        font-size: 0.9rem !important;
+        line-height: 1.4;
+        margin-bottom: 1.5rem;
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
     }
     
     .hero-buttons {
@@ -58,11 +141,18 @@ body {
     
     .btn-hero {
         width: 100%;
-        padding: 0.85rem 1.5rem;
+        padding: 0.9rem 1.5rem;
         font-size: 0.95rem;
+        text-align: center;
     }
     
-    /* Grids de 1 columna */
+    /* Search container en hero */
+    .search-container {
+        padding: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    /* ===== GRIDS OPTIMIZADOS ===== */
     .vehicles-grid,
     .categories-grid,
     .services-grid,
@@ -74,34 +164,91 @@ body {
     .catalog-layout,
     .detail-grid {
         grid-template-columns: 1fr !important;
-        gap: 1.25rem;
-    }
-    
-    /* Brands en 2 columnas */
-    .brands-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
         gap: 1rem;
     }
     
-    /* Section headers */
+    /* Brands en 2 columnas compactas */
+    .brands-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem;
+    }
+    
+    .brand-card {
+        padding: 1rem;
+    }
+    
+    /* ===== SECTION HEADERS ===== */
     .section-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.75rem;
+        margin-bottom: 1.5rem;
     }
     
     .section-title {
-        font-size: 1.5rem !important;
+        font-size: 1.4rem !important;
+        line-height: 1.2;
     }
     
-    /* Filtros sidebar */
+    .view-all {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.9rem;
+    }
+    
+    /* ===== VEHICLE CARDS ===== */
+    .vehicle-card {
+        margin-bottom: 0.5rem;
+    }
+    
+    .vehicle-image {
+        height: 200px;
+    }
+    
+    .vehicle-info {
+        padding: 1rem;
+    }
+    
+    .vehicle-title {
+        font-size: 1rem;
+        line-height: 1.3;
+    }
+    
+    .vehicle-specs {
+        font-size: 0.85rem;
+    }
+    
+    .vehicle-price {
+        font-size: 1.2rem;
+    }
+    
+    .btn-view {
+        padding: 0.5rem 1.2rem;
+        font-size: 0.9rem;
+    }
+    
+    /* ===== FILTROS SIDEBAR ===== */
     .filters-sidebar {
         position: static !important;
         margin-bottom: 1.5rem;
         padding: 1rem;
     }
     
-    /* Results header */
+    .filter-group {
+        margin-bottom: 1rem;
+    }
+    
+    .filter-label {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .filter-select,
+    .filter-input {
+        padding: 0.65rem;
+        font-size: 0.95rem;
+    }
+    
+    /* ===== RESULTS HEADER ===== */
     .results-header {
         flex-direction: column;
         align-items: stretch;
@@ -109,15 +256,30 @@ body {
         padding: 1rem;
     }
     
-    .sort-select {
-        width: 100%;
+    .results-info p {
+        font-size: 0.95rem;
     }
     
-    /* Search form */
+    .sort-select {
+        width: 100%;
+        padding: 0.65rem;
+    }
+    
+    /* ===== SEARCH FORM ===== */
     .search-form-grid,
     .search-grid {
         grid-template-columns: 1fr !important;
         gap: 0.75rem;
+    }
+    
+    .search-input {
+        padding: 0.65rem 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .btn-search {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
     }
     
     .search-actions {
@@ -128,9 +290,10 @@ body {
     .btn-search-submit,
     .btn-search-clear {
         width: 100%;
+        padding: 0.75rem;
     }
     
-    /* Detail specs */
+    /* ===== DETAIL PAGE ===== */
     .detail-specs-grid {
         grid-template-columns: 1fr !important;
     }
@@ -147,9 +310,24 @@ body {
     .btn-contact-whatsapp,
     .btn-contact-form {
         width: 100%;
+        padding: 0.85rem;
     }
     
-    /* CTA buttons */
+    /* ===== CTA SECTION ===== */
+    .cta-section {
+        padding: 2.5rem 0;
+    }
+    
+    .cta-content h2 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.75rem;
+    }
+    
+    .cta-content p {
+        font-size: 1rem !important;
+        margin-bottom: 1.5rem;
+    }
+    
     .cta-buttons {
         flex-direction: column;
         width: 100%;
@@ -159,71 +337,50 @@ body {
     .btn-cta-primary,
     .btn-cta-whatsapp {
         width: 100%;
+        padding: 0.9rem 1.5rem;
+        font-size: 0.95rem;
     }
     
-    /* Pagination ajustada */
+    /* ===== PAGINATION ===== */
     .pagination {
         flex-wrap: wrap;
         justify-content: center;
-        gap: 0.5rem;
+        gap: 0.4rem;
+        padding: 1.5rem 0;
     }
     
     .pagination-btn {
-        padding: 0.4rem 0.7rem;
+        padding: 0.5rem 0.75rem;
         font-size: 0.85rem;
-        min-width: 36px;
+        min-width: 38px;
     }
     
-    /* WhatsApp float button */
+    /* ===== WHATSAPP FLOAT ===== */
     .whatsapp-float {
         bottom: 20px;
         right: 20px;
     }
     
     .whatsapp-float svg {
-        width: 50px;
-        height: 50px;
+        width: 55px;
+        height: 55px;
     }
     
-    /* Page header */
+    /* ===== PAGE HEADER ===== */
     .page-header {
-        padding: 6rem 0 2rem;
+        padding: 5.5rem 0 2rem;
     }
     
     .page-title {
-        font-size: 1.8rem !important;
+        font-size: 1.75rem !important;
+        line-height: 1.2;
     }
     
     .page-subtitle {
         font-size: 1rem !important;
     }
     
-    /* Vehicle cards */
-    .vehicle-card {
-        margin-bottom: 0.5rem;
-    }
-    
-    .vehicle-image {
-        height: 180px;
-    }
-    
-    .vehicle-info {
-        padding: 1rem;
-    }
-    
-    .vehicle-title {
-        font-size: 1.05rem;
-    }
-    
-    .vehicle-specs {
-        font-size: 0.85rem;
-    }
-    
-    .vehicle-price {
-        font-size: 1.15rem;
-    }
-    
-    /* Footer */
+    /* ===== FOOTER ===== */
     .footer {
         padding: 2rem 0 1rem;
     }
@@ -233,24 +390,129 @@ body {
     }
     
     .footer-title {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
+        margin-bottom: 0.75rem;
     }
     
     .footer-subtitle {
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .footer-text,
+    .footer-contact p {
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    
+    .footer-links a {
+        font-size: 0.9rem;
+        padding: 0.4rem 0;
+    }
+    
+    .footer-bottom {
+        font-size: 0.85rem;
+        padding-top: 1rem;
+    }
+    
+    /* ===== CONTACT PAGE ===== */
+    .contact-form-container h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .form-group label {
+        font-size: 0.9rem;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 0.7rem 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .btn-submit {
+        padding: 0.85rem 1.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .info-card {
+        padding: 1.25rem;
+    }
+    
+    .info-icon {
+        font-size: 2rem;
+    }
+    
+    .info-card h3 {
+        font-size: 1.1rem;
+    }
+    
+    .btn-whatsapp {
+        padding: 0.65rem 1.2rem;
+        font-size: 0.9rem;
+    }
+    
+    /* ===== ABOUT PAGE ===== */
+    .about-content h2 {
+        font-size: 1.5rem;
+        margin: 1.5rem 0 1rem;
+    }
+    
+    .about-content p {
         font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .values-list li {
+        font-size: 0.95rem;
+        padding: 0.6rem 0 0.6rem 1rem;
+    }
+    
+    .reason-card {
+        padding: 1.25rem;
+    }
+    
+    .reason-card h3 {
+        font-size: 1.1rem;
+    }
+    
+    .contact-cta h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.25rem;
     }
 }
 
 /* ===== TABLETS (641px - 968px) ===== */
 @media (min-width: 641px) and (max-width: 968px) {
     
-    /* Logo ajustado */
+    /* Logo tablet */
     #logo-img {
-        height: 60px;
+        height: 55px;
     }
     
     .logo-text {
-        font-size: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    /* Favoritos tablet */
+    .favorites-link {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    /* Hero tablet */
+    .hero {
+        min-height: 550px;
+    }
+    
+    .hero-title {
+        font-size: 2rem !important;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.1rem !important;
     }
     
     /* Grids de 2 columnas */
@@ -266,24 +528,16 @@ body {
         grid-template-columns: repeat(3, 1fr) !important;
     }
     
-    /* Contact grid */
-    .contact-grid {
-        grid-template-columns: 1fr !important;
-    }
-    
-    /* Catalog layout */
-    .catalog-layout {
+    /* Otros grids en 1 columna */
+    .contact-grid,
+    .catalog-layout,
+    .detail-grid {
         grid-template-columns: 1fr !important;
     }
     
     .filters-sidebar {
         position: static !important;
         margin-bottom: 1.5rem;
-    }
-    
-    /* Detail grid */
-    .detail-grid {
-        grid-template-columns: 1fr !important;
     }
 }
 
@@ -293,27 +547,29 @@ body {
     /* Hamburger visible */
     .hamburger {
         display: flex !important;
-        z-index: 1001;
+        z-index: 1002;
     }
     
-    /* Menú móvil oculto por defecto */
+    /* Menú oculto por defecto - AJUSTADO */
     .nav-menu {
         position: fixed;
-        top: 70px;
+        top: 60px; /* Altura del header reducida */
         left: -100%;
         width: 100%;
-        height: calc(100vh - 70px);
+        height: calc(100vh - 60px);
         background: white;
         flex-direction: column;
         padding: 0;
         margin: 0;
-        transition: left 0.3s ease-in-out;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow-y: auto;
-        z-index: 999;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        overflow-x: hidden;
+        z-index: 998;
+        box-shadow: 2px 0 15px rgba(0,0,0,0.15);
+        -webkit-overflow-scrolling: touch;
     }
     
-    /* Menú móvil activo */
+    /* Menú activo */
     .nav-menu.active {
         left: 0;
     }
@@ -330,15 +586,17 @@ body {
     /* Items de navegación */
     .nav-item {
         width: 100%;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid #f5f5f5;
     }
     
-    /* Links de navegación */
+    /* Links principales */
     .nav-link {
         display: block;
         width: 100%;
         padding: 1rem 1.5rem;
         font-size: 1rem;
+        font-weight: 500;
+        color: var(--primary-dark);
     }
     
     /* Dropdown en móvil */
@@ -348,35 +606,96 @@ body {
         visibility: visible !important;
         transform: none !important;
         box-shadow: none !important;
-        background: rgba(184, 150, 88, 0.05);
+        background: rgba(184, 150, 88, 0.04);
         padding: 0;
         margin: 0;
         border-radius: 0;
         display: none;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-in-out;
     }
     
     .dropdown.active .dropdown-menu {
         display: block;
+        max-height: 500px;
     }
     
     .dropdown-menu li {
-        border-bottom: 1px solid rgba(0,0,0,0.05);
+        border-bottom: 1px solid rgba(0,0,0,0.03);
     }
     
     .dropdown-menu a {
-        padding: 0.75rem 2rem;
+        padding: 0.85rem 2.5rem;
         font-size: 0.95rem;
+        color: var(--text-gray);
+        display: block;
     }
     
-    /* Nav actions (favoritos) */
+    .dropdown-menu a:hover {
+        background: rgba(184, 150, 88, 0.08);
+        color: var(--primary-gold);
+    }
+    
+    /* Indicador de dropdown */
+    .dropdown > .nav-link::after {
+        content: '▼';
+        float: right;
+        font-size: 0.7rem;
+        transition: transform 0.3s ease;
+        color: var(--primary-gold);
+    }
+    
+    .dropdown.active > .nav-link::after {
+        transform: rotate(180deg);
+    }
+    
+    /* Nav actions en menú móvil */
     .nav-actions {
-        padding: 1rem 1.5rem;
+        padding: 1.25rem 1.5rem;
         border-top: 2px solid #f0f0f0;
+        background: rgba(184, 150, 88, 0.03);
     }
     
-    .favorites-link {
-        justify-content: center;
-        width: 100%;
+    /* Overlay oscuro cuando el menú está abierto */
+    body.menu-open::before {
+        content: '';
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 997;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    
+    body.menu-open.nav-menu-active::before {
+        opacity: 1;
+        pointer-events: all;
+    }
+}
+
+/* ===== LANDSCAPE EN MÓVILES ===== */
+@media (max-width: 968px) and (orientation: landscape) {
+    
+    .nav-menu {
+        height: calc(100vh - 55px);
+        top: 55px;
+    }
+    
+    .hero {
+        min-height: 400px;
+    }
+    
+    .hero-title {
+        font-size: 1.4rem !important;
+    }
+    
+    .hero-subtitle {
+        font-size: 0.85rem !important;
     }
 }
 
@@ -387,53 +706,60 @@ body {
 
 img,
 video,
-iframe {
+iframe,
+.vehicle-image,
+.category-image,
+.hero {
     max-width: 100%;
-    height: auto;
+    width: 100%;
 }
 
-/* ===== MEJORAS DE RENDIMIENTO ===== */
+/* ===== ACCESIBILIDAD Y TOUCH ===== */
 @media (max-width: 968px) {
     
-    /* Reducir animaciones en móvil */
-    * {
-        transition-duration: 0.2s !important;
-    }
-    
-    /* Optimizar imágenes */
-    .vehicle-image img,
-    .category-image img {
-        image-rendering: -webkit-optimize-contrast;
-    }
-}
-
-/* ===== FIX PARA LANDSCAPE EN MÓVILES ===== */
-@media (max-width: 968px) and (orientation: landscape) {
-    
-    .nav-menu {
-        height: calc(100vh - 60px);
-        top: 60px;
-    }
-    
-    .hero {
-        min-height: 350px;
-    }
-}
-
-/* ===== ACCESIBILIDAD ===== */
-@media (max-width: 968px) {
-    
-    /* Áreas de toque más grandes */
+    /* Áreas táctiles mínimas de 44x44px */
     .nav-link,
     .btn,
-    button {
+    button,
+    a.favorites-link,
+    .hamburger {
         min-height: 44px;
-        min-width: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
     
-    /* Texto más legible */
-    body {
-        font-size: 16px;
-        line-height: 1.6;
+    /* Scroll suave en iOS */
+    .nav-menu {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevenir zoom en inputs en iOS */
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* ===== OPTIMIZACIONES DE RENDIMIENTO ===== */
+@media (max-width: 968px) {
+    
+    /* Hardware acceleration */
+    .nav-menu,
+    .hamburger,
+    .dropdown-menu {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        will-change: transform;
+    }
+    
+    /* Reducir motion para usuarios que lo prefieran */
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
     }
 }

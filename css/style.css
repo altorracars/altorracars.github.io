@@ -1264,6 +1264,29 @@ section {
     background: var(--primary-brown);
 }
 
+/* Vehicles Carousel Sections */
+.vehicles-carousel-section {
+    padding: var(--spacing-xl) 0;
+    background: #fafafa;
+}
+
+.vehicles-carousel-section.new-vehicles-section {
+    background: white;
+}
+
+.vehicles-carousel-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.vehicles-carousel-section .section-title {
+    margin-bottom: 0;
+}
+
 /* CTA Section */
 .cta-section {
     background: linear-gradient(135deg, var(--primary-brown) 0%, var(--primary-dark) 100%);

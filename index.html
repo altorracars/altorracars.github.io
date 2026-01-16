@@ -104,6 +104,54 @@
         </div>
     </section>
 
+    <!-- Carrusel Vehículos Usados -->
+    <section class="vehicles-carousel-section used-vehicles-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Vehículos <span class="highlight">Usados</span></h2>
+                <a href="vehiculos-usados.html" class="btn-view-more">Ver todos →</a>
+            </div>
+
+            <div class="featured-section">
+                <div class="vehicles-grid" id="usedVehiclesCarousel">
+                    <!-- Vehicles will be loaded dynamically -->
+                </div>
+
+                <!-- Carousel Navigation -->
+                <button class="carousel-arrow prev" onclick="scrollCarousel('usedVehiclesCarousel', -1)" aria-label="Anterior">
+                    ◄
+                </button>
+                <button class="carousel-arrow next" onclick="scrollCarousel('usedVehiclesCarousel', 1)" aria-label="Siguiente">
+                    ►
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Carrusel Vehículos Nuevos -->
+    <section class="vehicles-carousel-section new-vehicles-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Vehículos <span class="highlight">Nuevos</span></h2>
+                <a href="vehiculos-nuevos.html" class="btn-view-more">Ver todos →</a>
+            </div>
+
+            <div class="featured-section">
+                <div class="vehicles-grid" id="newVehiclesCarousel">
+                    <!-- Vehicles will be loaded dynamically -->
+                </div>
+
+                <!-- Carousel Navigation -->
+                <button class="carousel-arrow prev" onclick="scrollCarousel('newVehiclesCarousel', -1)" aria-label="Anterior">
+                    ◄
+                </button>
+                <button class="carousel-arrow next" onclick="scrollCarousel('newVehiclesCarousel', 1)" aria-label="Siguiente">
+                    ►
+                </button>
+            </div>
+        </div>
+    </section>
+
     <!-- Experts Section - FASE 1: Más comercial -->
     <section class="experts-section">
         <div class="container">
@@ -243,15 +291,46 @@
             }
         }
 
+        // Load used vehicles carousel
+        async function loadUsedVehicles() {
+            showLoading('usedVehiclesCarousel');
+            await vehicleDB.load();
+            const used = vehicleDB.filter({ tipo: 'usado' });
+            renderVehicles(used.slice(0, 12), 'usedVehiclesCarousel');
+        }
+
+        // Load new vehicles carousel
+        async function loadNewVehicles() {
+            showLoading('newVehiclesCarousel');
+            await vehicleDB.load();
+            const newVehicles = vehicleDB.filter({ tipo: 'nuevo' });
+            renderVehicles(newVehicles.slice(0, 12), 'newVehiclesCarousel');
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
             loadFeatured();
             loadPopularBrands();
+            loadUsedVehicles();
+            loadNewVehicles();
         });
     </script>
     <script>
-function scrollCarousel(direction) {
-    const grid = document.querySelector('.featured-section .vehicles-grid');
+function scrollCarousel(containerId, direction) {
+    // Si containerId es string, buscar el carousel específico
+    let grid;
+    if (typeof containerId === 'string') {
+        const container = document.getElementById(containerId);
+        if (container) {
+            grid = container;
+        }
+    } else {
+        // Fallback para compatibilidad con código anterior
+        grid = document.querySelector('.featured-section .vehicles-grid');
+    }
+
+    if (!grid) return;
+
     const cardWidth = 340;
     grid.scrollBy({
         left: direction * cardWidth,

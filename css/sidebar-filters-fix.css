@@ -590,3 +590,36 @@
     }
 }
 
+/* Ajuste flechas carruseles - altorra cars */
+
+.carousel-wrapper {
+  position: relative;
+}
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%-50%);
+  width: 70px;
+  height: 70px;
+  font-size: 2rem;
+  z-index: 10;
+}
+.carousel-arrow.prev {
+  left: -40px;
+}
+.carousel-arrow.next {
+  right: -40px;
+}
+
+
+}
+
+}
+
+
+  left: -40px;
+}
+.carousel-arrow.next {
+  right: -40px;
+}
+

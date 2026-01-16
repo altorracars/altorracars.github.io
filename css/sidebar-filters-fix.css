@@ -339,7 +339,7 @@
    =========================================== */
 
 .carousel-nav,
-.carousel-arrows {
+.featured-section .carousel-arrows {
     display: flex;
     gap: 0.75rem;
     margin-top: 1rem;
@@ -394,11 +394,9 @@
 
    }
 .featured-section .carousel-arrow.prev {
-    left: 8px;
-}
-
+    left: 24px;
 .featured-section .carousel-arrow.next {
-    right: 8px;
+    right: 24px;
 }
 }
 
@@ -530,5 +528,11 @@
     .sidebar-filters.expanded,
     .catalog-filters.expanded {
         display: block;
-    }
+ 
+  @media (max-width: 640px) {
+  .featured-section .carousel-arrow {
+    display: none;
+  }
+}
+}}
 }

@@ -399,15 +399,6 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-
-
-   }
-.featured-section .carousel-arrow.prev {
-    left: 24px;
-.featured-section .carousel-arrow.next {
-    right: 24px;
-}
 }
 
 /* ===========================================
@@ -546,23 +537,33 @@
 }
 }}
 }
-/* Ajuste de posicion de flechas del carrusel - Más cerca de las miniaturas */
+/* Ajuste de posicion de flechas del carrusel - MUY cerca de las miniaturas */
 .featured-section .carousel-arrow.prev {
-  left: 15px !important;
+  left: -10px !important;
 }
 
 .featured-section .carousel-arrow.next {
-  right: 15px !important;
+  right: -10px !important;
 }
 
-/* En pantallas grandes (desktop), acercar aún más las flechas */
-@media (min-width: 1200px) {
+/* En pantallas grandes (desktop), mantener las flechas cerca */
+@media (min-width: 1024px) {
   .featured-section .carousel-arrow.prev {
-    left: 30px !important;
+    left: 10px !important;
   }
 
   .featured-section .carousel-arrow.next {
-    right: 30px !important;
+    right: 10px !important;
+  }
+}
+
+@media (min-width: 1400px) {
+  .featured-section .carousel-arrow.prev {
+    left: 20px !important;
+  }
+
+  .featured-section .carousel-arrow.next {
+    right: 20px !important;
   }
 }
 

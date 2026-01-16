@@ -673,3 +673,20 @@
 
 /* por si alguien ve el <i> (extra seguro) */
 .carousel-arrow i{ display: none !important; }
+
+/* Hover sin movimiento: no "baja", solo se acerca un poquito */
+.carousel-arrow{
+  transition: transform .15s ease, background-color .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+
+.carousel-arrow:hover{
+  transform: translateY(-50%) scale(1.06) !important; /* se acerca, no se mueve */
+  opacity: 0.95;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+
+/* Click con feedback, pero sin desplazarse */
+.carousel-arrow:active{
+  transform: translateY(-50%) scale(0.98) !important;
+}
+

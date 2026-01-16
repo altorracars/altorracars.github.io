@@ -104,6 +104,54 @@
         </div>
     </section>
 
+    <!-- Carrusel Vehículos Usados -->
+    <section class="vehicles-carousel-section used-vehicles-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Vehículos <span class="highlight">Usados</span></h2>
+                <a href="vehiculos-usados.html" class="btn-view-more">Ver todos →</a>
+            </div>
+
+            <div class="featured-section">
+                <div class="vehicles-grid" id="usedVehiclesCarousel">
+                    <!-- Vehicles will be loaded dynamically -->
+                </div>
+
+                <!-- Carousel Navigation -->
+                <button class="carousel-arrow prev" onclick="scrollCarousel('usedVehiclesCarousel', -1)" aria-label="Anterior">
+                    ◄
+                </button>
+                <button class="carousel-arrow next" onclick="scrollCarousel('usedVehiclesCarousel', 1)" aria-label="Siguiente">
+                    ►
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Carrusel Vehículos Nuevos -->
+    <section class="vehicles-carousel-section new-vehicles-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Vehículos <span class="highlight">Nuevos</span></h2>
+                <a href="vehiculos-nuevos.html" class="btn-view-more">Ver todos →</a>
+            </div>
+
+            <div class="featured-section">
+                <div class="vehicles-grid" id="newVehiclesCarousel">
+                    <!-- Vehicles will be loaded dynamically -->
+                </div>
+
+                <!-- Carousel Navigation -->
+                <button class="carousel-arrow prev" onclick="scrollCarousel('newVehiclesCarousel', -1)" aria-label="Anterior">
+                    ◄
+                </button>
+                <button class="carousel-arrow next" onclick="scrollCarousel('newVehiclesCarousel', 1)" aria-label="Siguiente">
+                    ►
+                </button>
+            </div>
+        </div>
+    </section>
+
     <!-- Experts Section - FASE 1: Más comercial -->
     <section class="experts-section">
         <div class="container">
@@ -112,13 +160,32 @@
                 <p class="section-subtitle">Contamos con la mejor asesoría en nuestras vitrinas para comprar el carro de tus sueños de la manera más cómoda, segura y fácil</p>
             </div>
 
-            <!-- Garantía Destacada -->
-            <div class="guarantee-banner">
-                <div class="guarantee-icon">🛡️</div>
-                <div class="guarantee-content">
-                    <h3>Tu Garantía Está Cubierta</h3>
-                    <p class="guarantee-text">12 MESES o 20.000 KM</p>
-                    <p class="guarantee-note">*Aplican términos y condiciones</p>
+            <!-- Garantía Destacada Rediseñada -->
+            <div class="guarantee-section">
+                <div class="guarantee-card">
+                    <div class="guarantee-badge">
+                        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                            <circle cx="40" cy="40" r="38" stroke="#b89658" stroke-width="3" fill="rgba(184, 150, 88, 0.1)"/>
+                            <path d="M40 15L45 25L55 27L47.5 35L49 45L40 40L31 45L32.5 35L25 27L35 25L40 15Z" fill="#b89658"/>
+                            <text x="40" y="62" font-size="24" font-weight="bold" fill="#b89658" text-anchor="middle">✓</text>
+                        </svg>
+                    </div>
+                    <div class="guarantee-details">
+                        <h3 class="guarantee-title">Garantía Incluida</h3>
+                        <div class="guarantee-specs">
+                            <div class="spec-item">
+                                <span class="spec-value">12</span>
+                                <span class="spec-label">MESES</span>
+                            </div>
+                            <div class="spec-divider">o</div>
+                            <div class="spec-item">
+                                <span class="spec-value">20,000</span>
+                                <span class="spec-label">KILÓMETROS</span>
+                            </div>
+                        </div>
+                        <p class="guarantee-description">Todos nuestros vehículos incluyen cobertura de garantía para tu tranquilidad</p>
+                        <a href="garantia.html" class="guarantee-link">Ver detalles de garantía →</a>
+                    </div>
                 </div>
             </div>
 
@@ -133,8 +200,8 @@
                     </div>
                     <div class="process-step">
                         <div class="step-number">2</div>
-                        <h4>Inspección Certificada</h4>
-                        <p>Todos nuestros vehículos pasan inspección de 120+ puntos</p>
+                        <h4>Vehículos Certificados</h4>
+                        <p>Todos nuestros vehículos se encuentran inspeccionados y certificados</p>
                     </div>
                     <div class="process-step">
                         <div class="step-number">3</div>
@@ -224,15 +291,46 @@
             }
         }
 
+        // Load used vehicles carousel
+        async function loadUsedVehicles() {
+            showLoading('usedVehiclesCarousel');
+            await vehicleDB.load();
+            const used = vehicleDB.filter({ tipo: 'usado' });
+            renderVehicles(used.slice(0, 12), 'usedVehiclesCarousel');
+        }
+
+        // Load new vehicles carousel
+        async function loadNewVehicles() {
+            showLoading('newVehiclesCarousel');
+            await vehicleDB.load();
+            const newVehicles = vehicleDB.filter({ tipo: 'nuevo' });
+            renderVehicles(newVehicles.slice(0, 12), 'newVehiclesCarousel');
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
             loadFeatured();
             loadPopularBrands();
+            loadUsedVehicles();
+            loadNewVehicles();
         });
     </script>
     <script>
-function scrollCarousel(direction) {
-    const grid = document.querySelector('.featured-section .vehicles-grid');
+function scrollCarousel(containerId, direction) {
+    // Si containerId es string, buscar el carousel específico
+    let grid;
+    if (typeof containerId === 'string') {
+        const container = document.getElementById(containerId);
+        if (container) {
+            grid = container;
+        }
+    } else {
+        // Fallback para compatibilidad con código anterior
+        grid = document.querySelector('.featured-section .vehicles-grid');
+    }
+
+    if (!grid) return;
+
     const cardWidth = 340;
     grid.scrollBy({
         left: direction * cardWidth,

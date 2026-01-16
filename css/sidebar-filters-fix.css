@@ -381,12 +381,14 @@
 
 .carousel-arrow.prev::before,
 .nav-arrow.prev::before {
-    content: "←";
+    content: "◄";
+    font-size: 1.3rem;
 }
 
 .carousel-arrow.next::before,
 .nav-arrow.next::before {
-    content: "→";
+    content: "►";
+    font-size: 1.3rem;
 }
 
 /* Flechas flotantes en sección destacados */
@@ -537,33 +539,44 @@
 }
 }}
 }
-/* Ajuste de posicion de flechas del carrusel - MUY cerca de las miniaturas */
+/* Ajuste de posicion de flechas del carrusel - Cerca de las miniaturas */
 .featured-section .carousel-arrow.prev {
-  left: -10px !important;
+  left: 40px !important;
 }
 
 .featured-section .carousel-arrow.next {
-  right: -10px !important;
+  right: 40px !important;
 }
 
-/* En pantallas grandes (desktop), mantener las flechas cerca */
-@media (min-width: 1024px) {
+/* En pantallas medianas, acercar más a los carruseles */
+@media (min-width: 768px) {
   .featured-section .carousel-arrow.prev {
-    left: 10px !important;
+    left: 60px !important;
   }
 
   .featured-section .carousel-arrow.next {
-    right: 10px !important;
+    right: 60px !important;
   }
 }
 
-@media (min-width: 1400px) {
+/* En pantallas grandes, mantener cerca del contenido */
+@media (min-width: 1200px) {
   .featured-section .carousel-arrow.prev {
-    left: 20px !important;
+    left: 80px !important;
   }
 
   .featured-section .carousel-arrow.next {
-    right: 20px !important;
+    right: 80px !important;
+  }
+}
+
+@media (min-width: 1600px) {
+  .featured-section .carousel-arrow.prev {
+    left: 120px !important;
+  }
+
+  .featured-section .carousel-arrow.next {
+    right: 120px !important;
   }
 }
 

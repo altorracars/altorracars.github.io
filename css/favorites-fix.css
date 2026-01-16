@@ -52,3 +52,35 @@
         box-shadow: none !important;
     }
 }
+
+/* Ajuste: mantener estilos de favoritos igual que en PC en dispositivos móviles */
+@media (max-width: 968px) {
+    .favorites-link {
+        border: 2px solid var(--primary-gold) !important;
+        border-radius: var(--radius-md) !important;
+        padding: 0.5rem 1rem !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        background: transparent !important;
+        color: var(--primary-dark) !important;
+        transition: var(--transition) !important;
+    }
+    .favorites-link:hover,
+    .favorites-link:focus,
+    .favorites-link:active,
+    .favorites-link:visited {
+        background: var(--primary-gold) !important;
+        color: white !important;
+    }
+    .favorites-count {
+        background: var(--primary-gold) !important;
+        color: white !important;
+        border: none !important;
+        padding: 0.2rem 0.5rem !important;
+        border-radius: 50% !important;
+        min-width: 20px !important;
+        text-align: center !important;
+    }
+}
+

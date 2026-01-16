@@ -391,16 +391,108 @@
     font-size: 1.3rem;
 }
 
-/* Flechas flotantes en sección destacados */
+/* Estilos para carruseles - Unificados */
 .featured-section {
+    padding: var(--spacing-xl) 0;
+    background: white;
+}
+
+.featured-section:nth-of-type(even) {
+    background: #fafafa;
+}
+
+.featured-section .section-header {
+    margin-bottom: var(--spacing-md); /* Reducir espacio entre título y carrusel */
+}
+
+.carousel-wrapper {
     position: relative;
 }
 
-.featured-section .carousel-arrow {
+.carousel-wrapper .vehicles-grid {
+    scroll-behavior: smooth;
+}
+
+/* Flechas flotantes en carruseles */
+.carousel-arrow {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 3px solid var(--primary-gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--primary-gold);
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.carousel-arrow:hover {
+    background: var(--primary-gold);
+    border-color: var(--primary-gold);
+    color: white;
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: 0 6px 25px rgba(184, 150, 88, 0.4);
+}
+
+.carousel-arrow:active {
+    transform: translateY(-50%) scale(1.05);
+}
+
+.carousel-arrow.prev {
+    left: 40px;
+}
+
+.carousel-arrow.next {
+    right: 40px;
+}
+
+/* Responsive - ajustar posición de flechas */
+@media (min-width: 768px) {
+    .carousel-arrow.prev {
+        left: 60px;
+    }
+
+    .carousel-arrow.next {
+        right: 60px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .carousel-arrow.prev {
+        left: 80px;
+    }
+
+    .carousel-arrow.next {
+        right: 80px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .carousel-arrow.prev {
+        left: 120px;
+    }
+
+    .carousel-arrow.next {
+        right: 120px;
+    }
+}
+
+/* Ocultar flechas en móvil */
+@media (max-width: 640px) {
+    .carousel-arrow {
+        display: none !important;
+    }
 }
 
 /* ===========================================
@@ -531,59 +623,6 @@
     .sidebar-filters.expanded,
     .catalog-filters.expanded {
         display: block;
- 
-  @media (max-width: 640px) {
-  .featured-section .carousel-arrow {
-    display: none;
-  }
-}
-}}
-}
-/* Ajuste de posicion de flechas del carrusel - Cerca de las miniaturas */
-.featured-section .carousel-arrow.prev {
-  left: 40px !important;
-}
-
-.featured-section .carousel-arrow.next {
-  right: 40px !important;
-}
-
-/* En pantallas medianas, acercar más a los carruseles */
-@media (min-width: 768px) {
-  .featured-section .carousel-arrow.prev {
-    left: 60px !important;
-  }
-
-  .featured-section .carousel-arrow.next {
-    right: 60px !important;
-  }
-}
-
-/* En pantallas grandes, mantener cerca del contenido */
-@media (min-width: 1200px) {
-  .featured-section .carousel-arrow.prev {
-    left: 80px !important;
-  }
-
-  .featured-section .carousel-arrow.next {
-    right: 80px !important;
-  }
-}
-
-@media (min-width: 1600px) {
-  .featured-section .carousel-arrow.prev {
-    left: 120px !important;
-  }
-
-  .featured-section .carousel-arrow.next {
-    right: 120px !important;
-  }
-}
-
-/* Ocultar flechas en dispositivos moviles */
-@media (max-width: 640px) {
-  .featured-section .carousel-arrow {
-    display: none !important;
-  }
+    }
 }
 

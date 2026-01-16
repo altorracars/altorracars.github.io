@@ -37,20 +37,22 @@
         </div>
     </section>
 
-  <!-- Featured Vehicles Section - FASE 2: Con Carrusel -->
+  <!-- Featured Vehicles Section - Carrusel Destacados -->
 <section class="featured-section">
   <div class="container">
     <div class="section-header">
       <h2 class="section-title">Vehículos <span class="highlight">Destacados</span></h2>
-      <a href="vehiculos-usados.html" class="view-all">Ver todos →</a>
+      <a href="busqueda.html" class="btn-view-more">Ver todos →</a>
     </div>
 
-    <!-- Flechas del carrusel (van entre el header y el grid) -->
-    <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarousel(-1)">‹</button>
-    <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarousel(1)">›</button>
+    <div class="carousel-wrapper">
+      <!-- Flechas del carrusel -->
+      <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('featuredVehicles', -1)">‹</button>
+      <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('featuredVehicles', 1)">›</button>
 
-    <div class="vehicles-grid" id="featuredVehicles">
-      <!-- Vehicles will be loaded dynamically -->
+      <div class="vehicles-grid" id="featuredVehicles">
+        <!-- Vehicles will be loaded dynamically -->
+      </div>
     </div>
   </div>
 </section>
@@ -105,49 +107,41 @@
     </section>
 
     <!-- Carrusel Vehículos Usados -->
-    <section class="vehicles-carousel-section used-vehicles-section">
+    <section class="featured-section">
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">Vehículos <span class="highlight">Usados</span></h2>
                 <a href="vehiculos-usados.html" class="btn-view-more">Ver todos →</a>
             </div>
 
-            <div class="featured-section">
+            <div class="carousel-wrapper">
+                <!-- Flechas del carrusel -->
+                <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('usedVehiclesCarousel', -1)">‹</button>
+                <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('usedVehiclesCarousel', 1)">›</button>
+
                 <div class="vehicles-grid" id="usedVehiclesCarousel">
                     <!-- Vehicles will be loaded dynamically -->
                 </div>
-
-                <!-- Carousel Navigation -->
-                <button class="carousel-arrow prev" onclick="scrollCarousel('usedVehiclesCarousel', -1)" aria-label="Anterior">
-                    ◄
-                </button>
-                <button class="carousel-arrow next" onclick="scrollCarousel('usedVehiclesCarousel', 1)" aria-label="Siguiente">
-                    ►
-                </button>
             </div>
         </div>
     </section>
 
     <!-- Carrusel Vehículos Nuevos -->
-    <section class="vehicles-carousel-section new-vehicles-section">
+    <section class="featured-section">
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">Vehículos <span class="highlight">Nuevos</span></h2>
                 <a href="vehiculos-nuevos.html" class="btn-view-more">Ver todos →</a>
             </div>
 
-            <div class="featured-section">
+            <div class="carousel-wrapper">
+                <!-- Flechas del carrusel -->
+                <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('newVehiclesCarousel', -1)">‹</button>
+                <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('newVehiclesCarousel', 1)">›</button>
+
                 <div class="vehicles-grid" id="newVehiclesCarousel">
                     <!-- Vehicles will be loaded dynamically -->
                 </div>
-
-                <!-- Carousel Navigation -->
-                <button class="carousel-arrow prev" onclick="scrollCarousel('newVehiclesCarousel', -1)" aria-label="Anterior">
-                    ◄
-                </button>
-                <button class="carousel-arrow next" onclick="scrollCarousel('newVehiclesCarousel', 1)" aria-label="Siguiente">
-                    ►
-                </button>
             </div>
         </div>
     </section>
@@ -316,24 +310,20 @@
         });
     </script>
     <script>
-function scrollCarousel(containerId, direction) {
-    // Si containerId es string, buscar el carousel específico
-    let grid;
-    if (typeof containerId === 'string') {
-        const container = document.getElementById(containerId);
-        if (container) {
-            grid = container;
-        }
-    } else {
-        // Fallback para compatibilidad con código anterior
-        grid = document.querySelector('.featured-section .vehicles-grid');
+// Función unificada para scroll de carruseles
+function scrollCarouselById(containerId, direction) {
+    const grid = document.getElementById(containerId);
+    if (!grid) {
+        console.error('Carousel not found:', containerId);
+        return;
     }
 
-    if (!grid) return;
+    // Calcular ancho de scroll basado en las tarjetas visibles
+    const cardWidth = 350; // Ancho aprox de cada tarjeta + gap
+    const scrollAmount = cardWidth * 3; // Scroll de 3 tarjetas a la vez
 
-    const cardWidth = 340;
     grid.scrollBy({
-        left: direction * cardWidth,
+        left: direction * scrollAmount,
         behavior: 'smooth'
     });
 }

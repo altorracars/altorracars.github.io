@@ -538,12 +538,10 @@
 }
 /* Ajuste de posicion de flechas del carrusel */
 .featured-section .carousel-arrow.prev {
-  left: 60px !important;
-}
+  left: 16px !important;
 
 .featured-section .carousel-arrow.next {
-  right: 60px !important;
-}
+  right: 16px !important;
 
 /* Ocultar flechas en dispositivos moviles */
 @media (max-width: 640px) {

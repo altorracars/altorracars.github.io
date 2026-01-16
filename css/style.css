@@ -297,8 +297,8 @@ button {
     left: 0;
     right: 0;
     bottom: 0;
-    /* Overlay más transparente para que la imagen de fondo resalte más */
-    background: linear-gradient(135deg, rgba(29, 27, 25, 0.25) 0%, rgba(145, 102, 82, 0.15) 100%);
+    /* Overlay mucho más transparente para que la imagen de fondo resalte al máximo */
+    background: linear-gradient(135deg, rgba(29, 27, 25, 0.15) 0%, rgba(145, 102, 82, 0.08) 100%);
 }
 
 .hero-content {
@@ -837,6 +837,57 @@ section {
 
 .whatsapp-float:hover {
     transform: scale(1.1);
+}
+
+/* Tooltip para WhatsApp */
+.whatsapp-float::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    right: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--primary-gold);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
+}
+
+/* Flecha del tooltip */
+.whatsapp-float::after {
+    content: "";
+    position: absolute;
+    right: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 8px solid transparent;
+    border-left-color: var(--primary-gold);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+/* Mostrar tooltip al hacer hover */
+.whatsapp-float:hover::before,
+.whatsapp-float:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.whatsapp-float:hover::before {
+    right: 75px;
+}
+
+.whatsapp-float:hover::after {
+    right: 65px;
 }
 
 /* Responsive Design */

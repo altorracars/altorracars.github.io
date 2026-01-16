@@ -589,37 +589,57 @@
         display: block;
     }
 }
-
-/* Ajuste flechas carruseles - altorra cars */
-
+/* Ajustes flechas carruseles - altorra cars v2 */
 .carousel-wrapper {
   position: relative;
 }
+
 .carousel-arrow {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%-50%);
+  transform: translateY(-50%);
   width: 70px;
   height: 70px;
   font-size: 2rem;
   z-index: 10;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: #916652;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-arrow i {
+  display: none;
+}
+
+.carousel-arrow.prev::before {
+  content: '<';
+}
+
+.carousel-arrow.next::before {
+  content: '>';
+}
+
+.carousel-arrow.prev {
+  left: -55px;
+}
+
+.carousel-arrow.next {
+  right: -55px;
+}
+
+
+/* Ajustes adicionales flechas - altorra cars v2 */
+.carousel-arrow {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #916652;
 }
 .carousel-arrow.prev {
-  left: -40px;
+  left: -65px;
 }
 .carousel-arrow.next {
-  right: -40px;
+  right: -65px;
 }
-
-
-}
-
-}
-
-
-  left: -40px;
-}
-.carousel-arrow.next {
-  right: -40px;
-}
-

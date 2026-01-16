@@ -643,3 +643,33 @@
 .carousel-arrow.next {
   right: -65px;
 }
+
+/* FIX v4: una sola flecha (< >), más afuera y más transparente */
+.carousel-arrow{
+  /* mata el caracter interno (‹/›) para que no se duplique */
+  font-size: 0 !important;
+
+  /* estilo tipo agua */
+  background: rgba(255,255,255,0.18) !important;
+  border: 1px solid rgba(0,0,0,0.14) !important;
+  color: #916652 !important;
+}
+
+/* solo una flecha */
+.carousel-arrow.prev::before{
+  content: "<" !important;
+  font-size: 2rem !important;
+  line-height: 1 !important;
+}
+.carousel-arrow.next::before{
+  content: ">" !important;
+  font-size: 2rem !important;
+  line-height: 1 !important;
+}
+
+/* más hacia afuera */
+.carousel-arrow.prev{ left: -95px !important; }
+.carousel-arrow.next{ right: -95px !important; }
+
+/* por si alguien ve el <i> (extra seguro) */
+.carousel-arrow i{ display: none !important; }

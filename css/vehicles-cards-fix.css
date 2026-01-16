@@ -20,33 +20,18 @@
     overflow: visible !important;
 }
 
-/* Grid en sección destacados (home) - modo carrusel */
+/* Grid en sección destacados (home) - modo carrusel SIN SCROLLBAR */
 .featured-section .vehicles-grid {
     display: flex !important;
     flex-direction: row !important;
     gap: 1.5rem !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
+    overflow: hidden !important; /* Ocultar scrollbar */
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     padding: 1rem 0 1.5rem 0 !important;
-    -webkit-overflow-scrolling: touch;
 }
 
-/* Scrollbar personalizada para carrusel */
-.featured-section .vehicles-grid::-webkit-scrollbar {
-    height: 8px;
-}
-
-.featured-section .vehicles-grid::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.featured-section .vehicles-grid::-webkit-scrollbar-thumb {
-    background: linear-gradient(90deg, #b89658 0%, #916652 100%);
-    border-radius: 10px;
-}
+/* Scrollbar eliminado - navegación solo con flechas */
 
 /* ===========================================
    SECCIÓN 2: TARJETA DE VEHÍCULO MEJORADA

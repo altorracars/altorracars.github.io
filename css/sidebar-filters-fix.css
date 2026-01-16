@@ -347,26 +347,36 @@
 
 .carousel-arrow,
 .nav-arrow {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #1d1b19 0%, #2d2a28 100%);
-    border: 2px solid rgba(184, 150, 88, 0.3);
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 3px solid var(--primary-gold);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
-    color: #b89658;
-    font-size: 1.2rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--primary-gold);
+    font-size: 1.5rem;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(184, 150, 88, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .carousel-arrow:hover,
 .nav-arrow:hover {
-    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
-    border-color: #b89658;
+    background: var(--primary-gold);
+    border-color: var(--primary-gold);
     color: white;
-    transform: scale(1.1);
+    transform: scale(1.15);
+    box-shadow: 0 6px 25px rgba(184, 150, 88, 0.4), 0 0 0 8px rgba(184, 150, 88, 0.15);
+}
+
+.carousel-arrow:active,
+.nav-arrow:active {
+    transform: scale(1.05);
 }
 
 .carousel-arrow.prev::before,
@@ -536,13 +546,24 @@
 }
 }}
 }
-/* Ajuste de posicion de flechas del carrusel */
+/* Ajuste de posicion de flechas del carrusel - Más cerca de las miniaturas */
 .featured-section .carousel-arrow.prev {
-  left: 60px !important;
+  left: 15px !important;
 }
 
 .featured-section .carousel-arrow.next {
-  right: 60px !important;
+  right: 15px !important;
+}
+
+/* En pantallas grandes (desktop), acercar aún más las flechas */
+@media (min-width: 1200px) {
+  .featured-section .carousel-arrow.prev {
+    left: 30px !important;
+  }
+
+  .featured-section .carousel-arrow.next {
+    right: 30px !important;
+  }
 }
 
 /* Ocultar flechas en dispositivos moviles */

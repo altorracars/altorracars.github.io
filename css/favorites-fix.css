@@ -1,54 +1,57 @@
 /* ============================================
-   CORRECCIÓN DEFINITIVA - BOTÓN FAVORITOS MÓVIL
-   Eliminación total de efectos visuales problem áticos
+   BOTÓN FAVORITOS UNIFICADO - PC Y MÓVIL
+   Estilo consistente en todas las plataformas
    ============================================ */
 
+/* Estilo base para todas las plataformas */
+.favorites-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    color: var(--primary-dark);
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--primary-gold);
+    background: white;
+    transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.favorites-link:hover {
+    background: var(--primary-gold);
+    color: white;
+}
+
+.favorites-count {
+    background: var(--primary-gold);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    min-width: 20px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Ajustes específicos para móvil */
 @media (max-width: 968px) {
     .favorites-link {
-        /* Eliminar TODOS los bordes y fondos */
-        border: none !important;
-        background: none !important;
-        background-color: transparent !important;
-
-        /* Eliminar TODAS las sombras */
-        box-shadow: none !important;
-        -webkit-box-shadow: none !important;
-        -moz-box-shadow: none !important;
-
-        /* Eliminar efectos de tap/click */
-        -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
-        -webkit-tap-highlight-color: transparent !important;
-
-        /* Eliminar outlines */
-        outline: none !important;
-        outline-width: 0 !important;
-
-        /* Colores del texto */
-        color: var(--primary-dark) !important;
-
-        /* Sin transiciones que puedan causar efectos */
-        transition: none !important;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
     }
 
-    /* Eliminar hover, focus, active COMPLETAMENTE */
-    .favorites-link:hover,
-    .favorites-link:focus,
-    .favorites-link:active,
-    .favorites-link:visited {
-        border: none !important;
-        background: none !important;
-        background-color: transparent !important;
-        box-shadow: none !important;
-        -webkit-box-shadow: none !important;
-        outline: none !important;
-        transform: none !important;
-    }
-
-    /* El contador badge */
     .favorites-count {
-        background: var(--primary-gold) !important;
-        color: white !important;
-        border: none !important;
-        box-shadow: none !important;
+        padding: 0.15rem 0.4rem;
+        font-size: 0.75rem;
+        min-width: 18px;
+    }
+
+    /* Evitar efectos de tap no deseados pero mantener el estilo */
+    .favorites-link:active {
+        background: var(--primary-gold);
+        color: white;
     }
 }

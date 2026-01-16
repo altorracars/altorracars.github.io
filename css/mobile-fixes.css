@@ -60,37 +60,7 @@ body {
         flex-shrink: 0;
     }
 
-    .favorites-link {
-        padding: 0.4rem 0.75rem;
-        font-size: 0.8rem;
-        gap: 0.3rem;
-        border: none !important; /* ELIMINAR BORDE DORADO COMPLETAMENTE */
-        background: transparent !important; /* SIN FONDO */
-        min-width: auto;
-        white-space: nowrap;
-        /* Eliminar efectos no deseados en móvil */
-        box-shadow: none !important;
-        -webkit-tap-highlight-color: transparent;
-        outline: none;
-    }
-
-    /* Eliminar efectos hover/active en móvil para favoritos */
-    .favorites-link:hover,
-    .favorites-link:focus,
-    .favorites-link:active {
-        box-shadow: none !important;
-        outline: none;
-    }
-
-    .favorites-count {
-        padding: 0.15rem 0.4rem;
-        font-size: 0.7rem;
-        min-width: 18px;
-        height: 18px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
+    /* Estilos del botón de favoritos manejados en favorites-fix.css para unificación */
     
     /* ===== HAMBURGER MEJORADO ===== */
     .hamburger {

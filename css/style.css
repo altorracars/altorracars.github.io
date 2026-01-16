@@ -297,8 +297,8 @@ button {
     left: 0;
     right: 0;
     bottom: 0;
-
-            background: linear-gradient(135deg, rgba(29, 27, 25, 0.5) 0%, rgba(145, 102, 82, 0.4) 100%);
+    /* Overlay más transparente para que la imagen de fondo resalte más */
+    background: linear-gradient(135deg, rgba(29, 27, 25, 0.25) 0%, rgba(145, 102, 82, 0.15) 100%);
 }
 
 .hero-content {
@@ -315,13 +315,32 @@ button {
     font-size: clamp(2rem, 5vw, 3.5rem);
     font-weight: 700;
     margin-bottom: var(--spacing-sm);
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    /* Efecto 3D mejorado con múltiples sombras */
+    text-shadow:
+        0 1px 0 rgba(0, 0, 0, 0.2),
+        0 2px 0 rgba(0, 0, 0, 0.2),
+        0 3px 0 rgba(0, 0, 0, 0.15),
+        0 4px 0 rgba(0, 0, 0, 0.1),
+        0 5px 10px rgba(0, 0, 0, 0.4),
+        0 8px 20px rgba(0, 0, 0, 0.3),
+        0 0 30px rgba(184, 150, 88, 0.3);
+    /* Borde sutil para mayor contraste */
+    -webkit-text-stroke: 1px rgba(0, 0, 0, 0.1);
 }
 
 .hero-subtitle {
     font-size: clamp(1rem, 2vw, 1.3rem);
     margin-bottom: var(--spacing-lg);
-    opacity: 0.95;
+    font-weight: 500;
+    /* Efecto 3D para subtítulo */
+    text-shadow:
+        0 1px 0 rgba(0, 0, 0, 0.3),
+        0 2px 0 rgba(0, 0, 0, 0.25),
+        0 3px 5px rgba(0, 0, 0, 0.4),
+        0 5px 15px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(184, 150, 88, 0.2);
+    /* Borde sutil para mayor legibilidad */
+    -webkit-text-stroke: 0.5px rgba(0, 0, 0, 0.1);
 }
 
 /* Search Container */

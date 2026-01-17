@@ -22,8 +22,7 @@
         padding: var(--spacing-md) 0;
         -webkit-overflow-scrolling: touch;
         /* Mejorar soporte touch en móvil */
-        touch-action: pan-x;
-        cursor: grab;
+        touch-action: pan-x pan-y;
 }
 
 /* Scrollbar personalizada */
@@ -74,6 +73,8 @@
         /* Asegurar scroll táctil en móvil */
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* IE/Edge */
+        /* Remover scroll-snap en móvil para mejor scroll táctil */
+        scroll-snap-type: none;
     }
 
     /* Ocultar scrollbar en móvil pero mantener funcionalidad */
@@ -110,8 +111,8 @@
         text-align: center;
         color: var(--text-gray);
         font-size: 0.85rem;
-        margin-top: 0.5rem;
-        padding: 0.5rem;
+        margin-top: -0.5rem;
+        padding: 0.25rem 0.5rem;
         animation: fadeIn 0.5s ease-in-out;
     }
 

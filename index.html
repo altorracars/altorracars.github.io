@@ -54,7 +54,7 @@
         <!-- Vehicles will be loaded dynamically -->
       </div>
     </div>
-    <p class="carousel-hint">👆 Desliza para ver más</p>
+    <p class="carousel-hint">👉 Desliza para ver más</p>
   </div>
 </section>
 
@@ -124,7 +124,7 @@
                     <!-- Vehicles will be loaded dynamically -->
                 </div>
             </div>
-            <p class="carousel-hint">👆 Desliza para ver más</p>
+            <p class="carousel-hint">👉 Desliza para ver más</p>
         </div>
     </section>
 
@@ -145,7 +145,7 @@
                     <!-- Vehicles will be loaded dynamically -->
                 </div>
             </div>
-            <p class="carousel-hint">👆 Desliza para ver más</p>
+            <p class="carousel-hint">👉 Desliza para ver más</p>
         </div>
     </section>
 
@@ -330,6 +330,36 @@ function scrollCarouselById(containerId, direction) {
         behavior: 'smooth'
     });
 }
+
+// Mejorar scroll táctil en móvil para carruseles
+function enableTouchScroll() {
+    const carousels = document.querySelectorAll('.vehicles-grid');
+
+    carousels.forEach(carousel => {
+        let startX = 0;
+        let scrollLeft = 0;
+        let isScrolling = false;
+
+        // Prevenir interferencias en móvil
+        carousel.style.cursor = 'default';
+
+        // No interferir con el scroll nativo, solo asegurar que funcione
+        carousel.addEventListener('touchstart', (e) => {
+            isScrolling = true;
+            startX = e.touches[0].pageX - carousel.offsetLeft;
+            scrollLeft = carousel.scrollLeft;
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', () => {
+            isScrolling = false;
+        }, { passive: true });
+    });
+}
+
+// Inicializar mejoras táctiles cuando cargue la página
+document.addEventListener('DOMContentLoaded', () => {
+    enableTouchScroll();
+});
 </script>
 </body>
 </html>

@@ -20,18 +20,45 @@
     overflow: visible !important;
 }
 
-/* Grid en sección destacados (home) - modo carrusel SIN SCROLLBAR */
+/* Grid en sección destacados (home) - modo carrusel CON SCROLL MÓVIL */
 .featured-section .vehicles-grid {
     display: flex !important;
     flex-direction: row !important;
     gap: 1.5rem !important;
-    overflow: hidden !important; /* Ocultar scrollbar */
+    overflow-x: auto !important; /* Permitir scroll horizontal en móvil */
+    overflow-y: hidden !important;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     padding: 1rem 0 1.5rem 0 !important;
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
 }
 
-/* Scrollbar eliminado - navegación solo con flechas */
+/* Scrollbar visible en desktop, oculto en móvil */
+.featured-section .vehicles-grid::-webkit-scrollbar {
+    height: 10px;
+}
+
+.featured-section .vehicles-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.featured-section .vehicles-grid::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #b89658 0%, #916652 100%);
+    border-radius: 10px;
+}
+
+/* Ocultar scrollbar en móvil pero mantener funcionalidad de scroll */
+@media (max-width: 640px) {
+    .featured-section .vehicles-grid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .featured-section .vehicles-grid {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+    }
+}
 
 /* ===========================================
    SECCIÓN 2: TARJETA DE VEHÍCULO MEJORADA

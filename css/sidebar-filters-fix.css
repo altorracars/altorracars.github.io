@@ -448,7 +448,7 @@
 }
 
 /* Ocultar flechas en móvil */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     .carousel-wrapper {
         flex-direction: column;
         gap: 1rem;

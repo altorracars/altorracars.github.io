@@ -592,6 +592,7 @@
 /* Ajustes flechas carruseles - altorra cars v2 */
 .carousel-wrapper {
   position: relative;
+  overflow: visible; /* Asegurar que las flechas sean visibles */
 }
 
 .carousel-arrow {
@@ -667,9 +668,9 @@
   line-height: 1 !important;
 }
 
-/* más hacia afuera */
-.carousel-arrow.prev{ left: -95px !important; }
-.carousel-arrow.next{ right: -95px !important; }
+/* Posición óptima para visibilidad sin cortes */
+.carousel-arrow.prev{ left: -80px !important; }
+.carousel-arrow.next{ right: -80px !important; }
 
 /* por si alguien ve el <i> (extra seguro) */
 .carousel-arrow i{ display: none !important; }

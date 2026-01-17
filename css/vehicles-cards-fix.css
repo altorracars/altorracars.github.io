@@ -20,7 +20,7 @@
     overflow: visible !important;
 }
 
-/* Grid en sección destacados (home) - modo carrusel CON SCROLL MÓVIL */
+/* Grid en sección destacados (home) - modo carrusel CON SCROLL TÁCTIL */
 .featured-section .vehicles-grid {
     display: flex !important;
     flex-direction: row !important;
@@ -31,33 +31,16 @@
     scroll-behavior: smooth;
     padding: 1rem 0 1.5rem 0 !important;
     -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+    /* Ocultar scrollbar completamente en todos los navegadores */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
 }
 
-/* Scrollbar visible en desktop, oculto en móvil */
+/* Ocultar scrollbar en Chrome/Safari/Edge */
 .featured-section .vehicles-grid::-webkit-scrollbar {
-    height: 10px;
-}
-
-.featured-section .vehicles-grid::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.featured-section .vehicles-grid::-webkit-scrollbar-thumb {
-    background: linear-gradient(90deg, #b89658 0%, #916652 100%);
-    border-radius: 10px;
-}
-
-/* Ocultar scrollbar en móvil pero mantener funcionalidad de scroll */
-@media (max-width: 640px) {
-    .featured-section .vehicles-grid::-webkit-scrollbar {
-        display: none;
-    }
-
-    .featured-section .vehicles-grid {
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE/Edge */
-    }
+    display: none;
+    width: 0;
+    height: 0;
 }
 
 /* ===========================================

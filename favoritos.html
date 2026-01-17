@@ -84,9 +84,10 @@
                 return;
             }
 
-            renderVehicles(favoriteVehicles, 'favoritesGrid');
+            // Renderizar sin listeners automáticos
+            renderVehicles(favoriteVehicles, 'favoritesGrid', { attachListeners: false });
 
-            // Re-attach listeners para actualización en tiempo real
+            // Attach listeners personalizados para actualización en tiempo real
             attachFavoriteListenersWithReload();
         }
 

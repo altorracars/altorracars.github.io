@@ -138,38 +138,65 @@ function attachFavoriteListeners() {
         button.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
+
             const vehicleId = button.getAttribute('data-id');
-            toggleFavorite(vehicleId);
-            
-            // Update button
+            const wasAdded = toggleFavorite(vehicleId);
+
+            // Update button with animation
             const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
             if (favorites.includes(vehicleId)) {
                 button.textContent = '♥';
                 button.classList.add('active');
+                // Animación de pulso
+                button.style.transform = 'scale(1.3)';
+                setTimeout(() => {
+                    button.style.transform = 'scale(1)';
+                }, 200);
             } else {
                 button.textContent = '♡';
                 button.classList.remove('active');
             }
-            
-            // Update counter
-            updateFavoritesCount();
+
+            // Update counter en desktop y móvil
+            if (typeof window.updateFavoritesCount === 'function') {
+                window.updateFavoritesCount();
+            }
+
+            // Mostrar notificación toast
+            if (typeof toast !== 'undefined') {
+                const count = favorites.length;
+                if (wasAdded) {
+                    toast.success(
+                        `Has añadido (${count}) ${count === 1 ? 'auto' : 'autos'} a favoritos.`,
+                        'Auto agregado'
+                    );
+                } else {
+                    toast.info(
+                        `Has eliminado un auto de favoritos. Tienes (${count}) ${count === 1 ? 'auto' : 'autos'}.`,
+                        'Auto eliminado'
+                    );
+                }
+            }
         });
     });
 }
 
-// Toggle favorite
+// Toggle favorite - Retorna true si fue agregado, false si fue eliminado
 function toggleFavorite(vehicleId) {
     let favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
     const index = favorites.indexOf(vehicleId.toString());
-    
+    let wasAdded = false;
+
     if (index > -1) {
         favorites.splice(index, 1);
+        wasAdded = false;
     } else {
         favorites.push(vehicleId.toString());
+        wasAdded = true;
     }
-    
+
     localStorage.setItem('altorra-favorites', JSON.stringify(favorites));
+    return wasAdded;
 }
 
 // Update favorites count in header

@@ -3,6 +3,11 @@
    Optimizado para iPhone y todos los móviles
    ============================================ */
 
+/* ===== OCULTAR FAVORITOS EN MENÚ EN DESKTOP ===== */
+.nav-item-mobile-only {
+    display: none;
+}
+
 /* ===== PREVENCIÓN DE DESBORDAMIENTO ===== */
 html {
     overflow-x: hidden;
@@ -56,11 +61,39 @@ body {
     }
     
     /* ===== BOTÓN FAVORITOS OPTIMIZADO ===== */
+    /* Ocultar botón de favoritos del header en móvil */
     .nav-actions {
-        flex-shrink: 0;
+        display: none !important;
     }
 
-    /* Estilos del botón de favoritos manejados en favorites-fix.css para unificación */
+    /* Mostrar botón de favoritos en menú móvil */
+    .nav-item-mobile-only {
+        display: block !important;
+        border-top: 2px solid #f0f0f0;
+        background: rgba(184, 150, 88, 0.05);
+    }
+
+    .favorites-link-mobile {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 1rem 1.5rem !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        color: var(--primary-gold) !important;
+    }
+
+    .favorites-link-mobile .favorites-count {
+        background: var(--primary-gold);
+        color: white;
+        padding: 0.25rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        min-width: 24px;
+        text-align: center;
+    }
     
     /* ===== HAMBURGER MEJORADO ===== */
     .hamburger {

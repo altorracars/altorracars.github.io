@@ -207,9 +207,18 @@ function initializeFavorites() {
 function updateFavoritesCount() {
     try {
         const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
+        const count = favorites.length.toString();
+
+        // Actualizar contador en header desktop
         const favCount = document.getElementById('favCount');
         if (favCount) {
-            favCount.textContent = favorites.length.toString();
+            favCount.textContent = count;
+        }
+
+        // Actualizar contador en menú móvil
+        const favCountMobile = document.getElementById('favCountMobile');
+        if (favCountMobile) {
+            favCountMobile.textContent = count;
         }
     } catch (error) {
         console.error('Error updating favorites:', error);

@@ -20,7 +20,10 @@
         scroll-behavior: smooth;
         scroll-snap-type: x mandatory;
         padding: var(--spacing-md) 0;
-        -webkit-overflow-scrolling: touch
+        -webkit-overflow-scrolling: touch;
+        /* Mejorar soporte touch en móvil */
+        touch-action: pan-x;
+        cursor: grab;
 }
 
 /* Scrollbar personalizada */
@@ -53,7 +56,8 @@
 /* Responsive Tablets */
 @media (max-width: 968px) {
     .vehicles-grid {
-grid-auto-columns: 300px;
+        grid-auto-columns: 300px;
+    }
 
     .vehicle-card {
         min-width: 300px;
@@ -67,6 +71,14 @@ grid-auto-columns: 300px;
               grid-auto-columns: 280px;
         gap: var(--spacing-sm);
         padding: var(--spacing-sm) 0;
+        /* Asegurar scroll táctil en móvil */
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+    }
+
+    /* Ocultar scrollbar en móvil pero mantener funcionalidad */
+    .vehicles-grid::-webkit-scrollbar {
+        display: none;
     }
 
     .vehicle-card {
@@ -86,6 +98,32 @@ grid-auto-columns: 300px;
         height: 100%;
         object-fit: cover;
     }
+
+    /* Ocultar flechas en móvil para evitar confusión */
+    .carousel-arrow {
+        display: none !important;
+    }
+
+    /* Mostrar texto informativo solo en móvil */
+    .carousel-hint {
+        display: block !important;
+        text-align: center;
+        color: var(--text-gray);
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+}
+
+/* Ocultar hint en desktop por defecto */
+.carousel-hint {
+    display: none;
 }
 
 /* Expand featured section container width */

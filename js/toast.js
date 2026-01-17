@@ -29,6 +29,9 @@ class ToastManager {
      * @param {number} duration - Duración en ms (default: 4000)
      */
     show(message, type = 'info', title = '', duration = 4000) {
+        // Cerrar todas las notificaciones anteriores para evitar saturación
+        this.closeAll();
+
         const toast = this.createToast(message, type, title, duration);
         this.container.appendChild(toast);
         this.toasts.push(toast);

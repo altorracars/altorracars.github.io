@@ -107,13 +107,14 @@ function renderVehicleCard(vehicle) {
 }
 
 // Render multiple vehicles
-function renderVehicles(vehicles, containerId) {
+function renderVehicles(vehicles, containerId, options = {}) {
+    const { attachListeners = true } = options;
     const container = document.getElementById(containerId);
     if (!container) {
         console.error(`Container ${containerId} not found`);
         return;
     }
-    
+
     if (vehicles.length === 0) {
         container.innerHTML = `
             <div class="no-results">
@@ -123,12 +124,14 @@ function renderVehicles(vehicles, containerId) {
         `;
         return;
     }
-    
+
     const html = vehicles.map(renderVehicleCard).join('');
     container.innerHTML = html;
-    
-    // Attach favorite button listeners
-    attachFavoriteListeners();
+
+    // Attach favorite button listeners solo si se especifica
+    if (attachListeners) {
+        attachFavoriteListeners();
+    }
 }
 
 // Attach event listeners to favorite buttons

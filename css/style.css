@@ -2435,9 +2435,22 @@ section {
 
 .process-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
+}
+
+/* Responsive para process-grid */
+@media (max-width: 968px) {
+    .process-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .process-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .process-step {

@@ -63,13 +63,17 @@ function getVehicleBadges(vehicle) {
     return badges;
 }
 
-// Check if vehicle is in favorites - NORMALIZADO A STRING
+// Check if vehicle is in favorites - USA FAVORITES MANAGER
 function isFavorite(vehicleId) {
+    // Usar el FavoritesManager unificado
+    if (typeof window.favoritesManager !== 'undefined') {
+        return window.favoritesManager.has(vehicleId);
+    }
+
+    // Fallback si FavoritesManager no está cargado
     try {
         const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-        // Normalizar vehicleId a string para comparación consistente
         const normalizedId = String(vehicleId);
-        // Normalizar todos los IDs del array a string
         const normalizedFavorites = favorites.map(id => String(id));
         return normalizedFavorites.includes(normalizedId);
     } catch (error) {
@@ -143,58 +147,70 @@ function renderVehicles(vehicles, containerId, options = {}) {
     }
 }
 
-// Attach event listeners to favorite buttons
+// Attach event listeners to favorite buttons - USA FAVORITES MANAGER
 function attachFavoriteListeners() {
     const favButtons = document.querySelectorAll('.favorite-btn');
+
     favButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
+        // Remover listeners previos para evitar duplicación
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+
+        newButton.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
 
-            const vehicleId = button.getAttribute('data-id');
+            const vehicleId = newButton.getAttribute('data-id');
 
-            // IMPORTANTE: Verificar estado ANTES de toggle para mensajes correctos
-            const wasInFavorites = isFavorite(vehicleId);
+            // Usar FavoritesManager para toggle
+            if (typeof window.favoritesManager !== 'undefined') {
+                const wasAdded = window.favoritesManager.toggle(vehicleId);
 
-            // Toggle el favorito
-            const wasAdded = toggleFavorite(vehicleId);
+                // Actualizar botón con el nuevo estado
+                window.favoritesManager.updateButtonState(newButton, vehicleId);
 
-            // Actualizar botón basándose en localStorage (fuente de verdad)
-            const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-            const normalizedFavorites = favorites.map(id => String(id));
-            const isNowFavorite = normalizedFavorites.includes(String(vehicleId));
-
-            if (isNowFavorite) {
-                button.textContent = '♥';
-                button.classList.add('active');
                 // Animación de pulso solo al agregar
-                button.style.transform = 'scale(1.3)';
-                setTimeout(() => {
-                    button.style.transform = 'scale(1)';
-                }, 200);
-            } else {
-                button.textContent = '♡';
-                button.classList.remove('active');
-            }
-
-            // Update counter en desktop y móvil
-            if (typeof window.updateFavoritesCount === 'function') {
-                window.updateFavoritesCount();
-            }
-
-            // Mostrar notificación toast basada en wasAdded (no en estado previo)
-            if (typeof toast !== 'undefined') {
-                const count = normalizedFavorites.length;
                 if (wasAdded) {
-                    toast.success(
-                        `Has añadido (${count}) ${count === 1 ? 'auto' : 'autos'} a favoritos.`,
-                        'Auto agregado'
-                    );
+                    newButton.style.transform = 'scale(1.3)';
+                    setTimeout(() => {
+                        newButton.style.transform = 'scale(1)';
+                    }, 200);
+                }
+
+                // Los contadores se actualizan automáticamente vía evento
+                // pero llamamos explícitamente por si acaso
+                window.favoritesManager.updateAllCounters();
+
+                // Mostrar notificación toast
+                if (typeof toast !== 'undefined') {
+                    const count = window.favoritesManager.count();
+                    if (wasAdded) {
+                        toast.success(
+                            `Has añadido (${count}) ${count === 1 ? 'auto' : 'autos'} a favoritos.`,
+                            'Auto agregado'
+                        );
+                    } else {
+                        toast.info(
+                            `Has eliminado un auto de favoritos. Tienes (${count}) ${count === 1 ? 'auto' : 'autos'}.`,
+                            'Auto eliminado'
+                        );
+                    }
+                }
+            } else {
+                // Fallback al sistema antiguo si FavoritesManager no está disponible
+                console.warn('FavoritesManager no disponible, usando sistema legacy');
+                const wasAdded = toggleFavorite(vehicleId);
+
+                if (wasAdded) {
+                    newButton.textContent = '♥';
+                    newButton.classList.add('active');
                 } else {
-                    toast.info(
-                        `Has eliminado un auto de favoritos. Tienes (${count}) ${count === 1 ? 'auto' : 'autos'}.`,
-                        'Auto eliminado'
-                    );
+                    newButton.textContent = '♡';
+                    newButton.classList.remove('active');
+                }
+
+                if (typeof window.updateFavoritesCount === 'function') {
+                    window.updateFavoritesCount();
                 }
             }
         });

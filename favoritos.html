@@ -35,6 +35,7 @@
         </div>
     </section>
     <div id="footer-placeholder"></div>
+    <script src="js/favorites-manager.js"></script>
     <script src="js/toast.js"></script>
     <script src="js/components.js"></script>
     <script src="js/database.js"></script>
@@ -44,7 +45,11 @@
         let currentFavorites = [];
 
         async function loadFavorites() {
-            const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
+            // Usar FavoritesManager para obtener todos los favoritos
+            const favorites = window.favoritesManager ?
+                window.favoritesManager.getAll() :
+                JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
+
             currentFavorites = favorites;
             const container = document.getElementById('favoritesGrid');
             const countSpan = document.getElementById('favoritesCount');
@@ -72,7 +77,10 @@
             }
 
             await vehicleDB.load();
-            const favoriteVehicles = favorites.map(id => vehicleDB.getVehicleById(id)).filter(v => v);
+            // Normalizar IDs antes de buscar
+            const favoriteVehicles = favorites
+                .map(id => vehicleDB.getVehicleById(String(id)))
+                .filter(v => v !== undefined && v !== null);
 
             if (favoriteVehicles.length === 0) {
                 container.innerHTML = `
@@ -91,7 +99,7 @@
             attachFavoriteListenersWithReload();
         }
 
-        // Attach listeners que recargan la página al eliminar
+        // Attach listeners que recargan la página al eliminar - USA FAVORITES MANAGER
         function attachFavoriteListenersWithReload() {
             const favButtons = document.querySelectorAll('.favorite-btn');
             favButtons.forEach(button => {
@@ -109,10 +117,18 @@
 
                     // Esperar animación
                     setTimeout(async () => {
-                        toggleFavorite(vehicleId);
+                        // Usar FavoritesManager para eliminar
+                        if (window.favoritesManager) {
+                            window.favoritesManager.remove(vehicleId);
+                        } else {
+                            // Fallback
+                            toggleFavorite(vehicleId);
+                        }
 
-                        // Actualizar contador en header (desktop y móvil)
-                        if (typeof window.updateFavoritesCount === 'function') {
+                        // Actualizar contadores (se hace automático con FavoritesManager pero por si acaso)
+                        if (window.favoritesManager) {
+                            window.favoritesManager.updateAllCounters();
+                        } else if (typeof window.updateFavoritesCount === 'function') {
                             window.updateFavoritesCount();
                         }
 
@@ -120,9 +136,12 @@
                         await loadFavorites();
 
                         // Notificación
-                        const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
+                        const count = window.favoritesManager ?
+                            window.favoritesManager.count() :
+                            JSON.parse(localStorage.getItem('altorra-favorites') || '[]').length;
+
                         toast.info(
-                            `Auto eliminado de favoritos. Tienes (${favorites.length}) ${favorites.length === 1 ? 'auto' : 'autos'}.`,
+                            `Auto eliminado de favoritos. Tienes (${count}) ${count === 1 ? 'auto' : 'autos'}.`,
                             'Auto eliminado'
                         );
                     }, 300);
@@ -130,7 +149,7 @@
             });
         }
 
-        // Función para eliminar todos los favoritos
+        // Función para eliminar todos los favoritos - USA FAVORITES MANAGER
         function clearAllFavorites() {
             if (currentFavorites.length === 0) return;
 
@@ -151,10 +170,18 @@
 
             // Eliminar después de animación
             setTimeout(() => {
-                localStorage.setItem('altorra-favorites', JSON.stringify([]));
+                // Usar FavoritesManager para limpiar
+                if (window.favoritesManager) {
+                    window.favoritesManager.clear();
+                } else {
+                    // Fallback
+                    localStorage.setItem('altorra-favorites', JSON.stringify([]));
+                }
 
-                // Actualizar contador
-                if (typeof window.updateFavoritesCount === 'function') {
+                // Actualizar contadores
+                if (window.favoritesManager) {
+                    window.favoritesManager.updateAllCounters();
+                } else if (typeof window.updateFavoritesCount === 'function') {
                     window.updateFavoritesCount();
                 }
 

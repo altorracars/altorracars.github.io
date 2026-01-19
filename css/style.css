@@ -488,13 +488,23 @@ section {
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
     z-index: 10;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
-.favorite-btn:hover,
+/* Hover solo en dispositivos con mouse real - NO EN TOUCH */
+@media (hover: hover) and (pointer: fine) {
+    .favorite-btn:hover {
+        background: var(--primary-gold);
+        color: white;
+        transform: scale(1.1);
+    }
+}
+
+/* Estado activo (cuando está en favoritos) */
 .favorite-btn.active {
     background: var(--primary-gold);
     color: white;
-    transform: scale(1.1);
 }
 
 .badge {
@@ -1561,13 +1571,23 @@ section {
     cursor: pointer;
     box-shadow: var(--shadow-md);
     transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
-.favorite-btn-detail:hover,
+/* Hover solo en dispositivos con mouse real - NO EN TOUCH */
+@media (hover: hover) and (pointer: fine) {
+    .favorite-btn-detail:hover {
+        background: var(--primary-gold);
+        color: white;
+        transform: scale(1.1);
+    }
+}
+
+/* Estado activo (cuando está en favoritos) */
 .favorite-btn-detail.active {
     background: var(--primary-gold);
     color: white;
-    transform: scale(1.1);
 }
 
 .detail-info {

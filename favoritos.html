@@ -14,7 +14,8 @@
 </head>
 <body>
     <div id="header-placeholder"></div>
-    <section class="page-header">
+    <!-- Header solo visible cuando hay favoritos -->
+    <section class="page-header" id="favoritesHeader" style="display: none;">
         <div class="container">
             <div class="favorites-header-content">
                 <div>
@@ -54,14 +55,17 @@
             const container = document.getElementById('favoritesGrid');
             const countSpan = document.getElementById('favoritesCount');
             const clearBtn = document.getElementById('clearAllBtn');
+            const header = document.getElementById('favoritesHeader');
 
             // Actualizar contador
             countSpan.textContent = favorites.length;
 
-            // Mostrar/ocultar botón eliminar todos
+            // Mostrar/ocultar header y botón según contenido
             if (favorites.length > 0) {
+                header.style.display = 'block';
                 clearBtn.style.display = 'block';
             } else {
+                header.style.display = 'none';
                 clearBtn.style.display = 'none';
             }
 

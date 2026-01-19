@@ -3,6 +3,16 @@
    Estilos para la página de favoritos
    ============================================ */
 
+/* ============================================
+   HEADER DE FAVORITOS - OPTIMIZADO
+   Minimizar cuando está vacío para full-page layout
+   ============================================ */
+
+/* Reducir padding del page-header en favoritos */
+.page-header {
+    padding: calc(var(--spacing-md) + 70px) 0 var(--spacing-md) !important;
+}
+
 /* Header de favoritos */
 .favorites-header-content {
     display: flex;
@@ -49,18 +59,40 @@
 }
 
 /* ============================================
-   ESTADO VACÍO DE FAVORITOS - DISEÑO MEJORADO
-   Inspirado en diseño inmobiliario de referencia
+   LAYOUT FULL-PAGE PARA FAVORITOS VACÍOS
+   Cubre toda la página verticalmente como inmobiliaria
    ============================================ */
 
+/* La sección de favoritos debe ocupar toda la altura disponible */
+.favorites-section {
+    min-height: 100vh; /* Full viewport cuando no hay page-header */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+/* Cuando hay favoritos y el page-header está visible */
+body:has(#favoritesHeader[style*="display: block"]) .favorites-section {
+    min-height: calc(100vh - 200px); /* Restar altura del header cuando está visible */
+}
+
+/* Container para centrado perfecto */
+.favorites-section .container {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Estado vacío centrado verticalmente en toda la página */
 .no-favorites {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 80px 20px;
-    min-height: 500px;
+    padding: 40px 20px;
     width: 100%;
     max-width: 700px;
     margin: 0 auto;
@@ -168,9 +200,19 @@
         justify-content: center;
     }
 
+    /* Mantener full-page layout en móvil */
+    .favorites-section {
+        min-height: 100vh; /* Full viewport en móvil cuando no hay header */
+        padding: 20px 15px;
+    }
+
+    /* Ajustar cuando hay header visible en móvil */
+    body:has(#favoritesHeader[style*="display: block"]) .favorites-section {
+        min-height: calc(100vh - 150px);
+    }
+
     .no-favorites {
-        padding: 60px 15px;
-        min-height: 400px;
+        padding: 30px 15px;
     }
 
     .no-favorites-icon {

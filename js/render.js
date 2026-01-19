@@ -63,10 +63,19 @@ function getVehicleBadges(vehicle) {
     return badges;
 }
 
-// Check if vehicle is in favorites
+// Check if vehicle is in favorites - NORMALIZADO A STRING
 function isFavorite(vehicleId) {
-    const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-    return favorites.includes(vehicleId.toString());
+    try {
+        const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
+        // Normalizar vehicleId a string para comparación consistente
+        const normalizedId = String(vehicleId);
+        // Normalizar todos los IDs del array a string
+        const normalizedFavorites = favorites.map(id => String(id));
+        return normalizedFavorites.includes(normalizedId);
+    } catch (error) {
+        console.error('Error checking favorite:', error);
+        return false;
+    }
 }
 
 // Render single vehicle card
@@ -143,14 +152,22 @@ function attachFavoriteListeners() {
             e.stopPropagation();
 
             const vehicleId = button.getAttribute('data-id');
+
+            // IMPORTANTE: Verificar estado ANTES de toggle para mensajes correctos
+            const wasInFavorites = isFavorite(vehicleId);
+
+            // Toggle el favorito
             const wasAdded = toggleFavorite(vehicleId);
 
-            // Update button with animation
+            // Actualizar botón basándose en localStorage (fuente de verdad)
             const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-            if (favorites.includes(vehicleId)) {
+            const normalizedFavorites = favorites.map(id => String(id));
+            const isNowFavorite = normalizedFavorites.includes(String(vehicleId));
+
+            if (isNowFavorite) {
                 button.textContent = '♥';
                 button.classList.add('active');
-                // Animación de pulso
+                // Animación de pulso solo al agregar
                 button.style.transform = 'scale(1.3)';
                 setTimeout(() => {
                     button.style.transform = 'scale(1)';
@@ -165,9 +182,9 @@ function attachFavoriteListeners() {
                 window.updateFavoritesCount();
             }
 
-            // Mostrar notificación toast
+            // Mostrar notificación toast basada en wasAdded (no en estado previo)
             if (typeof toast !== 'undefined') {
-                const count = favorites.length;
+                const count = normalizedFavorites.length;
                 if (wasAdded) {
                     toast.success(
                         `Has añadido (${count}) ${count === 1 ? 'auto' : 'autos'} a favoritos.`,
@@ -186,20 +203,33 @@ function attachFavoriteListeners() {
 
 // Toggle favorite - Retorna true si fue agregado, false si fue eliminado
 function toggleFavorite(vehicleId) {
-    let favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-    const index = favorites.indexOf(vehicleId.toString());
-    let wasAdded = false;
+    try {
+        let favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
 
-    if (index > -1) {
-        favorites.splice(index, 1);
-        wasAdded = false;
-    } else {
-        favorites.push(vehicleId.toString());
-        wasAdded = true;
+        // Normalizar TODO a strings para consistencia
+        const normalizedId = String(vehicleId);
+        const normalizedFavorites = favorites.map(id => String(id));
+
+        const index = normalizedFavorites.indexOf(normalizedId);
+        let wasAdded = false;
+
+        if (index > -1) {
+            // Eliminar de la posición encontrada
+            normalizedFavorites.splice(index, 1);
+            wasAdded = false;
+        } else {
+            // Agregar como string
+            normalizedFavorites.push(normalizedId);
+            wasAdded = true;
+        }
+
+        // Guardar array normalizado
+        localStorage.setItem('altorra-favorites', JSON.stringify(normalizedFavorites));
+        return wasAdded;
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        return false;
     }
-
-    localStorage.setItem('altorra-favorites', JSON.stringify(favorites));
-    return wasAdded;
 }
 
 // Update favorites count in header

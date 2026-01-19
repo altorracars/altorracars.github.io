@@ -203,23 +203,36 @@ function initializeFavorites() {
     updateFavoritesCount();
 }
 
-// Update favorites count
+// Update favorites count - MEJORADO CON RETRY Y NORMALIZACIÓN
 function updateFavoritesCount() {
     try {
         const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-        const count = favorites.length.toString();
+        // Normalizar todos los IDs a string
+        const normalizedFavorites = favorites.map(id => String(id));
+        const count = normalizedFavorites.length.toString();
+
+        // Función helper para actualizar un elemento
+        const updateElement = (elementId) => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = count;
+                return true;
+            }
+            return false;
+        };
 
         // Actualizar contador en header desktop
-        const favCount = document.getElementById('favCount');
-        if (favCount) {
-            favCount.textContent = count;
-        }
+        updateElement('favCount');
 
         // Actualizar contador en menú móvil
-        const favCountMobile = document.getElementById('favCountMobile');
-        if (favCountMobile) {
-            favCountMobile.textContent = count;
-        }
+        updateElement('favCountMobile');
+
+        // Si los elementos no existen, intentar después de un delay (header cargando)
+        setTimeout(() => {
+            updateElement('favCount');
+            updateElement('favCountMobile');
+        }, 100);
+
     } catch (error) {
         console.error('Error updating favorites:', error);
     }

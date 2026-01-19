@@ -68,9 +68,14 @@
             if (favorites.length === 0) {
                 container.innerHTML = `
                     <div class="no-favorites">
-                        <h2>No tienes vehículos favoritos</h2>
-                        <p>Explora nuestro catálogo y guarda los vehículos que te interesen</p>
-                        <a href="vehiculos-usados.html" class="btn-primary">Ver Catálogo</a>
+                        <div class="no-favorites-icon">♡</div>
+                        <h2>No tienes favoritos aún</h2>
+                        <p>Explora propiedades y agrega tus favoritos</p>
+                        <div class="no-favorites-actions">
+                            <a href="index.html" class="btn-catalog btn-catalog-primary">Ver Todos los Autos</a>
+                            <a href="vehiculos-usados.html" class="btn-catalog btn-catalog-secondary">Autos Usados</a>
+                            <a href="vehiculos-nuevos.html" class="btn-catalog btn-catalog-secondary">Autos Nuevos</a>
+                        </div>
                     </div>
                 `;
                 return;
@@ -85,8 +90,14 @@
             if (favoriteVehicles.length === 0) {
                 container.innerHTML = `
                     <div class="no-favorites">
+                        <div class="no-favorites-icon">♡</div>
                         <h2>No se encontraron vehículos</h2>
-                        <a href="vehiculos-usados.html" class="btn-primary">Ver Catálogo</a>
+                        <p>Los vehículos guardados ya no están disponibles</p>
+                        <div class="no-favorites-actions">
+                            <a href="index.html" class="btn-catalog btn-catalog-primary">Ver Todos los Autos</a>
+                            <a href="vehiculos-usados.html" class="btn-catalog btn-catalog-secondary">Autos Usados</a>
+                            <a href="vehiculos-nuevos.html" class="btn-catalog btn-catalog-secondary">Autos Nuevos</a>
+                        </div>
                     </div>
                 `;
                 return;

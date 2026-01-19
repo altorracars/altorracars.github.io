@@ -198,6 +198,11 @@
     z-index: 15 !important;
     border: none;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    touch-action: manipulation !important;
+    user-select: none !important;
 }
 
 /* Hover solo en dispositivos con mouse real (no touch) - FIX para móvil */

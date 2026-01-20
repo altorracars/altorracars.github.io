@@ -1,53 +1,24 @@
 /* ============================================
-   FAVORITOS VACÍO - FULL PAGE LAYOUT
-   Diseño perfecto tipo Altorra Inmobiliaria
+   FAVORITOS VACÍO - DISEÑO TIPO INMOBILIARIA
+   Sistema simple y robusto para todas las pantallas
    ============================================ */
 
-/* FORZAR html y body a 100% height */
-html,
-body {
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+/* Sección de favoritos con centrado perfecto */
+.favorites-section {
+    min-height: calc(100vh - 160px); /* Viewport - header - footer aprox */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
 }
 
-/* Cuando la página está vacía, ocultar footer para full-page */
-body:has(.no-favorites) footer {
-    display: none !important;
+/* Container centrado */
+.favorites-section .container {
+    width: 100%;
+    max-width: 1000px;
 }
 
-/* Layout contenedor principal para full-page */
-body:has(.no-favorites) {
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 100vh !important;
-}
-
-/* Header debe ser fixed height */
-body:has(.no-favorites) #header {
-    flex-shrink: 0 !important;
-}
-
-/* La sección de favoritos ocupa TODO el espacio restante */
-body:has(.no-favorites) .favorites-section {
-    flex: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 40px 20px !important;
-    overflow-y: auto !important; /* Por si el contenido es muy grande */
-}
-
-/* Container centrado perfectamente */
-body:has(.no-favorites) .favorites-section .container {
-    width: 100% !important;
-    max-width: 900px !important; /* Más ancho para botones horizontales */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-/* Contenido del estado vacío optimizado */
+/* Estado vacío */
 .no-favorites {
     display: flex;
     flex-direction: column;
@@ -58,96 +29,109 @@ body:has(.no-favorites) .favorites-section .container {
     width: 100%;
 }
 
-/* ============================================
-   DISEÑO PC (Desktop) - HORIZONTAL
-   ============================================ */
-@media (min-width: 769px) {
-    /* Corazón grande pero que NO se corte */
-    .no-favorites-icon {
-        font-size: 120px !important;
-        margin-bottom: 30px !important;
-        color: #d4d4d4 !important;
-    }
+/* Icono corazón */
+.no-favorites-icon {
+    font-size: 120px;
+    color: #d4d4d4;
+    margin-bottom: 30px;
+    line-height: 1;
+    animation: heartPulse 2s ease-in-out infinite;
+}
 
-    .no-favorites h2 {
-        font-size: 2.2rem !important;
-        font-weight: 700 !important;
-        margin-bottom: 15px !important;
-        color: #1d1b19 !important;
+@keyframes heartPulse {
+    0%, 100% {
+        transform: scale(1);
     }
-
-    .no-favorites p {
-        font-size: 1.15rem !important;
-        margin-bottom: 40px !important;
-        max-width: 550px !important;
-        color: #666 !important;
-        line-height: 1.6 !important;
-    }
-
-    /* BOTONES EN FILA (horizontal) EN PC */
-    .no-favorites-actions {
-        display: flex !important;
-        flex-direction: row !important; /* ← FORZAR HORIZONTAL */
-        justify-content: center !important;
-        align-items: center !important;
-        gap: 16px !important;
-        flex-wrap: wrap !important; /* Por si no caben todos */
-    }
-
-    /* Botones más grandes en PC */
-    .btn-catalog {
-        padding: 16px 32px !important;
-        font-size: 1rem !important;
-        min-width: 180px !important; /* Ancho mínimo para uniformidad */
-        white-space: nowrap !important;
+    50% {
+        transform: scale(1.05);
     }
 }
 
-/* ============================================
-   DISEÑO TABLET (Intermedio)
-   ============================================ */
-@media (min-width: 641px) and (max-width: 768px) {
-    .no-favorites-icon {
-        font-size: 100px !important;
-        margin-bottom: 25px !important;
-    }
+/* Título */
+.no-favorites h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1d1b19;
+    margin: 0 0 15px 0;
+    letter-spacing: -0.5px;
+}
 
-    .no-favorites h2 {
-        font-size: 1.9rem !important;
-    }
-
-    .no-favorites p {
-        font-size: 1.05rem !important;
-        margin-bottom: 35px !important;
-    }
-
-    /* Botones en fila también en tablet */
-    .no-favorites-actions {
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: center !important;
-        gap: 12px !important;
-        flex-wrap: wrap !important;
-    }
-
-    .btn-catalog {
-        padding: 14px 28px !important;
-        font-size: 0.95rem !important;
-        min-width: 160px !important;
-    }
+/* Texto descriptivo */
+.no-favorites p {
+    font-size: 1.1rem;
+    color: #666;
+    margin: 0 0 40px 0;
+    line-height: 1.6;
+    max-width: 600px;
 }
 
 /* ============================================
-   DISEÑO MÓVIL - VERTICAL
+   BOTONES - HORIZONTAL EN PC, VERTICAL EN MÓVIL
    ============================================ */
-@media (max-width: 640px) {
-    /* En móvil sí mostrar footer */
-    body:has(.no-favorites) footer {
-        display: block !important;
-    }
 
-    body:has(.no-favorites) .favorites-section {
-        padding: 30px 15px !important;
+/* Contenedor de botones - HORIZONTAL por defecto (PC y Tablet) */
+.no-favorites-actions {
+    display: flex;
+    flex-direction: row; /* ← HORIZONTAL EN PC */
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* Estilos de botones */
+.btn-catalog {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    min-width: 180px;
+}
+
+/* Botón principal (dorado) */
+.btn-catalog-primary {
+    background: linear-gradient(135deg, #916652 0%, #b89658 100%);
+    color: white;
+}
+
+.btn-catalog-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(145, 102, 82, 0.35);
+}
+
+/* Botones secundarios (outline) */
+.btn-catalog-secondary {
+    background: white;
+    color: #916652;
+    border: 2px solid #b89658;
+}
+
+.btn-catalog-secondary:hover {
+    background: #f9f6f1;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(145, 102, 82, 0.2);
+}
+
+.btn-catalog:active {
+    transform: translateY(0);
+}
+
+/* ============================================
+   RESPONSIVE MÓVIL
+   ============================================ */
+@media (max-width: 768px) {
+    .favorites-section {
+        min-height: calc(100vh - 200px);
+        padding: 40px 20px;
     }
 
     .no-favorites {
@@ -155,48 +139,44 @@ body:has(.no-favorites) .favorites-section .container {
     }
 
     .no-favorites-icon {
-        font-size: 90px !important;
-        margin-bottom: 20px !important;
+        font-size: 100px;
+        margin-bottom: 25px;
     }
 
     .no-favorites h2 {
-        font-size: 1.6rem !important;
-        margin-bottom: 12px !important;
+        font-size: 1.8rem;
     }
 
     .no-favorites p {
-        font-size: 1rem !important;
-        margin-bottom: 30px !important;
+        font-size: 1rem;
+        margin-bottom: 35px;
     }
 
-    /* BOTONES EN COLUMNA (vertical) EN MÓVIL */
+    /* BOTONES EN COLUMNA en móvil */
     .no-favorites-actions {
-        display: flex !important;
-        flex-direction: column !important; /* ← FORZAR VERTICAL */
-        align-items: stretch !important;
-        width: 100% !important;
-        gap: 12px !important;
+        flex-direction: column; /* ← VERTICAL EN MÓVIL */
+        width: 100%;
+        gap: 12px;
     }
 
     .btn-catalog {
-        width: 100% !important;
-        padding: 14px 24px !important;
-        font-size: 0.95rem !important;
+        width: 100%;
+        min-width: auto;
     }
 }
 
-/* ============================================
-   PREVENIR OVERFLOW Y CORTES
-   ============================================ */
+/* Móvil pequeño */
+@media (max-width: 480px) {
+    .no-favorites-icon {
+        font-size: 90px;
+    }
 
-/* Asegurar que el contenido NUNCA se corte */
-body:has(.no-favorites) .no-favorites {
-    max-height: 100% !important;
-    overflow-y: visible !important;
-}
+    .no-favorites h2 {
+        font-size: 1.6rem;
+    }
 
-/* Prevenir corte del corazón */
-.no-favorites-icon {
-    overflow: visible !important;
-    line-height: 1 !important;
+    .btn-catalog {
+        padding: 14px 24px;
+        font-size: 0.95rem;
+    }
 }

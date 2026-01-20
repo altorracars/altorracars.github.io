@@ -9,7 +9,7 @@ class VehicleDatabase {
     
     async load() {
         if (this.loaded) return;
-        
+
         try {
             const response = await fetch('data/vehiculos.json');
             if (!response.ok) {
@@ -18,12 +18,58 @@ class VehicleDatabase {
             const data = await response.json();
             this.vehicles = data.vehiculos || [];
             this.brands = data.marcas || [];
+
+            // ✅ FASE 1: Normalizar taxonomía automáticamente
+            this.normalizeVehicles();
+
             this.loaded = true;
         } catch (error) {
             console.error('Error loading database:', error);
             this.vehicles = [];
             this.brands = [];
         }
+    }
+
+    /**
+     * FASE 1 - NORMALIZACIÓN AUTOMÁTICA
+     * Convierte "seminuevo" → "usado" y "camioneta" → "pickup"
+     * Sin romper el inventario existente
+     */
+    normalizeVehicles() {
+        this.vehicles = this.vehicles.map(v => {
+            const normalized = { ...v };
+
+            // Regla de negocio: "seminuevo" no existe, solo "nuevo" y "usado"
+            if (normalized.tipo === 'seminuevo') {
+                normalized.tipo = 'usado';
+            }
+
+            // Migración: "camioneta" → "pickup"
+            if (normalized.categoria === 'camioneta') {
+                normalized.categoria = 'pickup';
+            }
+
+            return normalized;
+        });
+    }
+
+    /**
+     * Normaliza queries de usuario para compatibilidad
+     */
+    normalizeQuery(value) {
+        if (!value) return value;
+
+        const normalized = value.toLowerCase().trim();
+
+        // Mapeos de compatibilidad
+        if (normalized === 'seminuevo' || normalized === 'semi-nuevo') {
+            return 'usado';
+        }
+        if (normalized === 'camioneta' || normalized === 'camionetas') {
+            return 'pickup';
+        }
+
+        return normalized;
     }
     
     // Get all vehicles
@@ -39,13 +85,21 @@ class VehicleDatabase {
     // Filter vehicles
     filter(filters = {}) {
         let filtered = [...this.vehicles];
-        
-        // Filter by type (nuevo, usado, seminuevo)
+
+        // ✅ FASE 1: Normalizar queries entrantes para compatibilidad
+        if (filters.tipo) {
+            filters.tipo = this.normalizeQuery(filters.tipo);
+        }
+        if (filters.categoria) {
+            filters.categoria = this.normalizeQuery(filters.categoria);
+        }
+
+        // Filter by type (nuevo, usado) - seminuevo ya mapeado a usado
         if (filters.tipo) {
             filtered = filtered.filter(v => v.tipo === filters.tipo);
         }
-        
-        // Filter by category (suv, sedan, etc)
+
+        // Filter by category (suv, sedan, hatchback, pickup) - camioneta ya mapeado a pickup
         if (filters.categoria) {
             filtered = filtered.filter(v => v.categoria === filters.categoria);
         }

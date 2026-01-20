@@ -21,26 +21,34 @@ function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// ✅ FASE 1: Formatear nombre de categoría canónico
+function formatCategoria(categoria) {
+    const categorias = {
+        'suv': 'SUV / Crossover',
+        'pickup': 'Pickup (Trabajo)',
+        'sedan': 'Sedán',
+        'hatchback': 'Hatchback / Compacto'
+    };
+    return categorias[categoria] || capitalize(categoria);
+}
+
 // Get badge class and text based on vehicle type
 function getBadge(vehicle) {
+    // FASE 1: Solo "Nuevo" y "Usado" (seminuevo ya mapeado a usado en database.js)
     if (vehicle.tipo === 'nuevo') {
         return { class: 'badge-new', text: 'Nuevo' };
-    } else if (vehicle.tipo === 'seminuevo') {
-        return { class: 'badge-used', text: 'Seminuevo' };
     } else {
         return { class: 'badge-used', text: 'Usado' };
     }
 }
 
-// Get all badges for a vehicle (FASE 2)
+// Get all badges for a vehicle
 function getVehicleBadges(vehicle) {
     const badges = [];
 
-    // Badge de tipo (Nuevo, Seminuevo, Usado)
+    // Badge de tipo (Nuevo, Usado) - FASE 1: Sin seminuevo
     if (vehicle.tipo === 'nuevo') {
         badges.push({ class: 'badge-nuevo', text: 'Nuevo' });
-    } else if (vehicle.tipo === 'seminuevo') {
-        badges.push({ class: 'badge-seminuevo', text: 'Seminuevo' });
     } else {
         badges.push({ class: 'badge-usado', text: 'Usado' });
     }
@@ -50,10 +58,7 @@ function getVehicleBadges(vehicle) {
         badges.push({ class: 'badge-destacado', text: 'Destacado' });
     }
 
-    // Badge de garantía (para nuevos y seminuevos)
-    if (vehicle.tipo === 'nuevo' || vehicle.tipo === 'seminuevo') {
-        badges.push({ class: 'badge-garantia', text: 'Garantía' });
-    }
+    // FASE 1: Garantía eliminada (no ofrecemos aún)
 
     // Badge de oferta (si tiene descuento o campo especial)
     if (vehicle.oferta || vehicle.precioOferta) {

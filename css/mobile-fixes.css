@@ -374,10 +374,10 @@ rgba(145, 102, 82, 0.55) 100%
     /* ===== WHATSAPP FLOAT ===== */
     .whatsapp-float {
         bottom: 20px;
-        right: 20px;
+        left: 20px;
     }
-    
-    .whatsapp-float svg {
+
+    .whatsapp-float img {
         width: 55px;
         height: 55px;
     }

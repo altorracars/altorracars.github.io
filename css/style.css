@@ -839,21 +839,29 @@ section {
 .whatsapp-float {
     position: fixed;
     bottom: 30px;
-    right: 30px;
+    left: 30px;
     z-index: 999;
     transition: var(--transition);
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+}
+
+/* Imagen del botón WhatsApp */
+.whatsapp-float img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: block;
 }
 
 .whatsapp-float:hover {
     transform: scale(1.1);
 }
 
-/* Tooltip para WhatsApp */
+/* Tooltip para WhatsApp - Aparece a la DERECHA */
 .whatsapp-float::before {
     content: attr(data-tooltip);
     position: absolute;
-    right: 70px;
+    left: 70px;
     top: 50%;
     transform: translateY(-50%);
     background: var(--primary-gold);
@@ -870,15 +878,15 @@ section {
     box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
 }
 
-/* Flecha del tooltip */
+/* Flecha del tooltip - Apunta a la IZQUIERDA */
 .whatsapp-float::after {
     content: "";
     position: absolute;
-    right: 60px;
+    left: 60px;
     top: 50%;
     transform: translateY(-50%);
     border: 8px solid transparent;
-    border-left-color: var(--primary-gold);
+    border-right-color: var(--primary-gold);
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -893,11 +901,11 @@ section {
 }
 
 .whatsapp-float:hover::before {
-    right: 75px;
+    left: 75px;
 }
 
 .whatsapp-float:hover::after {
-    right: 65px;
+    left: 65px;
 }
 
 /* Responsive Design */
@@ -992,7 +1000,7 @@ section {
 
     .whatsapp-float {
         bottom: 20px;
-        right: 20px;
+        left: 20px;
     }
 }
 

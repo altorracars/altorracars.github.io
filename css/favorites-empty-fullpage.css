@@ -47,6 +47,20 @@
     box-sizing: border-box !important;
 }
 
+/* ============================================
+   FIX CRÍTICO: Grid Layout Issue
+
+   .no-favorites se inserta dentro de .vehicles-grid que es
+   display:grid con múltiples columnas. Sin este fix, solo
+   ocupa la primera columna y se pega a la izquierda.
+   ============================================ */
+.favorites-section .vehicles-grid > .no-favorites {
+    grid-column: 1 / -1 !important;   /* Ocupa TODAS las columnas del grid */
+    justify-self: center !important;  /* Centra el item dentro del grid */
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
 /* Icono corazón grande */
 .no-favorites-icon {
     font-size: 120px;

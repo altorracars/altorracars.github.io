@@ -3,37 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camionetas | ALTORRA CARS</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/mobile-fixes.css">
-    <link rel="stylesheet" href="css/vehicles-cards-fix.css">
-    <link rel="stylesheet" href="css/sidebar-filters-fix.css">
-    <link rel="stylesheet" href="css/footer-fixes.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Redirigiendo a Pickup... | ALTORRA CARS</title>
+    <meta http-equiv="refresh" content="0; url=vehiculos-pickup.html">
+    <link rel="canonical" href="vehiculos-pickup.html">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f5f5f5;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+        }
+        .redirect-message {
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+        h1 {
+            color: #b89658;
+            margin-bottom: 1rem;
+        }
+        a {
+            color: #b89658;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body>
-    <div id="header-placeholder"></div>
-    <section class="page-header"><div class="container"><h1 class="page-title">Camionetas</h1><p class="page-subtitle">Potencia y versatilidad</p></div></section>
-    <section class="catalog-section"><div class="container"><div class="catalog-layout">
-        <aside class="filters-sidebar"><div class="filters-header"><h3>Filtros</h3><button id="clearFilters" class="btn-clear">Limpiar</button></div>
-            <form id="filtersForm" class="filters-form">
-                <div class="filter-group"><label>Tipo</label><select name="tipo" class="filter-select"><option value="">Todos</option><option value="nuevo">Nuevo</option><option value="usado">Usado</option></select></div>
-                <div class="filter-group"><label>Precio</label><div class="filter-inputs"><input type="number" name="precioMin" placeholder="Mínimo" class="filter-input"><span>-</span><input type="number" name="precioMax" placeholder="Máximo" class="filter-input"></div></div>
-                <div class="filter-group"><label>Marca</label><select name="marca" class="filter-select"><option value="">Todas</option><option value="toyota">Toyota</option><option value="ford">Ford</option><option value="nissan">Nissan</option></select></div>
-                <button type="submit" class="btn-apply-filters">Aplicar</button>
-            </form>
-        </aside>
-        <div class="catalog-main"><div class="results-header"><p><span id="resultsCount">0</span> camionetas</p><select id="sortBy" class="sort-select"><option value="precio-asc">Precio ↑</option><option value="precio-desc">Precio ↓</option></select></div>
-            <div class="vehicles-grid" id="vehiclesGrid"></div><div id="pagination"></div>
-        </div>
-    </div></div></section>
-    <div id="footer-placeholder"></div>
-    <script src="js/favorites-manager.js"></script><script src="js/toast.js"></script><script src="js/components.js"></script><script src="js/database.js"></script><script src="js/render.js"></script><script src="js/main.js"></script>
+    <div class="redirect-message">
+        <h1>✅ Actualización de categoría</h1>
+        <p>Redirigiendo a <strong>Vehículos Pickup (Trabajo)</strong>...</p>
+        <p style="margin-top: 1.5rem; font-size: 0.9rem; color: #666;">Si no eres redirigido automáticamente, <a href="vehiculos-pickup.html">haz clic aquí</a>.</p>
+    </div>
     <script>
-        let currentPage=1,itemsPerPage=12,currentFilters={categoria:'camioneta'},currentSort='precio-asc';
-        async function loadVehicles(){showLoading('vehiclesGrid');await vehicleDB.load();let v=vehicleDB.filter(currentFilters);v=vehicleDB.sort(v,currentSort);document.getElementById('resultsCount').textContent=v.length;renderVehicles(v.slice((currentPage-1)*itemsPerPage,currentPage*itemsPerPage),'vehiclesGrid');renderPagination(v.length,currentPage,itemsPerPage,'pagination');}
-        window.goToPage=p=>{currentPage=p;loadVehicles();scrollTo(0,0);};
-        document.addEventListener('DOMContentLoaded',()=>{document.getElementById('filtersForm')?.addEventListener('submit',e=>{e.preventDefault();currentFilters={categoria:'camioneta'};new FormData(e.target).forEach((v,k)=>{if(v)currentFilters[k]=v;});currentPage=1;loadVehicles();});document.getElementById('clearFilters')?.addEventListener('click',()=>{document.getElementById('filtersForm').reset();currentFilters={categoria:'camioneta'};loadVehicles();});document.getElementById('sortBy')?.addEventListener('change',e=>{currentSort=e.target.value;loadVehicles();});loadVehicles();});
+        // Redirección inmediata para compatibilidad
+        // "camionetas" ahora se llama "Pickup (Trabajo)"
+        window.location.replace('vehiculos-pickup.html');
     </script>
 </body>
 </html>

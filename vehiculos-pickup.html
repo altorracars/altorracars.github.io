@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">Marca | ALTORRA CARS</title>
+    <title>Pickup (Trabajo) | ALTORRA CARS</title>
+    <meta name="description" content="Camionetas pickup para trabajo - Catálogo de vehículos pickup en Cartagena. Potencia y versatilidad.">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/mobile-fixes.css">
     <link rel="stylesheet" href="css/vehicles-cards-fix.css">
@@ -13,10 +14,10 @@
 </head>
 <body>
     <div id="header-placeholder"></div>
-    <section class="page-header" id="brandHeader">
+    <section class="page-header">
         <div class="container">
-            <h1 class="page-title" id="brandTitle">Cargando...</h1>
-            <p class="page-subtitle" id="brandDesc"></p>
+            <h1 class="page-title">Pickup (Trabajo)</h1>
+            <p class="page-subtitle">Potencia y versatilidad para trabajo y aventura</p>
         </div>
     </section>
     <section class="catalog-section">
@@ -45,13 +46,14 @@
                             </div>
                         </div>
                         <div class="filter-group">
-                            <label>Categoría</label>
-                            <select name="categoria" class="filter-select">
+                            <label>Marca</label>
+                            <select name="marca" class="filter-select">
                                 <option value="">Todas</option>
-                                <option value="suv">SUV / Crossover</option>
-                                <option value="pickup">Pickup (Trabajo)</option>
-                                <option value="sedan">Sedán</option>
-                                <option value="hatchback">Hatchback / Compacto</option>
+                                <option value="toyota">Toyota</option>
+                                <option value="ford">Ford</option>
+                                <option value="nissan">Nissan</option>
+                                <option value="chevrolet">Chevrolet</option>
+                                <option value="mazda">Mazda</option>
                             </select>
                         </div>
                         <button type="submit" class="btn-apply-filters">Aplicar</button>
@@ -59,11 +61,11 @@
                 </aside>
                 <div class="catalog-main">
                     <div class="results-header">
-                        <p><span id="resultsCount">0</span> vehículos</p>
+                        <p><span id="resultsCount">0</span> vehículos pickup</p>
                         <select id="sortBy" class="sort-select">
                             <option value="precio-asc">Precio ↑</option>
                             <option value="precio-desc">Precio ↓</option>
-                            <option value="year-desc">Año ↓</option>
+                            <option value="year-desc">Más recientes</option>
                         </select>
                     </div>
                     <div class="vehicles-grid" id="vehiclesGrid"></div>
@@ -73,64 +75,64 @@
         </div>
     </section>
     <div id="footer-placeholder"></div>
-    <script src="js/favorites-manager.js"></script><script src="js/toast.js"></script>
+    <script src="js/favorites-manager.js"></script>
+    <script src="js/toast.js"></script>
     <script src="js/components.js"></script>
     <script src="js/database.js"></script>
     <script src="js/render.js"></script>
     <script src="js/main.js"></script>
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const brandId = params.get('marca');
         let currentPage = 1;
-        const itemsPerPage = 12;
-        let currentFilters = { marca: brandId };
+        let itemsPerPage = 12;
+        let currentFilters = { categoria: 'pickup' };
         let currentSort = 'precio-asc';
-        
+
         async function loadVehicles() {
-            if (!brandId) {
-                window.location.href = 'todas-marcas.html';
-                return;
-            }
-            
-            await vehicleDB.load();
-            const brandInfo = vehicleDB.getBrandInfo(brandId);
-            
-            if (brandInfo) {
-                document.getElementById('pageTitle').textContent = brandInfo.nombre + ' | ALTORRA CARS';
-                document.getElementById('brandTitle').textContent = brandInfo.nombre;
-                document.getElementById('brandDesc').textContent = brandInfo.descripcion;
-            } else {
-                document.getElementById('brandTitle').textContent = capitalize(brandId);
-            }
-            
             showLoading('vehiclesGrid');
+            await vehicleDB.load();
             let vehicles = vehicleDB.filter(currentFilters);
             vehicles = vehicleDB.sort(vehicles, currentSort);
+
             document.getElementById('resultsCount').textContent = vehicles.length;
+
             const start = (currentPage - 1) * itemsPerPage;
-            renderVehicles(vehicles.slice(start, start + itemsPerPage), 'vehiclesGrid');
+            const end = currentPage * itemsPerPage;
+            renderVehicles(vehicles.slice(start, end), 'vehiclesGrid');
             renderPagination(vehicles.length, currentPage, itemsPerPage, 'pagination');
         }
-        
-        window.goToPage = p => { currentPage = p; loadVehicles(); scrollTo(0, 0); };
-        
+
+        window.goToPage = (page) => {
+            currentPage = page;
+            loadVehicles();
+            scrollTo(0, 0);
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('filtersForm')?.addEventListener('submit', e => {
+            // Filters
+            document.getElementById('filtersForm')?.addEventListener('submit', (e) => {
                 e.preventDefault();
-                currentFilters = { marca: brandId };
-                new FormData(e.target).forEach((v, k) => { if (v) currentFilters[k] = v; });
+                currentFilters = { categoria: 'pickup' };
+                const formData = new FormData(e.target);
+                formData.forEach((value, key) => {
+                    if (value) currentFilters[key] = value;
+                });
                 currentPage = 1;
                 loadVehicles();
             });
+
+            // Clear filters
             document.getElementById('clearFilters')?.addEventListener('click', () => {
                 document.getElementById('filtersForm').reset();
-                currentFilters = { marca: brandId };
+                currentFilters = { categoria: 'pickup' };
                 loadVehicles();
             });
-            document.getElementById('sortBy')?.addEventListener('change', e => {
+
+            // Sort
+            document.getElementById('sortBy')?.addEventListener('change', (e) => {
                 currentSort = e.target.value;
                 loadVehicles();
             });
+
             loadVehicles();
         });
     </script>

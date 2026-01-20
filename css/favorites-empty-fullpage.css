@@ -1,35 +1,37 @@
 /* ============================================
-   FAVORITOS VACÍO - DISEÑO TIPO INMOBILIARIA
-   Sistema simple y robusto para todas las pantallas
+   FAVORITOS VACÍO - DISEÑO SIMPLE Y ROBUSTO
+   Sistema ultra-simple sin conflictos CSS
    ============================================ */
 
-/* Sección de favoritos con centrado perfecto */
+/* Sección principal - Full viewport */
 .favorites-section {
-    min-height: calc(100vh - 160px); /* Viewport - header - footer aprox */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    min-height: calc(100vh - 160px);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     padding: 60px 20px;
+    background: #fafafa;
 }
 
 /* Container centrado */
 .favorites-section .container {
     width: 100%;
     max-width: 1000px;
+    margin: 0 auto;
 }
 
-/* Estado vacío */
+/* Contenedor de contenido vacío */
 .no-favorites {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     text-align: center;
     padding: 40px 20px;
     width: 100%;
 }
 
-/* Icono corazón */
+/* Icono corazón grande */
 .no-favorites-icon {
     font-size: 120px;
     color: #d4d4d4;
@@ -47,7 +49,7 @@
     }
 }
 
-/* Título */
+/* Título principal */
 .no-favorites h2 {
     font-size: 2rem;
     font-weight: 700;
@@ -66,77 +68,83 @@
 }
 
 /* ============================================
-   BOTONES - HORIZONTAL EN PC, VERTICAL EN MÓVIL
+   BOTONES - HORIZONTAL EN PC (FORZADO)
    ============================================ */
 
-/* Contenedor de botones - HORIZONTAL por defecto (PC y Tablet) */
+/* Wrapper de botones - HORIZONTAL POR DEFECTO */
 .no-favorites-actions {
-    display: flex;
-    flex-direction: row; /* ← HORIZONTAL EN PC */
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    width: 100%;
-    max-width: 950px; /* Limitar ancho total para mejor centrado */
-    margin: 0 auto; /* Centrado perfecto */
+    display: flex !important;
+    flex-direction: row !important; /* ← FORZAR HORIZONTAL */
+    justify-content: center !important;
+    align-items: stretch !important;
+    gap: 24px !important;
+    width: 100% !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
 }
 
-/* Estilos de botones */
-.btn-catalog {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 18px 40px;
-    font-size: 1.05rem;
-    font-weight: 600;
-    border-radius: 10px;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    border: none;
-    white-space: nowrap;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    flex: 1 1 260px; /* Crecer para llenar espacio, mínimo 260px */
-    max-width: 320px; /* No demasiado ancho */
-    min-width: 260px; /* Mínimo más grande que antes */
+/* Estilos individuales de botones */
+.btn-catalog,
+.no-favorites-actions .btn-catalog,
+.no-favorites .btn-catalog {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 18px 40px !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    text-decoration: none !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    border: none !important;
+    white-space: nowrap !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+    flex: 1 1 auto !important; /* Crecer igual */
+    min-width: 240px !important;
+    max-width: 320px !important;
 }
 
 /* Botón principal (dorado) */
-.btn-catalog-primary {
-    background: linear-gradient(135deg, #916652 0%, #b89658 100%);
-    color: white;
+.btn-catalog-primary,
+.no-favorites-actions .btn-catalog-primary {
+    background: linear-gradient(135deg, #916652 0%, #b89658 100%) !important;
+    color: white !important;
 }
 
 .btn-catalog-primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 25px rgba(145, 102, 82, 0.35);
+    transform: translateY(-3px) !important;
+    box-shadow: 0 6px 25px rgba(145, 102, 82, 0.35) !important;
 }
 
 /* Botones secundarios (outline) */
-.btn-catalog-secondary {
-    background: white;
-    color: #916652;
-    border: 2px solid #b89658;
+.btn-catalog-secondary,
+.no-favorites-actions .btn-catalog-secondary {
+    background: white !important;
+    color: #916652 !important;
+    border: 2px solid #b89658 !important;
 }
 
 .btn-catalog-secondary:hover {
-    background: #f9f6f1;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(145, 102, 82, 0.2);
+    background: #f9f6f1 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(145, 102, 82, 0.2) !important;
 }
 
 .btn-catalog:active {
-    transform: translateY(0);
+    transform: translateY(0) !important;
 }
 
 /* ============================================
-   RESPONSIVE MÓVIL
+   RESPONSIVE - MÓVIL ÚNICAMENTE
    ============================================ */
+
+/* Tablets medianas y menores */
 @media (max-width: 768px) {
     .favorites-section {
         min-height: calc(100vh - 200px);
-        padding: 40px 20px;
+        padding: 40px 15px;
     }
 
     .no-favorites {
@@ -157,16 +165,19 @@
         margin-bottom: 35px;
     }
 
-    /* BOTONES EN COLUMNA en móvil */
+    /* CAMBIAR A VERTICAL EN MÓVIL */
     .no-favorites-actions {
-        flex-direction: column; /* ← VERTICAL EN MÓVIL */
-        width: 100%;
-        gap: 12px;
+        flex-direction: column !important;
+        max-width: 100% !important;
+        gap: 14px !important;
     }
 
-    .btn-catalog {
-        width: 100%;
-        min-width: auto;
+    .btn-catalog,
+    .no-favorites-actions .btn-catalog,
+    .no-favorites .btn-catalog {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: auto !important;
     }
 }
 
@@ -180,8 +191,9 @@
         font-size: 1.6rem;
     }
 
-    .btn-catalog {
-        padding: 14px 24px;
-        font-size: 0.95rem;
+    .btn-catalog,
+    .no-favorites-actions .btn-catalog {
+        padding: 14px 24px !important;
+        font-size: 0.95rem !important;
     }
 }

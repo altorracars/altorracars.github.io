@@ -54,6 +54,32 @@
                                 <option value="hatchback">Hatchback / Compacto</option>
                             </select>
                         </div>
+                        <!-- FASE 3: Filtros adicionales -->
+                        <div class="filter-group">
+                            <label>Transmisión</label>
+                            <select name="transmision" class="filter-select">
+                                <option value="">Todas</option>
+                                <option value="automatica">Automática</option>
+                                <option value="mecanica">Mecánica</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Combustible</label>
+                            <select name="combustible" class="filter-select">
+                                <option value="">Todos</option>
+                                <option value="gasolina">Gasolina</option>
+                                <option value="diesel">Diesel</option>
+                                <option value="hibrido">Híbrido</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Año</label>
+                            <div class="filter-inputs">
+                                <input type="number" name="yearMin" placeholder="Desde" class="filter-input">
+                                <span>-</span>
+                                <input type="number" name="yearMax" placeholder="Hasta" class="filter-input">
+                            </div>
+                        </div>
                         <button type="submit" class="btn-apply-filters">Aplicar</button>
                     </form>
                 </aside>

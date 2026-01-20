@@ -51,28 +51,21 @@
                         <!-- Brand -->
                         <div class="filter-group">
                             <label class="filter-label">Marca</label>
-                            <select name="marca" class="filter-select">
+                            <select name="marca" class="filter-select" id="marcaSelect">
                                 <option value="">Todas</option>
-                                <option value="chevrolet">Chevrolet</option>
-                                <option value="nissan">Nissan</option>
-                                <option value="renault">Renault</option>
-                                <option value="kia">Kia</option>
-                                <option value="mazda">Mazda</option>
-                                <option value="toyota">Toyota</option>
-                                <option value="hyundai">Hyundai</option>
-                                <option value="ford">Ford</option>
+                                <!-- FASE 5: Marcas dinámicas -->
                             </select>
                         </div>
 
-                        <!-- Category -->
+                        <!-- Category - FASE 1: Categorías canónicas -->
                         <div class="filter-group">
                             <label class="filter-label">Categoría</label>
                             <select name="categoria" class="filter-select">
                                 <option value="">Todas</option>
+                                <option value="suv">SUV / Crossover</option>
+                                <option value="pickup">Pickup (Trabajo)</option>
                                 <option value="sedan">Sedán</option>
-                                <option value="suv">SUV</option>
-                                <option value="camioneta">Camioneta</option>
-                                <option value="hatchback">Hatchback</option>
+                                <option value="hatchback">Hatchback / Compacto</option>
                             </select>
                         </div>
 
@@ -83,6 +76,17 @@
                                 <option value="">Todas</option>
                                 <option value="automatica">Automática</option>
                                 <option value="mecanica">Mecánica</option>
+                            </select>
+                        </div>
+
+                        <!-- FASE 3: Filtro de Combustible -->
+                        <div class="filter-group">
+                            <label class="filter-label">Combustible</label>
+                            <select name="combustible" class="filter-select">
+                                <option value="">Todos</option>
+                                <option value="gasolina">Gasolina</option>
+                                <option value="diesel">Diesel</option>
+                                <option value="hibrido">Híbrido</option>
                             </select>
                         </div>
 
@@ -180,8 +184,25 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
+        // FASE 5: Cargar marcas dinámicamente
+        async function loadDynamicFilters() {
+            await vehicleDB.load();
+            const brands = vehicleDB.getUniqueBrands();
+            const marcaSelect = document.getElementById('marcaSelect');
+            if (marcaSelect) {
+                brands.forEach(brand => {
+                    const option = document.createElement('option');
+                    option.value = brand;
+                    option.textContent = brand.charAt(0).toUpperCase() + brand.slice(1);
+                    marcaSelect.appendChild(option);
+                });
+            }
+        }
+
         // Handle filters form
         document.addEventListener('DOMContentLoaded', () => {
+            loadDynamicFilters();
+
             const filtersForm = document.getElementById('filtersForm');
             if (filtersForm) {
                 filtersForm.addEventListener('submit', (e) => {

@@ -33,16 +33,9 @@
                     </div>
                     <div class="form-group">
                         <label>Marca</label>
-                        <select name="marca">
+                        <select name="marca" id="marcaSelect">
                             <option value="">Todas</option>
-                            <option value="chevrolet">Chevrolet</option>
-                            <option value="nissan">Nissan</option>
-                            <option value="renault">Renault</option>
-                            <option value="kia">Kia</option>
-                            <option value="mazda">Mazda</option>
-                            <option value="toyota">Toyota</option>
-                            <option value="hyundai">Hyundai</option>
-                            <option value="ford">Ford</option>
+                            <!-- FASE 3: Marcas cargadas dinámicamente -->
                         </select>
                     </div>
                     <div class="form-group">
@@ -63,6 +56,17 @@
                             <option value="mecanica">Mecánica</option>
                         </select>
                     </div>
+                    <!-- FASE 3: Filtro de Combustible -->
+                    <div class="form-group">
+                        <label>Combustible</label>
+                        <select name="combustible">
+                            <option value="">Todos</option>
+                            <option value="gasolina">Gasolina</option>
+                            <option value="diesel">Diesel</option>
+                            <option value="hibrido">Híbrido</option>
+                            <option value="electrico">Eléctrico</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>Precio Mínimo</label>
                         <input type="number" name="precioMin" placeholder="Ej: 40000000">
@@ -78,6 +82,25 @@
                     <div class="form-group">
                         <label>Año Hasta</label>
                         <input type="number" name="yearMax" min="2000" max="2025">
+                    </div>
+                    <!-- FASE 3: Filtro de Kilometraje -->
+                    <div class="form-group">
+                        <label>Kilometraje Máximo</label>
+                        <input type="number" name="kilometrajeMax" placeholder="Ej: 50000">
+                    </div>
+                    <!-- FASE 3: Opciones Especiales -->
+                    <div class="form-group">
+                        <label>Opciones</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="destacado" value="true">
+                                Solo Destacados
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="oferta" value="true">
+                                Solo Ofertas
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="search-actions">
@@ -133,7 +156,27 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
         
+        // FASE 3: Cargar filtros dinámicos
+        async function loadDynamicFilters() {
+            await vehicleDB.load();
+
+            // Cargar marcas dinámicamente
+            const brands = vehicleDB.getUniqueBrands();
+            const marcaSelect = document.getElementById('marcaSelect');
+            if (marcaSelect) {
+                brands.forEach(brand => {
+                    const option = document.createElement('option');
+                    option.value = brand;
+                    option.textContent = brand.charAt(0).toUpperCase() + brand.slice(1);
+                    marcaSelect.appendChild(option);
+                });
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            // FASE 3: Cargar filtros dinámicos primero
+            loadDynamicFilters();
+
             document.getElementById('advancedSearchForm')?.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
@@ -144,19 +187,19 @@
                 currentPage = 1;
                 performSearch();
             });
-            
+
             document.getElementById('clearSearch')?.addEventListener('click', () => {
                 document.getElementById('advancedSearchForm').reset();
                 currentFilters = {};
                 currentPage = 1;
                 performSearch();
             });
-            
+
             document.getElementById('sortBy')?.addEventListener('change', (e) => {
                 currentSort = e.target.value;
                 performSearch();
             });
-            
+
             performSearch();
         });
     </script>

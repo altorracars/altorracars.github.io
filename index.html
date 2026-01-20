@@ -38,11 +38,11 @@
         </div>
     </section>
 
-  <!-- Featured Vehicles Section - Carrusel Destacados -->
+  <!-- FASE 2: Top Ranked Vehicles Section -->
 <section class="featured-section">
   <div class="container">
     <div class="section-header">
-      <h2 class="section-title">Vehículos <span class="highlight">Destacados</span></h2>
+      <h2 class="section-title">Lo <span class="highlight">Mejor del Mes</span></h2>
       <a href="busqueda.html" class="btn-view-more">Ver todos →</a>
     </div>
 
@@ -232,12 +232,13 @@
     <script src="js/render.js"></script>
     <script src="js/main.js"></script>
     <script>
-        // Load featured vehicles (sistema simple de scroll)
+        // FASE 2: Load featured vehicles with advanced ranking
         async function loadFeatured() {
             showLoading('featuredVehicles');
             await vehicleDB.load();
-            const featured = vehicleDB.getFeatured();
-            renderVehicles(featured, 'featuredVehicles');
+            // Usar sistema de ranking robusto (destacado > oferta > nuevo > año > km)
+            const topVehicles = vehicleDB.getTopVehicles(12);
+            renderVehicles(topVehicles, 'featuredVehicles');
         }
 
         // FASE 2: Load popular brands dynamically
@@ -262,20 +263,32 @@
             }
         }
 
-        // Load used vehicles carousel
+        // FASE 2: Load used vehicles with ranking
         async function loadUsedVehicles() {
             showLoading('usedVehiclesCarousel');
             await vehicleDB.load();
             const used = vehicleDB.filter({ tipo: 'usado' });
-            renderVehicles(used.slice(0, 12), 'usedVehiclesCarousel');
+            // Rankear usados por: destacado > oferta > año > kilometraje
+            const rankedUsed = used.map(v => ({
+                ...v,
+                _score: vehicleDB.calculateRankingScore(v)
+            })).sort((a, b) => b._score - a._score);
+            const cleanUsed = rankedUsed.map(({ _score, ...v }) => v);
+            renderVehicles(cleanUsed.slice(0, 12), 'usedVehiclesCarousel');
         }
 
-        // Load new vehicles carousel
+        // FASE 2: Load new vehicles with ranking
         async function loadNewVehicles() {
             showLoading('newVehiclesCarousel');
             await vehicleDB.load();
             const newVehicles = vehicleDB.filter({ tipo: 'nuevo' });
-            renderVehicles(newVehicles.slice(0, 12), 'newVehiclesCarousel');
+            // Rankear nuevos por: destacado > oferta > año
+            const rankedNew = newVehicles.map(v => ({
+                ...v,
+                _score: vehicleDB.calculateRankingScore(v)
+            })).sort((a, b) => b._score - a._score);
+            const cleanNew = rankedNew.map(({ _score, ...v }) => v);
+            renderVehicles(cleanNew.slice(0, 12), 'newVehiclesCarousel');
         }
 
         // Initialize page

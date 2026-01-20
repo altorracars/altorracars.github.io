@@ -47,14 +47,35 @@
                         </div>
                         <div class="filter-group">
                             <label>Marca</label>
-                            <select name="marca" class="filter-select">
+                            <select name="marca" class="filter-select" id="marcaSelect">
                                 <option value="">Todas</option>
-                                <option value="toyota">Toyota</option>
-                                <option value="ford">Ford</option>
-                                <option value="nissan">Nissan</option>
-                                <option value="chevrolet">Chevrolet</option>
-                                <option value="mazda">Mazda</option>
+                                <!-- FASE 3: Marcas dinámicas -->
                             </select>
+                        </div>
+                        <!-- FASE 3: Filtros adicionales -->
+                        <div class="filter-group">
+                            <label>Transmisión</label>
+                            <select name="transmision" class="filter-select">
+                                <option value="">Todas</option>
+                                <option value="automatica">Automática</option>
+                                <option value="mecanica">Mecánica</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Combustible</label>
+                            <select name="combustible" class="filter-select">
+                                <option value="">Todos</option>
+                                <option value="gasolina">Gasolina</option>
+                                <option value="diesel">Diesel</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Año</label>
+                            <div class="filter-inputs">
+                                <input type="number" name="yearMin" placeholder="Desde" class="filter-input">
+                                <span>-</span>
+                                <input type="number" name="yearMax" placeholder="Hasta" class="filter-input">
+                            </div>
                         </div>
                         <button type="submit" class="btn-apply-filters">Aplicar</button>
                     </form>
@@ -107,7 +128,24 @@
             scrollTo(0, 0);
         };
 
+        // FASE 3: Cargar marcas dinámicamente
+        async function loadDynamicFilters() {
+            await vehicleDB.load();
+            const brands = vehicleDB.getUniqueBrands();
+            const marcaSelect = document.getElementById('marcaSelect');
+            if (marcaSelect) {
+                brands.forEach(brand => {
+                    const option = document.createElement('option');
+                    option.value = brand;
+                    option.textContent = brand.charAt(0).toUpperCase() + brand.slice(1);
+                    marcaSelect.appendChild(option);
+                });
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            loadDynamicFilters();
+
             // Filters
             document.getElementById('filtersForm')?.addEventListener('submit', (e) => {
                 e.preventDefault();

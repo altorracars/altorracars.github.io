@@ -30,8 +30,13 @@
     <section class="catalog-section">
         <div class="container">
             <div class="catalog-layout">
+                <!-- Mobile Filter Toggle -->
+                <button type="button" class="mobile-filters-toggle" id="mobileFiltersToggle">
+                    <span class="toggle-icon">🔍 Filtros</span>
+                    <span class="toggle-arrow">▼</span>
+                </button>
                 <!-- Sidebar Filters -->
-                <aside class="filters-sidebar">
+                <aside class="filters-sidebar collapsed" id="filtersSidebar">
                     <div class="filters-header">
                         <h3>Filtros</h3>
                         <button id="clearFilters" class="btn-clear">Limpiar</button>
@@ -188,6 +193,17 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadDynamicFilters();
+
+            // Mobile filter toggle
+            const mobileToggle = document.getElementById('mobileFiltersToggle');
+            const sidebar = document.getElementById('filtersSidebar');
+            if (mobileToggle && sidebar) {
+                mobileToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('collapsed');
+                    const isCollapsed = sidebar.classList.contains('collapsed');
+                    mobileToggle.querySelector('.toggle-arrow').textContent = isCollapsed ? '▼' : '▲';
+                });
+            }
 
             document.getElementById('filtersForm')?.addEventListener('submit', (e) => {
                 e.preventDefault();

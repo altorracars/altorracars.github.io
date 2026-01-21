@@ -15,7 +15,11 @@
     <div id="header-placeholder"></div>
     <section class="page-header"><div class="container"><h1 class="page-title">Hatchback</h1><p class="page-subtitle">Compactos y eficientes</p></div></section>
     <section class="catalog-section"><div class="container"><div class="catalog-layout">
-        <aside class="filters-sidebar"><div class="filters-header"><h3>Filtros</h3><button id="clearFilters" class="btn-clear">Limpiar</button></div>
+        <button type="button" class="mobile-filters-toggle" id="mobileFiltersToggle">
+            <span class="toggle-icon">🔍 Filtros</span>
+            <span class="toggle-arrow">▼</span>
+        </button>
+        <aside class="filters-sidebar collapsed" id="filtersSidebar"><div class="filters-header"><h3>Filtros</h3><button id="clearFilters" class="btn-clear">Limpiar</button></div>
             <form id="filtersForm" class="filters-form">
                 <div class="filter-group"><label>Tipo</label><select name="tipo" class="filter-select"><option value="">Todos</option><option value="nuevo">Nuevo</option><option value="usado">Usado</option></select></div>
                 <div class="filter-group"><label>Precio</label><div class="filter-inputs"><input type="number" name="precioMin" placeholder="Mínimo" class="filter-input"><span>-</span><input type="number" name="precioMax" placeholder="Máximo" class="filter-input"></div></div>
@@ -72,6 +76,18 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadDynamicFilters();
+
+            // Mobile filter toggle
+            const mobileToggle = document.getElementById('mobileFiltersToggle');
+            const sidebar = document.getElementById('filtersSidebar');
+            if (mobileToggle && sidebar) {
+                mobileToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('collapsed');
+                    const isCollapsed = sidebar.classList.contains('collapsed');
+                    mobileToggle.querySelector('.toggle-arrow').textContent = isCollapsed ? '▼' : '▲';
+                });
+            }
+
             document.getElementById('filtersForm')?.addEventListener('submit', e => {
                 e.preventDefault();
                 currentFilters = {categoria: 'hatchback'};

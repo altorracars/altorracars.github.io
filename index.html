@@ -59,6 +59,48 @@
   </div>
 </section>
 
+    <!-- Carrusel Vehículos Nuevos -->
+    <section class="featured-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Vehículos <span class="highlight">Nuevos</span></h2>
+                <a href="vehiculos-nuevos.html" class="btn-view-more">Ver todos →</a>
+            </div>
+
+            <div class="carousel-wrapper">
+                <!-- Flechas del carrusel -->
+                <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('newVehiclesCarousel', -1)">‹</button>
+                <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('newVehiclesCarousel', 1)">›</button>
+
+                <div class="vehicles-grid" id="newVehiclesCarousel">
+                    <!-- Vehicles will be loaded dynamically -->
+                </div>
+            </div>
+            <p class="carousel-hint">👉 Desliza para ver más</p>
+        </div>
+    </section>
+
+    <!-- Carrusel Vehículos Usados -->
+    <section class="featured-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Vehículos <span class="highlight">Usados</span></h2>
+                <a href="vehiculos-usados.html" class="btn-view-more">Ver todos →</a>
+            </div>
+
+            <div class="carousel-wrapper">
+                <!-- Flechas del carrusel -->
+                <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('usedVehiclesCarousel', -1)">‹</button>
+                <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('usedVehiclesCarousel', 1)">›</button>
+
+                <div class="vehicles-grid" id="usedVehiclesCarousel">
+                    <!-- Vehicles will be loaded dynamically -->
+                </div>
+            </div>
+            <p class="carousel-hint">👉 Desliza para ver más</p>
+        </div>
+    </section>
+
     <!-- Categories Section -->
     <section class="categories-section">
         <div class="container">
@@ -108,75 +150,33 @@
         </div>
     </section>
 
-    <!-- Carrusel Vehículos Usados -->
-    <section class="featured-section">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Vehículos <span class="highlight">Usados</span></h2>
-                <a href="vehiculos-usados.html" class="btn-view-more">Ver todos →</a>
-            </div>
-
-            <div class="carousel-wrapper">
-                <!-- Flechas del carrusel -->
-                <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('usedVehiclesCarousel', -1)">‹</button>
-                <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('usedVehiclesCarousel', 1)">›</button>
-
-                <div class="vehicles-grid" id="usedVehiclesCarousel">
-                    <!-- Vehicles will be loaded dynamically -->
-                </div>
-            </div>
-            <p class="carousel-hint">👉 Desliza para ver más</p>
-        </div>
-    </section>
-
-    <!-- Carrusel Vehículos Nuevos -->
-    <section class="featured-section">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Vehículos <span class="highlight">Nuevos</span></h2>
-                <a href="vehiculos-nuevos.html" class="btn-view-more">Ver todos →</a>
-            </div>
-
-            <div class="carousel-wrapper">
-                <!-- Flechas del carrusel -->
-                <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('newVehiclesCarousel', -1)">‹</button>
-                <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('newVehiclesCarousel', 1)">›</button>
-
-                <div class="vehicles-grid" id="newVehiclesCarousel">
-                    <!-- Vehicles will be loaded dynamically -->
-                </div>
-            </div>
-            <p class="carousel-hint">👉 Desliza para ver más</p>
-        </div>
-    </section>
-
-    <!-- Experts Section - FASE 1: Más comercial -->
+    <!-- Commercial Section - Compra / Vende / Financia -->
     <section class="experts-section">
         <div class="container">
             <div class="experts-header">
-                <h2 class="section-title">Somos Expertos en <span class="highlight">Carros en Cartagena</span></h2>
-                <p class="section-subtitle">Contamos con la mejor asesoría en nuestras vitrinas para comprar el carro de tus sueños de la manera más cómoda, segura y fácil</p>
+                <h2 class="section-title">Todo lo que Necesitas en <span class="highlight">Un Solo Lugar</span></h2>
+                <p class="section-subtitle">Compra, vende o financia tu vehículo con la mejor asesoría de Cartagena</p>
             </div>
 
-            <!-- Proceso de Compra en 3 Pasos -->
-            <div class="process-section">
-                <h3 class="process-title">Compra tu auto en <span class="highlight">3 sencillos pasos</span></h3>
-                <div class="process-grid">
-                    <div class="process-step">
-                        <div class="step-number">1</div>
-                        <h4>Busca y Elige</h4>
-                        <p>Explora nuestro catálogo y encuentra el auto perfecto para ti</p>
-                    </div>
-                    <div class="process-step">
-                        <div class="step-number">2</div>
-                        <h4>Vehículos Certificados</h4>
-                        <p>Todos nuestros vehículos se encuentran inspeccionados y certificados</p>
-                    </div>
-                    <div class="process-step">
-                        <div class="step-number">3</div>
-                        <h4>Financia y Llévalo</h4>
-                        <p>Te ayudamos con la financiación y trámites en minutos</p>
-                    </div>
+            <!-- Servicios Comerciales -->
+            <div class="process-grid">
+                <div class="process-step">
+                    <div class="step-number">🚗</div>
+                    <h4>Compra tu Auto</h4>
+                    <p>Encuentra el vehículo perfecto entre nuestra amplia selección de nuevos y usados certificados</p>
+                    <a href="busqueda.html" class="btn-service">Ver Inventario</a>
+                </div>
+                <div class="process-step">
+                    <div class="step-number">💰</div>
+                    <h4>Vende tu Auto</h4>
+                    <p>Obtén la mejor oferta por tu vehículo. Evaluación gratuita y proceso rápido</p>
+                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20quiero%20vender%20mi%20vehículo" class="btn-service" target="_blank">Cotizar Ahora</a>
+                </div>
+                <div class="process-step">
+                    <div class="step-number">📄</div>
+                    <h4>Financiación</h4>
+                    <p>Te ayudamos a conseguir el crédito perfecto con las mejores tasas del mercado</p>
+                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20necesito%20información%20sobre%20financiación" class="btn-service" target="_blank">Solicitar Info</a>
                 </div>
             </div>
 
@@ -247,13 +247,29 @@
             renderVehicles(cleanFeatured.slice(0, 12), 'featuredVehicles');
         }
 
-        // FASE 2: Load popular brands dynamically
+        // FASE 2: Load popular brands dynamically (real by inventory count)
         async function loadPopularBrands() {
             await vehicleDB.load();
-            const brands = vehicleDB.getAllBrands(); // CORREGIDO: usar método correcto
+            const allVehicles = vehicleDB.getAll();
 
-            // Show first 12 brands
-            const popularBrands = brands.slice(0, 12);
+            // Count vehicles by brand
+            const brandCounts = {};
+            allVehicles.forEach(v => {
+                const brandKey = v.marca.toLowerCase();
+                brandCounts[brandKey] = (brandCounts[brandKey] || 0) + 1;
+            });
+
+            // Get all brands and sort by vehicle count
+            const brands = vehicleDB.getAllBrands();
+            const popularBrands = brands
+                .filter(brand => brandCounts[brand.id] > 0) // Only brands with vehicles
+                .map(brand => ({
+                    ...brand,
+                    count: brandCounts[brand.id]
+                }))
+                .sort((a, b) => b.count - a.count) // Sort by count descending
+                .slice(0, 12); // Top 12
+
             const container = document.getElementById('popularBrands');
 
             if (container) {
@@ -269,32 +285,53 @@
             }
         }
 
-        // FASE 2: Load used vehicles with ranking
-        async function loadUsedVehicles() {
-            showLoading('usedVehiclesCarousel');
-            await vehicleDB.load();
-            const used = vehicleDB.filter({ tipo: 'usado' });
-            // Rankear usados por: destacado > oferta > año > kilometraje
-            const rankedUsed = used.map(v => ({
-                ...v,
-                _score: vehicleDB.calculateRankingScore(v)
-            })).sort((a, b) => b._score - a._score);
-            const cleanUsed = rankedUsed.map(({ _score, ...v }) => v);
-            renderVehicles(cleanUsed.slice(0, 12), 'usedVehiclesCarousel');
-        }
-
-        // FASE 2: Load new vehicles with ranking
+        // FASE 2: Load new vehicles with ranking (year desc - newest first)
         async function loadNewVehicles() {
             showLoading('newVehiclesCarousel');
             await vehicleDB.load();
             const newVehicles = vehicleDB.filter({ tipo: 'nuevo' });
-            // Rankear nuevos por: destacado > oferta > año
-            const rankedNew = newVehicles.map(v => ({
-                ...v,
-                _score: vehicleDB.calculateRankingScore(v)
-            })).sort((a, b) => b._score - a._score);
-            const cleanNew = rankedNew.map(({ _score, ...v }) => v);
-            renderVehicles(cleanNew.slice(0, 12), 'newVehiclesCarousel');
+
+            // Sort: destacado > oferta > year (desc)
+            const sortedNew = newVehicles.sort((a, b) => {
+                // Destacados first
+                if (a.destacado && !b.destacado) return -1;
+                if (!a.destacado && b.destacado) return 1;
+
+                // Ofertas second
+                if (a.oferta && !b.oferta) return -1;
+                if (!a.oferta && b.oferta) return 1;
+
+                // Then by year (newest first)
+                return b.year - a.year;
+            });
+
+            renderVehicles(sortedNew.slice(0, 12), 'newVehiclesCarousel');
+        }
+
+        // FASE 2: Load used vehicles with ranking (year desc, then km asc)
+        async function loadUsedVehicles() {
+            showLoading('usedVehiclesCarousel');
+            await vehicleDB.load();
+            const used = vehicleDB.filter({ tipo: 'usado' });
+
+            // Sort: destacado > oferta > year (desc) > km (asc - less is better)
+            const sortedUsed = used.sort((a, b) => {
+                // Destacados first
+                if (a.destacado && !b.destacado) return -1;
+                if (!a.destacado && b.destacado) return 1;
+
+                // Ofertas second
+                if (a.oferta && !b.oferta) return -1;
+                if (!a.oferta && b.oferta) return 1;
+
+                // Then by year (newest first)
+                if (b.year !== a.year) return b.year - a.year;
+
+                // Finally by km (less km is better)
+                return a.kilometraje - b.kilometraje;
+            });
+
+            renderVehicles(sortedUsed.slice(0, 12), 'usedVehiclesCarousel');
         }
 
         // Initialize page

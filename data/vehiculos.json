@@ -1,4 +1,22 @@
 {
+  "_schema": {
+    "version": "2.0",
+    "descripcion": "Base de datos central de vehículos de ALTORRA CARS. Este archivo alimenta toda la plataforma: carruseles, filtros, búsqueda, fichas técnicas y detalle de vehículos.",
+    "camposRequeridos": ["id", "marca", "modelo", "year", "precio", "tipo", "categoria", "transmision", "combustible", "kilometraje", "imagen"],
+    "camposOpcionales": [
+      "precioOferta", "oferta", "destacado",
+      "motor", "cilindraje", "potencia", "traccion",
+      "color", "puertas", "pasajeros", "asientos", "direccion",
+      "placa", "codigoFasecolda", "revisionTecnica", "peritaje", "ubicacion",
+      "imagenes", "descripcion", "caracteristicas"
+    ],
+    "valoresPermitidos": {
+      "tipo": ["nuevo", "usado"],
+      "categoria": ["sedan", "suv", "hatchback", "pickup"],
+      "transmision": ["automatica", "mecanica"],
+      "combustible": ["gasolina", "diesel", "electrico", "hibrido"]
+    }
+  },
   "vehiculos": [
     {
       "id": 1,
@@ -6,15 +24,27 @@
       "modelo": "Onix",
       "year": 2024,
       "precio": 75000000,
+      "precioOferta": null,
+      "oferta": false,
       "tipo": "nuevo",
       "categoria": "hatchback",
       "transmision": "automatica",
       "combustible": "gasolina",
       "kilometraje": 0,
       "motor": "1.0L Turbo",
+      "cilindraje": "1000 cc",
+      "potencia": "116 HP",
+      "traccion": "Delantera",
       "color": "Blanco",
       "puertas": 5,
       "pasajeros": 5,
+      "asientos": 5,
+      "direccion": "Eléctrica",
+      "placa": "Disponible al contactar",
+      "codigoFasecolda": "Consultar",
+      "revisionTecnica": true,
+      "peritaje": true,
+      "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/chevrolet-onix-2024.jpg",
       "imagenes": [
         "multimedia/vehicles/chevrolet-onix-2024-1.jpg",
@@ -22,7 +52,7 @@
         "multimedia/vehicles/chevrolet-onix-2024-3.jpg"
       ],
       "destacado": true,
-      "descripcion": "Chevrolet Onix 2024 nuevo, motor turbo 1.0L, transmisión automática, sistema de audio con pantalla táctil, cámara de reversa, control de crucero.",
+      "descripcion": "Chevrolet Onix 2024 nuevo, motor turbo 1.0L, transmisión automática, sistema de audio con pantalla táctil, cámara de reversa, control de crucero. Vehículo ideal para ciudad con excelente rendimiento de combustible y tecnología moderna.",
       "caracteristicas": [
         "Control de crucero",
         "Cámara de reversa",
@@ -32,7 +62,8 @@
         "Aire acondicionado",
         "Dirección eléctrica",
         "Frenos ABS",
-        "Airbags frontales"
+        "Airbags frontales",
+        "Sensores de punto ciego"
       ]
     },
     {
@@ -41,21 +72,33 @@
       "modelo": "Kicks",
       "year": 2023,
       "precio": 82000000,
+      "precioOferta": null,
+      "oferta": false,
       "tipo": "usado",
       "categoria": "suv",
       "transmision": "automatica",
       "combustible": "gasolina",
       "kilometraje": 15000,
       "motor": "1.6L",
+      "cilindraje": "1598 cc",
+      "potencia": "114 HP",
+      "traccion": "Delantera",
       "color": "Gris",
       "puertas": 5,
       "pasajeros": 5,
+      "asientos": 5,
+      "direccion": "Eléctrica",
+      "placa": "Disponible al contactar",
+      "codigoFasecolda": "Consultar",
+      "revisionTecnica": true,
+      "peritaje": true,
+      "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/nissan-kicks-2023.jpg",
       "imagenes": [
         "multimedia/vehicles/nissan-kicks-2023-1.jpg"
       ],
       "destacado": true,
-      "descripcion": "Nissan Kicks 2023 seminuevo con solo 15.000 km, excelente estado, único dueño, mantenimientos al día.",
+      "descripcion": "Nissan Kicks 2023 seminuevo con solo 15.000 km, excelente estado, único dueño, mantenimientos al día. SUV urbano con tecnología de conectividad y sistemas de seguridad avanzados.",
       "caracteristicas": [
         "Cámara 360°",
         "Sensor de parqueo",
@@ -64,7 +107,9 @@
         "Android Auto",
         "Luces LED",
         "Rines de aleación",
-        "Aire acondicionado automático"
+        "Aire acondicionado automático",
+        "Control de crucero",
+        "Frenos ABS"
       ]
     },
     {

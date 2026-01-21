@@ -238,7 +238,7 @@
             padding: 16px 20px;
             border-radius: 10px;
             font-size: 15px;
-            font-weight: 800;
+            font-weight: 900;
             text-align: center;
             text-decoration: none;
             display: flex;
@@ -251,6 +251,7 @@
             letter-spacing: 0.3px;
             text-transform: uppercase;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #ffffff !important;
         }
 
         .btn-contact svg {
@@ -261,7 +262,6 @@
 
         .btn-whatsapp {
             background: linear-gradient(135deg, #25D366 0%, #1da851 100%);
-            color: white;
         }
 
         .btn-whatsapp:hover {
@@ -272,7 +272,6 @@
 
         .btn-phone {
             background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            color: white;
         }
 
         .btn-phone:hover {
@@ -393,17 +392,16 @@
         }
 
         .ficha-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--gray-200);
+            display: grid;
+            grid-template-columns: 1fr 1px 1fr;
             gap: 16px;
+            padding: 16px 24px;
+            align-items: center;
             transition: background 0.15s ease;
         }
 
-        .ficha-row:last-child {
-            border-bottom: none;
+        .ficha-row:not(:last-child) {
+            border-bottom: 2px solid var(--gray-200);
         }
 
         .ficha-row:hover {
@@ -412,17 +410,24 @@
 
         .ficha-label {
             font-size: 14px;
-            color: var(--gray-700);
-            font-weight: 700;
-            flex: 0 0 auto;
+            color: var(--gray-900);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .ficha-separator {
+            width: 1px;
+            height: 24px;
+            background: var(--gray-300);
+            justify-self: center;
         }
 
         .ficha-value {
             font-size: 15px;
-            font-weight: 600;
-            color: var(--gray-900);
+            font-weight: 400;
+            color: var(--gray-700);
             text-align: right;
-            flex: 1 1 auto;
         }
 
         /* ===== CARACTERÍSTICAS - GRID OPTIMIZADO ===== */
@@ -811,7 +816,29 @@
                 v.descripcion || 'No hay descripción disponible para este vehículo.';
 
             // WhatsApp
-            const whatsappMsg = `Hola ALTORRA CARS, estoy interesado en el ${v.marca} ${v.modelo} ${v.year}`;
+            const currentUrl = window.location.href;
+            const precioFinal = v.precioOferta || v.precio;
+            const whatsappMsg = `Hola ALTORRA CARS, estoy interesado en el siguiente vehículo:
+
+🚗 *${v.marca.toUpperCase()} ${v.modelo.toUpperCase()} ${v.year}*
+
+📋 *Información*:
+- Código: ${v.id}
+- Categoría: ${formatCategoria(v.categoria)}
+- Tipo: ${capitalizar(v.tipo)}
+- Año: ${v.year}
+- Kilometraje: ${formatKilometers(v.kilometraje)}
+- Transmisión: ${capitalizar(v.transmision)}
+- Combustible: ${capitalizar(v.combustible)}
+- Color: ${v.color || 'No especificado'}
+
+💰 *Precio*: ${formatCurrency(precioFinal)}
+
+🔗 *Ver detalle completo*:
+${currentUrl}
+
+¿Podrían brindarme más información sobre este vehículo?`;
+
             document.getElementById('btnWhatsApp').href =
                 `https://wa.me/573235016747?text=${encodeURIComponent(whatsappMsg)}`;
 
@@ -922,6 +949,7 @@
                         ${group.items.map(item => `
                             <div class="ficha-row">
                                 <span class="ficha-label">${item.label}</span>
+                                <div class="ficha-separator"></div>
                                 <span class="ficha-value">${item.value}</span>
                             </div>
                         `).join('')}

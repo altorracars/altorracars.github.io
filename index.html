@@ -236,9 +236,15 @@
         async function loadFeatured() {
             showLoading('featuredVehicles');
             await vehicleDB.load();
-            // Usar sistema de ranking robusto (destacado > oferta > nuevo > año > km)
-            const topVehicles = vehicleDB.getTopVehicles(12);
-            renderVehicles(topVehicles, 'featuredVehicles');
+            // CORREGIDO: Filtrar primero por destacados, luego rankear
+            const featured = vehicleDB.getFeatured();
+            // Rankear los destacados por oferta, tipo, año, km
+            const rankedFeatured = featured.map(v => ({
+                ...v,
+                _score: vehicleDB.calculateRankingScore(v)
+            })).sort((a, b) => b._score - a._score);
+            const cleanFeatured = rankedFeatured.map(({ _score, ...v }) => v);
+            renderVehicles(cleanFeatured.slice(0, 12), 'featuredVehicles');
         }
 
         // FASE 2: Load popular brands dynamically

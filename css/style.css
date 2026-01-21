@@ -2488,6 +2488,11 @@ section {
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    height: 100%;
 }
 
 .process-step:hover {
@@ -2496,44 +2501,49 @@ section {
 }
 
 .step-number {
-    width: 60px;
-    height: 60px;
+    width: 70px;
+    height: 70px;
     background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-brown) 100%);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
-    font-weight: bold;
+    font-size: 1.8rem;
+    font-weight: 700;
     margin: 0 auto var(--spacing-md);
     box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
+    letter-spacing: 1px;
 }
 
 .process-step h4 {
     font-size: 1.3rem;
     color: var(--primary-dark);
     margin-bottom: var(--spacing-sm);
+    font-weight: 700;
 }
 
 .process-step p {
     color: var(--text-gray);
     line-height: 1.6;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: auto;
+    flex-grow: 1;
 }
 
 .btn-service {
-    display: inline-block;
-    margin-top: var(--spacing-sm);
-    padding: 12px 24px;
+    display: block;
+    width: 100%;
+    margin-top: var(--spacing-md);
+    padding: 14px 24px;
     background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-brown) 100%);
     color: white;
     text-decoration: none;
     border-radius: var(--radius-md);
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1rem;
     transition: var(--transition);
     box-shadow: 0 2px 8px rgba(184, 150, 88, 0.3);
+    text-align: center;
 }
 
 .btn-service:hover {

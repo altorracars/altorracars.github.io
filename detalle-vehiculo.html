@@ -197,6 +197,22 @@
             line-height: 1;
         }
 
+        .price-normal {
+            font-size: 22px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            text-decoration: line-through;
+            margin-bottom: 4px;
+        }
+
+        .price-offer {
+            font-size: 36px;
+            font-weight: 900;
+            color: #ff4444;
+            line-height: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
         /* Quick Specs - Grid Compacto */
         .quick-specs {
             display: grid;
@@ -617,6 +633,14 @@
                 font-size: 28px;
             }
 
+            .price-normal {
+                font-size: 18px;
+            }
+
+            .price-offer {
+                font-size: 30px;
+            }
+
             .quick-specs {
                 grid-template-columns: 1fr;
             }
@@ -663,7 +687,7 @@
 
                         <div class="price-box">
                             <div class="price-label">Precio</div>
-                            <div class="price-value" id="priceValue"></div>
+                            <div id="priceContainer"></div>
                         </div>
 
                         <div class="quick-specs" id="quickSpecs"></div>
@@ -782,9 +806,22 @@
             document.getElementById('vehicleSubtitle').textContent =
                 `${formatCategoria(v.categoria)} • ${capitalizar(v.tipo)}`;
 
-            // Precio
+            // Precio - con precio normal tachado si hay oferta
             const precioFinal = v.precioOferta || v.precio;
-            document.getElementById('priceValue').textContent = formatCurrency(precioFinal);
+            const priceContainer = document.getElementById('priceContainer');
+
+            if (v.precioOferta) {
+                // Hay oferta: mostrar precio normal tachado y precio oferta en rojo
+                priceContainer.innerHTML = `
+                    <div class="price-normal">${formatCurrency(v.precio)}</div>
+                    <div class="price-offer">${formatCurrency(v.precioOferta)}</div>
+                `;
+            } else {
+                // No hay oferta: mostrar solo precio normal
+                priceContainer.innerHTML = `
+                    <div class="price-value">${formatCurrency(v.precio)}</div>
+                `;
+            }
 
             // Quick Specs
             const quickSpecs = [

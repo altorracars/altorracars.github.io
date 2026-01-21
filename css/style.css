@@ -2519,6 +2519,27 @@ section {
 .process-step p {
     color: var(--text-gray);
     line-height: 1.6;
+    margin-bottom: var(--spacing-md);
+}
+
+.btn-service {
+    display: inline-block;
+    margin-top: var(--spacing-sm);
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-brown) 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: var(--transition);
+    box-shadow: 0 2px 8px rgba(184, 150, 88, 0.3);
+}
+
+.btn-service:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.5);
+    color: white;
 }
 
 /* Benefits Grid */

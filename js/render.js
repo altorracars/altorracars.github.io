@@ -18,6 +18,7 @@ function formatKm(km) {
 
 // Capitalize first letter
 function capitalize(str) {
+    if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
@@ -272,14 +273,7 @@ function toggleFavorite(vehicleId) {
     }
 }
 
-// Update favorites count in header
-function updateFavoritesCount() {
-    const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-    const favCount = document.getElementById('favCount');
-    if (favCount) {
-        favCount.textContent = favorites.length.toString();
-    }
-}
+// Note: updateFavoritesCount() is defined in components.js to avoid duplication
 
 // Render pagination
 function renderPagination(totalItems, currentPage, itemsPerPage, containerId) {

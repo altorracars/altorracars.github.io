@@ -315,7 +315,12 @@ class VehicleDatabase {
 // Create global database instance
 const vehicleDB = new VehicleDatabase();
 
-// Export for use in other files
+// Make it available globally in browser
+if (typeof window !== 'undefined') {
+    window.vehicleDB = vehicleDB;
+}
+
+// Export for use in other files (Node.js)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { VehicleDatabase, vehicleDB };
 }

@@ -10,6 +10,56 @@
     <link rel="stylesheet" href="css/sidebar-filters-fix.css">
     <link rel="stylesheet" href="css/footer-fixes.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .toggle-filters-btn {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto 20px;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
+        }
+        .toggle-filters-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(184, 150, 88, 0.4);
+        }
+        .toggle-filters-btn .filter-icon {
+            font-size: 1.3rem;
+        }
+        .toggle-filters-btn .filter-arrow {
+            margin-left: auto;
+            transition: transform 0.3s ease;
+        }
+        .advanced-search-form.collapsed {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: max-height 0.4s ease, opacity 0.3s ease, transform 0.3s ease;
+        }
+        .advanced-search-form {
+            max-height: 2000px;
+            opacity: 1;
+            transform: translateY(0);
+            transition: max-height 0.4s ease, opacity 0.3s ease, transform 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .toggle-filters-btn {
+                max-width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
     <div id="header-placeholder"></div>
@@ -21,7 +71,12 @@
     </section>
     <section class="search-advanced-section">
         <div class="container">
-            <form id="advancedSearchForm" class="advanced-search-form">
+            <button type="button" id="toggleFilters" class="toggle-filters-btn">
+                <span class="filter-icon">🔍</span>
+                <span class="filter-text">Mostrar filtros</span>
+                <span class="filter-arrow">▼</span>
+            </button>
+            <form id="advancedSearchForm" class="advanced-search-form collapsed">
                 <div class="search-form-grid">
                     <div class="form-group">
                         <label>Tipo de Vehículo</label>
@@ -176,6 +231,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             // FASE 3: Cargar filtros dinámicos primero
             loadDynamicFilters();
+
+            // Toggle filters button
+            const toggleBtn = document.getElementById('toggleFilters');
+            const form = document.getElementById('advancedSearchForm');
+            if (toggleBtn && form) {
+                toggleBtn.addEventListener('click', () => {
+                    form.classList.toggle('collapsed');
+                    const isCollapsed = form.classList.contains('collapsed');
+                    toggleBtn.querySelector('.filter-text').textContent = isCollapsed ? 'Mostrar filtros' : 'Ocultar filtros';
+                    toggleBtn.querySelector('.filter-arrow').textContent = isCollapsed ? '▼' : '▲';
+                });
+            }
 
             document.getElementById('advancedSearchForm')?.addEventListener('submit', (e) => {
                 e.preventDefault();

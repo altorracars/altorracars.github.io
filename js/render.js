@@ -100,7 +100,7 @@ function renderVehicleCard(vehicle) {
     ).join('');
 
     return `
-        <div class="vehicle-card" data-id="${vehicle.id}">
+        <div class="vehicle-card clickable-card" data-id="${vehicle.id}" data-url="detalle-vehiculo.html?id=${vehicle.id}">
             <div class="vehicle-image">
                 <img src="${vehicle.imagen}" alt="${vehicle.marca} ${vehicle.modelo}" loading="lazy" onerror="this.src='multimedia/vehicles/placeholder-car.jpg'">
                 <button class="favorite-btn${activeClass}" data-id="${vehicle.id}" aria-label="Añadir a favoritos">${heartIcon}</button>
@@ -149,7 +149,26 @@ function renderVehicles(vehicles, containerId, options = {}) {
     // Attach favorite button listeners solo si se especifica
     if (attachListeners) {
         attachFavoriteListeners();
+        attachCardClickListeners();
     }
+}
+
+// Attach click listeners to vehicle cards
+function attachCardClickListeners() {
+    const cards = document.querySelectorAll('.clickable-card');
+    cards.forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', (e) => {
+            // No navegar si se clickeó el botón de favoritos o el botón "Ver más"
+            if (e.target.closest('.favorite-btn') || e.target.closest('.btn-view')) {
+                return;
+            }
+            const url = card.getAttribute('data-url');
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
 }
 
 // Attach event listeners to favorite buttons - USA FAVORITES MANAGER

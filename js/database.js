@@ -153,10 +153,10 @@ class VehicleDatabase {
         // Search by text (model, brand, description)
         if (filters.search) {
             const searchLower = filters.search.toLowerCase();
-            filtered = filtered.filter(v => 
+            filtered = filtered.filter(v =>
                 v.marca.toLowerCase().includes(searchLower) ||
                 v.modelo.toLowerCase().includes(searchLower) ||
-                v.descripcion.toLowerCase().includes(searchLower)
+                (v.descripcion && v.descripcion.toLowerCase().includes(searchLower))
             );
         }
         

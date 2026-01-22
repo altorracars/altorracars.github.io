@@ -11,9 +11,13 @@
 /* Grid de marcas mejorado - aprovechar espacio horizontal */
 .brands-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: var(--spacing-md);
     margin-top: var(--spacing-lg);
+    justify-content: center;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .brand-card {
@@ -85,7 +89,7 @@
 /* Responsive Tablets */
 @media (max-width: 968px) {
     .brands-grid {
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: var(--spacing-sm);
     }
 

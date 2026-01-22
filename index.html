@@ -59,27 +59,6 @@
   </div>
 </section>
 
-    <!-- Carrusel Vehículos Nuevos -->
-    <section class="featured-section">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Vehículos <span class="highlight">Nuevos</span></h2>
-                <a href="vehiculos-nuevos.html" class="btn-view-more">Ver todos →</a>
-            </div>
-
-            <div class="carousel-wrapper">
-                <!-- Flechas del carrusel -->
-                <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('newVehiclesCarousel', -1)">‹</button>
-                <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('newVehiclesCarousel', 1)">›</button>
-
-                <div class="vehicles-grid" id="newVehiclesCarousel">
-                    <!-- Vehicles will be loaded dynamically -->
-                </div>
-            </div>
-            <p class="carousel-hint">👉 Desliza para ver más</p>
-        </div>
-    </section>
-
     <!-- Carrusel Vehículos Usados -->
     <section class="featured-section">
         <div class="container">
@@ -94,6 +73,27 @@
                 <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('usedVehiclesCarousel', 1)">›</button>
 
                 <div class="vehicles-grid" id="usedVehiclesCarousel">
+                    <!-- Vehicles will be loaded dynamically -->
+                </div>
+            </div>
+            <p class="carousel-hint">👉 Desliza para ver más</p>
+        </div>
+    </section>
+
+    <!-- Carrusel Vehículos Nuevos -->
+    <section class="featured-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Vehículos <span class="highlight">Nuevos</span></h2>
+                <a href="vehiculos-nuevos.html" class="btn-view-more">Ver todos →</a>
+            </div>
+
+            <div class="carousel-wrapper">
+                <!-- Flechas del carrusel -->
+                <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('newVehiclesCarousel', -1)">‹</button>
+                <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('newVehiclesCarousel', 1)">›</button>
+
+                <div class="vehicles-grid" id="newVehiclesCarousel">
                     <!-- Vehicles will be loaded dynamically -->
                 </div>
             </div>
@@ -151,71 +151,32 @@
     </section>
 
     <!-- Commercial Section - Compra / Vende / Financia -->
-    <section class="experts-section">
+    <section class="commercial-section">
         <div class="container">
-            <div class="experts-header">
-                <h2 class="section-title">Todo lo que Necesitas en <span class="highlight">Un Solo Lugar</span></h2>
-                <p class="section-subtitle">Compra, vende o financia tu vehículo con la mejor asesoría de Cartagena</p>
+            <div class="commercial-header">
+                <h2 class="commercial-title">Todo en un <span class="highlight">Solo Lugar</span></h2>
+                <p class="commercial-subtitle">Soluciones integrales para tu movilidad en Cartagena</p>
             </div>
 
             <!-- Servicios Comerciales -->
-            <div class="process-grid">
-                <div class="process-step">
-                    <div class="step-number">01</div>
-                    <h4>Compra tu Auto</h4>
-                    <p>Encuentra el vehículo perfecto entre nuestra amplia selección de nuevos y usados certificados</p>
-                    <a href="busqueda.html" class="btn-service">Ver Inventario</a>
+            <div class="commercial-grid">
+                <div class="commercial-card">
+                    <div class="commercial-number">01</div>
+                    <h3 class="commercial-card-title">Compra tu Auto</h3>
+                    <p class="commercial-card-text">Encuentra el vehículo perfecto entre nuestra amplia selección certificada y garantizada.</p>
+                    <a href="busqueda.html" class="btn-commercial">VER INVENTARIO</a>
                 </div>
-                <div class="process-step">
-                    <div class="step-number">02</div>
-                    <h4>Vende tu Auto</h4>
-                    <p>Obtén la mejor oferta por tu vehículo. Evaluación gratuita y proceso rápido</p>
-                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20quiero%20vender%20mi%20vehículo" class="btn-service" target="_blank">Cotizar Ahora</a>
+                <div class="commercial-card">
+                    <div class="commercial-number">02</div>
+                    <h3 class="commercial-card-title">Vende tu Auto</h3>
+                    <p class="commercial-card-text">Recibe la mejor oferta del mercado. Avalúo rápido, transparente y seguro.</p>
+                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20quiero%20vender%20mi%20vehículo" class="btn-commercial" target="_blank">COTIZAR AHORA</a>
                 </div>
-                <div class="process-step">
-                    <div class="step-number">03</div>
-                    <h4>Financiación</h4>
-                    <p>Te ayudamos a conseguir el crédito perfecto con las mejores tasas del mercado</p>
-                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20necesito%20información%20sobre%20financiación" class="btn-service" target="_blank">Solicitar Info</a>
-                </div>
-            </div>
-
-            <!-- Beneficios -->
-            <div class="benefits-grid">
-                <div class="benefit-item">
-                    <span class="benefit-icon">✓</span>
-                    <span>Vehículos Certificados</span>
-                </div>
-                <div class="benefit-item">
-                    <span class="benefit-icon">✓</span>
-                    <span>Financiación al Instante</span>
-                </div>
-                <div class="benefit-item">
-                    <span class="benefit-icon">✓</span>
-                    <span>Asesoría Experta</span>
-                </div>
-                <div class="benefit-item">
-                    <span class="benefit-icon">✓</span>
-                    <span>Mejores Precios</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Call to Action Section -->
-    <section class="cta-section">
-        <div class="container">
-            <div class="cta-content">
-                <h2>¿Listo para encontrar tu auto ideal?</h2>
-                <p>Contáctanos ahora y recibe asesoría personalizada</p>
-                <div class="cta-buttons">
-                    <a href="contacto.html" class="btn-cta-primary">Contactar</a>
-                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20necesito%20información" class="btn-cta-whatsapp" target="_blank">
-                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                        </svg>
-                        WhatsApp
-                    </a>
+                <div class="commercial-card">
+                    <div class="commercial-number">03</div>
+                    <h3 class="commercial-card-title">Financiación</h3>
+                    <p class="commercial-card-text">Créditos a tu medida con las tasas más competitivas y aprobación rápida.</p>
+                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20necesito%20información%20sobre%20financiación" class="btn-commercial" target="_blank">SOLICITAR INFO</a>
                 </div>
             </div>
         </div>
@@ -250,7 +211,7 @@
         // FASE 2: Load popular brands dynamically (real by inventory count)
         async function loadPopularBrands() {
             await vehicleDB.load();
-            const allVehicles = vehicleDB.getAll();
+            const allVehicles = vehicleDB.getAllVehicles();
 
             // Count vehicles by brand
             const brandCounts = {};

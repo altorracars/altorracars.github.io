@@ -8,10 +8,10 @@
     background: #fafafa;
 }
 
-/* Grid de marcas mejorado - aprovechar espacio horizontal */
+/* Grid de marcas mejorado - 4 arriba, 4 abajo en PC */
 .brands-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--spacing-md);
     margin-top: var(--spacing-lg);
     justify-content: center;

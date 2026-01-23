@@ -847,8 +847,8 @@ section {
 
 /* Imagen del botón WhatsApp */
 .whatsapp-float img {
-    width: 110px;
-    height: 110px;
+    width: 176px;
+    height: 176px;
     display: block;
 }
 
@@ -860,7 +860,7 @@ section {
 .whatsapp-float::before {
     content: attr(data-tooltip);
     position: absolute;
-    left: 120px;
+    left: 186px;
     top: 50%;
     transform: translateY(-50%);
     background: var(--primary-gold);
@@ -881,7 +881,7 @@ section {
 .whatsapp-float::after {
     content: "";
     position: absolute;
-    left: 110px;
+    left: 176px;
     top: 50%;
     transform: translateY(-50%);
     border: 8px solid transparent;
@@ -900,11 +900,11 @@ section {
 }
 
 .whatsapp-float:hover::before {
-    left: 125px;
+    left: 191px;
 }
 
 .whatsapp-float:hover::after {
-    left: 115px;
+    left: 181px;
 }
 
 /* Responsive Design */
@@ -1000,6 +1000,11 @@ section {
     .whatsapp-float {
         bottom: 20px;
         left: 20px;
+    }
+
+    .whatsapp-float img {
+        width: 143px;
+        height: 143px;
     }
 }
 
@@ -2636,6 +2641,9 @@ section {
     letter-spacing: 1px;
     transition: all 0.3s ease;
     text-align: center;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .btn-commercial:hover {

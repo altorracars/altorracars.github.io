@@ -379,7 +379,7 @@ rgba(145, 102, 82, 0.55) 100%
 
     .whatsapp-float img {
         width: 90px;
-        height: 90px;
+        height: auto;
     }
     
     /* ===== PAGE HEADER ===== */

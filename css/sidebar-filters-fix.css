@@ -343,52 +343,6 @@
     margin-top: 1rem;
 }
 
-.carousel-arrow,
-.nav-arrow {
-    width: 56px;
-    height: 56px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 3px solid var(--primary-gold);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    color: var(--primary-gold);
-    font-size: 1.5rem;
-    font-weight: 700;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(184, 150, 88, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-.carousel-arrow:hover,
-.nav-arrow:hover {
-    background: var(--primary-gold);
-    border-color: var(--primary-gold);
-    color: white;
-    transform: scale(1.15);
-    box-shadow: 0 6px 25px rgba(184, 150, 88, 0.4), 0 0 0 8px rgba(184, 150, 88, 0.15);
-}
-
-.carousel-arrow:active,
-.nav-arrow:active {
-    transform: scale(1.05);
-}
-
-.carousel-arrow.prev::before,
-.nav-arrow.prev::before {
-    content: "◄";
-    font-size: 1.3rem;
-}
-
-.carousel-arrow.next::before,
-.nav-arrow.next::before {
-    content: "►";
-    font-size: 1.3rem;
-}
-
 /* Estilos para carruseles - Unificados */
 .featured-section {
     padding: var(--spacing-xl) 0;
@@ -408,53 +362,12 @@
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    overflow: visible;
 }
 
 .carousel-wrapper .vehicles-grid {
     flex: 1;
     scroll-behavior: smooth;
-}
-
-/* Flechas circulares estilo categorías */
-.carousel-arrow {
-    flex-shrink: 0;
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
-    border: none;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    color: white;
-    font-size: 1.8rem;
-    font-weight: 400;
-    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.3);
-    z-index: 10;
-}
-
-.carousel-arrow:hover {
-    background: linear-gradient(135deg, #c9a76a 0%, #a67663 100%);
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(184, 150, 88, 0.5);
-}
-
-.carousel-arrow:active {
-    transform: scale(0.95);
-}
-
-/* Ocultar flechas en móvil */
-@media (max-width: 640px) {
-    .carousel-wrapper {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .carousel-arrow {
-        display: none !important;
-    }
 }
 
 /* ===========================================
@@ -650,105 +563,78 @@
         display: block;
     }
 }
-/* Ajustes flechas carruseles - altorra cars v2 */
-.carousel-wrapper {
-  position: relative;
-  overflow: visible; /* Asegurar que las flechas sean visibles */
-}
+/* ===========================================
+   FLECHAS CARRUSEL - VERSIÓN CONSOLIDADA
+   =========================================== */
 
+/* Flechas de navegación del carrusel */
 .carousel-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 70px;
-  height: 70px;
-  font-size: 2rem;
-  z-index: 10;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  color: #916652;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 70px;
+    height: 70px;
+    font-size: 0; /* Ocultar texto interno del elemento */
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 50%;
+    color: #916652;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 }
 
-.carousel-arrow i {
-  display: none;
-}
-
+/* Iconos de las flechas */
 .carousel-arrow.prev::before {
-  content: '<';
+    content: "<";
+    font-size: 2rem;
+    line-height: 1;
 }
 
 .carousel-arrow.next::before {
-  content: '>';
+    content: ">";
+    font-size: 2rem;
+    line-height: 1;
 }
 
+/* Posicionamiento de flechas */
 .carousel-arrow.prev {
-  left: -55px;
+    left: -80px;
 }
 
 .carousel-arrow.next {
-  right: -55px;
+    right: -80px;
 }
 
-
-/* Ajustes adicionales flechas - altorra cars v2 */
-.carousel-arrow {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  color: #916652;
-}
-.carousel-arrow.prev {
-  left: -65px;
-}
-.carousel-arrow.next {
-  right: -65px;
+/* Ocultar iconos internos (si existen) */
+.carousel-arrow i {
+    display: none;
 }
 
-/* FIX v4: una sola flecha (< >), más afuera y más transparente */
-.carousel-arrow{
-  /* mata el caracter interno (‹/›) para que no se duplique */
-  font-size: 0 !important;
-
-  /* estilo tipo agua */
-  background: rgba(255,255,255,0.18) !important;
-  border: 1px solid rgba(0,0,0,0.14) !important;
-  color: #916652 !important;
+/* Hover - escalado suave sin movimiento */
+.carousel-arrow:hover {
+    transform: translateY(-50%) scale(1.06);
+    opacity: 0.95;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
-/* solo una flecha */
-.carousel-arrow.prev::before{
-  content: "<" !important;
-  font-size: 2rem !important;
-  line-height: 1 !important;
-}
-.carousel-arrow.next::before{
-  content: ">" !important;
-  font-size: 2rem !important;
-  line-height: 1 !important;
+/* Active - feedback al hacer click */
+.carousel-arrow:active {
+    transform: translateY(-50%) scale(0.98);
 }
 
-/* Posición óptima para visibilidad sin cortes */
-.carousel-arrow.prev{ left: -80px !important; }
-.carousel-arrow.next{ right: -80px !important; }
+/* Ocultar flechas en móvil */
+@media (max-width: 640px) {
+    .carousel-wrapper {
+        flex-direction: column;
+        gap: 1rem;
+    }
 
-/* por si alguien ve el <i> (extra seguro) */
-.carousel-arrow i{ display: none !important; }
-
-/* Hover sin movimiento: no "baja", solo se acerca un poquito */
-.carousel-arrow{
-  transition: transform .15s ease, background-color .15s ease, box-shadow .15s ease, opacity .15s ease;
-}
-
-.carousel-arrow:hover{
-  transform: translateY(-50%) scale(1.06) !important; /* se acerca, no se mueve */
-  opacity: 0.95;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-}
-
-/* Click con feedback, pero sin desplazarse */
-.carousel-arrow:active{
-  transform: translateY(-50%) scale(0.98) !important;
+    .carousel-arrow {
+        display: none;
+    }
 }
 

@@ -31,8 +31,10 @@ ${data.mensaje}
         // Open WhatsApp
         window.open(whatsappURL, '_blank');
 
-        // Show success message
-        alert('¡Gracias por tu mensaje! Serás redirigido a WhatsApp para completar tu consulta.');
+        // Show success message with toast (if available)
+        if (typeof toast !== 'undefined') {
+            toast.success('Serás redirigido a WhatsApp para completar tu consulta.', '¡Gracias por tu mensaje!');
+        }
 
         // Reset form
         contactForm.reset();

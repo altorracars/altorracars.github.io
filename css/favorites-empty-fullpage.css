@@ -1,50 +1,50 @@
 /* ============================================
-   FAVORITOS VACÍO - DISEÑO SIMPLE Y ROBUSTO
-   Sistema ultra-simple sin conflictos CSS
-   SOBRESCRIBE .container global de style.css
+   FAVORITOS VACÍO - DISEÑO OPTIMIZADO
+   Sistema mejorado con mejor especificidad CSS
+   Sin uso excesivo de !important
    ============================================ */
 
 /* Sección principal - Full viewport */
-.favorites-section {
-    min-height: calc(100vh - 160px) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 60px 0 !important;
-    background: #fafafa !important;
-    width: 100% !important;
-    margin: 0 !important;
+body .favorites-section.favorites-section {
+    min-height: calc(100vh - 160px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+    background: #fafafa;
+    width: 100%;
+    margin: 0;
 }
 
 /* CRÍTICO: Sobrescribir .container global de style.css
    que tiene max-width: 1200px y padding lateral */
-.favorites-section > .container {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
+body .favorites-section > .container.container {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 /* Vehicles grid cuando está vacío */
-.favorites-section .vehicles-grid {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+body .favorites-section .vehicles-grid.vehicles-grid {
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 /* Contenedor de contenido vacío */
-.no-favorites {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    padding: 40px 20px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 auto !important;
-    box-sizing: border-box !important;
+body .no-favorites.no-favorites {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
 }
 
 /* ============================================
@@ -54,15 +54,15 @@
    display:grid con múltiples columnas. Sin este fix, solo
    ocupa la primera columna y se pega a la izquierda.
    ============================================ */
-.favorites-section .vehicles-grid > .no-favorites {
-    grid-column: 1 / -1 !important;   /* Ocupa TODAS las columnas del grid */
-    justify-self: center !important;  /* Centra el item dentro del grid */
-    width: 100% !important;
-    max-width: 100% !important;
+body .favorites-section .vehicles-grid > .no-favorites {
+    grid-column: 1 / -1;   /* Ocupa TODAS las columnas del grid */
+    justify-self: center;  /* Centra el item dentro del grid */
+    width: 100%;
+    max-width: 100%;
 }
 
 /* Icono corazón grande */
-.no-favorites-icon {
+.no-favorites .no-favorites-icon {
     font-size: 120px;
     color: #d4d4d4;
     margin-bottom: 30px;
@@ -98,75 +98,71 @@
 }
 
 /* ============================================
-   BOTONES - HORIZONTAL EN PC (FORZADO)
+   BOTONES - HORIZONTAL EN PC
    ============================================ */
 
 /* Wrapper de botones - HORIZONTAL POR DEFECTO */
-.no-favorites-actions {
-    display: flex !important;
-    flex-direction: row !important; /* ← FORZAR HORIZONTAL */
-    justify-content: center !important;
-    align-items: center !important;
-    gap: 24px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 auto !important;
-    padding: 0 20px !important;
-    box-sizing: border-box !important;
-    flex-wrap: wrap !important;
+body .no-favorites .no-favorites-actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+    flex-wrap: wrap;
 }
 
 /* Estilos individuales de botones */
-.btn-catalog,
-.no-favorites-actions .btn-catalog,
-.no-favorites .btn-catalog {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 16px 32px !important;
-    font-size: 1rem !important;
-    font-weight: 600 !important;
-    border-radius: 10px !important;
-    text-decoration: none !important;
-    transition: all 0.3s ease !important;
-    cursor: pointer !important;
-    border: none !important;
-    white-space: nowrap !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
-    flex: 0 1 auto !important; /* No crecer, solo encoger si es necesario */
-    min-width: 200px !important;
-    max-width: 280px !important;
-    box-sizing: border-box !important;
+body .no-favorites .btn-catalog {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    flex: 0 1 auto;
+    min-width: 200px;
+    max-width: 280px;
+    box-sizing: border-box;
 }
 
 /* Botón principal (dorado) */
-.btn-catalog-primary,
-.no-favorites-actions .btn-catalog-primary {
-    background: linear-gradient(135deg, #916652 0%, #b89658 100%) !important;
-    color: white !important;
+body .no-favorites .btn-catalog-primary {
+    background: linear-gradient(135deg, #916652 0%, #b89658 100%);
+    color: white;
 }
 
-.btn-catalog-primary:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: 0 6px 25px rgba(145, 102, 82, 0.35) !important;
+body .no-favorites .btn-catalog-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(145, 102, 82, 0.35);
 }
 
 /* Botones secundarios (outline) */
-.btn-catalog-secondary,
-.no-favorites-actions .btn-catalog-secondary {
-    background: white !important;
-    color: #916652 !important;
-    border: 2px solid #b89658 !important;
+body .no-favorites .btn-catalog-secondary {
+    background: white;
+    color: #916652;
+    border: 2px solid #b89658;
 }
 
-.btn-catalog-secondary:hover {
-    background: #f9f6f1 !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(145, 102, 82, 0.2) !important;
+body .no-favorites .btn-catalog-secondary:hover {
+    background: #f9f6f1;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(145, 102, 82, 0.2);
 }
 
-.btn-catalog:active {
-    transform: translateY(0) !important;
+body .no-favorites .btn-catalog:active {
+    transform: translateY(0);
 }
 
 /* ============================================
@@ -175,16 +171,16 @@
 
 /* Tablets medianas y menores */
 @media (max-width: 768px) {
-    .favorites-section {
+    body .favorites-section {
         min-height: calc(100vh - 200px);
-        padding: 40px 20px !important;
+        padding: 40px 20px;
     }
 
-    .no-favorites {
-        padding: 30px 20px !important;
+    body .no-favorites {
+        padding: 30px 20px;
     }
 
-    .no-favorites-icon {
+    .no-favorites .no-favorites-icon {
         font-size: 100px;
         margin-bottom: 25px;
     }
@@ -199,25 +195,23 @@
     }
 
     /* CAMBIAR A VERTICAL EN MÓVIL */
-    .no-favorites-actions {
-        flex-direction: column !important;
-        max-width: 100% !important;
-        gap: 14px !important;
-        padding: 0 !important;
+    body .no-favorites .no-favorites-actions {
+        flex-direction: column;
+        max-width: 100%;
+        gap: 14px;
+        padding: 0;
     }
 
-    .btn-catalog,
-    .no-favorites-actions .btn-catalog,
-    .no-favorites .btn-catalog {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: auto !important;
+    body .no-favorites .btn-catalog {
+        width: 100%;
+        max-width: 100%;
+        min-width: auto;
     }
 }
 
 /* Móvil pequeño */
 @media (max-width: 480px) {
-    .no-favorites-icon {
+    .no-favorites .no-favorites-icon {
         font-size: 90px;
     }
 
@@ -225,9 +219,8 @@
         font-size: 1.6rem;
     }
 
-    .btn-catalog,
-    .no-favorites-actions .btn-catalog {
-        padding: 14px 24px !important;
-        font-size: 0.95rem !important;
+    body .no-favorites .btn-catalog {
+        padding: 14px 24px;
+        font-size: 0.95rem;
     }
 }

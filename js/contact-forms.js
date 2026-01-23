@@ -4,6 +4,7 @@
 class ContactFormManager {
     constructor() {
         this.whatsappNumber = '573235016747';
+        this.activeElement = null; // Para guardar el elemento activo antes de abrir modal
         this.init();
     }
 
@@ -59,8 +60,28 @@ class ContactFormManager {
     openModal(modalId) {
         const modal = document.getElementById(`${modalId}-modal`);
         if (modal) {
+            // Guardar el elemento activo para restaurar el focus después
+            this.activeElement = document.activeElement;
+
+            // Agregar ARIA attributes
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.setAttribute('aria-labelledby', `${modalId}-title`);
+
+            // Abrir modal
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
+
+            // Focus trap: enfocar el primer input del formulario
+            setTimeout(() => {
+                const firstInput = modal.querySelector('input:not([type="hidden"]), textarea, select');
+                if (firstInput) {
+                    firstInput.focus();
+                }
+            }, 100);
+
+            // Manejar Tab key para focus trap
+            this.trapFocus(modal);
         }
     }
 
@@ -70,6 +91,48 @@ class ContactFormManager {
             modal.classList.remove('active');
         });
         document.body.style.overflow = '';
+
+        // Restaurar focus al elemento que abrió el modal
+        if (this.activeElement) {
+            this.activeElement.focus();
+            this.activeElement = null;
+        }
+    }
+
+    trapFocus(modal) {
+        const focusableElements = modal.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        const handleTab = (e) => {
+            if (e.key !== 'Tab') return;
+
+            if (e.shiftKey) {
+                // Shift + Tab
+                if (document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else {
+                // Tab
+                if (document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        };
+
+        modal.addEventListener('keydown', handleTab);
+
+        // Remover listener cuando se cierra el modal
+        const removeListener = () => {
+            modal.removeEventListener('keydown', handleTab);
+        };
+
+        // Guardar referencia para limpiar después
+        modal.removeTabListener = removeListener;
     }
 
     handleVendeAutoSubmit(form) {

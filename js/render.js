@@ -103,7 +103,7 @@ function renderVehicleCard(vehicle) {
     return `
         <div class="vehicle-card clickable-card" data-id="${vehicle.id}" data-url="detalle-vehiculo.html?id=${vehicle.id}">
             <div class="vehicle-image">
-                <img src="${vehicle.imagen}" alt="${vehicle.marca} ${vehicle.modelo}" loading="lazy" onerror="this.src='multimedia/vehicles/placeholder-car.jpg'">
+                <img src="${vehicle.imagen}" alt="${vehicle.marca} ${vehicle.modelo}" loading="lazy" class="vehicle-img" data-fallback="multimedia/vehicles/placeholder-car.jpg">
                 <button class="favorite-btn${activeClass}" data-id="${vehicle.id}" aria-label="Añadir a favoritos">${heartIcon}</button>
                 <div class="vehicle-badges">
                     ${badgesHTML}
@@ -123,6 +123,25 @@ function renderVehicleCard(vehicle) {
             </div>
         </div>
     `;
+}
+
+// Centralized image error handling system
+function handleImageError(img) {
+    const fallback = img.getAttribute('data-fallback') || 'multimedia/vehicles/placeholder-car.jpg';
+    if (img.src !== fallback) {
+        img.src = fallback;
+    }
+}
+
+// Attach image error listeners to all vehicle images
+function attachImageErrorListeners() {
+    const vehicleImages = document.querySelectorAll('.vehicle-img');
+    vehicleImages.forEach(img => {
+        // Remove any existing listeners to prevent duplicates
+        img.removeEventListener('error', () => handleImageError(img));
+        // Add new listener
+        img.addEventListener('error', () => handleImageError(img));
+    });
 }
 
 // Render multiple vehicles
@@ -147,10 +166,14 @@ function renderVehicles(vehicles, containerId, options = {}) {
     const html = vehicles.map(renderVehicleCard).join('');
     container.innerHTML = html;
 
-    // Attach favorite button listeners solo si se especifica
+    // Attach listeners
     if (attachListeners) {
         attachFavoriteListeners();
         attachCardClickListeners();
+        attachImageErrorListeners();
+    } else {
+        // Always attach image error listeners for reliability
+        attachImageErrorListeners();
     }
 }
 

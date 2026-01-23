@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/footer-fixes.css">
     <link rel="stylesheet" href="css/brands-fixes.css">
     <link rel="stylesheet" href="css/toast-notifications.css">
+    <link rel="stylesheet" href="css/contact-forms.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -170,13 +171,13 @@
                     <div class="commercial-number">02</div>
                     <h3 class="commercial-card-title">Vende tu Auto</h3>
                     <p class="commercial-card-text">Recibe la mejor oferta del mercado. Avalúo rápido, transparente y seguro.</p>
-                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20quiero%20vender%20mi%20vehículo" class="btn-commercial" target="_blank">COTIZAR AHORA</a>
+                    <button type="button" class="btn-commercial" data-modal="vende-auto">COTIZAR AHORA</button>
                 </div>
                 <div class="commercial-card">
                     <div class="commercial-number">03</div>
                     <h3 class="commercial-card-title">Financiación</h3>
                     <p class="commercial-card-text">Contamos con aliados estratégicos financieros para ofrecerte las mejores opciones de crédito.</p>
-                    <a href="https://wa.me/573235016747?text=Hola%20ALTORRA%20CARS,%20necesito%20información%20sobre%20financiación" class="btn-commercial" target="_blank">SOLICITAR INFO</a>
+                    <button type="button" class="btn-commercial" data-modal="financiacion">SOLICITAR INFO</button>
                 </div>
             </div>
         </div>
@@ -185,9 +186,156 @@
     <!-- Footer Component -->
     <div id="footer-placeholder"></div>
 
+    <!-- Modal: Vende tu Auto -->
+    <div class="modal-overlay" id="vende-auto-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Vende tu Auto</h2>
+                <p class="modal-subtitle">Recibe la mejor oferta del mercado</p>
+                <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="vendeAutoForm">
+                    <div class="form-group">
+                        <label class="form-label required">Nombre completo</label>
+                        <input type="text" name="nombre" class="form-input" required placeholder="Ej: Juan Pérez">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Teléfono</label>
+                            <input type="tel" name="telefono" class="form-input" required placeholder="Ej: 3001234567">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Email</label>
+                            <input type="email" name="email" class="form-input" required placeholder="Ej: correo@ejemplo.com">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Marca</label>
+                            <input type="text" name="marca" class="form-input" required placeholder="Ej: Chevrolet">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Modelo</label>
+                            <input type="text" name="modelo" class="form-input" required placeholder="Ej: Spark GT">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Año</label>
+                            <input type="number" name="year" class="form-input" required placeholder="Ej: 2020" min="1990" max="2025">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Kilometraje</label>
+                            <input type="number" name="kilometraje" class="form-input" required placeholder="Ej: 50000">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Precio esperado</label>
+                        <input type="text" name="precio" class="form-input" required placeholder="Ej: $35,000,000">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Comentarios adicionales</label>
+                        <textarea name="comentarios" class="form-textarea" placeholder="Cuéntanos más sobre tu vehículo..."></textarea>
+                    </div>
+
+                    <button type="submit" class="form-submit">
+                        <svg class="whatsapp-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                        </svg>
+                        Enviar por WhatsApp
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Financiación -->
+    <div class="modal-overlay" id="financiacion-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Solicitud de Financiación</h2>
+                <p class="modal-subtitle">Te ayudamos a conseguir el mejor crédito</p>
+                <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="financiacionForm">
+                    <div class="form-group">
+                        <label class="form-label required">Nombre completo</label>
+                        <input type="text" name="nombre" class="form-input" required placeholder="Ej: Juan Pérez">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Teléfono</label>
+                            <input type="tel" name="telefono" class="form-input" required placeholder="Ej: 3001234567">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Email</label>
+                            <input type="email" name="email" class="form-input" required placeholder="Ej: correo@ejemplo.com">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Vehículo de interés</label>
+                        <input type="text" name="vehiculo-interes" class="form-input" required placeholder="Ej: Chevrolet Spark GT 2020">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Precio del vehículo</label>
+                            <input type="text" name="precio-vehiculo" class="form-input" required placeholder="Ej: $35,000,000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Cuota inicial disponible</label>
+                            <input type="text" name="cuota-inicial" class="form-input" required placeholder="Ej: $10,000,000">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Plazo deseado</label>
+                            <select name="plazo" class="form-select" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="12 meses">12 meses</option>
+                                <option value="24 meses">24 meses</option>
+                                <option value="36 meses">36 meses</option>
+                                <option value="48 meses">48 meses</option>
+                                <option value="60 meses">60 meses</option>
+                                <option value="72 meses">72 meses</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Ingresos mensuales</label>
+                            <input type="text" name="ingresos" class="form-input" required placeholder="Ej: $3,000,000">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Comentarios adicionales</label>
+                        <textarea name="comentarios" class="form-textarea" placeholder="Cuéntanos más sobre tu solicitud..."></textarea>
+                    </div>
+
+                    <button type="submit" class="form-submit">
+                        <svg class="whatsapp-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                        </svg>
+                        Enviar por WhatsApp
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/favorites-manager.js"></script>
     <script src="js/toast.js"></script>
+    <script src="js/contact-forms.js"></script>
     <script src="js/components.js"></script>
     <script src="js/database.js"></script>
     <script src="js/render.js"></script>
@@ -229,7 +377,7 @@
                     count: brandCounts[brand.id]
                 }))
                 .sort((a, b) => b.count - a.count) // Sort by count descending
-                .slice(0, 12); // Top 12
+                .slice(0, 8); // Top 8 (4 arriba, 4 abajo en PC)
 
             const container = document.getElementById('popularBrands');
 

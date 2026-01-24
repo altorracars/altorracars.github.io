@@ -377,9 +377,15 @@ rgba(145, 102, 82, 0.55) 100%
         left: 20px;
     }
 
-    .whatsapp-float img {
-        width: 135px;
-        height: auto;
+    .whatsapp-float svg {
+        width: 55px;
+        height: 55px;
+    }
+
+    /* Ocultar tooltip en móvil */
+    .whatsapp-float::before,
+    .whatsapp-float::after {
+        display: none;
     }
     
     /* ===== PAGE HEADER ===== */

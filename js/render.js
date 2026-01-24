@@ -26,7 +26,7 @@ function capitalize(str) {
 function formatCategoria(categoria) {
     const categorias = {
         'suv': 'SUV / Crossover',
-        'pickup': 'Pickup (Trabajo)',
+        'pickup': 'Pickup',
         'sedan': 'Sedán',
         'hatchback': 'Hatchback / Compacto'
     };

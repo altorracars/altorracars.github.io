@@ -845,10 +845,10 @@ section {
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
 }
 
-/* Imagen del botón WhatsApp - Aumentado 1.4x */
-.whatsapp-float img {
-    width: 216px;
-    height: auto;
+/* SVG del botón WhatsApp */
+.whatsapp-float svg {
+    width: 60px;
+    height: 60px;
     display: block;
 }
 
@@ -860,7 +860,7 @@ section {
 .whatsapp-float::before {
     content: attr(data-tooltip);
     position: absolute;
-    left: 226px;
+    left: 70px;
     top: 50%;
     transform: translateY(-50%);
     background: var(--primary-gold);
@@ -881,7 +881,7 @@ section {
 .whatsapp-float::after {
     content: "";
     position: absolute;
-    left: 216px;
+    left: 60px;
     top: 50%;
     transform: translateY(-50%);
     border: 8px solid transparent;
@@ -900,11 +900,11 @@ section {
 }
 
 .whatsapp-float:hover::before {
-    left: 169px;
+    left: 75px;
 }
 
 .whatsapp-float:hover::after {
-    left: 159px;
+    left: 65px;
 }
 
 /* Responsive Design */

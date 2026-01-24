@@ -860,7 +860,7 @@ section {
 .whatsapp-float::before {
     content: attr(data-tooltip);
     position: absolute;
-    left: 70px;
+    left: 65px;
     top: 50%;
     transform: translateY(-50%);
     background: var(--primary-gold);
@@ -881,7 +881,7 @@ section {
 .whatsapp-float::after {
     content: "";
     position: absolute;
-    left: 60px;
+    left: 57px;
     top: 50%;
     transform: translateY(-50%);
     border: 8px solid transparent;
@@ -900,11 +900,11 @@ section {
 }
 
 .whatsapp-float:hover::before {
-    left: 75px;
+    left: 70px;
 }
 
 .whatsapp-float:hover::after {
-    left: 65px;
+    left: 62px;
 }
 
 /* Responsive Design */

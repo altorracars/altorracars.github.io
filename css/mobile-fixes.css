@@ -374,7 +374,7 @@ rgba(145, 102, 82, 0.55) 100%
     /* ===== WHATSAPP FLOAT ===== */
     .whatsapp-float {
         bottom: 20px;
-        left: 20px;
+        right: 20px;
     }
 
     .whatsapp-float svg {
@@ -382,9 +382,14 @@ rgba(145, 102, 82, 0.55) 100%
         height: 55px;
     }
 
-    /* Ocultar tooltip en móvil */
     .whatsapp-float::before,
     .whatsapp-float::after {
+        width: 55px;
+        height: 55px;
+    }
+
+    /* Ocultar tooltip en móvil */
+    .whatsapp-tooltip {
         display: none;
     }
     

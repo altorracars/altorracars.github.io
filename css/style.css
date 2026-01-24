@@ -839,10 +839,56 @@ section {
 .whatsapp-float {
     position: fixed;
     bottom: 30px;
-    left: 30px;
+    right: 30px;
     z-index: 999;
     transition: var(--transition);
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+}
+
+/* Contenedor para las ondas animadas */
+.whatsapp-float::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: rgba(37, 211, 102, 0.4);
+    animation: whatsapp-pulse 2s ease-out infinite;
+    z-index: -1;
+}
+
+/* Segunda onda */
+.whatsapp-float::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: rgba(37, 211, 102, 0.3);
+    animation: whatsapp-pulse 2s ease-out 1s infinite;
+    z-index: -1;
+}
+
+/* Animación de ondas verdes */
+@keyframes whatsapp-pulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0.5;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0;
+    }
 }
 
 /* SVG del botón WhatsApp */
@@ -850,17 +896,24 @@ section {
     width: 60px;
     height: 60px;
     display: block;
+    position: relative;
+    z-index: 1;
 }
 
 .whatsapp-float:hover {
     transform: scale(1.1);
 }
 
-/* Tooltip para WhatsApp - Aparece a la DERECHA */
-.whatsapp-float::before {
-    content: attr(data-tooltip);
+/* Tooltip para WhatsApp - Aparece a la IZQUIERDA */
+.whatsapp-float:hover .whatsapp-tooltip {
+    opacity: 1;
+    visibility: visible;
+    right: 70px;
+}
+
+.whatsapp-tooltip {
     position: absolute;
-    left: 65px;
+    right: 65px;
     top: 50%;
     transform: translateY(-50%);
     background: var(--primary-gold);
@@ -877,34 +930,15 @@ section {
     box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
 }
 
-/* Flecha del tooltip - Apunta a la IZQUIERDA */
-.whatsapp-float::after {
+/* Flecha del tooltip - Apunta a la DERECHA */
+.whatsapp-tooltip::after {
     content: "";
     position: absolute;
-    left: 57px;
+    right: -8px;
     top: 50%;
     transform: translateY(-50%);
     border: 8px solid transparent;
-    border-right-color: var(--primary-gold);
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-}
-
-/* Mostrar tooltip al hacer hover */
-.whatsapp-float:hover::before,
-.whatsapp-float:hover::after {
-    opacity: 1;
-    visibility: visible;
-}
-
-.whatsapp-float:hover::before {
-    left: 70px;
-}
-
-.whatsapp-float:hover::after {
-    left: 62px;
+    border-left-color: var(--primary-gold);
 }
 
 /* Responsive Design */

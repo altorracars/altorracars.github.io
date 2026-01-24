@@ -1,0 +1,371 @@
+/* =============================================
+   TEMA OSCURO CORPORATIVO - ALTORRA CARS
+   Diseño profesional de concesionario premium
+   ============================================= */
+
+/* ===== COLORES BASE ===== */
+body {
+    background-color: #0a0a0a;
+    color: #e8e8e8;
+}
+
+/* ===== SECCIONES CON FONDOS ELEGANTES ===== */
+.featured-section,
+.new-vehicles-section,
+.used-vehicles-section,
+.brands-section,
+.categories-section,
+.commercial-section,
+.cta-section {
+    background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+    padding: 3rem 0 !important;
+    position: relative;
+}
+
+/* Líneas decorativas doradas entre secciones */
+.featured-section::before,
+.new-vehicles-section::before,
+.used-vehicles-section::before,
+.brands-section::before,
+.categories-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #b89658 50%, transparent 100%);
+}
+
+/* ===== TÍTULOS DE SECCIÓN ===== */
+.section-title {
+    color: #ffffff;
+    text-shadow: 0 2px 20px rgba(184, 150, 88, 0.3);
+}
+
+.section-title .highlight {
+    background: linear-gradient(135deg, #d4af37 0%, #b89658 50%, #8b6f47 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ===== HERO SECTION ===== */
+.hero {
+    background-image: url('../multimedia/heroindex.png') !important;
+}
+
+.hero-overlay {
+    background: linear-gradient(135deg, rgba(10, 10, 10, 0.4) 0%, rgba(26, 26, 26, 0.3) 100%) !important;
+}
+
+.hero-title {
+    color: #ffffff;
+    text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8), 0 2px 10px rgba(184, 150, 88, 0.4);
+}
+
+.hero-subtitle {
+    color: #f0f0f0;
+    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.8);
+}
+
+/* ===== TARJETAS DE VEHÍCULOS ===== */
+.vehicle-card {
+    background: linear-gradient(145deg, #1a1a1a 0%, #242424 100%);
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 1px rgba(184, 150, 88, 0.1);
+    transition: all 0.3s ease;
+}
+
+.vehicle-card:hover {
+    transform: translateY(-8px);
+    border-color: #b89658;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(184, 150, 88, 0.2);
+}
+
+.vehicle-title {
+    color: #ffffff;
+}
+
+.vehicle-price {
+    color: #d4af37;
+    text-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+}
+
+.vehicle-info {
+    color: #b0b0b0;
+}
+
+.vehicle-category {
+    color: #b89658;
+}
+
+/* ===== TARJETAS DE MARCAS ===== */
+.brand-card {
+    background: linear-gradient(145deg, #1a1a1a 0%, #242424 100%);
+    border: 1px solid #2a2a2a;
+    transition: all 0.3s ease;
+}
+
+.brand-card:hover {
+    background: linear-gradient(145deg, #242424 0%, #2a2a2a 100%);
+    border-color: #b89658;
+    box-shadow: 0 8px 30px rgba(184, 150, 88, 0.2);
+    transform: translateY(-5px);
+}
+
+.brand-name {
+    color: #ffffff;
+}
+
+/* ===== TARJETAS DE CATEGORÍAS ===== */
+.category-card {
+    background: linear-gradient(145deg, #1a1a1a 0%, #242424 100%);
+    border: 1px solid #2a2a2a;
+    position: relative;
+    overflow: hidden;
+}
+
+.category-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 10, 0.8) 100%);
+    z-index: 1;
+}
+
+.category-card:hover {
+    border-color: #b89658;
+    box-shadow: 0 8px 30px rgba(184, 150, 88, 0.25);
+}
+
+.category-name {
+    color: #ffffff;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+/* ===== SECCIÓN COMERCIAL ===== */
+.commercial-section {
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1512 50%, #0f0f0f 100%);
+}
+
+.commercial-card {
+    background: linear-gradient(145deg, #1a1a1a 0%, #242424 100%);
+    border: 1px solid #2a2a2a;
+    transition: all 0.3s ease;
+}
+
+.commercial-card:hover {
+    border-color: #b89658;
+    box-shadow: 0 12px 40px rgba(184, 150, 88, 0.2);
+    transform: translateY(-8px);
+}
+
+.commercial-title {
+    color: #ffffff;
+}
+
+.commercial-subtitle {
+    color: #b0b0b0;
+}
+
+.commercial-card-title {
+    color: #d4af37;
+}
+
+.commercial-card-text {
+    color: #b0b0b0;
+}
+
+.commercial-number {
+    background: linear-gradient(135deg, #b89658 0%, #8b6f47 100%);
+    color: #ffffff;
+}
+
+/* ===== BOTONES ===== */
+.btn-hero.btn-primary {
+    background: linear-gradient(135deg, #d4af37 0%, #b89658 100%);
+    border: 2px solid #d4af37;
+    color: #0a0a0a;
+    font-weight: 600;
+}
+
+.btn-hero.btn-primary:hover {
+    background: linear-gradient(135deg, #e6c654 0%, #d4af37 100%);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+}
+
+.btn-hero.btn-secondary {
+    background: transparent;
+    border: 2px solid #b89658;
+    color: #ffffff;
+}
+
+.btn-hero.btn-secondary:hover {
+    background: rgba(184, 150, 88, 0.1);
+    border-color: #d4af37;
+}
+
+.btn-hero.btn-outline {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+.btn-hero.btn-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #ffffff;
+}
+
+.btn-view-more {
+    background: linear-gradient(135deg, #b89658 0%, #8b6f47 100%);
+    color: #ffffff;
+    border: none;
+}
+
+.btn-view-more:hover {
+    background: linear-gradient(135deg, #d4af37 0%, #b89658 100%);
+    box-shadow: 0 4px 20px rgba(184, 150, 88, 0.4);
+}
+
+.btn-commercial {
+    background: linear-gradient(135deg, #b89658 0%, #8b6f47 100%);
+    color: #ffffff;
+}
+
+.btn-commercial:hover {
+    background: linear-gradient(135deg, #d4af37 0%, #b89658 100%);
+    box-shadow: 0 6px 25px rgba(184, 150, 88, 0.4);
+}
+
+/* ===== CTA SECTION ===== */
+.cta-section {
+    background: linear-gradient(135deg, #1a1512 0%, #0f0f0f 50%, #1a1512 100%);
+    border-top: 2px solid #2a2a2a;
+    border-bottom: 2px solid #2a2a2a;
+}
+
+.cta-title {
+    color: #ffffff;
+}
+
+.cta-subtitle {
+    color: #b0b0b0;
+}
+
+/* ===== BADGES ===== */
+.badge {
+    background: linear-gradient(135deg, #25d366 0%, #1da851 100%);
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.badge.badge-usado {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+.badge.badge-oferta {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.badge.badge-destacado {
+    background: linear-gradient(135deg, #d4af37 0%, #b89658 100%);
+}
+
+/* ===== REDUCIR ESPACIADO ENTRE SECCIONES ===== */
+.featured-section,
+.new-vehicles-section,
+.used-vehicles-section {
+    padding-top: 2.5rem !important;
+    padding-bottom: 2.5rem !important;
+}
+
+.brands-section,
+.categories-section {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+}
+
+.commercial-section {
+    padding-top: 3.5rem !important;
+    padding-bottom: 3.5rem !important;
+}
+
+/* Reducir margin entre contenedores */
+.section-header {
+    margin-bottom: 2rem !important;
+}
+
+.carousel-wrapper {
+    margin-bottom: 1.5rem !important;
+}
+
+/* ===== HEADER ===== */
+#header {
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #2a2a2a;
+}
+
+#header.sticky {
+    background: rgba(10, 10, 10, 0.98);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 1px rgba(184, 150, 88, 0.2);
+}
+
+.nav-link {
+    color: #e8e8e8;
+}
+
+.nav-link:hover {
+    color: #d4af37;
+}
+
+/* ===== FOOTER ===== */
+footer {
+    background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+    border-top: 1px solid #2a2a2a;
+}
+
+.footer-title {
+    color: #d4af37;
+}
+
+.footer-links a {
+    color: #b0b0b0;
+}
+
+.footer-links a:hover {
+    color: #d4af37;
+}
+
+.footer-bottom {
+    border-top: 1px solid #2a2a2a;
+    color: #808080;
+}
+
+/* ===== EFECTOS DE BRILLO DORADO ===== */
+@keyframes golden-glow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(184, 150, 88, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
+    }
+}
+
+.vehicle-card:hover,
+.brand-card:hover,
+.category-card:hover {
+    animation: golden-glow 2s ease-in-out infinite;
+}
+
+/* ===== SCROLL SUAVE ===== */
+html {
+    scroll-behavior: smooth;
+}

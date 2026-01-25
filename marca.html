@@ -15,10 +15,11 @@
 </head>
 <body>
     <div id="header-placeholder"></div>
-    <section class="page-header" id="brandHeader">
+    <section class="page-header brand-header" id="brandHeader">
         <div class="container">
-            <h1 class="page-title" id="brandTitle">Cargando...</h1>
-            <p class="page-subtitle" id="brandDesc"></p>
+            <img id="brandBanner" src="" alt="" class="brand-banner" style="display:none;">
+            <h1 class="page-title" id="brandTitle" style="display:none;">Cargando...</h1>
+            <p class="page-subtitle" id="brandDesc" style="display:none;"></p>
         </div>
     </section>
     <section class="catalog-section">
@@ -129,10 +130,35 @@
             
             if (brandInfo) {
                 document.getElementById('pageTitle').textContent = brandInfo.nombre + ' | ALTORRA CARS';
-                document.getElementById('brandTitle').textContent = brandInfo.nombre;
-                document.getElementById('brandDesc').textContent = brandInfo.descripcion;
+
+                // Intentar cargar banner
+                const bannerPath = `multimedia/banner/b_${brandId}.png`;
+                const bannerImg = document.getElementById('brandBanner');
+                const titleEl = document.getElementById('brandTitle');
+                const descEl = document.getElementById('brandDesc');
+
+                // Verificar si existe el banner
+                const img = new Image();
+                img.onload = function() {
+                    // Banner existe, mostrarlo
+                    bannerImg.src = bannerPath;
+                    bannerImg.alt = brandInfo.nombre;
+                    bannerImg.style.display = 'block';
+                    titleEl.style.display = 'none';
+                    descEl.style.display = 'none';
+                };
+                img.onerror = function() {
+                    // Banner no existe, usar texto
+                    bannerImg.style.display = 'none';
+                    titleEl.textContent = brandInfo.nombre;
+                    titleEl.style.display = 'block';
+                    descEl.textContent = brandInfo.descripcion;
+                    descEl.style.display = 'block';
+                };
+                img.src = bannerPath;
             } else {
                 document.getElementById('brandTitle').textContent = capitalize(brandId);
+                document.getElementById('brandTitle').style.display = 'block';
             }
             
             showLoading('vehiclesGrid');

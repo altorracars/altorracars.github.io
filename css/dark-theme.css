@@ -1173,11 +1173,21 @@ html {
     .brand-hero {
         height: 320px !important;
     }
+
+    .brand-hero-bg {
+        object-fit: contain !important;
+        background: #0a0a0a !important;
+    }
 }
 
 @media (max-width: 640px) {
     .brand-hero {
         height: 220px !important;
+    }
+
+    .brand-hero-bg {
+        object-fit: contain !important;
+        background: #0a0a0a !important;
     }
 
     .brand-hero::after {

@@ -1171,27 +1171,53 @@ html {
 
 @media (max-width: 968px) {
     .brand-hero {
-        height: 320px !important;
+        height: auto !important;
+        max-height: 350px !important;
+        min-height: 200px !important;
     }
 
     .brand-hero-bg {
+        position: relative !important;
         object-fit: contain !important;
-        background: #0a0a0a !important;
+        background: transparent !important;
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        animation: none !important;
+    }
+
+    .brand-hero-overlay {
+        display: none !important;
+    }
+
+    .brand-hero::after {
+        display: none !important;
     }
 }
 
 @media (max-width: 640px) {
     .brand-hero {
-        height: 220px !important;
+        height: auto !important;
+        max-height: 250px !important;
+        min-height: 150px !important;
     }
 
     .brand-hero-bg {
+        position: relative !important;
         object-fit: contain !important;
-        background: #0a0a0a !important;
+        background: transparent !important;
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        animation: none !important;
+    }
+
+    .brand-hero-overlay {
+        display: none !important;
     }
 
     .brand-hero::after {
-        height: 80px !important;
+        display: none !important;
     }
 }
 

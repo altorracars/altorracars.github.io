@@ -88,12 +88,17 @@
                 </aside>
                 <div class="catalog-main">
                     <div class="results-header">
-                        <p><span id="resultsCount">0</span> vehículos pickup</p>
-                        <select id="sortBy" class="sort-select">
-                            <option value="precio-asc">Precio ↑</option>
-                            <option value="precio-desc">Precio ↓</option>
-                            <option value="year-desc">Más recientes</option>
-                        </select>
+                        <div class="results-info">
+                            <p><span id="resultsCount">0</span> vehículos pickup</p>
+                        </div>
+                        <div class="results-sort">
+                            <label for="sortBy">Ordenar por:</label>
+                            <select id="sortBy" class="sort-select">
+                                <option value="precio-asc">Precio: Menor a Mayor</option>
+                                <option value="precio-desc">Precio: Mayor a Menor</option>
+                                <option value="year-desc">Año: Más Reciente</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="vehicles-grid" id="vehiclesGrid"></div>
                     <div id="pagination"></div>

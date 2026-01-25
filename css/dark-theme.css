@@ -1169,7 +1169,7 @@ html {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
-    object-position: center !important;
+    object-position: top center !important;
     filter: brightness(0.9) saturate(1.1) !important;
     animation: subtle-zoom 20s ease-in-out infinite alternate !important;
 }
@@ -1220,6 +1220,41 @@ html {
     }
 }
 
+/* ===== RESULTS HEADER RESPONSIVE ===== */
+@media (max-width: 968px) {
+    .results-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+        padding: 1rem !important;
+    }
+
+    .results-sort {
+        width: 100% !important;
+        justify-content: space-between !important;
+    }
+
+    .sort-select {
+        flex: 1 !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .results-info p,
+    .results-info h2 {
+        font-size: 0.85rem !important;
+    }
+
+    .results-sort label {
+        font-size: 0.8rem !important;
+    }
+
+    .sort-select {
+        font-size: 0.85rem !important;
+        padding: 0.4rem 0.6rem !important;
+    }
+}
+
 .page-title {
     color: var(--white-pure) !important;
     text-shadow: 0 4px 30px rgba(212, 175, 55, 0.4) !important;
@@ -1235,17 +1270,26 @@ html {
     color: var(--gray-light) !important;
 }
 
-/* ===== RESULTS HEADER - REDUCED HEIGHT & VISIBLE COUNTER ===== */
+/* ===== RESULTS HEADER - UNIFIED STYLE FOR ALL PAGES ===== */
 .results-header {
     background: rgba(26, 26, 26, 0.6) !important;
     border: 1px solid rgba(42, 42, 42, 0.5) !important;
     padding: 0.75rem 1.25rem !important;
     backdrop-filter: blur(10px) !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
 }
 
-.results-header p {
+.results-info p,
+.results-info h2 {
     color: var(--gray-light) !important;
     font-size: 0.95rem !important;
+    margin: 0 !important;
+}
+
+.results-info h2 {
+    font-size: 1.1rem !important;
 }
 
 #resultsCount {
@@ -1254,18 +1298,38 @@ html {
     font-size: 1.1rem !important;
 }
 
+.results-sort {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.results-sort label {
+    color: var(--gold-secondary) !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+
 .sort-select {
     background: rgba(26, 26, 26, 0.8) !important;
     color: var(--white-pure) !important;
     border: 1px solid rgba(212, 175, 55, 0.3) !important;
     padding: 0.5rem 0.75rem !important;
     border-radius: 8px !important;
+    font-size: 0.9rem !important;
     transition: all 0.3s ease !important;
+    cursor: pointer !important;
 }
 
 .sort-select:hover {
     border-color: var(--gold-primary) !important;
     box-shadow: 0 0 10px rgba(212, 175, 55, 0.2) !important;
+}
+
+.sort-select:focus {
+    outline: none !important;
+    border-color: var(--gold-primary) !important;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.3) !important;
 }
 
 .about-content h2 {

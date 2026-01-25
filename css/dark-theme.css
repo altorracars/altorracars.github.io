@@ -637,13 +637,13 @@ body {
     text-shadow: 0 2px 10px rgba(212, 175, 55, 0.4) !important;
 }
 
-/* ===== DROPDOWN MENUS - GLASSMORPHISM TRANSPARENTE ===== */
+/* ===== DROPDOWN MENUS - GLASSMORPHISM MEJORADO ===== */
 .dropdown-menu {
-    background: rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    border: 2px solid rgba(255, 255, 255, 0.3) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    background: rgba(26, 26, 26, 0.95) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 2px solid rgba(184, 150, 88, 0.4) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 175, 55, 0.2) !important;
 }
 
 .dropdown-menu li a {
@@ -654,7 +654,7 @@ body {
 }
 
 .dropdown-menu li a:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
+    background: rgba(212, 175, 55, 0.2) !important;
     color: var(--gold-primary) !important;
     text-shadow: 0 2px 8px rgba(212, 175, 55, 0.4) !important;
     transform: translateX(5px) !important;
@@ -730,18 +730,18 @@ footer {
 
 /* ===== ANIMACIONES PARA ÍCONOS COMERCIALES ===== */
 
-/* Compra tu Auto - Llave rotando y ruedas girando */
+/* Compra tu Auto - Auto moviéndose y llave rotando */
 .icon-compra:hover .car-key {
     animation: rotate-key 0.6s ease-in-out;
 }
 
-.icon-compra:hover .wheel-left,
-.icon-compra:hover .wheel-right {
-    animation: spin-wheel 1s linear infinite;
+.icon-compra:hover .car-body {
+    animation: car-drive 1.2s ease-in-out infinite;
 }
 
-.icon-compra:hover .car-body {
-    animation: car-bounce 0.5s ease-in-out;
+.icon-compra:hover .wheel-left,
+.icon-compra:hover .wheel-right {
+    animation: wheel-glow 0.8s ease-in-out infinite;
 }
 
 @keyframes rotate-key {
@@ -749,14 +749,20 @@ footer {
     50% { transform: rotate(15deg); transform-origin: 56px 24px; }
 }
 
-@keyframes spin-wheel {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+@keyframes car-drive {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    25% { transform: translateX(2px) translateY(-1px); }
+    50% { transform: translateX(0) translateY(0); }
+    75% { transform: translateX(-2px) translateY(-1px); }
 }
 
-@keyframes car-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
+@keyframes wheel-glow {
+    0%, 100% {
+        filter: drop-shadow(0 0 0px rgba(212, 175, 55, 0));
+    }
+    50% {
+        filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.9));
+    }
 }
 
 /* Vende tu Auto - Billetes expandiéndose */

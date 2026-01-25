@@ -169,13 +169,18 @@
     <section class="search-results-section">
         <div class="container">
             <div class="results-header">
-                <h2><span id="resultsCount">0</span> vehículos encontrados</h2>
-                <select id="sortBy" class="sort-select">
-                    <option value="precio-asc">Precio: Menor a Mayor</option>
-                    <option value="precio-desc">Precio: Mayor a Menor</option>
-                    <option value="year-desc">Año: Más Reciente</option>
-                    <option value="km-asc">Kilometraje: Menor</option>
-                </select>
+                <div class="results-info">
+                    <h2><span id="resultsCount">0</span> vehículos encontrados</h2>
+                </div>
+                <div class="results-sort">
+                    <label for="sortBy">Ordenar por:</label>
+                    <select id="sortBy" class="sort-select">
+                        <option value="precio-asc">Precio: Menor a Mayor</option>
+                        <option value="precio-desc">Precio: Mayor a Menor</option>
+                        <option value="year-desc">Año: Más Reciente</option>
+                        <option value="km-asc">Kilometraje: Menor</option>
+                    </select>
+                </div>
             </div>
             <div class="vehicles-grid" id="searchResults"></div>
             <div id="pagination"></div>

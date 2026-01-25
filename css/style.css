@@ -908,14 +908,14 @@ section {
 .whatsapp-float:hover .whatsapp-tooltip {
     opacity: 1;
     visibility: visible;
-    right: 70px;
+    transform: translateY(-50%) translateX(0);
 }
 
 .whatsapp-tooltip {
     position: absolute;
-    right: 65px;
+    right: 70px;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-50%) translateX(15px);
     background: var(--primary-gold);
     color: white;
     padding: 0.6rem 1.2rem;
@@ -928,6 +928,7 @@ section {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
     box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
+    z-index: 1000;
 }
 
 /* Flecha del tooltip - Apunta a la DERECHA */

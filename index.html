@@ -241,26 +241,27 @@
             <!-- Servicios Comerciales -->
             <div class="commercial-grid">
                 <div class="commercial-card">
-                    <div class="commercial-icon">
+                    <div class="commercial-icon icon-compra">
                         <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="40" cy="40" r="38" stroke="#d4af37" stroke-width="3" fill="rgba(212, 175, 55, 0.15)"/>
                             <!-- Car Body -->
-                            <path d="M20 42C20 40 21 39 23 39H30L33 35C34 33 36 32 38 32H50C52 32 54 33 55 35L58 39H65C67 39 68 40 68 42V50C68 52 67 53 65 53H63C63 56 61 58 58 58C55 58 53 56 53 53H35C35 56 33 58 30 58C27 58 25 56 25 53H23C21 53 20 52 20 50V42Z" fill="#d4af37"/>
+                            <path class="car-body" d="M20 42C20 40 21 39 23 39H30L33 35C34 33 36 32 38 32H50C52 32 54 33 55 35L58 39H65C67 39 68 40 68 42V50C68 52 67 53 65 53H63C63 56 61 58 58 58C55 58 53 56 53 53H35C35 56 33 58 30 58C27 58 25 56 25 53H23C21 53 20 52 20 50V42Z" fill="#d4af37"/>
                             <!-- Windows -->
                             <path d="M35 36C35 35 36 34 37 34H47C48 34 49 35 49 36V38H35V36Z" fill="rgba(26, 26, 26, 0.4)"/>
                             <rect x="34" y="36" width="7" height="4" fill="rgba(255, 255, 255, 0.3)"/>
                             <rect x="43" y="36" width="7" height="4" fill="rgba(255, 255, 255, 0.3)"/>
                             <!-- Wheels -->
-                            <circle cx="30" cy="53" r="6" fill="#1a1a1a"/>
+                            <circle class="wheel-left" cx="30" cy="53" r="6" fill="#1a1a1a"/>
                             <circle cx="30" cy="53" r="3.5" fill="#b89658"/>
-                            <circle cx="58" cy="53" r="6" fill="#1a1a1a"/>
+                            <circle class="wheel-right" cx="58" cy="53" r="6" fill="#1a1a1a"/>
                             <circle cx="58" cy="53" r="3.5" fill="#b89658"/>
                             <!-- Key -->
-                            <circle cx="56" cy="24" r="8" fill="rgba(212, 175, 55, 0.2)" stroke="#d4af37" stroke-width="2"/>
-                            <circle cx="56" cy="24" r="3" fill="#d4af37"/>
-                            <rect x="59" y="22" width="8" height="4" rx="1" fill="#d4af37"/>
-                            <rect x="63" y="20" width="2" height="2" fill="#1a1a1a"/>
-                            <rect x="63" y="24" width="2" height="2" fill="#1a1a1a"/>
+                            <g class="car-key">
+                                <circle cx="56" cy="24" r="8" fill="rgba(212, 175, 55, 0.2)" stroke="#d4af37" stroke-width="2"/>
+                                <circle cx="56" cy="24" r="3" fill="#d4af37"/>
+                                <rect x="59" y="22" width="8" height="4" rx="1" fill="#d4af37"/>
+                                <rect x="63" y="20" width="2" height="2" fill="#1a1a1a"/>
+                                <rect x="63" y="24" width="2" height="2" fill="#1a1a1a"/>
+                            </g>
                         </svg>
                     </div>
                     <h3 class="commercial-card-title">Compra tu Auto</h3>
@@ -268,13 +269,14 @@
                     <a href="busqueda.html" class="btn-commercial">VER INVENTARIO</a>
                 </div>
                 <div class="commercial-card">
-                    <div class="commercial-icon">
+                    <div class="commercial-icon icon-vende">
                         <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="40" cy="40" r="38" stroke="#d4af37" stroke-width="3" fill="rgba(212, 175, 55, 0.15)"/>
                             <!-- Billetes apilados -->
-                            <rect x="22" y="38" width="36" height="20" rx="2" fill="#b89658" stroke="#8b6f47" stroke-width="1.5"/>
-                            <rect x="24" y="34" width="36" height="20" rx="2" fill="#d4af37" stroke="#b89658" stroke-width="1.5"/>
-                            <rect x="26" y="30" width="36" height="20" rx="2" fill="#d4af37" stroke="#b89658" stroke-width="1.5"/>
+                            <g class="money-stack">
+                                <rect class="bill bill-1" x="22" y="38" width="36" height="20" rx="2" fill="#b89658" stroke="#8b6f47" stroke-width="1.5"/>
+                                <rect class="bill bill-2" x="24" y="34" width="36" height="20" rx="2" fill="#d4af37" stroke="#b89658" stroke-width="1.5"/>
+                                <rect class="bill bill-3" x="26" y="30" width="36" height="20" rx="2" fill="#d4af37" stroke="#b89658" stroke-width="1.5"/>
+                            </g>
                             <!-- Detalles del billete principal -->
                             <circle cx="44" cy="40" r="6" fill="rgba(26, 26, 26, 0.2)" stroke="#8b6f47" stroke-width="1"/>
                             <!-- Símbolo de dólar -->
@@ -285,8 +287,10 @@
                             <line x1="52" y1="42" x2="58" y2="42" stroke="#8b6f47" stroke-width="1.5" stroke-linecap="round"/>
                             <line x1="52" y1="45" x2="58" y2="45" stroke="#8b6f47" stroke-width="1.5" stroke-linecap="round"/>
                             <!-- Flecha hacia arriba (mejor precio) -->
-                            <path d="M56 22L56 28M53 25L56 22L59 25" stroke="#d4af37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <circle cx="56" cy="25" r="10" stroke="#d4af37" stroke-width="2" fill="rgba(212, 175, 55, 0.1)"/>
+                            <g class="price-arrow">
+                                <circle cx="56" cy="25" r="10" stroke="#d4af37" stroke-width="2" fill="rgba(212, 175, 55, 0.1)"/>
+                                <path d="M56 22L56 28M53 25L56 22L59 25" stroke="#d4af37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </g>
                         </svg>
                     </div>
                     <h3 class="commercial-card-title">Vende tu Auto</h3>
@@ -294,28 +298,31 @@
                     <button type="button" class="btn-commercial" data-modal="vende-auto">COTIZAR AHORA</button>
                 </div>
                 <div class="commercial-card">
-                    <div class="commercial-icon">
+                    <div class="commercial-icon icon-financia">
                         <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="40" cy="40" r="38" stroke="#d4af37" stroke-width="3" fill="rgba(212, 175, 55, 0.15)"/>
                             <!-- Tarjeta de crédito -->
-                            <rect x="20" y="30" width="40" height="26" rx="3" fill="#d4af37" stroke="#b89658" stroke-width="2"/>
-                            <!-- Banda magnética -->
-                            <rect x="20" y="35" width="40" height="5" fill="#1a1a1a"/>
-                            <!-- Chip -->
-                            <rect x="25" y="42" width="8" height="7" rx="1" fill="#b89658" stroke="#8b6f47" stroke-width="1"/>
-                            <line x1="27" y1="44" x2="27" y2="47" stroke="#8b6f47" stroke-width="0.5"/>
-                            <line x1="29" y1="44" x2="29" y2="47" stroke="#8b6f47" stroke-width="0.5"/>
-                            <line x1="31" y1="44" x2="31" y2="47" stroke="#8b6f47" stroke-width="0.5"/>
-                            <!-- Números de tarjeta -->
-                            <line x1="36" y1="45" x2="42" y2="45" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
-                            <line x1="36" y1="48" x2="42" y2="48" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
-                            <line x1="45" y1="45" x2="51" y2="45" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
-                            <line x1="45" y1="48" x2="51" y2="48" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+                            <g class="credit-card">
+                                <rect x="20" y="30" width="40" height="26" rx="3" fill="#d4af37" stroke="#b89658" stroke-width="2"/>
+                                <!-- Banda magnética -->
+                                <rect x="20" y="35" width="40" height="5" fill="#1a1a1a"/>
+                                <!-- Chip -->
+                                <rect class="card-chip" x="25" y="42" width="8" height="7" rx="1" fill="#b89658" stroke="#8b6f47" stroke-width="1"/>
+                                <line x1="27" y1="44" x2="27" y2="47" stroke="#8b6f47" stroke-width="0.5"/>
+                                <line x1="29" y1="44" x2="29" y2="47" stroke="#8b6f47" stroke-width="0.5"/>
+                                <line x1="31" y1="44" x2="31" y2="47" stroke="#8b6f47" stroke-width="0.5"/>
+                                <!-- Números de tarjeta -->
+                                <line x1="36" y1="45" x2="42" y2="45" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="36" y1="48" x2="42" y2="48" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="45" y1="45" x2="51" y2="45" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="45" y1="48" x2="51" y2="48" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+                            </g>
                             <!-- Símbolo de porcentaje (interés) -->
-                            <circle cx="54" cy="22" r="9" fill="rgba(212, 175, 55, 0.2)" stroke="#d4af37" stroke-width="2"/>
-                            <text x="54" y="26" text-anchor="middle" fill="#d4af37" font-size="11" font-weight="900" font-family="Arial">%</text>
+                            <g class="percent-symbol">
+                                <circle cx="54" cy="22" r="9" fill="rgba(212, 175, 55, 0.2)" stroke="#d4af37" stroke-width="2"/>
+                                <text x="54" y="26" text-anchor="middle" fill="#d4af37" font-size="11" font-weight="900" font-family="Arial">%</text>
+                            </g>
                             <!-- Checkmark (aprobado) -->
-                            <path d="M48 50L50 52L54 48" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="checkmark" d="M48 50L50 52L54 48" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
                     <h3 class="commercial-card-title">Financiación</h3>

@@ -1,6 +1,6 @@
 /* =============================================
-   TEMA OSCURO PREMIUM V2.0 - ALTORRA CARS
-   Diseño corporativo con tecnología avanzada CSS
+   TEMA OSCURO PREMIUM V3.0 - ALTORRA CARS
+   Con Glassmorphism y Animaciones Avanzadas
    ============================================= */
 
 /* ===== VARIABLES GLOBALES ===== */
@@ -90,35 +90,41 @@ body {
     font-weight: 500;
 }
 
-/* ===== TARJETAS DE VEHÍCULOS - BLANCAS PREMIUM ===== */
+/* ===== TARJETAS DE VEHÍCULOS - GLASSMORPHISM PREMIUM ===== */
 .vehicle-card,
 .vehicles-grid .vehicle-card,
 .featured-section .vehicle-card,
 .new-vehicles-section .vehicle-card,
 .used-vehicles-section .vehicle-card {
-    background: linear-gradient(145deg, var(--white-pure) 0%, var(--white-soft) 100%) !important;
-    border: 2px solid #e8e8e8 !important;
-    border-radius: 16px !important;
+    /* Glassmorphism background */
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 20px !important;
+
     box-shadow:
-        0 10px 40px rgba(0, 0, 0, 0.3),
-        0 0 0 1px rgba(184, 150, 88, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+        0 8px 32px 0 rgba(0, 0, 0, 0.37),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        0 0 0 1px rgba(184, 150, 88, 0.1) !important;
+
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
     overflow: hidden !important;
     position: relative !important;
 }
 
-/* Efecto glassmorphism en hover */
+/* Efecto glassmorphism intensificado en hover */
 .vehicle-card::before {
     content: '' !important;
     position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(184, 150, 88, 0.05) 100%) !important;
+    top: -50% !important;
+    left: -50% !important;
+    width: 200% !important;
+    height: 200% !important;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%) !important;
     opacity: 0 !important;
-    transition: opacity 0.4s ease !important;
+    transition: opacity 0.5s ease !important;
     pointer-events: none !important;
     z-index: 1 !important;
 }
@@ -128,30 +134,34 @@ body {
 }
 
 .vehicle-card:hover {
-    transform: translateY(-12px) scale(1.02) !important;
-    border-color: var(--gold-secondary) !important;
+    transform: translateY(-12px) scale(1.03) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(184, 150, 88, 0.5) !important;
+
     box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.4),
+        0 20px 60px 0 rgba(0, 0, 0, 0.5),
         0 0 0 2px var(--gold-secondary),
-        0 0 40px rgba(212, 175, 55, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+        0 0 50px rgba(212, 175, 55, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
 .vehicle-title {
-    color: var(--black-medium) !important;
+    color: var(--white-pure) !important;
     font-weight: 700 !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
 }
 
 .vehicle-price {
     color: var(--gold-primary) !important;
-    text-shadow: 0 2px 15px rgba(212, 175, 55, 0.4) !important;
+    text-shadow: 0 2px 15px rgba(212, 175, 55, 0.6) !important;
     font-weight: 800 !important;
     font-size: 1.5rem !important;
 }
 
 .vehicle-info {
-    color: #666666 !important;
+    color: var(--gray-light) !important;
     font-weight: 500 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 .vehicle-category {
@@ -166,27 +176,77 @@ body {
     z-index: 2 !important;
 }
 
-/* ===== TARJETAS DE MARCAS - BLANCAS ===== */
+/* ===== TARJETAS DE MARCAS - SIN FONDO, SOLO LOGOS CON ANIMACIÓN ===== */
 .brand-card {
-    background: linear-gradient(145deg, var(--white-pure) 0%, #f5f5f5 100%) !important;
-    border: 2px solid #e0e0e0 !important;
+    background: transparent !important;
+    border: none !important;
     border-radius: 16px !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2) !important;
+    padding: 2rem !important;
+    position: relative !important;
+    transition: all 0.4s ease !important;
+    overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 140px !important;
+}
+
+/* Borde animado con gradiente giratorio */
+.brand-card::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: -2px !important;
+    border-radius: 16px !important;
+    padding: 2px !important;
+    background: conic-gradient(
+        from 0deg at 50% 50%,
+        transparent 0deg,
+        var(--gold-primary) 90deg,
+        var(--gold-secondary) 180deg,
+        var(--gold-primary) 270deg,
+        transparent 360deg
+    ) !important;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+    -webkit-mask-composite: xor !important;
+    mask-composite: exclude !important;
+    opacity: 0 !important;
+    transition: opacity 0.4s ease !important;
+    animation: rotateBorder 3s linear infinite !important;
+}
+
+.brand-card:hover::before {
+    opacity: 1 !important;
+}
+
+@keyframes rotateBorder {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(-360deg);
+    }
 }
 
 .brand-card:hover {
-    background: linear-gradient(145deg, var(--white-pure) 0%, #fafafa 100%) !important;
-    border-color: var(--gold-secondary) !important;
-    box-shadow:
-        0 12px 40px rgba(0, 0, 0, 0.3),
-        0 0 30px rgba(184, 150, 88, 0.4) !important;
-    transform: translateY(-8px) scale(1.05) !important;
+    transform: translateY(-8px) scale(1.08) !important;
+}
+
+.brand-card:hover .brand-logo {
+    transform: scale(1.15) !important;
+    filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.6)) !important;
+}
+
+.brand-logo {
+    transition: all 0.4s ease !important;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3)) !important;
 }
 
 .brand-name {
-    color: var(--black-medium) !important;
+    color: var(--white-pure) !important;
     font-weight: 700 !important;
+    margin-top: 1rem !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* ===== TARJETAS DE CATEGORÍAS - SOLUCIÓN DEFINITIVA ===== */
@@ -385,42 +445,50 @@ body {
 }
 
 /* ===== BOTONES PREMIUM ===== */
+/* BOTÓN PRIMARIO - Ver Nuevos (DORADO, PRINCIPAL) */
 .btn-hero.btn-primary {
     background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-secondary) 100%) !important;
     border: 2px solid var(--gold-primary) !important;
     color: var(--black-deep) !important;
-    font-weight: 700 !important;
-    box-shadow: 0 6px 25px rgba(212, 175, 55, 0.4) !important;
+    font-weight: 800 !important;
+    box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5) !important;
     transition: all 0.3s ease !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
 }
 
 .btn-hero.btn-primary:hover {
-    background: linear-gradient(135deg, #e6c654 0%, var(--gold-primary) 100%) !important;
-    box-shadow: 0 8px 35px rgba(212, 175, 55, 0.6) !important;
-    transform: translateY(-3px) scale(1.05) !important;
+    background: linear-gradient(135deg, #f0c851 0%, var(--gold-primary) 100%) !important;
+    box-shadow: 0 12px 40px rgba(212, 175, 55, 0.7) !important;
+    transform: translateY(-4px) scale(1.08) !important;
+    border-color: #f0c851 !important;
 }
 
 .btn-hero.btn-secondary {
-    background: transparent !important;
-    border: 2px solid var(--gold-secondary) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
     color: var(--white-pure) !important;
+    font-weight: 600 !important;
 }
 
 .btn-hero.btn-secondary:hover {
-    background: rgba(184, 150, 88, 0.15) !important;
-    border-color: var(--gold-primary) !important;
-    box-shadow: 0 6px 25px rgba(184, 150, 88, 0.3) !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 6px 25px rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-3px) !important;
 }
 
 .btn-hero.btn-outline {
     background: transparent !important;
-    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
     color: var(--white-pure) !important;
+    font-weight: 500 !important;
 }
 
 .btn-hero.btn-outline:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-color: var(--white-pure) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 .btn-view-more {
@@ -450,6 +518,38 @@ body {
     background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-secondary) 100%) !important;
     box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5) !important;
     transform: translateY(-3px) !important;
+}
+
+/* ===== BOTÓN FAVORITOS - DORADO POR DEFECTO ===== */
+.favorites-link {
+    background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-secondary) 100%) !important;
+    color: var(--black-deep) !important;
+    border: 2px solid var(--gold-primary) !important;
+    font-weight: 700 !important;
+    padding: 0.7rem 1.5rem !important;
+    border-radius: 30px !important;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4) !important;
+    transition: all 0.3s ease !important;
+}
+
+.favorites-link:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: var(--black-deep) !important;
+    border-color: var(--white-pure) !important;
+    box-shadow: 0 6px 25px rgba(255, 255, 255, 0.3) !important;
+    transform: translateY(-2px) scale(1.05) !important;
+}
+
+.favorites-count {
+    background: var(--black-deep) !important;
+    color: var(--gold-primary) !important;
+    border: 1px solid var(--gold-primary) !important;
+    font-weight: 800 !important;
+}
+
+.favorites-link:hover .favorites-count {
+    background: var(--gold-primary) !important;
+    color: var(--black-deep) !important;
 }
 
 /* ===== BADGES ===== */
@@ -582,24 +682,21 @@ footer {
     }
 }
 
-/* Efecto de brillo en tarjetas */
-.vehicle-card::after,
-.brand-card::after,
-.commercial-card::after {
+/* Efecto de brillo en tarjetas de vehículos */
+.vehicle-card::after {
     content: '';
     position: absolute;
     top: 0;
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
     transition: left 0.7s;
     pointer-events: none;
+    z-index: 5;
 }
 
-.vehicle-card:hover::after,
-.brand-card:hover::after,
-.commercial-card:hover::after {
+.vehicle-card:hover::after {
     left: 100%;
 }
 
@@ -639,6 +736,10 @@ html {
     .commercial-card-title {
         font-size: 1.3rem !important;
     }
+
+    .brand-card {
+        padding: 1.5rem !important;
+    }
 }
 
 @media (max-width: 640px) {
@@ -654,5 +755,14 @@ html {
 
     .section-title {
         font-size: 1.8rem !important;
+    }
+
+    .brand-card {
+        padding: 1.2rem !important;
+    }
+
+    .btn-hero {
+        font-size: 0.9rem !important;
+        padding: 0.8rem 1.5rem !important;
     }
 }

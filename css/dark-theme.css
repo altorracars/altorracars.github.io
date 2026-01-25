@@ -953,15 +953,21 @@ html {
     }
 }
 
-/* ===== BOTÓN WHATSAPP - TOOLTIP MEJORADO ===== */
+/* ===== BOTÓN WHATSAPP - TOOLTIP CORREGIDO ===== */
+.whatsapp-float {
+    position: fixed !important;
+    z-index: 999 !important;
+}
+
 .whatsapp-tooltip {
     position: absolute !important;
-    right: 70px !important;
-    left: auto !important;
     top: 50% !important;
-    transform: translateY(-50%) translateX(10px) !important;
-    background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-secondary) 100%) !important;
-    color: var(--black-deep) !important;
+    right: 75px !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: translateY(-50%) translateX(20px) !important;
+    background: linear-gradient(135deg, #d4af37 0%, #b89658 100%) !important;
+    color: #0a0a0a !important;
     padding: 12px 20px !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
@@ -969,10 +975,10 @@ html {
     white-space: nowrap !important;
     opacity: 0 !important;
     visibility: hidden !important;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: all 0.3s ease-out !important;
     pointer-events: none !important;
-    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4) !important;
-    z-index: 1000 !important;
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5) !important;
+    z-index: 1001 !important;
 }
 
 .whatsapp-float:hover .whatsapp-tooltip {
@@ -984,11 +990,11 @@ html {
 .whatsapp-tooltip::after {
     content: "" !important;
     position: absolute !important;
-    right: -8px !important;
+    right: -10px !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
-    border: 8px solid transparent !important;
-    border-left-color: var(--gold-secondary) !important;
+    border: 10px solid transparent !important;
+    border-left-color: #b89658 !important;
 }
 
 /* En móvil */
@@ -1145,19 +1151,72 @@ html {
     border-bottom: 2px solid rgba(184, 150, 88, 0.2) !important;
 }
 
-/* Banner de marcas */
-.brand-banner {
-    max-width: 100% !important;
-    height: auto !important;
-    display: block !important;
-    margin: 0 auto !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+/* Hero de marca con banner full-width */
+.brand-hero {
+    position: relative !important;
+    width: 100vw !important;
+    margin-left: calc(-50vw + 50%) !important;
+    height: 450px !important;
+    overflow: hidden !important;
+    margin-top: 88px !important;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8) !important;
 }
 
-@media (max-width: 768px) {
-    .brand-banner {
-        max-width: 90% !important;
+.brand-hero-bg {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    filter: brightness(0.9) saturate(1.1) !important;
+    animation: subtle-zoom 20s ease-in-out infinite alternate !important;
+}
+
+@keyframes subtle-zoom {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
+}
+
+.brand-hero-overlay {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(180deg,
+        rgba(10, 10, 10, 0.1) 0%,
+        rgba(10, 10, 10, 0.4) 40%,
+        rgba(10, 10, 10, 0.85) 100%) !important;
+    z-index: 1 !important;
+}
+
+.brand-hero::after {
+    content: '' !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 120px !important;
+    background: linear-gradient(0deg, #0a0a0a 0%, transparent 100%) !important;
+    z-index: 2 !important;
+    pointer-events: none !important;
+}
+
+@media (max-width: 968px) {
+    .brand-hero {
+        height: 320px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .brand-hero {
+        height: 220px !important;
+    }
+
+    .brand-hero::after {
+        height: 80px !important;
     }
 }
 
@@ -1174,6 +1233,39 @@ html {
 .catalog-section {
     background: var(--black-deep) !important;
     color: var(--gray-light) !important;
+}
+
+/* ===== RESULTS HEADER - REDUCED HEIGHT & VISIBLE COUNTER ===== */
+.results-header {
+    background: rgba(26, 26, 26, 0.6) !important;
+    border: 1px solid rgba(42, 42, 42, 0.5) !important;
+    padding: 0.75rem 1.25rem !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.results-header p {
+    color: var(--gray-light) !important;
+    font-size: 0.95rem !important;
+}
+
+#resultsCount {
+    color: var(--gold-secondary) !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+}
+
+.sort-select {
+    background: rgba(26, 26, 26, 0.8) !important;
+    color: var(--white-pure) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    padding: 0.5rem 0.75rem !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+.sort-select:hover {
+    border-color: var(--gold-primary) !important;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2) !important;
 }
 
 .about-content h2 {

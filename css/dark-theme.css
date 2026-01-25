@@ -953,6 +953,51 @@ html {
     }
 }
 
+/* ===== BOTÓN WHATSAPP - TOOLTIP MEJORADO ===== */
+.whatsapp-tooltip {
+    position: absolute !important;
+    right: 70px !important;
+    left: auto !important;
+    top: 50% !important;
+    transform: translateY(-50%) translateX(10px) !important;
+    background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-secondary) 100%) !important;
+    color: var(--black-deep) !important;
+    padding: 12px 20px !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    white-space: nowrap !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    pointer-events: none !important;
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4) !important;
+    z-index: 1000 !important;
+}
+
+.whatsapp-float:hover .whatsapp-tooltip {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(-50%) translateX(0) !important;
+}
+
+.whatsapp-tooltip::after {
+    content: "" !important;
+    position: absolute !important;
+    right: -8px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    border: 8px solid transparent !important;
+    border-left-color: var(--gold-secondary) !important;
+}
+
+/* En móvil */
+@media (max-width: 768px) {
+    .whatsapp-tooltip {
+        display: none !important;
+    }
+}
+
 /* ===== BOTÓN WHATSAPP EN MÓVIL - DERECHA ===== */
 @media (max-width: 768px) {
     .whatsapp-float {
@@ -1098,6 +1143,22 @@ html {
 .page-header {
     background: linear-gradient(135deg, var(--black-deep) 0%, var(--black-medium) 100%) !important;
     border-bottom: 2px solid rgba(184, 150, 88, 0.2) !important;
+}
+
+/* Banner de marcas */
+.brand-banner {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    margin: 0 auto !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+@media (max-width: 768px) {
+    .brand-banner {
+        max-width: 90% !important;
+    }
 }
 
 .page-title {

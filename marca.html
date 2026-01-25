@@ -153,8 +153,15 @@
                     // Banner existe, mostrar hero section
                     bannerImg.src = bannerPath;
                     bannerImg.alt = brandInfo.nombre;
+
+                    // Guardar posición de scroll actual
+                    const currentScrollPos = window.pageYOffset || document.documentElement.scrollTop;
+
                     brandHero.style.display = 'block';
                     brandHeader.style.display = 'none';
+
+                    // Restaurar posición de scroll para evitar saltos
+                    window.scrollTo(0, currentScrollPos);
                 };
                 img.onerror = function() {
                     // Banner no existe, usar header normal

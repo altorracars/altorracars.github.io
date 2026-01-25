@@ -25,10 +25,10 @@ function capitalize(str) {
 // ✅ FASE 1: Formatear nombre de categoría canónico
 function formatCategoria(categoria) {
     const categorias = {
-        'suv': 'SUV / Crossover',
+        'suv': 'SUV',
         'pickup': 'Pickup',
         'sedan': 'Sedán',
-        'hatchback': 'Hatchback / Compacto'
+        'hatchback': 'Hatchback'
     };
     return categorias[categoria] || capitalize(categoria);
 }

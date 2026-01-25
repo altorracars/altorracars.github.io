@@ -892,7 +892,7 @@ html {
 /* ===== MENÚ MÓVIL - FONDO NEGRO Y LETRAS BLANCAS ===== */
 @media (max-width: 968px) {
     .nav-menu {
-        background: rgba(10, 10, 10, 0.98) !important;
+        background: #0a0a0a !important;
         backdrop-filter: blur(15px) !important;
         border-left: 2px solid rgba(184, 150, 88, 0.2) !important;
     }
@@ -959,6 +959,14 @@ html {
         bottom: 20px !important;
         right: 20px !important;
         left: auto !important;
+    }
+}
+
+/* ===== CAROUSEL HINT EN MÓVIL - MÁS PEGADO ===== */
+@media (max-width: 768px) {
+    .carousel-hint {
+        margin-top: -1.5rem !important;
+        margin-bottom: 1rem !important;
     }
 }
 

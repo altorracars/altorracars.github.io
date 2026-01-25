@@ -134,7 +134,7 @@ body {
 }
 
 .vehicle-card:hover {
-    transform: translateY(-12px) scale(1.03) !important;
+    transform: translateY(-8px) scale(1.015) !important;
     background: rgba(255, 255, 255, 0.12) !important;
     border-color: rgba(184, 150, 88, 0.5) !important;
 
@@ -212,12 +212,44 @@ body {
     opacity: 0 !important;
 }
 
-.brand-card:hover::before {
-    opacity: 1 !important;
+/* Solo en dispositivos no táctiles (PC) */
+@media (hover: hover) and (pointer: fine) {
+    .brand-card:hover::before {
+        opacity: 1 !important;
+    }
+
+    .brand-card:hover::after {
+        animation: golden-pulse-wave 1.5s ease-out infinite !important;
+    }
+
+    .brand-card:hover {
+        transform: translateY(-8px) scale(1.08) !important;
+    }
+
+    .brand-card:hover .brand-logo {
+        transform: scale(1.15) !important;
+        filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.6)) !important;
+    }
 }
 
-.brand-card:hover::after {
-    animation: golden-pulse-wave 1.5s ease-out infinite !important;
+/* En móvil: activar con click/tap */
+@media (hover: none) or (pointer: coarse) {
+    .brand-card:active::before {
+        opacity: 1 !important;
+    }
+
+    .brand-card:active::after {
+        animation: golden-pulse-wave 1.5s ease-out infinite !important;
+    }
+
+    .brand-card:active {
+        transform: translateY(-8px) scale(1.08) !important;
+    }
+
+    .brand-card:active .brand-logo {
+        transform: scale(1.15) !important;
+        filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.6)) !important;
+    }
 }
 
 @keyframes golden-pulse-wave {
@@ -229,15 +261,6 @@ body {
         transform: scale(1.3);
         opacity: 0;
     }
-}
-
-.brand-card:hover {
-    transform: translateY(-8px) scale(1.08) !important;
-}
-
-.brand-card:hover .brand-logo {
-    transform: scale(1.15) !important;
-    filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.6)) !important;
 }
 
 .brand-logo {
@@ -604,6 +627,8 @@ body {
 
 .carousel-wrapper {
     margin-bottom: 1.5rem !important;
+    padding: 1rem 0 !important;
+    overflow: visible !important;
 }
 
 /* ===== HEADER ===== */
@@ -731,16 +756,16 @@ footer {
 /* ===== ANIMACIONES PARA ÍCONOS COMERCIALES ===== */
 
 /* Compra tu Auto - Auto moviéndose y llave rotando */
-.icon-compra:hover .car-key {
+.commercial-card:hover .icon-compra .car-key {
     animation: rotate-key 0.6s ease-in-out;
 }
 
-.icon-compra:hover .car-body {
+.commercial-card:hover .icon-compra .car-body {
     animation: car-drive 1.2s ease-in-out infinite;
 }
 
-.icon-compra:hover .wheel-left,
-.icon-compra:hover .wheel-right {
+.commercial-card:hover .icon-compra .wheel-left,
+.commercial-card:hover .icon-compra .wheel-right {
     animation: wheel-glow 0.8s ease-in-out infinite;
 }
 
@@ -766,19 +791,19 @@ footer {
 }
 
 /* Vende tu Auto - Billetes expandiéndose */
-.icon-vende:hover .bill-1 {
+.commercial-card:hover .icon-vende .bill-1 {
     animation: expand-bill-1 0.6s ease-out;
 }
 
-.icon-vende:hover .bill-2 {
+.commercial-card:hover .icon-vende .bill-2 {
     animation: expand-bill-2 0.6s ease-out 0.1s;
 }
 
-.icon-vende:hover .bill-3 {
+.commercial-card:hover .icon-vende .bill-3 {
     animation: expand-bill-3 0.6s ease-out 0.2s;
 }
 
-.icon-vende:hover .price-arrow {
+.commercial-card:hover .icon-vende .price-arrow {
     animation: bounce-arrow 0.8s ease-in-out infinite;
 }
 
@@ -803,19 +828,19 @@ footer {
 }
 
 /* Financiación - Tarjeta brillando y % rotando */
-.icon-financia:hover .credit-card {
+.commercial-card:hover .icon-financia .credit-card {
     animation: card-glow 1.5s ease-in-out infinite;
 }
 
-.icon-financia:hover .percent-symbol {
+.commercial-card:hover .icon-financia .percent-symbol {
     animation: rotate-percent 2s linear infinite;
 }
 
-.icon-financia:hover .checkmark {
+.commercial-card:hover .icon-financia .checkmark {
     animation: draw-check 0.8s ease-out;
 }
 
-.icon-financia:hover .card-chip {
+.commercial-card:hover .icon-financia .card-chip {
     animation: chip-blink 0.8s ease-in-out infinite;
 }
 
@@ -855,6 +880,8 @@ html {
 
 .vehicles-grid {
     background: transparent !important;
+    overflow: visible !important;
+    padding: 0.5rem 0 !important;
 }
 
 /* ===== MENÚ HAMBURGUESA - DORADO/BLANCO VISIBLE ===== */

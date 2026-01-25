@@ -155,14 +155,6 @@
                     bannerImg.alt = brandInfo.nombre;
                     brandHero.style.display = 'block';
                     brandHeader.style.display = 'none';
-
-                    // Scroll suave a la sección de catálogo para mostrar vehículos
-                    setTimeout(() => {
-                        const catalogSection = document.querySelector('.catalog-section');
-                        if (catalogSection) {
-                            catalogSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                    }, 100);
                 };
                 img.onerror = function() {
                     // Banner no existe, usar header normal

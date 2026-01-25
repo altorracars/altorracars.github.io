@@ -953,55 +953,16 @@ html {
     }
 }
 
-/* ===== BOTÓN WHATSAPP - TOOLTIP CORREGIDO ===== */
-.whatsapp-float {
-    position: fixed !important;
-    z-index: 999 !important;
-}
-
+/* ===== BOTÓN WHATSAPP - DARK THEME STYLES ===== */
 .whatsapp-tooltip {
-    position: absolute !important;
-    top: 50% !important;
-    right: 75px !important;
-    left: auto !important;
-    bottom: auto !important;
-    transform: translateY(-50%) translateX(20px) !important;
     background: linear-gradient(135deg, #d4af37 0%, #b89658 100%) !important;
     color: #0a0a0a !important;
-    padding: 12px 20px !important;
-    border-radius: 12px !important;
     font-weight: 700 !important;
-    font-size: 0.95rem !important;
-    white-space: nowrap !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    transition: all 0.3s ease-out !important;
-    pointer-events: none !important;
     box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5) !important;
-    z-index: 1001 !important;
-}
-
-.whatsapp-float:hover .whatsapp-tooltip {
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: translateY(-50%) translateX(0) !important;
 }
 
 .whatsapp-tooltip::after {
-    content: "" !important;
-    position: absolute !important;
-    right: -10px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    border: 10px solid transparent !important;
     border-left-color: #b89658 !important;
-}
-
-/* En móvil */
-@media (max-width: 768px) {
-    .whatsapp-tooltip {
-        display: none !important;
-    }
 }
 
 /* ===== BOTÓN WHATSAPP EN MÓVIL - DERECHA ===== */
@@ -1010,6 +971,10 @@ html {
         bottom: 20px !important;
         right: 20px !important;
         left: auto !important;
+    }
+
+    .whatsapp-tooltip {
+        display: none !important;
     }
 }
 
@@ -1208,11 +1173,21 @@ html {
     .brand-hero {
         height: 320px !important;
     }
+
+    .brand-hero-bg {
+        object-fit: contain !important;
+        background: #0a0a0a !important;
+    }
 }
 
 @media (max-width: 640px) {
     .brand-hero {
         height: 220px !important;
+    }
+
+    .brand-hero-bg {
+        object-fit: contain !important;
+        background: #0a0a0a !important;
     }
 
     .brand-hero::after {

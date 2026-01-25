@@ -15,11 +15,14 @@
 </head>
 <body>
     <div id="header-placeholder"></div>
-    <section class="page-header brand-header" id="brandHeader">
+    <section class="brand-hero" id="brandHero" style="display:none;">
+        <div class="brand-hero-overlay"></div>
+        <img id="brandBanner" src="" alt="" class="brand-hero-bg">
+    </section>
+    <section class="page-header brand-header" id="brandHeader" style="display:none;">
         <div class="container">
-            <img id="brandBanner" src="" alt="" class="brand-banner" style="display:none;">
-            <h1 class="page-title" id="brandTitle" style="display:none;">Cargando...</h1>
-            <p class="page-subtitle" id="brandDesc" style="display:none;"></p>
+            <h1 class="page-title" id="brandTitle">Cargando...</h1>
+            <p class="page-subtitle" id="brandDesc"></p>
         </div>
     </section>
     <section class="catalog-section">
@@ -133,6 +136,8 @@
 
                 // Intentar cargar banner
                 const bannerPath = `multimedia/banner/b_${brandId}.png`;
+                const brandHero = document.getElementById('brandHero');
+                const brandHeader = document.getElementById('brandHeader');
                 const bannerImg = document.getElementById('brandBanner');
                 const titleEl = document.getElementById('brandTitle');
                 const descEl = document.getElementById('brandDesc');
@@ -140,25 +145,31 @@
                 // Verificar si existe el banner
                 const img = new Image();
                 img.onload = function() {
-                    // Banner existe, mostrarlo
+                    // Banner existe, mostrar hero section
                     bannerImg.src = bannerPath;
                     bannerImg.alt = brandInfo.nombre;
-                    bannerImg.style.display = 'block';
-                    titleEl.style.display = 'none';
-                    descEl.style.display = 'none';
+                    brandHero.style.display = 'block';
+                    brandHeader.style.display = 'none';
+
+                    // Scroll suave a la sección de catálogo para mostrar vehículos
+                    setTimeout(() => {
+                        const catalogSection = document.querySelector('.catalog-section');
+                        if (catalogSection) {
+                            catalogSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 100);
                 };
                 img.onerror = function() {
-                    // Banner no existe, usar texto
-                    bannerImg.style.display = 'none';
+                    // Banner no existe, usar header normal
                     titleEl.textContent = brandInfo.nombre;
-                    titleEl.style.display = 'block';
                     descEl.textContent = brandInfo.descripcion;
-                    descEl.style.display = 'block';
+                    brandHero.style.display = 'none';
+                    brandHeader.style.display = 'block';
                 };
                 img.src = bannerPath;
             } else {
                 document.getElementById('brandTitle').textContent = capitalize(brandId);
-                document.getElementById('brandTitle').style.display = 'block';
+                document.getElementById('brandHeader').style.display = 'block';
             }
             
             showLoading('vehiclesGrid');

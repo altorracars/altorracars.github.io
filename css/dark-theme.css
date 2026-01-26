@@ -1351,8 +1351,21 @@ html {
 }
 
 .catalog-section,
-.search-results-section {
+.search-results-section,
+.search-advanced-section {
     padding: 1.5rem 0 3rem !important;
+}
+
+.search-advanced-section {
+    padding: 1rem 0 0.5rem !important;
+}
+
+.toggle-filters-btn {
+    margin-bottom: 1rem !important;
+}
+
+.advanced-search-form {
+    margin-bottom: 1rem !important;
 }
 
 .filters-sidebar {
@@ -1390,6 +1403,18 @@ html {
     .catalog-section,
     .search-results-section {
         padding: 1rem 0 2rem !important;
+    }
+
+    .search-advanced-section {
+        padding: 0.75rem 0 0.5rem !important;
+    }
+
+    .toggle-filters-btn {
+        margin-bottom: 0.75rem !important;
+    }
+
+    .advanced-search-form {
+        margin-bottom: 0.75rem !important;
     }
 
     .filters-sidebar {
@@ -1434,6 +1459,18 @@ html {
     .catalog-section,
     .search-results-section {
         padding: 0.5rem 0 1.5rem !important;
+    }
+
+    .search-advanced-section {
+        padding: 0.5rem 0 0.25rem !important;
+    }
+
+    .toggle-filters-btn {
+        margin-bottom: 0.5rem !important;
+    }
+
+    .advanced-search-form {
+        margin-bottom: 0.5rem !important;
     }
 
     .filters-sidebar {

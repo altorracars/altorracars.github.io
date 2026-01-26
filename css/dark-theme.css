@@ -1252,59 +1252,67 @@ html {
 
 @media (max-width: 968px) {
     .brand-hero {
-        height: auto !important;
-        max-height: none !important;
+        height: 300px !important;
+        max-height: 300px !important;
         min-height: auto !important;
-        overflow: visible !important;
+        overflow: hidden !important;
         margin-top: 70px !important;
         margin-bottom: 0 !important;
     }
 
     .brand-hero-bg {
-        position: relative !important;
-        object-fit: contain !important;
+        position: absolute !important;
+        object-fit: cover !important;
+        object-position: center center !important;
         width: 100% !important;
-        height: auto !important;
+        height: 100% !important;
         display: block !important;
         animation: none !important;
-        filter: none !important;
+        filter: brightness(0.85) !important;
     }
 
     .brand-hero-overlay {
-        display: none !important;
+        background: linear-gradient(180deg,
+            rgba(10, 10, 10, 0.2) 0%,
+            rgba(10, 10, 10, 0.5) 60%,
+            rgba(10, 10, 10, 0.9) 100%) !important;
     }
 
     .brand-hero::after {
-        display: none !important;
+        height: 80px !important;
     }
 }
 
 @media (max-width: 640px) {
     .brand-hero {
-        height: auto !important;
-        max-height: none !important;
+        height: 220px !important;
+        max-height: 220px !important;
         min-height: auto !important;
-        overflow: visible !important;
+        overflow: hidden !important;
         margin-top: 70px !important;
         margin-bottom: 0 !important;
     }
 
     .brand-hero-bg {
-        position: relative !important;
-        object-fit: contain !important;
+        position: absolute !important;
+        object-fit: cover !important;
+        object-position: center center !important;
         width: 100% !important;
-        height: auto !important;
+        height: 100% !important;
         display: block !important;
         animation: none !important;
-        filter: none !important;
+        filter: brightness(0.8) !important;
     }
 
     .brand-hero-overlay {
-        display: none !important;
+        background: linear-gradient(180deg,
+            rgba(10, 10, 10, 0.2) 0%,
+            rgba(10, 10, 10, 0.6) 60%,
+            rgba(10, 10, 10, 0.95) 100%) !important;
     }
 
     .brand-hero::after {
-        display: none !important;
+        height: 60px !important;
     }
 }
 

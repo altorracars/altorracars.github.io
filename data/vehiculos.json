@@ -1186,49 +1186,49 @@
     {
       "id": "chevrolet",
       "nombre": "Chevrolet",
-      "logo": "multimedia/Logos/Chevrolet.png",
+      "logo": "multimedia/brands/chevrolet.svg",
       "descripcion": "Vehículos Chevrolet nuevos y usados con garantía."
     },
     {
       "id": "nissan",
       "nombre": "Nissan",
-      "logo": "multimedia/Logos/Nissan.png",
+      "logo": "multimedia/brands/nissan.svg",
       "descripcion": "Amplio catálogo de vehículos Nissan."
     },
     {
       "id": "renault",
       "nombre": "Renault",
-      "logo": "multimedia/Logos/Renault.png",
+      "logo": "multimedia/brands/renault.svg",
       "descripcion": "Renault, innovación francesa en Colombia."
     },
     {
       "id": "kia",
       "nombre": "Kia",
-      "logo": "multimedia/Logos/Kia.png",
+      "logo": "multimedia/brands/kia.svg",
       "descripcion": "Tecnología y diseño Kia."
     },
     {
       "id": "mazda",
       "nombre": "Mazda",
-      "logo": "multimedia/Logos/Mazda.png",
+      "logo": "multimedia/brands/mazda.svg",
       "descripcion": "Conducción deportiva con Mazda."
     },
     {
       "id": "toyota",
       "nombre": "Toyota",
-      "logo": "multimedia/Logos/Toyota.png",
+      "logo": "multimedia/brands/toyota.svg",
       "descripcion": "Confiabilidad Toyota."
     },
     {
       "id": "hyundai",
       "nombre": "Hyundai",
-      "logo": "multimedia/Logos/Hyundai.png",
+      "logo": "multimedia/brands/hyundai.svg",
       "descripcion": "Tecnología y garantía Hyundai."
     },
     {
       "id": "ford",
       "nombre": "Ford",
-      "logo": "multimedia/Logos/Ford.png",
+      "logo": "multimedia/brands/ford.svg",
       "descripcion": "Potencia y resistencia Ford."
     },
     {

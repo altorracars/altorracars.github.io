@@ -1258,11 +1258,12 @@ html {
         overflow: hidden !important;
         margin-top: 70px !important;
         margin-bottom: 0 !important;
+        background-color: #1a1a1a !important;
     }
 
     .brand-hero-bg {
         position: absolute !important;
-        object-fit: cover !important;
+        object-fit: contain !important;
         object-position: center center !important;
         width: 100% !important;
         height: 100% !important;
@@ -1291,11 +1292,12 @@ html {
         overflow: hidden !important;
         margin-top: 70px !important;
         margin-bottom: 0 !important;
+        background-color: #1a1a1a !important;
     }
 
     .brand-hero-bg {
         position: absolute !important;
-        object-fit: cover !important;
+        object-fit: contain !important;
         object-position: center center !important;
         width: 100% !important;
         height: 100% !important;

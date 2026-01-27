@@ -39,6 +39,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ALTORRA CARS">
 
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/database.js" as="script">
+    <link rel="preload" href="js/main.js" as="script">
+    <link rel="preload" href="data/vehiculos.json" as="fetch" crossorigin>
+
+    <!-- DNS Prefetch for External Resources -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+
     <!-- Structured Data - LocalBusiness Schema -->
     <script type="application/ld+json">
     {
@@ -94,9 +107,12 @@
     <link rel="stylesheet" href="css/toast-notifications.css">
     <link rel="stylesheet" href="css/contact-forms.css">
     <link rel="stylesheet" href="css/dark-theme.css">
+
+    <!-- Optimized Google Fonts Loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
 </head>
 <body>
     <!-- Header Component -->
@@ -482,173 +498,29 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="js/favorites-manager.js"></script>
-    <script src="js/toast.js"></script>
-    <script src="js/contact-forms.js"></script>
-    <script src="js/components.js"></script>
-    <script src="js/database.js"></script>
-    <script src="js/render.js"></script>
-    <script src="js/main.js"></script>
+    <!-- Scripts - Optimized Loading -->
+    <script src="js/favorites-manager.js" defer></script>
+    <script src="js/toast.js" defer></script>
+    <script src="js/contact-forms.js" defer></script>
+    <script src="js/components.js" defer></script>
+    <script src="js/database.js" defer></script>
+    <script src="js/render.js" defer></script>
+    <script src="js/main.js" defer></script>
+
+    <!-- Service Worker Registration -->
     <script>
-        // FASE 2: Load featured vehicles with advanced ranking
-        async function loadFeatured() {
-            showLoading('featuredVehicles');
-            await vehicleDB.load();
-            // CORREGIDO: Filtrar primero por destacados, luego rankear
-            const featured = vehicleDB.getFeatured();
-            // Rankear los destacados por oferta, tipo, año, km
-            const rankedFeatured = featured.map(v => ({
-                ...v,
-                _score: vehicleDB.calculateRankingScore(v)
-            })).sort((a, b) => b._score - a._score);
-            const cleanFeatured = rankedFeatured.map(({ _score, ...v }) => v);
-            renderVehicles(cleanFeatured.slice(0, 12), 'featuredVehicles');
-        }
-
-        // FASE 2: Load popular brands dynamically (real by inventory count)
-        async function loadPopularBrands() {
-            await vehicleDB.load();
-            const allVehicles = vehicleDB.getAllVehicles();
-
-            // Count vehicles by brand
-            const brandCounts = {};
-            allVehicles.forEach(v => {
-                const brandKey = v.marca.toLowerCase();
-                brandCounts[brandKey] = (brandCounts[brandKey] || 0) + 1;
+        // Register Service Worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
             });
-
-            // Get all brands and sort by vehicle count
-            const brands = vehicleDB.getAllBrands();
-            const popularBrands = brands
-                .filter(brand => brandCounts[brand.id] > 0) // Only brands with vehicles
-                .map(brand => ({
-                    ...brand,
-                    count: brandCounts[brand.id]
-                }))
-                .sort((a, b) => b.count - a.count) // Sort by count descending
-                .slice(0, 8); // Top 8 (4 arriba, 4 abajo en PC)
-
-            const container = document.getElementById('popularBrands');
-
-            if (container) {
-                const html = popularBrands.map(brand => `
-                    <a href="marca.html?marca=${brand.id}" class="brand-card">
-                        <img src="${brand.logo}" alt="${brand.nombre}" class="brand-logo"
-                             onerror="this.style.display='none'">
-                        <div class="brand-name">${brand.nombre}</div>
-                    </a>
-                `).join('');
-
-                container.innerHTML = html;
-            }
         }
-
-        // FASE 2: Load new vehicles with ranking (year desc - newest first)
-        async function loadNewVehicles() {
-            showLoading('newVehiclesCarousel');
-            await vehicleDB.load();
-            const newVehicles = vehicleDB.filter({ tipo: 'nuevo' });
-
-            // Sort: destacado > oferta > year (desc)
-            const sortedNew = newVehicles.sort((a, b) => {
-                // Destacados first
-                if (a.destacado && !b.destacado) return -1;
-                if (!a.destacado && b.destacado) return 1;
-
-                // Ofertas second
-                if (a.oferta && !b.oferta) return -1;
-                if (!a.oferta && b.oferta) return 1;
-
-                // Then by year (newest first)
-                return b.year - a.year;
-            });
-
-            renderVehicles(sortedNew.slice(0, 12), 'newVehiclesCarousel');
-        }
-
-        // FASE 2: Load used vehicles with ranking (year desc, then km asc)
-        async function loadUsedVehicles() {
-            showLoading('usedVehiclesCarousel');
-            await vehicleDB.load();
-            const used = vehicleDB.filter({ tipo: 'usado' });
-
-            // Sort: destacado > oferta > year (desc) > km (asc - less is better)
-            const sortedUsed = used.sort((a, b) => {
-                // Destacados first
-                if (a.destacado && !b.destacado) return -1;
-                if (!a.destacado && b.destacado) return 1;
-
-                // Ofertas second
-                if (a.oferta && !b.oferta) return -1;
-                if (!a.oferta && b.oferta) return 1;
-
-                // Then by year (newest first)
-                if (b.year !== a.year) return b.year - a.year;
-
-                // Finally by km (less km is better)
-                return a.kilometraje - b.kilometraje;
-            });
-
-            renderVehicles(sortedUsed.slice(0, 12), 'usedVehiclesCarousel');
-        }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
-            loadFeatured();
-            loadPopularBrands();
-            loadUsedVehicles();
-            loadNewVehicles();
-        });
     </script>
-    <script>
-// Función unificada para scroll de carruseles
-function scrollCarouselById(containerId, direction) {
-    const grid = document.getElementById(containerId);
-    if (!grid) {
-        console.error('Carousel not found:', containerId);
-        return;
-    }
-
-    // Calcular ancho de scroll basado en las tarjetas visibles
-    const cardWidth = 350; // Ancho aprox de cada tarjeta + gap
-    const scrollAmount = cardWidth * 3; // Scroll de 3 tarjetas a la vez
-
-    grid.scrollBy({
-        left: direction * scrollAmount,
-        behavior: 'smooth'
-    });
-}
-
-// Mejorar scroll táctil en móvil para carruseles
-function enableTouchScroll() {
-    const carousels = document.querySelectorAll('.vehicles-grid');
-
-    carousels.forEach(carousel => {
-        let startX = 0;
-        let scrollLeft = 0;
-        let isScrolling = false;
-
-        // Prevenir interferencias en móvil
-        carousel.style.cursor = 'default';
-
-        // No interferir con el scroll nativo, solo asegurar que funcione
-        carousel.addEventListener('touchstart', (e) => {
-            isScrolling = true;
-            startX = e.touches[0].pageX - carousel.offsetLeft;
-            scrollLeft = carousel.scrollLeft;
-        }, { passive: true });
-
-        carousel.addEventListener('touchend', () => {
-            isScrolling = false;
-        }, { passive: true });
-    });
-}
-
-// Inicializar mejoras táctiles cuando cargue la página
-document.addEventListener('DOMContentLoaded', () => {
-    enableTouchScroll();
-});
-</script>
 </body>
 </html>

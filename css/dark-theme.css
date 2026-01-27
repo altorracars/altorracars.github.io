@@ -1667,3 +1667,56 @@ html {
     background: var(--gold-secondary) !important;
     color: var(--black-deep) !important;
 }
+
+/* ===== CORRECCIONES DE CONTRASTE: DETALLE-VEHICULO.HTML ===== */
+
+/* Tabs de navegación - Ficha Técnica, Características, Descripción */
+.tab-btn {
+    color: var(--gray-light) !important;
+}
+
+.tab-btn:hover {
+    color: var(--gold-primary) !important;
+}
+
+.tab-btn.active {
+    color: var(--gold-primary) !important;
+}
+
+/* Títulos de secciones */
+.section-title {
+    color: var(--white-pure) !important;
+}
+
+/* Sección de Vehículos Similares */
+.similar-section h2 {
+    color: var(--white-pure) !important;
+    border-left-color: var(--gold-primary) !important;
+    background: linear-gradient(90deg, rgba(184,150,88,0.15) 0%, transparent 100%) !important;
+}
+
+/* Contenido de tabs */
+.tab-content {
+    color: var(--gray-light) !important;
+}
+
+/* Description box */
+.description-box {
+    background: rgba(26, 26, 26, 0.5) !important;
+    border-color: #2a2a2a !important;
+    color: var(--gray-light) !important;
+}
+
+/* Spec items en quick specs */
+.spec-item {
+    background: rgba(26, 26, 26, 0.5) !important;
+    border-color: #2a2a2a !important;
+}
+
+.spec-label {
+    color: var(--gold-secondary) !important;
+}
+
+.spec-value {
+    color: var(--white-pure) !important;
+}

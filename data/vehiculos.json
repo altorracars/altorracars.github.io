@@ -1186,61 +1186,61 @@
     {
       "id": "chevrolet",
       "nombre": "Chevrolet",
-      "logo": "multimedia/brands/chevrolet.svg",
+      "logo": "multimedia/Logos/Chevrolet.webp",
       "descripcion": "Vehículos Chevrolet nuevos y usados con garantía."
     },
     {
       "id": "nissan",
       "nombre": "Nissan",
-      "logo": "multimedia/brands/nissan.svg",
+      "logo": "multimedia/Logos/Nissan.webp",
       "descripcion": "Amplio catálogo de vehículos Nissan."
     },
     {
       "id": "renault",
       "nombre": "Renault",
-      "logo": "multimedia/brands/renault.svg",
+      "logo": "multimedia/Logos/Renault.webp",
       "descripcion": "Renault, innovación francesa en Colombia."
     },
     {
       "id": "kia",
       "nombre": "Kia",
-      "logo": "multimedia/brands/kia.svg",
+      "logo": "multimedia/Logos/Kia.webp",
       "descripcion": "Tecnología y diseño Kia."
     },
     {
       "id": "mazda",
       "nombre": "Mazda",
-      "logo": "multimedia/brands/mazda.svg",
+      "logo": "multimedia/Logos/Mazda.webp",
       "descripcion": "Conducción deportiva con Mazda."
     },
     {
       "id": "toyota",
       "nombre": "Toyota",
-      "logo": "multimedia/brands/toyota.svg",
+      "logo": "multimedia/Logos/Toyota.webp",
       "descripcion": "Confiabilidad Toyota."
     },
     {
       "id": "hyundai",
       "nombre": "Hyundai",
-      "logo": "multimedia/brands/hyundai.svg",
+      "logo": "multimedia/Logos/Hyundai.webp",
       "descripcion": "Tecnología y garantía Hyundai."
     },
     {
       "id": "ford",
       "nombre": "Ford",
-      "logo": "multimedia/brands/ford.svg",
+      "logo": "multimedia/Logos/Ford.webp",
       "descripcion": "Potencia y resistencia Ford."
     },
     {
       "id": "honda",
       "nombre": "Honda",
-      "logo": "multimedia/brands/honda.svg",
+      "logo": "multimedia/Logos/Honda.webp",
       "descripcion": "Ingeniería y confiabilidad Honda."
     },
     {
       "id": "mitsubishi",
       "nombre": "Mitsubishi",
-      "logo": "multimedia/brands/mitsubishi.svg",
+      "logo": "multimedia/Logos/Mitsubishi.webp",
       "descripcion": "Versatilidad y tecnología Mitsubishi."
     }
   ]

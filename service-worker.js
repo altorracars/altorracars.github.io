@@ -1,8 +1,8 @@
 // Service Worker for ALTORRA CARS
 // Progressive Web App with Offline Support
-// Version 1.0.0
+// Version 1.1.0 - Logos WebP optimizados
 
-const CACHE_VERSION = 'altorra-cars-v1.0.0';
+const CACHE_VERSION = 'altorra-cars-v1.1.0';
 const CACHE_NAME = `${CACHE_VERSION}`;
 
 // Assets to cache on install
@@ -41,7 +41,17 @@ const STATIC_ASSETS = [
 
     // Critical images
     '/multimedia/logo-altorra-cars.webp',
-    '/multimedia/vehicles/placeholder-car.jpg'
+    '/multimedia/vehicles/placeholder-car.jpg',
+
+    // Brand logos WebP (optimized)
+    '/multimedia/Logos/Chevrolet.webp',
+    '/multimedia/Logos/Nissan.webp',
+    '/multimedia/Logos/Renault.webp',
+    '/multimedia/Logos/Kia.webp',
+    '/multimedia/Logos/Mazda.webp',
+    '/multimedia/Logos/Toyota.webp',
+    '/multimedia/Logos/Hyundai.webp',
+    '/multimedia/Logos/Ford.webp'
 ];
 
 // Install event - cache static assets

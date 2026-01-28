@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="css/vehicles-cards-fix.css">
     <link rel="stylesheet" href="css/sidebar-filters-fix.css">
     <link rel="stylesheet" href="css/footer-fixes.css">
+    <link rel="stylesheet" href="css/comparador.css">
+    <link rel="stylesheet" href="css/calculadora-financiamiento.css">
+    <link rel="stylesheet" href="css/historial-visitas.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         /* ============================================
@@ -296,6 +299,16 @@
             box-shadow: 0 6px 12px rgba(0,0,0,0.3);
         }
 
+        .btn-calculator {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .btn-calculator:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(59,130,246,0.4);
+        }
+
         /* ===== TABS CONTENT ===== */
         .content-section {
             grid-column: 1 / -1;
@@ -547,34 +560,77 @@
             border-radius: 8px;
         }
 
-        /* Lightbox */
+        /* Lightbox Avanzado */
         .lightbox {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0,0,0,0.97);
             z-index: 9999;
             align-items: center;
             justify-content: center;
             animation: fadeIn 0.3s ease;
+            flex-direction: column;
         }
 
         .lightbox.active {
             display: flex;
         }
 
+        .lightbox-container {
+            position: relative;
+            max-width: 90vw;
+            max-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .lightbox-image {
-            max-width: 90%;
-            max-height: 90vh;
+            max-width: 100%;
+            max-height: 80vh;
             border-radius: 8px;
+            cursor: zoom-in;
+            transition: transform 0.3s ease;
+            user-select: none;
+        }
+
+        .lightbox-image.zoomed {
+            cursor: zoom-out;
+            transform: scale(1.5);
         }
 
         .lightbox-close {
             position: absolute;
-            top: 24px;
-            right: 24px;
-            width: 44px;
-            height: 44px;
+            top: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: rotate(90deg);
+        }
+
+        /* Navegación del lightbox */
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
             background: rgba(255,255,255,0.1);
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 50%;
@@ -585,11 +641,117 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            z-index: 10;
         }
 
-        .lightbox-close:hover {
+        .lightbox-nav:hover {
             background: rgba(255,255,255,0.2);
-            transform: rotate(90deg);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .lightbox-nav:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .lightbox-prev {
+            left: 20px;
+        }
+
+        .lightbox-next {
+            right: 20px;
+        }
+
+        /* Contador de imágenes en lightbox */
+        .lightbox-counter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Indicadores de puntos */
+        .lightbox-dots {
+            display: flex;
+            gap: 8px;
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .lightbox-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.4);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .lightbox-dot.active {
+            background: white;
+            transform: scale(1.2);
+        }
+
+        .lightbox-dot:hover {
+            background: rgba(255,255,255,0.7);
+        }
+
+        /* Zoom indicator */
+        .zoom-hint {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .lightbox.active .zoom-hint {
+            opacity: 1;
+            animation: fadeOutDelay 3s forwards;
+        }
+
+        @keyframes fadeOutDelay {
+            0%, 70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        @media (max-width: 768px) {
+            .lightbox-nav {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+
+            .lightbox-prev {
+                left: 10px;
+            }
+
+            .lightbox-next {
+                right: 10px;
+            }
+
+            .lightbox-close {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+            }
         }
 
         /* Responsive */
@@ -708,6 +870,19 @@
                                 </svg>
                                 WhatsApp
                             </a>
+                            <button id="btnCalculadora" class="btn-contact btn-calculator" data-financing="">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="4" y="2" width="16" height="20" rx="2"/>
+                                    <line x1="8" y1="6" x2="16" y2="6"/>
+                                    <line x1="8" y1="10" x2="10" y2="10"/>
+                                    <line x1="14" y1="10" x2="16" y2="10"/>
+                                    <line x1="8" y1="14" x2="10" y2="14"/>
+                                    <line x1="14" y1="14" x2="16" y2="14"/>
+                                    <line x1="8" y1="18" x2="10" y2="18"/>
+                                    <line x1="14" y1="18" x2="16" y2="18"/>
+                                </svg>
+                                Calcular cuota
+                            </button>
                             <a href="tel:573235016747" class="btn-contact btn-phone">
                                 <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/>
@@ -754,10 +929,29 @@
         </div>
     </div>
 
-    <!-- Lightbox -->
+    <!-- Lightbox Avanzado -->
     <div class="lightbox" id="lightbox">
-        <img id="lightboxImage" src="" alt="Imagen ampliada" class="lightbox-image">
-        <button class="lightbox-close" id="lightboxClose">×</button>
+        <button class="lightbox-close" id="lightboxClose" aria-label="Cerrar">×</button>
+
+        <button class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Imagen anterior">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15,18 9,12 15,6"/>
+            </svg>
+        </button>
+
+        <div class="lightbox-container">
+            <img id="lightboxImage" src="" alt="Imagen ampliada" class="lightbox-image">
+        </div>
+
+        <button class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Imagen siguiente">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9,18 15,12 9,6"/>
+            </svg>
+        </button>
+
+        <div class="lightbox-dots" id="lightboxDots"></div>
+        <div class="lightbox-counter" id="lightboxCounter">1 / 1</div>
+        <div class="zoom-hint">Click para hacer zoom</div>
     </div>
 
     <div id="footer-placeholder"></div>
@@ -768,6 +962,9 @@
     <script src="js/database.js"></script>
     <script src="js/render.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/comparador.js"></script>
+    <script src="js/calculadora-financiamiento.js"></script>
+    <script src="js/historial-visitas.js"></script>
     <script>
         let currentVehicle = null;
         let currentImages = [];
@@ -888,6 +1085,13 @@ ${currentUrl}
             document.getElementById('btnWhatsApp').href =
                 `https://wa.me/573235016747?text=${encodeURIComponent(whatsappMsg)}`;
 
+            // Configurar botón de calculadora
+            const btnCalculadora = document.getElementById('btnCalculadora');
+            if (btnCalculadora) {
+                btnCalculadora.dataset.financing = v.id;
+                btnCalculadora.dataset.price = precioFinal;
+            }
+
             document.title = `${v.marca} ${v.modelo} ${v.year} - ALTORRA CARS`;
         }
 
@@ -903,6 +1107,10 @@ ${currentUrl}
             document.getElementById('thumbnailsGrid').innerHTML = thumbnailsHTML;
         }
 
+        let isZoomed = false;
+        let touchStartX = 0;
+        let touchEndX = 0;
+
         function initGallery() {
             document.querySelectorAll('.thumbnail').forEach(thumb => {
                 thumb.addEventListener('click', (e) => {
@@ -915,10 +1123,25 @@ ${currentUrl}
                 openLightbox(currentImageIndex);
             });
 
+            // Lightbox controls
             document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+            document.getElementById('lightboxPrev').addEventListener('click', () => navigateLightbox(-1));
+            document.getElementById('lightboxNext').addEventListener('click', () => navigateLightbox(1));
+
             document.getElementById('lightbox').addEventListener('click', (e) => {
                 if (e.target.id === 'lightbox') closeLightbox();
             });
+
+            // Zoom on image click
+            document.getElementById('lightboxImage').addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleZoom();
+            });
+
+            // Touch gestures for mobile swipe
+            const lightbox = document.getElementById('lightbox');
+            lightbox.addEventListener('touchstart', handleTouchStart, { passive: true });
+            lightbox.addEventListener('touchend', handleTouchEnd, { passive: true });
         }
 
         function changeMainImage(index) {
@@ -932,14 +1155,97 @@ ${currentUrl}
         }
 
         function openLightbox(index) {
-            document.getElementById('lightboxImage').src = currentImages[index];
+            currentImageIndex = index;
+            updateLightboxImage();
+            renderLightboxDots();
             document.getElementById('lightbox').classList.add('active');
             document.body.style.overflow = 'hidden';
+            isZoomed = false;
+            document.getElementById('lightboxImage').classList.remove('zoomed');
         }
 
         function closeLightbox() {
             document.getElementById('lightbox').classList.remove('active');
             document.body.style.overflow = 'auto';
+            isZoomed = false;
+            document.getElementById('lightboxImage').classList.remove('zoomed');
+        }
+
+        function updateLightboxImage() {
+            const img = document.getElementById('lightboxImage');
+            img.src = currentImages[currentImageIndex];
+            document.getElementById('lightboxCounter').textContent =
+                `${currentImageIndex + 1} / ${currentImages.length}`;
+
+            // Update navigation buttons
+            document.getElementById('lightboxPrev').disabled = currentImageIndex === 0;
+            document.getElementById('lightboxNext').disabled = currentImageIndex === currentImages.length - 1;
+
+            // Update dots
+            document.querySelectorAll('.lightbox-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentImageIndex);
+            });
+        }
+
+        function navigateLightbox(direction) {
+            const newIndex = currentImageIndex + direction;
+            if (newIndex >= 0 && newIndex < currentImages.length) {
+                currentImageIndex = newIndex;
+                updateLightboxImage();
+
+                // Reset zoom when navigating
+                isZoomed = false;
+                document.getElementById('lightboxImage').classList.remove('zoomed');
+            }
+        }
+
+        function renderLightboxDots() {
+            const dotsContainer = document.getElementById('lightboxDots');
+            if (currentImages.length <= 1) {
+                dotsContainer.innerHTML = '';
+                return;
+            }
+
+            dotsContainer.innerHTML = currentImages.map((_, i) =>
+                `<button class="lightbox-dot ${i === currentImageIndex ? 'active' : ''}"
+                         data-index="${i}" aria-label="Ir a imagen ${i + 1}"></button>`
+            ).join('');
+
+            dotsContainer.querySelectorAll('.lightbox-dot').forEach(dot => {
+                dot.addEventListener('click', () => {
+                    currentImageIndex = parseInt(dot.dataset.index);
+                    updateLightboxImage();
+                });
+            });
+        }
+
+        function toggleZoom() {
+            isZoomed = !isZoomed;
+            document.getElementById('lightboxImage').classList.toggle('zoomed', isZoomed);
+        }
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }
+
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // Swipe left - next image
+                    navigateLightbox(1);
+                } else {
+                    // Swipe right - prev image
+                    navigateLightbox(-1);
+                }
+            }
         }
 
         function renderFichaTecnica(v) {
@@ -1149,13 +1455,15 @@ ${currentUrl}
         document.addEventListener('keydown', (e) => {
             if (document.getElementById('lightbox').classList.contains('active')) {
                 if (e.key === 'Escape') closeLightbox();
-                if (e.key === 'ArrowLeft' && currentImageIndex > 0) {
-                    changeMainImage(currentImageIndex - 1);
-                    openLightbox(currentImageIndex);
+                if (e.key === 'ArrowLeft') {
+                    navigateLightbox(-1);
                 }
-                if (e.key === 'ArrowRight' && currentImageIndex < currentImages.length - 1) {
-                    changeMainImage(currentImageIndex + 1);
-                    openLightbox(currentImageIndex);
+                if (e.key === 'ArrowRight') {
+                    navigateLightbox(1);
+                }
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    toggleZoom();
                 }
             }
         });

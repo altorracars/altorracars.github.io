@@ -1,0 +1,617 @@
+/* ============================================
+   CALCULADORA DE FINANCIAMIENTO - ALTORRA CARS
+   Estilos para modal de calculadora
+   ============================================ */
+
+/* ===== MODAL OVERLAY ===== */
+.financing-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.financing-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ===== MODAL CONTAINER ===== */
+.financing-modal {
+    background: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transform: scale(0.95) translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.financing-modal-overlay.active .financing-modal {
+    transform: scale(1) translateY(0);
+}
+
+/* Close button */
+.financing-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.financing-modal-close:hover {
+    background: #e5e7eb;
+    color: #1f2937;
+    transform: rotate(90deg);
+}
+
+/* ===== HEADER ===== */
+.financing-header {
+    text-align: center;
+    padding: 32px 24px 24px;
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    color: white;
+}
+
+.financing-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.financing-header h2 {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0 0 8px;
+}
+
+.financing-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+    margin: 0;
+}
+
+/* ===== VEHICLE INFO ===== */
+.financing-vehicle-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.financing-vehicle-info img {
+    width: 80px;
+    height: 55px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.financing-vehicle-details h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 4px;
+}
+
+.financing-vehicle-details p {
+    font-size: 14px;
+    color: #b89658;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* ===== BODY ===== */
+.financing-body {
+    padding: 24px;
+}
+
+/* ===== FIELDS ===== */
+.financing-field {
+    margin-bottom: 24px;
+}
+
+.financing-field label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+/* Input group */
+.financing-input-group {
+    display: flex;
+    align-items: center;
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+
+.financing-input-group:focus-within {
+    border-color: #b89658;
+    background: white;
+}
+
+.financing-currency {
+    padding: 0 16px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #6b7280;
+    background: #f3f4f6;
+    height: 52px;
+    display: flex;
+    align-items: center;
+}
+
+.financing-input-group input {
+    flex: 1;
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    outline: none;
+}
+
+/* ===== SLIDERS ===== */
+.financing-slider-container {
+    margin-top: 12px;
+}
+
+.financing-slider-container input[type="range"] {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #e5e7eb;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+}
+
+.financing-slider-container input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(184, 150, 88, 0.4);
+    transition: transform 0.2s ease;
+}
+
+.financing-slider-container input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+.financing-slider-container input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(184, 150, 88, 0.4);
+}
+
+.financing-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+/* ===== TERM BUTTONS ===== */
+.financing-terms {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.financing-term-btn {
+    padding: 12px 8px;
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.financing-term-btn small {
+    font-size: 11px;
+    font-weight: 500;
+    color: #9ca3af;
+}
+
+.financing-term-btn:hover {
+    border-color: #b89658;
+    background: #fffbeb;
+}
+
+.financing-term-btn.active {
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border-color: transparent;
+    color: white;
+}
+
+.financing-term-btn.active small {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* ===== RATE FIELD ===== */
+.financing-rate-field {
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin-bottom: 0;
+}
+
+.financing-rate-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.financing-rate-input input {
+    width: 80px;
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    outline: none;
+}
+
+.financing-rate-input input:focus {
+    border-color: #b89658;
+}
+
+.financing-rate-input span {
+    font-size: 16px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.financing-rate-note {
+    font-size: 12px;
+    color: #9ca3af;
+    margin: 8px 0 0;
+}
+
+/* ===== RESULTS ===== */
+.financing-results {
+    background: #f9fafb;
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.financing-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.financing-result-item:not(:last-child) {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.result-label {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.result-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.financing-result-item.main-result {
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    margin: 12px -24px;
+    padding: 16px 24px;
+}
+
+.financing-result-item.main-result .result-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+}
+
+.financing-result-item.main-result .result-value {
+    font-size: 24px;
+    color: white;
+}
+
+/* ===== CHART ===== */
+.financing-chart {
+    padding: 0 24px 20px;
+}
+
+.chart-bar {
+    display: flex;
+    height: 32px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chart-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    transition: width 0.3s ease;
+    min-width: 60px;
+}
+
+.chart-segment.capital {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.chart-segment.interest {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+/* ===== ACTIONS ===== */
+.financing-actions {
+    display: flex;
+    gap: 12px;
+    padding: 0 24px 24px;
+}
+
+.btn-financing-whatsapp {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #25D366 0%, #1da851 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-financing-whatsapp:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
+}
+
+.btn-financing-reset {
+    padding: 16px 24px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-financing-reset:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+/* ===== DISCLAIMER ===== */
+.financing-disclaimer {
+    padding: 0 24px 24px;
+    font-size: 11px;
+    color: #9ca3af;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* ===== TRIGGER BUTTON ===== */
+.btn-calculator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-calculator:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 560px) {
+    .financing-modal-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .financing-modal {
+        max-width: 100%;
+        max-height: 95vh;
+        border-radius: 20px 20px 0 0;
+    }
+
+    .financing-header {
+        padding: 24px 20px 20px;
+    }
+
+    .financing-header h2 {
+        font-size: 20px;
+    }
+
+    .financing-body {
+        padding: 20px;
+    }
+
+    .financing-terms {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .financing-result-item.main-result {
+        margin: 12px -20px;
+        padding: 14px 20px;
+    }
+
+    .financing-result-item.main-result .result-value {
+        font-size: 20px;
+    }
+
+    .financing-actions {
+        flex-direction: column;
+        padding: 0 20px 20px;
+    }
+
+    .btn-financing-reset {
+        order: 2;
+    }
+}
+
+/* ===== DARK THEME ===== */
+.dark-theme .financing-modal {
+    background: #1f2937;
+}
+
+.dark-theme .financing-modal-close {
+    background: #374151;
+    color: #9ca3af;
+}
+
+.dark-theme .financing-vehicle-info {
+    background: #111827;
+    border-color: #374151;
+}
+
+.dark-theme .financing-vehicle-details h3 {
+    color: #f9fafb;
+}
+
+.dark-theme .financing-body {
+    background: #1f2937;
+}
+
+.dark-theme .financing-field label {
+    color: #e5e7eb;
+}
+
+.dark-theme .financing-input-group {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+.dark-theme .financing-input-group:focus-within {
+    background: #1f2937;
+}
+
+.dark-theme .financing-currency {
+    background: #4b5563;
+    color: #9ca3af;
+}
+
+.dark-theme .financing-input-group input {
+    color: #f9fafb;
+}
+
+.dark-theme .financing-slider-container input[type="range"] {
+    background: #4b5563;
+}
+
+.dark-theme .financing-term-btn {
+    background: #374151;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+.dark-theme .financing-term-btn:hover {
+    background: #4b5563;
+}
+
+.dark-theme .financing-rate-field {
+    background: #111827;
+}
+
+.dark-theme .financing-rate-input input {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+.dark-theme .financing-results {
+    background: #111827;
+    border-color: #374151;
+}
+
+.dark-theme .financing-result-item:not(:last-child) {
+    border-color: #374151;
+}
+
+.dark-theme .result-label {
+    color: #9ca3af;
+}
+
+.dark-theme .result-value {
+    color: #f9fafb;
+}
+
+.dark-theme .btn-financing-reset {
+    background: #374151;
+    color: #9ca3af;
+}
+
+.dark-theme .btn-financing-reset:hover {
+    background: #4b5563;
+    color: #e5e7eb;
+}

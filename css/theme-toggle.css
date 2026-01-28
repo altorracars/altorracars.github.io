@@ -1,0 +1,112 @@
+/* ============================================
+   THEME TOGGLE BUTTON - ALTORRA CARS
+   ============================================ */
+
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-toggle-btn:hover {
+    border-color: #b89658;
+    color: #b89658;
+    transform: scale(1.05);
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+/* Icono */
+.theme-toggle-btn .theme-icon {
+    transition: all 0.3s ease;
+}
+
+.theme-toggle-btn:hover .theme-icon {
+    transform: rotate(15deg);
+}
+
+/* Estado activo (modo oscuro) */
+.theme-toggle-btn.dark-active {
+    background: #374151;
+    border-color: #4b5563;
+    color: #fbbf24;
+}
+
+.theme-toggle-btn.dark-active:hover {
+    background: #4b5563;
+    border-color: #fbbf24;
+}
+
+/* Animación de cambio */
+.theme-toggle-btn .theme-icon.sun {
+    animation: sunRotate 0.5s ease;
+}
+
+.theme-toggle-btn .theme-icon.moon {
+    animation: moonFade 0.5s ease;
+}
+
+@keyframes sunRotate {
+    from {
+        transform: rotate(-90deg) scale(0.5);
+        opacity: 0;
+    }
+    to {
+        transform: rotate(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes moonFade {
+    from {
+        transform: rotate(90deg) scale(0.5);
+        opacity: 0;
+    }
+    to {
+        transform: rotate(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .theme-toggle-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .theme-toggle-btn .theme-icon {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* En el header mobile */
+.mobile-nav .theme-toggle-btn {
+    position: absolute;
+    top: 16px;
+    right: 60px;
+}
+
+/* Dark theme overrides */
+.dark-theme .theme-toggle-btn {
+    border-color: #4b5563;
+    color: #9ca3af;
+}
+
+.dark-theme .theme-toggle-btn:hover {
+    border-color: #fbbf24;
+    color: #fbbf24;
+}

@@ -88,12 +88,27 @@ function isFavorite(vehicleId) {
     }
 }
 
+// Check if vehicle is in comparator
+function isInComparator(vehicleId) {
+    if (typeof window.vehicleComparator !== 'undefined') {
+        return window.vehicleComparator.has(vehicleId);
+    }
+    return false;
+}
+
 // Render single vehicle card
 function renderVehicleCard(vehicle) {
     const badges = getVehicleBadges(vehicle);
     const favorite = isFavorite(vehicle.id);
     const heartIcon = favorite ? '♥' : '♡';
     const activeClass = favorite ? ' active' : '';
+
+    // Check if in comparator
+    const inComparator = isInComparator(vehicle.id);
+    const compareActiveClass = inComparator ? ' active' : '';
+    const compareIcon = inComparator
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
 
     // Generate badges HTML
     const badgesHTML = badges.map(badge =>
@@ -104,7 +119,12 @@ function renderVehicleCard(vehicle) {
         <div class="vehicle-card clickable-card" data-id="${vehicle.id}" data-url="detalle-vehiculo.html?id=${vehicle.id}">
             <div class="vehicle-image">
                 <img src="${vehicle.imagen}" alt="${vehicle.marca} ${vehicle.modelo}" loading="lazy" class="vehicle-img" data-fallback="multimedia/vehicles/placeholder-car.jpg">
-                <button class="favorite-btn${activeClass}" data-id="${vehicle.id}" aria-label="Añadir a favoritos">${heartIcon}</button>
+                <div class="vehicle-actions">
+                    <button class="favorite-btn${activeClass}" data-id="${vehicle.id}" aria-label="Añadir a favoritos">${heartIcon}</button>
+                    <button class="btn-compare${compareActiveClass}" data-compare="${vehicle.id}" aria-label="Comparar vehículo" aria-pressed="${inComparator}">
+                        <span class="compare-icon">${compareIcon}</span>
+                    </button>
+                </div>
                 <div class="vehicle-badges">
                     ${badgesHTML}
                 </div>
@@ -183,8 +203,8 @@ function attachCardClickListeners() {
     cards.forEach(card => {
         card.style.cursor = 'pointer';
         card.addEventListener('click', (e) => {
-            // No navegar si se clickeó el botón de favoritos o el botón "Ver más"
-            if (e.target.closest('.favorite-btn') || e.target.closest('.btn-view')) {
+            // No navegar si se clickeó el botón de favoritos, comparar o el botón "Ver más"
+            if (e.target.closest('.favorite-btn') || e.target.closest('.btn-view') || e.target.closest('.btn-compare')) {
                 return;
             }
             const url = card.getAttribute('data-url');

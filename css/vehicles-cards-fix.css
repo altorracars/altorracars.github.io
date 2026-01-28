@@ -177,13 +177,24 @@
 }
 
 /* ===========================================
-   SECCIÓN 5: BOTÓN FAVORITO REPOSICIONADO
+   SECCIÓN 5: BOTONES DE ACCIÓN (FAVORITO + COMPARAR)
    =========================================== */
 
-.favorite-btn {
+/* Contenedor de acciones */
+.vehicle-actions {
     position: absolute !important;
     top: 12px !important;
     right: 12px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 15 !important;
+}
+
+.favorite-btn {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
     width: 38px;
     height: 38px;
     background: rgba(255, 255, 255, 0.95);
@@ -195,7 +206,6 @@
     color: #b89658;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: all 0.3s ease;
-    z-index: 15 !important;
     border: none;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent !important;
@@ -217,6 +227,50 @@
 .favorite-btn.active {
     background: #b89658;
     color: white;
+}
+
+/* Botón de comparar */
+.btn-compare {
+    position: relative !important;
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation !important;
+}
+
+.btn-compare .compare-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-compare:hover {
+        background: #3b82f6;
+        color: white;
+        transform: scale(1.1);
+    }
+}
+
+.btn-compare.active {
+    background: #10b981;
+    color: white;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-compare.active:hover {
+        background: #059669;
+    }
 }
 
 /* ===========================================
@@ -351,5 +405,19 @@
         width: 34px;
         height: 34px;
         font-size: 1.1rem;
+    }
+
+    .btn-compare {
+        width: 34px;
+        height: 34px;
+    }
+
+    .btn-compare svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .vehicle-actions {
+        gap: 6px;
     }
 }

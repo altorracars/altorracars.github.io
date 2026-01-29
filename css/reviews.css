@@ -5,8 +5,8 @@
 
 /* ===== SECCIÓN DE TESTIMONIOS ===== */
 .testimonials-section {
-    padding: 60px 0;
-    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+    padding: 70px 0;
+    background: linear-gradient(180deg, #1a1a1a 0%, #111111 100%);
 }
 
 .testimonials-header {
@@ -21,13 +21,17 @@
 .testimonials-title {
     font-size: 32px;
     font-weight: 700;
-    color: #1f2937;
+    color: #ffffff;
     margin: 0 0 8px;
+}
+
+.testimonials-title .highlight {
+    color: #b89658;
 }
 
 .testimonials-subtitle {
     font-size: 16px;
-    color: #6b7280;
+    color: #9ca3af;
     margin: 0;
 }
 
@@ -44,7 +48,7 @@
 .rating-number {
     font-size: 36px;
     font-weight: 800;
-    color: #1f2937;
+    color: #ffffff;
 }
 
 .rating-stars {
@@ -54,7 +58,7 @@
 
 .rating-count {
     font-size: 14px;
-    color: #6b7280;
+    color: #9ca3af;
 }
 
 /* ===== ESTRELLAS ===== */
@@ -88,17 +92,17 @@
 
 /* ===== TARJETA DE TESTIMONIO ===== */
 .testimonial-card {
-    background: white;
+    background: #252525;
     border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid #333333;
     transition: all 0.3s ease;
 }
 
 .testimonial-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 12px 30px rgba(184, 150, 88, 0.2);
     border-color: #b89658;
 }
 
@@ -130,7 +134,7 @@
 .testimonial-name {
     font-size: 15px;
     font-weight: 700;
-    color: #1f2937;
+    color: #ffffff;
     margin: 0 0 4px;
     display: flex;
     align-items: center;
@@ -146,7 +150,7 @@
     align-items: center;
     gap: 4px;
     font-size: 13px;
-    color: #6b7280;
+    color: #9ca3af;
 }
 
 .testimonial-rating {
@@ -159,11 +163,11 @@
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    background: #f3f4f6;
+    background: #1a1a1a;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: #d1d5db;
     margin-bottom: 16px;
 }
 
@@ -178,7 +182,7 @@
 .testimonial-title {
     font-size: 15px;
     font-weight: 700;
-    color: #1f2937;
+    color: #ffffff;
     margin: 0 0 8px;
     font-style: italic;
 }
@@ -186,13 +190,13 @@
 .testimonial-text {
     font-size: 14px;
     line-height: 1.6;
-    color: #4b5563;
+    color: #d1d5db;
     margin: 0;
 }
 
 .testimonial-footer {
     padding-top: 12px;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid #333333;
 }
 
 .testimonial-date {

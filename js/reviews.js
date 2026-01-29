@@ -140,7 +140,7 @@ class ReviewsSystem {
 
     // ===== SECCIÓN DE TESTIMONIOS (Homepage) =====
     renderTestimonialsSection(containerId, options = {}) {
-        const { title = 'Lo que dicen nuestros clientes', limit = 3 } = options;
+        const { limit = 3 } = options;
         const container = document.getElementById(containerId);
         if (!container) return;
 
@@ -152,7 +152,7 @@ class ReviewsSystem {
                 <div class="container">
                     <div class="testimonials-header">
                         <div class="testimonials-title-area">
-                            <h2 class="testimonials-title">${title}</h2>
+                            <h2 class="testimonials-title">Lo que dicen nuestros <span class="highlight">Clientes</span></h2>
                             <p class="testimonials-subtitle">Más de ${stats.total} clientes satisfechos confían en nosotros</p>
                         </div>
                         <div class="testimonials-summary">

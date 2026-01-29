@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Reseñas y testimonios de clientes satisfechos de ALTORRA CARS. Conoce las experiencias de quienes ya compraron su vehículo con nosotros.">
+    <title>Reseñas de Clientes | ALTORRA CARS</title>
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="multimedia/favicon.png">
+    <link rel="apple-touch-icon" href="multimedia/favicon.png">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="stylesheet" href="css/footer.css">
+    <link rel="stylesheet" href="css/reviews.css">
+    <link rel="stylesheet" href="css/theme-toggle.css">
+    <link rel="stylesheet" href="css/dark-theme.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        .page-hero {
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            padding: 80px 20px 60px;
+            text-align: center;
+            color: white;
+        }
+
+        .page-hero h1 {
+            font-size: 36px;
+            font-weight: 800;
+            margin: 0 0 12px;
+        }
+
+        .page-hero p {
+            font-size: 16px;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .reviews-container {
+            padding: 40px 20px 80px;
+            background: #f9fafb;
+            min-height: 60vh;
+        }
+
+        .dark-theme .page-hero {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        .dark-theme .reviews-container {
+            background: #111827;
+        }
+
+        @media (max-width: 768px) {
+            .page-hero {
+                padding: 70px 16px 40px;
+            }
+
+            .page-hero h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="header-container">
+            <a href="index.html" class="logo">
+                <img src="multimedia/logob.png" alt="ALTORRA CARS" class="logo-img">
+            </a>
+
+            <nav class="nav-menu" id="navMenu">
+                <a href="index.html" class="nav-link">Inicio</a>
+                <a href="busqueda.html?tipo=nuevo" class="nav-link">Nuevos</a>
+                <a href="busqueda.html?tipo=usado" class="nav-link">Usados</a>
+                <a href="busqueda.html" class="nav-link">Catálogo</a>
+                <a href="favoritos.html" class="nav-link">Favoritos</a>
+                <a href="comparar.html" class="nav-link">Comparar</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
+
+            <button class="menu-toggle" id="menuToggle" aria-label="Menú">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="page-hero">
+        <h1>Reseñas de Clientes</h1>
+        <p>Conoce las experiencias de quienes ya forman parte de la familia ALTORRA</p>
+    </section>
+
+    <!-- Reviews Content -->
+    <div class="reviews-container">
+        <div id="reviewsContent">
+            <!-- Se renderiza dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <img src="multimedia/logob.png" alt="ALTORRA CARS" class="footer-logo">
+                <p>Tu concesionario de confianza en Cartagena. Vehículos nuevos y usados con garantía.</p>
+            </div>
+
+            <div class="footer-section">
+                <h4>Enlaces Rápidos</h4>
+                <a href="busqueda.html?tipo=nuevo">Vehículos Nuevos</a>
+                <a href="busqueda.html?tipo=usado">Vehículos Usados</a>
+                <a href="comparar.html">Comparar Vehículos</a>
+                <a href="contacto.html">Contacto</a>
+            </div>
+
+            <div class="footer-section">
+                <h4>Contacto</h4>
+                <p>📍 Cartagena, Colombia</p>
+                <p>📞 +57 300 123 4567</p>
+                <p>✉️ ventas@altorracars.com</p>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 ALTORRA CARS. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/header.js"></script>
+    <script src="js/reviews.js"></script>
+    <script src="js/theme-toggle.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Renderizar página de reseñas
+            if (typeof reviewsSystem !== 'undefined') {
+                reviewsSystem.renderFullReviewsPage('reviewsContent');
+            }
+        });
+    </script>
+</body>
+</html>

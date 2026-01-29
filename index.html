@@ -61,6 +61,7 @@
       "legalName": "ALTORRA Company SAS",
       "url": "https://altorracars.github.io",
       "logo": "https://altorracars.github.io/multimedia/logo-placeholder.png",
+      "image": "https://altorracars.github.io/multimedia/hero-bg.jpg",
       "description": "Concesionario de vehículos nuevos y usados en Cartagena, Colombia. Ofertas en SUVs, sedanes, pickups y hatchbacks con financiación.",
       "telephone": "+573235016747",
       "email": "altorracarssale@gmail.com",
@@ -79,6 +80,15 @@
         "https://wa.me/573235016747"
       ],
       "priceRange": "$$",
+      "currenciesAccepted": "COP",
+      "paymentAccepted": "Cash, Credit Card, Financing",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "6",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
       "openingHoursSpecification": [
         {
           "@type": "OpeningHoursSpecification",
@@ -91,6 +101,71 @@
           "dayOfWeek": "Saturday",
           "opens": "09:00",
           "closes": "14:00"
+        }
+      ],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Vehículos disponibles",
+        "itemListElement": [
+          {
+            "@type": "OfferCatalog",
+            "name": "Vehículos Nuevos",
+            "url": "https://altorracars.github.io/vehiculos-nuevos.html"
+          },
+          {
+            "@type": "OfferCatalog",
+            "name": "Vehículos Usados",
+            "url": "https://altorracars.github.io/vehiculos-usados.html"
+          }
+        ]
+      }
+    }
+    </script>
+
+    <!-- Structured Data - WebSite Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "ALTORRA CARS",
+      "url": "https://altorracars.github.io",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://altorracars.github.io/busqueda.html?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- Structured Data - FAQ Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Ofrecen financiación para vehículos?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí, contamos con aliados estratégicos financieros para ofrecerte las mejores opciones de crédito con plazos de 12 a 72 meses."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Los vehículos tienen garantía?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Todos nuestros vehículos cuentan con garantía. Los vehículos nuevos tienen garantía de fábrica y los usados certificados incluyen garantía extendida."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Puedo agendar una cita para ver un vehículo?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí, puedes agendar una cita directamente desde nuestra página web o contactarnos por WhatsApp para coordinar una visita presencial."
+          }
         }
       ]
     }
@@ -520,6 +595,7 @@
     <script src="js/historial-visitas.js" defer></script>
     <script src="js/reviews.js" defer></script>
     <script src="js/theme-toggle.js" defer></script>
+    <script src="js/performance.js" defer></script>
 
     <!-- Initialize Testimonials -->
     <script>

@@ -6,27 +6,27 @@
 /* ===== BOTÓN FLOTANTE ===== */
 .btn-appointment-float {
     position: fixed;
-    bottom: 160px;
-    right: 20px;
+    bottom: 100px;
+    left: 20px;
     z-index: 9980;
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
     color: white;
     border: none;
     border-radius: 50px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 4px 20px rgba(184, 150, 88, 0.4);
     transition: all 0.3s ease;
 }
 
 .btn-appointment-float:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 8px 30px rgba(184, 150, 88, 0.5);
 }
 
 .btn-appointment-float svg {
@@ -399,19 +399,14 @@
     }
 
     .btn-appointment-float {
-        bottom: 140px;
-        right: 12px;
-        padding: 10px 16px;
-        font-size: 13px;
+        bottom: 90px;
+        left: 12px;
+        padding: 12px;
+        border-radius: 50%;
     }
 
     .btn-appointment-float span {
         display: none;
-    }
-
-    .btn-appointment-float {
-        padding: 14px;
-        border-radius: 50%;
     }
 }
 
@@ -421,102 +416,3 @@
     }
 }
 
-/* ===== DARK THEME ===== */
-.dark-theme .appointment-modal {
-    background: #1f2937;
-}
-
-.dark-theme .appointment-modal-header {
-    border-color: #374151;
-}
-
-.dark-theme .appointment-modal-title {
-    color: #f9fafb;
-}
-
-.dark-theme .appointment-modal-subtitle {
-    color: #9ca3af;
-}
-
-.dark-theme .appointment-modal-close {
-    background: #374151;
-    color: #9ca3af;
-}
-
-.dark-theme .appointment-modal-close:hover {
-    background: #4b5563;
-    color: #f9fafb;
-}
-
-.dark-theme .appointment-vehicle-info {
-    background: linear-gradient(135deg, #374151, #4b5563);
-    border-color: #b89658;
-    color: #fbbf24;
-}
-
-.dark-theme .form-section-label {
-    color: #e5e7eb;
-}
-
-.dark-theme .form-label {
-    color: #d1d5db;
-}
-
-.dark-theme .form-input,
-.dark-theme .form-textarea {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f9fafb;
-}
-
-.dark-theme .form-input:focus,
-.dark-theme .form-textarea:focus {
-    border-color: #3b82f6;
-}
-
-.dark-theme .form-input::placeholder,
-.dark-theme .form-textarea::placeholder {
-    color: #6b7280;
-}
-
-.dark-theme .date-option-content {
-    background: #374151;
-}
-
-.dark-theme .date-option input:checked + .date-option-content {
-    background: #1e3a5f;
-}
-
-.dark-theme .date-option:hover .date-option-content {
-    background: #4b5563;
-}
-
-.dark-theme .date-day {
-    color: #9ca3af;
-}
-
-.dark-theme .date-number {
-    color: #f9fafb;
-}
-
-.dark-theme .date-option input:checked + .date-option-content .date-number {
-    color: #60a5fa;
-}
-
-.dark-theme .time-option-content {
-    background: #374151;
-    color: #d1d5db;
-}
-
-.dark-theme .time-option input:checked + .time-option-content {
-    background: #1e3a5f;
-    color: #60a5fa;
-}
-
-.dark-theme .time-option:hover .time-option-content {
-    background: #4b5563;
-}
-
-.dark-theme .btn-appointment-float {
-    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
-}

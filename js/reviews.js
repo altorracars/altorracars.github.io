@@ -206,23 +206,9 @@ class ReviewsSystem {
                     </div>
                 </div>
 
-                <div class="testimonial-vehicle">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                        <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                        <path d="M5 17h-2v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2"/>
-                        <path d="M9 17h6"/>
-                    </svg>
-                    Compró: ${review.vehicle}
-                </div>
-
                 <div class="testimonial-content">
                     <h5 class="testimonial-title">"${review.title}"</h5>
                     <p class="testimonial-text">${review.text}</p>
-                </div>
-
-                <div class="testimonial-footer">
-                    <span class="testimonial-date">${this.formatDate(review.date)}</span>
                 </div>
             </div>
         `;

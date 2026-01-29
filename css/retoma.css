@@ -1,0 +1,629 @@
+/* ============================================
+   ESTIMADOR DE RETOMA (TRADE-IN) - ALTORRA CARS
+   Calcula el valor de tu vehículo
+   ============================================ */
+
+/* ===== BOTÓN ADICIONAL ===== */
+.btn-estimate {
+    margin-top: 10px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-estimate:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+
+/* ===== MODAL OVERLAY ===== */
+.tradein-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.tradein-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ===== MODAL ===== */
+.tradein-modal {
+    background: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.tradein-modal-overlay.active .tradein-modal {
+    transform: scale(1) translateY(0);
+}
+
+/* ===== HEADER ===== */
+.tradein-modal-header {
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    position: relative;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.tradein-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 6px;
+}
+
+.tradein-modal-title svg {
+    color: #10b981;
+}
+
+.tradein-modal-subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+    padding-left: 36px;
+}
+
+.tradein-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    font-size: 24px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tradein-modal-close:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+/* ===== BODY ===== */
+.tradein-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* ===== STEPS ===== */
+.tradein-step {
+    display: none;
+}
+
+.tradein-step.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.step-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 20px;
+}
+
+.step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* ===== FORMULARIO ===== */
+.tradein-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.tradein-form-group {
+    margin-bottom: 16px;
+}
+
+.tradein-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 6px;
+}
+
+.form-label.required::after {
+    content: ' *';
+    color: #ef4444;
+}
+
+.form-input,
+.form-select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #1f2937;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.form-select {
+    cursor: pointer;
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-input::placeholder {
+    color: #9ca3af;
+}
+
+.input-hint {
+    display: block;
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
+/* ===== OPCIONES DE CONDICIÓN ===== */
+.condition-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.condition-option {
+    cursor: pointer;
+}
+
+.condition-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.condition-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 10px;
+    background: #f9fafb;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.condition-option input:checked + .condition-card {
+    background: #ecfdf5;
+    border-color: #10b981;
+}
+
+.condition-option:hover .condition-card {
+    background: #f3f4f6;
+}
+
+.condition-icon {
+    font-size: 24px;
+}
+
+.condition-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.condition-desc {
+    font-size: 10px;
+    color: #6b7280;
+}
+
+/* ===== RESULTADO ===== */
+.estimate-result {
+    text-align: center;
+}
+
+.estimate-vehicle-summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.estimate-vehicle-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 12px;
+    color: #6b7280;
+}
+
+.estimate-vehicle-details h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 4px;
+}
+
+.estimate-vehicle-details p {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.estimate-value-card {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 2px solid #10b981;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.estimate-label {
+    font-size: 13px;
+    color: #047857;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.estimate-range {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 12px 0 8px;
+}
+
+.estimate-min,
+.estimate-max {
+    font-size: 16px;
+    font-weight: 600;
+    color: #065f46;
+}
+
+.estimate-separator {
+    color: #6b7280;
+}
+
+.estimate-main-value {
+    font-size: 36px;
+    font-weight: 800;
+    color: #047857;
+    line-height: 1;
+}
+
+.estimate-cta-message {
+    padding: 16px;
+    background: #fffbeb;
+    border: 1px solid #fbbf24;
+    border-radius: 12px;
+}
+
+.estimate-cta-message p {
+    font-size: 14px;
+    color: #92400e;
+    margin: 0 0 8px;
+}
+
+.estimate-cta-message p:last-child {
+    margin-bottom: 0;
+}
+
+.estimate-cta-message .highlight {
+    font-weight: 700;
+}
+
+/* ===== NAVEGACIÓN ===== */
+.tradein-navigation {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-tradein-prev,
+.btn-tradein-next {
+    flex: 1;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-tradein-prev {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #4b5563;
+}
+
+.btn-tradein-prev:hover {
+    background: #e5e7eb;
+}
+
+.btn-tradein-next {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    color: white;
+}
+
+.btn-tradein-next:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-tradein-whatsapp {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-tradein-whatsapp:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.35);
+}
+
+/* ===== FOOTER ===== */
+.tradein-modal-footer {
+    padding: 14px 24px;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+}
+
+.disclaimer {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.disclaimer svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 540px) {
+    .tradein-modal-overlay {
+        padding: 10px;
+        align-items: flex-end;
+    }
+
+    .tradein-modal {
+        max-height: 95vh;
+        border-radius: 20px 20px 0 0;
+    }
+
+    .tradein-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .condition-options {
+        grid-template-columns: 1fr;
+    }
+
+    .estimate-main-value {
+        font-size: 28px;
+    }
+}
+
+/* ===== DARK THEME ===== */
+.dark-theme .tradein-modal {
+    background: #1f2937;
+}
+
+.dark-theme .tradein-modal-header {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border-color: #374151;
+}
+
+.dark-theme .tradein-modal-title {
+    color: #f9fafb;
+}
+
+.dark-theme .tradein-modal-subtitle {
+    color: #9ca3af;
+}
+
+.dark-theme .tradein-modal-close {
+    background: #374151;
+    border-color: #4b5563;
+    color: #9ca3af;
+}
+
+.dark-theme .tradein-modal-close:hover {
+    background: #4b5563;
+    color: #f9fafb;
+}
+
+.dark-theme .step-title {
+    color: #f9fafb;
+}
+
+.dark-theme .form-label {
+    color: #d1d5db;
+}
+
+.dark-theme .form-input,
+.dark-theme .form-select {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+.dark-theme .form-input:focus,
+.dark-theme .form-select:focus {
+    border-color: #10b981;
+}
+
+.dark-theme .form-input::placeholder {
+    color: #6b7280;
+}
+
+.dark-theme .input-hint {
+    color: #6b7280;
+}
+
+.dark-theme .condition-card {
+    background: #374151;
+}
+
+.dark-theme .condition-option input:checked + .condition-card {
+    background: #065f46;
+    border-color: #10b981;
+}
+
+.dark-theme .condition-option:hover .condition-card {
+    background: #4b5563;
+}
+
+.dark-theme .condition-label {
+    color: #f9fafb;
+}
+
+.dark-theme .condition-desc {
+    color: #9ca3af;
+}
+
+.dark-theme .estimate-vehicle-summary {
+    background: #374151;
+}
+
+.dark-theme .estimate-vehicle-icon {
+    background: #4b5563;
+    color: #d1d5db;
+}
+
+.dark-theme .estimate-vehicle-details h4 {
+    color: #f9fafb;
+}
+
+.dark-theme .estimate-vehicle-details p {
+    color: #9ca3af;
+}
+
+.dark-theme .estimate-value-card {
+    background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+}
+
+.dark-theme .estimate-label {
+    color: #a7f3d0;
+}
+
+.dark-theme .estimate-min,
+.dark-theme .estimate-max {
+    color: #d1fae5;
+}
+
+.dark-theme .estimate-main-value {
+    color: #ecfdf5;
+}
+
+.dark-theme .estimate-cta-message {
+    background: #374151;
+    border-color: #b89658;
+}
+
+.dark-theme .estimate-cta-message p {
+    color: #fbbf24;
+}
+
+.dark-theme .tradein-navigation {
+    border-color: #374151;
+}
+
+.dark-theme .btn-tradein-prev {
+    background: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+}
+
+.dark-theme .btn-tradein-prev:hover {
+    background: #4b5563;
+}
+
+.dark-theme .tradein-modal-footer {
+    background: #111827;
+    border-color: #374151;
+}
+
+.dark-theme .disclaimer {
+    color: #9ca3af;
+}

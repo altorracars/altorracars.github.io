@@ -109,6 +109,9 @@
     <link rel="stylesheet" href="css/comparador.css">
     <link rel="stylesheet" href="css/calculadora-financiamiento.css">
     <link rel="stylesheet" href="css/historial-visitas.css">
+    <link rel="stylesheet" href="css/reviews.css">
+    <link rel="stylesheet" href="css/retoma.css">
+    <link rel="stylesheet" href="css/animaciones.css">
     <link rel="stylesheet" href="css/theme-toggle.css">
     <link rel="stylesheet" href="css/dark-theme.css">
 
@@ -249,6 +252,9 @@
             </div>
         </div>
     </section>
+
+    <!-- Testimonials Section -->
+    <div id="testimonials-section"></div>
 
     <!-- Commercial Section - Compra / Vende / Financia -->
     <section class="commercial-section">
@@ -513,7 +519,18 @@
     <script src="js/comparador.js" defer></script>
     <script src="js/calculadora-financiamiento.js" defer></script>
     <script src="js/historial-visitas.js" defer></script>
+    <script src="js/reviews.js" defer></script>
+    <script src="js/retoma.js" defer></script>
     <script src="js/theme-toggle.js" defer></script>
+
+    <!-- Initialize Testimonials -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof reviewsSystem !== 'undefined') {
+                reviewsSystem.renderTestimonialsSection('testimonials-section');
+            }
+        });
+    </script>
 
     <!-- Service Worker Registration -->
     <script>

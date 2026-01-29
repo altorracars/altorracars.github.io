@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="css/toast-notifications.css">
     <link rel="stylesheet" href="css/comparador.css">
     <link rel="stylesheet" href="css/theme-toggle.css">
+    <link rel="stylesheet" href="css/filtros-avanzados.css">
     <link rel="stylesheet" href="css/dark-theme.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -64,7 +65,6 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="css/dark-theme.css">
 </head>
 <body>
     <div id="header-placeholder"></div>
@@ -199,6 +199,7 @@
     <script src="js/main.js"></script>
     <script src="js/comparador.js"></script>
     <script src="js/theme-toggle.js"></script>
+    <script src="js/filtros-avanzados.js"></script>
     <script>
         let currentPage = 1;
         const itemsPerPage = 12;
@@ -276,6 +277,14 @@
 
             document.getElementById('sortBy')?.addEventListener('change', (e) => {
                 currentSort = e.target.value;
+                performSearch();
+            });
+
+            // Integrar con filtros avanzados (sliders)
+            document.addEventListener('advancedFiltersChanged', (e) => {
+                const sliderValues = e.detail;
+                Object.assign(currentFilters, sliderValues);
+                currentPage = 1;
                 performSearch();
             });
 

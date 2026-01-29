@@ -140,6 +140,14 @@ class VehicleDatabase {
             filtered = filtered.filter(v => v.kilometraje <= parseInt(filters.kilometrajeMax));
         }
 
+        // Filter by km range (from sliders)
+        if (filters.kmMin) {
+            filtered = filtered.filter(v => v.kilometraje >= parseInt(filters.kmMin));
+        }
+        if (filters.kmMax) {
+            filtered = filtered.filter(v => v.kilometraje <= parseInt(filters.kmMax));
+        }
+
         // FASE 3: Filter by destacado
         if (filters.destacado === 'true' || filters.destacado === true) {
             filtered = filtered.filter(v => v.destacado === true);

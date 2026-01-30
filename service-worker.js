@@ -1,29 +1,51 @@
 // Service Worker for ALTORRA CARS
 // Progressive Web App with Offline Support
-// Version 1.1.0 - Logos WebP optimizados
+// Version 1.2.0 - Performance optimization update
 
-const CACHE_VERSION = 'altorra-cars-v1.1.0';
+const CACHE_VERSION = 'altorra-cars-v1.2.0';
 const CACHE_NAME = `${CACHE_VERSION}`;
 
 // Assets to cache on install
 const STATIC_ASSETS = [
+    // HTML Pages
     '/',
     '/index.html',
     '/busqueda.html',
     '/vehiculos-usados.html',
     '/vehiculos-nuevos.html',
+    '/vehiculos-suv.html',
+    '/vehiculos-sedan.html',
+    '/vehiculos-hatchback.html',
+    '/vehiculos-pickup.html',
     '/favoritos.html',
     '/contacto.html',
     '/nosotros.html',
+    '/comparar.html',
+    '/detalle-vehiculo.html',
+    '/resenas.html',
+    '/404.html',
 
-    // CSS Files - Critical styles
+    // CSS Files - ALL styles
     '/css/style.css',
-    '/css/mobile-fixes.css',
     '/css/dark-theme.css',
+    '/css/mobile-fixes.css',
+    '/css/featured-fixes.css',
+    '/css/vehicles-cards-fix.css',
+    '/css/sidebar-filters-fix.css',
+    '/css/favorites-fix.css',
+    '/css/footer-fixes.css',
+    '/css/brands-fixes.css',
     '/css/toast-notifications.css',
     '/css/contact-forms.css',
+    '/css/comparador.css',
+    '/css/calculadora-financiamiento.css',
+    '/css/historial-visitas.css',
+    '/css/reviews.css',
+    '/css/animaciones.css',
+    '/css/citas.css',
+    '/css/filtros-avanzados.css',
 
-    // JavaScript Files
+    // JavaScript Files - ALL scripts
     '/js/database.js',
     '/js/render.js',
     '/js/components.js',
@@ -31,6 +53,13 @@ const STATIC_ASSETS = [
     '/js/toast.js',
     '/js/contact-forms.js',
     '/js/main.js',
+    '/js/comparador.js',
+    '/js/calculadora-financiamiento.js',
+    '/js/historial-visitas.js',
+    '/js/reviews.js',
+    '/js/performance.js',
+    '/js/citas.js',
+    '/js/filtros-avanzados.js',
 
     // Data
     '/data/vehiculos.json',
@@ -42,6 +71,12 @@ const STATIC_ASSETS = [
     // Critical images
     '/multimedia/logo-altorra-cars.webp',
     '/multimedia/vehicles/placeholder-car.jpg',
+
+    // Category images
+    '/multimedia/categories/suv.jpg',
+    '/multimedia/categories/sedan.jpg',
+    '/multimedia/categories/hatchback.jpg',
+    '/multimedia/categories/camioneta.jpg',
 
     // Brand logos WebP (optimized)
     '/multimedia/Logos/Chevrolet.webp',

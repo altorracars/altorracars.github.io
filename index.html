@@ -44,13 +44,14 @@
 
     <!-- Preload Critical Resources -->
     <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="css/dark-theme.css" as="style">
+    <link rel="preload" href="js/components.js" as="script">
     <link rel="preload" href="js/database.js" as="script">
-    <link rel="preload" href="js/main.js" as="script">
     <link rel="preload" href="data/vehiculos.json" as="fetch" crossorigin>
 
-    <!-- DNS Prefetch for External Resources -->
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <!-- Preconnect for External Resources (faster than dns-prefetch) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <!-- Structured Data - LocalBusiness Schema -->
     <script type="application/ld+json">
@@ -582,7 +583,7 @@
         </div>
     </div>
 
-    <!-- Scripts - Optimized Loading -->
+    <!-- Scripts - Optimized Loading (Solo scripts necesarios para esta página) -->
     <script src="js/favorites-manager.js" defer></script>
     <script src="js/toast.js" defer></script>
     <script src="js/contact-forms.js" defer></script>
@@ -590,11 +591,10 @@
     <script src="js/database.js" defer></script>
     <script src="js/render.js" defer></script>
     <script src="js/main.js" defer></script>
-    <script src="js/comparador.js" defer></script>
-    <script src="js/calculadora-financiamiento.js" defer></script>
-    <script src="js/historial-visitas.js" defer></script>
     <script src="js/reviews.js" defer></script>
     <script src="js/performance.js" defer></script>
+    <!-- comparador.js, calculadora-financiamiento.js, historial-visitas.js
+         se cargan solo en las páginas que los necesitan -->
 
     <!-- Initialize Testimonials -->
     <script>

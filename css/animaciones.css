@@ -3,6 +3,41 @@
    Efectos visuales para mejorar la experiencia
    ============================================ */
 
+/* ===== LAZY LOADING IMAGE TRANSITIONS ===== */
+.lazy-image {
+    opacity: 0;
+    filter: blur(8px);
+    transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+.lazy-image.loaded {
+    opacity: 1;
+    filter: blur(0);
+}
+
+.lazy-image.error {
+    opacity: 0.5;
+}
+
+/* Background lazy loading */
+[data-bg] {
+    background-color: #1a1a1a;
+    transition: background-image 0.3s ease;
+}
+
+[data-bg].bg-loaded {
+    background-color: transparent;
+}
+
+/* Font loading optimization - prevent FOUT */
+html:not(.fonts-loaded) body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html.fonts-loaded body {
+    font-family: 'Poppins', sans-serif;
+}
+
 /* ===== ANIMACIONES BASE ===== */
 @keyframes fadeIn {
     from { opacity: 0; }

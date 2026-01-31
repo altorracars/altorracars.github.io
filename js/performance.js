@@ -1,6 +1,7 @@
 // ============================================
 // OPTIMIZACIÓN DE PERFORMANCE - ALTORRA CARS
 // Lazy loading, preloading y mejoras de rendimiento
+// v2.0 - Optimización avanzada
 // ============================================
 
 class PerformanceOptimizer {
@@ -9,195 +10,285 @@ class PerformanceOptimizer {
     }
 
     init() {
+        // Ejecutar optimizaciones críticas inmediatamente
         this.setupLazyLoading();
         this.setupIntersectionAnimations();
-        this.preloadCriticalAssets();
+
+        // Ejecutar optimizaciones no críticas cuando el navegador esté idle
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => {
+                this.preloadCriticalAssets();
+                this.deferNonCriticalCSS();
+            });
+        } else {
+            setTimeout(() => {
+                this.preloadCriticalAssets();
+                this.deferNonCriticalCSS();
+            }, 200);
+        }
+
         this.optimizeScrollPerformance();
     }
 
-    // ===== LAZY LOADING DE IMÁGENES =====
+    // ===== LAZY LOADING DE IMÁGENES AVANZADO =====
     setupLazyLoading() {
-        // Usar IntersectionObserver para lazy loading nativo
-        if ('IntersectionObserver' in window) {
-            const imageObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
+        if (!('IntersectionObserver' in window)) return;
 
-                        // Cargar imagen desde data-src
-                        if (img.dataset.src) {
-                            img.src = img.dataset.src;
-                            img.removeAttribute('data-src');
-                        }
-
-                        // Cargar srcset si existe
-                        if (img.dataset.srcset) {
-                            img.srcset = img.dataset.srcset;
-                            img.removeAttribute('data-srcset');
-                        }
-
-                        img.classList.add('loaded');
-                        observer.unobserve(img);
-                    }
-                });
-            }, {
-                rootMargin: '50px 0px',
-                threshold: 0.01
-            });
-
-            // Observar todas las imágenes con data-src
-            document.querySelectorAll('img[data-src]').forEach(img => {
-                imageObserver.observe(img);
-            });
-
-            // También observar imágenes con loading="lazy" para polyfill
-            document.querySelectorAll('img[loading="lazy"]').forEach(img => {
-                if (!('loading' in HTMLImageElement.prototype)) {
-                    imageObserver.observe(img);
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    this.loadImage(img);
+                    observer.unobserve(img);
                 }
             });
+        }, {
+            rootMargin: '100px 0px', // Cargar 100px antes de que entre en viewport
+            threshold: 0.01
+        });
+
+        // Observar imágenes con data-src
+        document.querySelectorAll('img[data-src]').forEach(img => {
+            img.classList.add('lazy-image');
+            imageObserver.observe(img);
+        });
+
+        // Observar imágenes con loading="lazy" (polyfill para navegadores antiguos)
+        document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+            if (!('loading' in HTMLImageElement.prototype)) {
+                imageObserver.observe(img);
+            }
+        });
+
+        // Observar elementos con background-image lazy
+        document.querySelectorAll('[data-bg]').forEach(el => {
+            const bgObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.backgroundImage = `url(${entry.target.dataset.bg})`;
+                        entry.target.classList.add('bg-loaded');
+                        bgObserver.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: '100px 0px' });
+            bgObserver.observe(el);
+        });
+    }
+
+    loadImage(img) {
+        // Cargar imagen con efecto de fade-in
+        const src = img.dataset.src;
+        const srcset = img.dataset.srcset;
+
+        if (src) {
+            // Precargar imagen
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                img.src = src;
+                if (srcset) img.srcset = srcset;
+                img.classList.add('loaded');
+                img.removeAttribute('data-src');
+                img.removeAttribute('data-srcset');
+            };
+            tempImg.onerror = () => {
+                // Fallback si la imagen falla
+                img.src = 'multimedia/vehicles/placeholder-car.jpg';
+                img.classList.add('loaded', 'error');
+            };
+            tempImg.src = src;
         }
     }
 
-    // ===== ANIMACIONES AL SCROLL =====
+    // ===== ANIMACIONES AL SCROLL OPTIMIZADAS =====
     setupIntersectionAnimations() {
-        if ('IntersectionObserver' in window) {
-            const animationObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('active');
-                    }
-                });
-            }, {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            });
+        if (!('IntersectionObserver' in window)) return;
 
-            // Observar elementos con clase reveal
-            document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale').forEach(el => {
-                animationObserver.observe(el);
+        const animationObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Usar requestAnimationFrame para mejor rendimiento
+                    requestAnimationFrame(() => {
+                        entry.target.classList.add('active');
+                    });
+                }
             });
-        }
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        // Observar elementos con clases de animación
+        const animatedElements = document.querySelectorAll(
+            '.reveal, .reveal-left, .reveal-right, .reveal-scale, .fade-in, .slide-up'
+        );
+        animatedElements.forEach(el => animationObserver.observe(el));
     }
 
     // ===== PRELOAD DE ASSETS CRÍTICOS =====
     preloadCriticalAssets() {
-        // Preload de fuentes críticas
-        const fontPreloads = [
-            'https://fonts.gstatic.com/s/poppins/v21/pxiEyp8kv8JHgFVrJJfecg.woff2'
+        // Solo precargar si el navegador soporta preload
+        if (!document.createElement('link').relList?.supports?.('preload')) return;
+
+        // Preconnect a dominios externos
+        const preconnects = [
+            'https://fonts.googleapis.com',
+            'https://fonts.gstatic.com'
         ];
 
-        fontPreloads.forEach(url => {
-            const link = document.createElement('link');
-            link.rel = 'preload';
-            link.as = 'font';
-            link.type = 'font/woff2';
-            link.crossOrigin = 'anonymous';
-            link.href = url;
-            document.head.appendChild(link);
+        preconnects.forEach(url => {
+            if (!document.querySelector(`link[href="${url}"]`)) {
+                const link = document.createElement('link');
+                link.rel = 'preconnect';
+                link.href = url;
+                link.crossOrigin = 'anonymous';
+                document.head.appendChild(link);
+            }
         });
 
-        // Prefetch de páginas probables
-        this.prefetchPages();
+        // Prefetch de páginas más visitadas (después de 3 segundos)
+        setTimeout(() => this.prefetchPages(), 3000);
     }
 
     prefetchPages() {
-        // Prefetch de páginas más visitadas
+        // Solo prefetch si el usuario no tiene conexión lenta
+        if (navigator.connection?.saveData) return;
+        if (navigator.connection?.effectiveType === '2g') return;
+
         const pagesToPrefetch = [
             'busqueda.html',
             'vehiculos-usados.html',
             'vehiculos-nuevos.html'
         ];
 
-        // Solo prefetch después de cargar la página principal
-        if (document.readyState === 'complete') {
-            this.doPrefetch(pagesToPrefetch);
-        } else {
-            window.addEventListener('load', () => {
-                setTimeout(() => this.doPrefetch(pagesToPrefetch), 2000);
-            });
-        }
+        pagesToPrefetch.forEach(page => {
+            if (!document.querySelector(`link[href="${page}"]`)) {
+                const link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = page;
+                document.head.appendChild(link);
+            }
+        });
     }
 
-    doPrefetch(pages) {
-        pages.forEach(page => {
-            const link = document.createElement('link');
-            link.rel = 'prefetch';
-            link.href = page;
-            document.head.appendChild(link);
+    // ===== CARGAR CSS NO CRÍTICOS =====
+    deferNonCriticalCSS() {
+        // Cargar CSS que estaban con media="print"
+        document.querySelectorAll('link[media="print"]').forEach(link => {
+            if (link.onload === null) {
+                link.media = 'all';
+            }
         });
     }
 
     // ===== OPTIMIZAR RENDIMIENTO DE SCROLL =====
     optimizeScrollPerformance() {
         let ticking = false;
+        let lastScrollY = 0;
 
-        // Throttle de eventos de scroll
-        window.addEventListener('scroll', () => {
+        const onScroll = () => {
+            lastScrollY = window.scrollY;
+
             if (!ticking) {
-                window.requestAnimationFrame(() => {
-                    this.onScroll();
+                requestAnimationFrame(() => {
+                    this.handleScroll(lastScrollY);
                     ticking = false;
                 });
                 ticking = true;
             }
-        }, { passive: true });
+        };
+
+        window.addEventListener('scroll', onScroll, { passive: true });
     }
 
-    onScroll() {
-        // Header shrink en scroll (si aplica)
+    handleScroll(scrollY) {
+        // Header shrink en scroll
         const header = document.querySelector('.header, #header');
         if (header) {
-            if (window.scrollY > 100) {
+            if (scrollY > 100) {
                 header.classList.add('scrolled');
             } else {
                 header.classList.remove('scrolled');
             }
         }
+
+        // Parallax suave para hero (solo si está visible)
+        const hero = document.querySelector('.hero');
+        if (hero && scrollY < window.innerHeight) {
+            const heroContent = hero.querySelector('.hero-content');
+            if (heroContent) {
+                heroContent.style.transform = `translateY(${scrollY * 0.3}px)`;
+                heroContent.style.opacity = 1 - (scrollY / window.innerHeight) * 0.5;
+            }
+        }
     }
 
-    // ===== MÉTRICAS DE PERFORMANCE =====
-    logPerformanceMetrics() {
-        if ('performance' in window) {
-            window.addEventListener('load', () => {
-                setTimeout(() => {
-                    const perfData = performance.getEntriesByType('navigation')[0];
-                    if (perfData) {
-                        console.log('📊 Performance Metrics:');
-                        console.log(`   DNS: ${Math.round(perfData.domainLookupEnd - perfData.domainLookupStart)}ms`);
-                        console.log(`   TCP: ${Math.round(perfData.connectEnd - perfData.connectStart)}ms`);
-                        console.log(`   TTFB: ${Math.round(perfData.responseStart - perfData.requestStart)}ms`);
-                        console.log(`   DOM Ready: ${Math.round(perfData.domContentLoadedEventEnd - perfData.navigationStart)}ms`);
-                        console.log(`   Load: ${Math.round(perfData.loadEventEnd - perfData.navigationStart)}ms`);
-                    }
-                }, 0);
-            });
-        }
+    // ===== UTILIDADES =====
+    static debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    static throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
     }
 }
 
-// ===== RESOURCE HINTS DINÁMICOS =====
-function addResourceHints() {
-    // Preconnect a CDNs comunes
-    const preconnects = [
-        'https://fonts.googleapis.com',
-        'https://fonts.gstatic.com',
-        'https://www.google-analytics.com'
-    ];
+// ===== OPTIMIZACIONES ADICIONALES =====
 
-    preconnects.forEach(url => {
-        if (!document.querySelector(`link[href="${url}"]`)) {
-            const link = document.createElement('link');
-            link.rel = 'preconnect';
-            link.href = url;
-            link.crossOrigin = 'anonymous';
-            document.head.appendChild(link);
-        }
-    });
-}
+// Detectar soporte de WebP y AVIF
+const checkImageSupport = () => {
+    const webpSupport = document.createElement('canvas')
+        .toDataURL('image/webp')
+        .indexOf('data:image/webp') === 0;
 
-// Inicializar optimizaciones
+    document.documentElement.classList.add(webpSupport ? 'webp' : 'no-webp');
+};
+
+// Optimizar carga de fuentes
+const optimizeFontLoading = () => {
+    if ('fonts' in document) {
+        Promise.all([
+            document.fonts.load('400 1rem Poppins'),
+            document.fonts.load('600 1rem Poppins'),
+            document.fonts.load('700 1rem Poppins')
+        ]).then(() => {
+            document.documentElement.classList.add('fonts-loaded');
+        });
+    }
+};
+
+// Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    addResourceHints();
+    checkImageSupport();
+    optimizeFontLoading();
     window.performanceOptimizer = new PerformanceOptimizer();
 });
+
+// Registrar métricas de performance (solo en desarrollo)
+if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const perfData = performance.getEntriesByType('navigation')[0];
+            if (perfData) {
+                console.log('%c📊 Performance Metrics', 'color: #d4af37; font-weight: bold;');
+                console.log(`   DOM Ready: ${Math.round(perfData.domContentLoadedEventEnd)}ms`);
+                console.log(`   Full Load: ${Math.round(perfData.loadEventEnd)}ms`);
+                console.log(`   TTFB: ${Math.round(perfData.responseStart)}ms`);
+            }
+        }, 0);
+    });
+}

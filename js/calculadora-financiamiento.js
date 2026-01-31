@@ -147,7 +147,7 @@ class FinancingCalculator {
                                 <line x1="1" y1="10" x2="23" y2="10"/>
                             </svg>
                         </div>
-                        <h2 id="financing-title">Simulador de Financiamiento</h2>
+                        <h2 id="financing-title">Simulador de Crédito</h2>
                         <p class="financing-subtitle">Calcula tu cuota mensual estimada</p>
                     </div>
 

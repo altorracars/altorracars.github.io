@@ -392,6 +392,15 @@
                                     </div>
                                 </div>
 
+                                <!-- Nivel de riesgo (solo avanzada) -->
+                                <div class="form-group advanced-only" id="risk-group">
+                                    <label>Nivel de riesgo cliente</label>
+                                    <p class="field-help">G1 = Bajo riesgo, G6 = Alto riesgo</p>
+                                    <div class="risk-buttons" id="risk-buttons">
+                                        <!-- Se genera dinámicamente -->
+                                    </div>
+                                </div>
+
                                 <!-- Solo para simulación avanzada -->
                                 <div class="form-group advanced-only" id="plan-type-group">
                                     <label>Tipo de plan</label>
@@ -418,9 +427,8 @@
                                 <div class="form-group advanced-only hidden" id="leasing-option-group">
                                     <label for="leasing-option">Opción de compra</label>
                                     <select id="leasing-option">
-                                        <option value="1">1% del valor del vehículo</option>
-                                        <option value="10" selected>10% del valor del vehículo</option>
-                                        <option value="20">20% del valor del vehículo</option>
+                                        <option value="0.01" selected>1% del valor del vehículo</option>
+                                        <option value="0.10">10% del valor del vehículo</option>
                                     </select>
                                 </div>
 
@@ -429,8 +437,16 @@
                                     <label for="extra-payment">Valor de cuota extra</label>
                                     <div class="input-currency">
                                         <span class="currency-symbol">$</span>
-                                        <input type="text" id="extra-payment" inputmode="numeric" placeholder="1.000.000" value="1.000.000">
+                                        <input type="text" id="extra-payment" inputmode="numeric" placeholder="500.000" value="500.000">
                                     </div>
+                                </div>
+
+                                <!-- Mes primera cuota extra -->
+                                <div class="form-group advanced-only hidden" id="offset-group">
+                                    <label for="offset-meses">Mes primera cuota extra</label>
+                                    <select id="offset-meses">
+                                        <!-- Se genera dinámicamente -->
+                                    </select>
                                 </div>
                             </div>
 
@@ -554,7 +570,10 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="js/simulador-credito.js"></script>
+    <!-- JavaScript - Motor de Simulación v2.0 -->
+    <script src="js/simulador/data.js"></script>
+    <script src="js/simulador/finance.js"></script>
+    <script src="js/simulador/simulator.js"></script>
+    <script src="js/simulador/ui.js"></script>
 </body>
 </html>

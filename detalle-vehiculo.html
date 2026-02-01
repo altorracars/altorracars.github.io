@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="css/sidebar-filters-fix.css">
     <link rel="stylesheet" href="css/footer-fixes.css">
     <link rel="stylesheet" href="css/comparador.css">
-    <link rel="stylesheet" href="css/calculadora-financiamiento.css">
     <link rel="stylesheet" href="css/historial-visitas.css">
     <link rel="stylesheet" href="css/citas.css">
     <link rel="stylesheet" href="css/animaciones.css">
@@ -965,7 +964,6 @@
     <script src="js/render.js"></script>
     <script src="js/main.js"></script>
     <script src="js/comparador.js"></script>
-    <script src="js/calculadora-financiamiento.js"></script>
     <script src="js/historial-visitas.js"></script>
     <script src="js/citas.js"></script>
     <script>
@@ -1088,11 +1086,15 @@ ${currentUrl}
             document.getElementById('btnWhatsApp').href =
                 `https://wa.me/573235016747?text=${encodeURIComponent(whatsappMsg)}`;
 
-            // Configurar botón de calculadora
+            // Configurar botón de simulador - enlace directo a simulador-credito.html con parámetros
             const btnCalculadora = document.getElementById('btnCalculadora');
             if (btnCalculadora) {
-                btnCalculadora.dataset.financing = v.id;
-                btnCalculadora.dataset.price = precioFinal;
+                const params = new URLSearchParams({
+                    precio: precioFinal,
+                    year: v.year,
+                    vehiculo: `${v.marca} ${v.modelo}`
+                });
+                btnCalculadora.href = `simulador-credito.html?${params.toString()}`;
             }
 
             document.title = `${v.marca} ${v.modelo} ${v.year} - ALTORRA CARS`;

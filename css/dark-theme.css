@@ -546,6 +546,24 @@ body {
     transform: translateY(-3px) !important;
 }
 
+.btn-commercial-primary {
+    display: block !important;
+    text-align: center !important;
+    text-decoration: none !important;
+    margin-bottom: 10px !important;
+}
+
+.btn-commercial-secondary {
+    background: transparent !important;
+    border: 2px solid var(--gold-secondary) !important;
+    color: var(--gold-primary) !important;
+}
+
+.btn-commercial-secondary:hover {
+    background: rgba(184, 150, 88, 0.1) !important;
+    border-color: var(--gold-primary) !important;
+}
+
 /* ===== BOTÓN FAVORITOS - DORADO POR DEFECTO ===== */
 .favorites-link {
     background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-secondary) 100%) !important;

@@ -708,6 +708,35 @@ input[type="range"]::-webkit-slider-thumb:hover {
     opacity: 0.8;
 }
 
+/* Risk buttons */
+.risk-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.risk-btn {
+    padding: 10px 18px;
+    background: var(--sim-bg-card);
+    border: 1px solid var(--sim-border);
+    border-radius: 8px;
+    color: var(--sim-text-light);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.risk-btn:hover {
+    border-color: var(--sim-primary);
+}
+
+.risk-btn.active {
+    background: var(--sim-primary);
+    border-color: var(--sim-primary);
+    color: white;
+}
+
 /* Plan buttons */
 .plan-buttons {
     display: grid;
@@ -945,6 +974,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
     grid-column: 2 / -1;
     font-size: 13px;
     color: var(--sim-warning);
+}
+
+.entity-total {
+    font-size: 12px;
+    color: var(--sim-text-muted);
+    text-align: right;
+    margin-top: 4px;
 }
 
 .best-badge {

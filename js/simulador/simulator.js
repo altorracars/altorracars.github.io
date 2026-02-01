@@ -6,9 +6,16 @@
 (function() {
     'use strict';
 
-    // Obtener dependencias
-    const Data = (typeof window !== 'undefined' && window.SimuladorData) || require('./data.js');
-    const Finance = (typeof window !== 'undefined' && window.SimuladorFinance) || require('./finance.js');
+    // Obtener dependencias (deben estar cargadas antes de este script)
+    const Data = (typeof window !== 'undefined' && window.SimuladorData) ||
+                 (typeof global !== 'undefined' && global.SimuladorData);
+    const Finance = (typeof window !== 'undefined' && window.SimuladorFinance) ||
+                    (typeof global !== 'undefined' && global.SimuladorFinance);
+
+    if (!Data || !Finance) {
+        console.error('SimuladorEngine: Dependencias no cargadas (SimuladorData, SimuladorFinance)');
+        return;
+    }
 
     const { PMT, PV, calcularSeguroMensual } = Finance;
     const { SEGUROS, getSufiRate, getOccRate, getFinandinaRate, getFinanzautoRate, getMobilizeRate, validarMobilize } = Data;
@@ -337,20 +344,16 @@
     }
 
     // Exportar para uso en otros módulos
-    if (typeof window !== 'undefined') {
-        window.SimuladorEngine = {
-            simularFinanciacion,
-            calcularCuotasExtra2Anio,
-            calcularCuotasExtra1Anio
-        };
-    }
+    const exports = {
+        simularFinanciacion,
+        calcularCuotasExtra2Anio,
+        calcularCuotasExtra1Anio
+    };
 
-    // Para Node.js (tests)
-    if (typeof module !== 'undefined' && module.exports) {
-        module.exports = {
-            simularFinanciacion,
-            calcularCuotasExtra2Anio,
-            calcularCuotasExtra1Anio
-        };
+    if (typeof window !== 'undefined') {
+        window.SimuladorEngine = exports;
+    }
+    if (typeof global !== 'undefined') {
+        global.SimuladorEngine = exports;
     }
 })();

@@ -139,33 +139,22 @@ function validarMobilize(yearModelo, plazoMeses, valorFinanciar) {
 }
 
 // Exportar para uso en otros módulos
-if (typeof window !== 'undefined') {
-    window.SimuladorData = {
-        SEGUROS,
-        getSufiRate,
-        getOccRate,
-        getFinandinaRate,
-        getFinanzautoRate,
-        getMobilizeRate,
-        getMobilizeGrupo,
-        getMobilizeBucketInicial,
-        getMobilizeBucketAnio,
-        validarMobilize
-    };
-}
+const exports = {
+    SEGUROS,
+    getSufiRate,
+    getOccRate,
+    getFinandinaRate,
+    getFinanzautoRate,
+    getMobilizeRate,
+    getMobilizeGrupo,
+    getMobilizeBucketInicial,
+    getMobilizeBucketAnio,
+    validarMobilize
+};
 
-// Para Node.js (tests)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        SEGUROS,
-        getSufiRate,
-        getOccRate,
-        getFinandinaRate,
-        getFinanzautoRate,
-        getMobilizeRate,
-        getMobilizeGrupo,
-        getMobilizeBucketInicial,
-        getMobilizeBucketAnio,
-        validarMobilize
-    };
+if (typeof window !== 'undefined') {
+    window.SimuladorData = exports;
+}
+if (typeof global !== 'undefined') {
+    global.SimuladorData = exports;
 }

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Simulador de Crédito Vehicular ALTORRA CARS - Calcula tu financiamiento con múltiples entidades financieras">
+    <meta name="keywords" content="simulador crédito, financiamiento vehículo, crédito carro, Cartagena">
+    <title>Simulador de Crédito | ALTORRA CARS</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="multimedia/logo/favicon.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/simulador-credito.css">
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="simulator-page">
+    <!-- Header simplificado -->
+    <header class="simulator-header">
+        <div class="container">
+            <a href="index.html" class="simulator-logo">
+                <img src="multimedia/logo/logo-altorra.png" alt="ALTORRA CARS" height="40">
+            </a>
+            <a href="index.html" class="btn-back-home">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Volver al inicio
+            </a>
+        </div>
+    </header>
+
+    <!-- Contenido principal -->
+    <main class="simulator-main">
+        <div class="container">
+            <!-- Título de la página -->
+            <div class="simulator-page-header">
+                <h1>Simulador de <span class="gold">Crédito Vehicular</span></h1>
+                <p>Conoce las opciones de financiamiento disponibles para tu próximo vehículo</p>
+            </div>
+
+            <!-- PASO 1: Términos legales -->
+            <section class="simulator-step" id="step-terms">
+                <div class="step-card terms-card">
+                    <div class="terms-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                        </svg>
+                    </div>
+                    <h2>Antes de continuar</h2>
+                    <div class="terms-content">
+                        <div class="terms-box">
+                            <h3>Aviso Legal Importante</h3>
+                            <p>Esta herramienta de simulación financiera es únicamente de <strong>carácter informativo y referencial</strong>.</p>
+                            <p>Los valores mostrados (cuotas, tasas, plazos) son <strong>aproximados</strong> y pueden variar según:</p>
+                            <ul>
+                                <li>Tu perfil crediticio y capacidad de pago</li>
+                                <li>Políticas vigentes de cada entidad financiera</li>
+                                <li>Condiciones del mercado al momento de la solicitud</li>
+                                <li>Documentación y verificación de ingresos</li>
+                            </ul>
+                            <p><strong>ALTORRA CARS</strong> actúa como intermediario comercial y no como entidad financiera. No garantizamos la aprobación de créditos ni las condiciones simuladas.</p>
+                        </div>
+                    </div>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="accept-terms">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-text">He leído y acepto que esta simulación es únicamente referencial</span>
+                    </label>
+                    <button class="btn-primary btn-continue" id="btn-continue-terms" disabled>
+                        Continuar
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- PASO 2: Datos personales -->
+            <section class="simulator-step hidden" id="step-personal">
+                <div class="step-card">
+                    <div class="step-header">
+                        <span class="step-number">1</span>
+                        <div>
+                            <h2>Información Personal</h2>
+                            <p>Completa tus datos para personalizar la simulación</p>
+                        </div>
+                    </div>
+
+                    <form id="personal-form" class="personal-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="nombres">Nombres *</label>
+                                <input type="text" id="nombres" name="nombres" required placeholder="Ej: Juan Carlos">
+                            </div>
+                            <div class="form-group">
+                                <label for="apellidos">Apellidos *</label>
+                                <input type="text" id="apellidos" name="apellidos" required placeholder="Ej: Pérez García">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tipo-documento">Tipo de documento *</label>
+                                <select id="tipo-documento" name="tipo-documento" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="CC">Cédula de Ciudadanía</option>
+                                    <option value="CE">Cédula de Extranjería</option>
+                                    <option value="NIT">NIT</option>
+                                    <option value="PAS">Pasaporte</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="documento">Número de documento *</label>
+                                <input type="text" id="documento" name="documento" required placeholder="Ej: 1234567890" inputmode="numeric">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fecha-nacimiento">Fecha de nacimiento *</label>
+                                <input type="date" id="fecha-nacimiento" name="fecha-nacimiento" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ciudad">Ciudad de residencia *</label>
+                                <input type="text" id="ciudad" name="ciudad" required placeholder="Ej: Cartagena">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="celular">Celular *</label>
+                                <input type="tel" id="celular" name="celular" required placeholder="Ej: 3001234567" inputmode="tel">
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Correo electrónico *</label>
+                                <input type="email" id="email" name="email" required placeholder="Ej: correo@ejemplo.com">
+                            </div>
+                        </div>
+
+                        <div class="form-divider"></div>
+
+                        <div class="form-group">
+                            <label>¿Es usted una Persona Expuesta Públicamente (PEP) o tiene vínculo con alguna? *</label>
+                            <p class="field-help">Persona que desempeña funciones públicas prominentes en Colombia o en el extranjero</p>
+                            <div class="radio-group">
+                                <label class="radio-container">
+                                    <input type="radio" name="pep" value="no" required>
+                                    <span class="radio-mark"></span>
+                                    <span>No</span>
+                                </label>
+                                <label class="radio-container">
+                                    <input type="radio" name="pep" value="si">
+                                    <span class="radio-mark"></span>
+                                    <span>Sí</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ocupacion">Ocupación *</label>
+                                <select id="ocupacion" name="ocupacion" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="empleado">Empleado</option>
+                                    <option value="independiente">Independiente</option>
+                                    <option value="fuerzas-militares">Fuerzas Militares / Policía</option>
+                                    <option value="pensionado">Pensionado</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="otra-ocupacion-group" style="display: none;">
+                                <label for="otra-ocupacion">Especifique su ocupación *</label>
+                                <input type="text" id="otra-ocupacion" name="otra-ocupacion" placeholder="Describa su ocupación">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="antiguedad">Antigüedad laboral *</label>
+                                <select id="antiguedad" name="antiguedad" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="menos-6">Menos de 6 meses</option>
+                                    <option value="6-12">Entre 6 meses y 1 año</option>
+                                    <option value="1-2">Entre 1 y 2 años</option>
+                                    <option value="2-5">Entre 2 y 5 años</option>
+                                    <option value="mas-5">Más de 5 años</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ingresos">Ingresos mensuales *</label>
+                                <select id="ingresos" name="ingresos" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="1-2">$1.000.000 - $2.000.000</option>
+                                    <option value="2-4">$2.000.000 - $4.000.000</option>
+                                    <option value="4-7">$4.000.000 - $7.000.000</option>
+                                    <option value="7-10">$7.000.000 - $10.000.000</option>
+                                    <option value="10-15">$10.000.000 - $15.000.000</option>
+                                    <option value="mas-15">Más de $15.000.000</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-divider"></div>
+
+                        <!-- Autorizaciones -->
+                        <h3 class="authorizations-title">Autorizaciones requeridas</h3>
+
+                        <label class="checkbox-container auth-checkbox">
+                            <input type="checkbox" id="auth-contact" name="auth-contact" required>
+                            <span class="checkmark"></span>
+                            <span class="checkbox-text">Autorizo a <strong>ALTORRA CARS</strong> y sus entidades financieras aliadas a contactarme a través de los medios proporcionados para informarme sobre productos de financiación vehicular, ofertas y servicios relacionados.</span>
+                        </label>
+
+                        <label class="checkbox-container auth-checkbox">
+                            <input type="checkbox" id="auth-data" name="auth-data" required>
+                            <span class="checkmark"></span>
+                            <span class="checkbox-text">He leído, comprendo y acepto la <a href="#" class="link-policy" data-policy="privacy">Política de Tratamiento de Datos Personales</a> y la <a href="#" class="link-policy" data-policy="cookies">Política de Cookies</a> de ALTORRA CARS. Autorizo el tratamiento de mis datos personales conforme a dichas políticas.</span>
+                        </label>
+
+                        <label class="checkbox-container auth-checkbox">
+                            <input type="checkbox" id="auth-credit" name="auth-credit" required>
+                            <span class="checkmark"></span>
+                            <span class="checkbox-text">Autorizo a <strong>ALTORRA COMPANY S.A.S.</strong> y/o sus aliados comerciales a consultar mi información crediticia, financiera, comercial y de seguridad social en centrales de riesgo y operadores de información con el fin de evaluar mi solicitud de crédito vehicular.</span>
+                        </label>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" id="btn-back-terms">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                </svg>
+                                Volver
+                            </button>
+                            <button type="submit" class="btn-primary">
+                                Continuar a la simulación
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- PASO 3: Selección tipo de simulación -->
+            <section class="simulator-step hidden" id="step-type">
+                <div class="step-card">
+                    <div class="step-header">
+                        <span class="step-number">2</span>
+                        <div>
+                            <h2>Tipo de Simulación</h2>
+                            <p>Selecciona el tipo de simulación que deseas realizar</p>
+                        </div>
+                    </div>
+
+                    <div class="simulation-types">
+                        <button class="simulation-type-card" data-type="basic">
+                            <div class="type-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                </svg>
+                            </div>
+                            <h3>Simulación Básica</h3>
+                            <p>Calcula tu cuota mensual estimada con una tasa de interés promedio del mercado.</p>
+                            <span class="type-badge">Rápido y sencillo</span>
+                            <ul class="type-features">
+                                <li>Cálculo instantáneo</li>
+                                <li>Tasa referencial 1.45% NMV</li>
+                                <li>Ideal para estimaciones rápidas</li>
+                            </ul>
+                        </button>
+
+                        <button class="simulation-type-card featured" data-type="advanced">
+                            <div class="type-badge-featured">Recomendado</div>
+                            <div class="type-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                    <path d="M2 17l10 5 10-5"/>
+                                    <path d="M2 12l10 5 10-5"/>
+                                </svg>
+                            </div>
+                            <h3>Simulación Avanzada</h3>
+                            <p>Compara opciones de financiamiento con nuestras entidades aliadas estratégicas.</p>
+                            <span class="type-badge gold">Múltiples opciones</span>
+                            <ul class="type-features">
+                                <li>5 entidades financieras</li>
+                                <li>Tasas personalizadas</li>
+                                <li>Planes tradicional, cuotas extra y leasing</li>
+                                <li>Comparativa detallada</li>
+                            </ul>
+                        </button>
+                    </div>
+
+                    <div class="form-actions centered">
+                        <button type="button" class="btn-secondary" id="btn-back-personal">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                            Volver
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PASO 4: Simulador -->
+            <section class="simulator-step hidden" id="step-simulator">
+                <div class="step-card simulator-card">
+                    <div class="step-header">
+                        <span class="step-number">3</span>
+                        <div>
+                            <h2 id="simulator-title">Simulador de Crédito</h2>
+                            <p id="simulator-subtitle">Configura los parámetros de tu financiamiento</p>
+                        </div>
+                    </div>
+
+                    <div class="simulator-content">
+                        <!-- Panel izquierdo: Configuración -->
+                        <div class="simulator-config">
+                            <!-- Datos del vehículo -->
+                            <div class="config-section">
+                                <h3>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+                                        <circle cx="7" cy="17" r="2"/>
+                                        <circle cx="17" cy="17" r="2"/>
+                                    </svg>
+                                    Datos del vehículo
+                                </h3>
+
+                                <div class="form-group">
+                                    <label for="vehicle-name">Nombre del vehículo (opcional)</label>
+                                    <input type="text" id="vehicle-name" placeholder="Ej: Mazda CX-5 2023">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="vehicle-year">Año del modelo *</label>
+                                    <select id="vehicle-year" required>
+                                        <!-- Se genera dinámicamente -->
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="vehicle-price">Precio del vehículo *</label>
+                                    <div class="input-currency">
+                                        <span class="currency-symbol">$</span>
+                                        <input type="text" id="vehicle-price" inputmode="numeric" placeholder="65.000.000" required>
+                                    </div>
+                                    <input type="range" id="price-slider" min="20000000" max="300000000" step="1000000" value="65000000">
+                                    <div class="slider-labels">
+                                        <span>$20M</span>
+                                        <span>$300M</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Configuración del crédito -->
+                            <div class="config-section">
+                                <h3>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                        <line x1="1" y1="10" x2="23" y2="10"/>
+                                    </svg>
+                                    Configuración del crédito
+                                </h3>
+
+                                <div class="form-group">
+                                    <label for="down-payment">
+                                        Cuota inicial (<span id="down-payment-percent">30</span>%)
+                                    </label>
+                                    <div class="input-currency">
+                                        <span class="currency-symbol">$</span>
+                                        <input type="text" id="down-payment" inputmode="numeric" placeholder="19.500.000">
+                                    </div>
+                                    <input type="range" id="down-payment-slider" min="10" max="70" step="5" value="30">
+                                    <div class="slider-labels">
+                                        <span>10%</span>
+                                        <span>70%</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Plazo de financiamiento</label>
+                                    <div class="term-buttons" id="term-buttons">
+                                        <!-- Se genera dinámicamente -->
+                                    </div>
+                                </div>
+
+                                <!-- Solo para simulación avanzada -->
+                                <div class="form-group advanced-only" id="plan-type-group">
+                                    <label>Tipo de plan</label>
+                                    <div class="plan-buttons">
+                                        <button type="button" class="plan-btn active" data-plan="traditional">
+                                            <span class="plan-icon">📊</span>
+                                            <span class="plan-name">Tradicional</span>
+                                            <span class="plan-desc">Cuota fija mensual</span>
+                                        </button>
+                                        <button type="button" class="plan-btn" data-plan="extra">
+                                            <span class="plan-icon">💰</span>
+                                            <span class="plan-name">Cuotas Extra</span>
+                                            <span class="plan-desc">2 cuotas adicionales/año</span>
+                                        </button>
+                                        <button type="button" class="plan-btn" data-plan="leasing">
+                                            <span class="plan-icon">🔑</span>
+                                            <span class="plan-name">Leasing</span>
+                                            <span class="plan-desc">Opción de compra</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Opción de compra para Leasing -->
+                                <div class="form-group advanced-only hidden" id="leasing-option-group">
+                                    <label for="leasing-option">Opción de compra</label>
+                                    <select id="leasing-option">
+                                        <option value="1">1% del valor del vehículo</option>
+                                        <option value="10" selected>10% del valor del vehículo</option>
+                                        <option value="20">20% del valor del vehículo</option>
+                                    </select>
+                                </div>
+
+                                <!-- Cuota extra para plan de cuotas extras -->
+                                <div class="form-group advanced-only hidden" id="extra-payment-group">
+                                    <label for="extra-payment">Valor de cuota extra</label>
+                                    <div class="input-currency">
+                                        <span class="currency-symbol">$</span>
+                                        <input type="text" id="extra-payment" inputmode="numeric" placeholder="1.000.000" value="1.000.000">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Resumen -->
+                            <div class="config-summary">
+                                <div class="summary-item">
+                                    <span>Valor a financiar</span>
+                                    <strong id="summary-financed">$0</strong>
+                                </div>
+                                <div class="summary-item">
+                                    <span>Porcentaje financiado</span>
+                                    <strong id="summary-percent">0%</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel derecho: Resultados -->
+                        <div class="simulator-results">
+                            <!-- Resultados básicos -->
+                            <div class="results-basic" id="results-basic">
+                                <div class="result-main">
+                                    <span class="result-label">Cuota mensual estimada</span>
+                                    <span class="result-value" id="basic-monthly">$0</span>
+                                    <span class="result-rate">Tasa referencial: 1.45% NMV</span>
+                                </div>
+
+                                <div class="result-details">
+                                    <div class="detail-item">
+                                        <span>Monto a financiar</span>
+                                        <strong id="basic-amount">$0</strong>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span>Total a pagar (aprox.)</span>
+                                        <strong id="basic-total">$0</strong>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span>Intereses (aprox.)</span>
+                                        <strong id="basic-interest">$0</strong>
+                                    </div>
+                                </div>
+
+                                <p class="results-disclaimer">
+                                    * Valores calculados con tasa promedio del mercado. Las condiciones reales dependen de tu perfil crediticio.
+                                </p>
+                            </div>
+
+                            <!-- Resultados avanzados -->
+                            <div class="results-advanced hidden" id="results-advanced">
+                                <h3 class="results-title">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 20V10"/>
+                                        <path d="M18 20V4"/>
+                                        <path d="M6 20v-4"/>
+                                    </svg>
+                                    Comparativa de entidades financieras
+                                </h3>
+                                <p class="results-subtitle">Cuotas con seguro de vida incluido</p>
+
+                                <div class="entities-grid" id="entities-grid">
+                                    <!-- Se genera dinámicamente -->
+                                </div>
+
+                                <div class="plan-note" id="plan-note">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M12 16v-4"/>
+                                        <path d="M12 8h.01"/>
+                                    </svg>
+                                    <span></span>
+                                </div>
+                            </div>
+
+                            <!-- Acciones -->
+                            <div class="results-actions">
+                                <button type="button" class="btn-whatsapp" id="btn-whatsapp">
+                                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                                    </svg>
+                                    Enviar simulación y contactar asesor
+                                </button>
+                                <button type="button" class="btn-secondary" id="btn-new-simulation">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                        <path d="M3 3v5h5"/>
+                                    </svg>
+                                    Nueva simulación
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="simulator-footer">
+                        <button type="button" class="btn-secondary" id="btn-back-type">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                            Cambiar tipo de simulación
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer simplificado -->
+    <footer class="simulator-footer-page">
+        <div class="container">
+            <p>&copy; 2025 ALTORRA CARS. Todos los derechos reservados.</p>
+            <p class="footer-disclaimer">Esta herramienta es solo de carácter informativo. ALTORRA CARS no es una entidad financiera.</p>
+        </div>
+    </footer>
+
+    <!-- Modal de políticas -->
+    <div class="policy-modal" id="policy-modal">
+        <div class="policy-modal-content">
+            <button class="policy-modal-close" id="policy-modal-close">&times;</button>
+            <h2 id="policy-modal-title">Política</h2>
+            <div class="policy-modal-body" id="policy-modal-body">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/simulador-credito.js"></script>
+</body>
+</html>

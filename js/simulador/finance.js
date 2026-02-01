@@ -89,25 +89,18 @@ function parseCurrency(str) {
 }
 
 // Exportar para uso en otros módulos
-if (typeof window !== 'undefined') {
-    window.SimuladorFinance = {
-        PMT,
-        PV,
-        calcularSeguroMensual,
-        formatCOP,
-        formatPercent,
-        parseCurrency
-    };
-}
+const exports = {
+    PMT,
+    PV,
+    calcularSeguroMensual,
+    formatCOP,
+    formatPercent,
+    parseCurrency
+};
 
-// Para Node.js (tests)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        PMT,
-        PV,
-        calcularSeguroMensual,
-        formatCOP,
-        formatPercent,
-        parseCurrency
-    };
+if (typeof window !== 'undefined') {
+    window.SimuladorFinance = exports;
+}
+if (typeof global !== 'undefined') {
+    global.SimuladorFinance = exports;
 }

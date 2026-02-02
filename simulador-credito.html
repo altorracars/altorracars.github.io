@@ -13,222 +13,1221 @@
     <!-- CSS -->
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/dark-theme.css">
-    <link rel="stylesheet" href="css/simulador-credito.css">
 
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================
+           SIMULADOR DE CRÉDITO - DISEÑO MODERNO V3.0
+           Full-width, responsive, UX mejorada
+        ============================================ */
+
+        :root {
+            --primary: #c9a227;
+            --primary-dark: #a88620;
+            --primary-light: #dbb93a;
+            --bg-dark: #0a0a0a;
+            --bg-card: #111111;
+            --bg-card-hover: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --border-color: #2a2a2a;
+            --success: #22c55e;
+            --error: #ef4444;
+            --gradient-gold: linear-gradient(135deg, #c9a227 0%, #dbb93a 50%, #a88620 100%);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .sim-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .sim-header .logo img {
+            height: 40px;
+            transition: var(--transition);
+        }
+
+        .sim-header .logo:hover img {
+            transform: scale(1.05);
+        }
+
+        .btn-home {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .btn-home:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--primary);
+        }
+
+        /* Main content */
+        .sim-main {
+            padding-top: 70px;
+            min-height: 100vh;
+        }
+
+        /* Steps indicator */
+        .steps-indicator {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 0;
+        }
+
+        .steps-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0.4;
+            transition: var(--transition);
+        }
+
+        .step-item.active {
+            opacity: 1;
+        }
+
+        .step-item.completed {
+            opacity: 1;
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .step-item.active .step-number {
+            background: var(--gradient-gold);
+            color: #000;
+        }
+
+        .step-item.completed .step-number {
+            background: var(--success);
+        }
+
+        .step-item.completed .step-number::after {
+            content: '✓';
+        }
+
+        .step-item.completed .step-number span {
+            display: none;
+        }
+
+        .step-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: var(--border-color);
+            margin: 0 16px;
+        }
+
+        .step-line.completed {
+            background: var(--success);
+        }
+
+        /* Sections */
+        .sim-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .sim-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Section: Terms */
+        .terms-section {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 60px 24px;
+        }
+
+        .terms-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 48px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .terms-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: var(--gradient-gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .terms-icon svg {
+            color: #000;
+            width: 40px;
+            height: 40px;
+        }
+
+        .terms-card h2 {
+            font-size: 28px;
+            margin-bottom: 24px;
+        }
+
+        .terms-box {
+            background: rgba(201, 162, 39, 0.1);
+            border: 1px solid rgba(201, 162, 39, 0.3);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: left;
+            margin-bottom: 32px;
+        }
+
+        .terms-box h3 {
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .terms-box p {
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .terms-box ul {
+            margin: 16px 0;
+            padding-left: 24px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .terms-box ul li {
+            margin-bottom: 8px;
+        }
+
+        /* Checkbox */
+        .checkbox-wrap {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 32px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .checkbox-wrap input {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .checkbox-wrap span {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: var(--gradient-gold);
+            border: none;
+            border-radius: var(--radius-md);
+            color: #000;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            min-width: 200px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(201, 162, 39, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--primary);
+        }
+
+        /* Section: Personal */
+        .personal-section {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .form-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 40px;
+            border: 1px solid var(--border-color);
+        }
+
+        .form-header {
+            margin-bottom: 32px;
+        }
+
+        .form-header h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: var(--text-secondary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-divider {
+            grid-column: 1 / -1;
+            height: 1px;
+            background: var(--border-color);
+            margin: 16px 0;
+        }
+
+        .form-subtitle {
+            grid-column: 1 / -1;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-top: 8px;
+        }
+
+        .field-help {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 24px;
+            margin-top: 8px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+
+        .radio-group input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+
+        .auth-checkbox {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255,255,255,0.02);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+        }
+
+        .auth-checkbox input {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .auth-checkbox span {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .auth-checkbox a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .auth-checkbox a:hover {
+            text-decoration: underline;
+        }
+
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
+            margin-top: 16px;
+        }
+
+        /* Section: Simulator - FULL WIDTH */
+        .simulator-section {
+            width: 100%;
+            padding: 40px 24px;
+        }
+
+        .simulator-grid {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 32px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1100px) {
+            .simulator-grid {
+                grid-template-columns: 1fr;
+                max-width: 800px;
+            }
+        }
+
+        /* Config Panel */
+        .config-panel {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            border: 1px solid var(--border-color);
+            height: fit-content;
+            position: sticky;
+            top: 90px;
+        }
+
+        .config-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .config-title svg {
+            color: var(--primary);
+        }
+
+        .config-group {
+            margin-bottom: 24px;
+        }
+
+        .config-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .config-group .value-display {
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Currency input */
+        .currency-input {
+            position: relative;
+        }
+
+        .currency-input .symbol {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .currency-input input {
+            width: 100%;
+            padding: 14px 16px 14px 40px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .currency-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+        }
+
+        /* Slider */
+        .slider-wrap {
+            margin-top: 12px;
+        }
+
+        .slider-wrap input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .slider-wrap input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--gradient-gold);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .slider-wrap input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* Term buttons */
+        .term-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .term-btn {
+            padding: 12px 8px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .term-btn:hover {
+            border-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .term-btn.active {
+            background: var(--gradient-gold);
+            border-color: var(--primary);
+            color: #000;
+        }
+
+        /* Summary */
+        .config-summary {
+            background: rgba(201, 162, 39, 0.1);
+            border: 1px solid rgba(201, 162, 39, 0.3);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-top: 24px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .summary-row:not(:last-child) {
+            border-bottom: 1px solid rgba(201, 162, 39, 0.2);
+        }
+
+        .summary-row span {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .summary-row strong {
+            color: var(--primary);
+            font-size: 16px;
+        }
+
+        /* Results Panel */
+        .results-panel {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            border: 1px solid var(--border-color);
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .results-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .results-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Entity cards grid */
+        .entities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .entity-card {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .entity-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--entity-color, var(--border-color));
+        }
+
+        .entity-card:hover {
+            border-color: var(--entity-color, var(--primary));
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .entity-card.best {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+        }
+
+        .entity-card.best::before {
+            background: var(--success);
+        }
+
+        .entity-card.unavailable {
+            opacity: 0.5;
+        }
+
+        .entity-card.unavailable:hover {
+            transform: none;
+        }
+
+        .entity-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .entity-name {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .entity-badge {
+            padding: 4px 10px;
+            background: var(--success);
+            color: #000;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .entity-rate {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .entity-monthly {
+            margin-bottom: 16px;
+        }
+
+        .entity-monthly-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .entity-monthly-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .entity-monthly-value.small {
+            font-size: 18px;
+            color: var(--text-muted);
+        }
+
+        .entity-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .entity-detail {
+            text-align: center;
+        }
+
+        .entity-detail-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .entity-detail-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        /* Disclaimer */
+        .results-disclaimer {
+            margin-top: 32px;
+            padding: 20px;
+            background: rgba(255,255,255,0.02);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--primary);
+        }
+
+        .results-disclaimer p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .results-disclaimer p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* WhatsApp CTA */
+        .cta-section {
+            margin-top: 32px;
+            padding: 32px;
+            background: linear-gradient(135deg, rgba(37, 211, 102, 0.1) 0%, rgba(37, 211, 102, 0.05) 100%);
+            border: 1px solid rgba(37, 211, 102, 0.3);
+            border-radius: var(--radius-lg);
+            text-align: center;
+        }
+
+        .cta-section h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .cta-section p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .btn-whatsapp {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 40px;
+            background: #25D366;
+            border: none;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-whatsapp:hover {
+            background: #128C7E;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(37, 211, 102, 0.4);
+        }
+
+        /* Footer */
+        .sim-footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            padding: 24px;
+            text-align: center;
+        }
+
+        .sim-footer p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        /* Loading state */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sim-header {
+                padding: 0 16px;
+            }
+
+            .btn-home span {
+                display: none;
+            }
+
+            .steps-indicator {
+                display: none;
+            }
+
+            .terms-card {
+                padding: 32px 24px;
+            }
+
+            .form-card {
+                padding: 24px;
+            }
+
+            .config-panel {
+                position: static;
+                padding: 24px;
+            }
+
+            .results-panel {
+                padding: 24px;
+            }
+
+            .term-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .entity-monthly-value {
+                font-size: 26px;
+            }
+
+            .form-actions {
+                flex-direction: column-reverse;
+            }
+
+            .form-actions button {
+                width: 100%;
+            }
+        }
+
+        /* Policy modal */
+        .policy-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .policy-modal.active {
+            display: flex;
+        }
+
+        .policy-modal-content {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            max-width: 700px;
+            max-height: 80vh;
+            overflow: auto;
+            padding: 32px;
+            position: relative;
+        }
+
+        .policy-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-dark);
+            border: none;
+            border-radius: 50%;
+            color: var(--text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .policy-modal-content h2 {
+            margin-bottom: 20px;
+            padding-right: 40px;
+        }
+
+        .policy-modal-body {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .policy-modal-body h3 {
+            color: var(--text-primary);
+            margin: 20px 0 10px;
+            font-size: 16px;
+        }
+    </style>
 </head>
-<body class="simulator-page">
-    <!-- Header simplificado -->
-    <header class="simulator-header">
-        <div class="container">
-            <a href="index.html" class="simulator-logo">
-                <img src="multimedia/logo/logo-altorra.png" alt="ALTORRA CARS" height="40">
-            </a>
-            <a href="index.html" class="btn-back-home">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-                Volver al inicio
-            </a>
-        </div>
+<body>
+    <!-- Header -->
+    <header class="sim-header">
+        <a href="index.html" class="logo">
+            <img src="multimedia/logo/logo-altorra.png" alt="ALTORRA CARS">
+        </a>
+        <a href="index.html" class="btn-home">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            <span>Volver al inicio</span>
+        </a>
     </header>
 
-    <!-- Contenido principal -->
-    <main class="simulator-main">
-        <div class="container">
-            <!-- Título de la página -->
-            <div class="simulator-page-header">
-                <h1>Simulador de <span class="gold">Crédito Vehicular</span></h1>
-                <p>Conoce las opciones de financiamiento disponibles para tu próximo vehículo</p>
+    <main class="sim-main">
+        <!-- Steps indicator -->
+        <div class="steps-indicator">
+            <div class="steps-container">
+                <div class="step-item active" data-step="1">
+                    <div class="step-number"><span>1</span></div>
+                    <span class="step-text">Términos</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step-item" data-step="2">
+                    <div class="step-number"><span>2</span></div>
+                    <span class="step-text">Datos personales</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step-item" data-step="3">
+                    <div class="step-number"><span>3</span></div>
+                    <span class="step-text">Simulación</span>
+                </div>
             </div>
+        </div>
 
-            <!-- PASO 1: Términos legales -->
-            <section class="simulator-step" id="step-terms">
-                <div class="step-card terms-card">
+        <!-- Section 1: Terms -->
+        <section class="sim-section active" id="section-terms">
+            <div class="terms-section">
+                <div class="terms-card">
                     <div class="terms-icon">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 12l2 2 4-4"/>
-                            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                            <circle cx="12" cy="12" r="10"/>
                         </svg>
                     </div>
                     <h2>Antes de continuar</h2>
-                    <div class="terms-content">
-                        <div class="terms-box">
-                            <h3>Aviso Legal Importante</h3>
-                            <p>Esta herramienta de simulación financiera es únicamente de <strong>carácter informativo y referencial</strong>.</p>
-                            <p>Los valores mostrados (cuotas, tasas, plazos) son <strong>aproximados</strong> y pueden variar según:</p>
-                            <ul>
-                                <li>Tu perfil crediticio y capacidad de pago</li>
-                                <li>Políticas vigentes de cada entidad financiera</li>
-                                <li>Condiciones del mercado al momento de la solicitud</li>
-                                <li>Documentación y verificación de ingresos</li>
-                            </ul>
-                            <p><strong>ALTORRA CARS</strong> actúa como intermediario comercial y no como entidad financiera. No garantizamos la aprobación de créditos ni las condiciones simuladas.</p>
-                        </div>
+
+                    <div class="terms-box">
+                        <h3>Aviso Legal Importante</h3>
+                        <p>Esta herramienta de simulación financiera es únicamente de <strong>carácter informativo y referencial</strong>.</p>
+                        <p>Los valores mostrados (cuotas, tasas, plazos) son <strong>aproximados</strong> y pueden variar según:</p>
+                        <ul>
+                            <li>Tu perfil crediticio y capacidad de pago</li>
+                            <li>Políticas vigentes de cada entidad financiera</li>
+                            <li>Condiciones del mercado al momento de la solicitud</li>
+                        </ul>
+                        <p><strong>ALTORRA CARS</strong> actúa como intermediario comercial y no como entidad financiera.</p>
                     </div>
-                    <label class="checkbox-container">
+
+                    <label class="checkbox-wrap">
                         <input type="checkbox" id="accept-terms">
-                        <span class="checkmark"></span>
-                        <span class="checkbox-text">He leído y acepto que esta simulación es únicamente referencial</span>
+                        <span>He leído y acepto que esta simulación es únicamente referencial</span>
                     </label>
-                    <button class="btn-primary btn-continue" id="btn-continue-terms" disabled>
+
+                    <button class="btn-primary" id="btn-continue-terms" disabled>
                         Continuar
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
                     </button>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <!-- PASO 2: Datos personales -->
-            <section class="simulator-step hidden" id="step-personal">
-                <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">1</span>
-                        <div>
-                            <h2>Información Personal</h2>
-                            <p>Completa tus datos para personalizar la simulación</p>
-                        </div>
+        <!-- Section 2: Personal Data -->
+        <section class="sim-section" id="section-personal">
+            <div class="personal-section">
+                <div class="form-card">
+                    <div class="form-header">
+                        <h2>Información Personal</h2>
+                        <p>Completa tus datos para personalizar la simulación</p>
                     </div>
 
-                    <form id="personal-form" class="personal-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="nombres">Nombres *</label>
-                                <input type="text" id="nombres" name="nombres" required placeholder="Ej: Juan Carlos">
-                            </div>
-                            <div class="form-group">
-                                <label for="apellidos">Apellidos *</label>
-                                <input type="text" id="apellidos" name="apellidos" required placeholder="Ej: Pérez García">
-                            </div>
+                    <form id="personal-form" class="form-grid">
+                        <div class="form-group">
+                            <label for="nombres">Nombres *</label>
+                            <input type="text" id="nombres" required placeholder="Ej: Juan Carlos">
+                        </div>
+                        <div class="form-group">
+                            <label for="apellidos">Apellidos *</label>
+                            <input type="text" id="apellidos" required placeholder="Ej: Pérez García">
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="tipo-documento">Tipo de documento *</label>
-                                <select id="tipo-documento" name="tipo-documento" required>
-                                    <option value="">Seleccionar...</option>
-                                    <option value="CC">Cédula de Ciudadanía</option>
-                                    <option value="CE">Cédula de Extranjería</option>
-                                    <option value="NIT">NIT</option>
-                                    <option value="PAS">Pasaporte</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="documento">Número de documento *</label>
-                                <input type="text" id="documento" name="documento" required placeholder="Ej: 1234567890" inputmode="numeric">
-                            </div>
+                        <div class="form-group">
+                            <label for="tipo-documento">Tipo de documento *</label>
+                            <select id="tipo-documento" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="CC">Cédula de Ciudadanía</option>
+                                <option value="CE">Cédula de Extranjería</option>
+                                <option value="NIT">NIT</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="documento">Número de documento *</label>
+                            <input type="text" id="documento" required placeholder="Ej: 1234567890" inputmode="numeric">
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="fecha-nacimiento">Fecha de nacimiento *</label>
-                                <input type="date" id="fecha-nacimiento" name="fecha-nacimiento" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="ciudad">Ciudad de residencia *</label>
-                                <input type="text" id="ciudad" name="ciudad" required placeholder="Ej: Cartagena">
-                            </div>
+                        <div class="form-group">
+                            <label for="celular">Celular *</label>
+                            <input type="tel" id="celular" required placeholder="Ej: 3001234567" inputmode="tel">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Correo electrónico *</label>
+                            <input type="email" id="email" required placeholder="Ej: correo@ejemplo.com">
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="celular">Celular *</label>
-                                <input type="tel" id="celular" name="celular" required placeholder="Ej: 3001234567" inputmode="tel">
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Correo electrónico *</label>
-                                <input type="email" id="email" name="email" required placeholder="Ej: correo@ejemplo.com">
-                            </div>
+                        <div class="form-group">
+                            <label for="ciudad">Ciudad de residencia *</label>
+                            <input type="text" id="ciudad" required placeholder="Ej: Cartagena">
+                        </div>
+                        <div class="form-group">
+                            <label for="ocupacion">Ocupación *</label>
+                            <select id="ocupacion" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="empleado">Empleado</option>
+                                <option value="independiente">Independiente</option>
+                                <option value="pensionado">Pensionado</option>
+                                <option value="otro">Otro</option>
+                            </select>
                         </div>
 
                         <div class="form-divider"></div>
 
-                        <div class="form-group">
-                            <label>¿Es usted una Persona Expuesta Públicamente (PEP) o tiene vínculo con alguna? *</label>
-                            <p class="field-help">Persona que desempeña funciones públicas prominentes en Colombia o en el extranjero</p>
+                        <div class="form-group full-width">
+                            <label>¿Es Persona Expuesta Públicamente (PEP)? *</label>
+                            <p class="field-help">Funcionario público o con vínculos a cargos públicos prominentes</p>
                             <div class="radio-group">
-                                <label class="radio-container">
+                                <label>
                                     <input type="radio" name="pep" value="no" required>
-                                    <span class="radio-mark"></span>
                                     <span>No</span>
                                 </label>
-                                <label class="radio-container">
+                                <label>
                                     <input type="radio" name="pep" value="si">
-                                    <span class="radio-mark"></span>
                                     <span>Sí</span>
                                 </label>
                             </div>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ocupacion">Ocupación *</label>
-                                <select id="ocupacion" name="ocupacion" required>
-                                    <option value="">Seleccionar...</option>
-                                    <option value="empleado">Empleado</option>
-                                    <option value="independiente">Independiente</option>
-                                    <option value="fuerzas-militares">Fuerzas Militares / Policía</option>
-                                    <option value="pensionado">Pensionado</option>
-                                    <option value="otro">Otro</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="otra-ocupacion-group" style="display: none;">
-                                <label for="otra-ocupacion">Especifique su ocupación *</label>
-                                <input type="text" id="otra-ocupacion" name="otra-ocupacion" placeholder="Describa su ocupación">
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="antiguedad">Antigüedad laboral *</label>
-                                <select id="antiguedad" name="antiguedad" required>
-                                    <option value="">Seleccionar...</option>
-                                    <option value="menos-6">Menos de 6 meses</option>
-                                    <option value="6-12">Entre 6 meses y 1 año</option>
-                                    <option value="1-2">Entre 1 y 2 años</option>
-                                    <option value="2-5">Entre 2 y 5 años</option>
-                                    <option value="mas-5">Más de 5 años</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="ingresos">Ingresos mensuales *</label>
-                                <select id="ingresos" name="ingresos" required>
-                                    <option value="">Seleccionar...</option>
-                                    <option value="1-2">$1.000.000 - $2.000.000</option>
-                                    <option value="2-4">$2.000.000 - $4.000.000</option>
-                                    <option value="4-7">$4.000.000 - $7.000.000</option>
-                                    <option value="7-10">$7.000.000 - $10.000.000</option>
-                                    <option value="10-15">$10.000.000 - $15.000.000</option>
-                                    <option value="mas-15">Más de $15.000.000</option>
-                                </select>
-                            </div>
-                        </div>
-
                         <div class="form-divider"></div>
+                        <h3 class="form-subtitle">Autorizaciones requeridas</h3>
 
-                        <!-- Autorizaciones -->
-                        <h3 class="authorizations-title">Autorizaciones requeridas</h3>
-
-                        <label class="checkbox-container auth-checkbox">
-                            <input type="checkbox" id="auth-contact" name="auth-contact" required>
-                            <span class="checkmark"></span>
-                            <span class="checkbox-text">Autorizo a <strong>ALTORRA CARS</strong> y sus entidades financieras aliadas a contactarme a través de los medios proporcionados para informarme sobre productos de financiación vehicular, ofertas y servicios relacionados.</span>
+                        <label class="auth-checkbox">
+                            <input type="checkbox" id="auth-contact" required>
+                            <span>Autorizo a <strong>ALTORRA CARS</strong> y sus entidades financieras aliadas a contactarme para informarme sobre productos de financiación vehicular.</span>
                         </label>
 
-                        <label class="checkbox-container auth-checkbox">
-                            <input type="checkbox" id="auth-data" name="auth-data" required>
-                            <span class="checkmark"></span>
-                            <span class="checkbox-text">He leído, comprendo y acepto la <a href="#" class="link-policy" data-policy="privacy">Política de Tratamiento de Datos Personales</a> y la <a href="#" class="link-policy" data-policy="cookies">Política de Cookies</a> de ALTORRA CARS. Autorizo el tratamiento de mis datos personales conforme a dichas políticas.</span>
+                        <label class="auth-checkbox">
+                            <input type="checkbox" id="auth-data" required>
+                            <span>He leído y acepto la <a href="#" class="link-policy" data-policy="privacy">Política de Tratamiento de Datos Personales</a> de ALTORRA CARS.</span>
                         </label>
 
-                        <label class="checkbox-container auth-checkbox">
-                            <input type="checkbox" id="auth-credit" name="auth-credit" required>
-                            <span class="checkmark"></span>
-                            <span class="checkbox-text">Autorizo a <strong>ALTORRA COMPANY S.A.S.</strong> y/o sus aliados comerciales a consultar mi información crediticia, financiera, comercial y de seguridad social en centrales de riesgo y operadores de información con el fin de evaluar mi solicitud de crédito vehicular.</span>
+                        <label class="auth-checkbox">
+                            <input type="checkbox" id="auth-credit" required>
+                            <span>Autorizo consultar mi información crediticia en centrales de riesgo para evaluar mi solicitud de crédito vehicular.</span>
                         </label>
 
                         <div class="form-actions">
@@ -239,7 +1238,7 @@
                                 Volver
                             </button>
                             <button type="submit" class="btn-primary">
-                                Continuar a la simulación
+                                Continuar
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M5 12h14M12 5l7 7-7 7"/>
                                 </svg>
@@ -247,333 +1246,606 @@
                         </div>
                     </form>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <!-- PASO 3: Selección tipo de simulación -->
-            <section class="simulator-step hidden" id="step-type">
-                <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">2</span>
-                        <div>
-                            <h2>Tipo de Simulación</h2>
-                            <p>Selecciona el tipo de simulación que deseas realizar</p>
+        <!-- Section 3: Simulator -->
+        <section class="sim-section" id="section-simulator">
+            <div class="simulator-section">
+                <div class="simulator-grid">
+                    <!-- Config Panel -->
+                    <div class="config-panel">
+                        <h2 class="config-title">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                            </svg>
+                            Configuración
+                        </h2>
+
+                        <!-- Vehicle name -->
+                        <div class="config-group">
+                            <label for="vehicle-name">Vehículo (opcional)</label>
+                            <div class="currency-input">
+                                <input type="text" id="vehicle-name" placeholder="Ej: Mazda CX-5 2023" style="padding-left:16px;">
+                            </div>
+                        </div>
+
+                        <!-- Year -->
+                        <div class="config-group">
+                            <label for="vehicle-year">Año del modelo</label>
+                            <select id="vehicle-year" style="width:100%;padding:14px 16px;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:var(--radius-md);color:var(--text-primary);font-size:15px;">
+                                <!-- Generated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="config-group">
+                            <label>Precio del vehículo</label>
+                            <div class="currency-input">
+                                <span class="symbol">$</span>
+                                <input type="text" id="vehicle-price" inputmode="numeric" placeholder="65.000.000">
+                            </div>
+                            <div class="slider-wrap">
+                                <input type="range" id="price-slider" min="20000000" max="300000000" step="1000000" value="65000000">
+                                <div class="slider-labels">
+                                    <span>$20M</span>
+                                    <span>$300M</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Down payment -->
+                        <div class="config-group">
+                            <label>Cuota inicial <span class="value-display" id="dp-percent-display">(30%)</span></label>
+                            <div class="currency-input">
+                                <span class="symbol">$</span>
+                                <input type="text" id="down-payment" inputmode="numeric" placeholder="19.500.000">
+                            </div>
+                            <div class="slider-wrap">
+                                <input type="range" id="dp-slider" min="10" max="70" step="5" value="30">
+                                <div class="slider-labels">
+                                    <span>10%</span>
+                                    <span>70%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Term -->
+                        <div class="config-group">
+                            <label>Plazo de financiamiento</label>
+                            <div class="term-grid" id="term-grid">
+                                <!-- Generated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="config-summary">
+                            <div class="summary-row">
+                                <span>Valor a financiar</span>
+                                <strong id="financed-amount">$0</strong>
+                            </div>
+                            <div class="summary-row">
+                                <span>Porcentaje financiado</span>
+                                <strong id="financed-percent">0%</strong>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="simulation-types">
-                        <button class="simulation-type-card" data-type="basic">
-                            <div class="type-icon">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                                </svg>
+                    <!-- Results Panel -->
+                    <div class="results-panel">
+                        <div class="results-header">
+                            <div>
+                                <h2 class="results-title">Resultados de la Simulación</h2>
+                                <p class="results-subtitle">Cuotas mensuales con seguro de vida incluido</p>
                             </div>
-                            <h3>Simulación Básica</h3>
-                            <p>Calcula tu cuota mensual estimada con una tasa de interés promedio del mercado.</p>
-                            <span class="type-badge">Rápido y sencillo</span>
-                            <ul class="type-features">
-                                <li>Cálculo instantáneo</li>
-                                <li>Tasa referencial 1.45% NMV</li>
-                                <li>Ideal para estimaciones rápidas</li>
-                            </ul>
-                        </button>
+                        </div>
 
-                        <button class="simulation-type-card featured" data-type="advanced">
-                            <div class="type-badge-featured">Recomendado</div>
-                            <div class="type-icon">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                    <path d="M2 17l10 5 10-5"/>
-                                    <path d="M2 12l10 5 10-5"/>
+                        <div class="entities-grid" id="entities-grid">
+                            <!-- Generated dynamically -->
+                        </div>
+
+                        <div class="results-disclaimer">
+                            <p><strong>Nota importante:</strong> Las tasas y condiciones mostradas son referenciales y pueden variar según tu perfil crediticio, historial financiero y políticas vigentes de cada entidad.</p>
+                            <p>ALTORRA CARS actúa como intermediario comercial. La aprobación del crédito está sujeta a estudio de cada entidad financiera.</p>
+                        </div>
+
+                        <div class="cta-section">
+                            <h3>¿Te interesa alguna opción?</h3>
+                            <p>Contáctanos por WhatsApp para recibir asesoría personalizada</p>
+                            <button class="btn-whatsapp" id="btn-whatsapp">
+                                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                                 </svg>
-                            </div>
-                            <h3>Simulación Avanzada</h3>
-                            <p>Compara opciones de financiamiento con nuestras entidades aliadas estratégicas.</p>
-                            <span class="type-badge gold">Múltiples opciones</span>
-                            <ul class="type-features">
-                                <li>5 entidades financieras</li>
-                                <li>Tasas personalizadas</li>
-                                <li>Planes tradicional, cuotas extra y leasing</li>
-                                <li>Comparativa detallada</li>
-                            </ul>
-                        </button>
-                    </div>
-
-                    <div class="form-actions centered">
-                        <button type="button" class="btn-secondary" id="btn-back-personal">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 12H5M12 19l-7-7 7-7"/>
-                            </svg>
-                            Volver
-                        </button>
+                                Contactar asesor
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </section>
-
-            <!-- PASO 4: Simulador -->
-            <section class="simulator-step hidden" id="step-simulator">
-                <div class="step-card simulator-card">
-                    <div class="step-header">
-                        <span class="step-number">3</span>
-                        <div>
-                            <h2 id="simulator-title">Simulador de Crédito</h2>
-                            <p id="simulator-subtitle">Configura los parámetros de tu financiamiento</p>
-                        </div>
-                    </div>
-
-                    <div class="simulator-content">
-                        <!-- Panel izquierdo: Configuración -->
-                        <div class="simulator-config">
-                            <!-- Datos del vehículo -->
-                            <div class="config-section">
-                                <h3>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-                                        <circle cx="7" cy="17" r="2"/>
-                                        <circle cx="17" cy="17" r="2"/>
-                                    </svg>
-                                    Datos del vehículo
-                                </h3>
-
-                                <div class="form-group">
-                                    <label for="vehicle-name">Nombre del vehículo (opcional)</label>
-                                    <input type="text" id="vehicle-name" placeholder="Ej: Mazda CX-5 2023">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="vehicle-year">Año del modelo *</label>
-                                    <select id="vehicle-year" required>
-                                        <!-- Se genera dinámicamente -->
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="vehicle-price">Precio del vehículo *</label>
-                                    <div class="input-currency">
-                                        <span class="currency-symbol">$</span>
-                                        <input type="text" id="vehicle-price" inputmode="numeric" placeholder="65.000.000" required>
-                                    </div>
-                                    <input type="range" id="price-slider" min="20000000" max="300000000" step="1000000" value="65000000">
-                                    <div class="slider-labels">
-                                        <span>$20M</span>
-                                        <span>$300M</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Configuración del crédito -->
-                            <div class="config-section">
-                                <h3>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                                        <line x1="1" y1="10" x2="23" y2="10"/>
-                                    </svg>
-                                    Configuración del crédito
-                                </h3>
-
-                                <div class="form-group">
-                                    <label for="down-payment">
-                                        Cuota inicial (<span id="down-payment-percent">30</span>%)
-                                    </label>
-                                    <div class="input-currency">
-                                        <span class="currency-symbol">$</span>
-                                        <input type="text" id="down-payment" inputmode="numeric" placeholder="19.500.000">
-                                    </div>
-                                    <input type="range" id="down-payment-slider" min="10" max="70" step="5" value="30">
-                                    <div class="slider-labels">
-                                        <span>10%</span>
-                                        <span>70%</span>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Plazo de financiamiento</label>
-                                    <div class="term-buttons" id="term-buttons">
-                                        <!-- Se genera dinámicamente -->
-                                    </div>
-                                </div>
-
-                                <!-- Nivel de riesgo (solo avanzada) -->
-                                <div class="form-group advanced-only" id="risk-group">
-                                    <label>Nivel de riesgo cliente</label>
-                                    <p class="field-help">G1 = Bajo riesgo, G6 = Alto riesgo</p>
-                                    <div class="risk-buttons" id="risk-buttons">
-                                        <!-- Se genera dinámicamente -->
-                                    </div>
-                                </div>
-
-                                <!-- Solo para simulación avanzada -->
-                                <div class="form-group advanced-only" id="plan-type-group">
-                                    <label>Tipo de plan</label>
-                                    <div class="plan-buttons">
-                                        <button type="button" class="plan-btn active" data-plan="traditional">
-                                            <span class="plan-icon">📊</span>
-                                            <span class="plan-name">Tradicional</span>
-                                            <span class="plan-desc">Cuota fija mensual</span>
-                                        </button>
-                                        <button type="button" class="plan-btn" data-plan="extra">
-                                            <span class="plan-icon">💰</span>
-                                            <span class="plan-name">Cuotas Extra</span>
-                                            <span class="plan-desc">2 cuotas adicionales/año</span>
-                                        </button>
-                                        <button type="button" class="plan-btn" data-plan="leasing">
-                                            <span class="plan-icon">🔑</span>
-                                            <span class="plan-name">Leasing</span>
-                                            <span class="plan-desc">Opción de compra</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Opción de compra para Leasing -->
-                                <div class="form-group advanced-only hidden" id="leasing-option-group">
-                                    <label for="leasing-option">Opción de compra</label>
-                                    <select id="leasing-option">
-                                        <option value="0.01" selected>1% del valor del vehículo</option>
-                                        <option value="0.10">10% del valor del vehículo</option>
-                                    </select>
-                                </div>
-
-                                <!-- Cuota extra para plan de cuotas extras -->
-                                <div class="form-group advanced-only hidden" id="extra-payment-group">
-                                    <label for="extra-payment">Valor de cuota extra</label>
-                                    <div class="input-currency">
-                                        <span class="currency-symbol">$</span>
-                                        <input type="text" id="extra-payment" inputmode="numeric" placeholder="500.000" value="500.000">
-                                    </div>
-                                </div>
-
-                                <!-- Mes primera cuota extra -->
-                                <div class="form-group advanced-only hidden" id="offset-group">
-                                    <label for="offset-meses">Mes primera cuota extra</label>
-                                    <select id="offset-meses">
-                                        <!-- Se genera dinámicamente -->
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Resumen -->
-                            <div class="config-summary">
-                                <div class="summary-item">
-                                    <span>Valor a financiar</span>
-                                    <strong id="summary-financed">$0</strong>
-                                </div>
-                                <div class="summary-item">
-                                    <span>Porcentaje financiado</span>
-                                    <strong id="summary-percent">0%</strong>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Panel derecho: Resultados -->
-                        <div class="simulator-results">
-                            <!-- Resultados básicos -->
-                            <div class="results-basic" id="results-basic">
-                                <div class="result-main">
-                                    <span class="result-label">Cuota mensual estimada</span>
-                                    <span class="result-value" id="basic-monthly">$0</span>
-                                    <span class="result-rate">Tasa referencial: 1.45% NMV</span>
-                                </div>
-
-                                <div class="result-details">
-                                    <div class="detail-item">
-                                        <span>Monto a financiar</span>
-                                        <strong id="basic-amount">$0</strong>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span>Total a pagar (aprox.)</span>
-                                        <strong id="basic-total">$0</strong>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span>Intereses (aprox.)</span>
-                                        <strong id="basic-interest">$0</strong>
-                                    </div>
-                                </div>
-
-                                <p class="results-disclaimer">
-                                    * Valores calculados con tasa promedio del mercado. Las condiciones reales dependen de tu perfil crediticio.
-                                </p>
-                            </div>
-
-                            <!-- Resultados avanzados -->
-                            <div class="results-advanced hidden" id="results-advanced">
-                                <h3 class="results-title">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M12 20V10"/>
-                                        <path d="M18 20V4"/>
-                                        <path d="M6 20v-4"/>
-                                    </svg>
-                                    Comparativa de entidades financieras
-                                </h3>
-                                <p class="results-subtitle">Cuotas con seguro de vida incluido</p>
-
-                                <div class="entities-grid" id="entities-grid">
-                                    <!-- Se genera dinámicamente -->
-                                </div>
-
-                                <div class="plan-note" id="plan-note">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <path d="M12 16v-4"/>
-                                        <path d="M12 8h.01"/>
-                                    </svg>
-                                    <span></span>
-                                </div>
-                            </div>
-
-                            <!-- Acciones -->
-                            <div class="results-actions">
-                                <button type="button" class="btn-whatsapp" id="btn-whatsapp">
-                                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                                    </svg>
-                                    Enviar simulación y contactar asesor
-                                </button>
-                                <button type="button" class="btn-secondary" id="btn-new-simulation">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                                        <path d="M3 3v5h5"/>
-                                    </svg>
-                                    Nueva simulación
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="simulator-footer">
-                        <button type="button" class="btn-secondary" id="btn-back-type">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 12H5M12 19l-7-7 7-7"/>
-                            </svg>
-                            Cambiar tipo de simulación
-                        </button>
-                    </div>
-                </div>
-            </section>
-        </div>
+            </div>
+        </section>
     </main>
 
-    <!-- Footer simplificado -->
-    <footer class="simulator-footer-page">
-        <div class="container">
-            <p>&copy; 2025 ALTORRA CARS. Todos los derechos reservados.</p>
-            <p class="footer-disclaimer">Esta herramienta es solo de carácter informativo. ALTORRA CARS no es una entidad financiera.</p>
-        </div>
+    <!-- Footer -->
+    <footer class="sim-footer">
+        <p>&copy; 2025 ALTORRA CARS. Todos los derechos reservados.</p>
+        <p>Esta herramienta es solo de carácter informativo. ALTORRA CARS no es una entidad financiera.</p>
     </footer>
 
-    <!-- Modal de políticas -->
+    <!-- Policy Modal -->
     <div class="policy-modal" id="policy-modal">
         <div class="policy-modal-content">
             <button class="policy-modal-close" id="policy-modal-close">&times;</button>
             <h2 id="policy-modal-title">Política</h2>
-            <div class="policy-modal-body" id="policy-modal-body">
-                <!-- Contenido dinámico -->
-            </div>
+            <div class="policy-modal-body" id="policy-modal-body"></div>
         </div>
     </div>
 
-    <!-- JavaScript - Motor de Simulación v2.0 -->
+    <!-- JavaScript -->
     <script src="js/simulador/data.js"></script>
     <script src="js/simulador/finance.js"></script>
     <script src="js/simulador/simulator.js"></script>
-    <script src="js/simulador/ui.js"></script>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ============================================
+        // STATE & CONFIG
+        // ============================================
+        const state = {
+            step: 1,
+            terms: false,
+            personal: {},
+            vehicle: {
+                name: '',
+                year: new Date().getFullYear(),
+                price: 65000000,
+                downPayment: 19500000,
+                downPaymentPercent: 30,
+                term: 60
+            }
+        };
+
+        const TERMS = [24, 36, 48, 60, 72, 84];
+        const WHATSAPP = '573235016747';
+
+        // Entity colors
+        const ENTITY_COLORS = {
+            SUFI: '#0066cc',
+            OCCIDENTE: '#e31937',
+            FINANDINA: '#00a651',
+            FINANZAUTO: '#ff6600',
+            MOBILIZE: '#ffd700'
+        };
+
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const $sections = document.querySelectorAll('.sim-section');
+        const $steps = document.querySelectorAll('.step-item');
+        const $stepLines = document.querySelectorAll('.step-line');
+
+        // Terms
+        const $acceptTerms = document.getElementById('accept-terms');
+        const $btnContinueTerms = document.getElementById('btn-continue-terms');
+
+        // Personal
+        const $personalForm = document.getElementById('personal-form');
+        const $btnBackTerms = document.getElementById('btn-back-terms');
+
+        // Simulator
+        const $vehicleName = document.getElementById('vehicle-name');
+        const $vehicleYear = document.getElementById('vehicle-year');
+        const $vehiclePrice = document.getElementById('vehicle-price');
+        const $priceSlider = document.getElementById('price-slider');
+        const $downPayment = document.getElementById('down-payment');
+        const $dpSlider = document.getElementById('dp-slider');
+        const $dpPercentDisplay = document.getElementById('dp-percent-display');
+        const $termGrid = document.getElementById('term-grid');
+        const $financedAmount = document.getElementById('financed-amount');
+        const $financedPercent = document.getElementById('financed-percent');
+        const $entitiesGrid = document.getElementById('entities-grid');
+        const $btnWhatsapp = document.getElementById('btn-whatsapp');
+
+        // Policy modal
+        const $policyModal = document.getElementById('policy-modal');
+        const $policyModalClose = document.getElementById('policy-modal-close');
+        const $policyModalTitle = document.getElementById('policy-modal-title');
+        const $policyModalBody = document.getElementById('policy-modal-body');
+
+        // ============================================
+        // UTILS
+        // ============================================
+        function formatCOP(num) {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(num);
+        }
+
+        function parseCurrency(str) {
+            return parseInt(String(str).replace(/\D/g, '')) || 0;
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('es-CO').format(num);
+        }
+
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function goToStep(stepNum) {
+            state.step = stepNum;
+
+            // Update sections
+            $sections.forEach((s, i) => {
+                s.classList.toggle('active', i + 1 === stepNum);
+            });
+
+            // Update step indicators
+            $steps.forEach((s, i) => {
+                const num = i + 1;
+                s.classList.toggle('active', num === stepNum);
+                s.classList.toggle('completed', num < stepNum);
+            });
+
+            $stepLines.forEach((l, i) => {
+                l.classList.toggle('completed', i + 1 < stepNum);
+            });
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // If going to simulator, run calculation
+            if (stepNum === 3) {
+                runSimulation();
+            }
+        }
+
+        // ============================================
+        // STEP 1: TERMS
+        // ============================================
+        $acceptTerms.addEventListener('change', () => {
+            state.terms = $acceptTerms.checked;
+            $btnContinueTerms.disabled = !state.terms;
+        });
+
+        $btnContinueTerms.addEventListener('click', () => {
+            if (state.terms) goToStep(2);
+        });
+
+        // ============================================
+        // STEP 2: PERSONAL
+        // ============================================
+        $btnBackTerms.addEventListener('click', () => goToStep(1));
+
+        $personalForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            // Collect form data
+            state.personal = {
+                nombres: document.getElementById('nombres').value,
+                apellidos: document.getElementById('apellidos').value,
+                tipoDoc: document.getElementById('tipo-documento').value,
+                documento: document.getElementById('documento').value,
+                celular: document.getElementById('celular').value,
+                email: document.getElementById('email').value,
+                ciudad: document.getElementById('ciudad').value,
+                ocupacion: document.getElementById('ocupacion').value,
+                pep: document.querySelector('input[name="pep"]:checked')?.value
+            };
+
+            goToStep(3);
+        });
+
+        // Policy links
+        document.querySelectorAll('.link-policy').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const type = e.target.dataset.policy;
+                showPolicyModal(type);
+            });
+        });
+
+        function showPolicyModal(type) {
+            if (type === 'privacy') {
+                $policyModalTitle.textContent = 'Política de Tratamiento de Datos Personales';
+                $policyModalBody.innerHTML = `
+                    <p><strong>ALTORRA COMPANY S.A.S.</strong>, identificada con NIT 901.234.567-8, como responsable del tratamiento de datos personales, recolecta y trata sus datos conforme a la Ley 1581 de 2012.</p>
+                    <h3>Finalidades</h3>
+                    <p>Sus datos serán utilizados para: evaluar solicitudes de crédito, gestionar trámites de financiación, enviar información comercial, cumplir obligaciones legales y mejorar nuestros servicios.</p>
+                    <h3>Derechos</h3>
+                    <p>Usted tiene derecho a conocer, actualizar, rectificar y suprimir sus datos, así como a revocar la autorización otorgada.</p>
+                    <h3>Contacto</h3>
+                    <p>Para ejercer sus derechos, contacte a: datos@altorracars.com</p>
+                `;
+            }
+            $policyModal.classList.add('active');
+        }
+
+        $policyModalClose.addEventListener('click', () => {
+            $policyModal.classList.remove('active');
+        });
+
+        $policyModal.addEventListener('click', (e) => {
+            if (e.target === $policyModal) {
+                $policyModal.classList.remove('active');
+            }
+        });
+
+        // ============================================
+        // STEP 3: SIMULATOR
+        // ============================================
+
+        // Initialize year select
+        function initYearSelect() {
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear + 1; y >= currentYear - 15; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                if (y === currentYear) opt.selected = true;
+                $vehicleYear.appendChild(opt);
+            }
+        }
+
+        // Initialize term buttons
+        function initTermButtons() {
+            TERMS.forEach(term => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'term-btn' + (term === state.vehicle.term ? ' active' : '');
+                btn.dataset.term = term;
+                btn.textContent = term + 'm';
+                btn.addEventListener('click', () => selectTerm(term));
+                $termGrid.appendChild(btn);
+            });
+        }
+
+        function selectTerm(term) {
+            state.vehicle.term = term;
+            $termGrid.querySelectorAll('.term-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.term) === term);
+            });
+            runSimulation();
+        }
+
+        // Update price from slider
+        function updateFromPriceSlider() {
+            const price = parseInt($priceSlider.value);
+            state.vehicle.price = price;
+            $vehiclePrice.value = formatNumber(price);
+            updateDownPayment();
+            updateSummary();
+            runSimulation();
+        }
+
+        // Update price from input
+        function updateFromPriceInput() {
+            const price = parseCurrency($vehiclePrice.value);
+            state.vehicle.price = price;
+            $priceSlider.value = Math.min(Math.max(price, 20000000), 300000000);
+            updateDownPayment();
+            updateSummary();
+            runSimulation();
+        }
+
+        // Update down payment from slider
+        function updateFromDPSlider() {
+            const percent = parseInt($dpSlider.value);
+            state.vehicle.downPaymentPercent = percent;
+            state.vehicle.downPayment = Math.round(state.vehicle.price * percent / 100);
+            $downPayment.value = formatNumber(state.vehicle.downPayment);
+            $dpPercentDisplay.textContent = `(${percent}%)`;
+            updateSummary();
+            runSimulation();
+        }
+
+        // Update down payment from input
+        function updateFromDPInput() {
+            const dp = parseCurrency($downPayment.value);
+            state.vehicle.downPayment = dp;
+            const percent = Math.round(dp / state.vehicle.price * 100);
+            state.vehicle.downPaymentPercent = percent;
+            $dpSlider.value = Math.min(Math.max(percent, 10), 70);
+            $dpPercentDisplay.textContent = `(${percent}%)`;
+            updateSummary();
+            runSimulation();
+        }
+
+        function updateDownPayment() {
+            const percent = state.vehicle.downPaymentPercent;
+            state.vehicle.downPayment = Math.round(state.vehicle.price * percent / 100);
+            $downPayment.value = formatNumber(state.vehicle.downPayment);
+        }
+
+        function updateSummary() {
+            const financed = state.vehicle.price - state.vehicle.downPayment;
+            const percent = Math.round((financed / state.vehicle.price) * 100);
+            $financedAmount.textContent = formatCOP(financed);
+            $financedPercent.textContent = percent + '%';
+        }
+
+        // Event listeners
+        $priceSlider.addEventListener('input', updateFromPriceSlider);
+        $vehiclePrice.addEventListener('blur', updateFromPriceInput);
+        $vehiclePrice.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFromPriceInput();
+            }
+        });
+
+        $dpSlider.addEventListener('input', updateFromDPSlider);
+        $downPayment.addEventListener('blur', updateFromDPInput);
+        $downPayment.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFromDPInput();
+            }
+        });
+
+        $vehicleYear.addEventListener('change', () => {
+            state.vehicle.year = parseInt($vehicleYear.value);
+            runSimulation();
+        });
+
+        $vehicleName.addEventListener('input', () => {
+            state.vehicle.name = $vehicleName.value;
+        });
+
+        // ============================================
+        // SIMULATION ENGINE
+        // ============================================
+        function runSimulation() {
+            const financed = state.vehicle.price - state.vehicle.downPayment;
+
+            // Use the simulator engine
+            const results = window.SimuladorEngine.simularFinanciacion({
+                yearModelo: state.vehicle.year,
+                precioVenta: state.vehicle.price,
+                cuotaInicial: state.vehicle.downPayment,
+                plazoMeses: state.vehicle.term,
+                riesgo: 'G1', // Default to G1 for simplified version
+                valorCuotaExtra: 500000,
+                offsetMeses: 6,
+                opcionCompraLeasing: 0.01
+            });
+
+            renderResults(results.tradicional, financed);
+        }
+
+        function renderResults(tradicional, financed) {
+            const entities = ['SUFI', 'OCCIDENTE', 'FINANDINA', 'FINANZAUTO', 'MOBILIZE'];
+
+            // Find best (lowest) rate
+            let bestEntity = null;
+            let bestRate = Infinity;
+
+            entities.forEach(entity => {
+                const data = tradicional[entity];
+                if (data && typeof data === 'object' && data.cuota) {
+                    if (data.cuota < bestRate) {
+                        bestRate = data.cuota;
+                        bestEntity = entity;
+                    }
+                }
+            });
+
+            // Render cards
+            let html = '';
+            entities.forEach(entity => {
+                const data = tradicional[entity];
+                const color = ENTITY_COLORS[entity];
+                const isBest = entity === bestEntity;
+                const isAvailable = data && typeof data === 'object' && data.cuota;
+
+                html += `
+                    <div class="entity-card ${isBest ? 'best' : ''} ${!isAvailable ? 'unavailable' : ''}" style="--entity-color: ${color}">
+                        <div class="entity-header">
+                            <span class="entity-name">${entity}</span>
+                            ${isBest ? '<span class="entity-badge">Mejor opción</span>' : ''}
+                        </div>
+
+                        ${isAvailable ? `
+                            <div class="entity-rate">Tasa: ${(data.tasa * 100).toFixed(2)}% MV</div>
+                            <div class="entity-monthly">
+                                <div class="entity-monthly-label">Cuota mensual</div>
+                                <div class="entity-monthly-value">${formatCOP(data.cuota)}</div>
+                            </div>
+                            <div class="entity-details">
+                                <div class="entity-detail">
+                                    <div class="entity-detail-label">Plazo</div>
+                                    <div class="entity-detail-value">${state.vehicle.term} meses</div>
+                                </div>
+                                <div class="entity-detail">
+                                    <div class="entity-detail-label">Total aprox.</div>
+                                    <div class="entity-detail-value">${formatCOP(data.total)}</div>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="entity-monthly">
+                                <div class="entity-monthly-label">Estado</div>
+                                <div class="entity-monthly-value small">${data || 'No disponible'}</div>
+                            </div>
+                        `}
+                    </div>
+                `;
+            });
+
+            $entitiesGrid.innerHTML = html;
+        }
+
+        // WhatsApp
+        $btnWhatsapp.addEventListener('click', () => {
+            const financed = state.vehicle.price - state.vehicle.downPayment;
+            const msg = `Hola ALTORRA CARS! 🚗
+
+Realicé una simulación de crédito:
+
+*Datos del cliente:*
+• Nombre: ${state.personal.nombres} ${state.personal.apellidos}
+• Documento: ${state.personal.tipoDoc} ${state.personal.documento}
+• Celular: ${state.personal.celular}
+• Ciudad: ${state.personal.ciudad}
+
+*Simulación:*
+• Vehículo: ${state.vehicle.name || 'No especificado'}
+• Precio: ${formatCOP(state.vehicle.price)}
+• Cuota inicial: ${formatCOP(state.vehicle.downPayment)} (${state.vehicle.downPaymentPercent}%)
+• A financiar: ${formatCOP(financed)}
+• Plazo: ${state.vehicle.term} meses
+
+Me interesa conocer más opciones de financiamiento.`;
+
+            window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+        });
+
+        // ============================================
+        // URL PARAMS (from vehicle detail page)
+        // ============================================
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+
+            if (params.has('precio')) {
+                state.vehicle.price = parseInt(params.get('precio'));
+                $vehiclePrice.value = formatNumber(state.vehicle.price);
+                $priceSlider.value = state.vehicle.price;
+            }
+
+            if (params.has('year')) {
+                state.vehicle.year = parseInt(params.get('year'));
+                $vehicleYear.value = state.vehicle.year;
+            }
+
+            if (params.has('vehiculo')) {
+                state.vehicle.name = params.get('vehiculo');
+                $vehicleName.value = state.vehicle.name;
+            }
+
+            updateDownPayment();
+            updateSummary();
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        function init() {
+            initYearSelect();
+            initTermButtons();
+            loadFromURL();
+            updateSummary();
+
+            // Initial values
+            $vehiclePrice.value = formatNumber(state.vehicle.price);
+            $downPayment.value = formatNumber(state.vehicle.downPayment);
+        }
+
+        init();
+    })();
+    </script>
 </body>
 </html>

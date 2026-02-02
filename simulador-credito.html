@@ -975,9 +975,334 @@
         .sim-animate {
             animation: fadeInUp 0.5s ease forwards;
         }
+
+        /* ============================================
+           TERMINOS Y CONDICIONES OVERLAY
+        ============================================ */
+        .terms-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--sim-bg);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .terms-overlay.hidden {
+            display: none;
+        }
+
+        .terms-container {
+            background: var(--sim-card);
+            border: 1px solid var(--sim-border);
+            border-radius: 24px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terms-header {
+            padding: 32px 32px 24px;
+            text-align: center;
+            border-bottom: 1px solid var(--sim-border);
+        }
+
+        .terms-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: rgba(201, 162, 39, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .terms-icon svg {
+            width: 40px;
+            height: 40px;
+            color: var(--sim-primary);
+        }
+
+        .terms-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--sim-text);
+            margin-bottom: 8px;
+        }
+
+        .terms-subtitle {
+            font-size: 16px;
+            color: var(--sim-text-secondary);
+        }
+
+        .terms-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        .terms-section {
+            margin-bottom: 24px;
+        }
+
+        .terms-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .terms-section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--sim-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .terms-section-title svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .terms-section p {
+            font-size: 14px;
+            color: var(--sim-text-secondary);
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .terms-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .terms-section li {
+            font-size: 14px;
+            color: var(--sim-text-secondary);
+            line-height: 1.8;
+            margin-bottom: 8px;
+        }
+
+        .terms-highlight {
+            background: rgba(201, 162, 39, 0.1);
+            border-left: 4px solid var(--sim-primary);
+            padding: 16px 20px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
+        }
+
+        .terms-highlight p {
+            margin: 0;
+            font-weight: 500;
+            color: var(--sim-text);
+        }
+
+        .terms-footer {
+            padding: 24px 32px;
+            border-top: 1px solid var(--sim-border);
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .terms-btn {
+            padding: 16px 40px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .terms-btn-decline {
+            background: transparent;
+            border: 2px solid var(--sim-border);
+            color: var(--sim-text-secondary);
+        }
+
+        .terms-btn-decline:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .terms-btn-accept {
+            background: var(--sim-gradient);
+            color: #000;
+        }
+
+        .terms-btn-accept:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(201, 162, 39, 0.4);
+        }
+
+        @media (max-width: 600px) {
+            .terms-header {
+                padding: 24px 20px 20px;
+            }
+
+            .terms-title {
+                font-size: 22px;
+            }
+
+            .terms-body {
+                padding: 20px;
+            }
+
+            .terms-footer {
+                padding: 20px;
+                flex-direction: column;
+            }
+
+            .terms-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* Vehicle info banner */
+        .sim-vehicle-banner {
+            background: rgba(201, 162, 39, 0.1);
+            border: 1px solid rgba(201, 162, 39, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .sim-vehicle-banner.hidden {
+            display: none;
+        }
+
+        .sim-vehicle-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sim-vehicle-info svg {
+            width: 24px;
+            height: 24px;
+            color: var(--sim-primary);
+        }
+
+        .sim-vehicle-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--sim-text);
+        }
+
+        .sim-vehicle-link {
+            font-size: 13px;
+            color: var(--sim-primary);
+            text-decoration: none;
+        }
+
+        .sim-vehicle-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
+    <!-- TERMINOS Y CONDICIONES OVERLAY -->
+    <div class="terms-overlay" id="terms-overlay">
+        <div class="terms-container">
+            <div class="terms-header">
+                <div class="terms-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                </div>
+                <h1 class="terms-title">Terminos y Condiciones</h1>
+                <p class="terms-subtitle">Lea atentamente antes de usar el simulador de credito</p>
+            </div>
+
+            <div class="terms-body">
+                <div class="terms-section">
+                    <h3 class="terms-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        Naturaleza de la simulacion
+                    </h3>
+                    <p><strong>Esta simulacion es unicamente de caracter informativo y referencial.</strong> El presente ejercicio de simulacion NO constituye una oferta comercial, propuesta formal, ni compromiso de aprobacion de credito por parte de ALTORRA CARS o ALTORRA COMPANY S.A.S.</p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        Sobre las tasas de interes
+                    </h3>
+                    <p>Las tasas de interes mostradas en este simulador son referenciales y pueden variar en cualquier momento sin previo aviso, segun:</p>
+                    <ul>
+                        <li>Las politicas de las entidades financieras aliadas</li>
+                        <li>Las condiciones del mercado financiero</li>
+                        <li>El perfil crediticio del solicitante</li>
+                        <li>El resultado del estudio de credito</li>
+                    </ul>
+                    <p>Esta variacion no implica responsabilidad alguna por parte de ALTORRA COMPANY S.A.S.</p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        Aprobacion del credito
+                    </h3>
+                    <p>El presente ejercicio de simulacion <strong>NO compromete a ALTORRA CARS</strong> con la aprobacion de la solicitud de credito. La respuesta final esta sujeta a:</p>
+                    <ul>
+                        <li>El estudio y analisis de los documentos de soporte</li>
+                        <li>La validacion de la informacion suministrada</li>
+                        <li>La aprobacion de la entidad financiera correspondiente</li>
+                        <li>El cumplimiento de las politicas de riesgo crediticio</li>
+                    </ul>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Rol de ALTORRA COMPANY S.A.S.
+                    </h3>
+                    <p>ALTORRA COMPANY S.A.S. actuara como intermediario comercial, gestionando con las entidades financieras aliadas el estudio del cupo de credito. <strong>La entidad financiera sera la unica responsable de las condiciones finales del credito</strong>, incluyendo tasa de interes, plazo, cargos fijos y adicionales.</p>
+                </div>
+
+                <div class="terms-highlight">
+                    <p>Al hacer clic en "Acepto los terminos", usted declara haber leido, entendido y aceptado las condiciones aqui descritas, y reconoce que los resultados de esta simulacion son meramente orientativos.</p>
+                </div>
+            </div>
+
+            <div class="terms-footer">
+                <button class="terms-btn terms-btn-decline" id="terms-decline">No acepto</button>
+                <button class="terms-btn terms-btn-accept" id="terms-accept">Acepto los terminos</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Header Global -->
     <div id="header-placeholder"></div>
 
@@ -996,6 +1321,18 @@
 
         <!-- Simulator -->
         <div class="sim-container">
+            <!-- Vehicle banner (shown when coming from vehicle detail) -->
+            <div class="sim-vehicle-banner hidden" id="vehicle-banner">
+                <div class="sim-vehicle-info">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+                        <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+                        <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/>
+                    </svg>
+                    <span class="sim-vehicle-name" id="vehicle-name-display">--</span>
+                </div>
+                <a href="#" class="sim-vehicle-link" id="vehicle-link" target="_blank">Ver vehiculo</a>
+            </div>
             <div class="sim-grid">
                 <!-- Config Panel -->
                 <aside class="sim-config">
@@ -1181,11 +1518,12 @@
                                 <line x1="12" y1="16" x2="12" y2="12"/>
                                 <line x1="12" y1="8" x2="12.01" y2="8"/>
                             </svg>
-                            Informacion importante
+                            Informacion legal importante
                         </h4>
-                        <p><strong>ALTORRA COMPANY S.A.S.</strong> gestionara con las entidades financieras aliadas el estudio del cupo de credito y actuara como intermediario comercial, siendo la entidad financiera la unica responsable de las condiciones finales del credito.</p>
-                        <p>Esta simulacion es unicamente de caracter informativo y referencial. La respuesta final esta sujeta al estudio y analisis de los documentos de soporte, la validacion de los mismos y la respuesta de la entidad financiera que acepte el estudio de su solicitud.</p>
-                        <p>La tasa de interes, el plazo, los cargos fijos y adicionales estan sujetos a la entidad financiera que de viabilidad a esta simulacion. El presente ejercicio de simulacion no compromete a ALTORRA CARS con la aprobacion de la solicitud de credito.</p>
+                        <p><strong>ESTA SIMULACION NO ES UNA PROPUESTA FORMAL.</strong> El presente ejercicio de simulacion es unicamente de caracter informativo y referencial, y NO constituye una oferta comercial ni compromiso de aprobacion de credito.</p>
+                        <p><strong>El presente ejercicio de simulacion NO compromete a ALTORRA CARS con la aprobacion de la solicitud de credito.</strong> La respuesta final esta sujeta al estudio y analisis de los documentos de soporte, la validacion de la informacion suministrada, y la aprobacion de la entidad financiera correspondiente.</p>
+                        <p><strong>Las tasas de credito pueden variar en cualquier momento sin previo aviso</strong>, segun las politicas de las entidades financieras aliadas, las condiciones del mercado y el perfil crediticio del solicitante. Esta variacion no implica responsabilidad alguna por parte de ALTORRA COMPANY S.A.S.</p>
+                        <p><strong>ALTORRA COMPANY S.A.S.</strong> actuara como intermediario comercial, gestionando con las entidades financieras aliadas el estudio del cupo de credito. La entidad financiera sera la unica responsable de las condiciones finales del credito, incluyendo tasa de interes, plazo, cargos fijos y adicionales.</p>
                     </div>
                 </div>
             </div>
@@ -1311,6 +1649,11 @@
                             <input type="checkbox" id="auth-credit" required>
                             <span>Autorizo a <strong>ALTORRA COMPANY S.A.S.</strong> y/o a sus aliados comerciales para que consulten mi informacion crediticia, financiera, comercial y de seguridad social en centrales de informacion financiera y operadores de informacion con el fin de verificar mi comportamiento crediticio para efectos de realizar estudio de solicitud de credito.</span>
                         </label>
+
+                        <label class="sim-auth-item">
+                            <input type="checkbox" id="auth-terms" required>
+                            <span>Entiendo y acepto que esta simulacion NO es una propuesta formal ni compromete a ALTORRA CARS con la aprobacion del credito. Las tasas de interes y condiciones finales seran determinadas por la entidad financiera que apruebe mi solicitud y pueden variar sin previo aviso.</span>
+                        </label>
                     </div>
 
                     <button type="submit" class="sim-modal-submit" id="btn-submit">
@@ -1337,7 +1680,10 @@
             price: 65000000,
             downPaymentPercent: 30,
             term: 60,
-            rate: 1.45
+            rate: 1.45,
+            vehicleName: '',
+            vehicleLink: '',
+            vehicleYear: ''
         };
 
         const RATES = [
@@ -1725,11 +2071,28 @@
             const income = document.getElementById('contact-income').value;
             const pep = document.getElementById('contact-pep').value;
 
+            // Build vehicle info section if available
+            let vehicleSection = '';
+            if (state.vehicleName) {
+                const vehicleFullName = state.vehicleYear
+                    ? `${state.vehicleName} ${state.vehicleYear}`
+                    : state.vehicleName;
+                vehicleSection = `VEHICULO DE INTERES:
+- ${vehicleFullName}`;
+                if (state.vehicleLink) {
+                    vehicleSection += `
+- Ver vehiculo: ${state.vehicleLink}`;
+                }
+                vehicleSection += `
+
+`;
+            }
+
             const msg = `Hola ALTORRA CARS!
 
 Solicito estudio de credito vehicular.
 
-DATOS PERSONALES:
+${vehicleSection}DATOS PERSONALES:
 - Nombre: ${name}
 - Celular: ${phone}
 - Email: ${email}
@@ -1765,6 +2128,74 @@ Quedo atento a su respuesta.`;
                 $priceInput.value = formatNumber(state.price);
                 $priceSlider.value = state.price;
             }
+
+            if (params.has('vehiculo')) {
+                state.vehicleName = params.get('vehiculo');
+            }
+
+            if (params.has('year')) {
+                state.vehicleYear = params.get('year');
+            }
+
+            if (params.has('enlace')) {
+                state.vehicleLink = params.get('enlace');
+            }
+
+            // Show vehicle banner if we have vehicle info
+            if (state.vehicleName) {
+                const banner = document.getElementById('vehicle-banner');
+                const nameDisplay = document.getElementById('vehicle-name-display');
+                const linkEl = document.getElementById('vehicle-link');
+
+                if (banner) {
+                    banner.classList.remove('hidden');
+                    const displayName = state.vehicleYear
+                        ? `${state.vehicleName} ${state.vehicleYear}`
+                        : state.vehicleName;
+                    nameDisplay.textContent = displayName;
+
+                    if (state.vehicleLink) {
+                        linkEl.href = state.vehicleLink;
+                        linkEl.style.display = 'inline';
+                    } else {
+                        linkEl.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        // ============================================
+        // TERMS OVERLAY
+        // ============================================
+        function initTermsOverlay() {
+            const overlay = document.getElementById('terms-overlay');
+            const acceptBtn = document.getElementById('terms-accept');
+            const declineBtn = document.getElementById('terms-decline');
+
+            if (!overlay) return;
+
+            // Check if terms were already accepted this session
+            if (sessionStorage.getItem('termsAccepted') === 'true') {
+                overlay.classList.add('hidden');
+                return;
+            }
+
+            // Accept terms
+            acceptBtn.addEventListener('click', () => {
+                sessionStorage.setItem('termsAccepted', 'true');
+                overlay.classList.add('hidden');
+            });
+
+            // Decline terms - go back to previous page or vehicle detail
+            declineBtn.addEventListener('click', () => {
+                if (state.vehicleLink) {
+                    window.location.href = state.vehicleLink;
+                } else if (document.referrer && document.referrer.includes(window.location.hostname)) {
+                    window.history.back();
+                } else {
+                    window.location.href = 'catalogo.html';
+                }
+            });
         }
 
         // ============================================
@@ -1772,6 +2203,7 @@ Quedo atento a su respuesta.`;
         // ============================================
         function init() {
             loadFromURL();
+            initTermsOverlay();
             $priceInput.value = formatNumber(state.price);
             updateUI();
         }

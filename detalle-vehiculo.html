@@ -1092,7 +1092,8 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
                 const params = new URLSearchParams({
                     precio: precioFinal,
                     year: v.year,
-                    vehiculo: `${v.marca} ${v.modelo}`
+                    vehiculo: `${v.marca} ${v.modelo}`,
+                    enlace: currentUrl
                 });
                 btnCalculadora.href = `simulador-credito.html?${params.toString()}`;
             }

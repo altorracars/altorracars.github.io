@@ -1214,6 +1214,11 @@
         .sim-vehicle-link:hover {
             text-decoration: underline;
         }
+
+        /* Ocultar boton flotante de WhatsApp - ya hay botones de contacto en el simulador */
+        .wa-float {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -2065,7 +2070,6 @@
         document.getElementById('contact-form').addEventListener('submit', (e) => {
             e.preventDefault();
 
-            const calc = calculate();
             const name = document.getElementById('contact-name').value;
             const phone = document.getElementById('contact-phone').value;
             const email = document.getElementById('contact-email').value;
@@ -2101,17 +2105,8 @@ ${vehicleSection}DATOS PERSONALES:
 - Email: ${email}
 - Ciudad: ${city}
 - Actividad: ${occupation}
-- Ingresos: ${income}
+- Ingresos mensuales: ${income}
 - PEP: ${pep}
-
-SIMULACION REALIZADA:
-- Precio vehiculo: ${formatCOP(state.price)}
-- Cuota inicial: ${formatCOP(calc.downPayment)} (${state.downPaymentPercent}%)
-- Valor a financiar: ${formatCOP(calc.financed)}
-- Plazo: ${state.term} meses
-- Tasa: ${state.rate}% MV
-- Cuota mensual estimada: ${formatCOP(calc.monthly)}
-- Total a pagar: ${formatCOP(calc.total)}
 
 Autorizo el tratamiento de mis datos y consulta en centrales de riesgo.
 

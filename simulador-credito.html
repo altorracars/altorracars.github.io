@@ -3,1456 +3,990 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Simulador de Crédito Vehicular ALTORRA CARS - Calcula tu financiamiento con múltiples entidades financieras">
-    <meta name="keywords" content="simulador crédito, financiamiento vehículo, crédito carro, Cartagena">
-    <title>Simulador de Crédito | ALTORRA CARS</title>
+    <meta name="description" content="Simulador de Crédito Vehicular ALTORRA CARS - Calcula tu financiamiento con diferentes tasas de interés">
+    <title>Simulador de Crédito Vehicular | ALTORRA CARS</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="multimedia/logo/favicon.png">
 
-    <!-- CSS -->
-    <link rel="stylesheet" href="css/normalize.css">
+    <!-- CSS Global del sitio -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile-fixes.css">
+    <link rel="stylesheet" href="css/footer-fixes.css">
     <link rel="stylesheet" href="css/dark-theme.css">
 
-    <!-- Preconnect -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* ============================================
-           SIMULADOR DE CRÉDITO - DISEÑO MODERNO V3.0
-           Full-width, responsive, UX mejorada
+           SIMULADOR DE CRÉDITO V4.0 - ALTORRA CARS
+           Diseño tecnológico con múltiples tasas
         ============================================ */
 
         :root {
-            --primary: #c9a227;
-            --primary-dark: #a88620;
-            --primary-light: #dbb93a;
-            --bg-dark: #0a0a0a;
-            --bg-card: #111111;
-            --bg-card-hover: #1a1a1a;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #666666;
-            --border-color: #2a2a2a;
-            --success: #22c55e;
-            --error: #ef4444;
-            --gradient-gold: linear-gradient(135deg, #c9a227 0%, #dbb93a 50%, #a88620 100%);
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
-            --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
-            --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --radius-xl: 24px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --sim-primary: #c9a227;
+            --sim-primary-dark: #a88620;
+            --sim-bg: #0a0a0a;
+            --sim-card: #111111;
+            --sim-card-hover: #1a1a1a;
+            --sim-border: #2a2a2a;
+            --sim-text: #ffffff;
+            --sim-text-secondary: #a0a0a0;
+            --sim-text-muted: #666666;
+            --sim-success: #22c55e;
+            --sim-warning: #f59e0b;
+            --sim-info: #3b82f6;
+            --sim-gradient: linear-gradient(135deg, #c9a227 0%, #dbb93a 50%, #a88620 100%);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            line-height: 1.6;
+        /* Page wrapper */
+        .simulator-page {
+            background: var(--sim-bg);
             min-height: 100vh;
+            padding-top: 80px;
         }
 
-        /* Header */
-        .sim-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 70px;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-color);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-        }
-
-        .sim-header .logo img {
-            height: 40px;
-            transition: var(--transition);
-        }
-
-        .sim-header .logo:hover img {
-            transform: scale(1.05);
-        }
-
-        .btn-home {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: transparent;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        .btn-home:hover {
-            background: var(--bg-card);
-            color: var(--text-primary);
-            border-color: var(--primary);
-        }
-
-        /* Main content */
-        .sim-main {
-            padding-top: 70px;
-            min-height: 100vh;
-        }
-
-        /* Steps indicator */
-        .steps-indicator {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border-color);
-            padding: 20px 0;
-        }
-
-        .steps-container {
-            max-width: 800px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 24px;
-        }
-
-        .step-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            opacity: 0.4;
-            transition: var(--transition);
-        }
-
-        .step-item.active {
-            opacity: 1;
-        }
-
-        .step-item.completed {
-            opacity: 1;
-        }
-
-        .step-number {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-            transition: var(--transition);
-        }
-
-        .step-item.active .step-number {
-            background: var(--gradient-gold);
-            color: #000;
-        }
-
-        .step-item.completed .step-number {
-            background: var(--success);
-        }
-
-        .step-item.completed .step-number::after {
-            content: '✓';
-        }
-
-        .step-item.completed .step-number span {
-            display: none;
-        }
-
-        .step-text {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .step-line {
-            flex: 1;
-            height: 2px;
-            background: var(--border-color);
-            margin: 0 16px;
-        }
-
-        .step-line.completed {
-            background: var(--success);
-        }
-
-        /* Sections */
-        .sim-section {
-            display: none;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .sim-section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Section: Terms */
-        .terms-section {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 60px 24px;
-        }
-
-        .terms-card {
-            background: var(--bg-card);
-            border-radius: var(--radius-xl);
-            padding: 48px;
+        /* Hero section */
+        .sim-hero {
+            background: linear-gradient(135deg, rgba(201, 162, 39, 0.15) 0%, rgba(201, 162, 39, 0.05) 100%);
+            border-bottom: 1px solid var(--sim-border);
+            padding: 60px 0;
             text-align: center;
-            border: 1px solid var(--border-color);
         }
 
-        .terms-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 24px;
-            background: var(--gradient-gold);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .sim-hero h1 {
+            font-size: clamp(28px, 5vw, 48px);
+            font-weight: 800;
+            margin-bottom: 16px;
+            color: var(--sim-text);
         }
 
-        .terms-icon svg {
-            color: #000;
-            width: 40px;
-            height: 40px;
+        .sim-hero h1 span {
+            background: var(--sim-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .terms-card h2 {
-            font-size: 28px;
-            margin-bottom: 24px;
-        }
-
-        .terms-box {
-            background: rgba(201, 162, 39, 0.1);
-            border: 1px solid rgba(201, 162, 39, 0.3);
-            border-radius: var(--radius-md);
-            padding: 24px;
-            text-align: left;
-            margin-bottom: 32px;
-        }
-
-        .terms-box h3 {
-            color: var(--primary);
-            margin-bottom: 12px;
-            font-size: 16px;
-        }
-
-        .terms-box p {
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-
-        .terms-box ul {
-            margin: 16px 0;
-            padding-left: 24px;
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .terms-box ul li {
-            margin-bottom: 8px;
-        }
-
-        /* Checkbox */
-        .checkbox-wrap {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 32px;
-            text-align: left;
-            cursor: pointer;
-        }
-
-        .checkbox-wrap input {
-            width: 20px;
-            height: 20px;
-            accent-color: var(--primary);
-            cursor: pointer;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .checkbox-wrap span {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        /* Buttons */
-        .btn-primary {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 16px 32px;
-            background: var(--gradient-gold);
-            border: none;
-            border-radius: var(--radius-md);
-            color: #000;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            min-width: 200px;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(201, 162, 39, 0.4);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 16px 32px;
-            background: transparent;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--primary);
-        }
-
-        /* Section: Personal */
-        .personal-section {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 24px;
-        }
-
-        .form-card {
-            background: var(--bg-card);
-            border-radius: var(--radius-xl);
-            padding: 40px;
-            border: 1px solid var(--border-color);
-        }
-
-        .form-header {
-            margin-bottom: 32px;
-        }
-
-        .form-header h2 {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-
-        .form-header p {
-            color: var(--text-secondary);
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        @media (max-width: 600px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .form-group {
-            margin-bottom: 0;
-        }
-
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 14px 16px;
-            background: var(--bg-dark);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
-            font-size: 15px;
-            transition: var(--transition);
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
-        }
-
-        .form-group input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .form-divider {
-            grid-column: 1 / -1;
-            height: 1px;
-            background: var(--border-color);
-            margin: 16px 0;
-        }
-
-        .form-subtitle {
-            grid-column: 1 / -1;
+        .sim-hero p {
             font-size: 18px;
-            font-weight: 600;
-            color: var(--primary);
-            margin-top: 8px;
-        }
-
-        .field-help {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 6px;
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 24px;
-            margin-top: 8px;
-        }
-
-        .radio-group label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            color: var(--text-primary);
-        }
-
-        .radio-group input[type="radio"] {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--primary);
-        }
-
-        .auth-checkbox {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 16px;
-            background: rgba(255,255,255,0.02);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-        }
-
-        .auth-checkbox input {
-            width: 20px;
-            height: 20px;
-            accent-color: var(--primary);
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .auth-checkbox span {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        .auth-checkbox a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-
-        .auth-checkbox a:hover {
-            text-decoration: underline;
-        }
-
-        .form-actions {
-            grid-column: 1 / -1;
-            display: flex;
-            gap: 16px;
-            justify-content: space-between;
-            margin-top: 16px;
-        }
-
-        /* Section: Simulator - FULL WIDTH */
-        .simulator-section {
-            width: 100%;
-            padding: 40px 24px;
-        }
-
-        .simulator-grid {
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 32px;
-            max-width: 1600px;
+            color: var(--sim-text-secondary);
+            max-width: 600px;
             margin: 0 auto;
         }
 
-        @media (max-width: 1100px) {
-            .simulator-grid {
+        /* Main container */
+        .sim-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Grid layout */
+        .sim-grid {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 32px;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .sim-grid {
                 grid-template-columns: 1fr;
-                max-width: 800px;
             }
         }
 
-        /* Config Panel */
-        .config-panel {
-            background: var(--bg-card);
-            border-radius: var(--radius-xl);
+        /* Config panel */
+        .sim-config {
+            background: var(--sim-card);
+            border: 1px solid var(--sim-border);
+            border-radius: 20px;
             padding: 32px;
-            border: 1px solid var(--border-color);
-            height: fit-content;
             position: sticky;
-            top: 90px;
+            top: 100px;
         }
 
-        .config-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 24px;
+        @media (max-width: 1024px) {
+            .sim-config {
+                position: static;
+            }
+        }
+
+        .sim-config-header {
             display: flex;
             align-items: center;
             gap: 12px;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--sim-border);
         }
 
-        .config-title svg {
-            color: var(--primary);
+        .sim-config-header svg {
+            width: 28px;
+            height: 28px;
+            color: var(--sim-primary);
         }
 
-        .config-group {
+        .sim-config-header h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--sim-text);
+            margin: 0;
+        }
+
+        /* Form groups */
+        .sim-group {
             margin-bottom: 24px;
         }
 
-        .config-group label {
-            display: block;
+        .sim-group label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             font-size: 14px;
             font-weight: 500;
-            color: var(--text-secondary);
+            color: var(--sim-text-secondary);
             margin-bottom: 10px;
         }
 
-        .config-group .value-display {
-            font-size: 13px;
-            color: var(--primary);
-            font-weight: 600;
+        .sim-group label .value {
+            color: var(--sim-primary);
+            font-weight: 700;
         }
 
-        /* Currency input */
-        .currency-input {
+        /* Inputs */
+        .sim-input-wrap {
             position: relative;
         }
 
-        .currency-input .symbol {
+        .sim-input-wrap .prefix {
             position: absolute;
             left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--text-muted);
+            color: var(--sim-text-muted);
             font-weight: 600;
+            font-size: 16px;
         }
 
-        .currency-input input {
+        .sim-input {
             width: 100%;
-            padding: 14px 16px 14px 40px;
-            background: var(--bg-dark);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
+            padding: 16px 16px 16px 44px;
+            background: var(--sim-bg);
+            border: 2px solid var(--sim-border);
+            border-radius: 12px;
+            color: var(--sim-text);
             font-size: 18px;
             font-weight: 600;
-            transition: var(--transition);
+            transition: all 0.3s ease;
         }
 
-        .currency-input input:focus {
+        .sim-input:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2);
+            border-color: var(--sim-primary);
+            box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.15);
+        }
+
+        .sim-select {
+            width: 100%;
+            padding: 16px;
+            background: var(--sim-bg);
+            border: 2px solid var(--sim-border);
+            border-radius: 12px;
+            color: var(--sim-text);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sim-select:focus {
+            outline: none;
+            border-color: var(--sim-primary);
         }
 
         /* Slider */
-        .slider-wrap {
+        .sim-slider {
+            width: 100%;
+            height: 8px;
+            background: var(--sim-border);
+            border-radius: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
             margin-top: 12px;
         }
 
-        .slider-wrap input[type="range"] {
-            width: 100%;
-            height: 6px;
-            background: var(--border-color);
-            border-radius: 3px;
-            appearance: none;
-            cursor: pointer;
-        }
-
-        .slider-wrap input[type="range"]::-webkit-slider-thumb {
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: var(--gradient-gold);
+        .sim-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--sim-gradient);
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
+            box-shadow: 0 2px 10px rgba(201, 162, 39, 0.4);
+            transition: transform 0.2s;
         }
 
-        .slider-wrap input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
+        .sim-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
         }
 
-        .slider-labels {
+        .sim-slider-labels {
             display: flex;
             justify-content: space-between;
             font-size: 12px;
-            color: var(--text-muted);
+            color: var(--sim-text-muted);
             margin-top: 8px;
         }
 
         /* Term buttons */
-        .term-grid {
+        .sim-term-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
         }
 
-        .term-btn {
-            padding: 12px 8px;
-            background: var(--bg-dark);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            color: var(--text-secondary);
-            font-size: 14px;
+        .sim-term-btn {
+            padding: 14px 8px;
+            background: var(--sim-bg);
+            border: 2px solid var(--sim-border);
+            border-radius: 10px;
+            color: var(--sim-text-secondary);
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s ease;
         }
 
-        .term-btn:hover {
-            border-color: var(--primary);
-            color: var(--text-primary);
+        .sim-term-btn:hover {
+            border-color: var(--sim-primary);
+            color: var(--sim-text);
         }
 
-        .term-btn.active {
-            background: var(--gradient-gold);
-            border-color: var(--primary);
+        .sim-term-btn.active {
+            background: var(--sim-gradient);
+            border-color: var(--sim-primary);
             color: #000;
         }
 
+        /* Rate selection */
+        .sim-rate-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sim-rate-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: var(--sim-bg);
+            border: 2px solid var(--sim-border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sim-rate-btn:hover {
+            border-color: var(--sim-primary);
+        }
+
+        .sim-rate-btn.active {
+            border-color: var(--sim-primary);
+            background: rgba(201, 162, 39, 0.1);
+        }
+
+        .sim-rate-btn .rate-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sim-rate-btn .rate-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--sim-text);
+        }
+
+        .sim-rate-btn .rate-desc {
+            font-size: 12px;
+            color: var(--sim-text-muted);
+        }
+
+        .sim-rate-btn .rate-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--sim-primary);
+        }
+
         /* Summary */
-        .config-summary {
+        .sim-summary {
             background: rgba(201, 162, 39, 0.1);
             border: 1px solid rgba(201, 162, 39, 0.3);
-            border-radius: var(--radius-md);
+            border-radius: 12px;
             padding: 20px;
             margin-top: 24px;
         }
 
-        .summary-row {
+        .sim-summary-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
+            padding: 10px 0;
         }
 
-        .summary-row:not(:last-child) {
+        .sim-summary-row:not(:last-child) {
             border-bottom: 1px solid rgba(201, 162, 39, 0.2);
         }
 
-        .summary-row span {
-            color: var(--text-secondary);
+        .sim-summary-row span {
+            color: var(--sim-text-secondary);
             font-size: 14px;
         }
 
-        .summary-row strong {
-            color: var(--primary);
-            font-size: 16px;
-        }
-
-        /* Results Panel */
-        .results-panel {
-            background: var(--bg-card);
-            border-radius: var(--radius-xl);
-            padding: 32px;
-            border: 1px solid var(--border-color);
-        }
-
-        .results-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 32px;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .results-title {
-            font-size: 24px;
+        .sim-summary-row strong {
+            color: var(--sim-primary);
+            font-size: 18px;
             font-weight: 700;
         }
 
-        .results-subtitle {
-            color: var(--text-secondary);
-            font-size: 14px;
+        /* Results panel */
+        .sim-results {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
-        /* Entity cards grid */
-        .entities-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-
-        .entity-card {
-            background: var(--bg-dark);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            transition: var(--transition);
+        /* Main result card */
+        .sim-result-main {
+            background: var(--sim-card);
+            border: 1px solid var(--sim-border);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
             position: relative;
             overflow: hidden;
         }
 
-        .entity-card::before {
+        .sim-result-main::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             height: 4px;
-            background: var(--entity-color, var(--border-color));
+            background: var(--sim-gradient);
         }
 
-        .entity-card:hover {
-            border-color: var(--entity-color, var(--primary));
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
+        .sim-result-label {
+            font-size: 16px;
+            color: var(--sim-text-secondary);
+            margin-bottom: 8px;
         }
 
-        .entity-card.best {
-            border-color: var(--success);
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+        .sim-result-value {
+            font-size: clamp(36px, 8vw, 56px);
+            font-weight: 800;
+            background: var(--sim-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+            margin-bottom: 16px;
         }
 
-        .entity-card.best::before {
-            background: var(--success);
+        .sim-result-rate {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: rgba(201, 162, 39, 0.15);
+            border-radius: 30px;
+            font-size: 14px;
+            color: var(--sim-primary);
+            font-weight: 600;
         }
 
-        .entity-card.unavailable {
-            opacity: 0.5;
+        /* Stats grid */
+        .sim-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
         }
 
-        .entity-card.unavailable:hover {
-            transform: none;
+        @media (max-width: 768px) {
+            .sim-stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
-        .entity-header {
+        .sim-stat-card {
+            background: var(--sim-card);
+            border: 1px solid var(--sim-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .sim-stat-card svg {
+            width: 32px;
+            height: 32px;
+            color: var(--sim-primary);
+            margin-bottom: 12px;
+        }
+
+        .sim-stat-label {
+            font-size: 13px;
+            color: var(--sim-text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sim-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--sim-text);
+        }
+
+        /* Chart section */
+        .sim-chart-section {
+            background: var(--sim-card);
+            border: 1px solid var(--sim-border);
+            border-radius: 20px;
+            padding: 32px;
+        }
+
+        .sim-chart-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
-        .entity-name {
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .entity-badge {
-            padding: 4px 10px;
-            background: var(--success);
-            color: #000;
-            font-size: 11px;
-            font-weight: 700;
-            border-radius: 20px;
-            text-transform: uppercase;
-        }
-
-        .entity-rate {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 16px;
-        }
-
-        .entity-monthly {
-            margin-bottom: 16px;
-        }
-
-        .entity-monthly-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-
-        .entity-monthly-value {
-            font-size: 32px;
-            font-weight: 800;
-            color: var(--text-primary);
-            line-height: 1;
-        }
-
-        .entity-monthly-value.small {
-            font-size: 18px;
-            color: var(--text-muted);
-        }
-
-        .entity-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            padding-top: 16px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .entity-detail {
-            text-align: center;
-        }
-
-        .entity-detail-label {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .entity-detail-value {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-
-        /* Disclaimer */
-        .results-disclaimer {
-            margin-top: 32px;
-            padding: 20px;
-            background: rgba(255,255,255,0.02);
-            border-radius: var(--radius-md);
-            border-left: 4px solid var(--primary);
-        }
-
-        .results-disclaimer p {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .results-disclaimer p:last-child {
-            margin-bottom: 0;
-        }
-
-        /* WhatsApp CTA */
-        .cta-section {
-            margin-top: 32px;
-            padding: 32px;
-            background: linear-gradient(135deg, rgba(37, 211, 102, 0.1) 0%, rgba(37, 211, 102, 0.05) 100%);
-            border: 1px solid rgba(37, 211, 102, 0.3);
-            border-radius: var(--radius-lg);
-            text-align: center;
-        }
-
-        .cta-section h3 {
+        .sim-chart-title {
             font-size: 20px;
+            font-weight: 700;
+            color: var(--sim-text);
+        }
+
+        .sim-chart-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sim-chart-tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--sim-border);
+            border-radius: 8px;
+            color: var(--sim-text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sim-chart-tab.active {
+            background: var(--sim-primary);
+            border-color: var(--sim-primary);
+            color: #000;
+        }
+
+        .sim-chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        /* Comparison table */
+        .sim-compare-section {
+            background: var(--sim-card);
+            border: 1px solid var(--sim-border);
+            border-radius: 20px;
+            padding: 32px;
+        }
+
+        .sim-compare-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--sim-text);
+            margin-bottom: 24px;
+        }
+
+        .sim-compare-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .sim-compare-card {
+            background: var(--sim-bg);
+            border: 2px solid var(--sim-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .sim-compare-card:hover {
+            border-color: var(--sim-primary);
+            transform: translateY(-4px);
+        }
+
+        .sim-compare-card.selected {
+            border-color: var(--sim-success);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+        }
+
+        .sim-compare-card .rate-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(201, 162, 39, 0.15);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sim-primary);
+            margin-bottom: 12px;
+        }
+
+        .sim-compare-card .rate-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--sim-text);
+            margin-bottom: 4px;
+        }
+
+        .sim-compare-card .rate-desc {
+            font-size: 12px;
+            color: var(--sim-text-muted);
+            margin-bottom: 16px;
+        }
+
+        .sim-compare-card .monthly {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--sim-text);
+            margin-bottom: 4px;
+        }
+
+        .sim-compare-card .monthly-label {
+            font-size: 12px;
+            color: var(--sim-text-muted);
+        }
+
+        .sim-compare-card .total {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--sim-border);
+            font-size: 13px;
+            color: var(--sim-text-secondary);
+        }
+
+        .sim-compare-card .best-badge {
+            position: absolute;
+            top: -10px;
+            right: 16px;
+            padding: 4px 12px;
+            background: var(--sim-success);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #000;
+            text-transform: uppercase;
+        }
+
+        /* CTA Section */
+        .sim-cta {
+            background: linear-gradient(135deg, rgba(37, 211, 102, 0.15) 0%, rgba(37, 211, 102, 0.05) 100%);
+            border: 1px solid rgba(37, 211, 102, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .sim-cta h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--sim-text);
             margin-bottom: 8px;
         }
 
-        .cta-section p {
-            color: var(--text-secondary);
-            margin-bottom: 20px;
+        .sim-cta p {
+            color: var(--sim-text-secondary);
+            margin-bottom: 24px;
         }
 
-        .btn-whatsapp {
+        .sim-btn-whatsapp {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            padding: 16px 40px;
+            padding: 18px 40px;
             background: #25D366;
             border: none;
-            border-radius: var(--radius-md);
+            border-radius: 12px;
             color: #fff;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s ease;
         }
 
-        .btn-whatsapp:hover {
+        .sim-btn-whatsapp:hover {
             background: #128C7E;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(37, 211, 102, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4);
         }
 
-        /* Footer */
-        .sim-footer {
-            background: var(--bg-card);
-            border-top: 1px solid var(--border-color);
-            padding: 24px;
-            text-align: center;
-        }
-
-        .sim-footer p {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        /* Loading state */
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 60px;
-            color: var(--text-secondary);
-        }
-
-        .spinner {
+        .sim-btn-whatsapp svg {
             width: 24px;
             height: 24px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        /* Amortization table */
+        .sim-amort-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .sim-amort-table th,
+        .sim-amort-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid var(--sim-border);
+        }
+
+        .sim-amort-table th {
+            background: var(--sim-bg);
+            color: var(--sim-text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .sim-amort-table td {
+            color: var(--sim-text);
+            font-size: 14px;
+        }
+
+        .sim-amort-table tr:hover td {
+            background: rgba(201, 162, 39, 0.05);
+        }
+
+        /* Disclaimer */
+        .sim-disclaimer {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 4px solid var(--sim-primary);
+            border-radius: 0 12px 12px 0;
+            padding: 20px 24px;
+            margin-top: 24px;
+        }
+
+        .sim-disclaimer p {
+            font-size: 13px;
+            color: var(--sim-text-muted);
+            margin: 0;
+            line-height: 1.6;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .sim-header {
-                padding: 0 16px;
+            .sim-config {
+                padding: 24px;
             }
 
-            .btn-home span {
-                display: none;
-            }
-
-            .steps-indicator {
-                display: none;
-            }
-
-            .terms-card {
+            .sim-result-main {
                 padding: 32px 24px;
             }
 
-            .form-card {
-                padding: 24px;
-            }
-
-            .config-panel {
-                position: static;
-                padding: 24px;
-            }
-
-            .results-panel {
-                padding: 24px;
-            }
-
-            .term-grid {
+            .sim-term-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .entity-monthly-value {
-                font-size: 26px;
-            }
-
-            .form-actions {
-                flex-direction: column-reverse;
-            }
-
-            .form-actions button {
-                width: 100%;
+            .sim-chart-header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
             }
         }
 
-        /* Policy modal */
-        .policy-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
+        /* Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .policy-modal.active {
-            display: flex;
-        }
-
-        .policy-modal-content {
-            background: var(--bg-card);
-            border-radius: var(--radius-xl);
-            max-width: 700px;
-            max-height: 80vh;
-            overflow: auto;
-            padding: 32px;
-            position: relative;
-        }
-
-        .policy-modal-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            width: 40px;
-            height: 40px;
-            background: var(--bg-dark);
-            border: none;
-            border-radius: 50%;
-            color: var(--text-primary);
-            font-size: 24px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .policy-modal-content h2 {
-            margin-bottom: 20px;
-            padding-right: 40px;
-        }
-
-        .policy-modal-body {
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.7;
-        }
-
-        .policy-modal-body h3 {
-            color: var(--text-primary);
-            margin: 20px 0 10px;
-            font-size: 16px;
+        .sim-animate {
+            animation: fadeInUp 0.5s ease forwards;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="sim-header">
-        <a href="index.html" class="logo">
-            <img src="multimedia/logo/logo-altorra.png" alt="ALTORRA CARS">
-        </a>
-        <a href="index.html" class="btn-home">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-            <span>Volver al inicio</span>
-        </a>
-    </header>
+    <!-- Header Global -->
+    <div id="header-placeholder"></div>
 
-    <main class="sim-main">
-        <!-- Steps indicator -->
-        <div class="steps-indicator">
-            <div class="steps-container">
-                <div class="step-item active" data-step="1">
-                    <div class="step-number"><span>1</span></div>
-                    <span class="step-text">Términos</span>
-                </div>
-                <div class="step-line"></div>
-                <div class="step-item" data-step="2">
-                    <div class="step-number"><span>2</span></div>
-                    <span class="step-text">Datos personales</span>
-                </div>
-                <div class="step-line"></div>
-                <div class="step-item" data-step="3">
-                    <div class="step-number"><span>3</span></div>
-                    <span class="step-text">Simulación</span>
+    <!-- Main Content -->
+    <main class="simulator-page">
+        <!-- Hero -->
+        <section class="sim-hero">
+            <div class="container">
+                <h1>Simulador de <span>Crédito Vehicular</span></h1>
+                <p>Calcula tu cuota mensual con diferentes tasas de interés del mercado colombiano</p>
+            </div>
+        </section>
+
+        <!-- Simulator -->
+        <div class="sim-container">
+            <div class="sim-grid">
+                <!-- Config Panel -->
+                <aside class="sim-config">
+                    <div class="sim-config-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        <h2>Configura tu crédito</h2>
+                    </div>
+
+                    <!-- Vehicle Price -->
+                    <div class="sim-group">
+                        <label>
+                            Precio del vehículo
+                            <span class="value" id="price-display">$65.000.000</span>
+                        </label>
+                        <div class="sim-input-wrap">
+                            <span class="prefix">$</span>
+                            <input type="text" class="sim-input" id="vehicle-price" value="65.000.000" inputmode="numeric">
+                        </div>
+                        <input type="range" class="sim-slider" id="price-slider" min="20000000" max="300000000" step="1000000" value="65000000">
+                        <div class="sim-slider-labels">
+                            <span>$20M</span>
+                            <span>$300M</span>
+                        </div>
+                    </div>
+
+                    <!-- Down Payment -->
+                    <div class="sim-group">
+                        <label>
+                            Cuota inicial
+                            <span class="value" id="dp-display">30% ($19.500.000)</span>
+                        </label>
+                        <input type="range" class="sim-slider" id="dp-slider" min="10" max="70" step="5" value="30">
+                        <div class="sim-slider-labels">
+                            <span>10%</span>
+                            <span>70%</span>
+                        </div>
+                    </div>
+
+                    <!-- Term -->
+                    <div class="sim-group">
+                        <label>Plazo de financiamiento</label>
+                        <div class="sim-term-grid" id="term-grid">
+                            <button class="sim-term-btn" data-term="24">24 meses</button>
+                            <button class="sim-term-btn" data-term="36">36 meses</button>
+                            <button class="sim-term-btn" data-term="48">48 meses</button>
+                            <button class="sim-term-btn active" data-term="60">60 meses</button>
+                            <button class="sim-term-btn" data-term="72">72 meses</button>
+                            <button class="sim-term-btn" data-term="84">84 meses</button>
+                        </div>
+                    </div>
+
+                    <!-- Interest Rate -->
+                    <div class="sim-group">
+                        <label>Tasa de interés mensual</label>
+                        <div class="sim-rate-options" id="rate-options">
+                            <label class="sim-rate-btn" data-rate="1.27">
+                                <div class="rate-info">
+                                    <span class="rate-name">Tasa Preferencial</span>
+                                    <span class="rate-desc">Excelente historial crediticio</span>
+                                </div>
+                                <span class="rate-value">1.27%</span>
+                            </label>
+                            <label class="sim-rate-btn active" data-rate="1.45">
+                                <div class="rate-info">
+                                    <span class="rate-name">Tasa Estándar</span>
+                                    <span class="rate-desc">Buen perfil crediticio</span>
+                                </div>
+                                <span class="rate-value">1.45%</span>
+                            </label>
+                            <label class="sim-rate-btn" data-rate="1.65">
+                                <div class="rate-info">
+                                    <span class="rate-name">Tasa Regular</span>
+                                    <span class="rate-desc">Perfil crediticio medio</span>
+                                </div>
+                                <span class="rate-value">1.65%</span>
+                            </label>
+                            <label class="sim-rate-btn" data-rate="1.88">
+                                <div class="rate-info">
+                                    <span class="rate-name">Tasa Alta</span>
+                                    <span class="rate-desc">Sin historial o reparado</span>
+                                </div>
+                                <span class="rate-value">1.88%</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="sim-summary">
+                        <div class="sim-summary-row">
+                            <span>Valor a financiar</span>
+                            <strong id="financed-display">$45.500.000</strong>
+                        </div>
+                        <div class="sim-summary-row">
+                            <span>Tasa efectiva anual</span>
+                            <strong id="ea-display">18.81% EA</strong>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Results Panel -->
+                <div class="sim-results">
+                    <!-- Main Result -->
+                    <div class="sim-result-main sim-animate">
+                        <p class="sim-result-label">Tu cuota mensual estimada</p>
+                        <p class="sim-result-value" id="monthly-payment">$1.185.432</p>
+                        <span class="sim-result-rate">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                            Tasa: <span id="rate-display">1.45% MV</span>
+                        </span>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="sim-stats-grid">
+                        <div class="sim-stat-card">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                <line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                            <p class="sim-stat-label">Total a pagar</p>
+                            <p class="sim-stat-value" id="total-payment">$71.125.920</p>
+                        </div>
+                        <div class="sim-stat-card">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                            <p class="sim-stat-label">Total intereses</p>
+                            <p class="sim-stat-value" id="total-interest">$25.625.920</p>
+                        </div>
+                        <div class="sim-stat-card">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            <p class="sim-stat-label">Plazo</p>
+                            <p class="sim-stat-value" id="term-display">60 meses</p>
+                        </div>
+                    </div>
+
+                    <!-- Comparison -->
+                    <div class="sim-compare-section">
+                        <h3 class="sim-compare-title">Compara diferentes escenarios de tasa</h3>
+                        <div class="sim-compare-grid" id="compare-grid">
+                            <!-- Generated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="sim-chart-section">
+                        <div class="sim-chart-header">
+                            <h3 class="sim-chart-title">Distribución del crédito</h3>
+                            <div class="sim-chart-tabs">
+                                <button class="sim-chart-tab active" data-chart="pie">Composición</button>
+                                <button class="sim-chart-tab" data-chart="bar">Amortización</button>
+                            </div>
+                        </div>
+                        <div class="sim-chart-container">
+                            <canvas id="sim-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- CTA -->
+                    <div class="sim-cta">
+                        <h3>¿Listo para dar el siguiente paso?</h3>
+                        <p>Contáctanos por WhatsApp y recibe asesoría personalizada para tu crédito vehicular</p>
+                        <button class="sim-btn-whatsapp" id="btn-whatsapp">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                            </svg>
+                            Solicitar asesoría gratuita
+                        </button>
+                    </div>
+
+                    <!-- Disclaimer -->
+                    <div class="sim-disclaimer">
+                        <p><strong>Aviso importante:</strong> Esta simulación es únicamente referencial. Las tasas de interés pueden variar entre 1.27% y 1.88% mensual según tu perfil crediticio. La aprobación final está sujeta a estudio de crédito por parte de la entidad financiera. ALTORRA CARS actúa como intermediario comercial.</p>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Section 1: Terms -->
-        <section class="sim-section active" id="section-terms">
-            <div class="terms-section">
-                <div class="terms-card">
-                    <div class="terms-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 12l2 2 4-4"/>
-                            <circle cx="12" cy="12" r="10"/>
-                        </svg>
-                    </div>
-                    <h2>Antes de continuar</h2>
-
-                    <div class="terms-box">
-                        <h3>Aviso Legal Importante</h3>
-                        <p>Esta herramienta de simulación financiera es únicamente de <strong>carácter informativo y referencial</strong>.</p>
-                        <p>Los valores mostrados (cuotas, tasas, plazos) son <strong>aproximados</strong> y pueden variar según:</p>
-                        <ul>
-                            <li>Tu perfil crediticio y capacidad de pago</li>
-                            <li>Políticas vigentes de cada entidad financiera</li>
-                            <li>Condiciones del mercado al momento de la solicitud</li>
-                        </ul>
-                        <p><strong>ALTORRA CARS</strong> actúa como intermediario comercial y no como entidad financiera.</p>
-                    </div>
-
-                    <label class="checkbox-wrap">
-                        <input type="checkbox" id="accept-terms">
-                        <span>He leído y acepto que esta simulación es únicamente referencial</span>
-                    </label>
-
-                    <button class="btn-primary" id="btn-continue-terms" disabled>
-                        Continuar
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 2: Personal Data -->
-        <section class="sim-section" id="section-personal">
-            <div class="personal-section">
-                <div class="form-card">
-                    <div class="form-header">
-                        <h2>Información Personal</h2>
-                        <p>Completa tus datos para personalizar la simulación</p>
-                    </div>
-
-                    <form id="personal-form" class="form-grid">
-                        <div class="form-group">
-                            <label for="nombres">Nombres *</label>
-                            <input type="text" id="nombres" required placeholder="Ej: Juan Carlos">
-                        </div>
-                        <div class="form-group">
-                            <label for="apellidos">Apellidos *</label>
-                            <input type="text" id="apellidos" required placeholder="Ej: Pérez García">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="tipo-documento">Tipo de documento *</label>
-                            <select id="tipo-documento" required>
-                                <option value="">Seleccionar...</option>
-                                <option value="CC">Cédula de Ciudadanía</option>
-                                <option value="CE">Cédula de Extranjería</option>
-                                <option value="NIT">NIT</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="documento">Número de documento *</label>
-                            <input type="text" id="documento" required placeholder="Ej: 1234567890" inputmode="numeric">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="celular">Celular *</label>
-                            <input type="tel" id="celular" required placeholder="Ej: 3001234567" inputmode="tel">
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Correo electrónico *</label>
-                            <input type="email" id="email" required placeholder="Ej: correo@ejemplo.com">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="ciudad">Ciudad de residencia *</label>
-                            <input type="text" id="ciudad" required placeholder="Ej: Cartagena">
-                        </div>
-                        <div class="form-group">
-                            <label for="ocupacion">Ocupación *</label>
-                            <select id="ocupacion" required>
-                                <option value="">Seleccionar...</option>
-                                <option value="empleado">Empleado</option>
-                                <option value="independiente">Independiente</option>
-                                <option value="pensionado">Pensionado</option>
-                                <option value="otro">Otro</option>
-                            </select>
-                        </div>
-
-                        <div class="form-divider"></div>
-
-                        <div class="form-group full-width">
-                            <label>¿Es Persona Expuesta Públicamente (PEP)? *</label>
-                            <p class="field-help">Funcionario público o con vínculos a cargos públicos prominentes</p>
-                            <div class="radio-group">
-                                <label>
-                                    <input type="radio" name="pep" value="no" required>
-                                    <span>No</span>
-                                </label>
-                                <label>
-                                    <input type="radio" name="pep" value="si">
-                                    <span>Sí</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="form-divider"></div>
-                        <h3 class="form-subtitle">Autorizaciones requeridas</h3>
-
-                        <label class="auth-checkbox">
-                            <input type="checkbox" id="auth-contact" required>
-                            <span>Autorizo a <strong>ALTORRA CARS</strong> y sus entidades financieras aliadas a contactarme para informarme sobre productos de financiación vehicular.</span>
-                        </label>
-
-                        <label class="auth-checkbox">
-                            <input type="checkbox" id="auth-data" required>
-                            <span>He leído y acepto la <a href="#" class="link-policy" data-policy="privacy">Política de Tratamiento de Datos Personales</a> de ALTORRA CARS.</span>
-                        </label>
-
-                        <label class="auth-checkbox">
-                            <input type="checkbox" id="auth-credit" required>
-                            <span>Autorizo consultar mi información crediticia en centrales de riesgo para evaluar mi solicitud de crédito vehicular.</span>
-                        </label>
-
-                        <div class="form-actions">
-                            <button type="button" class="btn-secondary" id="btn-back-terms">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                                </svg>
-                                Volver
-                            </button>
-                            <button type="submit" class="btn-primary">
-                                Continuar
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 3: Simulator -->
-        <section class="sim-section" id="section-simulator">
-            <div class="simulator-section">
-                <div class="simulator-grid">
-                    <!-- Config Panel -->
-                    <div class="config-panel">
-                        <h2 class="config-title">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"/>
-                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                            </svg>
-                            Configuración
-                        </h2>
-
-                        <!-- Vehicle name -->
-                        <div class="config-group">
-                            <label for="vehicle-name">Vehículo (opcional)</label>
-                            <div class="currency-input">
-                                <input type="text" id="vehicle-name" placeholder="Ej: Mazda CX-5 2023" style="padding-left:16px;">
-                            </div>
-                        </div>
-
-                        <!-- Year -->
-                        <div class="config-group">
-                            <label for="vehicle-year">Año del modelo</label>
-                            <select id="vehicle-year" style="width:100%;padding:14px 16px;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:var(--radius-md);color:var(--text-primary);font-size:15px;">
-                                <!-- Generated dynamically -->
-                            </select>
-                        </div>
-
-                        <!-- Price -->
-                        <div class="config-group">
-                            <label>Precio del vehículo</label>
-                            <div class="currency-input">
-                                <span class="symbol">$</span>
-                                <input type="text" id="vehicle-price" inputmode="numeric" placeholder="65.000.000">
-                            </div>
-                            <div class="slider-wrap">
-                                <input type="range" id="price-slider" min="20000000" max="300000000" step="1000000" value="65000000">
-                                <div class="slider-labels">
-                                    <span>$20M</span>
-                                    <span>$300M</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Down payment -->
-                        <div class="config-group">
-                            <label>Cuota inicial <span class="value-display" id="dp-percent-display">(30%)</span></label>
-                            <div class="currency-input">
-                                <span class="symbol">$</span>
-                                <input type="text" id="down-payment" inputmode="numeric" placeholder="19.500.000">
-                            </div>
-                            <div class="slider-wrap">
-                                <input type="range" id="dp-slider" min="10" max="70" step="5" value="30">
-                                <div class="slider-labels">
-                                    <span>10%</span>
-                                    <span>70%</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Term -->
-                        <div class="config-group">
-                            <label>Plazo de financiamiento</label>
-                            <div class="term-grid" id="term-grid">
-                                <!-- Generated dynamically -->
-                            </div>
-                        </div>
-
-                        <!-- Summary -->
-                        <div class="config-summary">
-                            <div class="summary-row">
-                                <span>Valor a financiar</span>
-                                <strong id="financed-amount">$0</strong>
-                            </div>
-                            <div class="summary-row">
-                                <span>Porcentaje financiado</span>
-                                <strong id="financed-percent">0%</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Results Panel -->
-                    <div class="results-panel">
-                        <div class="results-header">
-                            <div>
-                                <h2 class="results-title">Resultados de la Simulación</h2>
-                                <p class="results-subtitle">Cuotas mensuales con seguro de vida incluido</p>
-                            </div>
-                        </div>
-
-                        <div class="entities-grid" id="entities-grid">
-                            <!-- Generated dynamically -->
-                        </div>
-
-                        <div class="results-disclaimer">
-                            <p><strong>Nota importante:</strong> Las tasas y condiciones mostradas son referenciales y pueden variar según tu perfil crediticio, historial financiero y políticas vigentes de cada entidad.</p>
-                            <p>ALTORRA CARS actúa como intermediario comercial. La aprobación del crédito está sujeta a estudio de cada entidad financiera.</p>
-                        </div>
-
-                        <div class="cta-section">
-                            <h3>¿Te interesa alguna opción?</h3>
-                            <p>Contáctanos por WhatsApp para recibir asesoría personalizada</p>
-                            <button class="btn-whatsapp" id="btn-whatsapp">
-                                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                                </svg>
-                                Contactar asesor
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="sim-footer">
-        <p>&copy; 2025 ALTORRA CARS. Todos los derechos reservados.</p>
-        <p>Esta herramienta es solo de carácter informativo. ALTORRA CARS no es una entidad financiera.</p>
-    </footer>
+    <!-- Footer Global -->
+    <div id="footer-placeholder"></div>
 
-    <!-- Policy Modal -->
-    <div class="policy-modal" id="policy-modal">
-        <div class="policy-modal-content">
-            <button class="policy-modal-close" id="policy-modal-close">&times;</button>
-            <h2 id="policy-modal-title">Política</h2>
-            <div class="policy-modal-body" id="policy-modal-body"></div>
-        </div>
-    </div>
-
-    <!-- JavaScript -->
-    <script src="js/simulador/data.js"></script>
-    <script src="js/simulador/finance.js"></script>
-    <script src="js/simulador/simulator.js"></script>
-
+    <!-- Scripts -->
+    <script src="js/components.js"></script>
     <script>
     (function() {
         'use strict';
 
         // ============================================
-        // STATE & CONFIG
+        // STATE
         // ============================================
         const state = {
-            step: 1,
-            terms: false,
-            personal: {},
-            vehicle: {
-                name: '',
-                year: new Date().getFullYear(),
-                price: 65000000,
-                downPayment: 19500000,
-                downPaymentPercent: 30,
-                term: 60
-            }
+            price: 65000000,
+            downPaymentPercent: 30,
+            term: 60,
+            rate: 1.45
         };
 
-        const TERMS = [24, 36, 48, 60, 72, 84];
+        const RATES = [
+            { value: 1.27, name: 'Preferencial', desc: 'Excelente historial' },
+            { value: 1.45, name: 'Estándar', desc: 'Buen perfil' },
+            { value: 1.65, name: 'Regular', desc: 'Perfil medio' },
+            { value: 1.88, name: 'Alta', desc: 'Sin historial' }
+        ];
+
         const WHATSAPP = '573235016747';
-
-        // Entity colors
-        const ENTITY_COLORS = {
-            SUFI: '#0066cc',
-            OCCIDENTE: '#e31937',
-            FINANDINA: '#00a651',
-            FINANZAUTO: '#ff6600',
-            MOBILIZE: '#ffd700'
-        };
+        let chart = null;
+        let chartType = 'pie';
 
         // ============================================
-        // DOM ELEMENTS
+        // DOM
         // ============================================
-        const $sections = document.querySelectorAll('.sim-section');
-        const $steps = document.querySelectorAll('.step-item');
-        const $stepLines = document.querySelectorAll('.step-line');
-
-        // Terms
-        const $acceptTerms = document.getElementById('accept-terms');
-        const $btnContinueTerms = document.getElementById('btn-continue-terms');
-
-        // Personal
-        const $personalForm = document.getElementById('personal-form');
-        const $btnBackTerms = document.getElementById('btn-back-terms');
-
-        // Simulator
-        const $vehicleName = document.getElementById('vehicle-name');
-        const $vehicleYear = document.getElementById('vehicle-year');
-        const $vehiclePrice = document.getElementById('vehicle-price');
+        const $priceInput = document.getElementById('vehicle-price');
         const $priceSlider = document.getElementById('price-slider');
-        const $downPayment = document.getElementById('down-payment');
+        const $priceDisplay = document.getElementById('price-display');
         const $dpSlider = document.getElementById('dp-slider');
-        const $dpPercentDisplay = document.getElementById('dp-percent-display');
+        const $dpDisplay = document.getElementById('dp-display');
         const $termGrid = document.getElementById('term-grid');
-        const $financedAmount = document.getElementById('financed-amount');
-        const $financedPercent = document.getElementById('financed-percent');
-        const $entitiesGrid = document.getElementById('entities-grid');
-        const $btnWhatsapp = document.getElementById('btn-whatsapp');
-
-        // Policy modal
-        const $policyModal = document.getElementById('policy-modal');
-        const $policyModalClose = document.getElementById('policy-modal-close');
-        const $policyModalTitle = document.getElementById('policy-modal-title');
-        const $policyModalBody = document.getElementById('policy-modal-body');
+        const $rateOptions = document.getElementById('rate-options');
+        const $financedDisplay = document.getElementById('financed-display');
+        const $eaDisplay = document.getElementById('ea-display');
+        const $monthlyPayment = document.getElementById('monthly-payment');
+        const $rateDisplay = document.getElementById('rate-display');
+        const $totalPayment = document.getElementById('total-payment');
+        const $totalInterest = document.getElementById('total-interest');
+        const $termDisplay = document.getElementById('term-display');
+        const $compareGrid = document.getElementById('compare-grid');
+        const $chartCanvas = document.getElementById('sim-chart');
 
         // ============================================
         // UTILS
@@ -1466,385 +1000,342 @@
             }).format(num);
         }
 
-        function parseCurrency(str) {
-            return parseInt(String(str).replace(/\D/g, '')) || 0;
-        }
-
         function formatNumber(num) {
             return new Intl.NumberFormat('es-CO').format(num);
         }
 
-        // ============================================
-        // NAVIGATION
-        // ============================================
-        function goToStep(stepNum) {
-            state.step = stepNum;
+        function parseCurrency(str) {
+            return parseInt(String(str).replace(/\D/g, '')) || 0;
+        }
 
-            // Update sections
-            $sections.forEach((s, i) => {
-                s.classList.toggle('active', i + 1 === stepNum);
-            });
+        // PMT function (Excel compatible)
+        function PMT(rate, nper, pv) {
+            if (rate === 0) return -pv / nper;
+            const r = rate / 100;
+            return (r * pv) / (1 - Math.pow(1 + r, -nper));
+        }
 
-            // Update step indicators
-            $steps.forEach((s, i) => {
-                const num = i + 1;
-                s.classList.toggle('active', num === stepNum);
-                s.classList.toggle('completed', num < stepNum);
-            });
-
-            $stepLines.forEach((l, i) => {
-                l.classList.toggle('completed', i + 1 < stepNum);
-            });
-
-            // Scroll to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            // If going to simulator, run calculation
-            if (stepNum === 3) {
-                runSimulation();
-            }
+        // Monthly to EA
+        function monthlyToEA(monthlyRate) {
+            return (Math.pow(1 + monthlyRate / 100, 12) - 1) * 100;
         }
 
         // ============================================
-        // STEP 1: TERMS
+        // CALCULATION
         // ============================================
-        $acceptTerms.addEventListener('change', () => {
-            state.terms = $acceptTerms.checked;
-            $btnContinueTerms.disabled = !state.terms;
-        });
+        function calculate() {
+            const financed = state.price * (1 - state.downPaymentPercent / 100);
+            const downPayment = state.price * state.downPaymentPercent / 100;
+            const monthly = PMT(state.rate, state.term, financed);
+            const total = monthly * state.term;
+            const interest = total - financed;
+            const ea = monthlyToEA(state.rate);
 
-        $btnContinueTerms.addEventListener('click', () => {
-            if (state.terms) goToStep(2);
-        });
-
-        // ============================================
-        // STEP 2: PERSONAL
-        // ============================================
-        $btnBackTerms.addEventListener('click', () => goToStep(1));
-
-        $personalForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-
-            // Collect form data
-            state.personal = {
-                nombres: document.getElementById('nombres').value,
-                apellidos: document.getElementById('apellidos').value,
-                tipoDoc: document.getElementById('tipo-documento').value,
-                documento: document.getElementById('documento').value,
-                celular: document.getElementById('celular').value,
-                email: document.getElementById('email').value,
-                ciudad: document.getElementById('ciudad').value,
-                ocupacion: document.getElementById('ocupacion').value,
-                pep: document.querySelector('input[name="pep"]:checked')?.value
-            };
-
-            goToStep(3);
-        });
-
-        // Policy links
-        document.querySelectorAll('.link-policy').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const type = e.target.dataset.policy;
-                showPolicyModal(type);
-            });
-        });
-
-        function showPolicyModal(type) {
-            if (type === 'privacy') {
-                $policyModalTitle.textContent = 'Política de Tratamiento de Datos Personales';
-                $policyModalBody.innerHTML = `
-                    <p><strong>ALTORRA COMPANY S.A.S.</strong>, identificada con NIT 901.234.567-8, como responsable del tratamiento de datos personales, recolecta y trata sus datos conforme a la Ley 1581 de 2012.</p>
-                    <h3>Finalidades</h3>
-                    <p>Sus datos serán utilizados para: evaluar solicitudes de crédito, gestionar trámites de financiación, enviar información comercial, cumplir obligaciones legales y mejorar nuestros servicios.</p>
-                    <h3>Derechos</h3>
-                    <p>Usted tiene derecho a conocer, actualizar, rectificar y suprimir sus datos, así como a revocar la autorización otorgada.</p>
-                    <h3>Contacto</h3>
-                    <p>Para ejercer sus derechos, contacte a: datos@altorracars.com</p>
-                `;
-            }
-            $policyModal.classList.add('active');
+            return { financed, downPayment, monthly, total, interest, ea };
         }
 
-        $policyModalClose.addEventListener('click', () => {
-            $policyModal.classList.remove('active');
-        });
+        function updateUI() {
+            const calc = calculate();
 
-        $policyModal.addEventListener('click', (e) => {
-            if (e.target === $policyModal) {
-                $policyModal.classList.remove('active');
-            }
-        });
+            // Update displays
+            $priceDisplay.textContent = formatCOP(state.price);
+            $dpDisplay.textContent = `${state.downPaymentPercent}% (${formatCOP(calc.downPayment)})`;
+            $financedDisplay.textContent = formatCOP(calc.financed);
+            $eaDisplay.textContent = `${calc.ea.toFixed(2)}% EA`;
+            $monthlyPayment.textContent = formatCOP(calc.monthly);
+            $rateDisplay.textContent = `${state.rate}% MV`;
+            $totalPayment.textContent = formatCOP(calc.total);
+            $totalInterest.textContent = formatCOP(calc.interest);
+            $termDisplay.textContent = `${state.term} meses`;
 
-        // ============================================
-        // STEP 3: SIMULATOR
-        // ============================================
+            // Update comparison grid
+            updateComparison(calc.financed);
 
-        // Initialize year select
-        function initYearSelect() {
-            const currentYear = new Date().getFullYear();
-            for (let y = currentYear + 1; y >= currentYear - 15; y--) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
-                if (y === currentYear) opt.selected = true;
-                $vehicleYear.appendChild(opt);
-            }
+            // Update chart
+            updateChart(calc);
         }
 
-        // Initialize term buttons
-        function initTermButtons() {
-            TERMS.forEach(term => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'term-btn' + (term === state.vehicle.term ? ' active' : '');
-                btn.dataset.term = term;
-                btn.textContent = term + 'm';
-                btn.addEventListener('click', () => selectTerm(term));
-                $termGrid.appendChild(btn);
-            });
-        }
-
-        function selectTerm(term) {
-            state.vehicle.term = term;
-            $termGrid.querySelectorAll('.term-btn').forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.dataset.term) === term);
-            });
-            runSimulation();
-        }
-
-        // Update price from slider
-        function updateFromPriceSlider() {
-            const price = parseInt($priceSlider.value);
-            state.vehicle.price = price;
-            $vehiclePrice.value = formatNumber(price);
-            updateDownPayment();
-            updateSummary();
-            runSimulation();
-        }
-
-        // Update price from input
-        function updateFromPriceInput() {
-            const price = parseCurrency($vehiclePrice.value);
-            state.vehicle.price = price;
-            $priceSlider.value = Math.min(Math.max(price, 20000000), 300000000);
-            updateDownPayment();
-            updateSummary();
-            runSimulation();
-        }
-
-        // Update down payment from slider
-        function updateFromDPSlider() {
-            const percent = parseInt($dpSlider.value);
-            state.vehicle.downPaymentPercent = percent;
-            state.vehicle.downPayment = Math.round(state.vehicle.price * percent / 100);
-            $downPayment.value = formatNumber(state.vehicle.downPayment);
-            $dpPercentDisplay.textContent = `(${percent}%)`;
-            updateSummary();
-            runSimulation();
-        }
-
-        // Update down payment from input
-        function updateFromDPInput() {
-            const dp = parseCurrency($downPayment.value);
-            state.vehicle.downPayment = dp;
-            const percent = Math.round(dp / state.vehicle.price * 100);
-            state.vehicle.downPaymentPercent = percent;
-            $dpSlider.value = Math.min(Math.max(percent, 10), 70);
-            $dpPercentDisplay.textContent = `(${percent}%)`;
-            updateSummary();
-            runSimulation();
-        }
-
-        function updateDownPayment() {
-            const percent = state.vehicle.downPaymentPercent;
-            state.vehicle.downPayment = Math.round(state.vehicle.price * percent / 100);
-            $downPayment.value = formatNumber(state.vehicle.downPayment);
-        }
-
-        function updateSummary() {
-            const financed = state.vehicle.price - state.vehicle.downPayment;
-            const percent = Math.round((financed / state.vehicle.price) * 100);
-            $financedAmount.textContent = formatCOP(financed);
-            $financedPercent.textContent = percent + '%';
-        }
-
-        // Event listeners
-        $priceSlider.addEventListener('input', updateFromPriceSlider);
-        $vehiclePrice.addEventListener('blur', updateFromPriceInput);
-        $vehiclePrice.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                updateFromPriceInput();
-            }
-        });
-
-        $dpSlider.addEventListener('input', updateFromDPSlider);
-        $downPayment.addEventListener('blur', updateFromDPInput);
-        $downPayment.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                updateFromDPInput();
-            }
-        });
-
-        $vehicleYear.addEventListener('change', () => {
-            state.vehicle.year = parseInt($vehicleYear.value);
-            runSimulation();
-        });
-
-        $vehicleName.addEventListener('input', () => {
-            state.vehicle.name = $vehicleName.value;
-        });
-
-        // ============================================
-        // SIMULATION ENGINE
-        // ============================================
-        function runSimulation() {
-            const financed = state.vehicle.price - state.vehicle.downPayment;
-
-            // Use the simulator engine
-            const results = window.SimuladorEngine.simularFinanciacion({
-                yearModelo: state.vehicle.year,
-                precioVenta: state.vehicle.price,
-                cuotaInicial: state.vehicle.downPayment,
-                plazoMeses: state.vehicle.term,
-                riesgo: 'G1', // Default to G1 for simplified version
-                valorCuotaExtra: 500000,
-                offsetMeses: 6,
-                opcionCompraLeasing: 0.01
-            });
-
-            renderResults(results.tradicional, financed);
-        }
-
-        function renderResults(tradicional, financed) {
-            const entities = ['SUFI', 'OCCIDENTE', 'FINANDINA', 'FINANZAUTO', 'MOBILIZE'];
-
-            // Find best (lowest) rate
-            let bestEntity = null;
+        function updateComparison(financed) {
+            let html = '';
             let bestRate = Infinity;
+            let bestIndex = 0;
 
-            entities.forEach(entity => {
-                const data = tradicional[entity];
-                if (data && typeof data === 'object' && data.cuota) {
-                    if (data.cuota < bestRate) {
-                        bestRate = data.cuota;
-                        bestEntity = entity;
-                    }
+            // Find best rate
+            RATES.forEach((rate, i) => {
+                const monthly = PMT(rate.value, state.term, financed);
+                if (monthly < bestRate) {
+                    bestRate = monthly;
+                    bestIndex = i;
                 }
             });
 
-            // Render cards
-            let html = '';
-            entities.forEach(entity => {
-                const data = tradicional[entity];
-                const color = ENTITY_COLORS[entity];
-                const isBest = entity === bestEntity;
-                const isAvailable = data && typeof data === 'object' && data.cuota;
+            RATES.forEach((rate, i) => {
+                const monthly = PMT(rate.value, state.term, financed);
+                const total = monthly * state.term;
+                const isSelected = rate.value === state.rate;
+                const isBest = i === bestIndex;
 
                 html += `
-                    <div class="entity-card ${isBest ? 'best' : ''} ${!isAvailable ? 'unavailable' : ''}" style="--entity-color: ${color}">
-                        <div class="entity-header">
-                            <span class="entity-name">${entity}</span>
-                            ${isBest ? '<span class="entity-badge">Mejor opción</span>' : ''}
-                        </div>
-
-                        ${isAvailable ? `
-                            <div class="entity-rate">Tasa: ${(data.tasa * 100).toFixed(2)}% MV</div>
-                            <div class="entity-monthly">
-                                <div class="entity-monthly-label">Cuota mensual</div>
-                                <div class="entity-monthly-value">${formatCOP(data.cuota)}</div>
-                            </div>
-                            <div class="entity-details">
-                                <div class="entity-detail">
-                                    <div class="entity-detail-label">Plazo</div>
-                                    <div class="entity-detail-value">${state.vehicle.term} meses</div>
-                                </div>
-                                <div class="entity-detail">
-                                    <div class="entity-detail-label">Total aprox.</div>
-                                    <div class="entity-detail-value">${formatCOP(data.total)}</div>
-                                </div>
-                            </div>
-                        ` : `
-                            <div class="entity-monthly">
-                                <div class="entity-monthly-label">Estado</div>
-                                <div class="entity-monthly-value small">${data || 'No disponible'}</div>
-                            </div>
-                        `}
+                    <div class="sim-compare-card ${isSelected ? 'selected' : ''}" data-rate="${rate.value}" style="position: relative;">
+                        ${isBest ? '<span class="best-badge">Mejor opción</span>' : ''}
+                        <span class="rate-badge">${rate.value}% MV</span>
+                        <p class="rate-name">${rate.name}</p>
+                        <p class="rate-desc">${rate.desc}</p>
+                        <p class="monthly">${formatCOP(monthly)}</p>
+                        <p class="monthly-label">Cuota mensual</p>
+                        <p class="total">Total: ${formatCOP(total)}</p>
                     </div>
                 `;
             });
 
-            $entitiesGrid.innerHTML = html;
+            $compareGrid.innerHTML = html;
+
+            // Add click handlers
+            $compareGrid.querySelectorAll('.sim-compare-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    state.rate = parseFloat(card.dataset.rate);
+                    updateRateButtons();
+                    updateUI();
+                });
+            });
         }
 
-        // WhatsApp
-        $btnWhatsapp.addEventListener('click', () => {
-            const financed = state.vehicle.price - state.vehicle.downPayment;
-            const msg = `Hola ALTORRA CARS! 🚗
+        function updateRateButtons() {
+            $rateOptions.querySelectorAll('.sim-rate-btn').forEach(btn => {
+                btn.classList.toggle('active', parseFloat(btn.dataset.rate) === state.rate);
+            });
+        }
 
-Realicé una simulación de crédito:
+        function updateChart(calc) {
+            const ctx = $chartCanvas.getContext('2d');
 
-*Datos del cliente:*
-• Nombre: ${state.personal.nombres} ${state.personal.apellidos}
-• Documento: ${state.personal.tipoDoc} ${state.personal.documento}
-• Celular: ${state.personal.celular}
-• Ciudad: ${state.personal.ciudad}
+            if (chart) {
+                chart.destroy();
+            }
 
-*Simulación:*
-• Vehículo: ${state.vehicle.name || 'No especificado'}
-• Precio: ${formatCOP(state.vehicle.price)}
-• Cuota inicial: ${formatCOP(state.vehicle.downPayment)} (${state.vehicle.downPaymentPercent}%)
-• A financiar: ${formatCOP(financed)}
-• Plazo: ${state.vehicle.term} meses
+            if (chartType === 'pie') {
+                chart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Capital', 'Intereses', 'Cuota inicial'],
+                        datasets: [{
+                            data: [calc.financed, calc.interest, calc.downPayment],
+                            backgroundColor: [
+                                '#c9a227',
+                                '#3b82f6',
+                                '#22c55e'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#a0a0a0',
+                                    padding: 20,
+                                    font: { size: 13 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + formatCOP(context.raw);
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '60%'
+                    }
+                });
+            } else {
+                // Bar chart - amortization over years
+                const years = Math.ceil(state.term / 12);
+                const labels = [];
+                const capitalData = [];
+                const interestData = [];
 
-Me interesa conocer más opciones de financiamiento.`;
+                let balance = calc.financed;
+                const monthlyRate = state.rate / 100;
+
+                for (let year = 1; year <= years; year++) {
+                    labels.push(`Año ${year}`);
+                    let yearCapital = 0;
+                    let yearInterest = 0;
+
+                    for (let month = 0; month < 12 && (year - 1) * 12 + month < state.term; month++) {
+                        const interestPayment = balance * monthlyRate;
+                        const capitalPayment = calc.monthly - interestPayment;
+                        yearCapital += capitalPayment;
+                        yearInterest += interestPayment;
+                        balance -= capitalPayment;
+                    }
+
+                    capitalData.push(yearCapital);
+                    interestData.push(yearInterest);
+                }
+
+                chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Capital',
+                                data: capitalData,
+                                backgroundColor: '#c9a227'
+                            },
+                            {
+                                label: 'Intereses',
+                                data: interestData,
+                                backgroundColor: '#3b82f6'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                stacked: true,
+                                grid: { color: '#2a2a2a' },
+                                ticks: { color: '#a0a0a0' }
+                            },
+                            y: {
+                                stacked: true,
+                                grid: { color: '#2a2a2a' },
+                                ticks: {
+                                    color: '#a0a0a0',
+                                    callback: function(value) {
+                                        return '$' + (value / 1000000).toFixed(0) + 'M';
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#a0a0a0' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + formatCOP(context.raw);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+
+        // Price slider
+        $priceSlider.addEventListener('input', () => {
+            state.price = parseInt($priceSlider.value);
+            $priceInput.value = formatNumber(state.price);
+            updateUI();
+        });
+
+        // Price input
+        $priceInput.addEventListener('blur', () => {
+            state.price = parseCurrency($priceInput.value);
+            $priceSlider.value = Math.min(Math.max(state.price, 20000000), 300000000);
+            $priceInput.value = formatNumber(state.price);
+            updateUI();
+        });
+
+        $priceInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                $priceInput.blur();
+            }
+        });
+
+        // Down payment slider
+        $dpSlider.addEventListener('input', () => {
+            state.downPaymentPercent = parseInt($dpSlider.value);
+            updateUI();
+        });
+
+        // Term buttons
+        $termGrid.addEventListener('click', (e) => {
+            const btn = e.target.closest('.sim-term-btn');
+            if (!btn) return;
+
+            state.term = parseInt(btn.dataset.term);
+            $termGrid.querySelectorAll('.sim-term-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateUI();
+        });
+
+        // Rate buttons
+        $rateOptions.addEventListener('click', (e) => {
+            const btn = e.target.closest('.sim-rate-btn');
+            if (!btn) return;
+
+            state.rate = parseFloat(btn.dataset.rate);
+            updateRateButtons();
+            updateUI();
+        });
+
+        // Chart tabs
+        document.querySelectorAll('.sim-chart-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.sim-chart-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                chartType = tab.dataset.chart;
+                updateUI();
+            });
+        });
+
+        // WhatsApp button
+        document.getElementById('btn-whatsapp').addEventListener('click', () => {
+            const calc = calculate();
+            const msg = `Hola ALTORRA CARS! Realicé una simulación:
+
+*Precio vehículo:* ${formatCOP(state.price)}
+*Cuota inicial:* ${formatCOP(calc.downPayment)} (${state.downPaymentPercent}%)
+*A financiar:* ${formatCOP(calc.financed)}
+*Plazo:* ${state.term} meses
+*Tasa:* ${state.rate}% MV
+*Cuota mensual:* ${formatCOP(calc.monthly)}
+
+Me interesa recibir más información.`;
 
             window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
         });
 
         // ============================================
-        // URL PARAMS (from vehicle detail page)
+        // URL PARAMS
         // ============================================
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
 
             if (params.has('precio')) {
-                state.vehicle.price = parseInt(params.get('precio'));
-                $vehiclePrice.value = formatNumber(state.vehicle.price);
-                $priceSlider.value = state.vehicle.price;
+                state.price = parseInt(params.get('precio'));
+                $priceInput.value = formatNumber(state.price);
+                $priceSlider.value = state.price;
             }
-
-            if (params.has('year')) {
-                state.vehicle.year = parseInt(params.get('year'));
-                $vehicleYear.value = state.vehicle.year;
-            }
-
-            if (params.has('vehiculo')) {
-                state.vehicle.name = params.get('vehiculo');
-                $vehicleName.value = state.vehicle.name;
-            }
-
-            updateDownPayment();
-            updateSummary();
         }
 
         // ============================================
         // INIT
         // ============================================
         function init() {
-            initYearSelect();
-            initTermButtons();
             loadFromURL();
-            updateSummary();
-
-            // Initial values
-            $vehiclePrice.value = formatNumber(state.vehicle.price);
-            $downPayment.value = formatNumber(state.vehicle.downPayment);
+            $priceInput.value = formatNumber(state.price);
+            updateUI();
         }
 
-        init();
+        // Wait for components to load
+        setTimeout(init, 200);
     })();
     </script>
 </body>

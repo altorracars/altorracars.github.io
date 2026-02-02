@@ -14,6 +14,11 @@
     <meta name="geo.region" content="CO-BOL">
     <meta name="geo.placename" content="Cartagena">
 
+    <!-- Cache Control - Force fresh content -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://altorracars.github.io/">
@@ -627,20 +632,7 @@
         });
     </script>
 
-    <!-- Service Worker Registration -->
-    <script>
-        // Register Service Worker for PWA functionality
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registered successfully:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Service Worker registration failed:', error);
-                    });
-            });
-        }
-    </script>
+    <!-- Cache Manager - Handles SW updates and cache invalidation -->
+    <script src="js/cache-manager.js"></script>
 </body>
 </html>

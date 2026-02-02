@@ -1241,7 +1241,7 @@
                         </svg>
                         Naturaleza de la simulacion
                     </h3>
-                    <p><strong>Esta simulacion es unicamente de caracter informativo y referencial.</strong> El presente ejercicio de simulacion NO constituye una oferta comercial, propuesta formal, ni compromiso de aprobacion de credito por parte de ALTORRA CARS o ALTORRA COMPANY S.A.S.</p>
+                    <p><strong>Esta simulacion es unicamente de caracter informativo y referencial.</strong> El presente ejercicio de simulacion NO constituye una oferta comercial, propuesta formal, ni compromiso de aprobacion de credito por parte de ALTORRA COMPANY S.A.S.</p>
                 </div>
 
                 <div class="terms-section">
@@ -1269,7 +1269,7 @@
                         </svg>
                         Aprobacion del credito
                     </h3>
-                    <p>El presente ejercicio de simulacion <strong>NO compromete a ALTORRA CARS</strong> con la aprobacion de la solicitud de credito. La respuesta final esta sujeta a:</p>
+                    <p>El presente ejercicio de simulacion <strong>NO compromete a ALTORRA COMPANY S.A.S.</strong> con la aprobacion de la solicitud de credito. La respuesta final esta sujeta a:</p>
                     <ul>
                         <li>El estudio y analisis de los documentos de soporte</li>
                         <li>La validacion de la informacion suministrada</li>
@@ -1521,7 +1521,7 @@
                             Informacion legal importante
                         </h4>
                         <p><strong>ESTA SIMULACION NO ES UNA PROPUESTA FORMAL.</strong> El presente ejercicio de simulacion es unicamente de caracter informativo y referencial, y NO constituye una oferta comercial ni compromiso de aprobacion de credito.</p>
-                        <p><strong>El presente ejercicio de simulacion NO compromete a ALTORRA CARS con la aprobacion de la solicitud de credito.</strong> La respuesta final esta sujeta al estudio y analisis de los documentos de soporte, la validacion de la informacion suministrada, y la aprobacion de la entidad financiera correspondiente.</p>
+                        <p><strong>El presente ejercicio de simulacion NO compromete a ALTORRA COMPANY S.A.S. con la aprobacion de la solicitud de credito.</strong> La respuesta final esta sujeta al estudio y analisis de los documentos de soporte, la validacion de la informacion suministrada, y la aprobacion de la entidad financiera correspondiente.</p>
                         <p><strong>Las tasas de credito pueden variar en cualquier momento sin previo aviso</strong>, segun las politicas de las entidades financieras aliadas, las condiciones del mercado y el perfil crediticio del solicitante. Esta variacion no implica responsabilidad alguna por parte de ALTORRA COMPANY S.A.S.</p>
                         <p><strong>ALTORRA COMPANY S.A.S.</strong> actuara como intermediario comercial, gestionando con las entidades financieras aliadas el estudio del cupo de credito. La entidad financiera sera la unica responsable de las condiciones finales del credito, incluyendo tasa de interes, plazo, cargos fijos y adicionales.</p>
                     </div>
@@ -1637,7 +1637,7 @@
 
                         <label class="sim-auth-item">
                             <input type="checkbox" id="auth-contact" required>
-                            <span>Autorizo y solicito expresamente que me contacten para recibir informacion sobre productos de financiacion vehicular por parte de <strong>ALTORRA CARS</strong> y sus entidades financieras aliadas.</span>
+                            <span>Autorizo y solicito expresamente que me contacten para recibir informacion sobre productos de financiacion vehicular por parte de <strong>ALTORRA COMPANY S.A.S.</strong> y sus entidades financieras aliadas.</span>
                         </label>
 
                         <label class="sim-auth-item">
@@ -1652,7 +1652,7 @@
 
                         <label class="sim-auth-item">
                             <input type="checkbox" id="auth-terms" required>
-                            <span>Entiendo y acepto que esta simulacion NO es una propuesta formal ni compromete a ALTORRA CARS con la aprobacion del credito. Las tasas de interes y condiciones finales seran determinadas por la entidad financiera que apruebe mi solicitud y pueden variar sin previo aviso.</span>
+                            <span>Entiendo y acepto que esta simulacion NO es una propuesta formal ni compromete a ALTORRA COMPANY S.A.S. con la aprobacion del credito. Las tasas de interes y condiciones finales seran determinadas por la entidad financiera que apruebe mi solicitud y pueden variar sin previo aviso.</span>
                         </label>
                     </div>
 
@@ -2174,15 +2174,10 @@ Quedo atento a su respuesta.`;
 
             if (!overlay) return;
 
-            // Check if terms were already accepted this session
-            if (sessionStorage.getItem('termsAccepted') === 'true') {
-                overlay.classList.add('hidden');
-                return;
-            }
+            // Terms must always be shown - no session storage bypass
 
             // Accept terms
             acceptBtn.addEventListener('click', () => {
-                sessionStorage.setItem('termsAccepted', 'true');
                 overlay.classList.add('hidden');
             });
 

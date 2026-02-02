@@ -815,7 +815,7 @@ class FinancingCalculator {
 
         let vehicleInfo = '';
         if (this.currentVehicle) {
-            vehicleInfo = `🚗 *Vehículo de interés:*
+            vehicleInfo = `VEHICULO DE INTERES:
 ${this.capitalize(this.currentVehicle.marca)} ${this.currentVehicle.modelo} ${this.currentVehicle.year}
 
 `;
@@ -825,7 +825,7 @@ ${this.capitalize(this.currentVehicle.marca)} ${this.currentVehicle.modelo} ${th
         if (this.currentMode === 'quick') {
             const monthlyEl = document.getElementById('quick-monthly');
             const monthly = monthlyEl ? monthlyEl.textContent : '';
-            simulationInfo = `📊 *Simulación rápida:*
+            simulationInfo = `SIMULACION RAPIDA:
 - Cuota mensual estimada: ${monthly}
 - Tasa: 1.40% NMV (referencial)`;
         } else {
@@ -836,24 +836,21 @@ ${this.capitalize(this.currentVehicle.marca)} ${this.currentVehicle.modelo} ${th
                 extra: 'Cuotas extra',
                 leasing: 'Leasing'
             };
-            simulationInfo = `📊 *Simulación avanzada:*
+            simulationInfo = `SIMULACION AVANZADA:
 - Tipo de plan: ${planNames[planType]}
 - (Ver comparativa de entidades en el simulador)`;
         }
 
-        const message = `💰 *SOLICITUD DE FINANCIAMIENTO*
+        const message = `*SOLICITUD DE FINANCIAMIENTO*
 
-${vehicleInfo}💵 *Datos de la simulación:*
-- Precio del vehículo: ${this.formatCurrency(price)}
+${vehicleInfo}DATOS DE LA SIMULACION:
+- Precio del vehiculo: ${this.formatCurrency(price)}
 - Cuota inicial: ${this.formatCurrency(downPayment)} (${Math.round((downPayment/price)*100)}%)
 - Plazo: ${term} meses
 
 ${simulationInfo}
 
-Me gustaría recibir asesoría sobre opciones de financiamiento.
-
----
-Simulación desde altorracars.github.io`;
+Me gustaria recibir asesoria sobre opciones de financiamiento.`;
 
         const url = `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');

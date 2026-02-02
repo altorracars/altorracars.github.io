@@ -164,10 +164,7 @@ INFORMACION DEL VEHICULO:
 - Precio esperado: ${precio}
 
 Comentarios adicionales:
-${comentarios || 'Ninguno'}
-
----
-Enviado desde altorracars.github.io`;
+${comentarios || 'Ninguno'}`;
 
         // Redirigir a WhatsApp
         const whatsappUrl = `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(mensaje)}`;
@@ -214,10 +211,7 @@ INFORMACION FINANCIERA:
 - Ingresos mensuales: ${ingresos}
 
 Comentarios adicionales:
-${comentarios || 'Ninguno'}
-
----
-Enviado desde altorracars.github.io`;
+${comentarios || 'Ninguno'}`;
 
         // Redirigir a WhatsApp
         const whatsappUrl = `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(mensaje)}`;

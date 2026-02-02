@@ -706,37 +706,36 @@ class CreditSimulator {
         const vehicleYear = document.getElementById('vehicle-year')?.value || '';
 
         // Construir mensaje
-        let message = `*SOLICITUD DE FINANCIAMIENTO VEHICULAR*\n`;
-        message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        let message = `*SOLICITUD DE FINANCIAMIENTO VEHICULAR*\n\n`;
 
         // Datos personales
         message += `*DATOS DEL SOLICITANTE*\n`;
-        message += `• Nombre: ${this.userData.nombres} ${this.userData.apellidos}\n`;
-        message += `• ${this.userData.tipoDocumento}: ${this.userData.documento}\n`;
-        message += `• Ciudad: ${this.userData.ciudad}\n`;
-        message += `• Celular: ${this.userData.celular}\n`;
-        message += `• Email: ${this.userData.email}\n`;
-        message += `• Ocupación: ${this.userData.ocupacion === 'otro' ? this.userData.otraOcupacion : this.userData.ocupacion}\n`;
-        message += `• Antigüedad: ${this.getReadableOption('antiguedad', this.userData.antiguedad)}\n`;
-        message += `• Ingresos: ${this.getReadableOption('ingresos', this.userData.ingresos)}\n\n`;
+        message += `- Nombre: ${this.userData.nombres} ${this.userData.apellidos}\n`;
+        message += `- ${this.userData.tipoDocumento}: ${this.userData.documento}\n`;
+        message += `- Ciudad: ${this.userData.ciudad}\n`;
+        message += `- Celular: ${this.userData.celular}\n`;
+        message += `- Email: ${this.userData.email}\n`;
+        message += `- Ocupacion: ${this.userData.ocupacion === 'otro' ? this.userData.otraOcupacion : this.userData.ocupacion}\n`;
+        message += `- Antiguedad: ${this.getReadableOption('antiguedad', this.userData.antiguedad)}\n`;
+        message += `- Ingresos: ${this.getReadableOption('ingresos', this.userData.ingresos)}\n\n`;
 
-        // Datos del vehículo
-        message += `*DATOS DEL VEHÍCULO*\n`;
+        // Datos del vehiculo
+        message += `*DATOS DEL VEHICULO*\n`;
         if (vehicleName && vehicleName !== 'No especificado') {
-            message += `• Vehículo: ${vehicleName} ${vehicleYear}\n`;
+            message += `- Vehiculo: ${vehicleName} ${vehicleYear}\n`;
         }
-        message += `• Precio: ${this.formatCurrency(price)}\n`;
-        message += `• Cuota inicial: ${this.formatCurrency(downPayment)} (${Math.round((downPayment/price)*100)}%)\n`;
-        message += `• Valor a financiar: ${this.formatCurrency(price - downPayment)}\n`;
-        message += `• Plazo: ${term} meses\n\n`;
+        message += `- Precio: ${this.formatCurrency(price)}\n`;
+        message += `- Cuota inicial: ${this.formatCurrency(downPayment)} (${Math.round((downPayment/price)*100)}%)\n`;
+        message += `- Valor a financiar: ${this.formatCurrency(price - downPayment)}\n`;
+        message += `- Plazo: ${term} meses\n\n`;
 
-        // Tipo de simulación
-        message += `*TIPO DE SIMULACIÓN*\n`;
-        message += `• ${this.simulationType === 'advanced' ? 'Simulación Avanzada' : 'Simulación Básica'}\n`;
+        // Tipo de simulacion
+        message += `*TIPO DE SIMULACION*\n`;
+        message += `- ${this.simulationType === 'advanced' ? 'Simulacion Avanzada' : 'Simulacion Basica'}\n`;
 
         if (this.simulationType === 'basic') {
             const monthly = document.getElementById('basic-monthly')?.textContent || '';
-            message += `• Cuota estimada: ${monthly}\n`;
+            message += `- Cuota estimada: ${monthly}\n`;
         } else {
             const planBtn = document.querySelector('.plan-btn.active');
             const planType = planBtn ? planBtn.dataset.plan : 'traditional';
@@ -745,12 +744,11 @@ class CreditSimulator {
                 extra: 'Plan con Cuotas Extra',
                 leasing: 'Leasing'
             };
-            message += `• Plan seleccionado: ${planNames[planType]}\n`;
+            message += `- Plan seleccionado: ${planNames[planType]}\n`;
         }
 
-        message += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
-        message += `Solicito asesoría para obtener mi crédito vehicular.\n\n`;
-        message += `_Simulación realizada en altorracars.github.io_`;
+        message += `\n`;
+        message += `Solicito asesoria para obtener mi credito vehicular.`;
 
         // Abrir WhatsApp
         const url = `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(message)}`;

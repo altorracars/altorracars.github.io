@@ -543,26 +543,24 @@
         const vehicleName = document.getElementById('vehicle-name')?.value || '';
         const vehicleYear = document.getElementById('vehicle-year')?.value || '';
 
-        let message = `*SOLICITUD DE FINANCIAMIENTO VEHICULAR*\n`;
-        message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        let message = `*SOLICITUD DE FINANCIAMIENTO VEHICULAR*\n\n`;
 
         message += `*DATOS DEL SOLICITANTE*\n`;
-        message += `• Nombre: ${userData.nombres} ${userData.apellidos}\n`;
-        message += `• ${userData.tipoDocumento}: ${userData.documento}\n`;
-        message += `• Ciudad: ${userData.ciudad}\n`;
-        message += `• Celular: ${userData.celular}\n`;
-        message += `• Email: ${userData.email}\n\n`;
+        message += `- Nombre: ${userData.nombres} ${userData.apellidos}\n`;
+        message += `- ${userData.tipoDocumento}: ${userData.documento}\n`;
+        message += `- Ciudad: ${userData.ciudad}\n`;
+        message += `- Celular: ${userData.celular}\n`;
+        message += `- Email: ${userData.email}\n\n`;
 
-        message += `*DATOS DEL VEHÍCULO*\n`;
-        if (vehicleName) message += `• Vehículo: ${vehicleName} ${vehicleYear}\n`;
-        message += `• Precio: ${formatCOP(precio)}\n`;
-        message += `• Cuota inicial: ${formatCOP(cuotaInicial)}\n`;
-        message += `• A financiar: ${formatCOP(precio - cuotaInicial)}\n`;
-        message += `• Plazo: ${plazo} meses\n`;
-        message += `• Riesgo: ${riesgo}\n\n`;
+        message += `*DATOS DEL VEHICULO*\n`;
+        if (vehicleName) message += `- Vehiculo: ${vehicleName} ${vehicleYear}\n`;
+        message += `- Precio: ${formatCOP(precio)}\n`;
+        message += `- Cuota inicial: ${formatCOP(cuotaInicial)}\n`;
+        message += `- A financiar: ${formatCOP(precio - cuotaInicial)}\n`;
+        message += `- Plazo: ${plazo} meses\n`;
+        message += `- Riesgo: ${riesgo}\n\n`;
 
-        message += `*TIPO*: ${simulationType === 'advanced' ? 'Simulación Avanzada' : 'Simulación Básica'}\n\n`;
-        message += `_Simulación desde altorracars.github.io_`;
+        message += `*TIPO*: ${simulationType === 'advanced' ? 'Simulacion Avanzada' : 'Simulacion Basica'}`;
 
         const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');

@@ -1,84 +1,19 @@
 // Service Worker for ALTORRA CARS
-// Progressive Web App with Offline Support
-// Version 1.2.0 - Performance optimization update
+// Version 2.0.0 - Modern Caching Strategy
+// Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'altorra-cars-v1.2.0';
-const CACHE_NAME = `${CACHE_VERSION}`;
+const CACHE_VERSION = 'v2.0.0-' + '20260202'; // Date-based versioning
+const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
+const RUNTIME_CACHE = 'altorra-runtime';
 
-// Assets to cache on install
+// Assets that rarely change (fonts, brand logos)
 const STATIC_ASSETS = [
-    // HTML Pages
-    '/',
-    '/index.html',
-    '/busqueda.html',
-    '/vehiculos-usados.html',
-    '/vehiculos-nuevos.html',
-    '/vehiculos-suv.html',
-    '/vehiculos-sedan.html',
-    '/vehiculos-hatchback.html',
-    '/vehiculos-pickup.html',
-    '/favoritos.html',
-    '/contacto.html',
-    '/nosotros.html',
-    '/comparar.html',
-    '/detalle-vehiculo.html',
-    '/resenas.html',
-    '/404.html',
-
-    // CSS Files - ALL styles
-    '/css/style.css',
-    '/css/dark-theme.css',
-    '/css/mobile-fixes.css',
-    '/css/featured-fixes.css',
-    '/css/vehicles-cards-fix.css',
-    '/css/sidebar-filters-fix.css',
-    '/css/favorites-fix.css',
-    '/css/footer-fixes.css',
-    '/css/brands-fixes.css',
-    '/css/toast-notifications.css',
-    '/css/contact-forms.css',
-    '/css/comparador.css',
-    '/css/calculadora-financiamiento.css',
-    '/css/historial-visitas.css',
-    '/css/reviews.css',
-    '/css/animaciones.css',
-    '/css/citas.css',
-    '/css/filtros-avanzados.css',
-
-    // JavaScript Files - ALL scripts
-    '/js/database.js',
-    '/js/render.js',
-    '/js/components.js',
-    '/js/favorites-manager.js',
-    '/js/toast.js',
-    '/js/contact-forms.js',
-    '/js/main.js',
-    '/js/comparador.js',
-    '/js/calculadora-financiamiento.js',
-    '/js/historial-visitas.js',
-    '/js/reviews.js',
-    '/js/performance.js',
-    '/js/citas.js',
-    '/js/filtros-avanzados.js',
-
-    // Data
-    '/data/vehiculos.json',
-
-    // Snippets
-    '/snippets/header.html',
-    '/snippets/footer.html',
-
-    // Critical images
     '/multimedia/logo-altorra-cars.webp',
     '/multimedia/vehicles/placeholder-car.jpg',
-
-    // Category images
     '/multimedia/categories/suv.jpg',
     '/multimedia/categories/sedan.jpg',
     '/multimedia/categories/hatchback.jpg',
     '/multimedia/categories/camioneta.jpg',
-
-    // Brand logos WebP (optimized)
     '/multimedia/Logos/Chevrolet.webp',
     '/multimedia/Logos/Nissan.webp',
     '/multimedia/Logos/Renault.webp',
@@ -89,50 +24,62 @@ const STATIC_ASSETS = [
     '/multimedia/Logos/Ford.webp'
 ];
 
-// Install event - cache static assets
+// Install - precache only essential static assets
 self.addEventListener('install', (event) => {
-    console.log('[Service Worker] Installing...');
+    console.log('[SW] Installing version:', CACHE_VERSION);
 
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
-                console.log('[Service Worker] Caching static assets');
+                console.log('[SW] Precaching static assets');
                 return cache.addAll(STATIC_ASSETS);
             })
             .then(() => {
-                console.log('[Service Worker] Installation complete');
+                // Force activation immediately
                 return self.skipWaiting();
             })
             .catch((error) => {
-                console.error('[Service Worker] Installation failed:', error);
+                console.error('[SW] Installation failed:', error);
             })
     );
 });
 
-// Activate event - clean up old caches
+// Activate - clean ALL old caches and take control
 self.addEventListener('activate', (event) => {
-    console.log('[Service Worker] Activating...');
+    console.log('[SW] Activating version:', CACHE_VERSION);
 
     event.waitUntil(
         caches.keys()
             .then((cacheNames) => {
                 return Promise.all(
                     cacheNames.map((cacheName) => {
-                        if (cacheName !== CACHE_NAME) {
-                            console.log('[Service Worker] Deleting old cache:', cacheName);
+                        // Delete ANY cache that doesn't match current version
+                        if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
+                            console.log('[SW] Deleting old cache:', cacheName);
                             return caches.delete(cacheName);
                         }
                     })
                 );
             })
             .then(() => {
-                console.log('[Service Worker] Activation complete');
+                // Take control of all clients immediately
                 return self.clients.claim();
+            })
+            .then(() => {
+                // Notify all clients about the update
+                return self.clients.matchAll().then((clients) => {
+                    clients.forEach((client) => {
+                        client.postMessage({
+                            type: 'SW_UPDATED',
+                            version: CACHE_VERSION
+                        });
+                    });
+                });
             })
     );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch - Different strategies based on request type
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
@@ -142,110 +89,122 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Network first for API calls and data
-    if (request.url.includes('/data/') || request.url.includes('vehiculos.json')) {
-        event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    // Clone response to cache
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(request, responseClone);
-                    });
-                    return response;
-                })
-                .catch(() => {
-                    // Fallback to cache if network fails
-                    return caches.match(request);
-                })
-        );
+    // Skip chrome-extension and other non-http requests
+    if (!request.url.startsWith('http')) {
         return;
     }
 
-    // Cache first for static assets (CSS, JS, images)
-    event.respondWith(
-        caches.match(request)
-            .then((cachedResponse) => {
-                if (cachedResponse) {
-                    // Return cached version
-                    return cachedResponse;
-                }
-
-                // Not in cache, fetch from network
-                return fetch(request)
-                    .then((response) => {
-                        // Don't cache non-successful responses
-                        if (!response || response.status !== 200 || response.type !== 'basic') {
-                            return response;
-                        }
-
-                        // Clone response to cache
-                        const responseClone = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(request, responseClone);
-                        });
-
-                        return response;
-                    })
-                    .catch((error) => {
-                        console.error('[Service Worker] Fetch failed:', error);
-
-                        // Return offline page for HTML requests
-                        if (request.headers.get('accept').includes('text/html')) {
-                            return caches.match('/index.html');
-                        }
-                    });
-            })
-    );
-});
-
-// Background sync event (future enhancement)
-self.addEventListener('sync', (event) => {
-    console.log('[Service Worker] Background sync:', event.tag);
-
-    if (event.tag === 'sync-favorites') {
-        event.waitUntil(
-            // Sync favorites with server (if backend is implemented)
-            Promise.resolve()
-        );
+    // STRATEGY 1: Network Only for data files (always fresh)
+    if (request.url.includes('/data/') ||
+        request.url.includes('vehiculos.json') ||
+        request.url.includes('.json')) {
+        event.respondWith(networkOnly(request));
+        return;
     }
+
+    // STRATEGY 2: Network First for HTML pages (fresh content priority)
+    if (request.headers.get('accept')?.includes('text/html') ||
+        request.url.endsWith('.html') ||
+        request.url.endsWith('/')) {
+        event.respondWith(networkFirst(request));
+        return;
+    }
+
+    // STRATEGY 3: Stale-While-Revalidate for CSS, JS, images
+    event.respondWith(staleWhileRevalidate(request));
 });
 
-// Push notification event (future enhancement)
-self.addEventListener('push', (event) => {
-    console.log('[Service Worker] Push notification received');
+// Network Only - Always fetch from network
+async function networkOnly(request) {
+    try {
+        const response = await fetch(request);
+        return response;
+    } catch (error) {
+        console.error('[SW] Network only failed:', error);
+        return new Response('Network error', { status: 503 });
+    }
+}
 
-    const options = {
-        body: event.data ? event.data.text() : 'Nueva actualización disponible',
-        icon: '/multimedia/logo-altorra-cars.webp',
-        badge: '/multimedia/logo-altorra-cars.webp',
-        vibrate: [200, 100, 200],
-        data: {
-            dateOfArrival: Date.now(),
-            primaryKey: 1
+// Network First - Try network, fallback to cache
+async function networkFirst(request) {
+    try {
+        // Always try network first for HTML
+        const networkResponse = await fetch(request);
+
+        // Cache the fresh response
+        if (networkResponse.ok) {
+            const cache = await caches.open(RUNTIME_CACHE);
+            cache.put(request, networkResponse.clone());
         }
-    };
 
-    event.waitUntil(
-        self.registration.showNotification('ALTORRA CARS', options)
-    );
-});
+        return networkResponse;
+    } catch (error) {
+        // Network failed, try cache
+        console.log('[SW] Network failed, trying cache:', request.url);
+        const cachedResponse = await caches.match(request);
 
-// Message event - communication with main thread
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+
+        // Return offline fallback for HTML
+        return caches.match('/index.html');
+    }
+}
+
+// Stale-While-Revalidate - Return cache immediately, update in background
+async function staleWhileRevalidate(request) {
+    const cache = await caches.open(RUNTIME_CACHE);
+    const cachedResponse = await caches.match(request);
+
+    // Fetch fresh version in background
+    const fetchPromise = fetch(request)
+        .then((networkResponse) => {
+            if (networkResponse.ok) {
+                cache.put(request, networkResponse.clone());
+            }
+            return networkResponse;
+        })
+        .catch(() => null);
+
+    // Return cached version immediately if available
+    if (cachedResponse) {
+        // Still update cache in background
+        fetchPromise;
+        return cachedResponse;
+    }
+
+    // No cache, wait for network
+    const networkResponse = await fetchPromise;
+    return networkResponse || new Response('Asset not found', { status: 404 });
+}
+
+// Message handler - Allow forced updates
 self.addEventListener('message', (event) => {
-    console.log('[Service Worker] Message received:', event.data);
+    console.log('[SW] Message received:', event.data);
 
-    if (event.data && event.data.type === 'SKIP_WAITING') {
+    if (event.data?.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
 
-    if (event.data && event.data.type === 'CACHE_URLS') {
+    if (event.data?.type === 'CLEAR_CACHE') {
         event.waitUntil(
-            caches.open(CACHE_NAME).then((cache) => {
-                return cache.addAll(event.data.urls);
+            caches.keys().then((cacheNames) => {
+                return Promise.all(
+                    cacheNames.map((cacheName) => caches.delete(cacheName))
+                );
+            }).then(() => {
+                event.source.postMessage({ type: 'CACHE_CLEARED' });
             })
         );
     }
+
+    if (event.data?.type === 'GET_VERSION') {
+        event.source.postMessage({
+            type: 'VERSION_INFO',
+            version: CACHE_VERSION
+        });
+    }
 });
 
-console.log('[Service Worker] Script loaded successfully');
+console.log('[SW] Service Worker loaded - Version:', CACHE_VERSION);

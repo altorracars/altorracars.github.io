@@ -149,21 +149,21 @@ class ContactFormManager {
         const comentarios = formData.get('comentarios');
 
         // Construir mensaje de WhatsApp
-        const mensaje = `🚗 *VENTA DE VEHÍCULO*
+        const mensaje = `*VENTA DE VEHICULO*
 
-📋 *Información del Cliente*:
+INFORMACION DEL CLIENTE:
 - Nombre: ${nombre}
-- Teléfono: ${telefono}
+- Telefono: ${telefono}
 - Email: ${email}
 
-🚙 *Información del Vehículo*:
+INFORMACION DEL VEHICULO:
 - Marca: ${marca}
 - Modelo: ${modelo}
-- Año: ${year}
+- Ano: ${year}
 - Kilometraje: ${kilometraje} km
 - Precio esperado: ${precio}
 
-💬 *Comentarios adicionales*:
+Comentarios adicionales:
 ${comentarios || 'Ninguno'}
 
 ---
@@ -197,23 +197,23 @@ Enviado desde altorracars.github.io`;
         const comentarios = formData.get('comentarios');
 
         // Construir mensaje de WhatsApp
-        const mensaje = `💰 *SOLICITUD DE FINANCIACIÓN*
+        const mensaje = `*SOLICITUD DE FINANCIACION*
 
-📋 *Información del Cliente*:
+INFORMACION DEL CLIENTE:
 - Nombre: ${nombre}
-- Teléfono: ${telefono}
+- Telefono: ${telefono}
 - Email: ${email}
 
-🚙 *Información del Vehículo*:
-- Vehículo de interés: ${vehiculoInteres}
-- Precio del vehículo: ${precioVehiculo}
+INFORMACION DEL VEHICULO:
+- Vehiculo de interes: ${vehiculoInteres}
+- Precio del vehiculo: ${precioVehiculo}
 - Cuota inicial disponible: ${cuotaInicial}
 - Plazo deseado: ${plazo}
 
-💵 *Información Financiera*:
+INFORMACION FINANCIERA:
 - Ingresos mensuales: ${ingresos}
 
-💬 *Comentarios adicionales*:
+Comentarios adicionales:
 ${comentarios || 'Ninguno'}
 
 ---

@@ -375,13 +375,13 @@
                 `• ${capitalizar(v.marca)} ${v.modelo} ${v.year} - ${formatCurrency(v.precioOferta || v.precio)}`
             ).join('\n');
 
-            const message = `Hola ALTORRA CARS, estoy comparando los siguientes vehículos:
+            const message = `Hola ALTORRA CARS, estoy comparando los siguientes vehiculos:
 
 ${vehicleList}
 
-Me gustaría recibir más información y asesoría para tomar una decisión.
+Me gustaria recibir mas informacion y asesoria para tomar una decision.
 
-Ver comparación: ${window.location.href}`;
+Ver comparacion: ${window.location.href}`;
 
             btn.href = `https://wa.me/573235016747?text=${encodeURIComponent(message)}`;
         }

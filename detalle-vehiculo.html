@@ -1062,26 +1062,26 @@
             // WhatsApp
             const currentUrl = window.location.href;
             // Reutilizamos precioFinal ya declarado arriba
-            const whatsappMsg = `Hola ALTORRA CARS, estoy interesado en el siguiente vehículo:
+            const whatsappMsg = `Hola ALTORRA CARS, estoy interesado en el siguiente vehiculo:
 
-🚗 *${v.marca.toUpperCase()} ${v.modelo.toUpperCase()} ${v.year}*
+*${v.marca.toUpperCase()} ${v.modelo.toUpperCase()} ${v.year}*
 
-📋 *Información*:
-- Código: ${v.id}
-- Categoría: ${formatCategoria(v.categoria)}
+INFORMACION:
+- Codigo: ${v.id}
+- Categoria: ${formatCategoria(v.categoria)}
 - Tipo: ${capitalizar(v.tipo)}
-- Año: ${v.year}
+- Ano: ${v.year}
 - Kilometraje: ${formatKilometers(v.kilometraje)}
-- Transmisión: ${capitalizar(v.transmision)}
+- Transmision: ${capitalizar(v.transmision)}
 - Combustible: ${capitalizar(v.combustible)}
 - Color: ${v.color || 'No especificado'}
 
-💰 *Precio*: ${formatCurrency(precioFinal)}
+PRECIO: ${formatCurrency(precioFinal)}
 
-🔗 *Ver detalle completo*:
+Ver detalle completo:
 ${currentUrl}
 
-¿Podrían brindarme más información sobre este vehículo?`;
+Podrian brindarme mas informacion sobre este vehiculo?`;
 
             document.getElementById('btnWhatsApp').href =
                 `https://wa.me/573235016747?text=${encodeURIComponent(whatsappMsg)}`;

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Simulador de Crédito Vehicular ALTORRA CARS - Calcula tu financiamiento con diferentes tasas de interés">
-    <title>Simulador de Crédito Vehicular | ALTORRA CARS</title>
+    <meta name="description" content="Simulador de Credito Vehicular ALTORRA CARS - Calcula tu financiamiento con diferentes tasas de interes">
+    <title>Simulador de Credito Vehicular | ALTORRA CARS</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="multimedia/logo/favicon.png">
@@ -20,13 +20,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Chart.js para gráficos -->
+    <!-- Chart.js para graficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* ============================================
-           SIMULADOR DE CRÉDITO V4.0 - ALTORRA CARS
-           Diseño tecnológico con múltiples tasas
+           SIMULADOR DE CREDITO V5.0 - ALTORRA CARS
+           Con modal de contacto y autorizaciones
         ============================================ */
 
         :root {
@@ -52,40 +52,51 @@
             padding-top: 80px;
         }
 
-        /* Hero section */
-        .sim-hero {
-            background: linear-gradient(135deg, rgba(201, 162, 39, 0.15) 0%, rgba(201, 162, 39, 0.05) 100%);
-            border-bottom: 1px solid var(--sim-border);
-            padding: 60px 0;
+        /* Titulo compacto estilo Vardi */
+        .sim-title-section {
             text-align: center;
+            padding: 40px 20px 20px;
         }
 
-        .sim-hero h1 {
-            font-size: clamp(28px, 5vw, 48px);
-            font-weight: 800;
-            margin-bottom: 16px;
+        .sim-title-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 16px;
+            background: rgba(201, 162, 39, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sim-title-icon svg {
+            width: 32px;
+            height: 32px;
+            color: var(--sim-primary);
+        }
+
+        .sim-title-text {
+            font-size: 24px;
+            font-weight: 700;
             color: var(--sim-text);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .sim-hero h1 span {
+        .sim-title-line {
+            width: 80px;
+            height: 4px;
             background: var(--sim-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .sim-hero p {
-            font-size: 18px;
-            color: var(--sim-text-secondary);
-            max-width: 600px;
             margin: 0 auto;
+            border-radius: 2px;
         }
 
         /* Main container */
         .sim-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 20px 20px 40px;
         }
 
         /* Grid layout */
@@ -191,24 +202,6 @@
             outline: none;
             border-color: var(--sim-primary);
             box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.15);
-        }
-
-        .sim-select {
-            width: 100%;
-            padding: 16px;
-            background: var(--sim-bg);
-            border: 2px solid var(--sim-border);
-            border-radius: 12px;
-            color: var(--sim-text);
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .sim-select:focus {
-            outline: none;
-            border-color: var(--sim-primary);
         }
 
         /* Slider */
@@ -505,7 +498,7 @@
             position: relative;
         }
 
-        /* Comparison table */
+        /* Comparison */
         .sim-compare-section {
             background: var(--sim-card);
             border: 1px solid var(--sim-border);
@@ -622,6 +615,9 @@
         .sim-cta p {
             color: var(--sim-text-secondary);
             margin-bottom: 24px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .sim-btn-whatsapp {
@@ -651,51 +647,292 @@
             height: 24px;
         }
 
-        /* Amortization table */
-        .sim-amort-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        /* Legal disclaimer */
+        .sim-legal {
+            background: var(--sim-card);
+            border: 1px solid var(--sim-border);
+            border-radius: 20px;
+            padding: 32px;
         }
 
-        .sim-amort-table th,
-        .sim-amort-table td {
-            padding: 12px;
-            text-align: center;
-            border-bottom: 1px solid var(--sim-border);
-        }
-
-        .sim-amort-table th {
-            background: var(--sim-bg);
-            color: var(--sim-text-secondary);
-            font-size: 12px;
+        .sim-legal-title {
+            font-size: 16px;
             font-weight: 600;
-            text-transform: uppercase;
+            color: var(--sim-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .sim-amort-table td {
-            color: var(--sim-text);
-            font-size: 14px;
-        }
-
-        .sim-amort-table tr:hover td {
-            background: rgba(201, 162, 39, 0.05);
-        }
-
-        /* Disclaimer */
-        .sim-disclaimer {
-            background: rgba(255, 255, 255, 0.02);
-            border-left: 4px solid var(--sim-primary);
-            border-radius: 0 12px 12px 0;
-            padding: 20px 24px;
-            margin-top: 24px;
-        }
-
-        .sim-disclaimer p {
+        .sim-legal p {
             font-size: 13px;
             color: var(--sim-text-muted);
-            margin: 0;
-            line-height: 1.6;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .sim-legal p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ============================================
+           MODAL DE CONTACTO
+        ============================================ */
+        .sim-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sim-modal.active {
+            display: flex;
+        }
+
+        .sim-modal-content {
+            background: var(--sim-card);
+            border: 1px solid var(--sim-border);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .sim-modal-header {
+            padding: 24px 24px 0;
+            text-align: center;
+        }
+
+        .sim-modal-icon {
+            width: 64px;
+            height: 64px;
+            background: rgba(37, 211, 102, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        .sim-modal-icon svg {
+            width: 32px;
+            height: 32px;
+            color: #25D366;
+        }
+
+        .sim-modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--sim-text);
+            margin-bottom: 8px;
+        }
+
+        .sim-modal-subtitle {
+            font-size: 14px;
+            color: var(--sim-text-secondary);
+        }
+
+        .sim-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            background: var(--sim-bg);
+            border: 1px solid var(--sim-border);
+            border-radius: 50%;
+            color: var(--sim-text);
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .sim-modal-close:hover {
+            background: var(--sim-primary);
+            color: #000;
+        }
+
+        .sim-modal-body {
+            padding: 24px;
+        }
+
+        .sim-modal-summary {
+            background: rgba(201, 162, 39, 0.1);
+            border: 1px solid rgba(201, 162, 39, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .sim-modal-summary h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--sim-primary);
+            margin-bottom: 12px;
+        }
+
+        .sim-modal-summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .sim-modal-summary-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        .sim-modal-summary-item span {
+            color: var(--sim-text-secondary);
+        }
+
+        .sim-modal-summary-item strong {
+            color: var(--sim-text);
+        }
+
+        /* Form fields */
+        .sim-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 500px) {
+            .sim-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sim-form-group {
+            margin-bottom: 0;
+        }
+
+        .sim-form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .sim-form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--sim-text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .sim-form-input,
+        .sim-form-select {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--sim-bg);
+            border: 1px solid var(--sim-border);
+            border-radius: 10px;
+            color: var(--sim-text);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .sim-form-input:focus,
+        .sim-form-select:focus {
+            outline: none;
+            border-color: var(--sim-primary);
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+        }
+
+        .sim-form-input::placeholder {
+            color: var(--sim-text-muted);
+        }
+
+        /* Checkboxes de autorizacion */
+        .sim-auth-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--sim-border);
+        }
+
+        .sim-auth-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--sim-text);
+            margin-bottom: 16px;
+        }
+
+        .sim-auth-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+            cursor: pointer;
+        }
+
+        .sim-auth-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--sim-primary);
+            flex-shrink: 0;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .sim-auth-item span {
+            font-size: 12px;
+            color: var(--sim-text-muted);
+            line-height: 1.5;
+        }
+
+        .sim-auth-item a {
+            color: var(--sim-primary);
+            text-decoration: none;
+        }
+
+        .sim-auth-item a:hover {
+            text-decoration: underline;
+        }
+
+        /* Submit button */
+        .sim-modal-submit {
+            width: 100%;
+            padding: 16px;
+            background: #25D366;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .sim-modal-submit:hover:not(:disabled) {
+            background: #128C7E;
+            transform: translateY(-2px);
+        }
+
+        .sim-modal-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sim-modal-submit svg {
+            width: 20px;
+            height: 20px;
         }
 
         /* Responsive */
@@ -716,6 +953,10 @@
                 flex-direction: column;
                 gap: 16px;
                 align-items: flex-start;
+            }
+
+            .sim-modal-summary-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -742,13 +983,16 @@
 
     <!-- Main Content -->
     <main class="simulator-page">
-        <!-- Hero -->
-        <section class="sim-hero">
-            <div class="container">
-                <h1>Simulador de <span>Crédito Vehicular</span></h1>
-                <p>Calcula tu cuota mensual con diferentes tasas de interés del mercado colombiano</p>
+        <!-- Titulo compacto -->
+        <div class="sim-title-section">
+            <div class="sim-title-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
             </div>
-        </section>
+            <h1 class="sim-title-text">Simula tu Credito</h1>
+            <div class="sim-title-line"></div>
+        </div>
 
         <!-- Simulator -->
         <div class="sim-container">
@@ -760,13 +1004,13 @@
                             <circle cx="12" cy="12" r="3"/>
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                         </svg>
-                        <h2>Configura tu crédito</h2>
+                        <h2>Configura tu credito</h2>
                     </div>
 
                     <!-- Vehicle Price -->
                     <div class="sim-group">
                         <label>
-                            Precio del vehículo
+                            Precio del vehiculo
                             <span class="value" id="price-display">$65.000.000</span>
                         </label>
                         <div class="sim-input-wrap">
@@ -808,7 +1052,7 @@
 
                     <!-- Interest Rate -->
                     <div class="sim-group">
-                        <label>Tasa de interés mensual</label>
+                        <label>Tasa de interes mensual</label>
                         <div class="sim-rate-options" id="rate-options">
                             <label class="sim-rate-btn" data-rate="1.27">
                                 <div class="rate-info">
@@ -819,7 +1063,7 @@
                             </label>
                             <label class="sim-rate-btn active" data-rate="1.45">
                                 <div class="rate-info">
-                                    <span class="rate-name">Tasa Estándar</span>
+                                    <span class="rate-name">Tasa Estandar</span>
                                     <span class="rate-desc">Buen perfil crediticio</span>
                                 </div>
                                 <span class="rate-value">1.45%</span>
@@ -906,10 +1150,10 @@
                     <!-- Chart -->
                     <div class="sim-chart-section">
                         <div class="sim-chart-header">
-                            <h3 class="sim-chart-title">Distribución del crédito</h3>
+                            <h3 class="sim-chart-title">Distribucion del credito</h3>
                             <div class="sim-chart-tabs">
-                                <button class="sim-chart-tab active" data-chart="pie">Composición</button>
-                                <button class="sim-chart-tab" data-chart="bar">Amortización</button>
+                                <button class="sim-chart-tab active" data-chart="pie">Composicion</button>
+                                <button class="sim-chart-tab" data-chart="bar">Amortizacion</button>
                             </div>
                         </div>
                         <div class="sim-chart-container">
@@ -919,19 +1163,29 @@
 
                     <!-- CTA -->
                     <div class="sim-cta">
-                        <h3>¿Listo para dar el siguiente paso?</h3>
-                        <p>Contáctanos por WhatsApp y recibe asesoría personalizada para tu crédito vehicular</p>
-                        <button class="sim-btn-whatsapp" id="btn-whatsapp">
+                        <h3>Solicita tu estudio de credito</h3>
+                        <p>Nuestras entidades financieras aliadas pueden realizar tu estudio y ofrecerte tasas preferenciales segun tu perfil crediticio.</p>
+                        <button class="sim-btn-whatsapp" id="btn-open-modal">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                             </svg>
-                            Solicitar asesoría gratuita
+                            Solicitar asesoria gratuita
                         </button>
                     </div>
 
-                    <!-- Disclaimer -->
-                    <div class="sim-disclaimer">
-                        <p><strong>Aviso importante:</strong> Esta simulación es únicamente referencial. Las tasas de interés pueden variar entre 1.27% y 1.88% mensual según tu perfil crediticio. La aprobación final está sujeta a estudio de crédito por parte de la entidad financiera. ALTORRA CARS actúa como intermediario comercial.</p>
+                    <!-- Legal disclaimer -->
+                    <div class="sim-legal">
+                        <h4 class="sim-legal-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="16" x2="12" y2="12"/>
+                                <line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                            Informacion importante
+                        </h4>
+                        <p><strong>ALTORRA COMPANY S.A.S.</strong> gestionara con las entidades financieras aliadas el estudio del cupo de credito y actuara como intermediario comercial, siendo la entidad financiera la unica responsable de las condiciones finales del credito.</p>
+                        <p>Esta simulacion es unicamente de caracter informativo y referencial. La respuesta final esta sujeta al estudio y analisis de los documentos de soporte, la validacion de los mismos y la respuesta de la entidad financiera que acepte el estudio de su solicitud.</p>
+                        <p>La tasa de interes, el plazo, los cargos fijos y adicionales estan sujetos a la entidad financiera que de viabilidad a esta simulacion. El presente ejercicio de simulacion no compromete a ALTORRA CARS con la aprobacion de la solicitud de credito.</p>
                     </div>
                 </div>
             </div>
@@ -940,6 +1194,135 @@
 
     <!-- Footer Global -->
     <div id="footer-placeholder"></div>
+
+    <!-- Modal de contacto -->
+    <div class="sim-modal" id="contact-modal">
+        <div class="sim-modal-content">
+            <button class="sim-modal-close" id="modal-close">&times;</button>
+
+            <div class="sim-modal-header">
+                <div class="sim-modal-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                    </svg>
+                </div>
+                <h2 class="sim-modal-title">Solicita tu estudio de credito</h2>
+                <p class="sim-modal-subtitle">Completa tus datos para recibir asesoria personalizada</p>
+            </div>
+
+            <div class="sim-modal-body">
+                <!-- Resumen de simulacion -->
+                <div class="sim-modal-summary">
+                    <h4>Resumen de tu simulacion</h4>
+                    <div class="sim-modal-summary-grid">
+                        <div class="sim-modal-summary-item">
+                            <span>Precio vehiculo:</span>
+                            <strong id="modal-price">$65.000.000</strong>
+                        </div>
+                        <div class="sim-modal-summary-item">
+                            <span>Cuota inicial:</span>
+                            <strong id="modal-dp">$19.500.000</strong>
+                        </div>
+                        <div class="sim-modal-summary-item">
+                            <span>A financiar:</span>
+                            <strong id="modal-financed">$45.500.000</strong>
+                        </div>
+                        <div class="sim-modal-summary-item">
+                            <span>Plazo:</span>
+                            <strong id="modal-term">60 meses</strong>
+                        </div>
+                        <div class="sim-modal-summary-item">
+                            <span>Tasa:</span>
+                            <strong id="modal-rate">1.45% MV</strong>
+                        </div>
+                        <div class="sim-modal-summary-item">
+                            <span>Cuota mensual:</span>
+                            <strong id="modal-monthly">$1.185.432</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario -->
+                <form id="contact-form">
+                    <div class="sim-form-grid">
+                        <div class="sim-form-group">
+                            <label for="contact-name">Nombres completos *</label>
+                            <input type="text" class="sim-form-input" id="contact-name" placeholder="Ej: Juan Carlos Perez" required>
+                        </div>
+                        <div class="sim-form-group">
+                            <label for="contact-phone">Celular *</label>
+                            <input type="tel" class="sim-form-input" id="contact-phone" placeholder="Ej: 3001234567" required>
+                        </div>
+                        <div class="sim-form-group">
+                            <label for="contact-email">Correo electronico *</label>
+                            <input type="email" class="sim-form-input" id="contact-email" placeholder="Ej: correo@ejemplo.com" required>
+                        </div>
+                        <div class="sim-form-group">
+                            <label for="contact-city">Ciudad *</label>
+                            <input type="text" class="sim-form-input" id="contact-city" placeholder="Ej: Cartagena" required>
+                        </div>
+                        <div class="sim-form-group">
+                            <label for="contact-occupation">Tipo de actividad *</label>
+                            <select class="sim-form-select" id="contact-occupation" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Empleado">Empleado</option>
+                                <option value="Independiente">Independiente</option>
+                                <option value="Pensionado">Pensionado</option>
+                                <option value="Empresario">Empresario</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="sim-form-group">
+                            <label for="contact-income">Ingresos mensuales *</label>
+                            <select class="sim-form-select" id="contact-income" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Menos de $2.000.000">Menos de $2.000.000</option>
+                                <option value="$2.000.000 - $4.000.000">$2.000.000 - $4.000.000</option>
+                                <option value="$4.000.000 - $7.000.000">$4.000.000 - $7.000.000</option>
+                                <option value="$7.000.000 - $10.000.000">$7.000.000 - $10.000.000</option>
+                                <option value="Mas de $10.000.000">Mas de $10.000.000</option>
+                            </select>
+                        </div>
+                        <div class="sim-form-group full">
+                            <label for="contact-pep">Es Persona Expuesta Politicamente (PEP)? *</label>
+                            <select class="sim-form-select" id="contact-pep" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="No">No</option>
+                                <option value="Si">Si</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Autorizaciones -->
+                    <div class="sim-auth-section">
+                        <p class="sim-auth-title">Autorizaciones requeridas</p>
+
+                        <label class="sim-auth-item">
+                            <input type="checkbox" id="auth-contact" required>
+                            <span>Autorizo y solicito expresamente que me contacten para recibir informacion sobre productos de financiacion vehicular por parte de <strong>ALTORRA CARS</strong> y sus entidades financieras aliadas.</span>
+                        </label>
+
+                        <label class="sim-auth-item">
+                            <input type="checkbox" id="auth-data" required>
+                            <span>He leido, entiendo y autorizo el tratamiento de mis datos personales de acuerdo con la <a href="privacidad.html" target="_blank">Politica de Tratamiento de Datos Personales</a> de ALTORRA COMPANY S.A.S.</span>
+                        </label>
+
+                        <label class="sim-auth-item">
+                            <input type="checkbox" id="auth-credit" required>
+                            <span>Autorizo a <strong>ALTORRA COMPANY S.A.S.</strong> y/o a sus aliados comerciales para que consulten mi informacion crediticia, financiera, comercial y de seguridad social en centrales de informacion financiera y operadores de informacion con el fin de verificar mi comportamiento crediticio para efectos de realizar estudio de solicitud de credito.</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="sim-modal-submit" id="btn-submit">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                        </svg>
+                        Enviar solicitud por WhatsApp
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="js/components.js"></script>
@@ -959,7 +1342,7 @@
 
         const RATES = [
             { value: 1.27, name: 'Preferencial', desc: 'Excelente historial' },
-            { value: 1.45, name: 'Estándar', desc: 'Buen perfil' },
+            { value: 1.45, name: 'Estandar', desc: 'Buen perfil' },
             { value: 1.65, name: 'Regular', desc: 'Perfil medio' },
             { value: 1.88, name: 'Alta', desc: 'Sin historial' }
         ];
@@ -987,6 +1370,7 @@
         const $termDisplay = document.getElementById('term-display');
         const $compareGrid = document.getElementById('compare-grid');
         const $chartCanvas = document.getElementById('sim-chart');
+        const $modal = document.getElementById('contact-modal');
 
         // ============================================
         // UTILS
@@ -1077,7 +1461,7 @@
 
                 html += `
                     <div class="sim-compare-card ${isSelected ? 'selected' : ''}" data-rate="${rate.value}" style="position: relative;">
-                        ${isBest ? '<span class="best-badge">Mejor opción</span>' : ''}
+                        ${isBest ? '<span class="best-badge">Mejor opcion</span>' : ''}
                         <span class="rate-badge">${rate.value}% MV</span>
                         <p class="rate-name">${rate.name}</p>
                         <p class="rate-desc">${rate.desc}</p>
@@ -1162,7 +1546,7 @@
                 const monthlyRate = state.rate / 100;
 
                 for (let year = 1; year <= years; year++) {
-                    labels.push(`Año ${year}`);
+                    labels.push('Ano ' + year);
                     let yearCapital = 0;
                     let yearInterest = 0;
 
@@ -1295,19 +1679,77 @@
             });
         });
 
-        // WhatsApp button
-        document.getElementById('btn-whatsapp').addEventListener('click', () => {
+        // ============================================
+        // MODAL
+        // ============================================
+
+        // Open modal
+        document.getElementById('btn-open-modal').addEventListener('click', () => {
             const calc = calculate();
-            const msg = `Hola ALTORRA CARS! Realicé una simulación:
 
-*Precio vehículo:* ${formatCOP(state.price)}
-*Cuota inicial:* ${formatCOP(calc.downPayment)} (${state.downPaymentPercent}%)
-*A financiar:* ${formatCOP(calc.financed)}
-*Plazo:* ${state.term} meses
-*Tasa:* ${state.rate}% MV
-*Cuota mensual:* ${formatCOP(calc.monthly)}
+            // Update modal summary
+            document.getElementById('modal-price').textContent = formatCOP(state.price);
+            document.getElementById('modal-dp').textContent = formatCOP(calc.downPayment);
+            document.getElementById('modal-financed').textContent = formatCOP(calc.financed);
+            document.getElementById('modal-term').textContent = state.term + ' meses';
+            document.getElementById('modal-rate').textContent = state.rate + '% MV';
+            document.getElementById('modal-monthly').textContent = formatCOP(calc.monthly);
 
-Me interesa recibir más información.`;
+            $modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        // Close modal
+        document.getElementById('modal-close').addEventListener('click', () => {
+            $modal.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+
+        $modal.addEventListener('click', (e) => {
+            if (e.target === $modal) {
+                $modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // Form submit
+        document.getElementById('contact-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const calc = calculate();
+            const name = document.getElementById('contact-name').value;
+            const phone = document.getElementById('contact-phone').value;
+            const email = document.getElementById('contact-email').value;
+            const city = document.getElementById('contact-city').value;
+            const occupation = document.getElementById('contact-occupation').value;
+            const income = document.getElementById('contact-income').value;
+            const pep = document.getElementById('contact-pep').value;
+
+            const msg = `Hola ALTORRA CARS!
+
+Solicito estudio de credito vehicular.
+
+DATOS PERSONALES:
+- Nombre: ${name}
+- Celular: ${phone}
+- Email: ${email}
+- Ciudad: ${city}
+- Actividad: ${occupation}
+- Ingresos: ${income}
+- PEP: ${pep}
+
+SIMULACION REALIZADA:
+- Precio vehiculo: ${formatCOP(state.price)}
+- Cuota inicial: ${formatCOP(calc.downPayment)} (${state.downPaymentPercent}%)
+- Valor a financiar: ${formatCOP(calc.financed)}
+- Plazo: ${state.term} meses
+- Tasa: ${state.rate}% MV
+- Cuota mensual estimada: ${formatCOP(calc.monthly)}
+- Total a pagar: ${formatCOP(calc.total)}
+
+Autorizo el tratamiento de mis datos y consulta en centrales de riesgo.
+
+Quedo atento a su respuesta.`;
 
             window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
         });

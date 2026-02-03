@@ -240,12 +240,12 @@ class VehicleComparator {
             if (icon) {
                 icon.innerHTML = isInComparator
                     ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
-                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 3h5v5M8 3H3v5M16 21h5v-5M8 21H3v-5M12 8v8M8 12h8"/></svg>';
+                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4"/></svg>';
             }
 
             const text = btn.querySelector('.compare-text');
             if (text) {
-                text.textContent = isInComparator ? 'OK' : 'VS';
+                text.textContent = isInComparator ? 'Agregado' : 'Comparar';
             }
         });
     }

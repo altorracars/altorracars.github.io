@@ -823,6 +823,32 @@
             margin-bottom: 0;
         }
 
+        /* Row para campos lado a lado */
+        .sim-form-row {
+            display: flex;
+            gap: 12px;
+            grid-column: 1 / -1;
+        }
+
+        .sim-form-row .sim-form-group {
+            flex: 1;
+        }
+
+        .sim-form-row .sim-form-group-small {
+            flex: 0 0 140px;
+        }
+
+        @media (max-width: 500px) {
+            .sim-form-row {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .sim-form-row .sim-form-group-small {
+                flex: 1;
+            }
+        }
+
         .sim-form-group.full {
             grid-column: 1 / -1;
         }
@@ -1595,6 +1621,22 @@
                             <label for="contact-name">Nombres completos *</label>
                             <input type="text" class="sim-form-input" id="contact-name" placeholder="Ej: Juan Carlos Perez" required>
                         </div>
+                        <div class="sim-form-row">
+                            <div class="sim-form-group sim-form-group-small">
+                                <label for="contact-doc-type">Tipo documento *</label>
+                                <select class="sim-form-select" id="contact-doc-type" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="CC">Cedula de Ciudadania</option>
+                                    <option value="CE">Cedula de Extranjeria</option>
+                                    <option value="NIT">NIT</option>
+                                    <option value="Pasaporte">Pasaporte</option>
+                                </select>
+                            </div>
+                            <div class="sim-form-group">
+                                <label for="contact-doc-number">Numero de documento *</label>
+                                <input type="text" class="sim-form-input" id="contact-doc-number" placeholder="Ej: 1234567890" required>
+                            </div>
+                        </div>
                         <div class="sim-form-group">
                             <label for="contact-phone">Celular *</label>
                             <input type="tel" class="sim-form-input" id="contact-phone" placeholder="Ej: 3001234567" required>
@@ -2071,6 +2113,8 @@
             e.preventDefault();
 
             const name = document.getElementById('contact-name').value;
+            const docType = document.getElementById('contact-doc-type').value;
+            const docNumber = document.getElementById('contact-doc-number').value;
             const phone = document.getElementById('contact-phone').value;
             const email = document.getElementById('contact-email').value;
             const city = document.getElementById('contact-city').value;
@@ -2101,6 +2145,7 @@ Solicito estudio de credito vehicular.
 
 ${vehicleSection}DATOS PERSONALES:
 - Nombre: ${name}
+- Documento: ${docType} ${docNumber}
 - Celular: ${phone}
 - Email: ${email}
 - Ciudad: ${city}

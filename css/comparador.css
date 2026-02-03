@@ -225,67 +225,62 @@
     border-color: #ef4444;
 }
 
-/* ===== BOTÓN EN TARJETAS DE VEHÍCULOS ===== */
+/* ===== BOTÓN COMPARAR EN TARJETAS DE VEHÍCULOS ===== */
 .btn-compare {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    min-width: 36px;
-    height: 36px;
-    padding: 0 10px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #e5e7eb;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.75);
+    border: none;
     border-radius: 8px;
-    color: #6b7280;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     /* Prevent touch issues on mobile carousel */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    z-index: 5;
 }
 
-/* Text label for compare button */
+.btn-compare .compare-icon {
+    display: flex;
+    align-items: center;
+}
+
 .btn-compare .compare-text {
-    font-size: 10px;
-    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    display: none;
 }
 
-@media (min-width: 480px) {
-    .btn-compare .compare-text {
-        display: inline;
-    }
-}
-
-/* Only apply hover effects on devices with hover capability (not touch) */
+/* Hover en dispositivos con mouse */
 @media (hover: hover) and (pointer: fine) {
     .btn-compare:hover {
         background: #b89658;
-        border-color: #b89658;
-        color: white;
         transform: scale(1.05);
     }
 }
 
-/* Active state for touch - only on actual tap, not drag */
+/* Active state */
 .btn-compare:active {
     transform: scale(0.95);
 }
 
+/* Cuando esta agregado al comparador */
 .btn-compare.active {
     background: #10b981;
-    border-color: #10b981;
-    color: white;
 }
 
 @media (hover: hover) and (pointer: fine) {
     .btn-compare.active:hover {
         background: #059669;
-        border-color: #059669;
     }
 }
 

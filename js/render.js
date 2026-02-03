@@ -106,11 +106,10 @@ function renderVehicleCard(vehicle) {
     // Check if in comparator
     const inComparator = isInComparator(vehicle.id);
     const compareActiveClass = inComparator ? ' active' : '';
-    // Use a clearer "VS" style icon for comparing
     const compareIcon = inComparator
         ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 3h5v5M8 3H3v5M16 21h5v-5M8 21H3v-5M12 8v8M8 12h8"/></svg>';
-    const compareText = inComparator ? 'OK' : 'VS';
+        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4"/></svg>';
+    const compareText = inComparator ? 'Agregado' : 'Comparar';
 
     // Generate badges HTML
     const badgesHTML = badges.map(badge =>
@@ -123,14 +122,14 @@ function renderVehicleCard(vehicle) {
                 <img src="${vehicle.imagen}" alt="${vehicle.marca} ${vehicle.modelo}" loading="lazy" class="vehicle-img" data-fallback="multimedia/vehicles/placeholder-car.jpg">
                 <div class="vehicle-actions">
                     <button class="favorite-btn${activeClass}" data-id="${vehicle.id}" aria-label="Añadir a favoritos">${heartIcon}</button>
-                    <button class="btn-compare${compareActiveClass}" data-compare="${vehicle.id}" aria-label="Comparar vehiculo" aria-pressed="${inComparator}" title="Agregar al comparador">
-                        <span class="compare-icon">${compareIcon}</span>
-                        <span class="compare-text">${compareText}</span>
-                    </button>
                 </div>
                 <div class="vehicle-badges">
                     ${badgesHTML}
                 </div>
+                <button class="btn-compare${compareActiveClass}" data-compare="${vehicle.id}" aria-label="Comparar vehiculo" aria-pressed="${inComparator}" title="Agregar al comparador">
+                    <span class="compare-icon">${compareIcon}</span>
+                    <span class="compare-text">${compareText}</span>
+                </button>
             </div>
             <div class="vehicle-info">
                 <h3 class="vehicle-title">${capitalize(vehicle.marca)} ${vehicle.modelo} ${vehicle.year}</h3>

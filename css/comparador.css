@@ -230,21 +230,50 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
+    gap: 4px;
+    min-width: 36px;
     height: 36px;
+    padding: 0 10px;
     background: rgba(255, 255, 255, 0.95);
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     color: #6b7280;
     cursor: pointer;
     transition: all 0.2s ease;
+    /* Prevent touch issues on mobile carousel */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
 }
 
-.btn-compare:hover {
-    background: #b89658;
-    border-color: #b89658;
-    color: white;
-    transform: scale(1.1);
+/* Text label for compare button */
+.btn-compare .compare-text {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    display: none;
+}
+
+@media (min-width: 480px) {
+    .btn-compare .compare-text {
+        display: inline;
+    }
+}
+
+/* Only apply hover effects on devices with hover capability (not touch) */
+@media (hover: hover) and (pointer: fine) {
+    .btn-compare:hover {
+        background: #b89658;
+        border-color: #b89658;
+        color: white;
+        transform: scale(1.05);
+    }
+}
+
+/* Active state for touch - only on actual tap, not drag */
+.btn-compare:active {
+    transform: scale(0.95);
 }
 
 .btn-compare.active {
@@ -253,9 +282,11 @@
     color: white;
 }
 
-.btn-compare.active:hover {
-    background: #059669;
-    border-color: #059669;
+@media (hover: hover) and (pointer: fine) {
+    .btn-compare.active:hover {
+        background: #059669;
+        border-color: #059669;
+    }
 }
 
 /* ===== PÁGINA DE COMPARACIÓN ===== */

@@ -74,6 +74,11 @@ class VehicleComparator {
             this.saveToStorage();
             this.updateWidget();
             this.updateButtons();
+
+            if (typeof toast !== 'undefined') {
+                toast.info('Vehiculo quitado del comparador');
+            }
+
             return true;
         }
         return false;
@@ -233,9 +238,14 @@ class VehicleComparator {
 
             const icon = btn.querySelector('.compare-icon');
             if (icon) {
-                icon.innerHTML = isInComparator ?
-                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>' :
-                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
+                icon.innerHTML = isInComparator
+                    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 3h5v5M8 3H3v5M16 21h5v-5M8 21H3v-5M12 8v8M8 12h8"/></svg>';
+            }
+
+            const text = btn.querySelector('.compare-text');
+            if (text) {
+                text.textContent = isInComparator ? 'OK' : 'VS';
             }
         });
     }

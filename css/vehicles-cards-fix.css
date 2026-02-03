@@ -229,49 +229,8 @@
     color: white;
 }
 
-/* Botón de comparar */
-.btn-compare {
-    position: relative !important;
-    width: 38px;
-    height: 38px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #6b7280;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent !important;
-    touch-action: manipulation !important;
-}
-
-.btn-compare .compare-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .btn-compare:hover {
-        background: #3b82f6;
-        color: white;
-        transform: scale(1.1);
-    }
-}
-
-.btn-compare.active {
-    background: #10b981;
-    color: white;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .btn-compare.active:hover {
-        background: #059669;
-    }
-}
+/* Botón de comparar - ESTILOS MOVIDOS A comparador.css */
+/* Los estilos de .btn-compare ahora están centralizados en css/comparador.css */
 
 /* ===========================================
    SECCIÓN 6: INFORMACIÓN DEL VEHÍCULO
@@ -407,15 +366,7 @@
         font-size: 1.1rem;
     }
 
-    .btn-compare {
-        width: 34px;
-        height: 34px;
-    }
-
-    .btn-compare svg {
-        width: 14px;
-        height: 14px;
-    }
+    /* .btn-compare responsive - estilos en comparador.css */
 
     .vehicle-actions {
         gap: 6px;

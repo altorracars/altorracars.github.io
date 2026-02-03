@@ -248,6 +248,42 @@ class VehicleComparator {
                 text.textContent = isInComparator ? 'Agregado' : 'Comparar';
             }
         });
+
+        // Actualizar boton especial de pagina detalle-vehiculo
+        this.updateDetailPageButton();
+    }
+
+    updateDetailPageButton() {
+        const btnComparar = document.getElementById('btnComparar');
+        const btnCompararText = document.getElementById('btnCompararText');
+        const btnCompararIcon = document.getElementById('btnCompararIcon');
+
+        if (!btnComparar) return;
+
+        // Obtener ID del vehiculo de la URL
+        const params = new URLSearchParams(window.location.search);
+        const vehicleId = params.get('id');
+
+        if (!vehicleId) return;
+
+        const isInComparator = this.has(vehicleId);
+        btnComparar.classList.toggle('active', isInComparator);
+
+        if (btnCompararText) {
+            btnCompararText.textContent = isInComparator ? 'Agregado' : 'Comparar';
+        }
+
+        if (btnCompararIcon) {
+            if (isInComparator) {
+                btnCompararIcon.innerHTML = '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>';
+                btnCompararIcon.setAttribute('fill', 'currentColor');
+                btnCompararIcon.removeAttribute('stroke');
+            } else {
+                btnCompararIcon.innerHTML = '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="9" rx="1"/><path d="M6 15v6M18 15v6M3 18h6M15 18h6"/>';
+                btnCompararIcon.setAttribute('fill', 'none');
+                btnCompararIcon.setAttribute('stroke', 'currentColor');
+            }
+        }
     }
 
     attachEventListeners() {

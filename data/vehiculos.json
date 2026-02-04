@@ -2,19 +2,62 @@
   "_schema": {
     "version": "2.0",
     "descripcion": "Base de datos central de vehículos de ALTORRA CARS. Este archivo alimenta toda la plataforma: carruseles, filtros, búsqueda, fichas técnicas y detalle de vehículos.",
-    "camposRequeridos": ["id", "marca", "modelo", "year", "precio", "tipo", "categoria", "transmision", "combustible", "kilometraje", "imagen"],
+    "camposRequeridos": [
+      "id",
+      "marca",
+      "modelo",
+      "year",
+      "precio",
+      "tipo",
+      "categoria",
+      "transmision",
+      "combustible",
+      "kilometraje",
+      "imagen"
+    ],
     "camposOpcionales": [
-      "precioOferta", "oferta", "destacado",
-      "motor", "cilindraje", "potencia", "traccion",
-      "color", "puertas", "pasajeros", "asientos", "direccion",
-      "placa", "codigoFasecolda", "revisionTecnica", "peritaje", "ubicacion",
-      "imagenes", "descripcion", "caracteristicas"
+      "precioOferta",
+      "oferta",
+      "destacado",
+      "motor",
+      "cilindraje",
+      "potencia",
+      "traccion",
+      "color",
+      "puertas",
+      "pasajeros",
+      "asientos",
+      "direccion",
+      "placa",
+      "codigoFasecolda",
+      "revisionTecnica",
+      "peritaje",
+      "ubicacion",
+      "imagenes",
+      "descripcion",
+      "caracteristicas"
     ],
     "valoresPermitidos": {
-      "tipo": ["nuevo", "usado"],
-      "categoria": ["sedan", "suv", "hatchback", "pickup"],
-      "transmision": ["automatica", "mecanica"],
-      "combustible": ["gasolina", "diesel", "electrico", "hibrido"]
+      "tipo": [
+        "nuevo",
+        "usado"
+      ],
+      "categoria": [
+        "sedan",
+        "suv",
+        "hatchback",
+        "pickup"
+      ],
+      "transmision": [
+        "automatica",
+        "mecanica"
+      ],
+      "combustible": [
+        "gasolina",
+        "diesel",
+        "electrico",
+        "hibrido"
+      ]
     }
   },
   "vehiculos": [
@@ -47,9 +90,10 @@
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/chevrolet-onix-2024.jpg",
       "imagenes": [
-        "multimedia/vehicles/chevrolet-onix-2024-1.jpg",
-        "multimedia/vehicles/chevrolet-onix-2024-2.jpg",
-        "multimedia/vehicles/chevrolet-onix-2024-3.jpg"
+        "multimedia/vehicles/chevrolet-onix-2024.jpg",
+        "multimedia/categories/hatchback.jpg",
+        "multimedia/categories/HATCHBACK.webp",
+        "multimedia/hero-car.jpg"
       ],
       "destacado": true,
       "descripcion": "Chevrolet Onix 2024 nuevo, motor turbo 1.0L, transmisión automática, sistema de audio con pantalla táctil, cámara de reversa, control de crucero. Vehículo ideal para ciudad con excelente rendimiento de combustible y tecnología moderna.",
@@ -95,7 +139,10 @@
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/nissan-kicks-2023.jpg",
       "imagenes": [
-        "multimedia/vehicles/nissan-kicks-2023-1.jpg"
+        "multimedia/vehicles/nissan-kicks-2023.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
       ],
       "destacado": true,
       "descripcion": "Nissan Kicks 2023 seminuevo con solo 15.000 km, excelente estado, único dueño, mantenimientos al día. SUV urbano con tecnología de conectividad y sistemas de seguridad avanzados.",
@@ -138,7 +185,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Renault Duster 2022, perfecta para ciudad y carretera, tracción 4x2, espaciosa y económica. Excelente estado mecánico.",
       "caracteristicas": [
@@ -176,7 +228,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Kia Sportage 2024 totalmente equipado, tecnología de punta, diseño moderno y espacioso. Tracción integral AWD.",
       "caracteristicas": [
@@ -216,7 +273,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/hatchback.jpg",
+        "multimedia/categories/HATCHBACK.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Chevrolet Spark 2023, ideal para ciudad, bajo consumo, fácil de parquear. Único dueño.",
       "caracteristicas": [
@@ -253,7 +315,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Mazda CX-5 2024, diseño elegante, tecnología Skyactiv, conducción deportiva. Tracción AWD para todo terreno.",
       "caracteristicas": [
@@ -291,7 +358,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/camioneta.jpg",
+        "multimedia/categories/PICKUP.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Toyota Hilux 2023, doble cabina, 4x4, motor diesel turbo, ideal para trabajo y aventura. Excelente torque.",
       "caracteristicas": [
@@ -329,7 +401,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/sedan.jpg",
+        "multimedia/categories/SEDAN.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Nissan Sentra 2022, sedán elegante y confortable, bajo consumo, ideal para ejecutivos. Impecable estado.",
       "caracteristicas": [
@@ -366,7 +443,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/hatchback.jpg",
+        "multimedia/categories/HATCHBACK.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Renault Sandero 2023 nuevo, amplio espacio interior, excelente relación precio-calidad. Económico y confiable.",
       "caracteristicas": [
@@ -403,7 +485,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/hatchback.jpg",
+        "multimedia/categories/HATCHBACK.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Kia Picanto 2024, compacto y ágil, perfecto para la ciudad, bajo consumo de combustible. Muy económico.",
       "caracteristicas": [
@@ -440,7 +527,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Hyundai Tucson 2024, diseño futurista, tecnología híbrida disponible, muy espacioso. Todo lo que necesitas.",
       "caracteristicas": [
@@ -478,7 +570,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/camioneta.jpg",
+        "multimedia/categories/PICKUP.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Ford Ranger 2023, doble cabina 4x4, motor bi-turbo diesel, máxima potencia y capacidad. Poco kilometraje.",
       "caracteristicas": [
@@ -516,7 +613,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "oferta": true,
       "precioOferta": 89000000,
@@ -557,7 +659,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/sedan.jpg",
+        "multimedia/categories/SEDAN.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Toyota Corolla 2023, sedán confiable y elegante, bajo kilometraje, mantenimientos al día. Un clásico renovado.",
       "caracteristicas": [
@@ -595,7 +702,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/sedan.jpg",
+        "multimedia/categories/SEDAN.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Nissan Versa 2024 nuevo, sedán espacioso y económico, perfecto para familia. Excelente consumo de combustible.",
       "caracteristicas": [
@@ -633,7 +745,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Renault Koleos 2023, SUV 7 pasajeros, espacioso y confortable, tracción AWD. Perfecto para familias grandes.",
       "caracteristicas": [
@@ -671,7 +788,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/sedan.jpg",
+        "multimedia/categories/SEDAN.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Kia Rio 2023 sedán, económico y confiable, perfecto primer auto. Bajo consumo.",
       "caracteristicas": [
@@ -708,7 +830,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/sedan.jpg",
+        "multimedia/categories/SEDAN.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Mazda 2 Sedán 2024, diseño deportivo, tecnología Skyactiv, excelente manejo. Perfecto para ciudad.",
       "caracteristicas": [
@@ -746,7 +873,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/sedan.jpg",
+        "multimedia/categories/SEDAN.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Hyundai Accent 2023, sedán compacto, bajo kilometraje, perfecto estado. Económico y eficiente.",
       "caracteristicas": [
@@ -784,7 +916,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/sedan.jpg",
+        "multimedia/categories/SEDAN.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Chevrolet Sail 2022, sedán económico y confiable, ideal para taxi o particular. Buen estado general.",
       "caracteristicas": [
@@ -821,7 +958,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Toyota Fortuner 2024, SUV 7 pasajeros, motor diesel, tracción 4x4. La SUV más resistente y confiable del mercado.",
       "caracteristicas": [
@@ -861,7 +1003,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Nissan X-Trail 2023, SUV 7 pasajeros, tracción AWD, tecnología ProPILOT. Perfecta para familias.",
       "caracteristicas": [
@@ -899,7 +1046,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Ford Territory 2024, SUV moderna con tecnología SYNC 3, motor turbo eficiente. Diseño vanguardista.",
       "caracteristicas": [
@@ -937,7 +1089,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Mazda CX-30 2023, SUV compacta premium, diseño Kodo, tecnología i-Activsense. Poco kilometraje.",
       "caracteristicas": [
@@ -975,7 +1132,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "oferta": true,
       "precioOferta": 89000000,
@@ -1015,7 +1177,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Chevrolet Captiva 2023, SUV 7 pasajeros, motor turbo, amplio espacio. Perfecto para familias grandes.",
       "caracteristicas": [
@@ -1053,7 +1220,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Kia Seltos 2024, SUV urbana con diseño moderno, tecnología UVO Connect. Una de las más vendidas.",
       "caracteristicas": [
@@ -1091,7 +1263,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/hatchback.jpg",
+        "multimedia/categories/HATCHBACK.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": false,
       "descripcion": "Renault Stepway 2024, hatchback aventurero, mayor altura, estilo robusto. Perfecto para aventuras urbanas.",
       "caracteristicas": [
@@ -1129,7 +1306,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/suv.jpg",
+        "multimedia/categories/SUV.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Toyota Prado 2023, la SUV más completa, motor diesel, 7 pasajeros, lujo y capacidad todoterreno. Como nueva.",
       "caracteristicas": [
@@ -1169,7 +1351,12 @@
       "peritaje": true,
       "ubicacion": "Barranquilla",
       "imagen": "multimedia/vehicles/placeholder-car.jpg",
-      "imagenes": [],
+      "imagenes": [
+        "multimedia/vehicles/placeholder-car.jpg",
+        "multimedia/categories/camioneta.jpg",
+        "multimedia/categories/PICKUP.webp",
+        "multimedia/hero-car.jpg"
+      ],
       "destacado": true,
       "descripcion": "Nissan Frontier 2024, pickup doble cabina 4x4, motor diesel turbo. Potencia y resistencia para trabajo pesado.",
       "caracteristicas": [

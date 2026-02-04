@@ -125,9 +125,10 @@ class VehicleComparator {
             <div class="comparador-widget-header">
                 <div class="comparador-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="3" width="7" height="9" rx="1"/>
-                        <rect x="14" y="3" width="7" height="9" rx="1"/>
-                        <path d="M6 15v6M18 15v6M3 18h6M15 18h6"/>
+                        <rect x="2" y="3" width="5" height="9" rx="1"/>
+                        <rect x="9.5" y="3" width="5" height="9" rx="1"/>
+                        <rect x="17" y="3" width="5" height="9" rx="1"/>
+                        <path d="M4 15v6M12 15v6M20 15v6M2 18h4M10 18h4M18 18h4"/>
                     </svg>
                 </div>
                 <span class="comparador-title">Comparador</span>
@@ -237,10 +238,10 @@ class VehicleComparator {
 
             const icon = btn.querySelector('.compare-icon');
             if (icon) {
-                // Icono de dos columnas para comparar, checkmark cuando agregado
+                // Icono de 3 columnas para comparar (max 3 vehiculos), checkmark cuando agregado
                 icon.innerHTML = isInComparator
                     ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
-                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="9" rx="1"/><path d="M6 15v6M18 15v6M3 18h6M15 18h6"/></svg>';
+                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="5" height="9" rx="1"/><rect x="9.5" y="3" width="5" height="9" rx="1"/><rect x="17" y="3" width="5" height="9" rx="1"/><path d="M4 15v6M12 15v6M20 15v6M2 18h4M10 18h4M18 18h4"/></svg>';
             }
 
             const text = btn.querySelector('.compare-text');
@@ -279,7 +280,8 @@ class VehicleComparator {
                 btnCompararIcon.setAttribute('fill', 'currentColor');
                 btnCompararIcon.removeAttribute('stroke');
             } else {
-                btnCompararIcon.innerHTML = '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="9" rx="1"/><path d="M6 15v6M18 15v6M3 18h6M15 18h6"/>';
+                // Icono de 3 columnas para comparar (max 3 vehiculos)
+                btnCompararIcon.innerHTML = '<rect x="2" y="3" width="5" height="9" rx="1"/><rect x="9.5" y="3" width="5" height="9" rx="1"/><rect x="17" y="3" width="5" height="9" rx="1"/><path d="M4 15v6M12 15v6M20 15v6M2 18h4M10 18h4M18 18h4"/>';
                 btnCompararIcon.setAttribute('fill', 'none');
                 btnCompararIcon.setAttribute('stroke', 'currentColor');
             }

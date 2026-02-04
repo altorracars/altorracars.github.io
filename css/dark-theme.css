@@ -1396,6 +1396,11 @@ html {
     margin-bottom: 0.5rem !important;
 }
 
+/* Reducir espacio entre filtros y resultados en página de búsqueda */
+.search-advanced-section + .search-results-section {
+    padding-top: 0.25rem !important;
+}
+
 .filters-sidebar {
     margin-bottom: 1.5rem !important;
 }
@@ -1443,6 +1448,10 @@ html {
 
     .advanced-search-form {
         margin-bottom: 0.5rem !important;
+    }
+
+    .search-advanced-section + .search-results-section {
+        padding-top: 0.25rem !important;
     }
 
     .filters-sidebar {
@@ -1499,6 +1508,10 @@ html {
 
     .advanced-search-form {
         margin-bottom: 0.25rem !important;
+    }
+
+    .search-advanced-section + .search-results-section {
+        padding-top: 0.125rem !important;
     }
 
     .filters-sidebar {

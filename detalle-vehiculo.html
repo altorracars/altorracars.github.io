@@ -54,13 +54,6 @@
             align-items: start;
         }
 
-        /* Columna principal que contiene galería, tabs y vehiculos similares */
-        .main-column {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
         /* ===== GALERÍA OPTIMIZADA ===== */
         .gallery-section {
             display: flex;
@@ -341,12 +334,8 @@
 
         /* ===== TABS CONTENT ===== */
         .content-section {
-            /* Fluye naturalmente dentro de main-column */
-            background: white;
-            border: 1px solid var(--gray-200);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);
+            grid-column: 1 / -1;
+            margin-top: 24px;
         }
 
         .tabs-nav {
@@ -575,8 +564,9 @@
 
         /* ===== VEHÍCULOS SIMILARES ===== */
         .similar-section {
-            /* Ahora dentro de main-column, no necesita grid-column */
-            padding-top: 32px;
+            grid-column: 1 / -1;
+            margin-top: 48px;
+            padding-top: 48px;
             border-top: 2px solid var(--gray-200);
         }
 
@@ -804,14 +794,12 @@
                 grid-template-columns: 1fr;
             }
 
-            /* En móvil, el sidebar va después de main-column */
-            .main-column {
-                order: 1;
-            }
-
             .info-sidebar {
                 position: static;
-                order: 0; /* Sidebar primero en móvil con precio/info */
+            }
+
+            .content-section {
+                margin-top: 32px;
             }
 
             .ficha-rows {
@@ -877,16 +865,13 @@
     <div class="detail-page">
         <div class="detail-container">
             <div class="detail-grid">
-                <!-- Columna Principal (Galería + Contenido) -->
-                <div class="main-column">
-                    <!-- Galería -->
-                    <div class="gallery-section">
-                        <div class="main-image-container">
-                            <img id="mainImage" src="" alt="Vehículo" class="main-image">
-                            <div class="image-counter" id="imageCounter">1/1</div>
-                        </div>
-                        <div class="thumbnails-grid" id="thumbnailsGrid"></div>
+                <!-- Galería -->
+                <div class="gallery-section">
+                    <div class="main-image-container">
+                        <img id="mainImage" src="" alt="Vehículo" class="main-image">
+                        <div class="image-counter" id="imageCounter">1/1</div>
                     </div>
+                    <div class="thumbnails-grid" id="thumbnailsGrid"></div>
                 </div>
 
                 <!-- Info Sidebar -->
@@ -944,39 +929,39 @@
                             </button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Content Section - ahora dentro de main-column -->
-                    <div class="content-section">
-                        <div class="tabs-nav">
-                            <button class="tab-btn active" data-tab="ficha">Ficha Técnica</button>
-                            <button class="tab-btn" data-tab="caracteristicas">Características</button>
-                            <button class="tab-btn" data-tab="descripcion">Descripción</button>
-                        </div>
-
-                        <!-- Ficha Técnica -->
-                        <div class="tab-content active" id="tab-ficha">
-                            <h2 class="section-title">Ficha Técnica Completa</h2>
-                            <div class="ficha-table" id="fichaTable"></div>
-                        </div>
-
-                        <!-- Características -->
-                        <div class="tab-content" id="tab-caracteristicas">
-                            <h2 class="section-title">Características y Equipamiento</h2>
-                            <div class="features-grid" id="featuresGrid"></div>
-                        </div>
-
-                        <!-- Descripción -->
-                        <div class="tab-content" id="tab-descripcion">
-                            <h2 class="section-title">Descripción del Vehículo</h2>
-                            <div class="description-box" id="descriptionBox"></div>
-                        </div>
+                <!-- Content Section -->
+                <div class="content-section">
+                    <div class="tabs-nav">
+                        <button class="tab-btn active" data-tab="ficha">Ficha Técnica</button>
+                        <button class="tab-btn" data-tab="caracteristicas">Características</button>
+                        <button class="tab-btn" data-tab="descripcion">Descripción</button>
                     </div>
 
-                    <!-- Vehículos Similares -->
-                    <div class="similar-section">
-                        <h2>Vehículos Similares</h2>
-                        <div class="vehicles-grid" id="similarVehicles"></div>
+                    <!-- Ficha Técnica -->
+                    <div class="tab-content active" id="tab-ficha">
+                        <h2 class="section-title">Ficha Técnica Completa</h2>
+                        <div class="ficha-table" id="fichaTable"></div>
                     </div>
+
+                    <!-- Características -->
+                    <div class="tab-content" id="tab-caracteristicas">
+                        <h2 class="section-title">Características y Equipamiento</h2>
+                        <div class="features-grid" id="featuresGrid"></div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="tab-content" id="tab-descripcion">
+                        <h2 class="section-title">Descripción del Vehículo</h2>
+                        <div class="description-box" id="descriptionBox"></div>
+                    </div>
+                </div>
+
+                <!-- Vehículos Similares -->
+                <div class="similar-section">
+                    <h2>Vehículos Similares</h2>
+                    <div class="vehicles-grid" id="similarVehicles"></div>
                 </div>
             </div>
         </div>

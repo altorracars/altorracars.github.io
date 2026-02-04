@@ -46,11 +46,11 @@
             padding: 32px 20px;
         }
 
-        /* Grid Principal - Optimizado */
+        /* Grid Principal - Layout Balanceado */
         .detail-grid {
             display: grid;
-            grid-template-columns: 1fr 420px;
-            gap: 32px;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
             align-items: start;
         }
 
@@ -58,17 +58,17 @@
         .gallery-section {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
         }
 
         .main-image-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 16/9;
+            aspect-ratio: 16/10;
             background: var(--gray-100);
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
 
         .main-image {
@@ -85,92 +85,43 @@
 
         .image-counter {
             position: absolute;
-            bottom: 16px;
-            right: 16px;
-            background: rgba(0,0,0,0.75);
+            bottom: 12px;
+            right: 12px;
+            background: rgba(0,0,0,0.8);
             color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 13px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 600;
+            backdrop-filter: blur(4px);
         }
 
-        /* Thumbnails Compactos */
+        /* Thumbnails - Fila Horizontal Compacta */
         .thumbnails-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 12px;
-        }
-
-        /* Botones de acción debajo de galería */
-        .gallery-actions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-top: 8px;
-        }
-
-        .gallery-actions .btn-contact {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 14px 20px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: thin;
         }
 
-        .gallery-actions .btn-whatsapp {
-            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
-            color: white;
+        .thumbnails-grid::-webkit-scrollbar {
+            height: 4px;
         }
 
-        .gallery-actions .btn-whatsapp:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(37,211,102,0.4);
+        .thumbnails-grid::-webkit-scrollbar-track {
+            background: var(--gray-200);
+            border-radius: 2px;
         }
 
-        .gallery-actions .btn-calculator {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-        }
-
-        .gallery-actions .btn-calculator:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(59,130,246,0.4);
-        }
-
-        .gallery-actions .btn-comparar {
-            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-            color: white;
-        }
-
-        .gallery-actions .btn-comparar:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(139,92,246,0.4);
-        }
-
-        .gallery-actions .btn-comparar.active {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-
-        .gallery-actions .btn-agendar-cita {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-        }
-
-        .gallery-actions .btn-agendar-cita:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(245,158,11,0.4);
+        .thumbnails-grid::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 2px;
         }
 
         .thumbnail {
-            aspect-ratio: 4/3;
+            flex: 0 0 80px;
+            height: 60px;
             border-radius: 8px;
             overflow: hidden;
             cursor: pointer;
@@ -187,44 +138,114 @@
         .thumbnail:hover,
         .thumbnail.active {
             border-color: var(--gold);
+            transform: scale(1.05);
+        }
+
+        /* Botones de acción - Grid Compacto 2x2 */
+        .gallery-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .gallery-actions .btn-contact {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .gallery-actions .btn-contact svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .gallery-actions .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+        }
+
+        .gallery-actions .btn-whatsapp:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(37,211,102,0.4);
+        }
+
+        .gallery-actions .btn-calculator {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+
+        .gallery-actions .btn-calculator:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+        }
+
+        .gallery-actions .btn-comparar {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+        }
+
+        .gallery-actions .btn-comparar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139,92,246,0.4);
+        }
+
+        .gallery-actions .btn-comparar.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .gallery-actions .btn-agendar-cita {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .gallery-actions .btn-agendar-cita:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245,158,11,0.4);
         }
 
         /* ===== INFO SIDEBAR ===== */
         .info-sidebar {
             position: sticky;
             top: 88px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
         }
 
         .info-card {
-            background: white;
-            border: 1px solid var(--gray-200);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);
+            background: linear-gradient(180deg, rgba(30,30,30,0.95) 0%, rgba(20,20,20,0.98) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
 
         /* Header Info */
         .vehicle-header {
-            border-bottom: 1px solid var(--gray-200);
-            padding-bottom: 16px;
-            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 14px;
+            margin-bottom: 16px;
         }
 
         .badges {
             display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
         }
 
         .badge {
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -235,30 +256,31 @@
         .badge.oferta { background: #ef4444; color: white; }
 
         .vehicle-title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 800;
             line-height: 1.2;
-            margin: 0 0 8px;
-            color: var(--gray-900);
+            margin: 0 0 6px;
+            color: white;
         }
 
         .vehicle-subtitle {
-            font-size: 14px;
-            color: var(--gray-700);
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
             font-weight: 500;
         }
 
         /* Precio */
         .price-box {
-            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
-            padding: 20px;
+            background: linear-gradient(135deg, rgba(184,150,88,0.2) 0%, rgba(184,150,88,0.1) 100%);
+            border: 1px solid rgba(184,150,88,0.3);
+            padding: 16px;
             border-radius: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .price-label {
-            font-size: 12px;
-            color: rgba(255,255,255,0.9);
+            font-size: 11px;
+            color: rgba(255,255,255,0.7);
             margin-bottom: 4px;
             font-weight: 600;
             text-transform: uppercase;
@@ -266,46 +288,45 @@
         }
 
         .price-value {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 900;
-            color: white;
+            color: var(--gold);
             line-height: 1;
         }
 
         .price-normal {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 600;
-            color: rgba(255,255,255,0.7);
+            color: rgba(255,255,255,0.5);
             text-decoration: line-through;
             margin-bottom: 4px;
         }
 
         .price-offer {
-            font-size: 36px;
+            font-size: 30px;
             font-weight: 900;
-            color: #ff4444;
+            color: #ff6b6b;
             line-height: 1;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         /* Quick Specs - Grid Compacto */
         .quick-specs {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 8px;
         }
 
         .spec-item {
-            background: var(--gray-50);
-            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
             border-radius: 8px;
-            border: 1px solid var(--gray-200);
+            border: 1px solid rgba(255,255,255,0.08);
+            text-align: center;
         }
 
         .spec-label {
-            font-size: 11px;
-            color: var(--gray-700);
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
             text-transform: uppercase;
             font-weight: 600;
             letter-spacing: 0.3px;
@@ -313,9 +334,9 @@
         }
 
         .spec-value {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
-            color: var(--gray-900);
+            color: white;
         }
 
         /* Botones de Contacto - Diseño Moderno */
@@ -402,23 +423,27 @@
         /* ===== TABS CONTENT ===== */
         .content-section {
             grid-column: 1 / -1;
-            margin-top: 24px;
+            margin-top: 20px;
+            background: rgba(30,30,30,0.5);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
         .tabs-nav {
             display: flex;
             gap: 4px;
-            border-bottom: 2px solid var(--gray-200);
-            margin-bottom: 32px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            margin-bottom: 24px;
         }
 
         .tab-btn {
-            padding: 14px 24px;
+            padding: 12px 20px;
             background: transparent;
             border: none;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
-            color: var(--gray-700);
+            color: rgba(255,255,255,0.6);
             cursor: pointer;
             position: relative;
             transition: all 0.2s ease;
@@ -458,12 +483,12 @@
 
         /* ===== FICHA TÉCNICA - TABLA MODERNA ===== */
         .section-title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 800;
-            margin-bottom: 32px;
-            color: var(--gray-900);
+            margin-bottom: 20px;
+            color: white;
             position: relative;
-            padding-bottom: 12px;
+            padding-bottom: 10px;
         }
 
         .section-title::after {
@@ -471,33 +496,33 @@
             position: absolute;
             bottom: 0;
             left: 0;
-            width: 60px;
-            height: 4px;
+            width: 50px;
+            height: 3px;
             background: var(--gold);
             border-radius: 2px;
         }
 
         .ficha-table {
             display: grid;
-            gap: 28px;
+            gap: 16px;
         }
 
         .ficha-group {
-            background: white;
-            border: 2px solid var(--gray-200);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 12px;
             overflow: hidden;
             transition: border-color 0.2s ease;
         }
 
         .ficha-group:hover {
-            border-color: var(--gold);
+            border-color: rgba(184,150,88,0.5);
         }
 
         .ficha-group-title {
             background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
-            padding: 16px 24px;
-            font-size: 14px;
+            padding: 12px 20px;
+            font-size: 13px;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -506,46 +531,46 @@
 
         .ficha-rows {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            background: white;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            background: rgba(255,255,255,0.02);
         }
 
         .ficha-row {
             display: grid;
             grid-template-columns: 1fr 1px 1fr;
-            gap: 16px;
-            padding: 16px 24px;
+            gap: 12px;
+            padding: 12px 20px;
             align-items: center;
             transition: background 0.15s ease;
         }
 
         .ficha-row:not(:last-child) {
-            border-bottom: 2px solid var(--gray-200);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
         }
 
         .ficha-row:hover {
-            background: var(--gray-50);
+            background: rgba(255,255,255,0.04);
         }
 
         .ficha-label {
-            font-size: 14px;
-            color: var(--gray-900);
-            font-weight: 800;
+            font-size: 13px;
+            color: var(--gold);
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
         .ficha-separator {
             width: 1px;
-            height: 24px;
-            background: var(--gray-300);
+            height: 20px;
+            background: rgba(255,255,255,0.15);
             justify-self: center;
         }
 
         .ficha-value {
-            font-size: 15px;
-            font-weight: 400;
-            color: var(--gray-700);
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.8);
             text-align: right;
         }
 
@@ -553,33 +578,32 @@
         .features-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
+            gap: 16px;
             max-width: 100%;
             margin: 0 auto;
         }
 
         .feature-category {
-            background: white;
-            border: 2px solid var(--gray-200);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 12px;
-            padding: 24px;
+            padding: 16px;
             transition: all 0.3s ease;
         }
 
         .feature-category:hover {
-            border-color: var(--gold);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+            border-color: rgba(184,150,88,0.5);
+            background: rgba(255,255,255,0.05);
         }
 
         .feature-category-title {
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 800;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             color: white;
             background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
-            padding: 12px 16px;
-            border-radius: 8px;
+            padding: 10px 14px;
+            border-radius: 6px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             text-align: center;
@@ -588,67 +612,66 @@
         .feature-list {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 12px;
+            gap: 8px;
         }
 
         .feature-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 14px;
-            color: #1a1a1a !important; /* Forzar color oscuro para contraste en fondo blanco */
+            gap: 10px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.85) !important;
             font-weight: 500;
-            padding: 8px;
+            padding: 8px 10px;
             border-radius: 6px;
             transition: background 0.15s ease;
-            background: white;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
         .feature-item:hover {
-            background: #f5f5f5;
+            background: rgba(255,255,255,0.08);
         }
 
         .feature-item::before {
             content: '';
             display: inline-flex;
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             background: var(--gold);
             border-radius: 50%;
             flex-shrink: 0;
-            box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.2);
         }
 
         /* Descripción */
         .description-box {
-            background: var(--gray-50);
-            border: 1px solid var(--gray-200);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 10px;
-            padding: 24px;
+            padding: 20px;
             line-height: 1.7;
-            font-size: 15px;
-            color: var(--gray-700);
+            font-size: 14px;
+            color: rgba(255,255,255,0.75);
         }
 
         /* ===== VEHÍCULOS SIMILARES ===== */
         .similar-section {
             grid-column: 1 / -1;
-            margin-top: 48px;
-            padding-top: 48px;
-            border-top: 2px solid var(--gray-200);
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
 
         .similar-section h2 {
-            font-size: 28px;
+            font-size: 20px;
             font-weight: 800;
-            margin-bottom: 32px;
-            color: var(--gray-900);
+            margin-bottom: 20px;
+            color: white;
             position: relative;
-            padding-left: 20px;
-            border-left: 5px solid var(--gold);
-            background: linear-gradient(90deg, rgba(184,150,88,0.08) 0%, transparent 100%);
-            padding: 16px 20px;
-            border-radius: 8px;
+            border-left: 4px solid var(--gold);
+            background: linear-gradient(90deg, rgba(184,150,88,0.1) 0%, transparent 100%);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
         }
 
         /* Lightbox Avanzado */
@@ -860,14 +883,34 @@
 
             .detail-grid {
                 grid-template-columns: 1fr;
+                gap: 16px;
             }
 
             .info-sidebar {
                 position: static;
+                order: -1; /* Info primero en móvil */
+            }
+
+            .info-card {
+                padding: 16px;
+            }
+
+            .gallery-section {
+                order: 0;
             }
 
             .content-section {
-                margin-top: 32px;
+                margin-top: 16px;
+                padding: 16px;
+            }
+
+            .gallery-actions {
+                gap: 8px;
+            }
+
+            .gallery-actions .btn-contact {
+                padding: 10px 12px;
+                font-size: 12px;
             }
 
             .ficha-rows {
@@ -881,15 +924,54 @@
             }
 
             .detail-container {
-                padding: 16px;
+                padding: 12px;
+            }
+
+            .detail-grid {
+                gap: 12px;
             }
 
             .vehicle-title {
-                font-size: 20px;
+                font-size: 18px;
             }
 
             .price-value {
-                font-size: 28px;
+                font-size: 24px;
+            }
+
+            .price-offer {
+                font-size: 26px;
+            }
+
+            .main-image-container {
+                border-radius: 12px;
+            }
+
+            .thumbnail {
+                flex: 0 0 60px;
+                height: 45px;
+            }
+
+            .gallery-actions .btn-contact {
+                padding: 10px 8px;
+                font-size: 11px;
+                gap: 6px;
+            }
+
+            .gallery-actions .btn-contact svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .tabs-nav {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab-btn {
+                padding: 10px 14px;
+                font-size: 13px;
+                white-space: nowrap;
             }
 
             .price-normal {

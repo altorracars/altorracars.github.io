@@ -125,10 +125,9 @@ class VehicleComparator {
             <div class="comparador-widget-header">
                 <div class="comparador-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="3" width="7" height="7" rx="1"/>
-                        <rect x="14" y="3" width="7" height="7" rx="1"/>
-                        <rect x="3" y="14" width="7" height="7" rx="1"/>
-                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                        <rect x="3" y="3" width="7" height="9" rx="1"/>
+                        <rect x="14" y="3" width="7" height="9" rx="1"/>
+                        <path d="M6 15v6M18 15v6M3 18h6M15 18h6"/>
                     </svg>
                 </div>
                 <span class="comparador-title">Comparador</span>
@@ -238,9 +237,10 @@ class VehicleComparator {
 
             const icon = btn.querySelector('.compare-icon');
             if (icon) {
+                // Icono de dos columnas para comparar, checkmark cuando agregado
                 icon.innerHTML = isInComparator
                     ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
-                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4"/></svg>';
+                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="9" rx="1"/><path d="M6 15v6M18 15v6M3 18h6M15 18h6"/></svg>';
             }
 
             const text = btn.querySelector('.compare-text');

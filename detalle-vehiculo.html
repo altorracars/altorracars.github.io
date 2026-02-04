@@ -1145,6 +1145,10 @@
         let currentImages = [];
         let currentImageIndex = 0;
 
+        // Gallery Autoplay
+        let galleryAutoplayInterval = null;
+        const GALLERY_AUTOPLAY_DELAY = 4000; // 4 segundos
+
         function getVehicleIdFromURL() {
             const params = new URLSearchParams(window.location.search);
             return params.get('id');
@@ -1342,6 +1346,16 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
             const lightbox = document.getElementById('lightbox');
             lightbox.addEventListener('touchstart', handleTouchStart, { passive: true });
             lightbox.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+            // ===== AUTOPLAY: Pausar al hover, reanudar al salir =====
+            const gallerySection = document.querySelector('.gallery-section');
+            if (gallerySection) {
+                gallerySection.addEventListener('mouseenter', stopGalleryAutoplay);
+                gallerySection.addEventListener('mouseleave', startGalleryAutoplay);
+            }
+
+            // Iniciar autoplay
+            startGalleryAutoplay();
         }
 
         function changeMainImage(index) {
@@ -1354,7 +1368,25 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
             });
         }
 
+        // ===== GALLERY AUTOPLAY =====
+        function startGalleryAutoplay() {
+            if (currentImages.length <= 1) return;
+            stopGalleryAutoplay();
+            galleryAutoplayInterval = setInterval(() => {
+                const nextIndex = (currentImageIndex + 1) % currentImages.length;
+                changeMainImage(nextIndex);
+            }, GALLERY_AUTOPLAY_DELAY);
+        }
+
+        function stopGalleryAutoplay() {
+            if (galleryAutoplayInterval) {
+                clearInterval(galleryAutoplayInterval);
+                galleryAutoplayInterval = null;
+            }
+        }
+
         function openLightbox(index) {
+            stopGalleryAutoplay(); // Pausar autoplay al abrir lightbox
             currentImageIndex = index;
             updateLightboxImage();
             renderLightboxDots();
@@ -1369,6 +1401,7 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
             document.body.style.overflow = 'auto';
             isZoomed = false;
             document.getElementById('lightboxImage').classList.remove('zoomed');
+            startGalleryAutoplay(); // Reanudar autoplay al cerrar lightbox
         }
 
         function updateLightboxImage() {

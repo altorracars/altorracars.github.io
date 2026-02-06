@@ -1385,7 +1385,7 @@ html {
 }
 
 .search-advanced-section {
-    padding: 0.5rem 0 0.25rem !important;
+    padding: 0.5rem 0 0 !important;
 }
 
 .toggle-filters-btn {
@@ -1393,12 +1393,181 @@ html {
 }
 
 .advanced-search-form {
+    margin-bottom: 0 !important;
+    background: #1a1a1a !important;
+    border: 1px solid #2a2a2a !important;
+    padding: 1.5rem !important;
+}
+
+/* Grid de filtros - layout compacto */
+.search-form-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1rem !important;
+    margin-bottom: 1rem !important;
+}
+
+.search-form-grid .form-group {
+    margin-bottom: 0 !important;
+}
+
+.search-form-grid .form-group label {
+    color: #e8e8e8 !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
     margin-bottom: 0.5rem !important;
+    display: block !important;
+}
+
+.search-form-grid .form-group select,
+.search-form-grid .form-group input {
+    background: #0f0f0f !important;
+    border: 1px solid #333 !important;
+    color: #e8e8e8 !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 8px !important;
+    width: 100% !important;
+    font-size: 0.9rem !important;
+}
+
+.search-form-grid .form-group select:focus,
+.search-form-grid .form-group input:focus {
+    border-color: #b89658 !important;
+    outline: none !important;
+}
+
+.search-form-grid .form-group select option {
+    background: #1a1a1a !important;
+    color: #e8e8e8 !important;
+}
+
+/* Slider section - tema oscuro */
+.advanced-sliders-container {
+    margin: 1rem 0 !important;
+}
+
+.slider-section {
+    background: #0f0f0f !important;
+    border: 1px solid #333 !important;
+    padding: 1.25rem !important;
+    margin-bottom: 0 !important;
+}
+
+.slider-section-title {
+    color: #e8e8e8 !important;
+    border-color: #333 !important;
+    font-size: 0.8rem !important;
+    margin-bottom: 1rem !important;
+    padding-bottom: 0.75rem !important;
+}
+
+.slider-section-title svg {
+    color: #b89658 !important;
+}
+
+.range-slider-group {
+    margin-bottom: 1.25rem !important;
+}
+
+.range-slider-group:last-of-type {
+    margin-bottom: 1rem !important;
+}
+
+.range-slider-header label {
+    color: #ccc !important;
+    font-size: 0.85rem !important;
+}
+
+.range-values {
+    background: rgba(184, 150, 88, 0.15) !important;
+    color: #b89658 !important;
+    font-size: 0.8rem !important;
+    padding: 0.25rem 0.75rem !important;
+}
+
+.range-track {
+    background: #333 !important;
+}
+
+.range-labels {
+    color: #666 !important;
+    font-size: 0.7rem !important;
+    margin-top: 0.5rem !important;
+}
+
+.btn-reset-sliders {
+    background: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    color: #999 !important;
+    padding: 0.6rem 1rem !important;
+    font-size: 0.8rem !important;
+}
+
+.btn-reset-sliders:hover {
+    background: #252525 !important;
+    color: #e8e8e8 !important;
+}
+
+/* Checkbox group */
+.checkbox-group {
+    display: flex !important;
+    gap: 1rem !important;
+}
+
+.checkbox-label {
+    color: #ccc !important;
+    font-size: 0.85rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px !important;
+    accent-color: #b89658 !important;
+}
+
+/* Botones de búsqueda */
+.search-actions {
+    display: flex !important;
+    gap: 1rem !important;
+    margin-top: 1rem !important;
+    justify-content: center !important;
+}
+
+.btn-search-submit {
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.875rem 2rem !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+}
+
+.btn-search-submit:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3) !important;
+}
+
+.btn-search-clear {
+    background: transparent !important;
+    color: #999 !important;
+    border: 1px solid #333 !important;
+    padding: 0.875rem 2rem !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+}
+
+.btn-search-clear:hover {
+    background: #1a1a1a !important;
+    color: #e8e8e8 !important;
 }
 
 /* Reducir espacio entre filtros y resultados en página de búsqueda */
 .search-advanced-section + .search-results-section {
-    padding-top: 0.25rem !important;
+    padding-top: 0.5rem !important;
 }
 
 .filters-sidebar {
@@ -1439,7 +1608,7 @@ html {
     }
 
     .search-advanced-section {
-        padding: 0.5rem 0 0.25rem !important;
+        padding: 0.5rem 0 0 !important;
     }
 
     .toggle-filters-btn {
@@ -1447,11 +1616,31 @@ html {
     }
 
     .advanced-search-form {
-        margin-bottom: 0.5rem !important;
+        margin-bottom: 0 !important;
+        padding: 1rem !important;
+    }
+
+    /* Grid responsivo - 2 columnas en tablet */
+    .search-form-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.875rem !important;
     }
 
     .search-advanced-section + .search-results-section {
-        padding-top: 0.25rem !important;
+        padding-top: 0.5rem !important;
+    }
+
+    .slider-section {
+        padding: 1rem !important;
+    }
+
+    .search-actions {
+        flex-direction: column !important;
+    }
+
+    .btn-search-submit,
+    .btn-search-clear {
+        width: 100% !important;
     }
 
     .filters-sidebar {
@@ -1499,7 +1688,7 @@ html {
     }
 
     .search-advanced-section {
-        padding: 0.25rem 0 0.125rem !important;
+        padding: 0.25rem 0 0 !important;
     }
 
     .toggle-filters-btn {
@@ -1507,11 +1696,26 @@ html {
     }
 
     .advanced-search-form {
-        margin-bottom: 0.25rem !important;
+        margin-bottom: 0 !important;
+        padding: 0.875rem !important;
+    }
+
+    /* Grid responsivo - 1 columna en móvil */
+    .search-form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
     }
 
     .search-advanced-section + .search-results-section {
-        padding-top: 0.125rem !important;
+        padding-top: 0.25rem !important;
+    }
+
+    .slider-section {
+        padding: 0.875rem !important;
+    }
+
+    .range-slider-group {
+        margin-bottom: 1rem !important;
     }
 
     .filters-sidebar {

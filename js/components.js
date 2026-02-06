@@ -23,12 +23,33 @@ async function loadAllComponents() {
         loadComponent('header-placeholder', 'snippets/header.html'),
         loadComponent('footer-placeholder', 'snippets/footer.html')
     ]);
-    
+
     // Initialize after loading - pequeño delay para asegurar DOM
     setTimeout(() => {
         initializeHeader();
         initializeFavorites();
     }, 100);
+
+    // Cargar sistema de cookies dinamicamente
+    loadCookieSystem();
+}
+
+// Cargar CSS y JS de cookies
+function loadCookieSystem() {
+    // Cargar CSS
+    if (!document.querySelector('link[href*="cookies.css"]')) {
+        const cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.href = 'css/cookies.css';
+        document.head.appendChild(cssLink);
+    }
+
+    // Cargar JS
+    if (!document.querySelector('script[src*="cookies.js"]')) {
+        const script = document.createElement('script');
+        script.src = 'js/cookies.js';
+        document.body.appendChild(script);
+    }
 }
 
 // Initialize header functionality - MEJORADO PARA iPHONE

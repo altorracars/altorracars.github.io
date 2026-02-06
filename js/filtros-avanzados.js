@@ -35,17 +35,17 @@ class AdvancedFilters {
             slidersContainer.id = 'advanced-sliders';
             slidersContainer.className = 'advanced-sliders-container';
 
-            // Insertar después del primer grupo de filtros
-            const firstGroup = form.querySelector('.filter-group, .form-group');
-            if (firstGroup) {
-                firstGroup.parentNode.insertBefore(slidersContainer, firstGroup.nextSibling);
+            // Insertar DESPUÉS del grid de filtros, antes de search-actions
+            const searchActions = form.querySelector('.search-actions');
+            if (searchActions) {
+                form.insertBefore(slidersContainer, searchActions);
             } else {
-                form.prepend(slidersContainer);
+                form.appendChild(slidersContainer);
             }
         }
 
         slidersContainer.innerHTML = `
-            <div class="slider-section">
+            <div class="slider-section slider-section-horizontal">
                 <h4 class="slider-section-title">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="4" y1="21" x2="4" y2="14"/>
@@ -61,78 +61,80 @@ class AdvancedFilters {
                     Filtros por Rango
                 </h4>
 
-                <!-- Slider de Precio -->
-                <div class="range-slider-group">
-                    <div class="range-slider-header">
-                        <label>Precio</label>
-                        <span class="range-values" id="precio-values">
-                            <span id="precio-min-display">$20M</span>
-                            <span class="range-separator">-</span>
-                            <span id="precio-max-display">$300M</span>
-                        </span>
-                    </div>
-                    <div class="dual-range-slider" id="precio-slider">
-                        <div class="range-track">
-                            <div class="range-fill" id="precio-fill"></div>
+                <div class="sliders-horizontal-grid">
+                    <!-- Slider de Precio -->
+                    <div class="range-slider-group">
+                        <div class="range-slider-header">
+                            <label>Precio</label>
+                            <span class="range-values" id="precio-values">
+                                <span id="precio-min-display">$20M</span>
+                                <span class="range-separator">-</span>
+                                <span id="precio-max-display">$300M</span>
+                            </span>
                         </div>
-                        <input type="range" class="range-input range-min" id="precio-min"
-                               min="20000000" max="300000000" step="5000000" value="20000000">
-                        <input type="range" class="range-input range-max" id="precio-max"
-                               min="20000000" max="300000000" step="5000000" value="300000000">
+                        <div class="dual-range-slider" id="precio-slider">
+                            <div class="range-track">
+                                <div class="range-fill" id="precio-fill"></div>
+                            </div>
+                            <input type="range" class="range-input range-min" id="precio-min"
+                                   min="20000000" max="300000000" step="5000000" value="20000000">
+                            <input type="range" class="range-input range-max" id="precio-max"
+                                   min="20000000" max="300000000" step="5000000" value="300000000">
+                        </div>
+                        <div class="range-labels">
+                            <span>$20M</span>
+                            <span>$300M</span>
+                        </div>
                     </div>
-                    <div class="range-labels">
-                        <span>$20M</span>
-                        <span>$300M</span>
-                    </div>
-                </div>
 
-                <!-- Slider de Año -->
-                <div class="range-slider-group">
-                    <div class="range-slider-header">
-                        <label>Año</label>
-                        <span class="range-values" id="year-values">
-                            <span id="year-min-display">2015</span>
-                            <span class="range-separator">-</span>
-                            <span id="year-max-display">${this.filters.yearMax}</span>
-                        </span>
-                    </div>
-                    <div class="dual-range-slider" id="year-slider">
-                        <div class="range-track">
-                            <div class="range-fill" id="year-fill"></div>
+                    <!-- Slider de Año -->
+                    <div class="range-slider-group">
+                        <div class="range-slider-header">
+                            <label>Año</label>
+                            <span class="range-values" id="year-values">
+                                <span id="year-min-display">2015</span>
+                                <span class="range-separator">-</span>
+                                <span id="year-max-display">${this.filters.yearMax}</span>
+                            </span>
                         </div>
-                        <input type="range" class="range-input range-min" id="year-min"
-                               min="2015" max="${this.filters.yearMax}" step="1" value="2015">
-                        <input type="range" class="range-input range-max" id="year-max"
-                               min="2015" max="${this.filters.yearMax}" step="1" value="${this.filters.yearMax}">
+                        <div class="dual-range-slider" id="year-slider">
+                            <div class="range-track">
+                                <div class="range-fill" id="year-fill"></div>
+                            </div>
+                            <input type="range" class="range-input range-min" id="year-min"
+                                   min="2015" max="${this.filters.yearMax}" step="1" value="2015">
+                            <input type="range" class="range-input range-max" id="year-max"
+                                   min="2015" max="${this.filters.yearMax}" step="1" value="${this.filters.yearMax}">
+                        </div>
+                        <div class="range-labels">
+                            <span>2015</span>
+                            <span>${this.filters.yearMax}</span>
+                        </div>
                     </div>
-                    <div class="range-labels">
-                        <span>2015</span>
-                        <span>${this.filters.yearMax}</span>
-                    </div>
-                </div>
 
-                <!-- Slider de Kilometraje -->
-                <div class="range-slider-group">
-                    <div class="range-slider-header">
-                        <label>Kilometraje</label>
-                        <span class="range-values" id="km-values">
-                            <span id="km-min-display">0 km</span>
-                            <span class="range-separator">-</span>
-                            <span id="km-max-display">200,000 km</span>
-                        </span>
-                    </div>
-                    <div class="dual-range-slider" id="km-slider">
-                        <div class="range-track">
-                            <div class="range-fill" id="km-fill"></div>
+                    <!-- Slider de Kilometraje -->
+                    <div class="range-slider-group">
+                        <div class="range-slider-header">
+                            <label>Kilometraje</label>
+                            <span class="range-values" id="km-values">
+                                <span id="km-min-display">0 km</span>
+                                <span class="range-separator">-</span>
+                                <span id="km-max-display">200.000 km</span>
+                            </span>
                         </div>
-                        <input type="range" class="range-input range-min" id="km-min"
-                               min="0" max="200000" step="5000" value="0">
-                        <input type="range" class="range-input range-max" id="km-max"
-                               min="0" max="200000" step="5000" value="200000">
-                    </div>
-                    <div class="range-labels">
-                        <span>0 km</span>
-                        <span>200,000 km</span>
+                        <div class="dual-range-slider" id="km-slider">
+                            <div class="range-track">
+                                <div class="range-fill" id="km-fill"></div>
+                            </div>
+                            <input type="range" class="range-input range-min" id="km-min"
+                                   min="0" max="200000" step="5000" value="0">
+                            <input type="range" class="range-input range-max" id="km-max"
+                                   min="0" max="200000" step="5000" value="200000">
+                        </div>
+                        <div class="range-labels">
+                            <span>0 km</span>
+                            <span>200.000 km</span>
+                        </div>
                     </div>
                 </div>
 

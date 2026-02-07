@@ -11,6 +11,25 @@ class VehicleDatabase {
         if (this.loaded) return;
 
         try {
+            // Try loading from Firestore first
+            if (window.firebaseReady) {
+                try {
+                    await window.firebaseReady;
+                    if (window.db) {
+                        const loaded = await this.loadFromFirestore();
+                        if (loaded) {
+                            this.normalizeVehicles();
+                            this.loaded = true;
+                            console.log('Database loaded from Firestore (' + this.vehicles.length + ' vehicles)');
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Firestore not available, falling back to JSON:', e.message);
+                }
+            }
+
+            // Fallback: load from local JSON
             const response = await fetch('data/vehiculos.json');
             if (!response.ok) {
                 throw new Error('Failed to load vehicle database');
@@ -23,11 +42,24 @@ class VehicleDatabase {
             this.normalizeVehicles();
 
             this.loaded = true;
+            console.log('Database loaded from JSON fallback (' + this.vehicles.length + ' vehicles)');
         } catch (error) {
             console.error('Error loading database:', error);
             this.vehicles = [];
             this.brands = [];
         }
+    }
+
+    async loadFromFirestore() {
+        const vehiclesSnap = await window.db.collection('vehiculos').get();
+        if (vehiclesSnap.empty) return false;
+
+        this.vehicles = vehiclesSnap.docs.map(function(doc) { return doc.data(); });
+
+        const brandsSnap = await window.db.collection('marcas').get();
+        this.brands = brandsSnap.empty ? [] : brandsSnap.docs.map(function(doc) { return doc.data(); });
+
+        return true;
     }
 
     /**

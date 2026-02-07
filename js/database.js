@@ -7,8 +7,8 @@ class VehicleDatabase {
         this.loaded = false;
     }
     
-    async load() {
-        if (this.loaded) return;
+    async load(forceRefresh = false) {
+        if (this.loaded && !forceRefresh) return;
 
         try {
             // Try loading from Firestore first
@@ -29,7 +29,7 @@ class VehicleDatabase {
                 }
             }
 
-            // Fallback: load from local JSON
+            // Fallback: load from local JSON (only when Firestore is unavailable)
             const response = await fetch('data/vehiculos.json');
             if (!response.ok) {
                 throw new Error('Failed to load vehicle database');
@@ -38,7 +38,6 @@ class VehicleDatabase {
             this.vehicles = data.vehiculos || [];
             this.brands = data.marcas || [];
 
-            // ✅ FASE 1: Normalizar taxonomía automáticamente
             this.normalizeVehicles();
 
             this.loaded = true;
@@ -52,8 +51,7 @@ class VehicleDatabase {
 
     async loadFromFirestore() {
         const vehiclesSnap = await window.db.collection('vehiculos').get();
-        if (vehiclesSnap.empty) return false;
-
+        // Empty collection is valid (user deleted all vehicles) - don't fall back to JSON
         this.vehicles = vehiclesSnap.docs.map(function(doc) { return doc.data(); });
 
         const brandsSnap = await window.db.collection('marcas').get();

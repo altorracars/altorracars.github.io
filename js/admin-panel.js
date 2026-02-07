@@ -218,6 +218,18 @@
         if (e.target === this) closeModalFn();
     });
 
+    // Prevent Enter key from submitting/closing the vehicle form
+    $('vehicleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+    });
+
+    // Prevent Enter key in inputs from triggering unexpected behavior
+    $('vehicleForm').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+        }
+    });
+
     // ========== EDIT VEHICLE ==========
     function editVehicle(id) {
         var v = vehicles.find(function(x) { return x.id === id; });

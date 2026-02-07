@@ -29,17 +29,22 @@
 
     window.firebaseReady = loadScript(CDN_BASE + '/firebase-app-compat.js')
         .then(function() {
-            return loadScript(CDN_BASE + '/firebase-analytics-compat.js');
+            return Promise.all([
+                loadScript(CDN_BASE + '/firebase-analytics-compat.js'),
+                loadScript(CDN_BASE + '/firebase-firestore-compat.js')
+            ]);
         })
         .then(function() {
             var app = firebase.initializeApp(FIREBASE_CONFIG);
             var analytics = firebase.analytics();
+            var db = firebase.firestore();
 
             window.firebaseApp = app;
             window.firebaseAnalytics = analytics;
+            window.db = db;
 
-            console.log('Firebase initialized for ALTORRA CARS');
-            return { app: app, analytics: analytics };
+            console.log('Firebase + Firestore initialized for ALTORRA CARS');
+            return { app: app, analytics: analytics, db: db };
         })
         .catch(function(error) {
             console.warn('Firebase could not be loaded:', error);

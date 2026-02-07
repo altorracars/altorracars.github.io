@@ -32,7 +32,8 @@
             return Promise.all([
                 loadScript(CDN_BASE + '/firebase-analytics-compat.js'),
                 loadScript(CDN_BASE + '/firebase-firestore-compat.js'),
-                loadScript(CDN_BASE + '/firebase-auth-compat.js')
+                loadScript(CDN_BASE + '/firebase-auth-compat.js'),
+                loadScript(CDN_BASE + '/firebase-storage-compat.js')
             ]);
         })
         .then(function() {
@@ -40,14 +41,16 @@
             var analytics = firebase.analytics();
             var db = firebase.firestore();
             var auth = firebase.auth();
+            var storage = firebase.storage();
 
             window.firebaseApp = app;
             window.firebaseAnalytics = analytics;
             window.db = db;
             window.auth = auth;
+            window.storage = storage;
 
-            console.log('Firebase + Firestore + Auth initialized for ALTORRA CARS');
-            return { app: app, analytics: analytics, db: db, auth: auth };
+            console.log('Firebase + Firestore + Auth + Storage initialized');
+            return { app: app, analytics: analytics, db: db, auth: auth, storage: storage };
         })
         .catch(function(error) {
             console.warn('Firebase could not be loaded:', error);

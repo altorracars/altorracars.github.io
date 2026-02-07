@@ -5,6 +5,7 @@
     var vehicles = [];
     var brands = [];
     var deleteTargetId = null;
+    var uploadedImageUrls = []; // URLs of uploaded images for current vehicle
 
     // ========== HELPERS ==========
     function $(id) { return document.getElementById(id); }
@@ -194,7 +195,9 @@
         $('vehicleModal').classList.remove('active');
         $('vehicleForm').reset();
         $('vId').value = '';
-        $('imagePreview').innerHTML = '';
+        uploadedImageUrls = [];
+        $('uploadedImages').innerHTML = '';
+        $('uploadProgress').style.display = 'none';
         $('featuresPreview').innerHTML = '';
     }
 
@@ -203,6 +206,8 @@
         $('vId').value = '';
         $('vehicleForm').reset();
         $('vUbicacion').value = 'Barranquilla';
+        uploadedImageUrls = [];
+        $('uploadedImages').innerHTML = '';
         openModal();
     });
 
@@ -240,9 +245,11 @@
         $('vDescripcion').value = v.descripcion || '';
         $('vDestacado').checked = !!v.destacado;
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
-        $('vImagen').value = v.imagen || '';
-        $('vImagenes').value = (v.imagenes || []).join('\n');
         $('vCaracteristicas').value = (v.caracteristicas || []).join('\n');
+
+        // Load existing images into upload preview
+        uploadedImageUrls = (v.imagenes && v.imagenes.length) ? v.imagenes.slice() : (v.imagen ? [v.imagen] : []);
+        renderUploadedImages();
 
         openModal();
     }
@@ -288,8 +295,8 @@
             peritaje: true,
             descripcion: $('vDescripcion').value || '',
             destacado: $('vDestacado').checked,
-            imagen: $('vImagen').value || 'multimedia/vehicles/placeholder-car.jpg',
-            imagenes: $('vImagenes').value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean),
+            imagen: uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
+            imagenes: uploadedImageUrls.length ? uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
             caracteristicas: $('vCaracteristicas').value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean)
         };
 
@@ -365,10 +372,113 @@
             });
     });
 
+    // ========== IMAGE UPLOAD ==========
+    var uploadArea = $('uploadArea');
+    var fileInput = $('fileInput');
+
+    uploadArea.addEventListener('click', function() { fileInput.click(); });
+
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function() {
+        this.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            handleFiles(e.dataTransfer.files);
+        }
+    });
+
+    fileInput.addEventListener('change', function() {
+        if (this.files.length) {
+            handleFiles(this.files);
+            this.value = '';
+        }
+    });
+
+    function handleFiles(files) {
+        var fileArray = Array.from(files).filter(function(f) {
+            return f.type.startsWith('image/');
+        });
+        if (!fileArray.length) {
+            toast('Selecciona archivos de imagen validos', 'error');
+            return;
+        }
+
+        var total = fileArray.length;
+        var done = 0;
+        $('uploadProgress').style.display = 'block';
+        $('uploadStatus').textContent = 'Subiendo 0 de ' + total + '...';
+        $('progressFill').style.width = '0%';
+
+        fileArray.forEach(function(file) {
+            uploadFile(file, function() {
+                done++;
+                var pct = Math.round((done / total) * 100);
+                $('progressFill').style.width = pct + '%';
+                $('uploadStatus').textContent = 'Subiendo ' + done + ' de ' + total + '...';
+                if (done === total) {
+                    setTimeout(function() {
+                        $('uploadProgress').style.display = 'none';
+                    }, 1000);
+                    toast(total + ' imagen(es) subida(s)');
+                }
+            });
+        });
+    }
+
+    function uploadFile(file, onDone) {
+        var timestamp = Date.now();
+        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        var path = 'vehicles/' + timestamp + '_' + safeName;
+        var ref = window.storage.ref(path);
+
+        ref.put(file).then(function(snapshot) {
+            return snapshot.ref.getDownloadURL();
+        }).then(function(url) {
+            uploadedImageUrls.push(url);
+            renderUploadedImages();
+            if (onDone) onDone();
+        }).catch(function(err) {
+            toast('Error subiendo imagen: ' + err.message, 'error');
+            if (onDone) onDone();
+        });
+    }
+
+    function renderUploadedImages() {
+        var container = $('uploadedImages');
+        var html = '';
+        uploadedImageUrls.forEach(function(url, i) {
+            var isMain = (i === 0);
+            html += '<div class="uploaded-img' + (isMain ? ' main-img' : '') + '">' +
+                '<img src="' + url + '" alt="Foto ' + (i + 1) + '">' +
+                (isMain ? '<span class="img-badge">PRINCIPAL</span>' : '') +
+                '<button type="button" class="remove-img" onclick="adminPanel.removeImage(' + i + ')">&times;</button>' +
+            '</div>';
+        });
+        container.innerHTML = html;
+
+        // Update hidden fields
+        $('vImagen').value = uploadedImageUrls[0] || '';
+        $('vImagenes').value = uploadedImageUrls.join('\n');
+    }
+
+    function removeImage(index) {
+        uploadedImageUrls.splice(index, 1);
+        renderUploadedImages();
+    }
+
     // ========== EXPOSE FUNCTIONS ==========
     window.adminPanel = {
         editVehicle: editVehicle,
-        deleteVehicle: deleteVehicleFn
+        deleteVehicle: deleteVehicleFn,
+        removeImage: removeImage
     };
 
     // ========== INIT ==========

@@ -518,7 +518,7 @@
 
         var timestamp = Date.now();
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var path = 'vehicles/' + timestamp + '_' + safeName;
+        var path = 'cars/' + timestamp + '_' + safeName;
 
         try {
             var ref = window.storage.ref(path);

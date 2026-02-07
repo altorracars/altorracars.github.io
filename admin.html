@@ -318,14 +318,20 @@
                 <hr style="border-color: var(--admin-border); margin: 1rem 0;">
 
                 <div class="form-group">
-                    <label class="form-label">Imagen principal (URL)</label>
-                    <input type="text" id="vImagen" class="form-input" placeholder="multimedia/vehicles/mi-auto.webp">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Imagenes adicionales (URLs, una por linea)</label>
-                    <textarea id="vImagenes" class="form-textarea" placeholder="multimedia/vehicles/foto1.webp&#10;multimedia/vehicles/foto2.webp"></textarea>
-                    <div class="image-list" id="imagePreview"></div>
+                    <label class="form-label">Fotos del vehiculo</label>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📷</div>
+                        <p><strong>Haz clic aqui</strong> o arrastra las fotos</p>
+                        <p class="upload-hint">JPG, PNG o WebP - Maximo 5MB por imagen</p>
+                        <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+                    </div>
+                    <div id="uploadProgress" style="display:none; margin-top:0.5rem;">
+                        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                        <small id="uploadStatus" style="color: var(--admin-text-muted);">Subiendo...</small>
+                    </div>
+                    <div class="uploaded-images" id="uploadedImages"></div>
+                    <input type="hidden" id="vImagen">
+                    <input type="hidden" id="vImagenes">
                 </div>
 
                 <hr style="border-color: var(--admin-border); margin: 1rem 0;">

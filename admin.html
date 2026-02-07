@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin | ALTORRA CARS</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-container">
+    <div class="login-box">
+        <div class="login-logo">
+            <h1>ALTORRA CARS</h1>
+            <p>Panel de Administracion</p>
+        </div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label">Correo electronico</label>
+                <input type="email" id="loginEmail" class="form-input" required placeholder="admin@altorracars.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Contrasena</label>
+                <input type="password" id="loginPassword" class="form-input" required placeholder="Tu contrasena">
+            </div>
+            <div id="loginError" style="color: var(--admin-danger); font-size: 0.8rem; margin-bottom: 0.75rem; display: none;"></div>
+            <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Iniciar Sesion</button>
+        </form>
+    </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="admin-layout" style="display: none;">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+        <div class="sidebar-logo">
+            <h2>ALTORRA CARS</h2>
+            <small>Panel Admin</small>
+        </div>
+        <button class="nav-item active" data-section="dashboard">
+            <span>📊</span> Dashboard
+        </button>
+        <button class="nav-item" data-section="vehicles">
+            <span>🚗</span> Vehiculos
+        </button>
+        <button class="nav-item" data-section="brands">
+            <span>🏷</span> Marcas
+        </button>
+        <div class="nav-divider"></div>
+        <button class="nav-item" data-section="settings">
+            <span>⚙</span> Configuracion
+        </button>
+        <button class="nav-item" id="logoutBtn">
+            <span>🚪</span> Cerrar Sesion
+        </button>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <!-- DASHBOARD -->
+        <div id="sec-dashboard" class="section active">
+            <div class="page-header">
+                <h1>Dashboard</h1>
+                <span id="adminEmail" style="color: var(--admin-text-muted); font-size: 0.875rem;"></span>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Vehiculos</div>
+                    <div class="stat-value" id="statTotal">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Nuevos</div>
+                    <div class="stat-value" id="statNuevos">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Usados</div>
+                    <div class="stat-value" id="statUsados">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">En Oferta</div>
+                    <div class="stat-value" id="statOfertas">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Destacados</div>
+                    <div class="stat-value" id="statDestacados">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Marcas</div>
+                    <div class="stat-value" id="statMarcas">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VEHICLES -->
+        <div id="sec-vehicles" class="section">
+            <div class="page-header">
+                <h1>Vehiculos</h1>
+                <button class="btn btn-primary" id="btnAddVehicle">+ Agregar Vehiculo</button>
+            </div>
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>Inventario</h3>
+                    <input type="text" class="search-input" id="vehicleSearch" placeholder="Buscar vehiculo...">
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Imagen</th>
+                                <th>Vehiculo</th>
+                                <th>Tipo</th>
+                                <th>Categoria</th>
+                                <th>Precio</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vehiclesTableBody">
+                            <tr><td colspan="8" style="text-align:center; padding:2rem;">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- BRANDS -->
+        <div id="sec-brands" class="section">
+            <div class="page-header">
+                <h1>Marcas</h1>
+            </div>
+            <div class="table-container">
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Logo</th>
+                                <th>Nombre</th>
+                                <th>Descripcion</th>
+                                <th>Vehiculos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brandsTableBody">
+                            <tr><td colspan="4" style="text-align:center; padding:2rem;">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="sec-settings" class="section">
+            <div class="page-header">
+                <h1>Configuracion</h1>
+            </div>
+            <div class="stat-card" style="max-width: 500px;">
+                <h3 style="margin-bottom: 1rem;">Cambiar Contrasena</h3>
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label class="form-label">Nueva contrasena</label>
+                        <input type="password" id="newPassword" class="form-input" required minlength="6" placeholder="Minimo 6 caracteres">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Actualizar Contrasena</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- VEHICLE MODAL -->
+<div class="modal-overlay" id="vehicleModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle">Agregar Vehiculo</h2>
+            <button class="modal-close" id="closeModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="vehicleForm">
+                <input type="hidden" id="vId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Marca *</label>
+                        <select id="vMarca" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="chevrolet">Chevrolet</option>
+                            <option value="nissan">Nissan</option>
+                            <option value="renault">Renault</option>
+                            <option value="kia">Kia</option>
+                            <option value="mazda">Mazda</option>
+                            <option value="toyota">Toyota</option>
+                            <option value="hyundai">Hyundai</option>
+                            <option value="ford">Ford</option>
+                            <option value="honda">Honda</option>
+                            <option value="mitsubishi">Mitsubishi</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Modelo *</label>
+                        <input type="text" id="vModelo" class="form-input" required placeholder="Ej: Onix">
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label class="form-label">Ano *</label>
+                        <input type="number" id="vYear" class="form-input" required min="1990" max="2030" placeholder="2024">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipo *</label>
+                        <select id="vTipo" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="nuevo">Nuevo</option>
+                            <option value="usado">Usado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Categoria *</label>
+                        <select id="vCategoria" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="sedan">Sedan</option>
+                            <option value="suv">SUV</option>
+                            <option value="hatchback">Hatchback</option>
+                            <option value="pickup">Pickup</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label class="form-label">Precio *</label>
+                        <input type="number" id="vPrecio" class="form-input" required min="0" placeholder="75000000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Precio Oferta</label>
+                        <input type="number" id="vPrecioOferta" class="form-input" min="0" placeholder="Dejar vacio si no aplica">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kilometraje *</label>
+                        <input type="number" id="vKm" class="form-input" required min="0" placeholder="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Transmision *</label>
+                        <select id="vTransmision" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="automatica">Automatica</option>
+                            <option value="mecanica">Mecanica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Combustible *</label>
+                        <select id="vCombustible" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="gasolina">Gasolina</option>
+                            <option value="diesel">Diesel</option>
+                            <option value="electrico">Electrico</option>
+                            <option value="hibrido">Hibrido</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label class="form-label">Motor</label>
+                        <input type="text" id="vMotor" class="form-input" placeholder="1.0L Turbo">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Potencia</label>
+                        <input type="text" id="vPotencia" class="form-input" placeholder="116 HP">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Traccion</label>
+                        <input type="text" id="vTraccion" class="form-input" placeholder="Delantera">
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label class="form-label">Color</label>
+                        <input type="text" id="vColor" class="form-input" placeholder="Blanco">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Puertas</label>
+                        <input type="number" id="vPuertas" class="form-input" min="2" max="5" placeholder="5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pasajeros</label>
+                        <input type="number" id="vPasajeros" class="form-input" min="2" max="9" placeholder="5">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ubicacion</label>
+                    <input type="text" id="vUbicacion" class="form-input" placeholder="Barranquilla" value="Barranquilla">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Descripcion</label>
+                    <textarea id="vDescripcion" class="form-textarea" placeholder="Descripcion del vehiculo..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="vDestacado"> Destacado
+                    </label>
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="vOferta"> En Oferta
+                    </label>
+                </div>
+
+                <hr style="border-color: var(--admin-border); margin: 1rem 0;">
+
+                <div class="form-group">
+                    <label class="form-label">Imagen principal (URL)</label>
+                    <input type="text" id="vImagen" class="form-input" placeholder="multimedia/vehicles/mi-auto.webp">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Imagenes adicionales (URLs, una por linea)</label>
+                    <textarea id="vImagenes" class="form-textarea" placeholder="multimedia/vehicles/foto1.webp&#10;multimedia/vehicles/foto2.webp"></textarea>
+                    <div class="image-list" id="imagePreview"></div>
+                </div>
+
+                <hr style="border-color: var(--admin-border); margin: 1rem 0;">
+
+                <div class="form-group">
+                    <label class="form-label">Caracteristicas (una por linea)</label>
+                    <textarea id="vCaracteristicas" class="form-textarea" rows="5" placeholder="Camara de reversa&#10;Bluetooth&#10;Aire acondicionado"></textarea>
+                    <div class="tags-container" id="featuresPreview"></div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" id="cancelModal">Cancelar</button>
+            <button class="btn btn-primary" id="saveVehicle">Guardar Vehiculo</button>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2>Eliminar Vehiculo</h2>
+            <button class="modal-close" id="closeDeleteModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Estas seguro de eliminar <strong id="deleteVehicleName"></strong>?</p>
+            <p style="color: var(--admin-danger); margin-top: 0.5rem; font-size: 0.875rem;">Esta accion no se puede deshacer.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" id="cancelDelete">Cancelar</button>
+            <button class="btn btn-danger" id="confirmDelete">Eliminar</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="admin-toast" id="adminToast"></div>
+
+<!-- SCRIPTS -->
+<script src="js/firebase-config.js"></script>
+<script src="js/admin-panel.js"></script>
+</body>
+</html>

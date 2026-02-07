@@ -5,7 +5,8 @@
     var vehicles = [];
     var brands = [];
     var deleteTargetId = null;
-    var uploadedImageUrls = []; // URLs of uploaded images for current vehicle
+    var deleteBrandTargetId = null;
+    var uploadedImageUrls = [];
 
     // ========== HELPERS ==========
     function $(id) { return document.getElementById(id); }
@@ -114,6 +115,7 @@
         window.db.collection('marcas').get().then(function(snap) {
             brands = snap.docs.map(function(d) { return d.data(); });
             renderBrandsTable();
+            populateBrandSelect();
             updateStats();
         });
     }
@@ -127,6 +129,23 @@
         $('statMarcas').textContent = brands.length;
     }
 
+    // Populate brand select in vehicle form dynamically
+    function populateBrandSelect() {
+        var select = $('vMarca');
+        var currentVal = select.value;
+        // Keep first option
+        select.innerHTML = '<option value="">Seleccionar...</option>';
+        brands.sort(function(a, b) { return a.nombre.localeCompare(b.nombre); });
+        brands.forEach(function(b) {
+            var opt = document.createElement('option');
+            opt.value = b.id;
+            opt.textContent = b.nombre;
+            select.appendChild(opt);
+        });
+        // Restore selection if it was set
+        if (currentVal) select.value = currentVal;
+    }
+
     // ========== VEHICLES TABLE ==========
     function renderVehiclesTable(filter) {
         var filtered = vehicles;
@@ -137,7 +156,6 @@
             });
         }
 
-        // Sort by ID
         filtered.sort(function(a, b) { return a.id - b.id; });
 
         var html = '';
@@ -176,13 +194,18 @@
             var count = vehicles.filter(function(v) { return v.marca === b.id; }).length;
             html += '<tr>' +
                 '<td><img class="vehicle-thumb" src="' + (b.logo || '') + '" alt="' + b.nombre + '" onerror="this.style.display=\'none\'" style="width:40px;height:40px;object-fit:contain;"></td>' +
+                '<td><code>' + b.id + '</code></td>' +
                 '<td><strong>' + b.nombre + '</strong></td>' +
                 '<td>' + (b.descripcion || '-') + '</td>' +
                 '<td>' + count + '</td>' +
+                '<td>' +
+                    '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editBrand(\'' + b.id + '\')">Editar</button> ' +
+                    '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteBrand(\'' + b.id + '\')">Eliminar</button>' +
+                '</td>' +
             '</tr>';
         });
 
-        if (!html) html = '<tr><td colspan="4" style="text-align:center; padding:2rem;">No hay marcas</td></tr>';
+        if (!html) html = '<tr><td colspan="6" style="text-align:center; padding:2rem;">No hay marcas</td></tr>';
         $('brandsTableBody').innerHTML = html;
     }
 
@@ -198,6 +221,8 @@
         uploadedImageUrls = [];
         $('uploadedImages').innerHTML = '';
         $('uploadProgress').style.display = 'none';
+        $('uploadError').style.display = 'none';
+        $('manualImageUrl').value = '';
         $('featuresPreview').innerHTML = '';
     }
 
@@ -206,8 +231,12 @@
         $('vId').value = '';
         $('vehicleForm').reset();
         $('vUbicacion').value = 'Barranquilla';
+        $('vDireccion').value = 'Electrica';
+        $('vRevision').checked = true;
+        $('vPeritaje').checked = true;
         uploadedImageUrls = [];
         $('uploadedImages').innerHTML = '';
+        $('uploadError').style.display = 'none';
         openModal();
     });
 
@@ -223,7 +252,6 @@
         e.preventDefault();
     });
 
-    // Prevent Enter key in inputs from triggering unexpected behavior
     $('vehicleForm').addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
             e.preventDefault();
@@ -249,19 +277,26 @@
         $('vCombustible').value = v.combustible || '';
         $('vMotor').value = v.motor || '';
         $('vPotencia').value = v.potencia || '';
+        $('vCilindraje').value = v.cilindraje || '';
         $('vTraccion').value = v.traccion || '';
+        $('vDireccion').value = v.direccion || 'Electrica';
         $('vColor').value = v.color || '';
         $('vPuertas').value = v.puertas || 5;
         $('vPasajeros').value = v.pasajeros || 5;
         $('vUbicacion').value = v.ubicacion || 'Barranquilla';
+        $('vPlaca').value = v.placa || '';
+        $('vFasecolda').value = v.codigoFasecolda || '';
         $('vDescripcion').value = v.descripcion || '';
         $('vDestacado').checked = !!v.destacado;
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
+        $('vRevision').checked = v.revisionTecnica !== false;
+        $('vPeritaje').checked = v.peritaje !== false;
         $('vCaracteristicas').value = (v.caracteristicas || []).join('\n');
 
-        // Load existing images into upload preview
+        // Load existing images
         uploadedImageUrls = (v.imagenes && v.imagenes.length) ? v.imagenes.slice() : (v.imagen ? [v.imagen] : []);
         renderUploadedImages();
+        $('uploadError').style.display = 'none';
 
         openModal();
     }
@@ -294,17 +329,18 @@
             combustible: $('vCombustible').value,
             motor: $('vMotor').value || '',
             potencia: $('vPotencia').value || '',
+            cilindraje: $('vCilindraje').value || '',
             traccion: $('vTraccion').value || '',
+            direccion: $('vDireccion').value || 'Electrica',
             color: $('vColor').value || '',
             puertas: parseInt($('vPuertas').value) || 5,
             pasajeros: parseInt($('vPasajeros').value) || 5,
             asientos: parseInt($('vPasajeros').value) || 5,
-            direccion: 'Electrica',
             ubicacion: $('vUbicacion').value || 'Barranquilla',
-            placa: 'Disponible al contactar',
-            codigoFasecolda: 'Consultar',
-            revisionTecnica: true,
-            peritaje: true,
+            placa: $('vPlaca').value || 'Disponible al contactar',
+            codigoFasecolda: $('vFasecolda').value || 'Consultar',
+            revisionTecnica: $('vRevision').checked,
+            peritaje: $('vPeritaje').checked,
             descripcion: $('vDescripcion').value || '',
             destacado: $('vDestacado').checked,
             imagen: uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
@@ -414,7 +450,19 @@
         }
     });
 
+    function showUploadError(msg) {
+        var el = $('uploadError');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
     function handleFiles(files) {
+        // Check Firebase Storage is available
+        if (!window.storage) {
+            showUploadError('Firebase Storage no esta disponible. Usa la opcion de URL manual abajo para agregar imagenes.');
+            return;
+        }
+
         var fileArray = Array.from(files).filter(function(f) {
             return f.type.startsWith('image/');
         });
@@ -423,15 +471,25 @@
             return;
         }
 
+        // Check file sizes (max 5MB each)
+        var oversized = fileArray.filter(function(f) { return f.size > 5 * 1024 * 1024; });
+        if (oversized.length) {
+            toast('Algunas imagenes superan 5MB. Reduce su tamano.', 'error');
+            return;
+        }
+
+        $('uploadError').style.display = 'none';
         var total = fileArray.length;
         var done = 0;
+        var errors = 0;
         $('uploadProgress').style.display = 'block';
         $('uploadStatus').textContent = 'Subiendo 0 de ' + total + '...';
         $('progressFill').style.width = '0%';
 
         fileArray.forEach(function(file) {
-            uploadFile(file, function() {
+            uploadFile(file, function(success) {
                 done++;
+                if (!success) errors++;
                 var pct = Math.round((done / total) * 100);
                 $('progressFill').style.width = pct + '%';
                 $('uploadStatus').textContent = 'Subiendo ' + done + ' de ' + total + '...';
@@ -439,29 +497,78 @@
                     setTimeout(function() {
                         $('uploadProgress').style.display = 'none';
                     }, 1000);
-                    toast(total + ' imagen(es) subida(s)');
+                    if (errors === total) {
+                        showUploadError('No se pudieron subir las imagenes. Verifica que Firebase Storage este habilitado en tu proyecto de Firebase (console.firebase.google.com > Storage) y que las reglas permitan escritura autenticada. Mientras tanto, usa la opcion de URL manual abajo.');
+                    } else if (errors > 0) {
+                        toast((total - errors) + ' subida(s), ' + errors + ' error(es)', 'error');
+                    } else {
+                        toast(total + ' imagen(es) subida(s)');
+                    }
                 }
             });
         });
     }
 
     function uploadFile(file, onDone) {
+        if (!window.storage) {
+            showUploadError('Firebase Storage no disponible. Usa URLs manuales.');
+            if (onDone) onDone(false);
+            return;
+        }
+
         var timestamp = Date.now();
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         var path = 'vehicles/' + timestamp + '_' + safeName;
-        var ref = window.storage.ref(path);
 
-        ref.put(file).then(function(snapshot) {
-            return snapshot.ref.getDownloadURL();
-        }).then(function(url) {
-            uploadedImageUrls.push(url);
-            renderUploadedImages();
-            if (onDone) onDone();
-        }).catch(function(err) {
-            toast('Error subiendo imagen: ' + err.message, 'error');
-            if (onDone) onDone();
-        });
+        try {
+            var ref = window.storage.ref(path);
+            ref.put(file).then(function(snapshot) {
+                return snapshot.ref.getDownloadURL();
+            }).then(function(url) {
+                uploadedImageUrls.push(url);
+                renderUploadedImages();
+                if (onDone) onDone(true);
+            }).catch(function(err) {
+                console.error('Upload error:', err);
+                var errorMsg = 'Error subiendo imagen: ';
+                if (err.code === 'storage/unauthorized') {
+                    errorMsg += 'No autorizado. Ve a Firebase Console > Storage > Rules y configura reglas que permitan escritura autenticada.';
+                } else if (err.code === 'storage/object-not-found') {
+                    errorMsg += 'Bucket no encontrado. Activa Storage en Firebase Console.';
+                } else if (err.code === 'storage/retry-limit-exceeded') {
+                    errorMsg += 'Tiempo de espera agotado. Revisa tu conexion a internet.';
+                } else if (err.code === 'storage/unknown') {
+                    errorMsg += 'Error desconocido. Verifica que Storage este habilitado en Firebase Console > Storage.';
+                } else {
+                    errorMsg += err.message || err.code || 'Error desconocido';
+                }
+                showUploadError(errorMsg);
+                if (onDone) onDone(false);
+            });
+        } catch (e) {
+            console.error('Storage ref error:', e);
+            showUploadError('Error accediendo a Firebase Storage. Verifica la configuracion del proyecto.');
+            if (onDone) onDone(false);
+        }
     }
+
+    // Manual URL image input
+    $('btnAddImageUrl').addEventListener('click', function() {
+        var url = $('manualImageUrl').value.trim();
+        if (!url) {
+            toast('Ingresa una URL de imagen', 'error');
+            return;
+        }
+        // Basic URL validation
+        if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('multimedia/')) {
+            toast('Ingresa una URL valida (https://...)', 'error');
+            return;
+        }
+        uploadedImageUrls.push(url);
+        renderUploadedImages();
+        $('manualImageUrl').value = '';
+        toast('Imagen agregada');
+    });
 
     function renderUploadedImages() {
         var container = $('uploadedImages');
@@ -469,14 +576,13 @@
         uploadedImageUrls.forEach(function(url, i) {
             var isMain = (i === 0);
             html += '<div class="uploaded-img' + (isMain ? ' main-img' : '') + '">' +
-                '<img src="' + url + '" alt="Foto ' + (i + 1) + '">' +
+                '<img src="' + url + '" alt="Foto ' + (i + 1) + '" onerror="this.style.opacity=\'0.3\'">' +
                 (isMain ? '<span class="img-badge">PRINCIPAL</span>' : '') +
                 '<button type="button" class="remove-img" onclick="adminPanel.removeImage(' + i + ')">&times;</button>' +
             '</div>';
         });
         container.innerHTML = html;
 
-        // Update hidden fields
         $('vImagen').value = uploadedImageUrls[0] || '';
         $('vImagenes').value = uploadedImageUrls.join('\n');
     }
@@ -486,11 +592,156 @@
         renderUploadedImages();
     }
 
+    // ========== BRANDS CRUD ==========
+    function openBrandModal() {
+        $('brandModal').classList.add('active');
+    }
+
+    function closeBrandModalFn() {
+        $('brandModal').classList.remove('active');
+        $('brandForm').reset();
+        $('bOriginalId').value = '';
+        $('brandLogoPreview').innerHTML = '';
+    }
+
+    // Prevent Enter from submitting brand form
+    $('brandForm').addEventListener('submit', function(e) { e.preventDefault(); });
+    $('brandForm').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') e.preventDefault();
+    });
+
+    $('btnAddBrand').addEventListener('click', function() {
+        $('brandModalTitle').textContent = 'Agregar Marca';
+        $('bOriginalId').value = '';
+        $('brandForm').reset();
+        $('brandLogoPreview').innerHTML = '';
+        $('bId').readOnly = false;
+        openBrandModal();
+    });
+
+    $('closeBrandModal').addEventListener('click', closeBrandModalFn);
+    $('cancelBrandModal').addEventListener('click', closeBrandModalFn);
+
+    $('brandModal').addEventListener('click', function(e) {
+        if (e.target === this) closeBrandModalFn();
+    });
+
+    // Logo preview
+    $('bLogo').addEventListener('input', function() {
+        var url = this.value.trim();
+        if (url) {
+            $('brandLogoPreview').innerHTML = '<img src="' + url + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#1a1a2e;padding:4px;" onerror="this.parentNode.innerHTML=\'<small style=color:var(--admin-danger)>URL no valida</small>\'">';
+        } else {
+            $('brandLogoPreview').innerHTML = '';
+        }
+    });
+
+    function editBrand(brandId) {
+        var b = brands.find(function(x) { return x.id === brandId; });
+        if (!b) return;
+
+        $('brandModalTitle').textContent = 'Editar Marca: ' + b.nombre;
+        $('bOriginalId').value = b.id;
+        $('bId').value = b.id;
+        $('bId').readOnly = true; // Can't change ID when editing
+        $('bNombre').value = b.nombre || '';
+        $('bDescripcion').value = b.descripcion || '';
+        $('bLogo').value = b.logo || '';
+
+        // Trigger logo preview
+        if (b.logo) {
+            $('brandLogoPreview').innerHTML = '<img src="' + b.logo + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#1a1a2e;padding:4px;">';
+        }
+
+        openBrandModal();
+    }
+
+    $('saveBrand').addEventListener('click', function() {
+        var form = $('brandForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        var brandId = $('bId').value.trim().toLowerCase();
+        var originalId = $('bOriginalId').value;
+        var isEdit = !!originalId;
+
+        var brandData = {
+            id: brandId,
+            nombre: $('bNombre').value.trim(),
+            descripcion: $('bDescripcion').value.trim(),
+            logo: $('bLogo').value.trim()
+        };
+
+        var btn = $('saveBrand');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+        window.db.collection('marcas').doc(brandId).set(brandData)
+            .then(function() {
+                toast(isEdit ? 'Marca actualizada' : 'Marca agregada');
+                closeBrandModalFn();
+                loadData();
+            })
+            .catch(function(err) {
+                toast('Error: ' + err.message, 'error');
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Guardar Marca';
+            });
+    });
+
+    function deleteBrandFn(brandId) {
+        var b = brands.find(function(x) { return x.id === brandId; });
+        if (!b) return;
+
+        deleteBrandTargetId = brandId;
+        $('deleteBrandName').textContent = b.nombre;
+        $('deleteBrandModal').classList.add('active');
+    }
+
+    $('closeDeleteBrandModal').addEventListener('click', function() {
+        $('deleteBrandModal').classList.remove('active');
+        deleteBrandTargetId = null;
+    });
+
+    $('cancelDeleteBrand').addEventListener('click', function() {
+        $('deleteBrandModal').classList.remove('active');
+        deleteBrandTargetId = null;
+    });
+
+    $('confirmDeleteBrand').addEventListener('click', function() {
+        if (!deleteBrandTargetId) return;
+
+        var btn = $('confirmDeleteBrand');
+        btn.disabled = true;
+        btn.textContent = 'Eliminando...';
+
+        window.db.collection('marcas').doc(deleteBrandTargetId).delete()
+            .then(function() {
+                toast('Marca eliminada');
+                $('deleteBrandModal').classList.remove('active');
+                deleteBrandTargetId = null;
+                loadData();
+            })
+            .catch(function(err) {
+                toast('Error: ' + err.message, 'error');
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Eliminar';
+            });
+    });
+
     // ========== EXPOSE FUNCTIONS ==========
     window.adminPanel = {
         editVehicle: editVehicle,
         deleteVehicle: deleteVehicleFn,
-        removeImage: removeImage
+        removeImage: removeImage,
+        editBrand: editBrand,
+        deleteBrand: deleteBrandFn
     };
 
     // ========== INIT ==========

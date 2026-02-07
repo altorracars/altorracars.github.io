@@ -132,6 +132,7 @@
         <div id="sec-brands" class="section">
             <div class="page-header">
                 <h1>Marcas</h1>
+                <button class="btn btn-primary" id="btnAddBrand">+ Agregar Marca</button>
             </div>
             <div class="table-container">
                 <div style="overflow-x: auto;">
@@ -139,13 +140,15 @@
                         <thead>
                             <tr>
                                 <th>Logo</th>
+                                <th>ID</th>
                                 <th>Nombre</th>
                                 <th>Descripcion</th>
                                 <th>Vehiculos</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="brandsTableBody">
-                            <tr><td colspan="4" style="text-align:center; padding:2rem;">Cargando...</td></tr>
+                            <tr><td colspan="6" style="text-align:center; padding:2rem;">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -187,16 +190,7 @@
                         <label class="form-label">Marca *</label>
                         <select id="vMarca" class="form-select" required>
                             <option value="">Seleccionar...</option>
-                            <option value="chevrolet">Chevrolet</option>
-                            <option value="nissan">Nissan</option>
-                            <option value="renault">Renault</option>
-                            <option value="kia">Kia</option>
-                            <option value="mazda">Mazda</option>
-                            <option value="toyota">Toyota</option>
-                            <option value="hyundai">Hyundai</option>
-                            <option value="ford">Ford</option>
-                            <option value="honda">Honda</option>
-                            <option value="mitsubishi">Mitsubishi</option>
+                            <!-- Se carga dinamicamente desde Firestore -->
                         </select>
                     </div>
                     <div class="form-group">
@@ -276,16 +270,32 @@
                         <input type="text" id="vPotencia" class="form-input" placeholder="116 HP">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Traccion</label>
-                        <input type="text" id="vTraccion" class="form-input" placeholder="Delantera">
+                        <label class="form-label">Cilindraje</label>
+                        <input type="text" id="vCilindraje" class="form-input" placeholder="1000 cc">
                     </div>
                 </div>
 
                 <div class="form-row-3">
                     <div class="form-group">
+                        <label class="form-label">Traccion</label>
+                        <input type="text" id="vTraccion" class="form-input" placeholder="Delantera">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Direccion</label>
+                        <select id="vDireccion" class="form-select">
+                            <option value="Electrica">Electrica</option>
+                            <option value="Hidraulica">Hidraulica</option>
+                            <option value="Mecanica">Mecanica</option>
+                            <option value="Electrohidraulica">Electrohidraulica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Color</label>
                         <input type="text" id="vColor" class="form-input" placeholder="Blanco">
                     </div>
+                </div>
+
+                <div class="form-row-3">
                     <div class="form-group">
                         <label class="form-label">Puertas</label>
                         <input type="number" id="vPuertas" class="form-input" min="2" max="5" placeholder="5">
@@ -294,24 +304,40 @@
                         <label class="form-label">Pasajeros</label>
                         <input type="number" id="vPasajeros" class="form-input" min="2" max="9" placeholder="5">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Ubicacion</label>
+                        <input type="text" id="vUbicacion" class="form-input" placeholder="Barranquilla" value="Barranquilla">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Ubicacion</label>
-                    <input type="text" id="vUbicacion" class="form-input" placeholder="Barranquilla" value="Barranquilla">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Placa</label>
+                        <input type="text" id="vPlaca" class="form-input" placeholder="Disponible al contactar">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Codigo Fasecolda</label>
+                        <input type="text" id="vFasecolda" class="form-input" placeholder="Consultar">
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Descripcion</label>
-                    <textarea id="vDescripcion" class="form-textarea" placeholder="Descripcion del vehiculo..."></textarea>
+                    <textarea id="vDescripcion" class="form-textarea" rows="4" placeholder="Descripcion detallada del vehiculo..."></textarea>
                 </div>
 
-                <div class="form-row">
+                <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 1rem;">
                     <label class="form-checkbox">
                         <input type="checkbox" id="vDestacado"> Destacado
                     </label>
                     <label class="form-checkbox">
                         <input type="checkbox" id="vOferta"> En Oferta
+                    </label>
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="vRevision" checked> Revision Tecnico-Mecanica
+                    </label>
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="vPeritaje" checked> Peritaje Realizado
                     </label>
                 </div>
 
@@ -328,6 +354,14 @@
                     <div id="uploadProgress" style="display:none; margin-top:0.5rem;">
                         <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
                         <small id="uploadStatus" style="color: var(--admin-text-muted);">Subiendo...</small>
+                    </div>
+                    <div id="uploadError" style="display:none; margin-top:0.5rem; padding:0.75rem; background:rgba(248,81,73,0.1); border:1px solid var(--admin-danger); border-radius:6px; font-size:0.8rem; color:var(--admin-danger);"></div>
+                    <div style="margin-top:0.75rem;">
+                        <label class="form-label" style="font-size:0.8rem; color: var(--admin-text-muted);">O agrega URLs de imagenes manualmente:</label>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input type="text" id="manualImageUrl" class="form-input" placeholder="https://ejemplo.com/imagen.jpg" style="flex:1;">
+                            <button type="button" class="btn btn-ghost btn-sm" id="btnAddImageUrl">+ Agregar</button>
+                        </div>
                     </div>
                     <div class="uploaded-images" id="uploadedImages"></div>
                     <input type="hidden" id="vImagen">
@@ -364,6 +398,60 @@
         <div class="modal-footer">
             <button class="btn btn-ghost" id="cancelDelete">Cancelar</button>
             <button class="btn btn-danger" id="confirmDelete">Eliminar</button>
+        </div>
+    </div>
+</div>
+
+<!-- BRAND MODAL -->
+<div class="modal-overlay" id="brandModal">
+    <div class="modal" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 id="brandModalTitle">Agregar Marca</h2>
+            <button class="modal-close" id="closeBrandModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="brandForm">
+                <input type="hidden" id="bOriginalId">
+                <div class="form-group">
+                    <label class="form-label">ID (clave unica, minusculas, sin espacios) *</label>
+                    <input type="text" id="bId" class="form-input" required placeholder="toyota" pattern="[a-z0-9_-]+">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nombre *</label>
+                    <input type="text" id="bNombre" class="form-input" required placeholder="Toyota">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripcion</label>
+                    <input type="text" id="bDescripcion" class="form-input" placeholder="Fabricante japones de vehiculos">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">URL del Logo *</label>
+                    <input type="text" id="bLogo" class="form-input" required placeholder="multimedia/Logos/Toyota.webp">
+                    <div id="brandLogoPreview" style="margin-top:0.5rem;"></div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" id="cancelBrandModal">Cancelar</button>
+            <button class="btn btn-primary" id="saveBrand">Guardar Marca</button>
+        </div>
+    </div>
+</div>
+
+<!-- BRAND DELETE CONFIRM -->
+<div class="modal-overlay" id="deleteBrandModal">
+    <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2>Eliminar Marca</h2>
+            <button class="modal-close" id="closeDeleteBrandModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Estas seguro de eliminar la marca <strong id="deleteBrandName"></strong>?</p>
+            <p style="color: var(--admin-danger); margin-top: 0.5rem; font-size: 0.875rem;">Los vehiculos asociados no se eliminaran, pero quedaran sin marca valida.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" id="cancelDeleteBrand">Cancelar</button>
+            <button class="btn btn-danger" id="confirmDeleteBrand">Eliminar</button>
         </div>
     </div>
 </div>

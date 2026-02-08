@@ -34,8 +34,18 @@
 <!-- ADMIN PANEL -->
 <div id="adminPanel" class="admin-layout" style="display: none;">
 
+    <!-- MOBILE TOP BAR -->
+    <div class="mobile-topbar">
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="Abrir menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="mobile-topbar-logo">ALTORRA CARS <small>Admin</small></div>
+        <button class="btn btn-ghost btn-sm" id="mobileLogoutBtn" style="color:var(--admin-text-muted);font-size:0.75rem;">Salir</button>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- SIDEBAR -->
-    <nav class="sidebar">
+    <nav class="sidebar" id="adminSidebar">
         <div class="sidebar-logo">
             <h2>ALTORRA CARS</h2>
             <small>Panel Admin</small>

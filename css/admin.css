@@ -611,6 +611,21 @@ tbody tr:hover {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ESTIMATOR */
+.est-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.est-item {
+    padding: 0.25rem 0;
+}
+
+@media (max-width: 600px) {
+    .est-grid { grid-template-columns: 1fr; }
+}
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
     .sidebar { display: none; }

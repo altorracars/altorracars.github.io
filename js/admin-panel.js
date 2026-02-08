@@ -8,6 +8,22 @@
     var deleteBrandTargetId = null;
     var uploadedImageUrls = [];
 
+    // ========== CONFIG ==========
+    var UPLOAD_CONFIG = {
+        maxFileSizeMB: 2,
+        maxWidthPx: 1200,
+        compressionQuality: 0.75,
+        allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+        storagePath: 'cars/'
+    };
+
+    var FREE_TIER = {
+        storageGB: 5,
+        egressGB: 100,
+        classAOps: 5000,
+        classBOps: 50000
+    };
+
     // ========== HELPERS ==========
     function $(id) { return document.getElementById(id); }
 
@@ -21,6 +37,80 @@
     function formatPrice(n) {
         if (!n) return '-';
         return '$' + Number(n).toLocaleString('es-CO');
+    }
+
+    // ========== IMAGE COMPRESSION ==========
+    function compressImage(file) {
+        return new Promise(function(resolve, reject) {
+            // If already small enough and is webp, skip compression
+            if (file.size <= 200 * 1024 && file.type === 'image/webp') {
+                resolve(file);
+                return;
+            }
+
+            var img = new Image();
+            var canvas = document.createElement('canvas');
+            var reader = new FileReader();
+
+            reader.onload = function(e) {
+                img.onload = function() {
+                    // Calculate new dimensions (max 1200px wide, maintain ratio)
+                    var maxW = UPLOAD_CONFIG.maxWidthPx;
+                    var w = img.width;
+                    var h = img.height;
+
+                    if (w > maxW) {
+                        h = Math.round(h * (maxW / w));
+                        w = maxW;
+                    }
+
+                    canvas.width = w;
+                    canvas.height = h;
+
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    // Try WebP first, fallback to JPEG
+                    var outputType = 'image/webp';
+                    var quality = UPLOAD_CONFIG.compressionQuality;
+
+                    canvas.toBlob(function(blob) {
+                        if (!blob) {
+                            // WebP not supported, try JPEG
+                            canvas.toBlob(function(jpegBlob) {
+                                if (!jpegBlob) {
+                                    resolve(file); // Give up, use original
+                                    return;
+                                }
+                                var ext = '.jpg';
+                                var name = file.name.replace(/\.[^.]+$/, '') + '_compressed' + ext;
+                                var compressed = new File([jpegBlob], name, { type: 'image/jpeg' });
+                                console.log('Compressed: ' + (file.size / 1024).toFixed(0) + 'KB -> ' + (compressed.size / 1024).toFixed(0) + 'KB (JPEG)');
+                                resolve(compressed);
+                            }, 'image/jpeg', quality);
+                            return;
+                        }
+                        var ext = '.webp';
+                        var name = file.name.replace(/\.[^.]+$/, '') + '_compressed' + ext;
+                        var compressed = new File([blob], name, { type: outputType });
+                        console.log('Compressed: ' + (file.size / 1024).toFixed(0) + 'KB -> ' + (compressed.size / 1024).toFixed(0) + 'KB (WebP)');
+                        resolve(compressed);
+                    }, outputType, quality);
+                };
+
+                img.onerror = function() {
+                    reject(new Error('No se pudo leer la imagen'));
+                };
+
+                img.src = e.target.result;
+            };
+
+            reader.onerror = function() {
+                reject(new Error('No se pudo leer el archivo'));
+            };
+
+            reader.readAsDataURL(file);
+        });
     }
 
     // ========== AUTH ==========
@@ -111,6 +201,7 @@
             vehicles = snap.docs.map(function(d) { return d.data(); });
             renderVehiclesTable();
             updateStats();
+            updateEstimator();
         });
         window.db.collection('marcas').get().then(function(snap) {
             brands = snap.docs.map(function(d) { return d.data(); });
@@ -133,7 +224,6 @@
     function populateBrandSelect() {
         var select = $('vMarca');
         var currentVal = select.value;
-        // Keep first option
         select.innerHTML = '<option value="">Seleccionar...</option>';
         brands.sort(function(a, b) { return a.nombre.localeCompare(b.nombre); });
         brands.forEach(function(b) {
@@ -142,8 +232,81 @@
             opt.textContent = b.nombre;
             select.appendChild(opt);
         });
-        // Restore selection if it was set
         if (currentVal) select.value = currentVal;
+    }
+
+    // ========== STORAGE ESTIMATOR ==========
+    function updateEstimator() {
+        var el = $('storageEstimator');
+        if (!el) return;
+
+        // Count total images across all vehicles
+        var totalImages = 0;
+        vehicles.forEach(function(v) {
+            if (v.imagenes && v.imagenes.length) {
+                // Only count Storage URLs (not local/external)
+                v.imagenes.forEach(function(url) {
+                    if (url && (url.indexOf('firebasestorage') >= 0 || url.indexOf('storage.googleapis') >= 0)) {
+                        totalImages++;
+                    }
+                });
+            }
+        });
+
+        var avgSizeKB = 150; // After compression, avg ~150KB per image
+        var storageUsedMB = (totalImages * avgSizeKB) / 1024;
+        var storageUsedGB = storageUsedMB / 1024;
+        var storagePct = (storageUsedGB / FREE_TIER.storageGB) * 100;
+
+        // Estimate egress: assume each image loaded 3x/day avg * 30 days
+        var visitsInput = $('estVisitas');
+        var monthlyVisits = visitsInput ? (parseInt(visitsInput.value) || 500) : 500;
+        var avgImagesPerVisit = 8; // homepage + some detail pages
+        var egressGB = (monthlyVisits * avgImagesPerVisit * avgSizeKB) / (1024 * 1024);
+        var egressPct = (egressGB / FREE_TIER.egressGB) * 100;
+
+        var classAUsed = totalImages; // 1 upload per image
+        var classAPct = (classAUsed / FREE_TIER.classAOps) * 100;
+
+        // Downloads = visits * images per visit
+        var classBUsed = monthlyVisits * avgImagesPerVisit;
+        var classBPct = (classBUsed / FREE_TIER.classBOps) * 100;
+
+        var maxPct = Math.max(storagePct, egressPct, classAPct, classBPct);
+        var alertClass = maxPct >= 70 ? 'est-warning' : 'est-safe';
+
+        var html = '<div class="est-grid">' +
+            renderEstBar('Almacenamiento', storageUsedMB.toFixed(1) + ' MB', storageUsedGB.toFixed(3) + ' / ' + FREE_TIER.storageGB + ' GB', storagePct) +
+            renderEstBar('Egreso mensual', egressGB.toFixed(2) + ' GB', egressGB.toFixed(2) + ' / ' + FREE_TIER.egressGB + ' GB', egressPct) +
+            renderEstBar('Op. Clase A (subidas)', classAUsed, classAUsed + ' / ' + FREE_TIER.classAOps.toLocaleString(), classAPct) +
+            renderEstBar('Op. Clase B (lecturas)', classBUsed.toLocaleString(), classBUsed.toLocaleString() + ' / ' + FREE_TIER.classBOps.toLocaleString(), classBPct) +
+        '</div>';
+
+        if (maxPct >= 70) {
+            html += '<div style="margin-top:0.75rem;padding:0.5rem 0.75rem;background:rgba(210,153,34,0.15);border:1px solid var(--admin-warning);border-radius:6px;font-size:0.8rem;color:var(--admin-warning);">' +
+                '⚠ Te estas acercando al limite gratuito. Considera reducir imagenes o visitas.' +
+            '</div>';
+        } else {
+            html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--admin-text-muted);">' +
+                totalImages + ' imagenes en Storage | Compresion automatica activa (~150KB/img)' +
+            '</div>';
+        }
+
+        el.innerHTML = html;
+    }
+
+    function renderEstBar(label, value, detail, pct) {
+        var color = pct >= 70 ? 'var(--admin-warning)' : pct >= 90 ? 'var(--admin-danger)' : 'var(--admin-success)';
+        var clampedPct = Math.min(pct, 100);
+        return '<div class="est-item">' +
+            '<div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:2px;">' +
+                '<span>' + label + '</span>' +
+                '<span style="color:var(--admin-text-muted);">' + detail + '</span>' +
+            '</div>' +
+            '<div style="height:6px;background:var(--admin-border);border-radius:3px;overflow:hidden;">' +
+                '<div style="height:100%;width:' + clampedPct + '%;background:' + color + ';border-radius:3px;transition:width 0.3s;"></div>' +
+            '</div>' +
+        '</div>';
     }
 
     // ========== VEHICLES TABLE ==========
@@ -348,7 +511,6 @@
             caracteristicas: $('vCaracteristicas').value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean)
         };
 
-        // Ensure main image is in imagenes array
         if (vehicleData.imagen && vehicleData.imagenes.indexOf(vehicleData.imagen) === -1) {
             vehicleData.imagenes.unshift(vehicleData.imagen);
         }
@@ -457,24 +619,27 @@
     }
 
     function handleFiles(files) {
-        // Check Firebase Storage is available
         if (!window.storage) {
-            showUploadError('Firebase Storage no esta disponible. Usa la opcion de URL manual abajo para agregar imagenes.');
+            showUploadError('Firebase Storage no esta disponible. Usa la opcion de URL manual abajo.');
             return;
         }
 
-        var fileArray = Array.from(files).filter(function(f) {
-            return f.type.startsWith('image/');
+        var fileArray = Array.from(files);
+
+        // Validate file types
+        var invalidType = fileArray.filter(function(f) {
+            return UPLOAD_CONFIG.allowedTypes.indexOf(f.type) === -1;
         });
-        if (!fileArray.length) {
-            toast('Selecciona archivos de imagen validos', 'error');
+        if (invalidType.length) {
+            showUploadError('Formatos permitidos: JPG, PNG, WebP. Archivos rechazados: ' + invalidType.map(function(f) { return f.name; }).join(', '));
             return;
         }
 
-        // Check file sizes (max 5MB each)
-        var oversized = fileArray.filter(function(f) { return f.size > 5 * 1024 * 1024; });
+        // Validate file sizes (before compression)
+        var maxBytes = UPLOAD_CONFIG.maxFileSizeMB * 1024 * 1024;
+        var oversized = fileArray.filter(function(f) { return f.size > maxBytes * 5; }); // Allow up to 10MB raw, compression will reduce
         if (oversized.length) {
-            toast('Algunas imagenes superan 5MB. Reduce su tamano.', 'error');
+            showUploadError('Imagenes demasiado grandes (max 10MB original). Reduce el tamano antes de subir.');
             return;
         }
 
@@ -483,73 +648,102 @@
         var done = 0;
         var errors = 0;
         $('uploadProgress').style.display = 'block';
-        $('uploadStatus').textContent = 'Subiendo 0 de ' + total + '...';
+        $('uploadStatus').textContent = 'Comprimiendo y subiendo 0 de ' + total + '...';
         $('progressFill').style.width = '0%';
 
         fileArray.forEach(function(file) {
-            uploadFile(file, function(success) {
+            // Compress then upload
+            compressImage(file).then(function(compressed) {
+                // Check compressed size
+                if (compressed.size > UPLOAD_CONFIG.maxFileSizeMB * 1024 * 1024) {
+                    console.warn('Compressed file still too large: ' + (compressed.size / 1024).toFixed(0) + 'KB');
+                }
+                return uploadFileToStorage(compressed);
+            }).then(function(success) {
                 done++;
                 if (!success) errors++;
-                var pct = Math.round((done / total) * 100);
-                $('progressFill').style.width = pct + '%';
-                $('uploadStatus').textContent = 'Subiendo ' + done + ' de ' + total + '...';
-                if (done === total) {
-                    setTimeout(function() {
-                        $('uploadProgress').style.display = 'none';
-                    }, 1000);
-                    if (errors === total) {
-                        showUploadError('No se pudieron subir las imagenes. Verifica que Firebase Storage este habilitado en tu proyecto de Firebase (console.firebase.google.com > Storage) y que las reglas permitan escritura autenticada. Mientras tanto, usa la opcion de URL manual abajo.');
-                    } else if (errors > 0) {
-                        toast((total - errors) + ' subida(s), ' + errors + ' error(es)', 'error');
-                    } else {
-                        toast(total + ' imagen(es) subida(s)');
-                    }
-                }
+                updateUploadProgress(done, total, errors);
+            }).catch(function(err) {
+                console.error('Compress/upload error:', err);
+                done++;
+                errors++;
+                updateUploadProgress(done, total, errors);
             });
         });
     }
 
-    function uploadFile(file, onDone) {
-        if (!window.storage) {
-            showUploadError('Firebase Storage no disponible. Usa URLs manuales.');
-            if (onDone) onDone(false);
-            return;
+    function updateUploadProgress(done, total, errors) {
+        var pct = Math.round((done / total) * 100);
+        $('progressFill').style.width = pct + '%';
+        $('uploadStatus').textContent = 'Comprimiendo y subiendo ' + done + ' de ' + total + '...';
+        if (done === total) {
+            setTimeout(function() {
+                $('uploadProgress').style.display = 'none';
+            }, 1000);
+            if (errors === total) {
+                showUploadError('No se pudieron subir las imagenes. Verifica que Firebase Storage este habilitado y las reglas permitan escritura autenticada (Firebase Console > Storage > Reglas). Mientras tanto, usa URL manual.');
+            } else if (errors > 0) {
+                toast((total - errors) + ' subida(s), ' + errors + ' error(es)', 'error');
+            } else {
+                toast(total + ' imagen(es) comprimida(s) y subida(s)');
+            }
         }
+    }
 
-        var timestamp = Date.now();
-        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var path = 'cars/' + timestamp + '_' + safeName;
+    function uploadFileToStorage(file) {
+        return new Promise(function(resolve) {
+            if (!window.storage) {
+                showUploadError('Firebase Storage no disponible. Usa URLs manuales.');
+                resolve(false);
+                return;
+            }
 
-        try {
-            var ref = window.storage.ref(path);
-            ref.put(file).then(function(snapshot) {
-                return snapshot.ref.getDownloadURL();
-            }).then(function(url) {
-                uploadedImageUrls.push(url);
-                renderUploadedImages();
-                if (onDone) onDone(true);
-            }).catch(function(err) {
-                console.error('Upload error:', err);
-                var errorMsg = 'Error subiendo imagen: ';
-                if (err.code === 'storage/unauthorized') {
-                    errorMsg += 'No autorizado. Ve a Firebase Console > Storage > Rules y configura reglas que permitan escritura autenticada.';
-                } else if (err.code === 'storage/object-not-found') {
-                    errorMsg += 'Bucket no encontrado. Activa Storage en Firebase Console.';
-                } else if (err.code === 'storage/retry-limit-exceeded') {
-                    errorMsg += 'Tiempo de espera agotado. Revisa tu conexion a internet.';
-                } else if (err.code === 'storage/unknown') {
-                    errorMsg += 'Error desconocido. Verifica que Storage este habilitado en Firebase Console > Storage.';
-                } else {
-                    errorMsg += err.message || err.code || 'Error desconocido';
-                }
-                showUploadError(errorMsg);
-                if (onDone) onDone(false);
-            });
-        } catch (e) {
-            console.error('Storage ref error:', e);
-            showUploadError('Error accediendo a Firebase Storage. Verifica la configuracion del proyecto.');
-            if (onDone) onDone(false);
-        }
+            var timestamp = Date.now();
+            var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            var path = UPLOAD_CONFIG.storagePath + timestamp + '_' + safeName;
+
+            // Diagnostic log
+            var user = window.auth.currentUser;
+            console.log('[Storage Upload] Diagnostico:');
+            console.log('  Bucket: ' + (window.storage.app.options.storageBucket || 'no definido'));
+            console.log('  Ruta: ' + path);
+            console.log('  Archivo: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB, ' + file.type + ')');
+            console.log('  Usuario: ' + (user ? user.email + ' (uid: ' + user.uid + ')' : 'NO AUTENTICADO'));
+
+            try {
+                var ref = window.storage.ref(path);
+                ref.put(file).then(function(snapshot) {
+                    return snapshot.ref.getDownloadURL();
+                }).then(function(url) {
+                    console.log('[Storage Upload] OK: ' + url);
+                    uploadedImageUrls.push(url);
+                    renderUploadedImages();
+                    resolve(true);
+                }).catch(function(err) {
+                    console.error('[Storage Upload] FALLO:', err);
+                    console.error('  error.code: ' + err.code);
+                    console.error('  error.message: ' + err.message);
+                    var errorMsg = 'Error subiendo imagen: ';
+                    if (err.code === 'storage/unauthorized') {
+                        errorMsg += 'No autorizado. Ve a Firebase Console > Storage > Reglas y permite escritura para usuarios autenticados en /cars/.';
+                    } else if (err.code === 'storage/object-not-found' || err.code === 'storage/bucket-not-found') {
+                        errorMsg += 'Bucket no encontrado. Verifica que Storage este activado en Firebase Console.';
+                    } else if (err.code === 'storage/retry-limit-exceeded' || err.code === 'storage/canceled') {
+                        errorMsg += 'Conexion fallida. Revisa tu internet.';
+                    } else if (err.code === 'storage/unknown') {
+                        errorMsg += 'Error desconocido. Abre la consola del navegador (F12) para ver detalles.';
+                    } else {
+                        errorMsg += (err.message || err.code || 'Error desconocido') + ' (Abre F12 > Console para diagnostico)';
+                    }
+                    showUploadError(errorMsg);
+                    resolve(false);
+                });
+            } catch (e) {
+                console.error('[Storage Upload] Excepcion:', e);
+                showUploadError('Error accediendo a Firebase Storage. Abre F12 > Console para diagnostico.');
+                resolve(false);
+            }
+        });
     }
 
     // Manual URL image input
@@ -559,7 +753,6 @@
             toast('Ingresa una URL de imagen', 'error');
             return;
         }
-        // Basic URL validation
         if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('multimedia/')) {
             toast('Ingresa una URL valida (https://...)', 'error');
             return;
@@ -604,7 +797,6 @@
         $('brandLogoPreview').innerHTML = '';
     }
 
-    // Prevent Enter from submitting brand form
     $('brandForm').addEventListener('submit', function(e) { e.preventDefault(); });
     $('brandForm').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') e.preventDefault();
@@ -626,7 +818,6 @@
         if (e.target === this) closeBrandModalFn();
     });
 
-    // Logo preview
     $('bLogo').addEventListener('input', function() {
         var url = this.value.trim();
         if (url) {
@@ -643,12 +834,11 @@
         $('brandModalTitle').textContent = 'Editar Marca: ' + b.nombre;
         $('bOriginalId').value = b.id;
         $('bId').value = b.id;
-        $('bId').readOnly = true; // Can't change ID when editing
+        $('bId').readOnly = true;
         $('bNombre').value = b.nombre || '';
         $('bDescripcion').value = b.descripcion || '';
         $('bLogo').value = b.logo || '';
 
-        // Trigger logo preview
         if (b.logo) {
             $('brandLogoPreview').innerHTML = '<img src="' + b.logo + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#1a1a2e;padding:4px;">';
         }
@@ -734,6 +924,14 @@
                 btn.textContent = 'Eliminar';
             });
     });
+
+    // ========== ESTIMATOR EVENTS ==========
+    var estVisitas = $('estVisitas');
+    if (estVisitas) {
+        estVisitas.addEventListener('input', function() {
+            updateEstimator();
+        });
+    }
 
     // ========== EXPOSE FUNCTIONS ==========
     window.adminPanel = {

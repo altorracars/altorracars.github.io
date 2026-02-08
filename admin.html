@@ -93,6 +93,20 @@
                     <div class="stat-value" id="statMarcas">-</div>
                 </div>
             </div>
+
+            <!-- STORAGE ESTIMATOR -->
+            <div class="table-container" style="margin-top: 1.5rem;">
+                <div class="table-header">
+                    <h3>Consumo Storage (Free Tier)</h3>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <label style="font-size:0.75rem;color:var(--admin-text-muted);">Visitas/mes:</label>
+                        <input type="number" id="estVisitas" class="search-input" value="500" min="0" max="100000" style="width:100px;">
+                    </div>
+                </div>
+                <div style="padding:1rem 1.25rem;" id="storageEstimator">
+                    <span style="color:var(--admin-text-muted);font-size:0.875rem;">Cargando datos...</span>
+                </div>
+            </div>
         </div>
 
         <!-- VEHICLES -->
@@ -348,8 +362,8 @@
                     <div class="upload-area" id="uploadArea">
                         <div class="upload-icon">📷</div>
                         <p><strong>Haz clic aqui</strong> o arrastra las fotos</p>
-                        <p class="upload-hint">JPG, PNG o WebP - Maximo 5MB por imagen</p>
-                        <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+                        <p class="upload-hint">JPG, PNG o WebP - Se comprimen automaticamente a ~150KB</p>
+                        <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp" style="display:none">
                     </div>
                     <div id="uploadProgress" style="display:none; margin-top:0.5rem;">
                         <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>

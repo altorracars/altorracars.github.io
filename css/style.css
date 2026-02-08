@@ -1654,6 +1654,9 @@ section {
     align-items: center;
     justify-content: center;
     min-height: 300px;
+    width: 100%;
+    flex: 1 0 100%;
+    box-sizing: border-box;
 }
 
 .no-results-icon {

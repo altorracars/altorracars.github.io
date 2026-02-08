@@ -179,8 +179,16 @@ function renderVehicles(vehicles, containerId, options = {}) {
     if (vehicles.length === 0) {
         container.innerHTML = `
             <div class="no-results">
-                <p>No se encontraron vehículos con los filtros seleccionados.</p>
-                <a href="vehiculos-usados.html" class="btn-primary">Ver todos los vehículos</a>
+                <div class="no-results-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                </div>
+                <h3 class="no-results-title">No se encontraron vehiculos</h3>
+                <p class="no-results-text">No hay vehiculos que coincidan con los filtros seleccionados. Intenta ajustar tu busqueda.</p>
+                <a href="vehiculos-usados.html" class="no-results-btn">Ver todos los vehiculos</a>
             </div>
         `;
         return;

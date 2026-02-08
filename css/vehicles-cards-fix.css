@@ -44,6 +44,29 @@
 }
 
 /* ===========================================
+   FIX: .no-results full width in all contexts
+   =========================================== */
+
+/* In carousel flex containers: take full width, center content */
+.featured-section .vehicles-grid > .no-results,
+.carousel-wrapper .vehicles-grid > .no-results {
+    flex: 1 0 100% !important;
+    min-width: 100% !important;
+    width: 100% !important;
+}
+
+/* In catalog grid containers: span all columns */
+.catalog-main .vehicles-grid > .no-results,
+.catalog-section .vehicles-grid > .no-results,
+.favorites-section .vehicles-grid > .no-results,
+.search-results-section .vehicles-grid > .no-results,
+.vehicles-grid > .no-results {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    justify-self: center !important;
+}
+
+/* ===========================================
    SECCIÓN 2: TARJETA DE VEHÍCULO MEJORADA
    =========================================== */
 

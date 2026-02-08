@@ -39,6 +39,14 @@
     height: 0;
 }
 
+/* No-results must span full width even in auto-column grid */
+.vehicles-grid > .no-results {
+    grid-column: 1 / -1;
+    min-width: 100% !important;
+    max-width: none !important;
+    width: 100% !important;
+}
+
 /* Vehicle Card mejorada */
 .vehicle-card {
     scroll-snap-align: start;

@@ -9,6 +9,7 @@
     var deleteBrandTargetId = null;
     var deleteUserTargetId = null;
     var uploadedImageUrls = [];
+    var _creatingUser = false; // Guard flag to prevent onAuthStateChanged from interfering during user creation
 
     // ========== CONFIG ==========
     var UPLOAD_CONFIG = {
@@ -119,6 +120,12 @@
     function initAuth() {
         window.firebaseReady.then(function() {
             window.auth.onAuthStateChanged(function(user) {
+                // Skip auth state changes while creating a new user
+                // (createUserWithEmailAndPassword triggers multiple state changes)
+                if (_creatingUser) {
+                    console.log('[Auth] Skipping state change during user creation. User:', user ? user.email : 'null');
+                    return;
+                }
                 if (user) {
                     showAdmin(user);
                 } else {
@@ -1137,25 +1144,44 @@
                 .catch(function(err) { toast('Error: ' + err.message, 'error'); })
                 .finally(function() { btn.disabled = false; btn.textContent = 'Guardar Cambios'; });
         } else {
-            // Create new user in Firebase Auth + Firestore profile
-            var existingUser = users.find(function(u) { return u.email === email; });
-            if (existingUser) {
-                toast('Ya existe un usuario con ese email', 'error');
-                btn.disabled = false;
-                btn.textContent = 'Crear Usuario';
-                return;
-            }
+            // === CREATE NEW USER IN FIREBASE AUTH + FIRESTORE ===
+            // Strategy: Use guard flag to block onAuthStateChanged interference.
+            // Sequence:
+            //   1. Activate guard flag (_creatingUser = true)
+            //   2. createUserWithEmailAndPassword → creates Auth account (auto-signs in as new user)
+            //   3. Capture the new user's UID
+            //   4. Immediately sign out the new user
+            //   5. Re-authenticate as the admin (who has Firestore write permissions)
+            //   6. Write user profile to Firestore AS the admin
+            //   7. Deactivate guard flag
+            //   8. Reload data
 
-            // Save current admin's email for re-authentication
             var adminEmail = window.auth.currentUser.email;
+            var newUid = null;
 
-            // Step 1: Create Firebase Auth account for the new user
-            // This WILL sign in as the new user (Firebase client SDK behavior)
+            console.log('[CreateUser] Starting creation for:', email);
+
+            // Activate guard - prevent onAuthStateChanged from showing login screen
+            _creatingUser = true;
+
             window.auth.createUserWithEmailAndPassword(email, password)
                 .then(function(credential) {
-                    var newUid = credential.user.uid;
+                    newUid = credential.user.uid;
+                    console.log('[CreateUser] Auth account created. UID:', newUid);
 
-                    // Step 2: Save user profile to Firestore (using new user's uid as doc ID)
+                    // Sign out the newly created user immediately
+                    return window.auth.signOut();
+                })
+                .then(function() {
+                    console.log('[CreateUser] Signed out new user. Re-authenticating admin...');
+
+                    // Re-authenticate as admin
+                    return window.auth.signInWithEmailAndPassword(adminEmail, adminPassword);
+                })
+                .then(function() {
+                    console.log('[CreateUser] Admin re-authenticated. Writing profile to Firestore...');
+
+                    // Now write to Firestore AS the admin (who has permissions)
                     var userData = {
                         nombre: nombre,
                         email: email,
@@ -1166,44 +1192,52 @@
                         creadoPor: adminEmail
                     };
 
-                    return window.db.collection('usuarios').doc(newUid).set(userData)
-                        .then(function() {
-                            // Step 3: Sign out the newly created user
-                            return window.auth.signOut();
-                        })
-                        .then(function() {
-                            // Step 4: Re-authenticate as the admin
-                            return window.auth.signInWithEmailAndPassword(adminEmail, adminPassword);
-                        })
-                        .then(function() {
-                            toast('Usuario "' + nombre + '" creado exitosamente con acceso a Firebase Auth');
-                            closeUserModalFn();
-                            loadData();
-                        });
+                    return window.db.collection('usuarios').doc(newUid).set(userData);
+                })
+                .then(function() {
+                    console.log('[CreateUser] SUCCESS - User created in Auth + Firestore');
+
+                    // Deactivate guard
+                    _creatingUser = false;
+
+                    toast('Usuario "' + nombre + '" creado exitosamente');
+                    closeUserModalFn();
+                    loadData();
                 })
                 .catch(function(err) {
-                    console.error('Error creating user:', err);
+                    console.error('[CreateUser] ERROR:', err.code, err.message);
+                    _creatingUser = false;
+
                     var errorMsg = 'Error: ';
                     if (err.code === 'auth/email-already-in-use') {
-                        errorMsg += 'Este email ya tiene una cuenta en Firebase Auth.';
+                        errorMsg += 'Este email ya tiene una cuenta en Firebase Auth. Si quieres re-agregarlo, eliminalo primero desde Firebase Console > Authentication.';
                     } else if (err.code === 'auth/weak-password') {
                         errorMsg += 'La contrasena debe tener al menos 6 caracteres.';
                     } else if (err.code === 'auth/invalid-email') {
                         errorMsg += 'El email no es valido.';
+                    } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                        errorMsg += 'Tu contrasena de admin es incorrecta. El usuario Auth fue creado pero su perfil no se guardo. Verifica tu contrasena e intenta nuevamente.';
                     } else {
                         errorMsg += err.message;
                     }
                     toast(errorMsg, 'error');
 
-                    // If we got signed out during the process, try to re-auth admin
-                    if (!window.auth.currentUser && adminPassword) {
+                    // Recovery: try to re-auth admin if we lost the session
+                    if (!window.auth.currentUser && adminPassword && adminEmail) {
                         window.auth.signInWithEmailAndPassword(adminEmail, adminPassword)
-                            .catch(function() {
-                                toast('Sesion perdida. Por favor inicia sesion nuevamente.', 'error');
+                            .then(function() {
+                                console.log('[CreateUser] Admin session recovered');
+                                showAdmin(window.auth.currentUser);
+                            })
+                            .catch(function(reAuthErr) {
+                                console.error('[CreateUser] Failed to recover admin session:', reAuthErr);
+                                toast('Sesion perdida. Por favor recarga la pagina e inicia sesion.', 'error');
+                                showLogin();
                             });
                     }
                 })
                 .finally(function() {
+                    _creatingUser = false;
                     btn.disabled = false;
                     btn.textContent = 'Crear Usuario';
                 });

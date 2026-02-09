@@ -4,8 +4,10 @@
 
     var vehicles = [];
     var brands = [];
+    var users = [];
     var deleteTargetId = null;
     var deleteBrandTargetId = null;
+    var deleteUserTargetId = null;
     var uploadedImageUrls = [];
 
     // ========== CONFIG ==========
@@ -235,12 +237,30 @@
             renderVehiclesTable();
             updateStats();
             updateEstimator();
+            updateNavBadges();
         });
         window.db.collection('marcas').get().then(function(snap) {
             brands = snap.docs.map(function(d) { return d.data(); });
             renderBrandsTable();
             populateBrandSelect();
             updateStats();
+            updateNavBadges();
+        });
+        loadUsers();
+    }
+
+    function loadUsers() {
+        window.db.collection('usuarios').get().then(function(snap) {
+            users = snap.docs.map(function(d) {
+                var data = d.data();
+                data._docId = d.id;
+                return data;
+            });
+            renderUsersTable();
+            updateNavBadges();
+        }).catch(function(err) {
+            console.error('Error loading users:', err);
+            $('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Error al cargar usuarios: ' + err.message + '</td></tr>';
         });
     }
 
@@ -966,14 +986,233 @@
         });
     }
 
+    // ========== NAV BADGES ==========
+    function updateNavBadges() {
+        var vBadge = $('navBadgeVehicles');
+        var bBadge = $('navBadgeBrands');
+        if (vBadge) vBadge.textContent = vehicles.length || '';
+        if (bBadge) bBadge.textContent = brands.length || '';
+    }
+
+    // ========== USERS CRUD ==========
+    function renderUsersTable() {
+        if (!users.length) {
+            var currentUser = window.auth.currentUser;
+            if (currentUser) {
+                // Auto-register the current logged-in admin if no users exist yet
+                var autoUser = {
+                    nombre: currentUser.displayName || currentUser.email.split('@')[0],
+                    email: currentUser.email,
+                    rol: 'super_admin',
+                    estado: 'activo',
+                    creadoEn: new Date().toISOString()
+                };
+                window.db.collection('usuarios').doc(currentUser.uid).set(autoUser).then(function() {
+                    autoUser._docId = currentUser.uid;
+                    users = [autoUser];
+                    renderUsersTable();
+                });
+                return;
+            }
+            $('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No hay usuarios registrados</td></tr>';
+            return;
+        }
+
+        var currentEmail = window.auth.currentUser ? window.auth.currentUser.email : '';
+        var html = '';
+        users.forEach(function(u) {
+            var rolLabel = u.rol === 'super_admin' ? 'Super Admin' : u.rol === 'editor' ? 'Editor' : 'Viewer';
+            var rolClass = u.rol === 'super_admin' ? 'badge-destacado' : u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
+            var estadoClass = u.estado === 'activo' ? 'badge-nuevo' : 'badge-usado';
+            var isSelf = u.email === currentEmail;
+
+            html += '<tr>' +
+                '<td><strong>' + (u.nombre || '-') + '</strong>' + (isSelf ? ' <small style="color:var(--admin-gold);">(tu)</small>' : '') + '</td>' +
+                '<td>' + (u.email || '-') + '</td>' +
+                '<td><span class="badge ' + rolClass + '">' + rolLabel + '</span></td>' +
+                '<td><span class="badge ' + estadoClass + '">' + (u.estado || 'activo') + '</span></td>' +
+                '<td>' +
+                    '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editUser(\'' + u._docId + '\')">Editar</button> ' +
+                    (isSelf ? '' : '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteUser(\'' + u._docId + '\')">Eliminar</button>') +
+                '</td>' +
+            '</tr>';
+        });
+
+        $('usersTableBody').innerHTML = html;
+    }
+
+    // User Modal
+    function openUserModal() {
+        $('userModal').classList.add('active');
+    }
+
+    function closeUserModalFn() {
+        $('userModal').classList.remove('active');
+        $('userForm').reset();
+        $('uOriginalUid').value = '';
+        $('uPasswordGroup').style.display = '';
+        $('uPassword').required = true;
+        $('saveUser').textContent = 'Crear Usuario';
+    }
+
+    $('btnAddUser').addEventListener('click', function() {
+        $('userModalTitle').textContent = 'Crear Usuario';
+        $('uOriginalUid').value = '';
+        $('userForm').reset();
+        $('uPasswordGroup').style.display = '';
+        $('uPassword').required = true;
+        $('saveUser').textContent = 'Crear Usuario';
+        openUserModal();
+    });
+
+    $('closeUserModal').addEventListener('click', closeUserModalFn);
+    $('cancelUserModal').addEventListener('click', closeUserModalFn);
+
+    $('userModal').addEventListener('click', function(e) {
+        if (e.target === this) closeUserModalFn();
+    });
+
+    $('userForm').addEventListener('submit', function(e) { e.preventDefault(); });
+    $('userForm').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') e.preventDefault();
+    });
+
+    function editUser(uid) {
+        var u = users.find(function(x) { return x._docId === uid; });
+        if (!u) return;
+
+        $('userModalTitle').textContent = 'Editar Usuario';
+        $('uOriginalUid').value = uid;
+        $('uNombre').value = u.nombre || '';
+        $('uEmail').value = u.email || '';
+        $('uEmail').readOnly = true;
+        $('uRol').value = u.rol || 'editor';
+        // Hide password when editing (can't change other user's Auth password from client)
+        $('uPasswordGroup').style.display = 'none';
+        $('uPassword').required = false;
+        $('saveUser').textContent = 'Guardar Cambios';
+        openUserModal();
+    }
+
+    $('saveUser').addEventListener('click', function() {
+        var form = $('userForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        var originalUid = $('uOriginalUid').value;
+        var isEdit = !!originalUid;
+        var nombre = $('uNombre').value.trim();
+        var email = $('uEmail').value.trim();
+        var rol = $('uRol').value;
+        var password = $('uPassword').value;
+
+        var btn = $('saveUser');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+        if (isEdit) {
+            // Update existing user profile in Firestore
+            var updateData = {
+                nombre: nombre,
+                rol: rol,
+                actualizadoEn: new Date().toISOString()
+            };
+            window.db.collection('usuarios').doc(originalUid).update(updateData)
+                .then(function() {
+                    toast('Usuario actualizado');
+                    closeUserModalFn();
+                    $('uEmail').readOnly = false;
+                    loadUsers();
+                })
+                .catch(function(err) { toast('Error: ' + err.message, 'error'); })
+                .finally(function() { btn.disabled = false; btn.textContent = 'Guardar Cambios'; });
+        } else {
+            // Create new user: save profile to Firestore
+            // Note: Firebase Auth user creation from client SDK would sign out the current admin.
+            // Instead, we save the profile. The new user can set up their password via Firebase Auth
+            // password reset flow, or we create the Auth account here knowing it will sign us out temporarily.
+            var existingUser = users.find(function(u) { return u.email === email; });
+            if (existingUser) {
+                toast('Ya existe un usuario con ese email', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Crear Usuario';
+                return;
+            }
+
+            // Create Firebase Auth user (this will NOT sign out the current admin in compat SDK
+            // when using createUserWithEmailAndPassword - actually it DOES sign in the new user).
+            // Workaround: save profile to Firestore with a generated doc ID, the user activates via password reset.
+            var docId = email.replace(/[^a-zA-Z0-9]/g, '_');
+            var userData = {
+                nombre: nombre,
+                email: email,
+                rol: rol,
+                estado: 'pendiente',
+                creadoEn: new Date().toISOString(),
+                creadoPor: window.auth.currentUser ? window.auth.currentUser.email : 'sistema'
+            };
+
+            window.db.collection('usuarios').doc(docId).set(userData)
+                .then(function() {
+                    toast('Usuario creado. El usuario debe registrarse en Firebase Auth con el email: ' + email);
+                    closeUserModalFn();
+                    $('uEmail').readOnly = false;
+                    loadUsers();
+                })
+                .catch(function(err) { toast('Error: ' + err.message, 'error'); })
+                .finally(function() { btn.disabled = false; btn.textContent = 'Crear Usuario'; });
+        }
+    });
+
+    function deleteUserFn(uid) {
+        var u = users.find(function(x) { return x._docId === uid; });
+        if (!u) return;
+
+        var currentEmail = window.auth.currentUser ? window.auth.currentUser.email : '';
+        if (u.email === currentEmail) {
+            toast('No puedes eliminar tu propia cuenta', 'error');
+            return;
+        }
+
+        deleteUserTargetId = uid;
+        // Reuse delete modal pattern with a confirmation
+        if (confirm('Eliminar usuario "' + (u.nombre || u.email) + '"? Esta accion no se puede deshacer.')) {
+            window.db.collection('usuarios').doc(uid).delete()
+                .then(function() {
+                    toast('Usuario eliminado');
+                    deleteUserTargetId = null;
+                    loadUsers();
+                })
+                .catch(function(err) {
+                    toast('Error: ' + err.message, 'error');
+                });
+        }
+    }
+
     // ========== EXPOSE FUNCTIONS ==========
     window.adminPanel = {
         editVehicle: editVehicle,
         deleteVehicle: deleteVehicleFn,
         removeImage: removeImage,
         editBrand: editBrand,
-        deleteBrand: deleteBrandFn
+        deleteBrand: deleteBrandFn,
+        editUser: editUser,
+        deleteUser: deleteUserFn
     };
+
+    // ========== COLLAPSIBLE FORM SECTIONS ==========
+    document.querySelectorAll('.form-section-title[data-toggle]').forEach(function(title) {
+        title.addEventListener('click', function() {
+            var targetId = this.getAttribute('data-toggle');
+            var body = $(targetId);
+            if (body) {
+                body.classList.toggle('open');
+                this.classList.toggle('collapsed');
+            }
+        });
+    });
 
     // ========== INIT ==========
     initAuth();

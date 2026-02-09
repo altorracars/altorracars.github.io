@@ -699,6 +699,88 @@ tbody tr:hover {
     display: block;
 }
 
+/* NAV BADGES */
+.nav-badge {
+    font-size: 0.65rem;
+    background: var(--admin-gold);
+    color: #000;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: auto;
+    font-weight: 600;
+    min-width: 18px;
+    text-align: center;
+}
+.nav-badge:empty { display: none; }
+
+/* ROLES INFO */
+.roles-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+.role-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+}
+.role-card strong { display: block; font-size: 0.875rem; margin-bottom: 2px; }
+.role-card p { font-size: 0.75rem; color: var(--admin-text-muted); margin: 0; }
+.role-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.ri-gold { background: rgba(212,175,55,0.15); color: var(--admin-gold); }
+.ri-blue { background: rgba(88,166,255,0.15); color: var(--admin-info); }
+.ri-gray { background: rgba(139,148,158,0.15); color: var(--admin-text-muted); }
+
+/* STAT ICON */
+.stat-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 0.5rem;
+}
+.si-blue { background: rgba(88,166,255,0.15); color: var(--admin-info); }
+.si-green { background: rgba(63,185,80,0.15); color: var(--admin-success); }
+.si-purple { background: rgba(163,113,247,0.15); color: #a371f7; }
+.si-gold { background: rgba(212,175,55,0.15); color: var(--admin-gold); }
+
+/* PAGE SUBTITLE */
+.page-subtitle {
+    font-size: 0.8rem;
+    color: var(--admin-text-muted);
+    margin: 0.25rem 0 0 0;
+}
+
+/* FORM SECTIONS (collapsible) */
+.form-section { margin-bottom: 0.75rem; border: 1px solid var(--admin-border); border-radius: 8px; overflow: hidden; }
+.form-section-title {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.625rem 0.875rem; font-size: 0.8rem; font-weight: 600;
+    background: var(--admin-bg); cursor: pointer; user-select: none;
+    color: var(--admin-text);
+}
+.form-section-title:hover { background: var(--admin-surface); }
+.form-section-title .chevron { margin-left: auto; transition: transform 0.2s; }
+.form-section-body { padding: 0.75rem; display: none; }
+.form-section-body.open { display: block; }
+.form-section-title.collapsed .chevron { transform: rotate(-90deg); }
+
+/* CHECKBOX GRID */
+.checkbox-grid {
+    display: flex; flex-wrap: wrap; gap: 1rem;
+}
+
+/* ACTIVITY FEED */
+.activity-feed { padding: 1rem; }
+.activity-empty { text-align: center; color: var(--admin-text-muted); font-size: 0.8rem; padding: 1rem; }
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
     .mobile-topbar { display: flex; }

@@ -5,56 +5,111 @@ class VehicleDatabase {
         this.vehicles = [];
         this.brands = [];
         this.loaded = false;
+        this._cacheKey = 'altorra-db-cache';
+        this._cacheMaxAge = 5 * 60 * 1000; // 5 minutes
     }
-    
-    async load(forceRefresh = false) {
-        if (this.loaded && !forceRefresh) return;
 
+    // ========== LOCAL CACHE (instant load while Firebase loads) ==========
+
+    _saveToCache() {
         try {
-            // Try loading from Firestore first
-            if (window.firebaseReady) {
-                try {
-                    await window.firebaseReady;
-                    if (window.db) {
-                        const loaded = await this.loadFromFirestore();
-                        if (loaded) {
-                            this.normalizeVehicles();
-                            this.loaded = true;
-                            console.log('Database loaded from Firestore (' + this.vehicles.length + ' vehicles)');
-                            return;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Firestore not available, falling back to JSON:', e.message);
-                }
-            }
-
-            // Fallback: load from local JSON (only when Firestore is unavailable)
-            const response = await fetch('data/vehiculos.json');
-            if (!response.ok) {
-                throw new Error('Failed to load vehicle database');
-            }
-            const data = await response.json();
-            this.vehicles = data.vehiculos || [];
-            this.brands = data.marcas || [];
-
-            this.normalizeVehicles();
-
-            this.loaded = true;
-            console.log('Database loaded from JSON fallback (' + this.vehicles.length + ' vehicles)');
-        } catch (error) {
-            console.error('Error loading database:', error);
-            this.vehicles = [];
-            this.brands = [];
+            var payload = {
+                ts: Date.now(),
+                vehicles: this.vehicles,
+                brands: this.brands
+            };
+            localStorage.setItem(this._cacheKey, JSON.stringify(payload));
+        } catch (e) {
+            // localStorage full or unavailable - ignore silently
         }
     }
 
-    async loadFromFirestore() {
-        const vehiclesSnap = await window.db.collection('vehiculos').get();
-        // Empty collection is valid (user deleted all vehicles) - don't fall back to JSON
-        this.vehicles = vehiclesSnap.docs.map(function(doc) { return doc.data(); });
+    _loadFromCache() {
+        try {
+            var raw = localStorage.getItem(this._cacheKey);
+            if (!raw) return false;
+            var data = JSON.parse(raw);
+            if (Date.now() - data.ts > this._cacheMaxAge) return false;
+            this.vehicles = data.vehicles || [];
+            this.brands = data.brands || [];
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
 
-        const brandsSnap = await window.db.collection('marcas').get();
+    // ========== MAIN LOAD ==========
+
+    async load(forceRefresh = false) {
+        if (this.loaded && !forceRefresh) return;
+
+        // STEP 1: Show cached data instantly (if available)
+        var hadCache = false;
+        if (!forceRefresh) {
+            hadCache = this._loadFromCache();
+            if (hadCache) {
+                this.normalizeVehicles();
+                this.loaded = true;
+                console.log('Database loaded from cache (' + this.vehicles.length + ' vehicles) — refreshing from Firestore...');
+            }
+        }
+
+        // STEP 2: Load from Firestore (with timeout)
+        try {
+            if (window.firebaseReady) {
+                var firebaseOk = await this._awaitFirebaseWithTimeout(5000);
+                if (firebaseOk && window.db) {
+                    await this.loadFromFirestore();
+                    this.normalizeVehicles();
+                    this.loaded = true;
+                    this._saveToCache();
+                    console.log('Database loaded from Firestore (' + this.vehicles.length + ' vehicles)');
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('Firestore not available:', e.message);
+        }
+
+        // STEP 3: If no cache was loaded, fall back to JSON
+        if (!hadCache) {
+            try {
+                var response = await fetch('data/vehiculos.json');
+                if (!response.ok) throw new Error('Failed to load vehicle database');
+                var data = await response.json();
+                this.vehicles = data.vehiculos || [];
+                this.brands = data.marcas || [];
+                this.normalizeVehicles();
+                this.loaded = true;
+                console.log('Database loaded from JSON fallback (' + this.vehicles.length + ' vehicles)');
+            } catch (error) {
+                console.error('Error loading database:', error);
+                this.vehicles = [];
+                this.brands = [];
+            }
+        }
+    }
+
+    async _awaitFirebaseWithTimeout(ms) {
+        return Promise.race([
+            window.firebaseReady.then(function() { return true; }),
+            new Promise(function(resolve) {
+                setTimeout(function() { resolve(false); }, ms);
+            })
+        ]);
+    }
+
+    async loadFromFirestore() {
+        // PARALLEL queries instead of sequential
+        var results = await Promise.all([
+            window.db.collection('vehiculos').get(),
+            window.db.collection('marcas').get()
+        ]);
+
+        var vehiclesSnap = results[0];
+        var brandsSnap = results[1];
+
+        this.vehicles = vehiclesSnap.docs.map(function(doc) { return doc.data(); });
         this.brands = brandsSnap.empty ? [] : brandsSnap.docs.map(function(doc) { return doc.data(); });
 
         return true;

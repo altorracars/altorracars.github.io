@@ -1052,6 +1052,9 @@
         $('uOriginalUid').value = '';
         $('uPasswordGroup').style.display = '';
         $('uPassword').required = true;
+        $('uAdminPasswordGroup').style.display = '';
+        $('uAdminPassword').required = true;
+        $('uEmail').readOnly = false;
         $('saveUser').textContent = 'Crear Usuario';
     }
 
@@ -1061,6 +1064,9 @@
         $('userForm').reset();
         $('uPasswordGroup').style.display = '';
         $('uPassword').required = true;
+        $('uAdminPasswordGroup').style.display = '';
+        $('uAdminPassword').required = true;
+        $('uEmail').readOnly = false;
         $('saveUser').textContent = 'Crear Usuario';
         openUserModal();
     });
@@ -1087,9 +1093,11 @@
         $('uEmail').value = u.email || '';
         $('uEmail').readOnly = true;
         $('uRol').value = u.rol || 'editor';
-        // Hide password when editing (can't change other user's Auth password from client)
+        // Hide password fields when editing
         $('uPasswordGroup').style.display = 'none';
         $('uPassword').required = false;
+        $('uAdminPasswordGroup').style.display = 'none';
+        $('uAdminPassword').required = false;
         $('saveUser').textContent = 'Guardar Cambios';
         openUserModal();
     }
@@ -1107,6 +1115,7 @@
         var email = $('uEmail').value.trim();
         var rol = $('uRol').value;
         var password = $('uPassword').value;
+        var adminPassword = $('uAdminPassword').value;
 
         var btn = $('saveUser');
         btn.disabled = true;
@@ -1123,16 +1132,12 @@
                 .then(function() {
                     toast('Usuario actualizado');
                     closeUserModalFn();
-                    $('uEmail').readOnly = false;
                     loadUsers();
                 })
                 .catch(function(err) { toast('Error: ' + err.message, 'error'); })
                 .finally(function() { btn.disabled = false; btn.textContent = 'Guardar Cambios'; });
         } else {
-            // Create new user: save profile to Firestore
-            // Note: Firebase Auth user creation from client SDK would sign out the current admin.
-            // Instead, we save the profile. The new user can set up their password via Firebase Auth
-            // password reset flow, or we create the Auth account here knowing it will sign us out temporarily.
+            // Create new user in Firebase Auth + Firestore profile
             var existingUser = users.find(function(u) { return u.email === email; });
             if (existingUser) {
                 toast('Ya existe un usuario con ese email', 'error');
@@ -1141,28 +1146,67 @@
                 return;
             }
 
-            // Create Firebase Auth user (this will NOT sign out the current admin in compat SDK
-            // when using createUserWithEmailAndPassword - actually it DOES sign in the new user).
-            // Workaround: save profile to Firestore with a generated doc ID, the user activates via password reset.
-            var docId = email.replace(/[^a-zA-Z0-9]/g, '_');
-            var userData = {
-                nombre: nombre,
-                email: email,
-                rol: rol,
-                estado: 'pendiente',
-                creadoEn: new Date().toISOString(),
-                creadoPor: window.auth.currentUser ? window.auth.currentUser.email : 'sistema'
-            };
+            // Save current admin's email for re-authentication
+            var adminEmail = window.auth.currentUser.email;
 
-            window.db.collection('usuarios').doc(docId).set(userData)
-                .then(function() {
-                    toast('Usuario creado. El usuario debe registrarse en Firebase Auth con el email: ' + email);
-                    closeUserModalFn();
-                    $('uEmail').readOnly = false;
-                    loadUsers();
+            // Step 1: Create Firebase Auth account for the new user
+            // This WILL sign in as the new user (Firebase client SDK behavior)
+            window.auth.createUserWithEmailAndPassword(email, password)
+                .then(function(credential) {
+                    var newUid = credential.user.uid;
+
+                    // Step 2: Save user profile to Firestore (using new user's uid as doc ID)
+                    var userData = {
+                        nombre: nombre,
+                        email: email,
+                        rol: rol,
+                        estado: 'activo',
+                        uid: newUid,
+                        creadoEn: new Date().toISOString(),
+                        creadoPor: adminEmail
+                    };
+
+                    return window.db.collection('usuarios').doc(newUid).set(userData)
+                        .then(function() {
+                            // Step 3: Sign out the newly created user
+                            return window.auth.signOut();
+                        })
+                        .then(function() {
+                            // Step 4: Re-authenticate as the admin
+                            return window.auth.signInWithEmailAndPassword(adminEmail, adminPassword);
+                        })
+                        .then(function() {
+                            toast('Usuario "' + nombre + '" creado exitosamente con acceso a Firebase Auth');
+                            closeUserModalFn();
+                            loadData();
+                        });
                 })
-                .catch(function(err) { toast('Error: ' + err.message, 'error'); })
-                .finally(function() { btn.disabled = false; btn.textContent = 'Crear Usuario'; });
+                .catch(function(err) {
+                    console.error('Error creating user:', err);
+                    var errorMsg = 'Error: ';
+                    if (err.code === 'auth/email-already-in-use') {
+                        errorMsg += 'Este email ya tiene una cuenta en Firebase Auth.';
+                    } else if (err.code === 'auth/weak-password') {
+                        errorMsg += 'La contrasena debe tener al menos 6 caracteres.';
+                    } else if (err.code === 'auth/invalid-email') {
+                        errorMsg += 'El email no es valido.';
+                    } else {
+                        errorMsg += err.message;
+                    }
+                    toast(errorMsg, 'error');
+
+                    // If we got signed out during the process, try to re-auth admin
+                    if (!window.auth.currentUser && adminPassword) {
+                        window.auth.signInWithEmailAndPassword(adminEmail, adminPassword)
+                            .catch(function() {
+                                toast('Sesion perdida. Por favor inicia sesion nuevamente.', 'error');
+                            });
+                    }
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = 'Crear Usuario';
+                });
         }
     });
 
@@ -1177,11 +1221,11 @@
         }
 
         deleteUserTargetId = uid;
-        // Reuse delete modal pattern with a confirmation
-        if (confirm('Eliminar usuario "' + (u.nombre || u.email) + '"? Esta accion no se puede deshacer.')) {
+        if (confirm('Eliminar usuario "' + (u.nombre || u.email) + '"?\n\nSe desactivara su perfil y no podra acceder al panel.\nPara eliminar su cuenta de Firebase Auth, hazlo desde la consola de Firebase.')) {
+            // Mark as inactive in Firestore (the Auth account persists but user won't have a valid profile)
             window.db.collection('usuarios').doc(uid).delete()
                 .then(function() {
-                    toast('Usuario eliminado');
+                    toast('Perfil de usuario eliminado. Recuerda eliminar su cuenta desde Firebase Console > Authentication si deseas eliminarlo completamente.');
                     deleteUserTargetId = null;
                     loadUsers();
                 })

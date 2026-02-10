@@ -5,6 +5,38 @@ admin.initializeApp();
 
 const db = admin.firestore();
 
+function mapAdminAuthError(error, fallbackAction) {
+    const code = error && error.code ? String(error.code) : '';
+    const message = error && error.message ? String(error.message) : 'Sin detalles';
+
+    if (code === 'auth/email-already-exists') {
+        return new functions.https.HttpsError('already-exists',
+            'Este email ya tiene una cuenta en Firebase Auth. Eliminala primero desde Firebase Console si deseas re-crearla.');
+    }
+
+    if (code === 'auth/invalid-email') {
+        return new functions.https.HttpsError('invalid-argument', 'El formato del email no es valido.');
+    }
+
+    if (code === 'auth/weak-password' || code === 'auth/invalid-password') {
+        return new functions.https.HttpsError('invalid-argument', 'La contrasena no cumple los requisitos minimos.');
+    }
+
+    if (code === 'auth/operation-not-allowed') {
+        return new functions.https.HttpsError('failed-precondition',
+            'El proveedor Email/Password no esta habilitado en Firebase Authentication.');
+    }
+
+    if (code === 'auth/insufficient-permission') {
+        return new functions.https.HttpsError('permission-denied',
+            'La cuenta de servicio de Cloud Functions no tiene permisos de Firebase Auth Admin.');
+    }
+
+    return new functions.https.HttpsError('internal',
+        fallbackAction + ' (codigo: ' + (code || 'desconocido') + ').',
+        { code: code || 'unknown', originalMessage: message });
+}
+
 // Helper: verify caller is super_admin
 async function verifySuperAdmin(context) {
     if (!context.auth) {
@@ -88,20 +120,8 @@ exports.createManagedUser = functions.https.onCall(async (data, context) => {
         };
 
     } catch (error) {
-        // If Auth creation fails, provide friendly message
-        if (error.code === 'auth/email-already-exists') {
-            throw new functions.https.HttpsError('already-exists',
-                'Este email ya tiene una cuenta en Firebase Auth. Eliminala primero desde Firebase Console si deseas re-crearla.');
-        }
-        if (error.code === 'auth/invalid-email') {
-            throw new functions.https.HttpsError('invalid-argument', 'El formato del email no es valido.');
-        }
-        if (error.code === 'auth/weak-password') {
-            throw new functions.https.HttpsError('invalid-argument', 'La contrasena es muy debil.');
-        }
-
         console.error('Error creating user:', error);
-        throw new functions.https.HttpsError('internal', 'Error interno al crear usuario: ' + error.message);
+        throw mapAdminAuthError(error, 'No se pudo crear el usuario');
     }
 });
 
@@ -138,8 +158,7 @@ exports.deleteManagedUser = functions.https.onCall(async (data, context) => {
             console.log('User not found in Auth (already deleted or never existed):', uid);
         } else {
             console.error('Error deleting Auth user:', error);
-            throw new functions.https.HttpsError('internal',
-                'El perfil se elimino pero hubo un error eliminando la cuenta Auth: ' + error.message);
+            throw mapAdminAuthError(error, 'El perfil se elimino, pero no se pudo eliminar la cuenta de Authentication');
         }
     }
 

@@ -1,6 +1,21 @@
 // Main Script for ALTORRA CARS - Index Page
 // Optimized for Performance and Modern JavaScript
 
+
+let _liveRefreshScheduled = false;
+
+function scheduleLiveRefresh() {
+    if (_liveRefreshScheduled) return;
+    _liveRefreshScheduled = true;
+    setTimeout(function() {
+        _liveRefreshScheduled = false;
+        loadFeatured();
+        loadPopularBrands();
+        loadUsedVehicles();
+        loadNewVehicles();
+    }, 150);
+}
+
 /**
  * Load featured vehicles with advanced ranking system
  * Prioritizes: destacado > oferta > tipo > year > km
@@ -190,6 +205,14 @@ function initializePage() {
 
     // Enable touch scrolling for mobile
     enableTouchScroll();
+
+    // Real-time refresh from Firestore listeners
+    window.addEventListener('vehicleDB:updated', function(evt) {
+        if (!evt || !evt.detail || !evt.detail.source) return;
+        if (evt.detail.source.indexOf('firestore-live-') === 0) {
+            scheduleLiveRefresh();
+        }
+    });
 }
 
 // Initialize when DOM is ready

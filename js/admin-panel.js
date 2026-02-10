@@ -640,6 +640,7 @@
         $('vId').value = '';
         $('vehicleForm').reset();
         $('vUbicacion').value = 'Barranquilla';
+        $('vDisponibilidad').value = 'disponible';
         $('vDireccion').value = 'Electrica';
         $('vRevision').checked = true;
         $('vPeritaje').checked = true;
@@ -689,6 +690,7 @@
         $('vPlaca').value = v.placa || '';
         $('vFasecolda').value = v.codigoFasecolda || '';
         $('vDescripcion').value = v.descripcion || '';
+        $('vDisponibilidad').value = v.estado || v.disponibilidad || 'disponible';
         $('vDestacado').checked = !!v.destacado;
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
         $('vRevision').checked = v.revisionTecnica !== false;
@@ -721,6 +723,8 @@
             year: parseInt($('vYear').value),
             tipo: $('vTipo').value,
             categoria: $('vCategoria').value,
+            estado: $('vDisponibilidad').value || 'disponible',
+            disponibilidad: $('vDisponibilidad').value || 'disponible',
             precio: parseInt($('vPrecio').value),
             precioOferta: precioOferta,
             oferta: !!precioOferta,
@@ -756,7 +760,25 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
-        window.db.collection('vehiculos').doc(String(id)).set(vehicleData)
+        var vehicleRef = window.db.collection('vehiculos').doc(String(id));
+        var ts = firebase.firestore.FieldValue.serverTimestamp();
+        var actor = window.auth.currentUser ? (window.auth.currentUser.email || window.auth.currentUser.uid) : 'admin';
+
+        if (existingId) {
+            vehicleData.actualizadoEn = ts;
+            vehicleData.actualizadoPor = actor;
+        } else {
+            vehicleData.creadoEn = ts;
+            vehicleData.creadoPor = actor;
+            vehicleData.actualizadoEn = ts;
+            vehicleData.actualizadoPor = actor;
+        }
+
+        var writePromise = existingId
+            ? vehicleRef.update(vehicleData)
+            : vehicleRef.set(vehicleData, { merge: true });
+
+        writePromise
             .then(function() {
                 toast(existingId ? 'Vehiculo actualizado' : 'Vehiculo agregado');
                 closeModalFn();

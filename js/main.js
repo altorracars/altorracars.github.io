@@ -1,6 +1,47 @@
 // Main Script for ALTORRA CARS - Index Page
 // Optimized for Performance and Modern JavaScript
 
+
+let _liveRefreshScheduled = false;
+
+function showCatalogWarning(message) {
+    ['featuredVehicles', 'newVehiclesCarousel', 'usedVehiclesCarousel', 'popularBrands'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.getAttribute('data-warning') === '1') return;
+        var box = document.createElement('div');
+        box.className = 'no-results';
+        box.setAttribute('data-warning', '1');
+        box.innerHTML = '<h3 class="no-results-title">Inventario temporalmente no disponible</h3><p class="no-results-text">' + message + '</p>';
+        el.innerHTML = '';
+        el.appendChild(box);
+        el.setAttribute('data-warning', '1');
+    });
+}
+
+function clearCatalogWarning() {
+    ['featuredVehicles', 'newVehiclesCarousel', 'usedVehiclesCarousel', 'popularBrands'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.getAttribute('data-warning') === '1') {
+            el.innerHTML = '';
+            el.removeAttribute('data-warning');
+        }
+    });
+}
+
+function scheduleLiveRefresh() {
+    if (_liveRefreshScheduled) return;
+    _liveRefreshScheduled = true;
+    setTimeout(function() {
+        _liveRefreshScheduled = false;
+        loadFeatured();
+        loadPopularBrands();
+        loadUsedVehicles();
+        loadNewVehicles();
+    }, 150);
+}
+
 /**
  * Load featured vehicles with advanced ranking system
  * Prioritizes: destacado > oferta > tipo > year > km
@@ -10,7 +51,10 @@ async function loadFeatured() {
     await vehicleDB.load();
 
     // Filter featured vehicles first, then rank them
-    const featured = vehicleDB.getFeatured();
+    var featured = vehicleDB.getFeatured();
+    if (!featured.length) {
+        featured = vehicleDB.getTopVehicles(12);
+    }
 
     // Rank featured vehicles by score
     const rankedFeatured = featured
@@ -190,6 +234,23 @@ function initializePage() {
 
     // Enable touch scrolling for mobile
     enableTouchScroll();
+
+    // Real-time refresh from Firestore listeners
+    window.addEventListener('vehicleDB:updated', function(evt) {
+        if (!evt || !evt.detail || !evt.detail.source) return;
+        if (evt.detail.source.indexOf('firestore-live-') === 0) {
+            clearCatalogWarning();
+            scheduleLiveRefresh();
+        }
+    });
+
+    window.addEventListener('vehicleDB:error', function(evt) {
+        if (!evt || !evt.detail) return;
+        var msg = evt.detail.message || '';
+        if (msg.toLowerCase().indexOf('permission') >= 0 || msg.toLowerCase().indexOf('missing or insufficient permissions') >= 0) {
+            showCatalogWarning('No fue posible cargar el inventario por permisos de Firestore. Verifica reglas desplegadas y recarga la pagina.');
+        }
+    });
 }
 
 // Initialize when DOM is ready

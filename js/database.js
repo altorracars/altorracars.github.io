@@ -7,6 +7,10 @@ class VehicleDatabase {
         this.loaded = false;
         this._cacheKey = 'altorra-db-cache';
         this._cacheMaxAge = 5 * 60 * 1000; // 5 minutes
+        this._unsubscribeVehicles = null;
+        this._unsubscribeBrands = null;
+        this._listenersStarted = false;
+        this._lastErrors = { vehiculos: null, marcas: null };
     }
 
     // ========== LOCAL CACHE (instant load while Firebase loads) ==========
@@ -38,56 +42,72 @@ class VehicleDatabase {
         }
     }
 
+    _emitUpdate(source) {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('vehicleDB:updated', {
+                detail: {
+                    source: source,
+                    vehicles: this.vehicles.length,
+                    brands: this.brands.length
+                }
+            }));
+        }
+    }
+
+
+    _emitError(collection, error) {
+        this._lastErrors[collection] = error ? (error.message || String(error)) : null;
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('vehicleDB:error', {
+                detail: {
+                    collection: collection,
+                    message: this._lastErrors[collection]
+                }
+            }));
+        }
+    }
+
     // ========== MAIN LOAD ==========
 
     async load(forceRefresh = false) {
         if (this.loaded && !forceRefresh) return;
 
         // STEP 1: Show cached data instantly (if available)
-        var hadCache = false;
-        if (!forceRefresh) {
-            hadCache = this._loadFromCache();
-            if (hadCache) {
-                this.normalizeVehicles();
-                this.loaded = true;
-                console.log('Database loaded from cache (' + this.vehicles.length + ' vehicles) — refreshing from Firestore...');
-            }
+        if (!forceRefresh && this._loadFromCache()) {
+            this.normalizeVehicles();
+            this.loaded = true;
+            this._emitUpdate('cache');
+            console.log('Database loaded from cache (' + this.vehicles.length + ' vehicles) — syncing with Firestore...');
         }
 
-        // STEP 2: Load from Firestore (with timeout)
+        // STEP 2: Load from Firestore (source of truth)
         try {
-            if (window.firebaseReady) {
-                var firebaseOk = await this._awaitFirebaseWithTimeout(5000);
-                if (firebaseOk && window.db) {
-                    await this.loadFromFirestore();
-                    this.normalizeVehicles();
-                    this.loaded = true;
-                    this._saveToCache();
-                    console.log('Database loaded from Firestore (' + this.vehicles.length + ' vehicles)');
-                    return;
-                }
+            if (!window.firebaseReady) {
+                throw new Error('Firebase init promise not available');
             }
+
+            var firebaseOk = await this._awaitFirebaseWithTimeout(7000);
+            if (!firebaseOk || !window.db) {
+                throw new Error('Firebase/Firestore timeout');
+            }
+
+            await this.loadFromFirestore();
+            this.normalizeVehicles();
+            this.loaded = true;
+            this._saveToCache();
+            this._emitUpdate('firestore-initial');
+            console.log('Database loaded from Firestore (' + this.vehicles.length + ' vehicles)');
+            return;
         } catch (e) {
             console.warn('Firestore not available:', e.message);
         }
 
-        // STEP 3: If no cache was loaded, fall back to JSON
-        if (!hadCache) {
-            try {
-                var response = await fetch('data/vehiculos.json');
-                if (!response.ok) throw new Error('Failed to load vehicle database');
-                var data = await response.json();
-                this.vehicles = data.vehiculos || [];
-                this.brands = data.marcas || [];
-                this.normalizeVehicles();
-                this.loaded = true;
-                console.log('Database loaded from JSON fallback (' + this.vehicles.length + ' vehicles)');
-            } catch (error) {
-                console.error('Error loading database:', error);
-                this.vehicles = [];
-                this.brands = [];
-            }
-        }
+        // STEP 3: No JSON operational fallback anymore (single source of truth)
+        // If Firestore is unavailable and cache was stale/missing, fail closed with empty state.
+        this.vehicles = this.vehicles || [];
+        this.brands = this.brands || [];
+        this.loaded = true;
+        this._emitUpdate('empty');
     }
 
     async _awaitFirebaseWithTimeout(ms) {
@@ -100,17 +120,69 @@ class VehicleDatabase {
     }
 
     async loadFromFirestore() {
-        // PARALLEL queries instead of sequential
-        var results = await Promise.all([
-            window.db.collection('vehiculos').get(),
-            window.db.collection('marcas').get()
-        ]);
+        var self = this;
 
-        var vehiclesSnap = results[0];
-        var brandsSnap = results[1];
+        if (!this._listenersStarted) {
+            this._listenersStarted = true;
 
-        this.vehicles = vehiclesSnap.docs.map(function(doc) { return doc.data(); });
-        this.brands = brandsSnap.empty ? [] : brandsSnap.docs.map(function(doc) { return doc.data(); });
+            var firstVehiclesResolved = false;
+            var firstBrandsResolved = false;
+
+            var firstVehicles = new Promise(function(resolve) {
+                self._unsubscribeVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
+                    self.vehicles = snap.docs.map(function(doc) {
+                        var data = doc.data() || {};
+                        if (!data.id && doc.id) {
+                            var parsedId = parseInt(doc.id, 10);
+                            data.id = Number.isNaN(parsedId) ? doc.id : parsedId;
+                        }
+                        return data;
+                    });
+                    self.normalizeVehicles();
+                    self._saveToCache();
+                    self.loaded = true;
+                    self._emitUpdate('firestore-live-vehicles');
+                    self._emitError('vehiculos', null);
+                    if (!firstVehiclesResolved) {
+                        firstVehiclesResolved = true;
+                        resolve(true);
+                    }
+                }, function(err) {
+                    console.error('Firestore vehicles listener error:', err);
+                    self._emitError('vehiculos', err);
+                    if (!firstVehiclesResolved) {
+                        firstVehiclesResolved = true;
+                        resolve(false);
+                    }
+                });
+            });
+
+            var firstBrands = new Promise(function(resolve) {
+                self._unsubscribeBrands = window.db.collection('marcas').onSnapshot(function(snap) {
+                    self.brands = snap.empty ? [] : snap.docs.map(function(doc) { return doc.data(); });
+                    self._saveToCache();
+                    self.loaded = true;
+                    self._emitUpdate('firestore-live-brands');
+                    self._emitError('marcas', null);
+                    if (!firstBrandsResolved) {
+                        firstBrandsResolved = true;
+                        resolve(true);
+                    }
+                }, function(err) {
+                    console.error('Firestore brands listener error:', err);
+                    self._emitError('marcas', err);
+                    if (!firstBrandsResolved) {
+                        firstBrandsResolved = true;
+                        resolve(false);
+                    }
+                });
+            });
+
+            await Promise.race([
+                Promise.all([firstVehicles, firstBrands]),
+                new Promise(function(resolve) { setTimeout(resolve, 7000); })
+            ]);
+        }
 
         return true;
     }
@@ -132,6 +204,19 @@ class VehicleDatabase {
             // Migración: "camioneta" → "pickup"
             if (normalized.categoria === 'camioneta') {
                 normalized.categoria = 'pickup';
+            }
+
+            // Estado canónico del inventario
+            if (!normalized.estado) {
+                if (normalized.disponibilidad) {
+                    normalized.estado = normalized.disponibilidad;
+                } else {
+                    normalized.estado = 'disponible';
+                }
+            }
+
+            if (!['borrador', 'disponible', 'reservado', 'vendido'].includes(normalized.estado)) {
+                normalized.estado = 'disponible';
             }
 
             return normalized;
@@ -158,13 +243,17 @@ class VehicleDatabase {
     }
     
     // Get all vehicles
-    getAllVehicles() {
-        return this.vehicles;
+    getAllVehicles(filters = {}) {
+        if (filters.includeAllStates) return this.vehicles;
+        return this.vehicles.filter(function(v) { return (v.estado || 'disponible') === 'disponible'; });
     }
     
     // Get vehicle by ID
-    getVehicleById(id) {
-        return this.vehicles.find(v => v.id == id);
+    getVehicleById(id, options = {}) {
+        var vehicle = this.vehicles.find(v => v.id == id);
+        if (!vehicle) return null;
+        if (options.includeAllStates) return vehicle;
+        return (vehicle.estado || 'disponible') === 'disponible' ? vehicle : null;
     }
     
     // Filter vehicles
@@ -187,6 +276,15 @@ class VehicleDatabase {
         // Filter by category (suv, sedan, hatchback, pickup) - camioneta ya mapeado a pickup
         if (filters.categoria) {
             filtered = filtered.filter(v => v.categoria === filters.categoria);
+        }
+
+        // FASE 1: inventario público por defecto solo disponible
+        if (typeof filters.estado === 'undefined' || filters.estado === null || filters.estado === '') {
+            filtered = filtered.filter(v => (v.estado || 'disponible') === 'disponible');
+        } else if (filters.estado === 'all') {
+            // no filter
+        } else {
+            filtered = filtered.filter(v => (v.estado || 'disponible') === filters.estado);
         }
         
         // Filter by brand
@@ -258,7 +356,7 @@ class VehicleDatabase {
     
     // Get featured vehicles
     getFeatured() {
-        return this.vehicles.filter(v => v.destacado);
+        return this.vehicles.filter(v => v.destacado && (v.estado || 'disponible') === 'disponible');
     }
 
     /**
@@ -329,12 +427,12 @@ class VehicleDatabase {
     
     // Get vehicles by brand
     getByBrand(brand) {
-        return this.vehicles.filter(v => v.marca === brand);
+        return this.vehicles.filter(v => v.marca === brand && (v.estado || 'disponible') === 'disponible');
     }
     
     // Get vehicles by category
     getByCategory(category) {
-        return this.vehicles.filter(v => v.categoria === category);
+        return this.vehicles.filter(v => v.categoria === category && (v.estado || 'disponible') === 'disponible');
     }
     
     // Get all brands
@@ -352,22 +450,22 @@ class VehicleDatabase {
      * Para generar filtros dinámicos
      */
     getUniqueBrands() {
-        const brands = [...new Set(this.vehicles.map(v => v.marca))];
+        const brands = [...new Set(this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.marca))];
         return brands.sort();
     }
 
     getUniqueColors() {
-        const colors = [...new Set(this.vehicles.map(v => v.color))];
+        const colors = [...new Set(this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.color))];
         return colors.filter(c => c).sort();
     }
 
     getUniqueFuels() {
-        const fuels = [...new Set(this.vehicles.map(v => v.combustible))];
+        const fuels = [...new Set(this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.combustible))];
         return fuels.filter(f => f).sort();
     }
 
     getYearRange() {
-        const years = this.vehicles.map(v => v.year).filter(y => y);
+        const years = this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.year).filter(y => y);
         return {
             min: Math.min(...years),
             max: Math.max(...years)
@@ -375,7 +473,7 @@ class VehicleDatabase {
     }
 
     getPriceRange() {
-        const prices = this.vehicles.map(v => v.precio).filter(p => p);
+        const prices = this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.precio).filter(p => p);
         return {
             min: Math.min(...prices),
             max: Math.max(...prices)

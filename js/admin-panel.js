@@ -1,4 +1,5 @@
 // Admin Panel Logic for ALTORRA CARS
+// With full RBAC (Role-Based Access Control)
 (function() {
     'use strict';
 
@@ -7,9 +8,18 @@
     var users = [];
     var deleteTargetId = null;
     var deleteBrandTargetId = null;
-    var deleteUserTargetId = null;
     var uploadedImageUrls = [];
-    var _creatingUser = false; // Guard flag to prevent onAuthStateChanged from interfering during user creation
+
+    // ========== RBAC STATE ==========
+    var currentUserProfile = null;
+    var currentUserRole = null;
+
+    function isSuperAdmin() { return currentUserRole === 'super_admin'; }
+    function isEditor() { return currentUserRole === 'editor'; }
+    function isViewer() { return currentUserRole === 'viewer'; }
+    function canManageUsers() { return isSuperAdmin(); }
+    function canCreateOrEditInventory() { return isSuperAdmin() || isEditor(); }
+    function canDeleteInventory() { return isSuperAdmin(); }
 
     // ========== CONFIG ==========
     var UPLOAD_CONFIG = {
@@ -34,7 +44,7 @@
         var t = $('adminToast');
         t.textContent = msg;
         t.className = 'admin-toast ' + (type || 'success') + ' show';
-        setTimeout(function() { t.classList.remove('show'); }, 3000);
+        setTimeout(function() { t.classList.remove('show'); }, 4000);
     }
 
     function formatPrice(n) {
@@ -45,7 +55,6 @@
     // ========== IMAGE COMPRESSION ==========
     function compressImage(file) {
         return new Promise(function(resolve, reject) {
-            // If already small enough and is webp, skip compression
             if (file.size <= 200 * 1024 && file.type === 'image/webp') {
                 resolve(file);
                 return;
@@ -57,7 +66,6 @@
 
             reader.onload = function(e) {
                 img.onload = function() {
-                    // Calculate new dimensions (max 1200px wide, maintain ratio)
                     var maxW = UPLOAD_CONFIG.maxWidthPx;
                     var w = img.width;
                     var h = img.height;
@@ -73,66 +81,100 @@
                     var ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
 
-                    // Try WebP first, fallback to JPEG
                     var outputType = 'image/webp';
                     var quality = UPLOAD_CONFIG.compressionQuality;
 
                     canvas.toBlob(function(blob) {
                         if (!blob) {
-                            // WebP not supported, try JPEG
                             canvas.toBlob(function(jpegBlob) {
-                                if (!jpegBlob) {
-                                    resolve(file); // Give up, use original
-                                    return;
-                                }
-                                var ext = '.jpg';
-                                var name = file.name.replace(/\.[^.]+$/, '') + '_compressed' + ext;
-                                var compressed = new File([jpegBlob], name, { type: 'image/jpeg' });
-                                console.log('Compressed: ' + (file.size / 1024).toFixed(0) + 'KB -> ' + (compressed.size / 1024).toFixed(0) + 'KB (JPEG)');
-                                resolve(compressed);
+                                if (!jpegBlob) { resolve(file); return; }
+                                var name = file.name.replace(/\.[^.]+$/, '') + '_compressed.jpg';
+                                resolve(new File([jpegBlob], name, { type: 'image/jpeg' }));
                             }, 'image/jpeg', quality);
                             return;
                         }
-                        var ext = '.webp';
-                        var name = file.name.replace(/\.[^.]+$/, '') + '_compressed' + ext;
-                        var compressed = new File([blob], name, { type: outputType });
-                        console.log('Compressed: ' + (file.size / 1024).toFixed(0) + 'KB -> ' + (compressed.size / 1024).toFixed(0) + 'KB (WebP)');
-                        resolve(compressed);
+                        var name = file.name.replace(/\.[^.]+$/, '') + '_compressed.webp';
+                        resolve(new File([blob], name, { type: outputType }));
                     }, outputType, quality);
                 };
 
-                img.onerror = function() {
-                    reject(new Error('No se pudo leer la imagen'));
-                };
-
+                img.onerror = function() { reject(new Error('No se pudo leer la imagen')); };
                 img.src = e.target.result;
             };
 
-            reader.onerror = function() {
-                reject(new Error('No se pudo leer el archivo'));
-            };
-
+            reader.onerror = function() { reject(new Error('No se pudo leer el archivo')); };
             reader.readAsDataURL(file);
         });
     }
 
-    // ========== AUTH ==========
+    // ========== AUTH + RBAC INITIALIZATION ==========
     function initAuth() {
         window.firebaseReady.then(function() {
             window.auth.onAuthStateChanged(function(user) {
-                // Skip auth state changes while creating a new user
-                // (createUserWithEmailAndPassword triggers multiple state changes)
-                if (_creatingUser) {
-                    console.log('[Auth] Skipping state change during user creation. User:', user ? user.email : 'null');
-                    return;
-                }
                 if (user) {
-                    showAdmin(user);
+                    loadUserProfile(user);
                 } else {
+                    currentUserProfile = null;
+                    currentUserRole = null;
                     showLogin();
                 }
             });
         });
+    }
+
+    function loadUserProfile(authUser) {
+        // Load user's role from Firestore
+        window.db.collection('usuarios').doc(authUser.uid).get()
+            .then(function(doc) {
+                if (doc.exists) {
+                    currentUserProfile = doc.data();
+                    currentUserProfile._docId = doc.id;
+                    currentUserRole = currentUserProfile.rol;
+                    console.log('[RBAC] Profile loaded. Role:', currentUserRole, 'Email:', authUser.email);
+                    showAdmin(authUser);
+                } else {
+                    // Check if this is the FIRST user ever (bootstrap super_admin)
+                    return window.db.collection('usuarios').get().then(function(snap) {
+                        if (snap.empty) {
+                            // No users exist at all - auto-create as super_admin
+                            var autoProfile = {
+                                nombre: authUser.displayName || authUser.email.split('@')[0],
+                                email: authUser.email,
+                                rol: 'super_admin',
+                                estado: 'activo',
+                                uid: authUser.uid,
+                                creadoEn: new Date().toISOString(),
+                                creadoPor: 'sistema'
+                            };
+                            return window.db.collection('usuarios').doc(authUser.uid).set(autoProfile)
+                                .then(function() {
+                                    currentUserProfile = autoProfile;
+                                    currentUserProfile._docId = authUser.uid;
+                                    currentUserRole = 'super_admin';
+                                    console.log('[RBAC] First user bootstrapped as super_admin');
+                                    showAdmin(authUser);
+                                });
+                        } else {
+                            // Users exist but this person has no profile -> deny access
+                            showAccessDenied(authUser.email);
+                        }
+                    });
+                }
+            })
+            .catch(function(err) {
+                console.error('[RBAC] Error loading profile:', err);
+                // If permission-denied, try reading own profile only
+                showAccessDenied(authUser.email);
+            });
+    }
+
+    function showAccessDenied(email) {
+        $('loginScreen').style.display = 'flex';
+        $('adminPanel').style.display = 'none';
+        var errEl = $('loginError');
+        errEl.style.display = 'block';
+        errEl.textContent = 'Acceso denegado para ' + email + '. No tienes un perfil de administrador. Contacta al Super Admin.';
+        window.auth.signOut();
     }
 
     function showLogin() {
@@ -143,10 +185,33 @@
     function showAdmin(user) {
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'flex';
-        $('adminEmail').textContent = user.email;
+        $('adminEmail').textContent = user.email + ' (' + (currentUserRole === 'super_admin' ? 'Super Admin' : currentUserRole === 'editor' ? 'Editor' : 'Viewer') + ')';
+
+        applyRolePermissions();
         loadData();
     }
 
+    // ========== APPLY ROLE PERMISSIONS TO UI ==========
+    function applyRolePermissions() {
+        // Users nav/section: only super_admin
+        var usersNav = document.querySelector('.nav-item[data-section="users"]');
+        if (usersNav) {
+            usersNav.style.display = canManageUsers() ? '' : 'none';
+        }
+
+        // Create buttons: hidden for viewer
+        var btnAddVehicle = $('btnAddVehicle');
+        var btnAddBrand = $('btnAddBrand');
+        if (btnAddVehicle) btnAddVehicle.style.display = canCreateOrEditInventory() ? '' : 'none';
+        if (btnAddBrand) btnAddBrand.style.display = canCreateOrEditInventory() ? '' : 'none';
+
+        // Vehicle search (visible to all)
+        // Settings section (visible to all - password change is personal)
+
+        console.log('[RBAC] UI permissions applied for role:', currentUserRole);
+    }
+
+    // ========== LOGIN ==========
     $('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
         var email = $('loginEmail').value;
@@ -210,25 +275,25 @@
         sidebarOverlay.classList.remove('active');
     }
 
-    if (hamburgerBtn) {
-        hamburgerBtn.addEventListener('click', toggleMobileMenu);
-    }
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', closeMobileMenu);
-    }
+    if (hamburgerBtn) hamburgerBtn.addEventListener('click', toggleMobileMenu);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeMobileMenu);
 
-    // Mobile logout
     var mobileLogoutBtn = $('mobileLogoutBtn');
     if (mobileLogoutBtn) {
-        mobileLogoutBtn.addEventListener('click', function() {
-            window.auth.signOut();
-        });
+        mobileLogoutBtn.addEventListener('click', function() { window.auth.signOut(); });
     }
 
-    // ========== NAVIGATION ==========
+    // ========== NAVIGATION WITH PERMISSION GUARD ==========
     document.querySelectorAll('.nav-item[data-section]').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var section = this.getAttribute('data-section');
+
+            // Guard: prevent non-super-admin from accessing users section
+            if (section === 'users' && !canManageUsers()) {
+                toast('No tienes permisos para acceder a esta seccion', 'error');
+                return;
+            }
+
             document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
             this.classList.add('active');
             document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
@@ -253,7 +318,11 @@
             updateStats();
             updateNavBadges();
         });
-        loadUsers();
+
+        // Only load users if super_admin (avoids permission errors for editor/viewer)
+        if (canManageUsers()) {
+            loadUsers();
+        }
     }
 
     function loadUsers() {
@@ -264,7 +333,6 @@
                 return data;
             });
             renderUsersTable();
-            updateNavBadges();
         }).catch(function(err) {
             console.error('Error loading users:', err);
             $('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Error al cargar usuarios: ' + err.message + '</td></tr>';
@@ -280,7 +348,6 @@
         $('statMarcas').textContent = brands.length;
     }
 
-    // Populate brand select in vehicle form dynamically
     function populateBrandSelect() {
         var select = $('vMarca');
         var currentVal = select.value;
@@ -300,11 +367,9 @@
         var el = $('storageEstimator');
         if (!el) return;
 
-        // Count total images across all vehicles
         var totalImages = 0;
         vehicles.forEach(function(v) {
             if (v.imagenes && v.imagenes.length) {
-                // Only count Storage URLs (not local/external)
                 v.imagenes.forEach(function(url) {
                     if (url && (url.indexOf('firebasestorage') >= 0 || url.indexOf('storage.googleapis') >= 0)) {
                         totalImages++;
@@ -313,27 +378,24 @@
             }
         });
 
-        var avgSizeKB = 150; // After compression, avg ~150KB per image
+        var avgSizeKB = 150;
         var storageUsedMB = (totalImages * avgSizeKB) / 1024;
         var storageUsedGB = storageUsedMB / 1024;
         var storagePct = (storageUsedGB / FREE_TIER.storageGB) * 100;
 
-        // Estimate egress: assume each image loaded 3x/day avg * 30 days
         var visitsInput = $('estVisitas');
         var monthlyVisits = visitsInput ? (parseInt(visitsInput.value) || 500) : 500;
-        var avgImagesPerVisit = 8; // homepage + some detail pages
+        var avgImagesPerVisit = 8;
         var egressGB = (monthlyVisits * avgImagesPerVisit * avgSizeKB) / (1024 * 1024);
         var egressPct = (egressGB / FREE_TIER.egressGB) * 100;
 
-        var classAUsed = totalImages; // 1 upload per image
+        var classAUsed = totalImages;
         var classAPct = (classAUsed / FREE_TIER.classAOps) * 100;
 
-        // Downloads = visits * images per visit
         var classBUsed = monthlyVisits * avgImagesPerVisit;
         var classBPct = (classBUsed / FREE_TIER.classBOps) * 100;
 
         var maxPct = Math.max(storagePct, egressPct, classAPct, classBPct);
-        var alertClass = maxPct >= 70 ? 'est-warning' : 'est-safe';
 
         var html = '<div class="est-grid">' +
             renderEstBar('Almacenamiento', storageUsedMB.toFixed(1) + ' MB', storageUsedGB.toFixed(3) + ' / ' + FREE_TIER.storageGB + ' GB', storagePct) +
@@ -343,33 +405,29 @@
         '</div>';
 
         if (maxPct >= 70) {
-            html += '<div style="margin-top:0.75rem;padding:0.5rem 0.75rem;background:rgba(210,153,34,0.15);border:1px solid var(--admin-warning);border-radius:6px;font-size:0.8rem;color:var(--admin-warning);">' +
-                '⚠ Te estas acercando al limite gratuito. Considera reducir imagenes o visitas.' +
-            '</div>';
+            html += '<div style="margin-top:0.75rem;padding:0.5rem 0.75rem;background:rgba(210,153,34,0.15);border:1px solid var(--admin-warning);border-radius:6px;font-size:0.8rem;color:var(--admin-warning);">Te estas acercando al limite gratuito. Considera reducir imagenes o visitas.</div>';
         } else {
-            html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--admin-text-muted);">' +
-                totalImages + ' imagenes en Storage | Compresion automatica activa (~150KB/img)' +
-            '</div>';
+            html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--admin-text-muted);">' + totalImages + ' imagenes en Storage | Compresion automatica activa (~150KB/img)</div>';
         }
 
         el.innerHTML = html;
     }
 
     function renderEstBar(label, value, detail, pct) {
-        var color = pct >= 70 ? 'var(--admin-warning)' : pct >= 90 ? 'var(--admin-danger)' : 'var(--admin-success)';
+        var color = pct >= 90 ? 'var(--admin-danger)' : pct >= 70 ? 'var(--admin-warning)' : 'var(--admin-success)';
         var clampedPct = Math.min(pct, 100);
-        return '<div class="est-item">' +
-            '<div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:2px;">' +
-                '<span>' + label + '</span>' +
-                '<span style="color:var(--admin-text-muted);">' + detail + '</span>' +
-            '</div>' +
-            '<div style="height:6px;background:var(--admin-border);border-radius:3px;overflow:hidden;">' +
-                '<div style="height:100%;width:' + clampedPct + '%;background:' + color + ';border-radius:3px;transition:width 0.3s;"></div>' +
-            '</div>' +
-        '</div>';
+        return '<div class="est-item"><div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:2px;"><span>' + label + '</span><span style="color:var(--admin-text-muted);">' + detail + '</span></div><div style="height:6px;background:var(--admin-border);border-radius:3px;overflow:hidden;"><div style="height:100%;width:' + clampedPct + '%;background:' + color + ';border-radius:3px;transition:width 0.3s;"></div></div></div>';
     }
 
-    // ========== VEHICLES TABLE ==========
+    // ========== NAV BADGES ==========
+    function updateNavBadges() {
+        var vBadge = $('navBadgeVehicles');
+        var bBadge = $('navBadgeBrands');
+        if (vBadge) vBadge.textContent = vehicles.length || '';
+        if (bBadge) bBadge.textContent = brands.length || '';
+    }
+
+    // ========== VEHICLES TABLE (RBAC-aware) ==========
     function renderVehiclesTable(filter) {
         var filtered = vehicles;
         if (filter) {
@@ -387,6 +445,15 @@
             if (v.destacado) badges += '<span class="badge badge-destacado">Destacado</span> ';
             if (v.oferta || v.precioOferta) badges += '<span class="badge badge-oferta">Oferta</span> ';
 
+            var actions = '';
+            if (canCreateOrEditInventory()) {
+                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
+            }
+            if (canDeleteInventory()) {
+                actions += '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteVehicle(' + v.id + ')">Eliminar</button>';
+            }
+            if (!actions) actions = '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Solo lectura</span>';
+
             html += '<tr>' +
                 '<td>' + v.id + '</td>' +
                 '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
@@ -395,10 +462,7 @@
                 '<td>' + (v.categoria || '-') + '</td>' +
                 '<td>' + formatPrice(v.precio) + (v.precioOferta ? '<br><small style="color: var(--admin-warning);">' + formatPrice(v.precioOferta) + '</small>' : '') + '</td>' +
                 '<td>' + badges + '</td>' +
-                '<td>' +
-                    '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ' +
-                    '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteVehicle(' + v.id + ')">Eliminar</button>' +
-                '</td>' +
+                '<td>' + actions + '</td>' +
             '</tr>';
         });
 
@@ -410,21 +474,28 @@
         renderVehiclesTable(this.value);
     });
 
-    // ========== BRANDS TABLE ==========
+    // ========== BRANDS TABLE (RBAC-aware) ==========
     function renderBrandsTable() {
         var html = '';
         brands.forEach(function(b) {
             var count = vehicles.filter(function(v) { return v.marca === b.id; }).length;
+
+            var actions = '';
+            if (canCreateOrEditInventory()) {
+                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editBrand(\'' + b.id + '\')">Editar</button> ';
+            }
+            if (canDeleteInventory()) {
+                actions += '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteBrand(\'' + b.id + '\')">Eliminar</button>';
+            }
+            if (!actions) actions = '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Solo lectura</span>';
+
             html += '<tr>' +
                 '<td><img class="vehicle-thumb" src="' + (b.logo || '') + '" alt="' + b.nombre + '" onerror="this.style.display=\'none\'" style="width:40px;height:40px;object-fit:contain;"></td>' +
                 '<td><code>' + b.id + '</code></td>' +
                 '<td><strong>' + b.nombre + '</strong></td>' +
                 '<td>' + (b.descripcion || '-') + '</td>' +
                 '<td>' + count + '</td>' +
-                '<td>' +
-                    '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editBrand(\'' + b.id + '\')">Editar</button> ' +
-                    '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteBrand(\'' + b.id + '\')">Eliminar</button>' +
-                '</td>' +
+                '<td>' + actions + '</td>' +
             '</tr>';
         });
 
@@ -433,9 +504,7 @@
     }
 
     // ========== VEHICLE MODAL ==========
-    function openModal() {
-        $('vehicleModal').classList.add('active');
-    }
+    function openModal() { $('vehicleModal').classList.add('active'); }
 
     function closeModalFn() {
         $('vehicleModal').classList.remove('active');
@@ -450,6 +519,7 @@
     }
 
     $('btnAddVehicle').addEventListener('click', function() {
+        if (!canCreateOrEditInventory()) { toast('No tienes permisos para crear vehiculos', 'error'); return; }
         $('modalTitle').textContent = 'Agregar Vehiculo';
         $('vId').value = '';
         $('vehicleForm').reset();
@@ -465,24 +535,17 @@
 
     $('closeModal').addEventListener('click', closeModalFn);
     $('cancelModal').addEventListener('click', closeModalFn);
+    $('vehicleModal').addEventListener('click', function(e) { if (e.target === this) closeModalFn(); });
 
-    $('vehicleModal').addEventListener('click', function(e) {
-        if (e.target === this) closeModalFn();
-    });
-
-    // Prevent Enter key from submitting/closing the vehicle form
-    $('vehicleForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-    });
-
+    $('vehicleForm').addEventListener('submit', function(e) { e.preventDefault(); });
     $('vehicleForm').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-            e.preventDefault();
-        }
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault();
     });
 
     // ========== EDIT VEHICLE ==========
     function editVehicle(id) {
+        if (!canCreateOrEditInventory()) { toast('No tienes permisos para editar vehiculos', 'error'); return; }
+
         var v = vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
 
@@ -516,7 +579,6 @@
         $('vPeritaje').checked = v.peritaje !== false;
         $('vCaracteristicas').value = (v.caracteristicas || []).join('\n');
 
-        // Load existing images
         uploadedImageUrls = (v.imagenes && v.imagenes.length) ? v.imagenes.slice() : (v.imagen ? [v.imagen] : []);
         renderUploadedImages();
         $('uploadError').style.display = 'none';
@@ -526,11 +588,10 @@
 
     // ========== SAVE VEHICLE ==========
     $('saveVehicle').addEventListener('click', function() {
+        if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
+
         var form = $('vehicleForm');
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
+        if (!form.checkValidity()) { form.reportValidity(); return; }
 
         var existingId = $('vId').value;
         var id = existingId ? parseInt(existingId) : getNextId();
@@ -586,7 +647,11 @@
                 loadData();
             })
             .catch(function(err) {
-                toast('Error: ' + err.message, 'error');
+                if (err.code === 'permission-denied') {
+                    toast('Sin permisos para esta accion. Contacta al Super Admin.', 'error');
+                } else {
+                    toast('Error: ' + err.message, 'error');
+                }
             })
             .finally(function() {
                 btn.disabled = false;
@@ -599,8 +664,13 @@
         return Math.max.apply(null, vehicles.map(function(v) { return v.id || 0; })) + 1;
     }
 
-    // ========== DELETE VEHICLE ==========
+    // ========== DELETE VEHICLE (super_admin only) ==========
     function deleteVehicleFn(id) {
+        if (!canDeleteInventory()) {
+            toast('Solo un Super Admin puede eliminar vehiculos', 'error');
+            return;
+        }
+
         var v = vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
 
@@ -621,6 +691,7 @@
 
     $('confirmDelete').addEventListener('click', function() {
         if (!deleteTargetId) return;
+        if (!canDeleteInventory()) { toast('Sin permisos', 'error'); return; }
 
         var btn = $('confirmDelete');
         btn.disabled = true;
@@ -634,7 +705,11 @@
                 loadData();
             })
             .catch(function(err) {
-                toast('Error: ' + err.message, 'error');
+                if (err.code === 'permission-denied') {
+                    toast('Sin permisos para eliminar. Solo Super Admin puede eliminar.', 'error');
+                } else {
+                    toast('Error: ' + err.message, 'error');
+                }
             })
             .finally(function() {
                 btn.disabled = false;
@@ -648,28 +723,15 @@
 
     uploadArea.addEventListener('click', function() { fileInput.click(); });
 
-    uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.classList.add('dragover');
-    });
-
-    uploadArea.addEventListener('dragleave', function() {
-        this.classList.remove('dragover');
-    });
-
+    uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', function() { this.classList.remove('dragover'); });
     uploadArea.addEventListener('drop', function(e) {
         e.preventDefault();
         this.classList.remove('dragover');
-        if (e.dataTransfer.files.length) {
-            handleFiles(e.dataTransfer.files);
-        }
+        if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
     });
-
     fileInput.addEventListener('change', function() {
-        if (this.files.length) {
-            handleFiles(this.files);
-            this.value = '';
-        }
+        if (this.files.length) { handleFiles(this.files); this.value = ''; }
     });
 
     function showUploadError(msg) {
@@ -679,29 +741,18 @@
     }
 
     function handleFiles(files) {
-        if (!window.storage) {
-            showUploadError('Firebase Storage no esta disponible. Usa la opcion de URL manual abajo.');
-            return;
-        }
+        if (!window.storage) { showUploadError('Firebase Storage no esta disponible. Usa la opcion de URL manual.'); return; }
 
         var fileArray = Array.from(files);
-
-        // Validate file types
-        var invalidType = fileArray.filter(function(f) {
-            return UPLOAD_CONFIG.allowedTypes.indexOf(f.type) === -1;
-        });
+        var invalidType = fileArray.filter(function(f) { return UPLOAD_CONFIG.allowedTypes.indexOf(f.type) === -1; });
         if (invalidType.length) {
-            showUploadError('Formatos permitidos: JPG, PNG, WebP. Archivos rechazados: ' + invalidType.map(function(f) { return f.name; }).join(', '));
+            showUploadError('Formatos permitidos: JPG, PNG, WebP. Rechazados: ' + invalidType.map(function(f) { return f.name; }).join(', '));
             return;
         }
 
-        // Validate file sizes (before compression)
         var maxBytes = UPLOAD_CONFIG.maxFileSizeMB * 1024 * 1024;
-        var oversized = fileArray.filter(function(f) { return f.size > maxBytes * 5; }); // Allow up to 10MB raw, compression will reduce
-        if (oversized.length) {
-            showUploadError('Imagenes demasiado grandes (max 10MB original). Reduce el tamano antes de subir.');
-            return;
-        }
+        var oversized = fileArray.filter(function(f) { return f.size > maxBytes * 5; });
+        if (oversized.length) { showUploadError('Imagenes demasiado grandes (max 10MB).'); return; }
 
         $('uploadError').style.display = 'none';
         var total = fileArray.length;
@@ -712,19 +763,13 @@
         $('progressFill').style.width = '0%';
 
         fileArray.forEach(function(file) {
-            // Compress then upload
             compressImage(file).then(function(compressed) {
-                // Check compressed size
-                if (compressed.size > UPLOAD_CONFIG.maxFileSizeMB * 1024 * 1024) {
-                    console.warn('Compressed file still too large: ' + (compressed.size / 1024).toFixed(0) + 'KB');
-                }
                 return uploadFileToStorage(compressed);
             }).then(function(success) {
                 done++;
                 if (!success) errors++;
                 updateUploadProgress(done, total, errors);
-            }).catch(function(err) {
-                console.error('Compress/upload error:', err);
+            }).catch(function() {
                 done++;
                 errors++;
                 updateUploadProgress(done, total, errors);
@@ -735,87 +780,48 @@
     function updateUploadProgress(done, total, errors) {
         var pct = Math.round((done / total) * 100);
         $('progressFill').style.width = pct + '%';
-        $('uploadStatus').textContent = 'Comprimiendo y subiendo ' + done + ' de ' + total + '...';
+        $('uploadStatus').textContent = 'Subiendo ' + done + ' de ' + total + '...';
         if (done === total) {
-            setTimeout(function() {
-                $('uploadProgress').style.display = 'none';
-            }, 1000);
-            if (errors === total) {
-                showUploadError('No se pudieron subir las imagenes. Verifica que Firebase Storage este habilitado y las reglas permitan escritura autenticada (Firebase Console > Storage > Reglas). Mientras tanto, usa URL manual.');
-            } else if (errors > 0) {
-                toast((total - errors) + ' subida(s), ' + errors + ' error(es)', 'error');
-            } else {
-                toast(total + ' imagen(es) comprimida(s) y subida(s)');
-            }
+            setTimeout(function() { $('uploadProgress').style.display = 'none'; }, 1000);
+            if (errors === total) showUploadError('No se pudieron subir las imagenes. Verifica Storage.');
+            else if (errors > 0) toast((total - errors) + ' subida(s), ' + errors + ' error(es)', 'error');
+            else toast(total + ' imagen(es) subida(s)');
         }
     }
 
     function uploadFileToStorage(file) {
         return new Promise(function(resolve) {
-            if (!window.storage) {
-                showUploadError('Firebase Storage no disponible. Usa URLs manuales.');
-                resolve(false);
-                return;
-            }
+            if (!window.storage) { resolve(false); return; }
 
             var timestamp = Date.now();
             var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
             var path = UPLOAD_CONFIG.storagePath + timestamp + '_' + safeName;
-
-            // Diagnostic log
-            var user = window.auth.currentUser;
-            console.log('[Storage Upload] Diagnostico:');
-            console.log('  Bucket: ' + (window.storage.app.options.storageBucket || 'no definido'));
-            console.log('  Ruta: ' + path);
-            console.log('  Archivo: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB, ' + file.type + ')');
-            console.log('  Usuario: ' + (user ? user.email + ' (uid: ' + user.uid + ')' : 'NO AUTENTICADO'));
 
             try {
                 var ref = window.storage.ref(path);
                 ref.put(file).then(function(snapshot) {
                     return snapshot.ref.getDownloadURL();
                 }).then(function(url) {
-                    console.log('[Storage Upload] OK: ' + url);
                     uploadedImageUrls.push(url);
                     renderUploadedImages();
                     resolve(true);
                 }).catch(function(err) {
-                    console.error('[Storage Upload] FALLO:', err);
-                    console.error('  error.code: ' + err.code);
-                    console.error('  error.message: ' + err.message);
-                    var errorMsg = 'Error subiendo imagen: ';
-                    if (err.code === 'storage/unauthorized') {
-                        errorMsg += 'No autorizado. Ve a Firebase Console > Storage > Reglas y permite escritura para usuarios autenticados en /cars/.';
-                    } else if (err.code === 'storage/object-not-found' || err.code === 'storage/bucket-not-found') {
-                        errorMsg += 'Bucket no encontrado. Verifica que Storage este activado en Firebase Console.';
-                    } else if (err.code === 'storage/retry-limit-exceeded' || err.code === 'storage/canceled') {
-                        errorMsg += 'Conexion fallida. Revisa tu internet.';
-                    } else if (err.code === 'storage/unknown') {
-                        errorMsg += 'Error desconocido. Abre la consola del navegador (F12) para ver detalles.';
-                    } else {
-                        errorMsg += (err.message || err.code || 'Error desconocido') + ' (Abre F12 > Console para diagnostico)';
-                    }
-                    showUploadError(errorMsg);
+                    console.error('[Storage Upload] FALLO:', err.code, err.message);
+                    showUploadError('Error subiendo imagen: ' + (err.message || err.code));
                     resolve(false);
                 });
             } catch (e) {
                 console.error('[Storage Upload] Excepcion:', e);
-                showUploadError('Error accediendo a Firebase Storage. Abre F12 > Console para diagnostico.');
                 resolve(false);
             }
         });
     }
 
-    // Manual URL image input
     $('btnAddImageUrl').addEventListener('click', function() {
         var url = $('manualImageUrl').value.trim();
-        if (!url) {
-            toast('Ingresa una URL de imagen', 'error');
-            return;
-        }
+        if (!url) { toast('Ingresa una URL', 'error'); return; }
         if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('multimedia/')) {
-            toast('Ingresa una URL valida (https://...)', 'error');
-            return;
+            toast('URL no valida', 'error'); return;
         }
         uploadedImageUrls.push(url);
         renderUploadedImages();
@@ -835,7 +841,6 @@
             '</div>';
         });
         container.innerHTML = html;
-
         $('vImagen').value = uploadedImageUrls[0] || '';
         $('vImagenes').value = uploadedImageUrls.join('\n');
     }
@@ -846,9 +851,7 @@
     }
 
     // ========== BRANDS CRUD ==========
-    function openBrandModal() {
-        $('brandModal').classList.add('active');
-    }
+    function openBrandModal() { $('brandModal').classList.add('active'); }
 
     function closeBrandModalFn() {
         $('brandModal').classList.remove('active');
@@ -858,11 +861,10 @@
     }
 
     $('brandForm').addEventListener('submit', function(e) { e.preventDefault(); });
-    $('brandForm').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') e.preventDefault();
-    });
+    $('brandForm').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
 
     $('btnAddBrand').addEventListener('click', function() {
+        if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
         $('brandModalTitle').textContent = 'Agregar Marca';
         $('bOriginalId').value = '';
         $('brandForm').reset();
@@ -873,10 +875,7 @@
 
     $('closeBrandModal').addEventListener('click', closeBrandModalFn);
     $('cancelBrandModal').addEventListener('click', closeBrandModalFn);
-
-    $('brandModal').addEventListener('click', function(e) {
-        if (e.target === this) closeBrandModalFn();
-    });
+    $('brandModal').addEventListener('click', function(e) { if (e.target === this) closeBrandModalFn(); });
 
     $('bLogo').addEventListener('input', function() {
         var url = this.value.trim();
@@ -888,6 +887,7 @@
     });
 
     function editBrand(brandId) {
+        if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
         var b = brands.find(function(x) { return x.id === brandId; });
         if (!b) return;
 
@@ -907,11 +907,10 @@
     }
 
     $('saveBrand').addEventListener('click', function() {
+        if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
+
         var form = $('brandForm');
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
+        if (!form.checkValidity()) { form.reportValidity(); return; }
 
         var brandId = $('bId').value.trim().toLowerCase();
         var originalId = $('bOriginalId').value;
@@ -935,7 +934,8 @@
                 loadData();
             })
             .catch(function(err) {
-                toast('Error: ' + err.message, 'error');
+                if (err.code === 'permission-denied') toast('Sin permisos', 'error');
+                else toast('Error: ' + err.message, 'error');
             })
             .finally(function() {
                 btn.disabled = false;
@@ -944,6 +944,8 @@
     });
 
     function deleteBrandFn(brandId) {
+        if (!canDeleteInventory()) { toast('Solo un Super Admin puede eliminar marcas', 'error'); return; }
+
         var b = brands.find(function(x) { return x.id === brandId; });
         if (!b) return;
 
@@ -952,18 +954,12 @@
         $('deleteBrandModal').classList.add('active');
     }
 
-    $('closeDeleteBrandModal').addEventListener('click', function() {
-        $('deleteBrandModal').classList.remove('active');
-        deleteBrandTargetId = null;
-    });
-
-    $('cancelDeleteBrand').addEventListener('click', function() {
-        $('deleteBrandModal').classList.remove('active');
-        deleteBrandTargetId = null;
-    });
+    $('closeDeleteBrandModal').addEventListener('click', function() { $('deleteBrandModal').classList.remove('active'); deleteBrandTargetId = null; });
+    $('cancelDeleteBrand').addEventListener('click', function() { $('deleteBrandModal').classList.remove('active'); deleteBrandTargetId = null; });
 
     $('confirmDeleteBrand').addEventListener('click', function() {
         if (!deleteBrandTargetId) return;
+        if (!canDeleteInventory()) { toast('Sin permisos', 'error'); return; }
 
         var btn = $('confirmDeleteBrand');
         btn.disabled = true;
@@ -977,7 +973,8 @@
                 loadData();
             })
             .catch(function(err) {
-                toast('Error: ' + err.message, 'error');
+                if (err.code === 'permission-denied') toast('Sin permisos para eliminar.', 'error');
+                else toast('Error: ' + err.message, 'error');
             })
             .finally(function() {
                 btn.disabled = false;
@@ -988,50 +985,23 @@
     // ========== ESTIMATOR EVENTS ==========
     var estVisitas = $('estVisitas');
     if (estVisitas) {
-        estVisitas.addEventListener('input', function() {
-            updateEstimator();
-        });
+        estVisitas.addEventListener('input', function() { updateEstimator(); });
     }
 
-    // ========== NAV BADGES ==========
-    function updateNavBadges() {
-        var vBadge = $('navBadgeVehicles');
-        var bBadge = $('navBadgeBrands');
-        if (vBadge) vBadge.textContent = vehicles.length || '';
-        if (bBadge) bBadge.textContent = brands.length || '';
-    }
-
-    // ========== USERS CRUD ==========
+    // ========== USERS CRUD (via Cloud Functions) ==========
     function renderUsersTable() {
         if (!users.length) {
-            var currentUser = window.auth.currentUser;
-            if (currentUser) {
-                // Auto-register the current logged-in admin if no users exist yet
-                var autoUser = {
-                    nombre: currentUser.displayName || currentUser.email.split('@')[0],
-                    email: currentUser.email,
-                    rol: 'super_admin',
-                    estado: 'activo',
-                    creadoEn: new Date().toISOString()
-                };
-                window.db.collection('usuarios').doc(currentUser.uid).set(autoUser).then(function() {
-                    autoUser._docId = currentUser.uid;
-                    users = [autoUser];
-                    renderUsersTable();
-                });
-                return;
-            }
             $('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No hay usuarios registrados</td></tr>';
             return;
         }
 
-        var currentEmail = window.auth.currentUser ? window.auth.currentUser.email : '';
+        var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : '';
         var html = '';
         users.forEach(function(u) {
             var rolLabel = u.rol === 'super_admin' ? 'Super Admin' : u.rol === 'editor' ? 'Editor' : 'Viewer';
             var rolClass = u.rol === 'super_admin' ? 'badge-destacado' : u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
             var estadoClass = u.estado === 'activo' ? 'badge-nuevo' : 'badge-usado';
-            var isSelf = u.email === currentEmail;
+            var isSelf = u._docId === currentUid;
 
             html += '<tr>' +
                 '<td><strong>' + (u.nombre || '-') + '</strong>' + (isSelf ? ' <small style="color:var(--admin-gold);">(tu)</small>' : '') + '</td>' +
@@ -1049,9 +1019,7 @@
     }
 
     // User Modal
-    function openUserModal() {
-        $('userModal').classList.add('active');
-    }
+    function openUserModal() { $('userModal').classList.add('active'); }
 
     function closeUserModalFn() {
         $('userModal').classList.remove('active');
@@ -1059,20 +1027,17 @@
         $('uOriginalUid').value = '';
         $('uPasswordGroup').style.display = '';
         $('uPassword').required = true;
-        $('uAdminPasswordGroup').style.display = '';
-        $('uAdminPassword').required = true;
         $('uEmail').readOnly = false;
         $('saveUser').textContent = 'Crear Usuario';
     }
 
     $('btnAddUser').addEventListener('click', function() {
+        if (!canManageUsers()) { toast('No tienes permisos', 'error'); return; }
         $('userModalTitle').textContent = 'Crear Usuario';
         $('uOriginalUid').value = '';
         $('userForm').reset();
         $('uPasswordGroup').style.display = '';
         $('uPassword').required = true;
-        $('uAdminPasswordGroup').style.display = '';
-        $('uAdminPassword').required = true;
         $('uEmail').readOnly = false;
         $('saveUser').textContent = 'Crear Usuario';
         openUserModal();
@@ -1080,17 +1045,12 @@
 
     $('closeUserModal').addEventListener('click', closeUserModalFn);
     $('cancelUserModal').addEventListener('click', closeUserModalFn);
-
-    $('userModal').addEventListener('click', function(e) {
-        if (e.target === this) closeUserModalFn();
-    });
-
+    $('userModal').addEventListener('click', function(e) { if (e.target === this) closeUserModalFn(); });
     $('userForm').addEventListener('submit', function(e) { e.preventDefault(); });
-    $('userForm').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') e.preventDefault();
-    });
+    $('userForm').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
 
     function editUser(uid) {
+        if (!canManageUsers()) { toast('No tienes permisos', 'error'); return; }
         var u = users.find(function(x) { return x._docId === uid; });
         if (!u) return;
 
@@ -1100,21 +1060,17 @@
         $('uEmail').value = u.email || '';
         $('uEmail').readOnly = true;
         $('uRol').value = u.rol || 'editor';
-        // Hide password fields when editing
         $('uPasswordGroup').style.display = 'none';
         $('uPassword').required = false;
-        $('uAdminPasswordGroup').style.display = 'none';
-        $('uAdminPassword').required = false;
         $('saveUser').textContent = 'Guardar Cambios';
         openUserModal();
     }
 
     $('saveUser').addEventListener('click', function() {
+        if (!canManageUsers()) { toast('No tienes permisos', 'error'); return; }
+
         var form = $('userForm');
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
+        if (!form.checkValidity()) { form.reportValidity(); return; }
 
         var originalUid = $('uOriginalUid').value;
         var isEdit = !!originalUid;
@@ -1122,122 +1078,41 @@
         var email = $('uEmail').value.trim();
         var rol = $('uRol').value;
         var password = $('uPassword').value;
-        var adminPassword = $('uAdminPassword').value;
 
         var btn = $('saveUser');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
         if (isEdit) {
-            // Update existing user profile in Firestore
-            var updateData = {
-                nombre: nombre,
-                rol: rol,
-                actualizadoEn: new Date().toISOString()
-            };
-            window.db.collection('usuarios').doc(originalUid).update(updateData)
-                .then(function() {
-                    toast('Usuario actualizado');
+            // Update via Cloud Function
+            var updateUserRole = window.functions.httpsCallable('updateUserRole');
+            updateUserRole({ uid: originalUid, nombre: nombre, rol: rol })
+                .then(function(result) {
+                    toast(result.data.message || 'Usuario actualizado');
                     closeUserModalFn();
                     loadUsers();
                 })
-                .catch(function(err) { toast('Error: ' + err.message, 'error'); })
-                .finally(function() { btn.disabled = false; btn.textContent = 'Guardar Cambios'; });
-        } else {
-            // === CREATE NEW USER IN FIREBASE AUTH + FIRESTORE ===
-            // Strategy: Use guard flag to block onAuthStateChanged interference.
-            // Sequence:
-            //   1. Activate guard flag (_creatingUser = true)
-            //   2. createUserWithEmailAndPassword → creates Auth account (auto-signs in as new user)
-            //   3. Capture the new user's UID
-            //   4. Immediately sign out the new user
-            //   5. Re-authenticate as the admin (who has Firestore write permissions)
-            //   6. Write user profile to Firestore AS the admin
-            //   7. Deactivate guard flag
-            //   8. Reload data
-
-            var adminEmail = window.auth.currentUser.email;
-            var newUid = null;
-
-            console.log('[CreateUser] Starting creation for:', email);
-
-            // Activate guard - prevent onAuthStateChanged from showing login screen
-            _creatingUser = true;
-
-            window.auth.createUserWithEmailAndPassword(email, password)
-                .then(function(credential) {
-                    newUid = credential.user.uid;
-                    console.log('[CreateUser] Auth account created. UID:', newUid);
-
-                    // Sign out the newly created user immediately
-                    return window.auth.signOut();
-                })
-                .then(function() {
-                    console.log('[CreateUser] Signed out new user. Re-authenticating admin...');
-
-                    // Re-authenticate as admin
-                    return window.auth.signInWithEmailAndPassword(adminEmail, adminPassword);
-                })
-                .then(function() {
-                    console.log('[CreateUser] Admin re-authenticated. Writing profile to Firestore...');
-
-                    // Now write to Firestore AS the admin (who has permissions)
-                    var userData = {
-                        nombre: nombre,
-                        email: email,
-                        rol: rol,
-                        estado: 'activo',
-                        uid: newUid,
-                        creadoEn: new Date().toISOString(),
-                        creadoPor: adminEmail
-                    };
-
-                    return window.db.collection('usuarios').doc(newUid).set(userData);
-                })
-                .then(function() {
-                    console.log('[CreateUser] SUCCESS - User created in Auth + Firestore');
-
-                    // Deactivate guard
-                    _creatingUser = false;
-
-                    toast('Usuario "' + nombre + '" creado exitosamente');
-                    closeUserModalFn();
-                    loadData();
-                })
                 .catch(function(err) {
-                    console.error('[CreateUser] ERROR:', err.code, err.message);
-                    _creatingUser = false;
-
-                    var errorMsg = 'Error: ';
-                    if (err.code === 'auth/email-already-in-use') {
-                        errorMsg += 'Este email ya tiene una cuenta en Firebase Auth. Si quieres re-agregarlo, eliminalo primero desde Firebase Console > Authentication.';
-                    } else if (err.code === 'auth/weak-password') {
-                        errorMsg += 'La contrasena debe tener al menos 6 caracteres.';
-                    } else if (err.code === 'auth/invalid-email') {
-                        errorMsg += 'El email no es valido.';
-                    } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-                        errorMsg += 'Tu contrasena de admin es incorrecta. El usuario Auth fue creado pero su perfil no se guardo. Verifica tu contrasena e intenta nuevamente.';
-                    } else {
-                        errorMsg += err.message;
-                    }
-                    toast(errorMsg, 'error');
-
-                    // Recovery: try to re-auth admin if we lost the session
-                    if (!window.auth.currentUser && adminPassword && adminEmail) {
-                        window.auth.signInWithEmailAndPassword(adminEmail, adminPassword)
-                            .then(function() {
-                                console.log('[CreateUser] Admin session recovered');
-                                showAdmin(window.auth.currentUser);
-                            })
-                            .catch(function(reAuthErr) {
-                                console.error('[CreateUser] Failed to recover admin session:', reAuthErr);
-                                toast('Sesion perdida. Por favor recarga la pagina e inicia sesion.', 'error');
-                                showLogin();
-                            });
-                    }
+                    toast('Error: ' + (err.message || 'No se pudo actualizar'), 'error');
                 })
                 .finally(function() {
-                    _creatingUser = false;
+                    btn.disabled = false;
+                    btn.textContent = 'Guardar Cambios';
+                });
+        } else {
+            // Create via Cloud Function (no session change!)
+            var createManagedUser = window.functions.httpsCallable('createManagedUser');
+            createManagedUser({ nombre: nombre, email: email, password: password, rol: rol })
+                .then(function(result) {
+                    toast(result.data.message || 'Usuario creado exitosamente');
+                    closeUserModalFn();
+                    loadUsers();
+                })
+                .catch(function(err) {
+                    console.error('[CreateUser] Error:', err);
+                    toast('Error: ' + (err.message || 'No se pudo crear el usuario'), 'error');
+                })
+                .finally(function() {
                     btn.disabled = false;
                     btn.textContent = 'Crear Usuario';
                 });
@@ -1245,28 +1120,34 @@
     });
 
     function deleteUserFn(uid) {
-        var u = users.find(function(x) { return x._docId === uid; });
-        if (!u) return;
+        if (!canManageUsers()) { toast('No tienes permisos', 'error'); return; }
 
-        var currentEmail = window.auth.currentUser ? window.auth.currentUser.email : '';
-        if (u.email === currentEmail) {
+        var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : '';
+        if (uid === currentUid) {
             toast('No puedes eliminar tu propia cuenta', 'error');
             return;
         }
 
-        deleteUserTargetId = uid;
-        if (confirm('Eliminar usuario "' + (u.nombre || u.email) + '"?\n\nSe desactivara su perfil y no podra acceder al panel.\nPara eliminar su cuenta de Firebase Auth, hazlo desde la consola de Firebase.')) {
-            // Mark as inactive in Firestore (the Auth account persists but user won't have a valid profile)
-            window.db.collection('usuarios').doc(uid).delete()
-                .then(function() {
-                    toast('Perfil de usuario eliminado. Recuerda eliminar su cuenta desde Firebase Console > Authentication si deseas eliminarlo completamente.');
-                    deleteUserTargetId = null;
-                    loadUsers();
-                })
-                .catch(function(err) {
-                    toast('Error: ' + err.message, 'error');
-                });
+        var u = users.find(function(x) { return x._docId === uid; });
+        if (!u) return;
+
+        if (!confirm('Eliminar usuario "' + (u.nombre || u.email) + '"?\n\nSe eliminara tanto su perfil como su cuenta de autenticacion. Esta accion no se puede deshacer.')) {
+            return;
         }
+
+        toast('Eliminando usuario...', 'info');
+
+        // Delete via Cloud Function (deletes Auth + Firestore)
+        var deleteManagedUser = window.functions.httpsCallable('deleteManagedUser');
+        deleteManagedUser({ uid: uid })
+            .then(function(result) {
+                toast(result.data.message || 'Usuario eliminado completamente');
+                loadUsers();
+            })
+            .catch(function(err) {
+                console.error('[DeleteUser] Error:', err);
+                toast('Error: ' + (err.message || 'No se pudo eliminar'), 'error');
+            });
     }
 
     // ========== EXPOSE FUNCTIONS ==========

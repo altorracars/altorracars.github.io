@@ -33,7 +33,8 @@
                 loadScript(CDN_BASE + '/firebase-analytics-compat.js'),
                 loadScript(CDN_BASE + '/firebase-firestore-compat.js'),
                 loadScript(CDN_BASE + '/firebase-auth-compat.js'),
-                loadScript(CDN_BASE + '/firebase-storage-compat.js')
+                loadScript(CDN_BASE + '/firebase-storage-compat.js'),
+                loadScript(CDN_BASE + '/firebase-functions-compat.js')
             ]);
         })
         .then(function() {
@@ -42,15 +43,17 @@
             var db = firebase.firestore();
             var auth = firebase.auth();
             var storage = firebase.storage();
+            var functions = firebase.functions();
 
             window.firebaseApp = app;
             window.firebaseAnalytics = analytics;
             window.db = db;
             window.auth = auth;
             window.storage = storage;
+            window.functions = functions;
 
-            console.log('Firebase + Firestore + Auth + Storage initialized');
-            return { app: app, analytics: analytics, db: db, auth: auth, storage: storage };
+            console.log('Firebase + Firestore + Auth + Storage + Functions initialized');
+            return { app: app, analytics: analytics, db: db, auth: auth, storage: storage, functions: functions };
         })
         .catch(function(error) {
             console.warn('Firebase could not be loaded:', error);

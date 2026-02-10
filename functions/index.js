@@ -81,18 +81,23 @@ async function verifySuperAdminV1(context) {
         throw new functions.https.HttpsError('unauthenticated', 'Debes iniciar sesion.');
     }
 
-    const callerDoc = await db.collection('usuarios').doc(context.auth.uid).get();
-
-    if (!callerDoc.exists) {
-        throw new functions.https.HttpsError('permission-denied', 'No tienes un perfil de administrador.');
+    if (code === 'auth/weak-password' || code === 'auth/invalid-password') {
+        return new functions.https.HttpsError('invalid-argument', 'La contrasena no cumple los requisitos minimos.');
     }
 
-    const callerData = callerDoc.data();
-    if (callerData.rol !== 'super_admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Solo un Super Admin puede realizar esta accion.');
+    if (code === 'auth/operation-not-allowed') {
+        return new functions.https.HttpsError('failed-precondition',
+            'El proveedor Email/Password no esta habilitado en Firebase Authentication.');
     }
 
-    return callerData;
+    if (code === 'auth/insufficient-permission') {
+        return new functions.https.HttpsError('permission-denied',
+            'La cuenta de servicio de Cloud Functions no tiene permisos de Firebase Auth Admin.');
+    }
+
+    return new functions.https.HttpsError('internal',
+        fallbackAction + ' (codigo: ' + (code || 'desconocido') + ').',
+        { code: code || 'unknown', originalMessage: message });
 }
 
 async function verifySuperAdminV2(auth) {

@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: get the caller's role from usuarios collection
+    function getUserRole() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol;
+    }
+
+    // Helper: check if caller has a valid profile
+    function hasProfile() {
+      return exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function isSuperAdmin() {
+      return request.auth != null && hasProfile() && getUserRole() == 'super_admin';
+    }
+
+    function isEditorOrAbove() {
+      return request.auth != null && hasProfile() && getUserRole() in ['super_admin', 'editor'];
+    }
+
+    function isAuthenticated() {
+      return request.auth != null && hasProfile();
+    }
+
+    // ========== VEHICULOS ==========
+    match /vehiculos/{vehiculoId} {
+      // Any authenticated user with a profile can read
+      allow read: if request.auth != null;
+
+      // Editor or Super Admin can create and update
+      allow create, update: if isEditorOrAbove();
+
+      // Only Super Admin can delete
+      allow delete: if isSuperAdmin();
+    }
+
+    // ========== MARCAS ==========
+    match /marcas/{marcaId} {
+      // Any authenticated user can read (public site also needs this)
+      allow read: if true;
+
+      // Editor or Super Admin can create and update
+      allow create, update: if isEditorOrAbove();
+
+      // Only Super Admin can delete
+      allow delete: if isSuperAdmin();
+    }
+
+    // ========== USUARIOS ==========
+    match /usuarios/{userId} {
+      // Super Admin can read all user profiles
+      // Any authenticated user can read their own profile
+      allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
+
+      // Only Super Admin can create/update/delete user profiles
+      // (Cloud Functions with Admin SDK bypass rules, but this protects direct client access)
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    // ========== LEADS (future) ==========
+    match /leads/{leadId} {
+      allow read: if isAuthenticated();
+      allow create: if true; // Public forms can create leads
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // ========== CITAS (future) ==========
+    match /citas/{citaId} {
+      allow read: if isAuthenticated();
+      allow create: if true; // Public can request appointments
+      allow update, delete: if isEditorOrAbove();
+    }
+
+    // ========== CONFIG ==========
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Default: deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

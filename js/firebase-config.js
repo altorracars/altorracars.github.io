@@ -39,11 +39,19 @@
         })
         .then(function() {
             var app = firebase.initializeApp(FIREBASE_CONFIG);
-            var analytics = firebase.analytics();
             var db = firebase.firestore();
             var auth = firebase.auth();
             var storage = firebase.storage();
             var functions = firebase.functions();
+            var analytics = null;
+
+            try {
+                if (firebase.analytics) {
+                    analytics = firebase.analytics();
+                }
+            } catch (analyticsError) {
+                console.warn('Firebase Analytics could not be initialized:', analyticsError);
+            }
 
             window.firebaseApp = app;
             window.firebaseAnalytics = analytics;

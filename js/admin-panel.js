@@ -1152,7 +1152,7 @@
 
         if (isEdit) {
             // Update via Cloud Function
-            var updateUserRole = window.functions.httpsCallable('updateUserRole');
+            var updateUserRole = window.functions.httpsCallable('updateUserRoleV2');
             updateUserRole({ uid: originalUid, nombre: nombre, rol: rol })
                 .then(function(result) {
                     toast(result.data.message || 'Usuario actualizado');
@@ -1169,7 +1169,7 @@
                 });
         } else {
             // Create via Cloud Function (no session change!)
-            var createManagedUser = window.functions.httpsCallable('createManagedUser');
+            var createManagedUser = window.functions.httpsCallable('createManagedUserV2');
             createManagedUser({ nombre: nombre, email: email, password: password, rol: rol })
                 .then(function(result) {
                     toast(result.data.message || 'Usuario creado exitosamente');
@@ -1218,7 +1218,7 @@
         document.querySelectorAll('#usersTableBody .btn-danger').forEach(function(b) { b.disabled = true; });
 
         // Delete via Cloud Function (deletes Auth + Firestore)
-        var deleteManagedUser = window.functions.httpsCallable('deleteManagedUser');
+        var deleteManagedUser = window.functions.httpsCallable('deleteManagedUserV2');
         deleteManagedUser({ uid: uid })
             .then(function(result) {
                 toast(result.data.message || 'Usuario eliminado completamente');

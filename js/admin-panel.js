@@ -52,6 +52,18 @@
         // Firebase callable errors: err.code = 'functions/CODE', err.message = server message
         var code = (err.code || '').replace('functions/', '');
         var serverMsg = err.message || '';
+        var detailsMsg = '';
+
+        if (typeof err.details === 'string') {
+            detailsMsg = err.details;
+        } else if (err.details && typeof err.details === 'object') {
+            detailsMsg = err.details.originalMessage || err.details.message || '';
+        }
+
+        // Compat SDK may return generic strings like "internal" while the useful message is in details
+        if (!serverMsg || serverMsg.toLowerCase() === code || serverMsg.toLowerCase() === 'internal') {
+            serverMsg = detailsMsg || serverMsg;
+        }
 
         var map = {
             'unauthenticated': 'Tu sesion expiro. Inicia sesion de nuevo.',

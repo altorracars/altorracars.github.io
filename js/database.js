@@ -16,6 +16,8 @@ class VehicleDatabase {
         this._listenerRecoveryTimer = null;
         this._publicCatalogEndpoint = 'https://us-central1-altorra-cars.cloudfunctions.net/getPublicCatalog';
         this._publicCatalogPollTimer = null;
+        this._publicCatalogDisabled = false;
+        this._attemptedAnonymousBootstrap = false;
     }
 
     // ========== LOCAL CACHE (instant load while Firebase loads) ==========
@@ -73,6 +75,33 @@ class VehicleDatabase {
     }
 
 
+
+    async _ensureAnonymousAuth() {
+        if (!window.auth || typeof window.auth.signInAnonymously !== 'function') {
+            return false;
+        }
+
+        if (window.auth.currentUser) {
+            return true;
+        }
+
+        if (this._attemptedAnonymousBootstrap) {
+            return false;
+        }
+
+        this._attemptedAnonymousBootstrap = true;
+
+        try {
+            await window.auth.signInAnonymously();
+            console.warn('Anonymous auth bootstrap succeeded for public catalog reads.');
+            return true;
+        } catch (authError) {
+            console.warn('Anonymous auth bootstrap failed:', authError && authError.message ? authError.message : authError);
+            this._emitError('vehiculos', authError);
+            return false;
+        }
+    }
+
     _isPermissionDeniedError(error) {
         var msg = '';
         if (error && error.message) msg = String(error.message).toLowerCase();
@@ -97,6 +126,9 @@ class VehicleDatabase {
         try {
             var response = await fetch(this._publicCatalogEndpoint, { method: 'GET', cache: 'no-store' });
             if (!response.ok) {
+                if (response.status === 404) {
+                    this._publicCatalogDisabled = true;
+                }
                 throw new Error('Public catalog endpoint failed: HTTP ' + response.status);
             }
             var payload = await response.json();
@@ -113,6 +145,10 @@ class VehicleDatabase {
             }
             return true;
         } catch (fallbackError) {
+            var fallbackMsg = fallbackError && fallbackError.message ? String(fallbackError.message).toLowerCase() : '';
+            if (fallbackMsg.indexOf('failed to fetch') >= 0 || fallbackMsg.indexOf('cors') >= 0 || fallbackMsg.indexOf('http 404') >= 0) {
+                this._publicCatalogDisabled = true;
+            }
             if (!silent) {
                 console.error('Public catalog fallback failed:', fallbackError);
             }
@@ -199,10 +235,29 @@ class VehicleDatabase {
                 self._emitError('vehiculos', e);
 
                 if (self._isPermissionDeniedError(e) || String(e.message || '').indexOf('FIRESTORE_PERMISSION_DENIED') >= 0) {
-                    var fallbackOk = await self.loadFromPublicCatalogApi(false);
-                    if (fallbackOk) {
-                        self._startPublicCatalogPolling();
-                        return;
+                    var signedInAnonymously = await self._ensureAnonymousAuth();
+                    if (signedInAnonymously) {
+                        self._listenersStarted = false;
+                        await self.loadFromFirestore();
+                        if (!self._isPermissionDeniedError({ message: self._lastErrors.vehiculos || '' })) {
+                            self.normalizeVehicles();
+                            self.loaded = true;
+                            self._saveToCache();
+                            self._emitUpdate('firestore-after-anon-auth');
+                            self._emitError('vehiculos', null);
+                            self._emitError('marcas', null);
+                            self._nextRetryAt = 0;
+                            self._stopPublicCatalogPolling();
+                            return;
+                        }
+                    }
+
+                    if (!self._publicCatalogDisabled) {
+                        var fallbackOk = await self.loadFromPublicCatalogApi(false);
+                        if (fallbackOk) {
+                            self._startPublicCatalogPolling();
+                            return;
+                        }
                     }
                 }
             }

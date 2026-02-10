@@ -1,12 +1,82 @@
 const functions = require('firebase-functions');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
 
 const db = admin.firestore();
+const callableOptionsV2 = {
+    region: 'us-central1',
+    invoker: 'public',
+    cors: true
+};
+
+function mapAdminAuthErrorV1(error, fallbackAction) {
+    const code = error && error.code ? String(error.code) : '';
+    const message = error && error.message ? String(error.message) : 'Sin detalles';
+
+    if (code === 'auth/email-already-exists') {
+        return new functions.https.HttpsError('already-exists',
+            'Este email ya tiene una cuenta en Firebase Auth. Eliminala primero desde Firebase Console si deseas re-crearla.');
+    }
+
+    if (code === 'auth/invalid-email') {
+        return new functions.https.HttpsError('invalid-argument', 'El formato del email no es valido.');
+    }
+
+    if (code === 'auth/weak-password' || code === 'auth/invalid-password') {
+        return new functions.https.HttpsError('invalid-argument', 'La contrasena no cumple los requisitos minimos.');
+    }
+
+    if (code === 'auth/operation-not-allowed') {
+        return new functions.https.HttpsError('failed-precondition',
+            'El proveedor Email/Password no esta habilitado en Firebase Authentication.');
+    }
+
+    if (code === 'auth/insufficient-permission') {
+        return new functions.https.HttpsError('permission-denied',
+            'La cuenta de servicio de Cloud Functions no tiene permisos de Firebase Auth Admin.');
+    }
+
+    return new functions.https.HttpsError('internal',
+        fallbackAction + ' (codigo: ' + (code || 'desconocido') + ').',
+        { code: code || 'unknown', originalMessage: message });
+}
+
+function mapAdminAuthErrorV2(error, fallbackAction) {
+    const code = error && error.code ? String(error.code) : '';
+    const message = error && error.message ? String(error.message) : 'Sin detalles';
+
+    if (code === 'auth/email-already-exists') {
+        return new HttpsError('already-exists',
+            'Este email ya tiene una cuenta en Firebase Auth. Eliminala primero desde Firebase Console si deseas re-crearla.');
+    }
+
+    if (code === 'auth/invalid-email') {
+        return new HttpsError('invalid-argument', 'El formato del email no es valido.');
+    }
+
+    if (code === 'auth/weak-password' || code === 'auth/invalid-password') {
+        return new HttpsError('invalid-argument', 'La contrasena no cumple los requisitos minimos.');
+    }
+
+    if (code === 'auth/operation-not-allowed') {
+        return new HttpsError('failed-precondition',
+            'El proveedor Email/Password no esta habilitado en Firebase Authentication.');
+    }
+
+    if (code === 'auth/insufficient-permission') {
+        return new HttpsError('permission-denied',
+            'La cuenta de servicio de Cloud Functions no tiene permisos de Firebase Auth Admin.');
+    }
+
+    return new HttpsError('internal',
+        fallbackAction + ' (codigo: ' + (code || 'desconocido') + ').',
+        { code: code || 'unknown', originalMessage: message });
+}
 
 // Helper: verify caller is super_admin
-async function verifySuperAdmin(context) {
+async function verifySuperAdminV1(context) {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Debes iniciar sesion.');
     }
@@ -25,112 +95,71 @@ async function verifySuperAdmin(context) {
     return callerData;
 }
 
-// ========== BOOTSTRAP FIRST USER ==========
-// If no users exist at all, the caller becomes the first super_admin.
-// This runs server-side so Firestore rules don't block the write.
-exports.bootstrapFirstUser = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'Debes iniciar sesion.');
+async function verifySuperAdminV2(auth) {
+    if (!auth || !auth.uid) {
+        throw new HttpsError('unauthenticated', 'Debes iniciar sesion.');
     }
 
-    const callerUid = context.auth.uid;
-    const callerEmail = context.auth.token.email || '';
+    const callerDoc = await db.collection('usuarios').doc(auth.uid).get();
 
-    // Check if caller already has a profile
-    const existingProfile = await db.collection('usuarios').doc(callerUid).get();
-    if (existingProfile.exists) {
-        // Profile already exists - return it (no error)
-        return {
-            success: true,
-            alreadyExisted: true,
-            profile: existingProfile.data()
-        };
+    if (!callerDoc.exists) {
+        throw new HttpsError('permission-denied', 'No tienes un perfil de administrador.');
     }
 
-    // Check if ANY users exist in the collection
-    const anyUser = await db.collection('usuarios').limit(1).get();
-    if (!anyUser.empty) {
-        // Other users exist but this person has no profile -> denied
-        throw new functions.https.HttpsError('permission-denied',
-            'Ya existen usuarios en el sistema. Un Super Admin debe crear tu perfil. Tu UID: ' + callerUid);
+    const callerData = callerDoc.data();
+    if (callerData.rol !== 'super_admin') {
+        throw new HttpsError('permission-denied', 'Solo un Super Admin puede realizar esta accion.');
     }
 
-    // No users at all - bootstrap this person as super_admin
-    const profile = {
-        nombre: context.auth.token.name || callerEmail.split('@')[0] || 'Admin',
-        email: callerEmail,
-        rol: 'super_admin',
-        estado: 'activo',
-        uid: callerUid,
-        creadoEn: new Date().toISOString(),
-        creadoPor: 'bootstrap'
-    };
+    return callerData;
+}
 
-    await db.collection('usuarios').doc(callerUid).set(profile);
-
-    console.log('First user bootstrapped as super_admin:', callerUid, callerEmail);
-
-    return {
-        success: true,
-        alreadyExisted: false,
-        profile: profile
-    };
-});
-
-// ========== CREATE MANAGED USER ==========
-// Creates a user in Firebase Auth + Firestore profile
-// Only callable by super_admin
-exports.createManagedUser = functions.https.onCall(async (data, context) => {
-    // Verify caller is super_admin
-    const callerProfile = await verifySuperAdmin(context);
-
-    // Validate input
+async function createManagedUserCore(data, auth, errorMapper) {
     const { nombre, email, password, rol } = data;
 
     if (!nombre || typeof nombre !== 'string' || nombre.trim().length < 2) {
-        throw new functions.https.HttpsError('invalid-argument', 'El nombre es obligatorio (minimo 2 caracteres).');
+        throw new Error('__INVALID_NAME__');
     }
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
-        throw new functions.https.HttpsError('invalid-argument', 'El email no es valido.');
+        throw new Error('__INVALID_EMAIL__');
     }
 
     if (!password || typeof password !== 'string' || password.length < 6) {
-        throw new functions.https.HttpsError('invalid-argument', 'La contrasena debe tener al menos 6 caracteres.');
+        throw new Error('__INVALID_PASSWORD__');
     }
 
     const validRoles = ['super_admin', 'editor', 'viewer'];
     if (!rol || !validRoles.includes(rol)) {
-        throw new functions.https.HttpsError('invalid-argument', 'Rol invalido. Debe ser: super_admin, editor o viewer.');
+        throw new Error('__INVALID_ROLE__');
     }
 
-    // Check if email already exists in Firestore
+    const normalizedEmail = email.trim().toLowerCase();
+
     const existingSnap = await db.collection('usuarios')
-        .where('email', '==', email.trim().toLowerCase())
+        .where('email', '==', normalizedEmail)
         .limit(1)
         .get();
 
     if (!existingSnap.empty) {
-        throw new functions.https.HttpsError('already-exists', 'Ya existe un usuario con ese email en el sistema.');
+        throw new Error('__ALREADY_EXISTS_FIRESTORE__');
     }
 
     try {
-        // Step 1: Create Firebase Auth account
         const userRecord = await admin.auth().createUser({
-            email: email.trim().toLowerCase(),
+            email: normalizedEmail,
             password: password,
             displayName: nombre.trim()
         });
 
-        // Step 2: Create Firestore profile
         await db.collection('usuarios').doc(userRecord.uid).set({
             nombre: nombre.trim(),
-            email: email.trim().toLowerCase(),
+            email: normalizedEmail,
             rol: rol,
             estado: 'activo',
             uid: userRecord.uid,
             creadoEn: new Date().toISOString(),
-            creadoPor: context.auth.token.email || context.auth.uid
+            creadoPor: (auth && auth.token && auth.token.email) || auth.uid
         });
 
         return {
@@ -138,60 +167,96 @@ exports.createManagedUser = functions.https.onCall(async (data, context) => {
             uid: userRecord.uid,
             message: 'Usuario "' + nombre.trim() + '" creado exitosamente.'
         };
-
     } catch (error) {
-        // If Auth creation fails, provide friendly message
-        if (error.code === 'auth/email-already-exists') {
-            throw new functions.https.HttpsError('already-exists',
-                'Este email ya tiene una cuenta en Firebase Auth. Eliminala primero desde Firebase Console si deseas re-crearla.');
-        }
-        if (error.code === 'auth/invalid-email') {
-            throw new functions.https.HttpsError('invalid-argument', 'El formato del email no es valido.');
-        }
-        if (error.code === 'auth/weak-password') {
-            throw new functions.https.HttpsError('invalid-argument', 'La contrasena es muy debil.');
-        }
+        throw errorMapper(error, 'No se pudo crear el usuario');
+    }
+}
 
-        console.error('Error creating user:', error);
-        throw new functions.https.HttpsError('internal', 'Error interno al crear usuario: ' + error.message);
+function throwInputErrorV1(code) {
+    if (code === '__INVALID_NAME__') {
+        throw new functions.https.HttpsError('invalid-argument', 'El nombre es obligatorio (minimo 2 caracteres).');
+    }
+    if (code === '__INVALID_EMAIL__') {
+        throw new functions.https.HttpsError('invalid-argument', 'El email no es valido.');
+    }
+    if (code === '__INVALID_PASSWORD__') {
+        throw new functions.https.HttpsError('invalid-argument', 'La contrasena debe tener al menos 6 caracteres.');
+    }
+    if (code === '__INVALID_ROLE__') {
+        throw new functions.https.HttpsError('invalid-argument', 'Rol invalido. Debe ser: super_admin, editor o viewer.');
+    }
+    if (code === '__ALREADY_EXISTS_FIRESTORE__') {
+        throw new functions.https.HttpsError('already-exists', 'Ya existe un usuario con ese email en el sistema.');
+    }
+}
+
+function throwInputErrorV2(code) {
+    if (code === '__INVALID_NAME__') {
+        throw new HttpsError('invalid-argument', 'El nombre es obligatorio (minimo 2 caracteres).');
+    }
+    if (code === '__INVALID_EMAIL__') {
+        throw new HttpsError('invalid-argument', 'El email no es valido.');
+    }
+    if (code === '__INVALID_PASSWORD__') {
+        throw new HttpsError('invalid-argument', 'La contrasena debe tener al menos 6 caracteres.');
+    }
+    if (code === '__INVALID_ROLE__') {
+        throw new HttpsError('invalid-argument', 'Rol invalido. Debe ser: super_admin, editor o viewer.');
+    }
+    if (code === '__ALREADY_EXISTS_FIRESTORE__') {
+        throw new HttpsError('already-exists', 'Ya existe un usuario con ese email en el sistema.');
+    }
+}
+
+// ========== CREATE MANAGED USER (v1 - legacy name) ==========
+exports.createManagedUser = functions.region('us-central1').https.onCall(async (data, context) => {
+    await verifySuperAdminV1(context);
+
+    try {
+        return await createManagedUserCore(data, context.auth, mapAdminAuthErrorV1);
+    } catch (error) {
+        if (error && error.message) {
+            throwInputErrorV1(error.message);
+        }
+        throw error;
     }
 });
 
-// ========== DELETE MANAGED USER ==========
-// Deletes user from Firebase Auth + Firestore
-// Only callable by super_admin
-exports.deleteManagedUser = functions.https.onCall(async (data, context) => {
-    // Verify caller is super_admin
-    await verifySuperAdmin(context);
+// ========== CREATE MANAGED USER V2 (new callable) ==========
+exports.createManagedUserV2 = onCall(callableOptionsV2, async (request) => {
+    await verifySuperAdminV2(request.auth);
 
+    try {
+        return await createManagedUserCore(request.data || {}, request.auth, mapAdminAuthErrorV2);
+    } catch (error) {
+        if (error && error.message) {
+            throwInputErrorV2(error.message);
+        }
+        throw error;
+    }
+});
+
+async function deleteManagedUserCore(data, auth, errorMapper, failedPreconditionFactory) {
     const { uid } = data;
 
     if (!uid || typeof uid !== 'string') {
-        throw new functions.https.HttpsError('invalid-argument', 'UID del usuario es obligatorio.');
+        throw new Error('__INVALID_UID__');
     }
 
-    // Prevent self-deletion
-    if (uid === context.auth.uid) {
-        throw new functions.https.HttpsError('failed-precondition', 'No puedes eliminar tu propia cuenta.');
+    if (uid === auth.uid) {
+        throw failedPreconditionFactory('No puedes eliminar tu propia cuenta.');
     }
 
-    // Step 1: Delete from Firestore
     const userDoc = await db.collection('usuarios').doc(uid).get();
     if (userDoc.exists) {
         await db.collection('usuarios').doc(uid).delete();
     }
 
-    // Step 2: Delete from Firebase Auth
     try {
         await admin.auth().deleteUser(uid);
     } catch (error) {
-        if (error.code === 'auth/user-not-found') {
-            // User doesn't exist in Auth - that's OK, Firestore was already cleaned
-            console.log('User not found in Auth (already deleted or never existed):', uid);
-        } else {
-            console.error('Error deleting Auth user:', error);
-            throw new functions.https.HttpsError('internal',
-                'El perfil se elimino pero hubo un error eliminando la cuenta Auth: ' + error.message);
+        if (error.code !== 'auth/user-not-found') {
+            throw errorMapper(error, 'El perfil se elimino, pero no se pudo eliminar la cuenta de Authentication');
         }
     }
 
@@ -199,34 +264,63 @@ exports.deleteManagedUser = functions.https.onCall(async (data, context) => {
         success: true,
         message: 'Usuario eliminado completamente (Auth + Firestore).'
     };
+}
+
+exports.deleteManagedUser = functions.region('us-central1').https.onCall(async (data, context) => {
+    await verifySuperAdminV1(context);
+    try {
+        return await deleteManagedUserCore(
+            data,
+            context.auth,
+            mapAdminAuthErrorV1,
+            (message) => new functions.https.HttpsError('failed-precondition', message)
+        );
+    } catch (error) {
+        if (error && error.message === '__INVALID_UID__') {
+            throw new functions.https.HttpsError('invalid-argument', 'UID del usuario es obligatorio.');
+        }
+        throw error;
+    }
 });
 
-// ========== UPDATE USER ROLE ==========
-// Updates a user's role in Firestore
-// Only callable by super_admin
-exports.updateUserRole = functions.https.onCall(async (data, context) => {
-    await verifySuperAdmin(context);
+exports.deleteManagedUserV2 = onCall(callableOptionsV2, async (request) => {
+    await verifySuperAdminV2(request.auth);
+    try {
+        return await deleteManagedUserCore(
+            request.data || {},
+            request.auth,
+            mapAdminAuthErrorV2,
+            (message) => new HttpsError('failed-precondition', message)
+        );
+    } catch (error) {
+        if (error && error.message === '__INVALID_UID__') {
+            throw new HttpsError('invalid-argument', 'UID del usuario es obligatorio.');
+        }
+        throw error;
+    }
+});
 
+async function updateUserRoleCore(data, auth, invalidArgumentFactory, notFoundFactory) {
     const { uid, nombre, rol } = data;
 
     if (!uid || typeof uid !== 'string') {
-        throw new functions.https.HttpsError('invalid-argument', 'UID del usuario es obligatorio.');
+        throw invalidArgumentFactory('UID del usuario es obligatorio.');
     }
 
     const validRoles = ['super_admin', 'editor', 'viewer'];
     if (!rol || !validRoles.includes(rol)) {
-        throw new functions.https.HttpsError('invalid-argument', 'Rol invalido.');
+        throw invalidArgumentFactory('Rol invalido.');
     }
 
     const userDoc = await db.collection('usuarios').doc(uid).get();
     if (!userDoc.exists) {
-        throw new functions.https.HttpsError('not-found', 'Usuario no encontrado.');
+        throw notFoundFactory('Usuario no encontrado.');
     }
 
     const updateData = {
         rol: rol,
         actualizadoEn: new Date().toISOString(),
-        actualizadoPor: context.auth.token.email || context.auth.uid
+        actualizadoPor: (auth && auth.token && auth.token.email) || auth.uid
     };
 
     if (nombre && typeof nombre === 'string') {
@@ -239,4 +333,24 @@ exports.updateUserRole = functions.https.onCall(async (data, context) => {
         success: true,
         message: 'Usuario actualizado.'
     };
+}
+
+exports.updateUserRole = functions.region('us-central1').https.onCall(async (data, context) => {
+    await verifySuperAdminV1(context);
+    return updateUserRoleCore(
+        data,
+        context.auth,
+        (message) => new functions.https.HttpsError('invalid-argument', message),
+        (message) => new functions.https.HttpsError('not-found', message)
+    );
+});
+
+exports.updateUserRoleV2 = onCall(callableOptionsV2, async (request) => {
+    await verifySuperAdminV2(request.auth);
+    return updateUserRoleCore(
+        request.data || {},
+        request.auth,
+        (message) => new HttpsError('invalid-argument', message),
+        (message) => new HttpsError('not-found', message)
+    );
 });

@@ -4,6 +4,42 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 const db = admin.firestore();
+const httpsCallable = functions
+    .region('us-central1')
+    .runWith({ ingressSettings: 'ALLOW_ALL' })
+    .https;
+
+function mapAdminAuthError(error, fallbackAction) {
+    const code = error && error.code ? String(error.code) : '';
+    const message = error && error.message ? String(error.message) : 'Sin detalles';
+
+    if (code === 'auth/email-already-exists') {
+        return new functions.https.HttpsError('already-exists',
+            'Este email ya tiene una cuenta en Firebase Auth. Eliminala primero desde Firebase Console si deseas re-crearla.');
+    }
+
+    if (code === 'auth/invalid-email') {
+        return new functions.https.HttpsError('invalid-argument', 'El formato del email no es valido.');
+    }
+
+    if (code === 'auth/weak-password' || code === 'auth/invalid-password') {
+        return new functions.https.HttpsError('invalid-argument', 'La contrasena no cumple los requisitos minimos.');
+    }
+
+    if (code === 'auth/operation-not-allowed') {
+        return new functions.https.HttpsError('failed-precondition',
+            'El proveedor Email/Password no esta habilitado en Firebase Authentication.');
+    }
+
+    if (code === 'auth/insufficient-permission') {
+        return new functions.https.HttpsError('permission-denied',
+            'La cuenta de servicio de Cloud Functions no tiene permisos de Firebase Auth Admin.');
+    }
+
+    return new functions.https.HttpsError('internal',
+        fallbackAction + ' (codigo: ' + (code || 'desconocido') + ').',
+        { code: code || 'unknown', originalMessage: message });
+}
 
 function mapAdminAuthError(error, fallbackAction) {
     const code = error && error.code ? String(error.code) : '';
@@ -60,7 +96,7 @@ async function verifySuperAdmin(context) {
 // ========== CREATE MANAGED USER ==========
 // Creates a user in Firebase Auth + Firestore profile
 // Only callable by super_admin
-exports.createManagedUser = functions.https.onCall(async (data, context) => {
+exports.createManagedUser = httpsCallable.onCall(async (data, context) => {
     // Verify caller is super_admin
     const callerProfile = await verifySuperAdmin(context);
 
@@ -128,7 +164,7 @@ exports.createManagedUser = functions.https.onCall(async (data, context) => {
 // ========== DELETE MANAGED USER ==========
 // Deletes user from Firebase Auth + Firestore
 // Only callable by super_admin
-exports.deleteManagedUser = functions.https.onCall(async (data, context) => {
+exports.deleteManagedUser = httpsCallable.onCall(async (data, context) => {
     // Verify caller is super_admin
     await verifySuperAdmin(context);
 
@@ -171,7 +207,7 @@ exports.deleteManagedUser = functions.https.onCall(async (data, context) => {
 // ========== UPDATE USER ROLE ==========
 // Updates a user's role in Firestore
 // Only callable by super_admin
-exports.updateUserRole = functions.https.onCall(async (data, context) => {
+exports.updateUserRole = httpsCallable.onCall(async (data, context) => {
     await verifySuperAdmin(context);
 
     const { uid, nombre, rol } = data;

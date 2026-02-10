@@ -216,9 +216,9 @@
                     console.log('[RBAC] Profile loaded. Role:', currentUserRole, 'Email:', authUser.email);
                     showAdmin(authUser);
                 } else {
-                    // No profile -> try bootstrap via Cloud Function (safe, server-side)
-                    console.log('[RBAC] No profile found. Attempting bootstrap via Cloud Function...');
-                    attemptBootstrap(authUser);
+                    // No profile -> deny access (bootstrap function no longer used)
+                    console.warn('[RBAC] No profile found for authenticated user:', authUser.uid);
+                    showAccessDenied(authUser.email, authUser.uid, 'No tienes perfil administrativo asignado. Un Super Admin debe crearlo.');
                 }
             })
             .catch(function(err) {
@@ -228,31 +228,6 @@
                 } else {
                     showAccessDenied(authUser.email, authUser.uid, 'Error al cargar perfil: ' + err.message);
                 }
-            });
-    }
-
-    function attemptBootstrap(authUser) {
-        if (!window.functions) {
-            showAccessDenied(authUser.email, authUser.uid, 'Cloud Functions no disponibles. Verifica que esten desplegadas.');
-            return;
-        }
-
-        var bootstrapFn = window.functions.httpsCallable('bootstrapFirstUser');
-        bootstrapFn({})
-            .then(function(result) {
-                var data = result.data;
-                if (data.success) {
-                    currentUserProfile = data.profile;
-                    currentUserProfile._docId = authUser.uid;
-                    currentUserRole = data.profile.rol;
-                    console.log('[RBAC] Bootstrap result:', data.alreadyExisted ? 'profile existed' : 'NEW super_admin created');
-                    showAdmin(authUser);
-                }
-            })
-            .catch(function(err) {
-                console.error('[RBAC] Bootstrap failed:', err);
-                var msg = parseCallableError(err);
-                showAccessDenied(authUser.email, authUser.uid, msg);
             });
     }
 
@@ -351,16 +326,41 @@
         window.auth.signOut();
     });
 
-    // Change password
+    // Change password (requires recent login re-auth)
     $('changePasswordForm').addEventListener('submit', function(e) {
         e.preventDefault();
+
+        var currentUser = window.auth.currentUser;
+        if (!currentUser || !currentUser.email) {
+            toast('Sesion invalida. Inicia sesion de nuevo.', 'error');
+            window.auth.signOut();
+            return;
+        }
+
         var newPass = $('newPassword').value;
-        window.auth.currentUser.updatePassword(newPass)
+        var currentPass = window.prompt('Para cambiar la contrasena, confirma tu contrasena actual:');
+        if (!currentPass) {
+            toast('Cambio de contrasena cancelado.', 'info');
+            return;
+        }
+
+        var credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPass);
+
+        currentUser.reauthenticateWithCredential(credential)
+            .then(function() {
+                return currentUser.updatePassword(newPass);
+            })
             .then(function() {
                 toast('Contrasena actualizada');
                 $('newPassword').value = '';
             })
-            .catch(function(err) { toast('Error: ' + err.message, 'error'); });
+            .catch(function(err) {
+                if (err && (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential')) {
+                    toast('Contrasena actual incorrecta.', 'error');
+                } else {
+                    toast('Error: ' + (err && err.message ? err.message : 'No se pudo cambiar la contrasena.'), 'error');
+                }
+            });
     });
 
     // ========== MOBILE MENU ==========

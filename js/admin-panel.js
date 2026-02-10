@@ -13,6 +13,11 @@
     // ========== RBAC STATE ==========
     var currentUserProfile = null;
     var currentUserRole = null;
+    var INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
+    var inactivityTimerId = null;
+    var inactivityTrackingActive = false;
+
+    var ACTIVITY_EVENTS = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
 
     function isSuperAdmin() { return currentUserRole === 'super_admin'; }
     function isEditor() { return currentUserRole === 'editor'; }
@@ -45,6 +50,44 @@
         t.textContent = msg;
         t.className = 'admin-toast ' + (type || 'success') + ' show';
         setTimeout(function() { t.classList.remove('show'); }, 5000);
+    }
+
+    function clearInactivityTimer() {
+        if (inactivityTimerId) {
+            clearTimeout(inactivityTimerId);
+            inactivityTimerId = null;
+        }
+    }
+
+    function stopInactivityTracking() {
+        clearInactivityTimer();
+        if (!inactivityTrackingActive) return;
+        ACTIVITY_EVENTS.forEach(function(eventName) {
+            document.removeEventListener(eventName, resetInactivityTracking, true);
+        });
+        inactivityTrackingActive = false;
+    }
+
+    function handleInactivityTimeout() {
+        clearInactivityTimer();
+        if (!window.auth || !window.auth.currentUser) return;
+        toast('Sesion cerrada por inactividad (5 minutos).', 'info');
+        window.auth.signOut();
+    }
+
+    function resetInactivityTracking() {
+        if (!inactivityTrackingActive) return;
+        clearInactivityTimer();
+        inactivityTimerId = setTimeout(handleInactivityTimeout, INACTIVITY_TIMEOUT_MS);
+    }
+
+    function startInactivityTracking() {
+        if (inactivityTrackingActive) return;
+        ACTIVITY_EVENTS.forEach(function(eventName) {
+            document.addEventListener(eventName, resetInactivityTracking, true);
+        });
+        inactivityTrackingActive = true;
+        resetInactivityTracking();
     }
 
     // Parse Firebase Callable errors into user-friendly Spanish messages
@@ -143,15 +186,22 @@
     // ========== AUTH + RBAC INITIALIZATION ==========
     function initAuth() {
         window.firebaseReady.then(function() {
-            window.auth.onAuthStateChanged(function(user) {
-                if (user) {
-                    loadUserProfile(user);
-                } else {
-                    currentUserProfile = null;
-                    currentUserRole = null;
-                    showLogin();
-                }
-            });
+            window.auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+                .catch(function(err) {
+                    console.warn('[Auth] No se pudo aplicar persistence NONE:', err);
+                })
+                .finally(function() {
+                    window.auth.onAuthStateChanged(function(user) {
+                        if (user) {
+                            loadUserProfile(user);
+                        } else {
+                            currentUserProfile = null;
+                            currentUserRole = null;
+                            stopInactivityTracking();
+                            showLogin();
+                        }
+                    });
+                });
         });
     }
 
@@ -207,6 +257,7 @@
     }
 
     function showAccessDenied(email, uid, reason) {
+        stopInactivityTracking();
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
         var errEl = $('loginError');
@@ -227,6 +278,7 @@
     }
 
     function showLogin() {
+        stopInactivityTracking();
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
     }
@@ -236,6 +288,7 @@
         $('adminPanel').style.display = 'flex';
         $('adminEmail').textContent = user.email + ' (' + (currentUserRole === 'super_admin' ? 'Super Admin' : currentUserRole === 'editor' ? 'Editor' : 'Viewer') + ')';
 
+        startInactivityTracking();
         applyRolePermissions();
         loadData();
     }
@@ -272,7 +325,10 @@
         btn.textContent = 'Ingresando...';
         errEl.style.display = 'none';
 
-        window.auth.signInWithEmailAndPassword(email, pass)
+        window.auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+            .then(function() {
+                return window.auth.signInWithEmailAndPassword(email, pass);
+            })
             .then(function() {
                 btn.disabled = false;
                 btn.textContent = 'Iniciar Sesion';

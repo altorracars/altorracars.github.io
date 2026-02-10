@@ -81,25 +81,21 @@ async function verifySuperAdminV1(context) {
         throw new functions.https.HttpsError('unauthenticated', 'Debes iniciar sesion.');
     }
 
-    if (code === 'auth/invalid-email') {
-        return new HttpsError('invalid-argument', 'El formato del email no es valido.');
-    }
-
     if (code === 'auth/weak-password' || code === 'auth/invalid-password') {
-        return new HttpsError('invalid-argument', 'La contrasena no cumple los requisitos minimos.');
+        return new functions.https.HttpsError('invalid-argument', 'La contrasena no cumple los requisitos minimos.');
     }
 
     if (code === 'auth/operation-not-allowed') {
-        return new HttpsError('failed-precondition',
+        return new functions.https.HttpsError('failed-precondition',
             'El proveedor Email/Password no esta habilitado en Firebase Authentication.');
     }
 
     if (code === 'auth/insufficient-permission') {
-        return new HttpsError('permission-denied',
+        return new functions.https.HttpsError('permission-denied',
             'La cuenta de servicio de Cloud Functions no tiene permisos de Firebase Auth Admin.');
     }
 
-    return new HttpsError('internal',
+    return new functions.https.HttpsError('internal',
         fallbackAction + ' (codigo: ' + (code || 'desconocido') + ').',
         { code: code || 'unknown', originalMessage: message });
 }

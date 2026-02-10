@@ -14,6 +14,8 @@ class VehicleDatabase {
         this._nextRetryAt = 0;
         this._loadPromise = null;
         this._listenerRecoveryTimer = null;
+        this._publicCatalogEndpoint = 'https://us-central1-altorra-cars.cloudfunctions.net/getPublicCatalog';
+        this._publicCatalogPollTimer = null;
     }
 
     // ========== LOCAL CACHE (instant load while Firebase loads) ==========
@@ -67,6 +69,55 @@ class VehicleDatabase {
                     message: this._lastErrors[collection]
                 }
             }));
+        }
+    }
+
+
+    _isPermissionDeniedError(error) {
+        var msg = '';
+        if (error && error.message) msg = String(error.message).toLowerCase();
+        return msg.indexOf('permission') >= 0 || msg.indexOf('insufficient permissions') >= 0 || msg.indexOf('missing or insufficient permissions') >= 0;
+    }
+
+    _startPublicCatalogPolling() {
+        if (this._publicCatalogPollTimer) return;
+        var self = this;
+        this._publicCatalogPollTimer = setInterval(function() {
+            self.loadFromPublicCatalogApi(true);
+        }, 30000);
+    }
+
+    _stopPublicCatalogPolling() {
+        if (!this._publicCatalogPollTimer) return;
+        clearInterval(this._publicCatalogPollTimer);
+        this._publicCatalogPollTimer = null;
+    }
+
+    async loadFromPublicCatalogApi(silent) {
+        try {
+            var response = await fetch(this._publicCatalogEndpoint, { method: 'GET', cache: 'no-store' });
+            if (!response.ok) {
+                throw new Error('Public catalog endpoint failed: HTTP ' + response.status);
+            }
+            var payload = await response.json();
+            this.vehicles = Array.isArray(payload.vehicles) ? payload.vehicles : [];
+            this.brands = Array.isArray(payload.brands) ? payload.brands : [];
+            this.normalizeVehicles();
+            this.loaded = true;
+            this._saveToCache();
+            this._emitUpdate('public-api');
+            this._emitError('vehiculos', null);
+            this._emitError('marcas', null);
+            if (!silent) {
+                console.warn('Catalog loaded from public Cloud Function fallback (' + this.vehicles.length + ' vehicles).');
+            }
+            return true;
+        } catch (fallbackError) {
+            if (!silent) {
+                console.error('Public catalog fallback failed:', fallbackError);
+            }
+            this._emitError('vehiculos', fallbackError);
+            return false;
         }
     }
 
@@ -130,6 +181,9 @@ class VehicleDatabase {
                 }
 
                 await self.loadFromFirestore();
+                if (self._isPermissionDeniedError({ message: self._lastErrors.vehiculos || '' })) {
+                    throw new Error('FIRESTORE_PERMISSION_DENIED');
+                }
                 self.normalizeVehicles();
                 self.loaded = true;
                 self._saveToCache();
@@ -137,11 +191,20 @@ class VehicleDatabase {
                 self._emitError('vehiculos', null);
                 self._emitError('marcas', null);
                 self._nextRetryAt = 0;
+                self._stopPublicCatalogPolling();
                 console.log('Database loaded from Firestore (' + self.vehicles.length + ' vehicles)');
                 return;
             } catch (e) {
                 console.warn('Firestore not available:', e.message);
                 self._emitError('vehiculos', e);
+
+                if (self._isPermissionDeniedError(e) || String(e.message || '').indexOf('FIRESTORE_PERMISSION_DENIED') >= 0) {
+                    var fallbackOk = await self.loadFromPublicCatalogApi(false);
+                    if (fallbackOk) {
+                        self._startPublicCatalogPolling();
+                        return;
+                    }
+                }
             }
 
             // STEP 3: Keep usable cache if present; otherwise allow future retries (never freeze empty state)
@@ -231,7 +294,9 @@ class VehicleDatabase {
                     if (self._unsubscribeVehicles) {
                         self._unsubscribeVehicles = null;
                     }
-                    self._scheduleListenerRecovery('vehiculos-listener-error');
+                    if (!self._isPermissionDeniedError(err)) {
+                        self._scheduleListenerRecovery('vehiculos-listener-error');
+                    }
                     if (!firstVehiclesResolved) {
                         firstVehiclesResolved = true;
                         resolve(false);
@@ -257,7 +322,9 @@ class VehicleDatabase {
                     if (self._unsubscribeBrands) {
                         self._unsubscribeBrands = null;
                     }
-                    self._scheduleListenerRecovery('marcas-listener-error');
+                    if (!self._isPermissionDeniedError(err)) {
+                        self._scheduleListenerRecovery('marcas-listener-error');
+                    }
                     if (!firstBrandsResolved) {
                         firstBrandsResolved = true;
                         resolve(false);

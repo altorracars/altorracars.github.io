@@ -10,6 +10,7 @@ class VehicleDatabase {
         this._unsubscribeVehicles = null;
         this._unsubscribeBrands = null;
         this._listenersStarted = false;
+        this._lastErrors = { vehiculos: null, marcas: null };
     }
 
     // ========== LOCAL CACHE (instant load while Firebase loads) ==========
@@ -48,6 +49,19 @@ class VehicleDatabase {
                     source: source,
                     vehicles: this.vehicles.length,
                     brands: this.brands.length
+                }
+            }));
+        }
+    }
+
+
+    _emitError(collection, error) {
+        this._lastErrors[collection] = error ? (error.message || String(error)) : null;
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('vehicleDB:error', {
+                detail: {
+                    collection: collection,
+                    message: this._lastErrors[collection]
                 }
             }));
         }
@@ -111,37 +125,63 @@ class VehicleDatabase {
         if (!this._listenersStarted) {
             this._listenersStarted = true;
 
-            this._unsubscribeVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
-                self.vehicles = snap.docs.map(function(doc) {
-                    var data = doc.data() || {};
-                    if (!data.id && doc.id) {
-                        var parsedId = parseInt(doc.id, 10);
-                        data.id = Number.isNaN(parsedId) ? doc.id : parsedId;
+            var firstVehiclesResolved = false;
+            var firstBrandsResolved = false;
+
+            var firstVehicles = new Promise(function(resolve) {
+                self._unsubscribeVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
+                    self.vehicles = snap.docs.map(function(doc) {
+                        var data = doc.data() || {};
+                        if (!data.id && doc.id) {
+                            var parsedId = parseInt(doc.id, 10);
+                            data.id = Number.isNaN(parsedId) ? doc.id : parsedId;
+                        }
+                        return data;
+                    });
+                    self.normalizeVehicles();
+                    self._saveToCache();
+                    self.loaded = true;
+                    self._emitUpdate('firestore-live-vehicles');
+                    self._emitError('vehiculos', null);
+                    if (!firstVehiclesResolved) {
+                        firstVehiclesResolved = true;
+                        resolve(true);
                     }
-                    return data;
+                }, function(err) {
+                    console.error('Firestore vehicles listener error:', err);
+                    self._emitError('vehiculos', err);
+                    if (!firstVehiclesResolved) {
+                        firstVehiclesResolved = true;
+                        resolve(false);
+                    }
                 });
-                self.normalizeVehicles();
-                self._saveToCache();
-                self.loaded = true;
-                self._emitUpdate('firestore-live-vehicles');
-            }, function(err) {
-                console.error('Firestore vehicles listener error:', err);
             });
 
-            this._unsubscribeBrands = window.db.collection('marcas').onSnapshot(function(snap) {
-                self.brands = snap.empty ? [] : snap.docs.map(function(doc) { return doc.data(); });
-                self._saveToCache();
-                self.loaded = true;
-                self._emitUpdate('firestore-live-brands');
-            }, function(err) {
-                console.error('Firestore brands listener error:', err);
+            var firstBrands = new Promise(function(resolve) {
+                self._unsubscribeBrands = window.db.collection('marcas').onSnapshot(function(snap) {
+                    self.brands = snap.empty ? [] : snap.docs.map(function(doc) { return doc.data(); });
+                    self._saveToCache();
+                    self.loaded = true;
+                    self._emitUpdate('firestore-live-brands');
+                    self._emitError('marcas', null);
+                    if (!firstBrandsResolved) {
+                        firstBrandsResolved = true;
+                        resolve(true);
+                    }
+                }, function(err) {
+                    console.error('Firestore brands listener error:', err);
+                    self._emitError('marcas', err);
+                    if (!firstBrandsResolved) {
+                        firstBrandsResolved = true;
+                        resolve(false);
+                    }
+                });
             });
-        }
 
-        // Wait for first snapshot values to be available
-        var startedAt = Date.now();
-        while ((this.vehicles.length === 0 && this.brands.length === 0) && Date.now() - startedAt < 7000) {
-            await new Promise(function(resolve) { setTimeout(resolve, 100); });
+            await Promise.race([
+                Promise.all([firstVehicles, firstBrands]),
+                new Promise(function(resolve) { setTimeout(resolve, 7000); })
+            ]);
         }
 
         return true;

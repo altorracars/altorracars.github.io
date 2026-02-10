@@ -7,6 +7,15 @@ class VehicleDatabase {
         this.loaded = false;
         this._cacheKey = 'altorra-db-cache';
         this._cacheMaxAge = 5 * 60 * 1000; // 5 minutes
+        this._unsubscribeVehicles = null;
+        this._unsubscribeBrands = null;
+        this._listenersStarted = false;
+        this._lastErrors = { vehiculos: null, marcas: null };
+        this._nextRetryAt = 0;
+        this._loadPromise = null;
+        this._listenerRecoveryTimer = null;
+        this._publicCatalogEndpoint = 'https://us-central1-altorra-cars.cloudfunctions.net/getPublicCatalog';
+        this._publicCatalogPollTimer = null;
     }
 
     // ========== LOCAL CACHE (instant load while Firebase loads) ==========
@@ -24,12 +33,12 @@ class VehicleDatabase {
         }
     }
 
-    _loadFromCache() {
+    _loadFromCache(allowStale) {
         try {
             var raw = localStorage.getItem(this._cacheKey);
             if (!raw) return false;
             var data = JSON.parse(raw);
-            if (Date.now() - data.ts > this._cacheMaxAge) return false;
+            if (!allowStale && (Date.now() - data.ts > this._cacheMaxAge)) return false;
             this.vehicles = data.vehicles || [];
             this.brands = data.brands || [];
             return true;
@@ -38,56 +47,203 @@ class VehicleDatabase {
         }
     }
 
+    _emitUpdate(source) {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('vehicleDB:updated', {
+                detail: {
+                    source: source,
+                    vehicles: this.vehicles.length,
+                    brands: this.brands.length
+                }
+            }));
+        }
+    }
+
+
+    _emitError(collection, error) {
+        this._lastErrors[collection] = error ? (error.message || String(error)) : null;
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('vehicleDB:error', {
+                detail: {
+                    collection: collection,
+                    message: this._lastErrors[collection]
+                }
+            }));
+        }
+    }
+
+
+    _isPermissionDeniedError(error) {
+        var msg = '';
+        if (error && error.message) msg = String(error.message).toLowerCase();
+        return msg.indexOf('permission') >= 0 || msg.indexOf('insufficient permissions') >= 0 || msg.indexOf('missing or insufficient permissions') >= 0;
+    }
+
+    _startPublicCatalogPolling() {
+        if (this._publicCatalogPollTimer) return;
+        var self = this;
+        this._publicCatalogPollTimer = setInterval(function() {
+            self.loadFromPublicCatalogApi(true);
+        }, 30000);
+    }
+
+    _stopPublicCatalogPolling() {
+        if (!this._publicCatalogPollTimer) return;
+        clearInterval(this._publicCatalogPollTimer);
+        this._publicCatalogPollTimer = null;
+    }
+
+    async loadFromPublicCatalogApi(silent) {
+        try {
+            var response = await fetch(this._publicCatalogEndpoint, { method: 'GET', cache: 'no-store' });
+            if (!response.ok) {
+                throw new Error('Public catalog endpoint failed: HTTP ' + response.status);
+            }
+            var payload = await response.json();
+            this.vehicles = Array.isArray(payload.vehicles) ? payload.vehicles : [];
+            this.brands = Array.isArray(payload.brands) ? payload.brands : [];
+            this.normalizeVehicles();
+            this.loaded = true;
+            this._saveToCache();
+            this._emitUpdate('public-api');
+            this._emitError('vehiculos', null);
+            this._emitError('marcas', null);
+            if (!silent) {
+                console.warn('Catalog loaded from public Cloud Function fallback (' + this.vehicles.length + ' vehicles).');
+            }
+            return true;
+        } catch (fallbackError) {
+            if (!silent) {
+                console.error('Public catalog fallback failed:', fallbackError);
+            }
+            this._emitError('vehiculos', fallbackError);
+            return false;
+        }
+    }
+
     // ========== MAIN LOAD ==========
 
-    async load(forceRefresh = false) {
-        if (this.loaded && !forceRefresh) return;
+    hasUsableLocalData() {
+        return this.vehicles.length > 0 || this.brands.length > 0;
+    }
 
-        // STEP 1: Show cached data instantly (if available)
-        var hadCache = false;
-        if (!forceRefresh) {
-            hadCache = this._loadFromCache();
-            if (hadCache) {
-                this.normalizeVehicles();
-                this.loaded = true;
-                console.log('Database loaded from cache (' + this.vehicles.length + ' vehicles) — refreshing from Firestore...');
-            }
+    async load(forceRefresh = false) {
+        if (this._loadPromise && !forceRefresh) {
+            return this._loadPromise;
         }
 
-        // STEP 2: Load from Firestore (with timeout)
-        try {
-            if (window.firebaseReady) {
-                var firebaseOk = await this._awaitFirebaseWithTimeout(5000);
-                if (firebaseOk && window.db) {
-                    await this.loadFromFirestore();
-                    this.normalizeVehicles();
-                    this.loaded = true;
-                    this._saveToCache();
-                    console.log('Database loaded from Firestore (' + this.vehicles.length + ' vehicles)');
-                    return;
+        // Return fast only when we already have usable data and listeners are active
+        if (this.loaded && !forceRefresh && this._listenersStarted && this.hasUsableLocalData()) {
+            return;
+        }
+
+        // Avoid hammering retries when Firebase is unavailable and cache is empty
+        if (!forceRefresh && Date.now() < this._nextRetryAt && !this.hasUsableLocalData()) {
+            return;
+        }
+
+        var self = this;
+        this._loadPromise = (async function() {
+            var cacheHasUsableData = false;
+
+            // STEP 1: Show cached data instantly (if available and useful)
+            if (!forceRefresh) {
+                if (self._loadFromCache(false)) {
+                    self.normalizeVehicles();
+                    cacheHasUsableData = self.hasUsableLocalData();
+                    if (cacheHasUsableData) {
+                        self.loaded = true;
+                        self._emitUpdate('cache');
+                        console.log('Database loaded from fresh cache (' + self.vehicles.length + ' vehicles) — syncing with Firestore...');
+                    }
+                }
+
+                if (!cacheHasUsableData && self._loadFromCache(true)) {
+                    self.normalizeVehicles();
+                    cacheHasUsableData = self.hasUsableLocalData();
+                    if (cacheHasUsableData) {
+                        self.loaded = true;
+                        self._emitUpdate('stale-cache');
+                        console.warn('Using stale cache while reconnecting to Firestore (' + self.vehicles.length + ' vehicles).');
+                    }
                 }
             }
-        } catch (e) {
-            console.warn('Firestore not available:', e.message);
-        }
 
-        // STEP 3: If no cache was loaded, fall back to JSON
-        if (!hadCache) {
+            // STEP 2: Load from Firestore (source of truth)
             try {
-                var response = await fetch('data/vehiculos.json');
-                if (!response.ok) throw new Error('Failed to load vehicle database');
-                var data = await response.json();
-                this.vehicles = data.vehiculos || [];
-                this.brands = data.marcas || [];
-                this.normalizeVehicles();
-                this.loaded = true;
-                console.log('Database loaded from JSON fallback (' + this.vehicles.length + ' vehicles)');
-            } catch (error) {
-                console.error('Error loading database:', error);
-                this.vehicles = [];
-                this.brands = [];
+                if (!window.firebaseReady) {
+                    throw new Error('Firebase init promise not available');
+                }
+
+                var firebaseOk = await self._awaitFirebaseWithTimeout(12000);
+                if (!firebaseOk || !window.db) {
+                    throw new Error('Firebase/Firestore timeout');
+                }
+
+                await self.loadFromFirestore();
+                if (self._isPermissionDeniedError({ message: self._lastErrors.vehiculos || '' })) {
+                    throw new Error('FIRESTORE_PERMISSION_DENIED');
+                }
+                self.normalizeVehicles();
+                self.loaded = true;
+                self._saveToCache();
+                self._emitUpdate('firestore-initial');
+                self._emitError('vehiculos', null);
+                self._emitError('marcas', null);
+                self._nextRetryAt = 0;
+                self._stopPublicCatalogPolling();
+                console.log('Database loaded from Firestore (' + self.vehicles.length + ' vehicles)');
+                return;
+            } catch (e) {
+                console.warn('Firestore not available:', e.message);
+                self._emitError('vehiculos', e);
+
+                if (self._isPermissionDeniedError(e) || String(e.message || '').indexOf('FIRESTORE_PERMISSION_DENIED') >= 0) {
+                    var fallbackOk = await self.loadFromPublicCatalogApi(false);
+                    if (fallbackOk) {
+                        self._startPublicCatalogPolling();
+                        return;
+                    }
+                }
             }
-        }
+
+            // STEP 3: Keep usable cache if present; otherwise allow future retries (never freeze empty state)
+            if (cacheHasUsableData) {
+                self.loaded = true;
+                self._emitUpdate('cache-fallback');
+            } else {
+                self.loaded = false;
+                self.vehicles = [];
+                self.brands = [];
+                self._emitUpdate('empty');
+                self._nextRetryAt = Date.now() + 15000;
+            }
+        })().finally(function() {
+            self._loadPromise = null;
+        });
+
+        return this._loadPromise;
+    }
+
+
+    _scheduleListenerRecovery(reason) {
+        if (this._listenerRecoveryTimer) return;
+        var self = this;
+        this._listenerRecoveryTimer = setTimeout(function() {
+            self._listenerRecoveryTimer = null;
+            self._listenersStarted = false;
+            if (self._unsubscribeVehicles) {
+                try { self._unsubscribeVehicles(); } catch (e) {}
+                self._unsubscribeVehicles = null;
+            }
+            if (self._unsubscribeBrands) {
+                try { self._unsubscribeBrands(); } catch (e) {}
+                self._unsubscribeBrands = null;
+            }
+            self.loaded = false;
+            self.load(true);
+        }, 4000);
+        console.warn('Scheduling Firestore listener recovery:', reason || 'unknown');
     }
 
     async _awaitFirebaseWithTimeout(ms) {
@@ -100,17 +256,87 @@ class VehicleDatabase {
     }
 
     async loadFromFirestore() {
-        // PARALLEL queries instead of sequential
-        var results = await Promise.all([
-            window.db.collection('vehiculos').get(),
-            window.db.collection('marcas').get()
-        ]);
+        var self = this;
 
-        var vehiclesSnap = results[0];
-        var brandsSnap = results[1];
+        if (this._listenersStarted && !this._unsubscribeVehicles && !this._unsubscribeBrands) {
+            this._listenersStarted = false;
+        }
 
-        this.vehicles = vehiclesSnap.docs.map(function(doc) { return doc.data(); });
-        this.brands = brandsSnap.empty ? [] : brandsSnap.docs.map(function(doc) { return doc.data(); });
+        if (!this._listenersStarted) {
+            this._listenersStarted = true;
+
+            var firstVehiclesResolved = false;
+            var firstBrandsResolved = false;
+
+            var firstVehicles = new Promise(function(resolve) {
+                self._unsubscribeVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
+                    self.vehicles = snap.docs.map(function(doc) {
+                        var data = doc.data() || {};
+                        if (!data.id && doc.id) {
+                            var parsedId = parseInt(doc.id, 10);
+                            data.id = Number.isNaN(parsedId) ? doc.id : parsedId;
+                        }
+                        return data;
+                    });
+                    self.normalizeVehicles();
+                    self._saveToCache();
+                    self.loaded = true;
+                    self._emitUpdate('firestore-live-vehicles');
+                    self._emitError('vehiculos', null);
+                    if (!firstVehiclesResolved) {
+                        firstVehiclesResolved = true;
+                        resolve(true);
+                    }
+                }, function(err) {
+                    console.error('Firestore vehicles listener error:', err);
+                    self._emitError('vehiculos', err);
+                    self._listenersStarted = false;
+                    if (self._unsubscribeVehicles) {
+                        self._unsubscribeVehicles = null;
+                    }
+                    if (!self._isPermissionDeniedError(err)) {
+                        self._scheduleListenerRecovery('vehiculos-listener-error');
+                    }
+                    if (!firstVehiclesResolved) {
+                        firstVehiclesResolved = true;
+                        resolve(false);
+                    }
+                });
+            });
+
+            var firstBrands = new Promise(function(resolve) {
+                self._unsubscribeBrands = window.db.collection('marcas').onSnapshot(function(snap) {
+                    self.brands = snap.empty ? [] : snap.docs.map(function(doc) { return doc.data(); });
+                    self._saveToCache();
+                    self.loaded = true;
+                    self._emitUpdate('firestore-live-brands');
+                    self._emitError('marcas', null);
+                    if (!firstBrandsResolved) {
+                        firstBrandsResolved = true;
+                        resolve(true);
+                    }
+                }, function(err) {
+                    console.error('Firestore brands listener error:', err);
+                    self._emitError('marcas', err);
+                    self._listenersStarted = false;
+                    if (self._unsubscribeBrands) {
+                        self._unsubscribeBrands = null;
+                    }
+                    if (!self._isPermissionDeniedError(err)) {
+                        self._scheduleListenerRecovery('marcas-listener-error');
+                    }
+                    if (!firstBrandsResolved) {
+                        firstBrandsResolved = true;
+                        resolve(false);
+                    }
+                });
+            });
+
+            await Promise.race([
+                Promise.all([firstVehicles, firstBrands]),
+                new Promise(function(resolve) { setTimeout(resolve, 7000); })
+            ]);
+        }
 
         return true;
     }
@@ -132,6 +358,19 @@ class VehicleDatabase {
             // Migración: "camioneta" → "pickup"
             if (normalized.categoria === 'camioneta') {
                 normalized.categoria = 'pickup';
+            }
+
+            // Estado canónico del inventario
+            if (!normalized.estado) {
+                if (normalized.disponibilidad) {
+                    normalized.estado = normalized.disponibilidad;
+                } else {
+                    normalized.estado = 'disponible';
+                }
+            }
+
+            if (!['borrador', 'disponible', 'reservado', 'vendido'].includes(normalized.estado)) {
+                normalized.estado = 'disponible';
             }
 
             return normalized;
@@ -158,13 +397,17 @@ class VehicleDatabase {
     }
     
     // Get all vehicles
-    getAllVehicles() {
-        return this.vehicles;
+    getAllVehicles(filters = {}) {
+        if (filters.includeAllStates) return this.vehicles;
+        return this.vehicles.filter(function(v) { return (v.estado || 'disponible') === 'disponible'; });
     }
     
     // Get vehicle by ID
-    getVehicleById(id) {
-        return this.vehicles.find(v => v.id == id);
+    getVehicleById(id, options = {}) {
+        var vehicle = this.vehicles.find(v => v.id == id);
+        if (!vehicle) return null;
+        if (options.includeAllStates) return vehicle;
+        return (vehicle.estado || 'disponible') === 'disponible' ? vehicle : null;
     }
     
     // Filter vehicles
@@ -187,6 +430,15 @@ class VehicleDatabase {
         // Filter by category (suv, sedan, hatchback, pickup) - camioneta ya mapeado a pickup
         if (filters.categoria) {
             filtered = filtered.filter(v => v.categoria === filters.categoria);
+        }
+
+        // FASE 1: inventario público por defecto solo disponible
+        if (typeof filters.estado === 'undefined' || filters.estado === null || filters.estado === '') {
+            filtered = filtered.filter(v => (v.estado || 'disponible') === 'disponible');
+        } else if (filters.estado === 'all') {
+            // no filter
+        } else {
+            filtered = filtered.filter(v => (v.estado || 'disponible') === filters.estado);
         }
         
         // Filter by brand
@@ -258,7 +510,7 @@ class VehicleDatabase {
     
     // Get featured vehicles
     getFeatured() {
-        return this.vehicles.filter(v => v.destacado);
+        return this.vehicles.filter(v => v.destacado && (v.estado || 'disponible') === 'disponible');
     }
 
     /**
@@ -329,12 +581,12 @@ class VehicleDatabase {
     
     // Get vehicles by brand
     getByBrand(brand) {
-        return this.vehicles.filter(v => v.marca === brand);
+        return this.vehicles.filter(v => v.marca === brand && (v.estado || 'disponible') === 'disponible');
     }
     
     // Get vehicles by category
     getByCategory(category) {
-        return this.vehicles.filter(v => v.categoria === category);
+        return this.vehicles.filter(v => v.categoria === category && (v.estado || 'disponible') === 'disponible');
     }
     
     // Get all brands
@@ -352,22 +604,22 @@ class VehicleDatabase {
      * Para generar filtros dinámicos
      */
     getUniqueBrands() {
-        const brands = [...new Set(this.vehicles.map(v => v.marca))];
+        const brands = [...new Set(this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.marca))];
         return brands.sort();
     }
 
     getUniqueColors() {
-        const colors = [...new Set(this.vehicles.map(v => v.color))];
+        const colors = [...new Set(this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.color))];
         return colors.filter(c => c).sort();
     }
 
     getUniqueFuels() {
-        const fuels = [...new Set(this.vehicles.map(v => v.combustible))];
+        const fuels = [...new Set(this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.combustible))];
         return fuels.filter(f => f).sort();
     }
 
     getYearRange() {
-        const years = this.vehicles.map(v => v.year).filter(y => y);
+        const years = this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.year).filter(y => y);
         return {
             min: Math.min(...years),
             max: Math.max(...years)
@@ -375,7 +627,7 @@ class VehicleDatabase {
     }
 
     getPriceRange() {
-        const prices = this.vehicles.map(v => v.precio).filter(p => p);
+        const prices = this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.precio).filter(p => p);
         return {
             min: Math.min(...prices),
             max: Math.max(...prices)

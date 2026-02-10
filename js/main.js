@@ -89,10 +89,10 @@ async function loadPopularBrands() {
     // Get all brands and sort by vehicle count
     const brands = vehicleDB.getAllBrands();
     const popularBrands = brands
-        .filter(brand => brandCounts[brand.id] > 0) // Only brands with vehicles
+        .filter(brand => brandCounts[(brand.id || '').toLowerCase()] > 0) // Only brands with vehicles
         .map(brand => ({
             ...brand,
-            count: brandCounts[brand.id]
+            count: brandCounts[(brand.id || '').toLowerCase()]
         }))
         .sort((a, b) => b.count - a.count) // Sort by count descending
         .slice(0, 8); // Top 8 brands

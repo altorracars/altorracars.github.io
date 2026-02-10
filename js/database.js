@@ -13,6 +13,7 @@ class VehicleDatabase {
         this._lastErrors = { vehiculos: null, marcas: null };
         this._nextRetryAt = 0;
         this._loadPromise = null;
+        this._listenerRecoveryTimer = null;
     }
 
     // ========== LOCAL CACHE (instant load while Firebase loads) ==========
@@ -161,6 +162,27 @@ class VehicleDatabase {
         return this._loadPromise;
     }
 
+
+    _scheduleListenerRecovery(reason) {
+        if (this._listenerRecoveryTimer) return;
+        var self = this;
+        this._listenerRecoveryTimer = setTimeout(function() {
+            self._listenerRecoveryTimer = null;
+            self._listenersStarted = false;
+            if (self._unsubscribeVehicles) {
+                try { self._unsubscribeVehicles(); } catch (e) {}
+                self._unsubscribeVehicles = null;
+            }
+            if (self._unsubscribeBrands) {
+                try { self._unsubscribeBrands(); } catch (e) {}
+                self._unsubscribeBrands = null;
+            }
+            self.loaded = false;
+            self.load(true);
+        }, 4000);
+        console.warn('Scheduling Firestore listener recovery:', reason || 'unknown');
+    }
+
     async _awaitFirebaseWithTimeout(ms) {
         return Promise.race([
             window.firebaseReady.then(function() { return true; }),
@@ -172,6 +194,10 @@ class VehicleDatabase {
 
     async loadFromFirestore() {
         var self = this;
+
+        if (this._listenersStarted && !this._unsubscribeVehicles && !this._unsubscribeBrands) {
+            this._listenersStarted = false;
+        }
 
         if (!this._listenersStarted) {
             this._listenersStarted = true;
@@ -201,6 +227,11 @@ class VehicleDatabase {
                 }, function(err) {
                     console.error('Firestore vehicles listener error:', err);
                     self._emitError('vehiculos', err);
+                    self._listenersStarted = false;
+                    if (self._unsubscribeVehicles) {
+                        self._unsubscribeVehicles = null;
+                    }
+                    self._scheduleListenerRecovery('vehiculos-listener-error');
                     if (!firstVehiclesResolved) {
                         firstVehiclesResolved = true;
                         resolve(false);
@@ -222,6 +253,11 @@ class VehicleDatabase {
                 }, function(err) {
                     console.error('Firestore brands listener error:', err);
                     self._emitError('marcas', err);
+                    self._listenersStarted = false;
+                    if (self._unsubscribeBrands) {
+                        self._unsubscribeBrands = null;
+                    }
+                    self._scheduleListenerRecovery('marcas-listener-error');
                     if (!firstBrandsResolved) {
                         firstBrandsResolved = true;
                         resolve(false);

@@ -52,6 +52,18 @@
         // Firebase callable errors: err.code = 'functions/CODE', err.message = server message
         var code = (err.code || '').replace('functions/', '');
         var serverMsg = err.message || '';
+        var detailsMsg = '';
+
+        if (typeof err.details === 'string') {
+            detailsMsg = err.details;
+        } else if (err.details && typeof err.details === 'object') {
+            detailsMsg = err.details.originalMessage || err.details.message || '';
+        }
+
+        // Compat SDK may return generic strings like "internal" while the useful message is in details
+        if (!serverMsg || serverMsg.toLowerCase() === code || serverMsg.toLowerCase() === 'internal') {
+            serverMsg = detailsMsg || serverMsg;
+        }
 
         var map = {
             'unauthenticated': 'Tu sesion expiro. Inicia sesion de nuevo.',
@@ -1140,7 +1152,7 @@
 
         if (isEdit) {
             // Update via Cloud Function
-            var updateUserRole = window.functions.httpsCallable('updateUserRole');
+            var updateUserRole = window.functions.httpsCallable('updateUserRoleV2');
             updateUserRole({ uid: originalUid, nombre: nombre, rol: rol })
                 .then(function(result) {
                     toast(result.data.message || 'Usuario actualizado');
@@ -1157,7 +1169,7 @@
                 });
         } else {
             // Create via Cloud Function (no session change!)
-            var createManagedUser = window.functions.httpsCallable('createManagedUser');
+            var createManagedUser = window.functions.httpsCallable('createManagedUserV2');
             createManagedUser({ nombre: nombre, email: email, password: password, rol: rol })
                 .then(function(result) {
                     toast(result.data.message || 'Usuario creado exitosamente');
@@ -1206,7 +1218,7 @@
         document.querySelectorAll('#usersTableBody .btn-danger').forEach(function(b) { b.disabled = true; });
 
         // Delete via Cloud Function (deletes Auth + Firestore)
-        var deleteManagedUser = window.functions.httpsCallable('deleteManagedUser');
+        var deleteManagedUser = window.functions.httpsCallable('deleteManagedUserV2');
         deleteManagedUser({ uid: uid })
             .then(function(result) {
                 toast(result.data.message || 'Usuario eliminado completamente');

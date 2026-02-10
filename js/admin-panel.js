@@ -44,7 +44,28 @@
         var t = $('adminToast');
         t.textContent = msg;
         t.className = 'admin-toast ' + (type || 'success') + ' show';
-        setTimeout(function() { t.classList.remove('show'); }, 4000);
+        setTimeout(function() { t.classList.remove('show'); }, 5000);
+    }
+
+    // Parse Firebase Callable errors into user-friendly Spanish messages
+    function parseCallableError(err) {
+        // Firebase callable errors: err.code = 'functions/CODE', err.message = server message
+        var code = (err.code || '').replace('functions/', '');
+        var serverMsg = err.message || '';
+
+        var map = {
+            'unauthenticated': 'Tu sesion expiro. Inicia sesion de nuevo.',
+            'permission-denied': serverMsg || 'No tienes permisos para esta accion.',
+            'invalid-argument': serverMsg || 'Datos invalidos. Revisa el formulario.',
+            'not-found': serverMsg || 'El recurso no fue encontrado.',
+            'already-exists': serverMsg || 'Este registro ya existe.',
+            'failed-precondition': serverMsg || 'No se puede completar la accion.',
+            'unavailable': 'Servicio no disponible. Las Cloud Functions no estan desplegadas o hay un problema de red.',
+            'internal': serverMsg || 'Error interno del servidor.',
+            'deadline-exceeded': 'La operacion tardo demasiado. Intenta de nuevo.'
+        };
+
+        return map[code] || serverMsg || 'Error desconocido: ' + (err.message || err.code || 'sin detalles');
     }
 
     function formatPrice(n) {
@@ -123,7 +144,7 @@
     }
 
     function loadUserProfile(authUser) {
-        // Load user's role from Firestore
+        // Step 1: Try to read own profile (always allowed by rules)
         window.db.collection('usuarios').doc(authUser.uid).get()
             .then(function(doc) {
                 if (doc.exists) {
@@ -133,47 +154,63 @@
                     console.log('[RBAC] Profile loaded. Role:', currentUserRole, 'Email:', authUser.email);
                     showAdmin(authUser);
                 } else {
-                    // Check if this is the FIRST user ever (bootstrap super_admin)
-                    return window.db.collection('usuarios').get().then(function(snap) {
-                        if (snap.empty) {
-                            // No users exist at all - auto-create as super_admin
-                            var autoProfile = {
-                                nombre: authUser.displayName || authUser.email.split('@')[0],
-                                email: authUser.email,
-                                rol: 'super_admin',
-                                estado: 'activo',
-                                uid: authUser.uid,
-                                creadoEn: new Date().toISOString(),
-                                creadoPor: 'sistema'
-                            };
-                            return window.db.collection('usuarios').doc(authUser.uid).set(autoProfile)
-                                .then(function() {
-                                    currentUserProfile = autoProfile;
-                                    currentUserProfile._docId = authUser.uid;
-                                    currentUserRole = 'super_admin';
-                                    console.log('[RBAC] First user bootstrapped as super_admin');
-                                    showAdmin(authUser);
-                                });
-                        } else {
-                            // Users exist but this person has no profile -> deny access
-                            showAccessDenied(authUser.email);
-                        }
-                    });
+                    // No profile -> try bootstrap via Cloud Function (safe, server-side)
+                    console.log('[RBAC] No profile found. Attempting bootstrap via Cloud Function...');
+                    attemptBootstrap(authUser);
                 }
             })
             .catch(function(err) {
                 console.error('[RBAC] Error loading profile:', err);
-                // If permission-denied, try reading own profile only
-                showAccessDenied(authUser.email);
+                if (err.code === 'permission-denied') {
+                    showAccessDenied(authUser.email, authUser.uid, 'Las reglas de seguridad impiden leer tu perfil. Contacta al Super Admin.');
+                } else {
+                    showAccessDenied(authUser.email, authUser.uid, 'Error al cargar perfil: ' + err.message);
+                }
             });
     }
 
-    function showAccessDenied(email) {
+    function attemptBootstrap(authUser) {
+        if (!window.functions) {
+            showAccessDenied(authUser.email, authUser.uid, 'Cloud Functions no disponibles. Verifica que esten desplegadas.');
+            return;
+        }
+
+        var bootstrapFn = window.functions.httpsCallable('bootstrapFirstUser');
+        bootstrapFn({})
+            .then(function(result) {
+                var data = result.data;
+                if (data.success) {
+                    currentUserProfile = data.profile;
+                    currentUserProfile._docId = authUser.uid;
+                    currentUserRole = data.profile.rol;
+                    console.log('[RBAC] Bootstrap result:', data.alreadyExisted ? 'profile existed' : 'NEW super_admin created');
+                    showAdmin(authUser);
+                }
+            })
+            .catch(function(err) {
+                console.error('[RBAC] Bootstrap failed:', err);
+                var msg = parseCallableError(err);
+                showAccessDenied(authUser.email, authUser.uid, msg);
+            });
+    }
+
+    function showAccessDenied(email, uid, reason) {
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
         var errEl = $('loginError');
         errEl.style.display = 'block';
-        errEl.textContent = 'Acceso denegado para ' + email + '. No tienes un perfil de administrador. Contacta al Super Admin.';
+        var msg = 'Acceso denegado para ' + email + '.';
+        if (reason) {
+            msg += '\n' + reason;
+        } else {
+            msg += '\nNo tienes un perfil de administrador.';
+        }
+        if (uid) {
+            msg += '\n\nTu UID: ' + uid;
+            msg += '\nCompartelo con el Super Admin para que te cree un perfil.';
+        }
+        errEl.style.whiteSpace = 'pre-line';
+        errEl.textContent = msg;
         window.auth.signOut();
     }
 
@@ -326,6 +363,11 @@
     }
 
     function loadUsers() {
+        if (!canManageUsers()) {
+            // Double-guard: editor/viewer should never reach here
+            console.warn('[RBAC] loadUsers blocked: user is not super_admin');
+            return;
+        }
         window.db.collection('usuarios').get().then(function(snap) {
             users = snap.docs.map(function(d) {
                 var data = d.data();
@@ -335,7 +377,13 @@
             renderUsersTable();
         }).catch(function(err) {
             console.error('Error loading users:', err);
-            $('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Error al cargar usuarios: ' + err.message + '</td></tr>';
+            var msg = 'Error al cargar usuarios.';
+            if (err.code === 'permission-denied') {
+                msg = 'Sin permisos para ver usuarios. Verifica que las Firestore Rules esten desplegadas y tu rol sea super_admin.';
+            } else {
+                msg += ' ' + err.message;
+            }
+            $('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">' + msg + '</td></tr>';
         });
     }
 
@@ -1083,6 +1131,13 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
+        if (!window.functions) {
+            toast('Cloud Functions no disponibles. Verifica que esten desplegadas.', 'error');
+            btn.disabled = false;
+            btn.textContent = isEdit ? 'Guardar Cambios' : 'Crear Usuario';
+            return;
+        }
+
         if (isEdit) {
             // Update via Cloud Function
             var updateUserRole = window.functions.httpsCallable('updateUserRole');
@@ -1093,7 +1148,8 @@
                     loadUsers();
                 })
                 .catch(function(err) {
-                    toast('Error: ' + (err.message || 'No se pudo actualizar'), 'error');
+                    console.error('[UpdateUser] Error:', err);
+                    toast(parseCallableError(err), 'error');
                 })
                 .finally(function() {
                     btn.disabled = false;
@@ -1110,7 +1166,7 @@
                 })
                 .catch(function(err) {
                     console.error('[CreateUser] Error:', err);
-                    toast('Error: ' + (err.message || 'No se pudo crear el usuario'), 'error');
+                    toast(parseCallableError(err), 'error');
                 })
                 .finally(function() {
                     btn.disabled = false;
@@ -1119,12 +1175,20 @@
         }
     });
 
+    var _deletingUser = false;
+
     function deleteUserFn(uid) {
         if (!canManageUsers()) { toast('No tienes permisos', 'error'); return; }
+        if (_deletingUser) { toast('Ya hay una eliminacion en curso...', 'info'); return; }
 
         var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : '';
         if (uid === currentUid) {
             toast('No puedes eliminar tu propia cuenta', 'error');
+            return;
+        }
+
+        if (!window.functions) {
+            toast('Cloud Functions no disponibles. Verifica que esten desplegadas.', 'error');
             return;
         }
 
@@ -1135,7 +1199,11 @@
             return;
         }
 
+        _deletingUser = true;
         toast('Eliminando usuario...', 'info');
+
+        // Disable all delete buttons in users table during operation
+        document.querySelectorAll('#usersTableBody .btn-danger').forEach(function(b) { b.disabled = true; });
 
         // Delete via Cloud Function (deletes Auth + Firestore)
         var deleteManagedUser = window.functions.httpsCallable('deleteManagedUser');
@@ -1146,7 +1214,11 @@
             })
             .catch(function(err) {
                 console.error('[DeleteUser] Error:', err);
-                toast('Error: ' + (err.message || 'No se pudo eliminar'), 'error');
+                toast(parseCallableError(err), 'error');
+            })
+            .finally(function() {
+                _deletingUser = false;
+                document.querySelectorAll('#usersTableBody .btn-danger').forEach(function(b) { b.disabled = false; });
             });
     }
 

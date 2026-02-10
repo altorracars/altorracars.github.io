@@ -3,6 +3,7 @@
 
 
 let _liveRefreshScheduled = false;
+let _catalogRetryTimer = null;
 
 function showCatalogWarning(message) {
     ['featuredVehicles', 'newVehiclesCarousel', 'usedVehiclesCarousel', 'popularBrands'].forEach(function(id) {
@@ -238,17 +239,39 @@ function initializePage() {
     // Real-time refresh from Firestore listeners
     window.addEventListener('vehicleDB:updated', function(evt) {
         if (!evt || !evt.detail || !evt.detail.source) return;
+
         if (evt.detail.source.indexOf('firestore-live-') === 0) {
+            if (_catalogRetryTimer) {
+                clearTimeout(_catalogRetryTimer);
+                _catalogRetryTimer = null;
+            }
             clearCatalogWarning();
             scheduleLiveRefresh();
+            return;
+        }
+
+        if (evt.detail.source === 'empty' && (!window.vehicleDB || window.vehicleDB.vehicles.length === 0)) {
+            if (!_catalogRetryTimer) {
+                _catalogRetryTimer = setTimeout(function() {
+                    _catalogRetryTimer = null;
+                    if (window.vehicleDB) {
+                        window.vehicleDB.load(true);
+                    }
+                }, 5000);
+            }
         }
     });
 
     window.addEventListener('vehicleDB:error', function(evt) {
         if (!evt || !evt.detail) return;
-        var msg = evt.detail.message || '';
-        if (msg.toLowerCase().indexOf('permission') >= 0 || msg.toLowerCase().indexOf('missing or insufficient permissions') >= 0) {
+        var msg = (evt.detail.message || '').toLowerCase();
+        if (msg.indexOf('permission') >= 0 || msg.indexOf('missing or insufficient permissions') >= 0) {
             showCatalogWarning('No fue posible cargar el inventario por permisos de Firestore. Verifica reglas desplegadas y recarga la pagina.');
+            return;
+        }
+
+        if (msg.indexOf('timeout') >= 0 || msg.indexOf('unavailable') >= 0 || msg.indexOf('network') >= 0 || msg.indexOf('offline') >= 0) {
+            showCatalogWarning('No se pudo conectar con Firestore. Mostrando datos en cache (si existen) mientras se restablece la conexion.');
         }
     });
 }

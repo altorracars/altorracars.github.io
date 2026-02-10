@@ -11,6 +11,8 @@ class VehicleDatabase {
         this._unsubscribeBrands = null;
         this._listenersStarted = false;
         this._lastErrors = { vehiculos: null, marcas: null };
+        this._nextRetryAt = 0;
+        this._loadPromise = null;
     }
 
     // ========== LOCAL CACHE (instant load while Firebase loads) ==========
@@ -28,12 +30,12 @@ class VehicleDatabase {
         }
     }
 
-    _loadFromCache() {
+    _loadFromCache(allowStale) {
         try {
             var raw = localStorage.getItem(this._cacheKey);
             if (!raw) return false;
             var data = JSON.parse(raw);
-            if (Date.now() - data.ts > this._cacheMaxAge) return false;
+            if (!allowStale && (Date.now() - data.ts > this._cacheMaxAge)) return false;
             this.vehicles = data.vehicles || [];
             this.brands = data.brands || [];
             return true;
@@ -69,45 +71,94 @@ class VehicleDatabase {
 
     // ========== MAIN LOAD ==========
 
+    hasUsableLocalData() {
+        return this.vehicles.length > 0 || this.brands.length > 0;
+    }
+
     async load(forceRefresh = false) {
-        if (this.loaded && !forceRefresh) return;
-
-        // STEP 1: Show cached data instantly (if available)
-        if (!forceRefresh && this._loadFromCache()) {
-            this.normalizeVehicles();
-            this.loaded = true;
-            this._emitUpdate('cache');
-            console.log('Database loaded from cache (' + this.vehicles.length + ' vehicles) — syncing with Firestore...');
+        if (this._loadPromise && !forceRefresh) {
+            return this._loadPromise;
         }
 
-        // STEP 2: Load from Firestore (source of truth)
-        try {
-            if (!window.firebaseReady) {
-                throw new Error('Firebase init promise not available');
-            }
-
-            var firebaseOk = await this._awaitFirebaseWithTimeout(7000);
-            if (!firebaseOk || !window.db) {
-                throw new Error('Firebase/Firestore timeout');
-            }
-
-            await this.loadFromFirestore();
-            this.normalizeVehicles();
-            this.loaded = true;
-            this._saveToCache();
-            this._emitUpdate('firestore-initial');
-            console.log('Database loaded from Firestore (' + this.vehicles.length + ' vehicles)');
+        // Return fast only when we already have usable data and listeners are active
+        if (this.loaded && !forceRefresh && this._listenersStarted && this.hasUsableLocalData()) {
             return;
-        } catch (e) {
-            console.warn('Firestore not available:', e.message);
         }
 
-        // STEP 3: No JSON operational fallback anymore (single source of truth)
-        // If Firestore is unavailable and cache was stale/missing, fail closed with empty state.
-        this.vehicles = this.vehicles || [];
-        this.brands = this.brands || [];
-        this.loaded = true;
-        this._emitUpdate('empty');
+        // Avoid hammering retries when Firebase is unavailable and cache is empty
+        if (!forceRefresh && Date.now() < this._nextRetryAt && !this.hasUsableLocalData()) {
+            return;
+        }
+
+        var self = this;
+        this._loadPromise = (async function() {
+            var cacheHasUsableData = false;
+
+            // STEP 1: Show cached data instantly (if available and useful)
+            if (!forceRefresh) {
+                if (self._loadFromCache(false)) {
+                    self.normalizeVehicles();
+                    cacheHasUsableData = self.hasUsableLocalData();
+                    if (cacheHasUsableData) {
+                        self.loaded = true;
+                        self._emitUpdate('cache');
+                        console.log('Database loaded from fresh cache (' + self.vehicles.length + ' vehicles) — syncing with Firestore...');
+                    }
+                }
+
+                if (!cacheHasUsableData && self._loadFromCache(true)) {
+                    self.normalizeVehicles();
+                    cacheHasUsableData = self.hasUsableLocalData();
+                    if (cacheHasUsableData) {
+                        self.loaded = true;
+                        self._emitUpdate('stale-cache');
+                        console.warn('Using stale cache while reconnecting to Firestore (' + self.vehicles.length + ' vehicles).');
+                    }
+                }
+            }
+
+            // STEP 2: Load from Firestore (source of truth)
+            try {
+                if (!window.firebaseReady) {
+                    throw new Error('Firebase init promise not available');
+                }
+
+                var firebaseOk = await self._awaitFirebaseWithTimeout(12000);
+                if (!firebaseOk || !window.db) {
+                    throw new Error('Firebase/Firestore timeout');
+                }
+
+                await self.loadFromFirestore();
+                self.normalizeVehicles();
+                self.loaded = true;
+                self._saveToCache();
+                self._emitUpdate('firestore-initial');
+                self._emitError('vehiculos', null);
+                self._emitError('marcas', null);
+                self._nextRetryAt = 0;
+                console.log('Database loaded from Firestore (' + self.vehicles.length + ' vehicles)');
+                return;
+            } catch (e) {
+                console.warn('Firestore not available:', e.message);
+                self._emitError('vehiculos', e);
+            }
+
+            // STEP 3: Keep usable cache if present; otherwise allow future retries (never freeze empty state)
+            if (cacheHasUsableData) {
+                self.loaded = true;
+                self._emitUpdate('cache-fallback');
+            } else {
+                self.loaded = false;
+                self.vehicles = [];
+                self.brands = [];
+                self._emitUpdate('empty');
+                self._nextRetryAt = Date.now() + 15000;
+            }
+        })().finally(function() {
+            self._loadPromise = null;
+        });
+
+        return this._loadPromise;
     }
 
     async _awaitFirebaseWithTimeout(ms) {

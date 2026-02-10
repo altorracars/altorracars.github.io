@@ -25,58 +25,6 @@ async function verifySuperAdmin(context) {
     return callerData;
 }
 
-// ========== BOOTSTRAP FIRST USER ==========
-// If no users exist at all, the caller becomes the first super_admin.
-// This runs server-side so Firestore rules don't block the write.
-exports.bootstrapFirstUser = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'Debes iniciar sesion.');
-    }
-
-    const callerUid = context.auth.uid;
-    const callerEmail = context.auth.token.email || '';
-
-    // Check if caller already has a profile
-    const existingProfile = await db.collection('usuarios').doc(callerUid).get();
-    if (existingProfile.exists) {
-        // Profile already exists - return it (no error)
-        return {
-            success: true,
-            alreadyExisted: true,
-            profile: existingProfile.data()
-        };
-    }
-
-    // Check if ANY users exist in the collection
-    const anyUser = await db.collection('usuarios').limit(1).get();
-    if (!anyUser.empty) {
-        // Other users exist but this person has no profile -> denied
-        throw new functions.https.HttpsError('permission-denied',
-            'Ya existen usuarios en el sistema. Un Super Admin debe crear tu perfil. Tu UID: ' + callerUid);
-    }
-
-    // No users at all - bootstrap this person as super_admin
-    const profile = {
-        nombre: context.auth.token.name || callerEmail.split('@')[0] || 'Admin',
-        email: callerEmail,
-        rol: 'super_admin',
-        estado: 'activo',
-        uid: callerUid,
-        creadoEn: new Date().toISOString(),
-        creadoPor: 'bootstrap'
-    };
-
-    await db.collection('usuarios').doc(callerUid).set(profile);
-
-    console.log('First user bootstrapped as super_admin:', callerUid, callerEmail);
-
-    return {
-        success: true,
-        alreadyExisted: false,
-        profile: profile
-    };
-});
-
 // ========== CREATE MANAGED USER ==========
 // Creates a user in Firebase Auth + Firestore profile
 // Only callable by super_admin

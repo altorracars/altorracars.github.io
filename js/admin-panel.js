@@ -13,6 +13,11 @@
     // ========== RBAC STATE ==========
     var currentUserProfile = null;
     var currentUserRole = null;
+    var INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
+    var inactivityTimerId = null;
+    var inactivityTrackingActive = false;
+
+    var ACTIVITY_EVENTS = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
 
     function isSuperAdmin() { return currentUserRole === 'super_admin'; }
     function isEditor() { return currentUserRole === 'editor'; }
@@ -47,11 +52,61 @@
         setTimeout(function() { t.classList.remove('show'); }, 5000);
     }
 
+    function clearInactivityTimer() {
+        if (inactivityTimerId) {
+            clearTimeout(inactivityTimerId);
+            inactivityTimerId = null;
+        }
+    }
+
+    function stopInactivityTracking() {
+        clearInactivityTimer();
+        if (!inactivityTrackingActive) return;
+        ACTIVITY_EVENTS.forEach(function(eventName) {
+            document.removeEventListener(eventName, resetInactivityTracking, true);
+        });
+        inactivityTrackingActive = false;
+    }
+
+    function handleInactivityTimeout() {
+        clearInactivityTimer();
+        if (!window.auth || !window.auth.currentUser) return;
+        toast('Sesion cerrada por inactividad (5 minutos).', 'info');
+        window.auth.signOut();
+    }
+
+    function resetInactivityTracking() {
+        if (!inactivityTrackingActive) return;
+        clearInactivityTimer();
+        inactivityTimerId = setTimeout(handleInactivityTimeout, INACTIVITY_TIMEOUT_MS);
+    }
+
+    function startInactivityTracking() {
+        if (inactivityTrackingActive) return;
+        ACTIVITY_EVENTS.forEach(function(eventName) {
+            document.addEventListener(eventName, resetInactivityTracking, true);
+        });
+        inactivityTrackingActive = true;
+        resetInactivityTracking();
+    }
+
     // Parse Firebase Callable errors into user-friendly Spanish messages
     function parseCallableError(err) {
         // Firebase callable errors: err.code = 'functions/CODE', err.message = server message
         var code = (err.code || '').replace('functions/', '');
         var serverMsg = err.message || '';
+        var detailsMsg = '';
+
+        if (typeof err.details === 'string') {
+            detailsMsg = err.details;
+        } else if (err.details && typeof err.details === 'object') {
+            detailsMsg = err.details.originalMessage || err.details.message || '';
+        }
+
+        // Compat SDK may return generic strings like "internal" while the useful message is in details
+        if (!serverMsg || serverMsg.toLowerCase() === code || serverMsg.toLowerCase() === 'internal') {
+            serverMsg = detailsMsg || serverMsg;
+        }
 
         var map = {
             'unauthenticated': 'Tu sesion expiro. Inicia sesion de nuevo.',
@@ -131,15 +186,22 @@
     // ========== AUTH + RBAC INITIALIZATION ==========
     function initAuth() {
         window.firebaseReady.then(function() {
-            window.auth.onAuthStateChanged(function(user) {
-                if (user) {
-                    loadUserProfile(user);
-                } else {
-                    currentUserProfile = null;
-                    currentUserRole = null;
-                    showLogin();
-                }
-            });
+            window.auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+                .catch(function(err) {
+                    console.warn('[Auth] No se pudo aplicar persistence NONE:', err);
+                })
+                .finally(function() {
+                    window.auth.onAuthStateChanged(function(user) {
+                        if (user) {
+                            loadUserProfile(user);
+                        } else {
+                            currentUserProfile = null;
+                            currentUserRole = null;
+                            stopInactivityTracking();
+                            showLogin();
+                        }
+                    });
+                });
         });
     }
 
@@ -154,9 +216,9 @@
                     console.log('[RBAC] Profile loaded. Role:', currentUserRole, 'Email:', authUser.email);
                     showAdmin(authUser);
                 } else {
-                    // No profile -> try bootstrap via Cloud Function (safe, server-side)
-                    console.log('[RBAC] No profile found. Attempting bootstrap via Cloud Function...');
-                    attemptBootstrap(authUser);
+                    // No profile -> deny access (bootstrap function no longer used)
+                    console.warn('[RBAC] No profile found for authenticated user:', authUser.uid);
+                    showAccessDenied(authUser.email, authUser.uid, 'No tienes perfil administrativo asignado. Un Super Admin debe crearlo.');
                 }
             })
             .catch(function(err) {
@@ -169,32 +231,8 @@
             });
     }
 
-    function attemptBootstrap(authUser) {
-        if (!window.functions) {
-            showAccessDenied(authUser.email, authUser.uid, 'Cloud Functions no disponibles. Verifica que esten desplegadas.');
-            return;
-        }
-
-        var bootstrapFn = window.functions.httpsCallable('bootstrapFirstUser');
-        bootstrapFn({})
-            .then(function(result) {
-                var data = result.data;
-                if (data.success) {
-                    currentUserProfile = data.profile;
-                    currentUserProfile._docId = authUser.uid;
-                    currentUserRole = data.profile.rol;
-                    console.log('[RBAC] Bootstrap result:', data.alreadyExisted ? 'profile existed' : 'NEW super_admin created');
-                    showAdmin(authUser);
-                }
-            })
-            .catch(function(err) {
-                console.error('[RBAC] Bootstrap failed:', err);
-                var msg = parseCallableError(err);
-                showAccessDenied(authUser.email, authUser.uid, msg);
-            });
-    }
-
     function showAccessDenied(email, uid, reason) {
+        stopInactivityTracking();
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
         var errEl = $('loginError');
@@ -215,6 +253,7 @@
     }
 
     function showLogin() {
+        stopInactivityTracking();
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
     }
@@ -224,6 +263,7 @@
         $('adminPanel').style.display = 'flex';
         $('adminEmail').textContent = user.email + ' (' + (currentUserRole === 'super_admin' ? 'Super Admin' : currentUserRole === 'editor' ? 'Editor' : 'Viewer') + ')';
 
+        startInactivityTracking();
         applyRolePermissions();
         loadData();
     }
@@ -260,7 +300,10 @@
         btn.textContent = 'Ingresando...';
         errEl.style.display = 'none';
 
-        window.auth.signInWithEmailAndPassword(email, pass)
+        window.auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+            .then(function() {
+                return window.auth.signInWithEmailAndPassword(email, pass);
+            })
             .then(function() {
                 btn.disabled = false;
                 btn.textContent = 'Iniciar Sesion';
@@ -283,16 +326,41 @@
         window.auth.signOut();
     });
 
-    // Change password
+    // Change password (requires recent login re-auth)
     $('changePasswordForm').addEventListener('submit', function(e) {
         e.preventDefault();
+
+        var currentUser = window.auth.currentUser;
+        if (!currentUser || !currentUser.email) {
+            toast('Sesion invalida. Inicia sesion de nuevo.', 'error');
+            window.auth.signOut();
+            return;
+        }
+
         var newPass = $('newPassword').value;
-        window.auth.currentUser.updatePassword(newPass)
+        var currentPass = window.prompt('Para cambiar la contrasena, confirma tu contrasena actual:');
+        if (!currentPass) {
+            toast('Cambio de contrasena cancelado.', 'info');
+            return;
+        }
+
+        var credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPass);
+
+        currentUser.reauthenticateWithCredential(credential)
+            .then(function() {
+                return currentUser.updatePassword(newPass);
+            })
             .then(function() {
                 toast('Contrasena actualizada');
                 $('newPassword').value = '';
             })
-            .catch(function(err) { toast('Error: ' + err.message, 'error'); });
+            .catch(function(err) {
+                if (err && (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential')) {
+                    toast('Contrasena actual incorrecta.', 'error');
+                } else {
+                    toast('Error: ' + (err && err.message ? err.message : 'No se pudo cambiar la contrasena.'), 'error');
+                }
+            });
     });
 
     // ========== MOBILE MENU ==========
@@ -1140,7 +1208,7 @@
 
         if (isEdit) {
             // Update via Cloud Function
-            var updateUserRole = window.functions.httpsCallable('updateUserRole');
+            var updateUserRole = window.functions.httpsCallable('updateUserRoleV2');
             updateUserRole({ uid: originalUid, nombre: nombre, rol: rol })
                 .then(function(result) {
                     toast(result.data.message || 'Usuario actualizado');
@@ -1157,7 +1225,7 @@
                 });
         } else {
             // Create via Cloud Function (no session change!)
-            var createManagedUser = window.functions.httpsCallable('createManagedUser');
+            var createManagedUser = window.functions.httpsCallable('createManagedUserV2');
             createManagedUser({ nombre: nombre, email: email, password: password, rol: rol })
                 .then(function(result) {
                     toast(result.data.message || 'Usuario creado exitosamente');
@@ -1206,7 +1274,7 @@
         document.querySelectorAll('#usersTableBody .btn-danger').forEach(function(b) { b.disabled = true; });
 
         // Delete via Cloud Function (deletes Auth + Firestore)
-        var deleteManagedUser = window.functions.httpsCallable('deleteManagedUser');
+        var deleteManagedUser = window.functions.httpsCallable('deleteManagedUserV2');
         deleteManagedUser({ uid: uid })
             .then(function(result) {
                 toast(result.data.message || 'Usuario eliminado completamente');

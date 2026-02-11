@@ -57,7 +57,6 @@ class VehicleDatabase {
         }
     }
 
-
     _emitError(collection, error) {
         this._lastErrors[collection] = error ? (error.message || String(error)) : null;
         if (typeof window !== 'undefined') {
@@ -70,10 +69,6 @@ class VehicleDatabase {
         }
     }
 
-
-
-
-
     // ========== MAIN LOAD ==========
 
     hasUsableLocalData() {
@@ -81,34 +76,12 @@ class VehicleDatabase {
     }
 
     async load(forceRefresh = false) {
+        // Evitar múltiples llamadas simultáneas
         if (this._loadPromise && !forceRefresh) {
             return this._loadPromise;
         }
-    }
 
-
-
-    async _ensureAnonymousAuth() {
-        if (!window.auth || typeof window.auth.signInAnonymously !== 'function') {
-            return false;
-        }
-
-        if (window.auth.currentUser) {
-            return true;
-        }
-
-        if (this._attemptedAnonymousBootstrap) {
-            return false;
-        }
-
-        this._attemptedAnonymousBootstrap = true;
-
-        // Return fast only when we already have usable data and listeners are active
-        if (this.loaded && !forceRefresh && this._listenersStarted && this.hasUsableLocalData()) {
-            return;
-        }
-
-        // Avoid hammering retries when Firebase is unavailable and cache is empty
+        // Evitar reintentos muy agresivos si falló recientemente
         if (!forceRefresh && Date.now() < this._nextRetryAt && !this.hasUsableLocalData()) {
             return;
         }
@@ -117,18 +90,20 @@ class VehicleDatabase {
         this._loadPromise = (async function() {
             var cacheHasUsableData = false;
 
-            // STEP 1: Show cached data instantly (if available and useful)
+            // STEP 1: Cargar caché local instantáneamente (si existe)
             if (!forceRefresh) {
+                // Intento 1: Caché fresco
                 if (self._loadFromCache(false)) {
                     self.normalizeVehicles();
                     cacheHasUsableData = self.hasUsableLocalData();
                     if (cacheHasUsableData) {
                         self.loaded = true;
                         self._emitUpdate('cache');
-                        console.log('Database loaded from fresh cache (' + self.vehicles.length + ' vehicles) — syncing with Firestore...');
+                        console.log('Database loaded from fresh cache (' + self.vehicles.length + ' vehicles)');
                     }
                 }
 
+                // Intento 2: Caché antiguo (stale)
                 if (!cacheHasUsableData && self._loadFromCache(true)) {
                     self.normalizeVehicles();
                     cacheHasUsableData = self.hasUsableLocalData();
@@ -138,18 +113,26 @@ class VehicleDatabase {
                         console.warn('Using stale cache while reconnecting to Firestore (' + self.vehicles.length + ' vehicles).');
                     }
                 }
-                throw new Error('Public catalog endpoint failed: HTTP ' + response.status);
             }
 
-            // STEP 2: Load from Firestore (source of truth)
+            // STEP 2: Cargar desde Firestore (Fuente de verdad)
             try {
                 if (!window.firebaseReady) {
-                    throw new Error('Firebase init promise not available');
+                    // Esperar un poco a que firebase cargue si no está listo
+                    await new Promise(r => setTimeout(r, 500));
+                }
+                
+                if (!window.db) {
+                     // Si después de esperar no hay DB, intentar esperar el promise global
+                     if (window.firebaseReady) {
+                        await window.firebaseReady;
+                     }
                 }
 
+                // Timeout de seguridad por si Firebase no responde
                 var firebaseOk = await self._awaitFirebaseWithTimeout(12000);
                 if (!firebaseOk || !window.db) {
-                    throw new Error('Firebase/Firestore timeout');
+                    throw new Error('Firebase/Firestore timeout or not initialized');
                 }
 
                 await self.loadFromFirestore();
@@ -157,28 +140,30 @@ class VehicleDatabase {
                 self.loaded = true;
                 self._saveToCache();
                 self._emitUpdate('firestore-initial');
-                self._emitError('vehiculos', null);
+                self._emitError('vehiculos', null); // Limpiar errores previos
                 self._emitError('marcas', null);
                 self._nextRetryAt = 0;
                 console.log('Database loaded from Firestore (' + self.vehicles.length + ' vehicles)');
                 return;
-            } catch (e) {
-                console.warn('Firestore not available:', e.message);
-                self._emitError('vehiculos', e);
 
+            } catch (e) {
+                console.warn('Firestore connection failed, using fallback:', e.message);
+                self._emitError('vehiculos', e);
             }
 
-            // STEP 3: Keep usable cache if present; otherwise allow future retries (never freeze empty state)
+            // STEP 3: Fallback final
+            // Si Firestore falló pero teníamos caché, nos quedamos con el caché.
+            // Si no hay nada, declaramos estado vacío y programamos reintento.
             if (cacheHasUsableData) {
                 self.loaded = true;
                 self._emitUpdate('cache-fallback');
             } else {
                 self.loaded = false;
-                self.vehicles = [];
-                self.brands = [];
+                // No borramos arrays vacíos por si acaso
                 self._emitUpdate('empty');
-                self._nextRetryAt = Date.now() + 15000;
+                self._nextRetryAt = Date.now() + 15000; // Reintentar en 15s
             }
+
         })().finally(function() {
             self._loadPromise = null;
         });
@@ -186,13 +171,13 @@ class VehicleDatabase {
         return this._loadPromise;
     }
 
-
     _scheduleListenerRecovery(reason) {
         if (this._listenerRecoveryTimer) return;
         var self = this;
         this._listenerRecoveryTimer = setTimeout(function() {
             self._listenerRecoveryTimer = null;
             self._listenersStarted = false;
+            // Limpiar listeners viejos
             if (self._unsubscribeVehicles) {
                 try { self._unsubscribeVehicles(); } catch (e) {}
                 self._unsubscribeVehicles = null;
@@ -201,49 +186,63 @@ class VehicleDatabase {
                 try { self._unsubscribeBrands(); } catch (e) {}
                 self._unsubscribeBrands = null;
             }
+            // Forzar recarga
             self.loaded = false;
+            console.warn('Retrying Firestore connection:', reason);
             self.load(true);
-        }, 4000);
-        console.warn('Scheduling Firestore listener recovery:', reason || 'unknown');
+        }, 5000);
     }
 
     async _awaitFirebaseWithTimeout(ms) {
+        // Espera a que window.firebaseReady se resuelva O pase el tiempo 'ms'
+        if (!window.firebaseReady) return false;
+        
         return Promise.race([
-            window.firebaseReady.then(function() { return true; }),
+            window.firebaseReady.then(function() { return true; }).catch(function() { return false; }),
             new Promise(function(resolve) {
                 setTimeout(function() { resolve(false); }, ms);
             })
         ]);
     }
 
+    _isPermissionDeniedError(err) {
+        if (!err) return false;
+        const msg = (err.message || '').toLowerCase();
+        return msg.indexOf('permission-denied') >= 0 || msg.indexOf('insufficient permissions') >= 0;
+    }
+
     async loadFromFirestore() {
         var self = this;
 
-        if (this._listenersStarted && !this._unsubscribeVehicles && !this._unsubscribeBrands) {
-            this._listenersStarted = false;
+        // Si ya estamos escuchando, no duplicar
+        if (this._listenersStarted && this._unsubscribeVehicles && this._unsubscribeBrands) {
+            return true;
         }
 
-        if (!this._listenersStarted) {
-            this._listenersStarted = true;
+        this._listenersStarted = true;
+        var firstVehiclesResolved = false;
+        var firstBrandsResolved = false;
 
-            var firstVehiclesResolved = false;
-            var firstBrandsResolved = false;
-
-            var firstVehicles = new Promise(function(resolve) {
+        // Promesa para vehiculos
+        var firstVehicles = new Promise(function(resolve) {
+            try {
                 self._unsubscribeVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
                     self.vehicles = snap.docs.map(function(doc) {
                         var data = doc.data() || {};
+                        // Asegurar ID numérico o string consistente
                         if (!data.id && doc.id) {
                             var parsedId = parseInt(doc.id, 10);
                             data.id = Number.isNaN(parsedId) ? doc.id : parsedId;
                         }
                         return data;
                     });
+                    
                     self.normalizeVehicles();
                     self._saveToCache();
                     self.loaded = true;
+                    // Emitir evento live
                     self._emitUpdate('firestore-live-vehicles');
-                    self._emitError('vehiculos', null);
+                    
                     if (!firstVehiclesResolved) {
                         firstVehiclesResolved = true;
                         resolve(true);
@@ -251,27 +250,31 @@ class VehicleDatabase {
                 }, function(err) {
                     console.error('Firestore vehicles listener error:', err);
                     self._emitError('vehiculos', err);
-                    self._listenersStarted = false;
-                    if (self._unsubscribeVehicles) {
-                        self._unsubscribeVehicles = null;
-                    }
+                    
                     if (!self._isPermissionDeniedError(err)) {
-                        self._scheduleListenerRecovery('vehiculos-listener-error');
+                        self._scheduleListenerRecovery('vehiculos-error');
                     }
+                    
                     if (!firstVehiclesResolved) {
                         firstVehiclesResolved = true;
                         resolve(false);
                     }
                 });
-            });
+            } catch (e) {
+                console.error('Error setting up vehicle listener:', e);
+                resolve(false);
+            }
+        });
 
-            var firstBrands = new Promise(function(resolve) {
+        // Promesa para marcas
+        var firstBrands = new Promise(function(resolve) {
+            try {
                 self._unsubscribeBrands = window.db.collection('marcas').onSnapshot(function(snap) {
                     self.brands = snap.empty ? [] : snap.docs.map(function(doc) { return doc.data(); });
                     self._saveToCache();
-                    self.loaded = true;
+                    // Emitir evento live
                     self._emitUpdate('firestore-live-brands');
-                    self._emitError('marcas', null);
+                    
                     if (!firstBrandsResolved) {
                         firstBrandsResolved = true;
                         resolve(true);
@@ -279,25 +282,27 @@ class VehicleDatabase {
                 }, function(err) {
                     console.error('Firestore brands listener error:', err);
                     self._emitError('marcas', err);
-                    self._listenersStarted = false;
-                    if (self._unsubscribeBrands) {
-                        self._unsubscribeBrands = null;
-                    }
+                    
                     if (!self._isPermissionDeniedError(err)) {
-                        self._scheduleListenerRecovery('marcas-listener-error');
+                        self._scheduleListenerRecovery('marcas-error');
                     }
+                    
                     if (!firstBrandsResolved) {
                         firstBrandsResolved = true;
                         resolve(false);
                     }
                 });
-            });
+            } catch (e) {
+                console.error('Error setting up brand listener:', e);
+                resolve(false);
+            }
+        });
 
-            await Promise.race([
-                Promise.all([firstVehicles, firstBrands]),
-                new Promise(function(resolve) { setTimeout(resolve, 7000); })
-            ]);
-        }
+        // Esperar a que ambas carguen por primera vez (o fallen) con timeout
+        await Promise.race([
+            Promise.all([firstVehicles, firstBrands]),
+            new Promise(function(resolve) { setTimeout(resolve, 8000); })
+        ]);
 
         return true;
     }
@@ -305,9 +310,13 @@ class VehicleDatabase {
     /**
      * FASE 1 - NORMALIZACIÓN AUTOMÁTICA
      * Convierte "seminuevo" → "usado" y "camioneta" → "pickup"
-     * Sin romper el inventario existente
      */
     normalizeVehicles() {
+        if (!Array.isArray(this.vehicles)) {
+            this.vehicles = [];
+            return;
+        }
+
         this.vehicles = this.vehicles.map(v => {
             const normalized = { ...v };
 
@@ -321,7 +330,7 @@ class VehicleDatabase {
                 normalized.categoria = 'pickup';
             }
 
-            // Estado canónico del inventario
+            // Estado canónico
             if (!normalized.estado) {
                 if (normalized.disponibilidad) {
                     normalized.estado = normalized.disponibilidad;
@@ -330,6 +339,7 @@ class VehicleDatabase {
                 }
             }
 
+            // Sanitizar estado
             if (!['borrador', 'disponible', 'reservado', 'vendido'].includes(normalized.estado)) {
                 normalized.estado = 'disponible';
             }
@@ -338,22 +348,11 @@ class VehicleDatabase {
         });
     }
 
-    /**
-     * Normaliza queries de usuario para compatibilidad
-     */
     normalizeQuery(value) {
         if (!value) return value;
-
         const normalized = value.toLowerCase().trim();
-
-        // Mapeos de compatibilidad
-        if (normalized === 'seminuevo' || normalized === 'semi-nuevo') {
-            return 'usado';
-        }
-        if (normalized === 'camioneta' || normalized === 'camionetas') {
-            return 'pickup';
-        }
-
+        if (normalized === 'seminuevo' || normalized === 'semi-nuevo') return 'usado';
+        if (normalized === 'camioneta' || normalized === 'camionetas') return 'pickup';
         return normalized;
     }
     
@@ -365,6 +364,7 @@ class VehicleDatabase {
     
     // Get vehicle by ID
     getVehicleById(id, options = {}) {
+        // Comparación laxa (==) para manejar string/number id mix
         var vehicle = this.vehicles.find(v => v.id == id);
         if (!vehicle) return null;
         if (options.includeAllStates) return vehicle;
@@ -375,88 +375,36 @@ class VehicleDatabase {
     filter(filters = {}) {
         let filtered = [...this.vehicles];
 
-        // ✅ FASE 1: Normalizar queries entrantes para compatibilidad
-        if (filters.tipo) {
-            filters.tipo = this.normalizeQuery(filters.tipo);
-        }
-        if (filters.categoria) {
-            filters.categoria = this.normalizeQuery(filters.categoria);
-        }
+        if (filters.tipo) filters.tipo = this.normalizeQuery(filters.tipo);
+        if (filters.categoria) filters.categoria = this.normalizeQuery(filters.categoria);
 
-        // Filter by type (nuevo, usado) - seminuevo ya mapeado a usado
-        if (filters.tipo) {
-            filtered = filtered.filter(v => v.tipo === filters.tipo);
-        }
+        if (filters.tipo) filtered = filtered.filter(v => v.tipo === filters.tipo);
+        if (filters.categoria) filtered = filtered.filter(v => v.categoria === filters.categoria);
 
-        // Filter by category (suv, sedan, hatchback, pickup) - camioneta ya mapeado a pickup
-        if (filters.categoria) {
-            filtered = filtered.filter(v => v.categoria === filters.categoria);
-        }
-
-        // FASE 1: inventario público por defecto solo disponible
         if (typeof filters.estado === 'undefined' || filters.estado === null || filters.estado === '') {
             filtered = filtered.filter(v => (v.estado || 'disponible') === 'disponible');
-        } else if (filters.estado === 'all') {
-            // no filter
-        } else {
+        } else if (filters.estado !== 'all') {
             filtered = filtered.filter(v => (v.estado || 'disponible') === filters.estado);
         }
         
-        // Filter by brand
-        if (filters.marca) {
-            filtered = filtered.filter(v => v.marca === filters.marca);
-        }
-        
-        // Filter by transmission
-        if (filters.transmision) {
-            filtered = filtered.filter(v => v.transmision === filters.transmision);
-        }
+        if (filters.marca) filtered = filtered.filter(v => v.marca === filters.marca);
+        if (filters.transmision) filtered = filtered.filter(v => v.transmision === filters.transmision);
+        if (filters.combustible) filtered = filtered.filter(v => v.combustible === filters.combustible);
 
-        // FASE 3: Filter by combustible
-        if (filters.combustible) {
-            filtered = filtered.filter(v => v.combustible === filters.combustible);
-        }
+        if (filters.precioMin) filtered = filtered.filter(v => v.precio >= parseInt(filters.precioMin));
+        if (filters.precioMax) filtered = filtered.filter(v => v.precio <= parseInt(filters.precioMax));
 
-        // Filter by price range
-        if (filters.precioMin) {
-            filtered = filtered.filter(v => v.precio >= parseInt(filters.precioMin));
-        }
-        if (filters.precioMax) {
-            filtered = filtered.filter(v => v.precio <= parseInt(filters.precioMax));
-        }
+        if (filters.yearMin) filtered = filtered.filter(v => v.year >= parseInt(filters.yearMin));
+        if (filters.yearMax) filtered = filtered.filter(v => v.year <= parseInt(filters.yearMax));
+        if (filters.kilometrajeMax) filtered = filtered.filter(v => v.kilometraje <= parseInt(filters.kilometrajeMax));
 
-        // Filter by year range
-        if (filters.yearMin) {
-            filtered = filtered.filter(v => v.year >= parseInt(filters.yearMin));
-        }
-        if (filters.yearMax) {
-            filtered = filtered.filter(v => v.year <= parseInt(filters.yearMax));
-        }
-
-        // FASE 3: Filter by kilometraje
-        if (filters.kilometrajeMax) {
-            filtered = filtered.filter(v => v.kilometraje <= parseInt(filters.kilometrajeMax));
-        }
-
-        // Filter by km range (from sliders)
-        if (filters.kmMin) {
-            filtered = filtered.filter(v => v.kilometraje >= parseInt(filters.kmMin));
-        }
-        if (filters.kmMax) {
-            filtered = filtered.filter(v => v.kilometraje <= parseInt(filters.kmMax));
-        }
-
-        // FASE 3: Filter by destacado
         if (filters.destacado === 'true' || filters.destacado === true) {
             filtered = filtered.filter(v => v.destacado === true);
         }
-
-        // FASE 3: Filter by oferta
         if (filters.oferta === 'true' || filters.oferta === true) {
             filtered = filtered.filter(v => v.oferta === true || v.precioOferta);
         }
         
-        // Search by text (model, brand, description)
         if (filters.search) {
             const searchLower = filters.search.toLowerCase();
             filtered = filtered.filter(v =>
@@ -469,101 +417,51 @@ class VehicleDatabase {
         return filtered;
     }
     
-    // Get featured vehicles
     getFeatured() {
         return this.vehicles.filter(v => v.destacado && (v.estado || 'disponible') === 'disponible');
     }
 
-    /**
-     * FASE 2 - SISTEMA DE RANKING ROBUSTO
-     * Calcula un score de prioridad para cada vehículo
-     * Criterios: destacado > oferta > nuevo > año reciente > bajo kilometraje
-     */
     calculateRankingScore(vehicle) {
         let score = 0;
-
-        // 1. Destacado tiene máxima prioridad (+1000)
-        if (vehicle.destacado) {
-            score += 1000;
-        }
-
-        // 2. Ofertas tienen alta prioridad (+500)
-        if (vehicle.oferta || vehicle.precioOferta) {
-            score += 500;
-        }
-
-        // 3. Vehículos nuevos tienen prioridad sobre usados (+200)
-        if (vehicle.tipo === 'nuevo') {
-            score += 200;
-        }
-
-        // 4. Año más reciente suma puntos (máx +100)
-        // Asumiendo años entre 2000-2030
+        if (vehicle.destacado) score += 1000;
+        if (vehicle.oferta || vehicle.precioOferta) score += 500;
+        if (vehicle.tipo === 'nuevo') score += 200;
         const yearScore = Math.max(0, Math.min(100, (vehicle.year - 2000) * 3));
         score += yearScore;
-
-        // 5. Menor kilometraje suma puntos (máx +50)
-        // Inverso: menos km = más puntos
         const kmScore = Math.max(0, 50 - (vehicle.kilometraje / 10000));
         score += kmScore;
-
         return score;
     }
 
-    /**
-     * FASE 2 - OBTENER VEHÍCULOS RANKEADOS
-     * Retorna vehículos ordenados por score de ranking
-     */
     getRankedVehicles(limit = null) {
         const ranked = [...this.vehicles].map(v => ({
             ...v,
             _rankingScore: this.calculateRankingScore(v)
         }));
-
-        // Ordenar por score descendente
         ranked.sort((a, b) => b._rankingScore - a._rankingScore);
-
-        // Remover el score temporal antes de retornar
         const clean = ranked.map(v => {
             const { _rankingScore, ...vehicle } = v;
             return vehicle;
         });
-
         return limit ? clean.slice(0, limit) : clean;
     }
 
-    /**
-     * FASE 2 - OBTENER TOP VEHÍCULOS
-     * Retorna los N mejores vehículos según ranking
-     */
     getTopVehicles(limit = 12) {
         return this.getRankedVehicles(limit);
     }
     
-    // Get vehicles by brand
     getByBrand(brand) {
         return this.vehicles.filter(v => v.marca === brand && (v.estado || 'disponible') === 'disponible');
     }
     
-    // Get vehicles by category
-    getByCategory(category) {
-        return this.vehicles.filter(v => v.categoria === category && (v.estado || 'disponible') === 'disponible');
-    }
-    
-    // Get all brands
     getAllBrands() {
         return this.brands;
     }
 
-    // Get brand info
     getBrandInfo(brandId) {
         return this.brands.find(b => b.id === brandId);
     }
 
-    /**
-     * FASE 3 - OBTENER VALORES ÚNICOS DEL INVENTARIO
-     * Para generar filtros dinámicos
-     */
     getUniqueBrands() {
         const brands = [...new Set(this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.marca))];
         return brands.sort();
@@ -581,6 +479,7 @@ class VehicleDatabase {
 
     getYearRange() {
         const years = this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.year).filter(y => y);
+        if (!years.length) return { min: 2010, max: 2025 };
         return {
             min: Math.min(...years),
             max: Math.max(...years)
@@ -589,32 +488,11 @@ class VehicleDatabase {
 
     getPriceRange() {
         const prices = this.vehicles.filter(v => (v.estado || 'disponible') === 'disponible').map(v => v.precio).filter(p => p);
+        if (!prices.length) return { min: 0, max: 500000000 };
         return {
             min: Math.min(...prices),
             max: Math.max(...prices)
         };
-    }
-    
-    // Sort vehicles
-    sort(vehicles, sortBy = 'precio-asc') {
-        const sorted = [...vehicles];
-        
-        switch (sortBy) {
-            case 'precio-asc':
-                return sorted.sort((a, b) => a.precio - b.precio);
-            case 'precio-desc':
-                return sorted.sort((a, b) => b.precio - a.precio);
-            case 'year-desc':
-                return sorted.sort((a, b) => b.year - a.year);
-            case 'year-asc':
-                return sorted.sort((a, b) => a.year - b.year);
-            case 'km-asc':
-                return sorted.sort((a, b) => a.kilometraje - b.kilometraje);
-            case 'marca-asc':
-                return sorted.sort((a, b) => a.marca.localeCompare(b.marca));
-            default:
-                return sorted;
-        }
     }
 }
 

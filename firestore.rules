@@ -26,8 +26,8 @@ service cloud.firestore {
 
     // ========== VEHICULOS ==========
     match /vehiculos/{vehiculoId} {
-      // Public catalog: allow read access for website visitors (inventory shown is filtered client-side by estado)
-      allow read: if true;
+      // Any authenticated user with a profile can read
+      allow read: if request.auth != null;
 
       // Editor or Super Admin can create and update
       allow create, update: if isEditorOrAbove();

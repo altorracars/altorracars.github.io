@@ -1,8 +1,8 @@
 // Service Worker for ALTORRA CARS
-// Version 2.0.1 - Modern Caching Strategy
+// Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v2.0.1-' + '20260211'; // Date-based versioning
+const CACHE_VERSION = 'v2.0.0-' + '20260202'; // Date-based versioning
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = 'altorra-runtime';
 

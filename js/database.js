@@ -84,6 +84,24 @@ class VehicleDatabase {
         if (this._loadPromise && !forceRefresh) {
             return this._loadPromise;
         }
+    }
+
+
+
+    async _ensureAnonymousAuth() {
+        if (!window.auth || typeof window.auth.signInAnonymously !== 'function') {
+            return false;
+        }
+
+        if (window.auth.currentUser) {
+            return true;
+        }
+
+        if (this._attemptedAnonymousBootstrap) {
+            return false;
+        }
+
+        this._attemptedAnonymousBootstrap = true;
 
         // Return fast only when we already have usable data and listeners are active
         if (this.loaded && !forceRefresh && this._listenersStarted && this.hasUsableLocalData()) {
@@ -120,6 +138,7 @@ class VehicleDatabase {
                         console.warn('Using stale cache while reconnecting to Firestore (' + self.vehicles.length + ' vehicles).');
                     }
                 }
+                throw new Error('Public catalog endpoint failed: HTTP ' + response.status);
             }
 
             // STEP 2: Load from Firestore (source of truth)

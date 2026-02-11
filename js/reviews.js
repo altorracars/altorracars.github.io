@@ -47,7 +47,7 @@ class ReviewsSystem {
                 id: 4,
                 name: 'Ana Patricia Ruiz',
                 location: 'Cartagena',
-                rating: 4,
+                rating: 5,
                 date: '2024-12-28',
                 vehicle: 'Kia Sportage 2023',
                 title: 'Buena compra, buen servicio',

@@ -54,16 +54,17 @@ function getVehicleBadges(vehicle) {
         badges.push({ class: 'badge-usado', text: 'Usado' });
     }
 
-    var hasOferta = !!(vehicle.oferta || vehicle.precioOferta);
-
-    // Badge de oferta tiene prioridad sobre destacado
-    if (hasOferta) {
-        badges.push({ class: 'badge-oferta', text: 'Oferta' });
-    } else if (vehicle.destacado) {
+    // Badge de destacado
+    if (vehicle.destacado) {
         badges.push({ class: 'badge-destacado', text: 'Destacado' });
     }
 
     // FASE 1: Garantía eliminada (no ofrecemos aún)
+
+    // Badge de oferta (si tiene descuento o campo especial)
+    if (vehicle.oferta || vehicle.precioOferta) {
+        badges.push({ class: 'badge-oferta', text: 'Oferta' });
+    }
 
     return badges;
 }
@@ -139,9 +140,7 @@ function renderVehicleCard(vehicle) {
                     <span>${capitalize(vehicle.categoria)}</span>
                 </p>
                 <div class="vehicle-footer">
-                    <p class="vehicle-price">${(vehicle.oferta || vehicle.precioOferta) && vehicle.precioOferta ?
-                        '<span style="display:block;color:var(--warning-color,#ff4d4f);font-weight:700;">' + formatPrice(vehicle.precioOferta) + '</span><span style="display:block;font-size:0.82em;color:#8a8a8a;text-decoration:line-through;">' + formatPrice(vehicle.precio) + '</span>'
-                        : formatPrice(vehicle.precio)}</p>
+                    <p class="vehicle-price">${formatPrice(vehicle.precio)}</p>
                     <a href="detalle-vehiculo.html?id=${vehicle.id}" class="btn-view">Ver más</a>
                 </div>
             </div>

@@ -7,7 +7,7 @@
 
     const CacheManager = {
         // Current app version - update this on each deploy
-        APP_VERSION: '2.0.1-20260211',
+        APP_VERSION: '2.0.0-20260202',
 
         // Storage key for version tracking
         VERSION_KEY: 'altorra_app_version',

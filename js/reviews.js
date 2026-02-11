@@ -22,7 +22,7 @@ class ReviewsSystem {
             {
                 id: 2,
                 name: 'María Fernanda López',
-                location: 'Barranquilla',
+                location: 'Cartagena',
                 rating: 5,
                 date: '2025-01-10',
                 vehicle: 'Mazda CX-5 2023',
@@ -34,7 +34,7 @@ class ReviewsSystem {
             {
                 id: 3,
                 name: 'Roberto Jiménez',
-                location: 'Santa Marta',
+                location: 'Cartagena',
                 rating: 5,
                 date: '2025-01-05',
                 vehicle: 'Chevrolet Tracker 2024',

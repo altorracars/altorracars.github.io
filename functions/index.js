@@ -75,61 +75,24 @@ function mapAdminAuthErrorV2(error, fallbackAction) {
         { code: code || 'unknown', originalMessage: message });
 }
 
-// Helper: verify caller is super_admin
+// Helper: verify caller is super_admin (V1 callable format)
 async function verifySuperAdminV1(context) {
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Debes iniciar sesion.');
     }
 
-    if (code === 'auth/weak-password' || code === 'auth/invalid-password') {
-        return new functions.https.HttpsError('invalid-argument', 'La contrasena no cumple los requisitos minimos.');
+    const callerDoc = await db.collection('usuarios').doc(context.auth.uid).get();
+
+    if (!callerDoc.exists) {
+        throw new functions.https.HttpsError('permission-denied', 'No tienes un perfil de administrador.');
     }
 
-    if (code === 'auth/operation-not-allowed') {
-        return new functions.https.HttpsError('failed-precondition',
-            'El proveedor Email/Password no esta habilitado en Firebase Authentication.');
+    const callerData = callerDoc.data();
+    if (callerData.rol !== 'super_admin') {
+        throw new functions.https.HttpsError('permission-denied', 'Solo un Super Admin puede realizar esta accion.');
     }
 
-    if (code === 'auth/insufficient-permission') {
-        return new functions.https.HttpsError('permission-denied',
-            'La cuenta de servicio de Cloud Functions no tiene permisos de Firebase Auth Admin.');
-    }
-
-    return new functions.https.HttpsError('internal',
-        fallbackAction + ' (codigo: ' + (code || 'desconocido') + ').',
-        { code: code || 'unknown', originalMessage: message });
-}
-
-function mapAdminAuthErrorV2(error, fallbackAction) {
-    const code = error && error.code ? String(error.code) : '';
-    const message = error && error.message ? String(error.message) : 'Sin detalles';
-
-    if (code === 'auth/email-already-exists') {
-        return new HttpsError('already-exists',
-            'Este email ya tiene una cuenta en Firebase Auth. Eliminala primero desde Firebase Console si deseas re-crearla.');
-    }
-
-    if (code === 'auth/invalid-email') {
-        return new HttpsError('invalid-argument', 'El formato del email no es valido.');
-    }
-
-    if (code === 'auth/weak-password' || code === 'auth/invalid-password') {
-        return new HttpsError('invalid-argument', 'La contrasena no cumple los requisitos minimos.');
-    }
-
-    if (code === 'auth/operation-not-allowed') {
-        return new HttpsError('failed-precondition',
-            'El proveedor Email/Password no esta habilitado en Firebase Authentication.');
-    }
-
-    if (code === 'auth/insufficient-permission') {
-        return new HttpsError('permission-denied',
-            'La cuenta de servicio de Cloud Functions no tiene permisos de Firebase Auth Admin.');
-    }
-
-    return new HttpsError('internal',
-        fallbackAction + ' (codigo: ' + (code || 'desconocido') + ').',
-        { code: code || 'unknown', originalMessage: message });
+    return callerData;
 }
 
 async function verifySuperAdminV2(auth) {

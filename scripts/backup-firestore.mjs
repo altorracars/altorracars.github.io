@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { writeFileSync, mkdirSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 const firebaseConfig = {
     apiKey: "AIzaSyD9MJrON70mPqZxQqhndgQHNkTZUnnaQIs",
@@ -30,7 +32,8 @@ async function main() {
     console.log('=== ALTORRA CARS - Firestore Backup ===\n');
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const backupDir = new URL('../backups', import.meta.url).pathname;
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const backupDir = join(__dirname, '..', 'backups');
 
     try {
         mkdirSync(backupDir, { recursive: true });
@@ -59,7 +62,7 @@ async function main() {
     }
 
     const filename = `backup-${timestamp}.json`;
-    const filepath = `${backupDir}/${filename}`;
+    const filepath = join(backupDir, filename);
 
     writeFileSync(filepath, JSON.stringify(backup, null, 2), 'utf-8');
     console.log(`\nBackup saved to: backups/${filename}`);

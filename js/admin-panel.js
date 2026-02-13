@@ -123,6 +123,12 @@
         return map[code] || serverMsg || 'Error desconocido: ' + (err.message || err.code || 'sin detalles');
     }
 
+    // Normaliza texto a Title Case: primera letra de cada palabra en mayúscula, resto en minúscula
+    function toTitleCase(str) {
+        if (!str) return '';
+        return str.trim().toLowerCase().replace(/(?:^|\s)\S/g, function(c) { return c.toUpperCase(); });
+    }
+
     function formatPrice(n) {
         if (!n) return '-';
         return '$' + Number(n).toLocaleString('es-CO');
@@ -717,7 +723,7 @@
         var vehicleData = {
             id: id,
             marca: $('vMarca').value,
-            modelo: $('vModelo').value,
+            modelo: $('vModelo').value.trim(),
             year: parseInt($('vYear').value),
             tipo: $('vTipo').value,
             categoria: $('vCategoria').value,
@@ -732,7 +738,7 @@
             cilindraje: $('vCilindraje').value || '',
             traccion: $('vTraccion').value || '',
             direccion: $('vDireccion').value || 'Electrica',
-            color: $('vColor').value || '',
+            color: toTitleCase($('vColor').value),
             puertas: parseInt($('vPuertas').value) || 5,
             pasajeros: parseInt($('vPasajeros').value) || 5,
             asientos: parseInt($('vPasajeros').value) || 5,

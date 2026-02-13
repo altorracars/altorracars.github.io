@@ -112,12 +112,30 @@ class VehicleDatabase {
         this.vehicles = vehiclesSnap.docs.map(function(doc) { return doc.data(); });
         this.brands = brandsSnap.empty ? [] : brandsSnap.docs.map(function(doc) { return doc.data(); });
 
+        // Normalizar rutas de logos de marcas (corrige "multimedia/Logo/" → "multimedia/Logos/")
+        this.brands = this.brands.map(b => {
+            if (b.logo && b.logo.indexOf('multimedia/Logo/') === 0) {
+                return { ...b, logo: b.logo.replace('multimedia/Logo/', 'multimedia/Logos/') };
+            }
+            return b;
+        });
+
         return true;
+    }
+
+    /**
+     * Normaliza texto a Title Case: primera letra de cada palabra en mayúscula, resto en minúscula.
+     * Ejemplo: "GRIS OSCURO" → "Gris Oscuro", "azul metálico" → "Azul Metálico"
+     */
+    _toTitleCase(str) {
+        if (!str) return '';
+        return str.trim().toLowerCase().replace(/(?:^|\s)\S/g, c => c.toUpperCase());
     }
 
     /**
      * FASE 1 - NORMALIZACIÓN AUTOMÁTICA
      * Convierte "seminuevo" → "usado" y "camioneta" → "pickup"
+     * Estandariza colores a Title Case, recorta espacios en modelos
      * Sin romper el inventario existente
      */
     normalizeVehicles() {
@@ -132,6 +150,16 @@ class VehicleDatabase {
             // Migración: "camioneta" → "pickup"
             if (normalized.categoria === 'camioneta') {
                 normalized.categoria = 'pickup';
+            }
+
+            // Estandarizar color a Title Case (ej: "ROJO" → "Rojo", "GRIS OSCURO" → "Gris Oscuro")
+            if (normalized.color) {
+                normalized.color = this._toTitleCase(normalized.color);
+            }
+
+            // Recortar espacios sobrantes en modelo
+            if (normalized.modelo) {
+                normalized.modelo = normalized.modelo.trim();
             }
 
             return normalized;

@@ -311,7 +311,9 @@
         btn.textContent = 'Ingresando...';
         errEl.style.display = 'none';
 
-        window.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        window.firebaseReady.then(function() {
+            return window.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        })
             .then(function() {
                 return window.auth.signInWithEmailAndPassword(email, pass);
             })
@@ -334,7 +336,9 @@
     });
 
     $('logoutBtn').addEventListener('click', function() {
-        window.auth.signOut();
+        window.firebaseReady.then(function() {
+            window.auth.signOut();
+        });
     });
 
     // Change password (requires recent login re-auth)
@@ -396,7 +400,7 @@
 
     var mobileLogoutBtn = $('mobileLogoutBtn');
     if (mobileLogoutBtn) {
-        mobileLogoutBtn.addEventListener('click', function() { window.auth.signOut(); });
+        mobileLogoutBtn.addEventListener('click', function() { if (window.auth) window.auth.signOut(); });
     }
 
     // ========== NAVIGATION WITH PERMISSION GUARD ==========

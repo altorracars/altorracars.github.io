@@ -193,14 +193,18 @@ rgba(145, 102, 82, 0.55) 100%
         padding: 1rem;
     }
 
-    /* Brand arrows slightly smaller on mobile */
-    .brands-arrow {
-        width: 32px;
-        height: 32px;
-        font-size: 1rem;
+    /* Brand carousel wrapper padding on mobile */
+    .brands-carousel-wrapper {
+        padding: 0 30px;
     }
-    .brands-arrow.prev { left: -4px; }
-    .brands-arrow.next { right: -4px; }
+
+    .brands-arrow {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+    .brands-arrow.prev { left: 0; }
+    .brands-arrow.next { right: 0; }
 
     /* Price block stacking on mobile */
     .vehicle-price-block {

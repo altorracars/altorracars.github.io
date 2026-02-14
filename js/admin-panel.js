@@ -15,11 +15,11 @@
     // ========== RBAC STATE ==========
     var currentUserProfile = null;
     var currentUserRole = null;
-    var INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
+    var INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
     var inactivityTimerId = null;
     var inactivityTrackingActive = false;
 
-    var ACTIVITY_EVENTS = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
+    var ACTIVITY_EVENTS = ['mousemove', 'touchstart', 'touchmove'];
 
     function isSuperAdmin() { return currentUserRole === 'super_admin'; }
     function isEditor() { return currentUserRole === 'editor'; }
@@ -73,7 +73,7 @@
     function handleInactivityTimeout() {
         clearInactivityTimer();
         if (!window.auth || !window.auth.currentUser) return;
-        toast('Sesion cerrada por inactividad (5 minutos).', 'info');
+        toast('Sesion cerrada por inactividad (3 minutos).', 'info');
         window.auth.signOut();
     }
 
@@ -194,9 +194,9 @@
     // ========== AUTH + RBAC INITIALIZATION ==========
     function initAuth() {
         window.firebaseReady.then(function() {
-            window.auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+            window.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
                 .catch(function(err) {
-                    console.warn('[Auth] No se pudo aplicar persistence NONE:', err);
+                    console.warn('[Auth] No se pudo aplicar persistence SESSION:', err);
                 })
                 .finally(function() {
                     window.auth.onAuthStateChanged(function(user) {
@@ -272,6 +272,8 @@
         $('adminPanel').style.display = 'flex';
         $('adminEmail').textContent = user.email + ' (' + (currentUserRole === 'super_admin' ? 'Super Admin' : currentUserRole === 'editor' ? 'Editor' : 'Viewer') + ')';
 
+        recordLoginEvent(user.email);
+        writeAuditLog('login', 'sesion', user.email);
         startInactivityTracking();
         applyRolePermissions();
         loadData();
@@ -309,7 +311,7 @@
         btn.textContent = 'Ingresando...';
         errEl.style.display = 'none';
 
-        window.auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+        window.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
             .then(function() {
                 return window.auth.signInWithEmailAndPassword(email, pass);
             })
@@ -437,6 +439,7 @@
             renderBrandsTable();
             populateBrandSelect();
             updateStats();
+            renderActivityFeed();
             updateNavBadges();
         }, function(err) {
             console.error('Brands snapshot error:', err);
@@ -495,39 +498,75 @@
     // ========== ACTIVITY FEED ==========
     var ACTIVITY_PAGE_SIZE = 10;
     var activityExpanded = false;
+    var loginEvents = []; // In-memory login tracking
 
-    function buildActivityItemHTML(v) {
-        var who = v.updatedBy || 'Admin';
+    function recordLoginEvent(email) {
+        loginEvents.push({
+            _actType: 'login',
+            updatedAt: new Date().toISOString(),
+            updatedBy: email
+        });
+    }
+
+    function buildActivityItemHTML(item) {
+        var who = item.updatedBy || 'Admin';
         if (who.indexOf('@') > 0) {
             who = who.split('@')[0];
         }
 
-        var when = v.updatedAt ? formatTimeAgo(v.updatedAt) : '';
+        var when = item.updatedAt ? formatTimeAgo(item.updatedAt) : '';
 
-        var marca = v.marca ? capitalize(v.marca) : '';
-        var modelo = v.modelo || '';
-        var year = v.year || '';
+        // Login event
+        if (item._actType === 'login') {
+            return '<div class="activity-item">' +
+                '<span class="activity-icon">🔑</span>' +
+                '<div class="activity-content">' +
+                    '<span class="activity-who">' + escapeHtml(who) + '</span> ' +
+                    'inició sesión' +
+                    '<div class="activity-time">' + when + '</div>' +
+                '</div>' +
+            '</div>';
+        }
+
+        // Brand event
+        if (item._type === 'marca') {
+            var brandName = item.nombre || item.id || '';
+            return '<div class="activity-item">' +
+                '<span class="activity-icon">🏷️</span>' +
+                '<div class="activity-content">' +
+                    '<span class="activity-who">' + escapeHtml(who) + '</span> ' +
+                    'actualizó marca ' +
+                    '<span class="activity-vehicle">' + escapeHtml(brandName) + '</span>' +
+                    '<div class="activity-time">' + when + '</div>' +
+                '</div>' +
+            '</div>';
+        }
+
+        // Vehicle event
+        var marca = item.marca ? capitalize(item.marca) : '';
+        var modelo = item.modelo || '';
+        var year = item.year || '';
         var vehicleName = (marca + ' ' + modelo + ' ' + year).trim();
 
         var actionText = 'actualizó';
         var actionIcon = '✏️';
-        if (v._version === 1) {
+        if (item._version === 1) {
             actionText = 'creó';
             actionIcon = '➕';
         }
 
         var estadoBadge = '';
-        if (v.estado && v.estado !== 'disponible') {
+        if (item.estado && item.estado !== 'disponible') {
             var estadoLabels = { reservado: 'Reservado', vendido: 'Vendido', borrador: 'Borrador' };
             var estadoClasses = { reservado: 'act-warning', vendido: 'act-danger', borrador: 'act-muted' };
-            estadoBadge = ' <span class="act-badge ' + (estadoClasses[v.estado] || '') + '">' + (estadoLabels[v.estado] || v.estado) + '</span>';
+            estadoBadge = ' <span class="act-badge ' + (estadoClasses[item.estado] || '') + '">' + (estadoLabels[item.estado] || item.estado) + '</span>';
         }
 
         return '<div class="activity-item">' +
             '<span class="activity-icon">' + actionIcon + '</span>' +
             '<div class="activity-content">' +
                 '<span class="activity-who">' + escapeHtml(who) + '</span> ' +
-                actionText + ' ' +
+                actionText + ' vehículo ' +
                 '<span class="activity-vehicle">' + escapeHtml(vehicleName) + '</span>' +
                 estadoBadge +
                 '<div class="activity-time">' + when + '</div>' +
@@ -539,34 +578,43 @@
         var feed = $('activityFeed');
         if (!feed) return;
 
-        // Collect ALL vehicles that have updatedAt, sorted most recent first
-        var allRecent = vehicles
-            .filter(function(v) { return v.updatedAt; })
-            .slice()
-            .sort(function(a, b) {
-                return (b.updatedAt || '').localeCompare(a.updatedAt || '');
-            });
+        // Merge vehicles + brands + login events, all sorted by updatedAt
+        var allItems = [];
 
-        if (allRecent.length === 0) {
+        vehicles.forEach(function(v) {
+            if (v.updatedAt) allItems.push(v);
+        });
+
+        brands.forEach(function(b) {
+            if (b.updatedAt) allItems.push(b);
+        });
+
+        loginEvents.forEach(function(e) {
+            allItems.push(e);
+        });
+
+        allItems.sort(function(a, b) {
+            return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+        });
+
+        if (allItems.length === 0) {
             feed.innerHTML = '<div class="activity-empty">Sin actividad reciente</div>';
             return;
         }
 
         var showAll = activityExpanded;
-        var visible = showAll ? allRecent : allRecent.slice(0, ACTIVITY_PAGE_SIZE);
+        var visible = showAll ? allItems : allItems.slice(0, ACTIVITY_PAGE_SIZE);
 
         var html = visible.map(buildActivityItemHTML).join('');
 
-        // Show "Ver más" button if there are more items
-        if (!showAll && allRecent.length > ACTIVITY_PAGE_SIZE) {
-            html += '<button class="activity-show-more" id="btnActivityMore">Ver toda la actividad (' + allRecent.length + ' registros)</button>';
-        } else if (showAll && allRecent.length > ACTIVITY_PAGE_SIZE) {
+        if (!showAll && allItems.length > ACTIVITY_PAGE_SIZE) {
+            html += '<button class="activity-show-more" id="btnActivityMore">Ver toda la actividad (' + allItems.length + ' registros)</button>';
+        } else if (showAll && allItems.length > ACTIVITY_PAGE_SIZE) {
             html += '<button class="activity-show-more" id="btnActivityLess">Mostrar menos</button>';
         }
 
         feed.innerHTML = html;
 
-        // Attach click handler
         var btnMore = $('btnActivityMore');
         if (btnMore) {
             btnMore.addEventListener('click', function() {
@@ -723,14 +771,13 @@
             var estadoInfo = ESTADO_LABELS[estado] || ESTADO_LABELS.disponible;
             var estadoBadge = '<span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span>';
 
-            var actions = '';
+            var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ';
             if (canCreateOrEditInventory()) {
                 actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
             }
             if (canDeleteInventory()) {
                 actions += '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteVehicle(' + v.id + ')">Eliminar</button>';
             }
-            if (!actions) actions = '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Solo lectura</span>';
 
             html += '<tr>' +
                 '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
@@ -792,6 +839,101 @@
         $('uploadError').style.display = 'none';
         $('manualImageUrl').value = '';
         $('featuresPreview').innerHTML = '';
+        clearDraft();
+    }
+
+    // ========== PHASE 4: AUTOSAVE DRAFTS ==========
+    var DRAFT_KEY = 'altorra_vehicle_draft';
+    var draftInterval = null;
+
+    function getFormSnapshot() {
+        return {
+            vId: $('vId').value,
+            vMarca: $('vMarca').value,
+            vModelo: $('vModelo').value,
+            vYear: $('vYear').value,
+            vTipo: $('vTipo').value,
+            vCategoria: $('vCategoria').value,
+            vPrecio: $('vPrecio').value,
+            vPrecioOferta: $('vPrecioOferta').value,
+            vKm: $('vKm').value,
+            vTransmision: $('vTransmision').value,
+            vCombustible: $('vCombustible').value,
+            vMotor: $('vMotor').value,
+            vPotencia: $('vPotencia').value,
+            vCilindraje: $('vCilindraje').value,
+            vTraccion: $('vTraccion').value,
+            vDireccion: $('vDireccion').value,
+            vColor: $('vColor').value,
+            vPuertas: $('vPuertas').value,
+            vPasajeros: $('vPasajeros').value,
+            vUbicacion: $('vUbicacion').value,
+            vPlaca: $('vPlaca').value,
+            vFasecolda: $('vFasecolda').value,
+            vDescripcion: $('vDescripcion').value,
+            vEstado: $('vEstado').value,
+            vDestacado: $('vDestacado').checked,
+            vOferta: $('vOferta').checked,
+            vRevision: $('vRevision').checked,
+            vPeritaje: $('vPeritaje').checked,
+            vCaracteristicas: $('vCaracteristicas').value,
+            _images: uploadedImageUrls.slice(),
+            _savedAt: new Date().toISOString()
+        };
+    }
+
+    function restoreFormSnapshot(snap) {
+        var fields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vPrecioOferta','vKm','vTransmision','vCombustible','vMotor','vPotencia','vCilindraje','vTraccion','vDireccion','vColor','vPuertas','vPasajeros','vUbicacion','vPlaca','vFasecolda','vDescripcion','vEstado','vCaracteristicas'];
+        fields.forEach(function(f) {
+            if ($(f) && snap[f] !== undefined) $(f).value = snap[f];
+        });
+        if (snap.vId) $('vId').value = snap.vId;
+        $('vDestacado').checked = !!snap.vDestacado;
+        $('vOferta').checked = !!snap.vOferta;
+        $('vRevision').checked = snap.vRevision !== false;
+        $('vPeritaje').checked = snap.vPeritaje !== false;
+        if (snap._images && snap._images.length) {
+            uploadedImageUrls = snap._images.slice();
+            renderUploadedImages();
+        }
+    }
+
+    function saveDraft() {
+        try {
+            var snap = getFormSnapshot();
+            // Only save if form has meaningful data
+            if (snap.vMarca || snap.vModelo || snap.vPrecio) {
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(snap));
+            }
+        } catch (e) { /* storage full or unavailable */ }
+    }
+
+    function clearDraft() {
+        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+        if (draftInterval) { clearInterval(draftInterval); draftInterval = null; }
+    }
+
+    function startDraftAutoSave() {
+        if (draftInterval) clearInterval(draftInterval);
+        draftInterval = setInterval(saveDraft, 5000);
+    }
+
+    function checkForDraft() {
+        try {
+            var stored = localStorage.getItem(DRAFT_KEY);
+            if (!stored) return false;
+            var snap = JSON.parse(stored);
+            if (!snap.vMarca && !snap.vModelo && !snap.vPrecio) return false;
+            var savedAt = snap._savedAt ? formatTimeAgo(snap._savedAt) : '';
+            var label = (snap.vMarca || '') + ' ' + (snap.vModelo || '') + ' ' + (snap.vYear || '');
+            if (confirm('Tienes un borrador guardado: ' + label.trim() + ' (' + savedAt + '). ¿Deseas recuperarlo?')) {
+                restoreFormSnapshot(snap);
+                return true;
+            } else {
+                clearDraft();
+                return false;
+            }
+        } catch (e) { return false; }
     }
 
     $('btnAddVehicle').addEventListener('click', function() {
@@ -807,6 +949,8 @@
         uploadedImageUrls = [];
         $('uploadedImages').innerHTML = '';
         $('uploadError').style.display = 'none';
+        checkForDraft();
+        startDraftAutoSave();
         openModal();
     });
 
@@ -861,7 +1005,25 @@
         renderUploadedImages();
         $('uploadError').style.display = 'none';
 
+        startDraftAutoSave();
         openModal();
+    }
+
+    // ========== PHASE 4: AUDIT LOG ==========
+    function writeAuditLog(action, target, details) {
+        try {
+            var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
+            var logEntry = {
+                action: action,
+                target: target,
+                details: details || '',
+                user: userEmail,
+                timestamp: new Date().toISOString()
+            };
+            window.db.collection('auditLog').add(logEntry).catch(function() {
+                // Silently fail — audit log is not critical
+            });
+        } catch (e) {}
     }
 
     // ========== SAVE VEHICLE (with optimistic locking + collision-safe IDs) ==========
@@ -986,6 +1148,8 @@
 
         savePromise
             .then(function() {
+                var label = (vehicleData.marca || '') + ' ' + (vehicleData.modelo || '') + ' ' + (vehicleData.year || '');
+                writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id, label.trim());
                 toast(isEdit ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo #' + vehicleData.id + ' agregado');
                 closeModalFn();
             })
@@ -1042,8 +1206,10 @@
         btn.disabled = true;
         btn.textContent = 'Eliminando...';
 
+        var deletingId = deleteTargetId;
         window.db.collection('vehiculos').doc(String(deleteTargetId)).delete()
             .then(function() {
+                writeAuditLog('vehicle_delete', 'vehiculo #' + deletingId, '');
                 toast('Vehiculo eliminado');
                 $('deleteModal').classList.remove('active');
                 deleteTargetId = null;
@@ -1179,20 +1345,60 @@
         var html = '';
         uploadedImageUrls.forEach(function(url, i) {
             var isMain = (i === 0);
-            html += '<div class="uploaded-img' + (isMain ? ' main-img' : '') + '">' +
+            html += '<div class="uploaded-img' + (isMain ? ' main-img' : '') + '" draggable="true" data-idx="' + i + '">' +
+                '<div class="img-drag-handle" title="Arrastra para reordenar">☰</div>' +
                 '<img src="' + url + '" alt="Foto ' + (i + 1) + '" onerror="this.style.opacity=\'0.3\'">' +
-                (isMain ? '<span class="img-badge">PRINCIPAL</span>' : '') +
+                (isMain ? '<span class="img-badge">PRINCIPAL</span>' : '<span class="img-badge img-badge-num">' + (i + 1) + '</span>') +
                 '<button type="button" class="remove-img" onclick="adminPanel.removeImage(' + i + ')">&times;</button>' +
             '</div>';
         });
         container.innerHTML = html;
         $('vImagen').value = uploadedImageUrls[0] || '';
         $('vImagenes').value = uploadedImageUrls.join('\n');
+        initImageDragDrop(container);
     }
 
     function removeImage(index) {
         uploadedImageUrls.splice(index, 1);
         renderUploadedImages();
+    }
+
+    // Phase 4: Drag-and-drop image reorder
+    var _dragSrcIdx = null;
+
+    function initImageDragDrop(container) {
+        var items = container.querySelectorAll('.uploaded-img');
+        items.forEach(function(item) {
+            item.addEventListener('dragstart', function(e) {
+                _dragSrcIdx = parseInt(this.getAttribute('data-idx'));
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            item.addEventListener('dragend', function() {
+                this.classList.remove('dragging');
+                container.querySelectorAll('.uploaded-img').forEach(function(el) { el.classList.remove('drag-over'); });
+            });
+            item.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+            });
+            item.addEventListener('dragleave', function() {
+                this.classList.remove('drag-over');
+            });
+            item.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                var targetIdx = parseInt(this.getAttribute('data-idx'));
+                if (_dragSrcIdx !== null && _dragSrcIdx !== targetIdx) {
+                    var moved = uploadedImageUrls.splice(_dragSrcIdx, 1)[0];
+                    uploadedImageUrls.splice(targetIdx, 0, moved);
+                    renderUploadedImages();
+                    toast('Imagen reordenada', 'info');
+                }
+                _dragSrcIdx = null;
+            });
+        });
     }
 
     // ========== BRANDS CRUD ==========
@@ -1300,11 +1506,15 @@
         var originalId = $('bOriginalId').value;
         var isEdit = !!originalId;
 
+        var userEmail = window.auth.currentUser ? window.auth.currentUser.email : 'admin';
         var brandData = {
             id: brandId,
             nombre: $('bNombre').value.trim(),
             descripcion: $('bDescripcion').value.trim(),
-            logo: $('bLogo').value.trim()
+            logo: $('bLogo').value.trim(),
+            updatedAt: new Date().toISOString(),
+            updatedBy: userEmail,
+            _type: 'marca'
         };
 
         var btn = $('saveBrand');
@@ -1313,6 +1523,7 @@
 
         window.db.collection('marcas').doc(brandId).set(brandData)
             .then(function() {
+                writeAuditLog(isEdit ? 'brand_update' : 'brand_create', 'marca ' + brandId, brandData.nombre);
                 toast(isEdit ? 'Marca actualizada' : 'Marca agregada');
                 closeBrandModalFn();
                 loadData();
@@ -1351,6 +1562,7 @@
 
         window.db.collection('marcas').doc(deleteBrandTargetId).delete()
             .then(function() {
+                writeAuditLog('brand_delete', 'marca ' + deleteBrandTargetId, '');
                 toast('Marca eliminada');
                 $('deleteBrandModal').classList.remove('active');
                 deleteBrandTargetId = null;
@@ -1558,6 +1770,153 @@
             });
     }
 
+    // ========== PHASE 4: PREVIEW VEHICLE (Read-only) ==========
+    function previewVehicle(id) {
+        var v = vehicles.find(function(x) { return x.id === id; });
+        if (!v) return;
+
+        var marca = (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1);
+        var imgs = (v.imagenes || [v.imagen]).filter(Boolean);
+        var imgsHtml = imgs.map(function(url, i) {
+            return '<img src="' + url + '" style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;margin-bottom:0.5rem;" onerror="this.style.display=\'none\'" alt="Foto ' + (i + 1) + '">';
+        }).join('');
+
+        var specs = [
+            { label: 'Marca', val: marca },
+            { label: 'Modelo', val: v.modelo },
+            { label: 'Año', val: v.year },
+            { label: 'Tipo', val: v.tipo },
+            { label: 'Categoria', val: v.categoria },
+            { label: 'Precio', val: formatPrice(v.precio) },
+            { label: 'Precio Oferta', val: v.precioOferta ? formatPrice(v.precioOferta) : '-' },
+            { label: 'Kilometraje', val: (v.kilometraje || 0).toLocaleString('es-CO') + ' km' },
+            { label: 'Transmision', val: v.transmision },
+            { label: 'Combustible', val: v.combustible },
+            { label: 'Motor', val: v.motor || '-' },
+            { label: 'Color', val: v.color || '-' },
+            { label: 'Puertas', val: v.puertas || 5 },
+            { label: 'Pasajeros', val: v.pasajeros || 5 },
+            { label: 'Ubicacion', val: v.ubicacion || '-' },
+            { label: 'Estado', val: (v.estado || 'disponible') },
+            { label: 'Version', val: v._version || '-' },
+            { label: 'Ultima edicion', val: v.updatedAt ? formatTimeAgo(v.updatedAt) + ' por ' + (v.updatedBy || '-') : '-' }
+        ];
+
+        var specsHtml = '<table style="width:100%;font-size:0.8rem;border-collapse:collapse;">' +
+            specs.map(function(s) {
+                return '<tr style="border-bottom:1px solid var(--admin-border,#30363d);">' +
+                    '<td style="padding:0.35rem 0.5rem;color:var(--admin-text-muted);white-space:nowrap;">' + s.label + '</td>' +
+                    '<td style="padding:0.35rem 0.5rem;color:var(--admin-text-primary,#f0f6fc);font-weight:500;">' + (s.val || '-') + '</td>' +
+                '</tr>';
+            }).join('') + '</table>';
+
+        var features = (v.caracteristicas || []);
+        var featHtml = features.length > 0 ? '<div style="margin-top:0.75rem;"><strong style="font-size:0.8rem;">Caracteristicas:</strong><div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.35rem;">' +
+            features.map(function(f) { return '<span style="background:var(--admin-surface,#161b22);border:1px solid var(--admin-border,#30363d);border-radius:4px;padding:0.15rem 0.5rem;font-size:0.7rem;">' + escapeHtml(f) + '</span>'; }).join('') +
+            '</div></div>' : '';
+
+        var content = '<div style="max-height:70vh;overflow-y:auto;padding-right:0.5rem;">' +
+            imgsHtml +
+            '<h3 style="margin:0.5rem 0 0.75rem;color:var(--admin-text-primary,#f0f6fc);">' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</h3>' +
+            specsHtml + featHtml +
+            (v.descripcion ? '<div style="margin-top:0.75rem;font-size:0.8rem;color:var(--admin-text-secondary);">' + escapeHtml(v.descripcion) + '</div>' : '') +
+            '</div>';
+
+        // Reuse delete modal structure for preview — create a temporary overlay
+        var overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.style.zIndex = '999';
+        overlay.innerHTML = '<div class="modal" style="max-width:550px;"><div class="modal-header"><h2>Vista Previa — #' + id + '</h2><button class="modal-close" id="closePreview">&times;</button></div><div class="modal-body">' + content + '</div><div class="modal-footer"><button class="btn btn-ghost" id="closePreviewBtn">Cerrar</button><a href="detalle-vehiculo.html?id=' + id + '" target="_blank" class="btn btn-primary btn-sm">Abrir pagina publica</a></div></div>';
+
+        document.body.appendChild(overlay);
+        overlay.querySelector('#closePreview').addEventListener('click', function() { document.body.removeChild(overlay); });
+        overlay.querySelector('#closePreviewBtn').addEventListener('click', function() { document.body.removeChild(overlay); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) document.body.removeChild(overlay); });
+    }
+
+    // ========== PHASE 4: EXPORT/IMPORT JSON BACKUP ==========
+    var btnExport = $('btnExportJSON');
+    if (btnExport) {
+        btnExport.addEventListener('click', function() {
+            var data = {
+                exportDate: new Date().toISOString(),
+                vehiculos: vehicles,
+                marcas: brands
+            };
+            var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'altorra-backup-' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            writeAuditLog('backup_export', 'datos', vehicles.length + ' vehiculos, ' + brands.length + ' marcas');
+            toast('Respaldo exportado: ' + vehicles.length + ' vehiculos, ' + brands.length + ' marcas');
+        });
+    }
+
+    var btnImport = $('btnImportJSON');
+    var importFile = $('importJSONFile');
+    if (btnImport && importFile) {
+        btnImport.addEventListener('click', function() { importFile.click(); });
+        importFile.addEventListener('change', function() {
+            var file = this.files[0];
+            if (!file) return;
+            if (!isSuperAdmin()) { toast('Solo Super Admin puede importar datos', 'error'); return; }
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var data = JSON.parse(e.target.result);
+                    if (!data.vehiculos && !data.marcas) {
+                        toast('Archivo JSON invalido: no contiene vehiculos ni marcas.', 'error');
+                        return;
+                    }
+
+                    var vCount = (data.vehiculos || []).length;
+                    var bCount = (data.marcas || []).length;
+
+                    if (!confirm('Importar ' + vCount + ' vehiculos y ' + bCount + ' marcas? Esto REEMPLAZARA los datos existentes con los mismos IDs.')) return;
+
+                    var statusEl = $('backupStatus');
+                    statusEl.innerHTML = '<span style="color:var(--admin-accent);">Importando...</span>';
+
+                    var batch = window.db.batch();
+                    var count = 0;
+
+                    (data.vehiculos || []).forEach(function(v) {
+                        if (!v.id) return;
+                        v.updatedAt = new Date().toISOString();
+                        v.updatedBy = window.auth.currentUser ? window.auth.currentUser.email : 'import';
+                        if (!v._version) v._version = 1;
+                        batch.set(window.db.collection('vehiculos').doc(String(v.id)), v);
+                        count++;
+                    });
+
+                    (data.marcas || []).forEach(function(b) {
+                        if (!b.id) return;
+                        batch.set(window.db.collection('marcas').doc(b.id), b);
+                        count++;
+                    });
+
+                    batch.commit().then(function() {
+                        writeAuditLog('backup_import', 'datos', vCount + ' vehiculos, ' + bCount + ' marcas');
+                        toast('Importados ' + count + ' registros');
+                        statusEl.innerHTML = '<span style="color:#3fb950;">✓ Importacion completada: ' + count + ' registros.</span>';
+                        loadData();
+                    }).catch(function(err) {
+                        toast('Error de importacion: ' + err.message, 'error');
+                        statusEl.innerHTML = '<span style="color:var(--admin-danger);">Error: ' + err.message + '</span>';
+                    });
+                } catch (err) {
+                    toast('Error al leer archivo JSON: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+            this.value = '';
+        });
+    }
+
     // ========== EXPOSE FUNCTIONS ==========
     window.adminPanel = {
         editVehicle: editVehicle,
@@ -1566,7 +1925,8 @@
         editBrand: editBrand,
         deleteBrand: deleteBrandFn,
         editUser: editUser,
-        deleteUser: deleteUserFn
+        deleteUser: deleteUserFn,
+        previewVehicle: previewVehicle
     };
 
     // ========== COLLAPSIBLE FORM SECTIONS ==========
@@ -1586,6 +1946,13 @@
     if (btnSitemap) {
         btnSitemap.addEventListener('click', function() {
             generateSitemap();
+        });
+    }
+
+    var btnSharePages = $('btnGenerateSharePages');
+    if (btnSharePages) {
+        btnSharePages.addEventListener('click', function() {
+            generateSharePages();
         });
     }
 
@@ -1676,6 +2043,92 @@
 
     function escapeXml(str) {
         return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ========== SHARE PAGES GENERATOR ==========
+    function generateSharePages() {
+        var statusEl = $('sitemapStatus');
+        if (!statusEl) return;
+
+        var disponibles = vehicles.filter(function(v) {
+            return !v.estado || v.estado === 'disponible';
+        });
+
+        if (disponibles.length === 0) {
+            statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">No hay vehiculos disponibles para generar.</span>';
+            return;
+        }
+
+        statusEl.innerHTML = '<span style="color:var(--admin-accent);font-size:0.8rem;">Generando ' + disponibles.length + ' paginas...</span>';
+
+        var base = 'https://altorracars.github.io';
+        var files = [];
+
+        disponibles.forEach(function(v) {
+            var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
+            var modelo = v.modelo || '';
+            var year = v.year || '';
+            var title = marca + ' ' + modelo + ' ' + year + ' | ALTORRA CARS';
+            var precio = v.precioOferta || v.precio || 0;
+            var precioText = precio ? ('$' + Number(precio).toLocaleString('es-CO')) : '';
+            var desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. Disponible en ALTORRA CARS, Cartagena.';
+            var image = v.imagen || '';
+            var fullImage = image.startsWith('http') ? image : base + '/' + image;
+            var detailUrl = base + '/detalle-vehiculo.html?id=' + v.id;
+
+            var html = '<!DOCTYPE html>\n<html lang="es">\n<head>\n';
+            html += '<meta charset="UTF-8">\n';
+            html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
+            html += '<title>' + escapeHtml(title) + '</title>\n';
+            html += '<meta name="description" content="' + escapeHtml(desc) + '">\n';
+            html += '<meta property="og:type" content="product">\n';
+            html += '<meta property="og:url" content="' + escapeHtml(detailUrl) + '">\n';
+            html += '<meta property="og:title" content="' + escapeHtml(title) + '">\n';
+            html += '<meta property="og:description" content="' + escapeHtml(desc) + '">\n';
+            html += '<meta property="og:image" content="' + escapeHtml(fullImage) + '">\n';
+            html += '<meta property="og:image:width" content="1200">\n';
+            html += '<meta property="og:image:height" content="630">\n';
+            html += '<meta property="og:site_name" content="ALTORRA CARS">\n';
+            html += '<meta property="og:locale" content="es_CO">\n';
+            html += '<meta name="twitter:card" content="summary_large_image">\n';
+            html += '<meta name="twitter:title" content="' + escapeHtml(title) + '">\n';
+            html += '<meta name="twitter:description" content="' + escapeHtml(desc) + '">\n';
+            html += '<meta name="twitter:image" content="' + escapeHtml(fullImage) + '">\n';
+            html += '<meta http-equiv="refresh" content="0;url=' + detailUrl + '">\n';
+            html += '<link rel="canonical" href="' + detailUrl + '">\n';
+            html += '<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0a0a0a;color:#d4af37;}a{color:#d4af37;}</style>\n';
+            html += '</head>\n<body>\n';
+            html += '<p>Redirigiendo a <a href="' + detailUrl + '">' + escapeHtml(marca + ' ' + modelo + ' ' + year) + '</a>...</p>\n';
+            html += '<script>window.location.replace("' + detailUrl + '");<\/script>\n';
+            html += '</body>\n</html>\n';
+
+            files.push({ name: v.id + '.html', content: html });
+        });
+
+        // Download each file individually is impractical. Create a single combined download.
+        // Generate as a single HTML file with instructions + all file contents for manual creation.
+        var combined = '<!-- PAGINAS DE COMPARTIR - ALTORRA CARS -->\n';
+        combined += '<!-- Instrucciones: Copia cada seccion en un archivo dentro de la carpeta v/ del repositorio -->\n';
+        combined += '<!-- Ejemplo: v/1.html, v/2.html, etc. -->\n';
+        combined += '<!-- Luego comparte: https://altorracars.github.io/v/1.html -->\n\n';
+
+        files.forEach(function(f) {
+            combined += '<!-- ===== ARCHIVO: v/' + f.name + ' ===== -->\n';
+            combined += f.content;
+            combined += '\n\n';
+        });
+
+        // Also create them as individual downloads for the first vehicle as example
+        // But mainly download all at once
+        var blob = new Blob([combined], { type: 'text/html' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'paginas-compartir-vehiculos.html';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        statusEl.innerHTML = '<span style="color:#3fb950;font-size:0.8rem;">✓ ' + files.length + ' paginas generadas. Separa cada seccion en archivos individuales dentro de la carpeta <strong>v/</strong> del repositorio.<br>Ejemplo: <code>v/' + files[0].name + '</code> → comparte: <code>' + base + '/v/' + files[0].name + '</code></span>';
     }
 
     // ========== INIT ==========

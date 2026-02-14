@@ -1118,7 +1118,7 @@
         status.textContent = 'Subiendo logo...';
 
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var path = 'logos/' + Date.now() + '_' + safeName;
+        var path = UPLOAD_CONFIG.storagePath + 'logo_' + Date.now() + '_' + safeName;
 
         try {
             var ref = window.storage.ref(path);

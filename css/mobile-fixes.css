@@ -812,6 +812,153 @@ iframe,
     }
 }
 
+/* ===== MEJORAS ADAPTATIVAS GLOBALES ===== */
+
+/* Tablets y pantallas medianas */
+@media (max-width: 968px) {
+    .carousel-container {
+        padding: 0 1.5rem var(--spacing-lg, 2rem) 1.5rem !important;
+    }
+
+    .carousel-container-inner {
+        margin: 0 -1.5rem !important;
+        padding: 0 1.5rem !important;
+    }
+
+    .commercial-section {
+        padding: 3rem 0 !important;
+    }
+
+    .commercial-card {
+        padding: 2rem 1.5rem !important;
+    }
+
+    .guarantee-card {
+        padding: 2rem 1.5rem !important;
+    }
+
+    .process-grid {
+        gap: 1.5rem !important;
+    }
+}
+
+/* Móviles */
+@media (max-width: 640px) {
+    /* Carousel */
+    .carousel-container {
+        padding: 0 1rem var(--spacing-md, 1.5rem) 1rem !important;
+    }
+
+    .carousel-container-inner {
+        margin: 0 -1rem !important;
+        padding: 0 1rem !important;
+    }
+
+    /* Commercial section */
+    .commercial-section {
+        padding: 2rem 0 !important;
+    }
+
+    .commercial-card {
+        padding: 1.5rem 1rem !important;
+    }
+
+    .commercial-card-title {
+        font-size: 1.2rem !important;
+    }
+
+    .commercial-card-text {
+        font-size: 0.85rem !important;
+    }
+
+    .btn-commercial {
+        padding: 0.75rem 1.2rem !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Guarantee */
+    .guarantee-card {
+        padding: 1.5rem 1rem !important;
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    /* Process steps */
+    .process-grid {
+        gap: 1rem !important;
+    }
+
+    .process-step {
+        padding: 1.5rem 1rem !important;
+    }
+
+    .step-number {
+        width: 55px !important;
+        height: 55px !important;
+        font-size: 1.4rem !important;
+    }
+
+    /* Brands carousel */
+    .brands-carousel-wrapper {
+        padding: 0 10px !important;
+    }
+
+    .brands-arrow {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Search container */
+    .search-container {
+        padding: 0.75rem !important;
+        margin: 0.75rem 0 !important;
+    }
+
+    /* Toggle filters button */
+    .toggle-filters-btn {
+        max-width: 100% !important;
+        width: calc(100% - 2rem) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    /* All section titles */
+    .section-header h2,
+    .section-header .section-title {
+        font-size: 1.3rem !important;
+    }
+
+    /* Prevent any horizontal overflow */
+    .container,
+    .section,
+    main,
+    .catalog-main,
+    .catalog-section {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+}
+
+/* Pantallas extra pequeñas (< 380px) */
+@media (max-width: 380px) {
+    .container {
+        padding: 0 0.65rem !important;
+    }
+
+    .commercial-card {
+        padding: 1.25rem 0.75rem !important;
+    }
+
+    .process-step {
+        padding: 1.25rem 0.75rem !important;
+    }
+
+    .guarantee-card {
+        padding: 1.25rem 0.75rem !important;
+    }
+}
+
 /* ===== OPTIMIZACIONES DE RENDIMIENTO ===== */
 @media (max-width: 968px) {
 

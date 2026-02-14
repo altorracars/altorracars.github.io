@@ -157,6 +157,19 @@ body {
     color: #fff;
 }
 
+.btn-warning {
+    background: transparent;
+    color: var(--admin-warning);
+    border-color: var(--admin-warning);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.btn-warning:hover {
+    background: var(--admin-warning);
+    color: #000;
+}
+
 .btn-ghost {
     background: transparent;
     color: var(--admin-text);

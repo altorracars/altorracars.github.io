@@ -194,9 +194,9 @@
     // ========== AUTH + RBAC INITIALIZATION ==========
     function initAuth() {
         window.firebaseReady.then(function() {
-            window.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+            window.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
                 .catch(function(err) {
-                    console.warn('[Auth] No se pudo aplicar persistence SESSION:', err);
+                    console.warn('[Auth] No se pudo aplicar persistence LOCAL:', err);
                 })
                 .finally(function() {
                     window.auth.onAuthStateChanged(function(user) {
@@ -311,7 +311,7 @@
         btn.textContent = 'Ingresando...';
         errEl.style.display = 'none';
 
-        window.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+        window.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
             .then(function() {
                 return window.auth.signInWithEmailAndPassword(email, pass);
             })
@@ -430,6 +430,8 @@
             renderActivityFeed();
             updateEstimator();
             updateNavBadges();
+            renderSoldVehicles();
+            renderDealersList();
         }, function(err) {
             console.error('Vehicles snapshot error:', err);
         });
@@ -454,11 +456,21 @@
     function stopRealtimeSync() {
         if (unsubVehicles) { unsubVehicles(); unsubVehicles = null; }
         if (unsubBrands) { unsubBrands(); unsubBrands = null; }
+        if (unsubAppointments) { unsubAppointments(); unsubAppointments = null; }
+        if (unsubDealers) { unsubDealers(); unsubDealers = null; }
     }
 
     // Backward-compatible alias — existing calls to loadData() trigger a one-time fetch
     function loadData() {
         startRealtimeSync();
+        // Phase 5: Load appointments, dealers, and availability config
+        try {
+            loadAppointments();
+            loadDealers();
+            loadAvailabilityConfig();
+        } catch (e) {
+            console.warn('[Phase5] Error loading:', e);
+        }
     }
 
     function loadUsers() {
@@ -493,6 +505,9 @@
         $('statOfertas').textContent = vehicles.filter(function(v) { return v.oferta || v.precioOferta; }).length;
         $('statDestacados').textContent = vehicles.filter(function(v) { return v.destacado; }).length;
         $('statMarcas').textContent = brands.length;
+        $('statVendidos').textContent = vehicles.filter(function(v) { return v.estado === 'vendido'; }).length;
+        var citasEl = $('statCitas');
+        if (citasEl) citasEl.textContent = appointments.length > 0 ? appointments.filter(function(a) { return a.estado === 'pendiente'; }).length : '-';
     }
 
     // ========== ACTIVITY FEED ==========
@@ -774,6 +789,9 @@
             var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ';
             if (canCreateOrEditInventory()) {
                 actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
+                if (estado === 'disponible') {
+                    actions += '<button class="btn btn-sm" style="color:var(--admin-gold);border-color:var(--admin-gold);" onclick="adminPanel.markAsSold(' + v.id + ')">Vendido</button> ';
+                }
             }
             if (canDeleteInventory()) {
                 actions += '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteVehicle(' + v.id + ')">Eliminar</button>';
@@ -829,7 +847,17 @@
     // ========== VEHICLE MODAL ==========
     function openModal() { $('vehicleModal').classList.add('active'); }
 
-    function closeModalFn() {
+    // ========== CLOSE MODAL WITH CONFIRMATION ==========
+    function formHasData() {
+        return !!($('vMarca').value || $('vModelo').value || $('vPrecio').value);
+    }
+
+    function closeModalFn(force) {
+        if (!force && formHasData()) {
+            if (!confirm('Tienes datos sin guardar. ¿Deseas cerrar? (Usa "Guardar Borrador" para no perder la informacion)')) {
+                return;
+            }
+        }
         $('vehicleModal').classList.remove('active');
         $('vehicleForm').reset();
         $('vId').value = '';
@@ -839,11 +867,10 @@
         $('uploadError').style.display = 'none';
         $('manualImageUrl').value = '';
         $('featuresPreview').innerHTML = '';
-        clearDraft();
+        stopDraftAutoSave();
     }
 
-    // ========== PHASE 4: AUTOSAVE DRAFTS ==========
-    var DRAFT_KEY = 'altorra_vehicle_draft';
+    // ========== PHASE 4: DRAFTS (Firestore per-user) ==========
     var draftInterval = null;
 
     function getFormSnapshot() {
@@ -898,31 +925,52 @@
         }
     }
 
-    function saveDraft() {
-        try {
-            var snap = getFormSnapshot();
-            // Only save if form has meaningful data
-            if (snap.vMarca || snap.vModelo || snap.vPrecio) {
-                localStorage.setItem(DRAFT_KEY, JSON.stringify(snap));
-            }
-        } catch (e) { /* storage full or unavailable */ }
+    function getDraftDocRef() {
+        if (!window.auth || !window.auth.currentUser || !window.db) return null;
+        return window.db.collection('usuarios').doc(window.auth.currentUser.uid).collection('drafts').doc('vehicleDraft');
     }
 
-    function clearDraft() {
-        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    function saveDraftToFirestore(showToast) {
+        var ref = getDraftDocRef();
+        if (!ref) return Promise.resolve();
+        var snap = getFormSnapshot();
+        if (!snap.vMarca && !snap.vModelo && !snap.vPrecio) {
+            if (showToast) toast('No hay datos para guardar como borrador', 'error');
+            return Promise.resolve();
+        }
+        snap._userId = window.auth.currentUser.uid;
+        snap._userEmail = window.auth.currentUser.email;
+        return ref.set(snap).then(function() {
+            if (showToast) toast('Borrador guardado correctamente');
+        }).catch(function(err) {
+            console.warn('[Draft] Error al guardar borrador:', err);
+            if (showToast) toast('Error al guardar borrador', 'error');
+        });
+    }
+
+    function clearDraftFromFirestore() {
+        var ref = getDraftDocRef();
+        if (!ref) return Promise.resolve();
+        return ref.delete().catch(function() {});
+    }
+
+    function stopDraftAutoSave() {
         if (draftInterval) { clearInterval(draftInterval); draftInterval = null; }
     }
 
     function startDraftAutoSave() {
-        if (draftInterval) clearInterval(draftInterval);
-        draftInterval = setInterval(saveDraft, 5000);
+        stopDraftAutoSave();
+        draftInterval = setInterval(function() {
+            saveDraftToFirestore(false);
+        }, 10000); // Auto-save every 10 seconds silently
     }
 
     function checkForDraft() {
-        try {
-            var stored = localStorage.getItem(DRAFT_KEY);
-            if (!stored) return false;
-            var snap = JSON.parse(stored);
+        var ref = getDraftDocRef();
+        if (!ref) return Promise.resolve(false);
+        return ref.get().then(function(doc) {
+            if (!doc.exists) return false;
+            var snap = doc.data();
             if (!snap.vMarca && !snap.vModelo && !snap.vPrecio) return false;
             var savedAt = snap._savedAt ? formatTimeAgo(snap._savedAt) : '';
             var label = (snap.vMarca || '') + ' ' + (snap.vModelo || '') + ' ' + (snap.vYear || '');
@@ -930,10 +978,10 @@
                 restoreFormSnapshot(snap);
                 return true;
             } else {
-                clearDraft();
+                clearDraftFromFirestore();
                 return false;
             }
-        } catch (e) { return false; }
+        }).catch(function() { return false; });
     }
 
     $('btnAddVehicle').addEventListener('click', function() {
@@ -949,14 +997,24 @@
         uploadedImageUrls = [];
         $('uploadedImages').innerHTML = '';
         $('uploadError').style.display = 'none';
-        checkForDraft();
-        startDraftAutoSave();
-        openModal();
+        checkForDraft().then(function() {
+            startDraftAutoSave();
+            openModal();
+        });
     });
 
-    $('closeModal').addEventListener('click', closeModalFn);
-    $('cancelModal').addEventListener('click', closeModalFn);
+    $('closeModal').addEventListener('click', function() { closeModalFn(); });
+    $('cancelModal').addEventListener('click', function() { closeModalFn(); });
+    // Click outside modal: ask confirmation instead of closing directly
     $('vehicleModal').addEventListener('click', function(e) { if (e.target === this) closeModalFn(); });
+
+    // Save Draft button
+    var saveDraftBtn = $('saveDraftBtn');
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', function() {
+            saveDraftToFirestore(true);
+        });
+    }
 
     $('vehicleForm').addEventListener('submit', function(e) { e.preventDefault(); });
     $('vehicleForm').addEventListener('keydown', function(e) {
@@ -1151,7 +1209,8 @@
                 var label = (vehicleData.marca || '') + ' ' + (vehicleData.modelo || '') + ' ' + (vehicleData.year || '');
                 writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id, label.trim());
                 toast(isEdit ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo #' + vehicleData.id + ' agregado');
-                closeModalFn();
+                clearDraftFromFirestore();
+                closeModalFn(true);
             })
             .catch(function(err) {
                 if (err.code === 'version-conflict') {
@@ -1926,7 +1985,10 @@
         deleteBrand: deleteBrandFn,
         editUser: editUser,
         deleteUser: deleteUserFn,
-        previewVehicle: previewVehicle
+        previewVehicle: previewVehicle,
+        updateAppointment: function() {},
+        editDealer: function() {},
+        markAsSold: function() {}
     };
 
     // ========== COLLAPSIBLE FORM SECTIONS ==========
@@ -2131,7 +2193,341 @@
         statusEl.innerHTML = '<span style="color:#3fb950;font-size:0.8rem;">✓ ' + files.length + ' paginas generadas. Separa cada seccion en archivos individuales dentro de la carpeta <strong>v/</strong> del repositorio.<br>Ejemplo: <code>v/' + files[0].name + '</code> → comparte: <code>' + base + '/v/' + files[0].name + '</code></span>';
     }
 
+    // ========== PHASE 5: APPOINTMENTS MANAGEMENT ==========
+    var appointments = [];
+    var unsubAppointments = null;
+
+    function loadAppointments() {
+        if (unsubAppointments) unsubAppointments();
+        unsubAppointments = window.db.collection('citas').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
+            appointments = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
+            renderAppointmentsTable();
+            var pending = appointments.filter(function(a) { return a.estado === 'pendiente'; }).length;
+            var badge = $('navBadgeAppointments');
+            if (badge) badge.textContent = pending > 0 ? pending : '';
+        }, function(err) {
+            console.warn('[Citas] Error loading appointments:', err);
+        });
+    }
+
+    function renderAppointmentsTable() {
+        var body = $('appointmentsBody');
+        if (!body) return;
+        var filterEl = $('appointmentFilter');
+        var filter = filterEl ? filterEl.value : 'all';
+        var filtered = filter === 'all' ? appointments : appointments.filter(function(a) { return a.estado === filter; });
+
+        if (filtered.length === 0) {
+            body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay citas ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
+            return;
+        }
+
+        body.innerHTML = filtered.map(function(a) {
+            var estadoClass = a.estado === 'confirmada' ? 'admin-success' : a.estado === 'completada' ? 'admin-gold' : a.estado === 'cancelada' ? 'admin-danger' : 'admin-warning';
+            var estadoLabel = a.estado ? (a.estado.charAt(0).toUpperCase() + a.estado.slice(1)) : 'Pendiente';
+            return '<tr>' +
+                '<td><strong>' + (a.nombre || '-') + '</strong><br><small style="color:var(--admin-text-muted)">' + (a.telefono || '') + '</small></td>' +
+                '<td>' + (a.vehiculo || 'General') + '</td>' +
+                '<td>' + (a.fecha || '-') + '</td>' +
+                '<td>' + (a.hora || '-') + '</td>' +
+                '<td><span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLabel + '</span></td>' +
+                '<td style="white-space:nowrap;">' +
+                    (a.estado === 'pendiente' ? '<button class="btn btn-sm btn-success" onclick="adminPanel.updateAppointment(\'' + a._docId + '\',\'confirmada\')">Confirmar</button> ' : '') +
+                    (a.estado === 'confirmada' ? '<button class="btn btn-sm btn-primary" onclick="adminPanel.updateAppointment(\'' + a._docId + '\',\'completada\')">Completar</button> ' : '') +
+                    ((a.estado === 'pendiente' || a.estado === 'confirmada') ? '<button class="btn btn-sm btn-danger" onclick="adminPanel.updateAppointment(\'' + a._docId + '\',\'cancelada\')">Cancelar</button>' : '') +
+                '</td>' +
+            '</tr>';
+        }).join('');
+    }
+
+    function updateAppointmentStatus(docId, newStatus) {
+        if (!isEditorOrAbove() && !isSuperAdmin()) { toast('No tienes permisos', 'error'); return; }
+        window.db.collection('citas').doc(docId).update({
+            estado: newStatus,
+            updatedAt: new Date().toISOString(),
+            updatedBy: window.auth.currentUser.email
+        }).then(function() {
+            toast('Cita actualizada a: ' + newStatus);
+            writeAuditLog('appointment_' + newStatus, 'cita ' + docId, '');
+        }).catch(function(err) {
+            toast('Error: ' + err.message, 'error');
+        });
+    }
+
+    // Appointment filter change
+    var appointmentFilterEl = $('appointmentFilter');
+    if (appointmentFilterEl) {
+        appointmentFilterEl.addEventListener('change', renderAppointmentsTable);
+    }
+
+    // Save availability config
+    var btnSaveAvail = $('btnSaveAvailability');
+    if (btnSaveAvail) {
+        btnSaveAvail.addEventListener('click', function() {
+            if (!isSuperAdmin()) { toast('Solo Super Admin puede cambiar disponibilidad', 'error'); return; }
+            var startHour = parseInt($('availStartHour').value);
+            var endHour = parseInt($('availEndHour').value);
+            var days = [];
+            document.querySelectorAll('#availDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+            window.db.collection('config').doc('availability').set({
+                startHour: startHour,
+                endHour: endHour,
+                days: days,
+                updatedAt: new Date().toISOString()
+            }).then(function() {
+                toast('Disponibilidad guardada');
+                $('availabilityStatus').innerHTML = '<span style="color:var(--admin-success);">Guardado correctamente</span>';
+            }).catch(function(err) {
+                toast('Error: ' + err.message, 'error');
+            });
+        });
+    }
+
+    // Load availability config
+    function loadAvailabilityConfig() {
+        window.db.collection('config').doc('availability').get().then(function(doc) {
+            if (!doc.exists) return;
+            var data = doc.data();
+            if (data.startHour && $('availStartHour')) $('availStartHour').value = data.startHour;
+            if (data.endHour && $('availEndHour')) $('availEndHour').value = data.endHour;
+            if (data.days) {
+                document.querySelectorAll('#availDays input').forEach(function(cb) {
+                    cb.checked = data.days.indexOf(parseInt(cb.value)) !== -1;
+                });
+            }
+        }).catch(function() {});
+    }
+
+    // ========== PHASE 5: CONCESIONARIOS ==========
+    var dealers = [];
+    var unsubDealers = null;
+
+    function loadDealers() {
+        if (unsubDealers) unsubDealers();
+        unsubDealers = window.db.collection('concesionarios').onSnapshot(function(snap) {
+            dealers = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
+            renderDealersList();
+        }, function(err) {
+            console.warn('[Dealers] Error loading:', err);
+        });
+    }
+
+    function renderDealersList() {
+        var container = $('dealersList');
+        if (!container) return;
+
+        if (dealers.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:var(--admin-text-muted);padding:1rem;">No hay concesionarios registrados. Agrega el primero.</p>';
+            return;
+        }
+
+        // Calculate metrics per dealer
+        var soldByDealer = {};
+        var soldVehicles = vehicles.filter(function(v) { return v.estado === 'vendido'; });
+        soldVehicles.forEach(function(v) {
+            var d = v.concesionario || 'sin-asignar';
+            if (!soldByDealer[d]) soldByDealer[d] = { count: 0, revenue: 0 };
+            soldByDealer[d].count++;
+            soldByDealer[d].revenue += (v.precioVenta || v.precio || 0);
+        });
+
+        var activeByDealer = {};
+        vehicles.filter(function(v) { return v.estado === 'disponible' || !v.estado; }).forEach(function(v) {
+            var d = v.concesionario || 'sin-asignar';
+            activeByDealer[d] = (activeByDealer[d] || 0) + 1;
+        });
+
+        container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">' +
+            dealers.map(function(d) {
+                var sold = soldByDealer[d._docId] || { count: 0, revenue: 0 };
+                var active = activeByDealer[d._docId] || 0;
+                return '<div style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:12px;padding:1.25rem;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.75rem;">' +
+                        '<div><h4 style="margin:0;color:var(--admin-gold);">' + (d.nombre || 'Sin nombre') + '</h4>' +
+                        '<small style="color:var(--admin-text-muted);">' + (d.ciudad || '') + ' - ' + (d.direccion || '') + '</small></div>' +
+                        (isSuperAdmin() ? '<button class="btn btn-sm btn-ghost" onclick="adminPanel.editDealer(\'' + d._docId + '\')" style="font-size:0.75rem;">Editar</button>' : '') +
+                    '</div>' +
+                    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;text-align:center;">' +
+                        '<div style="background:rgba(63,185,80,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:1.25rem;font-weight:800;color:var(--admin-success);">' + active + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Activos</div></div>' +
+                        '<div style="background:rgba(212,175,55,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:1.25rem;font-weight:800;color:var(--admin-gold);">' + sold.count + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Vendidos</div></div>' +
+                        '<div style="background:rgba(88,166,255,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:0.85rem;font-weight:800;color:var(--admin-info);">$' + (sold.revenue > 0 ? (sold.revenue / 1000000).toFixed(1) + 'M' : '0') + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Ingresos</div></div>' +
+                    '</div>' +
+                    (d.telefono ? '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--admin-text-muted);">Tel: ' + d.telefono + '</div>' : '') +
+                    (d.horario ? '<div style="font-size:0.8rem;color:var(--admin-text-muted);">Horario: ' + d.horario + '</div>' : '') +
+                '</div>';
+            }).join('') +
+        '</div>';
+    }
+
+    // Dealer Modal
+    var btnAddDealer = $('btnAddDealer');
+    if (btnAddDealer) {
+        btnAddDealer.addEventListener('click', function() {
+            if (!isSuperAdmin()) { toast('Solo Super Admin puede gestionar concesionarios', 'error'); return; }
+            $('dealerModalTitle').textContent = 'Agregar Concesionario';
+            $('dOriginalId').value = '';
+            $('dealerForm').reset();
+            $('dCiudad').value = 'Barranquilla';
+            $('dealerModal').classList.add('active');
+        });
+    }
+
+    var closeDealerModalEl = $('closeDealerModal');
+    if (closeDealerModalEl) closeDealerModalEl.addEventListener('click', function() { $('dealerModal').classList.remove('active'); });
+    var cancelDealerModalEl = $('cancelDealerModal');
+    if (cancelDealerModalEl) cancelDealerModalEl.addEventListener('click', function() { $('dealerModal').classList.remove('active'); });
+    var dealerModalEl = $('dealerModal');
+    if (dealerModalEl) dealerModalEl.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+
+    function editDealer(docId) {
+        if (!isSuperAdmin()) { toast('Sin permisos', 'error'); return; }
+        var d = dealers.find(function(x) { return x._docId === docId; });
+        if (!d) return;
+        $('dealerModalTitle').textContent = 'Editar Concesionario';
+        $('dOriginalId').value = docId;
+        $('dNombre').value = d.nombre || '';
+        $('dDireccion').value = d.direccion || '';
+        $('dTelefono').value = d.telefono || '';
+        $('dCiudad').value = d.ciudad || 'Barranquilla';
+        $('dHorario').value = d.horario || '';
+        $('dResponsable').value = d.responsable || '';
+        $('dealerModal').classList.add('active');
+    }
+
+    var saveDealerBtn = $('saveDealer');
+    if (saveDealerBtn) {
+        saveDealerBtn.addEventListener('click', function() {
+            if (!isSuperAdmin()) { toast('Sin permisos', 'error'); return; }
+            var nombre = $('dNombre').value.trim();
+            if (!nombre) { toast('Nombre es requerido', 'error'); return; }
+
+            var dealerData = {
+                nombre: nombre,
+                direccion: $('dDireccion').value.trim(),
+                telefono: $('dTelefono').value.trim(),
+                ciudad: $('dCiudad').value.trim() || 'Barranquilla',
+                horario: $('dHorario').value.trim(),
+                responsable: $('dResponsable').value.trim(),
+                updatedAt: new Date().toISOString(),
+                updatedBy: window.auth.currentUser.email
+            };
+
+            var existingId = $('dOriginalId').value;
+            var savePromise;
+            if (existingId) {
+                savePromise = window.db.collection('concesionarios').doc(existingId).update(dealerData);
+            } else {
+                var docId = nombre.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+                savePromise = window.db.collection('concesionarios').doc(docId).set(dealerData);
+            }
+
+            savePromise.then(function() {
+                toast(existingId ? 'Concesionario actualizado' : 'Concesionario creado');
+                writeAuditLog(existingId ? 'dealer_update' : 'dealer_create', 'concesionario ' + nombre, '');
+                $('dealerModal').classList.remove('active');
+            }).catch(function(err) {
+                toast('Error: ' + err.message, 'error');
+            });
+        });
+    }
+
+    // ========== PHASE 5: SOLD VEHICLES ==========
+    function renderSoldVehicles() {
+        var body = $('soldVehiclesBody');
+        if (!body) return;
+        var sold = vehicles.filter(function(v) { return v.estado === 'vendido'; });
+        sold.sort(function(a, b) { return (b.fechaVenta || b.updatedAt || '').localeCompare(a.fechaVenta || a.updatedAt || ''); });
+
+        if (sold.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay vehiculos vendidos registrados</td></tr>';
+            return;
+        }
+
+        body.innerHTML = sold.map(function(v) {
+            var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
+            return '<tr>' +
+                '<td><strong>' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</strong></td>' +
+                '<td>' + formatPrice(v.precioVenta || v.precio) + '</td>' +
+                '<td>' + (v.fechaVenta || v.updatedAt || '-').split('T')[0] + '</td>' +
+                '<td>' + (v.canalVenta || '-') + '</td>' +
+                '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + (v.observacionesVenta || '-') + '</td>' +
+            '</tr>';
+        }).join('');
+    }
+
+    // Mark Vehicle as Sold
+    function markAsSold(vehicleId) {
+        if (!canCreateOrEditInventory()) { toast('Sin permisos', 'error'); return; }
+        var v = vehicles.find(function(x) { return x.id === vehicleId; });
+        if (!v) return;
+
+        $('soldVehicleId').value = vehicleId;
+        var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
+        $('soldVehicleInfo').innerHTML = '<strong>' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</strong><br>Precio actual: ' + formatPrice(v.precio);
+        $('soldPrecio').value = v.precio || '';
+        $('soldCanal').value = '';
+        $('soldObservaciones').value = '';
+        $('soldModal').classList.add('active');
+    }
+
+    var closeSoldModalEl = $('closeSoldModal');
+    if (closeSoldModalEl) closeSoldModalEl.addEventListener('click', function() { $('soldModal').classList.remove('active'); });
+    var cancelSoldModalEl = $('cancelSoldModal');
+    if (cancelSoldModalEl) cancelSoldModalEl.addEventListener('click', function() { $('soldModal').classList.remove('active'); });
+    var soldModalEl = $('soldModal');
+    if (soldModalEl) soldModalEl.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+
+    var confirmSoldBtn = $('confirmSold');
+    if (confirmSoldBtn) {
+        confirmSoldBtn.addEventListener('click', function() {
+            var vehicleId = parseInt($('soldVehicleId').value);
+            if (!vehicleId) return;
+            var precioVenta = parseInt($('soldPrecio').value);
+            var canal = $('soldCanal').value;
+            if (!precioVenta || !canal) { toast('Precio y canal son requeridos', 'error'); return; }
+
+            var v = vehicles.find(function(x) { return x.id === vehicleId; });
+            var currentVersion = v ? (v._version || 0) : 0;
+
+            window.db.collection('vehiculos').doc(String(vehicleId)).update({
+                estado: 'vendido',
+                precioVenta: precioVenta,
+                canalVenta: canal,
+                observacionesVenta: $('soldObservaciones').value.trim(),
+                fechaVenta: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                updatedBy: window.auth.currentUser.email,
+                _version: currentVersion + 1
+            }).then(function() {
+                var marca = v ? (v.marca || '') : '';
+                toast('Vehiculo marcado como vendido');
+                writeAuditLog('vehicle_sold', 'vehiculo #' + vehicleId, marca + ' - ' + formatPrice(precioVenta) + ' via ' + canal);
+                $('soldModal').classList.remove('active');
+            }).catch(function(err) {
+                toast('Error: ' + err.message, 'error');
+            });
+        });
+    }
+
+    // ========== PHASE 5: HOOK INTO LOAD DATA ==========
+    var _originalLoadData = typeof loadData === 'function' ? loadData : null;
+
+    // We need to hook into the existing loadData to also load appointments and dealers
+    // But loadData is defined above. Let me find and hook into it.
+
     // ========== INIT ==========
     initAuth();
+
+    // Expose functions for onclick handlers
+    window.adminPanel = window.adminPanel || {};
+    window.adminPanel.removeImage = removeImage;
+    window.adminPanel.editVehicle = editVehicle;
+    window.adminPanel.deleteVehicle = deleteVehicleFn;
+    window.adminPanel.editBrand = typeof editBrand !== 'undefined' ? editBrand : function() {};
+    window.adminPanel.deleteBrand = typeof deleteBrandFn !== 'undefined' ? deleteBrandFn : function() {};
+    window.adminPanel.previewVehicle = typeof previewVehicle !== 'undefined' ? previewVehicle : function() {};
+    window.adminPanel.updateAppointment = updateAppointmentStatus;
+    window.adminPanel.editDealer = editDealer;
+    window.adminPanel.markAsSold = markAsSold;
 
 })();

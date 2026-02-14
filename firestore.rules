@@ -73,6 +73,12 @@ service cloud.firestore {
       // Only Super Admin can create/update/delete user profiles
       // (Cloud Functions with Admin SDK bypass rules, but this protects direct client access)
       allow create, update, delete: if isSuperAdmin();
+
+      // ========== USER DRAFTS (subcollection) ==========
+      match /drafts/{draftId} {
+        // Users can read/write their own drafts
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // ========== LEADS (future) ==========

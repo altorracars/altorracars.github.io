@@ -284,7 +284,7 @@ button {
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, var(--primary-brown) 0%, var(--primary-dark) 100%);
-    background-image: url('../multimedia/hero-car.jpg');
+    background-image: url('../multimedia/hero-car.webp');
     background-size: cover;
     background-position: center;
     margin-top: 70px;
@@ -553,6 +553,19 @@ section {
     font-size: 1.3rem;
     font-weight: 700;
     color: var(--primary-gold);
+}
+
+.vehicle-price-original {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #999;
+    text-decoration: line-through;
+    display: block;
+    line-height: 1;
+}
+
+.vehicle-price-offer {
+    color: #ef4444;
 }
 
 .btn-view {

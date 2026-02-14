@@ -200,24 +200,26 @@
         @media(max-width:768px){.nav-links{display:none}.header .container{padding:0 1rem}}
     </style>
 
+    <!-- Critical CSS (render-blocking — needed for first paint) -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dark-theme.css">
     <link rel="stylesheet" href="css/mobile-fixes.css">
-    <link rel="stylesheet" href="css/featured-fixes.css">
-    <link rel="stylesheet" href="css/vehicles-cards-fix.css">
-    <link rel="stylesheet" href="css/sidebar-filters-fix.css">
-    <link rel="stylesheet" href="css/favorites-fix.css">
-    <link rel="stylesheet" href="css/footer-fixes.css">
-    <link rel="stylesheet" href="css/brands-fixes.css">
-    <link rel="stylesheet" href="css/toast-notifications.css">
-    <link rel="stylesheet" href="css/contact-forms.css">
-    <!-- CSS para features específicas - carga diferida -->
-    <link rel="stylesheet" href="css/comparador.css">
+
+    <!-- Non-critical CSS (deferred — loads after first paint) -->
+    <link rel="stylesheet" href="css/featured-fixes.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/vehicles-cards-fix.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/sidebar-filters-fix.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/favorites-fix.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/footer-fixes.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/brands-fixes.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/toast-notifications.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/contact-forms.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/comparador.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/calculadora-financiamiento.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/historial-visitas.css" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="css/reviews.css">
-    <link rel="stylesheet" href="css/animaciones.css">
-    <link rel="stylesheet" href="css/citas.css">
-    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/reviews.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/animaciones.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/citas.css" media="print" onload="this.media='all'">
 
     <!-- Optimized Google Fonts Loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -344,15 +346,12 @@
         </div>
     </section>
 
-    <!-- Popular Brands Section - FASE 2: Con logos dinámicos -->
+    <!-- FASE 2: Nuestras Marcas — carrusel interactivo con todas -->
     <section class="brands-section">
         <div class="container">
-            <h2 class="section-title">Marcas <span class="highlight">Populares</span></h2>
-            <div class="brands-grid" id="popularBrands">
+            <h2 class="section-title">Nuestras <span class="highlight">Marcas</span></h2>
+            <div class="brands-grid brands-carousel" id="popularBrands">
                 <!-- Brands will be loaded dynamically -->
-            </div>
-            <div class="text-center mt-3">
-                <a href="busqueda.html" class="btn-view-more">Ver todas las marcas →</a>
             </div>
         </div>
     </section>

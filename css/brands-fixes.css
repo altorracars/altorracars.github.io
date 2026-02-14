@@ -8,7 +8,7 @@
     background: #fafafa;
 }
 
-/* Grid de marcas mejorado - 4 arriba, 4 abajo en PC */
+/* FASE 2: Carrusel horizontal interactivo — todas las marcas */
 .brands-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -18,6 +18,33 @@
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
+}
+
+.brands-carousel {
+    display: flex;
+    gap: var(--spacing-md);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+    max-width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-gold) transparent;
+}
+
+.brands-carousel::-webkit-scrollbar {
+    height: 4px;
+}
+
+.brands-carousel::-webkit-scrollbar-thumb {
+    background: var(--primary-gold);
+    border-radius: 4px;
+}
+
+.brands-carousel .brand-card {
+    flex: 0 0 160px;
+    scroll-snap-align: start;
+    position: relative;
 }
 
 .brand-card {
@@ -63,6 +90,21 @@
     color: var(--primary-dark);
     text-align: center;
     margin-top: 0.5rem;
+}
+
+/* Conteo de vehiculos por marca */
+.brand-count {
+    font-size: 0.75rem;
+    color: #999;
+    font-weight: 400;
+}
+
+.brand-count::before {
+    content: '';
+}
+
+.brand-count::after {
+    content: ' autos';
 }
 
 /* Botón "Ver todas las marcas" */

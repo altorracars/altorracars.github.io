@@ -1103,6 +1103,45 @@
         }
     });
 
+    // FASE 2: Upload de logo de marca desde archivo
+    $('btnUploadBrandLogo').addEventListener('click', function() {
+        $('brandLogoFile').click();
+    });
+
+    $('brandLogoFile').addEventListener('change', function() {
+        var file = this.files[0];
+        if (!file) return;
+        if (!window.storage) { toast('Storage no disponible', 'error'); return; }
+
+        var status = $('brandLogoUploadStatus');
+        status.style.display = 'block';
+        status.textContent = 'Subiendo logo...';
+
+        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        var path = 'logos/' + Date.now() + '_' + safeName;
+
+        try {
+            var ref = window.storage.ref(path);
+            ref.put(file).then(function(snapshot) {
+                return snapshot.ref.getDownloadURL();
+            }).then(function(url) {
+                $('bLogo').value = url;
+                $('brandLogoPreview').innerHTML = '<img src="' + url + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#1a1a2e;padding:4px;">';
+                status.textContent = 'Logo subido correctamente';
+                status.style.color = 'var(--admin-success)';
+                setTimeout(function() { status.style.display = 'none'; status.style.color = ''; }, 3000);
+            }).catch(function(err) {
+                status.textContent = 'Error: ' + (err.message || err.code);
+                status.style.color = 'var(--admin-danger)';
+            });
+        } catch (e) {
+            status.textContent = 'Error: ' + e.message;
+            status.style.color = 'var(--admin-danger)';
+        }
+
+        this.value = '';
+    });
+
     function editBrand(brandId) {
         if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
         var b = brands.find(function(x) { return x.id === brandId; });

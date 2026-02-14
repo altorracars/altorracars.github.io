@@ -597,7 +597,74 @@
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body" id="sec-features">
-                        <div class="form-group"><label class="form-label">Una por linea</label><textarea id="vCaracteristicas" class="form-textarea" rows="5" placeholder="Camara de reversa&#10;Bluetooth&#10;Aire acondicionado"></textarea><div class="tags-container" id="featuresPreview"></div></div>
+                        <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:0.75rem;">Selecciona las caracteristicas por categoria o agrega personalizadas abajo.</p>
+                        <div id="featCategoriesContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-bottom:1rem;">
+                            <!-- Seguridad -->
+                            <div class="feat-category-card" style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;">
+                                <h5 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--admin-gold);">Seguridad</h5>
+                                <div class="feat-checkboxes" data-category="seguridad">
+                                    <label class="feat-cb"><input type="checkbox" value="Sistema de frenos ABS"> ABS</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Airbags frontales"> Airbags frontales</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Airbags laterales"> Airbags laterales</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Alarma"> Alarma</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Bloqueo central"> Bloqueo central</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Control de estabilidad"> Control estabilidad</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Control de traccion"> Control traccion</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Sensor de reversa"> Sensor reversa</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Camara de reversa"> Camara reversa</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Camara 360"> Camara 360</label>
+                                </div>
+                            </div>
+                            <!-- Confort -->
+                            <div class="feat-category-card" style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;">
+                                <h5 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--admin-gold);">Confort</h5>
+                                <div class="feat-checkboxes" data-category="confort">
+                                    <label class="feat-cb"><input type="checkbox" value="Aire acondicionado"> Aire acondicionado</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Climatizador automatico"> Climatizador auto</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Asientos en cuero"> Asientos en cuero</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Asientos calefactados"> Asientos calefactados</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Asiento electrico"> Asiento electrico</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Volante multifuncional"> Volante multifuncional</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Tapizado en cuero"> Tapizado en cuero</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Techo panoramico"> Techo panoramico</label>
+                                </div>
+                            </div>
+                            <!-- Tecnologia -->
+                            <div class="feat-category-card" style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;">
+                                <h5 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--admin-gold);">Tecnologia</h5>
+                                <div class="feat-checkboxes" data-category="tecnologia">
+                                    <label class="feat-cb"><input type="checkbox" value="Pantalla tactil"> Pantalla tactil</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Bluetooth"> Bluetooth</label>
+                                    <label class="feat-cb"><input type="checkbox" value="USB / Auxiliar"> USB / Auxiliar</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Android Auto"> Android Auto</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Apple CarPlay"> Apple CarPlay</label>
+                                    <label class="feat-cb"><input type="checkbox" value="GPS / Navegacion"> GPS / Navegacion</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Radio AM/FM"> Radio AM/FM</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Computador de viaje"> Computador de viaje</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Keyless entry"> Keyless entry</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Boton de encendido"> Boton de encendido</label>
+                                </div>
+                            </div>
+                            <!-- Exterior e Interior -->
+                            <div class="feat-category-card" style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;">
+                                <h5 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--admin-gold);">Exterior e Interior</h5>
+                                <div class="feat-checkboxes" data-category="exterior">
+                                    <label class="feat-cb"><input type="checkbox" value="Vidrios electricos"> Vidrios electricos</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Espejos electricos"> Espejos electricos</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Luces LED"> Luces LED</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Luces DRL"> Luces DRL</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Rines de aluminio"> Rines de aluminio</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Barras de techo"> Barras de techo</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Exploradoras"> Exploradoras</label>
+                                    <label class="feat-cb"><input type="checkbox" value="Cierre centralizado"> Cierre centralizado</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Caracteristicas adicionales (una por linea)</label>
+                            <textarea id="vCaracteristicas" class="form-textarea" rows="3" placeholder="Caracteristicas no listadas arriba..."></textarea>
+                            <div class="tags-container" id="featuresPreview"></div>
+                        </div>
                     </div>
                 </div>
             </form>

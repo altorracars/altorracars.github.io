@@ -867,6 +867,8 @@
         $('uploadError').style.display = 'none';
         $('manualImageUrl').value = '';
         $('featuresPreview').innerHTML = '';
+        // Reset feature checkboxes
+        document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
         stopDraftAutoSave();
     }
 
@@ -1057,7 +1059,7 @@
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
         $('vRevision').checked = v.revisionTecnica !== false;
         $('vPeritaje').checked = v.peritaje !== false;
-        $('vCaracteristicas').value = (v.caracteristicas || []).join('\n');
+        loadFeaturesIntoForm(v.caracteristicas || []);
 
         // Load concesionario value
         if ($('vConcesionario')) {
@@ -1101,6 +1103,46 @@
         } catch (e) {}
     }
 
+    // ========== COLLECT FEATURES FROM CHECKBOXES + TEXTAREA ==========
+    function collectAllFeatures() {
+        var features = [];
+        // Collect from category checkboxes
+        document.querySelectorAll('.feat-checkboxes input[type="checkbox"]:checked').forEach(function(cb) {
+            if (cb.value && features.indexOf(cb.value) === -1) features.push(cb.value);
+        });
+        // Collect from textarea (additional features)
+        var textarea = $('vCaracteristicas');
+        if (textarea && textarea.value.trim()) {
+            textarea.value.split('\n').forEach(function(line) {
+                var trimmed = line.trim();
+                if (trimmed && features.indexOf(trimmed) === -1) features.push(trimmed);
+            });
+        }
+        return features;
+    }
+
+    function loadFeaturesIntoForm(caracteristicas) {
+        if (!caracteristicas || !caracteristicas.length) return;
+        // Uncheck all first
+        document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+
+        var uncategorized = [];
+        var checkboxValues = [];
+        document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) { checkboxValues.push(cb.value); });
+
+        caracteristicas.forEach(function(feat) {
+            var found = false;
+            document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) {
+                if (cb.value === feat) { cb.checked = true; found = true; }
+            });
+            if (!found) uncategorized.push(feat);
+        });
+
+        if ($('vCaracteristicas')) {
+            $('vCaracteristicas').value = uncategorized.join('\n');
+        }
+    }
+
     // ========== SAVE VEHICLE (with optimistic locking + collision-safe IDs) ==========
     function buildVehicleData(id) {
         var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value) : null;
@@ -1138,7 +1180,7 @@
             destacado: $('vDestacado').checked,
             imagen: uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
             imagenes: uploadedImageUrls.length ? uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
-            caracteristicas: $('vCaracteristicas').value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean),
+            caracteristicas: collectAllFeatures(),
             concesionario: $('vConcesionario') ? $('vConcesionario').value : '',
             consignaParticular: ($('vConcesionario') && $('vConcesionario').value === '_particular' && $('vConsignaParticular')) ? $('vConsignaParticular').value.trim() : '',
             updatedAt: new Date().toISOString(),

@@ -138,7 +138,29 @@ body {
 }
 
 .btn-primary:hover { background: var(--admin-gold-dark); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Login button spinner */
+.btn-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: btn-spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+@keyframes btn-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Smooth transitions for login/admin switch */
+.login-container, .admin-layout {
+    transition: opacity 0.2s ease;
+}
 
 .btn-success {
     background: var(--admin-success);

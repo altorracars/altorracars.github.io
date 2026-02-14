@@ -241,6 +241,7 @@
 
     function showAccessDenied(email, uid, reason) {
         stopInactivityTracking();
+        resetLoginBtn();
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
         var errEl = $('loginError');
@@ -263,11 +264,14 @@
     function showLogin() {
         stopInactivityTracking();
         stopRealtimeSync();
+        resetLoginBtn();
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
+        $('loginForm').reset();
     }
 
     function showAdmin(user) {
+        resetLoginBtn();
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'flex';
         $('adminEmail').textContent = user.email + ' (' + (currentUserRole === 'super_admin' ? 'Super Admin' : currentUserRole === 'editor' ? 'Editor' : 'Viewer') + ')';
@@ -300,35 +304,51 @@
     }
 
     // ========== LOGIN ==========
+    function resetLoginBtn() {
+        var btn = $('loginBtn');
+        btn.disabled = false;
+        btn.innerHTML = 'Iniciar Sesion';
+    }
+
     $('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        var email = $('loginEmail').value;
+        var email = $('loginEmail').value.trim();
         var pass = $('loginPassword').value;
         var errEl = $('loginError');
         var btn = $('loginBtn');
 
+        if (!email || !pass) return;
+
         btn.disabled = true;
-        btn.textContent = 'Ingresando...';
+        btn.innerHTML = '<span class="btn-spinner"></span> Ingresando...';
         errEl.style.display = 'none';
 
+        // Timeout safety: if Firebase never resolves, restore button after 15s
+        var loginTimeout = setTimeout(function() {
+            resetLoginBtn();
+            errEl.style.display = 'block';
+            errEl.textContent = 'Tiempo de espera agotado. Verifica tu conexion e intenta de nuevo.';
+        }, 15000);
+
         window.firebaseReady.then(function() {
-            return window.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        })
-            .then(function() {
+                // Persistence already set in initAuth, go straight to sign in
                 return window.auth.signInWithEmailAndPassword(email, pass);
             })
             .then(function() {
-                btn.disabled = false;
-                btn.textContent = 'Iniciar Sesion';
+                clearTimeout(loginTimeout);
+                // onAuthStateChanged will handle showing the admin panel
+                // Keep button in loading state until panel shows
             })
             .catch(function(error) {
-                btn.disabled = false;
-                btn.textContent = 'Iniciar Sesion';
+                clearTimeout(loginTimeout);
+                resetLoginBtn();
                 errEl.style.display = 'block';
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                     errEl.textContent = 'Correo o contrasena incorrectos';
                 } else if (error.code === 'auth/too-many-requests') {
                     errEl.textContent = 'Demasiados intentos. Espera un momento.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errEl.textContent = 'Sin conexion a internet. Verifica tu red.';
                 } else {
                     errEl.textContent = 'Error: ' + error.message;
                 }
@@ -2455,7 +2475,7 @@
         editUser: editUser,
         deleteUser: deleteUserFn,
         previewVehicle: previewVehicle,
-        updateAppointment: updateAppointmentStatus,
+        updateAppointment: manageAppointment,
         editDealer: editDealer,
         markAsSold: markAsSold,
         addListItem: addListItem,
@@ -2947,25 +2967,7 @@
         });
     }
 
-    // ========== PHASE 5: HOOK INTO LOAD DATA ==========
-    var _originalLoadData = typeof loadData === 'function' ? loadData : null;
-
-    // We need to hook into the existing loadData to also load appointments and dealers
-    // But loadData is defined above. Let me find and hook into it.
-
     // ========== INIT ==========
     initAuth();
-
-    // Expose functions for onclick handlers
-    window.adminPanel = window.adminPanel || {};
-    window.adminPanel.removeImage = removeImage;
-    window.adminPanel.editVehicle = editVehicle;
-    window.adminPanel.deleteVehicle = deleteVehicleFn;
-    window.adminPanel.editBrand = typeof editBrand !== 'undefined' ? editBrand : function() {};
-    window.adminPanel.deleteBrand = typeof deleteBrandFn !== 'undefined' ? deleteBrandFn : function() {};
-    window.adminPanel.previewVehicle = typeof previewVehicle !== 'undefined' ? previewVehicle : function() {};
-    window.adminPanel.updateAppointment = updateAppointmentStatus;
-    window.adminPanel.editDealer = editDealer;
-    window.adminPanel.markAsSold = markAsSold;
 
 })();

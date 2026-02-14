@@ -831,15 +831,52 @@ tbody tr:hover {
 .form-section { margin-bottom: 0.75rem; border: 1px solid var(--admin-border); border-radius: 8px; overflow: hidden; }
 .form-section-title {
     display: flex; align-items: center; gap: 0.5rem;
-    padding: 0.625rem 0.875rem; font-size: 0.8rem; font-weight: 600;
-    background: var(--admin-bg); cursor: pointer; user-select: none;
+    padding: 0.75rem 1rem; font-size: 0.85rem; font-weight: 700;
+    background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.05));
+    border-left: 3px solid var(--admin-gold);
+    cursor: pointer; user-select: none;
     color: var(--admin-text);
+    transition: background 0.2s, border-color 0.2s;
 }
-.form-section-title:hover { background: var(--admin-surface); }
-.form-section-title .chevron { margin-left: auto; transition: transform 0.2s; }
+.form-section-title:hover { background: linear-gradient(135deg, rgba(212,175,55,0.18), rgba(212,175,55,0.08)); }
+.form-section-title .chevron { margin-left: auto; transition: transform 0.3s; }
 .form-section-body { padding: 0.75rem; display: none; }
 .form-section-body.open { display: block; }
 .form-section-title.collapsed .chevron { transform: rotate(-90deg); }
+.form-section-title.collapsed { background: var(--admin-bg); border-left-color: var(--admin-border); opacity: 0.8; }
+
+/* Form validation highlight for missing required fields */
+.form-input.field-error, .form-select.field-error {
+    border-color: var(--admin-danger) !important;
+    box-shadow: 0 0 0 2px rgba(248,81,73,0.2);
+    animation: field-shake 0.4s ease;
+}
+.form-group .field-error-msg {
+    color: var(--admin-danger);
+    font-size: 0.7rem;
+    margin-top: 2px;
+    display: block;
+}
+@keyframes field-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+/* Section with errors indicator */
+.form-section.has-errors > .form-section-title {
+    border-left-color: var(--admin-danger);
+    background: linear-gradient(135deg, rgba(248,81,73,0.12), rgba(248,81,73,0.04));
+}
+.form-section.has-errors > .form-section-title::after {
+    content: 'Campos pendientes';
+    font-size: 0.65rem;
+    color: var(--admin-danger);
+    font-weight: 600;
+    margin-left: 0.5rem;
+    padding: 1px 6px;
+    background: rgba(248,81,73,0.12);
+    border-radius: 4px;
+}
 
 /* CHECKBOX GRID */
 .checkbox-grid {

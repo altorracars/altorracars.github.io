@@ -957,6 +957,26 @@ tbody tr:hover {
     border-color: var(--admin-accent, #d4af37);
 }
 
+/* Activity select mode */
+.activity-item.selectable {
+    cursor: pointer;
+    padding-left: 0;
+}
+
+.activity-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--admin-gold);
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.activity-details {
+    font-size: 0.75rem;
+    color: var(--admin-text-muted, #8b949e);
+}
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
     .mobile-topbar { display: flex; }

@@ -482,16 +482,18 @@
         if (unsubBrands) { unsubBrands(); unsubBrands = null; }
         if (unsubAppointments) { unsubAppointments(); unsubAppointments = null; }
         if (unsubDealers) { unsubDealers(); unsubDealers = null; }
+        if (unsubAuditLog) { unsubAuditLog(); unsubAuditLog = null; }
     }
 
     // Backward-compatible alias — existing calls to loadData() trigger a one-time fetch
     function loadData() {
         startRealtimeSync();
-        // Phase 5: Load appointments, dealers, and availability config
+        // Phase 5: Load appointments, dealers, availability config, and audit log
         try {
             loadAppointments();
             loadDealers();
             loadAvailabilityConfig();
+            loadAuditLog();
         } catch (e) {
             console.warn('[Phase5] Error loading:', e);
         }
@@ -534,80 +536,106 @@
         if (citasEl) citasEl.textContent = appointments.length > 0 ? appointments.filter(function(a) { return a.estado === 'pendiente'; }).length : '-';
     }
 
-    // ========== ACTIVITY FEED ==========
+    // ========== ACTIVITY FEED (persistent via auditLog) ==========
     var ACTIVITY_PAGE_SIZE = 10;
     var activityExpanded = false;
-    var loginEvents = []; // In-memory login tracking
+    var auditLogEntries = [];
+    var unsubAuditLog = null;
+    var activitySelectMode = false;
+    var selectedActivityIds = [];
 
     function recordLoginEvent(email) {
-        loginEvents.push({
-            _actType: 'login',
-            updatedAt: new Date().toISOString(),
-            updatedBy: email
-        });
+        // Login events now persisted to auditLog via writeAuditLog
+    }
+
+    function loadAuditLog() {
+        if (unsubAuditLog) unsubAuditLog();
+        unsubAuditLog = window.db.collection('auditLog')
+            .orderBy('timestamp', 'desc')
+            .limit(200)
+            .onSnapshot(function(snap) {
+                auditLogEntries = snap.docs.map(function(doc) {
+                    var data = doc.data();
+                    data._docId = doc.id;
+                    return data;
+                });
+                renderActivityFeed();
+            }, function(err) {
+                console.warn('[AuditLog] Error loading:', err);
+                // Fallback to old method
+                renderActivityFeedFallback();
+            });
+    }
+
+    function getActivityIcon(action) {
+        var icons = {
+            'login': '🔑',
+            'vehicle_create': '➕',
+            'vehicle_update': '✏️',
+            'vehicle_delete': '🗑️',
+            'vehicle_sold': '💰',
+            'brand_create': '🏷️',
+            'brand_update': '🏷️',
+            'brand_delete': '🗑️',
+            'dealer_create': '🏢',
+            'dealer_update': '🏢',
+            'backup_export': '📦',
+            'backup_import': '📥',
+            'list_update': '📋',
+            'appointment_confirmada': '📅',
+            'appointment_cancelada': '❌'
+        };
+        return icons[action] || '📝';
+    }
+
+    function getActivityText(item) {
+        var actionTexts = {
+            'login': 'inició sesión',
+            'vehicle_create': 'creó vehículo',
+            'vehicle_update': 'actualizó vehículo',
+            'vehicle_delete': 'eliminó vehículo',
+            'vehicle_sold': 'registró venta de',
+            'brand_create': 'creó marca',
+            'brand_update': 'actualizó marca',
+            'brand_delete': 'eliminó marca',
+            'dealer_create': 'creó concesionario',
+            'dealer_update': 'actualizó concesionario',
+            'backup_export': 'exportó respaldo',
+            'backup_import': 'importó respaldo',
+            'list_update': 'actualizó lista',
+            'appointment_confirmada': 'confirmó cita',
+            'appointment_cancelada': 'canceló cita'
+        };
+        return actionTexts[item.action] || item.action || 'realizó acción';
     }
 
     function buildActivityItemHTML(item) {
-        var who = item.updatedBy || 'Admin';
+        var who = item.user || item.updatedBy || 'Admin';
         if (who.indexOf('@') > 0) {
             who = who.split('@')[0];
         }
 
-        var when = item.updatedAt ? formatTimeAgo(item.updatedAt) : '';
+        var when = (item.timestamp || item.updatedAt) ? formatTimeAgo(item.timestamp || item.updatedAt) : '';
+        var icon = getActivityIcon(item.action || item._actType);
+        var actionText = getActivityText(item);
+        var target = item.target || item.details || '';
+        var details = item.details || '';
+        var docId = item._docId || '';
 
-        // Login event
-        if (item._actType === 'login') {
-            return '<div class="activity-item">' +
-                '<span class="activity-icon">🔑</span>' +
-                '<div class="activity-content">' +
-                    '<span class="activity-who">' + escapeHtml(who) + '</span> ' +
-                    'inició sesión' +
-                    '<div class="activity-time">' + when + '</div>' +
-                '</div>' +
-            '</div>';
+        var checkboxHtml = '';
+        if (activitySelectMode && docId) {
+            var checked = selectedActivityIds.indexOf(docId) >= 0 ? ' checked' : '';
+            checkboxHtml = '<input type="checkbox" class="activity-checkbox" data-id="' + docId + '"' + checked + '> ';
         }
 
-        // Brand event
-        if (item._type === 'marca') {
-            var brandName = item.nombre || item.id || '';
-            return '<div class="activity-item">' +
-                '<span class="activity-icon">🏷️</span>' +
-                '<div class="activity-content">' +
-                    '<span class="activity-who">' + escapeHtml(who) + '</span> ' +
-                    'actualizó marca ' +
-                    '<span class="activity-vehicle">' + escapeHtml(brandName) + '</span>' +
-                    '<div class="activity-time">' + when + '</div>' +
-                '</div>' +
-            '</div>';
-        }
-
-        // Vehicle event
-        var marca = item.marca ? capitalize(item.marca) : '';
-        var modelo = item.modelo || '';
-        var year = item.year || '';
-        var vehicleName = (marca + ' ' + modelo + ' ' + year).trim();
-
-        var actionText = 'actualizó';
-        var actionIcon = '✏️';
-        if (item._version === 1) {
-            actionText = 'creó';
-            actionIcon = '➕';
-        }
-
-        var estadoBadge = '';
-        if (item.estado && item.estado !== 'disponible') {
-            var estadoLabels = { reservado: 'Reservado', vendido: 'Vendido', borrador: 'Borrador' };
-            var estadoClasses = { reservado: 'act-warning', vendido: 'act-danger', borrador: 'act-muted' };
-            estadoBadge = ' <span class="act-badge ' + (estadoClasses[item.estado] || '') + '">' + (estadoLabels[item.estado] || item.estado) + '</span>';
-        }
-
-        return '<div class="activity-item">' +
-            '<span class="activity-icon">' + actionIcon + '</span>' +
+        return '<div class="activity-item' + (activitySelectMode ? ' selectable' : '') + '" data-doc-id="' + docId + '">' +
+            checkboxHtml +
+            '<span class="activity-icon">' + icon + '</span>' +
             '<div class="activity-content">' +
                 '<span class="activity-who">' + escapeHtml(who) + '</span> ' +
-                actionText + ' vehículo ' +
-                '<span class="activity-vehicle">' + escapeHtml(vehicleName) + '</span>' +
-                estadoBadge +
+                actionText + ' ' +
+                (target ? '<span class="activity-vehicle">' + escapeHtml(target) + '</span>' : '') +
+                (details && details !== target ? ' <span class="activity-details">' + escapeHtml(details) + '</span>' : '') +
                 '<div class="activity-time">' + when + '</div>' +
             '</div>' +
         '</div>';
@@ -617,27 +645,11 @@
         var feed = $('activityFeed');
         if (!feed) return;
 
-        // Merge vehicles + brands + login events, all sorted by updatedAt
-        var allItems = [];
-
-        vehicles.forEach(function(v) {
-            if (v.updatedAt) allItems.push(v);
-        });
-
-        brands.forEach(function(b) {
-            if (b.updatedAt) allItems.push(b);
-        });
-
-        loginEvents.forEach(function(e) {
-            allItems.push(e);
-        });
-
-        allItems.sort(function(a, b) {
-            return (b.updatedAt || '').localeCompare(a.updatedAt || '');
-        });
+        var allItems = auditLogEntries.slice();
 
         if (allItems.length === 0) {
             feed.innerHTML = '<div class="activity-empty">Sin actividad reciente</div>';
+            updateActivityControls(0);
             return;
         }
 
@@ -653,6 +665,22 @@
         }
 
         feed.innerHTML = html;
+        updateActivityControls(allItems.length);
+
+        // Attach checkbox listeners
+        if (activitySelectMode) {
+            feed.querySelectorAll('.activity-checkbox').forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    var id = this.getAttribute('data-id');
+                    if (this.checked) {
+                        if (selectedActivityIds.indexOf(id) === -1) selectedActivityIds.push(id);
+                    } else {
+                        selectedActivityIds = selectedActivityIds.filter(function(x) { return x !== id; });
+                    }
+                    updateDeleteSelectedBtn();
+                });
+            });
+        }
 
         var btnMore = $('btnActivityMore');
         if (btnMore) {
@@ -671,6 +699,101 @@
                 feed.scrollTop = 0;
             });
         }
+    }
+
+    function renderActivityFeedFallback() {
+        var feed = $('activityFeed');
+        if (!feed) return;
+
+        var allItems = [];
+        vehicles.forEach(function(v) { if (v.updatedAt) allItems.push(v); });
+        brands.forEach(function(b) { if (b.updatedAt) allItems.push(Object.assign({ _actType: 'brand' }, b)); });
+        allItems.sort(function(a, b) { return (b.updatedAt || '').localeCompare(a.updatedAt || ''); });
+
+        if (allItems.length === 0) {
+            feed.innerHTML = '<div class="activity-empty">Sin actividad reciente</div>';
+            return;
+        }
+
+        var visible = allItems.slice(0, ACTIVITY_PAGE_SIZE);
+        feed.innerHTML = visible.map(function(item) {
+            var who = item.updatedBy || 'Admin';
+            if (who.indexOf('@') > 0) who = who.split('@')[0];
+            var when = item.updatedAt ? formatTimeAgo(item.updatedAt) : '';
+            var icon = item._actType === 'brand' ? '🏷️' : (item._version === 1 ? '➕' : '✏️');
+            var name = item._actType === 'brand' ? (item.nombre || '') : ((item.marca ? capitalize(item.marca) : '') + ' ' + (item.modelo || '') + ' ' + (item.year || '')).trim();
+            return '<div class="activity-item"><span class="activity-icon">' + icon + '</span><div class="activity-content"><span class="activity-who">' + escapeHtml(who) + '</span> actualizó <span class="activity-vehicle">' + escapeHtml(name) + '</span><div class="activity-time">' + when + '</div></div></div>';
+        }).join('');
+    }
+
+    function updateActivityControls(count) {
+        var countEl = $('activityCount');
+        if (countEl) countEl.textContent = count > 0 ? '(' + count + ')' : '';
+    }
+
+    function updateDeleteSelectedBtn() {
+        var btn = $('btnDeleteSelectedActivity');
+        if (btn) {
+            btn.textContent = 'Eliminar seleccionados (' + selectedActivityIds.length + ')';
+            btn.disabled = selectedActivityIds.length === 0;
+        }
+    }
+
+    function toggleActivitySelectMode() {
+        activitySelectMode = !activitySelectMode;
+        selectedActivityIds = [];
+        var btn = $('btnSelectActivity');
+        if (btn) {
+            btn.textContent = activitySelectMode ? 'Cancelar' : 'Seleccionar';
+            btn.className = activitySelectMode ? 'btn btn-ghost btn-sm' : 'btn btn-ghost btn-sm';
+        }
+        var actionsEl = $('activitySelectActions');
+        if (actionsEl) actionsEl.style.display = activitySelectMode ? 'flex' : 'none';
+        renderActivityFeed();
+    }
+
+    function deleteSelectedActivity() {
+        if (selectedActivityIds.length === 0) return;
+        if (!confirm('Eliminar ' + selectedActivityIds.length + ' registros de actividad?')) return;
+        var batch = window.db.batch();
+        selectedActivityIds.forEach(function(docId) {
+            batch.delete(window.db.collection('auditLog').doc(docId));
+        });
+        batch.commit().then(function() {
+            toast(selectedActivityIds.length + ' registros eliminados');
+            selectedActivityIds = [];
+            activitySelectMode = false;
+            var btn = $('btnSelectActivity');
+            if (btn) btn.textContent = 'Seleccionar';
+            var actionsEl = $('activitySelectActions');
+            if (actionsEl) actionsEl.style.display = 'none';
+        }).catch(function(err) {
+            toast('Error al eliminar: ' + err.message, 'error');
+        });
+    }
+
+    function clearAllActivity() {
+        if (!confirm('Eliminar TODA la actividad reciente? Esta accion no se puede deshacer.')) return;
+        var batch = window.db.batch();
+        var count = 0;
+        auditLogEntries.forEach(function(entry) {
+            if (entry._docId) {
+                batch.delete(window.db.collection('auditLog').doc(entry._docId));
+                count++;
+            }
+        });
+        if (count === 0) { toast('No hay actividad para limpiar', 'info'); return; }
+        batch.commit().then(function() {
+            toast(count + ' registros de actividad eliminados');
+            activitySelectMode = false;
+            selectedActivityIds = [];
+            var btn = $('btnSelectActivity');
+            if (btn) btn.textContent = 'Seleccionar';
+            var actionsEl = $('activitySelectActions');
+            if (actionsEl) actionsEl.style.display = 'none';
+        }).catch(function(err) {
+            toast('Error: ' + err.message, 'error');
+        });
     }
 
     function formatTimeAgo(isoString) {
@@ -814,7 +937,7 @@
             if (canCreateOrEditInventory()) {
                 actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
                 if (estado === 'disponible') {
-                    actions += '<button class="btn btn-sm" style="color:var(--admin-gold);border-color:var(--admin-gold);" onclick="adminPanel.markAsSold(' + v.id + ')">Gestionar Operacion</button> ';
+                    actions += '<button class="btn btn-sm" style="color:var(--admin-info);border-color:var(--admin-info);" onclick="adminPanel.markAsSold(' + v.id + ')">Gestionar Operacion</button> ';
                 }
             }
             if (canDeleteInventory()) {
@@ -2579,7 +2702,10 @@
         removeListItem: removeListItem,
         saveList: saveList,
         toggleBlockDate: toggleBlockDate,
-        manageAppointment: manageAppointment
+        manageAppointment: manageAppointment,
+        toggleActivitySelect: toggleActivitySelectMode,
+        deleteSelectedActivity: deleteSelectedActivity,
+        clearAllActivity: clearAllActivity
     };
 
     // ========== COLLAPSIBLE FORM SECTIONS ==========

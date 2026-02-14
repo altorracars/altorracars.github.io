@@ -88,29 +88,27 @@ function initBrandsAutoScroll(container) {
     var track = container.querySelector('.brands-track');
     if (!track) return;
 
-    var state = { pos: 0, paused: false };
+    var BASE_SPEED = 0.5;
+    var BOOST_SPEED = 3.5;
+    var state = { pos: 0, speed: BASE_SPEED, baseSpeed: BASE_SPEED, boostSpeed: BOOST_SPEED, paused: false };
     window._brandsScrollState = state;
-
-    var speed = 0.5; // pixels per frame
 
     function step() {
         if (!state.paused) {
-            state.pos += speed;
+            state.pos += state.speed;
             var halfWidth = track.scrollWidth / 2;
-            if (state.pos >= halfWidth) state.pos = 0;
-            if (state.pos < 0) state.pos = halfWidth + state.pos;
+            if (state.pos >= halfWidth) state.pos -= halfWidth;
+            if (state.pos < 0) state.pos += halfWidth;
             track.style.transform = 'translateX(-' + state.pos + 'px)';
         }
         requestAnimationFrame(step);
     }
 
-    // Pause on hover
-    container.addEventListener('mouseenter', function() { state.paused = true; });
-    container.addEventListener('mouseleave', function() { state.paused = false; });
-
-    // Pause on touch
-    container.addEventListener('touchstart', function() { state.paused = true; }, { passive: true });
-    container.addEventListener('touchend', function() { state.paused = false; }, { passive: true });
+    // Pause ONLY on the carousel itself, not on arrows
+    track.addEventListener('mouseenter', function() { state.paused = true; });
+    track.addEventListener('mouseleave', function() { state.paused = false; });
+    track.addEventListener('touchstart', function() { state.paused = true; }, { passive: true });
+    track.addEventListener('touchend', function() { state.paused = false; }, { passive: true });
 
     requestAnimationFrame(step);
 }
@@ -257,22 +255,23 @@ if (document.readyState === 'loading') {
 
 /**
  * Scroll brand carousel by clicking arrow buttons
- * Jumps a set number of brand cards per click
+ * Boosts speed in the clicked direction while held; returns to normal on release
  */
+var _brandsBoostTimer = null;
+
 function scrollBrandsCarousel(direction) {
-    var container = document.getElementById('popularBrands');
-    if (!container) return;
-    var track = container.querySelector('.brands-track');
-    if (!track || !window._brandsScrollState) return;
-
-    var cardWidth = 166; // 150px card + 16px gap
-    var jump = cardWidth * 3;
     var state = window._brandsScrollState;
+    if (!state) return;
 
-    state.pos += direction * jump;
-    var halfWidth = track.scrollWidth / 2;
-    if (state.pos < 0) state.pos = halfWidth + state.pos;
-    if (state.pos >= halfWidth) state.pos = state.pos - halfWidth;
+    // Set speed to fast in the given direction
+    state.speed = direction * state.boostSpeed;
+    state.paused = false;
+
+    // After 1.5 seconds, return to normal auto-scroll (right)
+    clearTimeout(_brandsBoostTimer);
+    _brandsBoostTimer = setTimeout(function() {
+        state.speed = state.baseSpeed;
+    }, 1500);
 }
 
 // Make scrollCarouselById available globally for onclick handlers

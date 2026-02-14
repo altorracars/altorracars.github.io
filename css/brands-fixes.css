@@ -82,6 +82,7 @@
 /* Navigation arrows for brand carousel */
 .brands-carousel-wrapper {
     position: relative;
+    padding: 0 50px;
 }
 
 .brands-arrow {
@@ -89,13 +90,13 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 3;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: white;
     border: 2px solid #e0e0e0;
     color: var(--primary-dark, #1d1b19);
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
@@ -112,8 +113,12 @@
     box-shadow: 0 4px 12px rgba(184,150,88,0.3);
 }
 
-.brands-arrow.prev { left: -16px; }
-.brands-arrow.next { right: -16px; }
+.brands-arrow:active {
+    transform: translateY(-50%) scale(0.92);
+}
+
+.brands-arrow.prev { left: 0; }
+.brands-arrow.next { right: 0; }
 
 /* Boton "Ver todas las marcas" */
 .btn-view-more {
@@ -153,11 +158,15 @@
         font-size: 0.8rem;
     }
 
+    .brands-carousel-wrapper {
+        padding: 0 36px;
+    }
+
     .brands-arrow {
         width: 34px;
         height: 34px;
         font-size: 1rem;
     }
-    .brands-arrow.prev { left: -8px; }
-    .brands-arrow.next { right: -8px; }
+    .brands-arrow.prev { left: 0; }
+    .brands-arrow.next { right: 0; }
 }

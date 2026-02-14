@@ -145,14 +145,17 @@
                 </div>
             </div>
 
-            <!-- SITEMAP GENERATOR -->
+            <!-- SEO TOOLS -->
             <div class="table-container" style="margin-top: 1.5rem;">
                 <div class="table-header">
-                    <h3>SEO — Sitemap</h3>
-                    <button class="btn btn-sm" id="btnGenerateSitemap" style="font-size:0.75rem;padding:0.35rem 0.75rem;">Generar sitemap.xml</button>
+                    <h3>SEO — Herramientas</h3>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <button class="btn btn-sm" id="btnGenerateSitemap" style="font-size:0.75rem;padding:0.35rem 0.75rem;">Generar sitemap.xml</button>
+                        <button class="btn btn-sm" id="btnGenerateSharePages" style="font-size:0.75rem;padding:0.35rem 0.75rem;">Generar links WhatsApp</button>
+                    </div>
                 </div>
                 <div style="padding:0.75rem 1.25rem;" id="sitemapStatus">
-                    <span style="color:var(--admin-text-muted);font-size:0.8rem;">Genera un sitemap actualizado con todos los vehiculos del inventario.</span>
+                    <span style="color:var(--admin-text-muted);font-size:0.8rem;">Genera sitemap o paginas para compartir vehiculos por WhatsApp con imagen y titulo.</span>
                 </div>
             </div>
         </div>
@@ -239,7 +242,7 @@
         <!-- SETTINGS -->
         <div id="sec-settings" class="section">
             <div class="page-header">
-                <div><h1>Configuracion</h1><p class="page-subtitle">Ajustes de tu cuenta</p></div>
+                <div><h1>Configuracion</h1><p class="page-subtitle">Ajustes de tu cuenta y respaldo de datos</p></div>
             </div>
             <div class="stat-card" style="max-width: 500px;">
                 <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
@@ -253,6 +256,21 @@
                     </div>
                     <button type="submit" class="btn btn-primary">Actualizar Contrasena</button>
                 </form>
+            </div>
+
+            <!-- BACKUP & RESTORE -->
+            <div class="stat-card" style="max-width: 500px; margin-top: 1.5rem;">
+                <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Respaldo de Datos
+                </h3>
+                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Exporta o importa todos los vehiculos y marcas como archivo JSON.</p>
+                <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" id="btnExportJSON">Exportar JSON</button>
+                    <button class="btn btn-ghost btn-sm" id="btnImportJSON">Importar JSON</button>
+                    <input type="file" id="importJSONFile" accept=".json" style="display:none">
+                </div>
+                <div id="backupStatus" style="margin-top:0.75rem;font-size:0.8rem;"></div>
             </div>
         </div>
     </main>

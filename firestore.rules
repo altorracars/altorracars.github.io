@@ -89,6 +89,13 @@ service cloud.firestore {
       allow update, delete: if isEditorOrAbove();
     }
 
+    // ========== AUDIT LOG ==========
+    match /auditLog/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isEditorOrAbove();
+      // No updates or deletes — audit log is append-only
+    }
+
     // ========== CONFIG ==========
     match /config/{docId} {
       allow read: if true;

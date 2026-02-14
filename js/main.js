@@ -3,29 +3,44 @@
 
 /**
  * Load featured vehicles with advanced ranking system
+ * Optimized: renders from cache immediately, then updates from Firestore
  * Prioritizes: destacado > oferta > tipo > year > km
  */
 async function loadFeatured() {
-    showLoading('featuredVehicles');
-    await vehicleDB.load();
+    var container = document.getElementById('featuredVehicles');
+    if (!container) return;
 
-    const featured = vehicleDB.getFeatured();
-
-    const rankedFeatured = featured
-        .map(v => ({
-            ...v,
-            _score: vehicleDB.calculateRankingScore(v)
-        }))
-        .sort((a, b) => b._score - a._score);
-
-    const cleanFeatured = rankedFeatured.map(({ _score, ...v }) => v);
-
-    // FASE 2: Ocultar seccion si no hay destacados
-    if (cleanFeatured.length === 0) {
-        hideParentSection('featuredVehicles');
-        return;
+    function rankAndRender() {
+        var featured = vehicleDB.getFeatured();
+        if (featured.length === 0) {
+            hideParentSection('featuredVehicles');
+            return;
+        }
+        // Simple inline sort — avoids creating intermediate objects
+        featured.sort(function(a, b) {
+            return vehicleDB.calculateRankingScore(b) - vehicleDB.calculateRankingScore(a);
+        });
+        renderVehicles(featured.slice(0, 12), 'featuredVehicles');
     }
-    renderVehicles(cleanFeatured.slice(0, 12), 'featuredVehicles');
+
+    // Try cache-first instant render
+    if (!vehicleDB.loaded) {
+        var hadCache = vehicleDB._loadFromCache();
+        if (hadCache) {
+            vehicleDB.normalizeVehicles();
+            vehicleDB.loaded = true;
+            rankAndRender();
+        } else {
+            showLoading('featuredVehicles');
+        }
+    } else {
+        rankAndRender();
+        return; // Already loaded — no need to await
+    }
+
+    // Then load from Firestore for fresh data
+    await vehicleDB.load(true);
+    rankAndRender();
 }
 
 /**

@@ -553,19 +553,27 @@ section {
     font-size: 1.3rem;
     font-weight: 700;
     color: var(--primary-gold);
+    margin: 0;
+}
+
+.vehicle-price-block {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
 }
 
 .vehicle-price-original {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     color: #999;
     text-decoration: line-through;
-    display: block;
-    line-height: 1;
 }
 
 .vehicle-price-offer {
+    font-size: 1.3rem;
+    font-weight: 700;
     color: #ef4444;
+    margin: 0;
 }
 
 .btn-view {

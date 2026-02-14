@@ -116,11 +116,13 @@ function renderVehicleCard(vehicle) {
         `<span class="badge ${badge.class}">${badge.text}</span>`
     ).join('');
 
-    // FASE 2: Precio oferta + precio full tachado
+    // FASE 2: Precio oferta + precio full tachado (apilado vertical)
     const hasOffer = vehicle.precioOferta && vehicle.precioOferta < vehicle.precio;
     const priceHTML = hasOffer
-        ? `<span class="vehicle-price-original">${formatPrice(vehicle.precio)}</span>
-           <p class="vehicle-price vehicle-price-offer">${formatPrice(vehicle.precioOferta)}</p>`
+        ? `<div class="vehicle-price-block">
+               <span class="vehicle-price-original">${formatPrice(vehicle.precio)}</span>
+               <span class="vehicle-price vehicle-price-offer">${formatPrice(vehicle.precioOferta)}</span>
+           </div>`
         : `<p class="vehicle-price">${formatPrice(vehicle.precio)}</p>`;
 
     return `

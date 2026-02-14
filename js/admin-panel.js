@@ -425,6 +425,7 @@
             vehicles = snap.docs.map(function(d) { return d.data(); });
             renderVehiclesTable();
             updateStats();
+            renderActivityFeed();
             updateEstimator();
             updateNavBadges();
         }, function(err) {
@@ -489,6 +490,105 @@
         $('statOfertas').textContent = vehicles.filter(function(v) { return v.oferta || v.precioOferta; }).length;
         $('statDestacados').textContent = vehicles.filter(function(v) { return v.destacado; }).length;
         $('statMarcas').textContent = brands.length;
+    }
+
+    // ========== ACTIVITY FEED ==========
+    function renderActivityFeed() {
+        var feed = $('activityFeed');
+        if (!feed) return;
+
+        // Collect vehicles that have updatedAt (i.e. were saved via admin)
+        var recent = vehicles
+            .filter(function(v) { return v.updatedAt; })
+            .slice()
+            .sort(function(a, b) {
+                return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+            })
+            .slice(0, 15);
+
+        if (recent.length === 0) {
+            feed.innerHTML = '<div class="activity-empty">Sin actividad reciente</div>';
+            return;
+        }
+
+        var html = recent.map(function(v) {
+            var who = v.updatedBy || 'Admin';
+            // Show just the email username part
+            if (who.indexOf('@') > 0) {
+                who = who.split('@')[0];
+            }
+
+            var when = '';
+            if (v.updatedAt) {
+                when = formatTimeAgo(v.updatedAt);
+            }
+
+            var marca = v.marca ? capitalize(v.marca) : '';
+            var modelo = v.modelo || '';
+            var year = v.year || '';
+            var vehicleName = (marca + ' ' + modelo + ' ' + year).trim();
+
+            // Determine action type based on _version
+            var actionText = 'actualizó';
+            var actionIcon = '✏️';
+            if (v._version === 1) {
+                actionText = 'creó';
+                actionIcon = '➕';
+            }
+
+            var estadoBadge = '';
+            if (v.estado && v.estado !== 'disponible') {
+                var estadoLabels = { reservado: 'Reservado', vendido: 'Vendido', borrador: 'Borrador' };
+                var estadoClasses = { reservado: 'act-warning', vendido: 'act-danger', borrador: 'act-muted' };
+                estadoBadge = ' <span class="act-badge ' + (estadoClasses[v.estado] || '') + '">' + (estadoLabels[v.estado] || v.estado) + '</span>';
+            }
+
+            return '<div class="activity-item">' +
+                '<span class="activity-icon">' + actionIcon + '</span>' +
+                '<div class="activity-content">' +
+                    '<span class="activity-who">' + escapeHtml(who) + '</span> ' +
+                    actionText + ' ' +
+                    '<span class="activity-vehicle">' + escapeHtml(vehicleName) + '</span>' +
+                    estadoBadge +
+                    '<div class="activity-time">' + when + '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        feed.innerHTML = html;
+    }
+
+    function formatTimeAgo(isoString) {
+        try {
+            var date = new Date(isoString);
+            var now = new Date();
+            var diffMs = now - date;
+            var diffSec = Math.floor(diffMs / 1000);
+            var diffMin = Math.floor(diffSec / 60);
+            var diffHours = Math.floor(diffMin / 60);
+            var diffDays = Math.floor(diffHours / 24);
+
+            if (diffSec < 60) return 'Hace un momento';
+            if (diffMin < 60) return 'Hace ' + diffMin + (diffMin === 1 ? ' minuto' : ' minutos');
+            if (diffHours < 24) return 'Hace ' + diffHours + (diffHours === 1 ? ' hora' : ' horas');
+            if (diffDays < 7) return 'Hace ' + diffDays + (diffDays === 1 ? ' dia' : ' dias');
+
+            // Show full date for older entries
+            return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    }
+
+    function capitalize(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
     function populateBrandSelect() {
@@ -1118,7 +1218,7 @@
         status.textContent = 'Subiendo logo...';
 
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var path = 'logos/' + Date.now() + '_' + safeName;
+        var path = UPLOAD_CONFIG.storagePath + 'logo_' + Date.now() + '_' + safeName;
 
         try {
             var ref = window.storage.ref(path);

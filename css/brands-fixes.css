@@ -1,122 +1,116 @@
 /* ============================================
-   CORRECCIÓN DEFINITIVA - MARCAS
-   Visualización mejorada de logos de marcas
+   MARCAS — Carrusel infinito auto-scroll
    ============================================ */
 
 .brands-section {
     padding: var(--spacing-xl) 0;
     background: #fafafa;
+    overflow: hidden;
 }
 
-/* FASE 2: Carrusel horizontal interactivo — todas las marcas */
-.brands-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
-    justify-content: center;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
+/* Contenedor del carrusel — oculta overflow, sin scrollbar */
 .brands-carousel {
-    display: flex;
-    gap: var(--spacing-md);
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 0.5rem;
-    max-width: 100%;
-    scrollbar-width: thin;
-    scrollbar-color: var(--primary-gold) transparent;
-}
-
-.brands-carousel::-webkit-scrollbar {
-    height: 4px;
-}
-
-.brands-carousel::-webkit-scrollbar-thumb {
-    background: var(--primary-gold);
-    border-radius: 4px;
-}
-
-.brands-carousel .brand-card {
-    flex: 0 0 160px;
-    scroll-snap-align: start;
+    overflow: hidden;
+    margin-top: var(--spacing-lg);
     position: relative;
 }
 
+/* Track que se mueve con translateX */
+.brands-track {
+    display: flex;
+    gap: 1rem;
+    width: max-content;
+    will-change: transform;
+}
+
 .brand-card {
+    flex: 0 0 150px;
     background: white;
     border: 2px solid #f0f0f0;
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg, 12px);
+    padding: 1.25rem 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--spacing-sm);
-    transition: var(--transition);
-    min-height: 140px;
+    gap: 0.5rem;
+    transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
     cursor: pointer;
     text-decoration: none;
+    min-height: 130px;
 }
 
 .brand-card:hover {
-    border-color: var(--primary-gold);
-    transform: translateY(-5px);
+    border-color: var(--primary-gold, #d4af37);
+    transform: translateY(-4px);
     box-shadow: 0 8px 20px rgba(184, 150, 88, 0.2);
-    background: linear-gradient(135deg, #fafafa 0%, white 100%);
 }
 
 /* Logo de marca */
 .brand-logo {
     width: 100%;
-    max-width: 120px;
-    height: 60px;
+    max-width: 100px;
+    height: 55px;
     object-fit: contain;
-    transition: var(--transition);
+    transition: transform 0.3s;
 }
 
 .brand-card:hover .brand-logo {
-    transform: scale(1.1);
+    transform: scale(1.08);
 }
 
 /* Nombre de marca */
 .brand-name {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: var(--primary-dark);
+    color: var(--primary-dark, #1d1b19);
     text-align: center;
-    margin-top: 0.5rem;
+    white-space: nowrap;
 }
 
 /* Conteo de vehiculos por marca */
 .brand-count {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #999;
     font-weight: 400;
-}
-
-.brand-count::before {
-    content: '';
 }
 
 .brand-count::after {
     content: ' autos';
 }
 
-/* Botón "Ver todas las marcas" */
+/* Fade edges for visual polish */
+.brands-carousel::before,
+.brands-carousel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.brands-carousel::before {
+    left: 0;
+    background: linear-gradient(to right, #fafafa, transparent);
+}
+
+.brands-carousel::after {
+    right: 0;
+    background: linear-gradient(to left, #fafafa, transparent);
+}
+
+/* Boton "Ver todas las marcas" */
 .btn-view-more {
     display: inline-block;
     padding: 0.85rem 2.5rem;
-    background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-brown) 100%);
+    background: linear-gradient(135deg, var(--primary-gold, #d4af37) 0%, var(--primary-brown, #916652) 100%);
     color: white;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-md, 8px);
     font-weight: 600;
     font-size: 1rem;
-    transition: var(--transition);
+    transition: transform 0.3s, box-shadow 0.3s;
     box-shadow: 0 4px 12px rgba(184, 150, 88, 0.3);
     text-decoration: none;
     border: none;
@@ -128,53 +122,25 @@
     box-shadow: 0 6px 20px rgba(184, 150, 88, 0.4);
 }
 
-/* Responsive Tablets */
-@media (max-width: 968px) {
-    .brands-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: var(--spacing-sm);
-    }
-
-    .brand-card {
-        padding: var(--spacing-md);
-        min-height: 120px;
-    }
-
-    .brand-logo {
-        max-width: 100px;
-        height: 50px;
-    }
-
-    .brand-name {
-        font-size: 0.9rem;
-    }
-}
-
-/* Responsive Móvil */
+/* Responsive */
 @media (max-width: 640px) {
-    .brands-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 columnas en móvil */
-        gap: var(--spacing-sm);
-    }
-
     .brand-card {
-        padding: var(--spacing-md);
+        flex: 0 0 120px;
+        padding: 1rem 0.75rem;
         min-height: 110px;
     }
 
     .brand-logo {
-        max-width: 90px;
+        max-width: 80px;
         height: 45px;
     }
 
     .brand-name {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 
-    .btn-view-more {
-        padding: 0.75rem 2rem;
-        font-size: 0.95rem;
-        width: 100%;
-        text-align: center;
+    .brands-carousel::before,
+    .brands-carousel::after {
+        width: 30px;
     }
 }

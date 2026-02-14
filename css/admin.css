@@ -782,8 +782,58 @@ tbody tr:hover {
 }
 
 /* ACTIVITY FEED */
-.activity-feed { padding: 1rem; }
+.activity-feed { padding: 0.5rem 1rem; max-height: 420px; overflow-y: auto; }
 .activity-empty { text-align: center; color: var(--admin-text-muted); font-size: 0.8rem; padding: 1rem; }
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--admin-border, #30363d);
+}
+.activity-item:last-child { border-bottom: none; }
+
+.activity-icon {
+    flex-shrink: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.activity-content {
+    font-size: 0.8rem;
+    color: var(--admin-text-secondary, #c9d1d9);
+    line-height: 1.45;
+}
+
+.activity-who {
+    font-weight: 600;
+    color: var(--admin-text-primary, #f0f6fc);
+}
+
+.activity-vehicle {
+    font-weight: 600;
+    color: var(--admin-accent, #d4af37);
+}
+
+.activity-time {
+    font-size: 0.7rem;
+    color: var(--admin-text-muted, #8b949e);
+    margin-top: 0.15rem;
+}
+
+.act-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-left: 0.25rem;
+}
+.act-warning { background: rgba(227,179,65,0.15); color: #e3b341; }
+.act-danger { background: rgba(248,81,73,0.15); color: #f85149; }
+.act-muted { background: rgba(139,148,158,0.15); color: #8b949e; }
 
 /* RESPONSIVE */
 @media (max-width: 768px) {

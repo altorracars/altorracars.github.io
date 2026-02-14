@@ -29,55 +29,90 @@ async function loadFeatured() {
 }
 
 /**
- * FASE 2: Load ALL brands as interactive scrollable carousel
- * Sorted by vehicle count descending — no limit
+ * Load ALL brands from database as infinite auto-scroll carousel
+ * Shows every brand registered, sorted alphabetically
  */
 async function loadPopularBrands() {
     await vehicleDB.load();
-    const allVehicles = vehicleDB.getAllVehicles();
-
-    const brandCounts = {};
-    allVehicles.forEach(v => {
-        const brandKey = v.marca.toLowerCase();
-        brandCounts[brandKey] = (brandCounts[brandKey] || 0) + 1;
-    });
 
     const brands = vehicleDB.getAllBrands();
-    const allBrands = brands
-        .filter(brand => brandCounts[brand.id] > 0)
-        .map(brand => ({
-            ...brand,
-            count: brandCounts[brand.id]
-        }))
-        .sort((a, b) => b.count - a.count); // No .slice() — show ALL
-
     const container = document.getElementById('popularBrands');
+    if (!container) return;
 
-    if (container) {
-        if (allBrands.length === 0) {
-            hideParentSection('popularBrands');
-            return;
-        }
-
-        // Prefer .webp logos, fallback to original
-        const html = allBrands.map(brand => {
-            var logo = brand.logo || '';
-            if (logo.endsWith('.png')) {
-                var webpLogo = logo.replace(/\.png$/i, '.webp');
-                logo = webpLogo;
-            }
-            return `
-            <a href="marca.html?marca=${brand.id}" class="brand-card">
-                <img src="${logo}" alt="${brand.nombre}" class="brand-logo" loading="lazy"
-                     onerror="this.src='${brand.logo}';this.onerror=null;">
-                <div class="brand-name">${brand.nombre}</div>
-                <span class="brand-count">${brand.count}</span>
-            </a>
-            `;
-        }).join('');
-
-        container.innerHTML = html;
+    if (brands.length === 0) {
+        hideParentSection('popularBrands');
+        return;
     }
+
+    // Count vehicles per brand for display
+    const allVehicles = vehicleDB.getAllVehicles();
+    const brandCounts = {};
+    allVehicles.forEach(function(v) {
+        var key = v.marca ? v.marca.toLowerCase() : '';
+        brandCounts[key] = (brandCounts[key] || 0) + 1;
+    });
+
+    // Sort alphabetically — show ALL brands from DB
+    var sortedBrands = brands.slice().sort(function(a, b) {
+        return (a.nombre || '').localeCompare(b.nombre || '');
+    });
+
+    // Build brand cards
+    function buildBrandCard(brand) {
+        var logo = brand.logo || '';
+        if (logo.endsWith('.png')) {
+            logo = logo.replace(/\.png$/i, '.webp');
+        }
+        var count = brandCounts[brand.id] || 0;
+        var countText = count > 0 ? '<span class="brand-count">' + count + '</span>' : '';
+        return '<a href="marca.html?marca=' + brand.id + '" class="brand-card">' +
+            '<img src="' + logo + '" alt="' + (brand.nombre || '') + '" class="brand-logo" loading="lazy"' +
+            ' onerror="this.src=\'' + (brand.logo || '') + '\';this.onerror=null;">' +
+            '<div class="brand-name">' + (brand.nombre || '') + '</div>' +
+            countText +
+            '</a>';
+    }
+
+    // Duplicate brands for seamless infinite loop
+    var cards = sortedBrands.map(buildBrandCard).join('');
+    container.innerHTML = '<div class="brands-track">' + cards + cards + '</div>';
+
+    // Start auto-scroll animation
+    initBrandsAutoScroll(container);
+}
+
+/**
+ * Infinite auto-scroll carousel with pause on hover/touch
+ */
+function initBrandsAutoScroll(container) {
+    var track = container.querySelector('.brands-track');
+    if (!track) return;
+
+    var speed = 0.5; // pixels per frame
+    var pos = 0;
+    var paused = false;
+    var animId = null;
+
+    function step() {
+        if (!paused) {
+            pos += speed;
+            // Reset when first set scrolls out
+            var halfWidth = track.scrollWidth / 2;
+            if (pos >= halfWidth) pos = 0;
+            track.style.transform = 'translateX(-' + pos + 'px)';
+        }
+        animId = requestAnimationFrame(step);
+    }
+
+    // Pause on hover
+    container.addEventListener('mouseenter', function() { paused = true; });
+    container.addEventListener('mouseleave', function() { paused = false; });
+
+    // Pause on touch
+    container.addEventListener('touchstart', function() { paused = true; }, { passive: true });
+    container.addEventListener('touchend', function() { paused = false; }, { passive: true });
+
+    animId = requestAnimationFrame(step);
 }
 
 /**

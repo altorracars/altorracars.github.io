@@ -36,10 +36,8 @@
             <form id="filtersForm" class="filters-form">
                 <div class="filter-group">
                     <label>Tipo</label>
-                    <select name="tipo" class="filter-select">
+                    <select name="tipo" class="filter-select" id="tipoSelect">
                         <option value="">Todos</option>
-                        <option value="nuevo">Nuevo</option>
-                        <option value="usado">Usado</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -57,22 +55,16 @@
                         <!-- FASE 3: Marcas dinámicas -->
                     </select>
                 </div>
-                <!-- FASE 3: Filtros adicionales -->
                 <div class="filter-group">
                     <label>Transmisión</label>
-                    <select name="transmision" class="filter-select">
+                    <select name="transmision" class="filter-select" id="transmisionSelect">
                         <option value="">Todas</option>
-                        <option value="automatica">Automática</option>
-                        <option value="mecanica">Mecánica</option>
                     </select>
                 </div>
                 <div class="filter-group">
                     <label>Combustible</label>
-                    <select name="combustible" class="filter-select">
+                    <select name="combustible" class="filter-select" id="combustibleSelect">
                         <option value="">Todos</option>
-                        <option value="gasolina">Gasolina</option>
-                        <option value="diesel">Diesel</option>
-                        <option value="hibrido">Híbrido</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -105,7 +97,7 @@
     </div></div></section>
     <div id="footer-placeholder"></div>
     <script src="js/firebase-config.js"></script>
-    <script src="js/favorites-manager.js"></script><script src="js/toast.js"></script><script src="js/components.js"></script><script src="js/database.js"></script><script src="js/render.js"></script><script src="js/main.js"></script><script src="js/comparador.js"></script>
+    <script src="js/favorites-manager.js"></script><script src="js/toast.js"></script><script src="js/components.js"></script><script src="js/database.js"></script><script src="js/dynamic-lists.js"></script><script src="js/render.js"></script><script src="js/main.js"></script><script src="js/comparador.js"></script>
     <script>
         let currentPage = 1;
         const itemsPerPage = 12;
@@ -128,19 +120,10 @@
             scrollTo(0, 0);
         };
 
-        // FASE 3: Cargar marcas dinámicamente
         async function loadDynamicFilters() {
             await vehicleDB.load();
-            const brands = vehicleDB.getUniqueBrands();
-            const marcaSelect = document.getElementById('marcaSelect');
-            if (marcaSelect) {
-                brands.forEach(brand => {
-                    const option = document.createElement('option');
-                    option.value = brand;
-                    option.textContent = brand.charAt(0).toUpperCase() + brand.slice(1);
-                    marcaSelect.appendChild(option);
-                });
-            }
+            await DynamicLists.load();
+            DynamicLists.populatePageFilters();
         }
 
         document.addEventListener('DOMContentLoaded', () => {

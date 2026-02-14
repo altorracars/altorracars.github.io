@@ -9,6 +9,8 @@
     var deleteTargetId = null;
     var deleteBrandTargetId = null;
     var uploadedImageUrls = [];
+    var unsubVehicles = null;
+    var unsubBrands = null;
 
     // ========== RBAC STATE ==========
     var currentUserProfile = null;
@@ -260,6 +262,7 @@
 
     function showLogin() {
         stopInactivityTracking();
+        stopRealtimeSync();
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
     }
@@ -413,27 +416,45 @@
         });
     });
 
-    // ========== LOAD DATA ==========
-    function loadData() {
-        window.db.collection('vehiculos').get().then(function(snap) {
+    // ========== REAL-TIME SYNC (onSnapshot) ==========
+    function startRealtimeSync() {
+        // Detach previous listeners if any
+        stopRealtimeSync();
+
+        unsubVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
             vehicles = snap.docs.map(function(d) { return d.data(); });
             renderVehiclesTable();
             updateStats();
             updateEstimator();
             updateNavBadges();
+        }, function(err) {
+            console.error('Vehicles snapshot error:', err);
         });
-        window.db.collection('marcas').get().then(function(snap) {
+
+        unsubBrands = window.db.collection('marcas').onSnapshot(function(snap) {
             brands = snap.docs.map(function(d) { return d.data(); });
             renderBrandsTable();
             populateBrandSelect();
             updateStats();
             updateNavBadges();
+        }, function(err) {
+            console.error('Brands snapshot error:', err);
         });
 
         // Only load users if super_admin (avoids permission errors for editor/viewer)
         if (canManageUsers()) {
             loadUsers();
         }
+    }
+
+    function stopRealtimeSync() {
+        if (unsubVehicles) { unsubVehicles(); unsubVehicles = null; }
+        if (unsubBrands) { unsubBrands(); unsubBrands = null; }
+    }
+
+    // Backward-compatible alias — existing calls to loadData() trigger a one-time fetch
+    function loadData() {
+        startRealtimeSync();
     }
 
     function loadUsers() {
@@ -550,12 +571,19 @@
     }
 
     // ========== VEHICLES TABLE (RBAC-aware) ==========
+    var ESTADO_LABELS = {
+        disponible: { text: 'Disponible', cls: 'badge-success' },
+        reservado:  { text: 'Reservado',  cls: 'badge-warning' },
+        vendido:    { text: 'Vendido',    cls: 'badge-danger' },
+        borrador:   { text: 'Borrador',   cls: 'badge-muted' }
+    };
+
     function renderVehiclesTable(filter) {
         var filtered = vehicles;
         if (filter) {
             var q = filter.toLowerCase();
             filtered = vehicles.filter(function(v) {
-                return (v.marca + ' ' + v.modelo + ' ' + v.year).toLowerCase().indexOf(q) >= 0;
+                return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '')).toLowerCase().indexOf(q) >= 0;
             });
         }
 
@@ -563,9 +591,9 @@
 
         var html = '';
         filtered.forEach(function(v) {
-            var badges = '';
-            if (v.destacado) badges += '<span class="badge badge-destacado">Destacado</span> ';
-            if (v.oferta || v.precioOferta) badges += '<span class="badge badge-oferta">Oferta</span> ';
+            var estado = v.estado || 'disponible';
+            var estadoInfo = ESTADO_LABELS[estado] || ESTADO_LABELS.disponible;
+            var estadoBadge = '<span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span>';
 
             var actions = '';
             if (canCreateOrEditInventory()) {
@@ -577,18 +605,16 @@
             if (!actions) actions = '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Solo lectura</span>';
 
             html += '<tr>' +
-                '<td>' + v.id + '</td>' +
                 '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
-                '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + '</small></td>' +
+                '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small></td>' +
                 '<td><span class="badge badge-' + v.tipo + '">' + v.tipo + '</span></td>' +
-                '<td>' + (v.categoria || '-') + '</td>' +
                 '<td>' + formatPrice(v.precio) + (v.precioOferta ? '<br><small style="color: var(--admin-warning);">' + formatPrice(v.precioOferta) + '</small>' : '') + '</td>' +
-                '<td>' + badges + '</td>' +
+                '<td>' + estadoBadge + '</td>' +
                 '<td>' + actions + '</td>' +
             '</tr>';
         });
 
-        if (!html) html = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
+        if (!html) html = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
         $('vehiclesTableBody').innerHTML = html;
     }
 
@@ -647,6 +673,7 @@
         $('vehicleForm').reset();
         $('vUbicacion').value = 'Barranquilla';
         $('vDireccion').value = 'Electrica';
+        $('vEstado').value = 'disponible';
         $('vRevision').checked = true;
         $('vPeritaje').checked = true;
         uploadedImageUrls = [];
@@ -695,6 +722,7 @@
         $('vPlaca').value = v.placa || '';
         $('vFasecolda').value = v.codigoFasecolda || '';
         $('vDescripcion').value = v.descripcion || '';
+        $('vEstado').value = v.estado || 'disponible';
         $('vDestacado').checked = !!v.destacado;
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
         $('vRevision').checked = v.revisionTecnica !== false;
@@ -708,7 +736,7 @@
         openModal();
     }
 
-    // ========== SAVE VEHICLE ==========
+    // ========== SAVE VEHICLE (with optimistic locking) ==========
     $('saveVehicle').addEventListener('click', function() {
         if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
 
@@ -718,7 +746,12 @@
         var existingId = $('vId').value;
         var id = existingId ? parseInt(existingId) : getNextId();
 
+        // Capture the _version the editor loaded (for conflict detection)
+        var editingVehicle = existingId ? vehicles.find(function(v) { return v.id === parseInt(existingId); }) : null;
+        var expectedVersion = editingVehicle ? (editingVehicle._version || 0) : null;
+
         var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value) : null;
+        var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
 
         var vehicleData = {
             id: id,
@@ -748,10 +781,13 @@
             revisionTecnica: $('vRevision').checked,
             peritaje: $('vPeritaje').checked,
             descripcion: $('vDescripcion').value || '',
+            estado: $('vEstado').value || 'disponible',
             destacado: $('vDestacado').checked,
             imagen: uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
             imagenes: uploadedImageUrls.length ? uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
-            caracteristicas: $('vCaracteristicas').value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean)
+            caracteristicas: $('vCaracteristicas').value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean),
+            updatedAt: new Date().toISOString(),
+            updatedBy: userEmail
         };
 
         if (vehicleData.imagen && vehicleData.imagenes.indexOf(vehicleData.imagen) === -1) {
@@ -762,14 +798,30 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
-        window.db.collection('vehiculos').doc(String(id)).set(vehicleData)
+        var docRef = window.db.collection('vehiculos').doc(String(id));
+
+        window.db.runTransaction(function(transaction) {
+            return transaction.get(docRef).then(function(doc) {
+                if (doc.exists && expectedVersion !== null) {
+                    var currentVersion = doc.data()._version || 0;
+                    if (currentVersion !== expectedVersion) {
+                        var lastEditor = doc.data().updatedBy || 'otro usuario';
+                        throw { code: 'version-conflict', message: 'Este vehiculo fue modificado por ' + lastEditor + ' mientras lo editabas. Cierra el formulario y vuelve a abrirlo para ver los cambios actuales.' };
+                    }
+                }
+                // Increment version
+                vehicleData._version = (doc.exists ? (doc.data()._version || 0) : 0) + 1;
+                transaction.set(docRef, vehicleData);
+            });
+        })
             .then(function() {
-                toast(existingId ? 'Vehiculo actualizado' : 'Vehiculo agregado');
+                toast(existingId ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo agregado');
                 closeModalFn();
-                loadData();
             })
             .catch(function(err) {
-                if (err.code === 'permission-denied') {
+                if (err.code === 'version-conflict') {
+                    toast(err.message, 'error');
+                } else if (err.code === 'permission-denied') {
                     toast('Sin permisos para esta accion. Contacta al Super Admin.', 'error');
                 } else {
                     toast('Error: ' + err.message, 'error');

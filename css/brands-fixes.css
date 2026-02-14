@@ -79,27 +79,41 @@
     content: ' autos';
 }
 
-/* Fade edges for visual polish */
-.brands-carousel::before,
-.brands-carousel::after {
-    content: '';
+/* Navigation arrows for brand carousel */
+.brands-carousel-wrapper {
+    position: relative;
+}
+
+.brands-arrow {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 60px;
-    z-index: 2;
-    pointer-events: none;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #e0e0e0;
+    color: var(--primary-dark, #1d1b19);
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.brands-carousel::before {
-    left: 0;
-    background: linear-gradient(to right, #fafafa, transparent);
+.brands-arrow:hover {
+    background: var(--primary-gold, #d4af37);
+    border-color: var(--primary-gold, #d4af37);
+    color: white;
+    box-shadow: 0 4px 12px rgba(184,150,88,0.3);
 }
 
-.brands-carousel::after {
-    right: 0;
-    background: linear-gradient(to left, #fafafa, transparent);
-}
+.brands-arrow.prev { left: -16px; }
+.brands-arrow.next { right: -16px; }
 
 /* Boton "Ver todas las marcas" */
 .btn-view-more {
@@ -139,8 +153,11 @@
         font-size: 0.8rem;
     }
 
-    .brands-carousel::before,
-    .brands-carousel::after {
-        width: 30px;
+    .brands-arrow {
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
     }
+    .brands-arrow.prev { left: -8px; }
+    .brands-arrow.next { right: -8px; }
 }

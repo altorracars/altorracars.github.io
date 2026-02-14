@@ -88,31 +88,31 @@ function initBrandsAutoScroll(container) {
     var track = container.querySelector('.brands-track');
     if (!track) return;
 
+    var state = { pos: 0, paused: false };
+    window._brandsScrollState = state;
+
     var speed = 0.5; // pixels per frame
-    var pos = 0;
-    var paused = false;
-    var animId = null;
 
     function step() {
-        if (!paused) {
-            pos += speed;
-            // Reset when first set scrolls out
+        if (!state.paused) {
+            state.pos += speed;
             var halfWidth = track.scrollWidth / 2;
-            if (pos >= halfWidth) pos = 0;
-            track.style.transform = 'translateX(-' + pos + 'px)';
+            if (state.pos >= halfWidth) state.pos = 0;
+            if (state.pos < 0) state.pos = halfWidth + state.pos;
+            track.style.transform = 'translateX(-' + state.pos + 'px)';
         }
-        animId = requestAnimationFrame(step);
+        requestAnimationFrame(step);
     }
 
     // Pause on hover
-    container.addEventListener('mouseenter', function() { paused = true; });
-    container.addEventListener('mouseleave', function() { paused = false; });
+    container.addEventListener('mouseenter', function() { state.paused = true; });
+    container.addEventListener('mouseleave', function() { state.paused = false; });
 
     // Pause on touch
-    container.addEventListener('touchstart', function() { paused = true; }, { passive: true });
-    container.addEventListener('touchend', function() { paused = false; }, { passive: true });
+    container.addEventListener('touchstart', function() { state.paused = true; }, { passive: true });
+    container.addEventListener('touchend', function() { state.paused = false; }, { passive: true });
 
-    animId = requestAnimationFrame(step);
+    requestAnimationFrame(step);
 }
 
 /**
@@ -255,5 +255,26 @@ if (document.readyState === 'loading') {
     initializePage();
 }
 
+/**
+ * Scroll brand carousel by clicking arrow buttons
+ * Jumps a set number of brand cards per click
+ */
+function scrollBrandsCarousel(direction) {
+    var container = document.getElementById('popularBrands');
+    if (!container) return;
+    var track = container.querySelector('.brands-track');
+    if (!track || !window._brandsScrollState) return;
+
+    var cardWidth = 166; // 150px card + 16px gap
+    var jump = cardWidth * 3;
+    var state = window._brandsScrollState;
+
+    state.pos += direction * jump;
+    var halfWidth = track.scrollWidth / 2;
+    if (state.pos < 0) state.pos = halfWidth + state.pos;
+    if (state.pos >= halfWidth) state.pos = state.pos - halfWidth;
+}
+
 // Make scrollCarouselById available globally for onclick handlers
 window.scrollCarouselById = scrollCarouselById;
+window.scrollBrandsCarousel = scrollBrandsCarousel;

@@ -71,22 +71,12 @@ class VehicleDatabase {
             console.warn('Firestore not available:', e.message);
         }
 
-        // STEP 3: If no cache was loaded, fall back to JSON
+        // STEP 3: If no cache was loaded, Firestore is unavailable — empty state
         if (!hadCache) {
-            try {
-                var response = await fetch('data/vehiculos.json');
-                if (!response.ok) throw new Error('Failed to load vehicle database');
-                var data = await response.json();
-                this.vehicles = data.vehiculos || [];
-                this.brands = data.marcas || [];
-                this.normalizeVehicles();
-                this.loaded = true;
-                console.log('Database loaded from JSON fallback (' + this.vehicles.length + ' vehicles)');
-            } catch (error) {
-                console.error('Error loading database:', error);
-                this.vehicles = [];
-                this.brands = [];
-            }
+            console.warn('Firestore unavailable and no cache. Starting with empty inventory.');
+            this.vehicles = [];
+            this.brands = [];
+            this.loaded = true;
         }
     }
 
@@ -162,6 +152,11 @@ class VehicleDatabase {
                 normalized.modelo = normalized.modelo.trim();
             }
 
+            // Normalizar estado: si no tiene, asignar 'disponible'
+            if (!normalized.estado) {
+                normalized.estado = 'disponible';
+            }
+
             return normalized;
         });
     }
@@ -205,6 +200,14 @@ class VehicleDatabase {
         }
         if (filters.categoria) {
             filters.categoria = this.normalizeQuery(filters.categoria);
+        }
+
+        // Filter by estado (disponible, reservado, vendido, borrador)
+        // By default, public pages only show 'disponible' vehicles
+        if (filters.estado) {
+            filtered = filtered.filter(v => v.estado === filters.estado);
+        } else if (filters._includeAllEstados !== true) {
+            filtered = filtered.filter(v => v.estado === 'disponible' || !v.estado);
         }
 
         // Filter by type (nuevo, usado) - seminuevo ya mapeado a usado
@@ -284,9 +287,9 @@ class VehicleDatabase {
         return filtered;
     }
     
-    // Get featured vehicles
+    // Get featured vehicles (only disponible)
     getFeatured() {
-        return this.vehicles.filter(v => v.destacado);
+        return this.vehicles.filter(v => v.destacado && (v.estado === 'disponible' || !v.estado));
     }
 
     /**
@@ -330,7 +333,8 @@ class VehicleDatabase {
      * Retorna vehículos ordenados por score de ranking
      */
     getRankedVehicles(limit = null) {
-        const ranked = [...this.vehicles].map(v => ({
+        const available = this.vehicles.filter(v => v.estado === 'disponible' || !v.estado);
+        const ranked = [...available].map(v => ({
             ...v,
             _rankingScore: this.calculateRankingScore(v)
         }));

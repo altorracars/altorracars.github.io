@@ -381,6 +381,10 @@ tbody tr:hover {
 .badge-usado { background: rgba(88, 166, 255, 0.15); color: var(--admin-info); }
 .badge-oferta { background: rgba(210, 153, 34, 0.15); color: var(--admin-warning); }
 .badge-destacado { background: rgba(212, 175, 55, 0.15); color: var(--admin-gold); }
+.badge-success { background: rgba(63, 185, 80, 0.15); color: var(--admin-success); }
+.badge-warning { background: rgba(210, 153, 34, 0.15); color: var(--admin-warning); }
+.badge-danger { background: rgba(248, 81, 73, 0.15); color: var(--admin-danger); }
+.badge-muted { background: rgba(139, 148, 158, 0.15); color: #8b949e; }
 
 /* MODAL */
 .modal-overlay {

@@ -736,20 +736,8 @@
         openModal();
     }
 
-    // ========== SAVE VEHICLE (with optimistic locking) ==========
-    $('saveVehicle').addEventListener('click', function() {
-        if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
-
-        var form = $('vehicleForm');
-        if (!form.checkValidity()) { form.reportValidity(); return; }
-
-        var existingId = $('vId').value;
-        var id = existingId ? parseInt(existingId) : getNextId();
-
-        // Capture the _version the editor loaded (for conflict detection)
-        var editingVehicle = existingId ? vehicles.find(function(v) { return v.id === parseInt(existingId); }) : null;
-        var expectedVersion = editingVehicle ? (editingVehicle._version || 0) : null;
-
+    // ========== SAVE VEHICLE (with optimistic locking + collision-safe IDs) ==========
+    function buildVehicleData(id) {
         var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value) : null;
         var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
 
@@ -794,28 +782,83 @@
             vehicleData.imagenes.unshift(vehicleData.imagen);
         }
 
+        return vehicleData;
+    }
+
+    // Save a NEW vehicle with collision-safe ID (retries if ID already taken)
+    function saveNewVehicle(vehicleData, candidateId, maxRetries) {
+        if (maxRetries <= 0) {
+            return Promise.reject({ code: 'id-exhausted', message: 'No se pudo generar un ID unico. Recarga la pagina e intenta de nuevo.' });
+        }
+
+        vehicleData.id = candidateId;
+        var docRef = window.db.collection('vehiculos').doc(String(candidateId));
+
+        return window.db.runTransaction(function(transaction) {
+            return transaction.get(docRef).then(function(doc) {
+                if (doc.exists) {
+                    // This ID is already taken — another user created it
+                    throw { code: 'id-collision', takenId: candidateId };
+                }
+                vehicleData._version = 1;
+                transaction.set(docRef, vehicleData);
+            });
+        }).catch(function(err) {
+            if (err.code === 'id-collision') {
+                // Retry with next ID
+                return saveNewVehicle(vehicleData, err.takenId + 1, maxRetries - 1);
+            }
+            throw err;
+        });
+    }
+
+    // Save an EXISTING vehicle with optimistic locking
+    function saveExistingVehicle(vehicleData, id, expectedVersion) {
+        var docRef = window.db.collection('vehiculos').doc(String(id));
+
+        return window.db.runTransaction(function(transaction) {
+            return transaction.get(docRef).then(function(doc) {
+                var currentVersion = doc.exists ? (doc.data()._version || 0) : 0;
+                if (expectedVersion !== null && currentVersion !== expectedVersion) {
+                    var lastEditor = doc.data().updatedBy || 'otro usuario';
+                    throw { code: 'version-conflict', message: 'Este vehiculo fue modificado por ' + lastEditor + ' mientras lo editabas. Cierra el formulario y vuelve a abrirlo para ver los cambios actuales.' };
+                }
+                vehicleData._version = currentVersion + 1;
+                transaction.set(docRef, vehicleData);
+            });
+        });
+    }
+
+    $('saveVehicle').addEventListener('click', function() {
+        if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
+
+        var form = $('vehicleForm');
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+
+        var existingId = $('vId').value;
+        var isEdit = !!existingId;
+
         var btn = $('saveVehicle');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
-        var docRef = window.db.collection('vehiculos').doc(String(id));
+        var savePromise;
 
-        window.db.runTransaction(function(transaction) {
-            return transaction.get(docRef).then(function(doc) {
-                if (doc.exists && expectedVersion !== null) {
-                    var currentVersion = doc.data()._version || 0;
-                    if (currentVersion !== expectedVersion) {
-                        var lastEditor = doc.data().updatedBy || 'otro usuario';
-                        throw { code: 'version-conflict', message: 'Este vehiculo fue modificado por ' + lastEditor + ' mientras lo editabas. Cierra el formulario y vuelve a abrirlo para ver los cambios actuales.' };
-                    }
-                }
-                // Increment version
-                vehicleData._version = (doc.exists ? (doc.data()._version || 0) : 0) + 1;
-                transaction.set(docRef, vehicleData);
-            });
-        })
+        if (isEdit) {
+            var id = parseInt(existingId);
+            var editingVehicle = vehicles.find(function(v) { return v.id === id; });
+            var expectedVersion = editingVehicle ? (editingVehicle._version || 0) : null;
+            var vehicleData = buildVehicleData(id);
+            savePromise = saveExistingVehicle(vehicleData, id, expectedVersion);
+        } else {
+            var candidateId = getNextId();
+            var vehicleData = buildVehicleData(candidateId);
+            savePromise = saveNewVehicle(vehicleData, candidateId, 10);
+        }
+
+        savePromise
             .then(function() {
-                toast(existingId ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo agregado');
+                toast(isEdit ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo #' + vehicleData.id + ' agregado');
                 closeModalFn();
             })
             .catch(function(err) {
@@ -824,7 +867,7 @@
                 } else if (err.code === 'permission-denied') {
                     toast('Sin permisos para esta accion. Contacta al Super Admin.', 'error');
                 } else {
-                    toast('Error: ' + err.message, 'error');
+                    toast('Error: ' + (err.message || err), 'error');
                 }
             })
             .finally(function() {

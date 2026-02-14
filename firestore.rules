@@ -34,8 +34,12 @@ service cloud.firestore {
         && request.resource.data._version == 1;
 
       // Editor or Super Admin can update (must increment _version)
+      // Also allows migration of pre-versioning docs (_version was null → set to 1)
       allow update: if isEditorOrAbove()
-        && request.resource.data._version == resource.data._version + 1;
+        && (
+          request.resource.data._version == resource.data._version + 1
+          || (resource.data._version == null && request.resource.data._version == 1)
+        );
 
       // Only Super Admin can delete
       allow delete: if isSuperAdmin();

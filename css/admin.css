@@ -835,6 +835,26 @@ tbody tr:hover {
 .act-danger { background: rgba(248,81,73,0.15); color: #f85149; }
 .act-muted { background: rgba(139,148,158,0.15); color: #8b949e; }
 
+.activity-show-more {
+    display: block;
+    width: 100%;
+    padding: 0.6rem;
+    margin-top: 0.5rem;
+    background: var(--admin-surface, #161b22);
+    border: 1px solid var(--admin-border, #30363d);
+    border-radius: 6px;
+    color: var(--admin-accent, #d4af37);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    text-align: center;
+}
+.activity-show-more:hover {
+    background: var(--admin-border, #30363d);
+    border-color: var(--admin-accent, #d4af37);
+}
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
     .mobile-topbar { display: flex; }

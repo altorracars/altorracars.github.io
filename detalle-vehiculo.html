@@ -2,11 +2,35 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Detalle de Vehículo | ALTORRA CARS</title>
+
+    <!-- SEO Meta Tags (updated dynamically via JS) -->
+    <meta name="description" content="Vehículo disponible en ALTORRA CARS - Cartagena, Colombia. Financiación disponible.">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="product">
+    <meta property="og:url" id="og-url" content="https://altorracars.github.io/detalle-vehiculo.html">
+    <meta property="og:title" id="og-title" content="Vehículo | ALTORRA CARS">
+    <meta property="og:description" id="og-description" content="Vehículo disponible en ALTORRA CARS, Cartagena.">
+    <meta property="og:image" id="og-image" content="https://altorracars.github.io/multimedia/logo-placeholder.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="ALTORRA CARS">
+    <meta property="og:locale" content="es_CO">
+    <meta property="product:price:amount" id="og-price" content="">
+    <meta property="product:price:currency" content="COP">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="tw-title" content="Vehículo | ALTORRA CARS">
+    <meta name="twitter:description" id="tw-description" content="Vehículo disponible en ALTORRA CARS, Cartagena.">
+    <meta name="twitter:image" id="tw-image" content="https://altorracars.github.io/multimedia/logo-placeholder.png">
+
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/mobile-fixes.css">
     <link rel="stylesheet" href="css/vehicles-cards-fix.css">
@@ -1186,9 +1210,92 @@
             }
 
             renderVehicleDetail();
+            updateMetaTags(currentVehicle);
+            injectVehicleSchema(currentVehicle);
             loadSimilarVehicles();
             initTabs();
             initGallery();
+        }
+
+        function updateMetaTags(v) {
+            const marca = capitalizar(v.marca || '');
+            const modelo = v.modelo || '';
+            const year = v.year || '';
+            const title = marca + ' ' + modelo + ' ' + year + ' | ALTORRA CARS';
+            const precio = v.precioOferta || v.precio;
+            const precioText = precio ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(precio) : '';
+            const desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. ' + capitalizar(v.tipo || '') + ', ' + capitalizar(v.transmision || '') + ', ' + formatKilometers(v.kilometraje || 0) + '. Disponible en ALTORRA CARS, Cartagena.';
+            const image = v.imagen || 'https://altorracars.github.io/multimedia/logo-placeholder.png';
+            const fullImage = image.startsWith('http') ? image : 'https://altorracars.github.io/' + image;
+            const url = 'https://altorracars.github.io/detalle-vehiculo.html?id=' + v.id;
+
+            // Update page title
+            document.title = title;
+
+            // Update meta description
+            var metaDesc = document.querySelector('meta[name="description"]');
+            if (metaDesc) metaDesc.setAttribute('content', desc);
+
+            // Open Graph
+            var setMeta = function(id, content) {
+                var el = document.getElementById(id);
+                if (el) el.setAttribute('content', content);
+            };
+            setMeta('og-url', url);
+            setMeta('og-title', title);
+            setMeta('og-description', desc);
+            setMeta('og-image', fullImage);
+            setMeta('og-price', precio || '');
+            setMeta('tw-title', title);
+            setMeta('tw-description', desc);
+            setMeta('tw-image', fullImage);
+        }
+
+        function injectVehicleSchema(v) {
+            const marca = capitalizar(v.marca || '');
+            const modelo = v.modelo || '';
+            const year = v.year || '';
+            const precio = v.precioOferta || v.precio;
+            const image = v.imagen || '';
+            const fullImage = image.startsWith('http') ? image : 'https://altorracars.github.io/' + image;
+            const url = 'https://altorracars.github.io/detalle-vehiculo.html?id=' + v.id;
+
+            var schema = {
+                '@context': 'https://schema.org',
+                '@type': 'Car',
+                'name': marca + ' ' + modelo + ' ' + year,
+                'brand': { '@type': 'Brand', 'name': marca },
+                'model': modelo,
+                'vehicleModelDate': String(year),
+                'image': fullImage,
+                'url': url,
+                'vehicleTransmission': capitalizar(v.transmision || ''),
+                'fuelType': capitalizar(v.combustible || ''),
+                'mileageFromOdometer': {
+                    '@type': 'QuantitativeValue',
+                    'value': v.kilometraje || 0,
+                    'unitCode': 'KMT'
+                },
+                'color': v.color || '',
+                'numberOfDoors': v.puertas || 5,
+                'vehicleSeatingCapacity': v.pasajeros || 5,
+                'offers': {
+                    '@type': 'Offer',
+                    'price': precio,
+                    'priceCurrency': 'COP',
+                    'availability': 'https://schema.org/InStock',
+                    'seller': {
+                        '@type': 'AutoDealer',
+                        'name': 'ALTORRA CARS',
+                        'url': 'https://altorracars.github.io'
+                    }
+                }
+            };
+
+            var script = document.createElement('script');
+            script.type = 'application/ld+json';
+            script.textContent = JSON.stringify(schema);
+            document.head.appendChild(script);
         }
 
         function renderVehicleDetail() {
@@ -1644,28 +1751,48 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
 
         function loadSimilarVehicles() {
             const v = currentVehicle;
+            const TARGET_MIN = 7;
+            const TARGET_MAX = 12;
+            const allOthers = vehicleDB.getAllVehicles().filter(veh => veh.id !== v.id && (!veh.estado || veh.estado === 'disponible'));
 
-            let similar = vehicleDB.filter({ categoria: v.categoria })
-                .filter(vehicle => vehicle.id !== v.id);
+            // Score every vehicle by similarity
+            let scored = allOthers.map(vehicle => {
+                let simScore = 0;
 
-            if (similar.length < 3) {
-                similar = vehicleDB.filter({ tipo: v.tipo })
-                    .filter(vehicle => vehicle.id !== v.id);
-            }
+                // Same category = highest priority (+200)
+                if (vehicle.categoria === v.categoria) simScore += 200;
 
-            similar = similar.map(vehicle => {
-                let simScore = vehicleDB.calculateRankingScore(vehicle);
+                // Same brand = strong match (+150)
+                if (vehicle.marca === v.marca) simScore += 150;
+
+                // Price within 20% = very relevant (+100)
                 const priceDiff = Math.abs(vehicle.precio - v.precio);
-                if (priceDiff < v.precio * 0.2) simScore += 100;
+                if (v.precio && priceDiff < v.precio * 0.2) simScore += 100;
+                else if (v.precio && priceDiff < v.precio * 0.4) simScore += 50;
+
+                // Year within 2 years (+80)
                 const yearDiff = Math.abs(vehicle.year - v.year);
                 if (yearDiff <= 2) simScore += 80;
-                if (vehicle.marca === v.marca) simScore += 50;
+                else if (yearDiff <= 4) simScore += 40;
+
+                // Same type (nuevo/usado) (+60)
+                if (vehicle.tipo === v.tipo) simScore += 60;
+
+                // Same transmission (+30)
                 if (vehicle.transmision === v.transmision) simScore += 30;
+
+                // Base ranking score
+                simScore += vehicleDB.calculateRankingScore(vehicle) * 0.1;
+
                 return { ...vehicle, _simScore: simScore };
             }).sort((a, b) => b._simScore - a._simScore);
 
-            const cleanSimilar = similar.map(({ _simScore, ...vehicle }) => vehicle);
-            renderVehicles(cleanSimilar.slice(0, 4), 'similarVehicles');
+            // Take 7-12: prefer at least TARGET_MIN, cap at TARGET_MAX
+            let count = Math.min(scored.length, TARGET_MAX);
+            if (count < TARGET_MIN) count = Math.min(scored.length, TARGET_MIN);
+
+            const cleanSimilar = scored.slice(0, count).map(({ _simScore, ...vehicle }) => vehicle);
+            renderVehicles(cleanSimilar, 'similarVehicles');
         }
 
         function capitalizar(str) {

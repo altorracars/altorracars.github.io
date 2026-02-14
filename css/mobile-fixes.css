@@ -183,14 +183,34 @@ rgba(145, 102, 82, 0.55) 100%
         gap: 1rem;
     }
     
-    /* Brands en 2 columnas compactas */
-    .brands-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 0.75rem;
+    /* Brands carousel — override grid on mobile */
+    .brands-grid.brands-carousel {
+        display: block !important;
+        grid-template-columns: none !important;
     }
-    
+
     .brand-card {
         padding: 1rem;
+    }
+
+    /* Brand arrows slightly smaller on mobile */
+    .brands-arrow {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+    .brands-arrow.prev { left: -4px; }
+    .brands-arrow.next { right: -4px; }
+
+    /* Price block stacking on mobile */
+    .vehicle-price-block {
+        line-height: 1.1;
+    }
+    .vehicle-price-original {
+        font-size: 0.75rem !important;
+    }
+    .vehicle-price-offer {
+        font-size: 1.1rem !important;
     }
     
     /* ===== SECTION HEADERS ===== */
@@ -528,9 +548,10 @@ rgba(145, 102, 82, 0.55) 100%
         grid-template-columns: repeat(2, 1fr) !important;
     }
     
-    /* Brands en 3 columnas */
-    .brands-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
+    /* Brands carousel — override grid on tablet */
+    .brands-grid.brands-carousel {
+        display: block !important;
+        grid-template-columns: none !important;
     }
     
     /* Otros grids en 1 columna */
@@ -747,9 +768,49 @@ iframe,
     }
 }
 
+/* ===== ANDROID COMPATIBILITY ===== */
+@media (max-width: 968px) {
+    /* Safe area padding for notched Android & iOS devices */
+    body {
+        padding-left: env(safe-area-inset-left, 0);
+        padding-right: env(safe-area-inset-right, 0);
+    }
+
+    /* Dynamic viewport for Android Chrome address bar */
+    .hero {
+        min-height: 100dvh;
+        min-height: 100vh; /* fallback */
+    }
+
+    .nav-menu {
+        height: calc(100dvh - 60px);
+        height: calc(100vh - 60px); /* fallback */
+    }
+
+    /* Suppress tap highlight on Android */
+    a, button, .btn, .vehicle-card, .brand-card, .category-card {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Fix touch scrolling for carousels on Android */
+    .vehicles-grid {
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+
+    .vehicle-card {
+        scroll-snap-align: start;
+    }
+
+    /* Brands carousel touch-friendly padding */
+    .brands-carousel {
+        padding: 0.5rem 0;
+    }
+}
+
 /* ===== OPTIMIZACIONES DE RENDIMIENTO ===== */
 @media (max-width: 968px) {
-    
+
     /* Hardware acceleration */
     .nav-menu,
     .hamburger,
@@ -758,7 +819,7 @@ iframe,
         transform: translateZ(0);
         will-change: transform;
     }
-    
+
     /* Reducir motion para usuarios que lo prefieran */
     @media (prefers-reduced-motion: reduce) {
         * {

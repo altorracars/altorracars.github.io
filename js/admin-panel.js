@@ -493,69 +493,97 @@
     }
 
     // ========== ACTIVITY FEED ==========
+    var ACTIVITY_PAGE_SIZE = 10;
+    var activityExpanded = false;
+
+    function buildActivityItemHTML(v) {
+        var who = v.updatedBy || 'Admin';
+        if (who.indexOf('@') > 0) {
+            who = who.split('@')[0];
+        }
+
+        var when = v.updatedAt ? formatTimeAgo(v.updatedAt) : '';
+
+        var marca = v.marca ? capitalize(v.marca) : '';
+        var modelo = v.modelo || '';
+        var year = v.year || '';
+        var vehicleName = (marca + ' ' + modelo + ' ' + year).trim();
+
+        var actionText = 'actualizó';
+        var actionIcon = '✏️';
+        if (v._version === 1) {
+            actionText = 'creó';
+            actionIcon = '➕';
+        }
+
+        var estadoBadge = '';
+        if (v.estado && v.estado !== 'disponible') {
+            var estadoLabels = { reservado: 'Reservado', vendido: 'Vendido', borrador: 'Borrador' };
+            var estadoClasses = { reservado: 'act-warning', vendido: 'act-danger', borrador: 'act-muted' };
+            estadoBadge = ' <span class="act-badge ' + (estadoClasses[v.estado] || '') + '">' + (estadoLabels[v.estado] || v.estado) + '</span>';
+        }
+
+        return '<div class="activity-item">' +
+            '<span class="activity-icon">' + actionIcon + '</span>' +
+            '<div class="activity-content">' +
+                '<span class="activity-who">' + escapeHtml(who) + '</span> ' +
+                actionText + ' ' +
+                '<span class="activity-vehicle">' + escapeHtml(vehicleName) + '</span>' +
+                estadoBadge +
+                '<div class="activity-time">' + when + '</div>' +
+            '</div>' +
+        '</div>';
+    }
+
     function renderActivityFeed() {
         var feed = $('activityFeed');
         if (!feed) return;
 
-        // Collect vehicles that have updatedAt (i.e. were saved via admin)
-        var recent = vehicles
+        // Collect ALL vehicles that have updatedAt, sorted most recent first
+        var allRecent = vehicles
             .filter(function(v) { return v.updatedAt; })
             .slice()
             .sort(function(a, b) {
                 return (b.updatedAt || '').localeCompare(a.updatedAt || '');
-            })
-            .slice(0, 15);
+            });
 
-        if (recent.length === 0) {
+        if (allRecent.length === 0) {
             feed.innerHTML = '<div class="activity-empty">Sin actividad reciente</div>';
             return;
         }
 
-        var html = recent.map(function(v) {
-            var who = v.updatedBy || 'Admin';
-            // Show just the email username part
-            if (who.indexOf('@') > 0) {
-                who = who.split('@')[0];
-            }
+        var showAll = activityExpanded;
+        var visible = showAll ? allRecent : allRecent.slice(0, ACTIVITY_PAGE_SIZE);
 
-            var when = '';
-            if (v.updatedAt) {
-                when = formatTimeAgo(v.updatedAt);
-            }
+        var html = visible.map(buildActivityItemHTML).join('');
 
-            var marca = v.marca ? capitalize(v.marca) : '';
-            var modelo = v.modelo || '';
-            var year = v.year || '';
-            var vehicleName = (marca + ' ' + modelo + ' ' + year).trim();
-
-            // Determine action type based on _version
-            var actionText = 'actualizó';
-            var actionIcon = '✏️';
-            if (v._version === 1) {
-                actionText = 'creó';
-                actionIcon = '➕';
-            }
-
-            var estadoBadge = '';
-            if (v.estado && v.estado !== 'disponible') {
-                var estadoLabels = { reservado: 'Reservado', vendido: 'Vendido', borrador: 'Borrador' };
-                var estadoClasses = { reservado: 'act-warning', vendido: 'act-danger', borrador: 'act-muted' };
-                estadoBadge = ' <span class="act-badge ' + (estadoClasses[v.estado] || '') + '">' + (estadoLabels[v.estado] || v.estado) + '</span>';
-            }
-
-            return '<div class="activity-item">' +
-                '<span class="activity-icon">' + actionIcon + '</span>' +
-                '<div class="activity-content">' +
-                    '<span class="activity-who">' + escapeHtml(who) + '</span> ' +
-                    actionText + ' ' +
-                    '<span class="activity-vehicle">' + escapeHtml(vehicleName) + '</span>' +
-                    estadoBadge +
-                    '<div class="activity-time">' + when + '</div>' +
-                '</div>' +
-            '</div>';
-        }).join('');
+        // Show "Ver más" button if there are more items
+        if (!showAll && allRecent.length > ACTIVITY_PAGE_SIZE) {
+            html += '<button class="activity-show-more" id="btnActivityMore">Ver toda la actividad (' + allRecent.length + ' registros)</button>';
+        } else if (showAll && allRecent.length > ACTIVITY_PAGE_SIZE) {
+            html += '<button class="activity-show-more" id="btnActivityLess">Mostrar menos</button>';
+        }
 
         feed.innerHTML = html;
+
+        // Attach click handler
+        var btnMore = $('btnActivityMore');
+        if (btnMore) {
+            btnMore.addEventListener('click', function() {
+                activityExpanded = true;
+                feed.style.maxHeight = 'none';
+                renderActivityFeed();
+            });
+        }
+        var btnLess = $('btnActivityLess');
+        if (btnLess) {
+            btnLess.addEventListener('click', function() {
+                activityExpanded = false;
+                feed.style.maxHeight = '420px';
+                renderActivityFeed();
+                feed.scrollTop = 0;
+            });
+        }
     }
 
     function formatTimeAgo(isoString) {
@@ -1552,6 +1580,103 @@
             }
         });
     });
+
+    // ========== SITEMAP GENERATOR ==========
+    var btnSitemap = $('btnGenerateSitemap');
+    if (btnSitemap) {
+        btnSitemap.addEventListener('click', function() {
+            generateSitemap();
+        });
+    }
+
+    function generateSitemap() {
+        var statusEl = $('sitemapStatus');
+        if (!statusEl) return;
+        statusEl.innerHTML = '<span style="color:var(--admin-accent);font-size:0.8rem;">Generando sitemap...</span>';
+
+        var today = new Date().toISOString().split('T')[0];
+        var base = 'https://altorracars.github.io';
+
+        // Static pages
+        var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n';
+        xml += '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n\n';
+
+        var staticPages = [
+            { loc: '/', priority: '1.0', freq: 'daily' },
+            { loc: '/busqueda.html', priority: '0.9', freq: 'weekly' },
+            { loc: '/vehiculos-usados.html', priority: '0.9', freq: 'daily' },
+            { loc: '/vehiculos-nuevos.html', priority: '0.9', freq: 'daily' },
+            { loc: '/vehiculos-suv.html', priority: '0.8', freq: 'weekly' },
+            { loc: '/vehiculos-sedan.html', priority: '0.8', freq: 'weekly' },
+            { loc: '/vehiculos-pickup.html', priority: '0.8', freq: 'weekly' },
+            { loc: '/vehiculos-hatchback.html', priority: '0.8', freq: 'weekly' },
+            { loc: '/contacto.html', priority: '0.7', freq: 'monthly' },
+            { loc: '/nosotros.html', priority: '0.7', freq: 'monthly' },
+            { loc: '/favoritos.html', priority: '0.6', freq: 'monthly' },
+            { loc: '/simulador-credito.html', priority: '0.7', freq: 'monthly' }
+        ];
+
+        staticPages.forEach(function(p) {
+            xml += '  <url>\n';
+            xml += '    <loc>' + base + p.loc + '</loc>\n';
+            xml += '    <lastmod>' + today + '</lastmod>\n';
+            xml += '    <changefreq>' + p.freq + '</changefreq>\n';
+            xml += '    <priority>' + p.priority + '</priority>\n';
+            xml += '  </url>\n\n';
+        });
+
+        // Brand pages from DB
+        brands.forEach(function(b) {
+            xml += '  <url>\n';
+            xml += '    <loc>' + base + '/marca.html?marca=' + encodeURIComponent(b.id) + '</loc>\n';
+            xml += '    <lastmod>' + today + '</lastmod>\n';
+            xml += '    <changefreq>weekly</changefreq>\n';
+            xml += '    <priority>0.7</priority>\n';
+            xml += '  </url>\n\n';
+        });
+
+        // Vehicle detail pages from DB
+        var disponibles = vehicles.filter(function(v) {
+            return !v.estado || v.estado === 'disponible';
+        });
+
+        disponibles.forEach(function(v) {
+            var lastmod = v.updatedAt ? v.updatedAt.split('T')[0] : today;
+            xml += '  <url>\n';
+            xml += '    <loc>' + base + '/detalle-vehiculo.html?id=' + v.id + '</loc>\n';
+            xml += '    <lastmod>' + lastmod + '</lastmod>\n';
+            xml += '    <changefreq>weekly</changefreq>\n';
+            xml += '    <priority>0.8</priority>\n';
+            if (v.imagen) {
+                var imgUrl = v.imagen.startsWith('http') ? v.imagen : base + '/' + v.imagen;
+                var marca = v.marca ? v.marca.charAt(0).toUpperCase() + v.marca.slice(1) : '';
+                xml += '    <image:image>\n';
+                xml += '      <image:loc>' + escapeXml(imgUrl) + '</image:loc>\n';
+                xml += '      <image:title>' + escapeXml(marca + ' ' + (v.modelo || '') + ' ' + (v.year || '')) + '</image:title>\n';
+                xml += '    </image:image>\n';
+            }
+            xml += '  </url>\n\n';
+        });
+
+        xml += '</urlset>\n';
+
+        // Download as file
+        var blob = new Blob([xml], { type: 'application/xml' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'sitemap.xml';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        var count = staticPages.length + brands.length + disponibles.length;
+        statusEl.innerHTML = '<span style="color:#3fb950;font-size:0.8rem;">✓ Sitemap generado con ' + count + ' URLs (' + disponibles.length + ' vehiculos). Sube el archivo a la raiz del repositorio.</span>';
+    }
+
+    function escapeXml(str) {
+        return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
     // ========== INIT ==========
     initAuth();

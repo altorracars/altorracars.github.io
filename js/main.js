@@ -9,10 +9,8 @@ async function loadFeatured() {
     showLoading('featuredVehicles');
     await vehicleDB.load();
 
-    // Filter featured vehicles first, then rank them
     const featured = vehicleDB.getFeatured();
 
-    // Rank featured vehicles by score
     const rankedFeatured = featured
         .map(v => ({
             ...v,
@@ -20,51 +18,76 @@ async function loadFeatured() {
         }))
         .sort((a, b) => b._score - a._score);
 
-    // Clean score property before rendering
     const cleanFeatured = rankedFeatured.map(({ _score, ...v }) => v);
 
+    // FASE 2: Ocultar seccion si no hay destacados
+    if (cleanFeatured.length === 0) {
+        hideParentSection('featuredVehicles');
+        return;
+    }
     renderVehicles(cleanFeatured.slice(0, 12), 'featuredVehicles');
 }
 
 /**
- * Load popular brands dynamically based on inventory count
- * Shows top 8 brands with most vehicles in stock
+ * FASE 2: Load ALL brands as interactive scrollable carousel
+ * Sorted by vehicle count descending — no limit
  */
 async function loadPopularBrands() {
     await vehicleDB.load();
     const allVehicles = vehicleDB.getAllVehicles();
 
-    // Count vehicles by brand
     const brandCounts = {};
     allVehicles.forEach(v => {
         const brandKey = v.marca.toLowerCase();
         brandCounts[brandKey] = (brandCounts[brandKey] || 0) + 1;
     });
 
-    // Get all brands and sort by vehicle count
     const brands = vehicleDB.getAllBrands();
-    const popularBrands = brands
-        .filter(brand => brandCounts[brand.id] > 0) // Only brands with vehicles
+    const allBrands = brands
+        .filter(brand => brandCounts[brand.id] > 0)
         .map(brand => ({
             ...brand,
             count: brandCounts[brand.id]
         }))
-        .sort((a, b) => b.count - a.count) // Sort by count descending
-        .slice(0, 8); // Top 8 brands
+        .sort((a, b) => b.count - a.count); // No .slice() — show ALL
 
     const container = document.getElementById('popularBrands');
 
     if (container) {
-        const html = popularBrands.map(brand => `
+        if (allBrands.length === 0) {
+            hideParentSection('popularBrands');
+            return;
+        }
+
+        // Prefer .webp logos, fallback to original
+        const html = allBrands.map(brand => {
+            var logo = brand.logo || '';
+            if (logo.endsWith('.png')) {
+                var webpLogo = logo.replace(/\.png$/i, '.webp');
+                logo = webpLogo;
+            }
+            return `
             <a href="marca.html?marca=${brand.id}" class="brand-card">
-                <img src="${brand.logo}" alt="${brand.nombre}" class="brand-logo"
-                     onerror="this.style.display='none'">
+                <img src="${logo}" alt="${brand.nombre}" class="brand-logo" loading="lazy"
+                     onerror="this.src='${brand.logo}';this.onerror=null;">
                 <div class="brand-name">${brand.nombre}</div>
+                <span class="brand-count">${brand.count}</span>
             </a>
-        `).join('');
+            `;
+        }).join('');
 
         container.innerHTML = html;
     }
+}
+
+/**
+ * FASE 2: Ocultar seccion padre cuando un contenedor esta vacio
+ */
+function hideParentSection(containerId) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    var section = el.closest('section');
+    if (section) section.style.display = 'none';
 }
 
 /**
@@ -76,17 +99,17 @@ async function loadNewVehicles() {
     await vehicleDB.load();
     const newVehicles = vehicleDB.filter({ tipo: 'nuevo' });
 
-    // Sort: destacado > oferta > year (desc)
+    // FASE 2: Ocultar seccion si no hay nuevos
+    if (newVehicles.length === 0) {
+        hideParentSection('newVehiclesCarousel');
+        return;
+    }
+
     const sortedNew = newVehicles.sort((a, b) => {
-        // Featured first
         if (a.destacado && !b.destacado) return -1;
         if (!a.destacado && b.destacado) return 1;
-
-        // Offers second
         if (a.oferta && !b.oferta) return -1;
         if (!a.oferta && b.oferta) return 1;
-
-        // Then by year (newest first)
         return b.year - a.year;
     });
 
@@ -102,20 +125,18 @@ async function loadUsedVehicles() {
     await vehicleDB.load();
     const used = vehicleDB.filter({ tipo: 'usado' });
 
-    // Sort: destacado > oferta > year (desc) > km (asc - less is better)
+    // FASE 2: Ocultar seccion si no hay usados
+    if (used.length === 0) {
+        hideParentSection('usedVehiclesCarousel');
+        return;
+    }
+
     const sortedUsed = used.sort((a, b) => {
-        // Featured first
         if (a.destacado && !b.destacado) return -1;
         if (!a.destacado && b.destacado) return 1;
-
-        // Offers second
         if (a.oferta && !b.oferta) return -1;
         if (!a.oferta && b.oferta) return 1;
-
-        // Then by year (newest first)
         if (b.year !== a.year) return b.year - a.year;
-
-        // Finally by km (less km is better)
         return a.kilometraje - b.kilometraje;
     });
 

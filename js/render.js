@@ -44,26 +44,25 @@ function getBadge(vehicle) {
 }
 
 // Get all badges for a vehicle
+// FASE 2: Oferta tiene prioridad visual sobre destacado
 function getVehicleBadges(vehicle) {
     const badges = [];
 
-    // Badge de tipo (Nuevo, Usado) - FASE 1: Sin seminuevo
+    // 1. Badge de oferta PRIMERO (prioridad visual)
+    if (vehicle.oferta || vehicle.precioOferta) {
+        badges.push({ class: 'badge-oferta', text: 'Oferta' });
+    }
+
+    // 2. Badge de tipo (Nuevo, Usado)
     if (vehicle.tipo === 'nuevo') {
         badges.push({ class: 'badge-nuevo', text: 'Nuevo' });
     } else {
         badges.push({ class: 'badge-usado', text: 'Usado' });
     }
 
-    // Badge de destacado
+    // 3. Badge de destacado (menor prioridad)
     if (vehicle.destacado) {
         badges.push({ class: 'badge-destacado', text: 'Destacado' });
-    }
-
-    // FASE 1: Garantía eliminada (no ofrecemos aún)
-
-    // Badge de oferta (si tiene descuento o campo especial)
-    if (vehicle.oferta || vehicle.precioOferta) {
-        badges.push({ class: 'badge-oferta', text: 'Oferta' });
     }
 
     return badges;
@@ -117,10 +116,17 @@ function renderVehicleCard(vehicle) {
         `<span class="badge ${badge.class}">${badge.text}</span>`
     ).join('');
 
+    // FASE 2: Precio oferta + precio full tachado
+    const hasOffer = vehicle.precioOferta && vehicle.precioOferta < vehicle.precio;
+    const priceHTML = hasOffer
+        ? `<span class="vehicle-price-original">${formatPrice(vehicle.precio)}</span>
+           <p class="vehicle-price vehicle-price-offer">${formatPrice(vehicle.precioOferta)}</p>`
+        : `<p class="vehicle-price">${formatPrice(vehicle.precio)}</p>`;
+
     return `
         <div class="vehicle-card clickable-card" data-id="${vehicle.id}" data-url="detalle-vehiculo.html?id=${vehicle.id}">
             <div class="vehicle-image">
-                <img src="${vehicle.imagen}" alt="${vehicle.marca} ${vehicle.modelo}" loading="lazy" class="vehicle-img" data-fallback="multimedia/vehicles/placeholder-car.jpg">
+                <img src="${vehicle.imagen}" alt="${capitalize(vehicle.marca)} ${vehicle.modelo} ${vehicle.year}" loading="lazy" decoding="async" width="400" height="260" class="vehicle-img" data-fallback="multimedia/vehicles/placeholder-car.jpg">
                 <div class="vehicle-actions">
                     <button class="favorite-btn${activeClass}" data-id="${vehicle.id}" aria-label="Añadir a favoritos">${heartIcon}</button>
                 </div>
@@ -140,7 +146,7 @@ function renderVehicleCard(vehicle) {
                     <span>${capitalize(vehicle.categoria)}</span>
                 </p>
                 <div class="vehicle-footer">
-                    <p class="vehicle-price">${formatPrice(vehicle.precio)}</p>
+                    ${priceHTML}
                     <a href="detalle-vehiculo.html?id=${vehicle.id}" class="btn-view">Ver más</a>
                 </div>
             </div>

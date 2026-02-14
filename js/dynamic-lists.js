@@ -41,6 +41,16 @@
             { value: '4x4', label: '4x4' },
             { value: 'AWD', label: 'AWD' }
         ],
+        colores: [
+            { value: 'Blanco', label: 'Blanco' },
+            { value: 'Negro', label: 'Negro' },
+            { value: 'Gris', label: 'Gris' },
+            { value: 'Plata', label: 'Plata' },
+            { value: 'Rojo', label: 'Rojo' },
+            { value: 'Azul', label: 'Azul' },
+            { value: 'Verde', label: 'Verde' },
+            { value: 'Beige', label: 'Beige' }
+        ],
         canalesVenta: [
             { value: 'presencial', label: 'Visita presencial' },
             { value: 'whatsapp', label: 'WhatsApp' },

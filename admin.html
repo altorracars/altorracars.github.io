@@ -77,6 +77,10 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <span>Concesionarios</span>
         </button>
+        <button class="nav-item" data-section="lists">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span>Listas</span>
+        </button>
         <div class="nav-divider"></div>
         <button class="nav-item" data-section="settings">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -264,17 +268,17 @@
             <div class="page-header">
                 <div>
                     <h1>Agenda de Citas</h1>
-                    <p class="page-subtitle">Gestiona las solicitudes de visita de clientes</p>
+                    <p class="page-subtitle">Gestiona la disponibilidad del calendario y las solicitudes de visita</p>
                 </div>
             </div>
 
-            <!-- Availability Panel -->
+            <!-- Availability Config Panel -->
             <div class="stat-card" style="margin-bottom:1.5rem;">
                 <h3 style="margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    Disponibilidad Horaria
+                    Configuracion de Disponibilidad
                 </h3>
-                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Configura los dias y horarios disponibles para agendar citas.</p>
+                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Define los dias y horarios disponibles para agendar citas. Los usuarios veran en el calendario solo los dias y horas habilitados.</p>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:500px;">
                     <div class="form-group">
                         <label class="form-label">Hora inicio</label>
@@ -296,7 +300,7 @@
                     </div>
                 </div>
                 <div style="margin-top:0.75rem;">
-                    <label class="form-label">Dias disponibles</label>
+                    <label class="form-label">Dias disponibles por defecto</label>
                     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;" id="availDays">
                         <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="1" checked> Lun</label>
                         <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="2" checked> Mar</label>
@@ -307,36 +311,70 @@
                         <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="0"> Dom</label>
                     </div>
                 </div>
+                <div style="margin-top:1rem;">
+                    <label class="form-label">Intervalo de citas (minutos)</label>
+                    <select id="availInterval" class="form-select" style="max-width:200px;">
+                        <option value="30" selected>30 minutos</option>
+                        <option value="60">1 hora</option>
+                    </select>
+                </div>
                 <button class="btn btn-primary btn-sm" id="btnSaveAvailability" style="margin-top:1rem;">Guardar Disponibilidad</button>
                 <div id="availabilityStatus" style="margin-top:0.5rem;font-size:0.8rem;"></div>
             </div>
 
-            <!-- Appointment Filters -->
+            <!-- Calendar: Block Specific Dates -->
+            <div class="stat-card" style="margin-bottom:1.5rem;">
+                <h3 style="margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Calendario de Disponibilidad
+                </h3>
+                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Haz clic en los dias para bloquearlos o desbloquearlos. Los dias bloqueados no estaran disponibles para los usuarios.</p>
+                <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
+                    <button class="btn btn-ghost btn-sm" id="calPrevMonth">&larr; Mes anterior</button>
+                    <h4 id="calMonthLabel" style="margin:0;min-width:180px;text-align:center;"></h4>
+                    <button class="btn btn-ghost btn-sm" id="calNextMonth">Mes siguiente &rarr;</button>
+                </div>
+                <div id="adminCalendar" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:500px;"></div>
+                <div style="margin-top:0.75rem;display:flex;gap:1rem;font-size:0.8rem;color:var(--admin-text-muted);">
+                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:rgba(63,185,80,0.2);border:1px solid #3fb950;display:inline-block;"></span> Disponible</span>
+                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:rgba(248,81,73,0.2);border:1px solid #f85149;display:inline-block;"></span> Bloqueado</span>
+                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:var(--admin-border);display:inline-block;"></span> No disponible (dia no habilitado)</span>
+                </div>
+            </div>
+
+            <!-- Appointment Requests Management -->
+            <div class="page-header" style="margin-top:1.5rem;">
+                <div>
+                    <h2 style="font-size:1.25rem;">Solicitudes de Citas</h2>
+                    <p class="page-subtitle">Todas las solicitudes de visita de clientes con datos de contacto</p>
+                </div>
+            </div>
             <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem;">
                 <select id="appointmentFilter" class="form-select" style="min-width:150px;">
                     <option value="all">Todas</option>
                     <option value="pendiente" selected>Pendientes</option>
                     <option value="confirmada">Confirmadas</option>
+                    <option value="reprogramada">Reprogramadas</option>
                     <option value="completada">Completadas</option>
                     <option value="cancelada">Canceladas</option>
                 </select>
             </div>
 
-            <!-- Appointments Table -->
             <div class="stat-card" style="overflow-x:auto;">
                 <table class="admin-table" id="appointmentsTable">
                     <thead>
                         <tr>
                             <th>Cliente</th>
+                            <th>Contacto</th>
                             <th>Vehiculo</th>
-                            <th>Fecha</th>
-                            <th>Hora</th>
+                            <th>Fecha / Hora</th>
                             <th>Estado</th>
+                            <th>Observaciones</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="appointmentsBody">
-                        <tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando citas...</td></tr>
+                        <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando citas...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -346,8 +384,8 @@
         <div id="sec-dealers" class="section">
             <div class="page-header">
                 <div>
-                    <h1>Concesionarios</h1>
-                    <p class="page-subtitle">Gestion de sedes, vehiculos vendidos y metricas</p>
+                    <h1>Concesionarios y Consignas</h1>
+                    <p class="page-subtitle">Gestiona concesionarios aliados y consignatarios. Los vehiculos se asocian a cada uno.</p>
                 </div>
                 <button class="btn btn-primary" id="btnAddDealer">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -355,33 +393,58 @@
                 </button>
             </div>
 
+            <div class="stat-card" style="margin-bottom:1rem;padding:1rem;">
+                <p style="font-size:0.85rem;color:var(--admin-text-muted);margin:0;">
+                    Los concesionarios y consignatarios que agregues aqui aparecen automaticamente en el formulario de vehiculos.
+                    Al crear o editar un vehiculo, selecciona si pertenece a un concesionario aliado o ingresa el nombre de la persona que hace la consigna.
+                </p>
+            </div>
+
             <!-- Dealers List -->
             <div id="dealersList" class="stat-card" style="margin-bottom:1.5rem;">
                 <p style="text-align:center;color:var(--admin-text-muted);padding:1rem;">Cargando concesionarios...</p>
             </div>
 
-            <!-- Sold Vehicles Section -->
+            <!-- Vehicles by Origin -->
             <div class="page-header" style="margin-top:2rem;">
                 <div>
-                    <h2 style="font-size:1.25rem;">Vehiculos Vendidos</h2>
-                    <p class="page-subtitle">Registro de ventas con razon, canal y observaciones</p>
+                    <h2 style="font-size:1.25rem;">Vehiculos por Origen</h2>
+                    <p class="page-subtitle">Inventario agrupado por concesionario o consignatario</p>
                 </div>
             </div>
             <div class="stat-card" style="overflow-x:auto;">
-                <table class="admin-table" id="soldVehiclesTable">
+                <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Vehiculo</th>
-                            <th>Precio Venta</th>
-                            <th>Fecha</th>
-                            <th>Canal</th>
-                            <th>Observaciones</th>
+                            <th>Origen</th>
+                            <th>Estado</th>
+                            <th>Precio</th>
                         </tr>
                     </thead>
-                    <tbody id="soldVehiclesBody">
-                        <tr><td colspan="5" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando vehiculos vendidos...</td></tr>
+                    <tbody id="vehiclesByOriginBody">
+                        <tr><td colspan="4" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando...</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- LISTAS CONFIGURABLES -->
+        <div id="sec-lists" class="section">
+            <div class="page-header">
+                <div>
+                    <h1>Listas Configurables</h1>
+                    <p class="page-subtitle">Gestiona las opciones de todos los desplegables del sistema (tipos, categorias, transmision, combustible, etc.)</p>
+                </div>
+            </div>
+            <div class="stat-card" style="margin-bottom:1rem;padding:1rem;">
+                <p style="font-size:0.85rem;color:var(--admin-text-muted);margin:0;">
+                    Estos valores se sincronizan en toda la pagina: formularios de vehiculos, filtros publicos, busqueda avanzada y paginas de categoria.
+                    Los cambios se aplican inmediatamente en todo el sitio.
+                </p>
+            </div>
+            <div id="listsContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:1.5rem;">
+                <p style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando listas...</p>
             </div>
         </div>
 
@@ -441,7 +504,7 @@
                     </div>
                     <div class="form-section-body open" id="sec-basica">
                         <div class="form-row"><div class="form-group"><label class="form-label">Marca *</label><select id="vMarca" class="form-select" required><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Modelo *</label><input type="text" id="vModelo" class="form-input" required placeholder="Ej: Onix"></div></div>
-                        <div class="form-row-3"><div class="form-group"><label class="form-label">Ano *</label><input type="number" id="vYear" class="form-input" required min="1990" max="2030" placeholder="2024"></div><div class="form-group"><label class="form-label">Tipo *</label><select id="vTipo" class="form-select" required><option value="">Seleccionar...</option><option value="nuevo">Nuevo</option><option value="usado">Usado</option></select></div><div class="form-group"><label class="form-label">Categoria *</label><select id="vCategoria" class="form-select" required><option value="">Seleccionar...</option><option value="sedan">Sedan</option><option value="suv">SUV</option><option value="hatchback">Hatchback</option><option value="pickup">Pickup</option></select></div></div>
+                        <div class="form-row-3"><div class="form-group"><label class="form-label">Ano *</label><input type="number" id="vYear" class="form-input" required min="1990" max="2030" placeholder="2024"></div><div class="form-group"><label class="form-label">Tipo *</label><select id="vTipo" class="form-select" required><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Categoria *</label><select id="vCategoria" class="form-select" required><option value="">Seleccionar...</option></select></div></div>
                     </div>
                 </div>
 
@@ -466,9 +529,9 @@
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body" id="sec-specs">
-                        <div class="form-row"><div class="form-group"><label class="form-label">Transmision *</label><select id="vTransmision" class="form-select" required><option value="">Seleccionar...</option><option value="automatica">Automatica</option><option value="mecanica">Mecanica</option></select></div><div class="form-group"><label class="form-label">Combustible *</label><select id="vCombustible" class="form-select" required><option value="">Seleccionar...</option><option value="gasolina">Gasolina</option><option value="diesel">Diesel</option><option value="electrico">Electrico</option><option value="hibrido">Hibrido</option></select></div></div>
+                        <div class="form-row"><div class="form-group"><label class="form-label">Transmision *</label><select id="vTransmision" class="form-select" required><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Combustible *</label><select id="vCombustible" class="form-select" required><option value="">Seleccionar...</option></select></div></div>
                         <div class="form-row-3"><div class="form-group"><label class="form-label">Motor</label><input type="text" id="vMotor" class="form-input" placeholder="1.0L Turbo"></div><div class="form-group"><label class="form-label">Potencia</label><input type="text" id="vPotencia" class="form-input" placeholder="116 HP"></div><div class="form-group"><label class="form-label">Cilindraje</label><input type="text" id="vCilindraje" class="form-input" placeholder="1000 cc"></div></div>
-                        <div class="form-row-3"><div class="form-group"><label class="form-label">Traccion</label><input type="text" id="vTraccion" class="form-input" placeholder="Delantera"></div><div class="form-group"><label class="form-label">Direccion</label><select id="vDireccion" class="form-select"><option value="Electrica">Electrica</option><option value="Hidraulica">Hidraulica</option><option value="Mecanica">Mecanica</option><option value="Electrohidraulica">Electrohidraulica</option></select></div><div class="form-group"><label class="form-label">Color</label><input type="text" id="vColor" class="form-input" placeholder="Blanco"></div></div>
+                        <div class="form-row-3"><div class="form-group"><label class="form-label">Traccion</label><select id="vTraccion" class="form-select"><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Direccion</label><select id="vDireccion" class="form-select"><option value="Electrica">Electrica</option></select></div><div class="form-group"><label class="form-label">Color</label><input type="text" id="vColor" class="form-input" placeholder="Blanco"></div></div>
                         <div class="form-row-3"><div class="form-group"><label class="form-label">Puertas</label><input type="number" id="vPuertas" class="form-input" min="2" max="5" placeholder="5"></div><div class="form-group"><label class="form-label">Pasajeros</label><input type="number" id="vPasajeros" class="form-input" min="2" max="9" placeholder="5"></div><div class="form-group"><label class="form-label">Placa</label><input type="text" id="vPlaca" class="form-input" placeholder="Disponible al contactar"></div></div>
                         <div class="form-group"><label class="form-label">Codigo Fasecolda</label><input type="text" id="vFasecolda" class="form-input" placeholder="Consultar"></div>
                     </div>
@@ -487,6 +550,18 @@
                             <label class="form-checkbox"><input type="checkbox" id="vOferta"> En Oferta</label>
                             <label class="form-checkbox"><input type="checkbox" id="vRevision" checked> Revision Tecnico-Mecanica</label>
                             <label class="form-checkbox"><input type="checkbox" id="vPeritaje" checked> Peritaje Realizado</label>
+                        </div>
+                        <div class="form-row" style="margin-top:1rem;">
+                            <div class="form-group">
+                                <label class="form-label">Origen / Concesionario</label>
+                                <select id="vConcesionario" class="form-select">
+                                    <option value="">Propio / Consigna particular</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="consignaPartGroup" style="display:none;">
+                                <label class="form-label">Nombre del consignatario</label>
+                                <input type="text" id="vConsignaParticular" class="form-input" placeholder="Nombre de la persona">
+                            </div>
                         </div>
                         <div class="form-group" style="margin-top:1rem;"><label class="form-label">Descripcion</label><textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea></div>
                     </div>
@@ -592,10 +667,47 @@
     </div>
 </div>
 
+<!-- APPOINTMENT MANAGEMENT MODAL -->
+<div class="modal-overlay" id="appointmentModal">
+    <div class="modal" style="max-width:550px;">
+        <div class="modal-header"><h2 id="appointmentModalTitle">Gestionar Cita</h2><button class="modal-close" id="closeAppointmentModal">&times;</button></div>
+        <div class="modal-body">
+            <form id="appointmentManageForm">
+                <input type="hidden" id="amDocId">
+                <div id="amClientInfo" style="padding:0.75rem;background:rgba(212,175,55,0.1);border:1px solid var(--admin-gold);border-radius:8px;margin-bottom:1rem;font-size:0.85rem;"></div>
+                <div class="form-group">
+                    <label class="form-label">Estado</label>
+                    <select id="amEstado" class="form-select">
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="reprogramada">Reprogramada</option>
+                        <option value="completada">Completada</option>
+                        <option value="cancelada">Cancelada</option>
+                    </select>
+                </div>
+                <div id="amReprogramarGroup" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Nueva fecha</label><input type="date" id="amNuevaFecha" class="form-input"></div>
+                        <div class="form-group"><label class="form-label">Nueva hora</label><input type="time" id="amNuevaHora" class="form-input"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Observaciones</label>
+                    <textarea id="amObservaciones" class="form-textarea" rows="3" placeholder="Notas sobre la cita..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" id="cancelAppointmentModal">Cancelar</button>
+            <button class="btn btn-primary" id="saveAppointmentStatus">Guardar Cambios</button>
+        </div>
+    </div>
+</div>
+
 <!-- SOLD VEHICLE MODAL -->
 <div class="modal-overlay" id="soldModal">
     <div class="modal" style="max-width:500px;">
-        <div class="modal-header"><h2>Registrar Venta</h2><button class="modal-close" id="closeSoldModal">&times;</button></div>
+        <div class="modal-header"><h2>Registrar Operacion</h2><button class="modal-close" id="closeSoldModal">&times;</button></div>
         <div class="modal-body">
             <form id="soldForm">
                 <input type="hidden" id="soldVehicleId">
@@ -614,6 +726,7 @@
 
 <!-- SCRIPTS -->
 <script src="js/firebase-config.js"></script>
+<script src="js/dynamic-lists.js"></script>
 <script src="js/admin-panel.js"></script>
 </body>
 </html>

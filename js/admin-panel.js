@@ -430,7 +430,7 @@
             renderActivityFeed();
             updateEstimator();
             updateNavBadges();
-            renderSoldVehicles();
+            renderVehiclesByOrigin();
             renderDealersList();
         }, function(err) {
             console.error('Vehicles snapshot error:', err);
@@ -790,7 +790,7 @@
             if (canCreateOrEditInventory()) {
                 actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
                 if (estado === 'disponible') {
-                    actions += '<button class="btn btn-sm" style="color:var(--admin-gold);border-color:var(--admin-gold);" onclick="adminPanel.markAsSold(' + v.id + ')">Vendido</button> ';
+                    actions += '<button class="btn btn-sm" style="color:var(--admin-gold);border-color:var(--admin-gold);" onclick="adminPanel.markAsSold(' + v.id + ')">Gestionar Operacion</button> ';
                 }
             }
             if (canDeleteInventory()) {
@@ -1059,6 +1059,23 @@
         $('vPeritaje').checked = v.peritaje !== false;
         $('vCaracteristicas').value = (v.caracteristicas || []).join('\n');
 
+        // Load concesionario value
+        if ($('vConcesionario')) {
+            // Populate concesionario select first, then set value
+            if (window.DynamicLists) {
+                window.DynamicLists.populateConcesionarioSelect($('vConcesionario'));
+                setTimeout(function() {
+                    $('vConcesionario').value = v.concesionario || '';
+                    toggleConsignaField();
+                    if (v.consignaParticular && $('vConsignaParticular')) {
+                        $('vConsignaParticular').value = v.consignaParticular;
+                    }
+                }, 300);
+            } else {
+                $('vConcesionario').value = v.concesionario || '';
+            }
+        }
+
         uploadedImageUrls = (v.imagenes && v.imagenes.length) ? v.imagenes.slice() : (v.imagen ? [v.imagen] : []);
         renderUploadedImages();
         $('uploadError').style.display = 'none';
@@ -1122,6 +1139,8 @@
             imagen: uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
             imagenes: uploadedImageUrls.length ? uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
             caracteristicas: $('vCaracteristicas').value.split('\n').map(function(s) { return s.trim(); }).filter(Boolean),
+            concesionario: $('vConcesionario') ? $('vConcesionario').value : '',
+            consignaParticular: ($('vConcesionario') && $('vConcesionario').value === '_particular' && $('vConsignaParticular')) ? $('vConsignaParticular').value.trim() : '',
             updatedAt: new Date().toISOString(),
             updatedBy: userEmail
         };
@@ -1976,6 +1995,410 @@
         });
     }
 
+    // ========== CONCESIONARIO FIELD TOGGLE ==========
+    function toggleConsignaField() {
+        var concSelect = $('vConcesionario');
+        var partGroup = $('consignaPartGroup');
+        if (concSelect && partGroup) {
+            partGroup.style.display = concSelect.value === '_particular' ? '' : 'none';
+        }
+    }
+    var concSelectEl = $('vConcesionario');
+    if (concSelectEl) {
+        concSelectEl.addEventListener('change', toggleConsignaField);
+    }
+
+    // ========== LISTAS CONFIGURABLES SECTION ==========
+    var LIST_LABELS = {
+        tipos: { title: 'Tipos de Vehiculo', desc: 'Nuevo, Usado, etc.' },
+        categorias: { title: 'Categorias', desc: 'Sedan, SUV, Pickup, etc.' },
+        transmisiones: { title: 'Transmisiones', desc: 'Automatica, Mecanica, etc.' },
+        combustibles: { title: 'Combustibles', desc: 'Gasolina, Diesel, Electrico, etc.' },
+        direcciones: { title: 'Direcciones', desc: 'Electrica, Hidraulica, etc.' },
+        tracciones: { title: 'Tracciones', desc: 'Delantera, 4x4, AWD, etc.' },
+        colores: { title: 'Colores', desc: 'Blanco, Negro, Rojo, etc.' },
+        canalesVenta: { title: 'Canales de Venta', desc: 'Presencial, WhatsApp, Redes, etc.' }
+    };
+
+    function renderListsSection() {
+        var container = $('listsContainer');
+        if (!container) return;
+
+        var lists = window.DynamicLists ? window.DynamicLists.getLists() : {};
+        var defaults = window.DynamicLists ? window.DynamicLists.DEFAULTS : {};
+
+        container.innerHTML = '';
+        Object.keys(LIST_LABELS).forEach(function(key) {
+            var info = LIST_LABELS[key];
+            var items = lists[key] || defaults[key] || [];
+            var card = document.createElement('div');
+            card.className = 'stat-card';
+            card.style.padding = '1.25rem';
+
+            var itemsHtml = items.map(function(item, idx) {
+                var val = typeof item === 'string' ? item : item.value;
+                var label = typeof item === 'string' ? item : item.label;
+                return '<div class="list-item-row" style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid var(--admin-border);">' +
+                    '<input type="text" class="form-input" value="' + escapeHtml(val) + '" data-list="' + key + '" data-idx="' + idx + '" data-field="value" style="flex:1;padding:0.3rem 0.5rem;font-size:0.85rem;" placeholder="Valor">' +
+                    '<input type="text" class="form-input" value="' + escapeHtml(label) + '" data-list="' + key + '" data-idx="' + idx + '" data-field="label" style="flex:1;padding:0.3rem 0.5rem;font-size:0.85rem;" placeholder="Etiqueta">' +
+                    '<button class="btn btn-danger btn-sm" style="padding:0.2rem 0.5rem;font-size:0.75rem;" onclick="adminPanel.removeListItem(\'' + key + '\',' + idx + ')">&times;</button>' +
+                '</div>';
+            }).join('');
+
+            card.innerHTML =
+                '<h4 style="margin:0 0 0.25rem;color:var(--admin-gold);font-size:0.95rem;">' + info.title + '</h4>' +
+                '<p style="font-size:0.75rem;color:var(--admin-text-muted);margin:0 0 0.75rem;">' + info.desc + '</p>' +
+                '<div id="list-items-' + key + '">' + itemsHtml + '</div>' +
+                '<div style="display:flex;gap:0.5rem;margin-top:0.75rem;">' +
+                    '<button class="btn btn-ghost btn-sm" onclick="adminPanel.addListItem(\'' + key + '\')" style="font-size:0.8rem;">+ Agregar</button>' +
+                    '<button class="btn btn-primary btn-sm" onclick="adminPanel.saveList(\'' + key + '\')" style="font-size:0.8rem;">Guardar</button>' +
+                '</div>';
+            container.appendChild(card);
+        });
+    }
+
+    function addListItem(listKey) {
+        var container = $('list-items-' + listKey);
+        if (!container) return;
+        var items = container.querySelectorAll('.list-item-row');
+        var idx = items.length;
+        var row = document.createElement('div');
+        row.className = 'list-item-row';
+        row.style = 'display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid var(--admin-border);';
+        row.innerHTML =
+            '<input type="text" class="form-input" data-list="' + listKey + '" data-idx="' + idx + '" data-field="value" style="flex:1;padding:0.3rem 0.5rem;font-size:0.85rem;" placeholder="Valor (ej: hibrido)">' +
+            '<input type="text" class="form-input" data-list="' + listKey + '" data-idx="' + idx + '" data-field="label" style="flex:1;padding:0.3rem 0.5rem;font-size:0.85rem;" placeholder="Etiqueta (ej: Hibrido)">' +
+            '<button class="btn btn-danger btn-sm" style="padding:0.2rem 0.5rem;font-size:0.75rem;" onclick="this.parentElement.remove()">&times;</button>';
+        container.appendChild(row);
+        row.querySelector('input').focus();
+    }
+
+    function removeListItem(listKey, idx) {
+        var container = $('list-items-' + listKey);
+        if (!container) return;
+        var rows = container.querySelectorAll('.list-item-row');
+        if (rows[idx]) rows[idx].remove();
+    }
+
+    function saveList(listKey) {
+        if (!isSuperAdmin()) { toast('Solo Super Admin puede modificar listas', 'error'); return; }
+        var container = $('list-items-' + listKey);
+        if (!container) return;
+
+        var rows = container.querySelectorAll('.list-item-row');
+        var items = [];
+        rows.forEach(function(row) {
+            var valInput = row.querySelector('input[data-field="value"]');
+            var labelInput = row.querySelector('input[data-field="label"]');
+            if (valInput && labelInput && valInput.value.trim()) {
+                items.push({ value: valInput.value.trim(), label: labelInput.value.trim() || valInput.value.trim() });
+            }
+        });
+
+        if (items.length === 0) { toast('La lista no puede quedar vacia', 'error'); return; }
+
+        // Get current lists and update the specific key
+        var currentLists = window.DynamicLists ? JSON.parse(JSON.stringify(window.DynamicLists.getLists())) : {};
+        currentLists[listKey] = items;
+
+        window.DynamicLists.saveLists(currentLists).then(function() {
+            toast('Lista "' + (LIST_LABELS[listKey] ? LIST_LABELS[listKey].title : listKey) + '" guardada');
+            writeAuditLog('list_update', 'lista ' + listKey, items.length + ' opciones');
+            // Refresh admin form selects
+            if (window.DynamicLists) {
+                window.DynamicLists.populateAdminForm();
+            }
+        }).catch(function(err) {
+            toast('Error: ' + err.message, 'error');
+        });
+    }
+
+    // ========== ADMIN CALENDAR ==========
+    var calendarMonth = new Date().getMonth();
+    var calendarYear = new Date().getFullYear();
+    var blockedDates = {}; // { 'YYYY-MM-DD': true }
+
+    function renderAdminCalendar() {
+        var cal = $('adminCalendar');
+        var label = $('calMonthLabel');
+        if (!cal || !label) return;
+
+        var monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        label.textContent = monthNames[calendarMonth] + ' ' + calendarYear;
+
+        var dayHeaders = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+        var html = dayHeaders.map(function(d) { return '<div style="text-align:center;font-size:0.75rem;font-weight:600;color:var(--admin-text-muted);padding:4px;">' + d + '</div>'; }).join('');
+
+        var firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+        var daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+        var today = new Date();
+        today.setHours(0,0,0,0);
+
+        // Get available days from config
+        var availDays = [];
+        document.querySelectorAll('#availDays input:checked').forEach(function(cb) { availDays.push(parseInt(cb.value)); });
+
+        for (var i = 0; i < firstDay; i++) {
+            html += '<div></div>';
+        }
+
+        for (var day = 1; day <= daysInMonth; day++) {
+            var date = new Date(calendarYear, calendarMonth, day);
+            var dateStr = date.toISOString().split('T')[0];
+            var isPast = date < today;
+            var dayOfWeek = date.getDay();
+            var isAvailDay = availDays.indexOf(dayOfWeek) !== -1;
+            var isBlocked = blockedDates[dateStr] === true;
+
+            var bgColor, textColor, cursor, border;
+            if (isPast) {
+                bgColor = 'var(--admin-border)';
+                textColor = 'var(--admin-text-muted)';
+                cursor = 'default';
+                border = 'transparent';
+            } else if (!isAvailDay) {
+                bgColor = 'var(--admin-border)';
+                textColor = 'var(--admin-text-muted)';
+                cursor = 'default';
+                border = 'transparent';
+            } else if (isBlocked) {
+                bgColor = 'rgba(248,81,73,0.2)';
+                textColor = '#f85149';
+                cursor = 'pointer';
+                border = '#f85149';
+            } else {
+                bgColor = 'rgba(63,185,80,0.15)';
+                textColor = '#3fb950';
+                cursor = 'pointer';
+                border = '#3fb950';
+            }
+
+            var clickable = !isPast && isAvailDay;
+            html += '<div style="text-align:center;padding:8px 4px;border-radius:8px;font-size:0.85rem;font-weight:600;' +
+                'background:' + bgColor + ';color:' + textColor + ';cursor:' + cursor + ';border:1px solid ' + border + ';"' +
+                (clickable ? ' onclick="adminPanel.toggleBlockDate(\'' + dateStr + '\')"' : '') +
+                ' title="' + (isPast ? 'Pasado' : !isAvailDay ? 'Dia no habilitado' : isBlocked ? 'Bloqueado - clic para desbloquear' : 'Disponible - clic para bloquear') + '">' +
+                day + '</div>';
+        }
+
+        cal.innerHTML = html;
+    }
+
+    function toggleBlockDate(dateStr) {
+        if (!isSuperAdmin()) { toast('Solo Super Admin puede bloquear dias', 'error'); return; }
+        if (blockedDates[dateStr]) {
+            delete blockedDates[dateStr];
+        } else {
+            blockedDates[dateStr] = true;
+        }
+        saveBlockedDates();
+        renderAdminCalendar();
+    }
+
+    function saveBlockedDates() {
+        var blockedList = Object.keys(blockedDates).filter(function(k) { return blockedDates[k]; });
+        window.db.collection('config').doc('availability').update({
+            blockedDates: blockedList,
+            updatedAt: new Date().toISOString()
+        }).catch(function(err) {
+            // If doc doesn't exist yet, set instead
+            window.db.collection('config').doc('availability').set({
+                blockedDates: blockedList,
+                updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(function() {});
+        });
+    }
+
+    function loadBlockedDates() {
+        window.db.collection('config').doc('availability').get().then(function(doc) {
+            if (doc.exists && doc.data().blockedDates) {
+                blockedDates = {};
+                doc.data().blockedDates.forEach(function(d) { blockedDates[d] = true; });
+            }
+            // Also load interval
+            if (doc.exists && doc.data().interval && $('availInterval')) {
+                $('availInterval').value = doc.data().interval;
+            }
+            renderAdminCalendar();
+        }).catch(function() { renderAdminCalendar(); });
+    }
+
+    var calPrev = $('calPrevMonth');
+    var calNext = $('calNextMonth');
+    if (calPrev) calPrev.addEventListener('click', function() {
+        calendarMonth--;
+        if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+        renderAdminCalendar();
+    });
+    if (calNext) calNext.addEventListener('click', function() {
+        calendarMonth++;
+        if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+        renderAdminCalendar();
+    });
+
+    // ========== ENHANCED APPOINTMENTS (with observations, reschedule, contact info) ==========
+    function renderAppointmentsTable() {
+        var body = $('appointmentsBody');
+        if (!body) return;
+        var filterEl = $('appointmentFilter');
+        var filter = filterEl ? filterEl.value : 'all';
+        var filtered = filter === 'all' ? appointments : appointments.filter(function(a) { return a.estado === filter; });
+
+        if (filtered.length === 0) {
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay citas ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
+            return;
+        }
+
+        body.innerHTML = filtered.map(function(a) {
+            var estadoColors = {
+                pendiente: 'admin-warning',
+                confirmada: 'admin-success',
+                reprogramada: 'admin-info',
+                completada: 'admin-gold',
+                cancelada: 'admin-danger'
+            };
+            var estadoClass = estadoColors[a.estado] || 'admin-warning';
+            var estadoLabel = a.estado ? (a.estado.charAt(0).toUpperCase() + a.estado.slice(1)) : 'Pendiente';
+
+            return '<tr>' +
+                '<td><strong>' + escapeHtml(a.nombre || '-') + '</strong></td>' +
+                '<td><div style="font-size:0.85rem;">' + escapeHtml(a.telefono || '-') + '</div><div style="font-size:0.75rem;color:var(--admin-text-muted);">' + escapeHtml(a.email || '-') + '</div></td>' +
+                '<td>' + escapeHtml(a.vehiculo || 'General') + '</td>' +
+                '<td><div>' + escapeHtml(a.fecha || '-') + '</div><div style="font-weight:600;">' + escapeHtml(a.hora || '-') + '</div></td>' +
+                '<td><span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLabel + '</span></td>' +
+                '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + escapeHtml(a.observaciones || a.comentarios || '-') + '</td>' +
+                '<td style="white-space:nowrap;">' +
+                    '<button class="btn btn-sm btn-ghost" onclick="adminPanel.manageAppointment(\'' + a._docId + '\')" title="Gestionar">Gestionar</button>' +
+                '</td>' +
+            '</tr>';
+        }).join('');
+    }
+
+    function manageAppointment(docId) {
+        var a = appointments.find(function(x) { return x._docId === docId; });
+        if (!a) return;
+
+        $('amDocId').value = docId;
+        $('amEstado').value = a.estado || 'pendiente';
+        $('amObservaciones').value = a.observaciones || '';
+
+        $('amClientInfo').innerHTML =
+            '<strong>' + escapeHtml(a.nombre || '') + '</strong><br>' +
+            'Tel: ' + escapeHtml(a.telefono || '-') + ' | Email: ' + escapeHtml(a.email || '-') + '<br>' +
+            'Vehiculo: ' + escapeHtml(a.vehiculo || 'General') + '<br>' +
+            'Fecha: ' + escapeHtml(a.fecha || '-') + ' | Hora: ' + escapeHtml(a.hora || '-');
+
+        toggleReprogramarGroup();
+        $('appointmentModal').classList.add('active');
+    }
+
+    function toggleReprogramarGroup() {
+        var group = $('amReprogramarGroup');
+        var estado = $('amEstado').value;
+        if (group) group.style.display = estado === 'reprogramada' ? '' : 'none';
+    }
+
+    var amEstadoEl = $('amEstado');
+    if (amEstadoEl) amEstadoEl.addEventListener('change', toggleReprogramarGroup);
+
+    var closeAppModal = $('closeAppointmentModal');
+    if (closeAppModal) closeAppModal.addEventListener('click', function() { $('appointmentModal').classList.remove('active'); });
+    var cancelAppModal = $('cancelAppointmentModal');
+    if (cancelAppModal) cancelAppModal.addEventListener('click', function() { $('appointmentModal').classList.remove('active'); });
+    var appModalEl = $('appointmentModal');
+    if (appModalEl) appModalEl.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+
+    var saveAppStatusBtn = $('saveAppointmentStatus');
+    if (saveAppStatusBtn) {
+        saveAppStatusBtn.addEventListener('click', function() {
+            var docId = $('amDocId').value;
+            if (!docId) return;
+            if (!isEditorOrAbove() && !isSuperAdmin()) { toast('Sin permisos', 'error'); return; }
+
+            var updateData = {
+                estado: $('amEstado').value,
+                observaciones: $('amObservaciones').value.trim(),
+                updatedAt: new Date().toISOString(),
+                updatedBy: window.auth.currentUser.email
+            };
+
+            if ($('amEstado').value === 'reprogramada') {
+                var nuevaFecha = $('amNuevaFecha').value;
+                var nuevaHora = $('amNuevaHora').value;
+                if (nuevaFecha) updateData.fecha = nuevaFecha;
+                if (nuevaHora) updateData.hora = nuevaHora;
+            }
+
+            window.db.collection('citas').doc(docId).update(updateData).then(function() {
+                toast('Cita actualizada a: ' + updateData.estado);
+                writeAuditLog('appointment_' + updateData.estado, 'cita ' + docId, updateData.observaciones || '');
+                $('appointmentModal').classList.remove('active');
+            }).catch(function(err) {
+                toast('Error: ' + err.message, 'error');
+            });
+        });
+    }
+
+    function isEditorOrAbove() {
+        return isSuperAdmin() || isEditor();
+    }
+
+    // ========== VEHICLES BY ORIGIN ==========
+    function renderVehiclesByOrigin() {
+        var body = $('vehiclesByOriginBody');
+        if (!body) return;
+
+        var vehiclesWithOrigin = vehicles.map(function(v) {
+            var origin = '';
+            if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
+                var d = dealers.find(function(x) { return x._docId === v.concesionario; });
+                origin = d ? d.nombre : v.concesionario;
+            } else if (v.concesionario === '_particular' && v.consignaParticular) {
+                origin = 'Consigna: ' + v.consignaParticular;
+            } else {
+                origin = 'Propio';
+            }
+            return { vehicle: v, origin: origin };
+        });
+
+        // Sort by origin
+        vehiclesWithOrigin.sort(function(a, b) { return a.origin.localeCompare(b.origin); });
+
+        if (vehiclesWithOrigin.length === 0) {
+            body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay vehiculos</td></tr>';
+            return;
+        }
+
+        body.innerHTML = vehiclesWithOrigin.map(function(item) {
+            var v = item.vehicle;
+            var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
+            var estadoInfo = ESTADO_LABELS[v.estado || 'disponible'] || ESTADO_LABELS.disponible;
+            return '<tr>' +
+                '<td><strong>' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</strong></td>' +
+                '<td>' + escapeHtml(item.origin) + '</td>' +
+                '<td><span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span></td>' +
+                '<td>' + formatPrice(v.precio) + '</td>' +
+            '</tr>';
+        }).join('');
+    }
+
+    // ========== INIT DYNAMIC LISTS IN ADMIN ==========
+    function initDynamicListsAdmin() {
+        if (!window.DynamicLists) return;
+        window.DynamicLists.load().then(function() {
+            window.DynamicLists.populateAdminForm();
+            renderListsSection();
+            loadBlockedDates();
+        });
+    }
+
+    // Hook into loadData
+    var _origLoadData = loadData;
+    loadData = function() {
+        _origLoadData();
+        initDynamicListsAdmin();
+    };
+
     // ========== EXPOSE FUNCTIONS ==========
     window.adminPanel = {
         editVehicle: editVehicle,
@@ -1986,9 +2409,14 @@
         editUser: editUser,
         deleteUser: deleteUserFn,
         previewVehicle: previewVehicle,
-        updateAppointment: function() {},
-        editDealer: function() {},
-        markAsSold: function() {}
+        updateAppointment: updateAppointmentStatus,
+        editDealer: editDealer,
+        markAsSold: markAsSold,
+        addListItem: addListItem,
+        removeListItem: removeListItem,
+        saveList: saveList,
+        toggleBlockDate: toggleBlockDate,
+        manageAppointment: manageAppointment
     };
 
     // ========== COLLAPSIBLE FORM SECTIONS ==========
@@ -2210,92 +2638,55 @@
         });
     }
 
-    function renderAppointmentsTable() {
-        var body = $('appointmentsBody');
-        if (!body) return;
-        var filterEl = $('appointmentFilter');
-        var filter = filterEl ? filterEl.value : 'all';
-        var filtered = filter === 'all' ? appointments : appointments.filter(function(a) { return a.estado === filter; });
+    // Old renderAppointmentsTable removed - now defined in enhanced appointments section above
 
-        if (filtered.length === 0) {
-            body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay citas ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
-            return;
-        }
-
-        body.innerHTML = filtered.map(function(a) {
-            var estadoClass = a.estado === 'confirmada' ? 'admin-success' : a.estado === 'completada' ? 'admin-gold' : a.estado === 'cancelada' ? 'admin-danger' : 'admin-warning';
-            var estadoLabel = a.estado ? (a.estado.charAt(0).toUpperCase() + a.estado.slice(1)) : 'Pendiente';
-            return '<tr>' +
-                '<td><strong>' + (a.nombre || '-') + '</strong><br><small style="color:var(--admin-text-muted)">' + (a.telefono || '') + '</small></td>' +
-                '<td>' + (a.vehiculo || 'General') + '</td>' +
-                '<td>' + (a.fecha || '-') + '</td>' +
-                '<td>' + (a.hora || '-') + '</td>' +
-                '<td><span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLabel + '</span></td>' +
-                '<td style="white-space:nowrap;">' +
-                    (a.estado === 'pendiente' ? '<button class="btn btn-sm btn-success" onclick="adminPanel.updateAppointment(\'' + a._docId + '\',\'confirmada\')">Confirmar</button> ' : '') +
-                    (a.estado === 'confirmada' ? '<button class="btn btn-sm btn-primary" onclick="adminPanel.updateAppointment(\'' + a._docId + '\',\'completada\')">Completar</button> ' : '') +
-                    ((a.estado === 'pendiente' || a.estado === 'confirmada') ? '<button class="btn btn-sm btn-danger" onclick="adminPanel.updateAppointment(\'' + a._docId + '\',\'cancelada\')">Cancelar</button>' : '') +
-                '</td>' +
-            '</tr>';
-        }).join('');
-    }
-
-    function updateAppointmentStatus(docId, newStatus) {
-        if (!isEditorOrAbove() && !isSuperAdmin()) { toast('No tienes permisos', 'error'); return; }
-        window.db.collection('citas').doc(docId).update({
-            estado: newStatus,
-            updatedAt: new Date().toISOString(),
-            updatedBy: window.auth.currentUser.email
-        }).then(function() {
-            toast('Cita actualizada a: ' + newStatus);
-            writeAuditLog('appointment_' + newStatus, 'cita ' + docId, '');
-        }).catch(function(err) {
-            toast('Error: ' + err.message, 'error');
-        });
-    }
-
-    // Appointment filter change
-    var appointmentFilterEl = $('appointmentFilter');
-    if (appointmentFilterEl) {
-        appointmentFilterEl.addEventListener('change', renderAppointmentsTable);
-    }
-
-    // Save availability config
-    var btnSaveAvail = $('btnSaveAvailability');
-    if (btnSaveAvail) {
-        btnSaveAvail.addEventListener('click', function() {
+    // Save availability config (enhanced with interval and blocked dates)
+    var btnSaveAvail2 = $('btnSaveAvailability');
+    if (btnSaveAvail2) {
+        btnSaveAvail2.addEventListener('click', function() {
             if (!isSuperAdmin()) { toast('Solo Super Admin puede cambiar disponibilidad', 'error'); return; }
             var startHour = parseInt($('availStartHour').value);
             var endHour = parseInt($('availEndHour').value);
+            var interval = $('availInterval') ? parseInt($('availInterval').value) : 30;
             var days = [];
             document.querySelectorAll('#availDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+            var blockedList = Object.keys(blockedDates).filter(function(k) { return blockedDates[k]; });
             window.db.collection('config').doc('availability').set({
                 startHour: startHour,
                 endHour: endHour,
                 days: days,
+                interval: interval,
+                blockedDates: blockedList,
                 updatedAt: new Date().toISOString()
             }).then(function() {
                 toast('Disponibilidad guardada');
                 $('availabilityStatus').innerHTML = '<span style="color:var(--admin-success);">Guardado correctamente</span>';
+                renderAdminCalendar();
             }).catch(function(err) {
                 toast('Error: ' + err.message, 'error');
             });
         });
     }
 
-    // Load availability config
+    // Load availability config (enhanced)
     function loadAvailabilityConfig() {
         window.db.collection('config').doc('availability').get().then(function(doc) {
             if (!doc.exists) return;
             var data = doc.data();
             if (data.startHour && $('availStartHour')) $('availStartHour').value = data.startHour;
             if (data.endHour && $('availEndHour')) $('availEndHour').value = data.endHour;
+            if (data.interval && $('availInterval')) $('availInterval').value = data.interval;
             if (data.days) {
                 document.querySelectorAll('#availDays input').forEach(function(cb) {
                     cb.checked = data.days.indexOf(parseInt(cb.value)) !== -1;
                 });
             }
-        }).catch(function() {});
+            if (data.blockedDates) {
+                blockedDates = {};
+                data.blockedDates.forEach(function(d) { blockedDates[d] = true; });
+            }
+            renderAdminCalendar();
+        }).catch(function() { renderAdminCalendar(); });
     }
 
     // ========== PHASE 5: CONCESIONARIOS ==========
@@ -2307,6 +2698,7 @@
         unsubDealers = window.db.collection('concesionarios').onSnapshot(function(snap) {
             dealers = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
             renderDealersList();
+            renderVehiclesByOrigin();
         }, function(err) {
             console.warn('[Dealers] Error loading:', err);
         });

@@ -378,6 +378,103 @@
     height: 20px;
 }
 
+/* ===== CALENDARIO DE DISPONIBILIDAD ===== */
+.appointment-calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.cal-nav-btn {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+    transition: all 0.2s ease;
+}
+
+.cal-nav-btn:hover {
+    background: #e5e7eb;
+}
+
+.cal-month-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.appointment-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.cal-header {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    padding: 6px 2px;
+    text-transform: uppercase;
+}
+
+.cal-empty {
+    padding: 8px;
+}
+
+.cal-day {
+    text-align: center;
+    padding: 8px 4px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.cal-past {
+    color: #d1d5db;
+    background: #f9fafb;
+}
+
+.cal-unavailable {
+    color: #d1d5db;
+    background: #f9fafb;
+}
+
+.cal-available {
+    color: #059669;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    cursor: pointer;
+}
+
+.cal-available:hover {
+    background: #d1fae5;
+    transform: scale(1.05);
+}
+
+.cal-selected {
+    background: #3b82f6 !important;
+    color: white !important;
+    border-color: #2563eb !important;
+}
+
+.selected-date-label {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #eff6ff;
+    border: 1px solid #93c5fd;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d4ed8;
+    text-align: center;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 600px) {
     .appointment-modal-overlay {

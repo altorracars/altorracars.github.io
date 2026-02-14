@@ -869,19 +869,88 @@
     }
 
     // ========== VEHICLE MODAL ==========
-    function openModal() { $('vehicleModal').classList.add('active'); }
+    function openModal() {
+        // Open all form sections so nothing is hidden
+        document.querySelectorAll('#vehicleForm .form-section-body').forEach(function(body) {
+            body.classList.add('open');
+        });
+        document.querySelectorAll('#vehicleForm .form-section-title').forEach(function(title) {
+            title.classList.remove('collapsed');
+        });
+        clearValidationErrors();
+        $('vehicleModal').classList.add('active');
+    }
 
     // ========== CLOSE MODAL WITH CONFIRMATION ==========
     function formHasData() {
         return !!($('vMarca').value || $('vModelo').value || $('vPrecio').value);
     }
 
+    function clearValidationErrors() {
+        document.querySelectorAll('.field-error').forEach(function(el) { el.classList.remove('field-error'); });
+        document.querySelectorAll('.field-error-msg').forEach(function(el) { el.remove(); });
+        document.querySelectorAll('.form-section.has-errors').forEach(function(el) { el.classList.remove('has-errors'); });
+    }
+
+    function validateAndHighlightFields() {
+        clearValidationErrors();
+        var requiredFields = $('vehicleForm').querySelectorAll('[required]');
+        var firstErrorSection = null;
+        var hasErrors = false;
+        requiredFields.forEach(function(field) {
+            if (!field.value || field.value.trim() === '') {
+                hasErrors = true;
+                field.classList.add('field-error');
+                // Add error message below field
+                var msg = document.createElement('span');
+                msg.className = 'field-error-msg';
+                msg.textContent = 'Este campo es requerido';
+                field.parentNode.appendChild(msg);
+                // Mark parent section
+                var section = field.closest('.form-section');
+                if (section) {
+                    section.classList.add('has-errors');
+                    // Open the section so user sees the error
+                    var body = section.querySelector('.form-section-body');
+                    var title = section.querySelector('.form-section-title');
+                    if (body && !body.classList.contains('open')) {
+                        body.classList.add('open');
+                        if (title) title.classList.remove('collapsed');
+                    }
+                    if (!firstErrorSection) firstErrorSection = section;
+                }
+                // Remove error on input
+                field.addEventListener('input', function handler() {
+                    this.classList.remove('field-error');
+                    var errMsg = this.parentNode.querySelector('.field-error-msg');
+                    if (errMsg) errMsg.remove();
+                    var sec = this.closest('.form-section');
+                    if (sec && !sec.querySelector('.field-error')) sec.classList.remove('has-errors');
+                    this.removeEventListener('input', handler);
+                }, { once: true });
+            }
+        });
+        if (firstErrorSection) {
+            firstErrorSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return !hasErrors;
+    }
+
     function closeModalFn(force) {
         if (!force && formHasData()) {
-            if (!confirm('Tienes datos sin guardar. ¿Deseas cerrar? (Usa "Guardar Borrador" para no perder la informacion)')) {
+            var action = confirm('Tienes datos sin guardar. ¿Deseas guardar como borrador antes de cerrar?');
+            if (action) {
+                saveDraftToFirestore(true).then(function() {
+                    doCloseModal();
+                });
                 return;
             }
         }
+        doCloseModal();
+    }
+
+    function doCloseModal() {
+        clearValidationErrors();
         $('vehicleModal').classList.remove('active');
         $('vehicleForm').reset();
         $('vId').value = '';
@@ -891,7 +960,6 @@
         $('uploadError').style.display = 'none';
         $('manualImageUrl').value = '';
         $('featuresPreview').innerHTML = '';
-        // Reset feature checkboxes
         document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
         stopDraftAutoSave();
     }
@@ -956,12 +1024,24 @@
         return window.db.collection('usuarios').doc(window.auth.currentUser.uid).collection('drafts').doc('vehicleDraft');
     }
 
+    function snapshotHasAnyData(snap) {
+        var checkFields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vKm','vTransmision','vCombustible','vMotor','vColor','vDescripcion'];
+        for (var i = 0; i < checkFields.length; i++) {
+            if (snap[checkFields[i]]) return true;
+        }
+        if (snap._images && snap._images.length > 0) return true;
+        return false;
+    }
+
     function saveDraftToFirestore(showToast) {
         var ref = getDraftDocRef();
-        if (!ref) return Promise.resolve();
+        if (!ref) {
+            if (showToast) toast('No se pudo acceder al almacenamiento de borradores', 'error');
+            return Promise.resolve();
+        }
         var snap = getFormSnapshot();
-        if (!snap.vMarca && !snap.vModelo && !snap.vPrecio) {
-            if (showToast) toast('No hay datos para guardar como borrador', 'error');
+        if (!snapshotHasAnyData(snap)) {
+            if (showToast) toast('No hay datos para guardar como borrador', 'info');
             return Promise.resolve();
         }
         snap._userId = window.auth.currentUser.uid;
@@ -970,7 +1050,7 @@
             if (showToast) toast('Borrador guardado correctamente');
         }).catch(function(err) {
             console.warn('[Draft] Error al guardar borrador:', err);
-            if (showToast) toast('Error al guardar borrador', 'error');
+            if (showToast) toast('Error al guardar borrador: ' + (err.code === 'permission-denied' ? 'Sin permisos. Verifica las reglas de Firestore.' : err.message), 'error');
         });
     }
 
@@ -997,7 +1077,7 @@
         return ref.get().then(function(doc) {
             if (!doc.exists) return false;
             var snap = doc.data();
-            if (!snap.vMarca && !snap.vModelo && !snap.vPrecio) return false;
+            if (!snapshotHasAnyData(snap)) return false;
             var savedAt = snap._savedAt ? formatTimeAgo(snap._savedAt) : '';
             var label = (snap.vMarca || '') + ' ' + (snap.vModelo || '') + ' ' + (snap.vYear || '');
             if (confirm('Tienes un borrador guardado: ' + label.trim() + ' (' + savedAt + '). ¿Deseas recuperarlo?')) {
@@ -1031,8 +1111,6 @@
 
     $('closeModal').addEventListener('click', function() { closeModalFn(); });
     $('cancelModal').addEventListener('click', function() { closeModalFn(); });
-    // Click outside modal: ask confirmation instead of closing directly
-    $('vehicleModal').addEventListener('click', function(e) { if (e.target === this) closeModalFn(); });
 
     // Save Draft button
     var saveDraftBtn = $('saveDraftBtn');
@@ -1265,8 +1343,10 @@
     $('saveVehicle').addEventListener('click', function() {
         if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
 
-        var form = $('vehicleForm');
-        if (!form.checkValidity()) { form.reportValidity(); return; }
+        if (!validateAndHighlightFields()) {
+            toast('Completa los campos requeridos marcados en rojo', 'error');
+            return;
+        }
 
         var existingId = $('vId').value;
         var isEdit = !!existingId;
@@ -1570,7 +1650,6 @@
 
     $('closeBrandModal').addEventListener('click', closeBrandModalFn);
     $('cancelBrandModal').addEventListener('click', closeBrandModalFn);
-    $('brandModal').addEventListener('click', function(e) { if (e.target === this) closeBrandModalFn(); });
 
     $('bLogo').addEventListener('input', function() {
         var url = this.value.trim();
@@ -1628,9 +1707,7 @@
         $('brandModalTitle').textContent = 'Editar Marca: ' + b.nombre;
         $('bOriginalId').value = b.id;
         $('bId').value = b.id;
-        $('bId').readOnly = true;
         $('bNombre').value = b.nombre || '';
-        $('bDescripcion').value = b.descripcion || '';
         $('bLogo').value = b.logo || '';
 
         if (b.logo) {
@@ -1640,21 +1717,30 @@
         openBrandModal();
     }
 
+    function generateBrandId(nombre) {
+        return nombre.trim().toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+    }
+
     $('saveBrand').addEventListener('click', function() {
         if (!canCreateOrEditInventory()) { toast('No tienes permisos', 'error'); return; }
 
         var form = $('brandForm');
         if (!form.checkValidity()) { form.reportValidity(); return; }
 
-        var brandId = $('bId').value.trim().toLowerCase();
+        var nombre = $('bNombre').value.trim();
         var originalId = $('bOriginalId').value;
         var isEdit = !!originalId;
+        var brandId = isEdit ? originalId : generateBrandId(nombre);
 
         var userEmail = window.auth.currentUser ? window.auth.currentUser.email : 'admin';
         var brandData = {
             id: brandId,
-            nombre: $('bNombre').value.trim(),
-            descripcion: $('bDescripcion').value.trim(),
+            nombre: nombre,
+            descripcion: nombre,
             logo: $('bLogo').value.trim(),
             updatedAt: new Date().toISOString(),
             updatedBy: userEmail,
@@ -1785,7 +1871,6 @@
 
     $('closeUserModal').addEventListener('click', closeUserModalFn);
     $('cancelUserModal').addEventListener('click', closeUserModalFn);
-    $('userModal').addEventListener('click', function(e) { if (e.target === this) closeUserModalFn(); });
     $('userForm').addEventListener('submit', function(e) { e.preventDefault(); });
     $('userForm').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
 
@@ -2303,6 +2388,13 @@
     });
 
     // ========== ENHANCED APPOINTMENTS (with observations, reschedule, contact info) ==========
+    var appointmentFilterEl = $('appointmentFilter');
+    if (appointmentFilterEl) {
+        appointmentFilterEl.addEventListener('change', function() {
+            renderAppointmentsTable();
+        });
+    }
+
     function renderAppointmentsTable() {
         var body = $('appointmentsBody');
         if (!body) return;
@@ -2371,8 +2463,6 @@
     if (closeAppModal) closeAppModal.addEventListener('click', function() { $('appointmentModal').classList.remove('active'); });
     var cancelAppModal = $('cancelAppointmentModal');
     if (cancelAppModal) cancelAppModal.addEventListener('click', function() { $('appointmentModal').classList.remove('active'); });
-    var appModalEl = $('appointmentModal');
-    if (appModalEl) appModalEl.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
 
     var saveAppStatusBtn = $('saveAppointmentStatus');
     if (saveAppStatusBtn) {
@@ -2398,9 +2488,16 @@
             window.db.collection('citas').doc(docId).update(updateData).then(function() {
                 toast('Cita actualizada a: ' + updateData.estado);
                 writeAuditLog('appointment_' + updateData.estado, 'cita ' + docId, updateData.observaciones || '');
+                // Switch filter to show the updated appointment's status
+                var filterEl = $('appointmentFilter');
+                if (filterEl) filterEl.value = updateData.estado;
                 $('appointmentModal').classList.remove('active');
             }).catch(function(err) {
-                toast('Error: ' + err.message, 'error');
+                if (err.code === 'permission-denied') {
+                    toast('Sin permisos para actualizar citas. Verifica tu rol y las Firestore Rules.', 'error');
+                } else {
+                    toast('Error: ' + err.message, 'error');
+                }
             });
         });
     }
@@ -2834,8 +2931,6 @@
     if (closeDealerModalEl) closeDealerModalEl.addEventListener('click', function() { $('dealerModal').classList.remove('active'); });
     var cancelDealerModalEl = $('cancelDealerModal');
     if (cancelDealerModalEl) cancelDealerModalEl.addEventListener('click', function() { $('dealerModal').classList.remove('active'); });
-    var dealerModalEl = $('dealerModal');
-    if (dealerModalEl) dealerModalEl.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
 
     function editDealer(docId) {
         if (!isSuperAdmin()) { toast('Sin permisos', 'error'); return; }
@@ -2884,7 +2979,11 @@
                 writeAuditLog(existingId ? 'dealer_update' : 'dealer_create', 'concesionario ' + nombre, '');
                 $('dealerModal').classList.remove('active');
             }).catch(function(err) {
-                toast('Error: ' + err.message, 'error');
+                if (err.code === 'permission-denied') {
+                    toast('Sin permisos. Verifica que las Firestore Rules esten desplegadas y tu rol sea super_admin. Ejecuta: firebase deploy --only firestore:rules', 'error');
+                } else {
+                    toast('Error: ' + err.message, 'error');
+                }
             });
         });
     }
@@ -2932,8 +3031,6 @@
     if (closeSoldModalEl) closeSoldModalEl.addEventListener('click', function() { $('soldModal').classList.remove('active'); });
     var cancelSoldModalEl = $('cancelSoldModal');
     if (cancelSoldModalEl) cancelSoldModalEl.addEventListener('click', function() { $('soldModal').classList.remove('active'); });
-    var soldModalEl = $('soldModal');
-    if (soldModalEl) soldModalEl.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
 
     var confirmSoldBtn = $('confirmSold');
     if (confirmSoldBtn) {

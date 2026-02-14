@@ -44,10 +44,8 @@
                     <form id="filtersForm" class="filters-form">
                         <div class="filter-group">
                             <label>Tipo</label>
-                            <select name="tipo" class="filter-select">
+                            <select name="tipo" id="tipoSelect" class="filter-select">
                                 <option value="">Todos</option>
-                                <option value="nuevo">Nuevo</option>
-                                <option value="usado">Usado</option>
                             </select>
                         </div>
                         <div class="filter-group">
@@ -60,30 +58,20 @@
                         </div>
                         <div class="filter-group">
                             <label>Categoría</label>
-                            <select name="categoria" class="filter-select">
+                            <select name="categoria" id="categoriaSelect" class="filter-select">
                                 <option value="">Todas</option>
-                                <option value="suv">SUV</option>
-                                <option value="pickup">Pickup</option>
-                                <option value="sedan">Sedán</option>
-                                <option value="hatchback">Hatchback</option>
                             </select>
                         </div>
-                        <!-- FASE 3: Filtros adicionales -->
                         <div class="filter-group">
                             <label>Transmisión</label>
-                            <select name="transmision" class="filter-select">
+                            <select name="transmision" id="transmisionSelect" class="filter-select">
                                 <option value="">Todas</option>
-                                <option value="automatica">Automática</option>
-                                <option value="mecanica">Mecánica</option>
                             </select>
                         </div>
                         <div class="filter-group">
                             <label>Combustible</label>
-                            <select name="combustible" class="filter-select">
+                            <select name="combustible" id="combustibleSelect" class="filter-select">
                                 <option value="">Todos</option>
-                                <option value="gasolina">Gasolina</option>
-                                <option value="diesel">Diesel</option>
-                                <option value="hibrido">Híbrido</option>
                             </select>
                         </div>
                         <div class="filter-group">
@@ -122,6 +110,7 @@
     <script src="js/favorites-manager.js"></script><script src="js/toast.js"></script>
     <script src="js/components.js"></script>
     <script src="js/database.js"></script>
+    <script src="js/dynamic-lists.js"></script>
     <script src="js/render.js"></script>
     <script src="js/main.js"></script>
     <script src="js/comparador.js"></script>
@@ -140,6 +129,8 @@
             }
             
             await vehicleDB.load();
+            await DynamicLists.load();
+            DynamicLists.populatePageFilters();
             const brandInfo = vehicleDB.getBrandInfo(brandId);
             
             if (brandInfo) {

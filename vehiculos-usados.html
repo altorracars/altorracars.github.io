@@ -65,36 +65,27 @@
                             </select>
                         </div>
 
-                        <!-- Category - FASE 1: Categorías canónicas -->
+                        <!-- Category -->
                         <div class="filter-group">
                             <label class="filter-label">Categoría</label>
-                            <select name="categoria" class="filter-select">
+                            <select name="categoria" class="filter-select" id="categoriaSelect">
                                 <option value="">Todas</option>
-                                <option value="suv">SUV</option>
-                                <option value="pickup">Pickup</option>
-                                <option value="sedan">Sedán</option>
-                                <option value="hatchback">Hatchback</option>
                             </select>
                         </div>
 
                         <!-- Transmission -->
                         <div class="filter-group">
                             <label class="filter-label">Transmisión</label>
-                            <select name="transmision" class="filter-select">
+                            <select name="transmision" class="filter-select" id="transmisionSelect">
                                 <option value="">Todas</option>
-                                <option value="automatica">Automática</option>
-                                <option value="mecanica">Mecánica</option>
                             </select>
                         </div>
 
-                        <!-- FASE 3: Filtro de Combustible -->
+                        <!-- Combustible -->
                         <div class="filter-group">
                             <label class="filter-label">Combustible</label>
-                            <select name="combustible" class="filter-select">
+                            <select name="combustible" class="filter-select" id="combustibleSelect">
                                 <option value="">Todos</option>
-                                <option value="gasolina">Gasolina</option>
-                                <option value="diesel">Diesel</option>
-                                <option value="hibrido">Híbrido</option>
                             </select>
                         </div>
 
@@ -152,6 +143,7 @@
     <script src="js/toast.js"></script>
     <script src="js/components.js"></script>
     <script src="js/database.js"></script>
+    <script src="js/dynamic-lists.js"></script>
     <script src="js/render.js"></script>
     <script src="js/filters.js"></script>
     <script src="js/main.js"></script>
@@ -194,19 +186,10 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        // FASE 5: Cargar marcas dinámicamente
         async function loadDynamicFilters() {
             await vehicleDB.load();
-            const brands = vehicleDB.getUniqueBrands();
-            const marcaSelect = document.getElementById('marcaSelect');
-            if (marcaSelect) {
-                brands.forEach(brand => {
-                    const option = document.createElement('option');
-                    option.value = brand;
-                    option.textContent = brand.charAt(0).toUpperCase() + brand.slice(1);
-                    marcaSelect.appendChild(option);
-                });
-            }
+            await DynamicLists.load();
+            DynamicLists.populatePageFilters();
         }
 
         // Handle filters form

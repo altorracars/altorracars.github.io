@@ -934,3 +934,24 @@ tbody tr:hover {
     .search-input { width: 100%; }
     .table-header { flex-direction: column; gap: 0.5rem; align-items: stretch; }
 }
+
+/* Feature checkboxes for characteristics */
+.feat-cb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--admin-text);
+    padding: 3px 0;
+    cursor: pointer;
+}
+.feat-cb input[type="checkbox"] {
+    accent-color: var(--admin-gold);
+    width: 15px;
+    height: 15px;
+}
+.feat-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}

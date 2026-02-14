@@ -87,46 +87,33 @@
                 <div class="search-form-grid">
                     <div class="form-group">
                         <label>Tipo de Vehículo</label>
-                        <select name="tipo">
+                        <select name="tipo" id="tipoSelect">
                             <option value="">Todos</option>
-                            <option value="nuevo">Nuevo</option>
-                            <option value="usado">Usado</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Marca</label>
                         <select name="marca" id="marcaSelect">
                             <option value="">Todas</option>
-                            <!-- FASE 3: Marcas cargadas dinámicamente -->
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Categoría</label>
-                        <select name="categoria">
+                        <select name="categoria" id="categoriaSelect">
                             <option value="">Todas</option>
-                            <option value="suv">SUV</option>
-                            <option value="pickup">Pickup</option>
-                            <option value="sedan">Sedán</option>
-                            <option value="hatchback">Hatchback</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Transmisión</label>
-                        <select name="transmision">
+                        <select name="transmision" id="transmisionSelect">
                             <option value="">Todas</option>
-                            <option value="automatica">Automática</option>
-                            <option value="mecanica">Mecánica</option>
                         </select>
                     </div>
                     <!-- FASE 3: Filtro de Combustible -->
                     <div class="form-group">
                         <label>Combustible</label>
-                        <select name="combustible">
+                        <select name="combustible" id="combustibleSelect">
                             <option value="">Todos</option>
-                            <option value="gasolina">Gasolina</option>
-                            <option value="diesel">Diesel</option>
-                            <option value="hibrido">Híbrido</option>
-                            <option value="electrico">Eléctrico</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -198,6 +185,7 @@
     <script src="js/toast.js"></script>
     <script src="js/components.js"></script>
     <script src="js/database.js"></script>
+    <script src="js/dynamic-lists.js"></script>
     <script src="js/render.js"></script>
     <script src="js/main.js"></script>
     <script src="js/comparador.js"></script>
@@ -226,25 +214,14 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
         
-        // FASE 3: Cargar filtros dinámicos
+        // Cargar filtros dinámicos desde Firestore
         async function loadDynamicFilters() {
             await vehicleDB.load();
-
-            // Cargar marcas dinámicamente
-            const brands = vehicleDB.getUniqueBrands();
-            const marcaSelect = document.getElementById('marcaSelect');
-            if (marcaSelect) {
-                brands.forEach(brand => {
-                    const option = document.createElement('option');
-                    option.value = brand;
-                    option.textContent = brand.charAt(0).toUpperCase() + brand.slice(1);
-                    marcaSelect.appendChild(option);
-                });
-            }
+            await DynamicLists.load();
+            DynamicLists.populatePageFilters();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // FASE 3: Cargar filtros dinámicos primero
             loadDynamicFilters();
 
             // Toggle filters button

@@ -49,8 +49,8 @@ service cloud.firestore {
 
     // ========== CONCESIONARIOS ==========
     match /concesionarios/{concesionarioId} {
-      // Public — vehicle detail pages show dealer name
-      allow read: if true;
+      // INTERNAL — only authenticated admin users can read dealer info
+      allow read: if isAuthenticated();
       allow create, update: if isSuperAdmin();
       allow delete: if isSuperAdmin();
     }

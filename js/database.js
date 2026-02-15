@@ -4,7 +4,6 @@ class VehicleDatabase {
     constructor() {
         this.vehicles = [];
         this.brands = [];
-        this.dealers = [];
         this.loaded = false;
         this._cacheKey = 'altorra-db-cache';
         this._cacheMaxAge = 5 * 60 * 1000; // 5 minutes
@@ -17,8 +16,7 @@ class VehicleDatabase {
             var payload = {
                 ts: Date.now(),
                 vehicles: this.vehicles,
-                brands: this.brands,
-                dealers: this.dealers
+                brands: this.brands
             };
             localStorage.setItem(this._cacheKey, JSON.stringify(payload));
         } catch (e) {
@@ -34,7 +32,6 @@ class VehicleDatabase {
             if (Date.now() - data.ts > this._cacheMaxAge) return false;
             this.vehicles = data.vehicles || [];
             this.brands = data.brands || [];
-            this.dealers = data.dealers || [];
             return true;
         } catch (e) {
             return false;
@@ -83,7 +80,6 @@ class VehicleDatabase {
             console.warn('Firestore unavailable and no cache. Starting with empty inventory.');
             this.vehicles = [];
             this.brands = [];
-            this.dealers = [];
             this.loaded = true;
         }
     }
@@ -105,19 +101,22 @@ class VehicleDatabase {
         var results = await Promise.race([
             Promise.all([
                 window.db.collection('vehiculos').get(),
-                window.db.collection('marcas').get(),
-                window.db.collection('concesionarios').get()
+                window.db.collection('marcas').get()
             ]),
             queryTimeout
         ]);
 
         var vehiclesSnap = results[0];
         var brandsSnap = results[1];
-        var dealersSnap = results[2];
 
-        this.vehicles = vehiclesSnap.docs.map(function(doc) { return doc.data(); });
+        this.vehicles = vehiclesSnap.docs.map(function(doc) {
+            var data = doc.data();
+            // Strip internal/classified fields — dealer info is admin-only
+            delete data.concesionario;
+            delete data.consignaParticular;
+            return data;
+        });
         this.brands = brandsSnap.empty ? [] : brandsSnap.docs.map(function(doc) { return doc.data(); });
-        this.dealers = dealersSnap.empty ? [] : dealersSnap.docs.map(function(doc) { return doc.data(); });
 
         // Normalizar rutas de logos de marcas (corrige "multimedia/Logo/" → "multimedia/Logos/")
         this.brands = this.brands.map(b => {
@@ -389,16 +388,6 @@ class VehicleDatabase {
     // Get all brands
     getAllBrands() {
         return this.brands;
-    }
-
-    // Get all dealers
-    getAllDealers() {
-        return this.dealers;
-    }
-
-    // Get dealer info by ID
-    getDealerInfo(dealerId) {
-        return this.dealers.find(d => d.id === dealerId);
     }
 
     // Get brand info

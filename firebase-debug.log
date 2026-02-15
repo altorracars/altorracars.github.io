@@ -1,0 +1,16 @@
+[debug] [2026-02-15T20:45:31.645Z] ----------------------------------------------------------------------
+[debug] [2026-02-15T20:45:31.648Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\romad\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only firestore:rules
+[debug] [2026-02-15T20:45:31.648Z] CLI Version:   15.6.0
+[debug] [2026-02-15T20:45:31.648Z] Platform:      win32
+[debug] [2026-02-15T20:45:31.649Z] Node Version:  v24.13.0
+[debug] [2026-02-15T20:45:31.649Z] Time:          Sun Feb 15 2026 15:45:31 GMT-0500 (hora estándar de Colombia)
+[debug] [2026-02-15T20:45:31.649Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-02-15T20:45:32.951Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-15T20:45:32.951Z] > authorizing via signed-in user (altorracarssale@gmail.com)
+[debug] [2026-02-15T20:45:32.951Z] [iam] checking project altorra-cars for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-02-15T20:45:32.952Z] Checked if tokens are valid: false, expires at: 1771185287731
+[debug] [2026-02-15T20:45:32.952Z] Checked if tokens are valid: false, expires at: 1771185287731
+[debug] [2026-02-15T20:45:32.952Z] > refreshing access token with scopes: []
+[debug] [2026-02-15T20:45:32.953Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-02-15T20:45:32.953Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]

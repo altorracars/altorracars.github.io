@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v2.0.0-' + '20260202'; // Date-based versioning
+const CACHE_VERSION = 'v2.1.0-' + '20260215'; // Date-based versioning
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = 'altorra-runtime';
 
@@ -94,10 +94,8 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // STRATEGY 1: Network Only for data files (always fresh)
-    if (request.url.includes('/data/') ||
-        request.url.includes('vehiculos.json') ||
-        request.url.includes('.json')) {
+    // STRATEGY 1: Network Only for JSON data files (always fresh)
+    if (request.url.includes('.json')) {
         event.respondWith(networkOnly(request));
         return;
     }

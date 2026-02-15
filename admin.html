@@ -215,10 +215,10 @@
                 <div style="overflow-x: auto;">
                     <table>
                         <thead><tr>
-                            <th>Imagen</th><th>Vehiculo</th><th>Tipo</th><th>Precio</th><th>Estado</th><th>Origen</th><th>Acciones</th>
+                            <th>Codigo</th><th>Imagen</th><th>Vehiculo</th><th>Tipo</th><th>Precio</th><th>Estado</th><th>Origen</th><th>Acciones</th>
                         </tr></thead>
                         <tbody id="vehiclesTableBody">
-                            <tr><td colspan="7" style="text-align:center;padding:2rem;">Cargando...</td></tr>
+                            <tr><td colspan="8" style="text-align:center;padding:2rem;">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -442,6 +442,33 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Sales Tracking / Operaciones -->
+            <div class="page-header" style="margin-top:2rem;">
+                <div>
+                    <h2 style="font-size:1.25rem;">Operaciones de Venta</h2>
+                    <p class="page-subtitle">Registro de ventas con utilidad y canal</p>
+                </div>
+            </div>
+            <div id="salesSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-bottom:1rem;"></div>
+            <div class="stat-card" style="overflow-x:auto;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Codigo</th>
+                            <th>Vehiculo</th>
+                            <th>Canal</th>
+                            <th>Precio Cierre</th>
+                            <th>Utilidad ALTORRA</th>
+                            <th>Responsable</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTrackingBody">
+                        <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Sin operaciones registradas</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- LISTAS CONFIGURABLES -->
@@ -509,6 +536,12 @@
         <div class="modal-body">
             <form id="vehicleForm">
                 <input type="hidden" id="vId">
+                <input type="hidden" id="vCodigoUnico">
+
+                <div id="codigoUnicoDisplay" style="display:none; margin-bottom:1rem; padding:0.5rem 1rem; background:var(--admin-bg-secondary,#161b22); border:1px solid var(--admin-border,#30363d); border-radius:6px;">
+                    <small style="color:var(--admin-text-muted,#8b949e);">Codigo unico</small>
+                    <div id="codigoUnicoValue" style="font-family:monospace; font-size:1.1rem; font-weight:600; color:var(--admin-accent,#58a6ff); letter-spacing:1px;"></div>
+                </div>
 
                 <!-- Seccion: Info Basica -->
                 <div class="form-section">
@@ -788,15 +821,37 @@
 
 <!-- SOLD VEHICLE MODAL -->
 <div class="modal-overlay" id="soldModal">
-    <div class="modal" style="max-width:500px;">
-        <div class="modal-header"><h2>Registrar Operacion</h2><button class="modal-close" id="closeSoldModal">&times;</button></div>
+    <div class="modal" style="max-width:600px;">
+        <div class="modal-header"><h2>Registrar Operacion de Venta</h2><button class="modal-close" id="closeSoldModal">&times;</button></div>
         <div class="modal-body">
             <form id="soldForm">
                 <input type="hidden" id="soldVehicleId">
                 <div id="soldVehicleInfo" style="padding:0.75rem;background:rgba(212,175,55,0.1);border:1px solid var(--admin-gold);border-radius:8px;margin-bottom:1rem;font-size:0.85rem;"></div>
-                <div class="form-group"><label class="form-label">Precio de venta *</label><input type="number" id="soldPrecio" class="form-input" required placeholder="85000000"></div>
-                <div class="form-group"><label class="form-label">Canal de venta *</label><select id="soldCanal" class="form-select" required><option value="">Seleccionar...</option><option value="presencial">Visita presencial</option><option value="whatsapp">WhatsApp</option><option value="redes">Redes sociales</option><option value="referido">Referido</option><option value="otro">Otro</option></select></div>
-                <div class="form-group"><label class="form-label">Observaciones</label><textarea id="soldObservaciones" class="form-textarea" rows="3" placeholder="Notas sobre la venta..."></textarea></div>
+
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Canal de venta *</label><select id="soldCanal" class="form-select" required><option value="">Seleccionar...</option><option value="altorra">ALTORRA (venta directa)</option><option value="concesionario">Concesionario</option><option value="intermediario">Otro intermediario</option><option value="cliente_directo">Cliente directo</option></select></div>
+                    <div class="form-group"><label class="form-label">Responsable comercial *</label><input type="text" id="soldResponsable" class="form-input" required placeholder="Nombre del asesor"></div>
+                </div>
+
+                <div style="margin:0.75rem 0 0.5rem;font-weight:600;font-size:0.85rem;color:var(--admin-text-secondary);">Precios y margenes</div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Precio base concesionario</label><input type="number" id="soldPrecioBase" class="form-input" placeholder="Precio que paga el concesionario"></div>
+                    <div class="form-group"><label class="form-label">Precio publicado web</label><input type="number" id="soldPrecioWeb" class="form-input" placeholder="Precio en la pagina"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Precio de cierre *</label><input type="number" id="soldPrecio" class="form-input" required placeholder="Precio final acordado"></div>
+                    <div class="form-group"><label class="form-label">Comision minima</label><input type="number" id="soldComisionMin" class="form-input" placeholder="Comision base"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Utilidad adicional</label><input type="number" id="soldUtilidadAdicional" class="form-input" placeholder="Ganancia extra"></div>
+                    <div class="form-group">
+                        <label class="form-label">Utilidad total ALTORRA</label>
+                        <div id="soldUtilidadTotal" style="padding:0.5rem 0.75rem;background:var(--admin-bg-secondary,#161b22);border:1px solid var(--admin-border,#30363d);border-radius:6px;font-weight:700;font-size:1rem;color:var(--admin-success,#3fb950);min-height:38px;display:flex;align-items:center;">$0</div>
+                    </div>
+                </div>
+
+                <div class="form-group"><label class="form-label">Fecha de cierre</label><input type="date" id="soldFechaCierre" class="form-input"></div>
+                <div class="form-group"><label class="form-label">Observaciones</label><textarea id="soldObservaciones" class="form-textarea" rows="3" placeholder="Notas sobre la operacion..."></textarea></div>
             </form>
         </div>
         <div class="modal-footer"><button class="btn btn-ghost" id="cancelSoldModal">Cancelar</button><button class="btn btn-primary" id="confirmSold">Registrar Venta</button></div>

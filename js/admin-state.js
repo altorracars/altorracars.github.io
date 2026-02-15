@@ -27,7 +27,7 @@
         // ========== RBAC STATE ==========
         currentUserProfile: null,
         currentUserRole: null,
-        INACTIVITY_TIMEOUT_MS: 3 * 60 * 1000,
+        INACTIVITY_TIMEOUT_MS: 10 * 60 * 1000,
         inactivityTimerId: null,
         inactivityTrackingActive: false,
         ACTIVITY_EVENTS: ['mousemove', 'touchstart', 'touchmove'],

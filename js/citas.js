@@ -296,13 +296,39 @@ class AppointmentSystem {
         });
     }
 
-    showTimeSlots(modal) {
+    async loadBookedSlotsForDate(dateStr) {
+        try {
+            if (!window.db) return [];
+            var doc = await window.db.collection('config').doc('bookedSlots').get();
+            if (doc.exists) {
+                var data = doc.data();
+                return data[dateStr] || [];
+            }
+        } catch (e) {
+            console.warn('[Citas] Could not load booked slots:', e);
+        }
+        return [];
+    }
+
+    async showTimeSlots(modal) {
         var container = modal.querySelector('#timeSlotsContainer');
         var section = modal.querySelector('#timeSlotSection');
         if (!container || !section) return;
 
         section.style.display = '';
-        container.innerHTML = this.availableSlots.map(function(slot, index) {
+        container.innerHTML = '<div class="time-loading">Verificando disponibilidad...</div>';
+
+        var bookedSlots = await this.loadBookedSlotsForDate(this.selectedDate);
+        var freeSlots = this.availableSlots.filter(function(slot) {
+            return bookedSlots.indexOf(slot) === -1;
+        });
+
+        if (freeSlots.length === 0) {
+            container.innerHTML = '<div class="time-unavailable">No hay horarios disponibles para este día. Por favor selecciona otra fecha.</div>';
+            return;
+        }
+
+        container.innerHTML = freeSlots.map(function(slot, index) {
             return '<label class="time-option">' +
                 '<input type="radio" name="hora" value="' + slot + '"' + (index === 0 ? ' checked' : '') + '>' +
                 '<span class="time-option-content">' + slot + '</span>' +
@@ -327,27 +353,68 @@ class AppointmentSystem {
         var comentarios = formData.get('comentarios') || 'Ninguno';
 
         var self = this;
+        var submitBtn = form.querySelector('.btn-submit-appointment');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Reservando...';
+        }
 
-        // Save to Firestore
-        this.saveAppointmentToFirestore({
-            nombre: nombre,
-            whatsapp: telefono,
-            telefono: telefono,
-            email: email,
-            fecha: fecha,
-            hora: hora,
-            comentarios: comentarios,
-            vehiculo: vehicleInfo.marca ? (vehicleInfo.marca + ' ' + vehicleInfo.modelo + ' ' + (vehicleInfo.year || '')) : '',
-            vehiculoId: vehicleInfo.id || '',
-            vehiculoPrecio: vehicleInfo.precio || 0,
-            estado: 'pendiente',
-            observaciones: '',
-            createdAt: new Date().toISOString()
+        // Atomic booking: reserve the slot first, then save the appointment
+        this.bookSlotAtomically(fecha, hora).then(function() {
+            // Slot reserved successfully, now save the full appointment
+            return self.saveAppointmentToFirestore({
+                nombre: nombre,
+                whatsapp: telefono,
+                telefono: telefono,
+                email: email,
+                fecha: fecha,
+                hora: hora,
+                comentarios: comentarios,
+                vehiculo: vehicleInfo.marca ? (vehicleInfo.marca + ' ' + vehicleInfo.modelo + ' ' + (vehicleInfo.year || '')) : '',
+                vehiculoId: vehicleInfo.id || '',
+                vehiculoPrecio: vehicleInfo.precio || 0,
+                estado: 'pendiente',
+                observaciones: '',
+                createdAt: new Date().toISOString()
+            });
         }).then(function() {
-            // Show success message instead of opening WhatsApp
             self.showConfirmation(modal, nombre, fecha, hora);
-        }).catch(function() {
-            self.showConfirmation(modal, nombre, fecha, hora);
+        }).catch(function(err) {
+            if (err && err.message === 'SLOT_TAKEN') {
+                alert('Lo sentimos, este horario acaba de ser reservado por otra persona. Por favor selecciona otro horario.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Enviar Solicitud de Cita';
+                }
+                // Refresh time slots to show updated availability
+                self.showTimeSlots(modal);
+            } else {
+                // Firestore might be unavailable, still show confirmation
+                self.showConfirmation(modal, nombre, fecha, hora);
+            }
+        });
+    }
+
+    // ===== ATOMIC SLOT BOOKING =====
+    async bookSlotAtomically(fecha, hora) {
+        if (!window.db) return Promise.resolve();
+        var bookedRef = window.db.collection('config').doc('bookedSlots');
+        return window.db.runTransaction(function(transaction) {
+            return transaction.get(bookedRef).then(function(doc) {
+                var data = doc.exists ? doc.data() : {};
+                var daySlots = data[fecha] || [];
+                if (daySlots.indexOf(hora) !== -1) {
+                    throw new Error('SLOT_TAKEN');
+                }
+                daySlots.push(hora);
+                var update = {};
+                update[fecha] = daySlots;
+                if (doc.exists) {
+                    transaction.update(bookedRef, update);
+                } else {
+                    transaction.set(bookedRef, update);
+                }
+            });
         });
     }
 

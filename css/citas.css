@@ -350,6 +350,27 @@
     background: #e5e7eb;
 }
 
+/* ===== TIME SLOT STATES ===== */
+.time-loading {
+    text-align: center;
+    padding: 16px;
+    color: #6b7280;
+    font-size: 14px;
+    font-style: italic;
+}
+
+.time-unavailable {
+    text-align: center;
+    padding: 16px;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
 /* ===== BOTÓN SUBMIT ===== */
 .btn-submit-appointment {
     display: flex;

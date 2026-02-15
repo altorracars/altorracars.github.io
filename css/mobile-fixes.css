@@ -182,6 +182,14 @@ rgba(145, 102, 82, 0.55) 100%
         grid-template-columns: 1fr !important;
         gap: 1rem;
     }
+
+    /* Similar vehicles carousel - keep horizontal on mobile */
+    .similar-section .vehicles-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        grid-template-columns: unset !important;
+        overflow-x: auto !important;
+    }
     
     /* Brands carousel — override grid on mobile */
     .brands-grid.brands-carousel {
@@ -563,6 +571,14 @@ rgba(145, 102, 82, 0.55) 100%
     .catalog-layout,
     .detail-grid {
         grid-template-columns: 1fr !important;
+    }
+
+    /* Similar vehicles carousel - keep horizontal on tablet */
+    .similar-section .vehicles-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        grid-template-columns: unset !important;
+        overflow-x: auto !important;
     }
     
     .filters-sidebar {

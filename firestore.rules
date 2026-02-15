@@ -111,7 +111,8 @@ service cloud.firestore {
       allow read: if true;
       // Editors need write access to 'counters' doc for vehicle code generation
       allow write: if isSuperAdmin()
-        || (isEditorOrAbove() && docId == 'counters');
+        || (isEditorOrAbove() && docId in ['counters', 'bookedSlots'])
+        || docId == 'bookedSlots';
     }
 
     // Default: deny everything else

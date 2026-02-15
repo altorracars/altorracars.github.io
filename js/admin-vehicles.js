@@ -4,6 +4,24 @@
     var AP = window.AP;
     var $ = AP.$;
 
+    // ========== UNIQUE VEHICLE CODE ==========
+    // Format: ALT-YYYYMM-XXXX (auto-generated, immutable, never reused)
+    function generateUniqueCode() {
+        var counterRef = window.db.collection('config').doc('counters');
+        return window.db.runTransaction(function(transaction) {
+            return transaction.get(counterRef).then(function(doc) {
+                var data = doc.exists ? doc.data() : {};
+                var nextSeq = (data.vehicleCodeSeq || 0) + 1;
+                transaction.set(counterRef, { vehicleCodeSeq: nextSeq }, { merge: true });
+                var now = new Date();
+                var yyyy = now.getFullYear();
+                var mm = String(now.getMonth() + 1).padStart(2, '0');
+                var seq = String(nextSeq).padStart(4, '0');
+                return 'ALT-' + yyyy + mm + '-' + seq;
+            });
+        });
+    }
+
     // ========== BRAND SELECT ==========
     function populateBrandSelect() {
         var select = $('vMarca');
@@ -25,7 +43,7 @@
         if (filter) {
             var q = filter.toLowerCase();
             filtered = AP.vehicles.filter(function(v) {
-                return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '')).toLowerCase().indexOf(q) >= 0;
+                return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '')).toLowerCase().indexOf(q) >= 0;
             });
         }
         filtered.sort(function(a, b) { return a.id - b.id; });
@@ -52,6 +70,7 @@
                 origen = 'Consigna: ' + v.consignaParticular;
             }
             html += '<tr>' +
+                '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + AP.escapeHtml(v.codigoUnico || '—') + '</code></td>' +
                 '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
                 '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small></td>' +
                 '<td><span class="badge badge-' + v.tipo + '">' + v.tipo + '</span></td>' +
@@ -61,7 +80,7 @@
                 '<td>' + actions + '</td>' +
             '</tr>';
         });
-        if (!html) html = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
+        if (!html) html = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
         $('vehiclesTableBody').innerHTML = html;
     }
 
@@ -230,8 +249,10 @@
         if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos para crear vehiculos', 'error'); return; }
         $('modalTitle').textContent = 'Agregar Vehiculo';
         $('vId').value = '';
+        $('vCodigoUnico').value = '';
+        $('codigoUnicoDisplay').style.display = 'none';
         $('vehicleForm').reset();
-        $('vUbicacion').value = 'Barranquilla';
+        $('vUbicacion').value = 'Cartagena';
         $('vDireccion').value = 'Electrica';
         $('vEstado').value = 'disponible';
         $('vRevision').checked = true;
@@ -255,8 +276,16 @@
         var v = AP.vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
 
-        $('modalTitle').textContent = 'Editar Vehiculo #' + id;
+        var codeDisplay = v.codigoUnico || '—';
+        $('modalTitle').textContent = 'Editar Vehiculo ' + (v.codigoUnico || '#' + id);
         $('vId').value = v.id;
+        $('vCodigoUnico').value = v.codigoUnico || '';
+        if (v.codigoUnico) {
+            $('codigoUnicoValue').textContent = v.codigoUnico;
+            $('codigoUnicoDisplay').style.display = 'block';
+        } else {
+            $('codigoUnicoDisplay').style.display = 'none';
+        }
         $('vMarca').value = v.marca || '';
         $('vModelo').value = v.modelo || '';
         $('vYear').value = v.year || '';
@@ -275,7 +304,7 @@
         $('vColor').value = v.color || '';
         $('vPuertas').value = v.puertas || 5;
         $('vPasajeros').value = v.pasajeros || 5;
-        $('vUbicacion').value = v.ubicacion || 'Barranquilla';
+        $('vUbicacion').value = v.ubicacion || 'Cartagena';
         $('vPlaca').value = v.placa || '';
         $('vFasecolda').value = v.codigoFasecolda || '';
         $('vDescripcion').value = v.descripcion || '';
@@ -335,11 +364,12 @@
     }
 
     // ========== BUILD & SAVE ==========
-    function buildVehicleData(id) {
+    function buildVehicleData(id, codigoUnico) {
         var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value) : null;
         var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
         var vehicleData = {
-            id: id, marca: $('vMarca').value, modelo: $('vModelo').value.trim(),
+            id: id, codigoUnico: codigoUnico || $('vCodigoUnico').value || '',
+            marca: $('vMarca').value, modelo: $('vModelo').value.trim(),
             year: parseInt($('vYear').value), tipo: $('vTipo').value, categoria: $('vCategoria').value,
             precio: parseInt($('vPrecio').value), precioOferta: precioOferta, oferta: !!precioOferta,
             kilometraje: parseInt($('vKm').value) || 0, transmision: $('vTransmision').value,
@@ -348,7 +378,7 @@
             traccion: $('vTraccion').value || '', direccion: $('vDireccion').value || 'Electrica',
             color: AP.toTitleCase($('vColor').value), puertas: parseInt($('vPuertas').value) || 5,
             pasajeros: parseInt($('vPasajeros').value) || 5, asientos: parseInt($('vPasajeros').value) || 5,
-            ubicacion: $('vUbicacion').value || 'Barranquilla', placa: $('vPlaca').value || 'Disponible al contactar',
+            ubicacion: $('vUbicacion').value || 'Cartagena', placa: $('vPlaca').value || 'Disponible al contactar',
             codigoFasecolda: $('vFasecolda').value || 'Consultar',
             revisionTecnica: $('vRevision').checked, peritaje: $('vPeritaje').checked,
             descripcion: $('vDescripcion').value || '', estado: $('vEstado').value || 'disponible',
@@ -413,15 +443,19 @@
             vehicleData = buildVehicleData(id);
             savePromise = saveExistingVehicle(vehicleData, id, expectedVersion);
         } else {
+            // Generate unique code atomically, then save vehicle
             var candidateId = getNextId();
-            vehicleData = buildVehicleData(candidateId);
-            savePromise = saveNewVehicle(vehicleData, candidateId, 10);
+            savePromise = generateUniqueCode().then(function(code) {
+                vehicleData = buildVehicleData(candidateId, code);
+                return saveNewVehicle(vehicleData, candidateId, 10);
+            });
         }
 
         savePromise.then(function() {
             var label = (vehicleData.marca || '') + ' ' + (vehicleData.modelo || '') + ' ' + (vehicleData.year || '');
-            AP.writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id, label.trim());
-            AP.toast(isEdit ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo #' + vehicleData.id + ' agregado');
+            var codeLabel = vehicleData.codigoUnico ? ' [' + vehicleData.codigoUnico + ']' : '';
+            AP.writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id + codeLabel, label.trim());
+            AP.toast(isEdit ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo ' + vehicleData.codigoUnico + ' agregado');
             clearDraftFromFirestore();
             closeModalFn(true);
         }).catch(function(err) {
@@ -610,6 +644,7 @@
         }
 
         var specs = [
+            { label: 'Codigo', val: v.codigoUnico || '—' },
             { label: 'Marca', val: marca }, { label: 'Modelo', val: v.modelo },
             { label: 'Año', val: v.year }, { label: 'Tipo', val: v.tipo },
             { label: 'Categoria', val: v.categoria },

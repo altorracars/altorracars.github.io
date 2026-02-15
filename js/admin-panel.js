@@ -15,7 +15,7 @@
     // ========== RBAC STATE ==========
     var currentUserProfile = null;
     var currentUserRole = null;
-    var INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
+    var INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
     var inactivityTimerId = null;
     var inactivityTrackingActive = false;
 
@@ -24,9 +24,45 @@
     function isSuperAdmin() { return currentUserRole === 'super_admin'; }
     function isEditor() { return currentUserRole === 'editor'; }
     function isViewer() { return currentUserRole === 'viewer'; }
-    function canManageUsers() { return isSuperAdmin(); }
-    function canCreateOrEditInventory() { return isSuperAdmin() || isEditor(); }
-    function canDeleteInventory() { return isSuperAdmin(); }
+
+    // ========== GRANULAR RBAC MATRIX ==========
+    // Module-level permission checks
+    var RBAC = {
+        // Users: super_admin only
+        canViewUsers:        function() { return isSuperAdmin(); },
+        canManageUsers:      function() { return isSuperAdmin(); },
+        // Vehicles: editor+ create/edit, super_admin delete
+        canViewVehicles:     function() { return true; },
+        canCreateVehicle:    function() { return isSuperAdmin() || isEditor(); },
+        canEditVehicle:      function() { return isSuperAdmin() || isEditor(); },
+        canDeleteVehicle:    function() { return isSuperAdmin(); },
+        // Brands: editor+ create/edit, super_admin delete
+        canViewBrands:       function() { return true; },
+        canCreateBrand:      function() { return isSuperAdmin() || isEditor(); },
+        canEditBrand:        function() { return isSuperAdmin() || isEditor(); },
+        canDeleteBrand:      function() { return isSuperAdmin(); },
+        // Appointments: editor+ manage, super_admin delete
+        canViewAppointments: function() { return true; },
+        canManageAppointment:function() { return isSuperAdmin() || isEditor(); },
+        canDeleteAppointment:function() { return isSuperAdmin(); },
+        // Dealers: super_admin full, editor view only
+        canViewDealers:      function() { return isSuperAdmin() || isEditor(); },
+        canManageDealers:    function() { return isSuperAdmin(); },
+        // Lists: super_admin edit, editor view
+        canViewLists:        function() { return isSuperAdmin() || isEditor(); },
+        canEditLists:        function() { return isSuperAdmin(); },
+        // Settings & Backup
+        canExportBackup:     function() { return isSuperAdmin(); },
+        canImportBackup:     function() { return isSuperAdmin(); },
+        // Activity log
+        canViewActivity:     function() { return true; },
+        canDeleteActivity:   function() { return isSuperAdmin(); }
+    };
+
+    // Backwards-compatible aliases
+    function canManageUsers() { return RBAC.canManageUsers(); }
+    function canCreateOrEditInventory() { return RBAC.canCreateVehicle(); }
+    function canDeleteInventory() { return RBAC.canDeleteVehicle(); }
 
     // ========== CONFIG ==========
     var UPLOAD_CONFIG = {
@@ -73,7 +109,7 @@
     function handleInactivityTimeout() {
         clearInactivityTimer();
         if (!window.auth || !window.auth.currentUser) return;
-        toast('Sesion cerrada por inactividad (3 minutos).', 'info');
+        toast('Sesion cerrada por inactividad (10 minutos).', 'info');
         window.auth.signOut();
     }
 
@@ -284,22 +320,35 @@
 
     // ========== APPLY ROLE PERMISSIONS TO UI ==========
     function applyRolePermissions() {
-        // Users nav/section: only super_admin
-        var usersNav = document.querySelector('.nav-item[data-section="users"]');
-        if (usersNav) {
-            usersNav.style.display = canManageUsers() ? '' : 'none';
-        }
+        // Sidebar navigation visibility per module
+        var navRules = {
+            'dashboard':    true,
+            'vehicles':     RBAC.canViewVehicles(),
+            'brands':       RBAC.canViewBrands(),
+            'users':        RBAC.canViewUsers(),
+            'appointments': RBAC.canViewAppointments(),
+            'dealers':      RBAC.canViewDealers(),
+            'lists':        RBAC.canViewLists(),
+            'settings':     true
+        };
+        Object.keys(navRules).forEach(function(section) {
+            var navEl = document.querySelector('.nav-item[data-section="' + section + '"]');
+            if (navEl) navEl.style.display = navRules[section] ? '' : 'none';
+        });
 
-        // Create buttons: hidden for viewer
-        var btnAddVehicle = $('btnAddVehicle');
-        var btnAddBrand = $('btnAddBrand');
-        if (btnAddVehicle) btnAddVehicle.style.display = canCreateOrEditInventory() ? '' : 'none';
-        if (btnAddBrand) btnAddBrand.style.display = canCreateOrEditInventory() ? '' : 'none';
-
-        // Vehicle search (visible to all)
-        // Settings section (visible to all - password change is personal)
-
-        // RBAC permissions applied
+        // Create/action buttons per module
+        var btnRules = {
+            'btnAddVehicle': RBAC.canCreateVehicle(),
+            'btnAddBrand':   RBAC.canCreateBrand(),
+            'btnAddDealer':  RBAC.canManageDealers(),
+            'btnSaveLists':  RBAC.canEditLists(),
+            'exportBackup':  RBAC.canExportBackup(),
+            'importBackup':  RBAC.canImportBackup()
+        };
+        Object.keys(btnRules).forEach(function(id) {
+            var el = $(id);
+            if (el) el.style.display = btnRules[id] ? '' : 'none';
+        });
     }
 
     // ========== LOGIN ==========
@@ -480,6 +529,7 @@
             updateNavBadges();
             renderVehiclesByOrigin();
             renderDealersList();
+            renderSalesTracking();
             checkLoadingComplete();
         }, function(err) {
             console.error('Vehicles snapshot error:', err);
@@ -807,6 +857,7 @@
     }
 
     function deleteSelectedActivity() {
+        if (!RBAC.canDeleteActivity()) { toast('Sin permisos para eliminar actividad', 'error'); return; }
         if (selectedActivityIds.length === 0) return;
         if (!confirm('Eliminar ' + selectedActivityIds.length + ' registros de actividad?')) return;
         var batch = window.db.batch();
@@ -827,6 +878,7 @@
     }
 
     function clearAllActivity() {
+        if (!RBAC.canDeleteActivity()) { toast('Sin permisos para eliminar actividad', 'error'); return; }
         if (!confirm('Eliminar TODA la actividad reciente? Esta accion no se puede deshacer.')) return;
         var batch = window.db.batch();
         var count = 0;
@@ -975,7 +1027,7 @@
         if (filter) {
             var q = filter.toLowerCase();
             filtered = vehicles.filter(function(v) {
-                return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '')).toLowerCase().indexOf(q) >= 0;
+                return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '')).toLowerCase().indexOf(q) >= 0;
             });
         }
 
@@ -1008,6 +1060,7 @@
             }
 
             html += '<tr>' +
+                '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + escapeHtml(v.codigoUnico || '—') + '</code></td>' +
                 '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
                 '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small></td>' +
                 '<td><span class="badge badge-' + v.tipo + '">' + v.tipo + '</span></td>' +
@@ -1018,7 +1071,7 @@
             '</tr>';
         });
 
-        if (!html) html = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
+        if (!html) html = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
         $('vehiclesTableBody').innerHTML = html;
     }
 
@@ -1281,8 +1334,10 @@
         if (!canCreateOrEditInventory()) { toast('No tienes permisos para crear vehiculos', 'error'); return; }
         $('modalTitle').textContent = 'Agregar Vehiculo';
         $('vId').value = '';
+        $('vCodigoUnico').value = '';
+        $('codigoUnicoDisplay').style.display = 'none';
         $('vehicleForm').reset();
-        $('vUbicacion').value = 'Barranquilla';
+        $('vUbicacion').value = 'Cartagena';
         $('vDireccion').value = 'Electrica';
         $('vEstado').value = 'disponible';
         $('vRevision').checked = true;
@@ -1319,8 +1374,15 @@
         var v = vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
 
-        $('modalTitle').textContent = 'Editar Vehiculo #' + id;
+        $('modalTitle').textContent = 'Editar Vehiculo ' + (v.codigoUnico || '#' + id);
         $('vId').value = v.id;
+        $('vCodigoUnico').value = v.codigoUnico || '';
+        if (v.codigoUnico) {
+            $('codigoUnicoValue').textContent = v.codigoUnico;
+            $('codigoUnicoDisplay').style.display = 'block';
+        } else {
+            $('codigoUnicoDisplay').style.display = 'none';
+        }
         $('vMarca').value = v.marca || '';
         $('vModelo').value = v.modelo || '';
         $('vYear').value = v.year || '';
@@ -1339,7 +1401,7 @@
         $('vColor').value = v.color || '';
         $('vPuertas').value = v.puertas || 5;
         $('vPasajeros').value = v.pasajeros || 5;
-        $('vUbicacion').value = v.ubicacion || 'Barranquilla';
+        $('vUbicacion').value = v.ubicacion || 'Cartagena';
         $('vPlaca').value = v.placa || '';
         $('vFasecolda').value = v.codigoFasecolda || '';
         $('vDescripcion').value = v.descripcion || '';
@@ -1433,12 +1495,13 @@
     }
 
     // ========== SAVE VEHICLE (with optimistic locking + collision-safe IDs) ==========
-    function buildVehicleData(id) {
+    function buildVehicleData(id, codigoUnico) {
         var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value) : null;
         var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
 
         var vehicleData = {
             id: id,
+            codigoUnico: codigoUnico || $('vCodigoUnico').value || '',
             marca: $('vMarca').value,
             modelo: $('vModelo').value.trim(),
             year: parseInt($('vYear').value),
@@ -1459,7 +1522,7 @@
             puertas: parseInt($('vPuertas').value) || 5,
             pasajeros: parseInt($('vPasajeros').value) || 5,
             asientos: parseInt($('vPasajeros').value) || 5,
-            ubicacion: $('vUbicacion').value || 'Barranquilla',
+            ubicacion: $('vUbicacion').value || 'Cartagena',
             placa: $('vPlaca').value || 'Disponible al contactar',
             codigoFasecolda: $('vFasecolda').value || 'Consultar',
             revisionTecnica: $('vRevision').checked,
@@ -1542,25 +1605,30 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
+        var vehicleData;
         var savePromise;
 
         if (isEdit) {
             var id = parseInt(existingId);
             var editingVehicle = vehicles.find(function(v) { return v.id === id; });
             var expectedVersion = editingVehicle ? (editingVehicle._version || 0) : null;
-            var vehicleData = buildVehicleData(id);
+            vehicleData = buildVehicleData(id);
             savePromise = saveExistingVehicle(vehicleData, id, expectedVersion);
         } else {
+            // Generate unique code atomically, then save vehicle
             var candidateId = getNextId();
-            var vehicleData = buildVehicleData(candidateId);
-            savePromise = saveNewVehicle(vehicleData, candidateId, 10);
+            savePromise = generateUniqueCode().then(function(code) {
+                vehicleData = buildVehicleData(candidateId, code);
+                return saveNewVehicle(vehicleData, candidateId, 10);
+            });
         }
 
         savePromise
             .then(function() {
                 var label = (vehicleData.marca || '') + ' ' + (vehicleData.modelo || '') + ' ' + (vehicleData.year || '');
-                writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id, label.trim());
-                toast(isEdit ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo #' + vehicleData.id + ' agregado');
+                var codeLabel = vehicleData.codigoUnico ? ' [' + vehicleData.codigoUnico + ']' : '';
+                writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id + codeLabel, label.trim());
+                toast(isEdit ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo ' + vehicleData.codigoUnico + ' agregado');
                 clearDraftFromFirestore();
                 closeModalFn(true);
             })
@@ -1582,6 +1650,23 @@
     function getNextId() {
         if (vehicles.length === 0) return 1;
         return Math.max.apply(null, vehicles.map(function(v) { return v.id || 0; })) + 1;
+    }
+
+    // Generate unique vehicle code: ALT-YYYYMM-XXXX (atomic, immutable, never reused)
+    function generateUniqueCode() {
+        var counterRef = window.db.collection('config').doc('counters');
+        return window.db.runTransaction(function(transaction) {
+            return transaction.get(counterRef).then(function(doc) {
+                var data = doc.exists ? doc.data() : {};
+                var nextSeq = (data.vehicleCodeSeq || 0) + 1;
+                transaction.set(counterRef, { vehicleCodeSeq: nextSeq }, { merge: true });
+                var now = new Date();
+                var yyyy = now.getFullYear();
+                var mm = String(now.getMonth() + 1).padStart(2, '0');
+                var seq = String(nextSeq).padStart(4, '0');
+                return 'ALT-' + yyyy + mm + '-' + seq;
+            });
+        });
     }
 
     // ========== DELETE VEHICLE (super_admin only) ==========
@@ -2207,6 +2292,7 @@
         }
 
         var specs = [
+            { label: 'Codigo', val: v.codigoUnico || '—' },
             { label: 'Marca', val: marca },
             { label: 'Modelo', val: v.modelo },
             { label: 'Año', val: v.year },
@@ -2638,15 +2724,15 @@
                 '<td><span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLabel + '</span></td>' +
                 '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + escapeHtml(a.observaciones || a.comentarios || '-') + '</td>' +
                 '<td style="white-space:nowrap;">' +
-                    '<button class="btn btn-sm btn-ghost" onclick="adminPanel.manageAppointment(\'' + a._docId + '\')" title="Gestionar">Gestionar</button>' +
-                    (isSuperAdmin() ? ' <button class="btn btn-sm btn-danger" onclick="adminPanel.deleteAppointment(\'' + a._docId + '\')" title="Eliminar">&times;</button>' : '') +
+                    (RBAC.canManageAppointment() ? '<button class="btn btn-sm btn-ghost" onclick="adminPanel.manageAppointment(\'' + a._docId + '\')" title="Gestionar">Gestionar</button>' : '') +
+                    (RBAC.canDeleteAppointment() ? ' <button class="btn btn-sm btn-danger" onclick="adminPanel.deleteAppointment(\'' + a._docId + '\')" title="Eliminar">&times;</button>' : '') +
                 '</td>' +
             '</tr>';
         }).join('');
     }
 
     function deleteAppointment(docId) {
-        if (!isSuperAdmin()) { toast('Solo Super Admin puede eliminar citas', 'error'); return; }
+        if (!RBAC.canDeleteAppointment()) { toast('Solo Super Admin puede eliminar citas', 'error'); return; }
         if (!confirm('Eliminar esta cita? Esta accion no se puede deshacer.')) return;
         window.db.collection('citas').doc(docId).delete().then(function() {
             toast('Cita eliminada');
@@ -2810,7 +2896,8 @@
         deleteSelectedActivity: deleteSelectedActivity,
         clearAllActivity: clearAllActivity,
         deleteAppointment: deleteAppointment,
-        retryLoad: retryLoad
+        retryLoad: retryLoad,
+        RBAC: RBAC
     };
 
     // ========== COLLAPSIBLE FORM SECTIONS ==========
@@ -3093,6 +3180,7 @@
             dealers = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
             renderDealersList();
             renderVehiclesByOrigin();
+            renderSalesTracking();
         }, function(err) {
             console.warn('[Dealers] Error loading:', err);
         });
@@ -3149,11 +3237,11 @@
     var btnAddDealer = $('btnAddDealer');
     if (btnAddDealer) {
         btnAddDealer.addEventListener('click', function() {
-            if (!isSuperAdmin()) { toast('Solo Super Admin puede gestionar concesionarios', 'error'); return; }
+            if (!RBAC.canManageDealers()) { toast('Solo Super Admin puede gestionar concesionarios', 'error'); return; }
             $('dealerModalTitle').textContent = 'Agregar Concesionario';
             $('dOriginalId').value = '';
             $('dealerForm').reset();
-            $('dCiudad').value = 'Barranquilla';
+            $('dCiudad').value = 'Cartagena';
             $('dealerModal').classList.add('active');
         });
     }
@@ -3172,7 +3260,7 @@
         $('dNombre').value = d.nombre || '';
         $('dDireccion').value = d.direccion || '';
         $('dTelefono').value = d.telefono || '';
-        $('dCiudad').value = d.ciudad || 'Barranquilla';
+        $('dCiudad').value = d.ciudad || 'Cartagena';
         $('dHorario').value = d.horario || '';
         $('dResponsable').value = d.responsable || '';
         $('dealerModal').classList.add('active');
@@ -3189,7 +3277,7 @@
                 nombre: nombre,
                 direccion: $('dDireccion').value.trim(),
                 telefono: $('dTelefono').value.trim(),
-                ciudad: $('dCiudad').value.trim() || 'Barranquilla',
+                ciudad: $('dCiudad').value.trim() || 'Cartagena',
                 horario: $('dHorario').value.trim(),
                 responsable: $('dResponsable').value.trim(),
                 updatedAt: new Date().toISOString(),
@@ -3219,31 +3307,78 @@
         });
     }
 
-    // ========== PHASE 5: SOLD VEHICLES ==========
-    function renderSoldVehicles() {
-        var body = $('soldVehiclesBody');
+    // ========== SALES TRACKING ==========
+    var CANAL_LABELS = {
+        'altorra': 'ALTORRA',
+        'concesionario': 'Concesionario',
+        'intermediario': 'Intermediario',
+        'cliente_directo': 'Cliente directo',
+        'presencial': 'Presencial',
+        'whatsapp': 'WhatsApp',
+        'redes': 'Redes sociales',
+        'referido': 'Referido',
+        'otro': 'Otro'
+    };
+
+    function renderSalesTracking() {
+        var body = $('salesTrackingBody');
         if (!body) return;
+
         var sold = vehicles.filter(function(v) { return v.estado === 'vendido'; });
         sold.sort(function(a, b) { return (b.fechaVenta || b.updatedAt || '').localeCompare(a.fechaVenta || a.updatedAt || ''); });
 
         if (sold.length === 0) {
-            body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay vehiculos vendidos registrados</td></tr>';
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Sin operaciones registradas</td></tr>';
+            renderSalesSummary(sold);
             return;
         }
 
         body.innerHTML = sold.map(function(v) {
             var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
+            var utilColor = (v.utilidadTotal && v.utilidadTotal > 0) ? 'var(--admin-success,#3fb950)' : 'var(--admin-text-muted)';
             return '<tr>' +
-                '<td><strong>' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</strong></td>' +
-                '<td>' + formatPrice(v.precioVenta || v.precio) + '</td>' +
-                '<td>' + (v.fechaVenta || v.updatedAt || '-').split('T')[0] + '</td>' +
-                '<td>' + (v.canalVenta || '-') + '</td>' +
-                '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + (v.observacionesVenta || '-') + '</td>' +
+                '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + escapeHtml(v.codigoUnico || '—') + '</code></td>' +
+                '<td><strong>' + marca + ' ' + (v.modelo || '') + '</strong><br><small>' + (v.year || '') + '</small></td>' +
+                '<td>' + (CANAL_LABELS[v.canalVenta] || v.canalVenta || '-') + '</td>' +
+                '<td>' + formatPrice(v.precioCierre || v.precioVenta || v.precio) + '</td>' +
+                '<td style="font-weight:600;color:' + utilColor + ';">' + (v.utilidadTotal ? formatPrice(v.utilidadTotal) : '-') + '</td>' +
+                '<td>' + escapeHtml(v.responsableComercial || '-') + '</td>' +
+                '<td>' + (v.fechaCierre || (v.fechaVenta || '').split('T')[0] || '-') + '</td>' +
             '</tr>';
         }).join('');
+
+        renderSalesSummary(sold);
     }
 
-    // Mark Vehicle as Sold
+    function renderSalesSummary(sold) {
+        var container = $('salesSummary');
+        if (!container) return;
+        if (sold.length === 0) { container.innerHTML = ''; return; }
+
+        var totalVentas = sold.length;
+        var totalIngresos = sold.reduce(function(sum, v) { return sum + (v.precioCierre || v.precioVenta || v.precio || 0); }, 0);
+        var totalUtilidad = sold.reduce(function(sum, v) { return sum + (v.utilidadTotal || 0); }, 0);
+        var ventasSinUtilidad = sold.filter(function(v) { return !v.utilidadTotal || v.utilidadTotal <= 0; }).length;
+        var margenPromedio = totalVentas > 0 ? Math.round(totalUtilidad / totalVentas) : 0;
+
+        // Sales by channel
+        var byChannel = {};
+        sold.forEach(function(v) {
+            var ch = v.canalVenta || 'otro';
+            byChannel[ch] = (byChannel[ch] || 0) + 1;
+        });
+
+        var summaryHtml = '' +
+            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Total ventas</div><div style="font-size:1.5rem;font-weight:700;">' + totalVentas + '</div></div>' +
+            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Ingresos totales</div><div style="font-size:1.1rem;font-weight:700;">' + formatPrice(totalIngresos) + '</div></div>' +
+            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Utilidad total</div><div style="font-size:1.1rem;font-weight:700;color:var(--admin-success,#3fb950);">' + formatPrice(totalUtilidad) + '</div></div>' +
+            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Margen promedio</div><div style="font-size:1.1rem;font-weight:700;">' + formatPrice(margenPromedio) + '</div></div>' +
+            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Sin utilidad</div><div style="font-size:1.5rem;font-weight:700;color:' + (ventasSinUtilidad > 0 ? 'var(--admin-warning,#d29922)' : 'var(--admin-success)') + ';">' + ventasSinUtilidad + '</div></div>';
+
+        container.innerHTML = summaryHtml;
+    }
+
+    // Mark Vehicle as Sold — full sales tracking
     function markAsSold(vehicleId) {
         if (!canCreateOrEditInventory()) { toast('Sin permisos', 'error'); return; }
         var v = vehicles.find(function(x) { return x.id === vehicleId; });
@@ -3251,12 +3386,35 @@
 
         $('soldVehicleId').value = vehicleId;
         var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
-        $('soldVehicleInfo').innerHTML = '<strong>' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</strong><br>Precio actual: ' + formatPrice(v.precio);
+        var codeInfo = v.codigoUnico ? '<code style="color:var(--admin-accent);">' + v.codigoUnico + '</code> — ' : '';
+        $('soldVehicleInfo').innerHTML = codeInfo + '<strong>' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</strong><br>Precio publicado: ' + formatPrice(v.precio);
+
+        // Pre-fill fields from vehicle data
         $('soldPrecio').value = v.precio || '';
+        $('soldPrecioWeb').value = v.precio || '';
+        $('soldPrecioBase').value = '';
+        $('soldComisionMin').value = '';
+        $('soldUtilidadAdicional').value = '';
         $('soldCanal').value = '';
+        $('soldResponsable').value = '';
+        $('soldFechaCierre').value = new Date().toISOString().split('T')[0];
         $('soldObservaciones').value = '';
+        $('soldUtilidadTotal').textContent = '$0';
         $('soldModal').classList.add('active');
     }
+
+    // Auto-calculate utility when fields change
+    function calcUtilidad() {
+        var comision = parseInt($('soldComisionMin').value) || 0;
+        var adicional = parseInt($('soldUtilidadAdicional').value) || 0;
+        var total = comision + adicional;
+        $('soldUtilidadTotal').textContent = formatPrice(total);
+        $('soldUtilidadTotal').style.color = total > 0 ? 'var(--admin-success,#3fb950)' : 'var(--admin-text-muted,#8b949e)';
+    }
+    ['soldComisionMin', 'soldUtilidadAdicional'].forEach(function(id) {
+        var el = $(id);
+        if (el) el.addEventListener('input', calcUtilidad);
+    });
 
     var closeSoldModalEl = $('closeSoldModal');
     if (closeSoldModalEl) closeSoldModalEl.addEventListener('click', function() { $('soldModal').classList.remove('active'); });
@@ -3268,26 +3426,43 @@
         confirmSoldBtn.addEventListener('click', function() {
             var vehicleId = parseInt($('soldVehicleId').value);
             if (!vehicleId) return;
-            var precioVenta = parseInt($('soldPrecio').value);
+            var precioCierre = parseInt($('soldPrecio').value);
             var canal = $('soldCanal').value;
-            if (!precioVenta || !canal) { toast('Precio y canal son requeridos', 'error'); return; }
+            var responsable = ($('soldResponsable').value || '').trim();
+            if (!precioCierre || !canal || !responsable) { toast('Precio de cierre, canal y responsable son requeridos', 'error'); return; }
+
+            var comisionMin = parseInt($('soldComisionMin').value) || 0;
+            var utilidadAdicional = parseInt($('soldUtilidadAdicional').value) || 0;
+            var utilidadTotal = comisionMin + utilidadAdicional;
+            var generaUtilidadAltorra = canal === 'altorra' || canal === 'intermediario' || utilidadTotal > 0;
 
             var v = vehicles.find(function(x) { return x.id === vehicleId; });
             var currentVersion = v ? (v._version || 0) : 0;
 
             window.db.collection('vehiculos').doc(String(vehicleId)).update({
                 estado: 'vendido',
-                precioVenta: precioVenta,
+                // Sales tracking fields
                 canalVenta: canal,
-                observacionesVenta: $('soldObservaciones').value.trim(),
+                responsableComercial: responsable,
+                precioBaseConcesionario: parseInt($('soldPrecioBase').value) || null,
+                precioPublicadoWeb: parseInt($('soldPrecioWeb').value) || null,
+                precioCierre: precioCierre,
+                precioVenta: precioCierre,
+                comisionMinima: comisionMin || null,
+                utilidadAdicional: utilidadAdicional || null,
+                utilidadTotal: utilidadTotal || null,
+                generaUtilidadAltorra: generaUtilidadAltorra,
+                fechaCierre: $('soldFechaCierre').value || new Date().toISOString().split('T')[0],
                 fechaVenta: new Date().toISOString(),
+                observacionesVenta: $('soldObservaciones').value.trim(),
                 updatedAt: new Date().toISOString(),
                 updatedBy: window.auth.currentUser.email,
                 _version: currentVersion + 1
             }).then(function() {
                 var marca = v ? (v.marca || '') : '';
-                toast('Vehiculo marcado como vendido');
-                writeAuditLog('vehicle_sold', 'vehiculo #' + vehicleId, marca + ' - ' + formatPrice(precioVenta) + ' via ' + canal);
+                toast('Operacion registrada exitosamente');
+                var soldCode = v && v.codigoUnico ? ' [' + v.codigoUnico + ']' : '';
+                writeAuditLog('vehicle_sold', 'vehiculo #' + vehicleId + soldCode, marca + ' - ' + formatPrice(precioCierre) + ' via ' + canal + (utilidadTotal ? ' | utilidad: ' + formatPrice(utilidadTotal) : ''));
                 $('soldModal').classList.remove('active');
             }).catch(function(err) {
                 toast('Error: ' + err.message, 'error');

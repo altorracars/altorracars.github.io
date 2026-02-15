@@ -57,6 +57,55 @@
             { value: 'redes', label: 'Redes sociales' },
             { value: 'referido', label: 'Referido' },
             { value: 'otro', label: 'Otro' }
+        ],
+        featSeguridad: [
+            { value: 'Sistema de frenos ABS', label: 'ABS' },
+            { value: 'Airbags frontales', label: 'Airbags frontales' },
+            { value: 'Airbags laterales', label: 'Airbags laterales' },
+            { value: 'Alarma', label: 'Alarma' },
+            { value: 'Bloqueo central', label: 'Bloqueo central' },
+            { value: 'Control de estabilidad', label: 'Control estabilidad' },
+            { value: 'Control de traccion', label: 'Control traccion' },
+            { value: 'Sensor de reversa', label: 'Sensor reversa' },
+            { value: 'Camara de reversa', label: 'Camara reversa' },
+            { value: 'Camara 360', label: 'Camara 360' }
+        ],
+        featConfort: [
+            { value: 'Aire acondicionado', label: 'Aire acondicionado' },
+            { value: 'Climatizador automatico', label: 'Climatizador auto' },
+            { value: 'Asientos en cuero', label: 'Asientos en cuero' },
+            { value: 'Asientos calefactados', label: 'Asientos calefactados' },
+            { value: 'Asiento electrico', label: 'Asiento electrico' },
+            { value: 'Volante multifuncional', label: 'Volante multifuncional' },
+            { value: 'Tapizado en cuero', label: 'Tapizado en cuero' },
+            { value: 'Techo panoramico', label: 'Techo panoramico' }
+        ],
+        featTecnologia: [
+            { value: 'Pantalla tactil', label: 'Pantalla tactil' },
+            { value: 'Bluetooth', label: 'Bluetooth' },
+            { value: 'USB / Auxiliar', label: 'USB / Auxiliar' },
+            { value: 'Android Auto', label: 'Android Auto' },
+            { value: 'Apple CarPlay', label: 'Apple CarPlay' },
+            { value: 'GPS / Navegacion', label: 'GPS / Navegacion' },
+            { value: 'Radio AM/FM', label: 'Radio AM/FM' },
+            { value: 'Computador de viaje', label: 'Computador de viaje' },
+            { value: 'Keyless entry', label: 'Keyless entry' },
+            { value: 'Boton de encendido', label: 'Boton de encendido' }
+        ],
+        featExterior: [
+            { value: 'Luces LED', label: 'Luces LED' },
+            { value: 'Luces DRL', label: 'Luces DRL' },
+            { value: 'Rines de aluminio', label: 'Rines de aluminio' },
+            { value: 'Barras de techo', label: 'Barras de techo' },
+            { value: 'Exploradoras', label: 'Exploradoras' },
+            { value: 'Espejos electricos', label: 'Espejos electricos' }
+        ],
+        featInterior: [
+            { value: 'Vidrios electricos', label: 'Vidrios electricos' },
+            { value: 'Cierre centralizado', label: 'Cierre centralizado' },
+            { value: 'Tablero digital', label: 'Tablero digital' },
+            { value: 'Guantera refrigerada', label: 'Guantera refrigerada' },
+            { value: 'Apoyabrazos central', label: 'Apoyabrazos central' }
         ]
     };
 

@@ -90,10 +90,16 @@ class VehicleDatabase {
     }
 
     async loadFromFirestore() {
-        // PARALLEL queries instead of sequential
-        var results = await Promise.all([
-            window.db.collection('vehiculos').get(),
-            window.db.collection('marcas').get()
+        // PARALLEL queries with 10s timeout to prevent hanging
+        var queryTimeout = new Promise(function(_, reject) {
+            setTimeout(function() { reject(new Error('Firestore query timeout (10s)')); }, 10000);
+        });
+        var results = await Promise.race([
+            Promise.all([
+                window.db.collection('vehiculos').get(),
+                window.db.collection('marcas').get()
+            ]),
+            queryTimeout
         ]);
 
         var vehiclesSnap = results[0];

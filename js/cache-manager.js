@@ -23,7 +23,7 @@
             const storedVersion = localStorage.getItem(this.VERSION_KEY);
 
             if (storedVersion && storedVersion !== this.APP_VERSION) {
-                console.log('[CacheManager] New version detected:', this.APP_VERSION);
+                console.info('[CacheManager] New version detected:', this.APP_VERSION);
                 this.clearAllCaches();
             }
 
@@ -33,13 +33,13 @@
         // Register service worker with update handling
         registerServiceWorker() {
             if (!('serviceWorker' in navigator)) {
-                console.log('[CacheManager] Service Worker not supported');
+                console.warn('[CacheManager] Service Worker not supported');
                 return;
             }
 
             navigator.serviceWorker.register('/service-worker.js')
                 .then((registration) => {
-                    console.log('[CacheManager] SW registered:', registration.scope);
+                    // SW registered successfully
 
                     // Check for updates every 5 minutes
                     setInterval(() => {
@@ -49,12 +49,12 @@
                     // Handle update found
                     registration.addEventListener('updatefound', () => {
                         const newWorker = registration.installing;
-                        console.log('[CacheManager] New SW installing...');
+                        // New SW installing
 
                         newWorker.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                 // New version available
-                                console.log('[CacheManager] New version available');
+                                console.info('[CacheManager] New version available');
                                 this.showUpdateNotification();
                             }
                         });
@@ -71,19 +71,19 @@
 
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data?.type === 'SW_UPDATED') {
-                    console.log('[CacheManager] SW updated to:', event.data.version);
+                    console.info('[CacheManager] SW updated to:', event.data.version);
                     this.showUpdateNotification();
                 }
 
                 if (event.data?.type === 'CACHE_CLEARED') {
-                    console.log('[CacheManager] Cache cleared, reloading...');
+                    console.info('[CacheManager] Cache cleared, reloading...');
                     window.location.reload(true);
                 }
             });
 
             // Handle controller change (new SW took over)
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                console.log('[CacheManager] Controller changed, reloading...');
+                console.info('[CacheManager] Controller changed, reloading...');
                 window.location.reload(true);
             });
         },
@@ -107,14 +107,14 @@
 
         // Clear all caches and reload
         async clearAllCaches() {
-            console.log('[CacheManager] Clearing all caches...');
+            console.info('[CacheManager] Clearing all caches...');
 
             // Clear Cache API
             if ('caches' in window) {
                 const cacheNames = await caches.keys();
                 await Promise.all(
                     cacheNames.map((cacheName) => {
-                        console.log('[CacheManager] Deleting cache:', cacheName);
+                        // Deleting individual cache
                         return caches.delete(cacheName);
                     })
                 );
@@ -130,7 +130,7 @@
                 });
             }
 
-            console.log('[CacheManager] All caches cleared');
+            console.info('[CacheManager] All caches cleared');
         },
 
         // Force refresh the page
@@ -144,7 +144,7 @@
 
         // Manual cache clear function (can be called from console)
         clearAndReload() {
-            console.log('[CacheManager] Manual cache clear requested');
+            console.info('[CacheManager] Manual cache clear requested');
             this.clearAllCaches().then(() => {
                 // Unregister service worker
                 navigator.serviceWorker?.getRegistrations().then((registrations) => {

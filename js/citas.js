@@ -6,7 +6,6 @@
 
 class AppointmentSystem {
     constructor() {
-        this.whatsappNumber = '573235016747';
         this.availableSlots = [];
         this.availConfig = null;
         this.blockedDates = [];
@@ -88,11 +87,6 @@ class AppointmentSystem {
 
     formatDateISO(date) {
         return date.toISOString().split('T')[0];
-    }
-
-    // ===== CREAR BOTON FLOTANTE =====
-    createAppointmentButton() {
-        return;
     }
 
     // ===== BUILD CALENDAR HTML =====
@@ -185,8 +179,9 @@ class AppointmentSystem {
                             </div>\
                             <div class="appointment-form-row">\
                                 <div class="appointment-form-group">\
-                                    <label class="form-label required">Telefono</label>\
+                                    <label class="form-label required">WhatsApp</label>\
                                     <input type="tel" name="telefono" class="form-input" required placeholder="3001234567">\
+                                    <span class="form-hint">Se requiere WhatsApp para ser contactado y confirmar la cita</span>\
                                 </div>\
                                 <div class="appointment-form-group">\
                                     <label class="form-label">Email</label>\
@@ -208,14 +203,21 @@ class AppointmentSystem {
                             <label class="form-section-label">Comentarios (opcional)</label>\
                             <textarea name="comentarios" class="form-textarea" rows="2" placeholder="Alguna solicitud especial?"></textarea>\
                         </div>\
-                        <div style="padding:10px 14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:12px;color:#166534;line-height:1.5;">\
-                            Al confirmar esta cita, acepto que ALTORRA CARS me contacte por WhatsApp o telefono para gestionar mi visita presencial.\
+                        <div class="appointment-notice">\
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">\
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>\
+                            </svg>\
+                            <span>Tu cita quedara en estado <strong>pendiente</strong> hasta ser confirmada por nuestro equipo. Te contactaremos por WhatsApp para confirmar.</span>\
                         </div>\
                         <button type="submit" class="btn-submit-appointment">\
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">\
-                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>\
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">\
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>\
+                                <line x1="16" y1="2" x2="16" y2="6"/>\
+                                <line x1="8" y1="2" x2="8" y2="6"/>\
+                                <line x1="3" y1="10" x2="21" y2="10"/>\
+                                <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>\
                             </svg>\
-                            Confirmar Cita por WhatsApp\
+                            Enviar Solicitud de Cita\
                         </button>\
                     </form>\
                 </div>\
@@ -290,7 +292,7 @@ class AppointmentSystem {
                 alert('Por favor selecciona una fecha disponible en el calendario.');
                 return;
             }
-            self.submitAppointment(form, vehicleInfo);
+            self.submitAppointment(form, vehicleInfo, modal);
         });
     }
 
@@ -314,7 +316,7 @@ class AppointmentSystem {
     }
 
     // ===== ENVIAR CITA =====
-    submitAppointment(form, vehicleInfo) {
+    submitAppointment(form, vehicleInfo, modal) {
         var formData = new FormData(form);
 
         var nombre = formData.get('nombre');
@@ -324,17 +326,12 @@ class AppointmentSystem {
         var hora = formData.get('hora');
         var comentarios = formData.get('comentarios') || 'Ninguno';
 
-        var fechaObj = new Date(fecha + 'T12:00:00');
-        var fechaFormateada = fechaObj.toLocaleDateString('es-CO', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        var self = this;
 
-        // Save to Firestore with full contact info
+        // Save to Firestore
         this.saveAppointmentToFirestore({
             nombre: nombre,
+            whatsapp: telefono,
             telefono: telefono,
             email: email,
             fecha: fecha,
@@ -346,49 +343,87 @@ class AppointmentSystem {
             estado: 'pendiente',
             observaciones: '',
             createdAt: new Date().toISOString()
+        }).then(function() {
+            // Show success message instead of opening WhatsApp
+            self.showConfirmation(modal, nombre, fecha, hora);
+        }).catch(function() {
+            self.showConfirmation(modal, nombre, fecha, hora);
+        });
+    }
+
+    // ===== SHOW CONFIRMATION MESSAGE =====
+    showConfirmation(modal, nombre, fecha, hora) {
+        var fechaObj = new Date(fecha + 'T12:00:00');
+        var fechaFormateada = fechaObj.toLocaleDateString('es-CO', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
 
-        // Build WhatsApp message
-        var message = '*SOLICITUD DE CITA - ALTORRA CARS*\n\n';
-        message += '*Datos del cliente:*\n';
-        message += '- Nombre: ' + nombre + '\n';
-        message += '- Telefono: ' + telefono + '\n';
-        message += '- Email: ' + email + '\n\n';
-
-        if (vehicleInfo.marca) {
-            message += '*Vehiculo de interes:*\n';
-            message += '- ' + vehicleInfo.marca + ' ' + vehicleInfo.modelo + ' ' + (vehicleInfo.year || '') + '\n';
-            if (vehicleInfo.precio) {
-                message += '- Precio: $' + vehicleInfo.precio.toLocaleString('es-CO') + '\n';
-            }
-            message += '\n';
+        var modalContent = modal.querySelector('.appointment-modal');
+        if (modalContent) {
+            modalContent.innerHTML = '\
+                <div class="appointment-modal-header">\
+                    <h2 class="appointment-modal-title">\
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">\
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>\
+                            <polyline points="22 4 12 14.01 9 11.01"/>\
+                        </svg>\
+                        Solicitud Enviada\
+                    </h2>\
+                    <button type="button" class="appointment-modal-close" aria-label="Cerrar">&times;</button>\
+                </div>\
+                <div class="appointment-modal-body" style="text-align:center;padding:2rem 1.5rem;">\
+                    <div style="width:64px;height:64px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">\
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">\
+                            <polyline points="20 6 9 17 4 12"/>\
+                        </svg>\
+                    </div>\
+                    <h3 style="font-size:1.25rem;font-weight:700;color:#1f2937;margin-bottom:0.5rem;">Gracias, ' + nombre + '</h3>\
+                    <p style="font-size:0.95rem;color:#4b5563;margin-bottom:1rem;">Tu solicitud de cita ha sido registrada correctamente.</p>\
+                    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:1rem;text-align:left;margin-bottom:1rem;">\
+                        <div style="font-size:0.85rem;color:#0369a1;font-weight:600;margin-bottom:0.5rem;">Detalles de tu cita:</div>\
+                        <div style="font-size:0.9rem;color:#1e40af;">Fecha: ' + fechaFormateada + '</div>\
+                        <div style="font-size:0.9rem;color:#1e40af;">Hora: ' + hora + '</div>\
+                    </div>\
+                    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:1rem;text-align:left;margin-bottom:1.5rem;">\
+                        <div style="display:flex;align-items:flex-start;gap:0.5rem;">\
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="flex-shrink:0;margin-top:2px;">\
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>\
+                            </svg>\
+                            <span style="font-size:0.85rem;color:#92400e;line-height:1.5;">\
+                                <strong>Pendiente de confirmacion:</strong> Tu cita queda en estado pendiente hasta ser confirmada por nuestro equipo. \
+                                Te contactaremos por <strong>WhatsApp</strong> para confirmar la cita oficialmente.\
+                            </span>\
+                        </div>\
+                    </div>\
+                    <button type="button" class="btn-submit-appointment" style="background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);" onclick="this.closest(\'.appointment-modal-overlay\').classList.remove(\'active\');setTimeout(function(){var m=document.getElementById(\'appointment-modal\');if(m)m.remove();},300);">\
+                        Entendido\
+                    </button>\
+                </div>';
         }
 
-        message += '*Cita solicitada:*\n';
-        message += '- Fecha: ' + fechaFormateada + '\n';
-        message += '- Hora: ' + hora + '\n\n';
-        message += '*Comentarios:* ' + comentarios + '\n\n';
-        message += '_Al confirmar esta cita por WhatsApp, acepto que ALTORRA CARS me contacte para gestionar mi visita._';
-
-        var encodedMessage = encodeURIComponent(message);
-        var whatsappURL = 'https://wa.me/' + this.whatsappNumber + '?text=' + encodedMessage;
-        window.open(whatsappURL, '_blank');
-
-        var modal = document.getElementById('appointment-modal');
-        if (modal) this.closeModal(modal);
+        // Re-attach close button
+        var closeBtn = modal.querySelector('.appointment-modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(function() { modal.remove(); }, 300);
+            });
+        }
     }
 
     // ===== GUARDAR CITA EN FIRESTORE =====
     saveAppointmentToFirestore(data) {
         try {
             if (window.db) {
-                window.db.collection('citas').add(data).catch(function(err) {
-                    console.warn('[Citas] Error al guardar cita:', err);
-                });
+                return window.db.collection('citas').add(data);
             }
         } catch (e) {
             console.warn('[Citas] Firestore no disponible');
         }
+        return Promise.resolve();
     }
 
     // ===== EVENT LISTENERS GLOBALES =====

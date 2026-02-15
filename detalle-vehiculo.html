@@ -243,13 +243,21 @@
         }
 
         .btn-row .btn-action {
-            padding: 12px 14px;
+            padding: 12px 10px;
             font-size: 12px;
+            overflow: visible;
+            white-space: nowrap;
         }
 
         .btn-row .btn-action svg {
             width: 18px;
             height: 18px;
+        }
+
+        .btn-row .btn-action span {
+            overflow: visible;
+            text-overflow: unset;
+            white-space: nowrap;
         }
 
         /* Comparar */
@@ -324,7 +332,7 @@
             border-radius: 16px;
             padding: 20px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            overflow: hidden;
+            overflow: visible;
             word-wrap: break-word;
         }
 
@@ -976,6 +984,8 @@
             .btn-row .btn-action {
                 padding: 10px 12px;
                 font-size: 11px;
+                white-space: nowrap;
+                overflow: visible;
             }
 
             .ficha-rows {
@@ -1049,12 +1059,19 @@
 
             .btn-row {
                 gap: 6px;
+                grid-template-columns: 1fr 1fr;
             }
 
             .btn-row .btn-action {
                 padding: 10px 10px;
-                font-size: 10px;
+                font-size: 11px;
                 gap: 6px;
+                white-space: nowrap;
+                overflow: visible;
+            }
+
+            .btn-row .btn-action:last-child {
+                grid-column: 1 / -1;
             }
 
             .btn-row .btn-action svg {

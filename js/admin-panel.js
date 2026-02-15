@@ -276,7 +276,6 @@
         $('adminPanel').style.display = 'flex';
         $('adminEmail').textContent = user.email + ' (' + (currentUserRole === 'super_admin' ? 'Super Admin' : currentUserRole === 'editor' ? 'Editor' : 'Viewer') + ')';
 
-        recordLoginEvent(user.email);
         writeAuditLog('login', 'sesion', user.email);
         startInactivityTracking();
         applyRolePermissions();
@@ -300,7 +299,7 @@
         // Vehicle search (visible to all)
         // Settings section (visible to all - password change is personal)
 
-        console.log('[RBAC] UI permissions applied for role:', currentUserRole);
+        // RBAC permissions applied
     }
 
     // ========== LOGIN ==========
@@ -443,11 +442,36 @@
     });
 
     // ========== REAL-TIME SYNC (onSnapshot) ==========
+    var _vehiclesLoaded = false;
+    var _brandsLoaded = false;
+    var _loadingTimeout = null;
+    var _retryCount = 0;
+    var MAX_RETRIES = 3;
+
     function startRealtimeSync() {
         // Detach previous listeners if any
         stopRealtimeSync();
+        _vehiclesLoaded = false;
+        _brandsLoaded = false;
+
+        // Safety timeout: if data doesn't arrive in 15s, show error state
+        if (_loadingTimeout) clearTimeout(_loadingTimeout);
+        _loadingTimeout = setTimeout(function() {
+            if (!_vehiclesLoaded || !_brandsLoaded) {
+                console.warn('[LoadTimeout] Data not loaded within 15s. vehicles=' + _vehiclesLoaded + ', brands=' + _brandsLoaded);
+                if (_retryCount < MAX_RETRIES) {
+                    _retryCount++;
+                    console.log('[LoadRetry] Attempting retry #' + _retryCount);
+                    toast('Reintentando cargar datos... (intento ' + _retryCount + '/' + MAX_RETRIES + ')', 'warning');
+                    startRealtimeSync();
+                } else {
+                    showLoadingError();
+                }
+            }
+        }, 15000);
 
         unsubVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
+            _vehiclesLoaded = true;
             vehicles = snap.docs.map(function(d) { return d.data(); });
             renderVehiclesTable();
             updateStats();
@@ -456,25 +480,59 @@
             updateNavBadges();
             renderVehiclesByOrigin();
             renderDealersList();
+            checkLoadingComplete();
         }, function(err) {
             console.error('Vehicles snapshot error:', err);
+            handleSnapshotError('vehiculos', err);
         });
 
         unsubBrands = window.db.collection('marcas').onSnapshot(function(snap) {
+            _brandsLoaded = true;
             brands = snap.docs.map(function(d) { return d.data(); });
             renderBrandsTable();
             populateBrandSelect();
             updateStats();
             renderActivityFeed();
             updateNavBadges();
+            checkLoadingComplete();
         }, function(err) {
             console.error('Brands snapshot error:', err);
+            handleSnapshotError('marcas', err);
         });
 
         // Only load users if super_admin (avoids permission errors for editor/viewer)
         if (canManageUsers()) {
             loadUsers();
         }
+    }
+
+    function checkLoadingComplete() {
+        if (_vehiclesLoaded && _brandsLoaded) {
+            if (_loadingTimeout) { clearTimeout(_loadingTimeout); _loadingTimeout = null; }
+            _retryCount = 0;
+        }
+    }
+
+    function handleSnapshotError(collection, err) {
+        if (err.code === 'permission-denied') {
+            toast('Sin permisos para acceder a ' + collection + '. Verifica tu rol.', 'error');
+        }
+    }
+
+    function showLoadingError() {
+        var vBody = $('vehiclesTableBody');
+        if (vBody && vehicles.length === 0) {
+            vBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#f85149;">' +
+                'Error al cargar vehiculos. <a href="#" onclick="adminPanel.retryLoad();return false;" style="color:#58a6ff;text-decoration:underline;">Reintentar</a>' +
+                '</td></tr>';
+        }
+        toast('No se pudieron cargar los datos. Verifica tu conexion a internet.', 'error');
+    }
+
+    function retryLoad() {
+        _retryCount = 0;
+        toast('Recargando datos...', 'info');
+        loadData();
     }
 
     function stopRealtimeSync() {
@@ -543,10 +601,6 @@
     var unsubAuditLog = null;
     var activitySelectMode = false;
     var selectedActivityIds = [];
-
-    function recordLoginEvent(email) {
-        // Login events now persisted to auditLog via writeAuditLog
-    }
 
     function loadAuditLog() {
         if (unsubAuditLog) unsubAuditLog();
@@ -944,17 +998,27 @@
                 actions += '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteVehicle(' + v.id + ')">Eliminar</button>';
             }
 
+            // Resolve origin/concesionario
+            var origen = 'Propio';
+            if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
+                var dealer = dealers.find(function(x) { return x._docId === v.concesionario; });
+                origen = dealer ? dealer.nombre : v.concesionario;
+            } else if (v.concesionario === '_particular' && v.consignaParticular) {
+                origen = 'Consigna: ' + v.consignaParticular;
+            }
+
             html += '<tr>' +
                 '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
                 '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small></td>' +
                 '<td><span class="badge badge-' + v.tipo + '">' + v.tipo + '</span></td>' +
                 '<td>' + formatPrice(v.precio) + (v.precioOferta ? '<br><small style="color: var(--admin-warning);">' + formatPrice(v.precioOferta) + '</small>' : '') + '</td>' +
                 '<td>' + estadoBadge + '</td>' +
+                '<td><small style="color:var(--admin-text-secondary);">' + escapeHtml(origen) + '</small></td>' +
                 '<td>' + actions + '</td>' +
             '</tr>';
         });
 
-        if (!html) html = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
+        if (!html) html = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
         $('vehiclesTableBody').innerHTML = html;
     }
 
@@ -2133,6 +2197,15 @@
             return '<img src="' + url + '" style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;margin-bottom:0.5rem;" onerror="this.style.display=\'none\'" alt="Foto ' + (i + 1) + '">';
         }).join('');
 
+        // Resolve concesionario name for preview
+        var origenPreview = 'Propio';
+        if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
+            var dealerMatch = dealers.find(function(x) { return x._docId === v.concesionario; });
+            origenPreview = dealerMatch ? dealerMatch.nombre : v.concesionario;
+        } else if (v.concesionario === '_particular' && v.consignaParticular) {
+            origenPreview = 'Consigna: ' + v.consignaParticular;
+        }
+
         var specs = [
             { label: 'Marca', val: marca },
             { label: 'Modelo', val: v.modelo },
@@ -2145,11 +2218,16 @@
             { label: 'Transmision', val: v.transmision },
             { label: 'Combustible', val: v.combustible },
             { label: 'Motor', val: v.motor || '-' },
+            { label: 'Direccion', val: v.direccion || '-' },
+            { label: 'Traccion', val: v.traccion || '-' },
             { label: 'Color', val: v.color || '-' },
             { label: 'Puertas', val: v.puertas || 5 },
             { label: 'Pasajeros', val: v.pasajeros || 5 },
+            { label: 'Placa', val: v.placa || '-' },
             { label: 'Ubicacion', val: v.ubicacion || '-' },
+            { label: 'Origen / Concesionario', val: origenPreview },
             { label: 'Estado', val: (v.estado || 'disponible') },
+            { label: 'Descripcion', val: v.descripcion ? v.descripcion.substring(0, 100) + (v.descripcion.length > 100 ? '...' : '') : '-' },
             { label: 'Version', val: v._version || '-' },
             { label: 'Ultima edicion', val: v.updatedAt ? formatTimeAgo(v.updatedAt) + ' por ' + (v.updatedBy || '-') : '-' }
         ];
@@ -2291,7 +2369,12 @@
         direcciones: { title: 'Direcciones', desc: 'Electrica, Hidraulica, etc.' },
         tracciones: { title: 'Tracciones', desc: 'Delantera, 4x4, AWD, etc.' },
         colores: { title: 'Colores', desc: 'Blanco, Negro, Rojo, etc.' },
-        canalesVenta: { title: 'Canales de Venta', desc: 'Presencial, WhatsApp, Redes, etc.' }
+        canalesVenta: { title: 'Canales de Venta', desc: 'Presencial, WhatsApp, Redes, etc.' },
+        featSeguridad: { title: 'Caracteristicas: Seguridad', desc: 'ABS, Airbags, Alarma, etc.' },
+        featConfort: { title: 'Caracteristicas: Confort', desc: 'Aire acondicionado, Asientos cuero, etc.' },
+        featTecnologia: { title: 'Caracteristicas: Tecnologia', desc: 'Pantalla tactil, Bluetooth, etc.' },
+        featExterior: { title: 'Caracteristicas: Exterior', desc: 'Luces LED, Rines aluminio, etc.' },
+        featInterior: { title: 'Caracteristicas: Interior', desc: 'Vidrios electricos, Tapizado, etc.' }
     };
 
     function renderListsSection() {
@@ -2526,7 +2609,7 @@
         var filtered = filter === 'all' ? appointments : appointments.filter(function(a) { return a.estado === filter; });
 
         if (filtered.length === 0) {
-            body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay citas ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
+            body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay citas ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
             return;
         }
 
@@ -2540,19 +2623,37 @@
             };
             var estadoClass = estadoColors[a.estado] || 'admin-warning';
             var estadoLabel = a.estado ? (a.estado.charAt(0).toUpperCase() + a.estado.slice(1)) : 'Pendiente';
+            var whatsappNum = a.whatsapp || a.telefono || '';
 
             return '<tr>' +
                 '<td><strong>' + escapeHtml(a.nombre || '-') + '</strong></td>' +
-                '<td><div style="font-size:0.85rem;">' + escapeHtml(a.telefono || '-') + '</div><div style="font-size:0.75rem;color:var(--admin-text-muted);">' + escapeHtml(a.email || '-') + '</div></td>' +
+                '<td>' +
+                    '<div style="font-size:0.85rem;display:flex;align-items:center;gap:4px;">' +
+                        (whatsappNum ? '<a href="https://wa.me/' + whatsappNum.replace(/[^0-9]/g, '') + '" target="_blank" style="color:var(--admin-success);text-decoration:none;" title="Abrir WhatsApp">' + escapeHtml(whatsappNum) + ' </a>' : escapeHtml(whatsappNum || '-')) +
+                    '</div>' +
+                    '<div style="font-size:0.75rem;color:var(--admin-text-muted);">' + escapeHtml(a.email || '-') + '</div>' +
+                '</td>' +
                 '<td>' + escapeHtml(a.vehiculo || 'General') + '</td>' +
                 '<td><div>' + escapeHtml(a.fecha || '-') + '</div><div style="font-weight:600;">' + escapeHtml(a.hora || '-') + '</div></td>' +
                 '<td><span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLabel + '</span></td>' +
                 '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + escapeHtml(a.observaciones || a.comentarios || '-') + '</td>' +
                 '<td style="white-space:nowrap;">' +
                     '<button class="btn btn-sm btn-ghost" onclick="adminPanel.manageAppointment(\'' + a._docId + '\')" title="Gestionar">Gestionar</button>' +
+                    (isSuperAdmin() ? ' <button class="btn btn-sm btn-danger" onclick="adminPanel.deleteAppointment(\'' + a._docId + '\')" title="Eliminar">&times;</button>' : '') +
                 '</td>' +
             '</tr>';
         }).join('');
+    }
+
+    function deleteAppointment(docId) {
+        if (!isSuperAdmin()) { toast('Solo Super Admin puede eliminar citas', 'error'); return; }
+        if (!confirm('Eliminar esta cita? Esta accion no se puede deshacer.')) return;
+        window.db.collection('citas').doc(docId).delete().then(function() {
+            toast('Cita eliminada');
+            writeAuditLog('appointment_delete', 'cita ' + docId, '');
+        }).catch(function(err) {
+            toast('Error: ' + err.message, 'error');
+        });
     }
 
     function manageAppointment(docId) {
@@ -2565,9 +2666,11 @@
 
         $('amClientInfo').innerHTML =
             '<strong>' + escapeHtml(a.nombre || '') + '</strong><br>' +
-            'Tel: ' + escapeHtml(a.telefono || '-') + ' | Email: ' + escapeHtml(a.email || '-') + '<br>' +
+            'WhatsApp: <a href="https://wa.me/' + (a.whatsapp || a.telefono || '').replace(/[^0-9]/g, '') + '" target="_blank" style="color:var(--admin-success);">' + escapeHtml(a.whatsapp || a.telefono || '-') + '</a><br>' +
+            'Email: ' + escapeHtml(a.email || '-') + '<br>' +
             'Vehiculo: ' + escapeHtml(a.vehiculo || 'General') + '<br>' +
-            'Fecha: ' + escapeHtml(a.fecha || '-') + ' | Hora: ' + escapeHtml(a.hora || '-');
+            'Fecha: ' + escapeHtml(a.fecha || '-') + ' | Hora: ' + escapeHtml(a.hora || '-') + '<br>' +
+            'Comentarios: ' + escapeHtml(a.comentarios || '-');
 
         toggleReprogramarGroup();
         $('appointmentModal').classList.add('active');
@@ -2705,7 +2808,9 @@
         manageAppointment: manageAppointment,
         toggleActivitySelect: toggleActivitySelectMode,
         deleteSelectedActivity: deleteSelectedActivity,
-        clearAllActivity: clearAllActivity
+        clearAllActivity: clearAllActivity,
+        deleteAppointment: deleteAppointment,
+        retryLoad: retryLoad
     };
 
     // ========== COLLAPSIBLE FORM SECTIONS ==========

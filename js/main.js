@@ -249,7 +249,6 @@ function enableTouchScroll() {
 function initializePage() {
     // Load all vehicle carousels in parallel for better performance
     Promise.all([
-        loadFeatured(),
         loadPopularBrands(),
         loadUsedVehicles(),
         loadNewVehicles()

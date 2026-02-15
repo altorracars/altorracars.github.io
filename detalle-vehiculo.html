@@ -80,7 +80,7 @@
             gap: 24px;
             align-items: start;
             max-width: 100%;
-            overflow: hidden;
+            overflow: visible;
         }
 
         /* ===== GALERÍA OPTIMIZADA ===== */
@@ -700,7 +700,7 @@
             overflow-wrap: break-word;
         }
 
-        /* ===== VEHÍCULOS SIMILARES ===== */
+        /* ===== VEHÍCULOS SIMILARES - CARRUSEL HORIZONTAL ===== */
         .similar-section {
             grid-column: 1 / -1;
             margin-top: 24px;
@@ -708,7 +708,7 @@
             border-top: 1px solid rgba(255,255,255,0.1);
             min-width: 0;
             max-width: 100%;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .similar-section h2 {
@@ -721,6 +721,67 @@
             background: linear-gradient(90deg, rgba(184,150,88,0.1) 0%, transparent 100%);
             padding: 12px 16px;
             border-radius: 0 8px 8px 0;
+        }
+
+        .similar-carousel-wrapper {
+            position: relative;
+        }
+
+        .similar-carousel-wrapper .carousel-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            width: 40px;
+            height: 40px;
+            background: rgba(184,150,88,0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+        }
+
+        .similar-carousel-wrapper .carousel-arrow:hover {
+            background: var(--gold);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .similar-carousel-wrapper .carousel-arrow.prev {
+            left: 8px;
+        }
+
+        .similar-carousel-wrapper .carousel-arrow.next {
+            right: 8px;
+        }
+
+        .similar-section .vehicles-grid {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 16px !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            padding: 8px 4px 16px 4px !important;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .similar-section .vehicles-grid::-webkit-scrollbar {
+            display: none;
+        }
+
+        .similar-section .vehicle-card {
+            flex: 0 0 300px !important;
+            min-width: 300px !important;
+            max-width: 300px !important;
+            scroll-snap-align: start;
         }
 
         /* Lightbox Avanzado */
@@ -974,7 +1035,16 @@
                 order: 2;
             }
 
-            .similar-section { order: 3; }
+            .similar-section { order: 3; overflow: visible; }
+
+            .similar-section .vehicle-card {
+                flex: 0 0 280px !important;
+                min-width: 280px !important;
+                max-width: 280px !important;
+            }
+
+            .similar-carousel-wrapper .carousel-arrow.prev { left: 4px; }
+            .similar-carousel-wrapper .carousel-arrow.next { right: 4px; }
 
             .btn-action {
                 padding: 12px 16px;
@@ -1117,6 +1187,18 @@
                 padding: 12px 16px;
                 font-size: 13px;
             }
+
+            .similar-section .vehicle-card {
+                flex: 0 0 260px !important;
+                min-width: 260px !important;
+                max-width: 260px !important;
+            }
+
+            .similar-carousel-wrapper .carousel-arrow {
+                width: 34px;
+                height: 34px;
+                font-size: 18px;
+            }
         }
 
         /* Ocultar boton flotante de WhatsApp - ya hay botones de contacto en esta pagina */
@@ -1238,8 +1320,12 @@
 
                 <!-- Vehículos Similares -->
                 <div class="similar-section">
-                    <h2>Vehículos Similares</h2>
-                    <div class="vehicles-grid" id="similarVehicles"></div>
+                    <h2>Te puede interesar</h2>
+                    <div class="similar-carousel-wrapper">
+                        <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollSimilarCarousel(-1)">&#8249;</button>
+                        <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollSimilarCarousel(1)">&#8250;</button>
+                        <div class="vehicles-grid" id="similarVehicles"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1897,6 +1983,14 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
             const cleanSimilar = scored.slice(0, count).map(({ _simScore, ...vehicle }) => vehicle);
             renderVehicles(cleanSimilar, 'similarVehicles');
         }
+
+        function scrollSimilarCarousel(direction) {
+            var grid = document.getElementById('similarVehicles');
+            if (!grid) return;
+            var cardWidth = 316; // card width + gap
+            grid.scrollBy({ left: direction * cardWidth * 2, behavior: 'smooth' });
+        }
+        window.scrollSimilarCarousel = scrollSimilarCarousel;
 
         function capitalizar(str) {
             if (!str) return '';

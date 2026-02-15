@@ -26,8 +26,8 @@ service cloud.firestore {
 
     // ========== VEHICULOS ==========
     match /vehiculos/{vehiculoId} {
-      // Any authenticated user with a profile can read
-      allow read: if request.auth != null;
+      // Public catalog — anyone can browse the inventory
+      allow read: if true;
 
       // Editor or Super Admin can create (must include _version = 1)
       allow create: if isEditorOrAbove()
@@ -47,9 +47,10 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
-    // ========== CONCESIONARIOS (internal) ==========
+    // ========== CONCESIONARIOS ==========
     match /concesionarios/{concesionarioId} {
-      allow read: if request.auth != null;
+      // Public — vehicle detail pages show dealer name
+      allow read: if true;
       allow create, update: if isSuperAdmin();
       allow delete: if isSuperAdmin();
     }

@@ -145,7 +145,7 @@ function renderVehicleCard(vehicle) {
                 <p class="vehicle-specs">
                     <span>${capitalize(vehicle.transmision)}</span> •
                     <span>${formatKm(vehicle.kilometraje)}</span> •
-                    <span>${capitalize(vehicle.categoria)}</span>
+                    <span>${vehicle.motor || capitalize(vehicle.categoria)}</span>
                 </p>
                 <div class="vehicle-footer">
                     ${priceHTML}

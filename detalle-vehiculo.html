@@ -243,20 +243,22 @@
         }
 
         .btn-row .btn-action {
-            padding: 12px 10px;
-            font-size: 12px;
-            overflow: visible;
+            padding: 12px 8px;
+            font-size: 11px;
+            overflow: hidden;
             white-space: nowrap;
+            min-width: 0;
         }
 
         .btn-row .btn-action svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
         }
 
         .btn-row .btn-action span {
-            overflow: visible;
-            text-overflow: unset;
+            overflow: hidden;
+            text-overflow: ellipsis;
             white-space: nowrap;
         }
 
@@ -1133,11 +1135,12 @@
             }
 
             .btn-row .btn-action {
-                padding: 10px 10px;
+                padding: 10px 8px;
                 font-size: 11px;
-                gap: 6px;
+                gap: 4px;
                 white-space: nowrap;
-                overflow: visible;
+                overflow: hidden;
+                min-width: 0;
             }
 
             .btn-row .btn-action:last-child {

@@ -1750,6 +1750,19 @@
         el.style.display = 'block';
     }
 
+    // Natural sort: "1.jpg" < "2.jpg" < "10.jpg" < "12.jpg"
+    function naturalSortCompare(a, b) {
+        var ax = [], bx = [];
+        a.replace(/(\d+)|(\D+)/g, function(_, $1, $2) { ax.push([$1 || Infinity, $2 || '']); });
+        b.replace(/(\d+)|(\D+)/g, function(_, $1, $2) { bx.push([$1 || Infinity, $2 || '']); });
+        while (ax.length && bx.length) {
+            var an = ax.shift(), bn = bx.shift();
+            var nn = (parseInt(an[0]) - parseInt(bn[0])) || an[1].localeCompare(bn[1]);
+            if (nn) return nn;
+        }
+        return ax.length - bx.length;
+    }
+
     function handleFiles(files) {
         if (!window.storage) { showUploadError('Firebase Storage no esta disponible. Usa la opcion de URL manual.'); return; }
 
@@ -1764,25 +1777,44 @@
         var oversized = fileArray.filter(function(f) { return f.size > maxBytes * 5; });
         if (oversized.length) { showUploadError('Imagenes demasiado grandes (max 10MB).'); return; }
 
+        // Sort files by name ascending (natural order: 1, 2, 3... 10, 11, 12)
+        fileArray.sort(function(a, b) { return naturalSortCompare(a.name, b.name); });
+
         $('uploadError').style.display = 'none';
         var total = fileArray.length;
         var done = 0;
         var errors = 0;
+        // Track URLs by original index to maintain sorted order
+        var resultUrls = new Array(total);
+
         $('uploadProgress').style.display = 'block';
         $('uploadStatus').textContent = 'Comprimiendo y subiendo 0 de ' + total + '...';
         $('progressFill').style.width = '0%';
 
-        fileArray.forEach(function(file) {
+        fileArray.forEach(function(file, idx) {
             compressImage(file).then(function(compressed) {
-                return uploadFileToStorage(compressed);
+                return uploadFileToStorageIndexed(compressed, idx, resultUrls);
             }).then(function(success) {
                 done++;
                 if (!success) errors++;
                 updateUploadProgress(done, total, errors);
+                if (done === total) {
+                    // All uploads complete: add URLs in sorted order
+                    resultUrls.forEach(function(url) {
+                        if (url) uploadedImageUrls.push(url);
+                    });
+                    renderUploadedImages();
+                }
             }).catch(function() {
                 done++;
                 errors++;
                 updateUploadProgress(done, total, errors);
+                if (done === total) {
+                    resultUrls.forEach(function(url) {
+                        if (url) uploadedImageUrls.push(url);
+                    });
+                    renderUploadedImages();
+                }
             });
         });
     }
@@ -1814,6 +1846,34 @@
                 }).then(function(url) {
                     uploadedImageUrls.push(url);
                     renderUploadedImages();
+                    resolve(true);
+                }).catch(function(err) {
+                    console.error('[Storage Upload] FALLO:', err.code, err.message);
+                    showUploadError('Error subiendo imagen: ' + (err.message || err.code));
+                    resolve(false);
+                });
+            } catch (e) {
+                console.error('[Storage Upload] Excepcion:', e);
+                resolve(false);
+            }
+        });
+    }
+
+    // Indexed version: stores URL at specific position instead of pushing to array
+    function uploadFileToStorageIndexed(file, index, resultArray) {
+        return new Promise(function(resolve) {
+            if (!window.storage) { resolve(false); return; }
+
+            var timestamp = Date.now() + index; // unique per file
+            var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            var path = UPLOAD_CONFIG.storagePath + timestamp + '_' + safeName;
+
+            try {
+                var ref = window.storage.ref(path);
+                ref.put(file).then(function(snapshot) {
+                    return snapshot.ref.getDownloadURL();
+                }).then(function(url) {
+                    resultArray[index] = url;
                     resolve(true);
                 }).catch(function(err) {
                     console.error('[Storage Upload] FALLO:', err.code, err.message);
@@ -2868,32 +2928,38 @@
         var propios = vehicles.filter(function(v) { return isVehiclePropio(v); });
         var activos = propios.filter(function(v) { return v.estado === 'disponible' || !v.estado; });
         var vendidos = propios.filter(function(v) { return v.estado === 'vendido'; });
-        var totalIngresos = vendidos.reduce(function(s, v) { return s + (v.precioVenta || v.precioCierre || 0); }, 0);
-        var totalUtilidad = vendidos.reduce(function(s, v) { return s + (v.utilidadAltorra || v.utilidadTotal || 0); }, 0);
+        // Solo ventas ALTORRA generan ingreso real para propios
+        var vendidosAltorra = vendidos.filter(function(v) { return v.canalVenta === 'altorra'; });
+        var totalIngresos = vendidosAltorra.reduce(function(s, v) { return s + (v.precioVenta || v.precioCierre || 0); }, 0);
+        var totalUtilidad = vendidosAltorra.reduce(function(s, v) { return s + (v.utilidadAltorra || v.utilidadTotal || 0); }, 0);
 
         if (summary) {
             summary.innerHTML =
                 '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Activos</div><div style="font-size:1.5rem;font-weight:700;color:var(--admin-success,#3fb950);">' + activos.length + '</div></div>' +
                 '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Vendidos</div><div style="font-size:1.5rem;font-weight:700;">' + vendidos.length + '</div></div>' +
-                '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Ingresos</div><div style="font-size:1.1rem;font-weight:700;color:var(--admin-info,#58a6ff);">' + formatPrice(totalIngresos) + '</div></div>' +
+                '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Ingresos</div><div style="font-size:1.1rem;font-weight:700;color:var(--admin-info,#58a6ff);">' + formatPrice(totalIngresos) + '</div><div style="font-size:0.65rem;color:var(--admin-text-muted);">ventas propias</div></div>' +
                 '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Utilidad</div><div style="font-size:1.1rem;font-weight:700;color:var(--admin-success,#3fb950);">' + formatPrice(totalUtilidad) + '</div></div>';
         }
 
         if (propios.length === 0) {
-            body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay vehiculos propios registrados. Al crear un vehiculo, selecciona origen &quot;Propio (ALTORRA)&quot;.</td></tr>';
+            body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay vehiculos propios registrados. Al crear un vehiculo, selecciona origen &quot;Propio (ALTORRA)&quot;.</td></tr>';
             return;
         }
 
         body.innerHTML = propios.map(function(v) {
             var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
             var estadoInfo = ESTADO_LABELS[v.estado || 'disponible'] || ESTADO_LABELS.disponible;
-            var precioVenta = v.estado === 'vendido' ? formatPrice(v.precioVenta || v.precioCierre || 0) : '-';
-            var utilidad = v.estado === 'vendido' ? formatPrice(v.utilidadAltorra || v.utilidadTotal || 0) : '-';
-            var utilColor = (v.utilidadAltorra || v.utilidadTotal) > 0 ? 'var(--admin-success,#3fb950)' : '';
+            var esVendido = v.estado === 'vendido';
+            var esAltorra = v.canalVenta === 'altorra';
+            var precioVenta = esVendido && esAltorra ? formatPrice(v.precioVenta || v.precioCierre || 0) : (esVendido ? '<small style="color:var(--admin-text-muted);">Terceros</small>' : '-');
+            var utilidad = esVendido && esAltorra ? formatPrice(v.utilidadAltorra || v.utilidadTotal || 0) : '-';
+            var utilColor = (v.utilidadAltorra || v.utilidadTotal) > 0 && esAltorra ? 'var(--admin-success,#3fb950)' : '';
+            var canalInfo = esVendido ? (esAltorra ? '<span style="color:var(--admin-gold);font-size:0.75rem;">ALTORRA</span>' : '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Otros</span>') : '-';
             return '<tr>' +
                 '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + escapeHtml(v.codigoUnico || '—') + '</code></td>' +
                 '<td><strong>' + marca + ' ' + (v.modelo || '') + '</strong><br><small>' + (v.year || '') + '</small></td>' +
                 '<td><span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span></td>' +
+                '<td>' + canalInfo + '</td>' +
                 '<td>' + formatPrice(v.precio) + '</td>' +
                 '<td>' + precioVenta + '</td>' +
                 '<td style="font-weight:600;' + (utilColor ? 'color:' + utilColor + ';' : '') + '">' + utilidad + '</td>' +
@@ -3241,17 +3307,17 @@
         }
 
         // Calculate metrics per dealer
-        var soldByDealer = {};
-        var utilByDealer = {};
+        var metricsByDealer = {};
         var soldVehicles = vehicles.filter(function(v) { return v.estado === 'vendido'; });
         soldVehicles.forEach(function(v) {
             var did = v.concesionario || '';
             if (!did) return; // skip propios
-            if (!soldByDealer[did]) soldByDealer[did] = { count: 0, revenue: 0 };
-            soldByDealer[did].count++;
-            soldByDealer[did].revenue += (v.precioVenta || v.precioCierre || 0);
-            if (!utilByDealer[did]) utilByDealer[did] = 0;
-            if (v.canalVenta === 'altorra') utilByDealer[did] += (v.utilidadAltorra || v.utilidadTotal || 0);
+            if (!metricsByDealer[did]) metricsByDealer[did] = { vendidos: 0, ventasAltorra: 0, comisiones: 0 };
+            metricsByDealer[did].vendidos++;
+            if (v.canalVenta === 'altorra') {
+                metricsByDealer[did].ventasAltorra++;
+                metricsByDealer[did].comisiones += (v.comisionAltorra || v.utilidadAltorra || v.utilidadTotal || 0);
+            }
         });
 
         var activeByDealer = {};
@@ -3261,8 +3327,7 @@
 
         container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">' +
             dealers.map(function(d) {
-                var sold = soldByDealer[d._docId] || { count: 0, revenue: 0 };
-                var util = utilByDealer[d._docId] || 0;
+                var m = metricsByDealer[d._docId] || { vendidos: 0, ventasAltorra: 0, comisiones: 0 };
                 var active = activeByDealer[d._docId] || 0;
                 return '<div style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:12px;padding:1.25rem;">' +
                     '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.75rem;">' +
@@ -3272,9 +3337,9 @@
                     '</div>' +
                     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;text-align:center;">' +
                         '<div style="background:rgba(63,185,80,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:1.25rem;font-weight:800;color:var(--admin-success);">' + active + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Activos</div></div>' +
-                        '<div style="background:rgba(212,175,55,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:1.25rem;font-weight:800;color:var(--admin-gold);">' + sold.count + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Vendidos</div></div>' +
-                        '<div style="background:rgba(88,166,255,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:0.85rem;font-weight:800;color:var(--admin-info);">$' + (sold.revenue > 0 ? (sold.revenue / 1000000).toFixed(1) + 'M' : '0') + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Ventas</div></div>' +
-                        '<div style="background:rgba(63,185,80,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:0.85rem;font-weight:800;color:var(--admin-success);">$' + (util > 0 ? (util / 1000000).toFixed(1) + 'M' : '0') + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Utilidad</div></div>' +
+                        '<div style="background:rgba(212,175,55,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:1.25rem;font-weight:800;color:var(--admin-gold);">' + m.vendidos + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Vendidos</div></div>' +
+                        '<div style="background:rgba(88,166,255,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:0.85rem;font-weight:800;color:var(--admin-info);">' + m.ventasAltorra + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Nuestras</div></div>' +
+                        '<div style="background:rgba(63,185,80,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:0.85rem;font-weight:800;color:var(--admin-success);">$' + (m.comisiones > 0 ? (m.comisiones / 1000000).toFixed(1) + 'M' : '0') + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Comisiones</div></div>' +
                     '</div>' +
                     (d.telefono ? '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--admin-text-muted);">Tel: ' + d.telefono + '</div>' : '') +
                     (d.responsable ? '<div style="font-size:0.8rem;color:var(--admin-text-muted);">Responsable: ' + escapeHtml(d.responsable) + '</div>' : '') +
@@ -3376,27 +3441,42 @@
         sold.sort(function(a, b) { return (b.fechaVenta || b.updatedAt || '').localeCompare(a.fechaVenta || a.updatedAt || ''); });
 
         if (sold.length === 0) {
-            body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Sin operaciones registradas</td></tr>';
+            body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Sin operaciones registradas</td></tr>';
             renderSalesSummary(sold);
             return;
         }
 
         body.innerHTML = sold.map(function(v) {
             var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
-            var util = v.utilidadAltorra || v.utilidadTotal || 0;
-            var utilColor = util > 0 ? 'var(--admin-success,#3fb950)' : 'var(--admin-text-muted)';
             var origen = getVehicleOriginName(v);
+            var esPropio = isVehiclePropio(v);
             var esAltorra = v.canalVenta === 'altorra';
             var canalBadge = esAltorra
                 ? '<span style="color:var(--admin-gold);font-weight:700;">ALTORRA</span>'
                 : '<span style="color:var(--admin-text-muted);">Otros</span>';
+
+            // Ganancia ALTORRA: utilidad para propios, comision para aliados
+            var ganancia = 0;
+            var tipoGanancia = '-';
+            if (esAltorra) {
+                if (esPropio) {
+                    ganancia = v.utilidadAltorra || v.utilidadTotal || 0;
+                    tipoGanancia = '<span style="color:var(--admin-success);font-size:0.7rem;font-weight:600;">Utilidad</span>';
+                } else {
+                    ganancia = v.comisionAltorra || v.utilidadAltorra || v.utilidadTotal || 0;
+                    tipoGanancia = '<span style="color:var(--admin-info);font-size:0.7rem;font-weight:600;">Comision</span>';
+                }
+            }
+            var gananciaColor = ganancia > 0 ? 'var(--admin-success,#3fb950)' : 'var(--admin-text-muted)';
+
             return '<tr>' +
                 '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + escapeHtml(v.codigoUnico || '—') + '</code></td>' +
                 '<td><strong>' + marca + ' ' + (v.modelo || '') + '</strong><br><small>' + (v.year || '') + '</small></td>' +
                 '<td style="font-size:0.8rem;">' + escapeHtml(origen) + '</td>' +
                 '<td>' + canalBadge + '</td>' +
                 '<td>' + (esAltorra ? formatPrice(v.precioVenta || v.precioCierre || 0) : '-') + '</td>' +
-                '<td style="font-weight:600;color:' + utilColor + ';">' + (esAltorra && util ? formatPrice(util) : '-') + '</td>' +
+                '<td style="font-weight:600;color:' + gananciaColor + ';">' + (esAltorra && ganancia ? formatPrice(ganancia) : '-') + '</td>' +
+                '<td>' + (esAltorra ? tipoGanancia : '-') + '</td>' +
                 '<td>' + (v.fechaCierre || (v.fechaVenta || '').split('T')[0] || '-') + '</td>' +
             '</tr>';
         }).join('');
@@ -3412,15 +3492,27 @@
         var totalVentas = sold.length;
         var ventasAltorra = sold.filter(function(v) { return v.canalVenta === 'altorra'; });
         var ventasOtros = sold.filter(function(v) { return v.canalVenta !== 'altorra'; });
-        var totalUtilidadAltorra = ventasAltorra.reduce(function(sum, v) { return sum + (v.utilidadAltorra || v.utilidadTotal || 0); }, 0);
-        var totalIngresosAltorra = ventasAltorra.reduce(function(sum, v) { return sum + (v.precioVenta || v.precioCierre || 0); }, 0);
+
+        // Separar propios vs aliados vendidos por ALTORRA
+        var propiosAltorra = ventasAltorra.filter(function(v) { return isVehiclePropio(v); });
+        var aliadosAltorra = ventasAltorra.filter(function(v) { return !isVehiclePropio(v); });
+
+        // Ingresos propios: precio de venta entra a ALTORRA
+        var ingresosPropios = propiosAltorra.reduce(function(sum, v) { return sum + (v.precioVenta || v.precioCierre || 0); }, 0);
+        // Utilidad propios
+        var utilidadPropios = propiosAltorra.reduce(function(sum, v) { return sum + (v.utilidadAltorra || v.utilidadTotal || 0); }, 0);
+        // Comisiones de aliados: solo la comision entra a ALTORRA
+        var comisionesAliados = aliadosAltorra.reduce(function(sum, v) { return sum + (v.comisionAltorra || v.utilidadAltorra || v.utilidadTotal || 0); }, 0);
+        // Ganancia total ALTORRA = utilidad propios + comisiones aliados
+        var gananciaTotal = utilidadPropios + comisionesAliados;
 
         var summaryHtml =
             '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Total operaciones</div><div style="font-size:1.5rem;font-weight:700;">' + totalVentas + '</div></div>' +
             '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Ventas ALTORRA</div><div style="font-size:1.5rem;font-weight:700;color:var(--admin-gold);">' + ventasAltorra.length + '</div></div>' +
             '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Ventas terceros</div><div style="font-size:1.5rem;font-weight:700;color:var(--admin-text-muted);">' + ventasOtros.length + '</div></div>' +
-            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Ingresos ALTORRA</div><div style="font-size:1.1rem;font-weight:700;color:var(--admin-info,#58a6ff);">' + formatPrice(totalIngresosAltorra) + '</div></div>' +
-            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Utilidad ALTORRA</div><div style="font-size:1.1rem;font-weight:700;color:var(--admin-success,#3fb950);">' + formatPrice(totalUtilidadAltorra) + '</div></div>';
+            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Ingresos propios</div><div style="font-size:1.1rem;font-weight:700;color:var(--admin-info,#58a6ff);">' + formatPrice(ingresosPropios) + '</div><div style="font-size:0.65rem;color:var(--admin-text-muted);">venta vehiculos propios</div></div>' +
+            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Comisiones aliados</div><div style="font-size:1.1rem;font-weight:700;color:var(--admin-warning,#d29922);">' + formatPrice(comisionesAliados) + '</div><div style="font-size:0.65rem;color:var(--admin-text-muted);">intermediacion</div></div>' +
+            '<div class="stat-card" style="padding:0.75rem;text-align:center;"><div style="font-size:0.75rem;color:var(--admin-text-muted);">Ganancia total ALTORRA</div><div style="font-size:1.1rem;font-weight:700;color:var(--admin-success,#3fb950);">' + formatPrice(gananciaTotal) + '</div><div style="font-size:0.65rem;color:var(--admin-text-muted);">utilidad + comisiones</div></div>';
 
         container.innerHTML = summaryHtml;
     }
@@ -3431,55 +3523,75 @@
         var v = vehicles.find(function(x) { return x.id === vehicleId; });
         if (!v) return;
 
+        var esPropio = isVehiclePropio(v);
         $('soldVehicleId').value = vehicleId;
+        $('soldOrigenTipo').value = esPropio ? 'propio' : 'aliado';
         var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
         var codeInfo = v.codigoUnico ? '<code style="color:var(--admin-accent);">' + v.codigoUnico + '</code> — ' : '';
         $('soldVehicleInfo').innerHTML = codeInfo + '<strong>' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</strong><br>Precio publicado: ' + formatPrice(v.precio);
 
-        // Show origin info
+        // Show origin info with clear financial explanation
         var origenInfo = $('soldOrigenInfo');
         if (origenInfo) {
-            var esPropio = !v.concesionario || v.concesionario === '';
             if (esPropio) {
-                origenInfo.innerHTML = '<strong>Origen:</strong> Vehiculo propio (ALTORRA) — Ingresos y utilidad 100% nuestros';
+                origenInfo.style.background = 'rgba(63,185,80,0.1)';
+                origenInfo.style.borderColor = 'rgba(63,185,80,0.3)';
+                origenInfo.style.color = 'var(--admin-success,#3fb950)';
+                origenInfo.innerHTML = '<strong>PROPIO (ALTORRA)</strong> — El precio de venta ingresa a nuestras cuentas';
             } else {
                 var d = dealers.find(function(x) { return x._docId === v.concesionario; });
                 var dName = d ? d.nombre : v.concesionario;
-                origenInfo.innerHTML = '<strong>Origen:</strong> Aliado — ' + escapeHtml(dName);
+                origenInfo.style.background = 'rgba(88,166,255,0.1)';
+                origenInfo.style.borderColor = 'rgba(88,166,255,0.3)';
+                origenInfo.style.color = 'var(--admin-info,#58a6ff)';
+                origenInfo.innerHTML = '<strong>ALIADO: ' + escapeHtml(dName) + '</strong> — El dinero de venta va al aliado, solo recibimos comision';
             }
         }
 
-        // Reset fields
+        // Reset all fields
         if ($('soldPrecio')) $('soldPrecio').value = '';
         if ($('soldUtilidad')) $('soldUtilidad').value = '';
+        if ($('soldPrecioAliado')) $('soldPrecioAliado').value = '';
+        if ($('soldComision')) $('soldComision').value = '';
         $('soldCanal').value = '';
         if ($('soldResponsable')) $('soldResponsable').value = '';
+        if ($('soldResponsableAliado')) $('soldResponsableAliado').value = '';
         $('soldFechaCierre').value = new Date().toISOString().split('T')[0];
         $('soldObservaciones').value = '';
 
-        // Hide ALTORRA fields by default
-        var altorraFields = $('soldAltorraFields');
-        if (altorraFields) altorraFields.style.display = 'none';
+        // Hide all dynamic fields
+        if ($('soldPropioFields')) $('soldPropioFields').style.display = 'none';
+        if ($('soldAliadoFields')) $('soldAliadoFields').style.display = 'none';
         var canalHint = $('soldCanalHint');
         if (canalHint) canalHint.style.display = 'none';
 
         $('soldModal').classList.add('active');
     }
 
-    // Canal change handler: show/hide ALTORRA fields
+    // Canal change handler: show correct fields based on origin + canal
     var soldCanalEl = $('soldCanal');
     if (soldCanalEl) {
         soldCanalEl.addEventListener('change', function() {
-            var altorraFields = $('soldAltorraFields');
+            var origenTipo = $('soldOrigenTipo').value;
+            var propioFields = $('soldPropioFields');
+            var aliadoFields = $('soldAliadoFields');
             var canalHint = $('soldCanalHint');
+
+            // Hide all first
+            if (propioFields) propioFields.style.display = 'none';
+            if (aliadoFields) aliadoFields.style.display = 'none';
+
             if (this.value === 'altorra') {
-                if (altorraFields) altorraFields.style.display = '';
-                if (canalHint) { canalHint.style.display = 'block'; canalHint.textContent = 'Venta realizada por ALTORRA. Registra el precio y la utilidad generada.'; }
+                if (origenTipo === 'propio') {
+                    if (propioFields) propioFields.style.display = '';
+                    if (canalHint) { canalHint.style.display = 'block'; canalHint.style.color = 'var(--admin-success,#3fb950)'; canalHint.textContent = 'Vehiculo propio vendido por ALTORRA. El ingreso total entra a nuestras cuentas.'; }
+                } else {
+                    if (aliadoFields) aliadoFields.style.display = '';
+                    if (canalHint) { canalHint.style.display = 'block'; canalHint.style.color = 'var(--admin-info,#58a6ff)'; canalHint.textContent = 'Vehiculo de aliado vendido por ALTORRA. Solo la comision ingresa a nuestras cuentas.'; }
+                }
             } else if (this.value === 'otros') {
-                if (altorraFields) altorraFields.style.display = 'none';
-                if (canalHint) { canalHint.style.display = 'block'; canalHint.textContent = 'El vehiculo fue vendido por terceros. Se marcara como vendido sin registrar ingresos para ALTORRA.'; }
+                if (canalHint) { canalHint.style.display = 'block'; canalHint.style.color = 'var(--admin-text-muted)'; canalHint.textContent = 'Vendido por terceros. No genera ingresos ni comision para ALTORRA.'; }
             } else {
-                if (altorraFields) altorraFields.style.display = 'none';
                 if (canalHint) canalHint.style.display = 'none';
             }
         });
@@ -3500,25 +3612,37 @@
 
             var v = vehicles.find(function(x) { return x.id === vehicleId; });
             var currentVersion = v ? (v._version || 0) : 0;
+            var origenTipo = $('soldOrigenTipo').value; // 'propio' or 'aliado'
             var precioVenta = 0;
             var utilidadAltorra = 0;
+            var comisionAltorra = 0;
             var responsable = '';
 
             if (canal === 'altorra') {
-                precioVenta = parseInt($('soldPrecio').value) || 0;
-                utilidadAltorra = parseInt($('soldUtilidad').value) || 0;
-                responsable = ($('soldResponsable').value || '').trim();
-                if (!precioVenta || !responsable) { toast('Precio de venta y responsable son requeridos para ventas ALTORRA', 'error'); return; }
+                if (origenTipo === 'propio') {
+                    // Vehiculo propio: ingreso total + utilidad
+                    precioVenta = parseInt($('soldPrecio').value) || 0;
+                    utilidadAltorra = parseInt($('soldUtilidad').value) || 0;
+                    responsable = ($('soldResponsable').value || '').trim();
+                    if (!precioVenta || !responsable) { toast('Precio de venta y responsable son requeridos', 'error'); return; }
+                } else {
+                    // Vehiculo aliado: precio referencia + comision
+                    precioVenta = parseInt($('soldPrecioAliado').value) || 0;
+                    comisionAltorra = parseInt($('soldComision').value) || 0;
+                    responsable = ($('soldResponsableAliado').value || '').trim();
+                    if (!comisionAltorra || !responsable) { toast('Comision ALTORRA y responsable son requeridos', 'error'); return; }
+                }
             }
 
             var updateData = {
                 estado: 'vendido',
                 canalVenta: canal,
+                origenTipo: origenTipo,
                 responsableComercial: responsable || null,
                 precioVenta: precioVenta || null,
                 precioCierre: precioVenta || null,
-                utilidadAltorra: utilidadAltorra || null,
-                utilidadTotal: utilidadAltorra || null,
+                utilidadAltorra: (origenTipo === 'propio' && canal === 'altorra') ? (utilidadAltorra || null) : null,
+                comisionAltorra: (origenTipo === 'aliado' && canal === 'altorra') ? (comisionAltorra || null) : null,
                 fechaCierre: $('soldFechaCierre').value || new Date().toISOString().split('T')[0],
                 fechaVenta: new Date().toISOString(),
                 observacionesVenta: ($('soldObservaciones').value || '').trim(),
@@ -3532,7 +3656,11 @@
                 toast('Operacion registrada exitosamente');
                 var soldCode = v && v.codigoUnico ? ' [' + v.codigoUnico + ']' : '';
                 var logDetail = marca + ' via ' + canal;
-                if (canal === 'altorra') logDetail += ' | venta: ' + formatPrice(precioVenta) + ' | utilidad: ' + formatPrice(utilidadAltorra);
+                if (canal === 'altorra' && origenTipo === 'propio') {
+                    logDetail += ' | ingreso: ' + formatPrice(precioVenta) + ' | utilidad: ' + formatPrice(utilidadAltorra);
+                } else if (canal === 'altorra' && origenTipo === 'aliado') {
+                    logDetail += ' | venta aliado: ' + formatPrice(precioVenta) + ' | comision: ' + formatPrice(comisionAltorra);
+                }
                 writeAuditLog('vehicle_sold', 'vehiculo #' + vehicleId + soldCode, logDetail);
                 $('soldModal').classList.remove('active');
             }).catch(function(err) {

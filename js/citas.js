@@ -24,24 +24,35 @@ class AppointmentSystem {
         this.attachEventListeners();
     }
 
-    // ===== LOAD AVAILABILITY FROM FIRESTORE =====
+    // ===== LOAD AVAILABILITY FROM FIRESTORE (REAL-TIME) =====
     async loadAvailabilityConfig() {
         try {
             if (window.firebaseReady) await window.firebaseReady;
             if (!window.db) return;
-            var doc = await window.db.collection('config').doc('availability').get();
-            if (doc.exists) {
-                var data = doc.data();
-                this.startHour = data.startHour || 8;
-                this.endHour = data.endHour || 18;
-                this.interval = data.interval || 30;
-                this.availDays = data.days || [1, 2, 3, 4, 5];
-                this.blockedDates = data.blockedDates || [];
-            }
+            var self = this;
+            // Real-time listener: config updates instantly when admin changes availability
+            window.db.collection('config').doc('availability').onSnapshot(function(doc) {
+                if (doc.exists) {
+                    var data = doc.data();
+                    self.startHour = data.startHour || 8;
+                    self.endHour = data.endHour || 18;
+                    self.interval = data.interval || 30;
+                    self.availDays = data.days || [1, 2, 3, 4, 5];
+                    self.blockedDates = data.blockedDates || [];
+                }
+                self.availableSlots = self.generateTimeSlots();
+                // Refresh calendar if modal is open
+                var calEl = document.querySelector('#appointmentCalendar');
+                if (calEl) {
+                    calEl.innerHTML = self.buildCalendarHTML(self.currentYear, self.currentMonth);
+                }
+            }, function(err) {
+                console.warn('[Citas] Availability listener error:', err);
+            });
         } catch (e) {
             console.warn('[Citas] Could not load availability:', e);
+            this.availableSlots = this.generateTimeSlots();
         }
-        this.availableSlots = this.generateTimeSlots();
     }
 
     // ===== GENERAR HORARIOS DISPONIBLES =====
@@ -299,13 +310,22 @@ class AppointmentSystem {
     async loadBookedSlotsForDate(dateStr) {
         try {
             if (!window.db) return [];
-            var doc = await window.db.collection('config').doc('bookedSlots').get();
+            // Force fresh data from server (no client cache) to ensure real-time availability
+            var doc = await window.db.collection('config').doc('bookedSlots').get({ source: 'server' });
             if (doc.exists) {
                 var data = doc.data();
                 return data[dateStr] || [];
             }
         } catch (e) {
-            console.warn('[Citas] Could not load booked slots:', e);
+            // Fallback to cached data if server is unreachable
+            try {
+                var doc = await window.db.collection('config').doc('bookedSlots').get();
+                if (doc.exists) {
+                    return doc.data()[dateStr] || [];
+                }
+            } catch (e2) {
+                console.warn('[Citas] Could not load booked slots:', e2);
+            }
         }
         return [];
     }

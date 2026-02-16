@@ -6,7 +6,7 @@ class VehicleDatabase {
         this.brands = [];
         this.loaded = false;
         this._cacheKey = 'altorra-db-cache';
-        this._cacheMaxAge = 5 * 60 * 1000; // 5 minutes
+        this._cacheMaxAge = 15 * 60 * 1000; // 15 minutes (generous for slow networks)
     }
 
     // ========== LOCAL CACHE (instant load while Firebase loads) ==========
@@ -50,34 +50,38 @@ class VehicleDatabase {
             if (hadCache) {
                 this.normalizeVehicles();
                 this.loaded = true;
-                console.log('Database loaded from cache (' + this.vehicles.length + ' vehicles) — refreshing from Firestore...');
+                console.log('[DB] Cache loaded (' + this.vehicles.length + ' vehicles) — refreshing from Firestore...');
             }
         }
 
-        // STEP 2: Load from Firestore (with timeout + 1 retry)
+        // STEP 2: Load from Firestore (with generous timeout for slow networks + 3 retries)
         if (window.firebaseReady) {
-            var firebaseOk = await this._awaitFirebaseWithTimeout(8000);
+            var firebaseOk = await this._awaitFirebaseWithTimeout(15000);
             if (firebaseOk && window.db) {
-                for (var attempt = 1; attempt <= 2; attempt++) {
+                var delays = [0, 2000, 4000]; // retry backoff
+                for (var attempt = 0; attempt < 3; attempt++) {
+                    if (attempt > 0) {
+                        await new Promise(function(r) { setTimeout(r, delays[attempt]); });
+                    }
                     try {
                         await this.loadFromFirestore();
                         this.normalizeVehicles();
                         this.loaded = true;
                         this._saveToCache();
+                        console.log('[DB] Firestore loaded: ' + this.vehicles.length + ' vehicles, ' + this.brands.length + ' brands');
                         return;
                     } catch (e) {
-                        console.warn('Firestore attempt ' + attempt + ' failed:', e.message);
-                        if (attempt < 2) {
-                            await new Promise(function(r) { setTimeout(r, 1500); });
-                        }
+                        console.warn('[DB] Firestore attempt ' + (attempt + 1) + '/3 failed:', e.message);
                     }
                 }
+            } else {
+                console.warn('[DB] Firebase SDK not ready after 15s timeout');
             }
         }
 
         // STEP 3: If no cache was loaded, Firestore is unavailable — empty state
         if (!hadCache) {
-            console.warn('Firestore unavailable and no cache. Starting with empty inventory.');
+            console.warn('[DB] Firestore unavailable and no cache. Empty inventory.');
             this.vehicles = [];
             this.brands = [];
             this.loaded = true;
@@ -94,9 +98,9 @@ class VehicleDatabase {
     }
 
     async loadFromFirestore() {
-        // PARALLEL queries with 10s timeout to prevent hanging
+        // PARALLEL queries with 20s timeout (generous for slow networks)
         var queryTimeout = new Promise(function(_, reject) {
-            setTimeout(function() { reject(new Error('Firestore query timeout (10s)')); }, 10000);
+            setTimeout(function() { reject(new Error('Firestore query timeout (20s)')); }, 20000);
         });
         var results = await Promise.race([
             Promise.all([

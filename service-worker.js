@@ -167,8 +167,6 @@ async function staleWhileRevalidate(request) {
 
     // Return cached version immediately if available
     if (cachedResponse) {
-        // Still update cache in background
-        fetchPromise;
         return cachedResponse;
     }
 

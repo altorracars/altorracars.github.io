@@ -316,7 +316,12 @@ class VehicleDatabase {
     calculateRankingScore(vehicle) {
         let score = 0;
 
-        // 1. Destacado tiene máxima prioridad (+1000)
+        // 0. Prioridad manual (máxima precedencia: prioridad * 100)
+        if (vehicle.prioridad && vehicle.prioridad > 0) {
+            score += vehicle.prioridad * 100;
+        }
+
+        // 1. Destacado tiene alta prioridad (+1000)
         if (vehicle.destacado) {
             score += 1000;
         }
@@ -332,12 +337,10 @@ class VehicleDatabase {
         }
 
         // 4. Año más reciente suma puntos (máx +100)
-        // Asumiendo años entre 2000-2030
         const yearScore = Math.max(0, Math.min(100, (vehicle.year - 2000) * 3));
         score += yearScore;
 
         // 5. Menor kilometraje suma puntos (máx +50)
-        // Inverso: menos km = más puntos
         const kmScore = Math.max(0, 50 - (vehicle.kilometraje / 10000));
         score += kmScore;
 

@@ -81,7 +81,7 @@
         </button>
         <button class="nav-item" data-section="dealers">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            <span>Concesionarios</span>
+            <span>Aliados</span>
         </button>
         <button class="nav-item" data-section="lists">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -395,79 +395,109 @@
             </div>
         </div>
 
-        <!-- DEALERS / CONCESIONARIOS -->
+        <!-- ALIADOS Y OPERACIONES -->
         <div id="sec-dealers" class="section">
             <div class="page-header">
                 <div>
-                    <h1>Concesionarios y Consignas</h1>
-                    <p class="page-subtitle">Gestiona concesionarios aliados y consignatarios. Los vehiculos se asocian a cada uno.</p>
+                    <h1>Aliados y Operaciones</h1>
+                    <p class="page-subtitle">Gestiona aliados comerciales, consignatarios y controla tus operaciones de venta</p>
                 </div>
                 <button class="btn btn-primary" id="btnAddDealer">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Agregar Concesionario
+                    Agregar Aliado
                 </button>
             </div>
 
-            <div class="stat-card" style="margin-bottom:1rem;padding:1rem;">
-                <p style="font-size:0.85rem;color:var(--admin-text-muted);margin:0;">
-                    Los concesionarios y consignatarios que agregues aqui aparecen automaticamente en el formulario de vehiculos.
-                    Al crear o editar un vehiculo, selecciona si pertenece a un concesionario aliado o ingresa el nombre de la persona que hace la consigna.
-                </p>
+            <!-- Tabs de navegacion -->
+            <div style="display:flex;gap:4px;border-bottom:2px solid var(--admin-border,#30363d);margin-bottom:1.5rem;">
+                <button class="btn btn-ghost dealers-tab active" data-dealers-tab="aliados" style="border-radius:8px 8px 0 0;padding:0.6rem 1.25rem;font-weight:600;font-size:0.85rem;">Aliados</button>
+                <button class="btn btn-ghost dealers-tab" data-dealers-tab="propios" style="border-radius:8px 8px 0 0;padding:0.6rem 1.25rem;font-weight:600;font-size:0.85rem;">Vehiculos Propios</button>
+                <button class="btn btn-ghost dealers-tab" data-dealers-tab="operaciones" style="border-radius:8px 8px 0 0;padding:0.6rem 1.25rem;font-weight:600;font-size:0.85rem;">Operaciones</button>
             </div>
 
-            <!-- Dealers List -->
-            <div id="dealersList" class="stat-card" style="margin-bottom:1.5rem;">
-                <p style="text-align:center;color:var(--admin-text-muted);padding:1rem;">Cargando concesionarios...</p>
-            </div>
+            <!-- TAB: Aliados -->
+            <div id="dealersTabAliados" class="dealers-tab-content active">
+                <div class="stat-card" style="margin-bottom:1rem;padding:1rem;">
+                    <p style="font-size:0.85rem;color:var(--admin-text-muted);margin:0;">
+                        Los aliados que agregues aqui aparecen en el formulario de vehiculos al seleccionar origen. Incluye concesionarios aliados (ej: Usados de la Costa) y personas que dejan vehiculos en consigna.
+                    </p>
+                </div>
+                <div id="dealersList" class="stat-card" style="margin-bottom:1.5rem;">
+                    <p style="text-align:center;color:var(--admin-text-muted);padding:1rem;">Cargando aliados...</p>
+                </div>
 
-            <!-- Vehicles by Origin -->
-            <div class="page-header" style="margin-top:2rem;">
-                <div>
-                    <h2 style="font-size:1.25rem;">Vehiculos por Origen</h2>
-                    <p class="page-subtitle">Inventario agrupado por concesionario o consignatario</p>
+                <!-- Vehicles by Origin -->
+                <div class="page-header" style="margin-top:2rem;">
+                    <div>
+                        <h2 style="font-size:1.25rem;">Inventario por Aliado</h2>
+                        <p class="page-subtitle">Vehiculos agrupados por aliado/consignatario</p>
+                    </div>
+                </div>
+                <div class="stat-card" style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Vehiculo</th>
+                                <th>Aliado</th>
+                                <th>Estado</th>
+                                <th>Precio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vehiclesByOriginBody">
+                            <tr><td colspan="4" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="stat-card" style="overflow-x:auto;">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Vehiculo</th>
-                            <th>Origen</th>
-                            <th>Estado</th>
-                            <th>Precio</th>
-                        </tr>
-                    </thead>
-                    <tbody id="vehiclesByOriginBody">
-                        <tr><td colspan="4" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando...</td></tr>
-                    </tbody>
-                </table>
-            </div>
 
-            <!-- Sales Tracking / Operaciones -->
-            <div class="page-header" style="margin-top:2rem;">
-                <div>
-                    <h2 style="font-size:1.25rem;">Operaciones de Venta</h2>
-                    <p class="page-subtitle">Registro de ventas con utilidad y canal</p>
+            <!-- TAB: Vehiculos Propios -->
+            <div id="dealersTabPropios" class="dealers-tab-content" style="display:none;">
+                <div class="stat-card" style="margin-bottom:1rem;padding:1rem;">
+                    <p style="font-size:0.85rem;color:var(--admin-text-muted);margin:0;">
+                        Vehiculos que pertenecen a ALTORRA. Los ingresos y utilidades de estas ventas son 100% nuestros.
+                    </p>
+                </div>
+                <div id="propiosSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-bottom:1rem;"></div>
+                <div class="stat-card" style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Vehiculo</th>
+                                <th>Estado</th>
+                                <th>Precio Publicado</th>
+                                <th>Precio Venta</th>
+                                <th>Utilidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="propiosTableBody">
+                            <tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div id="salesSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-bottom:1rem;"></div>
-            <div class="stat-card" style="overflow-x:auto;">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Codigo</th>
-                            <th>Vehiculo</th>
-                            <th>Canal</th>
-                            <th>Precio Cierre</th>
-                            <th>Utilidad ALTORRA</th>
-                            <th>Responsable</th>
-                            <th>Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody id="salesTrackingBody">
-                        <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Sin operaciones registradas</td></tr>
-                    </tbody>
-                </table>
+
+            <!-- TAB: Operaciones de Venta -->
+            <div id="dealersTabOperaciones" class="dealers-tab-content" style="display:none;">
+                <div id="salesSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-bottom:1rem;"></div>
+                <div class="stat-card" style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Vehiculo</th>
+                                <th>Origen</th>
+                                <th>Canal</th>
+                                <th>Precio Venta</th>
+                                <th>Utilidad ALTORRA</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesTrackingBody">
+                            <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Sin operaciones registradas</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -601,14 +631,10 @@
                         </div>
                         <div class="form-row" style="margin-top:1rem;">
                             <div class="form-group">
-                                <label class="form-label">Origen / Concesionario</label>
+                                <label class="form-label">Origen del vehiculo</label>
                                 <select id="vConcesionario" class="form-select">
-                                    <option value="">Propio / Consigna particular</option>
+                                    <option value="">Propio (ALTORRA)</option>
                                 </select>
-                            </div>
-                            <div class="form-group" id="consignaPartGroup" style="display:none;">
-                                <label class="form-label">Nombre del consignatario</label>
-                                <input type="text" id="vConsignaParticular" class="form-input" placeholder="Nombre de la persona">
                             </div>
                         </div>
                         <div class="form-group" style="margin-top:1rem;"><label class="form-label">Descripcion</label><textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea></div>
@@ -766,19 +792,19 @@
 <!-- DEALER MODAL -->
 <div class="modal-overlay" id="dealerModal">
     <div class="modal" style="max-width:500px;">
-        <div class="modal-header"><h2 id="dealerModalTitle">Agregar Concesionario</h2><button class="modal-close" id="closeDealerModal">&times;</button></div>
+        <div class="modal-header"><h2 id="dealerModalTitle">Agregar Aliado</h2><button class="modal-close" id="closeDealerModal">&times;</button></div>
         <div class="modal-body">
             <form id="dealerForm">
                 <input type="hidden" id="dOriginalId">
-                <div class="form-group"><label class="form-label">Nombre *</label><input type="text" id="dNombre" class="form-input" required placeholder="Sede Principal"></div>
-                <div class="form-group"><label class="form-label">Direccion</label><input type="text" id="dDireccion" class="form-input" placeholder="Calle 30 #45-67, Barranquilla"></div>
+                <div class="form-group"><label class="form-label">Nombre *</label><input type="text" id="dNombre" class="form-input" required placeholder="Ej: Usados de la Costa, Juan Perez..."></div>
+                <div class="form-group"><label class="form-label">Direccion</label><input type="text" id="dDireccion" class="form-input" placeholder="Calle 30 #45-67"></div>
                 <div class="form-group"><label class="form-label">Telefono</label><input type="tel" id="dTelefono" class="form-input" placeholder="3001234567"></div>
-                <div class="form-group"><label class="form-label">Ciudad</label><input type="text" id="dCiudad" class="form-input" placeholder="Barranquilla" value="Barranquilla"></div>
+                <div class="form-group"><label class="form-label">Ciudad</label><input type="text" id="dCiudad" class="form-input" placeholder="Cartagena" value="Cartagena"></div>
                 <div class="form-group"><label class="form-label">Horario</label><input type="text" id="dHorario" class="form-input" placeholder="Lun-Vie 8am-6pm, Sab 9am-1pm"></div>
                 <div class="form-group"><label class="form-label">Responsable</label><input type="text" id="dResponsable" class="form-input" placeholder="Nombre del encargado"></div>
             </form>
         </div>
-        <div class="modal-footer"><button class="btn btn-ghost" id="cancelDealerModal">Cancelar</button><button class="btn btn-primary" id="saveDealer">Guardar Concesionario</button></div>
+        <div class="modal-footer"><button class="btn btn-ghost" id="cancelDealerModal">Cancelar</button><button class="btn btn-primary" id="saveDealer">Guardar Aliado</button></div>
     </div>
 </div>
 
@@ -827,31 +853,29 @@
             <form id="soldForm">
                 <input type="hidden" id="soldVehicleId">
                 <div id="soldVehicleInfo" style="padding:0.75rem;background:rgba(212,175,55,0.1);border:1px solid var(--admin-gold);border-radius:8px;margin-bottom:1rem;font-size:0.85rem;"></div>
+                <div id="soldOrigenInfo" style="padding:0.5rem 0.75rem;background:rgba(88,166,255,0.1);border:1px solid rgba(88,166,255,0.3);border-radius:8px;margin-bottom:1rem;font-size:0.8rem;color:var(--admin-info,#58a6ff);"></div>
 
-                <div class="form-row">
-                    <div class="form-group"><label class="form-label">Canal de venta *</label><select id="soldCanal" class="form-select" required><option value="">Seleccionar...</option><option value="altorra">ALTORRA (venta directa)</option><option value="concesionario">Concesionario</option><option value="intermediario">Otro intermediario</option><option value="cliente_directo">Cliente directo</option></select></div>
-                    <div class="form-group"><label class="form-label">Responsable comercial *</label><input type="text" id="soldResponsable" class="form-input" required placeholder="Nombre del asesor"></div>
+                <div class="form-group">
+                    <label class="form-label">Canal de venta *</label>
+                    <select id="soldCanal" class="form-select" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="altorra">ALTORRA (nuestro cliente)</option>
+                        <option value="otros">Otros (vendido por terceros)</option>
+                    </select>
+                    <small id="soldCanalHint" style="display:none;font-size:0.75rem;color:var(--admin-text-muted);margin-top:4px;"></small>
                 </div>
 
-                <div style="margin:0.75rem 0 0.5rem;font-weight:600;font-size:0.85rem;color:var(--admin-text-secondary);">Precios y margenes</div>
-                <div class="form-row">
-                    <div class="form-group"><label class="form-label">Precio base concesionario</label><input type="number" id="soldPrecioBase" class="form-input" placeholder="Precio que paga el concesionario"></div>
-                    <div class="form-group"><label class="form-label">Precio publicado web</label><input type="number" id="soldPrecioWeb" class="form-input" placeholder="Precio en la pagina"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label class="form-label">Precio de cierre *</label><input type="number" id="soldPrecio" class="form-input" required placeholder="Precio final acordado"></div>
-                    <div class="form-group"><label class="form-label">Comision minima</label><input type="number" id="soldComisionMin" class="form-input" placeholder="Comision base"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label class="form-label">Utilidad adicional</label><input type="number" id="soldUtilidadAdicional" class="form-input" placeholder="Ganancia extra"></div>
-                    <div class="form-group">
-                        <label class="form-label">Utilidad total ALTORRA</label>
-                        <div id="soldUtilidadTotal" style="padding:0.5rem 0.75rem;background:var(--admin-bg-secondary,#161b22);border:1px solid var(--admin-border,#30363d);border-radius:6px;font-weight:700;font-size:1rem;color:var(--admin-success,#3fb950);min-height:38px;display:flex;align-items:center;">$0</div>
+                <!-- Campos visibles solo cuando canal = ALTORRA -->
+                <div id="soldAltorraFields" style="display:none;">
+                    <div class="form-group"><label class="form-label">Responsable comercial *</label><input type="text" id="soldResponsable" class="form-input" placeholder="Nombre del asesor que cerro la venta"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Precio de venta *</label><input type="number" id="soldPrecio" class="form-input" required placeholder="Precio final de la operacion"></div>
+                        <div class="form-group"><label class="form-label">Utilidad ALTORRA *</label><input type="number" id="soldUtilidad" class="form-input" placeholder="Ganancia neta ALTORRA"></div>
                     </div>
                 </div>
 
                 <div class="form-group"><label class="form-label">Fecha de cierre</label><input type="date" id="soldFechaCierre" class="form-input"></div>
-                <div class="form-group"><label class="form-label">Observaciones</label><textarea id="soldObservaciones" class="form-textarea" rows="3" placeholder="Notas sobre la operacion..."></textarea></div>
+                <div class="form-group"><label class="form-label">Observaciones</label><textarea id="soldObservaciones" class="form-textarea" rows="2" placeholder="Notas sobre la operacion..."></textarea></div>
             </form>
         </div>
         <div class="modal-footer"><button class="btn btn-ghost" id="cancelSoldModal">Cancelar</button><button class="btn btn-primary" id="confirmSold">Registrar Venta</button></div>

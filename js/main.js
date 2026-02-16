@@ -20,7 +20,7 @@ async function loadFeatured() {
         featured.sort(function(a, b) {
             return vehicleDB.calculateRankingScore(b) - vehicleDB.calculateRankingScore(a);
         });
-        renderVehicles(featured.slice(0, 12), 'featuredVehicles');
+        renderVehicles(featured, 'featuredVehicles');
     }
 
     // Try cache-first instant render
@@ -154,6 +154,9 @@ async function loadNewVehicles() {
     }
 
     const sortedNew = newVehicles.sort((a, b) => {
+        // Prioridad manual primero (mayor = primero)
+        const pa = a.prioridad || 0, pb = b.prioridad || 0;
+        if (pa !== pb) return pb - pa;
         if (a.destacado && !b.destacado) return -1;
         if (!a.destacado && b.destacado) return 1;
         if (a.oferta && !b.oferta) return -1;
@@ -161,7 +164,7 @@ async function loadNewVehicles() {
         return b.year - a.year;
     });
 
-    renderVehicles(sortedNew.slice(0, 12), 'newVehiclesCarousel');
+    renderVehicles(sortedNew, 'newVehiclesCarousel');
 }
 
 /**
@@ -180,6 +183,9 @@ async function loadUsedVehicles() {
     }
 
     const sortedUsed = used.sort((a, b) => {
+        // Prioridad manual primero (mayor = primero)
+        const pa = a.prioridad || 0, pb = b.prioridad || 0;
+        if (pa !== pb) return pb - pa;
         if (a.destacado && !b.destacado) return -1;
         if (!a.destacado && b.destacado) return 1;
         if (a.oferta && !b.oferta) return -1;
@@ -188,7 +194,7 @@ async function loadUsedVehicles() {
         return a.kilometraje - b.kilometraje;
     });
 
-    renderVehicles(sortedUsed.slice(0, 12), 'usedVehiclesCarousel');
+    renderVehicles(sortedUsed, 'usedVehiclesCarousel');
 }
 
 /**

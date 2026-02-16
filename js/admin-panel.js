@@ -1238,6 +1238,7 @@
             vOferta: $('vOferta').checked,
             vRevision: $('vRevision').checked,
             vPeritaje: $('vPeritaje').checked,
+            vPrioridad: $('vPrioridad').value,
             vCaracteristicas: $('vCaracteristicas').value,
             _images: uploadedImageUrls.slice(),
             _savedAt: new Date().toISOString()
@@ -1245,7 +1246,7 @@
     }
 
     function restoreFormSnapshot(snap) {
-        var fields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vPrecioOferta','vKm','vTransmision','vCombustible','vMotor','vPotencia','vCilindraje','vTraccion','vDireccion','vColor','vPuertas','vPasajeros','vUbicacion','vPlaca','vFasecolda','vDescripcion','vEstado','vCaracteristicas'];
+        var fields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vPrecioOferta','vKm','vTransmision','vCombustible','vMotor','vPotencia','vCilindraje','vTraccion','vDireccion','vColor','vPuertas','vPasajeros','vUbicacion','vPlaca','vFasecolda','vDescripcion','vEstado','vPrioridad','vCaracteristicas'];
         fields.forEach(function(f) {
             if ($(f) && snap[f] !== undefined) $(f).value = snap[f];
         });
@@ -1411,6 +1412,7 @@
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
         $('vRevision').checked = v.revisionTecnica !== false;
         $('vPeritaje').checked = v.peritaje !== false;
+        $('vPrioridad').value = v.prioridad || 0;
         loadFeaturesIntoForm(v.caracteristicas || []);
 
         // Load concesionario value
@@ -1531,6 +1533,7 @@
             descripcion: $('vDescripcion').value || '',
             estado: $('vEstado').value || 'disponible',
             destacado: $('vDestacado').checked,
+            prioridad: parseInt($('vPrioridad').value) || 0,
             imagen: uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
             imagenes: uploadedImageUrls.length ? uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
             caracteristicas: collectAllFeatures(),

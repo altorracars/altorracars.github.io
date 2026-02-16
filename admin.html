@@ -454,7 +454,7 @@
             <div id="dealersTabPropios" class="dealers-tab-content" style="display:none;">
                 <div class="stat-card" style="margin-bottom:1rem;padding:1rem;">
                     <p style="font-size:0.85rem;color:var(--admin-text-muted);margin:0;">
-                        Vehiculos que pertenecen a ALTORRA. Los ingresos y utilidades de estas ventas son 100% nuestros.
+                        Vehiculos que pertenecen a ALTORRA. Al venderlos por nuestro canal, el ingreso total entra a nuestras cuentas.
                     </p>
                 </div>
                 <div id="propiosSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-bottom:1rem;"></div>
@@ -465,13 +465,14 @@
                                 <th>Codigo</th>
                                 <th>Vehiculo</th>
                                 <th>Estado</th>
+                                <th>Canal</th>
                                 <th>Precio Publicado</th>
                                 <th>Precio Venta</th>
                                 <th>Utilidad</th>
                             </tr>
                         </thead>
                         <tbody id="propiosTableBody">
-                            <tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando...</td></tr>
+                            <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -489,12 +490,13 @@
                                 <th>Origen</th>
                                 <th>Canal</th>
                                 <th>Precio Venta</th>
-                                <th>Utilidad ALTORRA</th>
+                                <th>Ganancia ALTORRA</th>
+                                <th>Tipo</th>
                                 <th>Fecha</th>
                             </tr>
                         </thead>
                         <tbody id="salesTrackingBody">
-                            <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Sin operaciones registradas</td></tr>
+                            <tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Sin operaciones registradas</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -859,8 +861,9 @@
         <div class="modal-body">
             <form id="soldForm">
                 <input type="hidden" id="soldVehicleId">
+                <input type="hidden" id="soldOrigenTipo">
                 <div id="soldVehicleInfo" style="padding:0.75rem;background:rgba(212,175,55,0.1);border:1px solid var(--admin-gold);border-radius:8px;margin-bottom:1rem;font-size:0.85rem;"></div>
-                <div id="soldOrigenInfo" style="padding:0.5rem 0.75rem;background:rgba(88,166,255,0.1);border:1px solid rgba(88,166,255,0.3);border-radius:8px;margin-bottom:1rem;font-size:0.8rem;color:var(--admin-info,#58a6ff);"></div>
+                <div id="soldOrigenInfo" style="padding:0.5rem 0.75rem;border-radius:8px;margin-bottom:1rem;font-size:0.8rem;"></div>
 
                 <div class="form-group">
                     <label class="form-label">Canal de venta *</label>
@@ -869,16 +872,27 @@
                         <option value="altorra">ALTORRA (nuestro cliente)</option>
                         <option value="otros">Otros (vendido por terceros)</option>
                     </select>
-                    <small id="soldCanalHint" style="display:none;font-size:0.75rem;color:var(--admin-text-muted);margin-top:4px;"></small>
+                    <small id="soldCanalHint" style="display:none;font-size:0.75rem;margin-top:4px;"></small>
                 </div>
 
-                <!-- Campos visibles solo cuando canal = ALTORRA -->
-                <div id="soldAltorraFields" style="display:none;">
+                <!-- Campos para vehiculo PROPIO vendido por ALTORRA -->
+                <div id="soldPropioFields" style="display:none;">
                     <div class="form-group"><label class="form-label">Responsable comercial *</label><input type="text" id="soldResponsable" class="form-input" placeholder="Nombre del asesor que cerro la venta"></div>
                     <div class="form-row">
-                        <div class="form-group"><label class="form-label">Precio de venta *</label><input type="number" id="soldPrecio" class="form-input" required placeholder="Precio final de la operacion"></div>
-                        <div class="form-group"><label class="form-label">Utilidad ALTORRA *</label><input type="number" id="soldUtilidad" class="form-input" placeholder="Ganancia neta ALTORRA"></div>
+                        <div class="form-group"><label class="form-label">Precio de venta *</label><input type="number" id="soldPrecio" class="form-input" required placeholder="Precio final (ingresa a ALTORRA)"></div>
+                        <div class="form-group"><label class="form-label">Utilidad ALTORRA</label><input type="number" id="soldUtilidad" class="form-input" placeholder="Ganancia neta de la venta"></div>
                     </div>
+                    <small style="display:block;color:var(--admin-text-muted,#8b949e);font-size:0.75rem;margin-top:-0.5rem;margin-bottom:1rem;">El precio de venta ingresa directamente a las cuentas de ALTORRA.</small>
+                </div>
+
+                <!-- Campos para vehiculo de ALIADO vendido por ALTORRA -->
+                <div id="soldAliadoFields" style="display:none;">
+                    <div class="form-group"><label class="form-label">Responsable comercial *</label><input type="text" id="soldResponsableAliado" class="form-input" placeholder="Nombre del asesor que cerro la venta"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Precio de venta (referencia)</label><input type="number" id="soldPrecioAliado" class="form-input" placeholder="Precio total (va al aliado)"></div>
+                        <div class="form-group"><label class="form-label">Comision ALTORRA *</label><input type="number" id="soldComision" class="form-input" placeholder="Comision que nos paga el aliado"></div>
+                    </div>
+                    <small style="display:block;color:var(--admin-text-muted,#8b949e);font-size:0.75rem;margin-top:-0.5rem;margin-bottom:1rem;">El precio de venta va al aliado. Solo la comision ingresa a ALTORRA.</small>
                 </div>
 
                 <div class="form-group"><label class="form-label">Fecha de cierre</label><input type="date" id="soldFechaCierre" class="form-input"></div>

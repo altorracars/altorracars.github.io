@@ -319,12 +319,11 @@
         if (!selectEl || !window.db) return;
         var currentVal = selectEl.value;
         window.db.collection('concesionarios').get().then(function(snap) {
-            var html = '<option value="">Propio / Consigna particular</option>';
+            var html = '<option value="">Propio (ALTORRA)</option>';
             snap.docs.forEach(function(doc) {
                 var d = doc.data();
                 html += '<option value="' + doc.id + '">' + (d.nombre || doc.id) + '</option>';
             });
-            html += '<option value="_particular">Consigna particular (escribir nombre)</option>';
             selectEl.innerHTML = html;
             if (currentVal) selectEl.value = currentVal;
         }).catch(function() {});

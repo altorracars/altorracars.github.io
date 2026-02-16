@@ -1750,6 +1750,19 @@
         el.style.display = 'block';
     }
 
+    // Natural sort: "1.jpg" < "2.jpg" < "10.jpg" < "12.jpg"
+    function naturalSortCompare(a, b) {
+        var ax = [], bx = [];
+        a.replace(/(\d+)|(\D+)/g, function(_, $1, $2) { ax.push([$1 || Infinity, $2 || '']); });
+        b.replace(/(\d+)|(\D+)/g, function(_, $1, $2) { bx.push([$1 || Infinity, $2 || '']); });
+        while (ax.length && bx.length) {
+            var an = ax.shift(), bn = bx.shift();
+            var nn = (parseInt(an[0]) - parseInt(bn[0])) || an[1].localeCompare(bn[1]);
+            if (nn) return nn;
+        }
+        return ax.length - bx.length;
+    }
+
     function handleFiles(files) {
         if (!window.storage) { showUploadError('Firebase Storage no esta disponible. Usa la opcion de URL manual.'); return; }
 
@@ -1764,25 +1777,44 @@
         var oversized = fileArray.filter(function(f) { return f.size > maxBytes * 5; });
         if (oversized.length) { showUploadError('Imagenes demasiado grandes (max 10MB).'); return; }
 
+        // Sort files by name ascending (natural order: 1, 2, 3... 10, 11, 12)
+        fileArray.sort(function(a, b) { return naturalSortCompare(a.name, b.name); });
+
         $('uploadError').style.display = 'none';
         var total = fileArray.length;
         var done = 0;
         var errors = 0;
+        // Track URLs by original index to maintain sorted order
+        var resultUrls = new Array(total);
+
         $('uploadProgress').style.display = 'block';
         $('uploadStatus').textContent = 'Comprimiendo y subiendo 0 de ' + total + '...';
         $('progressFill').style.width = '0%';
 
-        fileArray.forEach(function(file) {
+        fileArray.forEach(function(file, idx) {
             compressImage(file).then(function(compressed) {
-                return uploadFileToStorage(compressed);
+                return uploadFileToStorageIndexed(compressed, idx, resultUrls);
             }).then(function(success) {
                 done++;
                 if (!success) errors++;
                 updateUploadProgress(done, total, errors);
+                if (done === total) {
+                    // All uploads complete: add URLs in sorted order
+                    resultUrls.forEach(function(url) {
+                        if (url) uploadedImageUrls.push(url);
+                    });
+                    renderUploadedImages();
+                }
             }).catch(function() {
                 done++;
                 errors++;
                 updateUploadProgress(done, total, errors);
+                if (done === total) {
+                    resultUrls.forEach(function(url) {
+                        if (url) uploadedImageUrls.push(url);
+                    });
+                    renderUploadedImages();
+                }
             });
         });
     }
@@ -1814,6 +1846,34 @@
                 }).then(function(url) {
                     uploadedImageUrls.push(url);
                     renderUploadedImages();
+                    resolve(true);
+                }).catch(function(err) {
+                    console.error('[Storage Upload] FALLO:', err.code, err.message);
+                    showUploadError('Error subiendo imagen: ' + (err.message || err.code));
+                    resolve(false);
+                });
+            } catch (e) {
+                console.error('[Storage Upload] Excepcion:', e);
+                resolve(false);
+            }
+        });
+    }
+
+    // Indexed version: stores URL at specific position instead of pushing to array
+    function uploadFileToStorageIndexed(file, index, resultArray) {
+        return new Promise(function(resolve) {
+            if (!window.storage) { resolve(false); return; }
+
+            var timestamp = Date.now() + index; // unique per file
+            var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            var path = UPLOAD_CONFIG.storagePath + timestamp + '_' + safeName;
+
+            try {
+                var ref = window.storage.ref(path);
+                ref.put(file).then(function(snapshot) {
+                    return snapshot.ref.getDownloadURL();
+                }).then(function(url) {
+                    resultArray[index] = url;
                     resolve(true);
                 }).catch(function(err) {
                     console.error('[Storage Upload] FALLO:', err.code, err.message);

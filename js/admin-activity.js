@@ -203,6 +203,7 @@
     AP.loadAuditLog = loadAuditLog;
     AP.renderActivityFeed = renderActivityFeed;
     AP.toggleActivitySelectMode = toggleActivitySelectMode;
+    AP.toggleActivitySelect = toggleActivitySelectMode; // alias used in HTML onclick
     AP.deleteSelectedActivity = deleteSelectedActivity;
     AP.clearAllActivity = clearAllActivity;
 })();

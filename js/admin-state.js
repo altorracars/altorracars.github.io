@@ -239,5 +239,41 @@
         }
     };
 
+    // ========== GRANULAR RBAC MATRIX ==========
+    AP.RBAC = {
+        // Users: super_admin only
+        canViewUsers:         function() { return AP.isSuperAdmin(); },
+        canManageUsers:       function() { return AP.isSuperAdmin(); },
+        // Vehicles: editor+ create/edit, super_admin delete
+        canViewVehicles:      function() { return true; },
+        canCreateVehicle:     function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canEditVehicle:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canDeleteVehicle:     function() { return AP.isSuperAdmin(); },
+        // Brands: editor+ create/edit, super_admin delete
+        canViewBrands:        function() { return true; },
+        canCreateBrand:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canEditBrand:         function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canDeleteBrand:       function() { return AP.isSuperAdmin(); },
+        // Appointments: editor+ manage, super_admin delete
+        canViewAppointments:  function() { return true; },
+        canManageAppointment: function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canDeleteAppointment: function() { return AP.isSuperAdmin(); },
+        // Dealers: super_admin full, editor view only
+        canViewDealers:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canManageDealers:     function() { return AP.isSuperAdmin(); },
+        // Lists: super_admin edit, editor view
+        canViewLists:         function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canEditLists:         function() { return AP.isSuperAdmin(); },
+        // Settings & Backup
+        canExportBackup:      function() { return AP.isSuperAdmin(); },
+        canImportBackup:      function() { return AP.isSuperAdmin(); },
+        // Activity log
+        canViewActivity:      function() { return true; },
+        canDeleteActivity:    function() { return AP.isSuperAdmin(); }
+    };
+
     window.AP = AP;
+
+    // Compatibility alias: HTML onclick handlers reference adminPanel.xxx()
+    window.adminPanel = AP;
 })();

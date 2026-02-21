@@ -84,6 +84,37 @@ async function loadDestacadosBanner() {
     if (banner) {
         banner.addEventListener('mouseenter', function() { clearInterval(_destacadosTimer); });
         banner.addEventListener('mouseleave', function() { startDestacadosAutoRotate(); });
+
+        // Navigation arrows
+        var prevBtn = document.getElementById('destNavPrev');
+        var nextBtn = document.getElementById('destNavNext');
+        if (prevBtn) prevBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            goToDestacado((_destacadosIndex - 1 + _destacadosTotal) % _destacadosTotal);
+            clearInterval(_destacadosTimer);
+            startDestacadosAutoRotate();
+        });
+        if (nextBtn) nextBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            goToDestacado((_destacadosIndex + 1) % _destacadosTotal);
+            clearInterval(_destacadosTimer);
+            startDestacadosAutoRotate();
+        });
+
+        // Touch swipe support for banner
+        var _destTouchStartX = 0;
+        banner.addEventListener('touchstart', function(e) {
+            _destTouchStartX = e.touches[0].clientX;
+            clearInterval(_destacadosTimer);
+        }, { passive: true });
+        banner.addEventListener('touchend', function(e) {
+            var diff = _destTouchStartX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) goToDestacado((_destacadosIndex + 1) % _destacadosTotal);
+                else goToDestacado((_destacadosIndex - 1 + _destacadosTotal) % _destacadosTotal);
+            }
+            startDestacadosAutoRotate();
+        }, { passive: true });
     }
 }
 
@@ -296,59 +327,63 @@ function scrollCarouselById(containerId, direction) {
  * Supports both mouse drag (desktop) and touch (mobile)
  */
 function enableDragScroll() {
-    const carousels = document.querySelectorAll('.vehicles-grid');
+    var carousels = document.querySelectorAll('.vehicles-grid');
 
-    carousels.forEach(carousel => {
+    carousels.forEach(function(carousel) {
         // Skip grids that aren't horizontal carousels or already have drag enabled
         if (carousel.dataset.dragEnabled) return;
         var style = getComputedStyle(carousel);
         if (style.overflowX !== 'auto' && style.overflowX !== 'scroll') return;
+        // Also check if content actually overflows
+        if (carousel.scrollWidth <= carousel.clientWidth + 10) return;
         carousel.dataset.dragEnabled = 'true';
-        let isDown = false;
-        let startX = 0;
-        let scrollLeft = 0;
-        let hasMoved = false;
+        var isDown = false;
+        var startX = 0;
+        var scrollLeft = 0;
+        var hasMoved = false;
 
-        // Cursor feedback
+        // Cursor feedback (desktop only)
         carousel.style.cursor = 'grab';
 
         // ---- Mouse drag (desktop) ----
-        carousel.addEventListener('mousedown', (e) => {
-            // Ignore clicks on buttons/links inside cards
-            if (e.target.closest('button, a')) return;
+        carousel.addEventListener('mousedown', function(e) {
+            if (e.target.closest('button, a, .favorite-btn, .btn-compare')) return;
             isDown = true;
             hasMoved = false;
-            startX = e.pageX - carousel.offsetLeft;
+            startX = e.clientX;
             scrollLeft = carousel.scrollLeft;
             carousel.style.cursor = 'grabbing';
             carousel.style.scrollBehavior = 'auto';
+            carousel.style.scrollSnapType = 'none';
         });
 
-        carousel.addEventListener('mouseleave', () => {
+        carousel.addEventListener('mouseleave', function() {
             if (isDown) {
                 isDown = false;
                 carousel.style.cursor = 'grab';
                 carousel.style.scrollBehavior = '';
+                carousel.style.scrollSnapType = '';
             }
         });
 
-        carousel.addEventListener('mouseup', () => {
+        carousel.addEventListener('mouseup', function() {
+            if (!isDown) return;
             isDown = false;
             carousel.style.cursor = 'grab';
             carousel.style.scrollBehavior = '';
+            carousel.style.scrollSnapType = '';
         });
 
-        carousel.addEventListener('mousemove', (e) => {
+        carousel.addEventListener('mousemove', function(e) {
             if (!isDown) return;
             e.preventDefault();
-            var x = e.pageX - carousel.offsetLeft;
-            var walk = (x - startX) * 1.5; // Multiply for faster drag feel
+            var walk = e.clientX - startX;
             carousel.scrollLeft = scrollLeft - walk;
             if (Math.abs(walk) > 5) hasMoved = true;
         });
 
         // Prevent click navigation when dragging
-        carousel.addEventListener('click', (e) => {
+        carousel.addEventListener('click', function(e) {
             if (hasMoved) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -356,17 +391,8 @@ function enableDragScroll() {
             }
         }, true);
 
-        // ---- Touch (mobile) ----
-        carousel.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].pageX - carousel.offsetLeft;
-            scrollLeft = carousel.scrollLeft;
-        }, { passive: true });
-
-        carousel.addEventListener('touchmove', (e) => {
-            var x = e.touches[0].pageX - carousel.offsetLeft;
-            var walk = (x - startX) * 1.2;
-            carousel.scrollLeft = scrollLeft - walk;
-        }, { passive: true });
+        // Mobile: let native scroll handle touch - no JS override needed
+        // CSS -webkit-overflow-scrolling: touch and scroll-snap handle it
     });
 }
 
@@ -381,12 +407,13 @@ function initializePage() {
         loadPopularBrands(),
         loadUsedVehicles(),
         loadNewVehicles()
-    ]).catch(error => {
+    ]).then(function() {
+        // Enable drag after vehicles are rendered and overflow-x is active
+        enableDragScroll();
+    }).catch(function(error) {
         console.error('Error initializing page:', error);
+        enableDragScroll(); // still enable on error
     });
-
-    // Enable drag + touch scrolling for carousels
-    enableDragScroll();
 }
 
 // Initialize when DOM is ready

@@ -143,7 +143,18 @@
     box-shadow: 0 6px 20px rgba(184, 150, 88, 0.4);
 }
 
-/* Responsive */
+/* Responsive - Tablet */
+@media (max-width: 768px) {
+    .brands-arrow {
+        display: none;
+    }
+
+    .brands-carousel-wrapper {
+        padding: 0;
+    }
+}
+
+/* Responsive - Mobile */
 @media (max-width: 640px) {
     .brand-card {
         flex: 0 0 120px;
@@ -159,16 +170,4 @@
     .brand-name {
         font-size: 0.8rem;
     }
-
-    .brands-carousel-wrapper {
-        padding: 0 36px;
-    }
-
-    .brands-arrow {
-        width: 34px;
-        height: 34px;
-        font-size: 1rem;
-    }
-    .brands-arrow.prev { left: 0; }
-    .brands-arrow.next { right: 0; }
 }

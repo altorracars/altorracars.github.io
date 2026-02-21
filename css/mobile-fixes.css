@@ -117,6 +117,7 @@ body {
         min-height: 500px;
         padding: 1.5rem 0;
         margin-top: 60px;
+        background-attachment: scroll !important; /* fixed causes jank on mobile */
         background-position: center center;
         background-size: cover;
     }

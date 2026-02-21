@@ -295,6 +295,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Auth "coming soon" placeholder — visual only, no real auth yet
+window._authComingSoon = function() {
+    if (typeof showToast === 'function') {
+        showToast('Próximamente podrás crear tu cuenta e iniciar sesión', 'info');
+    } else {
+        alert('Próximamente podrás crear tu cuenta e iniciar sesión');
+    }
+};
+
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { 

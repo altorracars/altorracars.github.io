@@ -105,6 +105,7 @@ class Carousel {
     }
 
     setupTouchEvents() {
+        // Touch events (mobile)
         this.wrapper.addEventListener('touchstart', (e) => {
             this.touchStartX = e.touches[0].clientX;
             this.stopAutoplay();
@@ -120,6 +121,40 @@ class Carousel {
                 this.startAutoplay();
             }
         });
+
+        // Mouse drag events (desktop)
+        let isDragging = false;
+        let dragStartX = 0;
+
+        this.wrapper.style.cursor = 'grab';
+
+        this.wrapper.addEventListener('mousedown', (e) => {
+            if (e.target.closest('button, a')) return;
+            isDragging = true;
+            dragStartX = e.clientX;
+            this.wrapper.style.cursor = 'grabbing';
+            this.stopAutoplay();
+        });
+
+        this.wrapper.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            this.touchEndX = e.clientX;
+        });
+
+        const endDrag = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            this.wrapper.style.cursor = 'grab';
+            this.touchStartX = dragStartX;
+            this.handleSwipe();
+            if (this.options.autoplay) {
+                this.startAutoplay();
+            }
+        };
+
+        this.wrapper.addEventListener('mouseup', endDrag);
+        this.wrapper.addEventListener('mouseleave', endDrag);
     }
 
     handleSwipe() {

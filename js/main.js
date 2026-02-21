@@ -397,6 +397,53 @@ function enableDragScroll() {
 }
 
 /**
+ * Load promotional banners from Firestore (admin-managed)
+ * Displays between sections on the index page
+ */
+async function loadPromoBanners() {
+    var section = document.getElementById('promoBannerSection');
+    var wrapper = document.getElementById('promoBannerWrapper');
+    if (!section || !wrapper || !window.db) return;
+
+    try {
+        var snap = await db.collection('banners')
+            .where('active', '==', true)
+            .where('position', '==', 'promocional')
+            .orderBy('order', 'asc')
+            .limit(3)
+            .get();
+
+        if (snap.empty) { section.style.display = 'none'; return; }
+
+        var html = '';
+        snap.forEach(function(doc) {
+            var b = doc.data();
+            var linkOpen = b.link ? '<a href="' + b.link + '" class="promo-banner-link">' : '<div class="promo-banner-link">';
+            var linkClose = b.link ? '</a>' : '</div>';
+
+            html += linkOpen +
+                '<div class="promo-banner-item">' +
+                    (b.image ? '<img src="' + b.image + '" alt="' + (b.title || '') + '" loading="lazy">' : '') +
+                    '<div class="promo-banner-overlay">' +
+                        '<div class="promo-banner-content">' +
+                            (b.title ? '<h3 class="promo-banner-title">' + b.title + '</h3>' : '') +
+                            (b.subtitle ? '<p class="promo-banner-subtitle">' + b.subtitle + '</p>' : '') +
+                            (b.cta ? '<span class="promo-banner-cta">' + b.cta + ' &rarr;</span>' : '') +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            linkClose;
+        });
+
+        wrapper.innerHTML = html;
+        section.style.display = '';
+    } catch (e) {
+        console.warn('Error loading promo banners:', e);
+        section.style.display = 'none';
+    }
+}
+
+/**
  * Initialize page
  * Load all content when DOM is ready
  */
@@ -406,7 +453,8 @@ function initializePage() {
         loadDestacadosBanner(),
         loadPopularBrands(),
         loadUsedVehicles(),
-        loadNewVehicles()
+        loadNewVehicles(),
+        loadPromoBanners()
     ]).then(function() {
         // Enable drag after vehicles are rendered and overflow-x is active
         enableDragScroll();

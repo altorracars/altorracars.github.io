@@ -184,6 +184,9 @@ class PerformanceOptimizer {
     optimizeScrollPerformance() {
         let ticking = false;
         let lastScrollY = 0;
+        // Cache DOM refs once to avoid querying on every frame
+        this._headerEl = null;
+        this._headerCached = false;
 
         const onScroll = () => {
             lastScrollY = window.scrollY;
@@ -201,25 +204,27 @@ class PerformanceOptimizer {
     }
 
     handleScroll(scrollY) {
-        // Header shrink en scroll
-        const header = document.querySelector('.header, #header');
-        if (header) {
+        // Cache header element once
+        if (!this._headerCached) {
+            this._headerEl = document.querySelector('.header, #header');
+            this._headerCached = true;
+        }
+
+        // Header shrink en scroll — lightweight class toggle only
+        if (this._headerEl) {
             if (scrollY > 100) {
-                header.classList.add('scrolled');
+                if (!this._headerEl.classList.contains('scrolled')) {
+                    this._headerEl.classList.add('scrolled');
+                }
             } else {
-                header.classList.remove('scrolled');
+                if (this._headerEl.classList.contains('scrolled')) {
+                    this._headerEl.classList.remove('scrolled');
+                }
             }
         }
 
-        // Parallax suave para hero (solo si está visible)
-        const hero = document.querySelector('.hero');
-        if (hero && scrollY < window.innerHeight) {
-            const heroContent = hero.querySelector('.hero-content');
-            if (heroContent) {
-                heroContent.style.transform = `translateY(${scrollY * 0.3}px)`;
-                heroContent.style.opacity = 1 - (scrollY / window.innerHeight) * 0.5;
-            }
-        }
+        // Parallax REMOVED — was causing layout thrashing on every scroll frame.
+        // The hero uses CSS background-attachment: fixed for a lightweight parallax effect.
     }
 
     // ===== UTILIDADES =====

@@ -287,6 +287,7 @@ button {
     background-image: url('../multimedia/hero-car.webp');
     background-size: cover;
     background-position: center;
+    background-attachment: fixed;
     margin-top: 70px;
     padding: var(--spacing-xl) 0;
 }
@@ -437,6 +438,7 @@ section {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-md);
+    contain: layout style;
 }
 
 .vehicle-card {
@@ -444,8 +446,10 @@ section {
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
-    transition: var(--transition);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
+    will-change: transform;
+    contain: layout style;
 }
 
 .vehicle-card:hover {
@@ -461,11 +465,40 @@ section {
     background: var(--border-light);
 }
 
+/* Skeleton placeholder while image loads */
+.vehicle-image .img-skeleton {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+    background-size: 200% 100%;
+    animation: img-shimmer 1.5s ease-in-out infinite;
+    z-index: 1;
+}
+
+@keyframes img-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Progressive image loading — starts transparent, fades in */
 .vehicle-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: var(--transition);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    will-change: opacity;
+    position: relative;
+    z-index: 2;
+}
+
+.vehicle-image img.img-loaded {
+    opacity: 1;
+}
+
+/* Hide skeleton once image loads — uses :has() for modern browsers */
+.vehicle-image:has(img.img-loaded) .img-skeleton {
+    display: none;
 }
 
 .vehicle-card:hover .vehicle-image img {

@@ -125,10 +125,15 @@ function renderVehicleCard(vehicle) {
            </div>`
         : `<p class="vehicle-price">${formatPrice(vehicle.precio)}</p>`;
 
+    // Image: use placeholder with data-src for progressive loading
+    const imgSrc = vehicle.imagen || 'multimedia/vehicles/placeholder-car.jpg';
+    const altText = `${capitalize(vehicle.marca)} ${vehicle.modelo} ${vehicle.year}`;
+
     return `
         <div class="vehicle-card clickable-card" data-id="${vehicle.id}" data-url="detalle-vehiculo.html?id=${vehicle.id}">
             <div class="vehicle-image">
-                <img src="${vehicle.imagen}" alt="${capitalize(vehicle.marca)} ${vehicle.modelo} ${vehicle.year}" loading="lazy" decoding="async" width="400" height="260" class="vehicle-img" data-fallback="multimedia/vehicles/placeholder-car.jpg">
+                <div class="img-skeleton"></div>
+                <img src="${imgSrc}" alt="${altText}" loading="lazy" decoding="async" width="400" height="260" class="vehicle-img" data-fallback="multimedia/vehicles/placeholder-car.jpg" onload="this.classList.add('img-loaded');var s=this.parentElement.querySelector('.img-skeleton');if(s)s.style.display='none'" onerror="this.onerror=null;this.src=this.getAttribute('data-fallback')||'multimedia/vehicles/placeholder-car.jpg';this.classList.add('img-loaded','img-error');var s=this.parentElement.querySelector('.img-skeleton');if(s)s.style.display='none'">
                 <div class="vehicle-actions">
                     <button class="favorite-btn${activeClass}" data-id="${vehicle.id}" aria-label="Añadir a favoritos">${heartIcon}</button>
                 </div>
@@ -149,30 +154,27 @@ function renderVehicleCard(vehicle) {
                 </p>
                 <div class="vehicle-footer">
                     ${priceHTML}
-                    <a href="detalle-vehiculo.html?id=${vehicle.id}" class="btn-view">Ver más</a>
                 </div>
             </div>
         </div>
     `;
 }
 
-// Centralized image error handling system
-function handleImageError(img) {
-    const fallback = img.getAttribute('data-fallback') || 'multimedia/vehicles/placeholder-car.jpg';
-    if (img.src !== fallback) {
-        img.src = fallback;
-    }
-}
-
-// Attach image error listeners to all vehicle images
-function attachImageErrorListeners() {
+// Handle images that loaded from browser cache (onload already fired before JS ran)
+function handleCachedImages() {
     const vehicleImages = document.querySelectorAll('.vehicle-img');
     vehicleImages.forEach(img => {
-        // Remove any existing listeners to prevent duplicates
-        img.removeEventListener('error', () => handleImageError(img));
-        // Add new listener
-        img.addEventListener('error', () => handleImageError(img));
+        if (img.complete && img.naturalWidth > 0) {
+            img.classList.add('img-loaded');
+            var s = img.parentElement.querySelector('.img-skeleton');
+            if (s) s.style.display = 'none';
+        }
     });
+}
+
+// Legacy alias for backward compatibility
+function attachImageErrorListeners() {
+    handleCachedImages();
 }
 
 // Render multiple vehicles
@@ -222,8 +224,8 @@ function attachCardClickListeners() {
     cards.forEach(card => {
         card.style.cursor = 'pointer';
         card.addEventListener('click', (e) => {
-            // No navegar si se clickeó el botón de favoritos, comparar o el botón "Ver más"
-            if (e.target.closest('.favorite-btn') || e.target.closest('.btn-view') || e.target.closest('.btn-compare')) {
+            // No navegar si se clickeo el boton de favoritos o comparar
+            if (e.target.closest('.favorite-btn') || e.target.closest('.btn-compare')) {
                 return;
             }
             const url = card.getAttribute('data-url');

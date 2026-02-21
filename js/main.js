@@ -105,15 +105,27 @@ function initBrandsAutoScroll(container) {
 
     var BASE_SPEED = 0.5;
     var BOOST_SPEED = 3.5;
-    var state = { pos: 0, speed: BASE_SPEED, baseSpeed: BASE_SPEED, boostSpeed: BOOST_SPEED, paused: false };
+    var state = { pos: 0, speed: BASE_SPEED, baseSpeed: BASE_SPEED, boostSpeed: BOOST_SPEED, paused: false, visible: false };
     window._brandsScrollState = state;
 
+    // Only animate when the section is visible — saves CPU/battery
+    if ('IntersectionObserver' in window) {
+        var visObs = new IntersectionObserver(function(entries) {
+            state.visible = entries[0].isIntersecting;
+        }, { rootMargin: '100px 0px' });
+        visObs.observe(container);
+    } else {
+        state.visible = true; // fallback: always animate
+    }
+
     function step() {
-        if (!state.paused) {
+        if (!state.paused && state.visible) {
             state.pos += state.speed;
             var halfWidth = track.scrollWidth / 2;
-            if (state.pos >= halfWidth) state.pos -= halfWidth;
-            if (state.pos < 0) state.pos += halfWidth;
+            if (halfWidth > 0) {
+                if (state.pos >= halfWidth) state.pos -= halfWidth;
+                if (state.pos < 0) state.pos += halfWidth;
+            }
             track.style.transform = 'translateX(-' + state.pos + 'px)';
         }
         requestAnimationFrame(step);

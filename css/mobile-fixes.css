@@ -202,18 +202,14 @@ rgba(145, 102, 82, 0.55) 100%
         padding: 1rem;
     }
 
-    /* Brand carousel wrapper padding on mobile */
+    /* Brand carousel - no arrows on mobile, swipe only */
     .brands-carousel-wrapper {
-        padding: 0 30px;
+        padding: 0;
     }
 
     .brands-arrow {
-        width: 30px;
-        height: 30px;
-        font-size: 0.9rem;
+        display: none !important;
     }
-    .brands-arrow.prev { left: 0; }
-    .brands-arrow.next { right: 0; }
 
     /* Price block stacking on mobile */
     .vehicle-price-block {
@@ -915,15 +911,9 @@ iframe,
         font-size: 1.4rem !important;
     }
 
-    /* Brands carousel */
+    /* Brands carousel - no arrows on mobile */
     .brands-carousel-wrapper {
-        padding: 0 10px !important;
-    }
-
-    .brands-arrow {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 0.85rem !important;
+        padding: 0 !important;
     }
 
     /* Search container */

@@ -857,6 +857,20 @@
             cursor: not-allowed;
         }
 
+        .lightbox-nav,
+        .lightbox-close,
+        .lightbox-dot {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .lightbox-image {
+            touch-action: pan-x;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
         .lightbox-prev {
             left: 20px;
         }
@@ -1602,8 +1616,7 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
         }
 
         let isZoomed = false;
-        let touchStartX = 0;
-        let touchEndX = 0;
+        let _lbNavigating = false; // debounce flag
 
         function initGallery() {
             document.querySelectorAll('.thumbnail').forEach(thumb => {
@@ -1619,23 +1632,78 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
 
             // Lightbox controls
             document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
-            document.getElementById('lightboxPrev').addEventListener('click', () => navigateLightbox(-1));
-            document.getElementById('lightboxNext').addEventListener('click', () => navigateLightbox(1));
+            document.getElementById('lightboxPrev').addEventListener('click', function(e) {
+                e.stopPropagation();
+                navigateLightbox(-1);
+            });
+            document.getElementById('lightboxNext').addEventListener('click', function(e) {
+                e.stopPropagation();
+                navigateLightbox(1);
+            });
 
             document.getElementById('lightbox').addEventListener('click', (e) => {
                 if (e.target.id === 'lightbox') closeLightbox();
             });
 
-            // Zoom on image click
+            // Zoom on image click - only direct clicks, no multi-tap
+            var _lastZoomTap = 0;
             document.getElementById('lightboxImage').addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (_lbNavigating) return;
+                var now = Date.now();
+                if (now - _lastZoomTap < 400) return; // prevent rapid multi-tap zoom
+                _lastZoomTap = now;
                 toggleZoom();
             });
 
-            // Touch gestures for mobile swipe
-            const lightbox = document.getElementById('lightbox');
-            lightbox.addEventListener('touchstart', handleTouchStart, { passive: true });
-            lightbox.addEventListener('touchend', handleTouchEnd, { passive: true });
+            // Touch gestures for mobile swipe - only on the lightbox-container (image area)
+            var lbContainer = document.querySelector('.lightbox-container');
+            var _lbTouchStartX = 0;
+            var _lbTouchStartY = 0;
+            var _lbTouchMoved = false;
+
+            if (lbContainer) {
+                lbContainer.addEventListener('touchstart', function(e) {
+                    _lbTouchStartX = e.touches[0].clientX;
+                    _lbTouchStartY = e.touches[0].clientY;
+                    _lbTouchMoved = false;
+                }, { passive: true });
+
+                lbContainer.addEventListener('touchmove', function(e) {
+                    var dx = Math.abs(e.touches[0].clientX - _lbTouchStartX);
+                    var dy = Math.abs(e.touches[0].clientY - _lbTouchStartY);
+                    if (dx > 10 || dy > 10) _lbTouchMoved = true;
+                }, { passive: true });
+
+                lbContainer.addEventListener('touchend', function(e) {
+                    if (!_lbTouchMoved) return; // was a tap, not swipe
+                    var diff = _lbTouchStartX - e.changedTouches[0].clientX;
+                    if (Math.abs(diff) > 50) {
+                        if (diff > 0) navigateLightbox(1);
+                        else navigateLightbox(-1);
+                    }
+                }, { passive: true });
+            }
+
+            // Enable drag-to-scroll on thumbnails
+            var thumbGrid = document.getElementById('thumbnailsGrid');
+            if (thumbGrid) {
+                var tDown = false, tStartX = 0, tScrollL = 0, tMoved = false;
+                thumbGrid.style.cursor = 'grab';
+                thumbGrid.addEventListener('mousedown', function(e) {
+                    tDown = true; tMoved = false;
+                    tStartX = e.clientX; tScrollL = thumbGrid.scrollLeft;
+                    thumbGrid.style.cursor = 'grabbing';
+                });
+                thumbGrid.addEventListener('mousemove', function(e) {
+                    if (!tDown) return; e.preventDefault();
+                    var walk = e.clientX - tStartX;
+                    thumbGrid.scrollLeft = tScrollL - walk;
+                    if (Math.abs(walk) > 5) tMoved = true;
+                });
+                thumbGrid.addEventListener('mouseup', function() { tDown = false; thumbGrid.style.cursor = 'grab'; });
+                thumbGrid.addEventListener('mouseleave', function() { tDown = false; thumbGrid.style.cursor = 'grab'; });
+            }
 
             // ===== AUTOPLAY: Pausar al hover, reanudar al salir =====
             const gallerySection = document.querySelector('.gallery-section');
@@ -1711,15 +1779,19 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
         }
 
         function navigateLightbox(direction) {
-            const newIndex = currentImageIndex + direction;
-            if (newIndex >= 0 && newIndex < currentImages.length) {
-                currentImageIndex = newIndex;
-                updateLightboxImage();
+            if (_lbNavigating) return; // debounce rapid taps
+            var newIndex = currentImageIndex + direction;
+            if (newIndex < 0 || newIndex >= currentImages.length) return;
+            _lbNavigating = true;
+            currentImageIndex = newIndex;
+            updateLightboxImage();
 
-                // Reset zoom when navigating
-                isZoomed = false;
-                document.getElementById('lightboxImage').classList.remove('zoomed');
-            }
+            // Reset zoom when navigating
+            isZoomed = false;
+            document.getElementById('lightboxImage').classList.remove('zoomed');
+
+            // Release debounce after transition
+            setTimeout(function() { _lbNavigating = false; }, 300);
         }
 
         function renderLightboxDots() {
@@ -1743,32 +1815,9 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
         }
 
         function toggleZoom() {
+            if (_lbNavigating) return; // don't zoom during navigation
             isZoomed = !isZoomed;
             document.getElementById('lightboxImage').classList.toggle('zoomed', isZoomed);
-        }
-
-        function handleTouchStart(e) {
-            touchStartX = e.changedTouches[0].screenX;
-        }
-
-        function handleTouchEnd(e) {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        }
-
-        function handleSwipe() {
-            const swipeThreshold = 50;
-            const diff = touchStartX - touchEndX;
-
-            if (Math.abs(diff) > swipeThreshold) {
-                if (diff > 0) {
-                    // Swipe left - next image
-                    navigateLightbox(1);
-                } else {
-                    // Swipe right - prev image
-                    navigateLightbox(-1);
-                }
-            }
         }
 
         function renderFichaTecnica(v) {

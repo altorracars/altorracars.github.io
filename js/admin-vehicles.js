@@ -94,6 +94,15 @@
         $('vehicleModal').classList.add('active');
     }
 
+    function updateFeaturedCounter() {
+        var counter = $('featuredCounter');
+        if (!counter) return;
+        var editId = $('vId').value ? parseInt($('vId').value) : null;
+        var count = AP.vehicles.filter(function(v) { return v.destacado && v.id !== editId; }).length;
+        counter.textContent = '(' + count + '/4)';
+        counter.style.color = count >= 4 ? '#ef4444' : '#b89658';
+    }
+
     function formHasData() { return !!($('vMarca').value || $('vModelo').value || $('vPrecio').value); }
 
     function clearValidationErrors() {
@@ -260,6 +269,7 @@
         AP.uploadedImageUrls = [];
         $('uploadedImages').innerHTML = '';
         $('uploadError').style.display = 'none';
+        updateFeaturedCounter();
         checkForDraft().then(function() { startDraftAutoSave(); openModal(); });
     });
 
@@ -331,6 +341,7 @@
         AP.uploadedImageUrls = (v.imagenes && v.imagenes.length) ? v.imagenes.slice() : (v.imagen ? [v.imagen] : []);
         renderUploadedImages();
         $('uploadError').style.display = 'none';
+        updateFeaturedCounter();
         startDraftAutoSave();
         openModal();
     }
@@ -428,6 +439,18 @@
     $('saveVehicle').addEventListener('click', function() {
         if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos', 'error'); return; }
         if (!validateAndHighlightFields()) { AP.toast('Completa los campos requeridos marcados en rojo', 'error'); return; }
+
+        // Limitar máximo 4 vehículos destacados
+        if ($('vDestacado').checked) {
+            var editId = $('vId').value ? parseInt($('vId').value) : null;
+            var featuredCount = AP.vehicles.filter(function(v) {
+                return v.destacado && v.id !== editId;
+            }).length;
+            if (featuredCount >= 4) {
+                AP.toast('Máximo 4 vehículos destacados. Desmarca uno existente primero.', 'error');
+                return;
+            }
+        }
 
         var existingId = $('vId').value;
         var isEdit = !!existingId;

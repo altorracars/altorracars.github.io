@@ -60,10 +60,8 @@ function getVehicleBadges(vehicle) {
         badges.push({ class: 'badge-usado', text: 'Usado' });
     }
 
-    // 3. Badge de destacado (menor prioridad)
-    if (vehicle.destacado) {
-        badges.push({ class: 'badge-destacado', text: 'Destacado' });
-    }
+    // Fase 12: badge "Destacado" eliminado de miniaturas.
+    // Los destacados ahora se muestran en el banner rotativo del index.
 
     return badges;
 }

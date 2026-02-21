@@ -2,45 +2,105 @@
 // Optimized for Performance and Modern JavaScript
 
 /**
- * Load featured vehicles with advanced ranking system
- * Optimized: renders from cache immediately, then updates from Firestore
- * Prioritizes: destacado > oferta > tipo > year > km
+ * Fase 12: Banner rotativo de vehiculos destacados de la semana
+ * Muestra los 4 vehiculos marcados como destacado con auto-rotacion
  */
-async function loadFeatured() {
-    var container = document.getElementById('featuredVehicles');
-    if (!container) return;
+var _destacadosTimer = null;
+var _destacadosIndex = 0;
+var _destacadosTotal = 0;
 
-    function rankAndRender() {
-        var featured = vehicleDB.getFeatured();
-        if (featured.length === 0) {
-            hideParentSection('featuredVehicles');
-            return;
-        }
-        // Simple inline sort — avoids creating intermediate objects
-        featured.sort(function(a, b) {
-            return vehicleDB.calculateRankingScore(b) - vehicleDB.calculateRankingScore(a);
+async function loadDestacadosBanner() {
+    var section = document.getElementById('destacadosBannerSection');
+    if (!section) return;
+
+    await vehicleDB.load();
+
+    var featured = vehicleDB.getFeatured();
+    if (featured.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    // Limit to max 4
+    featured = featured.slice(0, 4);
+    _destacadosTotal = featured.length;
+    _destacadosIndex = 0;
+
+    var slidesContainer = document.getElementById('destacadosSlides');
+    var indicatorsContainer = document.getElementById('destacadosIndicators');
+    if (!slidesContainer || !indicatorsContainer) return;
+
+    // Build slides
+    var slidesHTML = '';
+    var indicatorsHTML = '';
+
+    featured.forEach(function(v, i) {
+        var imgSrc = v.imagen || 'multimedia/vehicles/placeholder-car.jpg';
+        var marca = v.marca ? v.marca.charAt(0).toUpperCase() + v.marca.slice(1) : '';
+        var title = marca + ' ' + (v.modelo || '') + ' ' + (v.year || '');
+        var price = typeof formatPrice === 'function' ? formatPrice(v.precio) : ('$' + v.precio);
+        var hasOffer = v.precioOferta && v.precioOferta < v.precio;
+        var priceHTML = hasOffer
+            ? '<span class="dest-price-old">' + price + '</span><span class="dest-price">' + formatPrice(v.precioOferta) + '</span>'
+            : '<span class="dest-price">' + price + '</span>';
+        var specs = [];
+        if (v.year) specs.push(v.year);
+        if (v.kilometraje) specs.push(formatKm(v.kilometraje));
+        if (v.transmision) specs.push(v.transmision.charAt(0).toUpperCase() + v.transmision.slice(1));
+        var specsText = specs.join(' · ');
+
+        slidesHTML += '<a href="detalle-vehiculo.html?id=' + v.id + '" class="dest-slide' + (i === 0 ? ' active' : '') + '" data-index="' + i + '">'
+            + '<div class="dest-image"><img src="' + imgSrc + '" alt="' + title + '" loading="' + (i === 0 ? 'eager' : 'lazy') + '"></div>'
+            + '<div class="dest-overlay">'
+            + '<div class="dest-badge">Destacado</div>'
+            + '<h3 class="dest-title">' + title + '</h3>'
+            + '<p class="dest-specs">' + specsText + '</p>'
+            + '<div class="dest-price-row">' + priceHTML + '</div>'
+            + '<span class="dest-cta">Ver vehiculo →</span>'
+            + '</div>'
+            + '</a>';
+
+        indicatorsHTML += '<button class="dest-dot' + (i === 0 ? ' active' : '') + '" data-index="' + i + '" aria-label="Ir al vehiculo ' + (i + 1) + '"></button>';
+    });
+
+    slidesContainer.innerHTML = slidesHTML;
+    indicatorsContainer.innerHTML = indicatorsHTML;
+
+    // Show section
+    section.style.display = '';
+
+    // Indicator click handlers
+    indicatorsContainer.querySelectorAll('.dest-dot').forEach(function(dot) {
+        dot.addEventListener('click', function() {
+            goToDestacado(parseInt(dot.dataset.index));
         });
-        renderVehicles(featured, 'featuredVehicles');
-    }
+    });
 
-    // Try cache-first instant render
-    if (!vehicleDB.loaded) {
-        var hadCache = vehicleDB._loadFromCache();
-        if (hadCache) {
-            vehicleDB.normalizeVehicles();
-            vehicleDB.loaded = true;
-            rankAndRender();
-        } else {
-            showLoading('featuredVehicles');
-        }
-    } else {
-        rankAndRender();
-        return; // Already loaded — no need to await
-    }
+    // Start auto-rotation
+    startDestacadosAutoRotate();
 
-    // Then load from Firestore for fresh data
-    await vehicleDB.load(true);
-    rankAndRender();
+    // Pause on hover
+    var banner = document.getElementById('destacadosBanner');
+    if (banner) {
+        banner.addEventListener('mouseenter', function() { clearInterval(_destacadosTimer); });
+        banner.addEventListener('mouseleave', function() { startDestacadosAutoRotate(); });
+    }
+}
+
+function goToDestacado(index) {
+    _destacadosIndex = index;
+    var slides = document.querySelectorAll('.dest-slide');
+    var dots = document.querySelectorAll('.dest-dot');
+    slides.forEach(function(s, i) { s.classList.toggle('active', i === index); });
+    dots.forEach(function(d, i) { d.classList.toggle('active', i === index); });
+}
+
+function startDestacadosAutoRotate() {
+    clearInterval(_destacadosTimer);
+    _destacadosTimer = setInterval(function() {
+        _destacadosIndex = (_destacadosIndex + 1) % _destacadosTotal;
+        goToDestacado(_destacadosIndex);
+    }, 3000);
 }
 
 /**
@@ -315,8 +375,9 @@ function enableDragScroll() {
  * Load all content when DOM is ready
  */
 function initializePage() {
-    // Load all vehicle carousels in parallel for better performance
+    // Load all sections in parallel for better performance
     Promise.all([
+        loadDestacadosBanner(),
         loadPopularBrands(),
         loadUsedVehicles(),
         loadNewVehicles()

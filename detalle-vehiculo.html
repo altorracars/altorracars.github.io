@@ -729,37 +729,14 @@
             position: relative;
         }
 
-        .similar-carousel-wrapper .carousel-arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 10;
-            width: 40px;
-            height: 40px;
-            background: rgba(184,150,88,0.9);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: all 0.2s ease;
-        }
-
-        .similar-carousel-wrapper .carousel-arrow:hover {
-            background: var(--gold);
-            transform: translateY(-50%) scale(1.1);
-        }
-
+        /* Arrows inherit global .carousel-arrow style from sidebar-filters-fix.css */
+        /* Only override positioning to stay inside the wrapper */
         .similar-carousel-wrapper .carousel-arrow.prev {
-            left: 8px;
+            left: -35px;
         }
 
         .similar-carousel-wrapper .carousel-arrow.next {
-            right: 8px;
+            right: -35px;
         }
 
         .similar-section .vehicles-grid {
@@ -1045,8 +1022,8 @@
                 max-width: 280px !important;
             }
 
-            .similar-carousel-wrapper .carousel-arrow.prev { left: 4px; }
-            .similar-carousel-wrapper .carousel-arrow.next { right: 4px; }
+            .similar-carousel-wrapper .carousel-arrow.prev { left: -10px; }
+            .similar-carousel-wrapper .carousel-arrow.next { right: -10px; }
 
             .btn-action {
                 padding: 12px 16px;
@@ -1198,9 +1175,8 @@
             }
 
             .similar-carousel-wrapper .carousel-arrow {
-                width: 34px;
-                height: 34px;
-                font-size: 18px;
+                width: 42px;
+                height: 42px;
             }
         }
 
@@ -1985,6 +1961,8 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
 
             const cleanSimilar = scored.slice(0, count).map(({ _simScore, ...vehicle }) => vehicle);
             renderVehicles(cleanSimilar, 'similarVehicles');
+            // Enable drag-to-scroll after rendering
+            if (typeof enableDragScroll === 'function') enableDragScroll();
         }
 
         function scrollSimilarCarousel(direction) {

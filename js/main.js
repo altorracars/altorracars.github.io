@@ -232,30 +232,80 @@ function scrollCarouselById(containerId, direction) {
 }
 
 /**
- * Enable touch scrolling for mobile carousels
- * Improves mobile UX with smooth touch scrolling
+ * Enable drag-to-scroll for all vehicle carousels
+ * Supports both mouse drag (desktop) and touch (mobile)
  */
-function enableTouchScroll() {
+function enableDragScroll() {
     const carousels = document.querySelectorAll('.vehicles-grid');
 
     carousels.forEach(carousel => {
+        // Skip grids that aren't horizontal carousels or already have drag enabled
+        if (carousel.dataset.dragEnabled) return;
+        var style = getComputedStyle(carousel);
+        if (style.overflowX !== 'auto' && style.overflowX !== 'scroll') return;
+        carousel.dataset.dragEnabled = 'true';
+        let isDown = false;
         let startX = 0;
         let scrollLeft = 0;
-        let isScrolling = false;
+        let hasMoved = false;
 
-        // Set default cursor
-        carousel.style.cursor = 'default';
+        // Cursor feedback
+        carousel.style.cursor = 'grab';
 
-        // Touch start handler
+        // ---- Mouse drag (desktop) ----
+        carousel.addEventListener('mousedown', (e) => {
+            // Ignore clicks on buttons/links inside cards
+            if (e.target.closest('button, a')) return;
+            isDown = true;
+            hasMoved = false;
+            startX = e.pageX - carousel.offsetLeft;
+            scrollLeft = carousel.scrollLeft;
+            carousel.style.cursor = 'grabbing';
+            carousel.style.scrollBehavior = 'auto';
+        });
+
+        carousel.addEventListener('mouseleave', () => {
+            if (isDown) {
+                isDown = false;
+                carousel.style.cursor = 'grab';
+                carousel.style.scrollBehavior = '';
+            }
+        });
+
+        carousel.addEventListener('mouseup', () => {
+            isDown = false;
+            carousel.style.cursor = 'grab';
+            carousel.style.scrollBehavior = '';
+        });
+
+        carousel.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            var x = e.pageX - carousel.offsetLeft;
+            var walk = (x - startX) * 1.5; // Multiply for faster drag feel
+            carousel.scrollLeft = scrollLeft - walk;
+            if (Math.abs(walk) > 5) hasMoved = true;
+        });
+
+        // Prevent click navigation when dragging
+        carousel.addEventListener('click', (e) => {
+            if (hasMoved) {
+                e.preventDefault();
+                e.stopPropagation();
+                hasMoved = false;
+            }
+        }, true);
+
+        // ---- Touch (mobile) ----
         carousel.addEventListener('touchstart', (e) => {
-            isScrolling = true;
             startX = e.touches[0].pageX - carousel.offsetLeft;
             scrollLeft = carousel.scrollLeft;
         }, { passive: true });
 
-        // Touch end handler
-        carousel.addEventListener('touchend', () => {
-            isScrolling = false;
+        carousel.addEventListener('touchmove', (e) => {
+            var x = e.touches[0].pageX - carousel.offsetLeft;
+            var walk = (x - startX) * 1.2;
+            carousel.scrollLeft = scrollLeft - walk;
         }, { passive: true });
     });
 }
@@ -274,8 +324,8 @@ function initializePage() {
         console.error('Error initializing page:', error);
     });
 
-    // Enable touch scrolling for mobile
-    enableTouchScroll();
+    // Enable drag + touch scrolling for carousels
+    enableDragScroll();
 }
 
 // Initialize when DOM is ready
@@ -306,6 +356,7 @@ function scrollBrandsCarousel(direction) {
     }, 1500);
 }
 
-// Make scrollCarouselById available globally for onclick handlers
+// Make functions available globally for onclick handlers and other pages
 window.scrollCarouselById = scrollCarouselById;
 window.scrollBrandsCarousel = scrollBrandsCarousel;
+window.enableDragScroll = enableDragScroll;

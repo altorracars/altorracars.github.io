@@ -11,11 +11,13 @@
         dealers: [],
         appointments: [],
         auditLogEntries: [],
+        banners: [],
 
         // ========== UI STATE ==========
         deleteTargetId: null,
         deleteBrandTargetId: null,
         uploadedImageUrls: [],
+        bannerUploadedUrl: '',
 
         // ========== SUBSCRIPTIONS ==========
         unsubVehicles: null,
@@ -23,6 +25,7 @@
         unsubAppointments: null,
         unsubDealers: null,
         unsubAuditLog: null,
+        unsubBanners: null,
 
         // ========== RBAC STATE ==========
         currentUserProfile: null,
@@ -269,7 +272,12 @@
         canImportBackup:      function() { return AP.isSuperAdmin(); },
         // Activity log
         canViewActivity:      function() { return true; },
-        canDeleteActivity:    function() { return AP.isSuperAdmin(); }
+        canDeleteActivity:    function() { return AP.isSuperAdmin(); },
+        // Banners: super_admin full, editor can create/edit
+        canViewBanners:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canCreateBanner:      function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canEditBanner:        function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canDeleteBanner:      function() { return AP.isSuperAdmin(); }
     };
 
     window.AP = AP;

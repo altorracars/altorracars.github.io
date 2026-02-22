@@ -28,6 +28,7 @@ Allow: /vehiculos-pickup.html
 Allow: /vehiculos-hatchback.html
 Allow: /vehiculos-camionetas.html
 Allow: /detalle-vehiculo.html
+Allow: /vehiculos/
 Allow: /marca.html
 Allow: /simulador-credito.html
 Allow: /comparar.html

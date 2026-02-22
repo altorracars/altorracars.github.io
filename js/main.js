@@ -49,7 +49,7 @@ async function loadDestacadosBanner() {
         if (v.transmision) specs.push(v.transmision.charAt(0).toUpperCase() + v.transmision.slice(1));
         var specsText = specs.join(' · ');
 
-        slidesHTML += '<a href="detalle-vehiculo.html?id=' + v.id + '" class="dest-slide' + (i === 0 ? ' active' : '') + '" data-index="' + i + '">'
+        slidesHTML += '<a href="' + getVehicleDetailUrl(v) + '" class="dest-slide' + (i === 0 ? ' active' : '') + '" data-index="' + i + '">'
             + '<div class="dest-image"><img src="' + imgSrc + '" alt="' + title + '" loading="' + (i === 0 ? 'eager' : 'lazy') + '"></div>'
             + '<div class="dest-overlay">'
             + '<div class="dest-badge">Destacado</div>'

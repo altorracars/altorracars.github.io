@@ -1,5 +1,22 @@
 // Vehicle Rendering System for ALTORRA CARS
 
+// FASE 16: Generate SEO-friendly slug for a vehicle
+// Must match the server-side slugify() in scripts/generate-vehicles.mjs
+function getVehicleSlug(v) {
+    return [v.marca, v.modelo, v.year, v.id]
+        .filter(Boolean)
+        .join('-')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+}
+
+// FASE 16: Get the detail URL for a vehicle (SEO-friendly)
+function getVehicleDetailUrl(vehicle) {
+    return 'vehiculos/' + getVehicleSlug(vehicle) + '.html';
+}
+
 // Format price in Colombian Pesos
 function formatPrice(price) {
     return new Intl.NumberFormat('es-CO', {
@@ -128,7 +145,7 @@ function renderVehicleCard(vehicle) {
     const altText = `${capitalize(vehicle.marca)} ${vehicle.modelo} ${vehicle.year}`;
 
     return `
-        <div class="vehicle-card clickable-card" data-id="${vehicle.id}" data-url="detalle-vehiculo.html?id=${vehicle.id}">
+        <div class="vehicle-card clickable-card" data-id="${vehicle.id}" data-url="${getVehicleDetailUrl(vehicle)}">
             <div class="vehicle-image">
                 <div class="img-skeleton"></div>
                 <img src="${imgSrc}" alt="${altText}" loading="lazy" decoding="async" width="400" height="260" class="vehicle-img" data-fallback="multimedia/vehicles/placeholder-car.jpg" onload="this.classList.add('img-loaded');var s=this.parentElement.querySelector('.img-skeleton');if(s)s.style.display='none'" onerror="this.onerror=null;this.src=this.getAttribute('data-fallback')||'multimedia/vehicles/placeholder-car.jpg';this.classList.add('img-loaded','img-error');var s=this.parentElement.querySelector('.img-skeleton');if(s)s.style.display='none'">

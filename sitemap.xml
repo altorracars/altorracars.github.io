@@ -66,7 +66,7 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- Vehicle detail (dynamic per ?id=) -->
+  <!-- Vehicle detail pages with images -->
   <url>
     <loc>https://altorracars.github.io/detalle-vehiculo.html?id=1</loc>
     <lastmod>2026-02-16</lastmod>

@@ -245,6 +245,86 @@ button {
     text-align: center;
 }
 
+/* Auth Buttons (desktop header) */
+.btn-auth {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.45rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.btn-auth-login {
+    background: transparent;
+    color: var(--primary-dark);
+    border: 1.5px solid var(--border-light);
+}
+
+.btn-auth-login:hover {
+    border-color: var(--primary-gold);
+    color: var(--primary-gold);
+}
+
+.btn-auth-login svg {
+    flex-shrink: 0;
+}
+
+.btn-auth-register {
+    background: linear-gradient(135deg, var(--primary-gold), var(--primary-brown));
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(184,150,88,0.3);
+}
+
+.btn-auth-register:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(184,150,88,0.4);
+}
+
+/* Auth Buttons (mobile menu) */
+.nav-auth-mobile {
+    display: flex !important;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem !important;
+    border-top: 2px solid #f0f0f0;
+    background: rgba(184, 150, 88, 0.03);
+}
+
+.btn-auth-mobile {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    min-height: 44px;
+}
+
+.btn-auth-login-mobile {
+    background: transparent;
+    color: var(--primary-dark);
+    border: 1.5px solid var(--border-light);
+}
+
+.btn-auth-register-mobile {
+    background: linear-gradient(135deg, var(--primary-gold), var(--primary-brown));
+    color: white;
+    border: none;
+}
+
 /* Hamburger Menu */
 .hamburger {
     display: none;

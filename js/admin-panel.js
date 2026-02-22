@@ -332,10 +332,11 @@
             'dashboard':    true,
             'vehicles':     RBAC.canViewVehicles(),
             'brands':       RBAC.canViewBrands(),
-            'users':        RBAC.canViewUsers(),
+            'banners':      true,
             'appointments': RBAC.canViewAppointments(),
             'dealers':      RBAC.canViewDealers(),
             'lists':        RBAC.canViewLists(),
+            'users':        RBAC.canViewUsers(),
             'settings':     true
         };
         Object.keys(navRules).forEach(function(section) {

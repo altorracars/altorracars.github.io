@@ -11,7 +11,8 @@
     "minify:js": "node scripts/minify-js.js",
     "lint": "bunx tsc --noEmit && bunx biome lint --write",
     "format": "bunx biome format --write",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate": "node scripts/generate-vehicles.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

@@ -235,7 +235,7 @@
                                         <h3>${capitalizar(v.marca)} ${v.modelo}</h3>
                                         <div class="vehicle-year">${v.year} · ${formatCategoria(v.categoria)}</div>
                                         <div class="vehicle-price">${formatCurrency(v.precioOferta || v.precio)}</div>
-                                        <a href="detalle-vehiculo.html?id=${v.id}" class="btn-ver-detalle">Ver detalle</a>
+                                        <a href="${getVehicleDetailUrl(v)}" class="btn-ver-detalle">Ver detalle</a>
                                     </td>
                                 `).join('')}
                                 ${canAddMore ? `

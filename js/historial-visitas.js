@@ -172,7 +172,7 @@ class VehicleHistory {
     renderHistoryCard(vehicle) {
         const price = vehicle.precioOferta || vehicle.precio;
         return `
-            <a href="detalle-vehiculo.html?id=${vehicle.id}" class="history-card">
+            <a href="${getVehicleDetailUrl(vehicle)}" class="history-card">
                 <div class="history-card-image">
                     <img src="${vehicle.imagen}" alt="${vehicle.marca} ${vehicle.modelo}"
                          loading="lazy"
@@ -275,7 +275,7 @@ class VehicleHistory {
             .filter(v => v);
 
         list.innerHTML = vehicles.map(v => `
-            <a href="detalle-vehiculo.html?id=${v.id}" class="history-widget-item">
+            <a href="${getVehicleDetailUrl(v)}" class="history-widget-item">
                 <img src="${v.imagen}" alt="${v.marca}"
                      onerror="this.src='multimedia/vehicles/placeholder-car.jpg'">
                 <div class="history-widget-item-info">

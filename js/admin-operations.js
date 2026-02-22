@@ -4,6 +4,13 @@
     var AP = window.AP;
     var $ = AP.$;
 
+    // FASE 16: Slug helper (mirrors scripts/generate-vehicles.mjs & render.js)
+    function _slugifyVehicle(v) {
+        return [v.marca, v.modelo, v.year, v.id].filter(Boolean).join('-')
+            .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
     // ========== SALES TRACKING ==========
     var CANAL_LABELS = {
         'altorra': 'ALTORRA',
@@ -365,7 +372,7 @@
 
             disponibles.forEach(function(v) {
                 var lastmod = v.updatedAt ? v.updatedAt.split('T')[0] : today;
-                xml += '  <url>\n    <loc>' + base + '/detalle-vehiculo.html?id=' + v.id + '</loc>\n    <lastmod>' + lastmod + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n';
+                xml += '  <url>\n    <loc>' + base + '/vehiculos/' + _slugifyVehicle(v) + '.html</loc>\n    <lastmod>' + lastmod + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n';
                 if (v.imagen) {
                     var imgUrl = v.imagen.startsWith('http') ? v.imagen : base + '/' + v.imagen;
                     var marca = v.marca ? v.marca.charAt(0).toUpperCase() + v.marca.slice(1) : '';
@@ -418,7 +425,7 @@
                 var desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. Disponible en ALTORRA CARS, Cartagena.';
                 var image = v.imagen || '';
                 var fullImage = image.startsWith('http') ? image : base + '/' + image;
-                var detailUrl = base + '/detalle-vehiculo.html?id=' + v.id;
+                var detailUrl = base + '/vehiculos/' + _slugifyVehicle(v) + '.html';
 
                 var html = '<!DOCTYPE html>\n<html lang="es">\n<head>\n';
                 html += '<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';

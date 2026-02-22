@@ -167,9 +167,15 @@
         $('featuresPreview').innerHTML = '';
         document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
         stopDraftAutoSave();
+        _originalSnapshot = null;
+        _lastSavedSnapshot = null;
     }
 
     // ========== DRAFTS ==========
+
+    // Fase 18: Original snapshot for smart dirty checking
+    var _originalSnapshot = null;
+
     function getFormSnapshot() {
         return {
             vId: $('vId').value, vMarca: $('vMarca').value, vModelo: $('vModelo').value,
@@ -185,6 +191,27 @@
             vCaracteristicas: $('vCaracteristicas').value,
             _images: AP.uploadedImageUrls.slice(), _savedAt: new Date().toISOString()
         };
+    }
+
+    // Fase 18: Compare two snapshots ignoring _savedAt
+    function snapshotsAreDifferent(a, b) {
+        if (!a || !b) return true;
+        var keys = Object.keys(a).filter(function(k) { return k !== '_savedAt' && k !== '_userId' && k !== '_userEmail'; });
+        for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            if (k === '_images') {
+                var ai = (a._images || []).join(',');
+                var bi = (b._images || []).join(',');
+                if (ai !== bi) return true;
+            } else if (String(a[k] || '') !== String(b[k] || '')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function captureOriginalSnapshot() {
+        _originalSnapshot = getFormSnapshot();
     }
 
     function restoreFormSnapshot(snap) {
@@ -215,19 +242,70 @@
         if (!ref) { if (showToast) AP.toast('No se pudo acceder al almacenamiento de borradores', 'error'); return Promise.resolve(); }
         var snap = getFormSnapshot();
         if (!snapshotHasAnyData(snap)) { if (showToast) AP.toast('No hay datos para guardar como borrador', 'info'); return Promise.resolve(); }
+
+        // Fase 18: Smart dirty check — skip save if nothing changed
+        if (!showToast && _originalSnapshot && !snapshotsAreDifferent(snap, _lastSavedSnapshot || _originalSnapshot)) {
+            return Promise.resolve();
+        }
+
         snap._userId = window.auth.currentUser.uid;
         snap._userEmail = window.auth.currentUser.email;
         return ref.set(snap).then(function() {
+            _lastSavedSnapshot = snap;
             if (showToast) AP.toast('Borrador guardado correctamente');
+            showDraftIndicator();
+            // Fase 18: Update shared drafts collection for visibility
+            updateSharedDraft(snap);
         }).catch(function(err) {
             if (showToast) AP.toast('Error al guardar borrador: ' + (err.code === 'permission-denied' ? 'Sin permisos.' : err.message), 'error');
         });
     }
 
+    // Fase 18: Track last saved snapshot to avoid redundant writes
+    var _lastSavedSnapshot = null;
+
     function clearDraftFromFirestore() {
         var ref = getDraftDocRef();
+        _lastSavedSnapshot = null;
         if (!ref) return Promise.resolve();
+        clearSharedDraft();
         return ref.delete().catch(function() {});
+    }
+
+    // Fase 18: Shared drafts visible to all admins
+    function getSharedDraftRef() {
+        if (!window.auth || !window.auth.currentUser || !window.db) return null;
+        return window.db.collection('drafts_activos').doc(window.auth.currentUser.uid);
+    }
+
+    function updateSharedDraft(snap) {
+        var ref = getSharedDraftRef();
+        if (!ref) return;
+        ref.set({
+            userId: window.auth.currentUser.uid,
+            userEmail: window.auth.currentUser.email || '',
+            marca: snap.vMarca || '',
+            modelo: snap.vModelo || '',
+            year: snap.vYear || '',
+            vehicleId: snap.vId || '',
+            lastSaved: new Date().toISOString()
+        }).catch(function() { /* silent — rules may not allow */ });
+    }
+
+    function clearSharedDraft() {
+        var ref = getSharedDraftRef();
+        if (!ref) return;
+        ref.delete().catch(function() {});
+    }
+
+    // Fase 18: Visual indicator when draft is saved
+    function showDraftIndicator() {
+        var el = $('draftSaveIndicator');
+        if (!el) return;
+        el.textContent = 'Borrador guardado';
+        el.classList.add('visible');
+        clearTimeout(el._timeout);
+        el._timeout = setTimeout(function() { el.classList.remove('visible'); }, 2500);
     }
 
     function stopDraftAutoSave() { if (AP.draftInterval) { clearInterval(AP.draftInterval); AP.draftInterval = null; } }
@@ -270,7 +348,7 @@
         $('uploadedImages').innerHTML = '';
         $('uploadError').style.display = 'none';
         updateFeaturedCounter();
-        checkForDraft().then(function() { startDraftAutoSave(); openModal(); });
+        checkForDraft().then(function() { captureOriginalSnapshot(); startDraftAutoSave(); openModal(); });
     });
 
     $('closeModal').addEventListener('click', function() { closeModalFn(); });
@@ -342,6 +420,7 @@
         renderUploadedImages();
         $('uploadError').style.display = 'none';
         updateFeaturedCounter();
+        captureOriginalSnapshot();
         startDraftAutoSave();
         openModal();
     }

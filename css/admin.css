@@ -306,6 +306,109 @@ body {
     padding: 1.5rem 2rem;
 }
 
+/* FASE 18: Active Drafts Panel */
+.active-drafts-panel {
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-left: 3px solid var(--admin-warning, #d29922);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.active-drafts-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--admin-warning, #d29922);
+    background: rgba(210, 153, 34, 0.06);
+    border-bottom: 1px solid var(--admin-border);
+}
+
+.active-drafts-list {
+    padding: 0;
+}
+
+.draft-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--admin-border);
+    transition: background 0.15s;
+}
+
+.draft-item:last-child {
+    border-bottom: none;
+}
+
+.draft-item:hover {
+    background: rgba(212, 175, 55, 0.05);
+}
+
+.draft-item-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.draft-item-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--admin-border);
+    color: var(--admin-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.draft-item-text {
+    min-width: 0;
+}
+
+.draft-item-label {
+    color: var(--admin-text);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.draft-item-meta {
+    color: var(--admin-text-muted);
+    font-size: 0.7rem;
+}
+
+.draft-item-actions .btn {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.625rem;
+}
+
+/* FASE 18: Draft save indicator */
+.draft-save-indicator {
+    font-size: 0.7rem;
+    color: var(--admin-success, #3fb950);
+    opacity: 0;
+    transition: opacity 0.3s;
+    margin-left: auto;
+    margin-right: 0.75rem;
+    white-space: nowrap;
+}
+
+.draft-save-indicator.visible {
+    opacity: 1;
+}
+
 /* HEADER */
 .page-header {
     display: flex;

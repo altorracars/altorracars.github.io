@@ -223,6 +223,15 @@
                     Agregar Vehiculo
                 </button>
             </div>
+            <!-- Fase 18: Active Drafts Panel -->
+            <div class="active-drafts-panel" id="activeDraftsPanel" style="display:none;">
+                <div class="active-drafts-header">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span>Borradores activos</span>
+                </div>
+                <div class="active-drafts-list" id="activeDraftsList"></div>
+            </div>
+
             <div class="table-container">
                 <div class="table-header">
                     <h3>Inventario</h3>
@@ -747,6 +756,7 @@
     <div class="modal">
         <div class="modal-header">
             <h2 id="modalTitle">Agregar Vehiculo</h2>
+            <span class="draft-save-indicator" id="draftSaveIndicator"></span>
             <button class="modal-close" id="closeModal">&times;</button>
         </div>
         <div class="modal-body">

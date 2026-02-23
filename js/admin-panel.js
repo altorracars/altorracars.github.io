@@ -614,6 +614,90 @@
         } catch (e) {
             console.warn('[Phase5] Error loading:', e);
         }
+        // Fase 18: Start listening for active drafts
+        startDraftsListener();
+    }
+
+    // ========== FASE 18: ACTIVE DRAFTS REAL-TIME LISTENER ==========
+    var unsubDrafts = null;
+
+    function startDraftsListener() {
+        if (!window.db) return;
+        try {
+            unsubDrafts = window.db.collection('drafts_activos').onSnapshot(function(snap) {
+                var drafts = [];
+                snap.forEach(function(doc) { drafts.push(doc.data()); });
+                renderActiveDrafts(drafts);
+            }, function() {
+                // Permission denied or collection doesn't exist — silent fail
+            });
+        } catch (_) {}
+    }
+
+    function renderActiveDrafts(drafts) {
+        var panel = $('activeDraftsPanel');
+        var list = $('activeDraftsList');
+        if (!panel || !list) return;
+
+        // Filter out stale drafts (older than 2 hours)
+        var now = Date.now();
+        var TWO_HOURS = 2 * 60 * 60 * 1000;
+        drafts = drafts.filter(function(d) {
+            if (!d.lastSaved) return false;
+            return (now - new Date(d.lastSaved).getTime()) < TWO_HOURS;
+        });
+
+        if (drafts.length === 0) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        panel.style.display = 'block';
+        var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : '';
+
+        list.innerHTML = drafts.map(function(d) {
+            var label = ((d.marca || '') + ' ' + (d.modelo || '') + ' ' + (d.year || '')).trim() || 'Sin titulo';
+            var email = d.userEmail || 'Admin';
+            var initials = email.substring(0, 2).toUpperCase();
+            var ago = d.lastSaved ? formatTimeAgo(d.lastSaved) : '';
+            var isOwn = d.userId === currentUid;
+            var editingLabel = d.vehicleId ? ('Editando #' + d.vehicleId) : 'Nuevo vehiculo';
+            var btnHtml = isOwn
+                ? '<span style="color:var(--admin-success);font-size:0.7rem;font-weight:500;">Tu borrador</span>'
+                : '<button class="btn btn-ghost btn-sm" onclick="adminPanel.loadDraftFromUser(\'' + (d.userId || '') + '\')">Continuar</button>';
+
+            return '<div class="draft-item">'
+                + '<div class="draft-item-info">'
+                + '<div class="draft-item-avatar">' + initials + '</div>'
+                + '<div class="draft-item-text">'
+                + '<div class="draft-item-label">' + label + ' <small style="color:var(--admin-text-muted);">(' + editingLabel + ')</small></div>'
+                + '<div class="draft-item-meta">' + email + ' · ' + ago + '</div>'
+                + '</div></div>'
+                + '<div class="draft-item-actions">' + btnHtml + '</div>'
+                + '</div>';
+        }).join('');
+    }
+
+    // Fase 18: Load another admin's draft into the form
+    function loadDraftFromUser(userId) {
+        if (!window.db || !userId) return;
+        window.db.collection('usuarios').doc(userId).collection('drafts').doc('vehicleDraft').get()
+            .then(function(doc) {
+                if (!doc.exists) { toast('Borrador no encontrado — puede que ya se haya guardado.', 'info'); return; }
+                var snap = doc.data();
+                if (!snap || !snap.vMarca) { toast('Borrador vacio', 'info'); return; }
+                // Open the add vehicle modal and restore the draft
+                $('modalTitle').textContent = 'Continuar Borrador';
+                $('vId').value = snap.vId || '';
+                $('vehicleForm').reset();
+                // Dispatch to admin-vehicles restoreFormSnapshot via exposed API
+                if (typeof adminPanel.restoreAndOpenDraft === 'function') {
+                    adminPanel.restoreAndOpenDraft(snap);
+                } else {
+                    toast('Funcion de restauracion no disponible', 'error');
+                }
+            })
+            .catch(function() { toast('No se pudo cargar el borrador de este usuario', 'error'); });
     }
 
     function loadUsers() {
@@ -3015,6 +3099,13 @@
         clearAllActivity: clearAllActivity,
         deleteAppointment: deleteAppointment,
         retryLoad: retryLoad,
+        loadDraftFromUser: loadDraftFromUser,
+        restoreAndOpenDraft: function(snap) {
+            // Bridge to admin-vehicles.js module
+            if (typeof AP.restoreAndOpenDraft === 'function') {
+                AP.restoreAndOpenDraft(snap);
+            }
+        },
         RBAC: RBAC
     };
 

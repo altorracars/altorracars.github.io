@@ -792,6 +792,20 @@
         overlay.addEventListener('click', function(e) { if (e.target === overlay) document.body.removeChild(overlay); });
     }
 
+    // Fase 18: Open modal with a restored draft (called from admin-panel.js)
+    function restoreAndOpenDraft(snap) {
+        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos para editar vehiculos', 'error'); return; }
+        $('modalTitle').textContent = 'Continuar Borrador';
+        $('vId').value = snap.vId || '';
+        $('vCodigoUnico').value = '';
+        $('codigoUnicoDisplay').style.display = 'none';
+        $('vehicleForm').reset();
+        restoreFormSnapshot(snap);
+        captureOriginalSnapshot();
+        startDraftAutoSave();
+        openModal();
+    }
+
     // ========== EXPOSE ==========
     AP.renderVehiclesTable = renderVehiclesTable;
     AP.populateBrandSelect = populateBrandSelect;
@@ -799,4 +813,5 @@
     AP.deleteVehicle = deleteVehicleFn;
     AP.removeImage = removeImage;
     AP.previewVehicle = previewVehicle;
+    AP.restoreAndOpenDraft = restoreAndOpenDraft;
 })();

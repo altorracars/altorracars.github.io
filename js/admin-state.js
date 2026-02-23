@@ -12,6 +12,7 @@
         appointments: [],
         auditLogEntries: [],
         banners: [],
+        reviews: [],
 
         // ========== UI STATE ==========
         deleteTargetId: null,
@@ -26,6 +27,7 @@
         unsubDealers: null,
         unsubAuditLog: null,
         unsubBanners: null,
+        unsubReviews: null,
 
         // ========== RBAC STATE ==========
         currentUserProfile: null,
@@ -278,7 +280,12 @@
         canViewBanners:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
         canCreateBanner:      function() { return AP.isSuperAdmin() || AP.isEditor(); },
         canEditBanner:        function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canDeleteBanner:      function() { return AP.isSuperAdmin(); }
+        canDeleteBanner:      function() { return AP.isSuperAdmin(); },
+        // Reviews: editor+ create/edit, super_admin delete
+        canViewReviews:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canCreateReview:      function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canEditReview:        function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        canDeleteReview:      function() { return AP.isSuperAdmin(); }
     };
 
     window.AP = AP;

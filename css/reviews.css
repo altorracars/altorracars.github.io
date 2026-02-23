@@ -238,18 +238,18 @@
 .reviews-summary-card {
     display: flex;
     gap: 40px;
-    background: white;
+    background: #252525;
     border-radius: 16px;
     padding: 32px;
     margin-bottom: 32px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid #333333;
 }
 
 .summary-left {
     text-align: center;
     padding-right: 40px;
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid #333333;
 }
 
 .summary-big-rating {
@@ -262,7 +262,7 @@
 .big-number {
     font-size: 56px;
     font-weight: 800;
-    color: #1f2937;
+    color: #ffffff;
     line-height: 1;
 }
 
@@ -273,7 +273,7 @@
 
 .summary-text {
     font-size: 14px;
-    color: #6b7280;
+    color: #9ca3af;
     margin: 12px 0 0;
 }
 
@@ -295,14 +295,14 @@
     width: 16px;
     font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: #d1d5db;
     text-align: right;
 }
 
 .bar-track {
     flex: 1;
     height: 8px;
-    background: #e5e7eb;
+    background: #333333;
     border-radius: 4px;
     overflow: hidden;
 }
@@ -317,7 +317,7 @@
 .rating-percent {
     width: 36px;
     font-size: 12px;
-    color: #6b7280;
+    color: #9ca3af;
     text-align: right;
 }
 
@@ -329,17 +329,17 @@
 }
 
 .review-card-full {
-    background: white;
+    background: #252525;
     border-radius: 16px;
     padding: 28px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid #333333;
     transition: all 0.3s ease;
 }
 
 .review-card-full:hover {
     border-color: #b89658;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 25px rgba(184, 150, 88, 0.15);
 }
 
 .review-card-header {
@@ -377,7 +377,7 @@
 .review-author-name {
     font-size: 16px;
     font-weight: 700;
-    color: #1f2937;
+    color: #ffffff;
     margin: 0;
     display: flex;
     align-items: center;
@@ -392,14 +392,14 @@
     font-size: 11px;
     font-weight: 600;
     color: #10b981;
-    background: #d1fae5;
+    background: rgba(16, 185, 129, 0.15);
     padding: 3px 8px;
     border-radius: 4px;
 }
 
 .review-author-location {
     font-size: 13px;
-    color: #6b7280;
+    color: #9ca3af;
 }
 
 .review-meta {
@@ -417,7 +417,7 @@
 
 .review-date {
     font-size: 12px;
-    color: #9ca3af;
+    color: #6b7280;
 }
 
 .review-vehicle-tag {
@@ -425,12 +425,12 @@
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: linear-gradient(135deg, #fef3c7, #fef9e7);
-    border: 1px solid #fbbf24;
+    background: rgba(184, 150, 88, 0.12);
+    border: 1px solid rgba(184, 150, 88, 0.3);
     border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
-    color: #92400e;
+    color: #b89658;
     margin-bottom: 20px;
 }
 
@@ -445,14 +445,14 @@
 .review-title {
     font-size: 18px;
     font-weight: 700;
-    color: #1f2937;
+    color: #ffffff;
     margin: 0 0 12px;
 }
 
 .review-text {
     font-size: 15px;
     line-height: 1.7;
-    color: #4b5563;
+    color: #d1d5db;
     margin: 0;
 }
 
@@ -475,10 +475,10 @@
     align-items: center;
     gap: 4px;
     padding: 12px 16px;
-    background: white;
+    background: #252525;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    border: 1px solid #333333;
     transition: all 0.3s ease;
 }
 
@@ -490,7 +490,7 @@
 .badge-rating {
     font-size: 24px;
     font-weight: 800;
-    color: #1f2937;
+    color: #ffffff;
     line-height: 1;
 }
 
@@ -506,7 +506,7 @@
 
 .badge-count {
     font-size: 10px;
-    color: #6b7280;
+    color: #9ca3af;
     white-space: nowrap;
 }
 
@@ -542,7 +542,7 @@
         padding-right: 0;
         border-right: none;
         padding-bottom: 24px;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid #333333;
     }
 
     .big-number {

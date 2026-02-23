@@ -9,6 +9,7 @@ class AppointmentSystem {
         this.availableSlots = [];
         this.availConfig = null;
         this.blockedDates = [];
+        this.blockedHours = {}; // { 'YYYY-MM-DD': ['09:00', '09:30'] }
         this.availDays = [1, 2, 3, 4, 5]; // default Mon-Fri
         this.startHour = 8;
         this.endHour = 18;
@@ -39,6 +40,7 @@ class AppointmentSystem {
                     self.interval = data.interval || 30;
                     self.availDays = data.days || [1, 2, 3, 4, 5];
                     self.blockedDates = data.blockedDates || [];
+                    self.blockedHours = data.blockedHours || {};
                 }
                 self.availableSlots = self.generateTimeSlots();
                 // Refresh calendar if modal is open
@@ -339,8 +341,9 @@ class AppointmentSystem {
         container.innerHTML = '<div class="time-loading">Verificando disponibilidad...</div>';
 
         var bookedSlots = await this.loadBookedSlotsForDate(this.selectedDate);
+        var blockedForDay = this.blockedHours[this.selectedDate] || [];
         var freeSlots = this.availableSlots.filter(function(slot) {
-            return bookedSlots.indexOf(slot) === -1;
+            return bookedSlots.indexOf(slot) === -1 && blockedForDay.indexOf(slot) === -1;
         });
 
         if (freeSlots.length === 0) {

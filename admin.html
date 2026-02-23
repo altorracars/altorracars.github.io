@@ -310,6 +310,10 @@
                     <h1>Agenda de Citas</h1>
                     <p class="page-subtitle">Gestiona la disponibilidad del calendario y las solicitudes de visita</p>
                 </div>
+                <button class="btn btn-primary" id="btnCreateInternalAppt">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Agendar Cita Interna
+                </button>
             </div>
 
             <!-- Availability Config Panel -->
@@ -368,17 +372,18 @@
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     Calendario de Disponibilidad
                 </h3>
-                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Haz clic en los dias para bloquearlos o desbloquearlos. Los dias bloqueados no estaran disponibles para los usuarios.</p>
+                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Haz clic en un dia para bloquear horas especificas o el dia completo. Los numeros indican citas agendadas.</p>
                 <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
                     <button class="btn btn-ghost btn-sm" id="calPrevMonth">&larr; Mes anterior</button>
                     <h4 id="calMonthLabel" style="margin:0;min-width:180px;text-align:center;"></h4>
                     <button class="btn btn-ghost btn-sm" id="calNextMonth">Mes siguiente &rarr;</button>
                 </div>
                 <div id="adminCalendar" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:500px;"></div>
-                <div style="margin-top:0.75rem;display:flex;gap:1rem;font-size:0.8rem;color:var(--admin-text-muted);">
+                <div style="margin-top:0.75rem;display:flex;gap:1rem;font-size:0.8rem;color:var(--admin-text-muted);flex-wrap:wrap;">
                     <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:rgba(63,185,80,0.2);border:1px solid #3fb950;display:inline-block;"></span> Disponible</span>
                     <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:rgba(248,81,73,0.2);border:1px solid #f85149;display:inline-block;"></span> Bloqueado</span>
-                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:var(--admin-border);display:inline-block;"></span> No disponible (dia no habilitado)</span>
+                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:rgba(217,153,34,0.2);border:1px solid #d29922;display:inline-block;"></span> Parcial / Con citas</span>
+                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:var(--admin-border);display:inline-block;"></span> No disponible</span>
                 </div>
             </div>
 
@@ -409,6 +414,7 @@
                             <th>Vehiculo</th>
                             <th>Fecha / Hora</th>
                             <th>Estado</th>
+                            <th>Tipo</th>
                             <th>Observaciones</th>
                             <th>Acciones</th>
                         </tr>
@@ -1044,6 +1050,75 @@
         <div class="modal-footer">
             <button class="btn btn-ghost" id="cancelAppointmentModal">Cancelar</button>
             <button class="btn btn-primary" id="saveAppointmentStatus">Guardar Cambios</button>
+        </div>
+    </div>
+</div>
+
+<!-- INTERNAL APPOINTMENT MODAL -->
+<div class="modal-overlay" id="internalApptModal">
+    <div class="modal" style="max-width:580px;">
+        <div class="modal-header"><h2>Agendar Cita Interna</h2><button class="modal-close" id="closeInternalApptModal">&times;</button></div>
+        <div class="modal-body">
+            <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Crea una cita directamente como admin (consignacion, inspeccion, visita interna).</p>
+            <form id="internalApptForm">
+                <div class="form-group">
+                    <label class="form-label">Tipo de cita *</label>
+                    <select id="iaType" class="form-select" required>
+                        <option value="visita">Visita presencial</option>
+                        <option value="consignacion">Consignacion</option>
+                        <option value="inspeccion">Inspeccion vehicular</option>
+                        <option value="prueba">Prueba de manejo</option>
+                        <option value="entrega">Entrega de vehiculo</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Nombre del cliente *</label><input type="text" id="iaNombre" class="form-input" required placeholder="Nombre completo"></div>
+                    <div class="form-group"><label class="form-label">WhatsApp *</label><input type="tel" id="iaWhatsapp" class="form-input" required placeholder="3001234567"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Email</label><input type="email" id="iaEmail" class="form-input" placeholder="correo@ejemplo.com"></div>
+                    <div class="form-group"><label class="form-label">Vehiculo relacionado</label><input type="text" id="iaVehiculo" class="form-input" placeholder="Marca Modelo Año"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Fecha *</label><input type="date" id="iaFecha" class="form-input" required></div>
+                    <div class="form-group"><label class="form-label">Hora *</label><input type="time" id="iaHora" class="form-input" required></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Estado inicial</label>
+                    <select id="iaEstado" class="form-select">
+                        <option value="confirmada">Confirmada</option>
+                        <option value="pendiente">Pendiente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Observaciones</label>
+                    <textarea id="iaObservaciones" class="form-textarea" rows="2" placeholder="Notas internas sobre la cita..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" id="cancelInternalApptModal">Cancelar</button>
+            <button class="btn btn-primary" id="saveInternalAppt">Crear Cita</button>
+        </div>
+    </div>
+</div>
+
+<!-- BLOCKED HOURS MODAL -->
+<div class="modal-overlay" id="blockedHoursModal">
+    <div class="modal" style="max-width:480px;">
+        <div class="modal-header"><h2 id="bhModalTitle">Bloquear Horas</h2><button class="modal-close" id="closeBlockedHoursModal">&times;</button></div>
+        <div class="modal-body">
+            <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Selecciona las horas a bloquear para este dia. Las horas bloqueadas no estaran disponibles para los clientes.</p>
+            <div id="bhDateLabel" style="font-size:0.95rem;font-weight:600;margin-bottom:1rem;color:var(--admin-gold);"></div>
+            <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+                <button class="btn btn-ghost btn-sm" id="bhBlockAll">Bloquear todo el dia</button>
+                <button class="btn btn-ghost btn-sm" id="bhUnblockAll">Desbloquear todo</button>
+            </div>
+            <div id="bhSlotsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" id="cancelBlockedHoursModal">Cancelar</button>
+            <button class="btn btn-primary" id="saveBlockedHours">Guardar</button>
         </div>
     </div>
 </div>

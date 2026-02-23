@@ -734,7 +734,7 @@
         $('statMarcas').textContent = brands.length;
         $('statVendidos').textContent = vehicles.filter(function(v) { return v.estado === 'vendido'; }).length;
         var citasEl = $('statCitas');
-        if (citasEl) citasEl.textContent = appointments.length > 0 ? appointments.filter(function(a) { return a.estado === 'pendiente'; }).length : '-';
+        if (citasEl) citasEl.textContent = AP.appointments.length > 0 ? AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length : '-';
     }
 
     // ========== ACTIVITY FEED (persistent via auditLog) ==========
@@ -2701,263 +2701,20 @@
         });
     }
 
-    // ========== ADMIN CALENDAR ==========
-    var calendarMonth = new Date().getMonth();
-    var calendarYear = new Date().getFullYear();
-    var blockedDates = {}; // { 'YYYY-MM-DD': true }
+    // ========== ADMIN CALENDAR & APPOINTMENTS ==========
+    // Delegated to admin-appointments.js (Fase 19)
+    // These local variables are kept for backward compat with AP references
+    AP.calendarMonth = new Date().getMonth();
+    AP.calendarYear = new Date().getFullYear();
+    AP.blockedDates = {};
+    AP.blockedHours = {};
 
-    function renderAdminCalendar() {
-        var cal = $('adminCalendar');
-        var label = $('calMonthLabel');
-        if (!cal || !label) return;
-
-        var monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        label.textContent = monthNames[calendarMonth] + ' ' + calendarYear;
-
-        var dayHeaders = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
-        var html = dayHeaders.map(function(d) { return '<div style="text-align:center;font-size:0.75rem;font-weight:600;color:var(--admin-text-muted);padding:4px;">' + d + '</div>'; }).join('');
-
-        var firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
-        var daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
-        var today = new Date();
-        today.setHours(0,0,0,0);
-
-        // Get available days from config
-        var availDays = [];
-        document.querySelectorAll('#availDays input:checked').forEach(function(cb) { availDays.push(parseInt(cb.value)); });
-
-        for (var i = 0; i < firstDay; i++) {
-            html += '<div></div>';
-        }
-
-        for (var day = 1; day <= daysInMonth; day++) {
-            var date = new Date(calendarYear, calendarMonth, day);
-            var dateStr = date.toISOString().split('T')[0];
-            var isPast = date < today;
-            var dayOfWeek = date.getDay();
-            var isAvailDay = availDays.indexOf(dayOfWeek) !== -1;
-            var isBlocked = blockedDates[dateStr] === true;
-
-            var bgColor, textColor, cursor, border;
-            if (isPast) {
-                bgColor = 'var(--admin-border)';
-                textColor = 'var(--admin-text-muted)';
-                cursor = 'default';
-                border = 'transparent';
-            } else if (!isAvailDay) {
-                bgColor = 'var(--admin-border)';
-                textColor = 'var(--admin-text-muted)';
-                cursor = 'default';
-                border = 'transparent';
-            } else if (isBlocked) {
-                bgColor = 'rgba(248,81,73,0.2)';
-                textColor = '#f85149';
-                cursor = 'pointer';
-                border = '#f85149';
-            } else {
-                bgColor = 'rgba(63,185,80,0.15)';
-                textColor = '#3fb950';
-                cursor = 'pointer';
-                border = '#3fb950';
-            }
-
-            var clickable = !isPast && isAvailDay;
-            html += '<div style="text-align:center;padding:8px 4px;border-radius:8px;font-size:0.85rem;font-weight:600;' +
-                'background:' + bgColor + ';color:' + textColor + ';cursor:' + cursor + ';border:1px solid ' + border + ';"' +
-                (clickable ? ' onclick="adminPanel.toggleBlockDate(\'' + dateStr + '\')"' : '') +
-                ' title="' + (isPast ? 'Pasado' : !isAvailDay ? 'Dia no habilitado' : isBlocked ? 'Bloqueado - clic para desbloquear' : 'Disponible - clic para bloquear') + '">' +
-                day + '</div>';
-        }
-
-        cal.innerHTML = html;
-    }
-
-    function toggleBlockDate(dateStr) {
-        if (!isSuperAdmin()) { toast('Solo Super Admin puede bloquear dias', 'error'); return; }
-        if (blockedDates[dateStr]) {
-            delete blockedDates[dateStr];
-        } else {
-            blockedDates[dateStr] = true;
-        }
-        saveBlockedDates();
-        renderAdminCalendar();
-    }
-
-    function saveBlockedDates() {
-        var blockedList = Object.keys(blockedDates).filter(function(k) { return blockedDates[k]; });
-        window.db.collection('config').doc('availability').update({
-            blockedDates: blockedList,
-            updatedAt: new Date().toISOString()
-        }).catch(function(err) {
-            // If doc doesn't exist yet, set instead
-            window.db.collection('config').doc('availability').set({
-                blockedDates: blockedList,
-                updatedAt: new Date().toISOString()
-            }, { merge: true }).catch(function() {});
-        });
-    }
-
-    function loadBlockedDates() {
-        window.db.collection('config').doc('availability').get().then(function(doc) {
-            if (doc.exists && doc.data().blockedDates) {
-                blockedDates = {};
-                doc.data().blockedDates.forEach(function(d) { blockedDates[d] = true; });
-            }
-            // Also load interval
-            if (doc.exists && doc.data().interval && $('availInterval')) {
-                $('availInterval').value = doc.data().interval;
-            }
-            renderAdminCalendar();
-        }).catch(function() { renderAdminCalendar(); });
-    }
-
-    var calPrev = $('calPrevMonth');
-    var calNext = $('calNextMonth');
-    if (calPrev) calPrev.addEventListener('click', function() {
-        calendarMonth--;
-        if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
-        renderAdminCalendar();
-    });
-    if (calNext) calNext.addEventListener('click', function() {
-        calendarMonth++;
-        if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
-        renderAdminCalendar();
-    });
-
-    // ========== ENHANCED APPOINTMENTS (with observations, reschedule, contact info) ==========
-    var appointmentFilterEl = $('appointmentFilter');
-    if (appointmentFilterEl) {
-        appointmentFilterEl.addEventListener('change', function() {
-            renderAppointmentsTable();
-        });
-    }
-
-    function renderAppointmentsTable() {
-        var body = $('appointmentsBody');
-        if (!body) return;
-        var filterEl = $('appointmentFilter');
-        var filter = filterEl ? filterEl.value : 'all';
-        var filtered = filter === 'all' ? appointments : appointments.filter(function(a) { return a.estado === filter; });
-
-        if (filtered.length === 0) {
-            body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay citas ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
-            return;
-        }
-
-        body.innerHTML = filtered.map(function(a) {
-            var estadoColors = {
-                pendiente: 'admin-warning',
-                confirmada: 'admin-success',
-                reprogramada: 'admin-info',
-                completada: 'admin-gold',
-                cancelada: 'admin-danger'
-            };
-            var estadoClass = estadoColors[a.estado] || 'admin-warning';
-            var estadoLabel = a.estado ? (a.estado.charAt(0).toUpperCase() + a.estado.slice(1)) : 'Pendiente';
-            var whatsappNum = a.whatsapp || a.telefono || '';
-
-            return '<tr>' +
-                '<td><strong>' + escapeHtml(a.nombre || '-') + '</strong></td>' +
-                '<td>' +
-                    '<div style="font-size:0.85rem;display:flex;align-items:center;gap:4px;">' +
-                        (whatsappNum ? '<a href="https://wa.me/' + whatsappNum.replace(/[^0-9]/g, '') + '" target="_blank" style="color:var(--admin-success);text-decoration:none;" title="Abrir WhatsApp">' + escapeHtml(whatsappNum) + ' </a>' : escapeHtml(whatsappNum || '-')) +
-                    '</div>' +
-                    '<div style="font-size:0.75rem;color:var(--admin-text-muted);">' + escapeHtml(a.email || '-') + '</div>' +
-                '</td>' +
-                '<td>' + escapeHtml(a.vehiculo || 'General') + '</td>' +
-                '<td><div>' + escapeHtml(a.fecha || '-') + '</div><div style="font-weight:600;">' + escapeHtml(a.hora || '-') + '</div></td>' +
-                '<td><span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLabel + '</span></td>' +
-                '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + escapeHtml(a.observaciones || a.comentarios || '-') + '</td>' +
-                '<td style="white-space:nowrap;">' +
-                    (RBAC.canManageAppointment() ? '<button class="btn btn-sm btn-ghost" onclick="adminPanel.manageAppointment(\'' + a._docId + '\')" title="Gestionar">Gestionar</button>' : '') +
-                    (RBAC.canDeleteAppointment() ? ' <button class="btn btn-sm btn-danger" onclick="adminPanel.deleteAppointment(\'' + a._docId + '\')" title="Eliminar">&times;</button>' : '') +
-                '</td>' +
-            '</tr>';
-        }).join('');
-    }
-
-    function deleteAppointment(docId) {
-        if (!RBAC.canDeleteAppointment()) { toast('Solo Super Admin puede eliminar citas', 'error'); return; }
-        if (!confirm('Eliminar esta cita? Esta accion no se puede deshacer.')) return;
-        window.db.collection('citas').doc(docId).delete().then(function() {
-            toast('Cita eliminada');
-            writeAuditLog('appointment_delete', 'cita ' + docId, '');
-        }).catch(function(err) {
-            toast('Error: ' + err.message, 'error');
-        });
-    }
-
-    function manageAppointment(docId) {
-        var a = appointments.find(function(x) { return x._docId === docId; });
-        if (!a) return;
-
-        $('amDocId').value = docId;
-        $('amEstado').value = a.estado || 'pendiente';
-        $('amObservaciones').value = a.observaciones || '';
-
-        $('amClientInfo').innerHTML =
-            '<strong>' + escapeHtml(a.nombre || '') + '</strong><br>' +
-            'WhatsApp: <a href="https://wa.me/' + (a.whatsapp || a.telefono || '').replace(/[^0-9]/g, '') + '" target="_blank" style="color:var(--admin-success);">' + escapeHtml(a.whatsapp || a.telefono || '-') + '</a><br>' +
-            'Email: ' + escapeHtml(a.email || '-') + '<br>' +
-            'Vehiculo: ' + escapeHtml(a.vehiculo || 'General') + '<br>' +
-            'Fecha: ' + escapeHtml(a.fecha || '-') + ' | Hora: ' + escapeHtml(a.hora || '-') + '<br>' +
-            'Comentarios: ' + escapeHtml(a.comentarios || '-');
-
-        toggleReprogramarGroup();
-        $('appointmentModal').classList.add('active');
-    }
-
-    function toggleReprogramarGroup() {
-        var group = $('amReprogramarGroup');
-        var estado = $('amEstado').value;
-        if (group) group.style.display = estado === 'reprogramada' ? '' : 'none';
-    }
-
-    var amEstadoEl = $('amEstado');
-    if (amEstadoEl) amEstadoEl.addEventListener('change', toggleReprogramarGroup);
-
-    var closeAppModal = $('closeAppointmentModal');
-    if (closeAppModal) closeAppModal.addEventListener('click', function() { $('appointmentModal').classList.remove('active'); });
-    var cancelAppModal = $('cancelAppointmentModal');
-    if (cancelAppModal) cancelAppModal.addEventListener('click', function() { $('appointmentModal').classList.remove('active'); });
-
-    var saveAppStatusBtn = $('saveAppointmentStatus');
-    if (saveAppStatusBtn) {
-        saveAppStatusBtn.addEventListener('click', function() {
-            var docId = $('amDocId').value;
-            if (!docId) return;
-            if (!isEditorOrAbove() && !isSuperAdmin()) { toast('Sin permisos', 'error'); return; }
-
-            var updateData = {
-                estado: $('amEstado').value,
-                observaciones: $('amObservaciones').value.trim(),
-                updatedAt: new Date().toISOString(),
-                updatedBy: window.auth.currentUser.email
-            };
-
-            if ($('amEstado').value === 'reprogramada') {
-                var nuevaFecha = $('amNuevaFecha').value;
-                var nuevaHora = $('amNuevaHora').value;
-                if (nuevaFecha) updateData.fecha = nuevaFecha;
-                if (nuevaHora) updateData.hora = nuevaHora;
-            }
-
-            window.db.collection('citas').doc(docId).update(updateData).then(function() {
-                toast('Cita actualizada a: ' + updateData.estado);
-                writeAuditLog('appointment_' + updateData.estado, 'cita ' + docId, updateData.observaciones || '');
-                // Switch filter to show the updated appointment's status
-                var filterEl = $('appointmentFilter');
-                if (filterEl) filterEl.value = updateData.estado;
-                $('appointmentModal').classList.remove('active');
-            }).catch(function(err) {
-                if (err.code === 'permission-denied') {
-                    toast('Sin permisos para actualizar citas. Verifica tu rol y las Firestore Rules.', 'error');
-                } else {
-                    toast('Error: ' + err.message, 'error');
-                }
-            });
-        });
-    }
+    function renderAdminCalendar() { if (typeof AP.renderAdminCalendar === 'function') AP.renderAdminCalendar(); }
+    function toggleBlockDate(dateStr) { if (typeof AP.toggleBlockDate === 'function') AP.toggleBlockDate(dateStr); }
+    function loadBlockedDates() { if (typeof AP.loadBlockedDates === 'function') AP.loadBlockedDates(); }
+    function renderAppointmentsTable() { if (typeof AP.renderAppointmentsTable === 'function') AP.renderAppointmentsTable(); }
+    function deleteAppointment(docId) { if (typeof AP.deleteAppointment === 'function') AP.deleteAppointment(docId); }
+    function manageAppointment(docId) { if (typeof AP.manageAppointment === 'function') AP.manageAppointment(docId); }
 
     function isEditorOrAbove() {
         return isSuperAdmin() || isEditor();
@@ -3093,6 +2850,7 @@
         removeListItem: removeListItem,
         saveList: saveList,
         toggleBlockDate: toggleBlockDate,
+        openDayManager: function(d) { if (typeof AP.openDayManager === 'function') AP.openDayManager(d); },
         manageAppointment: manageAppointment,
         toggleActivitySelect: toggleActivitySelectMode,
         deleteSelectedActivity: deleteSelectedActivity,
@@ -3312,72 +3070,12 @@
     }
 
     // ========== PHASE 5: APPOINTMENTS MANAGEMENT ==========
-    var appointments = [];
-    var unsubAppointments = null;
+    AP.appointments = [];
+    AP.unsubAppointments = null;
 
-    function loadAppointments() {
-        if (unsubAppointments) unsubAppointments();
-        unsubAppointments = window.db.collection('citas').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
-            appointments = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
-            renderAppointmentsTable();
-            var pending = appointments.filter(function(a) { return a.estado === 'pendiente'; }).length;
-            var badge = $('navBadgeAppointments');
-            if (badge) badge.textContent = pending > 0 ? pending : '';
-        }, function(err) {
-            console.warn('[Citas] Error loading appointments:', err);
-        });
-    }
-
-    // Old renderAppointmentsTable removed - now defined in enhanced appointments section above
-
-    // Save availability config (enhanced with interval and blocked dates)
-    var btnSaveAvail2 = $('btnSaveAvailability');
-    if (btnSaveAvail2) {
-        btnSaveAvail2.addEventListener('click', function() {
-            if (!isSuperAdmin()) { toast('Solo Super Admin puede cambiar disponibilidad', 'error'); return; }
-            var startHour = parseInt($('availStartHour').value);
-            var endHour = parseInt($('availEndHour').value);
-            var interval = $('availInterval') ? parseInt($('availInterval').value) : 30;
-            var days = [];
-            document.querySelectorAll('#availDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
-            var blockedList = Object.keys(blockedDates).filter(function(k) { return blockedDates[k]; });
-            window.db.collection('config').doc('availability').set({
-                startHour: startHour,
-                endHour: endHour,
-                days: days,
-                interval: interval,
-                blockedDates: blockedList,
-                updatedAt: new Date().toISOString()
-            }).then(function() {
-                toast('Disponibilidad guardada');
-                $('availabilityStatus').innerHTML = '<span style="color:var(--admin-success);">Guardado correctamente</span>';
-                renderAdminCalendar();
-            }).catch(function(err) {
-                toast('Error: ' + err.message, 'error');
-            });
-        });
-    }
-
-    // Load availability config (enhanced)
-    function loadAvailabilityConfig() {
-        window.db.collection('config').doc('availability').get().then(function(doc) {
-            if (!doc.exists) return;
-            var data = doc.data();
-            if (data.startHour && $('availStartHour')) $('availStartHour').value = data.startHour;
-            if (data.endHour && $('availEndHour')) $('availEndHour').value = data.endHour;
-            if (data.interval && $('availInterval')) $('availInterval').value = data.interval;
-            if (data.days) {
-                document.querySelectorAll('#availDays input').forEach(function(cb) {
-                    cb.checked = data.days.indexOf(parseInt(cb.value)) !== -1;
-                });
-            }
-            if (data.blockedDates) {
-                blockedDates = {};
-                data.blockedDates.forEach(function(d) { blockedDates[d] = true; });
-            }
-            renderAdminCalendar();
-        }).catch(function() { renderAdminCalendar(); });
-    }
+    // loadAppointments / loadAvailabilityConfig — delegated to admin-appointments.js (Fase 19)
+    function loadAppointments() { if (typeof AP.loadAppointments === 'function') AP.loadAppointments(); }
+    function loadAvailabilityConfig() { if (typeof AP.loadAvailabilityConfig === 'function') AP.loadAvailabilityConfig(); }
 
     // ========== PHASE 5: CONCESIONARIOS ==========
     var dealers = [];

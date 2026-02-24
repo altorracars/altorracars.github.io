@@ -107,11 +107,14 @@ function generatePage(template, v, slug) {
 
     let html = template;
 
-    // 1. Add <base href="/"> so relative paths work from /vehiculos/ subdir
-    html = html.replace(
-        '<meta charset="UTF-8">',
-        '<meta charset="UTF-8">\n    <base href="/">'
-    );
+    // 1. Ensure <base href="/"> exists so relative paths work from /vehiculos/ subdir
+    //    (template already includes it, but keep this as a safety check)
+    if (!html.includes('<base href="/">')) {
+        html = html.replace(
+            '<meta charset="UTF-8">',
+            '<meta charset="UTF-8">\n    <base href="/">'
+        );
+    }
 
     // 2. Add canonical URL
     html = html.replace(

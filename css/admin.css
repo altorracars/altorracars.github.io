@@ -806,6 +806,17 @@ tbody tr:hover {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.seo-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(184,150,88,0.3);
+    border-top-color: var(--admin-gold, #b89658);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    flex-shrink: 0;
+}
+
 /* ESTIMATOR */
 .est-grid {
     display: grid;

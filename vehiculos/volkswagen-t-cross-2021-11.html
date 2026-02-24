@@ -1387,6 +1387,7 @@ Capacidad del tanque de combustible de 50 litros</p>
     <script src="js/comparador.js"></script>
     <script src="js/historial-visitas.js"></script>
     <script src="js/citas.js"></script>
+    <script>window.PRERENDERED_VEHICLE_ID = "11";</script>
     <script>
         let currentVehicle = null;
         let currentImages = [];
@@ -1397,11 +1398,22 @@ Capacidad del tanque de combustible de 50 litros</p>
         const GALLERY_AUTOPLAY_DELAY = 4000; // 4 segundos
 
         function getVehicleIdFromURL() {
-            // Pre-rendered pages embed the ID directly (Fase 16)
+            // Pre-rendered pages embed the ID directly (legacy Fase 16)
             if (window.PRERENDERED_VEHICLE_ID) {
                 return window.PRERENDERED_VEHICLE_ID;
             }
             const params = new URLSearchParams(window.location.search);
+            // New dynamic system: ?v=marca-modelo-year-ID (slug)
+            var slug = params.get('v');
+            if (slug) {
+                // Extract ID from end of slug: "chevrolet-equinox-ls-2018-1" → "1"
+                var parts = slug.split('-');
+                var lastPart = parts[parts.length - 1];
+                if (lastPart && /^\d+$/.test(lastPart)) {
+                    return lastPart;
+                }
+            }
+            // Legacy fallback: ?id=N
             return params.get('id');
         }
 
@@ -1415,9 +1427,32 @@ Capacidad del tanque de combustible de 50 litros</p>
             await vehicleDB.load();
             currentVehicle = vehicleDB.getVehicleById(vehicleId);
 
+            // If not in local cache, try direct Firestore lookup
+            if (!currentVehicle && window.db) {
+                try {
+                    var doc = await window.db.collection('vehiculos').doc(String(vehicleId)).get();
+                    if (doc.exists) {
+                        var data = doc.data();
+                        delete data.concesionario;
+                        delete data.consignaParticular;
+                        currentVehicle = data;
+                    }
+                } catch (e) {
+                    console.warn('[Detail] Direct Firestore lookup failed:', e.message);
+                }
+            }
+
             if (!currentVehicle) {
-                alert('Vehículo no encontrado');
-                window.location.href = 'busqueda.html';
+                // Show friendly "not found" instead of alert
+                var container = document.querySelector('.detail-container');
+                if (container) {
+                    container.innerHTML = '<div style="text-align:center;padding:80px 20px;">' +
+                        '<div style="font-size:3rem;margin-bottom:16px;">🔍</div>' +
+                        '<h2 style="color:var(--gray-900);margin-bottom:8px;">Vehiculo no encontrado</h2>' +
+                        '<p style="color:#6b7280;margin-bottom:24px;">Es posible que este vehiculo ya no este disponible o que el enlace sea incorrecto.</p>' +
+                        '<a href="busqueda.html" class="btn-cta" style="display:inline-block;padding:12px 32px;background:var(--gold);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Ver inventario disponible</a>' +
+                        '</div>';
+                }
                 return;
             }
 
@@ -1439,8 +1474,8 @@ Capacidad del tanque de combustible de 50 litros</p>
             const desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. ' + capitalizar(v.tipo || '') + ', ' + capitalizar(v.transmision || '') + ', ' + formatKilometers(v.kilometraje || 0) + '. Disponible en ALTORRA CARS, Cartagena.';
             const image = v.imagen || 'https://altorracars.github.io/multimedia/logo-placeholder.png';
             const fullImage = image.startsWith('http') ? image : 'https://altorracars.github.io/' + image;
-            // Use current URL (works for both /vehiculos/slug.html and detalle-vehiculo.html?id=X)
-            const url = window.location.origin + window.location.pathname;
+            // Use shareable URL (static page with pre-baked OG tags)
+            const url = getShareableUrl();
 
             // Update page title
             document.title = title;
@@ -1471,7 +1506,7 @@ Capacidad del tanque de combustible de 50 litros</p>
             const precio = v.precioOferta || v.precio;
             const image = v.imagen || '';
             const fullImage = image.startsWith('http') ? image : 'https://altorracars.github.io/' + image;
-            const url = 'https://altorracars.github.io/detalle-vehiculo.html?id=' + v.id;
+            const url = getShareableUrl();
 
             var schema = {
                 '@context': 'https://schema.org',
@@ -1572,8 +1607,8 @@ Capacidad del tanque de combustible de 50 litros</p>
             document.getElementById('descriptionBox').textContent =
                 v.descripcion || 'No hay descripción disponible para este vehículo.';
 
-            // WhatsApp
-            const currentUrl = window.location.href;
+            // WhatsApp — use shareable URL for proper social previews
+            const currentUrl = getShareableUrl();
             // Reutilizamos precioFinal ya declarado arriba
             const whatsappMsg = `Hola ALTORRA CARS, estoy interesado en el siguiente vehiculo:
 
@@ -2082,6 +2117,21 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
         }
 
         // ===== SHARE VEHICLE =====
+        // Uses static URL (vehiculos/slug.html) for sharing — these pages have
+        // pre-baked OG meta tags that social media crawlers can read
+        function getShareableUrl() {
+            if (!currentVehicle) return window.location.href;
+            var v = currentVehicle;
+            var slug = [v.marca, v.modelo, v.year, v.id]
+                .filter(Boolean)
+                .join('-')
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+            return window.location.origin + '/vehiculos/' + slug + '.html';
+        }
+
         function shareVehicle() {
             if (!currentVehicle) return;
             var v = currentVehicle;
@@ -2092,7 +2142,7 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
             var precioText = precio ? formatCurrency(precio) : '';
             var title = marca + ' ' + modelo + ' ' + year + ' | ALTORRA CARS';
             var text = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '\n' + capitalizar(v.tipo || '') + ' | ' + capitalizar(v.transmision || '') + ' | ' + formatKilometers(v.kilometraje || 0);
-            var url = window.location.href;
+            var url = getShareableUrl();
 
             // Try native Web Share API first (mobile)
             if (navigator.share) {
@@ -2137,7 +2187,29 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
         window.shareVehicle = shareVehicle;
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadVehicleDetail();
+            loadVehicleDetail().then(function() {
+                // Real-time listener: auto-update if admin modifies this vehicle
+                var vid = getVehicleIdFromURL();
+                if (vid && window.db) {
+                    window.db.collection('vehiculos').doc(String(vid))
+                        .onSnapshot(function(doc) {
+                            if (!doc.exists || !currentVehicle) return;
+                            var updated = doc.data();
+                            // Only re-render if version changed
+                            if (updated._version && updated._version !== currentVehicle._version) {
+                                delete updated.concesionario;
+                                delete updated.consignaParticular;
+                                currentVehicle = updated;
+                                renderVehicleDetail();
+                                updateMetaTags(currentVehicle);
+                                loadSimilarVehicles();
+                                initTabs();
+                                initGallery();
+                                showShareToast('Informacion actualizada en tiempo real');
+                            }
+                        });
+                }
+            });
         });
 
         document.addEventListener('keydown', (e) => {

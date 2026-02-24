@@ -1,12 +1,14 @@
 // ===========================================================
-// FASE 16 — Pre-render vehicle pages for SEO & social sharing
+// Vehicle page generator — SEO & social sharing
 // ===========================================================
 // Reads vehicles from Firestore, generates individual HTML files
 // in /vehiculos/{slug}.html with pre-baked meta tags, OG data,
 // JSON-LD schema, and <noscript> content for crawlers.
 // Also regenerates sitemap.xml with all current vehicles.
 //
-// Usage: node scripts/generate-vehicles.mjs
+// This runs automatically via GitHub Actions on every push
+// and on a daily schedule. Can also be run manually:
+//   node scripts/generate-vehicles.mjs
 // ===========================================================
 
 import { initializeApp } from 'firebase/app';

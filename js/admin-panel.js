@@ -2916,6 +2916,36 @@
         });
     }
 
+    // Regenerar Paginas SEO — calls Firebase Cloud Function to trigger GitHub Actions
+    var btnRegenSeo = $('btnRegenerateSeo');
+    if (btnRegenSeo) {
+        btnRegenSeo.addEventListener('click', function() {
+            if (!isSuperAdmin()) { toast('Solo Super Admin puede regenerar paginas SEO', 'error'); return; }
+            if (!window.functions) { toast('Firebase Functions no disponible', 'error'); return; }
+
+            btnRegenSeo.disabled = true;
+            btnRegenSeo.textContent = 'Regenerando...';
+
+            var triggerSeo = window.functions.httpsCallable('triggerSeoRegeneration');
+            triggerSeo().then(function(result) {
+                toast(result.data.message || 'Regeneracion iniciada', 'success');
+                var statusEl = $('sitemapStatus');
+                if (statusEl) {
+                    statusEl.innerHTML = '<span style="color:var(--admin-success);font-size:0.8rem;">Regeneracion de paginas SEO iniciada. Las miniaturas de redes sociales se actualizaran en ~2 minutos.</span>';
+                }
+            }).catch(function(err) {
+                toast('Error: ' + (err.message || 'No se pudo regenerar'), 'error');
+                var statusEl = $('sitemapStatus');
+                if (statusEl) {
+                    statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">Error al regenerar. Verifica que GITHUB_PAT este configurado en Firebase Secrets.</span>';
+                }
+            }).finally(function() {
+                btnRegenSeo.disabled = false;
+                btnRegenSeo.textContent = 'Regenerar Paginas SEO';
+            });
+        });
+    }
+
     function generateSitemap() {
         var statusEl = $('sitemapStatus');
         if (!statusEl) return;

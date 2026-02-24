@@ -1447,8 +1447,8 @@
             const desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. ' + capitalizar(v.tipo || '') + ', ' + capitalizar(v.transmision || '') + ', ' + formatKilometers(v.kilometraje || 0) + '. Disponible en ALTORRA CARS, Cartagena.';
             const image = v.imagen || 'https://altorracars.github.io/multimedia/logo-placeholder.png';
             const fullImage = image.startsWith('http') ? image : 'https://altorracars.github.io/' + image;
-            // Use current URL (dynamic: detalle-vehiculo.html?v=slug)
-            const url = window.location.origin + window.location.pathname;
+            // Use shareable URL (static page with pre-baked OG tags)
+            const url = getShareableUrl();
 
             // Update page title
             document.title = title;
@@ -1479,7 +1479,7 @@
             const precio = v.precioOferta || v.precio;
             const image = v.imagen || '';
             const fullImage = image.startsWith('http') ? image : 'https://altorracars.github.io/' + image;
-            const url = window.location.origin + window.location.pathname + window.location.search;
+            const url = getShareableUrl();
 
             var schema = {
                 '@context': 'https://schema.org',
@@ -1580,8 +1580,8 @@
             document.getElementById('descriptionBox').textContent =
                 v.descripcion || 'No hay descripción disponible para este vehículo.';
 
-            // WhatsApp
-            const currentUrl = window.location.href;
+            // WhatsApp — use shareable URL for proper social previews
+            const currentUrl = getShareableUrl();
             // Reutilizamos precioFinal ya declarado arriba
             const whatsappMsg = `Hola ALTORRA CARS, estoy interesado en el siguiente vehiculo:
 
@@ -2090,6 +2090,21 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
         }
 
         // ===== SHARE VEHICLE =====
+        // Uses static URL (vehiculos/slug.html) for sharing — these pages have
+        // pre-baked OG meta tags that social media crawlers can read
+        function getShareableUrl() {
+            if (!currentVehicle) return window.location.href;
+            var v = currentVehicle;
+            var slug = [v.marca, v.modelo, v.year, v.id]
+                .filter(Boolean)
+                .join('-')
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+            return window.location.origin + '/vehiculos/' + slug + '.html';
+        }
+
         function shareVehicle() {
             if (!currentVehicle) return;
             var v = currentVehicle;
@@ -2100,7 +2115,7 @@ Podrian brindarme mas informacion sobre este vehiculo?`;
             var precioText = precio ? formatCurrency(precio) : '';
             var title = marca + ' ' + modelo + ' ' + year + ' | ALTORRA CARS';
             var text = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '\n' + capitalizar(v.tipo || '') + ' | ' + capitalizar(v.transmision || '') + ' | ' + formatKilometers(v.kilometraje || 0);
-            var url = window.location.href;
+            var url = getShareableUrl();
 
             // Try native Web Share API first (mobile)
             if (navigator.share) {

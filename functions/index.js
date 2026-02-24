@@ -1,9 +1,145 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
 
 const db = admin.firestore();
+
+// ========== SEO PAGE GENERATION TRIGGER ==========
+// GitHub Personal Access Token stored in Firebase Secret Manager
+// Set it with: firebase functions:secrets:set GITHUB_PAT
+const githubPat = defineSecret('GITHUB_PAT');
+
+// Debounce: only trigger once per 5 minutes max
+let _lastDispatchTime = 0;
+const DEBOUNCE_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Firestore trigger: when any vehicle document is created, updated, or deleted,
+ * dispatch a GitHub Actions workflow to regenerate SEO pages.
+ */
+exports.onVehicleChange = onDocumentWritten({
+    document: 'vehiculos/{vehicleId}',
+    region: 'us-central1',
+    secrets: [githubPat]
+}, async (event) => {
+    const now = Date.now();
+    if (now - _lastDispatchTime < DEBOUNCE_MS) {
+        console.log('[SEO] Skipped — debounce active (last dispatch ' + Math.round((now - _lastDispatchTime) / 1000) + 's ago)');
+        return;
+    }
+
+    // Check if this is a meaningful change (not just a read)
+    const before = event.data.before ? event.data.before.data() : null;
+    const after = event.data.after ? event.data.after.data() : null;
+
+    // Skip if nothing meaningful changed for SEO (same marca, modelo, year, precio, estado, imagen)
+    if (before && after) {
+        const seoFieldsSame = before.marca === after.marca &&
+            before.modelo === after.modelo &&
+            before.year === after.year &&
+            before.precio === after.precio &&
+            before.precioOferta === after.precioOferta &&
+            before.estado === after.estado &&
+            before.imagen === after.imagen &&
+            before.descripcion === after.descripcion;
+        if (seoFieldsSame) {
+            console.log('[SEO] Skipped — no SEO-relevant fields changed');
+            return;
+        }
+    }
+
+    const token = githubPat.value();
+    if (!token) {
+        console.error('[SEO] GITHUB_PAT secret not configured. Run: firebase functions:secrets:set GITHUB_PAT');
+        return;
+    }
+
+    try {
+        const response = await fetch('https://api.github.com/repos/altorracars/altorracars.github.io/dispatches', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                event_type: 'vehicle-changed',
+                client_payload: {
+                    vehicleId: event.params.vehicleId,
+                    action: !before ? 'created' : !after ? 'deleted' : 'updated',
+                    timestamp: new Date().toISOString()
+                }
+            })
+        });
+
+        if (response.ok || response.status === 204) {
+            _lastDispatchTime = now;
+            console.log('[SEO] GitHub Actions dispatched for vehicle ' + event.params.vehicleId);
+        } else {
+            const body = await response.text();
+            console.error('[SEO] GitHub API error ' + response.status + ': ' + body);
+        }
+    } catch (err) {
+        console.error('[SEO] Failed to dispatch GitHub Actions:', err.message);
+    }
+});
+
+/**
+ * Callable function: manually trigger SEO page regeneration from admin panel.
+ * Only super_admin can call this.
+ */
+exports.triggerSeoRegeneration = onCall({
+    region: 'us-central1',
+    invoker: 'public',
+    cors: true,
+    secrets: [githubPat]
+}, async (request) => {
+    // Verify super_admin
+    if (!request.auth || !request.auth.uid) {
+        throw new HttpsError('unauthenticated', 'Debes iniciar sesion.');
+    }
+    const callerDoc = await db.collection('usuarios').doc(request.auth.uid).get();
+    if (!callerDoc.exists || callerDoc.data().rol !== 'super_admin') {
+        throw new HttpsError('permission-denied', 'Solo Super Admin puede regenerar paginas SEO.');
+    }
+
+    const token = githubPat.value();
+    if (!token) {
+        throw new HttpsError('failed-precondition', 'GITHUB_PAT no configurado en Firebase Secrets.');
+    }
+
+    try {
+        const response = await fetch('https://api.github.com/repos/altorracars/altorracars.github.io/dispatches', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                event_type: 'vehicle-changed',
+                client_payload: {
+                    action: 'manual-trigger',
+                    triggeredBy: request.auth.token.email || request.auth.uid,
+                    timestamp: new Date().toISOString()
+                }
+            })
+        });
+
+        if (response.ok || response.status === 204) {
+            return { success: true, message: 'Regeneracion de paginas SEO iniciada. Las paginas se actualizaran en ~2 minutos.' };
+        } else {
+            const body = await response.text();
+            throw new HttpsError('internal', 'GitHub API error: ' + response.status);
+        }
+    } catch (err) {
+        if (err instanceof HttpsError) throw err;
+        throw new HttpsError('internal', 'Error al disparar regeneracion: ' + err.message);
+    }
+});
 const callableOptionsV2 = {
     region: 'us-central1',
     invoker: 'public',

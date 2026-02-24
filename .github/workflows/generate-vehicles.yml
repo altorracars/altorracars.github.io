@@ -1,6 +1,11 @@
 # Auto-generate vehicle detail pages for SEO & social sharing
-# Runs on every push to main AND on a daily schedule
 # Generates /vehiculos/{slug}.html with pre-baked OG meta tags
+#
+# Triggers:
+# 1. Push to main (code changes)
+# 2. Every 4 hours (catches Firestore changes)
+# 3. repository_dispatch (fired by Firebase Cloud Function on vehicle changes)
+# 4. workflow_dispatch (manual trigger from GitHub UI)
 
 name: Generate Vehicle Pages
 
@@ -8,9 +13,11 @@ on:
   push:
     branches: [main]
   schedule:
-    # Run daily at 6:00 AM UTC (1:00 AM Colombia time)
-    - cron: '0 6 * * *'
-  workflow_dispatch: # Allow manual trigger from GitHub UI
+    # Every 4 hours — safety net for any missed triggers
+    - cron: '0 */4 * * *'
+  repository_dispatch:
+    types: [vehicle-changed]
+  workflow_dispatch: # Manual trigger from GitHub UI
 
 jobs:
   generate:

@@ -444,6 +444,86 @@ async function loadPromoBanners() {
 }
 
 /**
+ * Fase 23: Show subtle real-time update indicator
+ */
+var _realtimeToastTimeout = null;
+function showRealtimeUpdateIndicator() {
+    var existing = document.getElementById('realtimeIndicator');
+    if (existing) existing.remove();
+    clearTimeout(_realtimeToastTimeout);
+
+    var indicator = document.createElement('div');
+    indicator.id = 'realtimeIndicator';
+    indicator.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);' +
+        'background:rgba(30,30,30,0.95);color:#b89658;padding:8px 20px;border-radius:24px;' +
+        'font-size:0.8rem;z-index:9999;backdrop-filter:blur(8px);border:1px solid rgba(184,150,88,0.3);' +
+        'box-shadow:0 4px 12px rgba(0,0,0,0.3);opacity:0;transition:opacity 0.3s;display:flex;align-items:center;gap:8px;';
+    indicator.innerHTML = '<span style="display:inline-block;width:6px;height:6px;background:#b89658;border-radius:50%;animation:pulse 1s infinite;"></span> Inventario actualizado';
+    document.body.appendChild(indicator);
+
+    // Add pulse animation if not exists
+    if (!document.getElementById('realtimePulseStyle')) {
+        var style = document.createElement('style');
+        style.id = 'realtimePulseStyle';
+        style.textContent = '@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}';
+        document.head.appendChild(style);
+    }
+
+    requestAnimationFrame(function() { indicator.style.opacity = '1'; });
+    _realtimeToastTimeout = setTimeout(function() {
+        indicator.style.opacity = '0';
+        setTimeout(function() { if (indicator.parentNode) indicator.remove(); }, 400);
+    }, 3000);
+}
+
+/**
+ * Fase 23: Re-render functions for real-time updates (no await vehicleDB.load() needed)
+ */
+function rerenderVehicleSections() {
+    // Re-render destacados
+    loadDestacadosBanner();
+    // Re-render nuevos y usados
+    loadNewVehicles();
+    loadUsedVehicles();
+    // Re-enable drag scroll after re-render
+    setTimeout(enableDragScroll, 300);
+}
+
+function rerenderBrands() {
+    loadPopularBrands();
+}
+
+function rerenderBanners() {
+    if (!vehicleDB._latestBanners) return;
+    var section = document.getElementById('promoBannerSection');
+    var wrapper = document.getElementById('promoBannerWrapper');
+    if (!section || !wrapper) return;
+
+    var banners = vehicleDB._latestBanners;
+    if (banners.length === 0) { section.style.display = 'none'; return; }
+
+    var html = '';
+    banners.forEach(function(b) {
+        var linkOpen = b.link ? '<a href="' + b.link + '" class="promo-banner-link">' : '<div class="promo-banner-link">';
+        var linkClose = b.link ? '</a>' : '</div>';
+        html += linkOpen +
+            '<div class="promo-banner-item">' +
+                (b.image ? '<img src="' + b.image + '" alt="' + (b.title || '') + '" loading="lazy">' : '') +
+                '<div class="promo-banner-overlay">' +
+                    '<div class="promo-banner-content">' +
+                        (b.title ? '<h3 class="promo-banner-title">' + b.title + '</h3>' : '') +
+                        (b.subtitle ? '<p class="promo-banner-subtitle">' + b.subtitle + '</p>' : '') +
+                        (b.cta ? '<span class="promo-banner-cta">' + b.cta + ' &rarr;</span>' : '') +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        linkClose;
+    });
+    wrapper.innerHTML = html;
+    section.style.display = '';
+}
+
+/**
  * Initialize page
  * Load all content when DOM is ready
  */
@@ -458,6 +538,18 @@ function initializePage() {
     ]).then(function() {
         // Enable drag after vehicles are rendered and overflow-x is active
         enableDragScroll();
+
+        // Fase 23: Start real-time listeners after initial load
+        if (window.vehicleDB && typeof vehicleDB.startRealtime === 'function') {
+            vehicleDB.onChange(function(changeType) {
+                console.log('[RT] Data changed:', changeType);
+                showRealtimeUpdateIndicator();
+                if (changeType === 'vehicles') rerenderVehicleSections();
+                else if (changeType === 'brands') rerenderBrands();
+                else if (changeType === 'banners') rerenderBanners();
+            });
+            vehicleDB.startRealtime();
+        }
     }).catch(function(error) {
         console.error('Error initializing page:', error);
         enableDragScroll(); // still enable on error

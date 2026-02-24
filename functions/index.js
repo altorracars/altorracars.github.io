@@ -35,20 +35,43 @@ exports.onVehicleChange = onDocumentWritten({
     const before = event.data.before ? event.data.before.data() : null;
     const after = event.data.after ? event.data.after.data() : null;
 
-    // Skip if nothing meaningful changed for SEO (same marca, modelo, year, precio, estado, imagen)
+    // ALL fields used by generate-vehicles.mjs to build OG tags, JSON-LD, and noscript content.
+    // If ANY of these change, the static page must be regenerated.
+    // Source: scripts/generate-vehicles.mjs — full audit of og:title, og:description, og:image,
+    //         twitter:*, JSON-LD schema, noscript block, sitemap image tags, and slug generation.
+    var SEO_FIELDS = [
+        'marca',         // og:title, og:description, slug, JSON-LD name/brand, sitemap
+        'modelo',        // og:title, og:description, slug, JSON-LD model, sitemap
+        'year',          // og:title, og:description, slug, JSON-LD vehicleModelDate, sitemap
+        'imagen',        // og:image, twitter:image, JSON-LD image, sitemap image, noscript
+        'precio',        // og:description, JSON-LD offer price
+        'precioOferta',  // og:description, JSON-LD offer price (takes precedence over precio)
+        'estado',        // determines if page exists (only "disponible" gets a page)
+        'descripcion',   // noscript SEO content
+        'tipo',          // og:description, noscript
+        'transmision',   // og:description, JSON-LD vehicleTransmission, noscript
+        'kilometraje',   // og:description, JSON-LD mileageFromOdometer, noscript
+        'combustible',   // JSON-LD fuelType, noscript
+        'color',         // JSON-LD color, noscript
+        'puertas',       // JSON-LD numberOfDoors
+        'pasajeros',     // JSON-LD seatingCapacity
+        'categoria'      // noscript content
+    ];
+
+    // For updates: skip if no SEO-relevant field changed
     if (before && after) {
-        const seoFieldsSame = before.marca === after.marca &&
-            before.modelo === after.modelo &&
-            before.year === after.year &&
-            before.precio === after.precio &&
-            before.precioOferta === after.precioOferta &&
-            before.estado === after.estado &&
-            before.imagen === after.imagen &&
-            before.descripcion === after.descripcion;
-        if (seoFieldsSame) {
+        var changed = SEO_FIELDS.some(function(field) {
+            return before[field] !== after[field];
+        });
+        if (!changed) {
             console.log('[SEO] Skipped — no SEO-relevant fields changed');
             return;
         }
+        // Log which fields changed for debugging
+        var changedFields = SEO_FIELDS.filter(function(field) {
+            return before[field] !== after[field];
+        });
+        console.log('[SEO] Changed fields: ' + changedFields.join(', '));
     }
 
     const token = githubPat.value();

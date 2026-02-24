@@ -7,6 +7,11 @@ class VehicleDatabase {
         this.loaded = false;
         this._cacheKey = 'altorra-db-cache';
         this._cacheMaxAge = 15 * 60 * 1000; // 15 minutes (generous for slow networks)
+        // Fase 23: Real-time listeners
+        this._listeners = { vehicles: null, brands: null, banners: null };
+        this._changeCallbacks = [];
+        this._realtimeActive = false;
+        this._initialLoadDone = false;
     }
 
     // ========== LOCAL CACHE (instant load while Firebase loads) ==========
@@ -131,6 +136,122 @@ class VehicleDatabase {
         });
 
         return true;
+    }
+
+    // ========== FASE 23: REAL-TIME LISTENERS ==========
+
+    /**
+     * Register a callback to be called when data changes in real-time.
+     * @param {Function} callback - fn(changeType) where changeType is 'vehicles', 'brands', or 'banners'
+     */
+    onChange(callback) {
+        if (typeof callback === 'function') {
+            this._changeCallbacks.push(callback);
+        }
+    }
+
+    /** Notify all registered callbacks */
+    _notifyChange(changeType) {
+        this._changeCallbacks.forEach(function(cb) {
+            try { cb(changeType); } catch (e) { console.warn('[DB] onChange callback error:', e); }
+        });
+    }
+
+    /**
+     * Start real-time listeners for vehicles and brands.
+     * Called once after initial load to keep data synced with Firestore.
+     */
+    startRealtime() {
+        if (this._realtimeActive || !window.db) return;
+        this._realtimeActive = true;
+        this._initialLoadDone = true;
+        var self = this;
+
+        // Vehicle listener
+        this._listeners.vehicles = window.db.collection('vehiculos')
+            .onSnapshot(function(snapshot) {
+                // Skip the first snapshot (already have data from .get())
+                if (!self._initialLoadDone) return;
+                // Debounce: ignore if this is initial
+                var isFirstSnapshot = !self._listeners._vehiclesReceived;
+                self._listeners._vehiclesReceived = true;
+                if (isFirstSnapshot) return;
+
+                var newVehicles = snapshot.docs.map(function(doc) {
+                    var data = doc.data();
+                    delete data.concesionario;
+                    delete data.consignaParticular;
+                    return data;
+                });
+
+                // Only update + notify if data actually changed
+                if (JSON.stringify(newVehicles.map(function(v) { return v.id + ':' + (v._version || 0) + ':' + v.estado; }).sort())
+                    !== JSON.stringify(self.vehicles.map(function(v) { return v.id + ':' + (v._version || 0) + ':' + v.estado; }).sort())) {
+                    self.vehicles = newVehicles;
+                    self.normalizeVehicles();
+                    self._saveToCache();
+                    console.log('[DB] Real-time update: ' + self.vehicles.length + ' vehicles');
+                    self._notifyChange('vehicles');
+                }
+            }, function(err) {
+                console.warn('[DB] Vehicle listener error:', err.message);
+            });
+
+        // Brands listener
+        this._listeners.brands = window.db.collection('marcas')
+            .onSnapshot(function(snapshot) {
+                var isFirstSnapshot = !self._listeners._brandsReceived;
+                self._listeners._brandsReceived = true;
+                if (isFirstSnapshot) return;
+
+                var newBrands = snapshot.docs.map(function(doc) { return doc.data(); });
+                newBrands = newBrands.map(function(b) {
+                    if (b.logo && b.logo.indexOf('multimedia/Logo/') === 0) {
+                        return Object.assign({}, b, { logo: b.logo.replace('multimedia/Logo/', 'multimedia/Logos/') });
+                    }
+                    return b;
+                });
+
+                if (newBrands.length !== self.brands.length ||
+                    JSON.stringify(newBrands.map(function(b) { return b.id; }).sort())
+                    !== JSON.stringify(self.brands.map(function(b) { return b.id; }).sort())) {
+                    self.brands = newBrands;
+                    self._saveToCache();
+                    console.log('[DB] Real-time update: ' + self.brands.length + ' brands');
+                    self._notifyChange('brands');
+                }
+            }, function(err) {
+                console.warn('[DB] Brands listener error:', err.message);
+            });
+
+        // Banners listener
+        this._listeners.banners = window.db.collection('banners')
+            .where('active', '==', true)
+            .where('position', '==', 'promocional')
+            .orderBy('order', 'asc')
+            .limit(3)
+            .onSnapshot(function(snapshot) {
+                var isFirstSnapshot = !self._listeners._bannersReceived;
+                self._listeners._bannersReceived = true;
+                if (isFirstSnapshot) return;
+
+                self._latestBanners = snapshot.docs.map(function(doc) { return doc.data(); });
+                console.log('[DB] Real-time update: ' + self._latestBanners.length + ' banners');
+                self._notifyChange('banners');
+            }, function(err) {
+                console.warn('[DB] Banners listener error:', err.message);
+            });
+
+        console.log('[DB] Real-time listeners started');
+    }
+
+    /** Stop all real-time listeners (cleanup) */
+    stopRealtime() {
+        if (this._listeners.vehicles) { this._listeners.vehicles(); this._listeners.vehicles = null; }
+        if (this._listeners.brands) { this._listeners.brands(); this._listeners.brands = null; }
+        if (this._listeners.banners) { this._listeners.banners(); this._listeners.banners = null; }
+        this._realtimeActive = false;
+        console.log('[DB] Real-time listeners stopped');
     }
 
     /**

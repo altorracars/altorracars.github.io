@@ -1297,3 +1297,24 @@ tbody tr:hover {
     border-radius: 4px;
     margin-left: auto;
 }
+
+/* ========== FASE 21: VEHICLE DRAG & DROP REORDER ========== */
+#vehiclesTable tr[draggable="true"] {
+    transition: background 0.15s, opacity 0.15s;
+}
+#vehiclesTable tr[draggable="true"]:hover .col-drag {
+    color: #b89658;
+}
+#vehiclesTable tr.drag-over-top {
+    border-top: 2px solid #b89658;
+    box-shadow: 0 -2px 8px rgba(184,150,88,0.3);
+}
+#vehiclesTable tr.drag-over-bottom {
+    border-bottom: 2px solid #b89658;
+    box-shadow: 0 2px 8px rgba(184,150,88,0.3);
+}
+#toggleReorderMode.active {
+    background: rgba(184,150,88,0.15) !important;
+    border-color: #b89658 !important;
+    color: #b89658 !important;
+}

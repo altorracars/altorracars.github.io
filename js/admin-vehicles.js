@@ -38,6 +38,9 @@
     }
 
     // ========== VEHICLES TABLE ==========
+    var _reorderMode = false;
+    var _dragSrcRow = null;
+
     function renderVehiclesTable(filter) {
         var filtered = AP.vehicles;
         if (filter) {
@@ -46,8 +49,22 @@
                 return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '')).toLowerCase().indexOf(q) >= 0;
             });
         }
-        filtered.sort(function(a, b) { return a.id - b.id; });
+        // In reorder mode sort by prioridad desc, otherwise by id
+        if (_reorderMode) {
+            filtered.sort(function(a, b) {
+                var pa = a.prioridad || 0, pb = b.prioridad || 0;
+                if (pa !== pb) return pb - pa;
+                return a.id - b.id;
+            });
+        } else {
+            filtered.sort(function(a, b) { return a.id - b.id; });
+        }
+
+        var maxPrio = 1;
+        filtered.forEach(function(v) { if ((v.prioridad || 0) > maxPrio) maxPrio = v.prioridad; });
+
         var html = '';
+        var colCount = _reorderMode ? 10 : 8;
         filtered.forEach(function(v) {
             var estado = v.estado || 'disponible';
             var estadoInfo = AP.ESTADO_LABELS[estado] || AP.ESTADO_LABELS.disponible;
@@ -69,19 +86,187 @@
             } else if (v.concesionario === '_particular' && v.consignaParticular) {
                 origen = 'Consigna: ' + v.consignaParticular;
             }
-            html += '<tr>' +
+
+            var prio = v.prioridad || 0;
+            var barPct = maxPrio > 0 ? Math.round((prio / maxPrio) * 100) : 0;
+            var barColor = prio === 0 ? '#333' : prio >= 70 ? '#b89658' : prio >= 30 ? '#f59e0b' : '#6b7280';
+
+            var dragCell = _reorderMode ? '<td class="col-drag" style="cursor:grab;text-align:center;color:var(--admin-text-muted);font-size:1.1rem;" title="Arrastra para reordenar">☰</td>' : '';
+            var posCell = _reorderMode ? '<td class="col-pos" style="min-width:70px;">' +
+                '<div style="display:flex;align-items:center;gap:6px;">' +
+                    '<span style="font-weight:700;font-size:0.8rem;min-width:22px;color:' + (prio > 0 ? '#b89658' : 'var(--admin-text-muted)') + ';">' + prio + '</span>' +
+                    '<div style="flex:1;height:6px;background:#1e1e1e;border-radius:3px;overflow:hidden;min-width:30px;">' +
+                        '<div style="height:100%;width:' + barPct + '%;background:' + barColor + ';border-radius:3px;transition:width 0.3s;"></div>' +
+                    '</div>' +
+                '</div>' +
+            '</td>' : '';
+
+            html += '<tr data-vehicle-id="' + v.id + '"' + (_reorderMode ? ' draggable="true"' : '') + '>' +
+                dragCell +
                 '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + AP.escapeHtml(v.codigoUnico || '—') + '</code></td>' +
                 '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
                 '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small></td>' +
                 '<td><span class="badge badge-' + v.tipo + '">' + v.tipo + '</span></td>' +
                 '<td>' + AP.formatPrice(v.precio) + (v.precioOferta ? '<br><small style="color: var(--admin-warning);">' + AP.formatPrice(v.precioOferta) + '</small>' : '') + '</td>' +
                 '<td>' + estadoBadge + '</td>' +
+                posCell +
                 '<td><small style="color:var(--admin-text-secondary);">' + AP.escapeHtml(origen) + '</small></td>' +
                 '<td>' + actions + '</td>' +
             '</tr>';
         });
-        if (!html) html = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
+        if (!html) html = '<tr><td colspan="' + colCount + '" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
         $('vehiclesTableBody').innerHTML = html;
+
+        if (_reorderMode) initTableDragDrop();
+    }
+
+    // ========== REORDER MODE TOGGLE ==========
+    function toggleReorderMode() {
+        if (!AP.canCreateOrEditInventory()) {
+            AP.toast('No tienes permisos para reordenar vehiculos', 'error');
+            return;
+        }
+        _reorderMode = !_reorderMode;
+        var btn = $('toggleReorderMode');
+        if (btn) {
+            btn.classList.toggle('active', _reorderMode);
+            btn.style.background = _reorderMode ? 'rgba(184,150,88,0.15)' : '';
+            btn.style.borderColor = _reorderMode ? '#b89658' : '';
+            btn.style.color = _reorderMode ? '#b89658' : '';
+        }
+
+        // Toggle column visibility
+        document.querySelectorAll('.col-drag, .col-pos').forEach(function(el) {
+            el.style.display = _reorderMode ? '' : 'none';
+        });
+
+        renderVehiclesTable($('vehicleSearch').value);
+
+        if (_reorderMode) {
+            AP.toast('Modo reordenar activo — arrastra filas para cambiar posicion', 'info');
+        }
+    }
+
+    var toggleBtn = $('toggleReorderMode');
+    if (toggleBtn) toggleBtn.addEventListener('click', toggleReorderMode);
+
+    // ========== TABLE DRAG & DROP ==========
+    function initTableDragDrop() {
+        var tbody = $('vehiclesTableBody');
+        if (!tbody) return;
+        var rows = tbody.querySelectorAll('tr[draggable="true"]');
+
+        rows.forEach(function(row) {
+            row.addEventListener('dragstart', function(e) {
+                _dragSrcRow = this;
+                this.style.opacity = '0.4';
+                this.style.background = 'rgba(184,150,88,0.1)';
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', this.getAttribute('data-vehicle-id'));
+            });
+
+            row.addEventListener('dragend', function() {
+                this.style.opacity = '';
+                this.style.background = '';
+                tbody.querySelectorAll('tr').forEach(function(r) {
+                    r.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+            });
+
+            row.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (this === _dragSrcRow) return;
+
+                // Show indicator above or below
+                var rect = this.getBoundingClientRect();
+                var midY = rect.top + rect.height / 2;
+                tbody.querySelectorAll('tr').forEach(function(r) {
+                    r.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+                if (e.clientY < midY) {
+                    this.classList.add('drag-over-top');
+                } else {
+                    this.classList.add('drag-over-bottom');
+                }
+            });
+
+            row.addEventListener('dragleave', function() {
+                this.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+
+            row.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over-top', 'drag-over-bottom');
+                if (this === _dragSrcRow || !_dragSrcRow) return;
+
+                var srcId = parseInt(_dragSrcRow.getAttribute('data-vehicle-id'));
+                var targetId = parseInt(this.getAttribute('data-vehicle-id'));
+                handlePrioritySwap(srcId, targetId);
+                _dragSrcRow = null;
+            });
+        });
+    }
+
+    // ========== PRIORITY SWAP / COLLISION DETECTION ==========
+    function handlePrioritySwap(srcId, targetId) {
+        var srcVehicle = AP.vehicles.find(function(v) { return v.id === srcId; });
+        var targetVehicle = AP.vehicles.find(function(v) { return v.id === targetId; });
+        if (!srcVehicle || !targetVehicle) return;
+
+        var srcPrio = srcVehicle.prioridad || 0;
+        var targetPrio = targetVehicle.prioridad || 0;
+
+        // Swap priorities
+        var newSrcPrio = targetPrio;
+        var newTargetPrio = srcPrio;
+
+        // If both are 0, assign sequential values based on position
+        if (srcPrio === 0 && targetPrio === 0) {
+            newSrcPrio = 10;
+            newTargetPrio = 5;
+        }
+
+        // Check for collisions with other vehicles
+        var collision = AP.vehicles.find(function(v) {
+            return v.id !== srcId && v.id !== targetId && (v.prioridad || 0) === newSrcPrio && newSrcPrio > 0;
+        });
+
+        if (collision) {
+            // Offer resolution
+            var confirm = window.confirm(
+                'Colision de posicion detectada:\n\n' +
+                '• ' + (srcVehicle.marca || '') + ' ' + (srcVehicle.modelo || '') + ' → posicion ' + newSrcPrio + '\n' +
+                '• ' + (collision.marca || '') + ' ' + (collision.modelo || '') + ' ya tiene posicion ' + newSrcPrio + '\n\n' +
+                '¿Desplazar automaticamente el vehiculo en conflicto?'
+            );
+            if (confirm) {
+                // Shift conflicting vehicle down by 1
+                var shiftedPrio = Math.max(0, newSrcPrio - 1);
+                savePriorityToFirestore(collision.id, shiftedPrio);
+            }
+        }
+
+        // Save both vehicles
+        var srcName = (srcVehicle.marca || '') + ' ' + (srcVehicle.modelo || '');
+        var targetName = (targetVehicle.marca || '') + ' ' + (targetVehicle.modelo || '');
+
+        Promise.all([
+            savePriorityToFirestore(srcId, newSrcPrio),
+            savePriorityToFirestore(targetId, newTargetPrio)
+        ]).then(function() {
+            AP.toast('Posiciones intercambiadas: ' + srcName + ' ↔ ' + targetName, 'success');
+            AP.writeAuditLog('reordenar', 'vehiculo', srcName + ' (pos ' + newSrcPrio + ') ↔ ' + targetName + ' (pos ' + newTargetPrio + ')');
+        }).catch(function(err) {
+            AP.toast('Error al guardar posiciones: ' + err.message, 'error');
+        });
+    }
+
+    function savePriorityToFirestore(vehicleId, priority) {
+        return window.db.collection('vehiculos').doc(String(vehicleId)).update({
+            prioridad: priority,
+            updatedAt: new Date().toISOString()
+        });
     }
 
     $('vehicleSearch').addEventListener('input', function() { renderVehiclesTable(this.value); });
@@ -188,7 +373,7 @@
             vPlaca: $('vPlaca').value, vFasecolda: $('vFasecolda').value, vDescripcion: $('vDescripcion').value,
             vEstado: $('vEstado').value, vDestacado: $('vDestacado').checked, vOferta: $('vOferta').checked,
             vRevision: $('vRevision').checked, vPeritaje: $('vPeritaje').checked,
-            vCaracteristicas: $('vCaracteristicas').value,
+            vPrioridad: $('vPrioridad').value, vCaracteristicas: $('vCaracteristicas').value,
             _images: AP.uploadedImageUrls.slice(), _savedAt: new Date().toISOString()
         };
     }
@@ -215,7 +400,7 @@
     }
 
     function restoreFormSnapshot(snap) {
-        var fields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vPrecioOferta','vKm','vTransmision','vCombustible','vMotor','vPotencia','vCilindraje','vTraccion','vDireccion','vColor','vPuertas','vPasajeros','vUbicacion','vPlaca','vFasecolda','vDescripcion','vEstado','vCaracteristicas'];
+        var fields = ['vMarca','vModelo','vYear','vTipo','vCategoria','vPrecio','vPrecioOferta','vKm','vTransmision','vCombustible','vMotor','vPotencia','vCilindraje','vTraccion','vDireccion','vColor','vPuertas','vPasajeros','vUbicacion','vPlaca','vFasecolda','vDescripcion','vEstado','vPrioridad','vCaracteristicas'];
         fields.forEach(function(f) { if ($(f) && snap[f] !== undefined) $(f).value = snap[f]; });
         if (snap.vId) $('vId').value = snap.vId;
         $('vDestacado').checked = !!snap.vDestacado;
@@ -401,6 +586,7 @@
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
         $('vRevision').checked = v.revisionTecnica !== false;
         $('vPeritaje').checked = v.peritaje !== false;
+        $('vPrioridad').value = v.prioridad || 0;
         loadFeaturesIntoForm(v.caracteristicas || []);
 
         if ($('vConcesionario')) {
@@ -473,6 +659,7 @@
             revisionTecnica: $('vRevision').checked, peritaje: $('vPeritaje').checked,
             descripcion: $('vDescripcion').value || '', estado: $('vEstado').value || 'disponible',
             destacado: $('vDestacado').checked,
+            prioridad: parseInt($('vPrioridad').value) || 0,
             imagen: AP.uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
             imagenes: AP.uploadedImageUrls.length ? AP.uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
             caracteristicas: collectAllFeatures(),

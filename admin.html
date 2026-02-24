@@ -240,15 +240,24 @@
             <div class="table-container">
                 <div class="table-header">
                     <h3>Inventario</h3>
-                    <input type="text" class="search-input" id="vehicleSearch" placeholder="Buscar por marca, modelo, ano...">
+                    <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+                        <input type="text" class="search-input" id="vehicleSearch" placeholder="Buscar por marca, modelo, ano...">
+                        <button class="btn btn-ghost btn-sm" id="toggleReorderMode" title="Modo reordenar" style="white-space:nowrap;gap:6px;display:flex;align-items:center;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/><polyline points="7 3 3 6 7 9"/><polyline points="17 15 21 18 17 21"/></svg>
+                            <span>Reordenar</span>
+                        </button>
+                    </div>
                 </div>
                 <div style="overflow-x: auto;">
-                    <table>
+                    <table id="vehiclesTable">
                         <thead><tr>
-                            <th>Codigo</th><th>Imagen</th><th>Vehiculo</th><th>Tipo</th><th>Precio</th><th>Estado</th><th>Origen</th><th>Acciones</th>
+                            <th class="col-drag" style="display:none;width:32px;"></th>
+                            <th>Codigo</th><th>Imagen</th><th>Vehiculo</th><th>Tipo</th><th>Precio</th><th>Estado</th>
+                            <th class="col-pos" style="display:none;width:80px;">Pos.</th>
+                            <th>Origen</th><th>Acciones</th>
                         </tr></thead>
                         <tbody id="vehiclesTableBody">
-                            <tr><td colspan="8" style="text-align:center;padding:2rem;">Cargando...</td></tr>
+                            <tr><td colspan="10" style="text-align:center;padding:2rem;">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>

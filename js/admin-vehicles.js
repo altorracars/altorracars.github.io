@@ -70,8 +70,14 @@
             var estadoInfo = AP.ESTADO_LABELS[estado] || AP.ESTADO_LABELS.disponible;
             var estadoBadge = '<span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span>';
             var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ';
+            var esVendido = estado === 'vendido';
             if (AP.canCreateOrEditInventory()) {
-                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
+                if (esVendido && !AP.isSuperAdmin()) {
+                    actions += '<button class="btn btn-ghost btn-sm" disabled title="Solo Super Admin puede editar vehiculos vendidos" style="opacity:0.4;cursor:not-allowed;">Editar</button> ';
+                    actions += '<span style="font-size:0.65rem;color:var(--admin-danger,#ef4444);">Protegido</span> ';
+                } else {
+                    actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
+                }
                 if (estado === 'disponible') {
                     actions += '<button class="btn btn-sm" style="color:var(--admin-info);border-color:var(--admin-info);" onclick="adminPanel.markAsSold(' + v.id + ')">Gestionar Operacion</button> ';
                 }
@@ -549,6 +555,12 @@
         var v = AP.vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
 
+        // Fase 22: Proteccion vehiculos vendidos
+        if (v.estado === 'vendido' && !AP.isSuperAdmin()) {
+            AP.toast('Este vehiculo esta vendido. Solo Super Admin puede editarlo.', 'error');
+            return;
+        }
+
         var codeDisplay = v.codigoUnico || '—';
         $('modalTitle').textContent = 'Editar Vehiculo ' + (v.codigoUnico || '#' + id);
         $('vId').value = v.id;
@@ -587,6 +599,27 @@
         $('vRevision').checked = v.revisionTecnica !== false;
         $('vPeritaje').checked = v.peritaje !== false;
         $('vPrioridad').value = v.prioridad || 0;
+
+        // Fase 22: Visual protection for sold vehicles
+        var estadoSelect = $('vEstado');
+        var soldWarning = document.getElementById('soldProtectionWarning');
+        if (soldWarning) soldWarning.remove();
+        estadoSelect.disabled = false;
+        estadoSelect.style.opacity = '';
+        if (v.estado === 'vendido') {
+            if (AP.isSuperAdmin()) {
+                // Super admin can edit but show warning
+                var warn = document.createElement('div');
+                warn.id = 'soldProtectionWarning';
+                warn.style.cssText = 'background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:8px 12px;margin-top:8px;font-size:0.8rem;color:#ef4444;';
+                warn.innerHTML = '<strong>VEHICULO VENDIDO</strong> — Estas editando un vehiculo vendido. Cambiar el estado revertira la venta.';
+                estadoSelect.parentNode.appendChild(warn);
+            } else {
+                estadoSelect.disabled = true;
+                estadoSelect.style.opacity = '0.5';
+            }
+        }
+
         loadFeaturesIntoForm(v.caracteristicas || []);
 
         if ($('vConcesionario')) {
@@ -705,6 +738,29 @@
     $('saveVehicle').addEventListener('click', function() {
         if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos', 'error'); return; }
         if (!validateAndHighlightFields()) { AP.toast('Completa los campos requeridos marcados en rojo', 'error'); return; }
+
+        // Fase 22: Proteccion vehiculos vendidos en save
+        var _editingId = $('vId').value ? parseInt($('vId').value) : null;
+        if (_editingId) {
+            var _originalVehicle = AP.vehicles.find(function(v) { return v.id === _editingId; });
+            if (_originalVehicle && _originalVehicle.estado === 'vendido' && !AP.isSuperAdmin()) {
+                AP.toast('No puedes modificar un vehiculo vendido. Contacta al Super Admin.', 'error');
+                return;
+            }
+            // Solo super_admin puede revertir estado vendido
+            if (_originalVehicle && _originalVehicle.estado === 'vendido' && $('vEstado').value !== 'vendido' && !AP.isSuperAdmin()) {
+                AP.toast('Solo Super Admin puede cambiar el estado de un vehiculo vendido.', 'error');
+                return;
+            }
+        }
+        // Prevenir que editores asignen estado vendido directamente (debe usar Gestionar Operacion)
+        if ($('vEstado').value === 'vendido') {
+            var _wasVendido = _editingId && AP.vehicles.find(function(v) { return v.id === _editingId && v.estado === 'vendido'; });
+            if (!_wasVendido && !AP.isSuperAdmin()) {
+                AP.toast('Para marcar como vendido usa "Gestionar Operacion". No se puede cambiar manualmente.', 'error');
+                return;
+            }
+        }
 
         // Limitar máximo 4 vehículos destacados
         if ($('vDestacado').checked) {

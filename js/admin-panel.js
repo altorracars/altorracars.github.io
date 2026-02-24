@@ -1133,8 +1133,14 @@
             var estadoBadge = '<span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span>';
 
             var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ';
+            var esVendido = estado === 'vendido';
             if (canCreateOrEditInventory()) {
-                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
+                if (esVendido && !isSuperAdmin()) {
+                    actions += '<button class="btn btn-ghost btn-sm" disabled title="Solo Super Admin puede editar vehiculos vendidos" style="opacity:0.4;cursor:not-allowed;">Editar</button> ';
+                    actions += '<span style="font-size:0.65rem;color:var(--admin-danger,#ef4444);">Protegido</span> ';
+                } else {
+                    actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
+                }
                 if (estado === 'disponible') {
                     actions += '<button class="btn btn-sm" style="color:var(--admin-info);border-color:var(--admin-info);" onclick="adminPanel.markAsSold(' + v.id + ')">Gestionar Operacion</button> ';
                 }
@@ -1468,6 +1474,12 @@
         var v = vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
 
+        // Fase 22: Proteccion vehiculos vendidos
+        if (v.estado === 'vendido' && !isSuperAdmin()) {
+            toast('Este vehiculo esta vendido. Solo Super Admin puede editarlo.', 'error');
+            return;
+        }
+
         $('modalTitle').textContent = 'Editar Vehiculo ' + (v.codigoUnico || '#' + id);
         $('vId').value = v.id;
         $('vCodigoUnico').value = v.codigoUnico || '';
@@ -1691,6 +1703,16 @@
         if (!validateAndHighlightFields()) {
             toast('Completa los campos requeridos marcados en rojo', 'error');
             return;
+        }
+
+        // Fase 22: Proteccion vehiculos vendidos en save
+        var _editId = $('vId').value ? parseInt($('vId').value) : null;
+        if (_editId) {
+            var _origV = vehicles.find(function(v) { return v.id === _editId; });
+            if (_origV && _origV.estado === 'vendido' && !isSuperAdmin()) {
+                toast('No puedes modificar un vehiculo vendido. Contacta al Super Admin.', 'error');
+                return;
+            }
         }
 
         var existingId = $('vId').value;
@@ -3319,6 +3341,8 @@
         if (!canCreateOrEditInventory()) { toast('Sin permisos', 'error'); return; }
         var v = vehicles.find(function(x) { return x.id === vehicleId; });
         if (!v) return;
+        // Fase 22: Proteccion contra doble venta
+        if (v.estado === 'vendido') { toast('Este vehiculo ya esta marcado como vendido.', 'error'); return; }
 
         var esPropio = isVehiclePropio(v);
         $('soldVehicleId').value = vehicleId;

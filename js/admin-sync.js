@@ -93,6 +93,7 @@
         if (AP.unsubDealers) { AP.unsubDealers(); AP.unsubDealers = null; }
         if (AP.unsubAuditLog) { AP.unsubAuditLog(); AP.unsubAuditLog = null; }
         if (AP.unsubBanners) { AP.unsubBanners(); AP.unsubBanners = null; }
+        if (AP.unsubReviews) { AP.unsubReviews(); AP.unsubReviews = null; }
     }
 
     function loadData() {
@@ -103,6 +104,7 @@
             if (AP.loadAvailabilityConfig) AP.loadAvailabilityConfig();
             if (AP.loadAuditLog) AP.loadAuditLog();
             if (AP.subscribeBanners) AP.subscribeBanners();
+            if (AP.subscribeReviews) AP.subscribeReviews();
         } catch (e) {
             console.warn('[Phase5] Error loading:', e);
         }

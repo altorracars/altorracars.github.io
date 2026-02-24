@@ -1,7 +1,6 @@
 // Vehicle Rendering System for ALTORRA CARS
 
-// FASE 16: Generate SEO-friendly slug for a vehicle
-// Must match the server-side slugify() in scripts/generate-vehicles.mjs
+// Generate SEO-friendly slug for a vehicle
 function getVehicleSlug(v) {
     return [v.marca, v.modelo, v.year, v.id]
         .filter(Boolean)
@@ -12,9 +11,10 @@ function getVehicleSlug(v) {
         .replace(/^-|-$/g, '');
 }
 
-// FASE 16: Get the detail URL for a vehicle (SEO-friendly)
+// Dynamic vehicle detail URL — no static generation needed
+// Format: detalle-vehiculo.html?v={slug} (SEO-friendly, works in real-time)
 function getVehicleDetailUrl(vehicle) {
-    return 'vehiculos/' + getVehicleSlug(vehicle) + '.html';
+    return 'detalle-vehiculo.html?v=' + getVehicleSlug(vehicle);
 }
 
 // Format price in Colombian Pesos

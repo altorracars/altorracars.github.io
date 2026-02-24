@@ -2971,7 +2971,7 @@
         disponibles.forEach(function(v) {
             var lastmod = v.updatedAt ? v.updatedAt.split('T')[0] : today;
             xml += '  <url>\n';
-            xml += '    <loc>' + base + '/vehiculos/' + _slugifyVehicle(v) + '.html</loc>\n';
+            xml += '    <loc>' + base + '/detalle-vehiculo.html?v=' + _slugifyVehicle(v) + '</loc>\n';
             xml += '    <lastmod>' + lastmod + '</lastmod>\n';
             xml += '    <changefreq>weekly</changefreq>\n';
             xml += '    <priority>0.8</priority>\n';
@@ -3034,7 +3034,7 @@
             var desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. Disponible en ALTORRA CARS, Cartagena.';
             var image = v.imagen || '';
             var fullImage = image.startsWith('http') ? image : base + '/' + image;
-            var detailUrl = base + '/vehiculos/' + _slugifyVehicle(v) + '.html';
+            var detailUrl = base + '/detalle-vehiculo.html?v=' + _slugifyVehicle(v);
 
             var html = '<!DOCTYPE html>\n<html lang="es">\n<head>\n';
             html += '<meta charset="UTF-8">\n';

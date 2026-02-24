@@ -372,7 +372,7 @@
 
             disponibles.forEach(function(v) {
                 var lastmod = v.updatedAt ? v.updatedAt.split('T')[0] : today;
-                xml += '  <url>\n    <loc>' + base + '/vehiculos/' + _slugifyVehicle(v) + '.html</loc>\n    <lastmod>' + lastmod + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n';
+                xml += '  <url>\n    <loc>' + base + '/detalle-vehiculo.html?v=' + _slugifyVehicle(v) + '</loc>\n    <lastmod>' + lastmod + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n';
                 if (v.imagen) {
                     var imgUrl = v.imagen.startsWith('http') ? v.imagen : base + '/' + v.imagen;
                     var marca = v.marca ? v.marca.charAt(0).toUpperCase() + v.marca.slice(1) : '';
@@ -425,7 +425,7 @@
                 var desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. Disponible en ALTORRA CARS, Cartagena.';
                 var image = v.imagen || '';
                 var fullImage = image.startsWith('http') ? image : base + '/' + image;
-                var detailUrl = base + '/vehiculos/' + _slugifyVehicle(v) + '.html';
+                var detailUrl = base + '/detalle-vehiculo.html?v=' + _slugifyVehicle(v);
 
                 var html = '<!DOCTYPE html>\n<html lang="es">\n<head>\n';
                 html += '<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';

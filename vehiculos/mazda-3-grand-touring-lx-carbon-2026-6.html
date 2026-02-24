@@ -1398,23 +1398,39 @@ Equipado con lo último en tecnología, este tope de gama incluye un sistema de 
         const GALLERY_AUTOPLAY_DELAY = 4000; // 4 segundos
 
         function getVehicleIdFromURL() {
-            // Pre-rendered pages embed the ID directly (legacy Fase 16)
+            // Pre-rendered pages embed the ID directly
             if (window.PRERENDERED_VEHICLE_ID) {
                 return window.PRERENDERED_VEHICLE_ID;
             }
-            const params = new URLSearchParams(window.location.search);
-            // New dynamic system: ?v=marca-modelo-year-ID (slug)
-            var slug = params.get('v');
-            if (slug) {
-                // Extract ID from end of slug: "chevrolet-equinox-ls-2018-1" → "1"
+
+            // Extract ID from the last numeric segment of a slug string
+            function extractIdFromSlug(slug) {
+                if (!slug) return null;
                 var parts = slug.split('-');
                 var lastPart = parts[parts.length - 1];
-                if (lastPart && /^\d+$/.test(lastPart)) {
-                    return lastPart;
-                }
+                return (lastPart && /^\d+$/.test(lastPart)) ? lastPart : null;
             }
-            // Legacy fallback: ?id=N
-            return params.get('id');
+
+            // 1. Query param: ?v=marca-modelo-year-ID
+            const params = new URLSearchParams(window.location.search);
+            var slug = params.get('v');
+            var idFromSlug = extractIdFromSlug(slug);
+            if (idFromSlug) return idFromSlug;
+
+            // 2. Legacy query param: ?id=N
+            var legacyId = params.get('id');
+            if (legacyId) return legacyId;
+
+            // 3. Path-based: /vehiculos/marca-modelo-year-ID.html
+            //    This handles direct navigation and browser refresh after replaceState
+            var path = window.location.pathname;
+            var pathMatch = path.match(/\/vehiculos\/(.+)\.html$/);
+            if (pathMatch) {
+                var pathId = extractIdFromSlug(pathMatch[1]);
+                if (pathId) return pathId;
+            }
+
+            return null;
         }
 
         async function loadVehicleDetail() {
@@ -1462,6 +1478,21 @@ Equipado con lo último en tecnología, este tope de gama incluye un sistema de 
             loadSimilarVehicles();
             initTabs();
             initGallery();
+
+            // Sync browser URL to SEO-canonical path (/vehiculos/slug.html)
+            // so copying the URL from the address bar gives the same link as the
+            // Share button — the static page that carries pre-baked OG meta tags.
+            // Uses replaceState (no page reload, no extra history entry).
+            if (!window.PRERENDERED_VEHICLE_ID) {
+                try {
+                    var seoUrl = getShareableUrl();
+                    if (seoUrl && window.location.href !== seoUrl) {
+                        history.replaceState({ vehicleId: currentVehicle.id }, document.title, seoUrl);
+                    }
+                } catch (e) {
+                    // Silent fail — URL stays as is, page still works
+                }
+            }
         }
 
         function updateMetaTags(v) {

@@ -309,6 +309,25 @@
 
     <div id="footer-placeholder"></div>
 
+    <script>
+    // Smart redirect: if the user hit a /vehiculos/slug.html that doesn't exist yet
+    // (vehicle just created, static page not generated), redirect to the dynamic page.
+    (function() {
+        var path = window.location.pathname;
+        var match = path.match(/\/vehiculos\/(.+)\.html$/);
+        if (match) {
+            var slug = match[1];
+            // Extract numeric ID from the end of the slug
+            var parts = slug.split('-');
+            var id = parts[parts.length - 1];
+            if (id && /^\d+$/.test(id)) {
+                window.location.replace('/detalle-vehiculo.html?v=' + slug);
+                return;
+            }
+        }
+    })();
+    </script>
+
     <script src="js/firebase-config.js"></script>
     <script src="js/components.js"></script>
 

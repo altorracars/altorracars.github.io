@@ -11,10 +11,10 @@ function getVehicleSlug(v) {
         .replace(/^-|-$/g, '');
 }
 
-// Dynamic vehicle detail URL — no static generation needed
-// Format: detalle-vehiculo.html?v={slug} (SEO-friendly, works in real-time)
+// Vehicle detail URL — points to the SEO-canonical path (/vehiculos/slug.html)
+// which has pre-baked OG tags. Falls back to dynamic page if static doesn't exist.
 function getVehicleDetailUrl(vehicle) {
-    return 'detalle-vehiculo.html?v=' + getVehicleSlug(vehicle);
+    return 'vehiculos/' + getVehicleSlug(vehicle) + '.html';
 }
 
 // Format price in Colombian Pesos

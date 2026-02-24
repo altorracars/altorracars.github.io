@@ -2921,23 +2921,46 @@
     if (btnRegenSeo) {
         btnRegenSeo.addEventListener('click', function() {
             if (!isSuperAdmin()) { toast('Solo Super Admin puede regenerar paginas SEO', 'error'); return; }
-            if (!window.functions) { toast('Firebase Functions no disponible', 'error'); return; }
 
+            var statusEl = $('sitemapStatus');
+
+            if (!window.functions) {
+                toast('Firebase Functions no disponible. Verifica la configuracion.', 'error');
+                if (statusEl) {
+                    statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">Error: Firebase Functions no esta inicializado. Verifica que el SDK este cargado correctamente.</span>';
+                }
+                return;
+            }
+
+            // Immediate visual feedback
             btnRegenSeo.disabled = true;
-            btnRegenSeo.textContent = 'Regenerando...';
+            btnRegenSeo.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><span class="seo-spinner"></span> Enviando...</span>';
+            if (statusEl) {
+                statusEl.innerHTML = '<span style="color:var(--admin-accent);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
+                    '<span class="seo-spinner"></span> Contactando servidor para regenerar paginas SEO...</span>';
+            }
 
             var triggerSeo = window.functions.httpsCallable('triggerSeoRegeneration');
             triggerSeo().then(function(result) {
-                toast(result.data.message || 'Regeneracion iniciada', 'success');
-                var statusEl = $('sitemapStatus');
+                toast(result.data.message || 'Regeneracion SEO iniciada', 'success');
                 if (statusEl) {
-                    statusEl.innerHTML = '<span style="color:var(--admin-success);font-size:0.8rem;">Regeneracion de paginas SEO iniciada. Las miniaturas de redes sociales se actualizaran en ~2 minutos.</span>';
+                    statusEl.innerHTML = '<span style="color:var(--admin-success);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
+                        '<span style="font-size:1rem;">&#10003;</span> Regeneracion iniciada exitosamente. Las miniaturas de redes sociales (WhatsApp, Facebook, Twitter) se actualizaran en aproximadamente 2 minutos.</span>';
                 }
             }).catch(function(err) {
-                toast('Error: ' + (err.message || 'No se pudo regenerar'), 'error');
-                var statusEl = $('sitemapStatus');
+                var errorMsg = err.message || 'No se pudo regenerar';
+                toast('Error SEO: ' + errorMsg, 'error');
                 if (statusEl) {
-                    statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">Error al regenerar. Verifica que GITHUB_PAT este configurado en Firebase Secrets.</span>';
+                    var hint = '';
+                    if (errorMsg.indexOf('GITHUB_PAT') !== -1 || errorMsg.indexOf('not configured') !== -1) {
+                        hint = ' Ejecuta: <code>firebase functions:secrets:set GITHUB_PAT</code>';
+                    } else if (errorMsg.indexOf('unauthenticated') !== -1) {
+                        hint = ' Inicia sesion nuevamente.';
+                    } else if (errorMsg.indexOf('permission') !== -1) {
+                        hint = ' Solo el Super Admin puede ejecutar esta accion.';
+                    }
+                    statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
+                        '<span style="font-size:1rem;">&#10007;</span> Error: ' + errorMsg + '.' + hint + '</span>';
                 }
             }).finally(function() {
                 btnRegenSeo.disabled = false;
@@ -3001,7 +3024,7 @@
         disponibles.forEach(function(v) {
             var lastmod = v.updatedAt ? v.updatedAt.split('T')[0] : today;
             xml += '  <url>\n';
-            xml += '    <loc>' + base + '/detalle-vehiculo.html?v=' + _slugifyVehicle(v) + '</loc>\n';
+            xml += '    <loc>' + base + '/vehiculos/' + _slugifyVehicle(v) + '.html' + '</loc>\n';
             xml += '    <lastmod>' + lastmod + '</lastmod>\n';
             xml += '    <changefreq>weekly</changefreq>\n';
             xml += '    <priority>0.8</priority>\n';
@@ -3064,7 +3087,7 @@
             var desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. Disponible en ALTORRA CARS, Cartagena.';
             var image = v.imagen || '';
             var fullImage = image.startsWith('http') ? image : base + '/' + image;
-            var detailUrl = base + '/detalle-vehiculo.html?v=' + _slugifyVehicle(v);
+            var detailUrl = base + '/vehiculos/' + _slugifyVehicle(v) + '.html';
 
             var html = '<!DOCTYPE html>\n<html lang="es">\n<head>\n';
             html += '<meta charset="UTF-8">\n';

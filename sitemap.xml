@@ -257,6 +257,16 @@
     </image:image>
   </url>
   <url>
+    <loc>https://altorracars.github.io/vehiculos/renault-logan-polar-2020-21.html</loc>
+    <lastmod>2026-02-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772037065065_1_compressed.webp?alt=media&amp;token=ef1f22b2-904d-4d99-b072-a6232980b39b</image:loc>
+      <image:title>Renault LOGAN POLAR 2020</image:title>
+    </image:image>
+  </url>
+  <url>
     <loc>https://altorracars.github.io/vehiculos/renault-duster-intens-2023-4.html</loc>
     <lastmod>2026-02-25</lastmod>
     <changefreq>weekly</changefreq>

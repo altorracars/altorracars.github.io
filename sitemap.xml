@@ -277,6 +277,46 @@
     </image:image>
   </url>
   <url>
+    <loc>https://altorracars.github.io/vehiculos/honda-hrv-lx-2019-23.html</loc>
+    <lastmod>2026-02-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772197590982_HONDA_HRV-LX_2019_-1_compressed.webp?alt=media&amp;token=2b910019-a0fc-488f-a2fa-a654f031a33c</image:loc>
+      <image:title>Honda HRV-LX 2019</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/renault-captur-zen-2019-24.html</loc>
+    <lastmod>2026-02-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772198608654_RENAULT_CAPTUR_2019_-1_compressed.webp?alt=media&amp;token=9b227c87-17c6-4eeb-926a-d3e1ade22eab</image:loc>
+      <image:title>Renault CAPTUR ZEN 2019</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/chevrolet-blazer-rs-2022-25.html</loc>
+    <lastmod>2026-02-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772200490329_CHEVROLET_BLAZER_2022-1_compressed.webp?alt=media&amp;token=be34b190-7aad-4543-a987-6c5c7f559739</image:loc>
+      <image:title>Chevrolet BLAZER RS 2022</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/kia-sportage-dizire-2020-26.html</loc>
+    <lastmod>2026-02-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772201596154_KIA_SPORTAGE_DZIRE_2020-1_compressed.webp?alt=media&amp;token=617f8d96-bf22-4996-aab1-69702b2187e0</image:loc>
+      <image:title>Kia SPORTAGE DIZIRE 2020</image:title>
+    </image:image>
+  </url>
+  <url>
     <loc>https://altorracars.github.io/vehiculos/renault-duster-intens-2023-4.html</loc>
     <lastmod>2026-02-27</lastmod>
     <changefreq>weekly</changefreq>

@@ -396,81 +396,67 @@
         });
     }
 
-    // ========== SHARE PAGES GENERATOR ==========
-    var btnSharePages = $('btnGenerateSharePages');
-    if (btnSharePages) {
-        btnSharePages.addEventListener('click', function() {
-            var statusEl = $('sitemapStatus');
-            if (!statusEl) return;
-
-            var disponibles = AP.vehicles.filter(function(v) { return !v.estado || v.estado === 'disponible'; });
-
-            if (disponibles.length === 0) {
-                statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">No hay vehiculos disponibles para generar.</span>';
+    // ========== REGENERAR PAGINAS SEO ==========
+    var btnRegenSeo = $('btnRegenerateSeo');
+    if (btnRegenSeo) {
+        btnRegenSeo.addEventListener('click', function() {
+            if (!AP.isSuperAdmin()) {
+                AP.toast('Solo Super Admin puede regenerar paginas SEO', 'error');
                 return;
             }
 
-            statusEl.innerHTML = '<span style="color:var(--admin-accent);font-size:0.8rem;">Generando ' + disponibles.length + ' paginas...</span>';
+            var statusEl = $('sitemapStatus');
 
-            var base = 'https://altorracars.github.io';
-            var files = [];
+            // Wait up to 5s for Firebase Functions SDK to load (deferred)
+            function doTrigger(attempt) {
+                if (!window.functions) {
+                    if (attempt < 10) {
+                        setTimeout(function() { doTrigger(attempt + 1); }, 500);
+                        return;
+                    }
+                    AP.toast('Firebase Functions no disponible. Recarga la pagina e intenta de nuevo.', 'error');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">Error: Firebase Functions no esta inicializado. Recarga la pagina.</span>';
+                    }
+                    return;
+                }
 
-            disponibles.forEach(function(v) {
-                var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
-                var modelo = v.modelo || '';
-                var year = v.year || '';
-                var title = marca + ' ' + modelo + ' ' + year + ' | ALTORRA CARS';
-                var precio = v.precioOferta || v.precio || 0;
-                var precioText = precio ? ('$' + Number(precio).toLocaleString('es-CO')) : '';
-                var desc = marca + ' ' + modelo + ' ' + year + ' - ' + precioText + '. Disponible en ALTORRA CARS, Cartagena.';
-                var image = v.imagen || '';
-                var fullImage = image.startsWith('http') ? image : base + '/' + image;
-                var detailUrl = base + '/vehiculos/' + _slugifyVehicle(v) + '.html';
+                btnRegenSeo.disabled = true;
+                btnRegenSeo.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><span class="seo-spinner"></span> Enviando...</span>';
+                if (statusEl) {
+                    statusEl.innerHTML = '<span style="color:var(--admin-accent);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
+                        '<span class="seo-spinner"></span> Contactando servidor para regenerar paginas SEO...</span>';
+                }
 
-                var html = '<!DOCTYPE html>\n<html lang="es">\n<head>\n';
-                html += '<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
-                html += '<title>' + AP.escapeHtml(title) + '</title>\n';
-                html += '<meta name="description" content="' + AP.escapeHtml(desc) + '">\n';
-                html += '<meta property="og:type" content="product">\n';
-                html += '<meta property="og:url" content="' + AP.escapeHtml(detailUrl) + '">\n';
-                html += '<meta property="og:title" content="' + AP.escapeHtml(title) + '">\n';
-                html += '<meta property="og:description" content="' + AP.escapeHtml(desc) + '">\n';
-                html += '<meta property="og:image" content="' + AP.escapeHtml(fullImage) + '">\n';
-                html += '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n';
-                html += '<meta property="og:site_name" content="ALTORRA CARS">\n<meta property="og:locale" content="es_CO">\n';
-                html += '<meta name="twitter:card" content="summary_large_image">\n';
-                html += '<meta name="twitter:title" content="' + AP.escapeHtml(title) + '">\n';
-                html += '<meta name="twitter:description" content="' + AP.escapeHtml(desc) + '">\n';
-                html += '<meta name="twitter:image" content="' + AP.escapeHtml(fullImage) + '">\n';
-                html += '<meta http-equiv="refresh" content="0;url=' + detailUrl + '">\n';
-                html += '<link rel="canonical" href="' + detailUrl + '">\n';
-                html += '<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0a0a0a;color:#d4af37;}a{color:#d4af37;}</style>\n';
-                html += '</head>\n<body>\n';
-                html += '<p>Redirigiendo a <a href="' + detailUrl + '">' + AP.escapeHtml(marca + ' ' + modelo + ' ' + year) + '</a>...</p>\n';
-                html += '<script>window.location.replace("' + detailUrl + '");<\/script>\n';
-                html += '</body>\n</html>\n';
+                var triggerSeo = window.functions.httpsCallable('triggerSeoRegeneration');
+                triggerSeo().then(function(result) {
+                    AP.toast(result.data.message || 'Regeneracion SEO iniciada', 'success');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span style="color:var(--admin-success,#3fb950);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
+                            '<span style="font-size:1rem;">&#10003;</span> Regeneracion iniciada. Las paginas SEO se actualizaran en ~2 minutos.</span>';
+                    }
+                }).catch(function(err) {
+                    var errorMsg = err.message || 'No se pudo regenerar';
+                    AP.toast('Error SEO: ' + errorMsg, 'error');
+                    if (statusEl) {
+                        var hint = '';
+                        if (errorMsg.indexOf('GITHUB_PAT') !== -1 || errorMsg.indexOf('not configured') !== -1) {
+                            hint = ' Ejecuta: <code>firebase functions:secrets:set GITHUB_PAT</code>';
+                        } else if (errorMsg.indexOf('unauthenticated') !== -1) {
+                            hint = ' Inicia sesion nuevamente.';
+                        } else if (errorMsg.indexOf('permission') !== -1) {
+                            hint = ' Solo el Super Admin puede ejecutar esta accion.';
+                        }
+                        statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
+                            '<span style="font-size:1rem;">&#10007;</span> Error: ' + AP.escapeHtml(errorMsg) + '.' + hint + '</span>';
+                    }
+                }).finally(function() {
+                    btnRegenSeo.disabled = false;
+                    btnRegenSeo.textContent = 'Regenerar Paginas SEO';
+                });
+            }
 
-                files.push({ name: v.id + '.html', content: html });
-            });
-
-            var combined = '<!-- PAGINAS DE COMPARTIR - ALTORRA CARS -->\n';
-            combined += '<!-- Instrucciones: Copia cada seccion en un archivo dentro de la carpeta v/ del repositorio -->\n\n';
-
-            files.forEach(function(f) {
-                combined += '<!-- ===== ARCHIVO: v/' + f.name + ' ===== -->\n';
-                combined += f.content;
-                combined += '\n\n';
-            });
-
-            var blob = new Blob([combined], { type: 'text/html' });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = 'paginas-compartir-vehiculos.html';
-            a.click();
-            URL.revokeObjectURL(url);
-
-            statusEl.innerHTML = '<span style="color:#3fb950;font-size:0.8rem;">' + files.length + ' paginas generadas. Separa cada seccion en archivos individuales dentro de la carpeta <strong>v/</strong> del repositorio.</span>';
+            doTrigger(0);
         });
     }
 

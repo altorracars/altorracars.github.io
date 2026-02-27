@@ -105,6 +105,7 @@
             if (AP.loadAuditLog) AP.loadAuditLog();
             if (AP.subscribeBanners) AP.subscribeBanners();
             if (AP.subscribeReviews) AP.subscribeReviews();
+            if (AP.startDraftsListener) AP.startDraftsListener();
         } catch (e) {
             console.warn('[Phase5] Error loading:', e);
         }

@@ -1049,6 +1049,75 @@
         openModal();
     }
 
+    // ========== FASE 18: ACTIVE DRAFTS REAL-TIME LISTENER ==========
+    var _unsubDrafts = null;
+
+    function startDraftsListener() {
+        if (!window.db) return;
+        try {
+            _unsubDrafts = window.db.collection('drafts_activos').onSnapshot(function(snap) {
+                var drafts = [];
+                snap.forEach(function(doc) { drafts.push(doc.data()); });
+                _renderActiveDrafts(drafts);
+            }, function() {
+                // Permission denied or collection doesn't exist — silent fail
+            });
+        } catch (_) {}
+    }
+
+    function _renderActiveDrafts(drafts) {
+        var panel = $('activeDraftsPanel');
+        var list = $('activeDraftsList');
+        if (!panel || !list) return;
+
+        // Filter out stale drafts (older than 2 hours)
+        var now = Date.now();
+        var TWO_HOURS = 2 * 60 * 60 * 1000;
+        drafts = drafts.filter(function(d) {
+            if (!d.lastSaved) return false;
+            return (now - new Date(d.lastSaved).getTime()) < TWO_HOURS;
+        });
+
+        if (drafts.length === 0) { panel.style.display = 'none'; return; }
+
+        panel.style.display = 'block';
+        var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : '';
+
+        list.innerHTML = drafts.map(function(d) {
+            var label = ((d.marca || '') + ' ' + (d.modelo || '') + ' ' + (d.year || '')).trim() || 'Sin titulo';
+            var email = d.userEmail || 'Admin';
+            var initials = email.substring(0, 2).toUpperCase();
+            var ago = d.lastSaved ? AP.formatTimeAgo(d.lastSaved) : '';
+            var isOwn = d.userId === currentUid;
+            var editingLabel = d.vehicleId ? ('Editando #' + d.vehicleId) : 'Nuevo vehiculo';
+            var btnHtml = isOwn
+                ? '<span style="color:var(--admin-success);font-size:0.7rem;font-weight:500;">Tu borrador</span>'
+                : '<button class="btn btn-ghost btn-sm" onclick="adminPanel.loadDraftFromUser(\'' + AP.escapeHtml(d.userId || '') + '\')">Continuar</button>';
+
+            return '<div class="draft-item">'
+                + '<div class="draft-item-info">'
+                + '<div class="draft-item-avatar">' + initials + '</div>'
+                + '<div class="draft-item-text">'
+                + '<div class="draft-item-label">' + AP.escapeHtml(label) + ' <small style="color:var(--admin-text-muted);">(' + AP.escapeHtml(editingLabel) + ')</small></div>'
+                + '<div class="draft-item-meta">' + AP.escapeHtml(email) + ' · ' + ago + '</div>'
+                + '</div></div>'
+                + '<div class="draft-item-actions">' + btnHtml + '</div>'
+                + '</div>';
+        }).join('');
+    }
+
+    function loadDraftFromUser(userId) {
+        if (!window.db || !userId) return;
+        window.db.collection('usuarios').doc(userId).collection('drafts').doc('vehicleDraft').get()
+            .then(function(doc) {
+                if (!doc.exists) { AP.toast('Borrador no encontrado — puede que ya se haya guardado.', 'info'); return; }
+                var snap = doc.data();
+                if (!snap || !snap.vMarca) { AP.toast('Borrador vacio', 'info'); return; }
+                restoreAndOpenDraft(snap);
+            })
+            .catch(function() { AP.toast('No se pudo cargar el borrador de este usuario', 'error'); });
+    }
+
     // ========== EXPOSE ==========
     AP.renderVehiclesTable = renderVehiclesTable;
     AP.populateBrandSelect = populateBrandSelect;
@@ -1057,4 +1126,6 @@
     AP.removeImage = removeImage;
     AP.previewVehicle = previewVehicle;
     AP.restoreAndOpenDraft = restoreAndOpenDraft;
+    AP.startDraftsListener = startDraftsListener;
+    AP.loadDraftFromUser = loadDraftFromUser;
 })();

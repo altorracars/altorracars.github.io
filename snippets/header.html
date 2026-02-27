@@ -49,18 +49,20 @@
                         </li>
                         <!-- Favoritos en menú móvil -->
                         <li class="nav-item nav-item-mobile-only">
-                            <a href="favoritos.html" class="nav-link favorites-link-mobile">
-                                ♥ Favoritos
-                                <span class="favorites-count" id="favCountMobile">0</span>
+                            <a href="favoritos.html" class="nav-link mobile-menu-favorites">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                Favoritos
+                                <span class="nav-badge" id="favCountMobile">0</span>
                             </a>
                         </li>
                         <!-- Auth buttons en menú móvil -->
                         <li class="nav-item nav-item-mobile-only nav-auth-mobile">
-                            <button class="btn-auth-mobile btn-auth-login-mobile" onclick="window._authComingSoon&&window._authComingSoon()">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                            <button class="mobile-auth-btn mobile-btn-outline" onclick="window._authComingSoon&&window._authComingSoon()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                                 Ingresar
                             </button>
-                            <button class="btn-auth-mobile btn-auth-register-mobile" onclick="window._authComingSoon&&window._authComingSoon()">
+                            <button class="mobile-auth-btn mobile-btn-gold" onclick="window._authComingSoon&&window._authComingSoon()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                 Registrarse
                             </button>
                         </li>
@@ -68,15 +70,17 @@
                 </div>
 
                 <div class="nav-actions">
-                    <a href="favoritos.html" class="favorites-link">
-                        ♥ Favoritos
-                        <span class="favorites-count" id="favCount">0</span>
+                    <a href="favoritos.html" class="nav-action-btn nav-btn-outline">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        Favoritos
+                        <span class="nav-badge" id="favCount">0</span>
                     </a>
-                    <button class="btn-auth btn-auth-login" id="btnLogin" onclick="window._authComingSoon&&window._authComingSoon()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    <button class="nav-action-btn nav-btn-outline" id="btnLogin" onclick="window._authComingSoon&&window._authComingSoon()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                         Ingresar
                     </button>
-                    <button class="btn-auth btn-auth-register" id="btnRegister" onclick="window._authComingSoon&&window._authComingSoon()">
+                    <button class="nav-action-btn nav-btn-gold" id="btnRegister" onclick="window._authComingSoon&&window._authComingSoon()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Registrarse
                     </button>
                 </div>

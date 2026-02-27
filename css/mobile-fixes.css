@@ -61,39 +61,7 @@ body {
     }
     
     /* ===== BOTÓN FAVORITOS OPTIMIZADO ===== */
-    /* Ocultar botón de favoritos del header en móvil */
-    .nav-actions {
-        display: none !important;
-    }
-
-    /* Mostrar botón de favoritos en menú móvil */
-    .nav-item-mobile-only {
-        display: block !important;
-        border-top: 2px solid #f0f0f0;
-        background: rgba(184, 150, 88, 0.05);
-    }
-
-    .favorites-link-mobile {
-        display: flex !important;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        padding: 1rem 1.5rem !important;
-        font-size: 1rem !important;
-        font-weight: 600 !important;
-        color: var(--primary-gold) !important;
-    }
-
-    .favorites-link-mobile .favorites-count {
-        background: var(--primary-gold);
-        color: white;
-        padding: 0.25rem 0.6rem;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        min-width: 24px;
-        text-align: center;
-    }
+    /* nav-actions y nav-item-mobile-only se controlan desde max-width: 968px */
     
     /* ===== HAMBURGER MEJORADO ===== */
     .hamburger {
@@ -530,11 +498,7 @@ rgba(145, 102, 82, 0.55) 100%
         font-size: 0.9rem;
     }
     
-    /* Favoritos tablet */
-    .favorites-link {
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-    }
+    /* Favoritos tablet: se muestra en el menú desplegable, no en el header */
     
     /* Hero tablet */
     .hero {
@@ -693,10 +657,15 @@ rgba(145, 102, 82, 0.55) 100%
         transform: rotate(180deg);
     }
     
-    /* Nav actions en menú móvil */
+    /* Ocultar botones de acción del header cuando el hamburger está activo */
     .nav-actions {
-        padding: 1.25rem 1.5rem;
-        border-top: 2px solid #f0f0f0;
+        display: none !important;
+    }
+
+    /* Mostrar items del menú móvil (Favoritos + Auth) en el menú desplegable */
+    .nav-item-mobile-only {
+        display: block !important;
+        border-top: 1px solid #f0f0f0;
         background: rgba(184, 150, 88, 0.03);
     }
     
@@ -764,7 +733,7 @@ iframe,
     .nav-link,
     .btn,
     button,
-    a.favorites-link,
+    .mobile-auth-btn,
     .hamburger {
         min-height: 44px;
         display: inline-flex;

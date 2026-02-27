@@ -253,14 +253,14 @@ button {
 /* ── Outlined (Favoritos + Ingresar) ── */
 .hdr-btn-outline {
     background: transparent;
-    color: var(--primary-dark);
-    border: 1.5px solid #d0d0d0;
+    color: rgba(255, 255, 255, 0.92);
+    border: 1.5px solid rgba(255, 255, 255, 0.38);
 }
 
 .hdr-btn-outline:hover {
     border-color: var(--primary-gold);
     color: var(--primary-gold);
-    background: rgba(184, 150, 88, 0.05);
+    background: rgba(184, 150, 88, 0.12);
 }
 
 /* ── Gold filled (Registrarse — CTA principal) ── */

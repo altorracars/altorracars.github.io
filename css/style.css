@@ -97,8 +97,9 @@ button {
     left: 0;
     right: 0;
     z-index: 1000;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 1);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
 }
@@ -211,168 +212,189 @@ button {
     padding-left: 2rem;
 }
 
-/* ============================================================
-   NAV ACTIONS — Botones de acción del header (desktop)
-   Diseño corporativo unificado: Favoritos | Ingresar | Registrarse
-   ============================================================ */
+/* ==============================================================
+   NAV ACTIONS — Barra de acciones del header (solo desktop >968px)
+   Diseño corporativo: ♥ Favoritos | → Ingresar | + Registrarse
+   ============================================================== */
+
 .nav-actions {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 6px;
     flex-shrink: 0;
 }
 
-/* Base: todos los botones de acción del header */
-.nav-action-btn {
+/* ── Base común para los tres botones del header ── */
+.hdr-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.82rem;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    font-size: 0.8rem;
     font-weight: 600;
     font-family: inherit;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.22s ease;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border-radius: 4px;
     white-space: nowrap;
-    line-height: 1.4;
-    letter-spacing: 0.01em;
+    cursor: pointer;
     text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease,
+                color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.nav-action-btn svg {
+.hdr-btn svg {
     flex-shrink: 0;
+    transition: none;
 }
 
-/* Variante outlined (Favoritos + Ingresar) */
-.nav-btn-outline {
+/* ── Outlined (Favoritos + Ingresar) ── */
+.hdr-btn-outline {
     background: transparent;
     color: var(--primary-dark);
-    border: 1.5px solid var(--border-light);
+    border: 1.5px solid #d0d0d0;
 }
 
-.nav-btn-outline:hover {
+.hdr-btn-outline:hover {
     border-color: var(--primary-gold);
     color: var(--primary-gold);
-    background: rgba(184, 150, 88, 0.06);
+    background: rgba(184, 150, 88, 0.05);
 }
 
-/* Variante dorada (Registrarse — CTA principal) */
-.nav-btn-gold {
+/* ── Gold filled (Registrarse — CTA principal) ── */
+.hdr-btn-gold {
     background: var(--primary-gold);
-    color: white;
+    color: #fff;
     border: 1.5px solid var(--primary-gold);
 }
 
-.nav-btn-gold:hover {
+.hdr-btn-gold:hover {
     background: var(--primary-brown);
     border-color: var(--primary-brown);
-    transform: translateY(-1px);
-    box-shadow: 0 3px 12px rgba(184, 150, 88, 0.35);
+    box-shadow: 0 2px 10px rgba(184, 150, 88, 0.4);
 }
 
-/* Badge de contador (Favoritos) */
-.nav-badge {
+/* ── Badge contador de Favoritos ── */
+.hdr-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     background: var(--primary-gold);
-    color: white;
-    padding: 0 0.38rem;
-    border-radius: 10px;
-    font-size: 0.7rem;
-    font-weight: 700;
+    color: #fff;
     min-width: 18px;
     height: 16px;
+    padding: 0 5px;
+    border-radius: 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
     line-height: 1;
 }
 
-/* ============================================================
-   MOBILE MENU — Favoritos + botones auth en el menú desplegable
-   ============================================================ */
+/* Cuando está dentro del botón outlined, el badge es el acento dorado */
+.hdr-btn-outline .hdr-badge {
+    background: var(--primary-gold);
+}
 
-/* Favoritos en menú móvil */
-.mobile-menu-favorites {
-    display: flex !important;
+/* ==============================================================
+   MOB-ACTIONS — Sección exclusiva dentro del menú móvil (≤968px)
+   Se renderiza DENTRO de .nav-menu, nunca duplica el header.
+   ============================================================== */
+
+/* Oculto en desktop — se muestra vía CSS móvil */
+.mob-actions {
+    display: none;
+}
+
+/* Enlace Favoritos en el menú móvil */
+.mob-fav {
+    display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 1rem 1.5rem !important;
-    font-weight: 600 !important;
-    color: var(--primary-gold) !important;
-    font-size: 1rem !important;
-    width: 100%;
+    gap: 10px;
+    padding: 1rem 1.5rem;
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--primary-gold);
+    border-top: 1px solid #ebebeb;
+    background: rgba(184, 150, 88, 0.04);
+    text-decoration: none;
+    transition: background 0.2s;
 }
 
-.mobile-menu-favorites .nav-badge {
+.mob-fav:hover {
+    background: rgba(184, 150, 88, 0.09);
+}
+
+.mob-badge {
     margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-gold);
+    color: #fff;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
 }
 
-/* Contenedor de auth buttons en menú móvil */
-.nav-auth-mobile {
-    display: flex !important;
-    gap: 0.65rem;
-    padding: 1rem 1.5rem !important;
-    border-top: 1px solid #f0f0f0;
+/* Fila de botones Ingresar + Registrarse en el menú móvil */
+.mob-auth-row {
+    display: flex;
+    gap: 10px;
+    padding: 0.85rem 1.5rem 1.25rem;
+    border-top: 1px solid #ebebeb;
     background: rgba(184, 150, 88, 0.02);
 }
 
-/* Base para botones auth del menú móvil */
-.mobile-auth-btn {
+/* ── Base botones móvil ── */
+.mob-btn {
     flex: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    padding: 0.75rem 0.75rem;
+    min-height: 44px;
+    padding: 0 10px;
     font-size: 0.88rem;
     font-weight: 600;
     font-family: inherit;
-    border-radius: 6px;
+    letter-spacing: 0.02em;
+    border-radius: 5px;
     cursor: pointer;
-    transition: all 0.22s ease;
-    min-height: 44px;
     white-space: nowrap;
-    letter-spacing: 0.01em;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.mobile-auth-btn svg {
-    flex-shrink: 0;
-}
+.mob-btn svg { flex-shrink: 0; }
 
-/* Outlined (Ingresar) */
-.mobile-btn-outline {
-    background: transparent;
+/* Outlined (Ingresar móvil) */
+.mob-btn-outline {
+    background: #fff;
     color: var(--primary-dark);
-    border: 1.5px solid var(--border-light);
+    border: 1.5px solid #d0d0d0;
 }
 
-.mobile-btn-outline:hover {
+.mob-btn-outline:hover {
     border-color: var(--primary-gold);
     color: var(--primary-gold);
-    background: rgba(184, 150, 88, 0.06);
 }
 
-/* Dorado (Registrarse) */
-.mobile-btn-gold {
+/* Gold (Registrarse móvil) */
+.mob-btn-gold {
     background: var(--primary-gold);
-    color: white;
+    color: #fff;
     border: 1.5px solid var(--primary-gold);
 }
 
-.mobile-btn-gold:hover {
+.mob-btn-gold:hover {
     background: var(--primary-brown);
     border-color: var(--primary-brown);
 }
-
-/* Compatibilidad con clases antiguas (por si quedan referencias) */
-.favorites-link { display: none; }
-.favorites-count { display: none; }
-.btn-auth { display: none; }
-.btn-auth-login { display: none; }
-.btn-auth-register { display: none; }
-.btn-auth-mobile { display: none; }
-.btn-auth-login-mobile { display: none; }
-.btn-auth-register-mobile { display: none; }
 
 /* Hamburger Menu */
 .hamburger {

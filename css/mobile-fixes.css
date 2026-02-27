@@ -3,10 +3,8 @@
    Optimizado para iPhone y todos los móviles
    ============================================ */
 
-/* ===== OCULTAR FAVORITOS EN MENÚ EN DESKTOP ===== */
-.nav-item-mobile-only {
-    display: none;
-}
+/* .mob-actions se oculta por defecto en style.css
+   y se activa dentro del @media max-width: 968px de abajo */
 
 /* ===== PREVENCIÓN DE DESBORDAMIENTO ===== */
 html {
@@ -657,16 +655,14 @@ rgba(145, 102, 82, 0.55) 100%
         transform: rotate(180deg);
     }
     
-    /* Ocultar botones de acción del header cuando el hamburger está activo */
+    /* Ocultar botones del header cuando el hamburger está activo */
     .nav-actions {
         display: none !important;
     }
 
-    /* Mostrar items del menú móvil (Favoritos + Auth) en el menú desplegable */
-    .nav-item-mobile-only {
+    /* Mostrar sección de auth/favoritos dentro del menú deslizable */
+    .mob-actions {
         display: block !important;
-        border-top: 1px solid #f0f0f0;
-        background: rgba(184, 150, 88, 0.03);
     }
     
     /* Overlay oscuro cuando el menú está abierto */
@@ -732,13 +728,9 @@ iframe,
     /* Áreas táctiles mínimas de 44x44px */
     .nav-link,
     .btn,
-    button,
-    .mobile-auth-btn,
+    .mob-btn,
     .hamburger {
         min-height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
     }
     
     /* Scroll suave en iOS */

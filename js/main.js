@@ -3,7 +3,7 @@
 
 /**
  * Fase 12: Banner rotativo de vehiculos destacados de la semana
- * Muestra los 4 vehiculos marcados como destacado con auto-rotacion
+ * Muestra hasta 6 vehiculos marcados como destacado con auto-rotacion
  */
 var _destacadosTimer = null;
 var _destacadosIndex = 0;
@@ -21,8 +21,8 @@ async function loadDestacadosBanner() {
         return;
     }
 
-    // Limit to max 4
-    featured = featured.slice(0, 4);
+    // Limit to max 6
+    featured = featured.slice(0, 6);
     _destacadosTotal = featured.length;
     _destacadosIndex = 0;
 
@@ -30,37 +30,50 @@ async function loadDestacadosBanner() {
     var indicatorsContainer = document.getElementById('destacadosIndicators');
     if (!slidesContainer || !indicatorsContainer) return;
 
-    // Build slides
     var slidesHTML = '';
     var indicatorsHTML = '';
 
     featured.forEach(function(v, i) {
         var imgSrc = v.imagen || 'multimedia/vehicles/placeholder-car.jpg';
         var marca = v.marca ? v.marca.charAt(0).toUpperCase() + v.marca.slice(1) : '';
-        var title = marca + ' ' + (v.modelo || '') + ' ' + (v.year || '');
+        var title = (marca + ' ' + (v.modelo || '') + (v.year ? ' ' + v.year : '')).trim();
         var price = typeof formatPrice === 'function' ? formatPrice(v.precio) : ('$' + v.precio);
         var hasOffer = v.precioOferta && v.precioOferta < v.precio;
-        var priceHTML = hasOffer
-            ? '<span class="dest-price-old">' + price + '</span><span class="dest-price">' + formatPrice(v.precioOferta) + '</span>'
-            : '<span class="dest-price">' + price + '</span>';
-        var specs = [];
-        if (v.year) specs.push(v.year);
-        if (v.kilometraje) specs.push(formatKm(v.kilometraje));
-        if (v.transmision) specs.push(v.transmision.charAt(0).toUpperCase() + v.transmision.slice(1));
-        var specsText = specs.join(' · ');
+        var displayPrice = hasOffer ? formatPrice(v.precioOferta) : price;
+
+        // Spec chips
+        var chipsHTML = '';
+        if (v.year)       chipsHTML += '<span class="dest-chip">&#128197; ' + v.year + '</span>';
+        if (v.kilometraje) chipsHTML += '<span class="dest-chip">&#128739; ' + (typeof formatKm === 'function' ? formatKm(v.kilometraje) : v.kilometraje + ' km') + '</span>';
+        if (v.transmision) chipsHTML += '<span class="dest-chip">&#9881; ' + v.transmision.charAt(0).toUpperCase() + v.transmision.slice(1) + '</span>';
+        if (v.combustible) chipsHTML += '<span class="dest-chip">' + v.combustible.charAt(0).toUpperCase() + v.combustible.slice(1) + '</span>';
+
+        // Price box
+        var priceboxHTML = '<div class="dest-pricebox">'
+            + '<div class="dest-pricebox-label">' + (hasOffer ? 'Precio Especial' : 'Precio') + '</div>'
+            + '<div class="dest-pricebox-main">' + displayPrice + '</div>'
+            + (hasOffer ? '<div class="dest-pricebox-old">' + price + '</div>' : '')
+            + '</div>';
 
         slidesHTML += '<a href="' + getVehicleDetailUrl(v) + '" class="dest-slide' + (i === 0 ? ' active' : '') + '" data-index="' + i + '">'
-            + '<div class="dest-image"><img src="' + imgSrc + '" alt="' + title + '" loading="' + (i === 0 ? 'eager' : 'lazy') + '"></div>'
-            + '<div class="dest-overlay">'
-            + '<div class="dest-badge">Destacado</div>'
-            + '<h3 class="dest-title">' + title + '</h3>'
-            + '<p class="dest-specs">' + specsText + '</p>'
-            + '<div class="dest-price-row">' + priceHTML + '</div>'
-            + '<span class="dest-cta">Ver vehiculo →</span>'
+            // Panel izquierdo: información
+            + '<div class="dest-info">'
+            +   '<div class="dest-week-badge">&#9733; Destacado de la Semana</div>'
+            +   '<h3 class="dest-name">' + title + '</h3>'
+            +   '<div class="dest-chips">' + chipsHTML + '</div>'
+            +   priceboxHTML
+            +   '<div class="dest-cta-btn">Ver Veh\u00edculo'
+            +     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>'
+            +   '</div>'
+            + '</div>'
+            // Panel derecho: imagen
+            + '<div class="dest-visual">'
+            +   '<div class="dest-visual-glow" aria-hidden="true"></div>'
+            +   '<img class="dest-car-img" src="' + imgSrc + '" alt="' + title + '" loading="' + (i === 0 ? 'eager' : 'lazy') + '">'
             + '</div>'
             + '</a>';
 
-        indicatorsHTML += '<button class="dest-dot' + (i === 0 ? ' active' : '') + '" data-index="' + i + '" aria-label="Ir al vehiculo ' + (i + 1) + '"></button>';
+        indicatorsHTML += '<button class="dest-dot' + (i === 0 ? ' active' : '') + '" data-index="' + i + '" aria-label="Ir al veh\u00edculo ' + (i + 1) + '"></button>';
     });
 
     slidesContainer.innerHTML = slidesHTML;

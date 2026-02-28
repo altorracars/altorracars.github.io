@@ -72,6 +72,7 @@
             var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ';
             var esVendido = estado === 'vendido';
             if (AP.canCreateOrEditInventory()) {
+                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.toggleDestacado(' + v.id + ')" title="' + (v.destacado ? 'Quitar de destacados' : 'Marcar como destacado') + '" style="font-size:1rem;padding:2px 7px;">' + (v.destacado ? '⭐' : '☆') + '</button> ';
                 if (esVendido && !AP.isSuperAdmin()) {
                     actions += '<button class="btn btn-ghost btn-sm" disabled title="Solo Super Admin puede editar vehiculos vendidos" style="opacity:0.4;cursor:not-allowed;">Editar</button> ';
                     actions += '<span style="font-size:0.65rem;color:var(--admin-danger,#ef4444);">Protegido</span> ';
@@ -290,8 +291,8 @@
         if (!counter) return;
         var editId = $('vId').value ? parseInt($('vId').value) : null;
         var count = AP.vehicles.filter(function(v) { return v.destacado && v.id !== editId; }).length;
-        counter.textContent = '(' + count + '/4)';
-        counter.style.color = count >= 4 ? '#ef4444' : '#b89658';
+        counter.textContent = '(' + count + '/6)';
+        counter.style.color = count >= 6 ? '#ef4444' : '#b89658';
     }
 
     function formHasData() { return !!($('vMarca').value || $('vModelo').value || $('vPrecio').value); }
@@ -762,14 +763,14 @@
             }
         }
 
-        // Limitar máximo 4 vehículos destacados
+        // Limitar máximo 6 vehículos destacados
         if ($('vDestacado').checked) {
             var editId = $('vId').value ? parseInt($('vId').value) : null;
             var featuredCount = AP.vehicles.filter(function(v) {
                 return v.destacado && v.id !== editId;
             }).length;
-            if (featuredCount >= 4) {
-                AP.toast('Máximo 4 vehículos destacados. Desmarca uno existente primero.', 'error');
+            if (featuredCount >= 6) {
+                AP.toast('Máximo 6 vehículos destacados. Desmarca uno existente primero.', 'error');
                 return;
             }
         }
@@ -1118,6 +1119,27 @@
             .catch(function() { AP.toast('No se pudo cargar el borrador de este usuario', 'error'); });
     }
 
+    // ========== TOGGLE DESTACADO ==========
+    function toggleDestacadoFn(id) {
+        if (!AP.canCreateOrEditInventory()) { AP.toast('Sin permisos.', 'error'); return; }
+        var vehicle = AP.vehicles.find(function(v) { return v.id === id; });
+        if (!vehicle) return;
+        var newVal = !vehicle.destacado;
+        if (newVal) {
+            var count = AP.vehicles.filter(function(v) { return v.destacado; }).length;
+            if (count >= 6) { AP.toast('Máximo 6 vehículos destacados.', 'error'); return; }
+        }
+        var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
+        window.db.collection('vehiculos').doc(String(id)).update({
+            destacado: newVal,
+            updatedAt: new Date().toISOString(),
+            updatedBy: userEmail
+        }).then(function() {
+            AP.toast(newVal ? '⭐ Vehículo marcado como destacado' : 'Vehículo quitado de destacados', 'success');
+            AP.writeAuditLog('vehicle_feature_toggle', 'vehiculo #' + id, newVal ? 'destacado' : 'sin destacar');
+        }).catch(function(err) { AP.toast('Error: ' + (err.message || err), 'error'); });
+    }
+
     // ========== EXPOSE ==========
     AP.renderVehiclesTable = renderVehiclesTable;
     AP.populateBrandSelect = populateBrandSelect;
@@ -1128,4 +1150,5 @@
     AP.restoreAndOpenDraft = restoreAndOpenDraft;
     AP.startDraftsListener = startDraftsListener;
     AP.loadDraftFromUser = loadDraftFromUser;
+    AP.toggleDestacado = toggleDestacadoFn;
 })();

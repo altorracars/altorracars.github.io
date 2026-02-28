@@ -66,9 +66,19 @@ async function loadDestacadosBanner() {
             +     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>'
             +   '</div>'
             + '</div>'
-            // Panel derecho: imagen
+            // Panel derecho: imagen con HUD tecnológico
             + '<div class="dest-visual">'
             +   '<div class="dest-visual-glow" aria-hidden="true"></div>'
+            +   '<div class="dest-hud-ring" aria-hidden="true"><div class="dest-hud-ring-arc"></div></div>'
+            +   '<div class="dest-hud-corner dest-hud-tl" aria-hidden="true"></div>'
+            +   '<div class="dest-hud-corner dest-hud-tr" aria-hidden="true"></div>'
+            +   '<div class="dest-hud-corner dest-hud-bl" aria-hidden="true"></div>'
+            +   '<div class="dest-hud-corner dest-hud-br" aria-hidden="true"></div>'
+            +   '<div class="dest-hud-dot dest-hud-dot-1" aria-hidden="true"></div>'
+            +   '<div class="dest-hud-dot dest-hud-dot-2" aria-hidden="true"></div>'
+            +   '<div class="dest-hud-dot dest-hud-dot-3" aria-hidden="true"></div>'
+            +   (v.kilometraje ? '<div class="dest-hud-meter dest-hud-meter-km" aria-hidden="true"><div class="dest-hud-meter-icon">&#9673;</div><div class="dest-hud-meter-label">Kilometraje</div><div class="dest-hud-meter-value">' + (typeof formatKm === 'function' ? formatKm(v.kilometraje) : v.kilometraje + ' km') + '</div></div>' : '')
+            +   (v.transmision ? '<div class="dest-hud-meter dest-hud-meter-trans" aria-hidden="true"><div class="dest-hud-meter-icon">&#9881;</div><div class="dest-hud-meter-label">Transmisi\u00f3n</div><div class="dest-hud-meter-value">' + v.transmision.charAt(0).toUpperCase() + v.transmision.slice(1) + '</div></div>' : '')
             +   '<img class="dest-car-img" src="' + imgSrc + '" alt="' + title + '" loading="' + (i === 0 ? 'eager' : 'lazy') + '">'
             + '</div>'
             + '</a>';

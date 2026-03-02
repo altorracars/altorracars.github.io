@@ -381,6 +381,9 @@
             vEstado: $('vEstado').value, vDestacado: $('vDestacado').checked, vOferta: $('vOferta').checked,
             vRevision: $('vRevision').checked, vPeritaje: $('vPeritaje').checked,
             vPrioridad: $('vPrioridad').value, vCaracteristicas: $('vCaracteristicas').value,
+            vFeaturedWeek: $('vFeaturedWeek') ? $('vFeaturedWeek').checked : false,
+            vFeaturedOrder: $('vFeaturedOrder') ? $('vFeaturedOrder').value : '',
+            vFeaturedCutoutPng: $('vFeaturedCutoutPng') ? $('vFeaturedCutoutPng').value : '',
             _images: AP.uploadedImageUrls.slice(), _savedAt: new Date().toISOString()
         };
     }
@@ -414,6 +417,9 @@
         $('vOferta').checked = !!snap.vOferta;
         $('vRevision').checked = snap.vRevision !== false;
         $('vPeritaje').checked = snap.vPeritaje !== false;
+        if ($('vFeaturedWeek'))    $('vFeaturedWeek').checked = !!snap.vFeaturedWeek;
+        if ($('vFeaturedOrder'))   $('vFeaturedOrder').value  = snap.vFeaturedOrder  || '';
+        if ($('vFeaturedCutoutPng')) $('vFeaturedCutoutPng').value = snap.vFeaturedCutoutPng || '';
         if (snap._images && snap._images.length) { AP.uploadedImageUrls = snap._images.slice(); renderUploadedImages(); }
     }
 
@@ -597,6 +603,9 @@
         $('vEstado').value = v.estado || 'disponible';
         $('vDestacado').checked = !!v.destacado;
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
+        if ($('vFeaturedWeek'))    $('vFeaturedWeek').checked = !!v.featuredWeek;
+        if ($('vFeaturedOrder'))   $('vFeaturedOrder').value  = v.featuredOrder  || '';
+        if ($('vFeaturedCutoutPng')) $('vFeaturedCutoutPng').value = v.featuredCutoutPng || '';
         $('vRevision').checked = v.revisionTecnica !== false;
         $('vPeritaje').checked = v.peritaje !== false;
         $('vPrioridad').value = v.prioridad || 0;
@@ -694,6 +703,9 @@
             descripcion: $('vDescripcion').value || '', estado: $('vEstado').value || 'disponible',
             destacado: $('vDestacado').checked,
             prioridad: parseInt($('vPrioridad').value) || 0,
+            featuredWeek: $('vFeaturedWeek') ? $('vFeaturedWeek').checked : false,
+            featuredOrder: $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value) || null) : null,
+            featuredCutoutPng: $('vFeaturedCutoutPng') ? ($('vFeaturedCutoutPng').value.trim() || null) : null,
             imagen: AP.uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
             imagenes: AP.uploadedImageUrls.length ? AP.uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
             caracteristicas: collectAllFeatures(),

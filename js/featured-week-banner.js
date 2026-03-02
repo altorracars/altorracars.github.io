@@ -162,10 +162,11 @@
                 ' aria-label="Ver detalle de ' + title.replace(/"/g, '&quot;') + '">' +
                 '<span class="fw-premium-tag">' + FW._icoStar() + ' SELECCI\u00d3N PREMIUM</span>' +
                 '<h2 class="fw-title">Destacados de la <span>Semana</span></h2>' +
-                '<p class="fw-subtitle">Ofertas exclusivos y veh\u00edculos de primer nivel</p>' +
+                '<p class="fw-subtitle">Veh\u00edculos exclusivos &bull; Selecci\u00f3n de la semana</p>' +
                 '<hr class="fw-sep">' +
                 '<span class="fw-badge">' + FW._icoStar() + ' DESTACADO DE LA SEMANA</span>' +
                 '<h3 class="fw-vehicle-name">' + title + '</h3>' +
+                '<span class="fw-avail-tag" aria-label="Veh\u00edculo disponible">&#9679; Disponible</span>' +
                 '<div class="fw-pills">' + pills + '</div>' +
                 '<div class="fw-price-box">' +
                     '<span class="fw-price-label">PRECIO</span>' +
@@ -183,10 +184,15 @@
                 (v.featuredCutoutPng && v.imagen
                     ? '<img class="fw-car-bg" src="' + v.imagen + '" alt="" aria-hidden="true" loading="lazy">'
                     : '') +
+                /* Car scene: floor plane + contact shadow + car image */
+                '<div class="fw-car-scene' + (v.featuredCutoutPng ? ' fw-car-scene--cutout' : '') + '" aria-hidden="true">' +
+                '<div class="fw-car-floor"></div>' +
+                '<div class="fw-car-shadow"></div>' +
                 '<img class="fw-car-img"' +
                 ' src="' + imgSrc + '"' +
                 ' alt="' + title.replace(/"/g, '&quot;') + '"' +
                 ' loading="' + (i === 0 ? 'eager' : 'lazy') + '">' +
+                '</div>' +
                 /* HUD layer: single stacking context above the car image */
                 '<div class="fw-hud-layer" aria-hidden="true">' +
                 '<div class="fw-hud-corner fw-hud-tl"></div>' +
@@ -195,6 +201,8 @@
                 '<div class="fw-hud-corner fw-hud-br"></div>' +
                 hudGauge + hudTrans + hudFuel + hudYear +
                 '</div>' +
+                /* Mobile tech strip: 1-2 key specs visible on small screens */
+                FW._buildMobileHud(v, trans, fuel, km) +
                 '</div>' +
 
                 '</div>'
@@ -455,6 +463,42 @@
                 '<span class="fw-hud-badge-value">' + value + '</span>' +
                 '</div>'
             );
+        },
+
+        /* ─────────────────────────────────────────
+           MOBILE HUD STRIP
+           Returns HTML for the compact tech strip shown on mobile.
+           Shows year (always) + best available secondary stat.
+        ───────────────────────────────────────── */
+        _buildMobileHud: function (v, trans, fuel, km) {
+            var items = [];
+
+            if (v.year) {
+                items.push({ lbl: 'A\u00d1O', val: String(v.year) });
+            }
+
+            /* Pick the most descriptive secondary stat */
+            if (trans) {
+                items.push({ lbl: 'TRANS.', val: trans });
+            } else if (fuel) {
+                items.push({ lbl: 'COMB.', val: fuel });
+            } else if (km) {
+                items.push({ lbl: 'KM', val: km });
+            }
+
+            if (!items.length) return '';
+
+            var inner = '';
+            items.forEach(function (item, idx) {
+                if (idx > 0) inner += '<div class="fw-hud-mobile-sep"></div>';
+                inner +=
+                    '<div class="fw-hud-mobile-item">' +
+                    '<span class="fw-hud-mobile-lbl">' + item.lbl + '</span>' +
+                    '<span class="fw-hud-mobile-val">' + item.val + '</span>' +
+                    '</div>';
+            });
+
+            return '<div class="fw-hud-mobile" aria-hidden="true">' + inner + '</div>';
         },
 
         /* ─────────────────────────────────────────

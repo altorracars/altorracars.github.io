@@ -987,6 +987,29 @@
                                 <small style="color:var(--admin-text-muted,#8b949e);font-size:0.75rem;">Mayor numero = aparece primero (0-99)</small>
                             </div>
                         </div>
+
+                        <!-- Destacados de la Semana — Banner Principal -->
+                        <div style="margin-top:1.25rem;padding:1rem;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.22);border-radius:8px;">
+                            <div style="display:flex;align-items:center;gap:7px;margin-bottom:0.85rem;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <span style="font-size:0.78rem;font-weight:700;color:#d4af37;letter-spacing:1px;text-transform:uppercase;">Destacados de la Semana</span>
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;">
+                                <label class="form-checkbox" style="margin:0;">
+                                    <input type="checkbox" id="vFeaturedWeek">
+                                    Incluir en banner principal
+                                </label>
+                                <div class="form-group" style="margin:0;min-width:130px;">
+                                    <label class="form-label" style="font-size:0.75rem;">Posicion en banner (1-6)</label>
+                                    <input type="number" id="vFeaturedOrder" class="form-input" min="1" max="6" placeholder="1-6">
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-top:0.85rem;margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.75rem;">URL imagen recortada (PNG sin fondo) — opcional</label>
+                                <input type="url" id="vFeaturedCutoutPng" class="form-input" placeholder="https://... / multimedia/vehicles/cutout.png">
+                                <small style="color:var(--admin-text-muted,#8b949e);font-size:0.72rem;">PNG transparente del vehiculo. Activa modo composicion premium en el banner.</small>
+                            </div>
+                        </div>
                         <div class="form-row" style="margin-top:1rem;">
                             <div class="form-group">
                                 <label class="form-label">Origen del vehiculo</label>

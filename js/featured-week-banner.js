@@ -179,15 +179,22 @@
                 '<div class="fw-visual">' +
                 '<div class="fw-glow" aria-hidden="true"></div>' +
                 '<div class="fw-hud-blueprint" aria-hidden="true"></div>' +
-                '<div class="fw-hud-corner fw-hud-tl" aria-hidden="true"></div>' +
-                '<div class="fw-hud-corner fw-hud-tr" aria-hidden="true"></div>' +
-                '<div class="fw-hud-corner fw-hud-bl" aria-hidden="true"></div>' +
-                '<div class="fw-hud-corner fw-hud-br" aria-hidden="true"></div>' +
-                hudGauge + hudTrans + hudFuel + hudYear +
+                /* Blurred background photo when a transparent cutout is used */
+                (v.featuredCutoutPng && v.imagen
+                    ? '<img class="fw-car-bg" src="' + v.imagen + '" alt="" aria-hidden="true" loading="lazy">'
+                    : '') +
                 '<img class="fw-car-img"' +
                 ' src="' + imgSrc + '"' +
                 ' alt="' + title.replace(/"/g, '&quot;') + '"' +
                 ' loading="' + (i === 0 ? 'eager' : 'lazy') + '">' +
+                /* HUD layer: single stacking context above the car image */
+                '<div class="fw-hud-layer" aria-hidden="true">' +
+                '<div class="fw-hud-corner fw-hud-tl"></div>' +
+                '<div class="fw-hud-corner fw-hud-tr"></div>' +
+                '<div class="fw-hud-corner fw-hud-bl"></div>' +
+                '<div class="fw-hud-corner fw-hud-br"></div>' +
+                hudGauge + hudTrans + hudFuel + hudYear +
+                '</div>' +
                 '</div>' +
 
                 '</div>'

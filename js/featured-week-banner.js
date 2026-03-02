@@ -160,11 +160,11 @@
                 '<a class="fw-info" href="' + href + '"' +
                 ' tabindex="' + (isActive ? '0' : '-1') + '"' +
                 ' aria-label="Ver detalle de ' + title.replace(/"/g, '&quot;') + '">' +
-                '<span class="fw-premium-tag">' + FW._icoStar() + ' SELECCI\u00d3N PREMIUM</span>' +
+                '<span class="fw-premium-tag">' + FW._icoStar() + ' REVISADO Y CERTIFICADO</span>' +
                 '<h2 class="fw-title">Destacados de la <span>Semana</span></h2>' +
-                '<p class="fw-subtitle">Veh\u00edculos exclusivos &bull; Selecci\u00f3n de la semana</p>' +
+                '<p class="fw-subtitle">Financiaci\u00f3n disponible &middot; Entrega en Cartagena</p>' +
                 '<hr class="fw-sep">' +
-                '<span class="fw-badge">' + FW._icoStar() + ' DESTACADO DE LA SEMANA</span>' +
+                '<span class="fw-badge">' + FW._icoStar() + ' OFERTA DE LA SEMANA</span>' +
                 '<h3 class="fw-vehicle-name">' + title + '</h3>' +
                 '<span class="fw-avail-tag" aria-label="Veh\u00edculo disponible">&#9679; Disponible</span>' +
                 '<div class="fw-pills">' + pills + '</div>' +
@@ -173,7 +173,7 @@
                     '<span class="fw-price-value">' + displayPrice + '</span>' +
                     priceOld +
                 '</div>' +
-                '<span class="fw-cta-visual" aria-hidden="true">VER VEH\u00cdCULO ' + FW._icoArrow() + '</span>' +
+                '<span class="fw-cta-visual" aria-hidden="true">VER DETALLES ' + FW._icoArrow() + '</span>' +
                 '</a>' +
 
                 /* ── Right: visual / HUD ── */

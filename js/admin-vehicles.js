@@ -420,6 +420,7 @@
         if ($('vFeaturedWeek'))    $('vFeaturedWeek').checked = !!snap.vFeaturedWeek;
         if ($('vFeaturedOrder'))   $('vFeaturedOrder').value  = snap.vFeaturedOrder  || '';
         if ($('vFeaturedCutoutPng')) $('vFeaturedCutoutPng').value = snap.vFeaturedCutoutPng || '';
+        renderCutoutPreview(snap.vFeaturedCutoutPng || '');
         if (snap._images && snap._images.length) { AP.uploadedImageUrls = snap._images.slice(); renderUploadedImages(); }
     }
 
@@ -606,6 +607,7 @@
         if ($('vFeaturedWeek'))    $('vFeaturedWeek').checked = !!v.featuredWeek;
         if ($('vFeaturedOrder'))   $('vFeaturedOrder').value  = v.featuredOrder  || '';
         if ($('vFeaturedCutoutPng')) $('vFeaturedCutoutPng').value = v.featuredCutoutPng || '';
+        renderCutoutPreview(v.featuredCutoutPng || '');
         $('vRevision').checked = v.revisionTecnica !== false;
         $('vPeritaje').checked = v.peritaje !== false;
         $('vPrioridad').value = v.prioridad || 0;
@@ -974,6 +976,80 @@
         });
     }
 
+    // ========== CUTOUT PNG UPLOAD ==========
+    var cutoutFileInput = $('cutoutFileInput');
+    if (cutoutFileInput) {
+        cutoutFileInput.addEventListener('change', function() {
+            if (this.files.length) { handleCutoutFile(this.files[0]); this.value = ''; }
+        });
+    }
+    var cutoutUploadArea = $('cutoutUploadArea');
+    if (cutoutUploadArea) {
+        cutoutUploadArea.addEventListener('dragover', function(e) { e.preventDefault(); this.style.background = 'rgba(212,175,55,0.08)'; });
+        cutoutUploadArea.addEventListener('dragleave', function() { this.style.background = 'rgba(212,175,55,0.03)'; });
+        cutoutUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault(); this.style.background = 'rgba(212,175,55,0.03)';
+            var f = e.dataTransfer.files[0];
+            if (f) handleCutoutFile(f);
+        });
+    }
+
+    function showCutoutError(msg) { var el = $('cutoutUploadError'); if (el) { el.textContent = msg; el.style.display = 'block'; } }
+
+    function handleCutoutFile(file) {
+        if (!window.storage) { showCutoutError('Firebase Storage no disponible. Usa la URL manual.'); return; }
+        if (file.type !== 'image/png') { showCutoutError('Solo se admiten archivos PNG (para transparencia).'); return; }
+        var maxBytes = 10 * 1024 * 1024;
+        if (file.size > maxBytes) { showCutoutError('El archivo es demasiado grande (max 10 MB).'); return; }
+        var errEl = $('cutoutUploadError'); if (errEl) errEl.style.display = 'none';
+        var prog = $('cutoutUploadProgress');
+        if (prog) { prog.style.display = 'block'; $('cutoutProgressFill').style.width = '0%'; $('cutoutUploadStatus').textContent = 'Subiendo cutout...'; }
+        uploadCutoutToStorage(file);
+    }
+
+    function uploadCutoutToStorage(file) {
+        if (!window.storage) { showCutoutError('Firebase Storage no disponible.'); return; }
+        var timestamp = Date.now();
+        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        var path = 'cars/cutouts/' + timestamp + '_' + safeName;
+        try {
+            var ref = window.storage.ref(path);
+            ref.put(file).then(function(snapshot) {
+                $('cutoutProgressFill').style.width = '50%';
+                return snapshot.ref.getDownloadURL();
+            }).then(function(url) {
+                $('cutoutProgressFill').style.width = '100%';
+                $('cutoutUploadStatus').textContent = 'Subido correctamente';
+                setTimeout(function() { var p = $('cutoutUploadProgress'); if (p) p.style.display = 'none'; }, 1200);
+                var field = $('vFeaturedCutoutPng'); if (field) field.value = url;
+                renderCutoutPreview(url);
+                AP.toast('Cutout PNG subido');
+            }).catch(function(err) {
+                var p = $('cutoutUploadProgress'); if (p) p.style.display = 'none';
+                showCutoutError('Error al subir: ' + (err.message || err.code));
+            });
+        } catch(e) { showCutoutError('Error inesperado al subir cutout.'); }
+    }
+
+    function renderCutoutPreview(url) {
+        var area = $('cutoutPreviewArea');
+        var img  = $('cutoutPreviewImg');
+        if (!area || !img) return;
+        if (url && url.trim()) {
+            img.src = url.trim();
+            area.style.display = 'flex';
+        } else {
+            img.src = '';
+            area.style.display = 'none';
+        }
+    }
+
+    function clearCutoutPng() {
+        var field = $('vFeaturedCutoutPng'); if (field) field.value = '';
+        renderCutoutPreview('');
+        AP.toast('Imagen recortada eliminada', 'info');
+    }
+
     // ========== CONCESIONARIO TOGGLE ==========
     function toggleConsignaField() {
         var concSelect = $('vConcesionario');
@@ -1163,4 +1239,6 @@
     AP.startDraftsListener = startDraftsListener;
     AP.loadDraftFromUser = loadDraftFromUser;
     AP.toggleDestacado = toggleDestacadoFn;
+    AP.clearCutoutPng = clearCutoutPng;
+    AP.renderCutoutPreview = renderCutoutPreview;
 })();

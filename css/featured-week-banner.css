@@ -415,7 +415,7 @@
     position: absolute;
     top: 6%; right: 0; bottom: 6%;
     width: 54%;
-    background-color: rgba(11,14,22,.58);
+    background-color: rgba(13,16,24,.62);
     background-image:
         /* Blueprint crosshatch grid */
         linear-gradient(rgba(212,175,55,.042) 1px, transparent 1px),
@@ -430,6 +430,8 @@
     pointer-events: none;
     z-index: 1;
     overflow: hidden;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 /* Blueprint panel top accent */
@@ -491,6 +493,30 @@
     font-family: system-ui, sans-serif;
     pointer-events: none;
     z-index: 2;
+}
+
+/* ── Blueprint SVG overlay: dimension lines, targets, traces ── */
+.fw-blueprint-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 3;
+    opacity: 1;
+}
+
+/* ── Overlay grid: full-coverage technical grid on visual zone ── */
+.fw-overlay-grid {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    opacity: .028;
+    background-image:
+        linear-gradient(rgba(212,175,55,1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(212,175,55,1) 1px, transparent 1px);
+    background-size: 36px 36px;
+    -webkit-mask-image: radial-gradient(ellipse at 55% 50%, black 22%, transparent 72%);
+    mask-image:         radial-gradient(ellipse at 55% 50%, black 22%, transparent 72%);
 }
 
 /* ── HUD blueprint micro-grid overlay on visual ── */
@@ -657,7 +683,8 @@
 /* ================================================================
    Z-INDEX MAP (within .fw-visual stacking context)
    glow(0) = blueprint-panel(1) = hud-blueprint(1) = car-bg(1)
-   < car-scene(3) < hud-layer(4) < visual::before(6) < data-rail(7)
+   < overlay-grid(2) < car-scene(3) < hud-layer(4)
+   < visual::before(6) < data-rail(7)
    ================================================================ */
 
 /* ── HUD layer: only corner brackets remain (no floating badges) ── */
@@ -669,7 +696,7 @@
 
 .fw-hud-corner {
     position: absolute;
-    width: 18px; height: 18px;
+    width: 24px; height: 24px;
     pointer-events: none;
 }
 
@@ -694,19 +721,29 @@
     border-right:  2px solid rgba(212,175,55,.52);
 }
 
-/* ── Horizontal scan-line accent — subtle center line ── */
+/* ── Horizontal scan-line accent — animated HUD sweep ── */
 .fw-hud-scanline {
     position: absolute;
     left: 0; right: 0;
     height: 1px;
-    top: 50%;
+    top: 10%;
     background: linear-gradient(90deg,
         transparent 0%,
-        rgba(212,175,55,.06) 18%,
-        rgba(212,175,55,.18) 50%,
-        rgba(212,175,55,.06) 82%,
+        rgba(212,175,55,.05) 15%,
+        rgba(212,175,55,.22) 50%,
+        rgba(212,175,55,.05) 85%,
         transparent 100%);
     pointer-events: none;
+    will-change: top, opacity;
+    animation: fw-scanline-sweep 8s ease-in-out infinite;
+}
+
+@keyframes fw-scanline-sweep {
+    0%   { top:  8%; opacity: 0;   }
+    4%   { opacity: .85; }
+    36%  { top: 92%; opacity: .85; }
+    40%  { opacity: 0;   }
+    100% { top:  8%; opacity: 0;   }
 }
 
 /* ================================================================
@@ -966,15 +1003,18 @@
 
     .fw-info::after { display: none; }
 
-    /* Hide blueprint and HUD layer on mobile */
+    /* Hide blueprint, HUD layer, overlay-grid, pills (data rail replaces them) */
     .fw-hud-layer,
     .fw-hud-blueprint,
     .fw-hud-scanline,
+    .fw-overlay-grid,
     .fw-blueprint-panel { display: none; }
 
-    /* Data rail: 2 items on mobile */
+    /* Pills are redundant on mobile — data rail shows the same info */
+    .fw-pills { display: none; }
+
+    /* Data rail: 3 items at 768px (hide only 4th — Combustible) */
     .fw-data-rail { height: 42px; }
-    .fw-data-item:nth-child(3),
     .fw-data-item:nth-child(4) { display: none; }
     .fw-data-label { font-size: .38rem; letter-spacing: 1.5px; }
     .fw-data-value { font-size: .65rem; }
@@ -1019,6 +1059,10 @@
     .fw-nav--next   { right: 5px; }
     .fw-visual      { height: 215px; }
     .fw-nav         { top: 107px; }
+
+    /* Very small screens: 2 items only (Año + Km) */
+    .fw-data-item:nth-child(3),
+    .fw-data-item:nth-child(4) { display: none; }
 }
 
 /* ── Reduced motion ── */
@@ -1027,11 +1071,13 @@
     .fw-slide--active .fw-car-img,
     .fw-slide--active .fw-info > *,
     .fw-glow,
+    .fw-hud-scanline,
     .fw-nav,
     .fw-cta-visual {
         transition: none !important;
         animation: none !important;
     }
     .fw-cta-visual::after { display: none; }
+    .fw-hud-scanline { display: none; }
     .fw-slide { transition: opacity .1s; }
 }

@@ -823,6 +823,35 @@
             }
         }
 
+        // Validar banner principal (featuredWeek)
+        var fwEl = $('vFeaturedWeek');
+        if (fwEl && fwEl.checked) {
+            var fwEditId   = $('vId').value ? parseInt($('vId').value) : null;
+            var fwVehicles = AP.vehicles.filter(function(v) { return v.featuredWeek && v.id !== fwEditId; });
+
+            // Límite máximo 6 slots en banner
+            if (fwVehicles.length >= 6) {
+                AP.toast('Máximo 6 vehículos en el banner principal. Desmarca uno existente antes de agregar otro.', 'error');
+                return;
+            }
+
+            // Detectar orden duplicado
+            var fwOrder = $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value) || null) : null;
+            if (fwOrder !== null) {
+                var orderConflict = fwVehicles.find(function(v) { return v.featuredOrder === fwOrder; });
+                if (orderConflict) {
+                    var conflictName = ((orderConflict.marca || '') + ' ' + (orderConflict.modelo || '')).trim();
+                    AP.toast(
+                        'La posición ' + fwOrder + ' ya está asignada a "' + conflictName + '". ' +
+                        'Elige otra posición (1-6) o deja el campo vacío para orden automático.',
+                        'error'
+                    );
+                    if ($('vFeaturedOrder')) $('vFeaturedOrder').classList.add('field-error');
+                    return;
+                }
+            }
+        }
+
         var existingId = $('vId').value;
         var isEdit = !!existingId;
         var btn = $('saveVehicle');

@@ -1,19 +1,22 @@
 /**
- * Featured Week Banner — ALTORRA CARS
- * Premium HUD Carousel | Gold Palette | Accessible
+ * Featured Week Banner — ALTORRA CARS — v7 DEFINITIVO
+ * HUD Automotriz Premium | Paleta Dorada/Ámbar | Sin Azul/Cian
  *
- * Field priority:   featuredWeek:true + featuredOrder  >  destacado:true  >  6 most recent
- * Optional fields:  featuredCutoutPng (PNG sin fondo), featuredOrder (1-6)
+ * Prioridad:  featuredWeek:true + featuredOrder  >  destacado:true  >  6 más recientes
+ * Campos opt: featuredCutoutPng (PNG sin fondo), featuredOrder (1-6), precioOferta
+ *
+ * Data Rail: componente unificado de specs (reemplaza HUD flotante legacy).
+ * Badge:     "OFERTA DE LA SEMANA" solo si precioOferta < precio.
  */
 (function () {
     'use strict';
 
     var FW = {
-        timer:          null,
-        index:          0,
-        total:          0,
-        vehicles:       [],
-        reducedMotion:  false,
+        timer:         null,
+        index:         0,
+        total:         0,
+        vehicles:      [],
+        reducedMotion: false,
 
         /* ─────────────────────────────────────────
            INIT
@@ -23,7 +26,8 @@
             if (!section) return;
 
             FW.reducedMotion =
-                !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+                !!(window.matchMedia &&
+                   window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
             await vehicleDB.load();
 
@@ -44,14 +48,14 @@
 
         /* ─────────────────────────────────────────
            VEHICLE SELECTION
-           featuredWeek > destacado > 6 most recent
+           featuredWeek > destacado > 6 más recientes
         ───────────────────────────────────────── */
         _getVehicles: function () {
             var all = (vehicleDB.vehicles || []).filter(function (v) {
                 return v.estado === 'disponible' || !v.estado;
             });
 
-            /* 1) featuredWeek field */
+            /* 1) featuredWeek flag */
             var byWeek = all.filter(function (v) { return v.featuredWeek; });
             if (byWeek.length) {
                 return byWeek.sort(function (a, b) {
@@ -59,18 +63,18 @@
                 });
             }
 
-            /* 2) destacado field (legacy) */
+            /* 2) destacado (legacy) */
             var byDest = all.filter(function (v) { return v.destacado; });
             if (byDest.length) return byDest;
 
-            /* 3) fallback: 6 newest by year */
+            /* 3) fallback: 6 más nuevos por año */
             return all.slice()
                 .sort(function (a, b) { return (b.year || 0) - (a.year || 0); })
                 .slice(0, 6);
         },
 
         /* ─────────────────────────────────────────
-           RENDER ALL SLIDES + DOTS
+           RENDER SLIDES + DOTS
         ───────────────────────────────────────── */
         _render: function (vehicles) {
             var track  = document.getElementById('fw-track');
@@ -92,63 +96,74 @@
             track.innerHTML  = slidesHTML;
             dotsEl.innerHTML = dotsHTML;
 
-            /* Preload second image immediately */
+            /* Preload next image immediately */
             FW._preloadNext(0);
         },
 
         /* ─────────────────────────────────────────
-           BUILD ONE SLIDE HTML
+           BUILD ONE SLIDE
         ───────────────────────────────────────── */
         _buildSlide: function (v, i) {
-            var imgSrc = v.featuredCutoutPng || v.imagen || 'multimedia/vehicles/placeholder-car.jpg';
+            var hasCutout  = !!v.featuredCutoutPng;
+            var imgSrc     = hasCutout
+                ? v.featuredCutoutPng
+                : (v.imagen || 'multimedia/vehicles/placeholder-car.jpg');
+
             var marca  = v.marca  ? v.marca.charAt(0).toUpperCase()  + v.marca.slice(1)  : '';
             var modelo = v.modelo ? v.modelo.toUpperCase() : '';
             var title  = (marca + ' ' + modelo + (v.year ? ' ' + v.year : '')).trim();
 
-            var price        = typeof formatPrice === 'function' ? formatPrice(v.precio) : '$' + v.precio;
-            var hasOffer     = v.precioOferta && v.precioOferta < v.precio;
+            var price        = typeof formatPrice === 'function' ? formatPrice(v.precio) : '$' + (v.precio || '');
+            var hasOffer     = !!(v.precioOferta && v.precioOferta < v.precio);
             var displayPrice = hasOffer
                 ? (typeof formatPrice === 'function' ? formatPrice(v.precioOferta) : '$' + v.precioOferta)
                 : price;
 
             var href  = typeof getVehicleDetailUrl === 'function' ? getVehicleDetailUrl(v) : '#';
-            var km    = typeof formatKm === 'function' ? formatKm(v.kilometraje) : (v.kilometraje + ' km');
+            var km    = typeof formatKm === 'function' ? formatKm(v.kilometraje) : (v.kilometraje != null ? v.kilometraje + ' km' : '');
             var trans = v.transmision ? v.transmision.charAt(0).toUpperCase() + v.transmision.slice(1) : '';
             var fuel  = v.combustible ? v.combustible.charAt(0).toUpperCase() + v.combustible.slice(1) : '';
 
-            /* ── Pills ── */
-            var pills = '';
-            if (v.year)                                      pills += FW._pill(FW._icoYear(),  v.year);
-            if (v.kilometraje !== undefined && v.kilometraje !== null) pills += FW._pill(FW._icoKm(),   km);
-            if (trans)                                       pills += FW._pill(FW._icoTrans(), trans);
-            if (fuel)                                        pills += FW._pill(FW._icoFuel(),  fuel);
-
-            /* ── Price old ── */
-            var priceOld = hasOffer ? '<span class="fw-price-old">' + price + '</span>' : '';
-
-            /* ── HUD elements ── */
-            var hudGauge = '';
-            if (v.kilometraje !== undefined && v.kilometraje !== null) {
-                hudGauge = '<div class="fw-hud-gauge" aria-hidden="true">' +
-                    FW._buildGauge(v.kilometraje, km) +
-                    '</div>';
+            /* ── Badge text and variant: OFFER / DESTACADO / PREMIUM ── */
+            var badgeText  = '';
+            var badgeClass = 'fw-badge';
+            if (hasOffer) {
+                badgeText  = FW._icoStar() + ' OFERTA DE LA SEMANA';
+                badgeClass = 'fw-badge fw-badge--offer';
+            } else if (v.featuredWeek) {
+                badgeText  = FW._icoStar() + ' DESTACADO DE LA SEMANA';
+            } else {
+                badgeText  = FW._icoStar() + ' SELECCI\u00d3N PREMIUM';
             }
-            var hudTrans = trans
-                ? '<div class="fw-hud-trans" aria-hidden="true">' +
-                  FW._buildBadge(FW._icoTransMd(), 'TRANS.', trans) + '</div>'
+
+            /* ── Spec pills (left panel) ── */
+            var pills = '';
+            if (v.year)                                                pills += FW._pill(FW._icoYear(),  v.year);
+            if (v.kilometraje != null)                                 pills += FW._pill(FW._icoKm(),   km);
+            if (trans)                                                 pills += FW._pill(FW._icoTrans(), trans);
+            if (fuel)                                                  pills += FW._pill(FW._icoFuel(),  fuel);
+
+            /* ── Old price row: only when hasOffer ── */
+            var priceOldHtml = hasOffer
+                ? '<span class="fw-price-old">' + price + '</span>'
                 : '';
-            var hudFuel = fuel
-                ? '<div class="fw-hud-fuel" aria-hidden="true">' +
-                  FW._buildBadge(FW._icoFuelMd(), 'COMB.', fuel) + '</div>'
-                : '';
-            var hudYear = v.year
-                ? '<div class="fw-hud-year" aria-hidden="true"><div class="fw-hud-year-inner">' +
-                  '<span class="fw-hud-year-lbl">A\u00d1O</span>' +
-                  '<span class="fw-hud-year-val">' + v.year + '</span>' +
-                  '</div></div>'
-                : '';
+
+            /* ── Section label ── */
+            var sectionTitle = v.featuredWeek
+                ? 'Destacados de la <span>Semana</span>'
+                : 'Veh\u00edculos <span>Destacados</span>';
 
             var isActive = (i === 0);
+            var imgClass = 'fw-car-img' + (hasCutout ? '' : ' fw-car-img--rect');
+
+            /* ── Blueprint panel: static tech decoration ── */
+            var blueprintTicks = '';
+            for (var t = 0; t < 14; t++) {
+                blueprintTicks +=
+                    '<div class="fw-blueprint-tick' +
+                    (t % 3 === 0 ? ' fw-blueprint-tick--major' : '') +
+                    '"></div>';
+            }
 
             return (
                 '<div class="fw-slide' + (isActive ? ' fw-slide--active' : '') + '"' +
@@ -156,55 +171,156 @@
                 ' aria-label="' + title.replace(/"/g, '&quot;') + '"' +
                 ' aria-hidden="' + (isActive ? 'false' : 'true') + '">' +
 
-                /* ── Left: info (link) ── */
+                /* ──────────── LEFT: info + CTA ──────────── */
                 '<a class="fw-info" href="' + href + '"' +
                 ' tabindex="' + (isActive ? '0' : '-1') + '"' +
                 ' aria-label="Ver detalle de ' + title.replace(/"/g, '&quot;') + '">' +
-                '<span class="fw-premium-tag">' + FW._icoStar() + ' REVISADO Y CERTIFICADO</span>' +
-                '<h2 class="fw-title">Destacados de la <span>Semana</span></h2>' +
-                '<p class="fw-subtitle">Financiaci\u00f3n disponible &middot; Entrega en Cartagena</p>' +
+
+                '<span class="fw-premium-tag">' +
+                    FW._icoStar() + ' REVISADO Y CERTIFICADO' +
+                '</span>' +
+
+                '<h2 class="fw-title">' + sectionTitle + '</h2>' +
+
+                '<p class="fw-subtitle">Financiaci\u00f3n disponible \u00b7 Entrega en Cartagena \u00b7 Verificado</p>' +
+
                 '<hr class="fw-sep">' +
-                '<span class="fw-badge">' + FW._icoStar() + ' OFERTA DE LA SEMANA</span>' +
+
+                '<span class="' + badgeClass + '">' + badgeText + '</span>' +
+
                 '<h3 class="fw-vehicle-name">' + title + '</h3>' +
+
                 '<span class="fw-avail-tag" aria-label="Veh\u00edculo disponible">&#9679; Disponible</span>' +
+
                 '<div class="fw-pills">' + pills + '</div>' +
+
                 '<div class="fw-price-box">' +
                     '<span class="fw-price-label">PRECIO</span>' +
                     '<span class="fw-price-value">' + displayPrice + '</span>' +
-                    priceOld +
+                    priceOldHtml +
                 '</div>' +
+
                 '<span class="fw-cta-visual" aria-hidden="true">VER DETALLES ' + FW._icoArrow() + '</span>' +
+
                 '</a>' +
 
-                /* ── Right: visual / HUD ── */
+                /* ──────────── RIGHT: visual zone ──────────── */
                 '<div class="fw-visual">' +
+
+                /* Ambient glow */
                 '<div class="fw-glow" aria-hidden="true"></div>' +
+
+                /* Micro-grid blueprint overlay */
                 '<div class="fw-hud-blueprint" aria-hidden="true"></div>' +
-                /* Blurred background photo when a transparent cutout is used */
-                (v.featuredCutoutPng && v.imagen
-                    ? '<img class="fw-car-bg" src="' + v.imagen + '" alt="" aria-hidden="true" loading="lazy">'
-                    : '') +
-                /* Car scene: floor plane + contact shadow + car image */
-                '<div class="fw-car-scene' + (v.featuredCutoutPng ? ' fw-car-scene--cutout' : '') + '" aria-hidden="true">' +
-                '<div class="fw-car-floor"></div>' +
-                '<div class="fw-car-shadow"></div>' +
-                '<img class="fw-car-img"' +
-                ' src="' + imgSrc + '"' +
-                ' alt="' + title.replace(/"/g, '&quot;') + '"' +
-                ' loading="' + (i === 0 ? 'eager' : 'lazy') + '">' +
-                '</div>' +
-                /* HUD layer: single stacking context above the car image */
-                '<div class="fw-hud-layer" aria-hidden="true">' +
-                '<div class="fw-hud-corner fw-hud-tl"></div>' +
-                '<div class="fw-hud-corner fw-hud-tr"></div>' +
-                '<div class="fw-hud-corner fw-hud-bl"></div>' +
-                '<div class="fw-hud-corner fw-hud-br"></div>' +
-                hudGauge + hudTrans + hudFuel + hudYear +
-                '</div>' +
-                /* Mobile tech strip: 1-2 key specs visible on small screens */
-                FW._buildMobileHud(v, trans, fuel, km) +
+
+                /* Blueprint panel: technical decoration behind car */
+                '<div class="fw-blueprint-panel" aria-hidden="true">' +
+                    '<div class="fw-blueprint-ticks">' + blueprintTicks + '</div>' +
+                    '<span class="fw-blueprint-label">SYS \u00b7 ALTORRA CARS</span>' +
                 '</div>' +
 
+                /* Blurred background photo (cutout mode only) */
+                (hasCutout && v.imagen
+                    ? '<img class="fw-car-bg" src="' + v.imagen + '" alt="" aria-hidden="true" loading="lazy">'
+                    : '') +
+
+                /* Car scene: floor + shadow + image */
+                '<div class="fw-car-scene' + (hasCutout ? ' fw-car-scene--cutout' : '') + '" aria-hidden="true">' +
+                    '<div class="fw-car-floor"></div>' +
+                    '<div class="fw-car-shadow"></div>' +
+                    '<img class="' + imgClass + '"' +
+                        ' src="' + imgSrc + '"' +
+                        ' alt="' + title.replace(/"/g, '&quot;') + '"' +
+                        ' loading="' + (i === 0 ? 'eager' : 'lazy') + '">' +
+                '</div>' +
+
+                /* HUD layer: corner brackets + scanline only — NO floating badges */
+                '<div class="fw-hud-layer" aria-hidden="true">' +
+                    '<div class="fw-hud-corner fw-hud-tl"></div>' +
+                    '<div class="fw-hud-corner fw-hud-tr"></div>' +
+                    '<div class="fw-hud-corner fw-hud-bl"></div>' +
+                    '<div class="fw-hud-corner fw-hud-br"></div>' +
+                    '<div class="fw-hud-scanline"></div>' +
+                '</div>' +
+
+                /* Data Rail: unified spec bar — el único componente de datos */
+                FW._buildDataRail(v, km, trans, fuel) +
+
+                '</div>' + /* .fw-visual */
+
+                '</div>' /* .fw-slide */
+            );
+        },
+
+        /* ─────────────────────────────────────────
+           DATA RAIL — Componente estrella unificado
+           Orden: Año | Km | Transmisión | Combustible
+           CSS controla visibilidad según breakpoint.
+        ───────────────────────────────────────── */
+        _buildDataRail: function (v, km, trans, fuel) {
+            var items = [];
+
+            /* Item 1: Año — siempre presente si existe */
+            if (v.year) {
+                items.push({
+                    icon:  FW._railIcon(FW._icoYear()),
+                    label: 'A\u00d1O',
+                    value: String(v.year)
+                });
+            }
+
+            /* Item 2: Kilometraje */
+            if (v.kilometraje != null && km) {
+                items.push({
+                    icon:  FW._railIcon(FW._icoKm()),
+                    label: 'KILOMETRAJE',
+                    value: km
+                });
+            }
+
+            /* Item 3: Transmisión */
+            if (trans) {
+                items.push({
+                    icon:  FW._railIcon(FW._icoTrans()),
+                    label: 'TRANSMISI\u00d3N',
+                    value: trans
+                });
+            }
+
+            /* Item 4: Combustible */
+            if (fuel) {
+                items.push({
+                    icon:  FW._railIcon(FW._icoFuel()),
+                    label: 'COMBUSTIBLE',
+                    value: fuel
+                });
+            }
+
+            /* Fallback: si no hay suficientes datos, N/D para mantener alineación */
+            while (items.length < 2) {
+                items.push({
+                    icon:  FW._railIcon(FW._icoYear()),
+                    label: 'DATO',
+                    value: 'N/D'
+                });
+            }
+
+            var inner = '';
+            items.forEach(function (item) {
+                inner +=
+                    '<div class="fw-data-item">' +
+                        '<div class="fw-data-icon">' + item.icon + '</div>' +
+                        '<div class="fw-data-meta">' +
+                            '<span class="fw-data-label">' + item.label + '</span>' +
+                            '<span class="fw-data-value">' + item.value + '</span>' +
+                        '</div>' +
+                    '</div>';
+            });
+
+            return (
+                '<div class="fw-data-rail"' +
+                ' aria-label="Especificaciones del veh\u00edculo">' +
+                inner +
                 '</div>'
             );
         },
@@ -221,9 +337,9 @@
             slides.forEach(function (s, i) {
                 var active = (i === index);
                 if (active) {
-                    /* Force animation restart by removing then adding active class */
+                    /* Force animation restart via reflow */
                     s.classList.remove('fw-slide--active');
-                    void s.offsetWidth; /* reflow */
+                    void s.offsetWidth;
                     s.classList.add('fw-slide--active');
                     s.setAttribute('aria-hidden', 'false');
                     var lnk = s.querySelector('.fw-info');
@@ -231,8 +347,8 @@
                 } else {
                     s.classList.remove('fw-slide--active');
                     s.setAttribute('aria-hidden', 'true');
-                    var lnk = s.querySelector('.fw-info');
-                    if (lnk) lnk.setAttribute('tabindex', '-1');
+                    var lnk2 = s.querySelector('.fw-info');
+                    if (lnk2) lnk2.setAttribute('tabindex', '-1');
                 }
             });
 
@@ -244,14 +360,14 @@
 
             FW._preloadNext(index);
 
-            /* Update live region for screen readers */
+            /* Live region for screen readers */
             var live = document.getElementById('fw-live');
             if (live) {
-                var v = FW.vehicles[index] || {};
-                var marca = v.marca ? v.marca.charAt(0).toUpperCase() + v.marca.slice(1) : '';
+                var veh   = FW.vehicles[index] || {};
+                var marca = veh.marca ? veh.marca.charAt(0).toUpperCase() + veh.marca.slice(1) : '';
                 live.textContent =
                     'Veh\u00edculo ' + (index + 1) + ' de ' + FW.total +
-                    ': ' + marca + ' ' + (v.modelo || '');
+                    ': ' + marca + ' ' + (veh.modelo || '');
             }
         },
 
@@ -354,155 +470,7 @@
         },
 
         /* ─────────────────────────────────────────
-           SVG SPEEDOMETER GAUGE
-           Center (50,50), radius 35, arc 150°→390°(30°)
-           = classic 240° speedometer shape, gap at bottom
-        ───────────────────────────────────────── */
-        _buildGauge: function (km, kmText) {
-            var maxKm   = 200000;
-            var ratio   = Math.min(1, Math.max(0, (km || 0) / maxKm));
-            var cx = 50, cy = 50, r = 35;
-            var startDeg = 150, rangeDeg = 240;
-            var toRad = function (d) { return d * Math.PI / 180; };
-
-            /* Track arc endpoints */
-            var sx = (cx + r * Math.cos(toRad(startDeg))).toFixed(2);
-            var sy = (cy + r * Math.sin(toRad(startDeg))).toFixed(2);
-            var ex = (cx + r * Math.cos(toRad(startDeg + rangeDeg))).toFixed(2);
-            var ey = (cy + r * Math.sin(toRad(startDeg + rangeDeg))).toFixed(2);
-
-            /* Full track arc (large=1, clockwise=1) */
-            var trackPath = 'M' + sx + ',' + sy + ' A' + r + ',' + r + ' 0 1,1 ' + ex + ',' + ey;
-
-            /* Active arc + needle */
-            var activeArc   = '';
-            var needleAngle = startDeg;
-
-            if (ratio > 0.01) {
-                needleAngle = startDeg + ratio * rangeDeg;
-                var ax       = (cx + r * Math.cos(toRad(needleAngle))).toFixed(2);
-                var ay       = (cy + r * Math.sin(toRad(needleAngle))).toFixed(2);
-                var largeArc = (ratio * rangeDeg > 180) ? 1 : 0;
-                activeArc =
-                    '<path d="M' + sx + ',' + sy +
-                    ' A' + r + ',' + r + ' 0 ' + largeArc + ',1 ' + ax + ',' + ay +
-                    '" fill="none" stroke="rgba(212,175,55,0.75)" stroke-width="4.5" stroke-linecap="round"/>';
-            }
-
-            var nr     = 27;
-            var needleX = (cx + nr * Math.cos(toRad(needleAngle))).toFixed(2);
-            var needleY = (cy + nr * Math.sin(toRad(needleAngle))).toFixed(2);
-            var needleEl =
-                '<line x1="' + cx + '" y1="' + cy + '"' +
-                ' x2="' + needleX + '" y2="' + needleY + '"' +
-                ' stroke="#d4af37" stroke-width="2.5" stroke-linecap="round"/>';
-
-            /* Tick marks (9 ticks @ 30° steps) */
-            var ticks = '';
-            for (var t = 0; t <= 8; t++) {
-                var ta      = toRad(startDeg + t * 30);
-                var isMain  = (t % 2 === 0);
-                var outerR  = 38;
-                var innerR  = isMain ? 31 : 34;
-                ticks +=
-                    '<line' +
-                    ' x1="' + (cx + outerR * Math.cos(ta)).toFixed(1) + '"' +
-                    ' y1="' + (cy + outerR * Math.sin(ta)).toFixed(1) + '"' +
-                    ' x2="' + (cx + innerR * Math.cos(ta)).toFixed(1) + '"' +
-                    ' y2="' + (cy + innerR * Math.sin(ta)).toFixed(1) + '"' +
-                    ' stroke="rgba(212,175,55,' + (isMain ? '0.55' : '0.25') + ')"' +
-                    ' stroke-width="' + (isMain ? '1.5' : '1') + '"' +
-                    ' stroke-linecap="round"/>';
-            }
-
-            return (
-                '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"' +
-                ' width="100%" height="100%" role="img" aria-label="Velocímetro ' + kmText + '">' +
-
-                /* Outer glow ring */
-                '<circle cx="50" cy="50" r="46" fill="none"' +
-                ' stroke="rgba(212,175,55,0.06)" stroke-width="2"/>' +
-                /* Background circle */
-                '<circle cx="50" cy="50" r="43" fill="rgba(8,9,14,0.9)"' +
-                ' stroke="rgba(212,175,55,0.22)" stroke-width="1.5"/>' +
-                /* Inner ring */
-                '<circle cx="50" cy="50" r="39" fill="none"' +
-                ' stroke="rgba(212,175,55,0.07)" stroke-width="1"/>' +
-
-                /* Track (full range, dim) */
-                '<path d="' + trackPath + '" fill="none"' +
-                ' stroke="rgba(212,175,55,0.13)" stroke-width="4.5" stroke-linecap="round"/>' +
-
-                ticks + activeArc + needleEl +
-
-                /* Center hub */
-                '<circle cx="50" cy="50" r="4" fill="#d4af37"/>' +
-                '<circle cx="50" cy="50" r="7" fill="none"' +
-                ' stroke="rgba(212,175,55,0.35)" stroke-width="1.5"/>' +
-
-                /* KM text */
-                '<text x="50" y="75" text-anchor="middle"' +
-                ' fill="rgba(212,175,55,0.9)" font-size="7.5" font-weight="700"' +
-                ' font-family="system-ui,sans-serif">' + kmText + '</text>' +
-                '<text x="50" y="83.5" text-anchor="middle"' +
-                ' fill="rgba(255,255,255,0.3)" font-size="4.8"' +
-                ' font-family="system-ui,sans-serif">KILOMETRAJE</text>' +
-
-                '</svg>'
-            );
-        },
-
-        /* ─────────────────────────────────────────
-           BUILD GLASSMORPHISM HUD BADGE
-        ───────────────────────────────────────── */
-        _buildBadge: function (icon, label, value) {
-            return (
-                '<div class="fw-hud-badge">' +
-                '<div class="fw-hud-badge-icon">' + icon + '</div>' +
-                '<span class="fw-hud-badge-label">' + label + '</span>' +
-                '<span class="fw-hud-badge-value">' + value + '</span>' +
-                '</div>'
-            );
-        },
-
-        /* ─────────────────────────────────────────
-           MOBILE HUD STRIP
-           Returns HTML for the compact tech strip shown on mobile.
-           Shows year (always) + best available secondary stat.
-        ───────────────────────────────────────── */
-        _buildMobileHud: function (v, trans, fuel, km) {
-            var items = [];
-
-            if (v.year) {
-                items.push({ lbl: 'A\u00d1O', val: String(v.year) });
-            }
-
-            /* Pick the most descriptive secondary stat */
-            if (trans) {
-                items.push({ lbl: 'TRANS.', val: trans });
-            } else if (fuel) {
-                items.push({ lbl: 'COMB.', val: fuel });
-            } else if (km) {
-                items.push({ lbl: 'KM', val: km });
-            }
-
-            if (!items.length) return '';
-
-            var inner = '';
-            items.forEach(function (item, idx) {
-                if (idx > 0) inner += '<div class="fw-hud-mobile-sep"></div>';
-                inner +=
-                    '<div class="fw-hud-mobile-item">' +
-                    '<span class="fw-hud-mobile-lbl">' + item.lbl + '</span>' +
-                    '<span class="fw-hud-mobile-val">' + item.val + '</span>' +
-                    '</div>';
-            });
-
-            return '<div class="fw-hud-mobile" aria-hidden="true">' + inner + '</div>';
-        },
-
-        /* ─────────────────────────────────────────
-           MONOLINE SVG ICONS (stroke-width 2, linecap round)
+           ICON HELPER — monoline SVG (stroke-width 2)
         ───────────────────────────────────────── */
         _svg: function (paths, size) {
             return (
@@ -513,7 +481,15 @@
             );
         },
 
-        /* Calendar — Year */
+        /* Wrapper that returns a slightly larger icon for the data rail */
+        _railIcon: function (icon) {
+            /* Icons are already 13px; rail needs 15px */
+            return icon.replace(/width="13" height="13"/, 'width="15" height="15"');
+        },
+
+        /* ── Icon definitions ── */
+
+        /* Calendar — Año */
         _icoYear: function () {
             return FW._svg(
                 '<rect x="3" y="4" width="18" height="18" rx="2"/>' +
@@ -523,7 +499,7 @@
             );
         },
 
-        /* Gauge needle — KM */
+        /* Gauge — Kilometraje */
         _icoKm: function () {
             return FW._svg(
                 '<path d="M12 5a7 7 0 1 0 7 7"/>' +
@@ -532,7 +508,7 @@
             );
         },
 
-        /* Sun/rays — Transmission */
+        /* Gear / cog — Transmisión */
         _icoTrans: function () {
             return FW._svg(
                 '<circle cx="12" cy="12" r="3"/>' +
@@ -551,23 +527,7 @@
             );
         },
 
-        /* Medium-size versions for HUD badges */
-        _icoTransMd: function () { return FW._svg(
-            '<circle cx="12" cy="12" r="3"/>' +
-            '<path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12' +
-            'M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>',
-            18);
-        },
-
-        _icoFuelMd: function () { return FW._svg(
-            '<path d="M3 22V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/>' +
-            '<line x1="3" y1="22" x2="14" y2="22"/>' +
-            '<path d="M14 9h3a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1v5"/>' +
-            '<rect x="5" y="7" width="5" height="3" rx="1"/>',
-            18);
-        },
-
-        /* Star */
+        /* Star — badges y premium tag */
         _icoStar: function () {
             return FW._svg(
                 '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02' +
@@ -576,7 +536,7 @@
             );
         },
 
-        /* Arrow right */
+        /* Arrow right — CTA */
         _icoArrow: function () {
             return FW._svg('<polyline points="9 18 15 12 9 6"/>', 14);
         },
@@ -593,10 +553,7 @@
 
     /*
      * Backwards-compatibility shim:
-     * main.js still calls loadDestacadosBanner() via initializePage()
-     * and rerenderVehicleSections(). This alias makes those calls
-     * invoke the new banner without touching main.js's call sites.
-     * NOTE: main.js's old function definition has been removed.
+     * main.js llama loadDestacadosBanner() — este alias mantiene esa interfaz.
      */
     window.loadDestacadosBanner = window.initFeaturedWeekBanner;
 

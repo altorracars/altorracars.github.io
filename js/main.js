@@ -113,6 +113,33 @@ function hideParentSection(containerId) {
 }
 
 /**
+ * Load ALL available vehicles (unified carousel — Nuevos + Usados)
+ * Prioritizes: prioridad > destacado > oferta > newer year
+ */
+async function loadAllVehicles() {
+    showLoading('allVehiclesCarousel');
+    await vehicleDB.load();
+    const all = (vehicleDB.getAllVehicles() || []).filter(v => v.estado === 'disponible' || !v.estado);
+
+    if (all.length === 0) {
+        hideParentSection('allVehiclesCarousel');
+        return;
+    }
+
+    const sorted = all.sort((a, b) => {
+        const pa = a.prioridad || 0, pb = b.prioridad || 0;
+        if (pa !== pb) return pb - pa;
+        if (a.destacado && !b.destacado) return -1;
+        if (!a.destacado && b.destacado) return 1;
+        if (a.oferta && !b.oferta) return -1;
+        if (!a.oferta && b.oferta) return 1;
+        return (b.year || 0) - (a.year || 0);
+    });
+
+    renderVehicles(sorted, 'allVehiclesCarousel');
+}
+
+/**
  * Load new vehicles with ranking
  * Prioritizes: destacado > oferta > newest year
  */
@@ -353,9 +380,8 @@ function showRealtimeUpdateIndicator() {
 function rerenderVehicleSections() {
     // Re-render destacados
     loadDestacadosBanner();
-    // Re-render nuevos y usados
-    loadNewVehicles();
-    loadUsedVehicles();
+    // Re-render unified vehicle carousel
+    loadAllVehicles();
     // Re-enable drag scroll after re-render
     setTimeout(enableDragScroll, 300);
 }
@@ -403,8 +429,7 @@ function initializePage() {
     Promise.all([
         loadDestacadosBanner(),
         loadPopularBrands(),
-        loadUsedVehicles(),
-        loadNewVehicles(),
+        loadAllVehicles(),
         loadPromoBanners()
     ]).then(function() {
         // Enable drag after vehicles are rendered and overflow-x is active

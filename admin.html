@@ -975,8 +975,42 @@
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-estado">
+                        <!-- vDestacado y vFeaturedWeek se sincronizan desde el selector de destaque -->
+                        <input type="checkbox" id="vDestacado" aria-hidden="true" style="display:none">
+
+                        <!-- Selector unificado de nivel de destaque -->
+                        <div style="margin-bottom:1rem;">
+                            <label class="form-label" style="margin-bottom:0.5rem;">Nivel de destaque</label>
+                            <div style="display:flex;flex-direction:column;gap:5px;">
+
+                                <label id="desq-lbl-estandar" style="display:flex;align-items:flex-start;gap:10px;padding:0.6rem 0.85rem;border-radius:6px;border:1px solid var(--admin-border,#30363d);cursor:pointer;">
+                                    <input type="radio" name="vDestaqueNivel" value="estandar" id="vDestaqueEstandar" style="margin-top:3px;flex-shrink:0;">
+                                    <div>
+                                        <span style="font-size:0.82rem;font-weight:600;color:var(--admin-text,#e6edf3);">Estandar</span>
+                                        <span style="display:block;font-size:0.72rem;color:var(--admin-text-muted,#8b949e);margin-top:1px;">Sin destacar — aparece en el catalogo normalmente</span>
+                                    </div>
+                                </label>
+
+                                <label id="desq-lbl-catalogo" style="display:flex;align-items:flex-start;gap:10px;padding:0.6rem 0.85rem;border-radius:6px;border:1px solid var(--admin-border,#30363d);cursor:pointer;">
+                                    <input type="radio" name="vDestaqueNivel" value="catalogo" id="vDestaqueCatalogo" style="margin-top:3px;flex-shrink:0;">
+                                    <div>
+                                        <span style="font-size:0.82rem;font-weight:600;color:var(--admin-text,#e6edf3);">Destacado en catalogo <small id="featuredCounter" style="color:#b89658;font-size:11px;margin-left:3px;font-weight:400;"></small></span>
+                                        <span style="display:block;font-size:0.72rem;color:var(--admin-text-muted,#8b949e);margin-top:1px;">Estrella en el listado. Si ningun vehiculo esta en banner, aparece tambien en el carrusel de inicio.</span>
+                                    </div>
+                                </label>
+
+                                <label id="desq-lbl-banner" style="display:flex;align-items:flex-start;gap:10px;padding:0.6rem 0.85rem;border-radius:6px;border:1px solid rgba(212,175,55,0.28);cursor:pointer;background:rgba(212,175,55,0.03);">
+                                    <input type="radio" name="vDestaqueNivel" value="banner" id="vDestaqueBanner" style="margin-top:3px;flex-shrink:0;">
+                                    <div>
+                                        <span style="font-size:0.82rem;font-weight:600;color:#d4af37;">En banner de inicio <small id="bannerCounter" style="font-size:11px;margin-left:3px;color:#8b949e;font-weight:400;"></small></span>
+                                        <span style="display:block;font-size:0.72rem;color:var(--admin-text-muted,#8b949e);margin-top:1px;">Carrusel de la pagina principal. Incluye destacado en catalogo. Activa la configuracion del banner abajo.</span>
+                                    </div>
+                                </label>
+
+                            </div>
+                        </div>
+
                         <div class="checkbox-grid">
-                            <label class="form-checkbox"><input type="checkbox" id="vDestacado"> Destacado en catalogo <small id="featuredCounter" style="color:#b89658;font-size:11px;margin-left:4px"></small></label>
                             <label class="form-checkbox"><input type="checkbox" id="vOferta"> En Oferta</label>
                             <label class="form-checkbox"><input type="checkbox" id="vRevision" checked> Revision Tecnico-Mecanica</label>
                             <label class="form-checkbox"><input type="checkbox" id="vPeritaje" checked> Peritaje Realizado</label>
@@ -1015,20 +1049,16 @@
                                 Al activar esta opcion en uno o mas vehiculos, el banner mostrara <strong style="color:#d4af37;">UNICAMENTE</strong> esos vehiculos marcados — los demas quedan excluidos aunque sean recientes.
                             </p>
                         </div>
-                        <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;margin-bottom:1rem;">
-                            <label class="form-checkbox" style="margin:0;align-self:center;">
-                                <input type="checkbox" id="vFeaturedWeek">
-                                Incluir en banner principal
-                                <small id="bannerCounter" style="font-size:11px;margin-left:4px;color:#8b949e;"></small>
-                            </label>
-                            <div class="form-group" style="margin:0;min-width:150px;">
+                        <!-- vFeaturedWeek sincronizado desde selector de destaque en sec-estado -->
+                        <input type="checkbox" id="vFeaturedWeek" aria-hidden="true" style="display:none">
+
+                        <div style="margin-bottom:1rem;">
+                            <div class="form-group" style="max-width:180px;">
                                 <label class="form-label" style="font-size:0.75rem;">Posicion en banner (1-6)</label>
                                 <input type="number" id="vFeaturedOrder" class="form-input" min="1" max="6" placeholder="1-6">
                                 <small style="color:var(--admin-text-muted,#8b949e);font-size:0.72rem;">Opcional — define el orden de aparicion</small>
                             </div>
                         </div>
-                        <!-- Modo actual del banner -->
-                        <div id="bannerModeChip" style="display:none;margin-bottom:0.75rem;"></div>
                         <!-- Cutout PNG upload widget -->
                         <div>
                             <label class="form-label" style="font-size:0.75rem;">Imagen recortada — PNG sin fondo (opcional)</label>

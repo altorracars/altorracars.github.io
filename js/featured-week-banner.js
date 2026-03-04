@@ -470,8 +470,14 @@
             if (!FW.vehicles.length) return;
             var next = FW.vehicles[(currentIndex + 1) % FW.total];
             if (!next) return;
-            var src = next.featuredCutoutPng || next.imagen;
-            if (src) { var img = new Image(); img.src = src; }
+            /* Cutout mode: dos recursos — PNG recortado + imagen base borrosa.
+               Precargamos ambos para evitar flash al cambiar slide. */
+            if (next.featuredCutoutPng) {
+                var cutout = new Image(); cutout.src = next.featuredCutoutPng;
+                if (next.imagen) { var bg = new Image(); bg.src = next.imagen; }
+            } else if (next.imagen) {
+                var regular = new Image(); regular.src = next.imagen;
+            }
         },
 
         /* ─────────────────────────────────────────

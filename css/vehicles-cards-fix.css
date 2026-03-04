@@ -20,6 +20,26 @@
     overflow: visible !important;
 }
 
+/* ── Section header always inline — "Ver todos" stays right of title on all screen sizes ── */
+.featured-section .section-header {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+}
+
+.featured-section .section-header .section-title {
+    font-size: clamp(1.1rem, 4vw, 1.5rem) !important;
+    margin-bottom: 0 !important;
+}
+
+.featured-section .section-header .btn-view-more {
+    flex-shrink: 0;
+    font-size: 0.78rem !important;
+    padding: 0.4rem 0.9rem !important;
+    margin-top: 0 !important;
+    white-space: nowrap;
+}
+
 /* Grid en sección destacados (home) - modo carrusel CON SCROLL TÁCTIL */
 .featured-section .vehicles-grid {
     display: flex !important;

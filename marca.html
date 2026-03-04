@@ -127,9 +127,12 @@
                 window.location.href = 'busqueda.html';
                 return;
             }
-            
-            await vehicleDB.load();
-            await DynamicLists.load();
+
+            // Show skeleton immediately so page feels instant
+            showLoading('vehiclesGrid');
+
+            // Load DB + filter lists in parallel — cuts wait time roughly in half
+            await Promise.all([vehicleDB.load(), DynamicLists.load()]);
             DynamicLists.populatePageFilters();
             const brandInfo = vehicleDB.getBrandInfo(brandId);
             
@@ -173,7 +176,6 @@
                 document.getElementById('brandHeader').style.display = 'block';
             }
             
-            showLoading('vehiclesGrid');
             let vehicles = vehicleDB.filter(currentFilters);
             vehicles = vehicleDB.sort(vehicles, currentSort);
             document.getElementById('resultsCount').textContent = vehicles.length;

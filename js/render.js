@@ -148,7 +148,7 @@ function renderVehicleCard(vehicle) {
         <div class="vehicle-card clickable-card" data-id="${vehicle.id}" data-url="${getVehicleDetailUrl(vehicle)}">
             <div class="vehicle-image">
                 <div class="img-skeleton"></div>
-                <img src="${imgSrc}" alt="${altText}" loading="lazy" decoding="async" width="400" height="260" class="vehicle-img" data-fallback="multimedia/vehicles/placeholder-car.jpg" onload="this.classList.add('img-loaded');var s=this.parentElement.querySelector('.img-skeleton');if(s)s.style.display='none'" onerror="this.onerror=null;this.src=this.getAttribute('data-fallback')||'multimedia/vehicles/placeholder-car.jpg';this.classList.add('img-loaded','img-error');var s=this.parentElement.querySelector('.img-skeleton');if(s)s.style.display='none'">
+                <img src="${imgSrc}" alt="${altText}" loading="lazy" decoding="async" width="400" height="260" class="vehicle-img" draggable="false" data-fallback="multimedia/vehicles/placeholder-car.jpg" onload="this.classList.add('img-loaded');var s=this.parentElement.querySelector('.img-skeleton');if(s)s.style.display='none'" onerror="this.onerror=null;this.src=this.getAttribute('data-fallback')||'multimedia/vehicles/placeholder-car.jpg';this.classList.add('img-loaded','img-error');var s=this.parentElement.querySelector('.img-skeleton');if(s)s.style.display='none'">
                 <div class="vehicle-actions">
                     <button class="favorite-btn${activeClass}" data-id="${vehicle.id}" aria-label="Añadir a favoritos">${heartIcon}</button>
                 </div>

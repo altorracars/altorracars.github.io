@@ -746,9 +746,9 @@
    DATA RAIL — Unified spec bar anchored at bottom of visual zone
    The single source of truth for vehicle specs in the banner.
 
-   Desktop (≥1200px): 4 items | height 56px
-   Tablet  (768–1199): 3 items | height 48px
-   Mobile  (<768px):   2 items | height 42px
+   Desktop (≥1200px): 4 items | height 64px
+   Tablet  (768–1199): 3 items | height 56px
+   Mobile  (<768px):   2 items | height 48px
    ================================================================ */
 .fw-data-rail {
     position: absolute;
@@ -756,7 +756,7 @@
     z-index: 7;
     display: flex;
     align-items: stretch;
-    height: 56px;
+    height: 64px;
     background: rgba(8,9,14,.9);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -824,7 +824,7 @@
 
 /* ── Data label (uppercase descriptor) ── */
 .fw-data-label {
-    font-size: .42rem;
+    font-size: .50rem;
     font-weight: 800;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -835,7 +835,7 @@
 
 /* ── Data value ── */
 .fw-data-value {
-    font-size: .76rem;
+    font-size: .86rem;
     font-weight: 700;
     color: rgba(255,255,255,.92);
     line-height: 1;
@@ -932,8 +932,8 @@
 /* Large tablet: hide 4th rail item to prevent crowding */
 @media (max-width: 1100px) {
     .fw-data-item:nth-child(4) { display: none; }
-    .fw-data-rail  { height: 48px; }
-    .fw-data-value { font-size: .70rem; }
+    .fw-data-rail  { height: 56px; }
+    .fw-data-value { font-size: .78rem; }
     .fw-blueprint-panel { opacity: .65; }
 }
 
@@ -970,16 +970,13 @@
         z-index: 1;
     }
 
+    /* All slides absolute — opacity transition works correctly */
     .fw-slide {
-        position: relative;
-        inset: auto;
+        position: absolute;
+        inset: 0;
         display: flex;
         flex-direction: column;
-        height: auto;
-        min-height: 490px;
     }
-
-    .fw-slide:not(.fw-slide--active) { display: none; }
 
     .fw-visual {
         order: 1;
@@ -1009,10 +1006,8 @@
         -webkit-backdrop-filter: blur(8px);
     }
 
-    /* Hide blueprint, HUD layer, overlay-grid, pills, glow anim (data rail replaces them) */
-    .fw-hud-layer,
+    /* Hide blueprint panel + grids on mobile; keep HUD corners + scanline */
     .fw-hud-blueprint,
-    .fw-hud-scanline,
     .fw-overlay-grid,
     .fw-blueprint-panel { display: none; }
 
@@ -1023,10 +1018,10 @@
     .fw-pills { display: none; }
 
     /* Data rail: 3 items at 768px (hide only 4th — Combustible) */
-    .fw-data-rail { height: 42px; }
+    .fw-data-rail { height: 48px; }
     .fw-data-item:nth-child(4) { display: none; }
-    .fw-data-label { font-size: .38rem; letter-spacing: 1.5px; }
-    .fw-data-value { font-size: .65rem; }
+    .fw-data-label { font-size: .44rem; letter-spacing: 1.5px; }
+    .fw-data-value { font-size: .72rem; }
     .fw-data-item  { padding: 0 8px; gap: 6px; }
 
     /* Arrows: position over the visual area */
@@ -1072,7 +1067,20 @@
     /* Very small screens: 2 items only (Año + Km) */
     .fw-data-item:nth-child(3),
     .fw-data-item:nth-child(4) { display: none; }
+    .fw-data-label { font-size: .42rem; }
+    .fw-data-value { font-size: .68rem; }
 }
+
+/* ── HUD corner pulse — subtle tech breathing effect ── */
+@keyframes fw-corner-pulse {
+    0%, 100% { opacity: .52; }
+    50%       { opacity: 1; filter: drop-shadow(0 0 5px rgba(212,175,55,.55)); }
+}
+
+.fw-hud-tl { animation: fw-corner-pulse 3.6s ease-in-out infinite; }
+.fw-hud-tr { animation: fw-corner-pulse 3.6s ease-in-out infinite .9s; }
+.fw-hud-bl { animation: fw-corner-pulse 3.6s ease-in-out infinite 1.8s; }
+.fw-hud-br { animation: fw-corner-pulse 3.6s ease-in-out infinite 2.7s; }
 
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
@@ -1081,6 +1089,7 @@
     .fw-slide--active .fw-info > *,
     .fw-glow,
     .fw-hud-scanline,
+    .fw-hud-tl, .fw-hud-tr, .fw-hud-bl, .fw-hud-br,
     .fw-nav,
     .fw-cta-visual {
         transition: none !important;

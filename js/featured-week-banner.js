@@ -176,10 +176,6 @@
                 ' tabindex="' + (isActive ? '0' : '-1') + '"' +
                 ' aria-label="Ver detalle de ' + title.replace(/"/g, '&quot;') + '">' +
 
-                '<span class="fw-premium-tag">' +
-                    FW._icoStar() + ' REVISADO Y CERTIFICADO' +
-                '</span>' +
-
                 '<h2 class="fw-title">' + sectionTitle + '</h2>' +
 
                 '<p class="fw-subtitle">Financiaci\u00f3n disponible \u00b7 Entrega en Cartagena \u00b7 Verificado</p>' +
@@ -475,7 +471,7 @@
             clearInterval(FW.timer);
             FW.timer = setInterval(function () {
                 FW._goTo((FW.index + 1) % FW.total);
-            }, 4500);
+            }, 6500);
         },
 
         _stopAutoRotate: function () {
@@ -537,22 +533,25 @@
                 }
             });
 
-            /* Touch swipe */
-            if (track) {
-                var txStart = 0;
-                track.addEventListener('touchstart', function (e) {
-                    txStart = e.touches[0].clientX;
-                    FW._stopAutoRotate();
-                }, { passive: true });
-                track.addEventListener('touchend', function (e) {
-                    var diff = txStart - e.changedTouches[0].clientX;
-                    if (Math.abs(diff) > 50) {
-                        if (diff > 0) FW._goTo((FW.index + 1) % FW.total);
-                        else          FW._goTo((FW.index - 1 + FW.total) % FW.total);
-                    }
-                    restart();
-                }, { passive: true });
-            }
+            /* Touch swipe — bound to full section for wider hit area on mobile */
+            var txStartX = 0, txStartY = 0;
+            section.addEventListener('touchstart', function (e) {
+                if (e.target.closest('.fw-nav')) return;
+                txStartX = e.touches[0].clientX;
+                txStartY = e.touches[0].clientY;
+                FW._stopAutoRotate();
+            }, { passive: true });
+            section.addEventListener('touchend', function (e) {
+                if (e.target.closest('.fw-nav')) return;
+                var dx = txStartX - e.changedTouches[0].clientX;
+                var dy = txStartY - e.changedTouches[0].clientY;
+                /* Only slide when horizontal swipe dominates vertical */
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 48) {
+                    if (dx > 0) FW._goTo((FW.index + 1) % FW.total);
+                    else        FW._goTo((FW.index - 1 + FW.total) % FW.total);
+                }
+                restart();
+            }, { passive: true });
         },
 
         /* ─────────────────────────────────────────

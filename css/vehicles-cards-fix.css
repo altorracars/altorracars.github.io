@@ -34,6 +34,9 @@
     /* Ocultar scrollbar completamente en todos los navegadores */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
+    /* Prevent text/image selection during mouse drag */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* Ocultar scrollbar en Chrome/Safari/Edge */

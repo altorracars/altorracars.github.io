@@ -93,11 +93,36 @@ function initBrandsAutoScroll(container) {
         requestAnimationFrame(step);
     }
 
-    // Pause ONLY on the carousel itself, not on arrows
+    // Pause on hover (desktop)
     track.addEventListener('mouseenter', function() { state.paused = true; });
     track.addEventListener('mouseleave', function() { state.paused = false; });
-    track.addEventListener('touchstart', function() { state.paused = true; }, { passive: true });
-    track.addEventListener('touchend', function() { state.paused = false; }, { passive: true });
+
+    // Touch drag — lets users scroll to a specific brand on mobile
+    var dragStartX = 0, dragStartPos = 0, isDragging = false;
+
+    container.addEventListener('touchstart', function(e) {
+        dragStartX   = e.touches[0].clientX;
+        dragStartPos = state.pos;
+        isDragging   = false;
+        state.paused = true;
+    }, { passive: true });
+
+    container.addEventListener('touchmove', function(e) {
+        if (e.touches.length !== 1) return;
+        var dx = dragStartX - e.touches[0].clientX;
+        if (!isDragging && Math.abs(dx) < 6) return;
+        isDragging = true;
+        var halfWidth = track.scrollWidth / 2;
+        if (halfWidth > 0) {
+            state.pos = ((dragStartPos + dx) % halfWidth + halfWidth) % halfWidth;
+        }
+        track.style.transform = 'translateX(-' + state.pos + 'px)';
+    }, { passive: true });
+
+    container.addEventListener('touchend', function() {
+        // Resume auto-scroll after 1.5 s so accidental releases don't snap
+        setTimeout(function() { state.paused = false; }, 1500);
+    }, { passive: true });
 
     requestAnimationFrame(step);
 }

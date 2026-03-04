@@ -497,7 +497,19 @@
             section.addEventListener('mouseenter', FW._stopAutoRotate);
             section.addEventListener('mouseleave', restart);
 
-            /* Arrow buttons */
+            /* Arrow buttons — JS pressed class prevents stuck :active on mobile */
+            [prev, next].filter(Boolean).forEach(function (btn) {
+                btn.addEventListener('touchstart', function () {
+                    btn.classList.add('fw-nav--pressed');
+                }, { passive: true });
+                btn.addEventListener('touchend', function () {
+                    btn.classList.remove('fw-nav--pressed');
+                }, { passive: true });
+                btn.addEventListener('touchcancel', function () {
+                    btn.classList.remove('fw-nav--pressed');
+                }, { passive: true });
+            });
+
             if (prev) prev.addEventListener('click', function () {
                 FW._stopAutoRotate();
                 FW._goTo((FW.index - 1 + FW.total) % FW.total);
@@ -507,6 +519,15 @@
                 FW._stopAutoRotate();
                 FW._goTo((FW.index + 1) % FW.total);
                 restart();
+            });
+
+            /* Page Visibility API — pause when tab hidden, resume on return */
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) {
+                    FW._stopAutoRotate();
+                } else {
+                    restart();
+                }
             });
 
             /* Dot clicks */

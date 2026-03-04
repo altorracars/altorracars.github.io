@@ -210,13 +210,17 @@
                 /* Ambient glow */
                 '<div class="fw-glow" aria-hidden="true"></div>' +
 
-                /* Micro-grid blueprint overlay */
+                /* Micro-grid blueprint overlay (radially masked to visual center) */
                 '<div class="fw-hud-blueprint" aria-hidden="true"></div>' +
 
-                /* Blueprint panel: technical decoration behind car */
+                /* Overlay grid: second tech grid layer, wider cell pattern */
+                '<div class="fw-overlay-grid" aria-hidden="true"></div>' +
+
+                /* Blueprint panel: technical instrument panel behind car */
                 '<div class="fw-blueprint-panel" aria-hidden="true">' +
                     '<div class="fw-blueprint-ticks">' + blueprintTicks + '</div>' +
                     '<span class="fw-blueprint-label">SYS \u00b7 ALTORRA CARS</span>' +
+                    FW._buildBlueprintSvg() +
                 '</div>' +
 
                 /* Blurred background photo (cutout mode only) */
@@ -322,6 +326,89 @@
                 ' aria-label="Especificaciones del veh\u00edculo">' +
                 inner +
                 '</div>'
+            );
+        },
+
+        /* ─────────────────────────────────────────
+           BLUEPRINT SVG — Technical drawing overlay
+           Dimension lines, target crosshairs, traces.
+           All strokes use gold palette at low opacity.
+        ───────────────────────────────────────── */
+        _buildBlueprintSvg: function () {
+            var g   = 'rgba(212,175,55,';
+            var ln  = function (x1, y1, x2, y2, op, sw, dash) {
+                return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"' +
+                    ' fill="none" stroke="' + g + op + ')" stroke-width="' + sw + '"' +
+                    (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+            };
+            var circ = function (cx, cy, r, op, sw, filled) {
+                return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '"' +
+                    (filled
+                        ? ' fill="' + g + op + ')"'
+                        : ' fill="none" stroke="' + g + op + ')" stroke-width="' + sw + '"') +
+                    '/>';
+            };
+            var txt = function (x, y, anchor, op, size, weight, content) {
+                return '<text x="' + x + '" y="' + y + '" text-anchor="' + anchor + '"' +
+                    ' fill="' + g + op + ')" font-size="' + size + '"' +
+                    ' font-family="system-ui,sans-serif"' +
+                    (weight ? ' font-weight="' + weight + '"' : '') +
+                    ' letter-spacing="1.2">' + content + '</text>';
+            };
+            /* Crosshair helper: circle + 4 extending arms */
+            var xhair = function (cx, cy) {
+                return circ(cx, cy, 6, '0.38', '0.65', false) +
+                    circ(cx, cy, 1.8, '0.38', '', true) +
+                    ln(cx - 8, cy, cx - 14, cy, '0.38', '0.65', '') +
+                    ln(cx + 8, cy, cx + 14, cy, '0.38', '0.65', '') +
+                    ln(cx, cy - 8, cx, cy - 14, '0.38', '0.65', '') +
+                    ln(cx, cy + 8, cx, cy + 14, '0.38', '0.65', '');
+            };
+
+            return (
+                '<svg class="fw-blueprint-svg" viewBox="0 0 220 320"' +
+                ' xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">' +
+
+                /* Horizontal dimension guide lines (dashed) */
+                ln(18, 80,  202, 80,  '0.22', '0.5', '5 4') +
+                ln(18, 160, 202, 160, '0.22', '0.5', '5 4') +
+                ln(18, 240, 202, 240, '0.22', '0.5', '5 4') +
+
+                /* Vertical center guide (very faint) */
+                ln(110, 10, 110, 310, '0.09', '0.5', '8 5') +
+
+                /* Dimension tick ends */
+                ln(18, 73, 18, 87,   '0.22', '0.5', '') +
+                ln(202, 73, 202, 87, '0.22', '0.5', '') +
+                ln(18, 153, 18, 167,   '0.22', '0.5', '') +
+                ln(202, 153, 202, 167, '0.22', '0.5', '') +
+
+                /* Registration crosshairs at 3 corners */
+                xhair(22, 22) +
+                xhair(198, 22) +
+                xhair(22, 298) +
+
+                /* Angled PCB trace routing */
+                '<polyline points="0,108 38,108 52,93 202,93"' +
+                ' fill="none" stroke="' + g + '0.16)" stroke-width="0.65"/>' +
+                '<polyline points="0,212 34,212 48,227 202,227"' +
+                ' fill="none" stroke="' + g + '0.13)" stroke-width="0.65"/>' +
+
+                /* Short horizontal accent traces */
+                ln(58, 50,  162, 50,  '0.09', '0.5', '3 3') +
+                ln(58, 270, 162, 270, '0.09', '0.5', '3 3') +
+
+                /* Technical labels */
+                txt(110, 77,  'middle', '0.34', '5.5', '700', 'VEH \u00b7 SYS \u00b7 REF') +
+                txt(110, 157, 'middle', '0.20', '4.2', '',    'ALTORRA SPEC \u00b7 v7') +
+                txt(110, 237, 'middle', '0.20', '4.2', '',    'CARTAGENA \u00b7 CO') +
+
+                /* Measurement ref marks */
+                txt(15, 78,  'end', '0.20', '4.2', '', 'A') +
+                txt(15, 158, 'end', '0.20', '4.2', '', 'B') +
+                txt(15, 238, 'end', '0.20', '4.2', '', 'C') +
+
+                '</svg>'
             );
         },
 

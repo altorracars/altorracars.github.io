@@ -975,35 +975,28 @@
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-estado">
-                        <!-- vDestacado y vFeaturedWeek se sincronizan desde el selector de destaque -->
+                        <!-- vDestacado y vFeaturedWeek sincronizados desde toggle unico -->
                         <input type="checkbox" id="vDestacado" aria-hidden="true" style="display:none">
+                        <input type="checkbox" id="vFeaturedWeek" aria-hidden="true" style="display:none">
 
-                        <!-- Selector unificado de nivel de destaque -->
+                        <!-- Toggle unico: Normal / Destacado -->
                         <div style="margin-bottom:1rem;">
-                            <label class="form-label" style="margin-bottom:0.5rem;">Nivel de destaque</label>
-                            <div style="display:flex;flex-direction:column;gap:5px;">
+                            <label class="form-label" style="margin-bottom:0.5rem;">Visibilidad del vehiculo</label>
+                            <div id="destaqueToggleWrap" style="display:flex;gap:6px;">
 
-                                <label id="desq-lbl-estandar" style="display:flex;align-items:flex-start;gap:10px;padding:0.6rem 0.85rem;border-radius:6px;border:1px solid var(--admin-border,#30363d);cursor:pointer;">
-                                    <input type="radio" name="vDestaqueNivel" value="estandar" id="vDestaqueEstandar" style="margin-top:3px;flex-shrink:0;">
+                                <label id="desq-lbl-normal" style="display:flex;align-items:center;gap:8px;padding:0.55rem 1rem;border-radius:6px;border:1px solid var(--admin-border,#30363d);cursor:pointer;flex:1;">
+                                    <input type="radio" name="vDestaqueNivel" value="normal" id="vDestaqueNormal" style="flex-shrink:0;">
                                     <div>
-                                        <span style="font-size:0.82rem;font-weight:600;color:var(--admin-text,#e6edf3);">Estandar</span>
-                                        <span style="display:block;font-size:0.72rem;color:var(--admin-text-muted,#8b949e);margin-top:1px;">Sin destacar — aparece en el catalogo normalmente</span>
+                                        <span style="font-size:0.82rem;font-weight:600;color:var(--admin-text,#e6edf3);">Normal</span>
+                                        <span style="display:block;font-size:0.72rem;color:var(--admin-text-muted,#8b949e);margin-top:1px;">Aparece solo en el catalogo</span>
                                     </div>
                                 </label>
 
-                                <label id="desq-lbl-catalogo" style="display:flex;align-items:flex-start;gap:10px;padding:0.6rem 0.85rem;border-radius:6px;border:1px solid var(--admin-border,#30363d);cursor:pointer;">
-                                    <input type="radio" name="vDestaqueNivel" value="catalogo" id="vDestaqueCatalogo" style="margin-top:3px;flex-shrink:0;">
+                                <label id="desq-lbl-destacado" style="display:flex;align-items:center;gap:8px;padding:0.55rem 1rem;border-radius:6px;border:1px solid rgba(212,175,55,0.28);cursor:pointer;flex:1;background:rgba(212,175,55,0.03);">
+                                    <input type="radio" name="vDestaqueNivel" value="destacado" id="vDestaqueDestacado" style="flex-shrink:0;">
                                     <div>
-                                        <span style="font-size:0.82rem;font-weight:600;color:var(--admin-text,#e6edf3);">Destacado en catalogo <small id="featuredCounter" style="color:#b89658;font-size:11px;margin-left:3px;font-weight:400;"></small></span>
-                                        <span style="display:block;font-size:0.72rem;color:var(--admin-text-muted,#8b949e);margin-top:1px;">Estrella en el listado. Si ningun vehiculo esta en banner, aparece tambien en el carrusel de inicio.</span>
-                                    </div>
-                                </label>
-
-                                <label id="desq-lbl-banner" style="display:flex;align-items:flex-start;gap:10px;padding:0.6rem 0.85rem;border-radius:6px;border:1px solid rgba(212,175,55,0.28);cursor:pointer;background:rgba(212,175,55,0.03);">
-                                    <input type="radio" name="vDestaqueNivel" value="banner" id="vDestaqueBanner" style="margin-top:3px;flex-shrink:0;">
-                                    <div>
-                                        <span style="font-size:0.82rem;font-weight:600;color:#d4af37;">En banner de inicio <small id="bannerCounter" style="font-size:11px;margin-left:3px;color:#8b949e;font-weight:400;"></small></span>
-                                        <span style="display:block;font-size:0.72rem;color:var(--admin-text-muted,#8b949e);margin-top:1px;">Carrusel de la pagina principal. Incluye destacado en catalogo. Activa la configuracion del banner abajo.</span>
+                                        <span style="font-size:0.82rem;font-weight:600;color:#d4af37;">Destacado <small id="featuredCounter" style="font-size:11px;margin-left:3px;color:#8b949e;font-weight:400;"></small></span>
+                                        <span style="display:block;font-size:0.72rem;color:var(--admin-text-muted,#8b949e);margin-top:1px;">Estrella en catalogo + aparece en banner de inicio (max 6)</span>
                                     </div>
                                 </label>
 
@@ -1043,14 +1036,12 @@
                     <div class="form-section-body" id="sec-banner">
                         <!-- Explicacion del comportamiento -->
                         <div style="margin-bottom:1.1rem;padding:0.75rem 1rem;background:rgba(212,175,55,0.06);border-left:3px solid rgba(212,175,55,0.45);border-radius:0 6px 6px 0;">
-                            <p style="margin:0 0 5px;font-size:0.8rem;font-weight:600;color:#d4af37;">Como funciona el banner de inicio</p>
+                            <p style="margin:0 0 5px;font-size:0.8rem;font-weight:600;color:#d4af37;">Configuracion del banner</p>
                             <p style="margin:0;font-size:0.78rem;color:var(--admin-text-muted,#8b949e);line-height:1.55;">
-                                Por defecto el banner muestra automaticamente los <strong style="color:rgba(255,255,255,0.75);">6 vehiculos mas recientes</strong> disponibles.<br>
-                                Al activar esta opcion en uno o mas vehiculos, el banner mostrara <strong style="color:#d4af37;">UNICAMENTE</strong> esos vehiculos marcados — los demas quedan excluidos aunque sean recientes.
+                                Los vehiculos marcados como <strong style="color:#d4af37;">Destacado</strong> aparecen automaticamente en el banner de inicio.<br>
+                                Si no hay destacados, el banner muestra los <strong style="color:rgba(255,255,255,0.75);">6 mas recientes</strong>. Maximo 6 destacados.
                             </p>
                         </div>
-                        <!-- vFeaturedWeek sincronizado desde selector de destaque en sec-estado -->
-                        <input type="checkbox" id="vFeaturedWeek" aria-hidden="true" style="display:none">
 
                         <div style="margin-bottom:1rem;">
                             <div class="form-group" style="max-width:180px;">

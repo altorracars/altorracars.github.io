@@ -286,6 +286,7 @@
         $('vehicleModal').classList.add('active');
     }
 
+    /* ── Contador unico de destacados (= banner) ── */
     function updateFeaturedCounter() {
         var counter = $('featuredCounter');
         if (!counter) return;
@@ -295,57 +296,41 @@
         counter.style.color = count >= 6 ? '#ef4444' : '#b89658';
     }
 
-    function updateBannerCounter() {
-        var counter = $('bannerCounter');
-        if (!counter) return;
-        var editId = $('vId').value ? parseInt($('vId').value) : null;
-        var count  = AP.vehicles.filter(function(v) { return v.featuredWeek && v.id !== editId; }).length;
-        if (count === 0) {
-            counter.textContent = '(modo auto)';
-            counter.style.color = '#8b949e';
-        } else {
-            counter.textContent = '(' + count + ' activo' + (count !== 1 ? 's' : '') + ')';
-            counter.style.color = count >= 6 ? '#ef4444' : '#b89658';
-        }
-    }
-
-    /* ── Selector unificado de destaque ────────────────────────────── */
-    /* Sincroniza los checkboxes ocultos y el estilo visual del radio */
+    /* ── Toggle 2-estados: Normal / Destacado ── */
     function syncDestaqueFromRadio(value) {
+        var isDestacado = (value === 'destacado');
         var destEl = $('vDestacado');
         var fwEl   = $('vFeaturedWeek');
-        if (destEl) destEl.checked = (value === 'catalogo' || value === 'banner');
-        if (fwEl)   fwEl.checked   = (value === 'banner');
+        if (destEl) destEl.checked = isDestacado;
+        if (fwEl)   fwEl.checked   = isDestacado;
 
-        /* Estilos de selección */
-        var styles = {
-            estandar: { border: 'var(--admin-border,#30363d)', bg: '' },
-            catalogo: { border: 'var(--admin-accent,#58a6ff)', bg: 'rgba(88,166,255,0.05)' },
-            banner:   { border: 'rgba(212,175,55,0.7)',        bg: 'rgba(212,175,55,0.08)' }
-        };
-        ['estandar','catalogo','banner'].forEach(function(v) {
-            var lbl = $('desq-lbl-' + v);
-            if (!lbl) return;
-            var active = (v === value);
-            lbl.style.borderColor  = active ? styles[v].border : (v === 'banner' ? 'rgba(212,175,55,0.28)' : 'var(--admin-border,#30363d)');
-            lbl.style.background   = active ? styles[v].bg     : (v === 'banner' ? 'rgba(212,175,55,0.03)' : '');
-        });
+        /* Estilo visual del toggle */
+        var lblN = $('desq-lbl-normal');
+        var lblD = $('desq-lbl-destacado');
+        if (lblN) {
+            lblN.style.borderColor = isDestacado ? 'var(--admin-border,#30363d)' : 'var(--admin-accent,#58a6ff)';
+            lblN.style.background  = isDestacado ? '' : 'rgba(88,166,255,0.05)';
+        }
+        if (lblD) {
+            lblD.style.borderColor = isDestacado ? 'rgba(212,175,55,0.7)' : 'rgba(212,175,55,0.28)';
+            lblD.style.background  = isDestacado ? 'rgba(212,175,55,0.08)' : 'rgba(212,175,55,0.03)';
+        }
 
-        /* Auto-abrir sec-banner cuando se selecciona ese nivel */
+        /* Auto-abrir sec-banner si es destacado */
         var secBanner = $('sec-banner');
-        if (value === 'banner' && secBanner && !secBanner.classList.contains('open')) {
+        if (isDestacado && secBanner && !secBanner.classList.contains('open')) {
             secBanner.classList.add('open');
             var title = document.querySelector('.form-section-title[data-toggle="sec-banner"]');
             if (title) title.classList.remove('collapsed');
         }
 
         updateFeaturedCounter();
-        updateBannerCounter();
     }
 
-    /* Aplica el radio correcto según los flags del vehículo cargado */
+    /* Lee flags del vehiculo cargado y aplica el radio correspondiente */
     function setDestaqueRadio(destacado, featuredWeek) {
-        var val   = featuredWeek ? 'banner' : (destacado ? 'catalogo' : 'estandar');
+        /* Retrocompat: si cualquiera de los dos flags es true => destacado */
+        var val   = (destacado || featuredWeek) ? 'destacado' : 'normal';
         var radio = document.querySelector('input[name="vDestaqueNivel"][value="' + val + '"]');
         if (radio) radio.checked = true;
         syncDestaqueFromRadio(val);
@@ -834,39 +819,26 @@
             }
         }
 
-        // Limitar máximo 6 vehículos destacados
+        // Limitar maximo 6 vehiculos destacados (= banner)
         if ($('vDestacado').checked) {
             var editId = $('vId').value ? parseInt($('vId').value) : null;
-            var featuredCount = AP.vehicles.filter(function(v) {
+            var otherDestacados = AP.vehicles.filter(function(v) {
                 return v.destacado && v.id !== editId;
-            }).length;
-            if (featuredCount >= 6) {
-                AP.toast('Máximo 6 vehículos destacados. Desmarca uno existente primero.', 'error');
-                return;
-            }
-        }
-
-        // Validar banner principal (featuredWeek)
-        var fwEl = $('vFeaturedWeek');
-        if (fwEl && fwEl.checked) {
-            var fwEditId   = $('vId').value ? parseInt($('vId').value) : null;
-            var fwVehicles = AP.vehicles.filter(function(v) { return v.featuredWeek && v.id !== fwEditId; });
-
-            // Límite máximo 6 slots en banner
-            if (fwVehicles.length >= 6) {
-                AP.toast('Máximo 6 vehículos en el banner principal. Desmarca uno existente antes de agregar otro.', 'error');
+            });
+            if (otherDestacados.length >= 6) {
+                AP.toast('Maximo 6 vehiculos destacados. Desmarca uno existente primero.', 'error');
                 return;
             }
 
-            // Detectar orden duplicado
+            // Detectar orden duplicado en banner
             var fwOrder = $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value) || null) : null;
             if (fwOrder !== null) {
-                var orderConflict = fwVehicles.find(function(v) { return v.featuredOrder === fwOrder; });
+                var orderConflict = otherDestacados.find(function(v) { return v.featuredOrder === fwOrder; });
                 if (orderConflict) {
                     var conflictName = ((orderConflict.marca || '') + ' ' + (orderConflict.modelo || '')).trim();
                     AP.toast(
-                        'La posición ' + fwOrder + ' ya está asignada a "' + conflictName + '". ' +
-                        'Elige otra posición (1-6) o deja el campo vacío para orden automático.',
+                        'La posicion ' + fwOrder + ' ya esta asignada a "' + conflictName + '". ' +
+                        'Elige otra posicion (1-6) o deja el campo vacio para orden automatico.',
                         'error'
                     );
                     if ($('vFeaturedOrder')) $('vFeaturedOrder').classList.add('field-error');
@@ -1145,7 +1117,7 @@
     var concSelectEl = $('vConcesionario');
     if (concSelectEl) concSelectEl.addEventListener('change', toggleConsignaField);
 
-    /* Selector unificado de destaque — radio change */
+    /* Toggle destaque — radio change */
     document.querySelectorAll('input[name="vDestaqueNivel"]').forEach(function(radio) {
         radio.addEventListener('change', function() { syncDestaqueFromRadio(this.value); });
     });
@@ -1298,7 +1270,7 @@
             .catch(function() { AP.toast('No se pudo cargar el borrador de este usuario', 'error'); });
     }
 
-    // ========== TOGGLE DESTACADO ==========
+    // ========== TOGGLE DESTACADO (estrella en tabla) ==========
     function toggleDestacadoFn(id) {
         if (!AP.canCreateOrEditInventory()) { AP.toast('Sin permisos.', 'error'); return; }
         var vehicle = AP.vehicles.find(function(v) { return v.id === id; });
@@ -1306,15 +1278,16 @@
         var newVal = !vehicle.destacado;
         if (newVal) {
             var count = AP.vehicles.filter(function(v) { return v.destacado; }).length;
-            if (count >= 6) { AP.toast('Máximo 6 vehículos destacados.', 'error'); return; }
+            if (count >= 6) { AP.toast('Maximo 6 vehiculos destacados.', 'error'); return; }
         }
         var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
         window.db.collection('vehiculos').doc(String(id)).update({
             destacado: newVal,
+            featuredWeek: newVal,
             updatedAt: new Date().toISOString(),
             updatedBy: userEmail
         }).then(function() {
-            AP.toast(newVal ? '⭐ Vehículo marcado como destacado' : 'Vehículo quitado de destacados', 'success');
+            AP.toast(newVal ? 'Vehiculo destacado (aparece en banner)' : 'Vehiculo quitado de destacados', 'success');
             AP.writeAuditLog('vehicle_feature_toggle', 'vehiculo #' + id, newVal ? 'destacado' : 'sin destacar');
         }).catch(function(err) { AP.toast('Error: ' + (err.message || err), 'error'); });
     }

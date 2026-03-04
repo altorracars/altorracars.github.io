@@ -1,12 +1,12 @@
 /**
- * Featured Week Banner — ALTORRA CARS — v7 DEFINITIVO
+ * Featured Week Banner — ALTORRA CARS — v8 Modelo Unificado
  * HUD Automotriz Premium | Paleta Dorada/Ámbar | Sin Azul/Cian
  *
- * Prioridad:  featuredWeek:true + featuredOrder  >  destacado:true  >  6 más recientes
+ * Prioridad:  destacado:true (= featuredWeek) + featuredOrder  >  6 más recientes
  * Campos opt: featuredCutoutPng (PNG sin fondo), featuredOrder (1-6), precioOferta
  *
- * Data Rail: componente unificado de specs (reemplaza HUD flotante legacy).
- * Badge:     "OFERTA DE LA SEMANA" solo si precioOferta < precio.
+ * Modelo simplificado: destacado = banner. Un solo concepto, una sola verdad.
+ * CSS .fw-car-bg eliminado — cutout mode muestra SOLO el PNG sin fondo borroso.
  */
 (function () {
     'use strict';
@@ -48,26 +48,22 @@
 
         /* ─────────────────────────────────────────
            VEHICLE SELECTION
-           featuredWeek > destacado > 6 más recientes
+           destacado (= banner) > 6 más recientes
         ───────────────────────────────────────── */
         _getVehicles: function () {
             var all = (vehicleDB.vehicles || []).filter(function (v) {
                 return v.estado === 'disponible' || !v.estado;
             });
 
-            /* 1) featuredWeek flag */
-            var byWeek = all.filter(function (v) { return v.featuredWeek; });
-            if (byWeek.length) {
-                return byWeek.sort(function (a, b) {
+            /* 1) Destacados — retrocompat: acepta featuredWeek O destacado */
+            var featured = all.filter(function (v) { return v.destacado || v.featuredWeek; });
+            if (featured.length) {
+                return featured.sort(function (a, b) {
                     return (a.featuredOrder || 999) - (b.featuredOrder || 999);
-                });
+                }).slice(0, 6);
             }
 
-            /* 2) destacado en catálogo (cap a 6 para no saturar) */
-            var byDest = all.filter(function (v) { return v.destacado; });
-            if (byDest.length) return byDest.slice(0, 6);
-
-            /* 3) fallback: 6 más recientes — año DESC, luego updatedAt DESC como desempate */
+            /* 2) Fallback: 6 más recientes — año DESC, luego updatedAt DESC */
             return all.slice()
                 .sort(function (a, b) {
                     var dy = (b.year || 0) - (a.year || 0);
@@ -130,13 +126,13 @@
             var trans = v.transmision ? v.transmision.charAt(0).toUpperCase() + v.transmision.slice(1) : '';
             var fuel  = v.combustible ? v.combustible.charAt(0).toUpperCase() + v.combustible.slice(1) : '';
 
-            /* ── Badge text and variant: OFFER / DESTACADO / PREMIUM ── */
+            /* ── Badge text: OFFER or DESTACADO ── */
             var badgeText  = '';
             var badgeClass = 'fw-badge';
             if (hasOffer) {
                 badgeText  = FW._icoStar() + ' OFERTA DE LA SEMANA';
                 badgeClass = 'fw-badge fw-badge--offer';
-            } else if (v.featuredWeek) {
+            } else if (v.destacado || v.featuredWeek) {
                 badgeText  = FW._icoStar() + ' DESTACADO DE LA SEMANA';
             } else {
                 badgeText  = FW._icoStar() + ' SELECCI\u00d3N PREMIUM';
@@ -153,7 +149,7 @@
                 : '';
 
             /* ── Section label ── */
-            var sectionTitle = v.featuredWeek
+            var sectionTitle = (v.destacado || v.featuredWeek)
                 ? 'Destacados de la <span>Semana</span>'
                 : 'Veh\u00edculos <span>Destacados</span>';
 
@@ -227,10 +223,7 @@
                     FW._buildBlueprintSvg() +
                 '</div>' +
 
-                /* Blurred background photo (cutout mode only) */
-                (hasCutout && v.imagen
-                    ? '<img class="fw-car-bg" src="' + v.imagen + '" alt="" aria-hidden="true" loading="lazy" decoding="async">'
-                    : '') +
+                /* Blurred bg removed — cutout shows PNG only */
 
                 /* Car scene: floor + shadow + image */
                 '<div class="fw-car-scene' + (hasCutout ? ' fw-car-scene--cutout' : '') + '" aria-hidden="true">' +
@@ -470,14 +463,9 @@
             if (!FW.vehicles.length) return;
             var next = FW.vehicles[(currentIndex + 1) % FW.total];
             if (!next) return;
-            /* Cutout mode: dos recursos — PNG recortado + imagen base borrosa.
-               Precargamos ambos para evitar flash al cambiar slide. */
-            if (next.featuredCutoutPng) {
-                var cutout = new Image(); cutout.src = next.featuredCutoutPng;
-                if (next.imagen) { var bg = new Image(); bg.src = next.imagen; }
-            } else if (next.imagen) {
-                var regular = new Image(); regular.src = next.imagen;
-            }
+            /* Precargar solo la imagen que se va a mostrar */
+            var nextSrc = next.featuredCutoutPng || next.imagen;
+            if (nextSrc) { var img = new Image(); img.src = nextSrc; }
         },
 
         /* ─────────────────────────────────────────

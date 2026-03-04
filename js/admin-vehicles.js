@@ -295,6 +295,38 @@
         counter.style.color = count >= 6 ? '#ef4444' : '#b89658';
     }
 
+    function updateBannerCounter() {
+        var counter = $('bannerCounter');
+        var chip    = $('bannerModeChip');
+        var editId  = $('vId').value ? parseInt($('vId').value) : null;
+        var count   = AP.vehicles.filter(function(v) { return v.featuredWeek && v.id !== editId; }).length;
+
+        if (counter) {
+            if (count === 0) {
+                counter.textContent = '(modo auto)';
+                counter.style.color = '#8b949e';
+            } else {
+                counter.textContent = '(' + count + ' activo' + (count !== 1 ? 's' : '') + ')';
+                counter.style.color = count >= 6 ? '#ef4444' : '#b89658';
+            }
+        }
+
+        if (chip) {
+            if (count === 0) {
+                chip.style.display = 'none';
+            } else {
+                chip.style.display = 'block';
+                chip.innerHTML =
+                    '<span style="display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;' +
+                    'padding:3px 8px;border-radius:4px;background:rgba(212,175,55,0.1);' +
+                    'border:1px solid rgba(212,175,55,0.3);color:#d4af37;">' +
+                    '&#9733; Modo personalizado activo — ' + count +
+                    ' veh\u00edculo' + (count !== 1 ? 's' : '') + ' en banner' +
+                    '</span>';
+            }
+        }
+    }
+
     function formHasData() { return !!($('vMarca').value || $('vModelo').value || $('vPrecio').value); }
 
     function clearValidationErrors() {
@@ -547,6 +579,7 @@
         $('uploadedImages').innerHTML = '';
         $('uploadError').style.display = 'none';
         updateFeaturedCounter();
+        updateBannerCounter();
         checkForDraft().then(function() { captureOriginalSnapshot(); startDraftAutoSave(); openModal(); });
     });
 
@@ -651,6 +684,7 @@
         renderUploadedImages();
         $('uploadError').style.display = 'none';
         updateFeaturedCounter();
+        updateBannerCounter();
         captureOriginalSnapshot();
         startDraftAutoSave();
         openModal();
@@ -1058,6 +1092,10 @@
     }
     var concSelectEl = $('vConcesionario');
     if (concSelectEl) concSelectEl.addEventListener('change', toggleConsignaField);
+
+    /* Live banner counter update when checkbox toggled */
+    var featWeekEl = $('vFeaturedWeek');
+    if (featWeekEl) featWeekEl.addEventListener('change', updateBannerCounter);
 
     // ========== PREVIEW ==========
     function previewVehicle(id) {

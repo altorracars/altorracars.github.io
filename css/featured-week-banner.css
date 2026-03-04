@@ -273,8 +273,8 @@
 
 .fw-pill svg {
     flex-shrink: 0;
-    opacity: .75;
-    color: var(--fw-gold-2);
+    opacity: .82;
+    color: var(--fw-gold-1);
 }
 
 /* ── Price box ── */
@@ -380,12 +380,15 @@
     overflow: hidden;
 }
 
-/* Left-edge blend: info panel → visual zone */
+/* Left-edge blend: info panel → visual zone (wider for stronger cohesion) */
 .fw-visual::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; bottom: 0; width: 26%;
-    background: linear-gradient(to right, rgba(10,11,16,.5) 0%, transparent 100%);
+    top: 0; left: 0; bottom: 0; width: 34%;
+    background: linear-gradient(to right,
+        rgba(10,11,16,.62) 0%,
+        rgba(10,11,16,.28) 55%,
+        transparent 100%);
     pointer-events: none;
     z-index: 6;
 }
@@ -999,9 +1002,19 @@
         padding: 1rem 1rem 1.5rem;
         gap: .5rem;
         flex: 1;
+        /* Bridge: subtle fade from visual zone edge into info panel */
+        background: linear-gradient(to bottom,
+            rgba(10,11,16,.22) 0%,
+            transparent 32px);
     }
 
     .fw-info::after { display: none; }
+
+    /* Mobile: reduce expensive backdrop-filter to ease GPU compositing */
+    .fw-data-rail {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
 
     /* Hide blueprint, HUD layer, overlay-grid, pills (data rail replaces them) */
     .fw-hud-layer,

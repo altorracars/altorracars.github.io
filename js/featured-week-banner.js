@@ -63,13 +63,19 @@
                 });
             }
 
-            /* 2) destacado (legacy) */
+            /* 2) destacado en catálogo (cap a 6 para no saturar) */
             var byDest = all.filter(function (v) { return v.destacado; });
-            if (byDest.length) return byDest;
+            if (byDest.length) return byDest.slice(0, 6);
 
-            /* 3) fallback: 6 más nuevos por año */
+            /* 3) fallback: 6 más recientes — año DESC, luego updatedAt DESC como desempate */
             return all.slice()
-                .sort(function (a, b) { return (b.year || 0) - (a.year || 0); })
+                .sort(function (a, b) {
+                    var dy = (b.year || 0) - (a.year || 0);
+                    if (dy !== 0) return dy;
+                    var ta = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.id || 0);
+                    var tb = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.id || 0);
+                    return tb - ta;
+                })
                 .slice(0, 6);
         },
 
@@ -136,12 +142,10 @@
                 badgeText  = FW._icoStar() + ' SELECCI\u00d3N PREMIUM';
             }
 
-            /* ── Spec pills (left panel) ── */
+            /* ── Spec pills (left panel) — info distinta al data rail ── */
             var pills = '';
-            if (v.year)                                                pills += FW._pill(FW._icoYear(),  v.year);
-            if (v.kilometraje != null)                                 pills += FW._pill(FW._icoKm(),   km);
-            if (trans)                                                 pills += FW._pill(FW._icoTrans(), trans);
-            if (fuel)                                                  pills += FW._pill(FW._icoFuel(),  fuel);
+            if (v.tipo)      pills += FW._pill(FW._icoCar(),      v.tipo.charAt(0).toUpperCase() + v.tipo.slice(1));
+            if (v.ubicacion) pills += FW._pill(FW._icoLocation(), v.ubicacion);
 
             /* ── Old price row: only when hasOffer ── */
             var priceOldHtml = hasOffer
@@ -225,7 +229,7 @@
 
                 /* Blurred background photo (cutout mode only) */
                 (hasCutout && v.imagen
-                    ? '<img class="fw-car-bg" src="' + v.imagen + '" alt="" aria-hidden="true" loading="lazy">'
+                    ? '<img class="fw-car-bg" src="' + v.imagen + '" alt="" aria-hidden="true" loading="lazy" decoding="async">'
                     : '') +
 
                 /* Car scene: floor + shadow + image */
@@ -235,7 +239,8 @@
                     '<img class="' + imgClass + '"' +
                         ' src="' + imgSrc + '"' +
                         ' alt="' + title.replace(/"/g, '&quot;') + '"' +
-                        ' loading="' + (i === 0 ? 'eager' : 'lazy') + '">' +
+                        ' loading="' + (i === 0 ? 'eager' : 'lazy') + '"' +
+                        ' decoding="' + (i === 0 ? 'sync' : 'async') + '">' +
                 '</div>' +
 
                 /* HUD layer: corner brackets + scanline only — NO floating badges */
@@ -626,6 +631,24 @@
         /* Arrow right — CTA */
         _icoArrow: function () {
             return FW._svg('<polyline points="9 18 15 12 9 6"/>', 14);
+        },
+
+        /* Car body — Tipo de vehículo */
+        _icoCar: function () {
+            return FW._svg(
+                '<path d="M7 17m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/>' +
+                '<path d="M17 17m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/>' +
+                '<path d="M5 17H3v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2"/>' +
+                '<path d="M9 17h6"/>'
+            );
+        },
+
+        /* Map pin — Ubicación */
+        _icoLocation: function () {
+            return FW._svg(
+                '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>' +
+                '<circle cx="12" cy="10" r="3"/>'
+            );
         },
 
         /* Pill wrapper */

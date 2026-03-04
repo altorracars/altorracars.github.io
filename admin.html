@@ -934,6 +934,7 @@
                     <div class="form-section-body open" id="sec-basica">
                         <div class="form-row"><div class="form-group"><label class="form-label">Marca *</label><select id="vMarca" class="form-select" required><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Modelo *</label><input type="text" id="vModelo" class="form-input" required placeholder="Ej: Onix"></div></div>
                         <div class="form-row-3"><div class="form-group"><label class="form-label">Ano *</label><input type="number" id="vYear" class="form-input" required min="1990" max="2030" placeholder="2024"></div><div class="form-group"><label class="form-label">Tipo *</label><select id="vTipo" class="form-select" required><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Categoria *</label><select id="vCategoria" class="form-select" required><option value="">Seleccionar...</option></select></div></div>
+                        <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Descripcion</label><textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea></div>
                     </div>
                 </div>
 
@@ -945,7 +946,7 @@
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-precio">
-                        <div class="form-row-3"><div class="form-group"><label class="form-label">Precio *</label><input type="number" id="vPrecio" class="form-input" required min="0" placeholder="75000000"></div><div class="form-group"><label class="form-label">Precio Oferta</label><input type="number" id="vPrecioOferta" class="form-input" min="0" placeholder="Vacio si no aplica"></div><div class="form-group"><label class="form-label">Kilometraje *</label><input type="number" id="vKm" class="form-input" required min="0" placeholder="0"></div></div>
+                        <div class="form-row-3"><div class="form-group"><label class="form-label">Precio *</label><input type="number" id="vPrecio" class="form-input" required min="0" placeholder="75000000"></div><div class="form-group"><label class="form-label">Precio Oferta</label><input type="number" id="vPrecioOferta" class="form-input" min="0" placeholder="Vacio si no aplica" oninput="var cb=document.getElementById('vOferta');if(cb)cb.checked=!!this.value;"><small style="display:block;color:var(--admin-text-muted,#8b949e);font-size:0.72rem;margin-top:3px;">Ingresa precio menor al normal para activar "En Oferta" automaticamente</small></div><div class="form-group"><label class="form-label">Kilometraje *</label><input type="number" id="vKm" class="form-input" required min="0" placeholder="0"></div></div>
                         <div class="form-row"><div class="form-group"><label class="form-label">Estado del vehiculo</label><select id="vEstado" class="form-select"><option value="disponible">Disponible</option><option value="reservado">Reservado</option><option value="vendido">Vendido</option><option value="borrador">Borrador</option></select></div><div class="form-group"><label class="form-label">Ubicacion</label><input type="text" id="vUbicacion" class="form-input" placeholder="Barranquilla" value="Barranquilla"></div></div>
                     </div>
                 </div>
@@ -966,16 +967,16 @@
                     </div>
                 </div>
 
-                <!-- Seccion: Estado -->
+                <!-- Seccion: Visibilidad y Publicacion -->
                 <div class="form-section">
                     <div class="form-section-title" data-toggle="sec-estado">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                        Estado y Opciones
+                        Visibilidad y Publicacion
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-estado">
                         <div class="checkbox-grid">
-                            <label class="form-checkbox"><input type="checkbox" id="vDestacado"> Destacado <small id="featuredCounter" style="color:#b89658;font-size:11px;margin-left:4px"></small></label>
+                            <label class="form-checkbox"><input type="checkbox" id="vDestacado"> Destacado en catalogo <small id="featuredCounter" style="color:#b89658;font-size:11px;margin-left:4px"></small></label>
                             <label class="form-checkbox"><input type="checkbox" id="vOferta"> En Oferta</label>
                             <label class="form-checkbox"><input type="checkbox" id="vRevision" checked> Revision Tecnico-Mecanica</label>
                             <label class="form-checkbox"><input type="checkbox" id="vPeritaje" checked> Peritaje Realizado</label>
@@ -987,52 +988,6 @@
                                 <small style="color:var(--admin-text-muted,#8b949e);font-size:0.75rem;">Mayor numero = aparece primero (0-99)</small>
                             </div>
                         </div>
-
-                        <!-- Destacados de la Semana — Banner Principal -->
-                        <div style="margin-top:1.25rem;padding:1rem;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.22);border-radius:8px;">
-                            <div style="display:flex;align-items:center;gap:7px;margin-bottom:0.85rem;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                <span style="font-size:0.78rem;font-weight:700;color:#d4af37;letter-spacing:1px;text-transform:uppercase;">Destacados de la Semana</span>
-                            </div>
-                            <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;">
-                                <label class="form-checkbox" style="margin:0;">
-                                    <input type="checkbox" id="vFeaturedWeek">
-                                    Incluir en banner principal
-                                </label>
-                                <div class="form-group" style="margin:0;min-width:130px;">
-                                    <label class="form-label" style="font-size:0.75rem;">Posicion en banner (1-6)</label>
-                                    <input type="number" id="vFeaturedOrder" class="form-input" min="1" max="6" placeholder="1-6">
-                                </div>
-                            </div>
-                            <!-- Cutout PNG upload widget -->
-                            <div style="margin-top:0.85rem;">
-                                <label class="form-label" style="font-size:0.75rem;">Imagen recortada — PNG sin fondo (opcional)</label>
-                                <small style="display:block;color:var(--admin-text-muted,#8b949e);font-size:0.72rem;margin-bottom:0.6rem;">PNG transparente del vehiculo. Activa modo composicion premium en el banner.</small>
-
-                                <!-- Preview area -->
-                                <div id="cutoutPreviewArea" style="display:none;margin-bottom:0.6rem;position:relative;width:100%;max-width:260px;background-image:repeating-conic-gradient(#2a2d35 0% 25%,#1c1f27 0% 50%);background-size:16px 16px;border-radius:6px;border:1px solid rgba(212,175,55,0.25);overflow:hidden;min-height:90px;display:flex;align-items:center;justify-content:center;">
-                                    <img id="cutoutPreviewImg" src="" alt="Cutout preview" style="max-width:100%;max-height:120px;object-fit:contain;display:block;">
-                                    <button type="button" id="btnCutoutClear" onclick="adminPanel.clearCutoutPng()" title="Quitar imagen recortada" style="position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(248,81,73,0.85);border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
-                                </div>
-
-                                <!-- Drop zone / click to upload -->
-                                <div id="cutoutUploadArea" style="border:1.5px dashed rgba(212,175,55,0.32);border-radius:6px;padding:0.75rem 1rem;text-align:center;cursor:pointer;background:rgba(212,175,55,0.03);transition:background 0.2s;" onclick="document.getElementById('cutoutFileInput').click()">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.6)" stroke-width="1.5" style="display:block;margin:0 auto 5px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                    <span style="font-size:0.75rem;color:rgba(255,255,255,0.55);">Subir PNG transparente</span>
-                                    <input type="file" id="cutoutFileInput" accept="image/png" style="display:none">
-                                </div>
-
-                                <!-- Progress + error -->
-                                <div id="cutoutUploadProgress" style="display:none;margin-top:0.4rem;"><div class="progress-bar"><div class="progress-fill" id="cutoutProgressFill"></div></div><small id="cutoutUploadStatus" style="color:var(--admin-text-muted);">Subiendo...</small></div>
-                                <div id="cutoutUploadError" style="display:none;margin-top:0.4rem;padding:0.5rem 0.75rem;background:rgba(248,81,73,0.1);border:1px solid var(--admin-danger);border-radius:6px;font-size:0.78rem;color:var(--admin-danger);"></div>
-
-                                <!-- Manual URL fallback -->
-                                <div style="margin-top:0.5rem;">
-                                    <label class="form-label" style="font-size:0.7rem;color:var(--admin-text-muted,#8b949e);">O pega la URL directamente:</label>
-                                    <input type="url" id="vFeaturedCutoutPng" class="form-input" placeholder="https://... / multimedia/vehicles/cutout.png" style="font-size:0.8rem;" oninput="adminPanel.renderCutoutPreview(this.value)">
-                                </div>
-                            </div>
-                        </div>
                         <div class="form-row" style="margin-top:1rem;">
                             <div class="form-group">
                                 <label class="form-label">Origen del vehiculo</label>
@@ -1041,7 +996,64 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group" style="margin-top:1rem;"><label class="form-label">Descripcion</label><textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea></div>
+                    </div>
+                </div>
+
+                <!-- Seccion: Banner Destacados de la Semana -->
+                <div class="form-section">
+                    <div class="form-section-title" data-toggle="sec-banner">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        Banner Destacados de la Semana
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="form-section-body" id="sec-banner">
+                        <!-- Explicacion del comportamiento -->
+                        <div style="margin-bottom:1.1rem;padding:0.75rem 1rem;background:rgba(212,175,55,0.06);border-left:3px solid rgba(212,175,55,0.45);border-radius:0 6px 6px 0;">
+                            <p style="margin:0 0 5px;font-size:0.8rem;font-weight:600;color:#d4af37;">Como funciona el banner de inicio</p>
+                            <p style="margin:0;font-size:0.78rem;color:var(--admin-text-muted,#8b949e);line-height:1.55;">
+                                Por defecto el banner muestra automaticamente los <strong style="color:rgba(255,255,255,0.75);">6 vehiculos mas recientes</strong> disponibles.<br>
+                                Al activar esta opcion en uno o mas vehiculos, el banner mostrara <strong style="color:#d4af37;">UNICAMENTE</strong> esos vehiculos marcados — los demas quedan excluidos aunque sean recientes.
+                            </p>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;margin-bottom:1rem;">
+                            <label class="form-checkbox" style="margin:0;align-self:center;">
+                                <input type="checkbox" id="vFeaturedWeek">
+                                Incluir en banner principal
+                            </label>
+                            <div class="form-group" style="margin:0;min-width:150px;">
+                                <label class="form-label" style="font-size:0.75rem;">Posicion en banner (1-6)</label>
+                                <input type="number" id="vFeaturedOrder" class="form-input" min="1" max="6" placeholder="1-6">
+                                <small style="color:var(--admin-text-muted,#8b949e);font-size:0.72rem;">Opcional — define el orden de aparicion</small>
+                            </div>
+                        </div>
+                        <!-- Cutout PNG upload widget -->
+                        <div>
+                            <label class="form-label" style="font-size:0.75rem;">Imagen recortada — PNG sin fondo (opcional)</label>
+                            <small style="display:block;color:var(--admin-text-muted,#8b949e);font-size:0.72rem;margin-bottom:0.6rem;">PNG transparente del vehiculo. Activa modo composicion premium en el banner.</small>
+
+                            <!-- Preview area -->
+                            <div id="cutoutPreviewArea" style="display:none;margin-bottom:0.6rem;position:relative;width:100%;max-width:260px;background-image:repeating-conic-gradient(#2a2d35 0% 25%,#1c1f27 0% 50%);background-size:16px 16px;border-radius:6px;border:1px solid rgba(212,175,55,0.25);overflow:hidden;min-height:90px;display:flex;align-items:center;justify-content:center;">
+                                <img id="cutoutPreviewImg" src="" alt="Cutout preview" style="max-width:100%;max-height:120px;object-fit:contain;display:block;">
+                                <button type="button" id="btnCutoutClear" onclick="adminPanel.clearCutoutPng()" title="Quitar imagen recortada" style="position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(248,81,73,0.85);border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+                            </div>
+
+                            <!-- Drop zone / click to upload -->
+                            <div id="cutoutUploadArea" style="border:1.5px dashed rgba(212,175,55,0.32);border-radius:6px;padding:0.75rem 1rem;text-align:center;cursor:pointer;background:rgba(212,175,55,0.03);transition:background 0.2s;" onclick="document.getElementById('cutoutFileInput').click()">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.6)" stroke-width="1.5" style="display:block;margin:0 auto 5px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                <span style="font-size:0.75rem;color:rgba(255,255,255,0.55);">Subir PNG transparente</span>
+                                <input type="file" id="cutoutFileInput" accept="image/png" style="display:none">
+                            </div>
+
+                            <!-- Progress + error -->
+                            <div id="cutoutUploadProgress" style="display:none;margin-top:0.4rem;"><div class="progress-bar"><div class="progress-fill" id="cutoutProgressFill"></div></div><small id="cutoutUploadStatus" style="color:var(--admin-text-muted);">Subiendo...</small></div>
+                            <div id="cutoutUploadError" style="display:none;margin-top:0.4rem;padding:0.5rem 0.75rem;background:rgba(248,81,73,0.1);border:1px solid var(--admin-danger);border-radius:6px;font-size:0.78rem;color:var(--admin-danger);"></div>
+
+                            <!-- Manual URL fallback -->
+                            <div style="margin-top:0.5rem;">
+                                <label class="form-label" style="font-size:0.7rem;color:var(--admin-text-muted,#8b949e);">O pega la URL directamente:</label>
+                                <input type="url" id="vFeaturedCutoutPng" class="form-input" placeholder="https://... / multimedia/vehicles/cutout.png" style="font-size:0.8rem;" oninput="adminPanel.renderCutoutPreview(this.value)">
+                            </div>
+                        </div>
                     </div>
                 </div>
 

@@ -2,9 +2,9 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v2.1.0-' + '20260215'; // Date-based versioning
+const CACHE_VERSION = 'v2.2.0-' + '20260305'; // Date-based versioning
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
-const RUNTIME_CACHE = 'altorra-runtime';
+const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`; // Version-specific → se limpia con cada actualización
 
 // Assets that rarely change (fonts, brand logos)
 const STATIC_ASSETS = [

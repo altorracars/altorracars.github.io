@@ -124,14 +124,74 @@
     line-height: 1.6 !important;
 }
 
-/* ── Botones en fila centrada ── */
-.hero-buttons {
-    display: flex !important;
-    gap: 0.75rem !important;
-    flex-wrap: wrap !important;
+/* ── CTA principal + pills de categoría ── */
+.hero-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 2.2rem;
+}
+
+/* Botón principal: "Explorar Catálogo" */
+.hero-btn-main {
+    display: inline-flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    margin-bottom: 2.2rem !important;
+    gap: 0.5rem !important;
+    padding: 0.9rem 2.2rem !important;
+}
+
+.btn-arrow-icon {
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+}
+
+.hero-btn-main:hover .btn-arrow-icon {
+    transform: translateX(4px);
+}
+
+/* Pills de categoría */
+.hero-cta-pills {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.btn-hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 1.2rem;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 100px;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-hero-pill:hover {
+    background: rgba(212, 175, 55, 0.14);
+    border-color: rgba(212, 175, 55, 0.45);
+    color: #d4af37;
+}
+
+/* Conteo dentro de la pill */
+.pill-count {
+    display: inline-block;
+    background: rgba(212, 175, 55, 0.18);
+    color: #d4af37;
+    padding: 0.05rem 0.4rem;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    line-height: 1.4;
 }
 
 /* ── Stats row ── */
@@ -172,6 +232,12 @@
     font-weight: 500;
 }
 
+/* Ícono en lugar de número (ej: ⚡ para Financiación) */
+.hero-stat-icon {
+    font-size: 1.4rem !important;
+    letter-spacing: 0 !important;
+}
+
 /* ── MÓVIL ── */
 @media (max-width: 768px) {
     .hero {
@@ -189,6 +255,20 @@
 
     .hero-subtitle {
         font-size: 0.85rem !important;
+    }
+
+    .hero-cta {
+        gap: 0.7rem;
+    }
+
+    .hero-btn-main {
+        padding: 0.8rem 1.8rem !important;
+        font-size: 0.95rem !important;
+    }
+
+    .btn-hero-pill {
+        padding: 0.45rem 1rem;
+        font-size: 0.8rem;
     }
 
     .hero-stat {
@@ -215,6 +295,15 @@
 
     .hero-title {
         font-size: clamp(1.4rem, 8vw, 2rem) !important;
+    }
+
+    .hero-cta-pills {
+        gap: 0.45rem;
+    }
+
+    .btn-hero-pill {
+        padding: 0.4rem 0.85rem;
+        font-size: 0.75rem;
     }
 
     .hero-stat {

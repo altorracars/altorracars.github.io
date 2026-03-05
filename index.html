@@ -244,7 +244,11 @@
         .hero-title{font-size:clamp(2rem,5vw,3.6rem);font-weight:900;color:#fff;margin-bottom:1rem;text-shadow:0 2px 40px rgba(0,0,0,.8);line-height:1.08}
         .hero-title-accent{color:#d4af37;display:block}
         .hero-subtitle{font-size:clamp(.9rem,1.6vw,1.05rem);color:rgba(255,255,255,.72);margin-bottom:2rem;line-height:1.6}
-        .hero-buttons{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:2.2rem}
+        .hero-cta{display:flex;flex-direction:column;align-items:center;gap:.85rem;margin-bottom:2.2rem}
+        .hero-btn-main{display:inline-flex!important;align-items:center!important;gap:.5rem!important}
+        .hero-cta-pills{display:flex;gap:.6rem}
+        .btn-hero-pill{display:inline-flex;align-items:center;gap:.45rem;padding:.5rem 1.2rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:100px;color:rgba(255,255,255,.82);font-size:.85rem;font-weight:600;text-decoration:none}
+        .pill-count{background:rgba(212,175,55,.18);color:#d4af37;padding:.05rem .4rem;border-radius:100px;font-size:.7rem;font-weight:700;min-width:20px;text-align:center}
         .hero-stats{display:flex;align-items:center;justify-content:center;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.12)}
         .hero-stat{display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:0 2rem}
         .hero-stat+.hero-stat{border-left:1px solid rgba(255,255,255,.15)}
@@ -312,7 +316,7 @@
             <!-- Badge -->
             <div class="hero-badge">
                 <span class="hero-badge-dot"></span>
-                Concesionario Líder en Cartagena
+                Concesionario en Cartagena
             </div>
 
             <!-- Título -->
@@ -323,33 +327,40 @@
 
             <!-- Subtítulo -->
             <p class="hero-subtitle">
-                Más de 500 vehículos usados y nuevos · 20+ marcas premium · Financiación aprobada en 24 horas
+                Autos usados y nuevos · Las mejores marcas · Al mejor precio
             </p>
 
-            <!-- Botones -->
-            <div class="hero-buttons">
-                <a href="vehiculos-usados.html" class="btn-hero btn-primary">VER USADOS</a>
-                <a href="vehiculos-nuevos.html" class="btn-hero btn-secondary">VER NUEVOS</a>
-                <a href="busqueda.html" class="btn-hero btn-outline">BÚSQUEDA AVANZADA</a>
+            <!-- CTA principal + filtros de categoría -->
+            <div class="hero-cta">
+                <a href="busqueda.html" class="btn-hero btn-primary hero-btn-main">
+                    Explorar Catálogo
+                    <svg class="btn-arrow-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </a>
+                <div class="hero-cta-pills">
+                    <a href="vehiculos-usados.html" class="btn-hero-pill">
+                        Usados <span id="heroUsadosCount" class="pill-count">–</span>
+                    </a>
+                    <a href="vehiculos-nuevos.html" class="btn-hero-pill">
+                        Nuevos <span id="heroNuevosCount" class="pill-count">–</span>
+                    </a>
+                </div>
             </div>
 
-            <!-- Stats -->
+            <!-- Stats dinámicos -->
             <div class="hero-stats">
                 <div class="hero-stat">
-                    <span class="hero-stat-num">500+</span>
+                    <span class="hero-stat-num" id="heroStatVehicles">–</span>
                     <span class="hero-stat-label">Vehículos</span>
                 </div>
                 <div class="hero-stat">
-                    <span class="hero-stat-num">20+</span>
+                    <span class="hero-stat-num" id="heroStatBrands">–</span>
                     <span class="hero-stat-label">Marcas</span>
                 </div>
                 <div class="hero-stat">
-                    <span class="hero-stat-num">24h</span>
-                    <span class="hero-stat-label">Financiación</span>
-                </div>
-                <div class="hero-stat">
-                    <span class="hero-stat-num">100%</span>
-                    <span class="hero-stat-label">Garantía</span>
+                    <span class="hero-stat-num hero-stat-icon">⚡</span>
+                    <span class="hero-stat-label">Financiación Rápida</span>
                 </div>
             </div>
 

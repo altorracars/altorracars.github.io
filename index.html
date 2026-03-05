@@ -237,26 +237,29 @@
         .logo-text{font-size:1.5rem;font-weight:800;color:#d4af37}
         .nav-links{display:flex;gap:2rem;list-style:none}
         .nav-links a{color:#e8e8e8;text-decoration:none;font-weight:500;transition:color 0.3s}
-        /* Hero — crítico inline (FOUC prevention) */
-        .hero{min-height:72vh;max-height:780px;display:flex;align-items:center;justify-content:center;position:relative;background-size:cover;background-position:center;overflow:hidden}
-        .hero-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.72) 0%,rgba(0,0,0,.32) 40%,rgba(0,0,0,.42) 65%,rgba(0,0,0,.82) 100%)}
-        .hero-content{position:relative;z-index:4;text-align:center;padding:2rem 2rem 3rem;max-width:860px;margin:0 auto;width:100%}
-        .hero-title{font-size:clamp(2rem,5vw,3.6rem);font-weight:900;color:#fff;margin-bottom:1rem;text-shadow:0 2px 40px rgba(0,0,0,.8);line-height:1.08}
-        .hero-title-accent{color:#d4af37;display:block}
-        .hero-subtitle{font-size:clamp(.9rem,1.6vw,1.05rem);color:rgba(255,255,255,.72);margin-bottom:2rem;line-height:1.6}
-        .hero-cta{display:flex;flex-direction:column;align-items:center;gap:.85rem;margin-bottom:2.2rem}
-        .hero-btn-main{display:inline-flex!important;align-items:center!important;gap:.5rem!important}
-        .hero-cta-pills{display:flex;gap:.6rem}
-        .btn-hero-pill{display:inline-flex;align-items:center;gap:.45rem;padding:.5rem 1.2rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:100px;color:rgba(255,255,255,.82);font-size:.85rem;font-weight:600;text-decoration:none}
-        .pill-count{background:rgba(212,175,55,.18);color:#d4af37;padding:.05rem .4rem;border-radius:100px;font-size:.7rem;font-weight:700;min-width:20px;text-align:center}
-        .hero-stats{display:flex;align-items:center;justify-content:center;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.12)}
-        .hero-stat{display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:0 2rem}
-        .hero-stat+.hero-stat{border-left:1px solid rgba(255,255,255,.15)}
-        .hero-stat-num{font-size:1.7rem;font-weight:800;color:#d4af37;line-height:1}
-        .hero-stat-label{font-size:.68rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.08em}
-        .hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.4);color:#d4af37;padding:.3rem 1rem;border-radius:100px;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.3rem}
-        @media(max-width:768px){.hero{min-height:58vh;max-height:560px}.hero-content{padding:1.5rem 1.5rem 2.5rem}.hero-title{font-size:clamp(1.6rem,7vw,2.4rem)}.hero-stat{padding:0 1.1rem}}
-        @media(max-width:480px){.hero{min-height:52vh}.hero-title{font-size:clamp(1.4rem,8vw,2rem)}.hero-stat{padding:0 .8rem}}
+        /* Hero — FOUC prevention (mínimo crítico; estilos completos en css/hero.css) */
+        .hero{min-height:clamp(520px,78vh,860px);display:flex;align-items:center;justify-content:center;position:relative;background-image:url('multimedia/heroindex.webp');background-size:cover;background-position:center 30%;overflow:hidden;isolation:isolate;margin-top:70px}
+        .hero-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(to bottom,rgba(0,0,0,.78) 0%,rgba(0,0,0,.28) 38%,rgba(0,0,0,.30) 62%,rgba(0,0,0,.88) 100%)}
+        .hero-ambient{position:absolute;inset:0;z-index:2;pointer-events:none}
+        .hero-content{position:relative;z-index:4;text-align:center;padding:3rem 2rem 4.5rem;max-width:880px;margin:0 auto;width:100%}
+        .hero-title{font-size:clamp(2.2rem,5.5vw,4rem);font-weight:900;color:#fff;margin-bottom:1.1rem;text-shadow:0 4px 48px rgba(0,0,0,.9);line-height:1.06;letter-spacing:-.025em}
+        .hero-title-accent{display:block;background:linear-gradient(135deg,#d4af37 0%,#f0d060 50%,#b89658 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .hero-subtitle{font-size:clamp(.9rem,1.7vw,1.08rem);color:rgba(255,255,255,.66);margin-bottom:2.2rem;line-height:1.7}
+        .hero-cta{display:flex;flex-direction:column;align-items:center;gap:.9rem;margin-bottom:2.4rem}
+        .hero-btn-main{display:inline-flex;align-items:center;gap:.55rem;padding:.95rem 2.4rem;background:linear-gradient(135deg,#d4af37 0%,#b89658 100%);color:#0a0a0a;font-weight:700;font-size:1rem;border-radius:100px;text-decoration:none;box-shadow:0 4px 24px rgba(212,175,55,.38)}
+        .btn-arrow-icon{flex-shrink:0}
+        .hero-cta-pills{display:flex;gap:.65rem}
+        .btn-hero-pill{display:inline-flex;align-items:center;gap:.45rem;padding:.5rem 1.25rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:100px;color:rgba(255,255,255,.78);font-size:.85rem;font-weight:600;text-decoration:none}
+        .pill-count{background:rgba(212,175,55,.18);color:#d4af37;padding:.05rem .4rem;border-radius:100px;font-size:.68rem;font-weight:700;min-width:20px;text-align:center;line-height:1.4}
+        .hero-stats{display:flex;align-items:center;justify-content:center;padding-top:1.6rem;border-top:1px solid rgba(255,255,255,.1)}
+        .hero-stat{display:flex;flex-direction:column;align-items:center;gap:.2rem;padding:0 2.2rem}
+        .hero-stat+.hero-stat{border-left:1px solid rgba(255,255,255,.12)}
+        .hero-stat-num{font-size:1.75rem;font-weight:800;color:#d4af37;line-height:1;letter-spacing:-.03em}
+        .hero-stat-label{font-size:.67rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.09em}
+        .hero-badge{display:inline-flex;align-items:center;gap:.55rem;background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.38);color:#d4af37;padding:.35rem 1.1rem;border-radius:100px;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.4rem}
+        .hero-badge-dot{width:6px;height:6px;background:#d4af37;border-radius:50%;flex-shrink:0}
+        @media(max-width:768px){.hero{min-height:clamp(480px,62vh,640px)}.hero-content{padding:2rem 1.5rem 3.5rem}.hero-title{font-size:clamp(1.75rem,7.5vw,2.5rem)}.hero-stat{padding:0 1.2rem}}
+        @media(max-width:480px){.hero{min-height:58vh}.hero-title{font-size:clamp(1.5rem,8.5vw,2.1rem)}.hero-stat{padding:0 .85rem}}
         .container{max-width:1400px;margin:0 auto;padding:0 2rem}
         @media(max-width:768px){.nav-links{display:none}.header .container{padding:0 1rem}}
         /* Critical: prevent FOUC for carousels and brands */
@@ -276,9 +279,11 @@
 
     <!-- Critical CSS (render-blocking — needed for first paint) -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/hero.css">
     <link rel="stylesheet" href="css/featured-week-banner.css">
     <link rel="stylesheet" href="css/dark-theme.css">
     <link rel="stylesheet" href="css/mobile-fixes.css">
+    <link rel="stylesheet" href="css/cookies.css">
 
     <!-- Above-the-fold CSS (render-blocking — needed for layout) -->
     <link rel="stylesheet" href="css/vehicles-cards-fix.css">
@@ -309,13 +314,15 @@
     <div id="header-placeholder"></div>
 
     <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-overlay"></div>
+    <section class="hero" aria-label="Portada principal">
+        <div class="hero-overlay" aria-hidden="true"></div>
+        <div class="hero-ambient" aria-hidden="true"></div>
+
         <div class="hero-content">
 
             <!-- Badge -->
             <div class="hero-badge">
-                <span class="hero-badge-dot"></span>
+                <span class="hero-badge-dot" aria-hidden="true"></span>
                 Concesionario Líder en Cartagena
             </div>
 
@@ -327,43 +334,50 @@
 
             <!-- Subtítulo -->
             <p class="hero-subtitle">
-                Autos usados y nuevos · Las mejores marcas · Al mejor precio
+                El mejor inventario de autos nuevos y usados en Cartagena.<br>
+                Financiación inmediata &middot; Las mejores marcas &middot; Garantía incluida
             </p>
 
-            <!-- CTA principal + filtros de categoría -->
+            <!-- CTA principal + pills -->
             <div class="hero-cta">
-                <a href="busqueda.html" class="btn-hero btn-primary hero-btn-main">
+                <a href="busqueda.html" class="hero-btn-main" aria-label="Explorar catálogo completo">
                     Explorar Catálogo
                     <svg class="btn-arrow-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true">
                         <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
                     </svg>
                 </a>
-                <div class="hero-cta-pills">
+                <div class="hero-cta-pills" role="group" aria-label="Filtrar por tipo">
                     <a href="vehiculos-usados.html" class="btn-hero-pill">
-                        Usados <span id="heroUsadosCount" class="pill-count">–</span>
+                        Usados <span id="heroUsadosCount" class="pill-count" aria-live="polite">–</span>
                     </a>
                     <a href="vehiculos-nuevos.html" class="btn-hero-pill">
-                        Nuevos <span id="heroNuevosCount" class="pill-count">–</span>
+                        Nuevos <span id="heroNuevosCount" class="pill-count" aria-live="polite">–</span>
                     </a>
                 </div>
             </div>
 
-            <!-- Stats dinámicos -->
-            <div class="hero-stats">
-                <div class="hero-stat">
-                    <span class="hero-stat-num" id="heroStatVehicles">–</span>
+            <!-- Stats dinámicos desde Firestore -->
+            <div class="hero-stats" role="list" aria-label="Estadísticas">
+                <div class="hero-stat" role="listitem">
+                    <span class="hero-stat-num" id="heroStatVehicles" aria-live="polite">–</span>
                     <span class="hero-stat-label">Vehículos</span>
                 </div>
-                <div class="hero-stat">
-                    <span class="hero-stat-num" id="heroStatBrands">–</span>
+                <div class="hero-stat" role="listitem">
+                    <span class="hero-stat-num" id="heroStatBrands" aria-live="polite">–</span>
                     <span class="hero-stat-label">Marcas</span>
                 </div>
-                <div class="hero-stat">
-                    <span class="hero-stat-num hero-stat-icon">⚡</span>
+                <div class="hero-stat" role="listitem">
+                    <span class="hero-stat-num hero-stat-icon" aria-hidden="true">⚡</span>
                     <span class="hero-stat-label">Financiación Rápida</span>
                 </div>
             </div>
 
+        </div>
+
+        <!-- Scroll hint -->
+        <div class="hero-scroll-hint" aria-hidden="true">
+            <div class="hero-scroll-hint-line"></div>
+            <span class="hero-scroll-hint-label">Scroll</span>
         </div>
     </section>
 
@@ -798,6 +812,9 @@
             }
         });
     </script>
+
+    <!-- Cookie Consent -->
+    <script src="js/cookies.js" defer></script>
 
     <!-- Cache Manager - Handles SW updates and cache invalidation -->
     <script src="js/cache-manager.js"></script>

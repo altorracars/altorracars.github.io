@@ -46,6 +46,19 @@
             window.db = db;
             window.auth = auth;
 
+            // Inicializar system/meta si no existe (necesario para el cache inteligente)
+            db.doc('system/meta').get().then(function(snap) {
+                if (!snap.exists) {
+                    return db.doc('system/meta').set({
+                        lastModified: Date.now(),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        note: 'Auto-created by firebase-config.js — no borrar'
+                    });
+                }
+            }).catch(function() {
+                // Silencioso: si falla (sin permisos) no interrumpe nada
+            });
+
             // Defer non-critical SDKs (load in background after login is ready)
             Promise.all([
                 loadScript(CDN_BASE + '/firebase-storage-compat.js'),

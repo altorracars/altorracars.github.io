@@ -1,0 +1,473 @@
+/* ============================================
+   HERO SECTION — ALTORRA CARS
+   Única fuente de verdad. No duplicar estilos hero en otros archivos.
+   v3.0.0 · 2026-03-05
+   ============================================ */
+
+/* ── Contenedor principal ── */
+.hero {
+    position: relative;
+    min-height: clamp(520px, 78vh, 860px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: url('../multimedia/heroindex.webp');
+    background-size: cover;
+    background-position: center 30%;
+    background-attachment: scroll;
+    overflow: hidden;
+    isolation: isolate;
+    margin-top: 70px;
+}
+
+/* ── Overlay principal ── */
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.78) 0%,
+        rgba(0, 0, 0, 0.28) 38%,
+        rgba(0, 0, 0, 0.30) 62%,
+        rgba(0, 0, 0, 0.88) 100%
+    );
+}
+
+/* ── Luces ambientales animadas (efecto glow) ── */
+.hero-ambient {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.hero-ambient::before,
+.hero-ambient::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    animation: hero-orb-drift 14s ease-in-out infinite alternate;
+}
+
+.hero-ambient::before {
+    width: 550px;
+    height: 550px;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.11) 0%, transparent 70%);
+    top: -160px;
+    left: -80px;
+}
+
+.hero-ambient::after {
+    width: 440px;
+    height: 440px;
+    background: radial-gradient(circle, rgba(184, 150, 88, 0.09) 0%, transparent 70%);
+    bottom: -90px;
+    right: -80px;
+    animation-delay: -7s;
+    animation-direction: alternate-reverse;
+}
+
+@keyframes hero-orb-drift {
+    0%   { transform: translate(0, 0)        scale(1);    }
+    50%  { transform: translate(50px, 35px)  scale(1.12); }
+    100% { transform: translate(-25px, -25px) scale(0.95); }
+}
+
+/* ── Fade inferior → fusión con sección de marcas ── */
+.hero::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 180px;
+    background: linear-gradient(to bottom, transparent 0%, #0a0a0a 100%);
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* ── Contenido principal ── */
+.hero-content {
+    position: relative;
+    z-index: 4;
+    text-align: center;
+    padding: 3rem 2rem 4.5rem;
+    max-width: 880px;
+    margin: 0 auto;
+    width: 100%;
+    animation: hero-content-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-content::before { display: none; }
+
+@keyframes hero-content-in {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── Badge ── */
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.38);
+    color: #d4af37;
+    padding: 0.35rem 1.1rem;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1.4rem;
+    backdrop-filter: blur(16px);
+    box-shadow:
+        0 0 24px rgba(212, 175, 55, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    animation: hero-badge-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+@keyframes hero-badge-in {
+    from { opacity: 0; transform: scale(0.9) translateY(10px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0);    }
+}
+
+.hero-badge-dot {
+    width: 6px;
+    height: 6px;
+    background: #d4af37;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 7px rgba(212, 175, 55, 0.9);
+    animation: hero-dot-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes hero-dot-pulse {
+    0%, 100% { opacity: 1; transform: scale(1);   box-shadow: 0 0 7px rgba(212, 175, 55, 0.9); }
+    50%       { opacity: 0.4; transform: scale(0.65); box-shadow: 0 0 2px rgba(212, 175, 55, 0.3); }
+}
+
+/* ── Título ── */
+.hero-title {
+    font-size: clamp(2.2rem, 5.5vw, 4rem);
+    font-weight: 900;
+    line-height: 1.06;
+    letter-spacing: -0.025em;
+    color: #ffffff;
+    text-shadow: 0 4px 48px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(0, 0, 0, 0.5);
+    margin-bottom: 1.1rem;
+    animation: hero-title-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+}
+
+@keyframes hero-title-in {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+.hero-title-accent {
+    display: block;
+    background: linear-gradient(135deg, #d4af37 0%, #f0d060 50%, #b89658 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 24px rgba(212, 175, 55, 0.45));
+}
+
+/* ── Subtítulo ── */
+.hero-subtitle {
+    font-size: clamp(0.9rem, 1.7vw, 1.08rem);
+    color: rgba(255, 255, 255, 0.66);
+    letter-spacing: 0.03em;
+    margin-bottom: 2.2rem;
+    font-weight: 400;
+    line-height: 1.7;
+    text-shadow: none;
+    -webkit-text-stroke: 0;
+    animation: hero-subtitle-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+
+@keyframes hero-subtitle-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── CTA principal + pills ── */
+.hero-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    margin-bottom: 2.4rem;
+    animation: hero-cta-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
+}
+
+@keyframes hero-cta-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Botón principal — dorado sólido con shimmer */
+.hero-btn-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.95rem 2.4rem;
+    background: linear-gradient(135deg, #d4af37 0%, #b89658 100%);
+    color: #0a0a0a;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 100px;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow:
+        0 4px 24px rgba(212, 175, 55, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.hero-btn-main::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.55s ease;
+}
+
+.hero-btn-main:hover::after {
+    transform: translateX(100%);
+}
+
+.hero-btn-main:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 8px 32px rgba(212, 175, 55, 0.52),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn-arrow-icon {
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+}
+
+.hero-btn-main:hover .btn-arrow-icon {
+    transform: translateX(5px);
+}
+
+/* Pills de categoría */
+.hero-cta-pills {
+    display: flex;
+    gap: 0.65rem;
+    align-items: center;
+}
+
+.btn-hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 1.25rem;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 100px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    backdrop-filter: blur(12px);
+    transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.btn-hero-pill:hover {
+    background: rgba(212, 175, 55, 0.14);
+    border-color: rgba(212, 175, 55, 0.42);
+    color: #d4af37;
+    transform: translateY(-1px);
+}
+
+.pill-count {
+    display: inline-block;
+    background: rgba(212, 175, 55, 0.18);
+    color: #d4af37;
+    padding: 0.05rem 0.4rem;
+    border-radius: 100px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* ── Stats row ── */
+.hero-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding-top: 1.6rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    animation: hero-stats-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
+}
+
+@keyframes hero-stats-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+.hero-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0 2.2rem;
+}
+
+.hero-stat + .hero-stat {
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hero-stat-num {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #d4af37;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-shadow: 0 0 24px rgba(212, 175, 55, 0.35);
+}
+
+.hero-stat-label {
+    font-size: 0.67rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-weight: 500;
+}
+
+.hero-stat-icon {
+    font-size: 1.5rem;
+    letter-spacing: 0;
+}
+
+/* ── Scroll hint ── */
+.hero-scroll-hint {
+    position: absolute;
+    bottom: 2.2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    pointer-events: none;
+    animation: hint-appear 1s ease 2.5s both;
+}
+
+@keyframes hint-appear {
+    from { opacity: 0; }
+    to   { opacity: 0.42; }
+}
+
+.hero-scroll-hint-line {
+    width: 1px;
+    height: 34px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.65), transparent);
+    animation: hint-line-draw 2s ease-in-out infinite;
+    transform-origin: top;
+}
+
+@keyframes hint-line-draw {
+    0%, 100% { transform: scaleY(0); transform-origin: top;    }
+    45%, 55% { transform: scaleY(1); transform-origin: top;    }
+}
+
+.hero-scroll-hint-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+/* ─────────────────────────────
+   RESPONSIVE
+───────────────────────────── */
+@media (max-width: 768px) {
+    .hero {
+        min-height: clamp(480px, 62vh, 640px);
+        background-position: center 25%;
+    }
+
+    .hero-content {
+        padding: 2rem 1.5rem 3.5rem;
+    }
+
+    .hero-title {
+        font-size: clamp(1.75rem, 7.5vw, 2.5rem);
+    }
+
+    .hero-subtitle {
+        font-size: 0.88rem;
+        margin-bottom: 1.8rem;
+    }
+
+    .hero-btn-main {
+        padding: 0.85rem 2rem;
+        font-size: 0.95rem;
+    }
+
+    .hero-stat {
+        padding: 0 1.2rem;
+    }
+
+    .hero-stat-num {
+        font-size: 1.45rem;
+    }
+
+    .hero-scroll-hint {
+        display: none;
+    }
+
+    .hero::before {
+        height: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero {
+        min-height: 58vh;
+        background-position: 62% center;
+    }
+
+    .hero-content {
+        padding: 1.75rem 1.25rem 3rem;
+    }
+
+    .hero-title {
+        font-size: clamp(1.5rem, 8.5vw, 2.1rem);
+    }
+
+    .hero-cta-pills {
+        gap: 0.5rem;
+    }
+
+    .btn-hero-pill {
+        padding: 0.42rem 0.9rem;
+        font-size: 0.78rem;
+    }
+
+    .hero-stat {
+        padding: 0 0.85rem;
+    }
+
+    .hero-stat-num {
+        font-size: 1.2rem;
+    }
+
+    .hero-stat-label {
+        font-size: 0.6rem;
+    }
+}

@@ -78,63 +78,8 @@ body {
         border-radius: 2px;
     }
     
-    /* ===== HERO SECTION OPTIMIZADO ===== */
-    .hero {
-        min-height: 500px;
-        padding: 1.5rem 0;
-        margin-top: 60px;
-        background-attachment: scroll !important; /* fixed causes jank on mobile */
-        background-position: center center;
-        background-size: cover;
-    }
-    
-    .hero-overlay {
-        background: linear-gradient(
-            135deg, 
-      rgba(29, 27, 25, 0.65) 0%,
-rgba(145, 102, 82, 0.55) 100%
-        );
-    }
-    
-    .hero-content {
-        padding: 1.5rem 1rem;
-    }
-    
-    .hero-title {
-        font-size: 1.5rem !important;
-        line-height: 1.2;
-        margin-bottom: 0.75rem;
-        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
-        word-wrap: break-word;
-    }
-    
-    .hero-subtitle {
-        font-size: 0.9rem !important;
-        line-height: 1.4;
-        margin-bottom: 1.5rem;
-        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
-    }
-    
-    .hero-buttons {
-        flex-direction: column;
-        width: 100%;
-        gap: 0.75rem;
-        margin-top: 1.5rem;
-    }
-    
-    .btn-hero {
-        width: 100%;
-        padding: 0.9rem 1.5rem;
-        font-size: 0.95rem;
-        text-align: center;
-    }
-    
-    /* Search container en hero */
-    .search-container {
-        padding: 1rem;
-        margin-top: 1.5rem;
-    }
-    
+    /* Hero → ver css/hero.css para responsive */
+
     /* ===== GRIDS OPTIMIZADOS ===== */
     .vehicles-grid,
     .categories-grid,

@@ -4,10 +4,22 @@
     var AP = window.AP;
     var $ = AP.$;
 
+    // Señaliza a las páginas públicas que los datos cambiaron.
+    // Se llama después del primer snapshot (cambios reales, no carga inicial).
+    function signalCacheInvalidation() {
+        if (!window.db) return;
+        window.db.doc('system/meta').set(
+            { lastModified: Date.now() },
+            { merge: true }
+        ).catch(function() { /* sin permisos o sin red — silencioso */ });
+    }
+
     function startRealtimeSync() {
         stopRealtimeSync();
         AP._vehiclesLoaded = false;
         AP._brandsLoaded = false;
+        var _vehiclesInitialized = false;
+        var _brandsInitialized   = false;
 
         if (AP._loadingTimeout) clearTimeout(AP._loadingTimeout);
         AP._loadingTimeout = setTimeout(function() {
@@ -25,6 +37,9 @@
         AP.unsubVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
             AP._vehiclesLoaded = true;
             AP.vehicles = snap.docs.map(function(d) { return d.data(); });
+            // Primer snapshot = carga inicial; los siguientes = cambios reales del admin
+            if (_vehiclesInitialized) signalCacheInvalidation();
+            _vehiclesInitialized = true;
             if (AP.renderVehiclesTable) AP.renderVehiclesTable();
             if (AP.updateStats) AP.updateStats();
             if (AP.renderActivityFeed) AP.renderActivityFeed();
@@ -41,6 +56,8 @@
         AP.unsubBrands = window.db.collection('marcas').onSnapshot(function(snap) {
             AP._brandsLoaded = true;
             AP.brands = snap.docs.map(function(d) { return d.data(); });
+            if (_brandsInitialized) signalCacheInvalidation();
+            _brandsInitialized = true;
             if (AP.renderBrandsTable) AP.renderBrandsTable();
             if (AP.populateBrandSelect) AP.populateBrandSelect();
             if (AP.updateStats) AP.updateStats();

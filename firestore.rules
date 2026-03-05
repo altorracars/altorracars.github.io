@@ -115,6 +115,17 @@ service cloud.firestore {
         || docId == 'bookedSlots';
     }
 
+    // ========== SYSTEM (cache invalidation) ==========
+    // system/meta — documento público que el cache-manager lee para detectar
+    // cambios del admin o deploys de GitHub. lastModified se actualiza desde
+    // el admin panel; deployVersion se actualiza desde GitHub Actions.
+    match /system/{docId} {
+      // Lectura pública: cualquier visitante valida su caché contra este doc
+      allow read: if true;
+      // Escritura solo para admins (firebase-config.js la crea en el primer load)
+      allow write: if isEditorOrAbove() || !exists(/databases/$(database)/documents/system/$(docId));
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;

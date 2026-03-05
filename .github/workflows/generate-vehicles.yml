@@ -41,6 +41,10 @@ jobs:
       - name: Generate vehicle pages from Firestore
         run: npm run generate
 
+      - name: Update deploy-info.json
+        run: |
+          echo "{\"version\":\"$(date -u +%Y%m%d%H%M%S)\",\"sha\":\"${GITHUB_SHA:0:7}\",\"ref\":\"${GITHUB_REF_NAME}\"}" > data/deploy-info.json
+
       - name: Check for changes
         id: changes
         run: |
@@ -51,6 +55,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add vehiculos/ data/vehicle-slugs.json sitemap.xml
+          git add vehiculos/ data/vehicle-slugs.json data/deploy-info.json sitemap.xml
           git commit -m "Auto-generate vehicle pages for SEO [skip ci]"
           git push

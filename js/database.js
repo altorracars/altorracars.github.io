@@ -73,6 +73,8 @@ class VehicleDatabase {
                         this.normalizeVehicles();
                         this.loaded = true;
                         this._saveToCache();
+                        // Marcar caché como fresco para que cache-manager sepa que los datos están vigentes
+                        if (window.AltorraCache) window.AltorraCache.markFresh().catch(function(){});
                         console.log('[DB] Firestore loaded: ' + this.vehicles.length + ' vehicles, ' + this.brands.length + ' brands');
                         return;
                     } catch (e) {

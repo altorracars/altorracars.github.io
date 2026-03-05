@@ -438,7 +438,7 @@ button {
     background-image: url('../multimedia/hero-car.webp');
     background-size: cover;
     background-position: center;
-    background-attachment: fixed;
+    background-attachment: scroll;
     margin-top: 70px;
     padding: var(--spacing-xl) 0;
 }
@@ -3104,80 +3104,7 @@ section {
     font-size: 0.95rem;
 }
 
-/* ============================================
-   IMPROVED BRANDS SECTION - FASE 2
-   Sección de marcas mejorada con logos
-   ============================================ */
-
-.brands-section {
-    padding: var(--spacing-xl) 0;
-    background: white;
-}
-
-.brands-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
-}
-
-.brand-card {
-    background: white;
-    border: 2px solid #f0f0f0;
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-sm);
-    transition: var(--transition);
-    min-height: 120px;
-    cursor: pointer;
-}
-
-.brand-card:hover {
-    border-color: var(--primary-gold);
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-md);
-    background: linear-gradient(135deg, #fafafa 0%, white 100%);
-}
-
-.brand-logo {
-    width: 80px;
-    height: 60px;
-    object-fit: contain;
-    filter: grayscale(100%);
-    transition: var(--transition);
-}
-
-.brand-card:hover .brand-logo {
-    filter: grayscale(0%);
-    transform: scale(1.1);
-}
-
-.brand-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--primary-dark);
-    text-align: center;
-}
-
-.btn-view-more {
-    display: inline-block;
-    padding: 0.75rem 2rem;
-    background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-brown) 100%);
-    color: white;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    transition: var(--transition);
-    box-shadow: var(--shadow-sm);
-}
-
-.btn-view-more:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
+/* FASE 2 brands styles moved to css/brands-fixes.css */
 
 /* ============================================
    EXPERTS SECTION - FASE 1

@@ -1,7 +1,178 @@
 /* ============================================
-   MARCAS — Carrusel oscuro pegado al hero
-   Logos blancos → fondo oscuro, sin bordes
-   Carga DESPUÉS de dark-theme.css → gana con !important
+   HERO — Rediseño tech compacto
+   + MARCAS — Carrusel oscuro, logos visibles
+   Carga DESPUÉS de dark-theme.css → gana siempre
+   ============================================ */
+
+/* ── Altura reducida (~2 "dedos" menos) ── */
+.hero {
+    min-height: 72vh !important;
+    max-height: 780px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;   /* texto a la izquierda */
+}
+
+/* ── Overlay más dramático: muy oscuro a la izquierda, se abre a la derecha ── */
+.hero-overlay {
+    background:
+        linear-gradient(
+            105deg,
+            rgba(0, 0, 0, 0.92) 0%,
+            rgba(5, 5, 5, 0.75) 45%,
+            rgba(0, 0, 0, 0.35) 100%
+        ) !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1 !important;
+}
+
+/* ── Grid tech sutil encima de la foto ── */
+.hero::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background-image:
+        linear-gradient(rgba(212, 175, 55, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(212, 175, 55, 0.04) 1px, transparent 1px) !important;
+    background-size: 55px 55px !important;
+    pointer-events: none !important;
+    z-index: 2 !important;
+}
+
+/* ── Fade inferior → negro = fusión con sección marcas ── */
+.hero::before {
+    content: '' !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 160px !important;
+    background: linear-gradient(to bottom, transparent 0%, #111111 100%) !important;
+    z-index: 3 !important;
+    pointer-events: none !important;
+}
+
+/* ── Contenido: izquierda, con línea dorada vertical ── */
+.hero-content {
+    position: relative !important;
+    z-index: 4 !important;
+    text-align: left !important;
+    padding: 2.5rem 3.5rem !important;
+    max-width: 720px !important;
+    /* margen para que no quede pegado al borde */
+    margin-left: max(2rem, calc((100vw - 1400px) / 2)) !important;
+}
+
+/* Acento dorado vertical a la izquierda */
+.hero-content::before {
+    content: '' !important;
+    position: absolute !important;
+    left: 1.5rem !important;
+    top: 2rem !important;
+    bottom: 2rem !important;
+    width: 3px !important;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(212, 175, 55, 0.8) 20%,
+        #d4af37 50%,
+        rgba(212, 175, 55, 0.8) 80%,
+        transparent 100%
+    ) !important;
+    border-radius: 2px !important;
+}
+
+/* ── Título: más impacto, menos tamaño total ── */
+.hero-title {
+    font-size: clamp(1.8rem, 4.5vw, 3.4rem) !important;
+    font-weight: 900 !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.01em !important;
+    color: #ffffff !important;
+    text-shadow: 0 2px 30px rgba(0, 0, 0, 0.9) !important;
+    margin-bottom: 0.9rem !important;
+    text-transform: uppercase !important;
+}
+
+/* Última palabra del título en dorado si está en un <span> */
+.hero-title .accent { color: #d4af37; }
+
+/* ── Subtítulo ── */
+.hero-subtitle {
+    font-size: clamp(0.85rem, 1.6vw, 1.1rem) !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    margin-bottom: 2rem !important;
+    text-shadow: none !important;
+    font-weight: 400 !important;
+}
+
+/* ── Botones hero: mantener estilo pero más compactos ── */
+.hero-buttons {
+    display: flex !important;
+    gap: 0.75rem !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+}
+
+/* ── MÓVIL: centrado y más bajo ── */
+@media (max-width: 768px) {
+    .hero {
+        min-height: 58vh !important;
+        max-height: 560px !important;
+        justify-content: center !important;
+    }
+
+    .hero-content {
+        text-align: center !important;
+        padding: 2rem 1.5rem !important;
+        margin-left: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .hero-content::before {
+        display: none !important;
+    }
+
+    .hero-title {
+        font-size: clamp(1.5rem, 7vw, 2.2rem) !important;
+    }
+
+    .hero-subtitle {
+        font-size: 0.8rem !important;
+        letter-spacing: 0.05em !important;
+    }
+
+    .hero-buttons {
+        justify-content: center !important;
+        gap: 0.6rem !important;
+    }
+
+    /* Grid más espaciado en mobile */
+    .hero::after {
+        background-size: 40px 40px !important;
+    }
+
+    .hero::before {
+        height: 100px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero {
+        min-height: 52vh !important;
+    }
+    .hero-title {
+        font-size: clamp(1.3rem, 8vw, 2rem) !important;
+    }
+}
+
+/* ============================================
+   FIN HERO — inicio sección MARCAS
    ============================================ */
 
 /* ── Variante hero-flow (index.html) ──
@@ -87,14 +258,14 @@
     height: 44px;
     object-fit: contain;
     filter: brightness(1) !important;
-    opacity: 0.75;
+    opacity: 1;
     transition: opacity 0.25s ease, transform 0.25s ease !important;
 }
 
 .brands-section.brands-section--hero-flow .brand-card:hover .brand-logo {
     opacity: 1 !important;
-    transform: scale(1.06) !important;
-    filter: brightness(1) drop-shadow(0 0 6px rgba(212,175,55,0.35)) !important;
+    transform: scale(1.08) !important;
+    filter: brightness(1.1) drop-shadow(0 0 8px rgba(212,175,55,0.45)) !important;
 }
 
 /* ── Nombre de marca ── */

@@ -98,12 +98,8 @@
      */
     async function fetchFirestoreLastModified() {
         try {
-            if (typeof firebase === 'undefined' || !firebase.apps?.length) return null;
-
-            const db = firebase.firestore
-                ? firebase.firestore()
-                : (window.firestoreDB || null);
-
+            // Usar window.db expuesto por firebase-config.js
+            const db = window.db || (typeof firebase !== 'undefined' && firebase.apps?.length ? firebase.firestore() : null);
             if (!db) return null;
 
             const snap = await db.doc(META_DOC_PATH).get();

@@ -400,6 +400,27 @@ function showRealtimeUpdateIndicator() {
 }
 
 /**
+ * Update hero stats with real vehicle/brand counts from vehicleDB
+ */
+function loadHeroStats() {
+    if (!window.vehicleDB) return;
+    var vehicles = vehicleDB.getAllVehicles() || [];
+    var brands   = vehicleDB.getAllBrands()   || [];
+    var usados   = vehicles.filter(function(v) { return v.tipo === 'usado';  }).length;
+    var nuevos   = vehicles.filter(function(v) { return v.tipo === 'nuevo';  }).length;
+
+    var vEl = document.getElementById('heroStatVehicles');
+    var bEl = document.getElementById('heroStatBrands');
+    var uEl = document.getElementById('heroUsadosCount');
+    var nEl = document.getElementById('heroNuevosCount');
+
+    if (vEl) vEl.textContent = vehicles.length || '–';
+    if (bEl) bEl.textContent = brands.length   || '–';
+    if (uEl) uEl.textContent = usados           || '–';
+    if (nEl) nEl.textContent = nuevos           || '–';
+}
+
+/**
  * Fase 23: Re-render functions for real-time updates (no await vehicleDB.load() needed)
  */
 function rerenderVehicleSections() {
@@ -457,6 +478,7 @@ function initializePage() {
         loadAllVehicles(),
         loadPromoBanners()
     ]).then(function() {
+        loadHeroStats();
         // Enable drag after vehicles are rendered and overflow-x is active
         enableDragScroll();
 
@@ -465,8 +487,8 @@ function initializePage() {
             vehicleDB.onChange(function(changeType) {
                 console.log('[RT] Data changed:', changeType);
                 showRealtimeUpdateIndicator();
-                if (changeType === 'vehicles') rerenderVehicleSections();
-                else if (changeType === 'brands') rerenderBrands();
+                if (changeType === 'vehicles') { rerenderVehicleSections(); loadHeroStats(); }
+                else if (changeType === 'brands') { rerenderBrands(); loadHeroStats(); }
                 else if (changeType === 'banners') rerenderBanners();
             });
             vehicleDB.startRealtime();

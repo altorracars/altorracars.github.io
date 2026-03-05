@@ -1,28 +1,37 @@
 /* ============================================
    MARCAS — Carrusel full-width pegado al hero
+   Este archivo carga DESPUÉS de dark-theme.css
+   Los !important sobreescriben los de dark-theme
    ============================================ */
 
+/* ── Base: sección de marcas (general) ── */
 .brands-section {
-    padding: 0;
-    margin: 0;
-    background: #ffffff;
     overflow: hidden;
 }
 
-/* Elimina cualquier gap entre hero y marcas */
-.brands-section--hero-flow {
-    margin-top: 0;
-    padding-top: 0;
-    padding-bottom: 0;
+/* ── Variante hero-flow (index.html) ──
+   Pegada al hero, fondo blanco, sin gap
+   Usa !important para ganar a dark-theme.css */
+.brands-section.brands-section--hero-flow {
+    background: #ffffff !important;
+    padding-top: 0 !important;
+    padding-bottom: 1rem !important;
+    margin-top: 0 !important;
+    position: relative !important;
 }
 
-/* Contenedor del carrusel — full width con padding mínimo para flechas */
+/* Eliminar línea decorativa dorada que agrega dark-theme */
+.brands-section.brands-section--hero-flow::before {
+    display: none !important;
+}
+
+/* Contenedor del carrusel */
 .brands-carousel {
     overflow: hidden;
     position: relative;
 }
 
-/* Track que se mueve con translateX */
+/* Track animado */
 .brands-track {
     display: flex;
     gap: 1rem;
@@ -30,52 +39,65 @@
     will-change: transform;
 }
 
-.brand-card {
+/* ── Tarjeta de marca en hero-flow (fondo blanco) ── */
+.brands-section.brands-section--hero-flow .brand-card {
     flex: 0 0 140px;
-    background: white;
-    border: 1.5px solid #f0f0f0;
-    border-radius: var(--radius-lg, 12px);
-    padding: 1rem 0.75rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    background: #ffffff !important;
+    border: 1.5px solid #ebebeb !important;
+    border-radius: 12px !important;
+    padding: 1rem 0.75rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     gap: 0.4rem;
-    transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+    min-height: 110px !important;
     cursor: pointer;
     text-decoration: none;
-    min-height: 110px;
+    transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s !important;
+    overflow: visible !important;
 }
 
-.brand-card:hover {
-    border-color: var(--primary-gold, #d4af37);
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(184, 150, 88, 0.2);
+.brands-section.brands-section--hero-flow .brand-card:hover {
+    border-color: var(--primary-gold, #d4af37) !important;
+    transform: translateY(-4px) !important;
+    box-shadow: 0 8px 20px rgba(184, 150, 88, 0.18) !important;
+    background: #fff !important;
 }
 
-/* Logo de marca */
-.brand-logo {
+/* Quitar pseudo-elementos que agrega dark-theme en hover */
+.brands-section.brands-section--hero-flow .brand-card::before,
+.brands-section.brands-section--hero-flow .brand-card::after {
+    display: none !important;
+}
+
+/* ── Logo de marca ── */
+.brands-section.brands-section--hero-flow .brand-logo {
     width: 100%;
     max-width: 90px;
     height: 50px;
     object-fit: contain;
-    transition: transform 0.3s;
+    filter: none !important;
+    transition: transform 0.3s !important;
 }
 
-.brand-card:hover .brand-logo {
-    transform: scale(1.08);
+.brands-section.brands-section--hero-flow .brand-card:hover .brand-logo {
+    transform: scale(1.08) !important;
+    filter: none !important;
 }
 
-/* Nombre de marca */
-.brand-name {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--primary-dark, #1d1b19);
+/* ── Nombre de marca (texto oscuro sobre blanco) ── */
+.brands-section.brands-section--hero-flow .brand-name {
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: var(--primary-dark, #1d1b19) !important;
     text-align: center;
     white-space: nowrap;
+    text-shadow: none !important;
+    margin-top: 0 !important;
 }
 
-/* Conteo de vehiculos por marca */
+/* ── Conteo de vehículos ── */
 .brand-count {
     font-size: 0.68rem;
     color: #999;
@@ -86,16 +108,16 @@
     content: ' autos';
 }
 
-/* ================================================
-   Wrapper full-width — flechas pequeñas y ocultas
-   ================================================ */
+/* ================================================================
+   Wrapper full-width — flechas pequeñas invisibles hasta hover
+   ================================================================ */
 .brands-carousel-wrapper {
     position: relative;
-    padding: 0.75rem 0;          /* solo padding vertical, cero horizontal */
+    padding: 0.75rem 0;
     width: 100%;
 }
 
-/* Flechas — invisibles por defecto, aparecen al hover del wrapper */
+/* Flechas — ocultas por defecto */
 .brands-arrow {
     position: absolute;
     top: 50%;
@@ -104,7 +126,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     border: 1px solid rgba(0, 0, 0, 0.1);
@@ -115,22 +137,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-
-    /* Oculto por defecto — aparece en hover del wrapper */
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease, background 0.2s ease, box-shadow 0.2s ease;
+    transition: opacity 0.25s ease, background 0.2s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Mostrar flechas al hacer hover sobre el carrusel */
+/* Mostrar flechas al hacer hover sobre el wrapper */
 .brands-carousel-wrapper:hover .brands-arrow {
     opacity: 1;
     pointer-events: auto;
 }
 
 .brands-arrow:hover {
-    background: rgba(255, 255, 255, 0.98);
+    background: #ffffff;
     border-color: rgba(184, 150, 88, 0.45);
     color: rgba(0, 0, 0, 0.8);
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
@@ -143,7 +163,7 @@
 .brands-arrow.prev { left: 6px; }
 .brands-arrow.next { right: 6px; }
 
-/* Boton "Ver todas las marcas" */
+/* ── Botón "Ver todas las marcas" ── */
 .btn-view-more {
     display: inline-block;
     padding: 0.85rem 2.5rem;
@@ -164,31 +184,27 @@
     box-shadow: 0 6px 20px rgba(184, 150, 88, 0.4);
 }
 
-/* Responsive - Tablet */
+/* ── Responsive ── */
 @media (max-width: 768px) {
     .brands-arrow {
         display: none;
     }
-
     .brands-carousel-wrapper {
         padding: 0.5rem 0;
     }
 }
 
-/* Responsive - Mobile */
 @media (max-width: 640px) {
-    .brand-card {
-        flex: 0 0 110px;
-        padding: 0.85rem 0.6rem;
-        min-height: 100px;
+    .brands-section.brands-section--hero-flow .brand-card {
+        flex: 0 0 110px !important;
+        padding: 0.85rem 0.6rem !important;
+        min-height: 100px !important;
     }
-
-    .brand-logo {
+    .brands-section.brands-section--hero-flow .brand-logo {
         max-width: 75px;
         height: 42px;
     }
-
-    .brand-name {
-        font-size: 0.75rem;
+    .brands-section.brands-section--hero-flow .brand-name {
+        font-size: 0.75rem !important;
     }
 }

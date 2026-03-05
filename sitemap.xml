@@ -317,6 +317,16 @@
     </image:image>
   </url>
   <url>
+    <loc>https://altorracars.github.io/vehiculos/kia-cerato-pro-2015-27.html</loc>
+    <lastmod>2026-03-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772716528810_KIA_CERATO_2016_-_1_compressed.webp?alt=media&amp;token=7aef1eaa-0a74-41e9-a845-f357bf58eb6d</image:loc>
+      <image:title>Kia CERATO PRO 2015</image:title>
+    </image:image>
+  </url>
+  <url>
     <loc>https://altorracars.github.io/vehiculos/renault-duster-intens-2023-4.html</loc>
     <lastmod>2026-03-05</lastmod>
     <changefreq>weekly</changefreq>

@@ -169,25 +169,14 @@
     to   { opacity: 1; transform: translateY(0);    }
 }
 
-/* Acento dorado 3D — "de tus Sueños": igual color que los contadores, con profundidad */
+/* Acento dorado — "de tus Sueños": mismo color y glow que el badge */
 .hero-title-accent {
     display: block;
-    background: linear-gradient(
-        180deg,
-        #ffe566 0%,    /* highlight brillante en la cima */
-        #d4af37 30%,   /* mismo dorado que los contadores */
-        #d4af37 65%,   /* consistente */
-        #b8941a 100%   /* leve sombra en la base para 3D */
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    /* 3D: extrusión oscura escalonada + sombra de lectura + glow dorado */
-    filter:
-        drop-shadow(0 1px 0 rgba(100, 65, 0, 0.85))
-        drop-shadow(0 2px 0 rgba(70, 42, 0, 0.65))
-        drop-shadow(0 3px 10px rgba(0, 0, 0, 0.92))
-        drop-shadow(0 0 22px rgba(212, 175, 55, 0.38));
+    color: #d4af37;
+    text-shadow:
+        0 0 18px rgba(212, 175, 55, 0.75),
+        0 0 40px rgba(212, 175, 55, 0.35),
+        0 2px 12px rgba(0, 0, 0, 0.8);
 }
 
 /* ── CTA principal ── */

@@ -416,84 +416,114 @@ function loadHeroStats() {
 
 /**
  * Smart search bar — autocomplete from vehicleDB, debounced, keyboard-navigable.
- * On select/Enter: redirects to busqueda.html?buscar=TERM
+ * Syncs with real-time DB updates. Redirects to busqueda.html?buscar=TERM on select/Enter.
  */
 function initHeroSearch() {
     var input    = document.getElementById('heroSearchInput');
     var dropdown = document.getElementById('heroSearchDropdown');
     if (!input || !dropdown) return;
 
-    var debounceTimer = null;
-    var activeIndex   = -1;
-    var suggestions   = [];
+    var debounceTimer  = null;
+    var retryTimer     = null;
+    var activeIndex    = -1;
+    var suggestions    = [];
 
+    // ── Helpers ──────────────────────────────────────────────
     function isDbReady() {
-        return window.vehicleDB && vehicleDB.loaded;
+        return !!(window.vehicleDB && vehicleDB.loaded && vehicleDB.getAllVehicles().length > 0);
     }
 
     function getSuggestions(query) {
-        if (!isDbReady()) return [];
         var q = query.trim().toLowerCase();
-        if (!q) return [];
+        if (!q || !isDbReady()) return [];
 
         var vehicles = vehicleDB.getAllVehicles() || [];
         var seen = {};
         var results = [];
 
         vehicles.forEach(function(v) {
+            // Only available vehicles; skip if no marca/modelo
             if (v.estado && v.estado !== 'disponible') return;
+            if (!v.marca || !v.modelo) return;
+
+            var yearStr = v.year ? String(v.year) : '';
             var candidates = [
-                v.marca,
-                v.marca + ' ' + v.modelo,
-                v.marca + ' ' + v.modelo + ' ' + v.year,
-                String(v.year)
+                v.marca.trim(),
+                (v.marca + ' ' + v.modelo).trim(),
+                yearStr ? (v.marca + ' ' + v.modelo + ' ' + yearStr).trim() : null,
+                yearStr || null
             ];
+
             candidates.forEach(function(term) {
-                var key = (term || '').trim().toLowerCase();
-                if (key && key.includes(q) && !seen[key]) {
+                if (!term) return;
+                var key = term.toLowerCase();
+                if (key.includes(q) && !seen[key]) {
                     seen[key] = true;
-                    results.push((term || '').trim());
+                    results.push(term);
                 }
             });
+        });
+
+        // Sort: exact starts-with first, then includes
+        results.sort(function(a, b) {
+            var aStart = a.toLowerCase().startsWith(q) ? 0 : 1;
+            var bStart = b.toLowerCase().startsWith(q) ? 0 : 1;
+            return aStart - bStart || a.localeCompare(b);
         });
 
         return results.slice(0, 8);
     }
 
+    // ── Render ───────────────────────────────────────────────
     function renderDropdown(items) {
-        activeIndex  = -1;
-        suggestions  = items;
+        activeIndex = -1;
+        suggestions = items;
         if (!items.length) {
-            dropdown.hidden = true;
-            dropdown.innerHTML = '';
+            closeDropdown();
             return;
         }
-        dropdown.innerHTML = items.map(function(item, i) {
+        var html = items.map(function(item, i) {
+            var safe = item.replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return '<li class="hero-search-option" role="option" data-index="' + i + '">' +
                 '<svg class="hero-search-opt-icon" viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true">' +
                 '<path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>' +
                 '</svg>' +
-                item +
+                safe +
                 '</li>';
         }).join('');
+        dropdown.innerHTML = html;
         dropdown.hidden = false;
     }
 
     function showLoadingHint() {
         dropdown.innerHTML = '<li class="hero-search-loading">Cargando inventario…</li>';
         dropdown.hidden = false;
+        // Auto-retry when DB becomes ready (poll every 600ms, max 20s)
+        clearTimeout(retryTimer);
+        var retryCount = 0;
+        function tryRetry() {
+            if (isDbReady()) {
+                var q = input.value.trim();
+                if (q) renderDropdown(getSuggestions(q));
+            } else if (retryCount < 33) {
+                retryCount++;
+                retryTimer = setTimeout(tryRetry, 600);
+            }
+        }
+        retryTimer = setTimeout(tryRetry, 600);
     }
 
-    function hideDropdown() {
+    function closeDropdown() {
         dropdown.hidden = true;
         dropdown.innerHTML = '';
-        suggestions  = [];
-        activeIndex  = -1;
+        suggestions = [];
+        activeIndex = -1;
+        clearTimeout(retryTimer);
     }
 
     function selectSuggestion(text) {
         input.value = text;
-        hideDropdown();
+        closeDropdown();
         window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(text);
     }
 
@@ -506,14 +536,15 @@ function initHeroSearch() {
         });
     }
 
+    // ── Events ───────────────────────────────────────────────
     input.addEventListener('input', function() {
         clearTimeout(debounceTimer);
         var q = input.value.trim();
-        if (!q) { hideDropdown(); return; }
+        if (!q) { closeDropdown(); return; }
         if (!isDbReady()) { showLoadingHint(); return; }
         debounceTimer = setTimeout(function() {
             renderDropdown(getSuggestions(q));
-        }, 250);
+        }, 220);
     });
 
     input.addEventListener('keydown', function(e) {
@@ -523,22 +554,28 @@ function initHeroSearch() {
             }
             return;
         }
-        if (e.key === 'ArrowDown')  { e.preventDefault(); navigateList(1); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); navigateList(-1); }
-        else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (activeIndex >= 0 && suggestions[activeIndex]) {
-                selectSuggestion(suggestions[activeIndex]);
-            } else if (input.value.trim()) {
-                hideDropdown();
-                window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(input.value.trim());
-            }
-        } else if (e.key === 'Escape') {
-            hideDropdown();
+        switch (e.key) {
+            case 'ArrowDown':  e.preventDefault(); navigateList(1);  break;
+            case 'ArrowUp':    e.preventDefault(); navigateList(-1); break;
+            case 'Enter':
+                e.preventDefault();
+                if (activeIndex >= 0 && suggestions[activeIndex]) {
+                    selectSuggestion(suggestions[activeIndex]);
+                } else if (input.value.trim()) {
+                    closeDropdown();
+                    window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(input.value.trim());
+                }
+                break;
+            case 'Escape':
+                closeDropdown();
+                input.blur();
+                break;
         }
     });
 
+    // mousedown to prevent blur firing before click
     dropdown.addEventListener('mousedown', function(e) {
+        e.preventDefault();
         var li = e.target.closest('.hero-search-option');
         if (li) {
             var idx = parseInt(li.dataset.index, 10);
@@ -546,19 +583,44 @@ function initHeroSearch() {
         }
     });
 
+    // touch support for mobile
+    dropdown.addEventListener('touchstart', function(e) {
+        var li = e.target.closest('.hero-search-option');
+        if (li) {
+            e.preventDefault();
+            var idx = parseInt(li.dataset.index, 10);
+            if (!isNaN(idx) && suggestions[idx]) selectSuggestion(suggestions[idx]);
+        }
+    }, { passive: false });
+
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('.hero-search-wrap')) hideDropdown();
+        if (!e.target.closest('.hero-search-wrap')) closeDropdown();
     });
 
-    // Refresh suggestions if DB loads while dropdown shows "Cargando…"
-    if (window.vehicleDB && typeof vehicleDB.onChange === 'function') {
-        vehicleDB.onChange(function() {
-            if (!dropdown.hidden && dropdown.querySelector('.hero-search-loading')) {
-                var q = input.value.trim();
-                if (q) renderDropdown(getSuggestions(q));
-            }
-        });
+    // Real-time DB sync: refresh open dropdown when inventory updates
+    function onDbChange() {
+        if (dropdown.hidden) return;
+        var q = input.value.trim();
+        if (!q) return;
+        if (isDbReady()) renderDropdown(getSuggestions(q));
     }
+
+    // Register onChange — vehicleDB always exists as global instance
+    if (window.vehicleDB && typeof vehicleDB.onChange === 'function') {
+        vehicleDB.onChange(onDbChange);
+    }
+    // Also hook into the real-time listeners registered after initial load
+    // by re-checking once vehicleDB is confirmed loaded
+    var _dbReadyCheck = setInterval(function() {
+        if (isDbReady()) {
+            clearInterval(_dbReadyCheck);
+            // If a search was typed before DB was ready, run it now
+            var q = input.value.trim();
+            if (!dropdown.hidden && q) renderDropdown(getSuggestions(q));
+        }
+    }, 500);
+    // Give up checking after 30s
+    setTimeout(function() { clearInterval(_dbReadyCheck); }, 30000);
 }
 
 /**

@@ -400,24 +400,165 @@ function showRealtimeUpdateIndicator() {
 }
 
 /**
- * Update hero stats with real vehicle/brand counts from vehicleDB
+ * Update trust bar stats with real vehicle/brand counts from vehicleDB
  */
 function loadHeroStats() {
     if (!window.vehicleDB) return;
     var vehicles = vehicleDB.getAllVehicles() || [];
     var brands   = vehicleDB.getAllBrands()   || [];
-    var usados   = vehicles.filter(function(v) { return v.tipo === 'usado';  }).length;
-    var nuevos   = vehicles.filter(function(v) { return v.tipo === 'nuevo';  }).length;
 
-    var vEl = document.getElementById('heroStatVehicles');
-    var bEl = document.getElementById('heroStatBrands');
-    var uEl = document.getElementById('heroUsadosCount');
-    var nEl = document.getElementById('heroNuevosCount');
+    var vEl = document.getElementById('trustStatVehicles');
+    var bEl = document.getElementById('trustStatBrands');
 
     if (vEl) vEl.textContent = vehicles.length || '–';
     if (bEl) bEl.textContent = brands.length   || '–';
-    if (uEl) uEl.textContent = usados           || '–';
-    if (nEl) nEl.textContent = nuevos           || '–';
+}
+
+/**
+ * Smart search bar — autocomplete from vehicleDB, debounced, keyboard-navigable.
+ * On select/Enter: redirects to busqueda.html?buscar=TERM
+ */
+function initHeroSearch() {
+    var input    = document.getElementById('heroSearchInput');
+    var dropdown = document.getElementById('heroSearchDropdown');
+    if (!input || !dropdown) return;
+
+    var debounceTimer = null;
+    var activeIndex   = -1;
+    var suggestions   = [];
+
+    function isDbReady() {
+        return window.vehicleDB && vehicleDB.loaded;
+    }
+
+    function getSuggestions(query) {
+        if (!isDbReady()) return [];
+        var q = query.trim().toLowerCase();
+        if (!q) return [];
+
+        var vehicles = vehicleDB.getAllVehicles() || [];
+        var seen = {};
+        var results = [];
+
+        vehicles.forEach(function(v) {
+            if (v.estado && v.estado !== 'disponible') return;
+            var candidates = [
+                v.marca,
+                v.marca + ' ' + v.modelo,
+                v.marca + ' ' + v.modelo + ' ' + v.year,
+                String(v.year)
+            ];
+            candidates.forEach(function(term) {
+                var key = (term || '').trim().toLowerCase();
+                if (key && key.includes(q) && !seen[key]) {
+                    seen[key] = true;
+                    results.push((term || '').trim());
+                }
+            });
+        });
+
+        return results.slice(0, 8);
+    }
+
+    function renderDropdown(items) {
+        activeIndex  = -1;
+        suggestions  = items;
+        if (!items.length) {
+            dropdown.hidden = true;
+            dropdown.innerHTML = '';
+            return;
+        }
+        dropdown.innerHTML = items.map(function(item, i) {
+            return '<li class="hero-search-option" role="option" data-index="' + i + '">' +
+                '<svg class="hero-search-opt-icon" viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true">' +
+                '<path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>' +
+                '</svg>' +
+                item +
+                '</li>';
+        }).join('');
+        dropdown.hidden = false;
+    }
+
+    function showLoadingHint() {
+        dropdown.innerHTML = '<li class="hero-search-loading">Cargando inventario…</li>';
+        dropdown.hidden = false;
+    }
+
+    function hideDropdown() {
+        dropdown.hidden = true;
+        dropdown.innerHTML = '';
+        suggestions  = [];
+        activeIndex  = -1;
+    }
+
+    function selectSuggestion(text) {
+        input.value = text;
+        hideDropdown();
+        window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(text);
+    }
+
+    function navigateList(dir) {
+        var items = dropdown.querySelectorAll('.hero-search-option');
+        if (!items.length) return;
+        activeIndex = Math.max(-1, Math.min(items.length - 1, activeIndex + dir));
+        items.forEach(function(el, i) {
+            el.classList.toggle('is-active', i === activeIndex);
+        });
+    }
+
+    input.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        var q = input.value.trim();
+        if (!q) { hideDropdown(); return; }
+        if (!isDbReady()) { showLoadingHint(); return; }
+        debounceTimer = setTimeout(function() {
+            renderDropdown(getSuggestions(q));
+        }, 250);
+    });
+
+    input.addEventListener('keydown', function(e) {
+        if (dropdown.hidden) {
+            if (e.key === 'Enter' && input.value.trim()) {
+                window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(input.value.trim());
+            }
+            return;
+        }
+        if (e.key === 'ArrowDown')  { e.preventDefault(); navigateList(1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); navigateList(-1); }
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeIndex >= 0 && suggestions[activeIndex]) {
+                selectSuggestion(suggestions[activeIndex]);
+            } else if (input.value.trim()) {
+                hideDropdown();
+                window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(input.value.trim());
+            }
+        } else if (e.key === 'Escape') {
+            hideDropdown();
+        }
+    });
+
+    dropdown.addEventListener('mousedown', function(e) {
+        var li = e.target.closest('.hero-search-option');
+        if (li) {
+            var idx = parseInt(li.dataset.index, 10);
+            if (!isNaN(idx) && suggestions[idx]) selectSuggestion(suggestions[idx]);
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.hero-search-wrap')) hideDropdown();
+    });
+
+    // Refresh suggestions if DB loads while dropdown shows "Cargando…"
+    if (window.vehicleDB && typeof vehicleDB.onChange === 'function') {
+        vehicleDB.onChange(function() {
+            if (!dropdown.hidden && dropdown.querySelector('.hero-search-loading')) {
+                var q = input.value.trim();
+                if (q) renderDropdown(getSuggestions(q));
+            }
+        });
+    }
 }
 
 /**
@@ -472,6 +613,8 @@ function rerenderBanners() {
  */
 function initializePage() {
     // Load all sections in parallel for better performance
+    initHeroSearch();
+
     Promise.all([
         loadDestacadosBanner(),
         loadPopularBrands(),

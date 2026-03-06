@@ -222,6 +222,12 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Leer término de búsqueda desde URL (ej. ?buscar=Toyota desde el hero)
+            const buscarParam = new URLSearchParams(window.location.search).get('buscar');
+            if (buscarParam) {
+                currentFilters.search = buscarParam;
+            }
+
             loadDynamicFilters();
 
             // Toggle filters button

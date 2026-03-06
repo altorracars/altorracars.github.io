@@ -15,7 +15,8 @@
     background-size: cover;
     background-position: center 30%;
     background-attachment: scroll;
-    overflow: hidden;
+    /* overflow: visible so the search dropdown can escape below the hero */
+    overflow: visible;
     isolation: isolate;
     margin-top: 70px;
 }
@@ -53,19 +54,19 @@
 }
 
 .hero-ambient::before {
-    width: 420px;
-    height: 420px;
-    background: radial-gradient(circle, rgba(212, 175, 55, 0.07) 0%, transparent 70%);
-    top: -200px;
-    left: -150px;
+    width: 380px;
+    height: 380px;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.045) 0%, transparent 65%);
+    top: -220px;
+    left: -180px;
 }
 
 .hero-ambient::after {
-    width: 360px;
-    height: 360px;
-    background: radial-gradient(circle, rgba(184, 150, 88, 0.06) 0%, transparent 70%);
-    bottom: -150px;
-    right: -120px;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(184, 150, 88, 0.035) 0%, transparent 65%);
+    bottom: -180px;
+    right: -150px;
     animation-delay: -8s;
     animation-direction: alternate-reverse;
 }
@@ -168,27 +169,24 @@
     to   { opacity: 1; transform: translateY(0);    }
 }
 
-/* Acento dorado 3D — "de tus Sueños" */
+/* Acento dorado premium — "de tus Sueños": brillante, limpio, legible */
 .hero-title-accent {
     display: block;
     background: linear-gradient(
-        160deg,
-        #ffe87c 0%,
-        #f5c842 22%,
-        #d4af37 45%,
-        #f0d060 62%,
-        #b89658 80%,
-        #9a7a3a 100%
+        175deg,
+        #fff0a0 0%,
+        #f5d050 28%,
+        #d4a820 55%,
+        #f0c840 78%,
+        #d4a820 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    /* 3D depth: offset shadows stacked, plus ambient glow */
+    /* Shadow oscuro para contraste (legibilidad), glow dorado sutil */
     filter:
-        drop-shadow(0 1px 0 rgba(160, 115, 10, 1))
-        drop-shadow(0 2px 0 rgba(120, 85, 5, 0.85))
-        drop-shadow(0 3px 1px rgba(80, 55, 2, 0.6))
-        drop-shadow(0 6px 20px rgba(212, 175, 55, 0.48));
+        drop-shadow(0 2px 6px rgba(0, 0, 0, 0.95))
+        drop-shadow(0 0 28px rgba(212, 175, 55, 0.3));
 }
 
 /* ── CTA principal ── */
@@ -371,25 +369,29 @@
    TRUST BAR (fuera del hero)
 ───────────────────────────── */
 .trust-bar {
-    background: #0f0f0f;
-    border-top: 1px solid rgba(212, 175, 55, 0.14);
-    border-bottom: 1px solid rgba(212, 175, 55, 0.08);
-    padding: 1.1rem 2rem 1rem;
+    background: #111111;
+    border-top: 1px solid rgba(212, 175, 55, 0.18);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1.25rem 2rem 1.1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0;
 }
 
 /* Tagline encima de los stats */
 .trust-bar-tagline {
-    margin: 0;
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.7);
-    letter-spacing: 0.04em;
+    margin: 0 0 0.9rem;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.72);
+    letter-spacing: 0.05em;
     text-align: center;
-    font-weight: 400;
+    font-weight: 300;
     line-height: 1.5;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    width: 100%;
+    max-width: 700px;
 }
 
 /* Fila de stats */
@@ -404,38 +406,38 @@
 .trust-bar-item {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.35rem 2rem;
+    gap: 0.55rem;
+    padding: 0.3rem 2.2rem;
 }
 
 .trust-bar-sep {
     width: 1px;
-    height: 26px;
+    height: 28px;
     background: rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
 }
 
 .trust-bar-num {
-    font-size: 1.35rem;
+    font-size: 1.45rem;
     font-weight: 800;
     color: #d4af37;
-    letter-spacing: -0.02em;
-    text-shadow: 0 0 16px rgba(212, 175, 55, 0.3);
+    letter-spacing: -0.03em;
+    text-shadow: 0 0 18px rgba(212, 175, 55, 0.32);
     line-height: 1;
 }
 
 .trust-bar-icon {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #d4af37;
     line-height: 1;
 }
 
 .trust-bar-label {
-    font-size: 0.68rem;
-    color: rgba(255, 255, 255, 0.52);
+    font-size: 0.67rem;
+    color: rgba(255, 255, 255, 0.48);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: 500;
+    letter-spacing: 0.12em;
+    font-weight: 600;
     white-space: nowrap;
 }
 
@@ -518,8 +520,7 @@
     }
 
     .trust-bar {
-        padding: 0.9rem 1rem 0.8rem;
-        gap: 0.6rem;
+        padding: 1rem 1rem 0.8rem;
     }
 
     .trust-bar-sep {
@@ -527,7 +528,9 @@
     }
 
     .trust-bar-tagline {
-        font-size: 0.74rem;
+        font-size: 0.72rem;
+        margin-bottom: 0.7rem;
+        padding-bottom: 0.7rem;
     }
 
     .trust-bar-item {
@@ -535,7 +538,11 @@
     }
 
     .trust-bar-label {
-        font-size: 0.62rem;
+        font-size: 0.6rem;
+    }
+
+    .trust-bar-num {
+        font-size: 1.2rem;
     }
 }
 

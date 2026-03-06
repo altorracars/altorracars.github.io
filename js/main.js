@@ -434,44 +434,54 @@ function initHeroSearch() {
     }
 
     function getSuggestions(query) {
-        var q = query.trim().toLowerCase();
-        if (!q || !isDbReady()) return [];
+        if (!isDbReady()) return [];
+
+        // Split query into individual words — ALL must match somewhere
+        var words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        if (!words.length) return [];
 
         var vehicles = vehicleDB.getAllVehicles() || [];
         var seen = {};
         var results = [];
 
         vehicles.forEach(function(v) {
-            // Only available vehicles; skip if no marca/modelo
             if (v.estado && v.estado !== 'disponible') return;
             if (!v.marca || !v.modelo) return;
 
-            var yearStr = v.year ? String(v.year) : '';
-            var candidates = [
-                v.marca.trim(),
-                (v.marca + ' ' + v.modelo).trim(),
-                yearStr ? (v.marca + ' ' + v.modelo + ' ' + yearStr).trim() : null,
-                yearStr || null
-            ];
+            // Build a full searchable haystack for this vehicle (all relevant fields)
+            var haystack = [
+                v.marca,
+                v.modelo,
+                v.year ? String(v.year) : '',
+                v.color || '',
+                v.categoria || '',
+                v.combustible || '',
+                v.transmision || ''
+            ].join(' ').toLowerCase();
 
-            candidates.forEach(function(term) {
-                if (!term) return;
-                var key = term.toLowerCase();
-                if (key.includes(q) && !seen[key]) {
-                    seen[key] = true;
-                    results.push(term);
-                }
-            });
+            // All query words must appear somewhere in the haystack
+            var allMatch = words.every(function(w) { return haystack.includes(w); });
+            if (!allMatch) return;
+
+            // Build a human-readable suggestion label
+            var label = (v.marca + ' ' + v.modelo + (v.year ? ' ' + v.year : '')).trim();
+            var key = label.toLowerCase();
+            if (!seen[key]) {
+                seen[key] = true;
+                // Score: how many words appear at the start of a word boundary
+                var score = words.filter(function(w) {
+                    return haystack.startsWith(w) || haystack.includes(' ' + w);
+                }).length;
+                results.push({ label: label, score: score });
+            }
         });
 
-        // Sort: exact starts-with first, then includes
+        // Sort: more matching words at boundaries first, then alphabetical
         results.sort(function(a, b) {
-            var aStart = a.toLowerCase().startsWith(q) ? 0 : 1;
-            var bStart = b.toLowerCase().startsWith(q) ? 0 : 1;
-            return aStart - bStart || a.localeCompare(b);
+            return b.score - a.score || a.label.localeCompare(b.label);
         });
 
-        return results.slice(0, 8);
+        return results.slice(0, 8).map(function(r) { return r.label; });
     }
 
     // ── Render ───────────────────────────────────────────────

@@ -415,8 +415,8 @@ function loadHeroStats() {
 }
 
 /**
- * Smart search bar — autocomplete from vehicleDB, debounced, keyboard-navigable.
- * Syncs with real-time DB updates. Redirects to busqueda.html?buscar=TERM on select/Enter.
+ * Smart search bar v2 — fuzzy matching, match highlighting, vehicle counts,
+ * recent searches, "/" shortcut, real-time DB sync.
  */
 function initHeroSearch() {
     var input    = document.getElementById('heroSearchInput');
@@ -426,101 +426,217 @@ function initHeroSearch() {
     var debounceTimer  = null;
     var retryTimer     = null;
     var activeIndex    = -1;
-    var suggestions    = [];
+    var suggestions    = [];           // plain string array for selection
+    var RECENT_KEY     = 'altorra-recent-searches';
 
-    // ── Helpers ──────────────────────────────────────────────
+    // ── Recent searches (localStorage) ───────────────────────
+    function getRecent() {
+        try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]').slice(0, 5); }
+        catch (e) { return []; }
+    }
+    function saveRecent(term) {
+        try {
+            var arr = getRecent().filter(function(t) { return t.toLowerCase() !== term.toLowerCase(); });
+            arr.unshift(term);
+            localStorage.setItem(RECENT_KEY, JSON.stringify(arr.slice(0, 5)));
+        } catch (e) {}
+    }
+
+    // ── DB readiness ──────────────────────────────────────────
     function isDbReady() {
         return !!(window.vehicleDB && vehicleDB.loaded && vehicleDB.getAllVehicles().length > 0);
     }
 
+    // ── Fuzzy matching (Levenshtein, typo tolerance) ──────────
+    function levenshtein(a, b) {
+        if (a === b) return 0;
+        if (!a.length) return b.length;
+        if (!b.length) return a.length;
+        var prev = [], curr = [];
+        for (var j = 0; j <= b.length; j++) prev[j] = j;
+        for (var i = 1; i <= a.length; i++) {
+            curr[0] = i;
+            for (var j = 1; j <= b.length; j++) {
+                curr[j] = a[i-1] === b[j-1]
+                    ? prev[j-1]
+                    : 1 + Math.min(prev[j-1], prev[j], curr[j-1]);
+            }
+            prev = curr.slice();
+        }
+        return curr[b.length];
+    }
+
+    function wordMatchesFuzzy(qWord, haystack) {
+        if (haystack.includes(qWord)) return true;
+        if (qWord.length < 4) return false;                  // skip fuzzy for short words
+        var maxDist = qWord.length <= 5 ? 1 : 2;
+        return haystack.split(/\s+/).some(function(hw) {
+            return Math.abs(hw.length - qWord.length) <= maxDist &&
+                   levenshtein(qWord, hw) <= maxDist;
+        });
+    }
+
+    // ── Build vehicle haystack string ────────────────────────
+    function buildHaystack(v) {
+        return [v.marca, v.modelo, v.year ? String(v.year) : '',
+                v.color || '', v.categoria || '', v.combustible || '',
+                v.transmision || ''].join(' ').toLowerCase();
+    }
+
+    // ── Count how many vehicles match a label+words combo ────
+    function countVehicles(vehicles, labelWords) {
+        return vehicles.filter(function(v) {
+            if (!v.marca || !v.modelo) return false;
+            if (v.estado && v.estado !== 'disponible') return false;
+            var h = buildHaystack(v);
+            return labelWords.every(function(w) { return h.includes(w); });
+        }).length;
+    }
+
+    // ── Core suggestion engine ────────────────────────────────
     function getSuggestions(query) {
         if (!isDbReady()) return [];
-
-        // Split query into individual words — ALL must match somewhere
         var words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
         if (!words.length) return [];
 
         var vehicles = vehicleDB.getAllVehicles() || [];
-        var seen = {};
-        var results = [];
+        var seenLabel = {};
+        var exact = [], fuzzy = [];
 
         vehicles.forEach(function(v) {
             if (v.estado && v.estado !== 'disponible') return;
             if (!v.marca || !v.modelo) return;
 
-            // Build a full searchable haystack for this vehicle (all relevant fields)
-            var haystack = [
-                v.marca,
-                v.modelo,
-                v.year ? String(v.year) : '',
-                v.color || '',
-                v.categoria || '',
-                v.combustible || '',
-                v.transmision || ''
-            ].join(' ').toLowerCase();
+            var haystack = buildHaystack(v);
 
-            // All query words must appear somewhere in the haystack
-            var allMatch = words.every(function(w) { return haystack.includes(w); });
-            if (!allMatch) return;
+            // Pass 1 — exact: all words must be substrings of haystack
+            var isExact = words.every(function(w) { return haystack.includes(w); });
+            // Pass 2 — fuzzy: each word matches exactly OR within edit distance
+            var isFuzzy = !isExact && words.every(function(w) { return wordMatchesFuzzy(w, haystack); });
 
-            // Build a human-readable suggestion label
-            var label = (v.marca + ' ' + v.modelo + (v.year ? ' ' + v.year : '')).trim();
-            var key = label.toLowerCase();
-            if (!seen[key]) {
-                seen[key] = true;
-                // Score: how many words appear at the start of a word boundary
-                var score = words.filter(function(w) {
-                    return haystack.startsWith(w) || haystack.includes(' ' + w);
-                }).length;
-                results.push({ label: label, score: score });
+            if (!isExact && !isFuzzy) return;
+
+            // Emit brand-level suggestion if only 1 query word and matches brand
+            if (words.length === 1 && v.marca.toLowerCase().includes(words[0])) {
+                var bLabel = v.marca.trim();
+                var bKey   = bLabel.toLowerCase();
+                if (!seenLabel[bKey]) {
+                    seenLabel[bKey] = true;
+                    (isExact ? exact : fuzzy).push({ label: bLabel, isFuzzy: !isExact, isBrand: true });
+                }
+            }
+
+            // Model-level suggestion
+            var mLabel = (v.marca + ' ' + v.modelo).trim();
+            var mKey   = mLabel.toLowerCase();
+            if (!seenLabel[mKey]) {
+                seenLabel[mKey] = true;
+                (isExact ? exact : fuzzy).push({ label: mLabel, isFuzzy: !isExact, isBrand: false });
             }
         });
 
-        // Sort: more matching words at boundaries first, then alphabetical
-        results.sort(function(a, b) {
-            return b.score - a.score || a.label.localeCompare(b.label);
+        // Merge exact first, then fuzzy
+        var combined = exact.concat(fuzzy);
+
+        // Attach vehicle counts and sort
+        combined.forEach(function(r) {
+            var lw = r.label.toLowerCase().split(/\s+/);
+            r.count = countVehicles(vehicles, lw);
+        });
+        combined.sort(function(a, b) {
+            // Exact before fuzzy, brand before model, more vehicles first, then alpha
+            if (a.isFuzzy !== b.isFuzzy) return a.isFuzzy ? 1 : -1;
+            if (a.isBrand !== b.isBrand) return a.isBrand ? -1 : 1;
+            return b.count - a.count || a.label.localeCompare(b.label);
         });
 
-        return results.slice(0, 8).map(function(r) { return r.label; });
+        return combined.slice(0, 8);
     }
 
-    // ── Render ───────────────────────────────────────────────
-    function renderDropdown(items) {
+    // ── Highlight matched words in text ───────────────────────
+    function highlight(text, words) {
+        var safe = text.replace(/[<>&"]/g, function(c) {
+            return { '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;' }[c];
+        });
+        if (!words || !words.length) return safe;
+        // Replace each matched word with <mark>
+        words.forEach(function(w) {
+            if (!w || w.length < 2) return;
+            var re = new RegExp('(' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            safe = safe.replace(re, '<mark class="hero-search-match">$1</mark>');
+        });
+        return safe;
+    }
+
+    // ── Render helpers ────────────────────────────────────────
+    var SEARCH_SVG = '<svg class="hero-search-opt-icon" viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>';
+    var CLOCK_SVG  = '<svg class="hero-search-opt-icon hero-search-opt-icon--recent" viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd"/></svg>';
+
+    function renderDropdown(items, words) {
         activeIndex = -1;
-        suggestions = items;
-        if (!items.length) {
-            closeDropdown();
-            return;
-        }
+        if (!items.length) { closeDropdown(); return; }
+
+        suggestions = items.map(function(r) { return typeof r === 'object' ? r.label : r; });
+
         var html = items.map(function(item, i) {
-            var safe = item.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            var isObj  = typeof item === 'object';
+            var label  = isObj ? item.label : item;
+            var count  = isObj ? item.count  : 0;
+            var isFuzzy = isObj ? item.isFuzzy : false;
+
+            var displayed = highlight(label, words);
+            var countHtml = count
+                ? '<span class="hero-search-count">' + count + (count === 1 ? ' auto' : ' autos') + '</span>'
+                : '';
+            var fuzzyHtml = isFuzzy
+                ? '<span class="hero-search-fuzzy" title="Resultado aproximado">~</span>'
+                : '';
+
             return '<li class="hero-search-option" role="option" data-index="' + i + '">' +
-                '<svg class="hero-search-opt-icon" viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true">' +
-                '<path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>' +
-                '</svg>' +
-                safe +
+                SEARCH_SVG +
+                '<span class="hero-search-option-text">' + displayed + '</span>' +
+                fuzzyHtml + countHtml +
                 '</li>';
         }).join('');
+
+        dropdown.innerHTML = html;
+        dropdown.hidden = false;
+    }
+
+    function renderRecent() {
+        var recent = getRecent();
+        if (!recent.length) { closeDropdown(); return; }
+        activeIndex = -1;
+        suggestions  = recent;
+
+        var html = '<li class="hero-search-section-head">Búsquedas recientes</li>' +
+            recent.map(function(term, i) {
+                var safe = term.replace(/[<>&"]/g, function(c) {
+                    return { '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;' }[c];
+                });
+                return '<li class="hero-search-option hero-search-option--recent" role="option" data-index="' + i + '">' +
+                    CLOCK_SVG +
+                    '<span class="hero-search-option-text">' + safe + '</span>' +
+                    '</li>';
+            }).join('');
+
         dropdown.innerHTML = html;
         dropdown.hidden = false;
     }
 
     function showLoadingHint() {
-        dropdown.innerHTML = '<li class="hero-search-loading">Cargando inventario…</li>';
+        dropdown.innerHTML = '<li class="hero-search-loading"><span class="hero-search-spinner"></span>Cargando inventario…</li>';
         dropdown.hidden = false;
-        // Auto-retry when DB becomes ready (poll every 600ms, max 20s)
         clearTimeout(retryTimer);
-        var retryCount = 0;
-        function tryRetry() {
+        var retries = 0;
+        (function tryRetry() {
             if (isDbReady()) {
                 var q = input.value.trim();
-                if (q) renderDropdown(getSuggestions(q));
-            } else if (retryCount < 33) {
-                retryCount++;
-                retryTimer = setTimeout(tryRetry, 600);
+                if (q) { var w = q.toLowerCase().split(/\s+/).filter(Boolean); renderDropdown(getSuggestions(q), w); }
+            } else if (retries++ < 40) {
+                retryTimer = setTimeout(tryRetry, 500);
             }
-        }
-        retryTimer = setTimeout(tryRetry, 600);
+        })();
     }
 
     function closeDropdown() {
@@ -533,6 +649,7 @@ function initHeroSearch() {
 
     function selectSuggestion(text) {
         input.value = text;
+        saveRecent(text);
         closeDropdown();
         window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(text);
     }
@@ -541,96 +658,104 @@ function initHeroSearch() {
         var items = dropdown.querySelectorAll('.hero-search-option');
         if (!items.length) return;
         activeIndex = Math.max(-1, Math.min(items.length - 1, activeIndex + dir));
-        items.forEach(function(el, i) {
-            el.classList.toggle('is-active', i === activeIndex);
-        });
+        items.forEach(function(el, i) { el.classList.toggle('is-active', i === activeIndex); });
     }
 
-    // ── Events ───────────────────────────────────────────────
+    // ── Events ────────────────────────────────────────────────
+    input.addEventListener('focus', function() {
+        if (!input.value.trim()) renderRecent();
+    });
+
     input.addEventListener('input', function() {
         clearTimeout(debounceTimer);
         var q = input.value.trim();
-        if (!q) { closeDropdown(); return; }
+        if (!q) { renderRecent(); return; }
         if (!isDbReady()) { showLoadingHint(); return; }
         debounceTimer = setTimeout(function() {
-            renderDropdown(getSuggestions(q));
-        }, 220);
+            var words = q.toLowerCase().split(/\s+/).filter(Boolean);
+            renderDropdown(getSuggestions(q), words);
+        }, 200);
     });
 
     input.addEventListener('keydown', function(e) {
         if (dropdown.hidden) {
             if (e.key === 'Enter' && input.value.trim()) {
+                saveRecent(input.value.trim());
                 window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(input.value.trim());
             }
             return;
         }
         switch (e.key) {
-            case 'ArrowDown':  e.preventDefault(); navigateList(1);  break;
-            case 'ArrowUp':    e.preventDefault(); navigateList(-1); break;
+            case 'ArrowDown': e.preventDefault(); navigateList(1);  break;
+            case 'ArrowUp':   e.preventDefault(); navigateList(-1); break;
             case 'Enter':
                 e.preventDefault();
                 if (activeIndex >= 0 && suggestions[activeIndex]) {
                     selectSuggestion(suggestions[activeIndex]);
                 } else if (input.value.trim()) {
+                    saveRecent(input.value.trim());
                     closeDropdown();
                     window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(input.value.trim());
                 }
                 break;
-            case 'Escape':
-                closeDropdown();
-                input.blur();
-                break;
+            case 'Escape': closeDropdown(); input.blur(); break;
         }
     });
 
-    // mousedown to prevent blur firing before click
     dropdown.addEventListener('mousedown', function(e) {
         e.preventDefault();
         var li = e.target.closest('.hero-search-option');
-        if (li) {
-            var idx = parseInt(li.dataset.index, 10);
-            if (!isNaN(idx) && suggestions[idx]) selectSuggestion(suggestions[idx]);
-        }
+        if (li) { var i = parseInt(li.dataset.index, 10); if (!isNaN(i) && suggestions[i]) selectSuggestion(suggestions[i]); }
     });
 
-    // touch support for mobile
     dropdown.addEventListener('touchstart', function(e) {
         var li = e.target.closest('.hero-search-option');
-        if (li) {
-            e.preventDefault();
-            var idx = parseInt(li.dataset.index, 10);
-            if (!isNaN(idx) && suggestions[idx]) selectSuggestion(suggestions[idx]);
-        }
+        if (li) { e.preventDefault(); var i = parseInt(li.dataset.index, 10); if (!isNaN(i) && suggestions[i]) selectSuggestion(suggestions[i]); }
     }, { passive: false });
 
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.hero-search-wrap')) closeDropdown();
     });
 
-    // Real-time DB sync: refresh open dropdown when inventory updates
+    // "/" to focus search from anywhere on the page
+    document.addEventListener('keydown', function(e) {
+        if (e.key === '/' && document.activeElement !== input &&
+            !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
+            e.preventDefault();
+            input.focus();
+            if (!input.value.trim()) renderRecent();
+        }
+    });
+
+    // Real-time DB sync — refresh open dropdown on inventory changes
     function onDbChange() {
         if (dropdown.hidden) return;
         var q = input.value.trim();
-        if (!q) return;
-        if (isDbReady()) renderDropdown(getSuggestions(q));
+        if (!isDbReady()) return;
+        if (q) {
+            var words = q.toLowerCase().split(/\s+/).filter(Boolean);
+            renderDropdown(getSuggestions(q), words);
+        } else {
+            renderRecent();
+        }
     }
 
-    // Register onChange — vehicleDB always exists as global instance
     if (window.vehicleDB && typeof vehicleDB.onChange === 'function') {
         vehicleDB.onChange(onDbChange);
     }
-    // Also hook into the real-time listeners registered after initial load
-    // by re-checking once vehicleDB is confirmed loaded
-    var _dbReadyCheck = setInterval(function() {
+
+    // Poll until DB is ready (handles slow connections / cache-miss scenarios)
+    var _poll = setInterval(function() {
         if (isDbReady()) {
-            clearInterval(_dbReadyCheck);
-            // If a search was typed before DB was ready, run it now
+            clearInterval(_poll);
             var q = input.value.trim();
-            if (!dropdown.hidden && q) renderDropdown(getSuggestions(q));
+            if (!dropdown.hidden && q) {
+                var words = q.toLowerCase().split(/\s+/).filter(Boolean);
+                renderDropdown(getSuggestions(q), words);
+            }
         }
     }, 500);
-    // Give up checking after 30s
-    setTimeout(function() { clearInterval(_dbReadyCheck); }, 30000);
+    setTimeout(function() { clearInterval(_poll); }, 30000);
 }
 
 /**

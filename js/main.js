@@ -97,21 +97,34 @@ function initBrandsAutoScroll(container) {
     track.addEventListener('mouseenter', function() { state.paused = true; });
     track.addEventListener('mouseleave', function() { state.paused = false; });
 
-    // Touch drag — lets users scroll to a specific brand on mobile
-    var dragStartX = 0, dragStartPos = 0, isDragging = false;
+    // Touch drag — only pause when user drags horizontally (not during page scroll)
+    var dragStartX = 0, dragStartY = 0, dragStartPos = 0;
+    var isDragging = false, touchDecided = false;
 
     container.addEventListener('touchstart', function(e) {
+        if (e.touches.length !== 1) return;
         dragStartX   = e.touches[0].clientX;
+        dragStartY   = e.touches[0].clientY;
         dragStartPos = state.pos;
         isDragging   = false;
-        state.paused = true;
+        touchDecided = false;
+        // Do NOT pause here — wait until we confirm horizontal direction
     }, { passive: true });
 
     container.addEventListener('touchmove', function(e) {
         if (e.touches.length !== 1) return;
         var dx = dragStartX - e.touches[0].clientX;
-        if (!isDragging && Math.abs(dx) < 6) return;
-        isDragging = true;
+        var dy = dragStartY - e.touches[0].clientY;
+
+        // First significant movement decides: vertical = page scroll, horizontal = carousel drag
+        if (!touchDecided && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+            touchDecided = true;
+            isDragging = Math.abs(dx) > Math.abs(dy); // horizontal wins
+            if (isDragging) state.paused = true;
+        }
+
+        if (!isDragging) return; // let vertical scroll pass through
+
         var halfWidth = track.scrollWidth / 2;
         if (halfWidth > 0) {
             state.pos = ((dragStartPos + dx) % halfWidth + halfWidth) % halfWidth;
@@ -120,8 +133,12 @@ function initBrandsAutoScroll(container) {
     }, { passive: true });
 
     container.addEventListener('touchend', function() {
-        // Resume auto-scroll after 1.5 s so accidental releases don't snap
-        setTimeout(function() { state.paused = false; }, 1500);
+        if (isDragging) {
+            // Resume auto-scroll 1.5 s after intentional drag ends
+            setTimeout(function() { state.paused = false; }, 1500);
+        }
+        isDragging   = false;
+        touchDecided = false;
     }, { passive: true });
 
     requestAnimationFrame(step);

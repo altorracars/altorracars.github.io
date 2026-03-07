@@ -81,12 +81,20 @@ class ContactFormManager {
             if (input.closest('#vendeAutoForm') && input.matches('.form-input, .form-textarea')) {
                 this.validateField(input);
             }
+            if (input.closest('#financiacionForm') && input.matches('.form-input, .form-select')) {
+                this.validateFinanciacionField(input);
+            }
         }, true);
 
         // Limpiar error al empezar a escribir
         document.addEventListener('input', (e) => {
             const input = e.target;
             if (input.closest('#vendeAutoForm') && input.matches('.form-input')) {
+                if (input.classList.contains('input-error')) {
+                    this.clearFieldError(input);
+                }
+            }
+            if (input.closest('#financiacionForm') && input.matches('.form-input')) {
                 if (input.classList.contains('input-error')) {
                     this.clearFieldError(input);
                 }
@@ -180,6 +188,44 @@ class ContactFormManager {
         if (err) err.textContent = '';
     }
 
+    validateFinanciacionField(input) {
+        const value = input.value.trim();
+        let error = '';
+        const isRequired = input.closest('.form-group')?.querySelector('.form-label.required') !== null;
+
+        if (isRequired && !value) {
+            error = 'Este campo es obligatorio';
+        } else if (value && input.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            error = 'Ingresa un email válido';
+        } else if (value && input.type === 'tel' && !/^\d{7,15}$/.test(value.replace(/\s/g, ''))) {
+            error = 'Ingresa un número válido (7-15 dígitos)';
+        }
+
+        if (error) {
+            this.setFieldError(input, error);
+            return false;
+        }
+        this.clearFieldError(input);
+        return true;
+    }
+
+    validateFinanciacionForm(form) {
+        let valid = true;
+        form.querySelectorAll('.form-input, .form-select').forEach(input => {
+            if (!this.validateFinanciacionField(input)) valid = false;
+        });
+        return valid;
+    }
+
+    resetFinanciacionForm() {
+        const form = document.getElementById('financiacionForm');
+        if (form) {
+            form.reset();
+            form.querySelectorAll('.form-input, .form-select').forEach(el => el.classList.remove('input-error'));
+            form.querySelectorAll('.form-error').forEach(el => el.textContent = '');
+        }
+    }
+
     resetVendeWizard() {
         this.goToWizardStep(1);
         const modal = document.getElementById('vende-auto-modal');
@@ -201,6 +247,7 @@ class ContactFormManager {
             document.body.style.overflow = 'hidden';
 
             if (modalId === 'vende-auto') this.resetVendeWizard();
+            if (modalId === 'financiacion') this.resetFinanciacionForm();
 
             setTimeout(() => {
                 const firstInput = modal.querySelector('input:not([type="hidden"]), textarea, select');
@@ -303,6 +350,8 @@ ${comentarios || 'Ninguno'}`;
     }
 
     handleFinanciacionSubmit(form) {
+        if (!this.validateFinanciacionForm(form)) return;
+
         const formData = new FormData(form);
 
         const nombre = formData.get('nombre');
@@ -313,6 +362,8 @@ ${comentarios || 'Ninguno'}`;
         const cuotaInicial = formData.get('cuota-inicial');
         const plazo = formData.get('plazo');
         const ingresos = formData.get('ingresos');
+        const situacion = formData.get('situacion-laboral');
+        const ciudad = formData.get('ciudad');
         const comentarios = formData.get('comentarios');
 
         // Construir mensaje de WhatsApp
@@ -322,6 +373,8 @@ INFORMACION DEL CLIENTE:
 - Nombre: ${nombre}
 - Telefono: ${telefono}
 - Email: ${email}
+- Ciudad: ${ciudad || 'No indicada'}
+- Situacion laboral: ${situacion || 'No indicada'}
 
 INFORMACION DEL VEHICULO:
 - Vehiculo de interes: ${vehiculoInteres}

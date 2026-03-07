@@ -1,7 +1,10 @@
 // ============================================
 // SISTEMA DE RESEÑAS Y TESTIMONIOS - ALTORRA CARS
-// Fase 20: 100% dinámico desde Firestore (colección 'resenas')
+// Fase 20+: 100% dinámico desde Firestore (colección 'resenas')
 // Sin datos estáticos — todo se gestiona desde el admin panel
+// Schema: name, location, rating, vehicle, text, source,
+//         verified, featured, avatar, createdAt, updatedAt
+//         (title y date: legacy opcional — se muestran si existen)
 // ============================================
 
 class ReviewsSystem {
@@ -34,7 +37,8 @@ class ReviewsSystem {
     _doFirestoreLoad() {
         const self = this;
         window.firebaseReady.then(function() {
-            return window.db.collection('resenas').orderBy('date', 'desc').get();
+            // Ordenar por createdAt; si el campo no existe (docs legacy) caerá gracefully
+            return window.db.collection('resenas').orderBy('createdAt', 'desc').get();
         }).then(function(snap) {
             snap.forEach(function(doc) {
                 var d = doc.data();
@@ -46,9 +50,28 @@ class ReviewsSystem {
             self.calculateStats();
             self._notifyCallbacks();
         }).catch(function(err) {
-            console.warn('[Reviews] Firestore load failed:', err.message);
-            self._firestoreLoaded = true;
-            self._notifyCallbacks();
+            console.warn('[Reviews] Firestore load failed (createdAt index?):', err.message);
+            // Fallback: try without ordering
+            window.db.collection('resenas').get().then(function(snap) {
+                snap.forEach(function(doc) {
+                    var d = doc.data();
+                    d._docId = doc.id;
+                    d.rating = parseInt(d.rating) || 5;
+                    self.reviews.push(d);
+                });
+                // Sort client-side: featured first, then newest
+                self.reviews.sort(function(a, b) {
+                    var aTime = a.createdAt || a.date || '';
+                    var bTime = b.createdAt || b.date || '';
+                    return bTime < aTime ? -1 : bTime > aTime ? 1 : 0;
+                });
+                self._firestoreLoaded = true;
+                self.calculateStats();
+                self._notifyCallbacks();
+            }).catch(function() {
+                self._firestoreLoaded = true;
+                self._notifyCallbacks();
+            });
         });
     }
 
@@ -92,9 +115,13 @@ class ReviewsSystem {
     getRecentReviews(limit = 3) {
         return [...this.reviews]
             .sort((a, b) => {
+                // Featured first
                 if (a.featured && !b.featured) return -1;
                 if (!a.featured && b.featured) return 1;
-                return new Date(b.date) - new Date(a.date);
+                // Then by createdAt or legacy date
+                const aTime = a.createdAt || a.date || '';
+                const bTime = b.createdAt || b.date || '';
+                return bTime < aTime ? -1 : bTime > aTime ? 1 : 0;
             })
             .slice(0, limit);
     }
@@ -113,9 +140,12 @@ class ReviewsSystem {
         return stars;
     }
 
-    formatDate(dateStr) {
-        if (!dateStr) return '';
-        const date = new Date(dateStr);
+    formatDate(review) {
+        // Prefer createdAt (new schema); fall back to legacy date field
+        const raw = review.createdAt || review.date;
+        if (!raw) return '';
+        const date = new Date(raw);
+        if (isNaN(date.getTime())) return '';
         return date.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
@@ -179,6 +209,10 @@ class ReviewsSystem {
     }
 
     renderTestimonialCard(review) {
+        // Legacy support: show title if present, otherwise skip
+        const titleHtml = review.title
+            ? `<h5 class="testimonial-title">"${review.title}"</h5>`
+            : '';
         return `
             <div class="testimonial-card">
                 <div class="testimonial-header">
@@ -200,7 +234,7 @@ class ReviewsSystem {
                     </div>
                 </div>
                 <div class="testimonial-content">
-                    <h5 class="testimonial-title">"${review.title}"</h5>
+                    ${titleHtml}
                     <p class="testimonial-text">${review.text}</p>
                 </div>
             </div>
@@ -280,6 +314,13 @@ class ReviewsSystem {
                     ${review.vehicle}
                 </div>` : '';
 
+        // Legacy support: show title if present
+        const titleHtml = review.title
+            ? `<h3 class="review-title">${review.title}</h3>`
+            : '';
+
+        const dateStr = this.formatDate(review);
+
         return `
             <div class="review-card-full">
                 <div class="review-card-header">
@@ -297,12 +338,12 @@ class ReviewsSystem {
                     </div>
                     <div class="review-meta">
                         <div class="review-rating">${this.renderStars(parseInt(review.rating) || 5)}</div>
-                        <span class="review-date">${this.formatDate(review.date)}</span>
+                        ${dateStr ? `<span class="review-date">${dateStr}</span>` : ''}
                     </div>
                 </div>
                 ${vehicleTag}
                 <div class="review-content">
-                    <h3 class="review-title">${review.title}</h3>
+                    ${titleHtml}
                     <p class="review-text">${review.text}</p>
                 </div>
             </div>

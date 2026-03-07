@@ -84,6 +84,26 @@ service cloud.firestore {
       }
     }
 
+    // ========== RESENAS ==========
+    match /resenas/{resenaId} {
+      // Public read — reviews displayed on frontend
+      allow read: if true;
+      // Editor or Super Admin can create/update reviews
+      allow create, update: if isEditorOrAbove();
+      // Only Super Admin can delete
+      allow delete: if isSuperAdmin();
+    }
+
+    // ========== BANNERS ==========
+    match /banners/{bannerId} {
+      // Public read — banners displayed on frontend
+      allow read: if true;
+      // Editor or Super Admin can create/update banners
+      allow create, update: if isEditorOrAbove();
+      // Only Super Admin can delete
+      allow delete: if isSuperAdmin();
+    }
+
     // ========== LEADS (future) ==========
     match /leads/{leadId} {
       allow read: if isAuthenticated();

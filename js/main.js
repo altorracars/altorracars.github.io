@@ -458,6 +458,13 @@ function initHeroSearch() {
             localStorage.setItem(RECENT_KEY, JSON.stringify(arr.slice(0, 5)));
         } catch (e) {}
     }
+    function removeRecent(term) {
+        try {
+            var arr = getRecent().filter(function(t) { return t.toLowerCase() !== term.toLowerCase(); });
+            localStorage.setItem(RECENT_KEY, JSON.stringify(arr));
+        } catch (e) {}
+        renderRecent();
+    }
 
     // ── DB readiness ──────────────────────────────────────────
     function isDbReady() {
@@ -650,6 +657,7 @@ function initHeroSearch() {
                 return '<li class="hero-search-option hero-search-option--recent" role="option" data-index="' + i + '">' +
                     CLOCK_SVG +
                     '<span class="hero-search-option-text">' + safe + '</span>' +
+                    '<button class="hero-search-delete" data-term="' + safe + '" aria-label="Eliminar búsqueda reciente" tabindex="-1">×</button>' +
                     '</li>';
             }).join('');
 
@@ -741,6 +749,8 @@ function initHeroSearch() {
 
     dropdown.addEventListener('mousedown', function(e) {
         e.preventDefault();
+        var delBtn = e.target.closest('.hero-search-delete');
+        if (delBtn) { removeRecent(delBtn.dataset.term); return; }
         var li = e.target.closest('.hero-search-option');
         if (li) { var i = parseInt(li.dataset.index, 10); if (!isNaN(i) && suggestions[i]) selectSuggestion(suggestions[i]); }
     });
@@ -752,6 +762,8 @@ function initHeroSearch() {
     }, { passive: true });
     dropdown.addEventListener('touchend', function(e) {
         if (Math.abs(e.changedTouches[0].clientY - _touchStartY) > 8) return; // scroll, not tap
+        var delBtn = e.target.closest('.hero-search-delete');
+        if (delBtn) { e.preventDefault(); removeRecent(delBtn.dataset.term); return; }
         var li = e.target.closest('.hero-search-option');
         if (li) {
             e.preventDefault();

@@ -410,6 +410,30 @@
     margin-left: 0.35rem;
 }
 
+/* Delete button for recent searches */
+.hero-search-delete {
+    margin-left: auto;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 0.2rem;
+    border-radius: 3px;
+    transition: color 0.15s, background 0.15s;
+    display: none;
+}
+.hero-search-option--recent:hover .hero-search-delete,
+.hero-search-option--recent:focus .hero-search-delete {
+    display: block;
+}
+.hero-search-delete:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
 /* Section header ("Búsquedas recientes") */
 .hero-search-section-head {
     padding: 0.55rem 1.25rem 0.3rem;

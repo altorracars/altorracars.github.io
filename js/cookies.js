@@ -184,7 +184,6 @@
             this._closeBanner();
             this._closeModal();
             this._dispatchEvent('accept-all');
-            this._toast('Cookies aceptadas — gracias por confiar en nosotros 🙌');
         }
 
         rejectAll() {
@@ -201,7 +200,6 @@
             this._closeBanner();
             this._closeModal();
             this._dispatchEvent('custom');
-            this._toast('Preferencias de cookies guardadas ✓');
         }
 
         /* Modal ------------------------------------------------------- */

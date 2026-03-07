@@ -6,12 +6,19 @@
     var $ = function(id) { return document.getElementById(id); };
     var _deleteReviewId = null;
 
+    // Source options for the dropdown
+    var SOURCE_LABELS = {
+        google_maps: 'Google Maps',
+        sitio_web: 'Sitio Web',
+        usuario_registrado: 'Usuario Registrado'
+    };
+
     // ========== FIRESTORE LISTENER ==========
     function subscribeReviews() {
         if (!window.db) return;
         if (AP.unsubReviews) AP.unsubReviews();
 
-        AP.unsubReviews = db.collection('resenas').orderBy('date', 'desc').onSnapshot(function(snap) {
+        AP.unsubReviews = db.collection('resenas').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
             AP.reviews = [];
             snap.forEach(function(doc) {
                 var d = doc.data();
@@ -25,7 +32,7 @@
             console.error('Reviews subscription error:', err);
             var tbody = $('reviewsTableBody');
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Error al cargar resenas: ' + err.message + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Error al cargar reseñas: ' + err.message + '</td></tr>';
             }
         });
     }
@@ -67,7 +74,7 @@
         if (!tbody) return;
 
         if (AP.reviews.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No hay resenas registradas. Agrega la primera.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No hay reseñas registradas. Agrega la primera.</td></tr>';
             return;
         }
 
@@ -76,9 +83,9 @@
 
         tbody.innerHTML = AP.reviews.map(function(r) {
             var initials = (r.name || 'NN').split(' ').map(function(w) { return w.charAt(0); }).join('').substring(0, 2).toUpperCase();
-            var dateStr = r.date ? new Date(r.date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+            var sourceLabel = SOURCE_LABELS[r.source] || r.source || '-';
             var featuredBadge = r.featured
-                ? '<span style="display:inline-block;padding:2px 8px;background:rgba(184,150,88,0.2);color:var(--admin-gold);border-radius:4px;font-size:0.75rem;font-weight:600;">Si</span>'
+                ? '<span style="display:inline-block;padding:2px 8px;background:rgba(184,150,88,0.2);color:var(--admin-gold);border-radius:4px;font-size:0.75rem;font-weight:600;">Sí</span>'
                 : '<span style="color:var(--admin-text-muted);font-size:0.8rem;">No</span>';
 
             var actions = '';
@@ -107,7 +114,7 @@
                 '</td>' +
                 '<td><div style="display:flex;gap:1px;">' + renderStarsSmall(parseInt(r.rating) || 0) + '</div></td>' +
                 '<td style="font-size:0.85rem;">' + AP.escapeHtml(r.vehicle || '-') + '</td>' +
-                '<td style="font-size:0.8rem;color:var(--admin-text-muted);">' + dateStr + '</td>' +
+                '<td style="font-size:0.8rem;color:var(--admin-text-muted);">' + AP.escapeHtml(sourceLabel) + '</td>' +
                 '<td>' + featuredBadge + '</td>' +
                 '<td style="text-align:right;"><div style="display:flex;gap:4px;justify-content:flex-end;">' + actions + '</div></td>' +
             '</tr>';
@@ -121,20 +128,19 @@
         $('reviewId').value = '';
 
         if (review) {
-            $('reviewModalTitle').textContent = 'Editar Resena';
+            $('reviewModalTitle').textContent = 'Editar Reseña';
             $('reviewId').value = review._docId;
             $('reviewName').value = review.name || '';
             $('reviewLocation').value = review.location || '';
             $('reviewRating').value = review.rating || 5;
             $('reviewVehicle').value = review.vehicle || '';
-            $('reviewTitle').value = review.title || '';
             $('reviewText').value = review.text || '';
-            $('reviewDate').value = review.date || '';
+            $('reviewSource').value = review.source || 'sitio_web';
             $('reviewVerified').checked = review.verified !== false;
             $('reviewFeatured').checked = !!review.featured;
         } else {
-            $('reviewModalTitle').textContent = 'Nueva Resena';
-            $('reviewDate').value = new Date().toISOString().split('T')[0];
+            $('reviewModalTitle').textContent = 'Nueva Reseña';
+            $('reviewSource').value = 'sitio_web';
             $('reviewVerified').checked = true;
             $('reviewFeatured').checked = false;
         }
@@ -152,33 +158,32 @@
         var location = $('reviewLocation').value.trim();
         var rating = parseInt($('reviewRating').value) || 5;
         var vehicle = $('reviewVehicle').value.trim();
-        var title = $('reviewTitle').value.trim();
         var text = $('reviewText').value.trim();
-        var date = $('reviewDate').value || new Date().toISOString().split('T')[0];
+        var source = $('reviewSource').value || 'sitio_web';
         var verified = $('reviewVerified').checked;
         var featured = $('reviewFeatured').checked;
         var docId = $('reviewId').value;
 
-        if (!name || !title || !text) {
-            AP.toast('Completa los campos obligatorios (nombre, titulo, texto)', 'error');
+        if (!name || !text) {
+            AP.toast('Completa los campos obligatorios (nombre, texto)', 'error');
             return;
         }
 
         // Generate avatar initials
         var avatar = name.split(' ').map(function(w) { return w.charAt(0); }).join('').substring(0, 2).toUpperCase();
 
+        var now = new Date().toISOString();
         var data = {
             name: name,
             location: location || 'Cartagena',
             rating: rating,
             vehicle: vehicle,
-            title: title,
             text: text,
-            date: date,
+            source: source,
             verified: verified,
             featured: featured,
             avatar: avatar,
-            updatedAt: new Date().toISOString()
+            updatedAt: now
         };
 
         var saveBtn = $('saveReview');
@@ -189,19 +194,19 @@
         if (docId) {
             promise = db.collection('resenas').doc(docId).update(data);
         } else {
-            data.createdAt = new Date().toISOString();
+            data.createdAt = now;
             promise = db.collection('resenas').add(data);
         }
 
         promise.then(function() {
-            AP.toast(docId ? 'Resena actualizada' : 'Resena creada', 'success');
-            AP.writeAuditLog(docId ? 'editar' : 'crear', 'resena', name + ' - ' + title);
+            AP.toast(docId ? 'Reseña actualizada' : 'Reseña creada', 'success');
+            AP.writeAuditLog(docId ? 'editar' : 'crear', 'resena', name);
             closeReviewModal();
         }).catch(function(err) {
             AP.toast('Error: ' + err.message, 'error');
         }).finally(function() {
             saveBtn.disabled = false;
-            saveBtn.innerHTML = 'Guardar Resena';
+            saveBtn.innerHTML = 'Guardar Reseña';
         });
     }
 
@@ -209,7 +214,7 @@
     function editReview(docId) {
         var review = AP.reviews.find(function(r) { return r._docId === docId; });
         if (!review) {
-            AP.toast('Resena no encontrada', 'error');
+            AP.toast('Reseña no encontrada', 'error');
             return;
         }
         openReviewModal(review);
@@ -227,7 +232,7 @@
         var review = AP.reviews.find(function(r) { return r._docId === _deleteReviewId; });
 
         db.collection('resenas').doc(_deleteReviewId).delete().then(function() {
-            AP.toast('Resena eliminada', 'success');
+            AP.toast('Reseña eliminada', 'success');
             AP.writeAuditLog('eliminar', 'resena', review ? review.name : _deleteReviewId);
             $('reviewDeleteConfirm').classList.remove('active');
             _deleteReviewId = null;

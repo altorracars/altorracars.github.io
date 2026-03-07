@@ -553,12 +553,12 @@
         <div id="sec-reviews" class="section">
             <div class="page-header">
                 <div>
-                    <h1>Resenas de Clientes</h1>
+                    <h1>Reseñas de Clientes</h1>
                     <p class="page-subtitle">Gestiona los testimonios que se muestran en el sitio web</p>
                 </div>
                 <button class="btn btn-primary" id="btnAddReview">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Nueva Resena
+                    Nueva Reseña
                 </button>
             </div>
 
@@ -566,7 +566,7 @@
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem;">
                 <div class="stat-card" style="padding:1rem;text-align:center;">
                     <div style="font-size:1.8rem;font-weight:800;color:var(--admin-gold);" id="reviewStatTotal">0</div>
-                    <div style="font-size:0.75rem;color:var(--admin-text-muted);">Total Resenas</div>
+                    <div style="font-size:0.75rem;color:var(--admin-text-muted);">Total Reseñas</div>
                 </div>
                 <div class="stat-card" style="padding:1rem;text-align:center;">
                     <div style="font-size:1.8rem;font-weight:800;color:#fbbf24;" id="reviewStatAvg">0.0</div>
@@ -584,15 +584,15 @@
                     <thead>
                         <tr>
                             <th>Cliente</th>
-                            <th>Calificacion</th>
-                            <th>Vehiculo</th>
-                            <th>Fecha</th>
+                            <th>Calificación</th>
+                            <th>Vehículo</th>
+                            <th>Fuente</th>
                             <th>Destacada</th>
                             <th style="text-align:right;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="reviewsTableBody">
-                        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Cargando resenas...</td></tr>
+                        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Cargando reseñas...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -602,7 +602,7 @@
         <div class="modal-overlay" id="reviewModal">
             <div class="modal" style="max-width:600px;">
                 <div class="modal-header">
-                    <h2 id="reviewModalTitle">Nueva Resena</h2>
+                    <h2 id="reviewModalTitle">Nueva Reseña</h2>
                     <button class="btn-close" id="closeReviewModal">&times;</button>
                 </div>
                 <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
@@ -622,7 +622,7 @@
 
                         <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
                             <div class="form-group">
-                                <label>Calificacion *</label>
+                                <label>Calificación *</label>
                                 <select id="reviewRating" class="form-control" required>
                                     <option value="5">5 Estrellas - Excelente</option>
                                     <option value="4">4 Estrellas - Muy bueno</option>
@@ -632,24 +632,23 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Vehiculo comprado</label>
+                                <label>Vehículo comprado</label>
                                 <input type="text" id="reviewVehicle" class="form-control" placeholder="Ej: Toyota Hilux 2024">
                             </div>
                         </div>
 
                         <div class="form-group" style="margin-bottom:1rem;">
-                            <label>Titulo de la resena *</label>
-                            <input type="text" id="reviewTitle" class="form-control" placeholder="Ej: Excelente experiencia de compra" required>
+                            <label>Fuente de la reseña *</label>
+                            <select id="reviewSource" class="form-control" required>
+                                <option value="sitio_web">Sitio Web</option>
+                                <option value="google_maps">Google Maps</option>
+                                <option value="usuario_registrado">Usuario Registrado</option>
+                            </select>
                         </div>
 
                         <div class="form-group" style="margin-bottom:1rem;">
-                            <label>Texto de la resena *</label>
+                            <label>Texto de la reseña *</label>
                             <textarea id="reviewText" class="form-control" rows="4" placeholder="La experiencia completa del cliente..." required style="resize:vertical;"></textarea>
-                        </div>
-
-                        <div class="form-group" style="margin-bottom:1rem;">
-                            <label>Fecha de la resena</label>
-                            <input type="date" id="reviewDate" class="form-control">
                         </div>
 
                         <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
@@ -664,7 +663,7 @@
                 </div>
                 <div class="modal-footer" style="display:flex;gap:0.75rem;justify-content:flex-end;padding:1rem 1.5rem;border-top:1px solid var(--admin-border,#30363d);">
                     <button class="btn btn-ghost" id="cancelReviewModal">Cancelar</button>
-                    <button class="btn btn-primary" id="saveReview">Guardar Resena</button>
+                    <button class="btn btn-primary" id="saveReview">Guardar Reseña</button>
                 </div>
             </div>
         </div>
@@ -674,8 +673,8 @@
             <div class="modal" style="max-width:420px;text-align:center;">
                 <div class="modal-body" style="padding:2rem;">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="margin-bottom:1rem;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                    <h3 style="margin-bottom:0.5rem;">Eliminar Resena</h3>
-                    <p style="color:var(--admin-text-muted);font-size:0.9rem;">Esta accion no se puede deshacer. La resena sera eliminada permanentemente.</p>
+                    <h3 style="margin-bottom:0.5rem;">Eliminar Reseña</h3>
+                    <p style="color:var(--admin-text-muted);font-size:0.9rem;">Esta acción no se puede deshacer. La reseña será eliminada permanentemente.</p>
                 </div>
                 <div class="modal-footer" style="display:flex;gap:0.75rem;justify-content:center;padding:1rem 1.5rem;border-top:1px solid var(--admin-border,#30363d);">
                     <button class="btn btn-ghost" onclick="document.getElementById('reviewDeleteConfirm').classList.remove('active')">Cancelar</button>

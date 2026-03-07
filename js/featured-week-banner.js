@@ -50,13 +50,16 @@
            VEHICLE SELECTION
            destacado (= banner) > 6 más recientes
         ───────────────────────────────────────── */
+        /* Helper: canonical "is featured" check — retrocompat con featuredWeek */
+        _isFeatured: function (v) { return !!(v.destacado || v.featuredWeek); },
+
         _getVehicles: function () {
             var all = (vehicleDB.vehicles || []).filter(function (v) {
                 return v.estado === 'disponible' || !v.estado;
             });
 
-            /* 1) Destacados — retrocompat: acepta featuredWeek O destacado */
-            var featured = all.filter(function (v) { return v.destacado || v.featuredWeek; });
+            /* 1) Destacados — único concepto operativo (featuredWeek = alias legacy) */
+            var featured = all.filter(FW._isFeatured);
             if (featured.length) {
                 return featured.sort(function (a, b) {
                     return (a.featuredOrder || 999) - (b.featuredOrder || 999);
@@ -132,7 +135,7 @@
             if (hasOffer) {
                 badgeText  = FW._icoStar() + ' OFERTA DE LA SEMANA';
                 badgeClass = 'fw-badge fw-badge--offer';
-            } else if (v.destacado || v.featuredWeek) {
+            } else if (FW._isFeatured(v)) {
                 badgeText  = FW._icoStar() + ' DESTACADO DE LA SEMANA';
             } else {
                 badgeText  = FW._icoStar() + ' SELECCI\u00d3N PREMIUM';
@@ -149,7 +152,7 @@
                 : '';
 
             /* ── Section label ── */
-            var sectionTitle = (v.destacado || v.featuredWeek)
+            var sectionTitle = FW._isFeatured(v)
                 ? 'Destacados de la <span>Semana</span>'
                 : 'Veh\u00edculos <span>Destacados</span>';
 
@@ -457,11 +460,13 @@
         ───────────────────────────────────────── */
         _preloadNext: function (currentIndex) {
             if (!FW.vehicles.length) return;
-            var next = FW.vehicles[(currentIndex + 1) % FW.total];
-            if (!next) return;
-            /* Precargar solo la imagen que se va a mostrar */
-            var nextSrc = next.featuredCutoutPng || next.imagen;
-            if (nextSrc) { var img = new Image(); img.src = nextSrc; }
+            /* Precarga siguiente + sucesor para evitar popping en swipe rápido */
+            [1, 2].forEach(function (offset) {
+                var v = FW.vehicles[(currentIndex + offset) % FW.total];
+                if (!v) return;
+                var src = v.featuredCutoutPng || v.imagen;
+                if (src) { var img = new Image(); img.src = src; }
+            });
         },
 
         /* ─────────────────────────────────────────

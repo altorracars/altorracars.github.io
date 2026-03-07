@@ -634,6 +634,7 @@
         drop-shadow(0 0 22px rgba(212,175,55,.09));
     transition: filter .6s ease;
     pointer-events: none;
+    will-change: transform, opacity; /* GPU layer for entrance animation */
 }
 
 .fw-car-scene--cutout .fw-car-img {
@@ -1057,6 +1058,12 @@
 
     /* Disable glow animation on mobile — static fallback */
     .fw-glow { animation: none; opacity: .6; }
+
+    /* Disable corner-pulse on mobile — saves 4 concurrent animations */
+    .fw-hud-tl, .fw-hud-tr, .fw-hud-bl, .fw-hud-br { animation: none; opacity: .52; }
+
+    /* Release will-change after animation completes on mobile */
+    .fw-car-img { will-change: auto; }
 
     /* Pills are redundant on mobile — data rail shows the same info */
     .fw-pills { display: none; }

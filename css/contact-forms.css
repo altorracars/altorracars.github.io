@@ -249,3 +249,293 @@
 .modal-container::-webkit-scrollbar-thumb:hover {
     background: #916652;
 }
+
+/* ============================================
+   MODAL WIZARD — "Vende tu Auto" — 3 pasos
+   ============================================ */
+
+.modal-container--wizard {
+    max-width: 540px;
+}
+
+/* Barra de progreso */
+.wizard-progress {
+    padding: 0 24px 0;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 14px;
+    padding-top: 14px;
+}
+
+.wizard-track {
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.wizard-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #b89658 0%, #d4af37 100%);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+.wizard-steps-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.wizard-step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #aaa;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+    flex: 1;
+}
+
+.wizard-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid #e5e7eb;
+    background: #fff;
+    color: #ccc;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s;
+}
+
+.wizard-step-item.active .wizard-dot {
+    border-color: #b89658;
+    background: #b89658;
+    color: #fff;
+}
+
+.wizard-step-item.active {
+    color: #b89658;
+}
+
+.wizard-step-item.done .wizard-dot {
+    border-color: #b89658;
+    background: #fff;
+    color: #b89658;
+    font-size: 0;
+}
+
+.wizard-step-item.done .wizard-dot::before {
+    content: '✓';
+    font-size: 13px;
+    font-weight: 700;
+    color: #b89658;
+}
+
+/* Panels */
+.wizard-panel {
+    display: none;
+}
+
+.wizard-panel.active {
+    display: block;
+}
+
+.wizard-panel-hint {
+    font-size: 13px;
+    color: #666;
+    margin: 0 0 18px;
+}
+
+/* Navegación del wizard */
+.wizard-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 12px;
+}
+
+.wizard-btn-next {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 22px;
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    margin-left: auto;
+}
+
+.wizard-btn-next:hover {
+    background: #b89658;
+    transform: translateX(2px);
+}
+
+.wizard-btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 18px;
+    background: transparent;
+    color: #666;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.wizard-btn-back:hover {
+    border-color: #b89658;
+    color: #b89658;
+    transform: translateX(-2px);
+}
+
+/* Trust inline (paso 1) */
+.wizard-trust-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #999;
+}
+
+/* Trust box (paso 3) */
+.wizard-trust-box {
+    background: #f8f7f5;
+    border: 1px solid #f0ece4;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.wizard-trust-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+}
+
+.wizard-trust-items span {
+    font-size: 12.5px;
+    color: #555;
+    font-weight: 500;
+}
+
+/* CTA final inline dentro del wizard-nav */
+.form-submit--inline {
+    width: auto;
+    flex: 1;
+    padding: 13px 20px;
+    font-size: 14px;
+}
+
+/* Validación en tiempo real */
+.form-input.input-error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-error {
+    display: block;
+    font-size: 12px;
+    color: #ef4444;
+    margin-top: 4px;
+    min-height: 16px;
+    font-weight: 500;
+}
+
+/* ============================================
+   GARANTÍAS STRIP
+   ============================================ */
+
+.garantias-strip {
+    background: #111;
+    padding: 36px 0;
+    border-top: 1px solid rgba(212, 175, 55, 0.15);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.garantias-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+.garantia-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.garantia-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d4af37;
+}
+
+.garantia-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.garantia-info strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+}
+
+.garantia-info span {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.45);
+    line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+    .garantias-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+@media (max-width: 500px) {
+    .garantias-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .wizard-trust-items {
+        flex-direction: column;
+        gap: 6px;
+    }
+    .wizard-nav {
+        flex-wrap: wrap;
+    }
+    .form-submit--inline {
+        width: 100%;
+    }
+}

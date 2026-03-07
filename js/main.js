@@ -443,7 +443,7 @@ function initHeroSearch() {
     var debounceTimer  = null;
     var retryTimer     = null;
     var activeIndex    = -1;
-    var suggestions    = [];           // plain string array for selection
+    var suggestions    = [];           // array of {label, vehicleUrl?} or plain strings (recents)
     var RECENT_KEY     = 'altorra-recent-searches';
 
     // ── Recent searches (localStorage) ───────────────────────
@@ -567,7 +567,23 @@ function initHeroSearch() {
             return b.count - a.count || a.label.localeCompare(b.label);
         });
 
-        return combined.slice(0, 8);
+        var result = combined.slice(0, 8);
+
+        // For model-level suggestions with exactly 1 vehicle, attach direct URL
+        if (typeof getVehicleDetailUrl === 'function') {
+            result.forEach(function(r) {
+                if (r.isBrand || r.count !== 1) return;
+                var lw = r.label.toLowerCase().split(/\s+/);
+                var match = vehicles.filter(function(v) {
+                    if (!v.marca || !v.modelo) return false;
+                    if (v.estado && v.estado !== 'disponible') return false;
+                    return lw.every(function(w) { return buildHaystack(v).includes(w); });
+                })[0];
+                if (match) r.vehicleUrl = getVehicleDetailUrl(match);
+            });
+        }
+
+        return result;
     }
 
     // ── Highlight matched words in text ───────────────────────
@@ -593,7 +609,7 @@ function initHeroSearch() {
         activeIndex = -1;
         if (!items.length) { closeDropdown(); return; }
 
-        suggestions = items.map(function(r) { return typeof r === 'object' ? r.label : r; });
+        suggestions = items.slice(); // keep objects so vehicleUrl is preserved
 
         var html = items.map(function(item, i) {
             var isObj  = typeof item === 'object';
@@ -664,11 +680,15 @@ function initHeroSearch() {
         clearTimeout(retryTimer);
     }
 
-    function selectSuggestion(text) {
+    function selectSuggestion(item) {
+        var text = typeof item === 'object' ? item.label : item;
+        var url  = (typeof item === 'object' && item.vehicleUrl)
+            ? item.vehicleUrl
+            : 'busqueda.html?buscar=' + encodeURIComponent(text);
         input.value = text;
         saveRecent(text);
         closeDropdown();
-        window.location.href = 'busqueda.html?buscar=' + encodeURIComponent(text);
+        window.location.href = url;
     }
 
     function navigateList(dir) {
@@ -725,9 +745,19 @@ function initHeroSearch() {
         if (li) { var i = parseInt(li.dataset.index, 10); if (!isNaN(i) && suggestions[i]) selectSuggestion(suggestions[i]); }
     });
 
+    // Touch: allow native scroll, select only on tap (small movement)
+    var _touchStartY = 0;
     dropdown.addEventListener('touchstart', function(e) {
+        _touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    dropdown.addEventListener('touchend', function(e) {
+        if (Math.abs(e.changedTouches[0].clientY - _touchStartY) > 8) return; // scroll, not tap
         var li = e.target.closest('.hero-search-option');
-        if (li) { e.preventDefault(); var i = parseInt(li.dataset.index, 10); if (!isNaN(i) && suggestions[i]) selectSuggestion(suggestions[i]); }
+        if (li) {
+            e.preventDefault();
+            var i = parseInt(li.dataset.index, 10);
+            if (!isNaN(i) && suggestions[i]) selectSuggestion(suggestions[i]);
+        }
     }, { passive: false });
 
     document.addEventListener('click', function(e) {

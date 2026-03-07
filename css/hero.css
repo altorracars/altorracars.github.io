@@ -8,7 +8,7 @@
 .hero {
     position: relative;
     z-index: 10; /* Ensure hero stacking context floats above trust bar */
-    min-height: clamp(480px, 72vh, 820px);
+    min-height: clamp(580px, 86vh, 940px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -95,7 +95,7 @@
     position: relative;
     z-index: 4;
     text-align: center;
-    padding: 2.5rem 2rem 4rem;
+    padding: 4rem 2rem 4rem;
     max-width: 880px;
     margin: 0 auto;
     width: 100%;

@@ -558,7 +558,7 @@
         padding-bottom: 0;
         background-position: center 48%;
         background-size: cover;
-        overflow: hidden;
+        /* overflow: visible (default) — do NOT set hidden: it clips the search dropdown */
     }
 
     .hero-content {

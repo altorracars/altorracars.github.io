@@ -117,9 +117,9 @@
     background: rgba(212, 175, 55, 0.1);
     border: 1px solid rgba(212, 175, 55, 0.38);
     color: #d4af37;
-    padding: 0.35rem 1.1rem;
+    padding: 0.5rem 1.5rem;
     border-radius: 100px;
-    font-size: 0.7rem;
+    font-size: 0.82rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -154,13 +154,13 @@
 
 /* ── Título ── */
 .hero-title {
-    font-size: clamp(2.2rem, 5.5vw, 4rem);
+    font-size: clamp(2.8rem, 6.5vw, 5.5rem);
     font-weight: 900;
-    line-height: 1.08;
-    letter-spacing: -0.025em;
+    line-height: 1.06;
+    letter-spacing: -0.03em;
     color: #ffffff;
     text-shadow: 0 2px 32px rgba(0, 0, 0, 0.95), 0 1px 0 rgba(0, 0, 0, 0.6);
-    margin-bottom: 1.6rem;
+    margin-bottom: 1.8rem;
     animation: hero-title-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
 }
 
@@ -244,7 +244,7 @@
 .hero-search-wrap {
     position: relative;
     width: 100%;
-    max-width: 560px;
+    max-width: 700px;
     margin: 0 auto;
     animation: hero-search-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both;
 }
@@ -290,8 +290,8 @@
     border: none;
     outline: none;
     color: #ffffff;
-    font-size: 0.9rem;
-    padding: 0.88rem 0;
+    font-size: 1rem;
+    padding: 1rem 0;
     font-family: inherit;
     line-height: 1.4;
     /* Prevent autocomplete styling from overriding */

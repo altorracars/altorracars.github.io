@@ -590,29 +590,45 @@
         </div>
     </section>
 
-    <!-- ¿Quieres publicar tu vehículo? — CTA Section -->
-    <section class="publish-cta-section" aria-label="Publica tu vehículo con ALTORRA CARS">
+    <!-- Garantías Strip — confianza y diferenciadores -->
+    <section class="garantias-strip" aria-label="Garantías ALTORRA CARS">
         <div class="container">
-            <div class="publish-cta-inner">
-                <div class="publish-cta-icon" aria-hidden="true">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 11l19-9-9 19-2-8-8-2z"/>
-                    </svg>
+            <div class="garantias-grid">
+                <div class="garantia-item">
+                    <div class="garantia-icon" aria-hidden="true">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="garantia-info">
+                        <strong>Avalúo en 24h</strong>
+                        <span>Respuesta el mismo día hábil</span>
+                    </div>
                 </div>
-                <div class="publish-cta-content">
-                    <h2 class="publish-cta-title">¿Quieres publicar <span>tu vehículo?</span></h2>
-                    <p class="publish-cta-desc">Si tienes un vehículo disponible para venta, <strong>ALTORRA CARS</strong> te ayuda a promocionarlo de forma rápida, segura y sin complicaciones.</p>
-                    <p class="publish-cta-claim">Recibe la mejor oferta del mercado</p>
+                <div class="garantia-item">
+                    <div class="garantia-icon" aria-hidden="true">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div class="garantia-info">
+                        <strong>Proceso Seguro</strong>
+                        <span>Transparente y 100% verificado</span>
+                    </div>
                 </div>
-                <div class="publish-cta-actions">
-                    <button type="button" class="btn-publish-main" data-modal="vende-auto">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 5v14M5 12l7-7 7 7"/>
-                        </svg>
-                        Publicar mi Vehículo
-                    </button>
+                <div class="garantia-item">
+                    <div class="garantia-icon" aria-hidden="true">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </div>
+                    <div class="garantia-info">
+                        <strong>Sin Compromiso</strong>
+                        <span>Oferta sin obligación de venta</span>
+                    </div>
+                </div>
+                <div class="garantia-item">
+                    <div class="garantia-icon" aria-hidden="true">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </div>
+                    <div class="garantia-info">
+                        <strong>Mejor Precio</strong>
+                        <span>Pagamos el precio justo del mercado</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -621,70 +637,145 @@
     <!-- Footer Component -->
     <div id="footer-placeholder"></div>
 
-    <!-- Modal: Vende tu Auto -->
-    <div class="modal-overlay" id="vende-auto-modal">
-        <div class="modal-container">
+    <!-- Modal: Vende tu Auto — Wizard 3 pasos -->
+    <div class="modal-overlay" id="vende-auto-modal" role="dialog" aria-modal="true" aria-labelledby="vende-auto-title">
+        <div class="modal-container modal-container--wizard">
             <div class="modal-header">
-                <h2 class="modal-title">Vende tu Auto</h2>
-                <p class="modal-subtitle">Recibe la mejor oferta del mercado</p>
+                <div>
+                    <h2 class="modal-title" id="vende-auto-title">Vende tu Auto</h2>
+                    <p class="modal-subtitle" id="vendeWizardSubtitle">Paso 1 de 3 — Datos de contacto</p>
+                </div>
                 <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
             </div>
+
+            <!-- Barra de progreso -->
+            <div class="wizard-progress" aria-label="Progreso del formulario">
+                <div class="wizard-track">
+                    <div class="wizard-fill" id="vendeWizardFill" style="width:33%"></div>
+                </div>
+                <div class="wizard-steps-row" role="list">
+                    <div class="wizard-step-item active" data-step="1" role="listitem" aria-current="step">
+                        <div class="wizard-dot">1</div>
+                        <span>Contacto</span>
+                    </div>
+                    <div class="wizard-step-item" data-step="2" role="listitem">
+                        <div class="wizard-dot">2</div>
+                        <span>Vehículo</span>
+                    </div>
+                    <div class="wizard-step-item" data-step="3" role="listitem">
+                        <div class="wizard-dot">3</div>
+                        <span>Oferta</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="modal-body">
-                <form id="vendeAutoForm">
-                    <div class="form-group">
-                        <label class="form-label required">Nombre completo</label>
-                        <input type="text" name="nombre" class="form-input" required placeholder="Ej: Juan Pérez">
-                    </div>
+                <form id="vendeAutoForm" novalidate>
 
-                    <div class="form-row">
+                    <!-- PASO 1: Datos de contacto -->
+                    <div class="wizard-panel active" data-panel="1">
+                        <p class="wizard-panel-hint">¿Cómo te contactamos para enviarte la oferta?</p>
                         <div class="form-group">
-                            <label class="form-label required">Teléfono</label>
-                            <input type="tel" name="telefono" class="form-input" required placeholder="Ej: 3001234567">
+                            <label class="form-label required" for="vende-nombre">Nombre completo</label>
+                            <input type="text" id="vende-nombre" name="nombre" class="form-input" placeholder="Ej: Juan Pérez" autocomplete="name">
+                            <span class="form-error" aria-live="polite"></span>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label required">Email</label>
-                            <input type="email" name="email" class="form-input" required placeholder="Ej: correo@ejemplo.com">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-telefono">Teléfono</label>
+                                <input type="tel" id="vende-telefono" name="telefono" class="form-input" placeholder="Ej: 3001234567" autocomplete="tel">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-email">Email</label>
+                                <input type="email" id="vende-email" name="email" class="form-input" placeholder="Ej: correo@ejemplo.com" autocomplete="email">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label required">Marca</label>
-                            <input type="text" name="marca" class="form-input" required placeholder="Ej: Chevrolet">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label required">Modelo</label>
-                            <input type="text" name="modelo" class="form-input" required placeholder="Ej: Spark GT">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label required">Año</label>
-                            <input type="number" name="year" class="form-input" required placeholder="Ej: 2020" min="1990" max="2026">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label required">Kilometraje</label>
-                            <input type="number" name="kilometraje" class="form-input" required placeholder="Ej: 50000">
+                        <div class="wizard-nav">
+                            <span class="wizard-trust-inline">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                Tus datos están protegidos
+                            </span>
+                            <button type="button" class="wizard-btn-next" data-panel="1">
+                                Siguiente
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label required">Precio esperado</label>
-                        <input type="text" name="precio" class="form-input" required placeholder="Ej: $35,000,000">
+                    <!-- PASO 2: Datos del vehículo -->
+                    <div class="wizard-panel" data-panel="2">
+                        <p class="wizard-panel-hint">Cuéntanos sobre el vehículo que deseas vender</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-marca">Marca</label>
+                                <input type="text" id="vende-marca" name="marca" class="form-input" placeholder="Ej: Chevrolet">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-modelo">Modelo</label>
+                                <input type="text" id="vende-modelo" name="modelo" class="form-input" placeholder="Ej: Spark GT">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-year">Año</label>
+                                <input type="number" id="vende-year" name="year" class="form-input" placeholder="Ej: 2020" min="1990" max="2026">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required" for="vende-km">Kilometraje</label>
+                                <input type="number" id="vende-km" name="kilometraje" class="form-input" placeholder="Ej: 50000">
+                                <span class="form-error" aria-live="polite"></span>
+                            </div>
+                        </div>
+                        <div class="wizard-nav">
+                            <button type="button" class="wizard-btn-back" data-panel="2">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                                Atrás
+                            </button>
+                            <button type="button" class="wizard-btn-next" data-panel="2">
+                                Siguiente
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Comentarios adicionales</label>
-                        <textarea name="comentarios" class="form-textarea" placeholder="Cuéntanos más sobre tu vehículo..."></textarea>
+                    <!-- PASO 3: Precio y envío -->
+                    <div class="wizard-panel" data-panel="3">
+                        <p class="wizard-panel-hint">¡Ya casi! Solo indícanos el precio que esperas</p>
+                        <div class="form-group">
+                            <label class="form-label required" for="vende-precio">Precio esperado</label>
+                            <input type="text" id="vende-precio" name="precio" class="form-input" placeholder="Ej: $35,000,000">
+                            <span class="form-error" aria-live="polite"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="vende-comentarios">Comentarios adicionales</label>
+                            <textarea id="vende-comentarios" name="comentarios" class="form-textarea" placeholder="Estado del vehículo, extras, historial de mantenimiento..."></textarea>
+                        </div>
+                        <div class="wizard-trust-box">
+                            <div class="wizard-trust-items">
+                                <span>⚡ Respuesta en menos de 24h</span>
+                                <span>🤝 Sin compromiso de venta</span>
+                                <span>💰 Oferta al precio del mercado</span>
+                            </div>
+                        </div>
+                        <div class="wizard-nav">
+                            <button type="button" class="wizard-btn-back" data-panel="3">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                                Atrás
+                            </button>
+                            <button type="submit" class="form-submit form-submit--inline">
+                                <svg class="whatsapp-icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                                </svg>
+                                Recibir mi oferta
+                            </button>
+                        </div>
                     </div>
 
-                    <button type="submit" class="form-submit">
-                        <svg class="whatsapp-icon" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                        </svg>
-                        Enviar por WhatsApp
-                    </button>
                 </form>
             </div>
         </div>

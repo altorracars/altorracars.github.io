@@ -552,15 +552,17 @@
 /* Mobile */
 @media (max-width: 480px) {
     .hero {
-        min-height: 0;
-        height: auto;
+        min-height: 0 !important;
+        height: auto !important;
         padding-top: 0;
         padding-bottom: 0;
-        background-position: 60% center;
+        background-position: center 48%;
+        background-size: cover;
+        overflow: hidden;
     }
 
     .hero-content {
-        padding: 1rem 1.25rem 1.5rem;
+        padding: 7vh 1.25rem 5vh;
     }
 
     .hero-title {

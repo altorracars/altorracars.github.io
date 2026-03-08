@@ -10,6 +10,7 @@
     function subscribeBanners() {
         if (!window.db) return;
         if (AP.unsubBanners) AP.unsubBanners();
+        var _initialized = false;
 
         AP.unsubBanners = db.collection('banners').orderBy('order', 'asc').onSnapshot(function(snap) {
             AP.banners = [];
@@ -18,6 +19,8 @@
                 d._docId = doc.id;
                 AP.banners.push(d);
             });
+            if (_initialized && AP.signalCacheInvalidation) AP.signalCacheInvalidation();
+            _initialized = true;
             renderAllBannerLists();
             updateBannerBadge();
         }, function(err) {

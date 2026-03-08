@@ -11,56 +11,51 @@
     position: relative;
 }
 
-/* Vehicles Grid Mejorado - Scroll Horizontal */
-.vehicles-grid {
-           display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: 340px;
-        gap: var(--spacing-md);
-        overflow-x: auto;
-        overflow-y: hidden;
-        scroll-behavior: smooth;
-        scroll-snap-type: x mandatory;
-        padding: var(--spacing-md) 0;
-        -webkit-overflow-scrolling: touch;
-        /* Mejorar soporte touch en móvil */
-        touch-action: pan-x pan-y;
+/* Vehicles Grid — scoped to featured section only to avoid catalog conflicts */
+.featured-section .vehicles-grid {
+    display: flex;
+    flex-direction: row;
+    gap: var(--spacing-md);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    padding: var(--spacing-md) 0;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
-/* Ocultar scrollbar completamente - tecnología moderna */
-.vehicles-grid {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
-}
-
-.vehicles-grid::-webkit-scrollbar {
-    display: none; /* Chrome/Safari/Edge */
+.featured-section .vehicles-grid::-webkit-scrollbar {
+    display: none;
     width: 0;
     height: 0;
 }
 
-/* No-results must span full width even in auto-column grid */
-.vehicles-grid > .no-results {
-    grid-column: 1 / -1;
-    min-width: 100% !important;
-    max-width: none !important;
-    width: 100% !important;
+/* No-results must span full width */
+.featured-section .vehicles-grid > .no-results {
+    min-width: 100%;
+    max-width: none;
+    width: 100%;
 }
 
-/* Vehicle Card mejorada */
-.vehicle-card {
+/* Vehicle Card in featured section */
+.featured-section .vehicle-card {
     scroll-snap-align: start;
-    min-width: 340px;
-    max-width: 340px;
+    flex: 0 0 320px;
+    min-width: 320px;
+    max-width: 320px;
 }
 
 /* Responsive Tablets */
 @media (max-width: 968px) {
-    .vehicles-grid {
-        grid-auto-columns: 300px;
+    .featured-section .vehicles-grid {
+        gap: var(--spacing-sm);
     }
 
-    .vehicle-card {
+    .featured-section .vehicle-card {
+        flex: 0 0 300px;
         min-width: 300px;
         max-width: 300px;
     }
@@ -68,23 +63,14 @@
 
 /* Responsive Móvil */
 @media (max-width: 640px) {
-    .vehicles-grid {
-              grid-auto-columns: 280px;
+    .featured-section .vehicles-grid {
         gap: var(--spacing-sm);
         padding: var(--spacing-sm) 0;
-        /* Asegurar scroll táctil en móvil */
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE/Edge */
-        /* Remover scroll-snap en móvil para mejor scroll táctil */
         scroll-snap-type: none;
     }
 
-    /* Ocultar scrollbar en móvil pero mantener funcionalidad */
-    .vehicles-grid::-webkit-scrollbar {
-        display: none;
-    }
-
-    .vehicle-card {
+    .featured-section .vehicle-card {
+        flex: 0 0 280px;
         min-width: 280px;
         max-width: 280px;
     }

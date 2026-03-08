@@ -316,12 +316,17 @@
             lblD.style.background  = isDestacado ? 'rgba(212,175,55,0.08)' : 'rgba(212,175,55,0.03)';
         }
 
-        /* Auto-abrir sec-banner si es destacado */
+        /* Mostrar/ocultar sec-banner según estado destacado */
         var secBanner = $('sec-banner');
-        if (isDestacado && secBanner && !secBanner.classList.contains('open')) {
-            secBanner.classList.add('open');
-            var title = document.querySelector('.form-section-title[data-toggle="sec-banner"]');
-            if (title) title.classList.remove('collapsed');
+        var bannerTitle = document.querySelector('.form-section-title[data-toggle="sec-banner"]');
+        if (secBanner) {
+            if (isDestacado) {
+                secBanner.classList.add('open');
+                if (bannerTitle) bannerTitle.classList.remove('collapsed');
+            } else {
+                secBanner.classList.remove('open');
+                if (bannerTitle) bannerTitle.classList.add('collapsed');
+            }
         }
 
         updateFeaturedCounter();
@@ -1121,6 +1126,29 @@
     document.querySelectorAll('input[name="vDestaqueNivel"]').forEach(function(radio) {
         radio.addEventListener('change', function() { syncDestaqueFromRadio(this.value); });
     });
+
+    /* Validación en tiempo real: orden duplicado en banner */
+    var featuredOrderEl = $('vFeaturedOrder');
+    if (featuredOrderEl) {
+        featuredOrderEl.addEventListener('input', function() {
+            var orderVal = parseInt(this.value) || null;
+            this.classList.remove('field-error');
+            var errEl = this.parentElement.querySelector('.field-error-msg');
+            if (errEl) errEl.remove();
+            if (!orderVal) return;
+            var editId = $('vId').value ? parseInt($('vId').value) : null;
+            var conflict = AP.vehicles.find(function(v) {
+                return v.destacado && v.id !== editId && v.featuredOrder === orderVal;
+            });
+            if (conflict) {
+                this.classList.add('field-error');
+                var msg = document.createElement('span');
+                msg.className = 'field-error-msg';
+                msg.textContent = 'Posición ' + orderVal + ' ya usada por "' + ((conflict.marca || '') + ' ' + (conflict.modelo || '')).trim() + '"';
+                this.parentElement.appendChild(msg);
+            }
+        });
+    }
 
     // ========== PREVIEW ==========
     function previewVehicle(id) {

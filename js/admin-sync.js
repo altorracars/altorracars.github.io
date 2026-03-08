@@ -240,4 +240,5 @@
     AP.updateStats = updateStats;
     AP.updateNavBadges = updateNavBadges;
     AP.updateEstimator = updateEstimator;
+    AP.signalCacheInvalidation = signalCacheInvalidation;
 })();

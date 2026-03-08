@@ -17,6 +17,7 @@
     function subscribeReviews() {
         if (!window.db) return;
         if (AP.unsubReviews) AP.unsubReviews();
+        var _initialized = false;
 
         AP.unsubReviews = db.collection('resenas').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
             AP.reviews = [];
@@ -25,6 +26,8 @@
                 d._docId = doc.id;
                 AP.reviews.push(d);
             });
+            if (_initialized && AP.signalCacheInvalidation) AP.signalCacheInvalidation();
+            _initialized = true;
             renderReviewsTable();
             updateReviewStats();
             updateReviewBadge();

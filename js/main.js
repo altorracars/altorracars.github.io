@@ -871,11 +871,12 @@ function initializePage() {
     // Load all sections in parallel for better performance
     initHeroSearch();
 
+    // Isolate each section so one failure doesn't cascade to the others
     Promise.all([
-        loadDestacadosBanner(),
-        loadPopularBrands(),
-        loadAllVehicles(),
-        loadPromoBanners()
+        loadDestacadosBanner().catch(function(e) { console.warn('[Banner] Failed to load:', e); }),
+        loadPopularBrands().catch(function(e) { console.warn('[Brands] Failed to load:', e); }),
+        loadAllVehicles().catch(function(e) { console.warn('[Vehicles] Failed to load:', e); }),
+        loadPromoBanners().catch(function(e) { console.warn('[Promos] Failed to load:', e); })
     ]).then(function() {
         loadHeroStats();
         // Enable drag after vehicles are rendered and overflow-x is active
@@ -892,9 +893,6 @@ function initializePage() {
             });
             vehicleDB.startRealtime();
         }
-    }).catch(function(error) {
-        console.error('Error initializing page:', error);
-        enableDragScroll(); // still enable on error
     });
 }
 

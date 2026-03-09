@@ -720,70 +720,135 @@
     border-right:  2px solid rgba(212,175,55,.52);
 }
 
-/* ── Primary scan-line — thin HUD sweep, subtle glow trail ── */
+/* ══════════════════════════════════════════════════════════════
+   HUD SCAN SYSTEM v3 — Industrial depth-map sweep
+
+   Architecture (4 layers, all purely CSS):
+     .fw-hud-scanline         primary beam   — single-axis sweep
+     .fw-hud-scanline::before anticipation   — EM field ahead of beam
+     .fw-hud-scanline::after  phosphor wake  — persistence trail
+     .fw-hud-layer::before    reference echo — mid-frame confirmation
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Primary sweep beam ──────────────────────────────────────
+   Asymmetric gradient: peak sits at ~38% (left of center),
+   not the midpoint. A directional scanner head reads left→right
+   with a leading bright edge and a longer dim tail.
+   Box-shadow radius ≤ 2px — tight precision, no bloom.
+   ──────────────────────────────────────────────────────────── */
 .fw-hud-scanline {
     position: absolute;
     left: 0; right: 0;
     height: 1px;
-    top: 6%;
+    top: 5%;
     background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(212,175,55,.04) 15%,
-        rgba(212,175,55,.38) 42%,
-        rgba(212,175,55,.55) 50%,
-        rgba(212,175,55,.38) 58%,
-        rgba(212,175,55,.04) 85%,
-        transparent 100%);
-    box-shadow: 0 0 6px rgba(212,175,55,.28);
+        transparent               0%,
+        rgba(212,175,55,.02)      6%,
+        rgba(212,175,55,.12)     20%,
+        rgba(240,210, 95,.44)    36%,  /* leading-edge peak */
+        rgba(255,240,150,.52)    41%,  /* micro-peak: brightest */
+        rgba(212,175,55,.36)     50%,
+        rgba(212,175,55,.14)     68%,
+        rgba(212,175,55,.03)     88%,
+        transparent              100%);
+    box-shadow: 0 0 2px rgba(212,175,55,.18);
     pointer-events: none;
     will-change: top, opacity;
-    animation: fw-scanline-sweep 6.5s linear infinite;
+    animation: fw-depth-scan 9s linear infinite;
 }
 
-/* Glow trail below the scanline */
+/* ── Anticipation field ──────────────────────────────────────
+   Very faint EM-field glow in the 12px zone directly above
+   the beam. Creates the impression of the scanner "reading
+   ahead" — barely perceptible but adds physical depth.
+   Positioned relative to the moving scanline element.
+   ──────────────────────────────────────────────────────────── */
+.fw-hud-scanline::before {
+    content: '';
+    position: absolute;
+    bottom: 2px;         /* extends above the 1px beam */
+    left: 8%; right: 28%;
+    height: 14px;
+    background: linear-gradient(180deg,
+        transparent           0%,
+        rgba(212,175,55,.018) 100%);
+    pointer-events: none;
+}
+
+/* ── Phosphor persistence wake ───────────────────────────────
+   The 22px gradient below the beam simulates the brief glow
+   of scanned data settling — like a CRT phosphor decay.
+   Max opacity: .045 — nearly invisible, adds warmth only.
+   ──────────────────────────────────────────────────────────── */
 .fw-hud-scanline::after {
     content: '';
     position: absolute;
-    top: 1px; left: 12%; right: 12%;
-    height: 8px;
+    top: 1px; left: 4%; right: 4%;
+    height: 22px;
     background: linear-gradient(180deg,
-        rgba(212,175,55,.10) 0%,
-        transparent 100%);
+        rgba(212,175,55,.045) 0%,
+        rgba(212,175,55,.012) 55%,
+        transparent           100%);
     pointer-events: none;
 }
 
-@keyframes fw-scanline-sweep {
-    0%   { top:  6%; opacity: 0;  }
-    4%   { opacity: 1; }
-    88%  { top: 94%; opacity: .9; }
-    94%  { opacity: 0; top: 96%; }
-    100% { top:  6%; opacity: 0;  }
+/* ── Depth-scan keyframes ────────────────────────────────────
+   Manual easing via keyframe spacing (animation runs linear):
+   · 0–10 %  slow ramp-in     (scanner initialising)
+   · 10–30%  acceleration
+   · 30–75%  cruise at ~constant velocity through the frame
+   · 75–90%  deceleration     (beam settling at bottom)
+   · 90–93%  fade out + hold
+   · 93–100% invisible retrace to top
+   ──────────────────────────────────────────────────────────── */
+@keyframes fw-depth-scan {
+    0%   { top:  5%; opacity: 0;  }
+    3%   { top:  5%; opacity: .9; }
+    10%  { top: 12%; }
+    28%  { top: 32%; }
+    50%  { top: 54%; }   /* mid-cycle ≈ mid-frame — synced to echo */
+    73%  { top: 76%; opacity: .70; }
+    87%  { top: 90%; opacity: .40; }
+    92%  { top: 94%; opacity: 0;  }
+    93%  { top:  5%; opacity: 0;  }  /* instant retrace */
+    100% { top:  5%; opacity: 0;  }
 }
 
-/* ── Secondary scan-line — reverse direction, offset timing ── */
+/* ── Mid-frame reference echo ────────────────────────────────
+   A stationary 1px marker fixed at 50% height. It flashes
+   briefly (0.5 s) at exactly the moment the primary beam
+   crosses mid-frame (~50% of the 9 s cycle).
+   Simulates a depth-measurement confirmation "lock".
+   scaleX grow/shrink from center adds a subtle locking feel.
+   ──────────────────────────────────────────────────────────── */
 .fw-hud-layer::before {
     content: '';
     position: absolute;
-    left: 0; right: 0;
+    left: 12%; right: 12%;
+    top: 50%;
     height: 1px;
-    bottom: 6%;
+    transform-origin: center;
     background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(212,175,55,.04) 15%,
-        rgba(212,175,55,.32) 50%,
-        rgba(212,175,55,.04) 85%,
-        transparent 100%);
-    box-shadow: 0 0 6px rgba(212,175,55,.25);
+        transparent              0%,
+        rgba(212,175,55,.10)    10%,
+        rgba(212,175,55,.26)    35%,
+        rgba(212,175,55,.26)    65%,
+        rgba(212,175,55,.10)    90%,
+        transparent             100%);
     pointer-events: none;
-    animation: fw-scanline-reverse 9s linear infinite 3.2s;
+    animation: fw-echo-lock 9s linear infinite;
 }
 
-@keyframes fw-scanline-reverse {
-    0%   { bottom:  6%; opacity: 0; }
-    4%   { opacity: .7; }
-    88%  { bottom: 94%; opacity: .7; }
-    94%  { opacity: 0; }
-    100% { bottom:  6%; opacity: 0; }
+@keyframes fw-echo-lock {
+    /* Silent while beam is above mid-frame */
+    0%,  44% { opacity: 0;  transform: scaleX(.55); }
+    /* Beam approaches — lock opens */
+    48%      { opacity: 1;  transform: scaleX(1);   }
+    /* Hold one beat */
+    51%      { opacity: .6; transform: scaleX(1);   }
+    /* Fade — measurement committed */
+    55%      { opacity: 0;  transform: scaleX(1);   }
+    56%, 100%{ opacity: 0;  transform: scaleX(.55); }
 }
 
 /* ================================================================

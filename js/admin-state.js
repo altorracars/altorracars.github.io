@@ -32,8 +32,8 @@
         // ========== RBAC STATE ==========
         currentUserProfile: null,
         currentUserRole: null,
-        INACTIVITY_TIMEOUT_MS: 10 * 60 * 1000,   // 10 minutos sin actividad → cerrar sesión
-        INACTIVITY_WARNING_MS:  9 * 60 * 1000,   // aviso 1 minuto antes del cierre
+        INACTIVITY_TIMEOUT_MS: 30 * 60 * 1000,   // 30 minutos sin actividad → cerrar sesión
+        INACTIVITY_WARNING_MS: 28 * 60 * 1000,   // aviso 2 minutos antes del cierre
         SESSION_MAX_MS:         8 * 60 * 60 * 1000, // 8 horas máximas por sesión absoluta
         inactivityTimerId: null,
         inactivityWarningId: null,

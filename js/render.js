@@ -196,10 +196,7 @@ function attachImageErrorListeners() {
 function renderVehicles(vehicles, containerId, options = {}) {
     const { attachListeners = true } = options;
     const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container ${containerId} not found`);
-        return;
-    }
+    if (!container) return;
 
     if (vehicles.length === 0) {
         container.innerHTML = `

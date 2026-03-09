@@ -75,7 +75,7 @@
     function handleInactivityTimeout() {
         clearInactivityTimers();
         if (!window.auth || !window.auth.currentUser) return;
-        AP.toast('Sesion cerrada por inactividad (10 minutos).', 'info');
+        AP.toast('Sesion cerrada por inactividad (30 minutos).', 'info');
         window.auth.signOut();
     }
 

@@ -821,8 +821,8 @@ function initHeroSearch() {
  * Fase 23: Re-render functions for real-time updates (no await vehicleDB.load() needed)
  */
 function rerenderVehicleSections() {
-    // Re-render destacados
-    loadDestacadosBanner();
+    // Re-render destacados (only on pages that include featured-week-banner.js)
+    if (typeof loadDestacadosBanner === 'function') loadDestacadosBanner();
     // Re-render unified vehicle carousel
     loadAllVehicles();
     // Re-enable drag scroll after re-render
@@ -873,7 +873,7 @@ function initializePage() {
 
     // Isolate each section so one failure doesn't cascade to the others
     Promise.all([
-        loadDestacadosBanner().catch(function(e) { console.warn('[Banner] Failed to load:', e); }),
+        (typeof loadDestacadosBanner === 'function' ? loadDestacadosBanner().catch(function(e) { console.warn('[Banner] Failed to load:', e); }) : Promise.resolve()),
         loadPopularBrands().catch(function(e) { console.warn('[Brands] Failed to load:', e); }),
         loadAllVehicles().catch(function(e) { console.warn('[Vehicles] Failed to load:', e); }),
         loadPromoBanners().catch(function(e) { console.warn('[Promos] Failed to load:', e); })

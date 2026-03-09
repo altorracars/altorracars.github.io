@@ -32,9 +32,6 @@ async function loadAllComponents() {
 
     // Cargar sistema de cookies dinamicamente
     loadCookieSystem();
-
-    // Cargar asistente inteligente de WhatsApp
-    loadWAAssistant();
 }
 
 // Cargar CSS y JS de cookies
@@ -55,15 +52,17 @@ function loadCookieSystem() {
     }
 }
 
-// Cargar Asistente WhatsApp inteligente
+// Cargar Asistente WhatsApp inteligente — se llama de inmediato al parsear el archivo,
+// sin esperar al footer, para que el botón aparezca lo antes posible.
 function loadWAAssistant() {
     if (!document.querySelector('script[src*="whatsapp-assistant.js"]')) {
         const script = document.createElement('script');
         script.src = 'js/whatsapp-assistant.js';
-        script.defer = true;
-        document.body.appendChild(script);
+        // Sin defer: scripts dinámicos son async por defecto (carga en paralelo)
+        document.head.appendChild(script);
     }
 }
+loadWAAssistant();
 
 // Initialize header functionality - MEJORADO PARA iPHONE
 function initializeHeader() {

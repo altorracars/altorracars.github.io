@@ -37,6 +37,21 @@
         AP.unsubVehicles = window.db.collection('vehiculos').onSnapshot(function(snap) {
             AP._vehiclesLoaded = true;
             AP.vehicles = snap.docs.map(function(d) { return d.data(); });
+
+            // Migración única: normalizar featuredWeek ↔ destacado
+            // Ambos campos deben ser iguales; el OR es el valor canónico
+            if (!_vehiclesInitialized && window.db && AP.canCreateOrEditInventory && AP.canCreateOrEditInventory()) {
+                AP.vehicles.forEach(function(v) {
+                    var isFeatured = !!(v.destacado || v.featuredWeek);
+                    if (!!v.destacado !== isFeatured || !!v.featuredWeek !== isFeatured) {
+                        window.db.collection('vehiculos').doc(String(v.id)).update({
+                            destacado:    isFeatured,
+                            featuredWeek: isFeatured
+                        }).catch(function() { /* sin permisos — ignorar */ });
+                    }
+                });
+            }
+
             // Primer snapshot = carga inicial; los siguientes = cambios reales del admin
             if (_vehiclesInitialized) signalCacheInvalidation();
             _vehiclesInitialized = true;

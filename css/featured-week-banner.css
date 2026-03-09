@@ -553,6 +553,8 @@
     justify-content: center;
     overflow: hidden;
     pointer-events: none;
+    /* Reserve space for data-rail so car centers in the visible area */
+    padding-bottom: 64px;
 }
 
 /* Studio edge vignette */
@@ -718,23 +720,21 @@
     border-right:  2px solid rgba(212,175,55,.52);
 }
 
-/* ── Primary scan-line — enhanced HUD sweep with glow trail ── */
+/* ── Primary scan-line — thin HUD sweep, subtle glow trail ── */
 .fw-hud-scanline {
     position: absolute;
     left: 0; right: 0;
-    height: 2px;
+    height: 1px;
     top: 6%;
     background: linear-gradient(90deg,
         transparent 0%,
-        rgba(212,175,55,.06) 10%,
-        rgba(212,175,55,.60) 42%,
-        rgba(212,175,55,.95) 50%,
-        rgba(212,175,55,.60) 58%,
-        rgba(212,175,55,.06) 90%,
+        rgba(212,175,55,.04) 15%,
+        rgba(212,175,55,.38) 42%,
+        rgba(212,175,55,.55) 50%,
+        rgba(212,175,55,.38) 58%,
+        rgba(212,175,55,.04) 85%,
         transparent 100%);
-    box-shadow:
-        0 0 10px rgba(212,175,55,.55),
-        0 0 28px rgba(212,175,55,.22);
+    box-shadow: 0 0 6px rgba(212,175,55,.28);
     pointer-events: none;
     will-change: top, opacity;
     animation: fw-scanline-sweep 6.5s linear infinite;
@@ -744,10 +744,10 @@
 .fw-hud-scanline::after {
     content: '';
     position: absolute;
-    top: 2px; left: 8%; right: 8%;
-    height: 12px;
+    top: 1px; left: 12%; right: 12%;
+    height: 8px;
     background: linear-gradient(180deg,
-        rgba(212,175,55,.18) 0%,
+        rgba(212,175,55,.10) 0%,
         transparent 100%);
     pointer-events: none;
 }
@@ -921,8 +921,9 @@
     transform: scale(1.06);
 }
 
-/* Pressed state disabled — was causing stuck visual bug on mobile */
-.fw-nav--pressed { }
+/* Pressed/active state: no transform — prevents visual jump on mobile touch */
+.fw-nav--pressed,
+.fw-nav:active { transform: none !important; }
 
 .fw-nav:focus-visible {
     outline: 2px solid rgba(212,175,55,.55);
@@ -978,6 +979,7 @@
 @media (max-width: 1100px) {
     .fw-data-item:nth-child(4) { display: none; }
     .fw-data-rail  { height: 56px; }
+    .fw-car-scene  { padding-bottom: 56px; }
     .fw-data-value { font-size: .78rem; }
     .fw-blueprint-panel { opacity: .65; }
 }
@@ -1077,6 +1079,7 @@
 
     /* Data rail: 3 items at 768px (hide only 4th — Combustible) */
     .fw-data-rail { height: 48px; }
+    .fw-car-scene { padding-bottom: 48px; }
     .fw-data-item:nth-child(4) { display: none; }
     .fw-data-label { font-size: .44rem; letter-spacing: 1.5px; }
     .fw-data-value { font-size: .72rem; }

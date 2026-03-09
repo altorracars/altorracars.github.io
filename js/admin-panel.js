@@ -2848,10 +2848,17 @@
         });
     }
 
-    // Hook into loadData
+    // Hook into loadData (internal)
     var _origLoadData = loadData;
     loadData = function() {
         _origLoadData();
+        initDynamicListsAdmin();
+    };
+
+    // Hook into AP.loadData (called by admin-auth.js post-login)
+    var _origAPLoadData = AP.loadData;
+    AP.loadData = function() {
+        if (_origAPLoadData) _origAPLoadData.apply(AP, arguments);
         initDynamicListsAdmin();
         _initGhTokenSection();
     };

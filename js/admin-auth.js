@@ -4,43 +4,106 @@
     var AP = window.AP;
     var $ = AP.$;
 
-    // ========== INACTIVITY TRACKING ==========
-    function clearInactivityTimer() {
-        if (AP.inactivityTimerId) {
-            clearTimeout(AP.inactivityTimerId);
-            AP.inactivityTimerId = null;
+    // ========== RATE LIMITING (localStorage) ==========
+    var RL_ATTEMPTS_KEY = 'ac_login_attempts';
+    var RL_LOCKOUT_KEY  = 'ac_login_lockout';
+    var RL_MAX_ATTEMPTS = 5;
+    var RL_LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutos
+
+    function getRateLimitState() {
+        var lockoutUntil = parseInt(localStorage.getItem(RL_LOCKOUT_KEY) || '0', 10);
+        if (Date.now() < lockoutUntil) {
+            return { locked: true, remainingMs: lockoutUntil - Date.now() };
         }
+        var attempts = parseInt(localStorage.getItem(RL_ATTEMPTS_KEY) || '0', 10);
+        return { locked: false, attempts: attempts };
+    }
+
+    function recordFailedAttempt() {
+        var attempts = parseInt(localStorage.getItem(RL_ATTEMPTS_KEY) || '0', 10) + 1;
+        if (attempts >= RL_MAX_ATTEMPTS) {
+            localStorage.setItem(RL_LOCKOUT_KEY, String(Date.now() + RL_LOCKOUT_MS));
+            localStorage.removeItem(RL_ATTEMPTS_KEY);
+        } else {
+            localStorage.setItem(RL_ATTEMPTS_KEY, String(attempts));
+        }
+        return attempts;
+    }
+
+    function clearRateLimit() {
+        localStorage.removeItem(RL_ATTEMPTS_KEY);
+        localStorage.removeItem(RL_LOCKOUT_KEY);
+    }
+
+    function formatMs(ms) {
+        var mins = Math.ceil(ms / 60000);
+        return mins + ' minuto' + (mins !== 1 ? 's' : '');
+    }
+
+    // ========== SESSION EXPIRY (8h absoluta) ==========
+    var SESSION_START_KEY = 'ac_session_start';
+
+    function recordSessionStart() {
+        localStorage.setItem(SESSION_START_KEY, String(Date.now()));
+    }
+
+    function clearSessionStart() {
+        localStorage.removeItem(SESSION_START_KEY);
+    }
+
+    function isSessionExpired() {
+        var start = parseInt(localStorage.getItem(SESSION_START_KEY) || '0', 10);
+        if (!start) return false;
+        return (Date.now() - start) > AP.SESSION_MAX_MS;
+    }
+
+    // ========== INACTIVITY TRACKING ==========
+    function clearInactivityTimers() {
+        if (AP.inactivityTimerId)  { clearTimeout(AP.inactivityTimerId);  AP.inactivityTimerId  = null; }
+        if (AP.inactivityWarningId) { clearTimeout(AP.inactivityWarningId); AP.inactivityWarningId = null; }
     }
 
     function stopInactivityTracking() {
-        clearInactivityTimer();
+        clearInactivityTimers();
         if (!AP.inactivityTrackingActive) return;
-        AP.ACTIVITY_EVENTS.forEach(function(eventName) {
-            document.removeEventListener(eventName, resetInactivityTracking, true);
+        AP.ACTIVITY_EVENTS.forEach(function(ev) {
+            document.removeEventListener(ev, resetInactivityTracking, true);
         });
         AP.inactivityTrackingActive = false;
     }
 
     function handleInactivityTimeout() {
-        clearInactivityTimer();
+        clearInactivityTimers();
         if (!window.auth || !window.auth.currentUser) return;
-        AP.toast('Sesion cerrada por inactividad (3 minutos).', 'info');
+        AP.toast('Sesion cerrada por inactividad (10 minutos).', 'info');
         window.auth.signOut();
     }
 
     function resetInactivityTracking() {
         if (!AP.inactivityTrackingActive) return;
-        clearInactivityTimer();
+        clearInactivityTimers();
+        // Aviso 1 minuto antes del cierre
+        if (AP.INACTIVITY_TIMEOUT_MS > 60000) {
+            AP.inactivityWarningId = setTimeout(function() {
+                AP.toast('⚠️ Tu sesion se cerrara en 1 minuto por inactividad.', 'warning');
+            }, AP.INACTIVITY_WARNING_MS);
+        }
         AP.inactivityTimerId = setTimeout(handleInactivityTimeout, AP.INACTIVITY_TIMEOUT_MS);
     }
 
     function startInactivityTracking() {
         if (AP.inactivityTrackingActive) return;
-        AP.ACTIVITY_EVENTS.forEach(function(eventName) {
-            document.addEventListener(eventName, resetInactivityTracking, true);
+        AP.ACTIVITY_EVENTS.forEach(function(ev) {
+            document.addEventListener(ev, resetInactivityTracking, true);
         });
         AP.inactivityTrackingActive = true;
         resetInactivityTracking();
+    }
+
+    // ========== LOADING SCREEN ==========
+    function hideLoadingScreen() {
+        var el = $('authLoadingScreen');
+        if (el) el.style.display = 'none';
     }
 
     // ========== AUTH INIT ==========
@@ -52,11 +115,19 @@
                 })
                 .finally(function() {
                     window.auth.onAuthStateChanged(function(user) {
+                        hideLoadingScreen(); // siempre ocultar el spinner al resolver
                         if (user) {
+                            if (isSessionExpired()) {
+                                clearSessionStart();
+                                AP.toast('Sesion expirada (8 horas). Inicia sesion de nuevo.', 'info');
+                                window.auth.signOut();
+                                return;
+                            }
                             loadUserProfile(user);
                         } else {
                             AP.currentUserProfile = null;
                             AP.currentUserRole = null;
+                            clearSessionStart();
                             stopInactivityTracking();
                             showLogin();
                         }
@@ -88,17 +159,15 @@
 
     function showAccessDenied(email, uid, reason) {
         stopInactivityTracking();
+        clearSessionStart();
         resetLoginBtn();
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
         var errEl = $('loginError');
         errEl.style.display = 'block';
         var msg = 'Acceso denegado para ' + email + '.';
-        if (reason) {
-            msg += '\n' + reason;
-        } else {
-            msg += '\nNo tienes un perfil de administrador.';
-        }
+        if (reason) msg += '\n' + reason;
+        else        msg += '\nNo tienes un perfil de administrador.';
         if (uid) {
             msg += '\n\nTu UID: ' + uid;
             msg += '\nCompartelo con el Super Admin para que te cree un perfil.';
@@ -115,6 +184,7 @@
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
         $('loginForm').reset();
+        updateRateLimitUI();
     }
 
     function showAdmin(user) {
@@ -122,6 +192,7 @@
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'flex';
         $('adminEmail').textContent = user.email + ' (' + (AP.currentUserRole === 'super_admin' ? 'Super Admin' : AP.currentUserRole === 'editor' ? 'Editor' : 'Viewer') + ')';
+        recordSessionStart();
         AP.writeAuditLog('login', 'sesion', user.email);
         startInactivityTracking();
         applyRolePermissions();
@@ -132,9 +203,9 @@
         var usersNav = document.querySelector('.nav-item[data-section="users"]');
         if (usersNav) usersNav.style.display = AP.canManageUsers() ? '' : 'none';
         var btnAddVehicle = $('btnAddVehicle');
-        var btnAddBrand = $('btnAddBrand');
+        var btnAddBrand   = $('btnAddBrand');
         if (btnAddVehicle) btnAddVehicle.style.display = AP.canCreateOrEditInventory() ? '' : 'none';
-        if (btnAddBrand) btnAddBrand.style.display = AP.canCreateOrEditInventory() ? '' : 'none';
+        if (btnAddBrand)   btnAddBrand.style.display   = AP.canCreateOrEditInventory() ? '' : 'none';
     }
 
     // ========== LOGIN FORM ==========
@@ -144,13 +215,58 @@
         btn.innerHTML = 'Iniciar Sesion';
     }
 
+    function updateRateLimitUI() {
+        var rateLimitEl = $('loginRateLimit');
+        var btn         = $('loginBtn');
+        if (!rateLimitEl) return;
+        var state = getRateLimitState();
+        if (state.locked) {
+            rateLimitEl.style.display = 'block';
+            rateLimitEl.textContent   = '🔒 Demasiados intentos fallidos. Espera ' + formatMs(state.remainingMs) + ' antes de intentar de nuevo.';
+            btn.disabled = true;
+            // Actualizar countdown cada 30s
+            setTimeout(updateRateLimitUI, 30000);
+        } else {
+            rateLimitEl.style.display = 'none';
+            btn.disabled = false;
+            if (state.attempts > 0) {
+                rateLimitEl.style.display = 'block';
+                rateLimitEl.textContent   = 'Intentos fallidos: ' + state.attempts + '/' + RL_MAX_ATTEMPTS + '. Siguiente bloqueo tras ' + (RL_MAX_ATTEMPTS - state.attempts) + ' intento(s) mas.';
+            }
+        }
+    }
+
+    // Mostrar/ocultar contraseña
+    var togglePasswordBtn = $('togglePasswordBtn');
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', function() {
+            var input = $('loginPassword');
+            var isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            togglePasswordBtn.setAttribute('aria-label', isHidden ? 'Ocultar contrasena' : 'Mostrar contrasena');
+            togglePasswordBtn.querySelector('svg').style.opacity = isHidden ? '0.5' : '1';
+        });
+    }
+
     $('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        var email = $('loginEmail').value.trim();
-        var pass = $('loginPassword').value;
-        var errEl = $('loginError');
-        var btn = $('loginBtn');
+
+        // Honeypot: si el campo oculto tiene contenido, es un bot
+        var honeypot = $('loginHoneypot');
+        if (honeypot && honeypot.value) return;
+
+        var email   = $('loginEmail').value.trim();
+        var pass    = $('loginPassword').value;
+        var errEl   = $('loginError');
+        var btn     = $('loginBtn');
         if (!email || !pass) return;
+
+        // Verificar rate limit antes de intentar
+        var rlState = getRateLimitState();
+        if (rlState.locked) {
+            updateRateLimitUI();
+            return;
+        }
 
         btn.disabled = true;
         btn.innerHTML = '<span class="btn-spinner"></span> Ingresando...';
@@ -167,12 +283,15 @@
             })
             .then(function() {
                 clearTimeout(loginTimeout);
+                clearRateLimit(); // login exitoso → resetear contador
             })
             .catch(function(error) {
                 clearTimeout(loginTimeout);
                 resetLoginBtn();
                 errEl.style.display = 'block';
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    recordFailedAttempt();
+                    updateRateLimitUI();
                     errEl.textContent = 'Correo o contrasena incorrectos';
                 } else if (error.code === 'auth/too-many-requests') {
                     errEl.textContent = 'Demasiados intentos. Espera un momento.';
@@ -185,6 +304,7 @@
     });
 
     $('logoutBtn').addEventListener('click', function() {
+        clearSessionStart();
         window.firebaseReady.then(function() { window.auth.signOut(); });
     });
 
@@ -215,9 +335,9 @@
     });
 
     // ========== MOBILE MENU ==========
-    var hamburgerBtn = $('hamburgerBtn');
-    var sidebar = $('adminSidebar');
-    var sidebarOverlay = $('sidebarOverlay');
+    var hamburgerBtn    = $('hamburgerBtn');
+    var sidebar         = $('adminSidebar');
+    var sidebarOverlay  = $('sidebarOverlay');
 
     function closeMobileMenu() {
         sidebar.classList.remove('open');
@@ -232,7 +352,10 @@
     });
     if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeMobileMenu);
     var mobileLogoutBtn = $('mobileLogoutBtn');
-    if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', function() { if (window.auth) window.auth.signOut(); });
+    if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', function() {
+        clearSessionStart();
+        if (window.auth) window.auth.signOut();
+    });
 
     // ========== NAVIGATION ==========
     document.querySelectorAll('.nav-item[data-section]').forEach(function(btn) {
@@ -263,9 +386,10 @@
     });
 
     // ========== EXPOSE ==========
-    AP.initAuth = initAuth;
+    AP.initAuth              = initAuth;
     AP.stopInactivityTracking = stopInactivityTracking;
 
-    // Start auth
+    // Inicializar UI de rate limit y arrancar auth
+    updateRateLimitUI();
     initAuth();
 })();

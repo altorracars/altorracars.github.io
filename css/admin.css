@@ -22,6 +22,64 @@ body {
     min-height: 100vh;
 }
 
+/* AUTH LOADING SCREEN */
+.auth-loading-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--admin-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.auth-loading-content {
+    text-align: center;
+}
+.auth-loading-logo {
+    color: var(--admin-gold);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin-bottom: 1.5rem;
+}
+.auth-loading-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--admin-border);
+    border-top-color: var(--admin-gold);
+    border-radius: 50%;
+    animation: auth-spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+}
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+.auth-loading-text {
+    color: var(--admin-text-muted);
+    font-size: 0.875rem;
+}
+
+/* LOGIN PASSWORD WRAP */
+.login-password-wrap {
+    position: relative;
+}
+.login-password-wrap .form-input {
+    padding-right: 2.5rem;
+}
+.login-eye-btn {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--admin-text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    line-height: 1;
+}
+.login-eye-btn:hover { color: var(--admin-text); }
+
 /* LOGIN */
 .login-container {
     display: flex;

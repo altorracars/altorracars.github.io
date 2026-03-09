@@ -38,15 +38,15 @@
             AP._vehiclesLoaded = true;
             AP.vehicles = snap.docs.map(function(d) { return d.data(); });
 
-            // Migración única: normalizar featuredWeek ↔ destacado
-            // Ambos campos deben ser iguales; el OR es el valor canónico
+            // Migración única: destacado es el campo canónico — featuredWeek lo sigue.
+            // NUNCA promover un vehículo por featuredWeek: evita que vehículos
+            // limpiados en admin reaparezcan en el banner.
             if (!_vehiclesInitialized && window.db && AP.canCreateOrEditInventory && AP.canCreateOrEditInventory()) {
                 AP.vehicles.forEach(function(v) {
-                    var isFeatured = !!(v.destacado || v.featuredWeek);
-                    if (!!v.destacado !== isFeatured || !!v.featuredWeek !== isFeatured) {
+                    var canonical = !!v.destacado; // destacado manda
+                    if (!!v.featuredWeek !== canonical) {
                         window.db.collection('vehiculos').doc(String(v.id)).update({
-                            destacado:    isFeatured,
-                            featuredWeek: isFeatured
+                            featuredWeek: canonical
                         }).catch(function() { /* sin permisos — ignorar */ });
                     }
                 });

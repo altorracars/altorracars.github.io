@@ -395,15 +395,15 @@
                 ln(58, 50,  162, 50,  '0.09', '0.5', '3 3') +
                 ln(58, 270, 162, 270, '0.09', '0.5', '3 3') +
 
-                /* Technical labels */
-                txt(110, 77,  'middle', '0.34', '5.5', '700', 'VEH \u00b7 SYS \u00b7 REF') +
-                txt(110, 157, 'middle', '0.20', '4.2', '',    'ALTORRA SPEC \u00b7 v7') +
-                txt(110, 237, 'middle', '0.20', '4.2', '',    'CARTAGENA \u00b7 CO') +
+                /* Technical labels — increased opacity for visibility */
+                txt(110, 77,  'middle', '0.55', '5.5', '700', 'VEH \u00b7 SYS \u00b7 REF') +
+                txt(110, 157, 'middle', '0.38', '4.2', '600', 'SYS \u00b7 ALTORRA CARS') +
+                txt(110, 237, 'middle', '0.38', '4.2', '600', 'CARTAGENA \u00b7 CO') +
 
                 /* Measurement ref marks */
-                txt(15, 78,  'end', '0.20', '4.2', '', 'A') +
-                txt(15, 158, 'end', '0.20', '4.2', '', 'B') +
-                txt(15, 238, 'end', '0.20', '4.2', '', 'C') +
+                txt(15, 78,  'end', '0.35', '4.2', '', 'A') +
+                txt(15, 158, 'end', '0.35', '4.2', '', 'B') +
+                txt(15, 238, 'end', '0.35', '4.2', '', 'C') +
 
                 '</svg>'
             );

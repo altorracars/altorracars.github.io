@@ -628,7 +628,7 @@
     width: 90%;
     max-height: 76%; /* leave room for data rail at bottom */
     object-fit: contain;
-    object-position: center 46%;
+    object-position: center center;
     filter:
         drop-shadow(0 24px 48px rgba(0,0,0,.92))
         drop-shadow(0 0 22px rgba(212,175,55,.09));
@@ -638,7 +638,7 @@
 }
 
 .fw-car-scene--cutout .fw-car-img {
-    object-position: center 52%;
+    object-position: center center;
 }
 
 /* Non-cutout: fade rectangular edges so it blends with background */
@@ -921,8 +921,8 @@
     transform: scale(1.06);
 }
 
-/* Use JS class instead of :active — prevents stuck state on mobile touch */
-.fw-nav--pressed { transform: scale(.96); }
+/* Pressed state disabled — was causing stuck visual bug on mobile */
+.fw-nav--pressed { }
 
 .fw-nav:focus-visible {
     outline: 2px solid rgba(212,175,55,.55);
@@ -1051,10 +1051,17 @@
         -webkit-backdrop-filter: blur(8px);
     }
 
-    /* Hide blueprint panel + grids on mobile; keep HUD corners + scanline */
+    /* Hide grids on mobile; keep blueprint panel for tech text aesthetic */
     .fw-hud-blueprint,
-    .fw-overlay-grid,
-    .fw-blueprint-panel { display: none; }
+    .fw-overlay-grid { display: none; }
+
+    /* Reposition blueprint on mobile — overlay on visual zone */
+    .fw-blueprint-panel {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.7;
+    }
 
     /* Disable glow animation on mobile — static fallback */
     .fw-glow { animation: none; opacity: .6; }

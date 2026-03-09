@@ -32,15 +32,30 @@
             await vehicleDB.load();
 
             var vehicles = FW._getVehicles();
-            if (!vehicles.length) { section.style.display = 'none'; return; }
+
+            /* No featured vehicles → hide banner and stop everything */
+            if (!vehicles.length) {
+                section.style.display = 'none';
+                FW._stopAutoRotate();
+                return;
+            }
 
             vehicles    = vehicles.slice(0, 6);
             FW.vehicles = vehicles;
             FW.total    = vehicles.length;
             FW.index    = 0;
 
+            /* Stop any running timer before re-render (safe for repeated calls) */
+            FW._stopAutoRotate();
+
             FW._render(vehicles);
-            FW._bindEvents();
+
+            /* Bind DOM events only once — avoid duplicate listeners on re-init */
+            if (!FW._eventsBound) {
+                FW._bindEvents();
+                FW._eventsBound = true;
+            }
+
             if (!FW.reducedMotion && FW.total > 1) FW._startAutoRotate();
 
             section.style.display = '';
@@ -50,32 +65,24 @@
            VEHICLE SELECTION
            destacado (= banner) > 6 más recientes
         ───────────────────────────────────────── */
-        /* Helper: canonical "is featured" check — retrocompat con featuredWeek */
-        _isFeatured: function (v) { return !!(v.destacado || v.featuredWeek); },
+        /* Canonical featured check — destacado is the single source of truth.
+           featuredWeek is a legacy alias kept in sync by admin writes but
+           is NOT read here; the admin migration ensures both fields match. */
+        _isFeatured: function (v) { return v.destacado === true; },
 
         _getVehicles: function () {
             var all = (vehicleDB.vehicles || []).filter(function (v) {
                 return v.estado === 'disponible' || !v.estado;
             });
 
-            /* 1) Destacados — único concepto operativo (featuredWeek = alias legacy) */
+            /* Only explicitly featured vehicles — no fallback.
+               When no vehicles are featured, the banner stays hidden. */
             var featured = all.filter(FW._isFeatured);
-            if (featured.length) {
-                return featured.sort(function (a, b) {
-                    return (a.featuredOrder || 999) - (b.featuredOrder || 999);
-                }).slice(0, 6);
-            }
+            if (!featured.length) return [];
 
-            /* 2) Fallback: 6 más recientes — año DESC, luego updatedAt DESC */
-            return all.slice()
-                .sort(function (a, b) {
-                    var dy = (b.year || 0) - (a.year || 0);
-                    if (dy !== 0) return dy;
-                    var ta = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.id || 0);
-                    var tb = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.id || 0);
-                    return tb - ta;
-                })
-                .slice(0, 6);
+            return featured.sort(function (a, b) {
+                return (a.featuredOrder || 999) - (b.featuredOrder || 999);
+            }).slice(0, 6);
         },
 
         /* ─────────────────────────────────────────
@@ -135,10 +142,8 @@
             if (hasOffer) {
                 badgeText  = FW._icoStar() + ' OFERTA DE LA SEMANA';
                 badgeClass = 'fw-badge fw-badge--offer';
-            } else if (FW._isFeatured(v)) {
-                badgeText  = FW._icoStar() + ' DESTACADO DE LA SEMANA';
             } else {
-                badgeText  = FW._icoStar() + ' SELECCI\u00d3N PREMIUM';
+                badgeText  = FW._icoStar() + ' DESTACADO DE LA SEMANA';
             }
 
             /* ── Spec pills (left panel) — info distinta al data rail ── */
@@ -152,9 +157,7 @@
                 : '';
 
             /* ── Section label ── */
-            var sectionTitle = FW._isFeatured(v)
-                ? 'Destacados de la <span>Semana</span>'
-                : 'Veh\u00edculos <span>Destacados</span>';
+            var sectionTitle = 'Destacados de la <span>Semana</span>';
 
             var isActive = (i === 0);
             var imgClass = 'fw-car-img' + (hasCutout ? '' : ' fw-car-img--rect');

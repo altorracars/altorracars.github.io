@@ -6,7 +6,7 @@ class VehicleDatabase {
         this.brands = [];
         this.loaded = false;
         this._cacheKey = 'altorra-db-cache';
-        this._cacheMaxAge = 15 * 60 * 1000; // 15 minutes (generous for slow networks)
+        this._cacheMaxAge = 5 * 60 * 1000; // 5 minutes — reduce stale window after admin changes
         // Fase 23: Real-time listeners
         this._listeners = { vehicles: null, brands: null, banners: null };
         this._changeCallbacks = [];
@@ -186,9 +186,16 @@ class VehicleDatabase {
                     return data;
                 });
 
-                // Only update + notify if data actually changed
-                if (JSON.stringify(newVehicles.map(function(v) { return v.id + ':' + (v._version || 0) + ':' + v.estado; }).sort())
-                    !== JSON.stringify(self.vehicles.map(function(v) { return v.id + ':' + (v._version || 0) + ':' + v.estado; }).sort())) {
+                // Only update + notify if data actually changed.
+                // Key includes updatedAt so toggleDestacado (.update() without _version bump)
+                // is still detected. Also includes destacado directly as a safety net.
+                function _vkey(v) {
+                    return v.id + ':' + (v._version || 0) + ':' + v.estado
+                         + ':' + (v.destacado ? '1' : '0')
+                         + ':' + (v.updatedAt || '');
+                }
+                if (JSON.stringify(newVehicles.map(_vkey).sort())
+                    !== JSON.stringify(self.vehicles.map(_vkey).sort())) {
                     self.vehicles = newVehicles;
                     self.normalizeVehicles();
                     self._saveToCache();

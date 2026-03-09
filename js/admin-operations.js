@@ -468,6 +468,8 @@
     };
 
     // ========== REGENERAR PAGINAS SEO ==========
+    // Llama directamente a la GitHub API (repository_dispatch) desde el browser,
+    // usando el mismo token guardado en localStorage. No depende de Firebase Functions.
     var btnRegenSeo = $('btnRegenerateSeo');
     if (btnRegenSeo) {
         btnRegenSeo.addEventListener('click', function() {
@@ -476,61 +478,67 @@
                 return;
             }
 
-            var statusEl = $('sitemapStatus');
+            var statusEl  = $('sitemapStatus');
+            var token     = localStorage.getItem(GH_TOKEN_KEY);
 
-            // Wait up to 5s for Firebase Functions SDK to load (deferred)
-            function doTrigger(attempt) {
-                if (!window.functions) {
-                    if (attempt < 10) {
-                        setTimeout(function() { doTrigger(attempt + 1); }, 500);
-                        return;
-                    }
-                    AP.toast('Firebase Functions no disponible. Recarga la pagina e intenta de nuevo.', 'error');
-                    if (statusEl) {
-                        statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">Error: Firebase Functions no esta inicializado. Recarga la pagina.</span>';
-                    }
-                    return;
-                }
-
-                btnRegenSeo.disabled = true;
-                btnRegenSeo.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><span class="seo-spinner"></span> Enviando...</span>';
-                if (statusEl) {
-                    statusEl.innerHTML = '<span style="color:var(--admin-accent);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
-                        '<span class="seo-spinner"></span> Contactando servidor para regenerar paginas SEO...</span>';
-                }
-
-                var triggerSeo = window.functions.httpsCallable('triggerSeoRegeneration');
-                // Pasar el token guardado en localStorage para que la Cloud Function lo use
-                // si el Firebase Secret (GITHUB_PAT) ya no está configurado.
-                var ghPat = localStorage.getItem(GH_TOKEN_KEY) || '';
-                triggerSeo({ githubPat: ghPat }).then(function(result) {
-                    AP.toast(result.data.message || 'Regeneracion SEO iniciada', 'success');
-                    if (statusEl) {
-                        statusEl.innerHTML = '<span style="color:var(--admin-success,#3fb950);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
-                            '<span style="font-size:1rem;">&#10003;</span> Regeneracion iniciada. Las paginas SEO se actualizaran en ~2 minutos.</span>';
-                    }
-                }).catch(function(err) {
-                    var errorMsg = err.message || 'No se pudo regenerar';
-                    AP.toast('Error SEO: ' + errorMsg, 'error');
-                    if (statusEl) {
-                        var hint = '';
-                        if (errorMsg.indexOf('GITHUB_PAT') !== -1 || errorMsg.indexOf('not configured') !== -1 || errorMsg.indexOf('401') !== -1) {
-                            hint = ' Verifica que el <strong>Token GitHub</strong> configurado abajo sea valido y tenga permiso <code>Contents: Read and write</code>.';
-                        } else if (errorMsg.indexOf('unauthenticated') !== -1) {
-                            hint = ' Inicia sesion nuevamente.';
-                        } else if (errorMsg.indexOf('permission') !== -1) {
-                            hint = ' Solo el Super Admin puede ejecutar esta accion.';
-                        }
-                        statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
-                            '<span style="font-size:1rem;">&#10007;</span> Error: ' + AP.escapeHtml(errorMsg) + '.' + hint + '</span>';
-                    }
-                }).finally(function() {
-                    btnRegenSeo.disabled = false;
-                    btnRegenSeo.textContent = 'Regenerar Paginas SEO';
-                });
+            if (!token) {
+                AP.toast('Configura el Token GitHub abajo antes de regenerar.', 'error');
+                if (statusEl) statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">&#10007; Falta el Token GitHub. Ingrésalo en el campo de abajo y guárdalo.</span>';
+                return;
             }
 
-            doTrigger(0);
+            btnRegenSeo.disabled = true;
+            btnRegenSeo.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><span class="seo-spinner"></span> Enviando...</span>';
+            if (statusEl) {
+                statusEl.innerHTML = '<span style="color:var(--admin-info);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
+                    '<span class="seo-spinner"></span> Disparando regeneracion de paginas SEO...</span>';
+            }
+
+            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/dispatches', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    event_type: 'vehicle-changed',
+                    client_payload: {
+                        action: 'manual-trigger',
+                        triggeredBy: (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'admin',
+                        timestamp: new Date().toISOString()
+                    }
+                })
+            })
+            .then(function(r) {
+                if (r.ok || r.status === 204) {
+                    AP.toast('Regeneracion SEO iniciada. Las paginas se actualizaran en ~2 minutos.', 'success');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span style="color:var(--admin-success,#3fb950);font-size:0.8rem;">&#10003; Regeneracion iniciada. Las paginas SEO se actualizaran en ~2 minutos.</span>';
+                    }
+                    AP.writeAuditLog('seo_regenerate', 'github-actions', 'Dispatch manual via GitHub API');
+                } else if (r.status === 401) {
+                    AP.toast('Error 401: token invalido o expirado.', 'error');
+                    if (statusEl) statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">&#10007; Token invalido o expirado (401). Genera un nuevo token en GitHub y guardalo abajo.</span>';
+                } else if (r.status === 403) {
+                    AP.toast('Error 403: el token no tiene permiso Actions: Write.', 'error');
+                    if (statusEl) statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">&#10007; Permiso insuficiente (403). El token necesita <code>Actions: Read and write</code>.</span>';
+                } else if (r.status === 404) {
+                    AP.toast('Error 404: repositorio no encontrado o workflow no existe.', 'error');
+                    if (statusEl) statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">&#10007; Workflow no encontrado (404). Verifica que el repositorio tenga un workflow que escuche <code>vehicle-changed</code>.</span>';
+                } else {
+                    AP.toast('Error GitHub API: ' + r.status, 'error');
+                    if (statusEl) statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">&#10007; GitHub API error ' + r.status + '.</span>';
+                }
+            })
+            .catch(function(err) {
+                AP.toast('Error de red: ' + (err.message || 'sin conexion'), 'error');
+                if (statusEl) statusEl.innerHTML = '<span style="color:var(--admin-danger);font-size:0.8rem;">&#10007; Error de red: ' + AP.escapeHtml(err.message || 'sin conexion') + '.</span>';
+            })
+            .finally(function() {
+                btnRegenSeo.disabled = false;
+                btnRegenSeo.textContent = 'Regenerar Paginas SEO';
+            });
         });
     }
 

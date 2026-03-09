@@ -500,7 +500,10 @@
                 }
 
                 var triggerSeo = window.functions.httpsCallable('triggerSeoRegeneration');
-                triggerSeo().then(function(result) {
+                // Pasar el token guardado en localStorage para que la Cloud Function lo use
+                // si el Firebase Secret (GITHUB_PAT) ya no está configurado.
+                var ghPat = localStorage.getItem(GH_TOKEN_KEY) || '';
+                triggerSeo({ githubPat: ghPat }).then(function(result) {
                     AP.toast(result.data.message || 'Regeneracion SEO iniciada', 'success');
                     if (statusEl) {
                         statusEl.innerHTML = '<span style="color:var(--admin-success,#3fb950);font-size:0.8rem;display:flex;align-items:center;gap:8px;">' +
@@ -511,8 +514,8 @@
                     AP.toast('Error SEO: ' + errorMsg, 'error');
                     if (statusEl) {
                         var hint = '';
-                        if (errorMsg.indexOf('GITHUB_PAT') !== -1 || errorMsg.indexOf('not configured') !== -1) {
-                            hint = ' Ejecuta: <code>firebase functions:secrets:set GITHUB_PAT</code>';
+                        if (errorMsg.indexOf('GITHUB_PAT') !== -1 || errorMsg.indexOf('not configured') !== -1 || errorMsg.indexOf('401') !== -1) {
+                            hint = ' Verifica que el <strong>Token GitHub</strong> configurado abajo sea valido y tenga permiso <code>Contents: Read and write</code>.';
                         } else if (errorMsg.indexOf('unauthenticated') !== -1) {
                             hint = ' Inicia sesion nuevamente.';
                         } else if (errorMsg.indexOf('permission') !== -1) {

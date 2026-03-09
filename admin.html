@@ -234,11 +234,13 @@
                 <div style="padding:0.75rem 1.25rem;" id="sitemapStatus">
                     <span style="color:var(--admin-text-muted);font-size:0.8rem;">Genera y publica el <code>sitemap.xml</code> directo al repositorio (requiere token GitHub abajo). <strong>Regenerar SEO</strong> actualiza miniaturas en redes sociales.</span>
                 </div>
-                <!-- GitHub Token para auto-publicar sitemap (solo Super Admin) -->
+                <!-- GitHub Token para auto-publicar sitemap y regenerar SEO (solo Super Admin) -->
                 <div id="ghTokenSection" style="padding:0.75rem 1.25rem;border-top:1px solid var(--admin-border);display:none;">
                     <p style="font-size:0.75rem;color:var(--admin-text-muted);margin-bottom:0.5rem;">
-                        <strong style="color:var(--admin-text);">Token GitHub</strong> — necesario para publicar el sitemap automaticamente al repo sin pasos manuales.<br>
-                        Crea un <em>Fine-grained token</em> con permiso <code>Contents: Read and write</code> solo para este repositorio.
+                        <strong style="color:var(--admin-text);">Token GitHub</strong> — usado para:
+                        <strong style="color:var(--admin-text);">①</strong> publicar <code>sitemap.xml</code> directo al repo y
+                        <strong style="color:var(--admin-text);">②</strong> disparar la regeneracion de paginas SEO.<br>
+                        Crea un <em>Fine-grained token</em> con permiso <code>Contents: Read and write</code> y <code>Actions: Read and write</code> solo para este repositorio.
                         Se guarda solo en este navegador (localStorage).
                     </p>
                     <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">

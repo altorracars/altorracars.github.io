@@ -129,9 +129,13 @@ exports.triggerSeoRegeneration = onCall({
         throw new HttpsError('permission-denied', 'Solo Super Admin puede regenerar paginas SEO.');
     }
 
-    const token = githubPat.value();
+    // Token: primero desde el parámetro enviado por el admin panel (localStorage),
+    // luego desde Firebase Secret Manager como fallback.
+    const token = (request.data && request.data.githubPat) || githubPat.value();
     if (!token) {
-        throw new HttpsError('failed-precondition', 'GITHUB_PAT no configurado en Firebase Secrets.');
+        throw new HttpsError('failed-precondition',
+            'GITHUB_PAT no configurado. Agrega el Token GitHub en el panel admin (seccion SEO) ' +
+            'o ejecuta: firebase functions:secrets:set GITHUB_PAT');
     }
 
     try {
@@ -155,7 +159,6 @@ exports.triggerSeoRegeneration = onCall({
         if (response.ok || response.status === 204) {
             return { success: true, message: 'Regeneracion de paginas SEO iniciada. Las paginas se actualizaran en ~2 minutos.' };
         } else {
-            const body = await response.text();
             throw new HttpsError('internal', 'GitHub API error: ' + response.status);
         }
     } catch (err) {

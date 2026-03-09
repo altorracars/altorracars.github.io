@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.gstatic.com">
     <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+    <link rel="icon" type="image/webp" href="/multimedia/logo-altorra-cars.webp">
     <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
@@ -226,12 +227,26 @@
                 <div class="table-header">
                     <h3>SEO — Herramientas</h3>
                     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                        <button class="btn btn-sm" id="btnGenerateSitemap" style="font-size:0.75rem;padding:0.35rem 0.75rem;">Generar sitemap.xml</button>
+                        <button class="btn btn-sm" id="btnGenerateSitemap" style="font-size:0.75rem;padding:0.35rem 0.75rem;">&#8635; Publicar sitemap.xml</button>
                         <button class="btn btn-sm" id="btnRegenerateSeo" style="font-size:0.75rem;padding:0.35rem 0.75rem;background:var(--admin-gold,#b89658);color:#fff;border-color:var(--admin-gold,#b89658);">Regenerar Paginas SEO</button>
                     </div>
                 </div>
                 <div style="padding:0.75rem 1.25rem;" id="sitemapStatus">
-                    <span style="color:var(--admin-text-muted);font-size:0.8rem;">Genera el sitemap.xml del sitio. <strong>Regenerar SEO</strong> fuerza la actualizacion de miniaturas en redes sociales (WhatsApp, Facebook, Twitter) — se ejecuta automaticamente al crear o editar vehiculos.</span>
+                    <span style="color:var(--admin-text-muted);font-size:0.8rem;">Genera y publica el <code>sitemap.xml</code> directo al repositorio (requiere token GitHub abajo). <strong>Regenerar SEO</strong> actualiza miniaturas en redes sociales.</span>
+                </div>
+                <!-- GitHub Token para auto-publicar sitemap (solo Super Admin) -->
+                <div id="ghTokenSection" style="padding:0.75rem 1.25rem;border-top:1px solid var(--admin-border);display:none;">
+                    <p style="font-size:0.75rem;color:var(--admin-text-muted);margin-bottom:0.5rem;">
+                        <strong style="color:var(--admin-text);">Token GitHub</strong> — necesario para publicar el sitemap automaticamente al repo sin pasos manuales.<br>
+                        Crea un <em>Fine-grained token</em> con permiso <code>Contents: Read and write</code> solo para este repositorio.
+                        Se guarda solo en este navegador (localStorage).
+                    </p>
+                    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                        <input type="password" id="ghTokenInput" class="search-input" placeholder="github_pat_..." style="flex:1;min-width:200px;font-size:0.8rem;" autocomplete="off">
+                        <button class="btn btn-sm" id="btnSaveGhToken" style="font-size:0.75rem;white-space:nowrap;">Guardar token</button>
+                        <button class="btn btn-ghost btn-sm" id="btnClearGhToken" style="font-size:0.75rem;white-space:nowrap;color:var(--admin-danger);">Borrar</button>
+                    </div>
+                    <p id="ghTokenStatus" style="font-size:0.72rem;color:var(--admin-text-muted);margin-top:0.4rem;"></p>
                 </div>
             </div>
         </div>

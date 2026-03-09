@@ -352,7 +352,6 @@
             { loc: '/vehiculos-sedan.html',      priority: '0.8', freq: 'weekly'  },
             { loc: '/vehiculos-pickup.html',     priority: '0.8', freq: 'weekly'  },
             { loc: '/vehiculos-hatchback.html',  priority: '0.8', freq: 'weekly'  },
-            { loc: '/vehiculos-camionetas.html', priority: '0.8', freq: 'weekly'  },
             { loc: '/simulador-credito.html',    priority: '0.7', freq: 'monthly' },
             { loc: '/comparar.html',             priority: '0.6', freq: 'monthly' },
             { loc: '/resenas.html',             priority: '0.6', freq: 'monthly' },

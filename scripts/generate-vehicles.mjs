@@ -252,7 +252,6 @@ function generateSitemap(vehicles, slugMap, brands = []) {
         { loc: '/vehiculos-sedan.html',      freq: 'weekly',  prio: '0.8' },
         { loc: '/vehiculos-pickup.html',     freq: 'weekly',  prio: '0.8' },
         { loc: '/vehiculos-hatchback.html',  freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-camionetas.html', freq: 'weekly',  prio: '0.8' },
         { loc: '/simulador-credito.html',    freq: 'monthly', prio: '0.7' },
         { loc: '/comparar.html',             freq: 'monthly', prio: '0.6' },
         { loc: '/resenas.html',             freq: 'monthly', prio: '0.6' },

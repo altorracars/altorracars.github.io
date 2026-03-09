@@ -32,6 +32,9 @@ async function loadAllComponents() {
 
     // Cargar sistema de cookies dinamicamente
     loadCookieSystem();
+
+    // Cargar asistente inteligente de WhatsApp
+    loadWAAssistant();
 }
 
 // Cargar CSS y JS de cookies
@@ -48,6 +51,16 @@ function loadCookieSystem() {
     if (!document.querySelector('script[src*="cookies.js"]')) {
         const script = document.createElement('script');
         script.src = 'js/cookies.js';
+        document.body.appendChild(script);
+    }
+}
+
+// Cargar Asistente WhatsApp inteligente
+function loadWAAssistant() {
+    if (!document.querySelector('script[src*="whatsapp-assistant.js"]')) {
+        const script = document.createElement('script');
+        script.src = 'js/whatsapp-assistant.js';
+        script.defer = true;
         document.body.appendChild(script);
     }
 }

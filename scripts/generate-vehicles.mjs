@@ -308,10 +308,11 @@ function generateSitemap(vehicles, slugMap, brands = []) {
         const year = v.year || '';
         const fullImage = getFullImage(v);
         const imageTitle = `${marca} ${modelo} ${year}`.trim();
+        const lastmod = v.updatedAt ? String(v.updatedAt).split('T')[0] : today;
 
         xml += `  <url>
     <loc>${SITE_URL}/vehiculos/${slug}.html</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>

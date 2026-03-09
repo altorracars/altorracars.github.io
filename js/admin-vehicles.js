@@ -304,30 +304,21 @@
         if (destEl) destEl.checked = isDestacado;
         if (fwEl)   fwEl.checked   = isDestacado;
 
-        /* Estilo visual del toggle */
-        var lblN = $('desq-lbl-normal');
-        var lblD = $('desq-lbl-destacado');
-        if (lblN) {
-            lblN.style.borderColor = isDestacado ? 'var(--admin-border,#30363d)' : 'var(--admin-accent,#58a6ff)';
-            lblN.style.background  = isDestacado ? '' : 'rgba(88,166,255,0.05)';
+        /* Estilo visual del nuevo toggle button */
+        var toggleBtn = $('destacadoToggleBtn');
+        var starEl    = $('destacadoStar');
+        if (toggleBtn) {
+            toggleBtn.style.borderColor = isDestacado ? 'rgba(212,175,55,0.7)' : 'var(--admin-border,#30363d)';
+            toggleBtn.style.background  = isDestacado ? 'rgba(212,175,55,0.08)' : '';
         }
-        if (lblD) {
-            lblD.style.borderColor = isDestacado ? 'rgba(212,175,55,0.7)' : 'rgba(212,175,55,0.28)';
-            lblD.style.background  = isDestacado ? 'rgba(212,175,55,0.08)' : 'rgba(212,175,55,0.03)';
+        if (starEl) {
+            starEl.textContent = isDestacado ? '\u2605' : '\u2606';
+            starEl.style.color = isDestacado ? '#d4af37' : '';
         }
 
-        /* Mostrar/ocultar sec-banner según estado destacado */
+        /* Mostrar/ocultar campos de banner inline */
         var secBanner = $('sec-banner');
-        var bannerTitle = document.querySelector('.form-section-title[data-toggle="sec-banner"]');
-        if (secBanner) {
-            if (isDestacado) {
-                secBanner.classList.add('open');
-                if (bannerTitle) bannerTitle.classList.remove('collapsed');
-            } else {
-                secBanner.classList.remove('open');
-                if (bannerTitle) bannerTitle.classList.add('collapsed');
-            }
-        }
+        if (secBanner) secBanner.style.display = isDestacado ? '' : 'none';
 
         updateFeaturedCounter();
     }
@@ -1122,10 +1113,22 @@
     var concSelectEl = $('vConcesionario');
     if (concSelectEl) concSelectEl.addEventListener('change', toggleConsignaField);
 
-    /* Toggle destaque — radio change */
+    /* Toggle destaque — radio change (hidden radios, kept for setDestaqueRadio compat) */
     document.querySelectorAll('input[name="vDestaqueNivel"]').forEach(function(radio) {
         radio.addEventListener('change', function() { syncDestaqueFromRadio(this.value); });
     });
+
+    /* Toggle destaque — click on new star button */
+    var _destacadoBtn = $('destacadoToggleBtn');
+    if (_destacadoBtn) {
+        _destacadoBtn.addEventListener('click', function() {
+            var isNow = $('vDestacado') ? $('vDestacado').checked : false;
+            var newVal = isNow ? 'normal' : 'destacado';
+            var radio = document.querySelector('input[name="vDestaqueNivel"][value="' + newVal + '"]');
+            if (radio) radio.checked = true;
+            syncDestaqueFromRadio(newVal);
+        });
+    }
 
     /* Validación en tiempo real: orden duplicado en banner */
     var featuredOrderEl = $('vFeaturedOrder');

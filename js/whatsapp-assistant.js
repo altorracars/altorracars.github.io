@@ -930,8 +930,11 @@
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
-    } else {
+    } else if (document.body) {
         init();
+    } else {
+        // DOM parseado pero body aún no disponible (edge case carga muy temprana)
+        document.addEventListener('DOMContentLoaded', init);
     }
 
 })();

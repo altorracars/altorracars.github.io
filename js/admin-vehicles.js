@@ -72,7 +72,8 @@
             var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ';
             var esVendido = estado === 'vendido';
             if (AP.canCreateOrEditInventory()) {
-                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.toggleDestacado(' + v.id + ')" title="' + (v.destacado ? 'Quitar de destacados' : 'Marcar como destacado') + '" style="font-size:1rem;padding:2px 7px;">' + (v.destacado ? '⭐' : '☆') + '</button> ';
+                var _isFeaturedRow = !!(v.destacado || v.featuredWeek);
+                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.toggleDestacado(' + v.id + ')" title="' + (_isFeaturedRow ? 'Quitar de destacados' : 'Marcar como destacado') + '" style="font-size:1rem;padding:2px 7px;">' + (_isFeaturedRow ? '⭐' : '☆') + '</button> ';
                 if (esVendido && !AP.isSuperAdmin()) {
                     actions += '<button class="btn btn-ghost btn-sm" disabled title="Solo Super Admin puede editar vehiculos vendidos" style="opacity:0.4;cursor:not-allowed;">Editar</button> ';
                     actions += '<span style="font-size:0.65rem;color:var(--admin-danger,#ef4444);">Protegido</span> ';
@@ -291,7 +292,7 @@
         var counter = $('featuredCounter');
         if (!counter) return;
         var editId = $('vId').value ? parseInt($('vId').value) : null;
-        var count = AP.vehicles.filter(function(v) { return v.destacado && v.id !== editId; }).length;
+        var count = AP.vehicles.filter(function(v) { return (v.destacado || v.featuredWeek) && v.id !== editId; }).length;
         counter.textContent = '(' + count + '/6)';
         counter.style.color = count >= 6 ? '#ef4444' : '#b89658';
     }
@@ -640,9 +641,10 @@
         $('vFasecolda').value = v.codigoFasecolda || '';
         $('vDescripcion').value = v.descripcion || '';
         $('vEstado').value = v.estado || 'disponible';
-        $('vDestacado').checked = !!v.destacado;
+        var _isVFeatured = !!(v.destacado || v.featuredWeek);
+        $('vDestacado').checked = _isVFeatured;
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
-        if ($('vFeaturedWeek'))    $('vFeaturedWeek').checked = !!v.featuredWeek;
+        if ($('vFeaturedWeek'))    $('vFeaturedWeek').checked = _isVFeatured;
         if ($('vFeaturedOrder'))   $('vFeaturedOrder').value  = v.featuredOrder  || '';
         if ($('vFeaturedCutoutPng')) $('vFeaturedCutoutPng').value = v.featuredCutoutPng || '';
         renderCutoutPreview(v.featuredCutoutPng || '');
@@ -742,8 +744,8 @@
             revisionTecnica: $('vRevision').checked, peritaje: $('vPeritaje').checked,
             descripcion: $('vDescripcion').value || '', estado: $('vEstado').value || 'disponible',
             destacado: $('vDestacado').checked,
-            prioridad: parseInt($('vPrioridad').value) || 0,
-            featuredWeek: $('vFeaturedWeek') ? $('vFeaturedWeek').checked : false,
+            featuredWeek: $('vDestacado').checked, /* siempre igual a destacado — campo legacy */
+            prioridad: (function() { var ex = AP.vehicles.find(function(v) { return v.id === id; }); return ex ? (ex.prioridad || 0) : 0; })(),
             featuredOrder: $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value) || null) : null,
             featuredCutoutPng: $('vFeaturedCutoutPng') ? ($('vFeaturedCutoutPng').value.trim() || null) : null,
             imagen: AP.uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
@@ -819,7 +821,7 @@
         if ($('vDestacado').checked) {
             var editId = $('vId').value ? parseInt($('vId').value) : null;
             var otherDestacados = AP.vehicles.filter(function(v) {
-                return v.destacado && v.id !== editId;
+                return (v.destacado || v.featuredWeek) && v.id !== editId;
             });
             if (otherDestacados.length >= 6) {
                 AP.toast('Maximo 6 vehiculos destacados. Desmarca uno existente primero.', 'error');
@@ -1306,10 +1308,10 @@
         if (!AP.canCreateOrEditInventory()) { AP.toast('Sin permisos.', 'error'); return; }
         var vehicle = AP.vehicles.find(function(v) { return v.id === id; });
         if (!vehicle) return;
-        var newVal = !vehicle.destacado;
+        var newVal = !(vehicle.destacado || vehicle.featuredWeek); /* OR canónico */
         if (newVal) {
-            var count = AP.vehicles.filter(function(v) { return v.destacado; }).length;
-            if (count >= 6) { AP.toast('Maximo 6 vehiculos destacados.', 'error'); return; }
+            var count = AP.vehicles.filter(function(v) { return (v.destacado || v.featuredWeek); }).length;
+            if (count >= 6) { AP.toast('Maximo 6 vehiculos destacados en banner.', 'error'); return; }
         }
         var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
         window.db.collection('vehiculos').doc(String(id)).update({

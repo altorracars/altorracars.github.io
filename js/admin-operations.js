@@ -327,8 +327,67 @@
     }
 
     // ========== SITEMAP GENERATOR ==========
+    var GH_TOKEN_KEY = 'ac_gh_token';
+    var GH_OWNER     = 'altorracars';
+    var GH_REPO      = 'altorracars.github.io';
+    var GH_BRANCH    = 'main';
+
     function escapeXml(str) {
         return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function _buildSitemapXml() {
+        var today = new Date().toISOString().split('T')[0];
+        var base  = 'https://altorracars.github.io';
+        var xml   = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n' +
+                    '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n\n';
+
+        var staticPages = [
+            { loc: '/',                         priority: '1.0', freq: 'daily'   },
+            { loc: '/busqueda.html',            priority: '0.9', freq: 'weekly'  },
+            { loc: '/vehiculos-usados.html',    priority: '0.9', freq: 'daily'   },
+            { loc: '/vehiculos-nuevos.html',    priority: '0.9', freq: 'daily'   },
+            { loc: '/vehiculos-suv.html',       priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-sedan.html',     priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-pickup.html',    priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-hatchback.html', priority: '0.8', freq: 'weekly'  },
+            { loc: '/contacto.html',            priority: '0.7', freq: 'monthly' },
+            { loc: '/nosotros.html',            priority: '0.7', freq: 'monthly' },
+            { loc: '/favoritos.html',           priority: '0.6', freq: 'monthly' },
+            { loc: '/simulador-credito.html',   priority: '0.7', freq: 'monthly' }
+        ];
+
+        staticPages.forEach(function(p) {
+            xml += '  <url>\n    <loc>' + base + p.loc + '</loc>\n    <lastmod>' + today + '</lastmod>\n    <changefreq>' + p.freq + '</changefreq>\n    <priority>' + p.priority + '</priority>\n  </url>\n\n';
+        });
+
+        AP.brands.forEach(function(b) {
+            xml += '  <url>\n    <loc>' + base + '/marca.html?marca=' + encodeURIComponent(b.id) + '</loc>\n    <lastmod>' + today + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n\n';
+        });
+
+        var disponibles = AP.vehicles.filter(function(v) { return !v.estado || v.estado === 'disponible'; });
+        disponibles.forEach(function(v) {
+            var lastmod = v.updatedAt ? v.updatedAt.split('T')[0] : today;
+            xml += '  <url>\n    <loc>' + base + '/vehiculos/' + _slugifyVehicle(v) + '.html</loc>\n    <lastmod>' + lastmod + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n';
+            if (v.imagen) {
+                var imgUrl = v.imagen.startsWith('http') ? v.imagen : base + '/' + v.imagen;
+                var marca  = v.marca ? v.marca.charAt(0).toUpperCase() + v.marca.slice(1) : '';
+                xml += '    <image:image>\n      <image:loc>' + escapeXml(imgUrl) + '</image:loc>\n      <image:title>' + escapeXml(marca + ' ' + (v.modelo || '') + ' ' + (v.year || '')) + '</image:title>\n    </image:image>\n';
+            }
+            xml += '  </url>\n\n';
+        });
+
+        xml += '</urlset>\n';
+        return { xml: xml, total: staticPages.length + AP.brands.length + disponibles.length, vehiculos: disponibles.length };
+    }
+
+    function _downloadSitemap(xml) {
+        var blob = new Blob([xml], { type: 'application/xml' });
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement('a');
+        a.href = url; a.download = 'sitemap.xml'; a.click();
+        URL.revokeObjectURL(url);
     }
 
     var btnSitemap = $('btnGenerateSitemap');
@@ -336,65 +395,77 @@
         btnSitemap.addEventListener('click', function() {
             var statusEl = $('sitemapStatus');
             if (!statusEl) return;
-            statusEl.innerHTML = '<span style="color:var(--admin-accent);font-size:0.8rem;">Generando sitemap...</span>';
+            var result = _buildSitemapXml();
+            var token  = localStorage.getItem(GH_TOKEN_KEY);
 
-            var today = new Date().toISOString().split('T')[0];
-            var base = 'https://altorracars.github.io';
-
-            var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-            xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n';
-            xml += '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n\n';
-
-            var staticPages = [
-                { loc: '/', priority: '1.0', freq: 'daily' },
-                { loc: '/busqueda.html', priority: '0.9', freq: 'weekly' },
-                { loc: '/vehiculos-usados.html', priority: '0.9', freq: 'daily' },
-                { loc: '/vehiculos-nuevos.html', priority: '0.9', freq: 'daily' },
-                { loc: '/vehiculos-suv.html', priority: '0.8', freq: 'weekly' },
-                { loc: '/vehiculos-sedan.html', priority: '0.8', freq: 'weekly' },
-                { loc: '/vehiculos-pickup.html', priority: '0.8', freq: 'weekly' },
-                { loc: '/vehiculos-hatchback.html', priority: '0.8', freq: 'weekly' },
-                { loc: '/contacto.html', priority: '0.7', freq: 'monthly' },
-                { loc: '/nosotros.html', priority: '0.7', freq: 'monthly' },
-                { loc: '/favoritos.html', priority: '0.6', freq: 'monthly' },
-                { loc: '/simulador-credito.html', priority: '0.7', freq: 'monthly' }
-            ];
-
-            staticPages.forEach(function(p) {
-                xml += '  <url>\n    <loc>' + base + p.loc + '</loc>\n    <lastmod>' + today + '</lastmod>\n    <changefreq>' + p.freq + '</changefreq>\n    <priority>' + p.priority + '</priority>\n  </url>\n\n';
-            });
-
-            AP.brands.forEach(function(b) {
-                xml += '  <url>\n    <loc>' + base + '/marca.html?marca=' + encodeURIComponent(b.id) + '</loc>\n    <lastmod>' + today + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n\n';
-            });
-
-            var disponibles = AP.vehicles.filter(function(v) { return !v.estado || v.estado === 'disponible'; });
-
-            disponibles.forEach(function(v) {
-                var lastmod = v.updatedAt ? v.updatedAt.split('T')[0] : today;
-                xml += '  <url>\n    <loc>' + base + '/vehiculos/' + _slugifyVehicle(v) + '.html' + '</loc>\n    <lastmod>' + lastmod + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n';
-                if (v.imagen) {
-                    var imgUrl = v.imagen.startsWith('http') ? v.imagen : base + '/' + v.imagen;
-                    var marca = v.marca ? v.marca.charAt(0).toUpperCase() + v.marca.slice(1) : '';
-                    xml += '    <image:image>\n      <image:loc>' + escapeXml(imgUrl) + '</image:loc>\n      <image:title>' + escapeXml(marca + ' ' + (v.modelo || '') + ' ' + (v.year || '')) + '</image:title>\n    </image:image>\n';
-                }
-                xml += '  </url>\n\n';
-            });
-
-            xml += '</urlset>\n';
-
-            var blob = new Blob([xml], { type: 'application/xml' });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = 'sitemap.xml';
-            a.click();
-            URL.revokeObjectURL(url);
-
-            var count = staticPages.length + AP.brands.length + disponibles.length;
-            statusEl.innerHTML = '<span style="color:#3fb950;font-size:0.8rem;">Sitemap generado con ' + count + ' URLs (' + disponibles.length + ' vehiculos). Sube el archivo a la raiz del repositorio.</span>';
+            if (token) {
+                statusEl.innerHTML = '<span style="color:var(--admin-info);font-size:0.8rem;">Publicando en repositorio...</span>';
+                var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/sitemap.xml';
+                fetch(apiUrl, { headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' } })
+                    .then(function(r) { return r.ok ? r.json() : null; })
+                    .then(function(fileData) {
+                        var body = { message: 'chore: update sitemap.xml (' + result.vehiculos + ' vehiculos)', content: btoa(unescape(encodeURIComponent(result.xml))), branch: GH_BRANCH };
+                        if (fileData && fileData.sha) body.sha = fileData.sha;
+                        return fetch(apiUrl, { method: 'PUT', headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    })
+                    .then(function(r) {
+                        if (r && r.ok) {
+                            statusEl.innerHTML = '<span style="color:#3fb950;font-size:0.8rem;">&#10003; sitemap.xml publicado en el repositorio — ' + result.total + ' URLs (' + result.vehiculos + ' vehiculos). Google lo indexara en las proximas horas.</span>';
+                            AP.writeAuditLog('sitemap', 'sitemap.xml', 'Publicado via GitHub API — ' + result.total + ' URLs');
+                        } else {
+                            return Promise.reject(new Error('GitHub API error ' + (r ? r.status : '')));
+                        }
+                    })
+                    .catch(function(err) {
+                        _downloadSitemap(result.xml);
+                        statusEl.innerHTML = '<span style="color:var(--admin-warning);font-size:0.8rem;">&#9888; No se pudo publicar automaticamente (' + (err.message || 'error') + '). Archivo descargado — subelo manualmente.</span>';
+                    });
+            } else {
+                _downloadSitemap(result.xml);
+                statusEl.innerHTML = '<span style="color:#3fb950;font-size:0.8rem;">&#10003; Sitemap generado (' + result.total + ' URLs, ' + result.vehiculos + ' vehiculos). ' +
+                    'Configura el <strong>Token GitHub</strong> abajo para publicar automaticamente.</span>';
+            }
         });
     }
+
+    // ========== GITHUB TOKEN (Super Admin only) ==========
+    function _initGhTokenSection() {
+        var section  = $('ghTokenSection');
+        var input    = $('ghTokenInput');
+        var saveBtn  = $('btnSaveGhToken');
+        var clearBtn = $('btnClearGhToken');
+        var statusEl = $('ghTokenStatus');
+        if (!section || !AP.isSuperAdmin()) return;
+        if (section.dataset.initialized) return; // evitar duplicados
+        section.dataset.initialized = '1';
+        section.style.display = 'block';
+        var saved = localStorage.getItem(GH_TOKEN_KEY);
+        if (saved) {
+            input.value = saved;
+            statusEl.textContent = '✓ Token guardado. Listo para publicar sitemap automaticamente.';
+            statusEl.style.color = 'var(--admin-success)';
+        }
+        saveBtn.addEventListener('click', function() {
+            var val = input.value.trim();
+            if (!val) { statusEl.textContent = 'Ingresa un token valido.'; statusEl.style.color = 'var(--admin-danger)'; return; }
+            localStorage.setItem(GH_TOKEN_KEY, val);
+            statusEl.textContent = '✓ Token guardado en este navegador.';
+            statusEl.style.color = 'var(--admin-success)';
+        });
+        clearBtn.addEventListener('click', function() {
+            localStorage.removeItem(GH_TOKEN_KEY);
+            input.value = '';
+            statusEl.textContent = 'Token eliminado.';
+            statusEl.style.color = 'var(--admin-text-muted)';
+        });
+    }
+
+    // Enganchar en AP.loadData para que se ejecute post-login (cuando el rol ya está disponible)
+    var _origAPLoadData = AP.loadData;
+    AP.loadData = function() {
+        if (_origAPLoadData) _origAPLoadData.apply(AP, arguments);
+        _initGhTokenSection();
+    };
 
     // ========== REGENERAR PAGINAS SEO ==========
     var btnRegenSeo = $('btnRegenerateSeo');

@@ -240,29 +240,28 @@ function generatePage(template, v, slug) {
 
 // ===================== Sitemap Generation =====================
 
-function generateSitemap(vehicles, slugMap) {
+function generateSitemap(vehicles, slugMap, brands = []) {
     const today = new Date().toISOString().split('T')[0];
 
     const staticPages = [
-        { loc: '/',                     freq: 'daily',   prio: '1.0' },
-        { loc: '/busqueda.html',        freq: 'daily',   prio: '0.9' },
-        { loc: '/vehiculos-usados.html', freq: 'daily',  prio: '0.9' },
-        { loc: '/vehiculos-nuevos.html', freq: 'daily',  prio: '0.9' },
-        { loc: '/vehiculos-suv.html',   freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-sedan.html', freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-pickup.html', freq: 'weekly', prio: '0.8' },
-        { loc: '/vehiculos-hatchback.html', freq: 'weekly', prio: '0.8' },
-        { loc: '/vehiculos-camionetas.html', freq: 'weekly', prio: '0.8' },
-        { loc: '/marca.html',           freq: 'weekly',  prio: '0.7' },
-        { loc: '/simulador-credito.html', freq: 'monthly', prio: '0.7' },
-        { loc: '/comparar.html',        freq: 'monthly', prio: '0.6' },
-        { loc: '/resenas.html',         freq: 'monthly', prio: '0.6' },
-        { loc: '/nosotros.html',        freq: 'monthly', prio: '0.6' },
-        { loc: '/contacto.html',        freq: 'monthly', prio: '0.6' },
-        { loc: '/favoritos.html',       freq: 'monthly', prio: '0.5' },
-        { loc: '/terminos.html',        freq: 'yearly',  prio: '0.3' },
-        { loc: '/privacidad.html',      freq: 'yearly',  prio: '0.3' },
-        { loc: '/cookies.html',         freq: 'yearly',  prio: '0.3' },
+        { loc: '/',                          freq: 'daily',   prio: '1.0' },
+        { loc: '/busqueda.html',             freq: 'daily',   prio: '0.9' },
+        { loc: '/vehiculos-usados.html',     freq: 'daily',   prio: '0.9' },
+        { loc: '/vehiculos-nuevos.html',     freq: 'daily',   prio: '0.9' },
+        { loc: '/vehiculos-suv.html',        freq: 'weekly',  prio: '0.8' },
+        { loc: '/vehiculos-sedan.html',      freq: 'weekly',  prio: '0.8' },
+        { loc: '/vehiculos-pickup.html',     freq: 'weekly',  prio: '0.8' },
+        { loc: '/vehiculos-hatchback.html',  freq: 'weekly',  prio: '0.8' },
+        { loc: '/vehiculos-camionetas.html', freq: 'weekly',  prio: '0.8' },
+        { loc: '/simulador-credito.html',    freq: 'monthly', prio: '0.7' },
+        { loc: '/comparar.html',             freq: 'monthly', prio: '0.6' },
+        { loc: '/resenas.html',             freq: 'monthly', prio: '0.6' },
+        { loc: '/nosotros.html',             freq: 'monthly', prio: '0.6' },
+        { loc: '/contacto.html',             freq: 'monthly', prio: '0.6' },
+        { loc: '/favoritos.html',            freq: 'monthly', prio: '0.5' },
+        { loc: '/terminos.html',             freq: 'yearly',  prio: '0.3' },
+        { loc: '/privacidad.html',           freq: 'yearly',  prio: '0.3' },
+        { loc: '/cookies.html',              freq: 'yearly',  prio: '0.3' },
     ];
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -280,6 +279,21 @@ function generateSitemap(vehicles, slugMap) {
     <priority>${p.prio}</priority>
   </url>
 `;
+    }
+
+    // Brand pages (/marca.html?marca=X) — one per brand
+    if (brands.length > 0) {
+        xml += '\n  <!-- Brand pages -->\n';
+        for (const b of brands) {
+            const brandId = encodeURIComponent(b.id);
+            xml += `  <url>
+    <loc>${SITE_URL}/marca.html?marca=${brandId}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+`;
+        }
     }
 
     // Vehicle detail pages (pre-rendered)
@@ -370,9 +384,15 @@ async function main() {
     );
     console.log('[generate] Slug map → data/vehicle-slugs.json');
 
+    // Fetch brands for sitemap brand pages
+    console.log('[generate] Fetching brands from Firestore...');
+    const brandsSnap = await getDocs(collection(db, 'marcas'));
+    const brands = brandsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    console.log(`[generate] ${brands.length} brands found.`);
+
     // Regenerate sitemap.xml
     console.log('[generate] Regenerating sitemap.xml...');
-    const sitemap = generateSitemap(vehicles, slugMap);
+    const sitemap = generateSitemap(vehicles, slugMap, brands);
     writeFileSync(join(ROOT, 'sitemap.xml'), sitemap);
     console.log('[generate] sitemap.xml updated.');
 

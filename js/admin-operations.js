@@ -344,18 +344,24 @@
                     '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n\n';
 
         var staticPages = [
-            { loc: '/',                         priority: '1.0', freq: 'daily'   },
-            { loc: '/busqueda.html',            priority: '0.9', freq: 'weekly'  },
-            { loc: '/vehiculos-usados.html',    priority: '0.9', freq: 'daily'   },
-            { loc: '/vehiculos-nuevos.html',    priority: '0.9', freq: 'daily'   },
-            { loc: '/vehiculos-suv.html',       priority: '0.8', freq: 'weekly'  },
-            { loc: '/vehiculos-sedan.html',     priority: '0.8', freq: 'weekly'  },
-            { loc: '/vehiculos-pickup.html',    priority: '0.8', freq: 'weekly'  },
-            { loc: '/vehiculos-hatchback.html', priority: '0.8', freq: 'weekly'  },
-            { loc: '/contacto.html',            priority: '0.7', freq: 'monthly' },
-            { loc: '/nosotros.html',            priority: '0.7', freq: 'monthly' },
-            { loc: '/favoritos.html',           priority: '0.6', freq: 'monthly' },
-            { loc: '/simulador-credito.html',   priority: '0.7', freq: 'monthly' }
+            { loc: '/',                          priority: '1.0', freq: 'daily'   },
+            { loc: '/busqueda.html',             priority: '0.9', freq: 'daily'   },
+            { loc: '/vehiculos-usados.html',     priority: '0.9', freq: 'daily'   },
+            { loc: '/vehiculos-nuevos.html',     priority: '0.9', freq: 'daily'   },
+            { loc: '/vehiculos-suv.html',        priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-sedan.html',      priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-pickup.html',     priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-hatchback.html',  priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-camionetas.html', priority: '0.8', freq: 'weekly'  },
+            { loc: '/simulador-credito.html',    priority: '0.7', freq: 'monthly' },
+            { loc: '/comparar.html',             priority: '0.6', freq: 'monthly' },
+            { loc: '/resenas.html',             priority: '0.6', freq: 'monthly' },
+            { loc: '/nosotros.html',             priority: '0.6', freq: 'monthly' },
+            { loc: '/contacto.html',             priority: '0.6', freq: 'monthly' },
+            { loc: '/favoritos.html',            priority: '0.5', freq: 'monthly' },
+            { loc: '/terminos.html',             priority: '0.3', freq: 'yearly'  },
+            { loc: '/privacidad.html',           priority: '0.3', freq: 'yearly'  },
+            { loc: '/cookies.html',              priority: '0.3', freq: 'yearly'  }
         ];
 
         staticPages.forEach(function(p) {

@@ -323,26 +323,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://altorracars.github.io/vehiculos/ford-edge-sel-2022-19.html</loc>
-    <lastmod>2026-02-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771470267090_1_compressed.webp?alt=media&amp;token=3adbd7ae-6213-4daa-826b-2ce4e0bdd604</image:loc>
-      <image:title>Ford EDGE SEL 2022</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/peugeot-2008-2022-20.html</loc>
-    <lastmod>2026-02-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771946924968_1_compressed.webp?alt=media&amp;token=4bfe610b-21c2-46a6-b221-8e5c994394a8</image:loc>
-      <image:title>Peugeot 2008 2022</image:title>
-    </image:image>
-  </url>
-  <url>
     <loc>https://altorracars.github.io/vehiculos/renault-logan-polar-2020-21.html</loc>
     <lastmod>2026-03-09</lastmod>
     <changefreq>weekly</changefreq>
@@ -350,16 +330,6 @@
     <image:image>
       <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773043992115_WhatsApp_Image_2026-02-19_at_6.08.27_PM_compressed.webp?alt=media&amp;token=35f09779-c5d9-4414-9ed0-dcbb240d3f45</image:loc>
       <image:title>Renault LOGAN POLAR 2020</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/hyundai-tucson-advance-2022-22.html</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772069575068_HYUNDAI_TUCSON_2022-1_compressed.webp?alt=media&amp;token=1997baf0-4215-4bb6-9f76-5c1b9072c1fd</image:loc>
-      <image:title>Hyundai TUCSON ADVANCE 2022</image:title>
     </image:image>
   </url>
   <url>
@@ -413,13 +383,13 @@
     </image:image>
   </url>
   <url>
-    <loc>https://altorracars.github.io/vehiculos/volkswagen-volkswaguen-gol-trendline-2020-28.html</loc>
-    <lastmod>2026-03-07</lastmod>
+    <loc>https://altorracars.github.io/vehiculos/volkswagen-gol-trendline-2020-28.html</loc>
+    <lastmod>2026-03-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
       <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772717968285_VOLKSWAGUEN_GOL_AUT_2020_-1_compressed.webp?alt=media&amp;token=9ae49171-4850-4d6f-a464-806a65192530</image:loc>
-      <image:title>Volkswagen VOLKSWAGUEN GOL TRENDLINE 2020</image:title>
+      <image:title>Volkswagen GOL TRENDLINE 2020</image:title>
     </image:image>
   </url>
   <url>
@@ -440,16 +410,6 @@
     <image:image>
       <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1770929206693_1_compressed.webp?alt=media&amp;token=2d79c053-044c-4a42-a1f2-7eb5a18e4c38</image:loc>
       <image:title>Renault DUSTER INTENS 2023</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/bmw-x4-xdrive30i-2019-5.html</loc>
-    <lastmod>2026-03-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1770931643695_1_compressed.webp?alt=media&amp;token=907a9e95-52bc-48d8-b2af-6ab56240efcb</image:loc>
-      <image:title>Bmw X4 XDRIVE30I 2019</image:title>
     </image:image>
   </url>
   <url>

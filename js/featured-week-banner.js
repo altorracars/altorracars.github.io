@@ -525,15 +525,6 @@
                 });
             }, { passive: true });
 
-            /* Clear pressed state when tab becomes hidden (prevents stuck state on tab switch) */
-            document.addEventListener('visibilitychange', function () {
-                if (document.hidden) {
-                    [prev, next].filter(Boolean).forEach(function (btn) {
-                        btn.classList.remove('fw-nav--pressed');
-                    });
-                }
-            });
-
             if (prev) prev.addEventListener('click', function () {
                 FW._stopAutoRotate();
                 FW._goTo((FW.index - 1 + FW.total) % FW.total);
@@ -545,10 +536,13 @@
                 restart();
             });
 
-            /* Page Visibility API — pause when tab hidden, resume on return */
+            /* Page Visibility API — pause auto-rotate + clear pressed state when tab hidden */
             document.addEventListener('visibilitychange', function () {
                 if (document.hidden) {
                     FW._stopAutoRotate();
+                    [prev, next].filter(Boolean).forEach(function (btn) {
+                        btn.classList.remove('fw-nav--pressed');
+                    });
                 } else {
                     restart();
                 }

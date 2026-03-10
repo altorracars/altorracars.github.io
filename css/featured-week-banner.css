@@ -623,31 +623,27 @@
 
 .fw-car-scene--cutout .fw-car-shadow { display: block; }
 
-/* ── Car wrap: sizing container for the trim transform ──
-   Holds the fixed display footprint (88% × 74% of the car-scene).
-   The JS trim logic applies:
-     Strategy A — object-view-box on <img>: Chrome 104+, Edge 104+, Safari 17.4+
-                  Crops the image intrinsic content to the actual car bounding box.
-     Strategy B — scale+translate on .fw-car-wrap: Firefox fallback.
-                  Wrapper transform never conflicts with the <img> entrance animation.
-   overflow:hidden clips scaled-up transparent areas locally.
+/* ── Car image ──
+   width + height set a fixed bounding box so every car (wide sedan, tall SUV)
+   occupies the same display footprint.  object-fit:contain then scales each
+   car proportionally inside that box.
+   object-position:center bottom anchors the car to the ground plane so the
+   contact shadow is consistent across slides.
+
+   Trim (JS): object-view-box (Strategy A) or scale+translate (Strategy B)
+   are applied directly to this element after transparent-border detection.
+   Strategy A is a separate CSS property — no conflict with the transform
+   keyframes of fw-car-enter.  Strategy B is applied via animationend to
+   avoid overwriting the animation's final transform state.
+   The img is a direct flex child of fw-car-scene (no intermediate wrapper),
+   so fw-car-scene's overflow:hidden and stacking context correctly clip the
+   will-change:transform compositing layer during the entrance animation.
 */
-.fw-car-wrap {
+.fw-car-img {
     position: relative;
     z-index: 1;
     width: 88%;
     height: 74%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    pointer-events: none;
-}
-
-/* ── Car image: fills the wrap entirely — sizing is now the wrap's job ── */
-.fw-car-img {
-    width: 100%;
-    height: 100%;
     object-fit: contain;
     object-position: center bottom;
     filter:
@@ -1115,16 +1111,10 @@
         flex-shrink: 0;
     }
 
-    /* Mobile: larger wrap footprint to maximise visible car size */
-    .fw-car-wrap {
+    /* Mobile: wider footprint — maximise visible car on small screens */
+    .fw-car-img {
         width: 94%;
         height: 80%;
-    }
-
-    /* Image always fills its wrap — sizing is the wrap's responsibility */
-    .fw-car-img {
-        width: 100%;
-        height: 100%;
     }
 
     /* Left vignette not needed when stacked */

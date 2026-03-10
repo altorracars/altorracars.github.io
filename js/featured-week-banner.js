@@ -108,6 +108,10 @@
             track.innerHTML  = slidesHTML;
             dotsEl.innerHTML = dotsHTML;
 
+            /* Detect transparent-border bounds for each cutout PNG and
+               scale/position the car to fill its display area exactly */
+            FW._processCutoutImages();
+
             /* Preload next image immediately */
             FW._preloadNext(0);
         },
@@ -227,15 +231,20 @@
 
                 /* Blurred bg removed — cutout shows PNG only */
 
-                /* Car scene: floor + shadow + image */
+                /* Car scene: floor + shadow + image
+                   .fw-car-wrap isolates the trim transform from the img entrance
+                   animation — the wrap gets scale/translate for transparent-border
+                   cropping; the img inside keeps its CSS animation untouched. */
                 '<div class="fw-car-scene' + (hasCutout ? ' fw-car-scene--cutout' : '') + '" aria-hidden="true">' +
                     '<div class="fw-car-floor"></div>' +
                     '<div class="fw-car-shadow"></div>' +
-                    '<img class="' + imgClass + '"' +
-                        ' src="' + imgSrc + '"' +
-                        ' alt="' + title.replace(/"/g, '&quot;') + '"' +
-                        ' loading="' + (i === 0 ? 'eager' : 'lazy') + '"' +
-                        ' decoding="' + (i === 0 ? 'sync' : 'async') + '">' +
+                    '<div class="fw-car-wrap' + (hasCutout ? ' fw-car-wrap--cutout' : '') + '">' +
+                        '<img class="' + imgClass + '"' +
+                            ' src="' + imgSrc + '"' +
+                            ' alt="' + title.replace(/"/g, '&quot;') + '"' +
+                            ' loading="' + (i === 0 ? 'eager' : 'lazy') + '"' +
+                            ' decoding="' + (i === 0 ? 'sync' : 'async') + '">' +
+                    '</div>' +
                 '</div>' +
 
                 /* HUD layer: corner brackets + scanline only — NO floating badges */
@@ -469,6 +478,132 @@
                 if (!v) return;
                 var src = v.featuredCutoutPng || v.imagen;
                 if (src) { var img = new Image(); img.src = src; }
+            });
+        },
+
+        /* ─────────────────────────────────────────
+           CUTOUT TRIM — transparent-border detection
+           ─────────────────────────────────────────
+           For each cutout PNG:
+             1. Draw the image at reduced resolution on an offscreen canvas
+             2. Scan every pixel for the first/last non-transparent pixel in each axis
+             3. Cache the normalized bounding box in memory + sessionStorage
+             4. Apply via object-view-box (Chrome/Edge/Safari 17.4+) or a CSS
+                transform on the .fw-car-wrap wrapper (Firefox fallback).
+                The wrapper isolates the trim transform from the img entrance
+                animation, which runs on the <img> element independently.
+        ───────────────────────────────────────── */
+        _trimCache: {},
+
+        _detectTrim: function (imgEl, cb) {
+            var src = imgEl.src;
+
+            /* Memory cache — fastest path */
+            if (FW._trimCache[src] !== undefined) { cb(FW._trimCache[src]); return; }
+
+            /* sessionStorage cache — survives navigation, avoids re-scanning */
+            var key = 'fw-trim:' + src.split('').reduce(function (a, c) {
+                return ((a << 5) - a + c.charCodeAt(0)) | 0;
+            }, 0);
+            try {
+                var stored = sessionStorage.getItem(key);
+                if (stored !== null) {
+                    FW._trimCache[src] = JSON.parse(stored);
+                    cb(FW._trimCache[src]);
+                    return;
+                }
+            } catch (e) {}
+
+            var W = imgEl.naturalWidth, H = imgEl.naturalHeight;
+            if (!W || !H) { cb(null); return; }
+
+            /* Scale down to max 400px — keeps scan under ~2ms regardless of resolution */
+            var sc  = Math.min(1, 400 / Math.max(W, H));
+            var cW  = Math.round(W * sc);
+            var cH  = Math.round(H * sc);
+            var cvs = document.createElement('canvas');
+            cvs.width = cW; cvs.height = cH;
+            var ctx = cvs.getContext('2d');
+
+            try { ctx.drawImage(imgEl, 0, 0, cW, cH); } catch (e) { cb(null); return; }
+
+            var data;
+            try { data = ctx.getImageData(0, 0, cW, cH).data; }
+            catch (e) { cb(null); return; } /* CORS — images must allow same-origin or CORS header */
+
+            /* Find tight bounding box of non-transparent pixels */
+            var ALPHA = 12; /* ignore anti-aliasing fringe */
+            var xMin = cW, yMin = cH, xMax = 0, yMax = 0;
+            for (var y = 0; y < cH; y++) {
+                for (var x = 0; x < cW; x++) {
+                    if (data[(y * cW + x) * 4 + 3] > ALPHA) {
+                        if (x < xMin) xMin = x;
+                        if (x > xMax) xMax = x;
+                        if (y < yMin) yMin = y;
+                        if (y > yMax) yMax = y;
+                    }
+                }
+            }
+
+            if (xMax <= xMin || yMax <= yMin) { FW._trimCache[src] = null; cb(null); return; }
+
+            /* Normalize to 0-1 and add a small visual margin */
+            var PAD = 0.012;
+            var trim = {
+                x:  Math.max(0, xMin / cW - PAD),
+                y:  Math.max(0, yMin / cH - PAD),
+                x2: Math.min(1, xMax / cW + PAD),
+                y2: Math.min(1, yMax / cH + PAD)
+            };
+
+            FW._trimCache[src] = trim;
+            try { sessionStorage.setItem(key, JSON.stringify(trim)); } catch (e) {}
+            cb(trim);
+        },
+
+        _applyTrim: function (imgEl, trim) {
+            if (!trim) return;
+            var wrap = imgEl.parentElement; /* .fw-car-wrap */
+            if (!wrap) return;
+
+            var carW = trim.x2 - trim.x;
+            var carH = trim.y2 - trim.y;
+
+            /* ── Strategy A: object-view-box (Chrome 104+, Edge 104+, Safari 17.4+) ──
+               Crops the image intrinsic content to the car bounding box.
+               object-fit:contain then scales that cropped region to fill the img.
+               No transform needed — zero conflict with the entrance animation. */
+            if (typeof CSS !== 'undefined' && CSS.supports &&
+                CSS.supports('object-view-box', 'inset(0%)')) {
+                var t = (trim.y  * 100).toFixed(2) + '%';
+                var r = ((1 - trim.x2) * 100).toFixed(2) + '%';
+                var b = ((1 - trim.y2) * 100).toFixed(2) + '%';
+                var l = (trim.x  * 100).toFixed(2) + '%';
+                imgEl.style.objectViewBox = 'inset(' + t + ' ' + r + ' ' + b + ' ' + l + ')';
+                return;
+            }
+
+            /* ── Strategy B: scale + translate on .fw-car-wrap (Firefox fallback) ──
+               Applies the transform to the wrapper, not the <img>, so the CSS
+               entrance animation on the img element is completely unaffected.
+               The .fw-car-scene overflow:hidden clips the upscaled wrap. */
+            var scale = Math.min(1 / carW, 1 / carH) * 0.96;
+            var tx    = ((0.5 - (trim.x + carW / 2)) * 100).toFixed(2);
+            var ty    = ((0.5 - (trim.y + carH / 2)) * 100).toFixed(2);
+            wrap.style.transform       = 'scale(' + scale.toFixed(4) + ') translate(' + tx + '%, ' + ty + '%)';
+            wrap.style.transformOrigin = 'center center';
+        },
+
+        _processCutoutImages: function () {
+            /* Only cutout PNGs (not rect photos) need trim processing */
+            var imgs = document.querySelectorAll('.fw-car-wrap--cutout .fw-car-img');
+            imgs.forEach(function (img) {
+                function run() {
+                    FW._detectTrim(img, function (trim) { FW._applyTrim(img, trim); });
+                }
+                /* Image may already be decoded (loading=eager, decoding=sync on slide 0) */
+                if (img.complete && img.naturalWidth > 0) { run(); }
+                else { img.addEventListener('load', run, { once: true }); }
             });
         },
 

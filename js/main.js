@@ -252,8 +252,11 @@ function scrollCarouselById(containerId, direction) {
         return;
     }
 
-    const cardWidth = 350;
-    const scrollAmount = cardWidth * 3;
+    const firstCard = grid.firstElementChild;
+    const cardWidth = (firstCard && firstCard.offsetWidth > 0) ? firstCard.offsetWidth : 320;
+    const gap = parseInt(getComputedStyle(grid).gap) || 16;
+    const visibleCards = Math.max(1, Math.floor(grid.clientWidth / (cardWidth + gap)));
+    const scrollAmount = (cardWidth + gap) * visibleCards;
     const maxScroll = grid.scrollWidth - grid.clientWidth;
     const tolerance = 10;
 

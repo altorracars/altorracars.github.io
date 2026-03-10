@@ -617,9 +617,25 @@
         },
 
         _applyTrim: function (imgEl, trim) {
-            /* Always release the animation pause, even when trim is unavailable */
+            var wasPending = imgEl.classList.contains('fw-car-img--trim-pending');
+
+            /* Bridge: keep image hidden for one extra frame after class removal.
+               Without this, removing .fw-car-img--trim-pending (which held
+               animation:none + opacity:0) and starting the entrance animation
+               happen in the same style recalc but the animation's backwards-fill
+               opacity:0 isn't guaranteed to paint before the class's opacity:0
+               disappears — causing a 1-frame flash at full opacity.
+               Setting opacity:0 as an inline style (highest priority) before the
+               class is removed ensures zero-gap, then rAF removes it once the
+               animation's from-frame (opacity:0) is already active. */
+            if (wasPending) imgEl.style.opacity = '0';
             imgEl.classList.remove('fw-car-img--trim-pending');
-            if (!trim) return;
+
+            if (!trim) {
+                if (wasPending) requestAnimationFrame(function () { imgEl.style.opacity = ''; });
+                return;
+            }
+
             var carW = trim.x2 - trim.x;
             var carH = trim.y2 - trim.y;
 
@@ -631,6 +647,7 @@
                 var b = ((1 - trim.y2) * 100).toFixed(2) + '%';
                 var l = (trim.x  * 100).toFixed(2) + '%';
                 imgEl.style.objectViewBox = 'inset(' + t + ' ' + r + ' ' + b + ' ' + l + ')';
+                if (wasPending) requestAnimationFrame(function () { imgEl.style.opacity = ''; });
                 return;
             }
 
@@ -649,7 +666,9 @@
             if (!anim || anim === 'none') {
                 /* No animation running (inactive slide or reduced-motion) */
                 imgEl.style.transform = tfm;
+                if (wasPending) requestAnimationFrame(function () { imgEl.style.opacity = ''; });
             } else {
+                if (wasPending) requestAnimationFrame(function () { imgEl.style.opacity = ''; });
                 imgEl.addEventListener('animationend', function handler () {
                     imgEl.style.transform = tfm;
                     imgEl.removeEventListener('animationend', handler);

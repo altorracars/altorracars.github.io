@@ -669,14 +669,13 @@
     animation: fw-car-enter .7s cubic-bezier(.25,.1,.25,1) both;
 }
 
-/* Hold the car image invisible until JS has detected the transparent-border
-   bounds and applied the trim.  On desktop the entrance animation is also
-   paused so it starts from its from-frame (opacity:0) once trim is ready.
-   On mobile (animation:none) the opacity:0 + CSS transition below handles
-   the fade-in.  _applyTrim() removes this class when trim is applied. */
+/* Hold the car image invisible until JS has applied the trim.
+   animation:none prevents the entrance animation from running before the
+   trim is ready; _applyTrim() removes this class, sets an inline opacity:0
+   bridge, then removes that in a rAF so the animation starts cleanly. */
 .fw-car-img--trim-pending {
     opacity: 0;
-    animation-play-state: paused !important;
+    animation: none !important;
 }
 
 @keyframes fw-car-enter {

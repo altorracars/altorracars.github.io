@@ -164,7 +164,13 @@
             var sectionTitle = 'Destacados de la <span>Semana</span>';
 
             var isActive = (i === 0);
-            var trimPending = hasCutout && !FW._getTrimFromCache(imgSrc);
+            /* On mobile the pending class hides the image while trim is detected,
+               which causes a noticeable empty slot (lazy images load slowly).
+               Better UX on mobile: show the image immediately, apply trim when
+               ready.  On desktop the class prevents the 1-frame flash. */
+            var isMobileLayout = !!(window.matchMedia &&
+                window.matchMedia('(max-width: 768px)').matches);
+            var trimPending = hasCutout && !FW._getTrimFromCache(imgSrc) && !isMobileLayout;
             var imgClass = 'fw-car-img' +
                 (hasCutout ? '' : ' fw-car-img--rect') +
                 (trimPending ? ' fw-car-img--trim-pending' : '');
@@ -619,64 +625,71 @@
         _applyTrim: function (imgEl, trim) {
             var wasPending = imgEl.classList.contains('fw-car-img--trim-pending');
 
-            /* Bridge: keep image hidden for one extra frame after class removal.
-               Without this, removing .fw-car-img--trim-pending (which held
-               animation:none + opacity:0) and starting the entrance animation
-               happen in the same style recalc but the animation's backwards-fill
-               opacity:0 isn't guaranteed to paint before the class's opacity:0
-               disappears — causing a 1-frame flash at full opacity.
-               Setting opacity:0 as an inline style (highest priority) before the
-               class is removed ensures zero-gap, then rAF removes it once the
-               animation's from-frame (opacity:0) is already active. */
-            if (wasPending) imgEl.style.opacity = '0';
+            /* ── Step 1: apply trim BEFORE the image becomes visible ── */
+            if (trim) {
+                var carW = trim.x2 - trim.x;
+                var carH = trim.y2 - trim.y;
+
+                if (typeof CSS !== 'undefined' && CSS.supports &&
+                    CSS.supports('object-view-box', 'inset(0%)')) {
+                    /* Strategy A: object-view-box (Chrome 104+, Safari 17.4+, Edge 104+).
+                       Applied before reveal so the image is never visible untrimmed. */
+                    imgEl.style.objectViewBox =
+                        'inset(' +
+                        (trim.y        * 100).toFixed(2) + '% ' +
+                        ((1 - trim.x2) * 100).toFixed(2) + '% ' +
+                        ((1 - trim.y2) * 100).toFixed(2) + '% ' +
+                        (trim.x        * 100).toFixed(2) + '%)';
+                } else {
+                    /* Strategy B: scale+translate (Firefox fallback).
+                       For the pending case the animation hasn't started yet
+                       (blocked by animation:none on the pending class) so we
+                       can set the transform directly without a conflict. */
+                    var scale = Math.min(1 / carW, 1 / carH) * 0.96;
+                    var tx    = ((0.5 - (trim.x + carW / 2)) * 100).toFixed(2);
+                    var ty    = ((0.5 - (trim.y + carH / 2)) * 100).toFixed(2);
+                    imgEl._fwTrimTransform =
+                        'scale(' + scale.toFixed(4) + ') translate(' + tx + '%, ' + ty + '%)';
+
+                    if (!wasPending) {
+                        /* Image already visible — wait for the running entrance
+                           animation to finish before applying the transform. */
+                        var anim = getComputedStyle(imgEl).animationName;
+                        if (!anim || anim === 'none') {
+                            imgEl.style.transform = imgEl._fwTrimTransform;
+                        } else {
+                            imgEl.addEventListener('animationend', function h() {
+                                imgEl.style.transform = imgEl._fwTrimTransform;
+                                imgEl.removeEventListener('animationend', h);
+                            }, { once: true });
+                        }
+                    }
+                    /* For the pending case the transform is stored; the
+                       _fwTrimBound listener below applies it at animationend
+                       (after the entrance animation completes). */
+                }
+            }
+
+            if (!wasPending) return;  /* Nothing more to do for non-pending images */
+
+            /* ── Step 2: reveal (pending path only) ──
+               visibility:hidden on the pending class is immune to animation
+               overrides — there is no 1-frame gap when it is removed.
+               After removing the class:
+                 • Desktop: entrance animation starts fresh from its from-frame
+                   (opacity:0).  We set inline opacity:0 first and remove it
+                   after a forced reflow; the browser then sees the animation's
+                   from-frame atomically.  No flash possible.
+                 • Mobile (animation:none): the opacity:0 → '' change triggers
+                   the 'transition: opacity .3s ease' on .fw-car-img → smooth
+                   fade-in with no animation timing to worry about. */
+            imgEl.style.opacity = '0';
             imgEl.classList.remove('fw-car-img--trim-pending');
+            imgEl.getBoundingClientRect(); /* force reflow — commits opacity:0 + initialises animation */
+            imgEl.style.opacity = '';      /* triggers animation (desktop) or transition (mobile) */
 
-            if (!trim) {
-                if (wasPending) requestAnimationFrame(function () { imgEl.style.opacity = ''; });
-                return;
-            }
-
-            var carW = trim.x2 - trim.x;
-            var carH = trim.y2 - trim.y;
-
-            /* Strategy A: object-view-box — no animation conflict */
-            if (typeof CSS !== 'undefined' && CSS.supports &&
-                CSS.supports('object-view-box', 'inset(0%)')) {
-                var t = (trim.y  * 100).toFixed(2) + '%';
-                var r = ((1 - trim.x2) * 100).toFixed(2) + '%';
-                var b = ((1 - trim.y2) * 100).toFixed(2) + '%';
-                var l = (trim.x  * 100).toFixed(2) + '%';
-                imgEl.style.objectViewBox = 'inset(' + t + ' ' + r + ' ' + b + ' ' + l + ')';
-                if (wasPending) requestAnimationFrame(function () { imgEl.style.opacity = ''; });
-                return;
-            }
-
-            /* Strategy B: scale+translate on <img> — wait for entrance animation to
-               finish (animationend) so the keyframes don't overwrite the transform.
-               Store the desired transform on the element so each new activation
-               (re-navigation to the slide) re-applies it after its animation. */
-            var scale = Math.min(1 / carW, 1 / carH) * 0.96;
-            var tx    = ((0.5 - (trim.x + carW / 2)) * 100).toFixed(2);
-            var ty    = ((0.5 - (trim.y + carH / 2)) * 100).toFixed(2);
-            var tfm   = 'scale(' + scale.toFixed(4) + ') translate(' + tx + '%, ' + ty + '%)';
-
-            imgEl._fwTrimTransform = tfm; /* remember it for re-animations */
-
-            var anim = getComputedStyle(imgEl).animationName;
-            if (!anim || anim === 'none') {
-                /* No animation running (inactive slide or reduced-motion) */
-                imgEl.style.transform = tfm;
-                if (wasPending) requestAnimationFrame(function () { imgEl.style.opacity = ''; });
-            } else {
-                if (wasPending) requestAnimationFrame(function () { imgEl.style.opacity = ''; });
-                imgEl.addEventListener('animationend', function handler () {
-                    imgEl.style.transform = tfm;
-                    imgEl.removeEventListener('animationend', handler);
-                }, { once: true });
-            }
-
-            /* Re-apply after every future slide activation */
-            if (!imgEl._fwTrimBound) {
+            /* Strategy B: re-apply trim after every future slide activation */
+            if (imgEl._fwTrimTransform && !imgEl._fwTrimBound) {
                 imgEl._fwTrimBound = true;
                 imgEl.addEventListener('animationend', function () {
                     if (imgEl._fwTrimTransform) imgEl.style.transform = imgEl._fwTrimTransform;

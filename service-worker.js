@@ -2,18 +2,16 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v4.0.0-' + '20260305'; // Date-based versioning
+const CACHE_VERSION = 'v4.0.0-' + '20260310'; // Bumped: category images moved out of precache
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 
-// Assets that rarely change (fonts, brand logos)
+// Assets that NEVER change between deploys (logos only — NOT category images)
+// Category images (/multimedia/categories/) are intentionally excluded:
+// they change between deploys and must always be fetched fresh (networkFirst).
 const STATIC_ASSETS = [
     '/multimedia/logo-altorra-cars.webp',
     '/multimedia/vehicles/placeholder-car.jpg',
-    '/multimedia/categories/suv.jpg',
-    '/multimedia/categories/sedan.jpg',
-    '/multimedia/categories/hatchback.jpg',
-    '/multimedia/categories/camioneta.jpg',
     '/multimedia/Logos/Chevrolet.webp',
     '/multimedia/Logos/Nissan.webp',
     '/multimedia/Logos/Renault.webp',
@@ -108,7 +106,13 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // STRATEGY 3: Stale-While-Revalidate for CSS, JS, images
+    // STRATEGY 3: Network First for category images (they change between deploys)
+    if (url.pathname.startsWith('/multimedia/categories/')) {
+        event.respondWith(networkFirst(request));
+        return;
+    }
+
+    // STRATEGY 4: Stale-While-Revalidate for stable assets (CSS, JS, logos)
     event.respondWith(staleWhileRevalidate(request));
 });
 

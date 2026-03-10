@@ -1,5 +1,5 @@
 /**
- * Featured Week Banner — ALTORRA CARS — v8 Modelo Unificado
+ * Featured Week Banner — ALTORRA CARS — v9 Carga Directa
  * HUD Automotriz Premium | Paleta Dorada/Ámbar | Sin Azul/Cian
  *
  * Prioridad:  destacado:true (= featuredWeek) + featuredOrder  >  6 más recientes
@@ -7,6 +7,9 @@
  *
  * Modelo simplificado: destacado = banner. Un solo concepto, una sola verdad.
  * CSS .fw-car-bg eliminado — cutout mode muestra SOLO el PNG sin fondo borroso.
+ *
+ * PNG óptimo: 800×400px recortado al borde del auto (sin relleno transparente).
+ * La imagen se muestra directamente con object-fit:contain — sin procesamiento Canvas.
  */
 (function () {
     'use strict';
@@ -108,10 +111,6 @@
             track.innerHTML  = slidesHTML;
             dotsEl.innerHTML = dotsHTML;
 
-            /* Detect transparent-border bounds for each cutout PNG and
-               scale/position the car to fill its display area exactly */
-            FW._processCutoutImages();
-
             /* Preload next image immediately */
             FW._preloadNext(0);
         },
@@ -164,16 +163,7 @@
             var sectionTitle = 'Destacados de la <span>Semana</span>';
 
             var isActive = (i === 0);
-            /* On mobile the pending class hides the image while trim is detected,
-               which causes a noticeable empty slot (lazy images load slowly).
-               Better UX on mobile: show the image immediately, apply trim when
-               ready.  On desktop the class prevents the 1-frame flash. */
-            var isMobileLayout = !!(window.matchMedia &&
-                window.matchMedia('(max-width: 768px)').matches);
-            var trimPending = hasCutout && !FW._getTrimFromCache(imgSrc) && !isMobileLayout;
-            var imgClass = 'fw-car-img' +
-                (hasCutout ? '' : ' fw-car-img--rect') +
-                (trimPending ? ' fw-car-img--trim-pending' : '');
+            var imgClass = 'fw-car-img' + (hasCutout ? '' : ' fw-car-img--rect');
 
             /* ── Blueprint panel: static tech decoration ── */
             var blueprintTicks = '';
@@ -241,19 +231,12 @@
                 /* Blurred bg removed — cutout shows PNG only */
 
                 /* Car scene: floor + shadow + image.
-                   The img is a direct flex child of fw-car-scene (no wrapper),
-                   which preserves the pre-existing overflow:hidden + stacking-
-                   context clipping that prevents the will-change:transform GPU
-                   layer from escaping during the entrance animation.
-                   object-view-box (Strategy A) is applied directly to img with
-                   no conflict since it is a different CSS property from transform.
-                   For Firefox (Strategy B) the trim transform is applied via
-                   animationend so it never fights the entrance keyframes. */
+                   PNG debe subirse recortado al borde del auto (800×400px, sin
+                   relleno transparente). object-fit:contain lo escala al contenedor. */
                 '<div class="fw-car-scene' + (hasCutout ? ' fw-car-scene--cutout' : '') + '" aria-hidden="true">' +
                     '<div class="fw-car-floor"></div>' +
                     '<div class="fw-car-shadow"></div>' +
                     '<img class="' + imgClass + '"' +
-                        FW._buildTrimAttr(hasCutout ? imgSrc : '') +
                         ' src="' + imgSrc + '"' +
                         ' alt="' + title.replace(/"/g, '&quot;') + '"' +
                         ' loading="' + (i === 0 ? 'eager' : 'lazy') + '"' +
@@ -494,224 +477,6 @@
             });
         },
 
-        /* ─────────────────────────────────────────
-           CUTOUT TRIM — transparent-border detection
-           ─────────────────────────────────────────
-           Detects the actual car bounding box inside a transparent-padded PNG
-           by scanning pixels in an offscreen Canvas at reduced resolution.
-
-           CORS: Firebase Storage is a different origin, so we load a *separate*
-           temp Image with crossOrigin='anonymous' for the canvas scan. The
-           displayed <img> keeps its original load (no crossOrigin attr) so it
-           always renders — the temp request only matters for the pixel scan.
-           If the bucket is not CORS-configured the temp request fails silently
-           and trim stays unset (graceful degradation, no visible breakage).
-
-           Strategy A — object-view-box (Chrome 104+, Edge 104+, Safari 17.4+):
-             Applied directly to the <img>. Completely separate CSS property from
-             `transform`, so it never conflicts with the entrance animation.
-
-           Flash prevention: _buildTrimAttr() reads the sessionStorage / memory
-           cache synchronously and injects `style="object-view-box:…"` directly
-           into the img tag before the first paint, eliminating the intermediate
-           state where the car shows at its padded (smaller) size.
-
-           Strategy B — scale+translate on img (Firefox fallback):
-             Applied AFTER animationend so the entrance animation completes first,
-             then the trim transform takes over seamlessly.
-        ───────────────────────────────────────── */
-        _trimCache: {},
-
-        /* Returns sessionStorage + memory cache synchronously; null if unknown */
-        _getTrimFromCache: function (src) {
-            if (FW._trimCache[src] !== undefined) return FW._trimCache[src];
-            var key = 'fw-trim:' + src.split('').reduce(function (a, c) {
-                return ((a << 5) - a + c.charCodeAt(0)) | 0;
-            }, 0);
-            try {
-                var stored = sessionStorage.getItem(key);
-                if (stored !== null) {
-                    FW._trimCache[src] = JSON.parse(stored);
-                    return FW._trimCache[src];
-                }
-            } catch (e) {}
-            return null;
-        },
-
-        /* Returns an inline style attribute string for the img tag, or '' */
-        _buildTrimAttr: function (src) {
-            if (!src) return '';
-            var trim = FW._getTrimFromCache(src);
-            if (!trim) return '';
-            /* Strategy A only — object-view-box */
-            if (typeof CSS === 'undefined' || !CSS.supports ||
-                !CSS.supports('object-view-box', 'inset(0%)')) return '';
-            var t = (trim.y  * 100).toFixed(2) + '%';
-            var r = ((1 - trim.x2) * 100).toFixed(2) + '%';
-            var b = ((1 - trim.y2) * 100).toFixed(2) + '%';
-            var l = (trim.x  * 100).toFixed(2) + '%';
-            return ' style="object-view-box:inset(' + t + ' ' + r + ' ' + b + ' ' + l + ')"';
-        },
-
-        /* Detect trim using a crossOrigin temp image (CORS-safe canvas scan) */
-        _detectTrim: function (src, cb) {
-            /* Memory / sessionStorage cache */
-            var cached = FW._getTrimFromCache(src);
-            if (cached !== null) { cb(cached); return; }
-
-            var key = 'fw-trim:' + src.split('').reduce(function (a, c) {
-                return ((a << 5) - a + c.charCodeAt(0)) | 0;
-            }, 0);
-
-            /* Use a separate crossOrigin img for the canvas pixel read.
-               This does NOT affect the displayed <img> — it's a second fetch
-               that the browser may serve from cache with CORS headers. */
-            var tmp = new Image();
-            tmp.crossOrigin = 'anonymous';
-
-            tmp.onerror = function () {
-                FW._trimCache[src] = null; /* CORS not configured — mark as unavailable */
-                cb(null);
-            };
-
-            tmp.onload = function () {
-                var W = tmp.naturalWidth, H = tmp.naturalHeight;
-                if (!W || !H) { cb(null); return; }
-
-                var sc  = Math.min(1, 400 / Math.max(W, H));
-                var cW  = Math.round(W * sc);
-                var cH  = Math.round(H * sc);
-                var cvs = document.createElement('canvas');
-                cvs.width = cW; cvs.height = cH;
-                var ctx = cvs.getContext('2d');
-
-                try { ctx.drawImage(tmp, 0, 0, cW, cH); } catch (e) { cb(null); return; }
-
-                var data;
-                try { data = ctx.getImageData(0, 0, cW, cH).data; }
-                catch (e) { cb(null); return; }
-
-                var ALPHA = 12;
-                var xMin = cW, yMin = cH, xMax = 0, yMax = 0;
-                for (var y = 0; y < cH; y++) {
-                    for (var x = 0; x < cW; x++) {
-                        if (data[(y * cW + x) * 4 + 3] > ALPHA) {
-                            if (x < xMin) xMin = x;
-                            if (x > xMax) xMax = x;
-                            if (y < yMin) yMin = y;
-                            if (y > yMax) yMax = y;
-                        }
-                    }
-                }
-
-                if (xMax <= xMin || yMax <= yMin) { FW._trimCache[src] = null; cb(null); return; }
-
-                var PAD = 0.012;
-                var trim = {
-                    x:  Math.max(0, xMin / cW - PAD),
-                    y:  Math.max(0, yMin / cH - PAD),
-                    x2: Math.min(1, xMax / cW + PAD),
-                    y2: Math.min(1, yMax / cH + PAD)
-                };
-
-                FW._trimCache[src] = trim;
-                try { sessionStorage.setItem(key, JSON.stringify(trim)); } catch (e) {}
-                cb(trim);
-            };
-
-            tmp.src = src;
-        },
-
-        _applyTrim: function (imgEl, trim) {
-            var wasPending = imgEl.classList.contains('fw-car-img--trim-pending');
-
-            /* ── Step 1: apply trim BEFORE the image becomes visible ── */
-            if (trim) {
-                var carW = trim.x2 - trim.x;
-                var carH = trim.y2 - trim.y;
-
-                if (typeof CSS !== 'undefined' && CSS.supports &&
-                    CSS.supports('object-view-box', 'inset(0%)')) {
-                    /* Strategy A: object-view-box (Chrome 104+, Safari 17.4+, Edge 104+).
-                       Applied before reveal so the image is never visible untrimmed. */
-                    imgEl.style.objectViewBox =
-                        'inset(' +
-                        (trim.y        * 100).toFixed(2) + '% ' +
-                        ((1 - trim.x2) * 100).toFixed(2) + '% ' +
-                        ((1 - trim.y2) * 100).toFixed(2) + '% ' +
-                        (trim.x        * 100).toFixed(2) + '%)';
-                } else {
-                    /* Strategy B: scale+translate (Firefox fallback).
-                       For the pending case the animation hasn't started yet
-                       (blocked by animation:none on the pending class) so we
-                       can set the transform directly without a conflict. */
-                    var scale = Math.min(1 / carW, 1 / carH) * 0.96;
-                    var tx    = ((0.5 - (trim.x + carW / 2)) * 100).toFixed(2);
-                    var ty    = ((0.5 - (trim.y + carH / 2)) * 100).toFixed(2);
-                    imgEl._fwTrimTransform =
-                        'scale(' + scale.toFixed(4) + ') translate(' + tx + '%, ' + ty + '%)';
-
-                    if (!wasPending) {
-                        /* Image already visible — wait for the running entrance
-                           animation to finish before applying the transform. */
-                        var anim = getComputedStyle(imgEl).animationName;
-                        if (!anim || anim === 'none') {
-                            imgEl.style.transform = imgEl._fwTrimTransform;
-                        } else {
-                            imgEl.addEventListener('animationend', function h() {
-                                imgEl.style.transform = imgEl._fwTrimTransform;
-                                imgEl.removeEventListener('animationend', h);
-                            }, { once: true });
-                        }
-                    }
-                    /* For the pending case the transform is stored; the
-                       _fwTrimBound listener below applies it at animationend
-                       (after the entrance animation completes). */
-                }
-            }
-
-            if (!wasPending) return;  /* Nothing more to do for non-pending images */
-
-            /* ── Step 2: reveal (pending path only) ──
-               visibility:hidden on the pending class is immune to animation
-               overrides — there is no 1-frame gap when it is removed.
-               After removing the class:
-                 • Desktop: entrance animation starts fresh from its from-frame
-                   (opacity:0).  We set inline opacity:0 first and remove it
-                   after a forced reflow; the browser then sees the animation's
-                   from-frame atomically.  No flash possible.
-                 • Mobile (animation:none): the opacity:0 → '' change triggers
-                   the 'transition: opacity .3s ease' on .fw-car-img → smooth
-                   fade-in with no animation timing to worry about. */
-            imgEl.style.opacity = '0';
-            imgEl.classList.remove('fw-car-img--trim-pending');
-            imgEl.getBoundingClientRect(); /* force reflow — commits opacity:0 + initialises animation */
-            imgEl.style.opacity = '';      /* triggers animation (desktop) or transition (mobile) */
-
-            /* Strategy B: re-apply trim after every future slide activation */
-            if (imgEl._fwTrimTransform && !imgEl._fwTrimBound) {
-                imgEl._fwTrimBound = true;
-                imgEl.addEventListener('animationend', function () {
-                    if (imgEl._fwTrimTransform) imgEl.style.transform = imgEl._fwTrimTransform;
-                });
-            }
-        },
-
-        _processCutoutImages: function () {
-            var imgs = document.querySelectorAll('.fw-car-img:not(.fw-car-img--rect)');
-            imgs.forEach(function (img) {
-                var src = img.src;
-                if (!src) return;
-                function run() {
-                    FW._detectTrim(src, function (trim) { FW._applyTrim(img, trim); });
-                }
-                /* Cutout images that already have object-view-box from _buildTrimAttr
-                   (cache hit on page load) don't need the canvas scan */
-                if (img.style.objectViewBox) return;
-                if (img.complete && img.naturalWidth > 0) { run(); }
-                else { img.addEventListener('load', run, { once: true }); }
-            });
-        },
 
         /* ─────────────────────────────────────────
            AUTO-ROTATION

@@ -624,13 +624,23 @@
 .fw-car-scene--cutout .fw-car-shadow { display: block; }
 
 /* ── Car image ── */
+/*
+   Bounding-box sizing strategy:
+   Setting BOTH width and height (instead of just width) forces every image
+   into the same fixed rectangle. object-fit:contain then scales each car
+   proportionally inside that box — so a wide sedan and a tall SUV occupy
+   the exact same visual footprint. Without an explicit height, images with
+   different natural aspect ratios render at different perceived sizes.
+   object-position:center bottom anchors the car to the ground plane so the
+   shadow contact point is consistent across slides.
+*/
 .fw-car-img {
     position: relative;
     z-index: 1;
-    width: 90%;
-    max-height: 76%; /* leave room for data rail at bottom */
+    width: 88%;
+    height: 74%;
     object-fit: contain;
-    object-position: center center;
+    object-position: center bottom;
     filter:
         drop-shadow(0 24px 48px rgba(0,0,0,.92))
         drop-shadow(0 0 22px rgba(212,175,55,.09));
@@ -640,7 +650,7 @@
 }
 
 .fw-car-scene--cutout .fw-car-img {
-    object-position: center center;
+    object-position: center bottom;
 }
 
 /* Non-cutout: fade rectangular edges so it blends with background */
@@ -1067,7 +1077,7 @@
         display: flex;
         flex-direction: column;
         height: auto;
-        min-height: 540px;
+        min-height: 600px;
         border-radius: 14px;
         overflow: visible;
     }
@@ -1078,7 +1088,7 @@
         grid-column: auto;
         grid-row: auto;
         flex: 1;
-        min-height: 490px;
+        min-height: 550px;
         z-index: 1;
     }
 
@@ -1092,8 +1102,15 @@
 
     .fw-visual {
         order: 1;
-        height: 245px;
+        height: 300px;
         flex-shrink: 0;
+    }
+
+    /* Mobile: fill the larger visual zone — explicit height ensures
+       all car images render at the same bounding box on small screens */
+    .fw-car-img {
+        width: 92%;
+        height: 78%;
     }
 
     /* Left vignette not needed when stacked */
@@ -1150,10 +1167,10 @@
     .fw-data-value { font-size: .72rem; }
     .fw-data-item  { padding: 0 8px; gap: 6px; }
 
-    /* Arrows: position over the visual area */
+    /* Arrows: centered on the visual area (300px / 2 = 150px) */
     .fw-nav {
         position: absolute;
-        top: 122px;
+        top: 150px;
         transform: translateY(-50%);
         width: 42px; height: 42px;
         grid-column: auto;
@@ -1187,8 +1204,8 @@
     .fw-nav         { width: 38px; height: 38px; }
     .fw-nav--prev   { left: 5px; }
     .fw-nav--next   { right: 5px; }
-    .fw-visual      { height: 215px; }
-    .fw-nav         { top: 107px; }
+    .fw-visual      { height: 265px; }
+    .fw-nav         { top: 132px; } /* 265px / 2 */
 
     /* Very small screens: 2 items only (Año + Km) */
     .fw-data-item:nth-child(3),

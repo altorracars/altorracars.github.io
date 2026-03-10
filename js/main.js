@@ -252,14 +252,22 @@ function scrollCarouselById(containerId, direction) {
         return;
     }
 
-    // Calculate scroll amount based on visible cards
-    const cardWidth = 350; // Approx card width + gap
-    const scrollAmount = cardWidth * 3; // Scroll 3 cards at a time
+    const cardWidth = 350;
+    const scrollAmount = cardWidth * 3;
+    const maxScroll = grid.scrollWidth - grid.clientWidth;
+    const tolerance = 10;
 
-    grid.scrollBy({
-        left: direction * scrollAmount,
-        behavior: 'smooth'
-    });
+    if (direction === 1 && grid.scrollLeft >= maxScroll - tolerance) {
+        // Al llegar al final, volver al inicio sin animación y luego scroll suave
+        grid.scrollLeft = 0;
+        grid.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    } else if (direction === -1 && grid.scrollLeft <= tolerance) {
+        // Al llegar al inicio, ir al final sin animación y luego scroll suave
+        grid.scrollLeft = maxScroll;
+        grid.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    } else {
+        grid.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+    }
 }
 
 /**

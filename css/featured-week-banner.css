@@ -642,7 +642,10 @@
         drop-shadow(0 0 22px rgba(212,175,55,.09));
     transition: filter .6s ease;
     pointer-events: none;
-    will-change: transform, opacity; /* GPU layer for entrance animation */
+    /* will-change eliminado de la regla base — se añade solo cuando la
+       animación está activa (.fw-slide--active) para evitar que el browser
+       cree una capa GPU con las dimensiones intrínsecas del PNG antes de
+       que object-fit:contain aplique las restricciones CSS. */
 }
 
 .fw-car-scene--cutout .fw-car-img {
@@ -655,9 +658,12 @@
     mask-image:         radial-gradient(ellipse 82% 72% at 50% 48%, black 45%, transparent 100%);
 }
 
-/* Car entrance animation */
+/* Car entrance animation — will-change solo aquí, cuando la animación
+   realmente corre. El browser crea la capa GPU DESPUÉS de que el layout
+   ya calculó el bounding box de object-fit:contain. */
 .fw-slide--active .fw-car-img {
     animation: fw-car-enter .7s cubic-bezier(.25,.1,.25,1) both;
+    will-change: transform, opacity;
 }
 
 
@@ -1193,12 +1199,11 @@
         padding: 8px 0 10px;
     }
 
-    /* Mobile: no entrance animation. The opacity bridge in _applyTrim sets
-       style.opacity='0' → getBoundingClientRect() → style.opacity='' which
-       triggers this transition (0→1) for a smooth reveal. */
-    .fw-car-img { transition: opacity .3s ease; }
-
-    .fw-slide--active .fw-car-img,
+    /* Mobile: sin animación de entrada — el reveal se hace vía la
+       transición de opacidad del slide padre (.fw-slide opacity 0→1).
+       will-change:auto anula el valor heredado para no crear capas GPU
+       innecesarias en móvil donde no hay transformación animada. */
+    .fw-slide--active .fw-car-img { animation: none; will-change: auto; }
     .fw-slide--active .fw-info > * { animation: none; }
 }
 

@@ -164,7 +164,10 @@
             var sectionTitle = 'Destacados de la <span>Semana</span>';
 
             var isActive = (i === 0);
-            var imgClass = 'fw-car-img' + (hasCutout ? '' : ' fw-car-img--rect');
+            var trimPending = hasCutout && !FW._getTrimFromCache(imgSrc);
+            var imgClass = 'fw-car-img' +
+                (hasCutout ? '' : ' fw-car-img--rect') +
+                (trimPending ? ' fw-car-img--trim-pending' : '');
 
             /* ── Blueprint panel: static tech decoration ── */
             var blueprintTicks = '';
@@ -614,6 +617,8 @@
         },
 
         _applyTrim: function (imgEl, trim) {
+            /* Always release the animation pause, even when trim is unavailable */
+            imgEl.classList.remove('fw-car-img--trim-pending');
             if (!trim) return;
             var carW = trim.x2 - trim.x;
             var carH = trim.y2 - trim.y;

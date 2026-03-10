@@ -669,6 +669,13 @@
     animation: fw-car-enter .7s cubic-bezier(.25,.1,.25,1) both;
 }
 
+/* Hold the entrance animation in its initial (invisible) state until JS has
+   detected the transparent-border bounds and applied the trim.  Once trim is
+   applied, _applyTrim() removes this class and the animation plays normally. */
+.fw-car-img--trim-pending {
+    animation-play-state: paused !important;
+}
+
 @keyframes fw-car-enter {
     from { opacity: 0; transform: translateX(28px) scale(.97); }
     to   { opacity: 1; transform: translateX(0)   scale(1);   }

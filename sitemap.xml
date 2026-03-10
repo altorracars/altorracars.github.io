@@ -403,6 +403,16 @@
     </image:image>
   </url>
   <url>
+    <loc>https://altorracars.github.io/vehiculos/mazda-3-touring-2017-30.html</loc>
+    <lastmod>2026-03-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773110047342_1_compressed.webp?alt=media&amp;token=54e783e9-e652-4059-a3df-c4ff31c41457</image:loc>
+      <image:title>Mazda 3 TOURING 2017</image:title>
+    </image:image>
+  </url>
+  <url>
     <loc>https://altorracars.github.io/vehiculos/renault-duster-intens-2023-4.html</loc>
     <lastmod>2026-02-21</lastmod>
     <changefreq>weekly</changefreq>

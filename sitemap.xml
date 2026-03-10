@@ -244,7 +244,7 @@
   </url>
   <url>
     <loc>https://altorracars.github.io/vehiculos/suzuki-baleno-2022-10.html</loc>
-    <lastmod>2026-02-21</lastmod>
+    <lastmod>2026-03-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -260,16 +260,6 @@
     <image:image>
       <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771106572875_Dise_o_sin_t_tulo__1__compressed.webp?alt=media&amp;token=eb75cb23-0211-462a-aa88-bf673277fe16</image:loc>
       <image:title>Volkswagen T-CROSS 2021</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/jeep-renegade-2019-12.html</loc>
-    <lastmod>2026-03-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771107503689_Dise_o_sin_t_tulo__2__compressed.webp?alt=media&amp;token=29fedf4a-07ed-44f3-817d-d82d5d23d07b</image:loc>
-      <image:title>Jeep RENEGADE 2019</image:title>
     </image:image>
   </url>
   <url>
@@ -324,7 +314,7 @@
   </url>
   <url>
     <loc>https://altorracars.github.io/vehiculos/ford-f150-raptor-2023-18.html</loc>
-    <lastmod>2026-03-09</lastmod>
+    <lastmod>2026-03-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -364,7 +354,7 @@
   </url>
   <url>
     <loc>https://altorracars.github.io/vehiculos/hyundai-tucson-advance-2022-22.html</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -414,7 +404,7 @@
   </url>
   <url>
     <loc>https://altorracars.github.io/vehiculos/kia-cerato-pro-2015-27.html</loc>
-    <lastmod>2026-03-09</lastmod>
+    <lastmod>2026-03-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -430,6 +420,16 @@
     <image:image>
       <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772717968285_VOLKSWAGUEN_GOL_AUT_2020_-1_compressed.webp?alt=media&amp;token=9ae49171-4850-4d6f-a464-806a65192530</image:loc>
       <image:title>Volkswagen VOLKSWAGUEN GOL TRENDLINE 2020</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/chevrolet-beat-ls-2020-29.html</loc>
+    <lastmod>2026-03-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773106320942_CHEVROLET_BEAT_2020-1_compressed.webp?alt=media&amp;token=609d655b-36a8-4074-ae07-1c591a989db3</image:loc>
+      <image:title>Chevrolet BEAT LS 2020</image:title>
     </image:image>
   </url>
   <url>

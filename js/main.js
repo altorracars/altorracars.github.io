@@ -257,14 +257,25 @@ function scrollCarouselById(containerId, direction) {
     const maxScroll = grid.scrollWidth - grid.clientWidth;
     const tolerance = 10;
 
-    if (direction === 1 && grid.scrollLeft >= maxScroll - tolerance) {
-        // Al llegar al final, volver al inicio sin animación y luego scroll suave
-        grid.scrollLeft = 0;
-        grid.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    } else if (direction === -1 && grid.scrollLeft <= tolerance) {
-        // Al llegar al inicio, ir al final sin animación y luego scroll suave
-        grid.scrollLeft = maxScroll;
-        grid.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    const atEnd   = direction ===  1 && grid.scrollLeft >= maxScroll - tolerance;
+    const atStart = direction === -1 && grid.scrollLeft <= tolerance;
+
+    if (atEnd || atStart) {
+        // Desactivar scroll-behavior y scroll-snap para que el salto sea instantáneo
+        grid.style.scrollBehavior = 'auto';
+        grid.style.scrollSnapType = 'none';
+
+        // Saltar al extremo opuesto
+        grid.scrollLeft = atEnd ? 0 : maxScroll;
+
+        // Esperar dos frames para que el navegador aplique el salto antes de animar
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                grid.style.scrollBehavior = '';
+                grid.style.scrollSnapType = '';
+                grid.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+            });
+        });
     } else {
         grid.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
     }

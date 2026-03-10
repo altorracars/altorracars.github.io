@@ -625,19 +625,10 @@
 
 /* ── Car image ──
    width + height set a fixed bounding box so every car (wide sedan, tall SUV)
-   occupies the same display footprint.  object-fit:contain then scales each
-   car proportionally inside that box.
-   object-position:center bottom anchors the car to the ground plane so the
-   contact shadow is consistent across slides.
-
-   Trim (JS): object-view-box (Strategy A) or scale+translate (Strategy B)
-   are applied directly to this element after transparent-border detection.
-   Strategy A is a separate CSS property — no conflict with the transform
-   keyframes of fw-car-enter.  Strategy B is applied via animationend to
-   avoid overwriting the animation's final transform state.
-   The img is a direct flex child of fw-car-scene (no intermediate wrapper),
-   so fw-car-scene's overflow:hidden and stacking context correctly clip the
-   will-change:transform compositing layer during the entrance animation.
+   occupies the same display footprint.  object-fit:contain scales each car
+   proportionally inside that box.  object-position:center bottom anchors the
+   car to the ground plane.
+   PNG óptimo: 800×400px recortado al borde del auto, sin relleno transparente.
 */
 .fw-car-img {
     position: relative;
@@ -669,18 +660,6 @@
     animation: fw-car-enter .7s cubic-bezier(.25,.1,.25,1) both;
 }
 
-/* Hold car image invisible until JS detects transparent-border bounds and
-   applies trim.  visibility:hidden is used intentionally (not opacity:0)
-   because CSS animation keyframes cannot override it — there is no 1-frame
-   gap between class removal and the animation's backwards-fill opacity:0
-   taking over.  animation:none prevents the entrance animation from running
-   before trim is known; _applyTrim() removes this class then uses a
-   getBoundingClientRect()-forced-reflow to guarantee the animation starts
-   from its from-frame atomically. */
-.fw-car-img--trim-pending {
-    visibility: hidden !important;
-    animation: none !important;
-}
 
 @keyframes fw-car-enter {
     from { opacity: 0; transform: translateX(28px) scale(.97); }

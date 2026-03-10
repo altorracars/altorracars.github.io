@@ -1041,7 +1041,10 @@
                             </div>
                             <div>
                                 <label class="form-label" style="font-size:0.75rem;">Imagen recortada — PNG sin fondo (opcional)</label>
-                                <small style="display:block;color:var(--admin-text-muted,#8b949e);font-size:0.72rem;margin-bottom:0.6rem;">PNG transparente. Activa modo composicion premium.</small>
+                                <div style="display:block;background:rgba(212,175,55,0.07);border:1px solid rgba(212,175,55,0.28);border-radius:5px;padding:0.5rem 0.7rem;margin-bottom:0.6rem;">
+                                    <span style="font-size:0.78rem;color:#d4af37;font-weight:600;">&#9650; Tamaño recomendado: 800 × 400 px</span><br>
+                                    <span style="font-size:0.72rem;color:var(--admin-text-muted,#8b949e);">Recorta el PNG al borde del vehiculo — <strong style="color:#e8c84a;">sin relleno transparente</strong>. La imagen se carga directa al banner sin procesamiento adicional, garantizando maxima velocidad de carga.</span>
+                                </div>
                                 <div id="cutoutPreviewArea" style="display:none;margin-bottom:0.6rem;position:relative;width:100%;max-width:260px;background-image:repeating-conic-gradient(#2a2d35 0% 25%,#1c1f27 0% 50%);background-size:16px 16px;border-radius:6px;border:1px solid rgba(212,175,55,0.25);overflow:hidden;min-height:90px;align-items:center;justify-content:center;">
                                     <img id="cutoutPreviewImg" src="" alt="Cutout preview" style="max-width:100%;max-height:120px;object-fit:contain;display:block;">
                                     <button type="button" id="btnCutoutClear" onclick="adminPanel.clearCutoutPng()" title="Quitar imagen recortada" style="position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(248,81,73,0.85);border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>

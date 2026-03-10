@@ -669,10 +669,13 @@
     animation: fw-car-enter .7s cubic-bezier(.25,.1,.25,1) both;
 }
 
-/* Hold the entrance animation in its initial (invisible) state until JS has
-   detected the transparent-border bounds and applied the trim.  Once trim is
-   applied, _applyTrim() removes this class and the animation plays normally. */
+/* Hold the car image invisible until JS has detected the transparent-border
+   bounds and applied the trim.  On desktop the entrance animation is also
+   paused so it starts from its from-frame (opacity:0) once trim is ready.
+   On mobile (animation:none) the opacity:0 + CSS transition below handles
+   the fade-in.  _applyTrim() removes this class when trim is applied. */
 .fw-car-img--trim-pending {
+    opacity: 0;
     animation-play-state: paused !important;
 }
 
@@ -1008,9 +1011,6 @@
     transform: scale(1.06);
 }
 
-/* Pressed/active state: no transform — prevents visual jump on mobile touch */
-.fw-nav--pressed,
-.fw-nav:active { transform: none !important; }
 
 .fw-nav:focus-visible {
     outline: 2px solid rgba(212,175,55,.55);
@@ -1202,6 +1202,10 @@
         justify-content: center;
         padding: 8px 0 10px;
     }
+
+    /* Mobile fade-in after trim: no entrance animation on mobile, so use a
+       simple opacity transition when fw-car-img--trim-pending is removed. */
+    .fw-car-img { transition: opacity .25s ease; }
 
     .fw-slide--active .fw-car-img,
     .fw-slide--active .fw-info > * { animation: none; }

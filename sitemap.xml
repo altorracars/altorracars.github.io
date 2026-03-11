@@ -128,6 +128,7 @@
     <priority>0.3</priority>
   </url>
 
+
   <!-- Brand pages (pre-rendered static URLs) -->
   <url>
     <loc>https://altorracars.github.io/marcas/audi.html</loc>
@@ -135,102 +136,119 @@
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/bmw.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/chevrolet.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/citroen.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/fiat.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/ford.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/honda.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/hyundai.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/jeep.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/kia.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/mazda.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/mitsubishi.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/nissan.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/peugeot.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/renault.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/suzuki.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/toyota.html</loc>
     <lastmod>2026-03-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/marcas/volkswagen.html</loc>
     <lastmod>2026-03-11</lastmod>
@@ -238,7 +256,6 @@
     <priority>0.7</priority>
   </url>
 
-  <!-- Vehicle detail pages (pre-rendered, SEO-friendly URLs) -->
   <url>
     <loc>https://altorracars.github.io/vehiculos/chevrolet-equinox-ls-2018-1.html</loc>
     <lastmod>2026-02-26</lastmod>
@@ -249,186 +266,7 @@
       <image:title>Chevrolet EQUINOX LS 2018</image:title>
     </image:image>
   </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/suzuki-baleno-2022-10.html</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771106368068_1_compressed.webp?alt=media&amp;token=7ecc3212-a961-47b0-91f0-5415e7469994</image:loc>
-      <image:title>Suzuki BALENO 2022</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/volkswagen-t-cross-2021-11.html</loc>
-    <lastmod>2026-03-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771106572875_Dise_o_sin_t_tulo__1__compressed.webp?alt=media&amp;token=eb75cb23-0211-462a-aa88-bf673277fe16</image:loc>
-      <image:title>Volkswagen T-CROSS 2021</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/chevrolet-tracker-ls-2017-13.html</loc>
-    <lastmod>2026-02-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771108172890_Dise_o_sin_t_tulo__3__compressed.webp?alt=media&amp;token=fe5b13c6-ca53-4055-bb84-3d1e205deb97</image:loc>
-      <image:title>Chevrolet TRACKER LS 2017</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/kia-picanto-vibrant-2020-14.html</loc>
-    <lastmod>2026-02-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771108588022_1_compressed.webp?alt=media&amp;token=cfb53739-736b-4b97-bfbc-c0f3144b2036</image:loc>
-      <image:title>Kia PICANTO VIBRANT 2020</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/chevrolet-onix-lt-2023-15.html</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771108747221_1_compressed.webp?alt=media&amp;token=1219c967-e2dc-49e8-b3bb-82ac4672cfc5</image:loc>
-      <image:title>Chevrolet ONIX LT 2023</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/volkswagen-jetta-gli-turbo-2010-16.html</loc>
-    <lastmod>2026-02-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771109570473_1_compressed.webp?alt=media&amp;token=311ab281-c6a3-4727-b8ed-b5c3e3b37ccf</image:loc>
-      <image:title>Volkswagen JETTA GLI TURBO 2010</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/mazda-3-grand-touring-hibrido-2023-17.html</loc>
-    <lastmod>2026-03-02</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771467759363_1_compressed.webp?alt=media&amp;token=bce20150-ba81-42b3-8238-4a54531453fc</image:loc>
-      <image:title>Mazda 3 GRAND TOURING HIBRIDO 2023</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/ford-f150-raptor-2023-18.html</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771468950363_FORD_F150_-1_compressed.webp?alt=media&amp;token=963d7611-4ff2-42ca-b736-8840bfe69445</image:loc>
-      <image:title>Ford F150 RAPTOR 2023</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/renault-logan-polar-2020-21.html</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773043992115_WhatsApp_Image_2026-02-19_at_6.08.27_PM_compressed.webp?alt=media&amp;token=35f09779-c5d9-4414-9ed0-dcbb240d3f45</image:loc>
-      <image:title>Renault LOGAN POLAR 2020</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/honda-hrv-lx-2019-23.html</loc>
-    <lastmod>2026-02-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772197590982_HONDA_HRV-LX_2019_-1_compressed.webp?alt=media&amp;token=2b910019-a0fc-488f-a2fa-a654f031a33c</image:loc>
-      <image:title>Honda HRV-LX 2019</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/renault-captur-zen-2019-24.html</loc>
-    <lastmod>2026-02-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772198608654_RENAULT_CAPTUR_2019_-1_compressed.webp?alt=media&amp;token=9b227c87-17c6-4eeb-926a-d3e1ade22eab</image:loc>
-      <image:title>Renault CAPTUR ZEN 2019</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/chevrolet-blazer-rs-2022-25.html</loc>
-    <lastmod>2026-03-02</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772200490329_CHEVROLET_BLAZER_2022-1_compressed.webp?alt=media&amp;token=be34b190-7aad-4543-a987-6c5c7f559739</image:loc>
-      <image:title>Chevrolet BLAZER RS 2022</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/kia-sportage-dizire-2020-26.html</loc>
-    <lastmod>2026-02-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772201596154_KIA_SPORTAGE_DZIRE_2020-1_compressed.webp?alt=media&amp;token=617f8d96-bf22-4996-aab1-69702b2187e0</image:loc>
-      <image:title>Kia SPORTAGE DIZIRE 2020</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/kia-cerato-pro-2015-27.html</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772724259403_WhatsApp_Image_2026-03-04_at_4.38.44_PM_compressed.webp?alt=media&amp;token=ce39610e-568b-4f8c-aadb-1d9ac3d77b76</image:loc>
-      <image:title>Kia CERATO PRO 2015</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/volkswagen-gol-trendline-2020-28.html</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772717968285_VOLKSWAGUEN_GOL_AUT_2020_-1_compressed.webp?alt=media&amp;token=9ae49171-4850-4d6f-a464-806a65192530</image:loc>
-      <image:title>Volkswagen GOL TRENDLINE 2020</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/chevrolet-beat-ls-2020-29.html</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773106320942_CHEVROLET_BEAT_2020-1_compressed.webp?alt=media&amp;token=609d655b-36a8-4074-ae07-1c591a989db3</image:loc>
-      <image:title>Chevrolet BEAT LS 2020</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/mazda-3-touring-2017-30.html</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773110047342_1_compressed.webp?alt=media&amp;token=54e783e9-e652-4059-a3df-c4ff31c41457</image:loc>
-      <image:title>Mazda 3 TOURING 2017</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://altorracars.github.io/vehiculos/volkswagen-voyage-2022-31.html</loc>
-    <lastmod>2026-03-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773193248526_1_compressed.webp?alt=media&amp;token=28723e9c-8f7d-48f0-8bb7-2d638f14cb2f</image:loc>
-      <image:title>Volkswagen VOYAGE 2022</image:title>
-    </image:image>
-  </url>
+
   <url>
     <loc>https://altorracars.github.io/vehiculos/renault-duster-intens-2023-4.html</loc>
     <lastmod>2026-02-21</lastmod>
@@ -439,6 +277,7 @@
       <image:title>Renault DUSTER INTENS 2023</image:title>
     </image:image>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/vehiculos/mazda-3-grand-touring-lx-carbon-2026-6.html</loc>
     <lastmod>2026-03-10</lastmod>
@@ -449,6 +288,7 @@
       <image:title>Mazda 3 GRAND TOURING LX CARBON 2026</image:title>
     </image:image>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/vehiculos/renault-kwid-zen-2024-7.html</loc>
     <lastmod>2026-02-21</lastmod>
@@ -459,6 +299,7 @@
       <image:title>Renault KWID ZEN 2024</image:title>
     </image:image>
   </url>
+
   <url>
     <loc>https://altorracars.github.io/vehiculos/fiat-pulse-2023-9.html</loc>
     <lastmod>2026-02-21</lastmod>
@@ -469,4 +310,203 @@
       <image:title>Fiat PULSE 2023</image:title>
     </image:image>
   </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/suzuki-baleno-2022-10.html</loc>
+    <lastmod>2026-03-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771106368068_1_compressed.webp?alt=media&amp;token=7ecc3212-a961-47b0-91f0-5415e7469994</image:loc>
+      <image:title>Suzuki BALENO 2022</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/volkswagen-t-cross-2021-11.html</loc>
+    <lastmod>2026-03-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771106572875_Dise_o_sin_t_tulo__1__compressed.webp?alt=media&amp;token=eb75cb23-0211-462a-aa88-bf673277fe16</image:loc>
+      <image:title>Volkswagen T-CROSS 2021</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/chevrolet-tracker-ls-2017-13.html</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771108172890_Dise_o_sin_t_tulo__3__compressed.webp?alt=media&amp;token=fe5b13c6-ca53-4055-bb84-3d1e205deb97</image:loc>
+      <image:title>Chevrolet TRACKER LS 2017</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/kia-picanto-vibrant-2020-14.html</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771108588022_1_compressed.webp?alt=media&amp;token=cfb53739-736b-4b97-bfbc-c0f3144b2036</image:loc>
+      <image:title>Kia PICANTO VIBRANT 2020</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/chevrolet-onix-lt-2023-15.html</loc>
+    <lastmod>2026-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771108747221_1_compressed.webp?alt=media&amp;token=1219c967-e2dc-49e8-b3bb-82ac4672cfc5</image:loc>
+      <image:title>Chevrolet ONIX LT 2023</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/volkswagen-jetta-gli-turbo-2010-16.html</loc>
+    <lastmod>2026-02-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771109570473_1_compressed.webp?alt=media&amp;token=311ab281-c6a3-4727-b8ed-b5c3e3b37ccf</image:loc>
+      <image:title>Volkswagen JETTA GLI TURBO 2010</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/mazda-3-grand-touring-hibrido-2023-17.html</loc>
+    <lastmod>2026-03-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771467759363_1_compressed.webp?alt=media&amp;token=bce20150-ba81-42b3-8238-4a54531453fc</image:loc>
+      <image:title>Mazda 3 GRAND TOURING HIBRIDO 2023</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/ford-f150-raptor-2023-18.html</loc>
+    <lastmod>2026-03-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1771468950363_FORD_F150_-1_compressed.webp?alt=media&amp;token=963d7611-4ff2-42ca-b736-8840bfe69445</image:loc>
+      <image:title>Ford F150 RAPTOR 2023</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/renault-logan-polar-2020-21.html</loc>
+    <lastmod>2026-03-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773043992115_WhatsApp_Image_2026-02-19_at_6.08.27_PM_compressed.webp?alt=media&amp;token=35f09779-c5d9-4414-9ed0-dcbb240d3f45</image:loc>
+      <image:title>Renault LOGAN POLAR 2020</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/honda-hrv-lx-2019-23.html</loc>
+    <lastmod>2026-02-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772197590982_HONDA_HRV-LX_2019_-1_compressed.webp?alt=media&amp;token=2b910019-a0fc-488f-a2fa-a654f031a33c</image:loc>
+      <image:title>Honda HRV-LX 2019</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/renault-captur-zen-2019-24.html</loc>
+    <lastmod>2026-02-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772198608654_RENAULT_CAPTUR_2019_-1_compressed.webp?alt=media&amp;token=9b227c87-17c6-4eeb-926a-d3e1ade22eab</image:loc>
+      <image:title>Renault CAPTUR ZEN 2019</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/chevrolet-blazer-rs-2022-25.html</loc>
+    <lastmod>2026-03-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772200490329_CHEVROLET_BLAZER_2022-1_compressed.webp?alt=media&amp;token=be34b190-7aad-4543-a987-6c5c7f559739</image:loc>
+      <image:title>Chevrolet BLAZER RS 2022</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/kia-sportage-dizire-2020-26.html</loc>
+    <lastmod>2026-02-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772201596154_KIA_SPORTAGE_DZIRE_2020-1_compressed.webp?alt=media&amp;token=617f8d96-bf22-4996-aab1-69702b2187e0</image:loc>
+      <image:title>Kia SPORTAGE DIZIRE 2020</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/kia-cerato-pro-2015-27.html</loc>
+    <lastmod>2026-03-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772724259403_WhatsApp_Image_2026-03-04_at_4.38.44_PM_compressed.webp?alt=media&amp;token=ce39610e-568b-4f8c-aadb-1d9ac3d77b76</image:loc>
+      <image:title>Kia CERATO PRO 2015</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/volkswagen-gol-trendline-2020-28.html</loc>
+    <lastmod>2026-03-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1772717968285_VOLKSWAGUEN_GOL_AUT_2020_-1_compressed.webp?alt=media&amp;token=9ae49171-4850-4d6f-a464-806a65192530</image:loc>
+      <image:title>Volkswagen GOL TRENDLINE 2020</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/chevrolet-beat-ls-2020-29.html</loc>
+    <lastmod>2026-03-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773106320942_CHEVROLET_BEAT_2020-1_compressed.webp?alt=media&amp;token=609d655b-36a8-4074-ae07-1c591a989db3</image:loc>
+      <image:title>Chevrolet BEAT LS 2020</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/mazda-3-touring-2017-30.html</loc>
+    <lastmod>2026-03-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773110047342_1_compressed.webp?alt=media&amp;token=54e783e9-e652-4059-a3df-c4ff31c41457</image:loc>
+      <image:title>Mazda 3 TOURING 2017</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/volkswagen-voyage-2022-31.html</loc>
+    <lastmod>2026-03-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://firebasestorage.googleapis.com/v0/b/altorra-cars.firebasestorage.app/o/cars%2F1773193248526_1_compressed.webp?alt=media&amp;token=28723e9c-8f7d-48f0-8bb7-2d638f14cb2f</image:loc>
+      <image:title>Volkswagen VOYAGE 2022</image:title>
+    </image:image>
+  </url>
+
 </urlset>

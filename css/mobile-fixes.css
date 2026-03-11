@@ -61,16 +61,19 @@ body {
     /* ===== BOTÓN FAVORITOS OPTIMIZADO ===== */
     /* nav-actions y nav-item-mobile-only se controlan desde max-width: 968px */
     
-    /* ===== HAMBURGER MEJORADO ===== */
+    /* ===== HAMBURGER — centrado vertical con el logo ===== */
     .hamburger {
-        width: 28px;
-        height: 28px;
-        padding: 4px;
-        gap: 4px;
-        margin-right: 0.25rem;
+        width: 36px;
+        height: 36px;
+        padding: 6px;
+        gap: 5px;
+        margin-right: 0;
         flex-shrink: 0;
+        align-self: center;
+        justify-content: center;
+        align-items: center;
     }
-    
+
     .hamburger span {
         width: 100%;
         height: 2.5px;
@@ -524,12 +527,12 @@ body {
         left: 0;
     }
     
-    /* Lista de navegación */
+    /* Lista de navegación — pequeño respiro al abrir */
     .nav-list {
         flex-direction: column;
         width: 100%;
         gap: 0;
-        padding: 0;
+        padding: 10px 0 0;
         margin: 0;
     }
     

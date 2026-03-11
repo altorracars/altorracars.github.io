@@ -46,8 +46,8 @@
     <meta name="apple-mobile-web-app-title" content="ALTORRA CARS">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/webp" href="/multimedia/logo-altorra-cars.webp">
-    <link rel="apple-touch-icon" href="/multimedia/logo-altorra-cars.webp">
+    <link rel="icon" type="image/png" href="/multimedia/logo-placeholder.png">
+    <link rel="apple-touch-icon" href="/multimedia/logo-placeholder.png">
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
@@ -59,7 +59,7 @@
     <link rel="preload" href="js/components.js" as="script">
     <link rel="preload" href="js/database.js" as="script">
     <link rel="preload" href="multimedia/heroindex.webp" as="image" fetchpriority="high">
-    <link rel="preload" href="/multimedia/logo-altorra-cars.webp" as="image">
+    <link rel="preload" href="/multimedia/logo-placeholder.png" as="image">
 
 
     <!-- Preconnect for External Resources (faster than dns-prefetch) -->
@@ -315,10 +315,7 @@
 <body>
     <!-- Page Loader -->
     <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
-        <picture>
-            <source srcset="/multimedia/logo-altorra-cars.webp" type="image/webp">
-            <img src="/multimedia/logo-placeholder.png" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
-        </picture>
+        <img src="/multimedia/logo-placeholder.png" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
         <div class="pl-ring" aria-hidden="true"></div>
     </div>
 

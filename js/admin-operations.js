@@ -344,8 +344,7 @@
         var today = new Date().toISOString().split('T')[0];
         var base  = 'https://altorracars.github.io';
         var xml   = '<?xml version="1.0" encoding="UTF-8"?>\n' +
-                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n' +
-                    '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n\n';
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n\n';
 
         var staticPages = [
             { loc: '/',                           priority: '1.0', freq: 'daily'   },
@@ -395,13 +394,7 @@
                     if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) lastmod = iso;
                 } catch (_) { /* keep today */ }
             }
-            xml += '  <url>\n    <loc>' + base + '/vehiculos/' + _slugifyVehicle(v) + '.html</loc>\n    <lastmod>' + lastmod + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n';
-            if (v.imagen) {
-                var imgUrl = v.imagen.startsWith('http') ? v.imagen : base + '/' + v.imagen;
-                var marca  = v.marca ? v.marca.charAt(0).toUpperCase() + v.marca.slice(1) : '';
-                xml += '    <image:image>\n      <image:loc>' + escapeXml(imgUrl) + '</image:loc>\n      <image:title>' + escapeXml(marca + ' ' + (v.modelo || '') + ' ' + (v.year || '')) + '</image:title>\n    </image:image>\n';
-            }
-            xml += '  </url>\n\n';
+            xml += '  <url>\n    <loc>' + base + '/vehiculos/' + _slugifyVehicle(v) + '.html</loc>\n    <lastmod>' + lastmod + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n\n';
         });
 
         xml += '</urlset>\n';

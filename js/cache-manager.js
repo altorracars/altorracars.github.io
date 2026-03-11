@@ -103,6 +103,146 @@
         return Number(ts);
     }
 
+    /* ─── Banner de actualización obligatoria ────────────────────── */
+    let _bannerShown = false;
+
+    function showUpdateBanner() {
+        if (_bannerShown) return;
+        _bannerShown = true;
+
+        // Estilos inyectados una sola vez
+        if (!document.getElementById('altorra-update-styles')) {
+            const style = document.createElement('style');
+            style.id = 'altorra-update-styles';
+            style.textContent = `
+                #altorra-update-banner {
+                    position: fixed;
+                    top: 0; left: 0; right: 0;
+                    z-index: 99999;
+                    background: linear-gradient(135deg, #0d0b00 0%, #1a1400 100%);
+                    border-bottom: 2px solid #d4af37;
+                    box-shadow: 0 4px 28px rgba(0,0,0,0.7);
+                    transform: translateY(-110%);
+                    transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
+                    font-family: inherit;
+                }
+                #altorra-update-banner.aub-visible {
+                    transform: translateY(0);
+                }
+                .aub-inner {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    max-width: 1540px;
+                    margin: 0 auto;
+                    padding: 13px 24px;
+                }
+                .aub-icon {
+                    font-size: 1.25rem;
+                    flex-shrink: 0;
+                    line-height: 1;
+                }
+                .aub-text {
+                    flex: 1;
+                    min-width: 0;
+                }
+                .aub-text strong {
+                    display: block;
+                    font-size: 0.88rem;
+                    font-weight: 700;
+                    color: #d4af37;
+                    line-height: 1.3;
+                }
+                .aub-text span {
+                    font-size: 0.78rem;
+                    color: rgba(255,255,255,0.5);
+                    line-height: 1.4;
+                }
+                .aub-btn {
+                    flex-shrink: 0;
+                    padding: 10px 24px;
+                    background: linear-gradient(135deg, #d4af37, #b89658);
+                    color: #0a0800;
+                    border: none;
+                    border-radius: 6px;
+                    font-weight: 700;
+                    font-size: 0.78rem;
+                    letter-spacing: 1.2px;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    font-family: inherit;
+                    white-space: nowrap;
+                }
+                .aub-btn:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(212,175,55,0.45);
+                }
+                .aub-btn:active { transform: translateY(0); }
+                .aub-btn:disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+                @media (max-width: 600px) {
+                    .aub-inner {
+                        flex-wrap: wrap;
+                        gap: 10px;
+                        padding: 12px 16px;
+                    }
+                    .aub-text span { display: none; }
+                    .aub-btn {
+                        width: 100%;
+                        text-align: center;
+                        padding: 13px;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        const banner = document.createElement('div');
+        banner.id = 'altorra-update-banner';
+        banner.setAttribute('role', 'alert');
+        banner.setAttribute('aria-live', 'assertive');
+        banner.innerHTML = `
+            <div class="aub-inner">
+                <span class="aub-icon" aria-hidden="true">⚡</span>
+                <div class="aub-text">
+                    <strong>Nueva versión disponible</strong>
+                    <span>ALTORRA CARS fue actualizado. Actualiza para ver los últimos cambios.</span>
+                </div>
+                <button class="aub-btn" id="aub-reload-btn">ACTUALIZAR AHORA</button>
+            </div>
+        `;
+        document.body.prepend(banner);
+
+        // Animar entrada (doble rAF para que el CSS de transición aplique)
+        requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('aub-visible')));
+
+        document.getElementById('aub-reload-btn').addEventListener('click', function () {
+            this.textContent = 'Actualizando…';
+            this.disabled = true;
+            AltorraCache.clearAndReload();
+        });
+    }
+
+    /* ─── Polling periódico mientras el tab está abierto ─────────── */
+    function startPolling() {
+        const INTERVAL = 45 * 1000; // 45 segundos
+        setInterval(async function () {
+            const remoteVer = await fetchDeployVersion();
+            if (!remoteVer) return;
+            const localVer = localStorage.getItem(DEPLOY_KEY);
+            if (localVer && remoteVer !== localVer) {
+                console.info('[AltorraCache] Polling: nuevo deploy detectado →', remoteVer);
+                await AltorraCache.invalidate();
+                localStorage.setItem(DEPLOY_KEY, remoteVer);
+                showUpdateBanner();
+            }
+        }, INTERVAL);
+    }
+
     /* ─── Fuente 1: Firestore system/meta ───────────────────────── */
     async function fetchFirestoreLastModified() {
         try {
@@ -216,6 +356,7 @@
 
         /**
          * Verifica si hay un nuevo deploy de GitHub comparando deploy-info.json.
+         * Si detecta versión nueva → limpia caché y muestra banner al usuario.
          * @returns {Promise<boolean>} true = mismo deploy, false = deploy nuevo detectado
          */
         async validateDeployVersion() {
@@ -224,17 +365,18 @@
 
             const localVer = localStorage.getItem(DEPLOY_KEY);
             if (!localVer) {
-                // Primera vez, solo guardar
+                // Primera visita: solo guardar versión base, sin banner
                 localStorage.setItem(DEPLOY_KEY, remoteVer);
                 return true;
             }
 
             if (localVer === remoteVer) return true; // mismo deploy ✓
 
-            // Nuevo deploy detectado
+            // Nuevo deploy detectado → informar al usuario
             console.info('[AltorraCache] Nuevo deploy de GitHub:', remoteVer, '(antes:', localVer + ')');
             await this.invalidate();
             localStorage.setItem(DEPLOY_KEY, remoteVer);
+            showUpdateBanner();
             return false;
         },
 
@@ -288,14 +430,8 @@
         },
 
         notifyUpdate() {
-            if (typeof toast !== 'undefined' && toast.info) {
-                toast.info(
-                    'Hay una nueva versión disponible. La página se actualizará en breve.',
-                    'Actualización disponible',
-                    5000
-                );
-            }
-            setTimeout(() => window.location.reload(true), 4000);
+            // Reemplaza el toast + auto-reload por el banner interactivo
+            showUpdateBanner();
         },
 
         setupListeners() {
@@ -358,6 +494,9 @@
         } else {
             setTimeout(runChecks, 1000);
         }
+
+        // Polling periódico: detectar nuevos deploys mientras el tab sigue abierto
+        startPolling();
     }
 
     /* ─── Arranque ───────────────────────────────────────────────── */

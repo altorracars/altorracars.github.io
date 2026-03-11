@@ -468,52 +468,57 @@
 .vende-features {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
-    margin: 20px 0 28px;
-    padding: 18px;
-    background: #f8f6f0;
-    border-radius: 10px;
-    border: 1px solid rgba(212, 175, 55, 0.2);
+    margin: 4px 0 28px;
 }
 
 .vende-feature {
     display: flex;
     align-items: flex-start;
-    gap: 9px;
+    gap: 10px;
+    padding: 12px 13px;
+    background: rgba(212, 175, 55, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.13);
+    border-radius: 10px;
     text-align: left;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.vende-feature:hover {
+    background: rgba(212, 175, 55, 0.09);
+    border-color: rgba(212, 175, 55, 0.25);
 }
 
 .vende-feature-icon {
     flex-shrink: 0;
-    width: 30px;
-    height: 30px;
-    background: rgba(212, 175, 55, 0.12);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    border-radius: 7px;
+    width: 28px;
+    height: 28px;
+    background: rgba(212, 175, 55, 0.1);
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #b89658;
+    color: #d4af37;
     margin-top: 1px;
 }
 
 .vende-feature-text {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 2px;
 }
 
 .vende-feature-text strong {
     font-size: 12px;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #fff;
     line-height: 1.3;
 }
 
 .vende-feature-text span {
-    font-size: 11px;
-    color: #888;
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.4);
     line-height: 1.4;
 }
 

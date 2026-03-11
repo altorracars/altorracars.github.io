@@ -44,6 +44,14 @@ function slugify(v) {
         .replace(/^-|-$/g, '');
 }
 
+function slugifyBrand(id) {
+    return String(id)
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+}
+
 function capitalize(str) {
     if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -238,9 +246,105 @@ function generatePage(template, v, slug) {
     return html;
 }
 
+// ===================== Brand Page Generation =====================
+
+function generateBrandPage(template, brand, slug, vehicles) {
+    const nombre = capitalize(brand.nombre || brand.id || '');
+    const brandId = String(brand.id);
+    const canonicalUrl = `${SITE_URL}/marcas/${slug}.html`;
+    const disponibles = vehicles.filter(v =>
+        String(v.marca || '').toLowerCase() === brandId.toLowerCase()
+    );
+    const count = disponibles.length;
+    const desc = `Vehículos ${nombre} disponibles en ALTORRA CARS, Cartagena. ${count} ${count === 1 ? 'vehículo' : 'vehículos'} en inventario. Financiación disponible.`;
+    const bannerImage = `${SITE_URL}/multimedia/banner/b_${brandId}.png`;
+
+    let html = template;
+
+    // Ensure <base href="/"> for subdir paths
+    if (!html.includes('<base href="/">')) {
+        html = html.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n    <base href="/">');
+    }
+
+    // Canonical + robots
+    html = html.replace(
+        /<meta name="robots"[^>]*>/,
+        `<meta name="robots" content="index, follow">\n    <link rel="canonical" href="${canonicalUrl}">`
+    );
+
+    // Title
+    html = html.replace(
+        /<title[^>]*>.*?<\/title>/,
+        `<title>${escapeHtml(nombre)} | ALTORRA CARS - Cartagena</title>`
+    );
+
+    // Meta description — insert after viewport meta if not present
+    if (!html.includes('<meta name="description"')) {
+        html = html.replace(
+            '<meta name="viewport"',
+            `<meta name="description" content="${escapeAttr(desc)}">\n    <meta name="viewport"`
+        );
+    } else {
+        html = html.replace(
+            /<meta name="description"[^>]*>/,
+            `<meta name="description" content="${escapeAttr(desc)}">`
+        );
+    }
+
+    // JSON-LD schema
+    const schema = {
+        '@context': 'https://schema.org',
+        '@type': 'AutoDealer',
+        name: `ALTORRA CARS - ${nombre}`,
+        url: canonicalUrl,
+        brand: { '@type': 'Brand', name: nombre },
+        description: desc,
+        address: {
+            '@type': 'PostalAddress',
+            addressLocality: 'Cartagena',
+            addressCountry: 'CO'
+        },
+        numberOfItems: count
+    };
+
+    html = html.replace(
+        '</head>',
+        `    <script type="application/ld+json">${JSON.stringify(schema)}</script>\n</head>`
+    );
+
+    // Inject PRERENDERED_BRAND_ID so the inline script picks up the brand without ?marca= query param
+    html = html.replace(
+        '<script>\n        const params = new URLSearchParams(window.location.search);',
+        `<script>window.PRERENDERED_BRAND_ID = ${JSON.stringify(brandId)};</script>\n    <script>\n        const params = new URLSearchParams(window.location.search);`
+    );
+
+    // <noscript> fallback for crawlers
+    const noscript = `
+    <noscript>
+        <div style="max-width:1200px;margin:100px auto;padding:24px;font-family:sans-serif">
+            <h1>Vehículos ${escapeHtml(nombre)} en ALTORRA CARS</h1>
+            <p>${escapeHtml(desc)}</p>
+            <ul style="list-style:none;padding:0;line-height:2">
+${disponibles.slice(0, 20).map(v => {
+    const vs = slugify(v);
+    return `                <li><a href="${SITE_URL}/vehiculos/${vs}.html">${escapeHtml(capitalize(v.marca || ''))} ${escapeHtml(v.modelo || '')} ${escapeHtml(String(v.year || ''))}</a></li>`;
+}).join('\n')}
+            </ul>
+            <p><a href="${SITE_URL}">Volver a ALTORRA CARS</a></p>
+        </div>
+    </noscript>`;
+
+    html = html.replace(
+        '<div id="header-placeholder"></div>',
+        `<div id="header-placeholder"></div>${noscript}`
+    );
+
+    return html;
+}
+
 // ===================== Sitemap Generation =====================
 
-function generateSitemap(vehicles, slugMap) {
+function generateSitemap(vehicles, slugMap, brandSlugMap = new Map()) {
     const today = new Date().toISOString().split('T')[0];
 
     const staticPages = [
@@ -281,9 +385,19 @@ function generateSitemap(vehicles, slugMap) {
 `;
     }
 
-    // NOTE: brand pages (/marca.html?marca=X) are intentionally excluded.
-    // marca.html is a JS-rendered SPA — all brand URLs return identical static HTML,
-    // causing Google to classify the sitemap as "unknown type".
+    // Brand pages — pre-rendered static URLs (no query strings)
+    if (brandSlugMap.size > 0) {
+        xml += '\n  <!-- Brand pages (pre-rendered static URLs) -->\n';
+        for (const [brandId, brandSlug] of brandSlugMap) {
+            xml += `  <url>
+    <loc>${SITE_URL}/marcas/${brandSlug}.html</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+`;
+        }
+    }
 
     // Vehicle detail pages (pre-rendered)
     xml += '\n  <!-- Vehicle detail pages (pre-rendered, SEO-friendly URLs) -->\n';
@@ -389,9 +503,45 @@ async function main() {
     );
     console.log('[generate] Slug map → data/vehicle-slugs.json');
 
+    // Generate brand pages
+    console.log('[generate] Fetching brands from Firestore...');
+    const brandsSnap = await getDocs(collection(db, 'marcas'));
+    const brands = brandsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    console.log(`[generate] ${brands.length} brands found.`);
+
+    const brandTemplate = readFileSync(join(ROOT, 'marca.html'), 'utf-8');
+    const brandSlugMap = new Map();
+    for (const b of brands) {
+        brandSlugMap.set(String(b.id), slugifyBrand(b.id));
+    }
+
+    const brandsDir = join(ROOT, 'marcas');
+    mkdirSync(brandsDir, { recursive: true });
+    try {
+        for (const f of readdirSync(brandsDir).filter(f => f.endsWith('.html'))) {
+            unlinkSync(join(brandsDir, f));
+        }
+    } catch (_) { /* first run */ }
+
+    console.log('[generate] Generating brand pages...');
+    for (const b of brands) {
+        const slug = brandSlugMap.get(String(b.id));
+        const html = generateBrandPage(brandTemplate, b, slug, vehicles);
+        writeFileSync(join(brandsDir, `${slug}.html`), html);
+        console.log(`  + marcas/${slug}.html`);
+    }
+    console.log(`[generate] ${brands.length} brand pages created in /marcas/`);
+
+    // Write brand slug map JSON
+    writeFileSync(
+        join(dataDir, 'brand-slugs.json'),
+        JSON.stringify(Object.fromEntries(brandSlugMap), null, 2)
+    );
+    console.log('[generate] Brand slug map → data/brand-slugs.json');
+
     // Regenerate sitemap.xml
     console.log('[generate] Regenerating sitemap.xml...');
-    const sitemap = generateSitemap(vehicles, slugMap);
+    const sitemap = generateSitemap(vehicles, slugMap, brandSlugMap);
     writeFileSync(join(ROOT, 'sitemap.xml'), sitemap);
     console.log('[generate] sitemap.xml updated.');
 

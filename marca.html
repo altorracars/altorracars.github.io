@@ -116,7 +116,7 @@
     <script src="js/comparador.js"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
-        const brandId = params.get('marca');
+        const brandId = window.PRERENDERED_BRAND_ID || params.get('marca');
         let currentPage = 1;
         const itemsPerPage = 12;
         let currentFilters = { marca: brandId };

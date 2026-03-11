@@ -45,6 +45,20 @@ jobs:
         run: |
           echo "{\"version\":\"$(date -u +%Y%m%d%H%M%S)\",\"sha\":\"${GITHUB_SHA:0:7}\",\"ref\":\"${GITHUB_REF_NAME}\"}" > data/deploy-info.json
 
+      - name: Validate sitemap.xml
+        run: |
+          if [ ! -s sitemap.xml ]; then
+            echo "ERROR: sitemap.xml is missing or empty — aborting." >&2; exit 1
+          fi
+          if ! grep -q '<?xml' sitemap.xml || ! grep -q '</urlset>' sitemap.xml; then
+            echo "ERROR: sitemap.xml is malformed." >&2; exit 1
+          fi
+          if grep -q 'marca.html?marca=' sitemap.xml; then
+            echo "ERROR: sitemap.xml still contains brand pages with query strings." >&2; exit 1
+          fi
+          URL_COUNT=$(grep -c '<loc>' sitemap.xml || true)
+          echo "sitemap.xml OK — ${URL_COUNT} URLs found."
+
       - name: Check for changes
         id: changes
         run: |

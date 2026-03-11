@@ -344,36 +344,49 @@
                     '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n\n';
 
         var staticPages = [
-            { loc: '/',                          priority: '1.0', freq: 'daily'   },
-            { loc: '/busqueda.html',             priority: '0.9', freq: 'daily'   },
-            { loc: '/vehiculos-usados.html',     priority: '0.9', freq: 'daily'   },
-            { loc: '/vehiculos-nuevos.html',     priority: '0.9', freq: 'daily'   },
-            { loc: '/vehiculos-suv.html',        priority: '0.8', freq: 'weekly'  },
-            { loc: '/vehiculos-sedan.html',      priority: '0.8', freq: 'weekly'  },
-            { loc: '/vehiculos-pickup.html',     priority: '0.8', freq: 'weekly'  },
-            { loc: '/vehiculos-hatchback.html',  priority: '0.8', freq: 'weekly'  },
-            { loc: '/simulador-credito.html',    priority: '0.7', freq: 'monthly' },
-            { loc: '/comparar.html',             priority: '0.6', freq: 'monthly' },
-            { loc: '/resenas.html',             priority: '0.6', freq: 'monthly' },
-            { loc: '/nosotros.html',             priority: '0.6', freq: 'monthly' },
-            { loc: '/contacto.html',             priority: '0.6', freq: 'monthly' },
-            { loc: '/favoritos.html',            priority: '0.5', freq: 'monthly' },
-            { loc: '/terminos.html',             priority: '0.3', freq: 'yearly'  },
-            { loc: '/privacidad.html',           priority: '0.3', freq: 'yearly'  },
-            { loc: '/cookies.html',              priority: '0.3', freq: 'yearly'  }
+            { loc: '/',                           priority: '1.0', freq: 'daily'   },
+            { loc: '/busqueda.html',              priority: '0.9', freq: 'daily'   },
+            { loc: '/vehiculos-usados.html',      priority: '0.9', freq: 'daily'   },
+            { loc: '/vehiculos-nuevos.html',      priority: '0.9', freq: 'daily'   },
+            { loc: '/vehiculos-suv.html',         priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-sedan.html',       priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-pickup.html',      priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-hatchback.html',   priority: '0.8', freq: 'weekly'  },
+            { loc: '/vehiculos-camionetas.html',  priority: '0.8', freq: 'weekly'  },
+            { loc: '/simulador-credito.html',     priority: '0.7', freq: 'monthly' },
+            { loc: '/comparar.html',              priority: '0.6', freq: 'monthly' },
+            { loc: '/resenas.html',              priority: '0.6', freq: 'monthly' },
+            { loc: '/nosotros.html',              priority: '0.6', freq: 'monthly' },
+            { loc: '/contacto.html',              priority: '0.6', freq: 'monthly' },
+            { loc: '/favoritos.html',             priority: '0.5', freq: 'monthly' },
+            { loc: '/terminos.html',              priority: '0.3', freq: 'yearly'  },
+            { loc: '/privacidad.html',            priority: '0.3', freq: 'yearly'  },
+            { loc: '/cookies.html',               priority: '0.3', freq: 'yearly'  }
         ];
 
         staticPages.forEach(function(p) {
             xml += '  <url>\n    <loc>' + base + p.loc + '</loc>\n    <lastmod>' + today + '</lastmod>\n    <changefreq>' + p.freq + '</changefreq>\n    <priority>' + p.priority + '</priority>\n  </url>\n\n';
         });
 
-        AP.brands.forEach(function(b) {
-            xml += '  <url>\n    <loc>' + base + '/marca.html?marca=' + encodeURIComponent(b.id) + '</loc>\n    <lastmod>' + today + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n\n';
-        });
+        // NOTE: brand pages (/marca.html?marca=X) are intentionally excluded.
+        // marca.html is a JS-rendered SPA — Google sees identical HTML for all brand URLs,
+        // causing "Tipo: Desconocido" in Search Console. Brand discovery happens via
+        // vehicle detail pages and category pages.
 
         var disponibles = AP.vehicles.filter(function(v) { return !v.estado || v.estado === 'disponible'; });
         disponibles.forEach(function(v) {
-            var lastmod = v.updatedAt ? v.updatedAt.split('T')[0] : today;
+            // Handle Firestore Timestamp, ISO string, or millis
+            var lastmod = today;
+            if (v.updatedAt) {
+                try {
+                    var ts = v.updatedAt;
+                    var d  = (ts && typeof ts.toDate === 'function') ? ts.toDate()
+                           : (typeof ts === 'number') ? new Date(ts)
+                           : new Date(String(ts));
+                    var iso = d.toISOString().split('T')[0];
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) lastmod = iso;
+                } catch (_) { /* keep today */ }
+            }
             xml += '  <url>\n    <loc>' + base + '/vehiculos/' + _slugifyVehicle(v) + '.html</loc>\n    <lastmod>' + lastmod + '</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n';
             if (v.imagen) {
                 var imgUrl = v.imagen.startsWith('http') ? v.imagen : base + '/' + v.imagen;
@@ -384,7 +397,7 @@
         });
 
         xml += '</urlset>\n';
-        return { xml: xml, total: staticPages.length + AP.brands.length + disponibles.length, vehiculos: disponibles.length };
+        return { xml: xml, total: staticPages.length + disponibles.length, vehiculos: disponibles.length };
     }
 
     function _downloadSitemap(xml) {

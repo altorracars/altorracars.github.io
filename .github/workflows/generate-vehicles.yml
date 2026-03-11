@@ -41,9 +41,19 @@ jobs:
       - name: Generate vehicle pages from Firestore
         run: npm run generate
 
-      - name: Update deploy-info.json
+      - name: Update deploy-info.json and bump cache versions
         run: |
-          echo "{\"version\":\"$(date -u +%Y%m%d%H%M%S)\",\"sha\":\"${GITHUB_SHA:0:7}\",\"ref\":\"${GITHUB_REF_NAME}\"}" > data/deploy-info.json
+          DEPLOY_TS="$(date -u +%Y%m%d%H%M%S)"
+          SHA_SHORT="${GITHUB_SHA:0:7}"
+
+          # 1. deploy-info.json — leído por cache-manager.js para detectar nuevos deploys
+          echo "{\"version\":\"${DEPLOY_TS}\",\"sha\":\"${SHA_SHORT}\",\"ref\":\"${GITHUB_REF_NAME}\"}" > data/deploy-info.json
+
+          # 2. Service Worker CACHE_VERSION — fuerza updatefound en todos los browsers
+          sed -i "s/const CACHE_VERSION = '[^']*'/const CACHE_VERSION = 'v${DEPLOY_TS}'/" service-worker.js
+
+          # 3. cache-manager.js APP_VERSION — detecta cambio en primera carga
+          sed -i "s/const APP_VERSION[[:space:]]*=[[:space:]]*'[^']*'/const APP_VERSION = '${DEPLOY_TS}'/" js/cache-manager.js
 
       - name: Validate sitemap.xml
         run: |
@@ -62,13 +72,13 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          git diff --quiet vehiculos/ marcas/ data/ sitemap.xml || echo "changed=true" >> $GITHUB_OUTPUT
+          git diff --quiet vehiculos/ marcas/ data/ sitemap.xml service-worker.js js/cache-manager.js || echo "changed=true" >> $GITHUB_OUTPUT
 
       - name: Commit and push generated pages
         if: steps.changes.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add vehiculos/ marcas/ data/vehicle-slugs.json data/brand-slugs.json data/deploy-info.json sitemap.xml
-          git commit -m "Auto-generate vehicle and brand pages for SEO [skip ci]"
+          git add vehiculos/ marcas/ data/vehicle-slugs.json data/brand-slugs.json data/deploy-info.json sitemap.xml service-worker.js js/cache-manager.js
+          git commit -m "Auto-generate vehicle pages + bump cache version [skip ci]"
           git push

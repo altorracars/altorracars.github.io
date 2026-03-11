@@ -18,9 +18,25 @@
     <link rel="stylesheet" href="css/comparador.css">
     <link rel="stylesheet" href="css/dark-theme.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Page Loader — Critical Inline CSS -->
+    <style>
+    #page-loader{position:fixed;inset:0;background:#0d0d0d;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:24px;transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);}
+    #page-loader.pl-done{opacity:0;visibility:hidden;pointer-events:none;}
+    .pl-logo{width:68px;height:68px;object-fit:contain;animation:plPulse 2s ease-in-out infinite;}
+    .pl-ring{width:48px;height:48px;border:3px solid rgba(184,150,88,.18);border-top-color:#b89658;border-radius:50%;animation:plSpin .8s linear infinite;}
+    @keyframes plPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.93)}}
+    @keyframes plSpin{to{transform:rotate(360deg)}}
+    </style>
+    <link rel="stylesheet" href="css/page-loader.css">
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoDealer","name":"ALTORRA CARS - Volkswagen","url":"https://altorracars.github.io/marcas/volkswagen.html","brand":{"@type":"Brand","name":"Volkswagen"},"description":"Vehículos Volkswagen disponibles en ALTORRA CARS, Cartagena. 4 vehículos en inventario. Financiación disponible.","address":{"@type":"PostalAddress","addressLocality":"Cartagena","addressCountry":"CO"},"numberOfItems":4}</script>
 </head>
 <body>
+    <!-- Page Loader -->
+    <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
+        <img src="/multimedia/logo-altorra-cars.webp" class="pl-logo" alt="ALTORRA CARS" width="68" height="68">
+        <div class="pl-ring" aria-hidden="true"></div>
+    </div>
+
     <div id="header-placeholder"></div>
     <noscript>
         <div style="max-width:1200px;margin:100px auto;padding:24px;font-family:sans-serif">
@@ -235,6 +251,7 @@
         });
     </script>
 
+        <script src="js/page-loader.js"></script>
     <!-- Cache Manager -->
     <script src="js/cache-manager.js"></script>
 </body>

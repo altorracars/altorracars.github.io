@@ -1,0 +1,70 @@
+/* ============================================
+   PAGE LOADER & TRANSITIONS - ALTORRA CARS
+   Experiencia de carga y navegación suave
+   ============================================ */
+
+/* ===== TOP PROGRESS BAR ===== */
+#page-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #b89658 0%, #d4af37 50%, #b89658 100%);
+    background-size: 200% 100%;
+    animation: pbShimmer 2s linear infinite;
+    z-index: 100001;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.45);
+    border-radius: 0 2px 2px 0;
+}
+
+#page-progress-bar.pb-done {
+    width: 100% !important;
+    opacity: 0;
+    transition: width 0.15s ease, opacity 0.5s ease 0.15s;
+}
+
+@keyframes pbShimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+/* ===== PAGE TRANSITION OVERLAY ===== */
+#page-transition-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0d0d0d;
+    z-index: 99998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#page-transition-overlay.pto-active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* ===== REDUCE MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+    #page-loader,
+    #page-transition-overlay,
+    #page-progress-bar {
+        transition: none !important;
+        animation: none !important;
+    }
+
+    #page-loader.pl-done {
+        display: none !important;
+    }
+
+    .pl-ring {
+        animation: none !important;
+        border-color: #b89658 !important;
+    }
+
+    .pl-logo {
+        animation: none !important;
+    }
+}

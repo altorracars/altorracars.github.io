@@ -45,6 +45,21 @@ jobs:
         run: |
           echo "{\"version\":\"$(date -u +%Y%m%d%H%M%S)\",\"sha\":\"${GITHUB_SHA:0:7}\",\"ref\":\"${GITHUB_REF_NAME}\"}" > data/deploy-info.json
 
+      - name: Validate sitemap.xml
+        run: |
+          # Ensure sitemap exists and is non-empty valid XML
+          if [ ! -s sitemap.xml ]; then
+            echo "ERROR: sitemap.xml is missing or empty — aborting commit." >&2
+            exit 1
+          fi
+          # Check structural markers (fast check before committing)
+          if ! grep -q '<?xml' sitemap.xml || ! grep -q '</urlset>' sitemap.xml; then
+            echo "ERROR: sitemap.xml is malformed (missing XML declaration or closing tag)." >&2
+            exit 1
+          fi
+          URL_COUNT=$(grep -c '<loc>' sitemap.xml || true)
+          echo "sitemap.xml OK — ${URL_COUNT} URLs found."
+
       - name: Check for changes
         id: changes
         run: |

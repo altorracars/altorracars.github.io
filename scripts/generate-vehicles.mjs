@@ -240,27 +240,28 @@ function generatePage(template, v, slug) {
 
 // ===================== Sitemap Generation =====================
 
-function generateSitemap(vehicles, slugMap, brands = []) {
+function generateSitemap(vehicles, slugMap) {
     const today = new Date().toISOString().split('T')[0];
 
     const staticPages = [
-        { loc: '/',                          freq: 'daily',   prio: '1.0' },
-        { loc: '/busqueda.html',             freq: 'daily',   prio: '0.9' },
-        { loc: '/vehiculos-usados.html',     freq: 'daily',   prio: '0.9' },
-        { loc: '/vehiculos-nuevos.html',     freq: 'daily',   prio: '0.9' },
-        { loc: '/vehiculos-suv.html',        freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-sedan.html',      freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-pickup.html',     freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-hatchback.html',  freq: 'weekly',  prio: '0.8' },
-        { loc: '/simulador-credito.html',    freq: 'monthly', prio: '0.7' },
-        { loc: '/comparar.html',             freq: 'monthly', prio: '0.6' },
-        { loc: '/resenas.html',             freq: 'monthly', prio: '0.6' },
-        { loc: '/nosotros.html',             freq: 'monthly', prio: '0.6' },
-        { loc: '/contacto.html',             freq: 'monthly', prio: '0.6' },
-        { loc: '/favoritos.html',            freq: 'monthly', prio: '0.5' },
-        { loc: '/terminos.html',             freq: 'yearly',  prio: '0.3' },
-        { loc: '/privacidad.html',           freq: 'yearly',  prio: '0.3' },
-        { loc: '/cookies.html',              freq: 'yearly',  prio: '0.3' },
+        { loc: '/',                           freq: 'daily',   prio: '1.0' },
+        { loc: '/busqueda.html',              freq: 'daily',   prio: '0.9' },
+        { loc: '/vehiculos-usados.html',      freq: 'daily',   prio: '0.9' },
+        { loc: '/vehiculos-nuevos.html',      freq: 'daily',   prio: '0.9' },
+        { loc: '/vehiculos-suv.html',         freq: 'weekly',  prio: '0.8' },
+        { loc: '/vehiculos-sedan.html',       freq: 'weekly',  prio: '0.8' },
+        { loc: '/vehiculos-pickup.html',      freq: 'weekly',  prio: '0.8' },
+        { loc: '/vehiculos-hatchback.html',   freq: 'weekly',  prio: '0.8' },
+        { loc: '/vehiculos-camionetas.html',  freq: 'weekly',  prio: '0.8' },
+        { loc: '/simulador-credito.html',     freq: 'monthly', prio: '0.7' },
+        { loc: '/comparar.html',              freq: 'monthly', prio: '0.6' },
+        { loc: '/resenas.html',              freq: 'monthly', prio: '0.6' },
+        { loc: '/nosotros.html',              freq: 'monthly', prio: '0.6' },
+        { loc: '/contacto.html',              freq: 'monthly', prio: '0.6' },
+        { loc: '/favoritos.html',             freq: 'monthly', prio: '0.5' },
+        { loc: '/terminos.html',              freq: 'yearly',  prio: '0.3' },
+        { loc: '/privacidad.html',            freq: 'yearly',  prio: '0.3' },
+        { loc: '/cookies.html',               freq: 'yearly',  prio: '0.3' },
     ];
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -280,20 +281,10 @@ function generateSitemap(vehicles, slugMap, brands = []) {
 `;
     }
 
-    // Brand pages (/marca.html?marca=X) — one per brand
-    if (brands.length > 0) {
-        xml += '\n  <!-- Brand pages -->\n';
-        for (const b of brands) {
-            const brandId = encodeURIComponent(b.id);
-            xml += `  <url>
-    <loc>${SITE_URL}/marca.html?marca=${brandId}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-`;
-        }
-    }
+    // NOTE: brand pages (/marca.html?marca=X) are intentionally excluded.
+    // marca.html is a JS-rendered SPA — all brand URLs share the same static HTML,
+    // causing Google to treat them as duplicate content and fail sitemap validation.
+    // Brand discovery happens naturally via vehicle detail pages and category pages.
 
     // Vehicle detail pages (pre-rendered)
     xml += '\n  <!-- Vehicle detail pages (pre-rendered, SEO-friendly URLs) -->\n';
@@ -307,7 +298,18 @@ function generateSitemap(vehicles, slugMap, brands = []) {
         const year = v.year || '';
         const fullImage = getFullImage(v);
         const imageTitle = `${marca} ${modelo} ${year}`.trim();
-        const lastmod = v.updatedAt ? String(v.updatedAt).split('T')[0] : today;
+        // Handle Firestore Timestamp objects, ISO strings, and millis
+        let lastmod = today;
+        if (v.updatedAt) {
+            try {
+                const ts = v.updatedAt;
+                const d = (typeof ts.toDate === 'function') ? ts.toDate()
+                        : (typeof ts === 'number')           ? new Date(ts)
+                        : new Date(String(ts));
+                const iso = d.toISOString().split('T')[0];
+                if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) lastmod = iso;
+            } catch (_) { /* keep today */ }
+        }
 
         xml += `  <url>
     <loc>${SITE_URL}/vehiculos/${slug}.html</loc>
@@ -323,6 +325,12 @@ function generateSitemap(vehicles, slugMap, brands = []) {
     }
 
     xml += '</urlset>\n';
+
+    // Basic structural validation before returning
+    if (!xml.startsWith('<?xml') || !xml.includes('</urlset>')) {
+        throw new Error('[generateSitemap] Output failed structural validation — aborting write.');
+    }
+
     return xml;
 }
 
@@ -384,15 +392,9 @@ async function main() {
     );
     console.log('[generate] Slug map → data/vehicle-slugs.json');
 
-    // Fetch brands for sitemap brand pages
-    console.log('[generate] Fetching brands from Firestore...');
-    const brandsSnap = await getDocs(collection(db, 'marcas'));
-    const brands = brandsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    console.log(`[generate] ${brands.length} brands found.`);
-
     // Regenerate sitemap.xml
     console.log('[generate] Regenerating sitemap.xml...');
-    const sitemap = generateSitemap(vehicles, slugMap, brands);
+    const sitemap = generateSitemap(vehicles, slugMap);
     writeFileSync(join(ROOT, 'sitemap.xml'), sitemap);
     console.log('[generate] sitemap.xml updated.');
 

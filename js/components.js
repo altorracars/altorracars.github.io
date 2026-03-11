@@ -24,6 +24,11 @@ async function loadAllComponents() {
         loadComponent('footer-placeholder', 'snippets/footer.html')
     ]);
 
+    // Dismissir page loader — header y footer ya están listos
+    if (typeof window.dismissPageLoader === 'function') {
+        window.dismissPageLoader();
+    }
+
     // Initialize after loading - pequeño delay para asegurar DOM
     setTimeout(() => {
         initializeHeader();

@@ -3325,8 +3325,10 @@ section {
 .commercial-section::before { top: 0; }
 .commercial-section::after  { bottom: 0; }
 
-/* Brillo ambiental de fondo */
+/* Contenedor más ancho que el global (1200px) para aprovechar el espacio */
 .commercial-section .container {
+    max-width: 1540px;
+    padding: 0 40px;
     position: relative;
     z-index: 1;
 }
@@ -3368,9 +3370,7 @@ section {
 .commercial-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    max-width: 1200px;
-    margin: 0 auto;
+    gap: 28px;
     position: relative;
     z-index: 1;
 }
@@ -3484,9 +3484,19 @@ section {
     transform: translateY(-1px);
 }
 
+@media (max-width: 1100px) {
+    .commercial-section .container {
+        padding: 0 28px;
+    }
+}
+
 @media (max-width: 968px) {
     .commercial-section {
         padding: 70px 0;
+    }
+
+    .commercial-section .container {
+        padding: 0 20px;
     }
 
     .commercial-grid {

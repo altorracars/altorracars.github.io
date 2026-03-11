@@ -27,6 +27,15 @@ async function loadAllComponents() {
     // Dismissir page loader — header y footer ya están listos
     if (typeof window.dismissPageLoader === 'function') {
         window.dismissPageLoader();
+    } else {
+        // Fallback: page-loader.js no cargado — ocultar loader directamente
+        var _loader = document.getElementById('page-loader');
+        if (_loader) {
+            _loader.classList.add('pl-done');
+            setTimeout(function () {
+                if (_loader.parentNode) _loader.parentNode.removeChild(_loader);
+            }, 800);
+        }
     }
 
     // Initialize after loading - pequeño delay para asegurar DOM

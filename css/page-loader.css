@@ -1,6 +1,8 @@
 /* ============================================
    PAGE LOADER & TRANSITIONS - ALTORRA CARS
    Experiencia de carga y navegación suave
+   Cross-browser: iOS Safari 12+, Android 5+,
+   Chrome 60+, Firefox 60+, Samsung Internet 7+
    ============================================ */
 
 /* ===== TOP PROGRESS BAR ===== */
@@ -10,61 +12,111 @@
     left: 0;
     height: 3px;
     width: 0%;
-    background: linear-gradient(90deg, #b89658 0%, #d4af37 50%, #b89658 100%);
+
+    /* Gradient con fallback sólido */
+    background: #b89658;
+    background: -webkit-linear-gradient(left, #b89658 0%, #d4af37 50%, #b89658 100%);
+    background: linear-gradient(to right, #b89658 0%, #d4af37 50%, #b89658 100%);
     background-size: 200% 100%;
+
+    -webkit-animation: pbShimmer 2s linear infinite;
     animation: pbShimmer 2s linear infinite;
+
     z-index: 100001;
+
+    /* Transición con prefijos */
+    -webkit-transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+    -webkit-box-shadow: 0 0 12px rgba(212, 175, 55, 0.45);
     box-shadow: 0 0 12px rgba(212, 175, 55, 0.45);
+
     border-radius: 0 2px 2px 0;
+
+    /* iOS: Asegurar que no sea afectada por safe-area */
+    padding-top: env(safe-area-inset-top, 0);
 }
 
 #page-progress-bar.pb-done {
     width: 100% !important;
     opacity: 0;
+    -webkit-transition: width 0.15s ease, opacity 0.5s ease 0.15s;
     transition: width 0.15s ease, opacity 0.5s ease 0.15s;
 }
 
-@keyframes pbShimmer {
-    0% { background-position: 0% 50%; }
+@-webkit-keyframes pbShimmer {
+    0%   { background-position: 0% 50%; }
     100% { background-position: 200% 50%; }
 }
+@keyframes pbShimmer {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
 
 /* ===== PAGE TRANSITION OVERLAY ===== */
 #page-transition-overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: #0d0d0d;
     z-index: 99998;
     opacity: 0;
     pointer-events: none;
+
+    /* Prefijos para transición */
+    -webkit-transition: opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     transition: opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* iOS: evitar scroll-through */
+    -webkit-overflow-scrolling: auto;
+    touch-action: none;
 }
 
 #page-transition-overlay.pto-active {
     opacity: 1;
     pointer-events: all;
+    /* Evitar clics fantasma en iOS */
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* ===== REDUCE MOTION ===== */
+
+/* ===== REDUCE MOTION (accesibilidad) ===== */
 @media (prefers-reduced-motion: reduce) {
     #page-loader,
     #page-transition-overlay,
     #page-progress-bar {
+        -webkit-transition: none !important;
         transition: none !important;
+        -webkit-animation: none !important;
         animation: none !important;
     }
 
+    /* Eliminar directamente sin transición */
     #page-loader.pl-done {
         display: none !important;
     }
 
     .pl-ring {
+        -webkit-animation: none !important;
         animation: none !important;
         border-color: #b89658 !important;
     }
 
     .pl-logo {
+        -webkit-animation: none !important;
         animation: none !important;
+    }
+}
+
+
+/* ===== PRINT: ocultar loader ===== */
+@media print {
+    #page-loader,
+    #page-transition-overlay,
+    #page-progress-bar {
+        display: none !important;
     }
 }

@@ -164,11 +164,31 @@ button {
     font-size: 0.95rem;
     border-radius: var(--radius-sm);
     transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .nav-link:hover {
     color: var(--primary-gold);
     background: rgba(184, 150, 88, 0.1);
+}
+
+/* Flecha indicadora de submenu (solo desktop) */
+@media (min-width: 969px) {
+    .nav-item.dropdown > .nav-link::after {
+        content: '▾';
+        font-size: 0.72rem;
+        color: var(--primary-gold);
+        transition: transform 0.22s ease;
+        line-height: 1;
+        margin-top: 1px;
+    }
+
+    .nav-item.dropdown:hover > .nav-link::after,
+    .nav-item.dropdown.active > .nav-link::after {
+        transform: rotate(180deg);
+    }
 }
 
 /* Dropdown */

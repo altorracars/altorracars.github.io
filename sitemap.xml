@@ -245,8 +245,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://altorracars.github.io/vehiculos/suzuki-baleno-2022-10.html</loc>
-    <lastmod>2026-03-10</lastmod>
+    <loc>https://altorracars.github.io/vehiculos/suzuki-baleno-gl-2022-10.html</loc>
+    <lastmod>2026-03-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -329,12 +329,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://altorracars.github.io/vehiculos/volkswagen-gol-trendline-2020-28.html</loc>
-    <lastmod>2026-03-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://altorracars.github.io/vehiculos/chevrolet-beat-ls-2020-29.html</loc>
     <lastmod>2026-03-10</lastmod>
     <changefreq>weekly</changefreq>
@@ -354,6 +348,12 @@
   </url>
   <url>
     <loc>https://altorracars.github.io/vehiculos/suzuki-new-baleno-2023-32.html</loc>
+    <lastmod>2026-03-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://altorracars.github.io/vehiculos/volkswagen-gol-trendline-2020-33.html</loc>
     <lastmod>2026-03-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

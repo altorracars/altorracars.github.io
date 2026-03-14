@@ -1,3 +1,6 @@
+/* ── Fuentes ── */
+@import url('https://fonts.googleapis.com/css2?family=Cardo:wght@700&display=swap');
+
 /* ============================================
    FOOTER — Premium Dark Gold Theme
    ALTORRA CARS
@@ -6,90 +9,224 @@
 /* ── Línea dorada superior ── */
 .footer-goldline {
     height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.6) 40%, rgba(212,175,55,0.6) 60%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.7) 35%, #d4af37 50%, rgba(212,175,55,0.7) 65%, transparent 100%);
 }
 
 /* ── Cuerpo ── */
 .footer-body {
-    background: #0a0a0a;
-    padding: 48px 0 40px;
+    background: #080808;
+    padding: 64px 0 56px;
+    position: relative;
+    overflow: hidden;
 }
 
-/* ── Centro: contacto + redes apilados y centrados ── */
-.footer-center {
+/* Fondo sutil — degradado radial dorado muy tenue */
+.footer-body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(212,175,55,0.04) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* ── Nombre de marca ── */
+.footer-brand-name {
+    text-align: center;
+    margin-bottom: 52px;
+    position: relative;
+}
+
+.footer-brand-altorra {
+    display: block;
+    font-family: 'Cardo', Georgia, 'Times New Roman', serif;
+    font-size: clamp(3.2rem, 9vw, 6.5rem);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
+    /* Degradado dorado en el texto */
+    background: linear-gradient(135deg, #c9a227 0%, #e8c84a 40%, #d4af37 60%, #a07d1a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.footer-brand-cars {
+    display: block;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: clamp(0.7rem, 1.8vw, 1.05rem);
+    font-weight: 400;
+    letter-spacing: 0.6em;
+    text-indent: 0.6em; /* compensa el último espacio del tracking */
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    line-height: 2.2;
+    margin-top: 2px;
+}
+
+/* Divisor fino debajo del nombre */
+.footer-brand-divider {
+    width: 80px;
+    height: 1px;
+    margin: 20px auto 0;
+    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent);
+}
+
+/* ── Fila de tarjetas de contacto ── */
+.footer-contact-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 44px;
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.footer-contact-card {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 28px;
+    gap: 14px;
+    padding: 28px 20px;
+    text-decoration: none;
+    border-radius: 12px;
+    transition: background 0.25s ease, transform 0.25s ease;
+    position: relative;
 }
 
-/* ── Contacto en fila ── */
-.footer-contact {
+a.footer-contact-card:hover {
+    background: rgba(212,175,55,0.05);
+    transform: translateY(-3px);
+}
+
+a.footer-contact-card:hover .footer-contact-icon-wrap {
+    background: rgba(212,175,55,0.18);
+    border-color: rgba(212,175,55,0.55);
+    box-shadow: 0 0 22px rgba(212,175,55,0.2);
+}
+
+a.footer-contact-card:hover .footer-contact-value {
+    color: rgba(255,255,255,0.9);
+}
+
+/* Separador vertical entre tarjetas */
+.footer-contact-vline {
+    width: 1px;
+    align-self: stretch;
+    margin: 16px 0;
+    background: linear-gradient(180deg, transparent, rgba(212,175,55,0.25), transparent);
+    flex-shrink: 0;
+}
+
+/* Ícono circular con borde dorado */
+.footer-contact-icon-wrap {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    border: 1px solid rgba(212,175,55,0.3);
+    background: rgba(212,175,55,0.07);
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
     justify-content: center;
-    gap: 6px 0;
-}
-
-.footer-contact-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 0.84rem;
-    color: rgba(255,255,255,0.5);
-    text-decoration: none;
-    transition: color 0.2s ease;
-    line-height: 1.4;
-    padding: 4px 14px;
-}
-
-a.footer-contact-item:hover {
-    color: rgba(212,175,55,0.9);
-}
-
-.footer-contact-item svg {
+    color: #d4af37;
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     flex-shrink: 0;
+}
+
+.footer-contact-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-align: center;
+}
+
+.footer-contact-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
     color: rgba(212,175,55,0.65);
 }
 
-.footer-contact-sep {
-    color: rgba(212,175,55,0.3);
-    font-size: 1.1rem;
-    line-height: 1;
-    user-select: none;
+.footer-contact-value {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.4;
+    transition: color 0.25s ease;
 }
 
 /* ── Redes sociales ── */
 .footer-social {
     display: flex;
-    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 0;
 }
 
 .footer-social-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
+    gap: 10px;
+    padding: 13px 24px;
+    border-radius: 50px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
     color: rgba(255,255,255,0.55);
     text-decoration: none;
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease,
+                transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .footer-social-btn:hover {
-    background: rgba(212,175,55,0.12);
-    border-color: rgba(212,175,55,0.35);
-    color: #d4af37;
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+}
+
+/* WhatsApp */
+.footer-social-wa:hover {
+    background: rgba(37,211,102,0.1);
+    border-color: rgba(37,211,102,0.45);
+    color: #25d366;
+    box-shadow: 0 8px 24px rgba(37,211,102,0.15);
+}
+
+/* Instagram */
+.footer-social-ig:hover {
+    background: rgba(228,64,95,0.1);
+    border-color: rgba(228,64,95,0.45);
+    color: #e4405f;
+    box-shadow: 0 8px 24px rgba(228,64,95,0.15);
+}
+
+/* Facebook */
+.footer-social-fb:hover {
+    background: rgba(24,119,242,0.1);
+    border-color: rgba(24,119,242,0.45);
+    color: #1877f2;
+    box-shadow: 0 8px 24px rgba(24,119,242,0.15);
+}
+
+.footer-social-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.footer-social-label {
+    line-height: 1;
 }
 
 /* ── Footer bottom bar ── */
 .footer-bottom {
-    background: #060606;
+    background: #040404;
     border-top: 1px solid rgba(255,255,255,0.06);
     padding: 20px 0;
 }
@@ -104,12 +241,12 @@ a.footer-contact-item:hover {
 
 .footer-copy {
     font-size: 0.82rem;
-    color: rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.3);
     line-height: 1.5;
 }
 
 .footer-copy strong {
-    color: rgba(212,175,55,0.7);
+    color: rgba(212,175,55,0.65);
     font-weight: 600;
 }
 
@@ -121,7 +258,7 @@ a.footer-contact-item:hover {
 
 .footer-legal a {
     font-size: 0.8rem;
-    color: rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.28);
     text-decoration: none;
     transition: color 0.2s ease;
 }
@@ -130,24 +267,66 @@ a.footer-contact-item:hover {
     color: rgba(212,175,55,0.8);
 }
 
+/* ── Responsive Tablet (≤ 860px) ── */
+@media (max-width: 860px) {
+    .footer-body {
+        padding: 52px 0 44px;
+    }
+
+    .footer-contact-row {
+        max-width: 600px;
+    }
+
+    .footer-contact-value {
+        font-size: 0.82rem;
+    }
+}
+
 /* ── Responsive Mobile (≤ 640px) ── */
 @media (max-width: 640px) {
     .footer-body {
-        padding: 36px 0 28px;
+        padding: 44px 0 36px;
     }
 
-    .footer-contact {
+    .footer-brand-name {
+        margin-bottom: 40px;
+    }
+
+    .footer-contact-row {
         flex-direction: column;
         gap: 4px;
+        max-width: 100%;
     }
 
-    .footer-contact-sep {
+    .footer-contact-card {
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        padding: 18px 16px;
+        gap: 16px;
+    }
+
+    .footer-contact-info {
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .footer-contact-icon-wrap {
+        width: 46px;
+        height: 46px;
+    }
+
+    .footer-contact-vline {
         display: none;
     }
 
-    .footer-contact-item {
-        padding: 5px 0;
-        font-size: 0.83rem;
+    .footer-social {
+        gap: 10px;
+    }
+
+    .footer-social-btn {
+        padding: 12px 18px;
+        font-size: 0.78rem;
     }
 
     .footer-bottom-inner {
@@ -162,7 +341,20 @@ a.footer-contact-item:hover {
     }
 }
 
-/* ── Compatibilidad con clases antiguas (usadas en pages inline) ── */
+/* ── Responsive Mobile XS (≤ 400px) ── */
+@media (max-width: 400px) {
+    .footer-social {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .footer-social-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ── Compatibilidad con clases antiguas ── */
 .footer-subtitle { font-size: 0.7rem; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: rgba(212,175,55,0.8); margin-bottom: 18px; }
 .footer-text { font-size: 0.88rem; color: rgba(255,255,255,0.45); line-height: 1.7; margin-bottom: 8px; }
 .footer-title { font-size: 1.1rem; font-weight: 700; color: var(--primary-gold); margin-bottom: 12px; }

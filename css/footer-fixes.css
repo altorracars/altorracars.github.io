@@ -15,220 +15,176 @@
 /* ── Cuerpo ── */
 .footer-body {
     background: #080808;
-    padding: 64px 0 56px;
+    padding: 36px 0 32px;
     position: relative;
     overflow: hidden;
 }
 
-/* Fondo sutil — degradado radial dorado muy tenue */
+/* Brillo radial muy tenue */
 .footer-body::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(212,175,55,0.04) 0%, transparent 70%);
+    background: radial-gradient(ellipse 50% 120% at 50% 50%, rgba(212,175,55,0.03) 0%, transparent 70%);
     pointer-events: none;
 }
 
-/* ── Nombre de marca ── */
-.footer-brand-name {
-    text-align: center;
-    margin-bottom: 52px;
-    position: relative;
+/* ── Layout: 3 columnas en una fila ── */
+.footer-inner {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0;
+}
+
+/* ── Col izquierda: Nombre de marca ── */
+.footer-brand-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-right: 48px;
+    border-right: 1px solid rgba(212,175,55,0.15);
 }
 
 .footer-brand-altorra {
     display: block;
     font-family: 'Cardo', Georgia, 'Times New Roman', serif;
-    font-size: clamp(3.2rem, 9vw, 6.5rem);
+    font-size: clamp(2rem, 3.2vw, 3rem);
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.1em;
     line-height: 1;
     text-transform: uppercase;
-    /* Degradado dorado en el texto */
     background: linear-gradient(135deg, #c9a227 0%, #e8c84a 40%, #d4af37 60%, #a07d1a 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    /* Shimmer sutil */
+    background-size: 200% 100%;
+    animation: footer-shimmer 6s ease infinite;
+}
+
+@keyframes footer-shimmer {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .footer-brand-cars {
     display: block;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: clamp(0.7rem, 1.8vw, 1.05rem);
+    font-size: clamp(0.55rem, 0.9vw, 0.72rem);
     font-weight: 400;
-    letter-spacing: 0.6em;
-    text-indent: 0.6em; /* compensa el último espacio del tracking */
+    letter-spacing: 0.55em;
+    text-indent: 0.55em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.45);
+    color: rgba(255,255,255,0.38);
     line-height: 2.2;
-    margin-top: 2px;
+    margin-top: 1px;
 }
 
-/* Divisor fino debajo del nombre */
-.footer-brand-divider {
-    width: 80px;
-    height: 1px;
-    margin: 20px auto 0;
-    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent);
-}
-
-/* ── Fila de tarjetas de contacto ── */
-.footer-contact-row {
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-    gap: 0;
-    margin-bottom: 44px;
-    max-width: 860px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.footer-contact-card {
-    flex: 1;
+/* ── Col central: Contacto ── */
+.footer-contact-col {
     display: flex;
     flex-direction: column;
+    gap: 10px;
+    padding: 0 48px;
+}
+
+.footer-contact-item {
+    display: inline-flex;
     align-items: center;
-    gap: 14px;
-    padding: 28px 20px;
+    gap: 11px;
     text-decoration: none;
-    border-radius: 12px;
-    transition: background 0.25s ease, transform 0.25s ease;
-    position: relative;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    transition: color 0.2s ease;
 }
 
-a.footer-contact-card:hover {
-    background: rgba(212,175,55,0.05);
-    transform: translateY(-3px);
+a.footer-contact-item:hover {
+    color: rgba(212,175,55,0.9);
 }
 
-a.footer-contact-card:hover .footer-contact-icon-wrap {
-    background: rgba(212,175,55,0.18);
+a.footer-contact-item:hover .footer-contact-icon {
     border-color: rgba(212,175,55,0.55);
-    box-shadow: 0 0 22px rgba(212,175,55,0.2);
+    background: rgba(212,175,55,0.12);
 }
 
-a.footer-contact-card:hover .footer-contact-value {
-    color: rgba(255,255,255,0.9);
-}
-
-/* Separador vertical entre tarjetas */
-.footer-contact-vline {
-    width: 1px;
-    align-self: stretch;
-    margin: 16px 0;
-    background: linear-gradient(180deg, transparent, rgba(212,175,55,0.25), transparent);
-    flex-shrink: 0;
-}
-
-/* Ícono circular con borde dorado */
-.footer-contact-icon-wrap {
-    width: 58px;
-    height: 58px;
-    border-radius: 50%;
-    border: 1px solid rgba(212,175,55,0.3);
-    background: rgba(212,175,55,0.07);
+.footer-contact-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #d4af37;
-    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(212,175,55,0.25);
+    background: rgba(212,175,55,0.06);
+    color: rgba(212,175,55,0.75);
     flex-shrink: 0;
+    transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-.footer-contact-info {
+.footer-contact-text {
+    line-height: 1.3;
+}
+
+/* ── Col derecha: Redes sociales ── */
+.footer-social-col {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    text-align: center;
-}
-
-.footer-contact-label {
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: rgba(212,175,55,0.65);
-}
-
-.footer-contact-value {
-    font-size: 0.9rem;
-    color: rgba(255,255,255,0.6);
-    line-height: 1.4;
-    transition: color 0.25s ease;
-}
-
-/* ── Redes sociales ── */
-.footer-social {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    margin-bottom: 0;
+    gap: 8px;
+    padding-left: 48px;
+    border-left: 1px solid rgba(212,175,55,0.15);
 }
 
 .footer-social-btn {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 13px 24px;
+    gap: 9px;
+    padding: 9px 18px;
     border-radius: 50px;
     border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.04);
-    color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.03);
+    color: rgba(255,255,255,0.5);
     text-decoration: none;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 500;
-    letter-spacing: 0.5px;
-    transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease,
-                transform 0.25s ease, box-shadow 0.25s ease;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    transition: background 0.25s ease, border-color 0.25s ease,
+                color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
 }
 
 .footer-social-btn:hover {
-    transform: translateY(-3px);
+    transform: translateX(3px);
 }
 
-/* WhatsApp */
 .footer-social-wa:hover {
     background: rgba(37,211,102,0.1);
-    border-color: rgba(37,211,102,0.45);
+    border-color: rgba(37,211,102,0.4);
     color: #25d366;
-    box-shadow: 0 8px 24px rgba(37,211,102,0.15);
+    box-shadow: 0 4px 16px rgba(37,211,102,0.12);
 }
 
-/* Instagram */
 .footer-social-ig:hover {
     background: rgba(228,64,95,0.1);
-    border-color: rgba(228,64,95,0.45);
+    border-color: rgba(228,64,95,0.4);
     color: #e4405f;
-    box-shadow: 0 8px 24px rgba(228,64,95,0.15);
+    box-shadow: 0 4px 16px rgba(228,64,95,0.12);
 }
 
-/* Facebook */
 .footer-social-fb:hover {
     background: rgba(24,119,242,0.1);
-    border-color: rgba(24,119,242,0.45);
+    border-color: rgba(24,119,242,0.4);
     color: #1877f2;
-    box-shadow: 0 8px 24px rgba(24,119,242,0.15);
-}
-
-.footer-social-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.footer-social-label {
-    line-height: 1;
+    box-shadow: 0 4px 16px rgba(24,119,242,0.12);
 }
 
 /* ── Footer bottom bar ── */
 .footer-bottom {
     background: #040404;
     border-top: 1px solid rgba(255,255,255,0.06);
-    padding: 20px 0;
+    padding: 16px 0;
 }
 
 .footer-bottom-inner {
@@ -240,13 +196,13 @@ a.footer-contact-card:hover .footer-contact-value {
 }
 
 .footer-copy {
-    font-size: 0.82rem;
-    color: rgba(255,255,255,0.3);
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.28);
     line-height: 1.5;
 }
 
 .footer-copy strong {
-    color: rgba(212,175,55,0.65);
+    color: rgba(212,175,55,0.6);
     font-weight: 600;
 }
 
@@ -257,76 +213,99 @@ a.footer-contact-card:hover .footer-contact-value {
 }
 
 .footer-legal a {
-    font-size: 0.8rem;
-    color: rgba(255,255,255,0.28);
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.25);
     text-decoration: none;
     transition: color 0.2s ease;
 }
 
 .footer-legal a:hover {
-    color: rgba(212,175,55,0.8);
+    color: rgba(212,175,55,0.75);
 }
 
-/* ── Responsive Tablet (≤ 860px) ── */
-@media (max-width: 860px) {
-    .footer-body {
-        padding: 52px 0 44px;
+/* ── Responsive Tablet (≤ 900px): 2 cols + social abajo ── */
+@media (max-width: 900px) {
+    .footer-inner {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+        gap: 28px 0;
     }
 
-    .footer-contact-row {
-        max-width: 600px;
+    .footer-brand-col {
+        grid-column: 1;
+        grid-row: 1;
+        border-right: none;
+        border-bottom: none;
+        padding-right: 0;
+        padding-bottom: 0;
     }
 
-    .footer-contact-value {
-        font-size: 0.82rem;
-    }
-}
-
-/* ── Responsive Mobile (≤ 640px) ── */
-@media (max-width: 640px) {
-    .footer-body {
-        padding: 44px 0 36px;
+    .footer-contact-col {
+        grid-column: 2;
+        grid-row: 1;
+        padding: 0 0 0 40px;
+        border-left: 1px solid rgba(212,175,55,0.15);
     }
 
-    .footer-brand-name {
-        margin-bottom: 40px;
-    }
-
-    .footer-contact-row {
-        flex-direction: column;
-        gap: 4px;
-        max-width: 100%;
-    }
-
-    .footer-contact-card {
+    .footer-social-col {
+        grid-column: 1 / -1;
+        grid-row: 2;
         flex-direction: row;
-        align-items: center;
-        text-align: left;
-        padding: 18px 16px;
-        gap: 16px;
-    }
-
-    .footer-contact-info {
-        align-items: flex-start;
-        text-align: left;
-    }
-
-    .footer-contact-icon-wrap {
-        width: 46px;
-        height: 46px;
-    }
-
-    .footer-contact-vline {
-        display: none;
-    }
-
-    .footer-social {
+        flex-wrap: wrap;
         gap: 10px;
+        padding-left: 0;
+        border-left: none;
+        padding-top: 24px;
+        border-top: 1px solid rgba(212,175,55,0.1);
+    }
+}
+
+/* ── Responsive Mobile (≤ 600px) ── */
+@media (max-width: 600px) {
+    .footer-body {
+        padding: 32px 0 28px;
+    }
+
+    .footer-inner {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        gap: 24px;
+    }
+
+    .footer-brand-col {
+        align-items: center;
+        padding: 0;
+        border: none;
+    }
+
+    .footer-brand-altorra {
+        font-size: 2.4rem;
+    }
+
+    .footer-contact-col {
+        padding: 0;
+        border: none;
+    }
+
+    .footer-contact-item {
+        font-size: 0.84rem;
+    }
+
+    .footer-social-col {
+        padding: 0;
+        border: none;
+        border-top: 1px solid rgba(212,175,55,0.1);
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        padding-top: 20px;
     }
 
     .footer-social-btn {
-        padding: 12px 18px;
-        font-size: 0.78rem;
+        flex: 1;
+        min-width: 120px;
+        justify-content: center;
     }
 
     .footer-bottom-inner {
@@ -338,19 +317,6 @@ a.footer-contact-card:hover .footer-contact-value {
 
     .footer-legal {
         gap: 16px;
-    }
-}
-
-/* ── Responsive Mobile XS (≤ 400px) ── */
-@media (max-width: 400px) {
-    .footer-social {
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .footer-social-btn {
-        width: 100%;
-        justify-content: center;
     }
 }
 

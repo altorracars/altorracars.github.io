@@ -101,11 +101,19 @@ button {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     box-shadow: var(--shadow-sm);
-    transition: var(--transition);
+    /* Smart hide/show: transform usa GPU, no provoca reflow */
+    transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s ease;
+    will-change: transform;
 }
 
 #header.sticky {
     box-shadow: var(--shadow-md);
+}
+
+/* Estado oculto — header se desliza hacia arriba fuera de pantalla */
+#header.header--hidden {
+    transform: translateY(-105%);
 }
 
 .navbar {

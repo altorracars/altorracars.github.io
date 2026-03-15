@@ -197,30 +197,49 @@ function initializeHeader() {
         }, 250);
     });
     
-    // ===== STICKY HEADER =====
+    // ===== STICKY + SMART HIDE/SHOW HEADER =====
+    // Se oculta al bajar, reaparece al subir (patrón "smart navbar").
+    // Usa requestAnimationFrame para no bloquear el hilo principal.
+    // CSS usa transform: translateY para aprovechar aceleración GPU.
     let lastScroll = 0;
     let ticking = false;
-    
+    const HIDE_THRESHOLD = 80; // px mínimos antes de activar el ocultamiento
+
     window.addEventListener('scroll', function() {
         if (!ticking) {
             window.requestAnimationFrame(function() {
                 const header = document.getElementById('header');
                 if (header) {
-                    const currentScroll = window.pageYOffset;
-                    
-                    if (currentScroll > 80) {
+                    const currentScroll = window.pageYOffset || window.scrollY;
+
+                    // Sticky (fondo con blur) cuando abandona el tope
+                    if (currentScroll > 10) {
                         header.classList.add('sticky');
                     } else {
                         header.classList.remove('sticky');
                     }
-                    
-                    lastScroll = currentScroll;
+
+                    // Smart hide/show — solo activo pasado el umbral
+                    if (currentScroll > HIDE_THRESHOLD) {
+                        if (currentScroll > lastScroll) {
+                            // Bajando → ocultar
+                            header.classList.add('header--hidden');
+                        } else {
+                            // Subiendo → mostrar
+                            header.classList.remove('header--hidden');
+                        }
+                    } else {
+                        // Cerca del tope → siempre visible
+                        header.classList.remove('header--hidden');
+                    }
+
+                    lastScroll = currentScroll <= 0 ? 0 : currentScroll;
                 }
                 ticking = false;
             });
             ticking = true;
         }
-    });
+    }, { passive: true });
     
     // ===== PREVENIR SCROLL MIENTRAS SE ARRASTRA EN MÓVIL =====
     navMenu.addEventListener('touchmove', function(e) {

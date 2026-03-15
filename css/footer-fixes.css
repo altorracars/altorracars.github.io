@@ -28,7 +28,7 @@ footer {
     background:
         radial-gradient(circle, rgba(212,175,55,0.04) 1px, transparent 1px) 0 0 / 28px 28px,
         #050505;
-    padding: 38px 0 34px;
+    padding: 24px 0 18px;
 }
 
 /* Ambient glow corners */
@@ -83,10 +83,10 @@ footer {
 .footer-col {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 }
 
-.footer-col--brand   { padding-right: 52px; }
+.footer-col--brand   { padding-right: 52px; text-align: center; }
 .footer-col--contact { padding: 0 48px; }
 .footer-col--social  { padding-left: 48px; }
 
@@ -163,20 +163,28 @@ footer {
     white-space: nowrap;
 }
 
-/* ── 9. Tagline ── */
+/* ── 9. Tagline — bloque unificado, centrado ── */
 .footer-tagline {
-    font-size: clamp(0.88rem, 1.05vw, 0.96rem);
-    color: rgba(255,255,255,0.58);
-    line-height: 1.7;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.42);
+    line-height: 1.65;
     margin: 0;
+    text-align: center;
 }
 
-.footer-tagline__sub {
+.footer-tagline strong {
     display: block;
-    margin-top: 5px;
-    color: rgba(255,255,255,0.32);
-    font-size: 0.82rem;
-    line-height: 1.65;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.62);
+    margin-bottom: 3px;
+}
+
+/* Compat — el span __sub ya no existe pero lo dejamos inerte */
+.footer-tagline__sub {
+    display: inline;
+    color: inherit;
+    font-size: inherit;
 }
 
 /* ── 10. Encabezados de columna ── */
@@ -207,7 +215,7 @@ footer {
 .footer-contact {
     display: flex;
     flex-direction: column;
-    gap: 9px;
+    gap: 7px;
 }
 
 .footer-ci {
@@ -241,7 +249,7 @@ a.footer-ci:hover {
     border: 1px solid rgba(212,175,55,0.12);
     border-left: 2px solid rgba(212,175,55,0.45);
     border-radius: 0 6px 6px 0;
-    padding: 11px 15px;
+    padding: 8px 13px;
 }
 
 .footer-schedule__label {
@@ -262,7 +270,7 @@ a.footer-ci:hover {
 .footer-social {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
 }
 
@@ -270,7 +278,7 @@ a.footer-ci:hover {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 20px;
+    padding: 10px 18px;
     border-radius: 50px;
     border: 1px solid rgba(255,255,255,0.1);
     background: rgba(255,255,255,0.03);

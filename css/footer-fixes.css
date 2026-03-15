@@ -1,23 +1,22 @@
 /* ================================================================
-   FOOTER — ALTORRA CARS  ·  Premium Dark v4
-   Concepto: Brand mark + statement + contact en línea + redes
+   FOOTER — ALTORRA CARS  ·  Premium v5  ·  3-col layout
    ================================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Cardo:wght@700&display=swap');
 
-/* ── 0. Anular border-top del footer en dark-theme.css (crea la línea doble) ── */
+/* ── 0. Anular border-top del dark-theme.css (evita línea doble) ── */
 footer {
     border-top: none !important;
 }
 
-/* ── 1. Línea superior (única línea dorada del footer) ── */
+/* ── 1. Línea dorada superior ── */
 .footer-topline {
     height: 1px;
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(212,175,55,0.5) 20%,
+        rgba(212,175,55,0.4) 15%,
         #d4af37 50%,
-        rgba(212,175,55,0.5) 80%,
+        rgba(212,175,55,0.4) 85%,
         transparent 100%
     );
 }
@@ -26,26 +25,25 @@ footer {
 .footer-body {
     position: relative;
     overflow: hidden;
-    /*  Textura sutil: dot grid muy tenue  */
     background:
-        radial-gradient(circle, rgba(212,175,55,0.045) 1px, transparent 1px) 0 0 / 28px 28px,
+        radial-gradient(circle, rgba(212,175,55,0.04) 1px, transparent 1px) 0 0 / 28px 28px,
         #050505;
-    padding: 52px 0 44px;
+    padding: 56px 0 48px;
 }
 
-/* Glow de ambientes en esquinas — sutil */
+/* Ambient glow corners */
 .footer-body::before {
     content: '';
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(ellipse 40% 80% at 0% 50%,  rgba(212,175,55,0.03) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 80% at 100% 50%, rgba(212,175,55,0.03) 0%, transparent 70%);
+        radial-gradient(ellipse 40% 80% at 0% 50%,  rgba(212,175,55,0.035) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 80% at 100% 50%, rgba(212,175,55,0.035) 0%, transparent 70%);
     pointer-events: none;
     z-index: 0;
 }
 
-/* ── 3. Marca de agua de fondo ── */
+/* ── 3. Marca de agua ── */
 .footer-wm {
     position: absolute;
     top: 50%;
@@ -55,7 +53,7 @@ footer {
     font-weight: 700;
     font-size: clamp(80px, 16vw, 200px);
     letter-spacing: 0.12em;
-    color: rgba(212,175,55,0.028);
+    color: rgba(212,175,55,0.025);
     white-space: nowrap;
     pointer-events: none;
     user-select: none;
@@ -63,7 +61,7 @@ footer {
     line-height: 1;
 }
 
-/* ── 4. Contenedor más ancho (1440px) ── */
+/* ── 4. Contenedor ── */
 .footer-wrap {
     max-width: 1440px;
     margin: 0 auto;
@@ -72,27 +70,44 @@ footer {
     z-index: 1;
 }
 
-/* ── 5. Layout 2 zonas: brand-mark | info ── */
-.footer-layout {
+/* ── 5. Grid 3 columnas: brand | sep | contact | sep | social ── */
+.footer-grid {
     display: grid;
-    grid-template-columns: auto auto 1fr;
-    align-items: center;
+    grid-template-columns: 1.1fr 1px 1fr 1px minmax(230px, 270px);
+    align-items: start;
     gap: 0;
-    min-height: 180px;
+    min-height: 200px;
 }
 
-/* ── 6. Zona izquierda: identidad ── */
-.footer-identity {
-    padding-right: 64px;
+/* ── 6. Columnas ── */
+.footer-col {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 22px;
 }
 
-/* Brand mark */
+.footer-col--brand   { padding-right: 52px; }
+.footer-col--contact { padding: 0 48px; }
+.footer-col--social  { padding-left: 48px; }
+
+/* ── 7. Separadores verticales ── */
+.footer-col-sep {
+    align-self: stretch;
+    margin: 4px 0;
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(212,175,55,0.22) 15%,
+        rgba(212,175,55,0.22) 85%,
+        transparent 100%
+    );
+}
+
+/* ── 8. Brand mark ── */
 .footer-mark {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     line-height: 1;
     gap: 0;
 }
@@ -100,12 +115,11 @@ footer {
 .footer-mark__name {
     display: block;
     font-family: 'Cardo', Georgia, 'Times New Roman', serif;
-    font-size: clamp(2.4rem, 4vw, 3.8rem);
+    font-size: clamp(2.6rem, 4.2vw, 4rem);
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     white-space: nowrap;
-    /* Shimmer dorado */
     background: linear-gradient(
         115deg,
         #7a5c00 0%,
@@ -129,124 +143,78 @@ footer {
     100% { background-position: 0% 50%; }
 }
 
-/* Regla entre ALTORRA y CARS — única línea de separación */
 .footer-mark__rule {
     display: block;
     width: 100%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.6) 30%, rgba(212,175,55,0.6) 70%, transparent);
-    margin: 6px 0 4px;
+    background: linear-gradient(90deg, rgba(212,175,55,0.6) 0%, rgba(212,175,55,0.2) 70%, transparent 100%);
+    margin: 7px 0 5px;
 }
 
 .footer-mark__sub {
     display: block;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: clamp(0.52rem, 0.85vw, 0.68rem);
+    font-size: clamp(0.5rem, 0.8vw, 0.66rem);
     font-weight: 400;
     letter-spacing: 0.65em;
     text-indent: 0.65em;
     text-transform: uppercase;
-    color: rgba(212,175,55,0.5);
+    color: rgba(212,175,55,0.45);
     white-space: nowrap;
 }
 
-/* ── 7. Divisor vertical central ── */
-.footer-divider {
-    width: 1px;
-    align-self: stretch;
-    margin: 12px 0;
-    background: linear-gradient(
-        180deg,
-        transparent 0%,
-        rgba(212,175,55,0.25) 20%,
-        rgba(212,175,55,0.25) 80%,
-        transparent 100%
-    );
-}
-
-/* ── 8. Zona derecha: 2 sub-columnas ── */
-.footer-info {
-    padding-left: 60px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 0 52px;
-    align-items: center;
-}
-
-/* Sub-col izquierda */
-.footer-info-left {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    justify-content: center;
-}
-
-/* Tagline */
+/* ── 9. Tagline ── */
 .footer-tagline {
-    font-size: clamp(0.88rem, 1.1vw, 0.97rem);
-    color: rgba(255,255,255,0.55);
-    line-height: 1.65;
+    font-size: clamp(0.88rem, 1.05vw, 0.96rem);
+    color: rgba(255,255,255,0.58);
+    line-height: 1.7;
     margin: 0;
 }
 
 .footer-tagline__sub {
     display: block;
-    margin-top: 4px;
-    color: rgba(255,255,255,0.3);
+    margin-top: 5px;
+    color: rgba(255,255,255,0.32);
     font-size: 0.82rem;
-    font-style: italic;
+    line-height: 1.65;
 }
 
-/* Sub-col derecha */
-.footer-info-right {
+/* ── 10. Encabezados de columna ── */
+.footer-col-heading {
     display: flex;
-    flex-direction: column;
-    gap: 18px;
-    align-items: flex-start;
-    min-width: 180px;
-}
-
-/* Horario */
-.footer-schedule {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-left: 2px solid rgba(212,175,55,0.4);
-    border-radius: 0 6px 6px 0;
-    padding: 10px 14px;
-    min-width: 100%;
-    box-sizing: border-box;
-}
-
-.footer-schedule__label {
-    font-size: 0.62rem;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.63rem;
     font-weight: 700;
-    letter-spacing: 0.14em;
-    text-indent: 0.14em;
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
     text-transform: uppercase;
-    color: rgba(212,175,55,0.65);
+    color: rgba(212,175,55,0.9);
+    margin: 0;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(212,175,55,0.18);
 }
 
-.footer-schedule__value {
-    font-size: 0.8rem;
-    color: rgba(255,255,255,0.4);
-    white-space: nowrap;
+.footer-col-heading__icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: rgba(212,175,55,0.7);
 }
 
-/* ── 9. Contacto en columna vertical ── */
+/* ── 11. Contacto ── */
 .footer-contact {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 9px;
 }
 
 .footer-ci {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    font-size: 0.82rem;
+    gap: 8px;
+    font-size: 0.84rem;
     color: rgba(255,255,255,0.38);
     text-decoration: none;
     transition: color 0.2s ease;
@@ -254,41 +222,67 @@ footer {
 }
 
 a.footer-ci:hover {
-    color: rgba(212,175,55,0.8);
+    color: rgba(212,175,55,0.85);
 }
 
 .footer-ci__icon {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
-    color: rgba(212,175,55,0.5);
+    color: rgba(212,175,55,0.55);
 }
 
-/* .footer-ci-sep removed — contact is now vertical, no separators needed */
-
-/* ── 10. Redes sociales — 3 botones uniformes ── */
-.footer-social {
+/* ── 12. Horario ── */
+.footer-schedule {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 5px;
+    background: rgba(212,175,55,0.04);
+    border: 1px solid rgba(212,175,55,0.12);
+    border-left: 2px solid rgba(212,175,55,0.45);
+    border-radius: 0 6px 6px 0;
+    padding: 11px 15px;
 }
 
-.footer-soc {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    padding: 9px 16px;
-    border-radius: 50px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.03);
-    color: rgba(255,255,255,0.45);
-    text-decoration: none;
-    transition: background 0.25s, border-color 0.25s, color 0.25s,
-                box-shadow 0.25s, transform 0.2s;
+.footer-schedule__label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(212,175,55,0.7);
+}
+
+.footer-schedule__value {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.42);
     white-space: nowrap;
 }
 
-/* Icono SVG — idéntico en los 3 botones */
+/* ── 13. Redes sociales — vertical stack full-width ── */
+.footer-social {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.footer-soc {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-radius: 50px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    color: rgba(255,255,255,0.48);
+    text-decoration: none;
+    transition: background 0.25s, border-color 0.25s, color 0.25s,
+                box-shadow 0.25s, transform 0.18s;
+    white-space: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .footer-soc__icon {
     width: 18px;
     height: 18px;
@@ -297,35 +291,35 @@ a.footer-ci:hover {
 }
 
 .footer-soc__label {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 500;
     letter-spacing: 0.01em;
 }
 
-/* Hover por red con colores de marca */
+/* Hover por red */
 .footer-soc--wa:hover {
-    background:      rgba(37,211,102,0.09);
-    border-color:    rgba(37,211,102,0.4);
-    color:           #25d366;
-    box-shadow:      0 4px 18px rgba(37,211,102,0.12);
-    transform:       translateY(-2px);
+    background:    rgba(37,211,102,0.09);
+    border-color:  rgba(37,211,102,0.4);
+    color:         #25d366;
+    box-shadow:    0 4px 18px rgba(37,211,102,0.12);
+    transform:     translateY(-2px);
 }
 .footer-soc--ig:hover {
-    background:      rgba(228,64,95,0.09);
-    border-color:    rgba(228,64,95,0.4);
-    color:           #e4405f;
-    box-shadow:      0 4px 18px rgba(228,64,95,0.12);
-    transform:       translateY(-2px);
+    background:    rgba(228,64,95,0.09);
+    border-color:  rgba(228,64,95,0.4);
+    color:         #e4405f;
+    box-shadow:    0 4px 18px rgba(228,64,95,0.12);
+    transform:     translateY(-2px);
 }
 .footer-soc--fb:hover {
-    background:      rgba(24,119,242,0.09);
-    border-color:    rgba(24,119,242,0.4);
-    color:           #1877f2;
-    box-shadow:      0 4px 18px rgba(24,119,242,0.12);
-    transform:       translateY(-2px);
+    background:    rgba(24,119,242,0.09);
+    border-color:  rgba(24,119,242,0.4);
+    color:         #1877f2;
+    box-shadow:    0 4px 18px rgba(24,119,242,0.12);
+    transform:     translateY(-2px);
 }
 
-/* ── 11. Barra inferior ── */
+/* ── 14. Barra inferior ── */
 .footer-bottom {
     background: #030303;
     border-top: 1px solid rgba(255,255,255,0.05);
@@ -348,7 +342,7 @@ a.footer-ci:hover {
 }
 
 .footer-copy strong {
-    color: rgba(212,175,55,0.45);
+    color: rgba(212,175,55,0.5);
     font-weight: 600;
 }
 
@@ -366,7 +360,7 @@ a.footer-ci:hover {
 }
 
 .footer-legal a:hover {
-    color: rgba(212,175,55,0.7);
+    color: rgba(212,175,55,0.75);
 }
 
 .footer-legal span {
@@ -378,79 +372,53 @@ a.footer-ci:hover {
    RESPONSIVE
    ================================================================ */
 
-/* Tablet grande — 1100px */
-@media (max-width: 1100px) {
-    .footer-wrap         { padding: 0 36px; }
-    .footer-identity     { padding-right: 44px; }
-    .footer-info         { padding-left: 40px; gap: 0 36px; }
+/* 1200px — reducir padding lateral */
+@media (max-width: 1200px) {
+    .footer-wrap            { padding: 0 36px; }
+    .footer-col--brand      { padding-right: 40px; }
+    .footer-col--contact    { padding: 0 36px; }
+    .footer-col--social     { padding-left: 36px; }
 }
 
-/* Tablet — 960px: stack info sub-cols */
+/* 960px — colapsar a 2 col: brand + [contact | social] */
 @media (max-width: 960px) {
-    .footer-info {
+    .footer-grid {
         grid-template-columns: 1fr;
-        gap: 24px 0;
+        gap: 36px 0;
     }
-    .footer-info-right {
-        flex-direction: row;
-        align-items: stretch;
-        gap: 16px;
-        min-width: unset;
-    }
-    .footer-schedule { min-width: unset; flex: 1; }
-}
-
-/* Tablet — 860px: stack brand + info */
-@media (max-width: 860px) {
-    .footer-layout {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto;
-        min-height: unset;
-        gap: 32px;
-    }
-
-    .footer-divider {
+    .footer-col-sep {
         width: 60%;
         height: 1px;
-        margin: 0 auto;
-        align-self: unset;
+        margin: 0;
         background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent);
     }
-
-    .footer-identity {
-        padding-right: 0;
-        justify-content: center;
-    }
-
-    .footer-info {
-        padding-left: 0;
-    }
+    .footer-col--brand   { padding-right: 0; }
+    .footer-col--contact { padding: 0; }
+    .footer-col--social  { padding-left: 0; }
+    .footer-col--social  { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+    .footer-col--social .footer-col-heading { width: 100%; }
+    .footer-col--social .footer-social      { flex-direction: row; flex-wrap: wrap; }
+    .footer-soc { width: auto; flex: 1; min-width: 140px; justify-content: center; }
 }
 
-/* Mobile — 560px */
-@media (max-width: 560px) {
-    .footer-body         { padding: 40px 0 32px; }
+/* 680px — centrar todo */
+@media (max-width: 680px) {
+    .footer-body         { padding: 44px 0 36px; }
     .footer-wrap         { padding: 0 20px; }
-
-    .footer-info         { text-align: center; }
-    .footer-info-left    { align-items: center; }
-    .footer-info-right   { flex-direction: column; align-items: center; width: 100%; }
-    .footer-schedule     { width: 100%; text-align: center; border-radius: 6px; border-left: none; border-top: 2px solid rgba(212,175,55,0.4); }
+    .footer-mark         { align-items: center; }
+    .footer-mark__rule   { width: 80%; }
+    .footer-col          { align-items: center; text-align: center; }
     .footer-contact      { align-items: center; }
-    .footer-social       { flex-wrap: wrap; justify-content: center; }
-    .footer-soc          { flex: 1; min-width: 120px; justify-content: center; }
+    .footer-schedule     { border-radius: 6px; border-left: none; border-top: 2px solid rgba(212,175,55,0.4); text-align: center; }
+    .footer-col-heading  { justify-content: center; }
+    .footer-col--social .footer-social { flex-direction: column; width: 100%; }
+    .footer-soc          { width: 100%; max-width: 280px; justify-content: center; }
     .footer-wm           { font-size: 18vw; }
-
-    .footer-bottom__row {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 10px;
-    }
+    .footer-bottom__row  { flex-direction: column; align-items: center; text-align: center; gap: 10px; }
 }
 
 /* ================================================================
-   LEGADO — clases antiguas por compatibilidad
+   LEGADO — compatibilidad con clases antiguas
    ================================================================ */
 .footer-subtitle        { font-size:0.68rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:rgba(212,175,55,0.75); margin-bottom:16px; }
 .footer-text            { font-size:0.85rem; color:rgba(255,255,255,0.42); line-height:1.7; margin-bottom:8px; }

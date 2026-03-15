@@ -103,122 +103,146 @@
         return Number(ts);
     }
 
-    /* ─── Banner de actualización obligatoria ────────────────────── */
-    let _bannerShown = false;
+    /* ─── Modal de actualización — centrado en pantalla ─────────── */
+    let _modalShown = false;
 
     function showUpdateBanner() {
-        if (_bannerShown) return;
-        _bannerShown = true;
+        if (_modalShown) return;
+        _modalShown = true;
 
-        // Estilos inyectados una sola vez
         if (!document.getElementById('altorra-update-styles')) {
             const style = document.createElement('style');
             style.id = 'altorra-update-styles';
             style.textContent = `
                 #altorra-update-banner {
                     position: fixed;
-                    top: 0; left: 0; right: 0;
+                    inset: 0;
                     z-index: 99999;
-                    background: linear-gradient(135deg, #0d0b00 0%, #1a1400 100%);
-                    border-bottom: 2px solid #d4af37;
-                    box-shadow: 0 4px 28px rgba(0,0,0,0.7);
-                    transform: translateY(-110%);
-                    transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
+                    background: rgba(0,0,0,0.72);
+                    backdrop-filter: blur(6px);
+                    -webkit-backdrop-filter: blur(6px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    opacity: 0;
+                    transition: opacity 0.35s ease;
                     font-family: inherit;
                 }
                 #altorra-update-banner.aub-visible {
-                    transform: translateY(0);
+                    opacity: 1;
                 }
-                .aub-inner {
-                    display: flex;
-                    align-items: center;
-                    gap: 14px;
-                    max-width: 1540px;
-                    margin: 0 auto;
-                    padding: 13px 24px;
+                .aub-card {
+                    background: linear-gradient(160deg, #0f0c00 0%, #1c1600 55%, #0a0800 100%);
+                    border: 1px solid rgba(212,175,55,0.3);
+                    border-top: 2px solid #d4af37;
+                    border-radius: 14px;
+                    box-shadow: 0 32px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(212,175,55,0.07);
+                    padding: 40px 44px 36px;
+                    max-width: 420px;
+                    width: 100%;
+                    text-align: center;
+                    transform: translateY(24px) scale(0.96);
+                    transition: transform 0.42s cubic-bezier(0.16,1,0.3,1);
                 }
-                .aub-icon {
-                    font-size: 1.25rem;
-                    flex-shrink: 0;
+                #altorra-update-banner.aub-visible .aub-card {
+                    transform: translateY(0) scale(1);
+                }
+                .aub-brand {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    letter-spacing: 0.14em;
+                    background: linear-gradient(115deg, #c9a227 0%, #f5df80 50%, #d4af37 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
                     line-height: 1;
                 }
-                .aub-text {
-                    flex: 1;
-                    min-width: 0;
-                }
-                .aub-text strong {
+                .aub-brand-sub {
                     display: block;
-                    font-size: 0.88rem;
+                    font-size: 0.48rem;
+                    letter-spacing: 0.6em;
+                    text-indent: 0.6em;
+                    text-transform: uppercase;
+                    color: rgba(212,175,55,0.38);
+                    margin-top: 3px;
+                }
+                .aub-rule {
+                    width: 50px;
+                    height: 1px;
+                    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.55), transparent);
+                    margin: 14px auto 20px;
+                }
+                .aub-icon {
+                    font-size: 2.2rem;
+                    display: block;
+                    margin-bottom: 10px;
+                    line-height: 1;
+                }
+                .aub-title {
+                    font-size: 1rem;
                     font-weight: 700;
                     color: #d4af37;
+                    margin: 0 0 8px;
                     line-height: 1.3;
                 }
-                .aub-text span {
-                    font-size: 0.78rem;
-                    color: rgba(255,255,255,0.5);
-                    line-height: 1.4;
+                .aub-desc {
+                    font-size: 0.81rem;
+                    color: rgba(255,255,255,0.42);
+                    line-height: 1.6;
+                    margin: 0 0 28px;
                 }
                 .aub-btn {
-                    flex-shrink: 0;
-                    padding: 10px 24px;
-                    background: linear-gradient(135deg, #d4af37, #b89658);
+                    display: block;
+                    width: 100%;
+                    padding: 14px 24px;
+                    background: linear-gradient(135deg, #d4af37 0%, #b89658 100%);
                     color: #0a0800;
                     border: none;
-                    border-radius: 6px;
+                    border-radius: 8px;
                     font-weight: 700;
-                    font-size: 0.78rem;
-                    letter-spacing: 1.2px;
+                    font-size: 0.8rem;
+                    letter-spacing: 1.6px;
                     text-transform: uppercase;
                     cursor: pointer;
                     transition: transform 0.2s ease, box-shadow 0.2s ease;
                     font-family: inherit;
-                    white-space: nowrap;
                 }
                 .aub-btn:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 6px 20px rgba(212,175,55,0.45);
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 28px rgba(212,175,55,0.4);
                 }
-                .aub-btn:active { transform: translateY(0); }
+                .aub-btn:active  { transform: translateY(0); }
                 .aub-btn:disabled {
-                    opacity: 0.7;
+                    opacity: 0.65;
                     cursor: not-allowed;
                     transform: none;
                 }
-                @media (max-width: 600px) {
-                    .aub-inner {
-                        flex-wrap: wrap;
-                        gap: 10px;
-                        padding: 12px 16px;
-                    }
-                    .aub-text span { display: none; }
-                    .aub-btn {
-                        width: 100%;
-                        text-align: center;
-                        padding: 13px;
-                    }
+                @media (max-width: 480px) {
+                    .aub-card { padding: 30px 24px 28px; }
                 }
             `;
             document.head.appendChild(style);
         }
 
-        const banner = document.createElement('div');
-        banner.id = 'altorra-update-banner';
-        banner.setAttribute('role', 'alert');
-        banner.setAttribute('aria-live', 'assertive');
-        banner.innerHTML = `
-            <div class="aub-inner">
+        const overlay = document.createElement('div');
+        overlay.id = 'altorra-update-banner';
+        overlay.setAttribute('role', 'alertdialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'aub-title');
+        overlay.innerHTML = `
+            <div class="aub-card">
+                <div class="aub-brand">ALTORRA<span class="aub-brand-sub">CARS</span></div>
+                <div class="aub-rule"></div>
                 <span class="aub-icon" aria-hidden="true">⚡</span>
-                <div class="aub-text">
-                    <strong>Nueva versión disponible</strong>
-                    <span>ALTORRA CARS fue actualizado. Actualiza para ver los últimos cambios.</span>
-                </div>
-                <button class="aub-btn" id="aub-reload-btn">ACTUALIZAR AHORA</button>
+                <p class="aub-title" id="aub-title">Nueva versión disponible</p>
+                <p class="aub-desc">Hay actualizaciones con nuevos vehículos o cambios recientes. Actualiza para ver el catálogo más reciente.</p>
+                <button class="aub-btn" id="aub-reload-btn">Actualizar ahora</button>
             </div>
         `;
-        document.body.prepend(banner);
+        document.body.appendChild(overlay);
 
-        // Animar entrada (doble rAF para que el CSS de transición aplique)
-        requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('aub-visible')));
+        requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('aub-visible')));
 
         document.getElementById('aub-reload-btn').addEventListener('click', function () {
             this.textContent = 'Actualizando…';
@@ -436,6 +460,11 @@
 
         setupListeners() {
             if (!('serviceWorker' in navigator)) return;
+
+            // Guardar si ya había un SW activo antes de cualquier cambio.
+            // Si no había controller previo es primera instalación → no notificar.
+            const hadController = !!navigator.serviceWorker.controller;
+
             navigator.serviceWorker.addEventListener('message', (e) => {
                 if (e.data?.type === 'SW_UPDATED') {
                     console.info('[SW] Actualizado a:', e.data.version);
@@ -445,8 +474,14 @@
                     window.location.reload(true);
                 }
             });
+
+            // controllerchange se dispara tanto en primera instalación como en updates.
+            // Solo mostrar modal si ya había un controller previo (= update real, no primer install).
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload(true);
+                if (hadController) {
+                    console.info('[SW] Controller cambiado → mostrando aviso de actualización');
+                    showUpdateBanner();
+                }
             });
         }
     };

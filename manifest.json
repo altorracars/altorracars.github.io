@@ -1,7 +1,7 @@
 {
-  "name": "ALTORRA CARS - Vehículos en Cartagena",
+  "name": "ALTORRA CARS - Carros Usados en Cartagena",
   "short_name": "ALTORRA CARS",
-  "description": "Encuentra los mejores vehículos nuevos y usados en Cartagena. SUVs, sedanes, pickups y hatchbacks con financiación y garantía.",
+  "description": "Compra y venta de carros usados en Cartagena, Colombia. Vehículos usados certificados con transparencia, calidad y atención personalizada.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

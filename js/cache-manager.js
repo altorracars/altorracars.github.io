@@ -41,6 +41,10 @@
     const DB_CACHE_KEY      = 'altorra-db-cache';   // clave que usa database.js
     const META_DOC_PATH     = 'system/meta';
     const DEPLOY_INFO_PATH  = '/data/deploy-info.json';
+    // Período de gracia: evita bucle infinito si el SW activa y envía SW_UPDATED
+    // justo después de que clearAndReload() reinstala el SW en la misma sesión.
+    const UPDATE_GRACE_KEY  = 'altorra_update_grace';
+    const UPDATE_GRACE_MS   = 30_000; // 30 segundos
 
     /* ─── L1: Memory cache ──────────────────────────────────────── */
     const memoryCache = new Map();
@@ -416,6 +420,12 @@
         /** Limpia todo y recarga la página. */
         async clearAndReload() {
             console.info('[AltorraCache] Limpieza total solicitada');
+
+            // Marcar período de gracia ANTES de cualquier otra operación.
+            // Este valor sobrevive el reload (localStorage) y suprime el modal
+            // durante 30 s para evitar que el SW recién instalado vuelva a dispararlo.
+            localStorage.setItem(UPDATE_GRACE_KEY, Date.now().toString());
+
             await this.invalidate();
             sessionStorage.clear();
 
@@ -475,19 +485,27 @@
                 }
             });
 
-            // controllerchange se dispara tanto en primera instalación como en updates.
-            // Solo mostrar modal si ya había un controller previo (= update real, no primer install).
+            // controllerchange: solo log. La notificación la maneja SW_UPDATED
+            // (que ahora solo se emite en updates reales) y updatefound.
+            // Eliminar el trigger de modal aquí evita una fuente de duplicados.
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (hadController) {
-                    console.info('[SW] Controller cambiado → mostrando aviso de actualización');
-                    showUpdateBanner();
-                }
+                console.info('[SW] Controller cambiado (controller:', !!navigator.serviceWorker.controller, ')');
             });
         }
     };
 
     /* ─── Inicialización ─────────────────────────────────────────── */
     async function init() {
+        // 0. Período de gracia post-clearAndReload
+        //    Si acabamos de hacer clearAndReload() en los últimos 30 s, suprimir
+        //    TODAS las señales de actualización para no entrar en bucle infinito.
+        const graceSince = Number(localStorage.getItem(UPDATE_GRACE_KEY) || 0);
+        if (graceSince && (Date.now() - graceSince) < UPDATE_GRACE_MS) {
+            _modalShown = true; // bloquea cualquier llamada a showUpdateBanner()
+            localStorage.removeItem(UPDATE_GRACE_KEY);
+            console.info('[AltorraCache] Grace period activo — modal suprimido tras reload de actualización');
+        }
+
         // 1. Detectar deploy nuevo de APP_VERSION (hardcoded cambia en PR manuale)
         const storedVersion = localStorage.getItem(VERSION_KEY);
         if (storedVersion && storedVersion !== APP_VERSION) {

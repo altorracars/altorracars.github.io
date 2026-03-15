@@ -42,29 +42,37 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Activate - clean ALL old caches and take control
+// Activate - clean old caches, take control, notify ONLY on real updates
 self.addEventListener('activate', (event) => {
     console.log('[SW] Activating version:', CACHE_VERSION);
 
     event.waitUntil(
         caches.keys()
             .then((cacheNames) => {
-                return Promise.all(
-                    cacheNames.map((cacheName) => {
-                        // Delete ANY cache that doesn't match current version
-                        if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
-                            console.log('[SW] Deleting old cache:', cacheName);
-                            return caches.delete(cacheName);
-                        }
-                    })
+                // Identify old caches to delete
+                const toDelete = cacheNames.filter(
+                    (n) => n !== CACHE_NAME && n !== RUNTIME_CACHE
                 );
+                // isRealUpdate: true only when there were previous caches
+                // (genuine version bump). False on first install / after unregister.
+                const isRealUpdate = toDelete.length > 0;
+
+                return Promise.all(toDelete.map((n) => {
+                    console.log('[SW] Deleting old cache:', n);
+                    return caches.delete(n);
+                })).then(() => isRealUpdate);
             })
-            .then(() => {
-                // Take control of all clients immediately
-                return self.clients.claim();
-            })
-            .then(() => {
-                // Notify all clients about the update
+            .then((isRealUpdate) => self.clients.claim().then(() => isRealUpdate))
+            .then((isRealUpdate) => {
+                if (!isRealUpdate) {
+                    // First install or post-unregister reinstall — do NOT notify.
+                    // Notifying here would cause an infinite reload loop because
+                    // clearAndReload() unregisters the SW and immediately triggers
+                    // a fresh install on the next page load.
+                    console.log('[SW] First install — skipping SW_UPDATED notification');
+                    return;
+                }
+                console.log('[SW] Real update detected — notifying clients');
                 return self.clients.matchAll().then((clients) => {
                     clients.forEach((client) => {
                         client.postMessage({

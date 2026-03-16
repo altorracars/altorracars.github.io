@@ -422,27 +422,30 @@
             console.info('[AltorraCache] Limpieza total solicitada');
 
             // Marcar período de gracia ANTES de cualquier otra operación.
-            // Este valor sobrevive el reload (localStorage) y suprime el modal
-            // durante 30 s para evitar que el SW recién instalado vuelva a dispararlo.
             localStorage.setItem(UPDATE_GRACE_KEY, Date.now().toString());
 
             await this.invalidate();
             sessionStorage.clear();
 
+            // Si hay un SW esperando (installed pero no activated), activarlo ya.
+            if ('serviceWorker' in navigator) {
+                const reg = await navigator.serviceWorker.getRegistration();
+                if (reg?.waiting) {
+                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+            }
+
             // Vaciar todos los cachés del Service Worker SIN desregistrarlo.
-            // Esto es crítico: si se desregistra el SW, el navegador usa su caché
-            // HTTP propio (GitHub Pages envía max-age=600) y los archivos viejos
-            // persisten aunque se llame a reload(true) — que los navegadores modernos
-            // tratan igual que reload() desde 2019 (spec change).
-            // Con el SW activo y sus cachés vacíos, intercepta cada petición y
-            // la resuelve forzosamente desde la red → resultado equivalente a Ctrl+Shift+R.
+            // El SW sigue activo e intercepta todas las peticiones en el reload.
+            // Sus estrategias de fetch usan cache: 'no-cache' / 'no-store',
+            // así que con los cachés SW vacíos, TODA petición va directo al
+            // servidor → resultado equivalente a Ctrl+Shift+R.
             if ('caches' in window) {
                 const names = await caches.keys();
                 await Promise.all(names.map(n => caches.delete(n)));
                 console.info('[AltorraCache] SW caches vaciados:', names.length);
             }
 
-            // reload() estándar — el SW (que sigue vivo) sirve todo desde red
             window.location.reload();
         }
     };
@@ -485,9 +488,6 @@
                 if (e.data?.type === 'SW_UPDATED') {
                     console.info('[SW] Actualizado a:', e.data.version);
                     this.notifyUpdate();
-                }
-                if (e.data?.type === 'CACHE_CLEARED') {
-                    window.location.reload(true);
                 }
             });
 

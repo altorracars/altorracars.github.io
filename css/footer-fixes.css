@@ -178,13 +178,13 @@ footer {
 .footer-tagline {
     font-size: 0.82rem;
     color: rgba(255,255,255,0.42);
-    line-height: 1.6;
+    line-height: 1.7;
     margin: 0;
-    /* text-wrap: balance equilibra las líneas evitando líneas finales
-       muy cortas — Chrome 114+, Firefox 121+, Edge 114+
-       Fallback: left-aligned limpio sin espacios feos */
-    text-align: left;
+    text-align: center;
     text-wrap: balance;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .footer-tagline strong {
@@ -192,7 +192,7 @@ footer {
     font-size: 0.88rem;
     font-weight: 600;
     color: rgba(255,255,255,0.62);
-    margin-bottom: 3px;
+    margin-bottom: 5px;
     text-align: center;
 }
 
@@ -453,18 +453,21 @@ a.footer-ci:hover {
     .footer-mark__name   { font-size: clamp(1.9rem, 10vw, 2.6rem); }
     .footer-mark__rule   { width: 70%; margin: 4px 0 3px; }
 
-    /* Tagline en mobile: balance para líneas equilibradas */
+    /* Tagline en mobile: centrado y simétrico */
     .footer-tagline {
         font-size: 0.79rem;
-        line-height: 1.55;
-        text-align: left;
+        line-height: 1.6;
+        text-align: center;
         text-wrap: balance;
+        max-width: 320px;
+        margin-left: auto;
+        margin-right: auto;
     }
     .footer-tagline strong {
         font-size: 0.82rem;
         display: block;
         text-align: center;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
     }
 
     /* Separadores más apretados */

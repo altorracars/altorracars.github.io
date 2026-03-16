@@ -215,49 +215,56 @@ class FavoritesManager {
     }
 
     /**
-     * Actualiza todos los contadores en la UI
+     * Actualiza todos los contadores en la UI.
+     * Si los elementos del header aún no existen (carga dinámica),
+     * usa MutationObserver para actualizar cuando aparezcan.
      */
     updateAllCounters() {
         const count = this.count();
         const countStr = count.toString();
 
-        // Actualizar contador desktop
-        const favCount = document.getElementById('favCount');
-        if (favCount) {
-            favCount.textContent = countStr;
-        }
+        const counterIds = ['favCount', 'favCountMobile', 'favoritesCount'];
+        let allFound = true;
 
-        // Actualizar contador móvil
-        const favCountMobile = document.getElementById('favCountMobile');
-        if (favCountMobile) {
-            favCountMobile.textContent = countStr;
-        }
-
-        // Actualizar contador en página de favoritos
-        const favoritesCount = document.getElementById('favoritesCount');
-        if (favoritesCount) {
-            favoritesCount.textContent = countStr;
-        }
+        counterIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = countStr;
+            } else {
+                allFound = false;
+            }
+        });
 
         this._log(`🔄 Contadores actualizados: ${count}`);
 
-        // Retry después de 100ms por si el header no ha cargado
-        setTimeout(() => {
-            const favCountRetry = document.getElementById('favCount');
-            if (favCountRetry) favCountRetry.textContent = countStr;
-
-            const favCountMobileRetry = document.getElementById('favCountMobile');
-            if (favCountMobileRetry) favCountMobileRetry.textContent = countStr;
-        }, 100);
-
-        // Otro retry después de 300ms
-        setTimeout(() => {
-            const favCountRetry2 = document.getElementById('favCount');
-            if (favCountRetry2) favCountRetry2.textContent = countStr;
-
-            const favCountMobileRetry2 = document.getElementById('favCountMobile');
-            if (favCountMobileRetry2) favCountMobileRetry2.textContent = countStr;
-        }, 300);
+        // Si faltan elementos (header aún cargando), observar el DOM
+        if (!allFound && !this._observing) {
+            this._observing = true;
+            const observer = new MutationObserver(() => {
+                let found = 0;
+                counterIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.textContent = this.count().toString();
+                        found++;
+                    }
+                });
+                // Desconectar una vez que encontramos al menos los 2 del header
+                if (found >= 2) {
+                    observer.disconnect();
+                    this._observing = false;
+                    this._log('🔄 Contadores actualizados vía MutationObserver');
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            // Seguridad: desconectar después de 5s si nunca aparecen
+            setTimeout(() => {
+                if (this._observing) {
+                    observer.disconnect();
+                    this._observing = false;
+                }
+            }, 5000);
+        }
     }
 
     /**

@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260316191238' + '20260310'; // Bumped: category images moved out of precache
+const CACHE_VERSION = 'v20260316191238'; // Bumped: category images moved out of precache
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 
@@ -10,7 +10,6 @@ const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 // Category images (/multimedia/categories/) are intentionally excluded:
 // they change between deploys and must always be fetched fresh (networkFirst).
 const STATIC_ASSETS = [
-    '/multimedia/logo-altorra-cars.webp',
     '/multimedia/vehicles/placeholder-car.jpg',
     '/multimedia/Logos/Chevrolet.webp',
     '/multimedia/Logos/Nissan.webp',

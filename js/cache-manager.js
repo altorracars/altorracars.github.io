@@ -429,15 +429,21 @@
             await this.invalidate();
             sessionStorage.clear();
 
+            // Vaciar todos los cachés del Service Worker SIN desregistrarlo.
+            // Esto es crítico: si se desregistra el SW, el navegador usa su caché
+            // HTTP propio (GitHub Pages envía max-age=600) y los archivos viejos
+            // persisten aunque se llame a reload(true) — que los navegadores modernos
+            // tratan igual que reload() desde 2019 (spec change).
+            // Con el SW activo y sus cachés vacíos, intercepta cada petición y
+            // la resuelve forzosamente desde la red → resultado equivalente a Ctrl+Shift+R.
             if ('caches' in window) {
                 const names = await caches.keys();
                 await Promise.all(names.map(n => caches.delete(n)));
+                console.info('[AltorraCache] SW caches vaciados:', names.length);
             }
-            if ('serviceWorker' in navigator) {
-                const regs = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(regs.map(r => r.unregister()));
-            }
-            window.location.reload(true);
+
+            // reload() estándar — el SW (que sigue vivo) sirve todo desde red
+            window.location.reload();
         }
     };
 

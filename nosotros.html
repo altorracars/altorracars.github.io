@@ -28,176 +28,208 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/dark-theme.css">
     <style>
-        /* Hero */
+        /* ── Global page background ── */
+        body { background: #0a0a0a; }
+
+        /* ── Hero ── */
         .about-hero {
-            background: linear-gradient(135deg, #1d1b19 0%, #2a2420 50%, #1d1b19 100%);
+            background: #0a0a0a;
             color: white;
             padding: calc(70px + 5rem) 0 5rem;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
-
         .about-hero::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(ellipse at 20% 80%, rgba(184,150,88,0.12) 0%, transparent 50%),
-                        radial-gradient(ellipse at 80% 20%, rgba(145,102,82,0.08) 0%, transparent 50%);
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 25% 80%, rgba(212,175,55,0.08) 0%, transparent 55%),
+                radial-gradient(ellipse at 75% 20%, rgba(184,150,88,0.06) 0%, transparent 55%);
         }
-
         .about-hero .container { position: relative; z-index: 1; }
-
         .about-hero h1 {
             font-size: 2.8rem;
             font-weight: 900;
             margin-bottom: 1rem;
             letter-spacing: -0.5px;
         }
-
         .about-hero h1 span {
-            background: linear-gradient(135deg, #d4af37, #b89658);
+            background: linear-gradient(135deg, #d4af37, #f5df80, #d4af37);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-
         .about-hero p {
             font-size: 1.15rem;
-            color: rgba(255,255,255,0.65);
+            color: rgba(255,255,255,0.55);
             max-width: 600px;
             margin: 0 auto;
             line-height: 1.7;
         }
-
         .about-hero .company-tag {
             display: inline-block;
             margin-top: 1.5rem;
             padding: 0.5rem 1.25rem;
-            border: 1px solid rgba(184,150,88,0.4);
+            border: 1px solid rgba(212,175,55,0.3);
             border-radius: 30px;
-            color: #b89658;
+            color: #d4af37;
             font-size: 0.85rem;
             font-weight: 600;
             letter-spacing: 0.5px;
         }
 
-        /* Mission/Vision/Values */
+        /* ── Pillar Cards (Mision / Vision / Compromiso) ── */
         .about-pillars {
             padding: 5rem 0;
-            background: #f9fafb;
+            background: #0a0a0a;
+            position: relative;
         }
-
+        .about-pillars::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent);
+        }
         .pillars-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
+            gap: 1.5rem;
         }
-
         .pillar-card {
-            background: white;
+            background: linear-gradient(165deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
             border-radius: 16px;
-            padding: 2.5rem 2rem;
-            box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-            border: 1px solid rgba(0,0,0,0.06);
+            padding: 2.5rem 2rem 2rem;
+            border: 1px solid rgba(255,255,255,0.06);
             text-align: center;
-            transition: all 0.3s;
+            transition: transform 0.35s cubic-bezier(.22,1,.36,1), border-color 0.35s, box-shadow 0.35s;
             position: relative;
             overflow: hidden;
         }
-
         .pillar-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(135deg, #b89658, #916652);
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #d4af37 50%, transparent 100%);
+            opacity: 0.6;
         }
-
-        .pillar-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-        }
-
-        .pillar-icon {
-            width: 64px;
-            height: 64px;
+        .pillar-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
             border-radius: 16px;
-            background: linear-gradient(135deg, rgba(184,150,88,0.12), rgba(184,150,88,0.04));
+            background: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .pillar-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(212,175,55,0.25);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 30px rgba(212,175,55,0.06);
+        }
+
+        /* Pillar icon container */
+        .pillar-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.03) 70%);
+            border: 1px solid rgba(212,175,55,0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1.25rem;
-            color: #b89658;
+            margin: 0 auto 1.5rem;
+            position: relative;
+            color: #d4af37;
+            transition: border-color 0.35s, box-shadow 0.35s;
+        }
+        .pillar-card:hover .pillar-icon {
+            border-color: rgba(212,175,55,0.4);
+            box-shadow: 0 0 20px rgba(212,175,55,0.12);
+        }
+        /* Rotating ring around icon */
+        .pillar-icon::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1px dashed rgba(212,175,55,0.15);
+            animation: pillar-ring-spin 20s linear infinite;
+        }
+        @keyframes pillar-ring-spin {
+            to { transform: rotate(360deg); }
         }
 
         .pillar-card h3 {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             font-weight: 700;
-            color: #1d1b19;
+            color: rgba(255,255,255,0.92);
             margin-bottom: 0.75rem;
+            letter-spacing: 0.3px;
         }
-
         .pillar-card p {
-            font-size: 0.9rem;
-            color: #6b7280;
+            font-size: 0.88rem;
+            color: rgba(255,255,255,0.4);
             line-height: 1.7;
         }
 
-        /* Values Section */
+        /* ── Values Section ── */
         .about-values {
             padding: 5rem 0;
-            background: white;
+            background: linear-gradient(180deg, #0a0a0a 0%, #0f0d08 100%);
+            position: relative;
+        }
+        .about-values::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
         }
 
         .section-header {
             text-align: center;
             margin-bottom: 3rem;
         }
-
         .section-header h2 {
             font-size: 2rem;
             font-weight: 800;
-            color: #1d1b19;
+            color: rgba(255,255,255,0.92);
             margin-bottom: 0.5rem;
         }
-
         .section-header p {
-            color: #6b7280;
+            color: rgba(255,255,255,0.4);
             font-size: 1rem;
             max-width: 500px;
             margin: 0 auto;
         }
-
         .section-header .accent-line {
             width: 50px;
-            height: 3px;
-            background: linear-gradient(135deg, #b89658, #916652);
-            border-radius: 2px;
-            margin: 0.75rem auto 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #d4af37, transparent);
+            margin: 1rem auto 0;
         }
 
         .values-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
+            gap: 1.25rem;
         }
-
         .value-card {
-            padding: 1.75rem;
+            padding: 1.75rem 1.5rem;
             border-radius: 14px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
             transition: all 0.3s;
             text-align: center;
         }
-
         .value-card:hover {
-            border-color: #b89658;
-            box-shadow: 0 4px 16px rgba(184,150,88,0.1);
+            border-color: rgba(212,175,55,0.25);
+            background: rgba(255,255,255,0.04);
+            transform: translateY(-3px);
         }
-
         .value-card .value-icon {
             width: 52px;
             height: 52px;
@@ -206,112 +238,113 @@
             align-items: center;
             justify-content: center;
             margin: 0 auto 1rem;
-            font-size: 1.5rem;
         }
-
-        .value-card:nth-child(1) .value-icon { background: rgba(184,150,88,0.1); }
+        .value-card:nth-child(1) .value-icon { background: rgba(212,175,55,0.1); }
         .value-card:nth-child(2) .value-icon { background: rgba(56,162,142,0.1); }
         .value-card:nth-child(3) .value-icon { background: rgba(59,130,246,0.1); }
-        .value-card:nth-child(4) .value-icon { background: rgba(139,92,246,0.1); }
+        .value-card:nth-child(4) .value-icon { background: rgba(168,85,247,0.1); }
 
         .value-card h4 {
             font-size: 1rem;
             font-weight: 700;
-            color: #1d1b19;
+            color: rgba(255,255,255,0.85);
             margin-bottom: 0.5rem;
         }
-
         .value-card p {
             font-size: 0.85rem;
-            color: #6b7280;
+            color: rgba(255,255,255,0.38);
             line-height: 1.6;
         }
 
-        /* Why Us */
+        /* ── Why Us ── */
         .about-why {
             padding: 5rem 0;
-            background: linear-gradient(135deg, #1d1b19 0%, #2a2420 100%);
+            background: #0a0a0a;
             color: white;
+            position: relative;
         }
-
-        .about-why .section-header h2 { color: white; }
-        .about-why .section-header p { color: rgba(255,255,255,0.6); }
-
+        .about-why::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+        }
         .why-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
+            gap: 1.5rem;
         }
-
         .why-card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
             border-radius: 14px;
             padding: 2rem;
             text-align: center;
             transition: all 0.3s;
         }
-
         .why-card:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: rgba(184,150,88,0.4);
-            transform: translateY(-2px);
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(212,175,55,0.3);
+            transform: translateY(-3px);
         }
-
         .why-card .why-number {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #b89658, #916652);
-            color: white;
+            background: linear-gradient(135deg, #d4af37, #b89658);
+            color: #0a0a0a;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 1rem;
             font-weight: 800;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
-
         .why-card h4 {
             font-size: 1.05rem;
             font-weight: 700;
+            color: rgba(255,255,255,0.9);
             margin-bottom: 0.5rem;
         }
-
         .why-card p {
             font-size: 0.85rem;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255,255,255,0.4);
             line-height: 1.6;
         }
 
-        /* CTA Section */
+        /* ── CTA Section ── */
         .about-cta {
             padding: 5rem 0;
-            background: #f9fafb;
+            background: linear-gradient(180deg, #0a0a0a 0%, #0f0d08 50%, #0a0a0a 100%);
             text-align: center;
+            position: relative;
         }
-
+        .about-cta::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent);
+        }
         .about-cta h2 {
             font-size: 2rem;
             font-weight: 800;
-            color: #1d1b19;
+            color: rgba(255,255,255,0.92);
             margin-bottom: 0.75rem;
         }
-
         .about-cta p {
-            color: #6b7280;
+            color: rgba(255,255,255,0.4);
             font-size: 1rem;
             max-width: 500px;
             margin: 0 auto 2rem;
         }
-
         .cta-buttons {
             display: flex;
             gap: 1rem;
             justify-content: center;
             flex-wrap: wrap;
         }
-
         .cta-btn {
             display: inline-flex;
             align-items: center;
@@ -321,42 +354,39 @@
             font-weight: 700;
             font-size: 0.95rem;
             transition: all 0.3s;
+            text-decoration: none;
         }
-
         .cta-btn.primary {
-            background: linear-gradient(135deg, #b89658, #916652);
-            color: white;
+            background: linear-gradient(135deg, #d4af37, #b89658);
+            color: #0a0a0a;
         }
-
         .cta-btn.primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(184,150,88,0.3);
+            box-shadow: 0 8px 28px rgba(212,175,55,0.3);
         }
-
         .cta-btn.secondary {
-            background: white;
-            color: #1d1b19;
-            border: 2px solid #e5e7eb;
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.15);
         }
-
         .cta-btn.secondary:hover {
-            border-color: #b89658;
-            color: #b89658;
+            border-color: rgba(212,175,55,0.5);
+            color: #d4af37;
         }
 
-        /* Responsive */
+        /* ── Responsive ── */
         @media (max-width: 900px) {
-            .pillars-grid { grid-template-columns: 1fr; }
-            .values-grid { grid-template-columns: 1fr 1fr; }
-            .why-grid { grid-template-columns: 1fr; }
+            .pillars-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+            .values-grid  { grid-template-columns: 1fr 1fr; }
+            .why-grid     { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
             .about-hero h1 { font-size: 2rem; }
         }
-
         @media (max-width: 600px) {
-            .values-grid { grid-template-columns: 1fr; }
-            .about-hero { padding: calc(70px + 3rem) 0 3rem; }
+            .values-grid  { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; }
+            .about-hero   { padding: calc(70px + 3rem) 0 3rem; }
             .about-hero h1 { font-size: 1.7rem; }
             .about-pillars, .about-values, .about-why, .about-cta { padding: 3rem 0; }
+            .pillar-card  { padding: 2rem 1.5rem 1.5rem; }
         }
     </style>
     <!-- Page Loader — Critical Inline CSS (cross-browser) -->
@@ -394,21 +424,37 @@
             <div class="pillars-grid">
                 <div class="pillar-card">
                     <div class="pillar-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="9" stroke="url(#gMis)" stroke-width="1.5"/>
+                            <path d="M12 8v5l3 3" stroke="url(#gMis)" stroke-width="1.8"/>
+                            <path d="M12 3v1M12 20v1M3 12h1M20 12h1" stroke="rgba(212,175,55,0.3)" stroke-width="1.5"/>
+                            <defs><linearGradient id="gMis" x1="3" y1="3" x2="21" y2="21"><stop stop-color="#f5df80"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>
+                        </svg>
                     </div>
                     <h3>Nuestra Mision</h3>
                     <p>Facilitar el acceso a vehiculos de calidad, brindando asesoria profesional, financiacion flexible y un proceso de compra transparente para cada uno de nuestros clientes en la region Caribe colombiana.</p>
                 </div>
                 <div class="pillar-card">
                     <div class="pillar-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="url(#gVis)" stroke-width="1.5"/>
+                            <circle cx="12" cy="12" r="3.5" stroke="url(#gVis)" stroke-width="1.8"/>
+                            <circle cx="12" cy="12" r="1" fill="#d4af37"/>
+                            <path d="M12 5v1M12 18v1" stroke="rgba(212,175,55,0.25)" stroke-width="1"/>
+                            <defs><linearGradient id="gVis" x1="1" y1="4" x2="23" y2="20"><stop stop-color="#f5df80"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>
+                        </svg>
                     </div>
                     <h3>Nuestra Vision</h3>
                     <p>Ser la empresa lider en venta de vehiculos en Cartagena y la Costa Caribe, reconocida por la calidad de nuestros productos, la transparencia en nuestros procesos y la excelencia en servicio.</p>
                 </div>
                 <div class="pillar-card">
                     <div class="pillar-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#gCom)" stroke-width="1.5"/>
+                            <path d="M9 12l2 2 4-4" stroke="url(#gCom)" stroke-width="2"/>
+                            <path d="M12 2v2" stroke="rgba(212,175,55,0.3)" stroke-width="1.5"/>
+                            <defs><linearGradient id="gCom" x1="4" y1="2" x2="20" y2="22"><stop stop-color="#f5df80"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>
+                        </svg>
                     </div>
                     <h3>Nuestro Compromiso</h3>
                     <p>Cada vehiculo pasa por inspeccion tecnica completa con peritaje certificado. Garantizamos que la informacion sea precisa y que el proceso de compra sea seguro y sin sorpresas.</p>
@@ -427,28 +473,28 @@
             <div class="values-grid">
                 <div class="value-card">
                     <div class="value-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b89658" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
                     </div>
                     <h4>Transparencia</h4>
                     <p>Informacion clara y honesta en cada transaccion, sin letras pequenas.</p>
                 </div>
                 <div class="value-card">
                     <div class="value-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38a28e" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38a28e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     </div>
                     <h4>Calidad</h4>
                     <p>Vehiculos certificados que cumplen los mas altos estandares de revision.</p>
                 </div>
                 <div class="value-card">
                     <div class="value-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </div>
                     <h4>Servicio</h4>
                     <p>Atencion personalizada y acompanamiento en cada etapa del proceso.</p>
                 </div>
                 <div class="value-card">
                     <div class="value-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
                     </div>
                     <h4>Confianza</h4>
                     <p>Relaciones duraderas basadas en el respeto y la honestidad.</p>

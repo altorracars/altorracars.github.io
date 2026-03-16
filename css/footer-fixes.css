@@ -172,6 +172,8 @@ footer {
     text-align: justify;
     hyphens: auto;
     -webkit-hyphens: auto;
+    /* Evita palabras huérfanas al final del párrafo (Chrome 117+, Edge 117+) */
+    text-wrap: pretty;
 }
 
 .footer-tagline strong {
@@ -421,7 +423,7 @@ a.footer-ci:hover {
     .footer-col--social  { padding-left: 0; }
 
     /* Tagline: centrado en tablet (texto corto relativo al ancho) */
-    .footer-tagline      { text-align: center; hyphens: none; -webkit-hyphens: none; }
+    .footer-tagline      { text-align: center; hyphens: none; -webkit-hyphens: none; text-wrap: pretty; }
 
     /* Contacto: left-aligned para escaneo fácil en tablet */
     .footer-contact      { align-items: flex-start; }
@@ -447,7 +449,7 @@ a.footer-ci:hover {
 
     /* Tagline: justify en móvil — columna ancha, texto largo */
     .footer-tagline      { font-size: 0.79rem; line-height: 1.55;
-                           text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+                           text-align: justify; hyphens: auto; -webkit-hyphens: auto; text-wrap: pretty; }
     .footer-tagline strong { font-size: 0.82rem; display: block; text-align: center; margin-bottom: 2px; }
 
     /* Separadores más apretados */

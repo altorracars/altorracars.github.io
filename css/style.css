@@ -3351,7 +3351,8 @@ section {
     background: linear-gradient(90deg, transparent, rgba(212,175,55,0.35), transparent);
 }
 .commercial-section::before { top: 0; }
-.commercial-section::after  { bottom: 0; }
+/* ::after eliminado — la línea inferior colisionaba visualmente con footer-topline */
+.commercial-section::after  { content: none; }
 
 /* Contenedor más ancho que el global (1200px) para aprovechar el espacio */
 .commercial-section .container {

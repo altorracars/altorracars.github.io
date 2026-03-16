@@ -174,19 +174,17 @@ footer {
     white-space: nowrap;
 }
 
-/* ── 9. Tagline — justificado en todos los dispositivos ── */
+/* ── 9. Tagline ── */
 .footer-tagline {
     font-size: 0.82rem;
     color: rgba(255,255,255,0.42);
     line-height: 1.6;
     margin: 0;
-    text-align: justify;
-    /* text-align-last: justify → la última línea también rellena el ancho
-       Soportado en Chrome, Firefox, Edge y Safari (iOS 14.5+) */
-    text-align-last: justify;
-    -webkit-text-align-last: justify;
-    hyphens: auto;
-    -webkit-hyphens: auto;
+    /* text-wrap: balance equilibra las líneas evitando líneas finales
+       muy cortas — Chrome 114+, Firefox 121+, Edge 114+
+       Fallback: left-aligned limpio sin espacios feos */
+    text-align: left;
+    text-wrap: balance;
 }
 
 .footer-tagline strong {
@@ -195,10 +193,7 @@ footer {
     font-weight: 600;
     color: rgba(255,255,255,0.62);
     margin-bottom: 3px;
-    /* El strong no es párrafo de texto — se centra aparte */
     text-align: center;
-    text-align-last: auto;
-    -webkit-text-align-last: auto;
 }
 
 /* ── 10. Encabezados de columna ── */
@@ -434,10 +429,7 @@ a.footer-ci:hover {
     /* Tagline centrado en tablet */
     .footer-tagline {
         text-align: center;
-        text-align-last: center;
-        -webkit-text-align-last: center;
-        hyphens: none;
-        -webkit-hyphens: none;
+        text-wrap: balance;
     }
 
     .footer-contact      { align-items: flex-start; }
@@ -461,22 +453,17 @@ a.footer-ci:hover {
     .footer-mark__name   { font-size: clamp(1.9rem, 10vw, 2.6rem); }
     .footer-mark__rule   { width: 70%; margin: 4px 0 3px; }
 
-    /* Tagline: justify full con última línea también justificada */
+    /* Tagline en mobile: balance para líneas equilibradas */
     .footer-tagline {
         font-size: 0.79rem;
         line-height: 1.55;
-        text-align: justify;
-        text-align-last: justify;
-        -webkit-text-align-last: justify;
-        hyphens: auto;
-        -webkit-hyphens: auto;
+        text-align: left;
+        text-wrap: balance;
     }
     .footer-tagline strong {
         font-size: 0.82rem;
         display: block;
         text-align: center;
-        text-align-last: auto;
-        -webkit-text-align-last: auto;
         margin-bottom: 2px;
     }
 

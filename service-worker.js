@@ -123,24 +123,24 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(staleWhileRevalidate(request));
 });
 
-// Network Only - Always fetch from network
+// Network Only - Always fetch from network, bypass HTTP cache entirely
 async function networkOnly(request) {
     try {
-        const response = await fetch(request);
-        return response;
+        return await fetch(request, { cache: 'no-store' });
     } catch (error) {
         console.error('[SW] Network only failed:', error);
         return new Response('Network error', { status: 503 });
     }
 }
 
-// Network First - Try network, fallback to cache
+// Network First - Try network (revalidating HTTP cache), fallback to SW cache
 async function networkFirst(request) {
     try {
-        // Always try network first for HTML
-        const networkResponse = await fetch(request);
+        // cache: 'no-cache' forces browser to revalidate with server (conditional GET).
+        // Without this, fetch() can return stale content from browser HTTP cache
+        // (GitHub Pages sends max-age=600) even after SW caches are cleared.
+        const networkResponse = await fetch(request, { cache: 'no-cache' });
 
-        // Cache the fresh response
         if (networkResponse.ok) {
             const cache = await caches.open(RUNTIME_CACHE);
             cache.put(request, networkResponse.clone());
@@ -148,26 +148,21 @@ async function networkFirst(request) {
 
         return networkResponse;
     } catch (error) {
-        // Network failed, try cache
         console.log('[SW] Network failed, trying cache:', request.url);
         const cachedResponse = await caches.match(request);
-
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-
-        // Return offline fallback for HTML
+        if (cachedResponse) return cachedResponse;
         return caches.match('/index.html');
     }
 }
 
-// Stale-While-Revalidate - Return cache immediately, update in background
+// Stale-While-Revalidate - Return cache immediately, revalidate in background
 async function staleWhileRevalidate(request) {
     const cache = await caches.open(RUNTIME_CACHE);
     const cachedResponse = await caches.match(request);
 
-    // Fetch fresh version in background
-    const fetchPromise = fetch(request)
+    // Revalidate in background — cache: 'no-cache' ensures a conditional GET
+    // so we always get fresh content when the asset has changed on the server.
+    const fetchPromise = fetch(request, { cache: 'no-cache' })
         .then((networkResponse) => {
             if (networkResponse.ok) {
                 cache.put(request, networkResponse.clone());
@@ -176,12 +171,9 @@ async function staleWhileRevalidate(request) {
         })
         .catch(() => null);
 
-    // Return cached version immediately if available
-    if (cachedResponse) {
-        return cachedResponse;
-    }
+    if (cachedResponse) return cachedResponse;
 
-    // No cache, wait for network
+    // No cache — wait for network (happens after clearAndReload)
     const networkResponse = await fetchPromise;
     return networkResponse || new Response('Asset not found', { status: 404 });
 }
@@ -192,18 +184,6 @@ self.addEventListener('message', (event) => {
 
     if (event.data?.type === 'SKIP_WAITING') {
         self.skipWaiting();
-    }
-
-    if (event.data?.type === 'CLEAR_CACHE') {
-        event.waitUntil(
-            caches.keys().then((cacheNames) => {
-                return Promise.all(
-                    cacheNames.map((cacheName) => caches.delete(cacheName))
-                );
-            }).then(() => {
-                event.source.postMessage({ type: 'CACHE_CLEARED' });
-            })
-        );
     }
 
     if (event.data?.type === 'GET_VERSION') {

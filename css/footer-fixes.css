@@ -3,9 +3,18 @@
    ================================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Cardo:wght@700&display=swap');
 
-/* ── 0. Anular border-top del dark-theme.css (evita línea doble) ── */
+/* ── 0. Neutralizar reglas antiguas de style.css / dark-theme.css ── */
 footer {
     border-top: none !important;
+    /* style.css añade padding: 4rem 0 2rem — se anula para que
+       footer-body controle el espaciado interior */
+    padding: 0 !important;
+}
+
+/* style.css añade margin-top: 2rem a .footer-contact,
+   causando el gap grande entre "HABLEMOS" y los datos de contacto */
+.footer-contact {
+    margin-top: 0 !important;
 }
 
 /* ── 1. Línea dorada superior ── */
@@ -28,7 +37,8 @@ footer {
     background:
         radial-gradient(circle, rgba(212,175,55,0.04) 1px, transparent 1px) 0 0 / 28px 28px,
         #050505;
-    padding: 10px 0 0;
+    /* padding simétrico: respira entre el topline y el footer-bottom */
+    padding: 32px 0 32px;
 }
 
 /* Ambient glow corners */
@@ -76,14 +86,15 @@ footer {
     grid-template-columns: 1.1fr 1px 1fr 1px minmax(230px, 270px);
     align-items: start;
     gap: 0;
-    min-height: unset;
 }
 
 /* ── 6. Columnas ── */
 .footer-col {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
+    /* Anula margin-bottom: 1.5rem que añade mobile-fixes.css */
+    margin-bottom: 0 !important;
 }
 
 .footer-col--brand   { padding-right: 52px; text-align: center; }
@@ -163,17 +174,19 @@ footer {
     white-space: nowrap;
 }
 
-/* ── 9. Tagline — bloque unificado, justificado ── */
+/* ── 9. Tagline — justificado en todos los dispositivos ── */
 .footer-tagline {
     font-size: 0.82rem;
     color: rgba(255,255,255,0.42);
     line-height: 1.6;
     margin: 0;
     text-align: justify;
+    /* text-align-last: justify → la última línea también rellena el ancho
+       Soportado en Chrome, Firefox, Edge y Safari (iOS 14.5+) */
+    text-align-last: justify;
+    -webkit-text-align-last: justify;
     hyphens: auto;
     -webkit-hyphens: auto;
-    /* Evita palabras huérfanas al final del párrafo (Chrome 117+, Edge 117+) */
-    text-wrap: pretty;
 }
 
 .footer-tagline strong {
@@ -182,13 +195,10 @@ footer {
     font-weight: 600;
     color: rgba(255,255,255,0.62);
     margin-bottom: 3px;
-}
-
-/* Compat — el span __sub ya no existe pero lo dejamos inerte */
-.footer-tagline__sub {
-    display: inline;
-    color: inherit;
-    font-size: inherit;
+    /* El strong no es párrafo de texto — se centra aparte */
+    text-align: center;
+    text-align-last: auto;
+    -webkit-text-align-last: auto;
 }
 
 /* ── 10. Encabezados de columna ── */
@@ -204,7 +214,7 @@ footer {
     text-transform: uppercase;
     color: rgba(212,175,55,0.9);
     margin: 0;
-    padding-bottom: 5px;
+    padding-bottom: 6px;
     border-bottom: 1px solid rgba(212,175,55,0.18);
 }
 
@@ -216,6 +226,7 @@ footer {
 }
 
 /* ── 11. Contacto ── */
+/* margin-top override se declara arriba en sección "Neutralizar" */
 .footer-contact {
     display: flex;
     flex-direction: column;
@@ -395,11 +406,10 @@ a.footer-ci:hover {
 
 /* ──────────────────────────────────────────────────────────────
    960px — colapsar a 1 columna vertical
-   Secciones separadas con líneas finas, sin gap grande
 ────────────────────────────────────────────────────────────── */
 @media (max-width: 960px) {
 
-    .footer-body { padding: 16px 0 0; }
+    .footer-body { padding: 24px 0 24px; }
     .footer-wrap { padding: 0 24px; }
 
     .footer-grid {
@@ -407,28 +417,32 @@ a.footer-ci:hover {
         gap: 0;
     }
 
-    /* Separadores → líneas horizontales entre secciones */
+    /* Separadores → líneas horizontales */
     .footer-col-sep {
         width: 100%;
         height: 1px;
-        margin: 12px 0;
+        margin: 14px 0;
         background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.18) 30%,
                     rgba(212,175,55,0.18) 70%, transparent 100%);
     }
 
-    /* Columnas: sin padding lateral, gap reducido */
     .footer-col          { gap: 7px; }
     .footer-col--brand   { padding-right: 0; align-items: center; text-align: center; }
     .footer-col--contact { padding: 0; }
     .footer-col--social  { padding-left: 0; }
 
-    /* Tagline: centrado en tablet (texto corto relativo al ancho) */
-    .footer-tagline      { text-align: center; hyphens: none; -webkit-hyphens: none; text-wrap: pretty; }
+    /* Tagline centrado en tablet */
+    .footer-tagline {
+        text-align: center;
+        text-align-last: center;
+        -webkit-text-align-last: center;
+        hyphens: none;
+        -webkit-hyphens: none;
+    }
 
-    /* Contacto: left-aligned para escaneo fácil en tablet */
     .footer-contact      { align-items: flex-start; }
 
-    /* Redes: fila horizontal de 3 botones */
+    /* Redes: fila horizontal */
     .footer-social       { flex-direction: row; gap: 8px; }
     .footer-soc          { flex: 1; min-width: 0; justify-content: center; padding: 9px 10px; }
 
@@ -440,32 +454,46 @@ a.footer-ci:hover {
 ────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
 
-    .footer-body         { padding: 12px 0 0; }
+    .footer-body         { padding: 20px 0 20px; }
     .footer-wrap         { padding: 0 16px; }
 
     /* Logo compacto */
     .footer-mark__name   { font-size: clamp(1.9rem, 10vw, 2.6rem); }
     .footer-mark__rule   { width: 70%; margin: 4px 0 3px; }
 
-    /* Tagline: justify en móvil — columna ancha, texto largo */
-    .footer-tagline      { font-size: 0.79rem; line-height: 1.55;
-                           text-align: justify; hyphens: auto; -webkit-hyphens: auto; text-wrap: pretty; }
-    .footer-tagline strong { font-size: 0.82rem; display: block; text-align: center; margin-bottom: 2px; }
+    /* Tagline: justify full con última línea también justificada */
+    .footer-tagline {
+        font-size: 0.79rem;
+        line-height: 1.55;
+        text-align: justify;
+        text-align-last: justify;
+        -webkit-text-align-last: justify;
+        hyphens: auto;
+        -webkit-hyphens: auto;
+    }
+    .footer-tagline strong {
+        font-size: 0.82rem;
+        display: block;
+        text-align: center;
+        text-align-last: auto;
+        -webkit-text-align-last: auto;
+        margin-bottom: 2px;
+    }
 
     /* Separadores más apretados */
     .footer-col-sep      { margin: 10px 0; }
     .footer-col          { gap: 6px; }
 
-    /* Heading de columna centrado y compacto */
+    /* Heading centrado y compacto */
     .footer-col-heading  { justify-content: center; font-size: 0.57rem; padding-bottom: 6px; }
 
-    /* Contacto centrado, items pequeños */
+    /* Contacto centrado */
     .footer-contact      { align-items: center; gap: 4px; }
     .footer-ci           { font-size: 0.79rem; }
     .footer-ci__icon     { width: 13px; height: 13px; }
 
-    /* Horario: compacto, sin border-left */
-    .footer-schedule     {
+    /* Horario compacto */
+    .footer-schedule {
         border-radius: 6px;
         border-left: none;
         border-top: 2px solid rgba(212,175,55,0.4);
@@ -477,7 +505,7 @@ a.footer-ci:hover {
     .footer-schedule__label { font-size: 0.56rem; }
     .footer-schedule__value { font-size: 0.76rem; white-space: normal; }
 
-    /* Redes: 3 en fila, compactos */
+    /* Redes: 3 en fila */
     .footer-soc          { padding: 8px 6px; gap: 6px; }
     .footer-soc__icon    { width: 15px; height: 15px; }
     .footer-soc__label   { font-size: 0.74rem; }
@@ -486,7 +514,7 @@ a.footer-ci:hover {
     .footer-wm           { font-size: 21vw; }
 
     /* Barra inferior: stack centrado */
-    .footer-bottom__row  {
+    .footer-bottom__row {
         flex-direction: column;
         align-items: center;
         text-align: center;
@@ -499,21 +527,10 @@ a.footer-ci:hover {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   380px — pantallas muy pequeñas: sólo iconos en redes sociales
+   380px — solo iconos en redes sociales
 ────────────────────────────────────────────────────────────── */
 @media (max-width: 380px) {
     .footer-soc__label   { display: none; }
     .footer-soc          { justify-content: center; padding: 9px; }
     .footer-soc__icon    { width: 17px; height: 17px; }
 }
-
-/* ================================================================
-   LEGADO — compatibilidad con clases antiguas
-   ================================================================ */
-.footer-subtitle        { font-size:0.68rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:rgba(212,175,55,0.75); margin-bottom:16px; }
-.footer-text            { font-size:0.85rem; color:rgba(255,255,255,0.42); line-height:1.7; margin-bottom:8px; }
-.footer-title           { font-size:1.1rem; font-weight:700; color:#d4af37; margin-bottom:12px; }
-.footer-legal-links     { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
-.footer-legal-links a   { font-size:0.78rem; color:rgba(255,255,255,0.28); text-decoration:none; }
-.footer-legal-links a:hover { color:rgba(212,175,55,0.75); }
-.footer-legal-links .separator { color:rgba(255,255,255,0.13); }

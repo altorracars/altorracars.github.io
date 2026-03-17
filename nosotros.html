@@ -204,13 +204,7 @@
             font-weight: 300;
         }
 
-        /* Decorative line below subtitle */
-        .hero-divider {
-            width: 80px;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #d4af37, transparent);
-            margin: 2rem auto;
-        }
+        /* hero-divider removed */
 
         /* Company badge — watermark/elegant style */
         .company-badge {
@@ -240,7 +234,7 @@
         .company-badge-text span:first-child {
             display: block;
             font-size: 0.65rem;
-            color: rgba(255,255,255,0.25);
+            color: rgba(212,175,55,0.4);
             text-transform: uppercase;
             letter-spacing: 3px;
             font-weight: 400;
@@ -250,47 +244,10 @@
             display: block;
             font-family: 'Cardo', Georgia, serif;
             font-size: 1.3rem;
-            color: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.22);
             font-weight: 700;
             letter-spacing: 0.18em;
             text-transform: uppercase;
-        }
-
-        /* Stats bar */
-        .hero-stats {
-            display: -webkit-box;
-            display: -webkit-flex;
-            display: -ms-flexbox;
-            display: flex;
-            -webkit-box-pack: center;
-            -webkit-justify-content: center;
-            -ms-flex-pack: center;
-            justify-content: center;
-            gap: 3rem;
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255,255,255,0.06);
-        }
-        .hero-stat {
-            text-align: center;
-        }
-        .hero-stat-number {
-            display: block;
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #f5df80, #d4af37);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1.2;
-        }
-        .hero-stat-label {
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.35);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 500;
-            margin-top: 0.25rem;
         }
 
         /* Bottom gradient fade */
@@ -299,7 +256,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 120px;
+            height: 80px;
             background: linear-gradient(to top, #0a0a0a, transparent);
             z-index: 2;
             pointer-events: none;
@@ -666,7 +623,6 @@
         @media (max-width: 1024px) {
             .about-hero h1 { font-size: 2.8rem; }
             .about-hero h1 span { font-size: 3.2rem; }
-            .hero-stats { gap: 2rem; }
         }
         @media (max-width: 900px) {
             .pillars-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
@@ -675,8 +631,6 @@
             .about-hero { min-height: clamp(400px, 60vh, 600px); }
             .about-hero h1 { font-size: 2.2rem; }
             .about-hero h1 span { font-size: 2.6rem; }
-            .hero-stats { gap: 1.5rem; }
-            .hero-stat-number { font-size: 1.6rem; }
             /* Center section headers on tablet/mobile */
             .section-header { text-align: center; }
             .section-header h2, .section-header p { text-align: center; margin-left: auto; margin-right: auto; }
@@ -689,8 +643,6 @@
             .hero-subtitle { font-size: 0.95rem; }
             .about-pillars, .about-values, .about-why, .about-cta { padding: 3rem 0; }
             .pillar-card  { padding: 2rem 1.5rem 1.5rem; }
-            .hero-stats { -webkit-flex-wrap: wrap; -ms-flex-wrap: wrap; flex-wrap: wrap; gap: 1.5rem; }
-            .hero-stat { -webkit-box-flex: 0; -webkit-flex: 0 0 calc(50% - 0.75rem); -ms-flex: 0 0 calc(50% - 0.75rem); flex: 0 0 calc(50% - 0.75rem); }
             .company-badge-text span:last-child { font-size: 1rem; letter-spacing: 0.12em; }
             /* Force center section headers on mobile */
             .section-header { text-align: center !important; padding: 0 1rem; }
@@ -700,8 +652,6 @@
         @media (max-width: 380px) {
             .about-hero h1 { font-size: 1.4rem; }
             .about-hero h1 span { font-size: 1.7rem; }
-            .hero-stat-number { font-size: 1.4rem; }
-            .hero-stat-label { font-size: 0.65rem; }
         }
     </style>
     <!-- Page Loader — Critical Inline CSS (cross-browser) -->
@@ -746,27 +696,10 @@
             <h1>SOMOS<span>ALTORRA CARS</span></h1>
             <p class="hero-subtitle">Tu aliado estratégico en la compra de vehículos usados en Cartagena. Transparencia total, financiación flexible y atención personalizada en cada negociación.</p>
 
-            <div class="hero-divider"></div>
-
             <div class="company-badge">
                 <div class="company-badge-text">
                     <span>Razón Social</span>
                     <span>ALTORRA COMPANY SAS</span>
-                </div>
-            </div>
-
-            <div class="hero-stats">
-                <div class="hero-stat">
-                    <span class="hero-stat-number">100+</span>
-                    <span class="hero-stat-label">Clientes satisfechos</span>
-                </div>
-                <div class="hero-stat">
-                    <span class="hero-stat-number">100%</span>
-                    <span class="hero-stat-label">Transparencia</span>
-                </div>
-                <div class="hero-stat">
-                    <span class="hero-stat-number">24/7</span>
-                    <span class="hero-stat-label">Atención digital</span>
                 </div>
             </div>
         </div>

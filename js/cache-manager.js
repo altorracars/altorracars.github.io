@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260317085413';
+    const APP_VERSION = '20260317131240';
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

@@ -513,7 +513,7 @@ function initHeroSearch() {
     }
 
     function wordMatchesFuzzy(qWord, haystack) {
-        if (haystack.includes(qWord)) return true;
+        if (wordMatchesInHaystack(qWord, haystack)) return true;
         if (qWord.length < 4) return false;                  // skip fuzzy for short words
         var maxDist = qWord.length <= 5 ? 1 : 2;
         return haystack.split(/\s+/).some(function(hw) {
@@ -529,13 +529,24 @@ function initHeroSearch() {
                 v.transmision || ''].join(' ').toLowerCase();
     }
 
+    // ── Word-boundary aware matching ─────────────────────────
+    // Prevents short numeric terms like "6" from matching inside "2016"
+    function wordMatchesInHaystack(word, haystack) {
+        // For short numeric words (1-2 digits), require word-boundary match
+        if (/^\d{1,2}$/.test(word)) {
+            var re = new RegExp('(?:^|\\s)' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s|$)');
+            return re.test(haystack);
+        }
+        return haystack.includes(word);
+    }
+
     // ── Count how many vehicles match a label+words combo ────
     function countVehicles(vehicles, labelWords) {
         return vehicles.filter(function(v) {
             if (!v.marca || !v.modelo) return false;
             if (v.estado && v.estado !== 'disponible') return false;
             var h = buildHaystack(v);
-            return labelWords.every(function(w) { return h.includes(w); });
+            return labelWords.every(function(w) { return wordMatchesInHaystack(w, h); });
         }).length;
     }
 
@@ -555,8 +566,8 @@ function initHeroSearch() {
 
             var haystack = buildHaystack(v);
 
-            // Pass 1 — exact: all words must be substrings of haystack
-            var isExact = words.every(function(w) { return haystack.includes(w); });
+            // Pass 1 — exact: all words must match in haystack (word-boundary aware for short numbers)
+            var isExact = words.every(function(w) { return wordMatchesInHaystack(w, haystack); });
             // Pass 2 — fuzzy: each word matches exactly OR within edit distance
             var isFuzzy = !isExact && words.every(function(w) { return wordMatchesFuzzy(w, haystack); });
 
@@ -606,7 +617,8 @@ function initHeroSearch() {
                 var match = vehicles.filter(function(v) {
                     if (!v.marca || !v.modelo) return false;
                     if (v.estado && v.estado !== 'disponible') return false;
-                    return lw.every(function(w) { return buildHaystack(v).includes(w); });
+                    var h = buildHaystack(v);
+                    return lw.every(function(w) { return wordMatchesInHaystack(w, h); });
                 })[0];
                 if (match) r.vehicleUrl = getVehicleDetailUrl(match);
             });

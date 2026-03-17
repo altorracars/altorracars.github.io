@@ -424,14 +424,26 @@ class VehicleDatabase {
             filtered = filtered.filter(v => v.oferta === true || v.precioOferta);
         }
         
-        // Search by text (model, brand, description)
+        // Search by text (model, brand, description) — multi-word aware
         if (filters.search) {
-            const searchLower = filters.search.toLowerCase();
-            filtered = filtered.filter(v =>
-                v.marca.toLowerCase().includes(searchLower) ||
-                v.modelo.toLowerCase().includes(searchLower) ||
-                (v.descripcion && v.descripcion.toLowerCase().includes(searchLower))
-            );
+            const searchWords = filters.search.toLowerCase().trim().split(/\s+/).filter(Boolean);
+            filtered = filtered.filter(v => {
+                const haystack = [
+                    v.marca || '', v.modelo || '',
+                    v.year ? String(v.year) : '',
+                    v.color || '', v.categoria || '',
+                    v.combustible || '', v.transmision || '',
+                    v.descripcion || ''
+                ].join(' ').toLowerCase();
+                return searchWords.every(word => {
+                    // For short numeric words (1-2 digits), require word-boundary match
+                    // so "6" matches model "6" but not year "2016"
+                    if (/^\d{1,2}$/.test(word)) {
+                        return new RegExp('(?:^|\\s)' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s|$)').test(haystack);
+                    }
+                    return haystack.includes(word);
+                });
+            });
         }
         
         return filtered;

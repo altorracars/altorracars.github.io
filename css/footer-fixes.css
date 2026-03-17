@@ -61,7 +61,7 @@ footer {
     transform: translate(-50%, -50%);
     font-family: 'Cardo', Georgia, serif;
     font-weight: 700;
-    font-size: clamp(80px, 16vw, 200px);
+    font-size: clamp(48px, 14vw, 200px);
     letter-spacing: 0.12em;
     color: rgba(212,175,55,0.025);
     white-space: nowrap;
@@ -69,6 +69,10 @@ footer {
     user-select: none;
     z-index: 0;
     line-height: 1;
+    /* Ensure it fits within viewport on all devices */
+    max-width: 90vw;
+    overflow: hidden;
+    text-align: center;
 }
 
 /* ── 4. Contenedor ── */
@@ -500,8 +504,8 @@ a.footer-ci:hover {
     .footer-soc__icon    { width: 15px; height: 15px; }
     .footer-soc__label   { font-size: 0.74rem; }
 
-    /* Marca de agua */
-    .footer-wm           { font-size: 21vw; }
+    /* Marca de agua — scale to fit mobile without clipping */
+    .footer-wm           { font-size: clamp(36px, 14vw, 100px); letter-spacing: 0.08em; }
 
     /* Barra inferior: stack centrado */
     .footer-bottom__row {

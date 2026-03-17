@@ -77,6 +77,38 @@
     100% { transform: translate(-15px, -15px) scale(0.96); }
 }
 
+/* ── Floating particles (bubbles) ── */
+.hero-particles {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+}
+.hero-particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(212,175,55,0.4);
+    animation: heroParticleFloat linear infinite;
+}
+.hero-particle:nth-child(1) { left: 10%; top: 80%; animation-duration: 12s; animation-delay: 0s; }
+.hero-particle:nth-child(2) { left: 25%; top: 90%; animation-duration: 15s; animation-delay: 2s; width: 2px; height: 2px; }
+.hero-particle:nth-child(3) { left: 45%; top: 85%; animation-duration: 10s; animation-delay: 4s; }
+.hero-particle:nth-child(4) { left: 65%; top: 95%; animation-duration: 14s; animation-delay: 1s; width: 2px; height: 2px; }
+.hero-particle:nth-child(5) { left: 80%; top: 88%; animation-duration: 11s; animation-delay: 3s; }
+.hero-particle:nth-child(6) { left: 35%; top: 92%; animation-duration: 16s; animation-delay: 5s; width: 4px; height: 4px; background: rgba(212,175,55,0.2); }
+.hero-particle:nth-child(7) { left: 55%; top: 78%; animation-duration: 13s; animation-delay: 6s; }
+.hero-particle:nth-child(8) { left: 90%; top: 82%; animation-duration: 17s; animation-delay: 2.5s; width: 2px; height: 2px; }
+
+@keyframes heroParticleFloat {
+    0%   { transform: translateY(0) scale(1); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateY(-85vh) scale(0); opacity: 0; }
+}
+
 /* ── Fade inferior → fusión con trust bar ── */
 .hero::before {
     content: '';
@@ -152,14 +184,13 @@
     50%       { opacity: 0.4; transform: scale(0.65); box-shadow: 0 0 2px rgba(212, 175, 55, 0.3); }
 }
 
-/* ── Título ── */
+/* ── Título — gold gradient shimmer (matches nosotros hero) ── */
 .hero-title {
     font-size: clamp(2.8rem, 6.5vw, 5.5rem);
     font-weight: 900;
     line-height: 1.06;
     letter-spacing: -0.03em;
-    color: #ffffff;
-    text-shadow: 0 2px 32px rgba(0, 0, 0, 0.95), 0 1px 0 rgba(0, 0, 0, 0.6);
+    color: rgba(255,255,255,0.95);
     margin-bottom: 1.8rem;
     animation: hero-title-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
 }
@@ -169,14 +200,21 @@
     to   { opacity: 1; transform: translateY(0);    }
 }
 
-/* Acento dorado — "de tus Sueños": mismo color y glow que el badge */
+/* Acento dorado — "de tus Sueños": gold shimmer gradient like nosotros */
 .hero-title-accent {
     display: block;
-    color: #d4af37;
-    text-shadow:
-        0 0 18px rgba(212, 175, 55, 0.75),
-        0 0 40px rgba(212, 175, 55, 0.35),
-        0 2px 12px rgba(0, 0, 0, 0.8);
+    background: linear-gradient(135deg, #f5df80 0%, #d4af37 40%, #b89658 70%, #f5df80 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: heroGoldShimmer 4s ease-in-out infinite;
+    filter: drop-shadow(0 2px 12px rgba(212,175,55,0.35));
+}
+
+@keyframes heroGoldShimmer {
+    0%, 100% { background-position: 0% center; }
+    50% { background-position: 200% center; }
 }
 
 /* ── CTA principal ── */
@@ -631,6 +669,12 @@
     .trust-bar-num {
         font-size: 1.2rem;
     }
+}
+
+/* Reduce particles on mobile for performance */
+@media (max-width: 768px) {
+    .hero-particle:nth-child(n+6) { display: none; }
+    .hero-particle { opacity: 0.6; }
 }
 
 /* Very small screens */

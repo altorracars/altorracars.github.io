@@ -43,13 +43,6 @@
       "icons": [{ "src": "/multimedia/logo-placeholder.png", "sizes": "192x192" }]
     },
     {
-      "name": "Vehículos Nuevos",
-      "short_name": "Nuevos",
-      "description": "Ver vehículos nuevos disponibles",
-      "url": "/vehiculos-nuevos.html",
-      "icons": [{ "src": "/multimedia/logo-placeholder.png", "sizes": "192x192" }]
-    },
-    {
       "name": "Búsqueda Avanzada",
       "short_name": "Buscar",
       "description": "Buscar vehículos con filtros avanzados",

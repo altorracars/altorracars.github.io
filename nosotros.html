@@ -17,7 +17,7 @@
     <meta property="og:url" content="https://altorracars.github.io/nosotros.html">
     <meta property="og:title" content="Nosotros | ALTORRA CARS — Especialistas en Carros Usados Cartagena">
     <meta property="og:description" content="Conoce ALTORRA CARS, especialistas en carros usados en Cartagena. Transparencia, calidad y servicio personalizado son nuestros pilares.">
-    <meta property="og:image" content="https://altorracars.github.io/multimedia/categories/BUSQUEDA.webp">
+    <meta property="og:image" content="https://altorracars.github.io/multimedia/nosotros-hero.webp">
     <meta property="og:site_name" content="ALTORRA CARS">
     <meta property="og:locale" content="es_CO">
     <link rel="stylesheet" href="css/style.css">
@@ -52,25 +52,26 @@
             overflow: hidden;
             padding: calc(70px + 3rem) 0 3rem;
         }
-        /* Background image with dark overlay */
+        /* Background image — matching index hero style (visible image, no gold tint) */
         .about-hero::before {
             content: '';
             position: absolute;
             inset: 0;
             background:
-                url('multimedia/categories/BUSQUEDA.webp') center/cover no-repeat;
-            -webkit-filter: brightness(0.28) saturate(0.8);
-            filter: brightness(0.28) saturate(0.8);
+                url('multimedia/nosotros-hero.webp') center/cover no-repeat;
         }
-        /* Golden radial accents */
+        /* Dark gradient overlay — same style as index hero (no gold) */
         .about-hero::after {
             content: '';
             position: absolute;
             inset: 0;
-            background:
-                radial-gradient(ellipse at 20% 80%, rgba(212,175,55,0.12) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(184,150,88,0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.7) 0%, transparent 50%);
+            background: linear-gradient(
+                to bottom,
+                rgba(0,0,0,0.72) 0%,
+                rgba(0,0,0,0.25) 38%,
+                rgba(0,0,0,0.28) 62%,
+                rgba(0,0,0,0.85) 100%
+            );
             pointer-events: none;
         }
 
@@ -210,70 +211,48 @@
             margin: 2rem auto;
         }
 
-        /* Company badge */
+        /* Company badge — watermark/elegant style */
         .company-badge {
-            display: -webkit-inline-box;
-            display: -webkit-inline-flex;
-            display: -ms-inline-flexbox;
-            display: inline-flex;
-            -webkit-box-align: center;
-            -webkit-align-items: center;
-            -ms-flex-align: center;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 2rem;
-            background: linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(184,150,88,0.05) 100%);
-            border: 1px solid rgba(212,175,55,0.2);
-            border-radius: 50px;
-            -webkit-backdrop-filter: blur(20px);
-            backdrop-filter: blur(20px);
-            -webkit-transition: all 0.3s;
-            transition: all 0.3s;
-        }
-        .company-badge:hover {
-            border-color: rgba(212,175,55,0.5);
-            -webkit-box-shadow: 0 0 30px rgba(212,175,55,0.1);
-            box-shadow: 0 0 30px rgba(212,175,55,0.1);
-        }
-        .company-badge-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #d4af37, #b89658);
             display: -webkit-box;
             display: -webkit-flex;
             display: -ms-flexbox;
             display: flex;
+            -webkit-box-orient: vertical;
+            -webkit-box-direction: normal;
+            -webkit-flex-direction: column;
+            -ms-flex-direction: column;
+            flex-direction: column;
             -webkit-box-align: center;
             -webkit-align-items: center;
             -ms-flex-align: center;
             align-items: center;
-            -webkit-box-pack: center;
-            -webkit-justify-content: center;
-            -ms-flex-pack: center;
-            justify-content: center;
-            -webkit-flex-shrink: 0;
-            -ms-flex-negative: 0;
-            flex-shrink: 0;
+            gap: 0;
+            background: none;
+            border: none;
+            border-radius: 0;
+            padding: 0;
         }
-        .company-badge-icon svg { width: 18px; height: 18px; fill: #0a0a0a; }
         .company-badge-text {
-            text-align: left;
+            text-align: center;
+            position: relative;
         }
         .company-badge-text span:first-child {
             display: block;
-            font-size: 0.7rem;
-            color: rgba(255,255,255,0.35);
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.25);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 500;
+            letter-spacing: 3px;
+            font-weight: 400;
+            margin-bottom: 0.35rem;
         }
         .company-badge-text span:last-child {
             display: block;
-            font-size: 0.95rem;
-            color: #d4af37;
+            font-family: 'Cardo', Georgia, serif;
+            font-size: 1.3rem;
+            color: rgba(255,255,255,0.12);
             font-weight: 700;
-            letter-spacing: 1px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
         }
 
         /* Stats bar */
@@ -711,8 +690,7 @@
             .pillar-card  { padding: 2rem 1.5rem 1.5rem; }
             .hero-stats { -webkit-flex-wrap: wrap; -ms-flex-wrap: wrap; flex-wrap: wrap; gap: 1.5rem; }
             .hero-stat { -webkit-box-flex: 0; -webkit-flex: 0 0 calc(50% - 0.75rem); -ms-flex: 0 0 calc(50% - 0.75rem); flex: 0 0 calc(50% - 0.75rem); }
-            .company-badge { padding: 0.6rem 1.25rem; }
-            .company-badge-text span:last-child { font-size: 0.85rem; }
+            .company-badge-text span:last-child { font-size: 1rem; letter-spacing: 0.12em; }
             /* Force center section headers on mobile */
             .section-header { text-align: center !important; padding: 0 1rem; }
             .section-header h2 { text-align: center !important; }

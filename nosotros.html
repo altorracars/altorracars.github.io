@@ -9,14 +9,14 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Nosotros | ALTORRA CARS — Especialistas en Carros Usados en Cartagena</title>
-    <meta name="description" content="Conoce ALTORRA CARS, tu aliado de confianza para comprar carros usados en Cartagena. División automotriz de ALTORRA COMPANY SAS. Transparencia, calidad y servicio personalizado en cada negociación.">
+    <meta name="description" content="Conoce ALTORRA CARS, tu concesionario de confianza para comprar carros usados en Cartagena. Venta de vehículos usados con transparencia, calidad certificada, financiación flexible y atención personalizada.">
     <meta name="keywords" content="ALTORRA CARS nosotros, concesionario carros usados Cartagena, quienes somos ALTORRA CARS, venta carros usados Cartagena, ALTORRA COMPANY SAS">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://altorracars.github.io/nosotros.html">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://altorracars.github.io/nosotros.html">
     <meta property="og:title" content="Nosotros | ALTORRA CARS — Especialistas en Carros Usados Cartagena">
-    <meta property="og:description" content="Conoce ALTORRA CARS, especialistas en carros usados en Cartagena. Transparencia, calidad y servicio personalizado son nuestros pilares.">
+    <meta property="og:description" content="ALTORRA CARS — Tu concesionario de vehículos usados en Cartagena. Carros certificados, financiación flexible y atención personalizada.">
     <meta property="og:image" content="https://altorracars.github.io/multimedia/nosotros-hero.webp">
     <meta property="og:site_name" content="ALTORRA CARS">
     <meta property="og:locale" content="es_CO">
@@ -31,10 +31,10 @@
         /* ── Global ── */
         body { background: #0a0a0a; }
 
-        /* ── Immersive Hero ── */
+        /* ── Immersive Hero — compact like index ── */
         .about-hero {
             position: relative;
-            min-height: 85vh;
+            min-height: clamp(520px, 75vh, 800px);
             display: -webkit-box;
             display: -webkit-flex;
             display: -ms-flexbox;
@@ -50,7 +50,8 @@
             text-align: center;
             color: white;
             overflow: hidden;
-            padding: calc(70px + 3rem) 0 3rem;
+            margin-top: 70px;
+            padding: 2rem 0 1rem;
         }
         /* Background image — matching index hero style (visible image, no gold tint) */
         .about-hero::before {
@@ -671,7 +672,7 @@
             .pillars-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
             .values-grid  { grid-template-columns: 1fr 1fr; max-width: 520px; margin: 0 auto; }
             .why-grid     { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
-            .about-hero { min-height: 70vh; }
+            .about-hero { min-height: clamp(400px, 60vh, 600px); }
             .about-hero h1 { font-size: 2.2rem; }
             .about-hero h1 span { font-size: 2.6rem; }
             .hero-stats { gap: 1.5rem; }
@@ -682,7 +683,7 @@
         }
         @media (max-width: 600px) {
             .values-grid  { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; }
-            .about-hero   { min-height: 60vh; padding: calc(70px + 2rem) 0 2rem; }
+            .about-hero   { min-height: 0; height: auto; padding: 2rem 0 1.5rem; }
             .about-hero h1 { font-size: 1.6rem; }
             .about-hero h1 span { font-size: 2rem; }
             .hero-subtitle { font-size: 0.95rem; }
@@ -743,7 +744,7 @@
                 Concesionario Líder en Cartagena
             </span>
             <h1>SOMOS<span>ALTORRA CARS</span></h1>
-            <p class="hero-subtitle">Más que un concesionario, somos tu aliado estratégico en la compra de vehículos nuevos y usados. Ofrecemos transparencia total, financiación flexible y atención personalizada en Cartagena.</p>
+            <p class="hero-subtitle">Tu aliado estratégico en la compra de vehículos usados en Cartagena. Transparencia total, financiación flexible y atención personalizada en cada negociación.</p>
 
             <div class="hero-divider"></div>
 
@@ -786,7 +787,7 @@
                         </svg>
                     </div>
                     <h3>Nuestra Misión</h3>
-                    <p>Facilitar el acceso a vehículos de calidad, brindando asesoría profesional, financiación flexible y un proceso de compra transparente para cada uno de nuestros clientes en la región Caribe colombiana.</p>
+                    <p>Facilitar el acceso a vehículos usados de calidad, brindando asesoría profesional, financiación flexible y un proceso de compra transparente para cada uno de nuestros clientes en Cartagena y la región Caribe.</p>
                 </div>
                 <div class="pillar-card">
                     <div class="pillar-icon">
@@ -870,7 +871,7 @@
                 <div class="why-card">
                     <div class="why-number">1</div>
                     <h4>Amplio Inventario</h4>
-                    <p>Vehículos nuevos y usados de todas las marcas, con opciones para cada presupuesto y necesidad.</p>
+                    <p>Vehículos usados de todas las marcas, con opciones para cada presupuesto y necesidad.</p>
                 </div>
                 <div class="why-card">
                     <div class="why-number">2</div>

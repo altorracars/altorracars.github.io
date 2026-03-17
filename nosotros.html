@@ -17,7 +17,7 @@
     <meta property="og:url" content="https://altorracars.github.io/nosotros.html">
     <meta property="og:title" content="Nosotros | ALTORRA CARS — Especialistas en Carros Usados Cartagena">
     <meta property="og:description" content="Conoce ALTORRA CARS, especialistas en carros usados en Cartagena. Transparencia, calidad y servicio personalizado son nuestros pilares.">
-    <meta property="og:image" content="https://altorracars.github.io/multimedia/heroindex.webp">
+    <meta property="og:image" content="https://altorracars.github.io/multimedia/categories/BUSQUEDA.webp">
     <meta property="og:site_name" content="ALTORRA CARS">
     <meta property="og:locale" content="es_CO">
     <link rel="stylesheet" href="css/style.css">
@@ -58,9 +58,9 @@
             position: absolute;
             inset: 0;
             background:
-                url('multimedia/heroindex.webp') center/cover no-repeat;
-            -webkit-filter: brightness(0.15) saturate(0.6);
-            filter: brightness(0.15) saturate(0.6);
+                url('multimedia/categories/BUSQUEDA.webp') center/cover no-repeat;
+            -webkit-filter: brightness(0.28) saturate(0.8);
+            filter: brightness(0.28) saturate(0.8);
         }
         /* Golden radial accents */
         .about-hero::after {
@@ -74,27 +74,7 @@
             pointer-events: none;
         }
 
-        /* Animated grid overlay */
-        .hero-grid-overlay {
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(212,175,55,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(212,175,55,0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            -webkit-animation: gridShift 25s linear infinite;
-            animation: gridShift 25s linear infinite;
-            pointer-events: none;
-            z-index: 1;
-        }
-        @-webkit-keyframes gridShift {
-            0% { -webkit-transform: translate(0, 0); transform: translate(0, 0); }
-            100% { -webkit-transform: translate(60px, 60px); transform: translate(60px, 60px); }
-        }
-        @keyframes gridShift {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(60px, 60px); }
-        }
+        /* Animated grid overlay — REMOVED, replaced by particles only */
 
         /* Floating particles */
         .hero-particles {
@@ -140,7 +120,7 @@
             max-width: 800px;
         }
 
-        /* Company tag top */
+        /* Company tag top — matching index hero-badge style */
         .hero-label {
             display: -webkit-inline-box;
             display: -webkit-inline-flex;
@@ -150,24 +130,38 @@
             -webkit-align-items: center;
             -ms-flex-align: center;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1.25rem;
-            border: 1px solid rgba(212,175,55,0.25);
-            border-radius: 30px;
-            background: rgba(212,175,55,0.06);
+            gap: 0.55rem;
+            padding: 0.5rem 1.5rem;
+            border: 1px solid rgba(212,175,55,0.38);
+            border-radius: 100px;
+            background: rgba(212,175,55,0.1);
             color: #d4af37;
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 2px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
             margin-bottom: 2rem;
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 0 24px rgba(212,175,55,0.08), inset 0 1px 0 rgba(255,255,255,0.07);
         }
-        .hero-label svg {
-            width: 14px;
-            height: 14px;
-            fill: #d4af37;
+        .hero-label-dot {
+            width: 6px;
+            height: 6px;
+            background: #d4af37;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 7px rgba(212,175,55,0.9);
+            -webkit-animation: hero-dot-pulse 2.2s ease-in-out infinite;
+            animation: hero-dot-pulse 2.2s ease-in-out infinite;
+        }
+        @-webkit-keyframes hero-dot-pulse {
+            0%, 100% { opacity: 1; -webkit-transform: scale(1); transform: scale(1); box-shadow: 0 0 7px rgba(212,175,55,0.9); }
+            50% { opacity: 0.4; -webkit-transform: scale(0.65); transform: scale(0.65); box-shadow: 0 0 2px rgba(212,175,55,0.3); }
+        }
+        @keyframes hero-dot-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 7px rgba(212,175,55,0.9); }
+            50% { opacity: 0.4; transform: scale(0.65); box-shadow: 0 0 2px rgba(212,175,55,0.3); }
         }
 
         .about-hero h1 {
@@ -703,6 +697,9 @@
             .about-hero h1 span { font-size: 2.6rem; }
             .hero-stats { gap: 1.5rem; }
             .hero-stat-number { font-size: 1.6rem; }
+            /* Center section headers on tablet/mobile */
+            .section-header { text-align: center; }
+            .section-header h2, .section-header p { text-align: center; margin-left: auto; margin-right: auto; }
         }
         @media (max-width: 600px) {
             .values-grid  { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; }
@@ -716,6 +713,10 @@
             .hero-stat { -webkit-box-flex: 0; -webkit-flex: 0 0 calc(50% - 0.75rem); -ms-flex: 0 0 calc(50% - 0.75rem); flex: 0 0 calc(50% - 0.75rem); }
             .company-badge { padding: 0.6rem 1.25rem; }
             .company-badge-text span:last-child { font-size: 0.85rem; }
+            /* Force center section headers on mobile */
+            .section-header { text-align: center !important; padding: 0 1rem; }
+            .section-header h2 { text-align: center !important; }
+            .section-header p { text-align: center !important; margin-left: auto; margin-right: auto; }
         }
         @media (max-width: 380px) {
             .about-hero h1 { font-size: 1.4rem; }
@@ -748,7 +749,6 @@
 
     <!-- ══════════ HERO INMERSIVO ══════════ -->
     <section class="about-hero">
-        <div class="hero-grid-overlay"></div>
         <div class="hero-particles">
             <div class="hero-particle"></div>
             <div class="hero-particle"></div>
@@ -761,20 +761,17 @@
         </div>
         <div class="container">
             <span class="hero-label">
-                <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                División automotriz
+                <span class="hero-label-dot" aria-hidden="true"></span>
+                Concesionario Líder en Cartagena
             </span>
-            <h1>Somos<span>ALTORRA CARS</span></h1>
+            <h1>SOMOS<span>ALTORRA CARS</span></h1>
             <p class="hero-subtitle">Más que un concesionario, somos tu aliado estratégico en la compra de vehículos nuevos y usados. Ofrecemos transparencia total, financiación flexible y atención personalizada en Cartagena.</p>
 
             <div class="hero-divider"></div>
 
             <div class="company-badge">
-                <div class="company-badge-icon">
-                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                </div>
                 <div class="company-badge-text">
-                    <span>Respaldados por</span>
+                    <span>Razón Social</span>
                     <span>ALTORRA COMPANY SAS</span>
                 </div>
             </div>

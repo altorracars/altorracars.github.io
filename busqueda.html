@@ -64,6 +64,31 @@
             transform: translateY(0);
             transition: max-height 0.4s ease, opacity 0.3s ease, transform 0.3s ease;
         }
+        .search-term-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1.25rem;
+            background: rgba(212,175,55,0.08);
+            border: 1px solid rgba(212,175,55,0.2);
+            border-radius: 10px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.95rem;
+        }
+        .search-term-banner strong { color: #d4af37; }
+        .search-term-clear {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.4);
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 0 0.25rem;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .search-term-clear:hover { color: #d4af37; }
         @media (max-width: 768px) {
             .toggle-filters-btn {
                 max-width: 100%;
@@ -182,6 +207,10 @@
     </section>
     <section class="search-results-section">
         <div class="container">
+            <div id="searchTermBanner" class="search-term-banner" style="display:none;">
+                <span>Resultados para: <strong id="searchTermText"></strong></span>
+                <button type="button" id="clearSearchTerm" class="search-term-clear" aria-label="Quitar búsqueda">&times;</button>
+            </div>
             <div class="results-header">
                 <div class="results-info">
                     <h2><span id="resultsCount">0</span> vehículos encontrados</h2>
@@ -247,7 +276,27 @@
             const buscarParam = new URLSearchParams(window.location.search).get('buscar');
             if (buscarParam) {
                 currentFilters.search = buscarParam;
+                // Show search term banner
+                const banner = document.getElementById('searchTermBanner');
+                const termText = document.getElementById('searchTermText');
+                if (banner && termText) {
+                    termText.textContent = buscarParam;
+                    banner.style.display = 'flex';
+                }
             }
+
+            // Clear search term button
+            document.getElementById('clearSearchTerm')?.addEventListener('click', () => {
+                delete currentFilters.search;
+                const banner = document.getElementById('searchTermBanner');
+                if (banner) banner.style.display = 'none';
+                // Update URL to remove buscar param
+                const url = new URL(window.location);
+                url.searchParams.delete('buscar');
+                window.history.replaceState({}, '', url);
+                currentPage = 1;
+                performSearch();
+            });
 
             loadDynamicFilters();
 
@@ -266,7 +315,10 @@
             document.getElementById('advancedSearchForm')?.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
+                // Preserve URL search term when applying filters
+                const savedSearch = currentFilters.search;
                 currentFilters = {};
+                if (savedSearch) currentFilters.search = savedSearch;
                 formData.forEach((value, key) => {
                     if (value) currentFilters[key] = value;
                 });

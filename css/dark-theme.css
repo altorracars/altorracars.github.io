@@ -1249,7 +1249,7 @@ body .page-header {
     100% { transform: translateY(-85vh) scale(0); opacity: 0; }
 }
 
-/* ── Bottom fade — 140px gradient to body bg ── */
+/* ── Bottom fade — 140px gradient to body bg + gold accent line ── */
 .hero-bottom-fade {
     position: absolute;
     bottom: 0; left: 0; right: 0;
@@ -1258,8 +1258,16 @@ body .page-header {
     z-index: 3;
     pointer-events: none;
 }
+.hero-bottom-fade::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.35) 20%, rgba(212,175,55,0.35) 80%, transparent);
+}
 
 /* ── Brand hero (image-based) — category & brand pages ── */
+/* Synced with index .hero and nosotros .about-hero */
 body .brand-hero {
     position: relative;
     width: 100%;
@@ -1270,14 +1278,20 @@ body .brand-hero {
     overflow: hidden;
     margin-top: 70px;
     isolation: isolate;
+    z-index: 10;
+    animation: brandHeroFadeIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes brandHeroFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 body .brand-hero-bg {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
     object-fit: cover;
-    object-position: center 30%;
-    filter: brightness(0.9) saturate(1.1);
+    object-position: center center;
+    filter: brightness(0.85) saturate(1.05);
     animation: subtle-zoom 20s ease-in-out infinite alternate;
 }
 @keyframes subtle-zoom {
@@ -1297,6 +1311,28 @@ body .brand-hero-overlay {
     );
 }
 
+/* ── Gold accent line at bottom — matches nosotros about-pillars::before ── */
+body .brand-hero + .catalog-section {
+    position: relative;
+}
+body .brand-hero + .catalog-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent);
+    z-index: 2;
+}
+
+/* ── Catalog section entrance animation ── */
+body .catalog-section {
+    animation: catalogFadeInUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+@keyframes catalogFadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Gradient hero (info & legal pages) — image-based like index ── */
 .gradient-hero {
     position: relative;
@@ -1310,14 +1346,16 @@ body .brand-hero-overlay {
     text-align: center;
     overflow: hidden;
     isolation: isolate;
+    z-index: 10;
+    animation: brandHeroFadeIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .gradient-hero-bg {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
     object-fit: cover;
-    object-position: center 30%;
-    filter: brightness(0.85) saturate(1.1);
+    object-position: center center;
+    filter: brightness(0.85) saturate(1.05);
     animation: subtle-zoom 20s ease-in-out infinite alternate;
 }
 .gradient-hero-overlay {
@@ -1399,7 +1437,7 @@ body .brand-hero-overlay {
     body .brand-hero-bg {
         object-position: center center;
         animation: none;
-        filter: brightness(0.85);
+        filter: brightness(0.8);
     }
     .gradient-hero {
         min-height: clamp(300px, 42vh, 420px);
@@ -1421,12 +1459,15 @@ body .brand-hero-overlay {
 }
 @media (max-width: 480px) {
     body .brand-hero {
-        min-height: clamp(200px, 30vh, 280px);
+        min-height: 0 !important;
+        height: auto !important;
+        padding-top: 0;
+        padding-bottom: 0;
     }
     body .brand-hero-bg {
         object-position: center center;
         animation: none;
-        filter: brightness(0.8);
+        filter: brightness(0.75);
     }
     .gradient-hero {
         min-height: clamp(240px, 32vh, 300px);

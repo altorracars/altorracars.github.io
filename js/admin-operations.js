@@ -350,7 +350,7 @@
             { loc: '/',                           priority: '1.0', freq: 'daily'   },
             { loc: '/busqueda.html',              priority: '0.9', freq: 'daily'   },
             { loc: '/vehiculos-usados.html',      priority: '0.9', freq: 'daily'   },
-            { loc: '/vehiculos-nuevos.html',      priority: '0.9', freq: 'daily'   },
+            { loc: '/vehiculos-nuevos.html',      priority: '0.3', freq: 'monthly' },
             { loc: '/vehiculos-suv.html',         priority: '0.8', freq: 'weekly'  },
             { loc: '/vehiculos-sedan.html',       priority: '0.8', freq: 'weekly'  },
             { loc: '/vehiculos-pickup.html',      priority: '0.8', freq: 'weekly'  },

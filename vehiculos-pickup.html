@@ -40,6 +40,7 @@
     @keyframes plSpin{to{transform:rotate(360deg)}}
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
+    <link rel="preload" as="image" href="multimedia/categories/PICKUP.jpg" fetchpriority="high">
 </head>
 <body>
     <!-- Page Loader -->
@@ -63,7 +64,7 @@
         <div class="hero-particle"></div>
         <div class="hero-particle"></div>
     </div>
-        <img src="multimedia/categories/PICKUP.jpg" alt="Pickup" class="brand-hero-bg">
+        <img src="multimedia/categories/PICKUP.jpg" alt="Pickup" class="brand-hero-bg" fetchpriority="high" loading="eager">
     <div class="hero-bottom-fade"></div>
     </section>
 

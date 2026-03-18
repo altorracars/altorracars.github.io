@@ -1459,10 +1459,8 @@ body .catalog-section {
 }
 @media (max-width: 480px) {
     body .brand-hero {
-        min-height: 0 !important;
-        height: auto !important;
-        padding-top: 0;
-        padding-bottom: 0;
+        min-height: clamp(220px, 32vh, 300px);
+        margin-top: 56px;
     }
     body .brand-hero-bg {
         object-position: center center;

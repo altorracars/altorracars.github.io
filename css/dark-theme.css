@@ -1179,13 +1179,15 @@ body .page-header {
 }
 
 /* Hero de marca con banner full-width */
+/* ── Brand hero — synced with index/nosotros hero system ── */
 body .brand-hero {
     position: relative;
     width: 100vw;
     margin-left: calc(-50vw + 50%);
-    height: 450px;
+    min-height: clamp(380px, 55vh, 520px);
     overflow: hidden;
-    margin-top: 88px;
+    margin-top: 70px;
+    isolation: isolate;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
 }
 
@@ -1196,7 +1198,7 @@ body .brand-hero-bg {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: top center;
+    object-position: center 30%;
     filter: brightness(0.9) saturate(1.1);
     animation: subtle-zoom 20s ease-in-out infinite alternate;
 }
@@ -1206,36 +1208,37 @@ body .brand-hero-bg {
     100% { transform: scale(1.05); }
 }
 
+/* Overlay — synced with index hero-overlay gradient */
 body .brand-hero-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(180deg,
-        rgba(10, 10, 10, 0.1) 0%,
-        rgba(10, 10, 10, 0.4) 40%,
-        rgba(10, 10, 10, 0.85) 100%);
+    inset: 0;
     z-index: 1;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.78) 0%,
+        rgba(0, 0, 0, 0.28) 38%,
+        rgba(0, 0, 0, 0.30) 62%,
+        rgba(0, 0, 0, 0.85) 100%
+    );
 }
 
+/* Bottom fade — synced with index hero (140px) */
 body .brand-hero::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 120px;
-    background: linear-gradient(0deg, #0a0a0a 0%, transparent 100%);
+    height: 140px;
+    background: linear-gradient(to bottom, transparent 0%, #0a0a0a 100%);
     z-index: 2;
     pointer-events: none;
 }
 
-@media (max-width: 968px) {
+/* Tablet — synced breakpoint 768px (matches index/nosotros) */
+@media (max-width: 768px) {
     body .brand-hero {
-        height: 300px;
-        max-height: 300px;
-        min-height: auto;
+        min-height: clamp(240px, 36vh, 340px);
         overflow: hidden;
         margin-top: 70px;
         margin-bottom: 0;
@@ -1243,33 +1246,32 @@ body .brand-hero::after {
     }
 
     body .brand-hero-bg {
-        position: absolute;
-        object-fit: contain;
+        object-fit: cover;
         object-position: center center;
-        width: 100%;
-        height: 100%;
-        display: block;
         animation: none;
         filter: brightness(0.85);
     }
 
     body .brand-hero-overlay {
-        background: linear-gradient(180deg,
-            rgba(10, 10, 10, 0.2) 0%,
-            rgba(10, 10, 10, 0.5) 60%,
-            rgba(10, 10, 10, 0.9) 100%);
+        background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.70) 0%,
+            rgba(0, 0, 0, 0.25) 40%,
+            rgba(0, 0, 0, 0.30) 60%,
+            rgba(0, 0, 0, 0.90) 100%
+        );
     }
 
     body .brand-hero::after {
-        height: 80px;
+        height: 100px;
     }
 }
 
-@media (max-width: 640px) {
+/* Mobile — synced breakpoint 480px (matches index/nosotros) */
+@media (max-width: 480px) {
     body .brand-hero {
-        height: 220px;
-        max-height: 220px;
-        min-height: auto;
+        min-height: 0;
+        height: 200px;
         overflow: hidden;
         margin-top: 70px;
         margin-bottom: 0;
@@ -1277,25 +1279,24 @@ body .brand-hero::after {
     }
 
     body .brand-hero-bg {
-        position: absolute;
-        object-fit: contain;
+        object-fit: cover;
         object-position: center center;
-        width: 100%;
-        height: 100%;
-        display: block;
         animation: none;
         filter: brightness(0.8);
     }
 
     body .brand-hero-overlay {
-        background: linear-gradient(180deg,
-            rgba(10, 10, 10, 0.2) 0%,
-            rgba(10, 10, 10, 0.6) 60%,
-            rgba(10, 10, 10, 0.95) 100%);
+        background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.75) 0%,
+            rgba(0, 0, 0, 0.30) 40%,
+            rgba(0, 0, 0, 0.35) 60%,
+            rgba(0, 0, 0, 0.95) 100%
+        );
     }
 
     body .brand-hero::after {
-        height: 60px;
+        height: 80px;
     }
 }
 
@@ -1557,17 +1558,13 @@ body .vehicles-grid {
     gap: 1.5rem;
 }
 
-/* Mobile/Tablet (≤968px) */
-@media (max-width: 968px) {
+/* Mobile/Tablet (≤768px) — synced with hero breakpoints */
+@media (max-width: 768px) {
     body .page-header {
         padding: calc(70px + 1.5rem) 0 1.5rem;
     }
 
     /* Banner con imagen */
-    body .brand-hero {
-        margin-top: 70px;
-    }
-
     body .brand-hero + .catalog-section {
         padding-top: 1rem;
     }
@@ -1647,8 +1644,8 @@ body .vehicles-grid {
     }
 }
 
-/* Mobile pequeño (≤640px) */
-@media (max-width: 640px) {
+/* Mobile pequeño (≤480px) — synced with hero breakpoints */
+@media (max-width: 480px) {
     body .page-header {
         padding: calc(70px + 1rem) 0 1rem;
     }

@@ -35,7 +35,7 @@
         .about-hero {
             position: relative;
             z-index: 10;
-            min-height: clamp(580px, 86vh, 940px);
+            min-height: clamp(480px, 70vh, 720px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -154,7 +154,7 @@
             position: relative;
             z-index: 4;
             text-align: center;
-            padding: 4rem 2rem 4rem;
+            padding: 3rem 2rem 3rem;
             max-width: 880px;
             margin: 0 auto;
             width: 100%;
@@ -203,14 +203,15 @@
             50% { opacity: 0.4; transform: scale(0.65); box-shadow: 0 0 2px rgba(212,175,55,0.3); }
         }
 
-        /* H1 "SOMOS" */
+        /* H1 "SOMOS" — same font-weight/letter-spacing as index .hero-title */
         .about-hero h1 {
-            font-size: 1.6rem;
+            font-size: clamp(1.1rem, 2vw, 1.5rem);
             font-weight: 900;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.03em;
+            margin-bottom: 0.4rem;
+            letter-spacing: 0.15em;
             line-height: 1.06;
-            color: rgba(255,255,255,0.95);
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.7);
             animation: hero-title-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
         }
         @keyframes hero-title-in {
@@ -231,7 +232,7 @@
         .hero-mark__name {
             display: block;
             font-family: 'Cardo', Georgia, 'Times New Roman', serif;
-            font-size: clamp(2.8rem, 5vw, 4.2rem);
+            font-size: clamp(2.4rem, 5.5vw, 4.5rem);
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -282,7 +283,7 @@
             font-size: 1.15rem;
             color: rgba(255,255,255,0.82);
             max-width: 580px;
-            margin: 1.5rem auto 0;
+            margin: 1rem auto 0;
             line-height: 1.8;
             font-weight: 400;
             text-shadow: 0 1px 4px rgba(0,0,0,0.6);
@@ -659,12 +660,12 @@
             .section-header h2, .section-header p { text-align: center; margin-left: auto; margin-right: auto; }
         }
         @media (max-width: 768px) {
-            .about-hero { min-height: clamp(320px, 46vh, 460px); }
+            .about-hero { min-height: clamp(300px, 42vh, 420px); }
             .about-hero .container { padding: 1.4rem 1.5rem 2rem; }
-            .about-hero h1 { font-size: 1.4rem; }
-            .hero-mark__name { font-size: clamp(2rem, 7.5vw, 3rem); }
-            .hero-mark__sub { font-size: clamp(0.7rem, 1.5vw, 1rem); }
-            .hero-subtitle { font-size: 1rem; }
+            .about-hero h1 { font-size: clamp(0.9rem, 1.8vw, 1.2rem); }
+            .hero-mark__name { font-size: clamp(1.6rem, 6vw, 2.2rem); }
+            .hero-mark__sub { font-size: clamp(0.65rem, 1.4vw, 0.9rem); }
+            .hero-subtitle { font-size: 0.95rem; }
             .hero-bottom-fade { height: 100px; }
             .hero-particle:nth-child(n+6) { display: none; }
             .hero-particle { opacity: 0.6; }
@@ -680,17 +681,17 @@
         @media (max-width: 480px) {
             .about-hero { min-height: 0 !important; height: auto !important; }
             .about-hero .container { padding: 7vh 1.25rem 5vh; }
-            .about-hero h1 { font-size: 1.2rem; }
-            .hero-mark__name { font-size: clamp(1.6rem, 8.5vw, 2.2rem); }
-            .hero-mark__sub { font-size: clamp(0.6rem, 1.2vw, 0.8rem); }
-            .hero-subtitle { font-size: 0.95rem; }
+            .about-hero h1 { font-size: clamp(0.8rem, 1.5vw, 1rem); }
+            .hero-mark__name { font-size: clamp(1.3rem, 7vw, 1.8rem); }
+            .hero-mark__sub { font-size: clamp(0.55rem, 1.1vw, 0.7rem); }
+            .hero-subtitle { font-size: 0.9rem; }
             .hero-label { margin-bottom: 0.9rem; }
             .hero-bottom-fade { height: 80px; }
         }
         @media (max-width: 360px) {
             .about-hero .container { padding: 1.25rem 1rem 2rem; }
-            .about-hero h1 { font-size: 1.1rem; }
-            .hero-mark__name { font-size: clamp(1.4rem, 8vw, 1.8rem); }
+            .about-hero h1 { font-size: 0.8rem; }
+            .hero-mark__name { font-size: clamp(1.2rem, 6.5vw, 1.5rem); }
         }
     </style>
     <!-- Page Loader — Critical Inline CSS (cross-browser) -->

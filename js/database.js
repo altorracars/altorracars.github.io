@@ -59,12 +59,12 @@ class VehicleDatabase {
             }
         }
 
-        // STEP 2: Load from Firestore (with generous timeout for slow networks + 3 retries)
+        // STEP 2: Load from Firestore (reduced timeout for fast first paint)
         if (window.firebaseReady) {
-            var firebaseOk = await this._awaitFirebaseWithTimeout(15000);
+            var firebaseOk = await this._awaitFirebaseWithTimeout(8000);
             if (firebaseOk && window.db) {
-                var delays = [0, 2000, 4000]; // retry backoff
-                for (var attempt = 0; attempt < 3; attempt++) {
+                var delays = [0, 2000]; // retry backoff (2 attempts)
+                for (var attempt = 0; attempt < 2; attempt++) {
                     if (attempt > 0) {
                         await new Promise(function(r) { setTimeout(r, delays[attempt]); });
                     }
@@ -78,11 +78,11 @@ class VehicleDatabase {
                         console.log('[DB] Firestore loaded: ' + this.vehicles.length + ' vehicles, ' + this.brands.length + ' brands');
                         return;
                     } catch (e) {
-                        console.warn('[DB] Firestore attempt ' + (attempt + 1) + '/3 failed:', e.message);
+                        console.warn('[DB] Firestore attempt ' + (attempt + 1) + '/2 failed:', e.message);
                     }
                 }
             } else {
-                console.warn('[DB] Firebase SDK not ready after 15s timeout');
+                console.warn('[DB] Firebase SDK not ready after 8s timeout');
             }
         }
 
@@ -105,9 +105,9 @@ class VehicleDatabase {
     }
 
     async loadFromFirestore() {
-        // PARALLEL queries with 20s timeout (generous for slow networks)
+        // PARALLEL queries with 12s timeout
         var queryTimeout = new Promise(function(_, reject) {
-            setTimeout(function() { reject(new Error('Firestore query timeout (20s)')); }, 20000);
+            setTimeout(function() { reject(new Error('Firestore query timeout (12s)')); }, 12000);
         });
         var results = await Promise.race([
             Promise.all([

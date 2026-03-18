@@ -19,66 +19,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/dark-theme.css">
     <style>
-        /* Hero Section */
-        /* ── Hero — synced with index/nosotros hero system ── */
-        .cookies-hero {
-            background: linear-gradient(135deg, #1d1b19 0%, #2a2420 50%, #1d1b19 100%);
-            color: white;
-            padding: calc(70px + 3rem) 0 3rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cookies-hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse at 25% 60%, rgba(212,175,55,0.07) 0%, transparent 55%),
-                radial-gradient(ellipse at 75% 40%, rgba(184,150,88,0.05) 0%, transparent 55%);
-        }
-
-        .cookies-hero .container { position: relative; z-index: 1; }
-
-        .cookies-hero h1 {
-            font-size: clamp(2rem, 4vw, 2.5rem);
-            font-weight: 900;
-            margin-bottom: 0.75rem;
-            letter-spacing: -0.03em;
-            line-height: 1.06;
-        }
-
-        .cookies-hero h1 span {
-            background: linear-gradient(135deg, #d4af37, #b89658);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .cookies-hero p {
-            font-size: 1.05rem;
-            color: rgba(255,255,255,0.6);
-            max-width: 550px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
-
-        .cookies-hero .last-updated {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.55rem;
-            margin-top: 1.2rem;
-            padding: 0.5rem 1.25rem;
-            border: 1px solid rgba(212,175,55,0.38);
-            border-radius: 100px;
-            background: rgba(212,175,55,0.1);
-            color: #d4af37;
-            font-size: 0.82rem;
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
 
         /* Content Section */
         .cookies-content {
@@ -311,14 +251,6 @@
 
         /* Responsive — synced breakpoints 768/480 */
         @media (max-width: 768px) {
-            .cookies-hero {
-                padding: calc(70px + 2.5rem) 0 2.5rem;
-            }
-
-            .cookies-hero h1 {
-                font-size: clamp(1.5rem, 3.5vw, 1.85rem);
-            }
-
             .legal-card {
                 padding: 2rem 1.5rem;
                 border-radius: 12px;
@@ -351,13 +283,6 @@
         }
 
         @media (max-width: 480px) {
-            .cookies-hero {
-                padding: calc(70px + 2rem) 0 2rem;
-            }
-            .cookies-hero h1 {
-                font-size: clamp(1.3rem, 5vw, 1.5rem);
-            }
-
             .legal-card {
                 padding: 1.5rem 1rem;
             }
@@ -385,12 +310,24 @@
 
     <div id="header-placeholder"></div>
 
-    <section class="cookies-hero">
-        <div class="container">
-            <h1>Politica de <span>Cookies</span></h1>
-            <p>Informacion sobre el uso de cookies y tecnologias similares en la plataforma de ALTORRA CARS.</p>
-            <span class="last-updated">Ultima actualizacion: Febrero 2025</span>
+    <section class="gradient-hero">
+        <div class="hero-ambient" aria-hidden="true"></div>
+        <div class="hero-particles" aria-hidden="true">
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
         </div>
+        <div class="container">
+            <h1>Política de <span>Cookies</span></h1>
+            <p>Información sobre el uso de cookies y tecnologías similares en la plataforma de ALTORRA CARS.</p>
+            <span class="hero-badge">Última actualización: Febrero 2025</span>
+        </div>
+        <div class="hero-bottom-fade"></div>
     </section>
 
     <section class="cookies-content">

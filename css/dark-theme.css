@@ -1178,37 +1178,112 @@ body .page-header {
     border-bottom: 2px solid rgba(184, 150, 88, 0.2);
 }
 
-/* Hero de marca con banner full-width */
-/* ── Brand hero — synced with index/nosotros hero system ── */
+/* ══════════════════════════════════════════════════
+   SHARED HERO SYSTEM — single source of truth
+   Synced with index (hero.css) and nosotros.html
+   Used by: brand-hero, contact-hero, page-hero,
+            terms-hero, cookies-hero, privacy-hero
+   ══════════════════════════════════════════════════ */
+
+/* ── Ambient orbs — corners only ── */
+.hero-ambient {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+}
+.hero-ambient::before,
+.hero-ambient::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    animation: hero-orb-drift 16s ease-in-out infinite alternate;
+}
+.hero-ambient::before {
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(212,175,55,0.045) 0%, transparent 65%);
+    top: -220px; left: -180px;
+}
+.hero-ambient::after {
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(184,150,88,0.035) 0%, transparent 65%);
+    bottom: -180px; right: -150px;
+    animation-delay: -8s;
+    animation-direction: alternate-reverse;
+}
+@keyframes hero-orb-drift {
+    0%   { transform: translate(0, 0) scale(1); }
+    50%  { transform: translate(30px, 20px) scale(1.08); }
+    100% { transform: translate(-15px, -15px) scale(0.96); }
+}
+
+/* ── Floating particles ── */
+.hero-particles {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+}
+.hero-particle {
+    position: absolute;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: rgba(212,175,55,0.4);
+    animation: heroParticleFloat linear infinite;
+}
+.hero-particle:nth-child(1) { left: 10%; top: 80%; animation-duration: 12s; }
+.hero-particle:nth-child(2) { left: 25%; top: 90%; animation-duration: 15s; animation-delay: 2s; width: 2px; height: 2px; }
+.hero-particle:nth-child(3) { left: 45%; top: 85%; animation-duration: 10s; animation-delay: 4s; }
+.hero-particle:nth-child(4) { left: 65%; top: 95%; animation-duration: 14s; animation-delay: 1s; width: 2px; height: 2px; }
+.hero-particle:nth-child(5) { left: 80%; top: 88%; animation-duration: 11s; animation-delay: 3s; }
+.hero-particle:nth-child(6) { left: 35%; top: 92%; animation-duration: 16s; animation-delay: 5s; width: 4px; height: 4px; background: rgba(212,175,55,0.2); }
+.hero-particle:nth-child(7) { left: 55%; top: 78%; animation-duration: 13s; animation-delay: 6s; }
+.hero-particle:nth-child(8) { left: 90%; top: 82%; animation-duration: 17s; animation-delay: 2.5s; width: 2px; height: 2px; }
+@keyframes heroParticleFloat {
+    0%   { transform: translateY(0) scale(1); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateY(-85vh) scale(0); opacity: 0; }
+}
+
+/* ── Bottom fade — 140px gradient to body bg ── */
+.hero-bottom-fade {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 140px;
+    background: linear-gradient(to bottom, transparent 0%, #0a0a0a 100%);
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* ── Brand hero (image-based) — category & brand pages ── */
 body .brand-hero {
     position: relative;
-    width: 100vw;
-    margin-left: calc(-50vw + 50%);
-    min-height: clamp(380px, 55vh, 520px);
+    width: 100%;
+    min-height: clamp(480px, 70vh, 720px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
     margin-top: 70px;
     isolation: isolate;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
 }
-
 body .brand-hero-bg {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     object-fit: cover;
     object-position: center 30%;
     filter: brightness(0.9) saturate(1.1);
     animation: subtle-zoom 20s ease-in-out infinite alternate;
 }
-
 @keyframes subtle-zoom {
-    0% { transform: scale(1); }
+    0%   { transform: scale(1); }
     100% { transform: scale(1.05); }
 }
-
-/* Overlay — synced with index hero-overlay gradient */
 body .brand-hero-overlay {
     position: absolute;
     inset: 0;
@@ -1222,82 +1297,124 @@ body .brand-hero-overlay {
     );
 }
 
-/* Bottom fade — synced with index hero (140px) */
-body .brand-hero::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 140px;
-    background: linear-gradient(to bottom, transparent 0%, #0a0a0a 100%);
-    z-index: 2;
-    pointer-events: none;
+/* ── Gradient hero (text-only) — info & legal pages ── */
+.gradient-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: clamp(340px, 48vh, 480px);
+    margin-top: 70px;
+    background: linear-gradient(135deg, #1d1b19 0%, #2a2420 50%, #1d1b19 100%);
+    color: white;
+    text-align: center;
+    overflow: hidden;
+    isolation: isolate;
+}
+.gradient-hero .container {
+    position: relative;
+    z-index: 4;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    width: 100%;
+    animation: hero-content-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes hero-content-in {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.gradient-hero h1 {
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 900;
+    margin: 0 0 0.75rem;
+    letter-spacing: -0.03em;
+    line-height: 1.06;
+}
+.gradient-hero h1 span {
+    background: linear-gradient(135deg, #d4af37, #f5df80, #d4af37);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: heroShimmer 6s ease-in-out infinite;
+}
+@keyframes heroShimmer {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+.gradient-hero p {
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.6);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+.gradient-hero .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid rgba(212,175,55,0.38);
+    border-radius: 100px;
+    background: rgba(212,175,55,0.1);
+    color: #d4af37;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 1.2rem;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 0 24px rgba(212,175,55,0.08), inset 0 1px 0 rgba(255,255,255,0.07);
 }
 
-/* Tablet — synced breakpoint 768px (matches index/nosotros) */
+/* ── Shared responsive — synced breakpoints 768 / 480 ── */
 @media (max-width: 768px) {
     body .brand-hero {
-        min-height: clamp(240px, 36vh, 340px);
-        overflow: hidden;
-        margin-top: 70px;
-        margin-bottom: 0;
-        background-color: #1a1a1a;
+        min-height: clamp(300px, 42vh, 420px);
     }
-
     body .brand-hero-bg {
-        object-fit: cover;
         object-position: center center;
         animation: none;
         filter: brightness(0.85);
     }
-
-    body .brand-hero-overlay {
-        background: linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.70) 0%,
-            rgba(0, 0, 0, 0.25) 40%,
-            rgba(0, 0, 0, 0.30) 60%,
-            rgba(0, 0, 0, 0.90) 100%
-        );
+    .gradient-hero {
+        min-height: clamp(260px, 36vh, 360px);
     }
-
-    body .brand-hero::after {
-        height: 100px;
+    .gradient-hero .container {
+        padding: 2rem 1.5rem;
     }
+    .gradient-hero h1 {
+        font-size: clamp(1.5rem, 3.5vw, 2rem);
+    }
+    .hero-bottom-fade { height: 100px; }
+    .hero-particle:nth-child(n+6) { display: none; }
+    .hero-particle { opacity: 0.6; }
 }
-
-/* Mobile — synced breakpoint 480px (matches index/nosotros) */
 @media (max-width: 480px) {
     body .brand-hero {
-        min-height: 0;
-        height: 200px;
-        overflow: hidden;
-        margin-top: 70px;
-        margin-bottom: 0;
-        background-color: #1a1a1a;
+        min-height: clamp(200px, 30vh, 280px);
     }
-
     body .brand-hero-bg {
-        object-fit: cover;
         object-position: center center;
         animation: none;
         filter: brightness(0.8);
     }
-
-    body .brand-hero-overlay {
-        background: linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.75) 0%,
-            rgba(0, 0, 0, 0.30) 40%,
-            rgba(0, 0, 0, 0.35) 60%,
-            rgba(0, 0, 0, 0.95) 100%
-        );
+    .gradient-hero {
+        min-height: clamp(220px, 32vh, 300px);
     }
-
-    body .brand-hero::after {
-        height: 80px;
+    .gradient-hero .container {
+        padding: 1.5rem 1.25rem;
     }
+    .gradient-hero h1 {
+        font-size: clamp(1.3rem, 5vw, 1.6rem);
+    }
+    .gradient-hero p {
+        font-size: 0.95rem;
+    }
+    .hero-bottom-fade { height: 80px; }
 }
 
 /* ===== RESULTS HEADER RESPONSIVE ===== */

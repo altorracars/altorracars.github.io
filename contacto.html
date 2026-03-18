@@ -33,45 +33,6 @@
         /* ── Global page background ── */
         body { background: #0a0a0a; }
 
-        /* ── Hero ── */
-        /* ── Hero — synced with index/nosotros hero system ── */
-        .contact-hero {
-            background: linear-gradient(135deg, #1d1b19 0%, #2a2420 50%, #1d1b19 100%);
-            color: white;
-            padding: calc(70px + 3rem) 0 3rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .contact-hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse at 25% 60%, rgba(212,175,55,0.07) 0%, transparent 55%),
-                radial-gradient(ellipse at 75% 40%, rgba(184,150,88,0.05) 0%, transparent 55%);
-        }
-        .contact-hero .container { position: relative; z-index: 1; }
-        .contact-hero h1 {
-            font-size: clamp(2rem, 4vw, 2.5rem);
-            font-weight: 900;
-            margin-bottom: 0.75rem;
-            letter-spacing: -0.03em;
-            line-height: 1.06;
-        }
-        .contact-hero h1 span {
-            background: linear-gradient(135deg, #d4af37, #f5df80, #d4af37);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .contact-hero p {
-            font-size: 1.05rem;
-            color: rgba(255,255,255,0.6);
-            max-width: 550px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
 
         /* ── Main Section ── */
         .contact-main {
@@ -325,14 +286,10 @@
         /* ── Responsive — synced breakpoints 768/480 ── */
         @media (max-width: 768px) {
             .contact-layout { grid-template-columns: 1fr; }
-            .contact-hero h1 { font-size: clamp(1.5rem, 3.5vw, 1.85rem); }
-            .contact-hero { padding: calc(70px + 2.5rem) 0 2.5rem; }
             .form-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
             .form-card { padding: 1.5rem; }
-            .contact-hero { padding: calc(70px + 2rem) 0 2rem; }
-            .contact-hero h1 { font-size: clamp(1.3rem, 5vw, 1.5rem); }
         }
     </style>
     <!-- Page Loader — Critical Inline CSS (cross-browser) -->
@@ -357,11 +314,23 @@
 
     <div id="header-placeholder"></div>
 
-    <section class="contact-hero">
-        <div class="container">
-            <h1>Hablemos de tu <span>proximo vehiculo</span></h1>
-            <p>Nuestro equipo esta listo para asesorarte. Respuesta garantizada en menos de 24 horas.</p>
+    <section class="gradient-hero">
+        <div class="hero-ambient" aria-hidden="true"></div>
+        <div class="hero-particles" aria-hidden="true">
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
+            <div class="hero-particle"></div>
         </div>
+        <div class="container">
+            <h1>Hablemos de tu <span>próximo vehículo</span></h1>
+            <p>Nuestro equipo está listo para asesorarte. Respuesta garantizada en menos de 24 horas.</p>
+        </div>
+        <div class="hero-bottom-fade"></div>
     </section>
 
     <section class="contact-main">

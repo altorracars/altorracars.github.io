@@ -304,6 +304,7 @@
     @keyframes plSpin{to{transform:rotate(360deg)}}
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
+    <link rel="preload" as="image" href="multimedia/heroes/contacto-hero.jpg" fetchpriority="high">
 </head>
 <body>
     <!-- Page Loader -->
@@ -315,7 +316,7 @@
     <div id="header-placeholder"></div>
 
     <section class="gradient-hero">
-        <img src="multimedia/heroes/contacto-hero.jpg" alt="Contacto ALTORRA CARS" class="gradient-hero-bg">
+        <img src="multimedia/heroes/contacto-hero.jpg" alt="Contacto ALTORRA CARS" class="gradient-hero-bg" fetchpriority="high" loading="eager">
         <div class="gradient-hero-overlay"></div>
         <div class="hero-ambient" aria-hidden="true"></div>
         <div class="hero-particles" aria-hidden="true">

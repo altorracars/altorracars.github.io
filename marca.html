@@ -171,38 +171,23 @@
             if (brandInfo) {
                 document.getElementById('pageTitle').textContent = brandInfo.nombre + ' | ALTORRA CARS';
 
-                // Intentar cargar banner
+                // Cargar banner inmediatamente — mostrar hero al instante
                 const bannerPath = `multimedia/banner/b_${brandId}.png`;
                 const brandHero = document.getElementById('brandHero');
                 const brandHeader = document.getElementById('brandHeader');
                 const bannerImg = document.getElementById('brandBanner');
-                const titleEl = document.getElementById('brandTitle');
-                const descEl = document.getElementById('brandDesc');
 
-                // Verificar si existe el banner
-                const img = new Image();
-                img.onload = function() {
-                    // Banner existe, mostrar hero section
-                    bannerImg.src = bannerPath;
-                    bannerImg.alt = brandInfo.nombre;
+                bannerImg.src = bannerPath;
+                bannerImg.alt = brandInfo.nombre;
+                brandHero.style.display = 'block';
 
-                    // Guardar posición de scroll actual
-                    const currentScrollPos = window.pageYOffset || document.documentElement.scrollTop;
-
-                    brandHero.style.display = 'block';
-                    brandHeader.style.display = 'none';
-
-                    // Restaurar posición de scroll para evitar saltos
-                    window.scrollTo(0, currentScrollPos);
-                };
-                img.onerror = function() {
-                    // Banner no existe, usar header normal
-                    titleEl.textContent = brandInfo.nombre;
-                    descEl.textContent = brandInfo.descripcion;
+                // Fallback: si el banner falla, mostrar header simple
+                bannerImg.onerror = function() {
                     brandHero.style.display = 'none';
+                    document.getElementById('brandTitle').textContent = brandInfo.nombre;
+                    document.getElementById('brandDesc').textContent = brandInfo.descripcion || '';
                     brandHeader.style.display = 'block';
                 };
-                img.src = bannerPath;
             } else {
                 document.getElementById('brandTitle').textContent = capitalize(brandId);
                 document.getElementById('brandHeader').style.display = 'block';

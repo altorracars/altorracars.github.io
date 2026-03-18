@@ -33,7 +33,6 @@
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoDealer","name":"ALTORRA CARS - Kia","url":"https://altorracars.github.io/marcas/kia.html","brand":{"@type":"Brand","name":"Kia"},"description":"Vehículos Kia disponibles en ALTORRA CARS, Cartagena. 3 vehículos en inventario. Financiación disponible.","address":{"@type":"PostalAddress","addressLocality":"Cartagena","addressCountry":"CO"},"numberOfItems":3}</script>
-    <link rel="preload" as="image" href="multimedia/banner/b_kia.png" fetchpriority="high">
 </head>
 <body>
     <!-- Page Loader -->
@@ -55,7 +54,7 @@
             <p><a href="https://altorracars.github.io">Volver a ALTORRA CARS</a></p>
         </div>
     </noscript>
-    <section class="brand-hero" id="brandHero">
+    <section class="brand-hero" id="brandHero" style="display:none;">
         <div class="brand-hero-overlay"></div>
     <div class="hero-ambient" aria-hidden="true"></div>
     <div class="hero-particles" aria-hidden="true">
@@ -68,7 +67,7 @@
         <div class="hero-particle"></div>
         <div class="hero-particle"></div>
     </div>
-        <img id="brandBanner" src="multimedia/banner/b_kia.png" alt="Kia" class="brand-hero-bg" fetchpriority="high" loading="eager">
+        <img id="brandBanner" src="" alt="" class="brand-hero-bg" fetchpriority="high" loading="eager">
     <div class="hero-bottom-fade"></div>
     </section>
     <section class="page-header brand-header" id="brandHeader" style="display:none;">
@@ -188,9 +187,23 @@
             if (brandInfo) {
                 document.getElementById('pageTitle').textContent = brandInfo.nombre + ' | ALTORRA CARS';
 
-                // Banner ya pre-cargado en HTML — solo actualizar alt text
+                // Cargar banner inmediatamente — mostrar hero al instante
+                const bannerPath = `multimedia/banner/b_${brandId}.png`;
+                const brandHero = document.getElementById('brandHero');
+                const brandHeader = document.getElementById('brandHeader');
                 const bannerImg = document.getElementById('brandBanner');
-                if (bannerImg) bannerImg.alt = brandInfo.nombre;
+
+                bannerImg.src = bannerPath;
+                bannerImg.alt = brandInfo.nombre;
+                brandHero.style.display = 'block';
+
+                // Fallback: si el banner falla, mostrar header simple
+                bannerImg.onerror = function() {
+                    brandHero.style.display = 'none';
+                    document.getElementById('brandTitle').textContent = brandInfo.nombre;
+                    document.getElementById('brandDesc').textContent = brandInfo.descripcion || '';
+                    brandHeader.style.display = 'block';
+                };
             } else {
                 document.getElementById('brandTitle').textContent = capitalize(brandId);
                 document.getElementById('brandHeader').style.display = 'block';

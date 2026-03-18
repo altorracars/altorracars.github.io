@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260318233008'; // Bumped: category images moved out of precache
+const CACHE_VERSION = 'v20260318233500'; // Bumped: new hero/banner images, networkFirst for banners
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 
@@ -113,8 +113,10 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // STRATEGY 3: Network First for category images (they change between deploys)
-    if (url.pathname.startsWith('/multimedia/categories/')) {
+    // STRATEGY 3: Network First for hero/category/banner images (they change between deploys)
+    if (url.pathname.startsWith('/multimedia/categories/') ||
+        url.pathname.startsWith('/multimedia/banner/') ||
+        url.pathname.startsWith('/multimedia/heroes/')) {
         event.respondWith(networkFirst(request));
         return;
     }

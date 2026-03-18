@@ -8,7 +8,7 @@
 .hero {
     position: relative;
     z-index: 10; /* Ensure hero stacking context floats above trust bar */
-    min-height: clamp(580px, 86vh, 940px);
+    min-height: clamp(480px, 70vh, 720px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -127,7 +127,7 @@
     position: relative;
     z-index: 4;
     text-align: center;
-    padding: 4rem 2rem 4rem;
+    padding: 3rem 2rem 3rem;
     max-width: 880px;
     margin: 0 auto;
     width: 100%;
@@ -186,12 +186,12 @@
 
 /* ── Título — gold gradient shimmer (matches nosotros hero) ── */
 .hero-title {
-    font-size: clamp(2.8rem, 6.5vw, 5.5rem);
+    font-size: clamp(2.4rem, 5.5vw, 4.5rem);
     font-weight: 900;
     line-height: 1.06;
     letter-spacing: -0.03em;
     color: rgba(255,255,255,0.95);
-    margin-bottom: 1.8rem;
+    margin-bottom: 1.4rem;
     animation: hero-title-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
 }
 
@@ -576,7 +576,7 @@
 /* Tablet */
 @media (max-width: 768px) {
     .hero {
-        min-height: clamp(320px, 46vh, 460px);
+        min-height: clamp(300px, 42vh, 420px);
         background-position: center 25%;
     }
 
@@ -585,8 +585,8 @@
     }
 
     .hero-title {
-        font-size: clamp(1.75rem, 7.5vw, 2.5rem);
-        margin-bottom: 1.2rem;
+        font-size: clamp(1.6rem, 6vw, 2.2rem);
+        margin-bottom: 1rem;
     }
 
     .hero-btn-main {
@@ -628,8 +628,8 @@
     }
 
     .hero-title {
-        font-size: clamp(1.5rem, 8.5vw, 2.1rem);
-        margin-bottom: 1rem;
+        font-size: clamp(1.3rem, 7vw, 1.8rem);
+        margin-bottom: 0.8rem;
     }
 
     .hero-badge {

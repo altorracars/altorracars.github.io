@@ -155,9 +155,7 @@ class PerformanceOptimizer {
         if (navigator.connection?.effectiveType === '2g') return;
 
         const pagesToPrefetch = [
-            'busqueda.html',
-            'vehiculos-usados.html',
-            'vehiculos-nuevos.html'
+            'busqueda.html'
         ];
 
         pagesToPrefetch.forEach(page => {

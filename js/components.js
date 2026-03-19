@@ -42,6 +42,7 @@ async function loadAllComponents() {
     setTimeout(() => {
         initializeHeader();
         initializeFavorites();
+        populateBrandsMenu();
     }, 100);
 
     // Cargar sistema de cookies dinamicamente
@@ -339,13 +340,56 @@ window._authComingSoon = function() {
     }
 };
 
+// Populate brands submenu dynamically from Firestore inventory
+async function populateBrandsMenu() {
+    if (typeof vehicleDB === 'undefined') return;
+
+    try {
+        await vehicleDB.load();
+        var vehicles = vehicleDB.getAll ? vehicleDB.getAll() : [];
+        if (!vehicles.length) return;
+
+        // Count available vehicles per brand
+        var brandCount = {};
+        vehicles.forEach(function (v) {
+            if (v.estado === 'disponible' && v.marca) {
+                var key = v.marca.toLowerCase();
+                brandCount[key] = (brandCount[key] || 0) + 1;
+            }
+        });
+
+        // Sort by count descending, take top 10
+        var sorted = Object.entries(brandCount)
+            .sort(function (a, b) { return b[1] - a[1]; })
+            .slice(0, 10);
+
+        if (!sorted.length) return;
+
+        var ul = document.getElementById('brands-submenu');
+        if (!ul) return;
+
+        // Capitalize brand name for display
+        function capitalize(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        ul.innerHTML = sorted.map(function (entry) {
+            var brandId = entry[0];
+            return '<li><a href="marca.html?marca=' + brandId + '">' + capitalize(brandId) + '</a></li>';
+        }).join('') + '<li><a href="index.html#marcas">Ver todas</a></li>';
+    } catch (e) {
+        // Keep static placeholder on error
+    }
+}
+
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { 
-        loadAllComponents, 
-        initializeHeader, 
+    module.exports = {
+        loadAllComponents,
+        initializeHeader,
         initializeFavorites,
-        updateFavoritesCount
+        updateFavoritesCount,
+        populateBrandsMenu
     };
 }
 

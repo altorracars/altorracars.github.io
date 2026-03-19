@@ -36,10 +36,10 @@
   ],
   "shortcuts": [
     {
-      "name": "Vehículos Usados",
-      "short_name": "Usados",
-      "description": "Ver vehículos usados disponibles",
-      "url": "/vehiculos-usados.html",
+      "name": "Catálogo de Vehículos",
+      "short_name": "Catálogo",
+      "description": "Ver todos los vehículos disponibles",
+      "url": "/busqueda.html",
       "icons": [{ "src": "/multimedia/logo-placeholder.png", "sizes": "192x192" }]
     },
     {

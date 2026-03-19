@@ -210,7 +210,7 @@ function renderVehicles(vehicles, containerId, options = {}) {
                 </div>
                 <h3 class="no-results-title">No se encontraron vehiculos</h3>
                 <p class="no-results-text">No hay vehiculos que coincidan con los filtros seleccionados. Intenta ajustar tu busqueda.</p>
-                <a href="vehiculos-usados.html" class="no-results-btn">Ver todos los vehiculos</a>
+                <a href="busqueda.html" class="no-results-btn">Ver todos los vehiculos</a>
             </div>
         `;
         return;

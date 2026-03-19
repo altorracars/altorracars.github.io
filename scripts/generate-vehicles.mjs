@@ -350,8 +350,6 @@ function generateSitemap(vehicles, slugMap, brandSlugMap = new Map()) {
     const staticPages = [
         { loc: '/',                          freq: 'daily',   prio: '1.0' },
         { loc: '/busqueda.html',             freq: 'daily',   prio: '0.9' },
-        { loc: '/vehiculos-usados.html',     freq: 'daily',   prio: '0.9' },
-        { loc: '/vehiculos-nuevos.html',     freq: 'monthly', prio: '0.3' },
         { loc: '/vehiculos-suv.html',        freq: 'weekly',  prio: '0.8' },
         { loc: '/vehiculos-sedan.html',      freq: 'weekly',  prio: '0.8' },
         { loc: '/vehiculos-pickup.html',     freq: 'weekly',  prio: '0.8' },

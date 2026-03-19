@@ -1294,6 +1294,9 @@ body .brand-hero-bg {
     filter: brightness(0.85) saturate(1.05);
     animation: subtle-zoom 20s ease-in-out infinite alternate;
 }
+/* Per-brand overrides for close-up / front-on shots that get clipped at 40% */
+body .brand-hero-bg[data-brand-pos="center"]  { object-position: center center; }
+body .brand-hero-bg[data-brand-pos="top"]     { object-position: center 30%; }
 @keyframes subtle-zoom {
     0%   { transform: scale(1); }
     100% { transform: scale(1.05); }

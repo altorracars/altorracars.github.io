@@ -24,6 +24,9 @@ async function loadAllComponents() {
         loadComponent('footer-placeholder', 'snippets/footer.html')
     ]);
 
+    // Ensure modals are available on ALL pages (Financiación, Vende tu Auto)
+    loadModalsIfNeeded();
+
     // Dismissir page loader — header y footer ya están listos
     if (typeof window.dismissPageLoader === 'function') {
         window.dismissPageLoader();
@@ -74,11 +77,17 @@ function initializeHeader() {
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.getElementById('navMenu');
     const body = document.body;
-    
+
     if (!hamburger || !navMenu) {
         console.error('Menu elements not found');
         return;
     }
+
+    // Safety cleanup: remove leftover menu-open state from prior navigation
+    body.classList.remove('menu-open', 'nav-menu-active');
+    body.style.overflow = '';
+    body.style.position = '';
+    body.style.width = '';
     
     // ===== TOGGLE MENÚ HAMBURGUESA =====
     hamburger.addEventListener('click', function(e) {
@@ -312,22 +321,60 @@ if (document.readyState === 'loading') {
     loadAllComponents();
 }
 
-// Smooth scroll para links internos
+// Smooth scroll para links internos (incluye links tipo "index.html#section")
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            if (href !== '#' && href.length > 1) {
-                const target = document.querySelector(href);
-                if (target) {
-                    e.preventDefault();
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
+    // Helper: scroll to an element accounting for fixed header
+    function smoothScrollTo(el) {
+        var header = document.getElementById('header');
+        var headerHeight = header ? header.offsetHeight + 10 : 70;
+        var targetPos = el.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+        window.scrollTo({ top: targetPos, behavior: 'smooth' });
+    }
+
+    // Handle hash on page load (e.g. navigated from another page with #marcas)
+    if (window.location.hash) {
+        var hashTarget = document.querySelector(window.location.hash);
+        if (hashTarget) {
+            // Delay to let layout settle after components load
+            setTimeout(function() { smoothScrollTo(hashTarget); }, 400);
+        }
+    }
+
+    // Delegate click handler for all anchor links with hashes
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('a[href]');
+        if (!link) return;
+
+        var href = link.getAttribute('href');
+        if (!href) return;
+
+        var hashIndex = href.indexOf('#');
+        if (hashIndex === -1) return; // no hash in link
+
+        var hash = href.substring(hashIndex);
+        if (hash === '#' || hash.length < 2) return;
+
+        var pathPart = href.substring(0, hashIndex);
+
+        // Check if the link points to the current page (same page hash navigation)
+        var isCurrentPage = !pathPart ||
+            pathPart === 'index.html' && (
+                window.location.pathname === '/' ||
+                window.location.pathname === '/index.html' ||
+                window.location.pathname.endsWith('/index.html')
+            );
+
+        if (isCurrentPage) {
+            var target = document.querySelector(hash);
+            if (target) {
+                e.preventDefault();
+                smoothScrollTo(target);
+                // Update URL hash without triggering default scroll
+                history.replaceState(null, '', hash);
             }
-        });
+        }
+        // If not current page, let the browser navigate normally
+        // The hash will be handled on the destination page via the load handler above
     });
 });
 

@@ -324,6 +324,24 @@ if (document.readyState === 'loading') {
     loadAllComponents();
 }
 
+// Utility: force-close the mobile menu and all dropdowns.
+// Resets body scroll lock so the page is always interactive after navigation.
+function forceCloseAllMenus() {
+    document.querySelectorAll('.dropdown.active').forEach(function (d) {
+        d.classList.remove('active');
+    });
+    var navMenu = document.getElementById('navMenu');
+    var hamburger = document.getElementById('hamburger');
+    if (navMenu && navMenu.classList.contains('active')) {
+        navMenu.classList.remove('active');
+    }
+    if (hamburger) hamburger.classList.remove('active');
+    document.body.classList.remove('menu-open', 'nav-menu-active');
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+}
+
 // Load modals HTML/CSS/JS dynamically on all pages
 function loadModalsIfNeeded() {
     // Skip if modals already exist (e.g. index.html has them inline)
@@ -360,23 +378,7 @@ function loadModalsIfNeeded() {
 
 // Ensure dropdowns and mobile menu close on hash-based navigation
 function closeMenuOnHashNav() {
-    window.addEventListener('hashchange', function () {
-        // Close all dropdowns
-        document.querySelectorAll('.dropdown.active').forEach(function (d) {
-            d.classList.remove('active');
-        });
-        // Close mobile menu if open
-        var navMenu = document.getElementById('navMenu');
-        var hamburger = document.getElementById('hamburger');
-        if (navMenu && navMenu.classList.contains('active')) {
-            navMenu.classList.remove('active');
-            if (hamburger) hamburger.classList.remove('active');
-            document.body.classList.remove('menu-open', 'nav-menu-active');
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
-        }
-    });
+    window.addEventListener('hashchange', forceCloseAllMenus);
 }
 
 // Smooth scroll para links internos (incluye links tipo "index.html#section")
@@ -389,13 +391,29 @@ document.addEventListener('DOMContentLoaded', function() {
         window.scrollTo({ top: targetPos, behavior: 'smooth' });
     }
 
+    // Detect if href points to the current page (generic, works on any page)
+    function isSamePageHash(href) {
+        try {
+            var url = new URL(href, location.href);
+            return url.hash && url.pathname === location.pathname;
+        } catch (e) {
+            // Fallback for browsers without URL API
+            var hashIdx = href.indexOf('#');
+            if (hashIdx === -1) return false;
+            var path = href.substring(0, hashIdx);
+            if (!path) return true; // pure "#hash"
+            var currentFile = location.pathname.split('/').pop() || 'index.html';
+            return path === currentFile;
+        }
+    }
+
     // Handle hash on page load (e.g. navigated from another page with #marcas)
     if (window.location.hash) {
-        var hashTarget = document.querySelector(window.location.hash);
-        if (hashTarget) {
-            // Delay to let layout settle after components load
-            setTimeout(function() { smoothScrollTo(hashTarget); }, 400);
-        }
+        // Delay to let layout settle after components load
+        setTimeout(function() {
+            var hashTarget = document.querySelector(window.location.hash);
+            if (hashTarget) smoothScrollTo(hashTarget);
+        }, 600);
     }
 
     // Delegate click handler for all anchor links with hashes
@@ -404,52 +422,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!link) return;
 
         var href = link.getAttribute('href');
-        if (!href) return;
+        if (!href || href.indexOf('#') === -1) return;
 
-        var hashIndex = href.indexOf('#');
-        if (hashIndex === -1) return; // no hash in link
-
-        var hash = href.substring(hashIndex);
+        var hash = href.substring(href.indexOf('#'));
         if (hash === '#' || hash.length < 2) return;
 
-        var pathPart = href.substring(0, hashIndex);
-
-        // Check if the link points to the current page (same page hash navigation)
-        var isCurrentPage = !pathPart ||
-            pathPart === 'index.html' && (
-                window.location.pathname === '/' ||
-                window.location.pathname === '/index.html' ||
-                window.location.pathname.endsWith('/index.html')
-            );
-
-        if (isCurrentPage) {
+        if (isSamePageHash(href)) {
             var target = document.querySelector(hash);
             if (target) {
                 e.preventDefault();
+                e.stopPropagation(); // Prevent page-loader from also intercepting
 
-                // Close dropdowns and mobile menu before scrolling
-                document.querySelectorAll('.dropdown.active').forEach(function (d) {
-                    d.classList.remove('active');
-                });
-                var navMenu = document.getElementById('navMenu');
-                var hamburger = document.getElementById('hamburger');
-                if (navMenu && navMenu.classList.contains('active')) {
-                    navMenu.classList.remove('active');
-                    if (hamburger) hamburger.classList.remove('active');
-                    document.body.classList.remove('menu-open', 'nav-menu-active');
-                    document.body.style.overflow = '';
-                    document.body.style.position = '';
-                    document.body.style.width = '';
-                }
+                // Close all menus/dropdowns before scrolling
+                forceCloseAllMenus();
 
                 smoothScrollTo(target);
-                // Update URL hash without triggering default scroll
                 history.replaceState(null, '', hash);
             }
         }
         // If not current page, let the browser navigate normally
         // The hash will be handled on the destination page via the load handler above
-    });
+    }, true); // Use capture phase to fire BEFORE page-loader's bubble handler
 });
 
 // Auth "coming soon" placeholder — visual only, no real auth yet

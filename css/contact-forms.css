@@ -17,10 +17,12 @@
     align-items: center;
     justify-content: center;
     animation: fadeIn 0.3s ease;
+    pointer-events: none;
 }
 
 .modal-overlay.active {
     display: flex;
+    pointer-events: auto;
 }
 
 /* Modal Container */

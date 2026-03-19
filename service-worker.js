@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260318233500'; // Bumped: new hero/banner images, networkFirst for banners
+const CACHE_VERSION = 'v20260319021147'; // Bumped: new hero/banner images, networkFirst for banners
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

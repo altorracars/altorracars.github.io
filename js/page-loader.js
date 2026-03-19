@@ -158,7 +158,7 @@
 
     // ===== 4. INTERCEPCIÓN DE LINKS =====
 
-    // Detectar si un href es interno (misma origin)
+    // Detectar si un href es interno (misma origin) y navega a otra página
     function isInternalLink(href) {
         if (!href) return false;
         if (href.charAt(0) === '#') return false;
@@ -172,9 +172,21 @@
         // Verificar mismo origen — con fallback para navegadores sin URL API
         try {
             var url = new URL(href, location.href);
-            return url.hostname === location.hostname;
+            if (url.hostname !== location.hostname) return false;
+            // Excluir links a la misma página con hash (e.g. "index.html#marcas" estando en index)
+            // Estos deben hacer smooth scroll, NO activar la transición de página
+            if (url.hash && url.pathname === location.pathname) return false;
+            return true;
         } catch (e) {
             // Fallback: href relativo sin protocolo = interno
+            // Excluir links con hash que apuntan a la misma página
+            if (href.indexOf('#') !== -1) {
+                var pathPart = href.substring(0, href.indexOf('#'));
+                if (!pathPart) return false; // pure hash like "#marcas"
+                // Check if the path part matches current page
+                var currentFile = location.pathname.split('/').pop() || 'index.html';
+                if (pathPart === currentFile) return false;
+            }
             return href.charAt(0) === '/' ||
                    href.charAt(0) === '.' ||
                    !/^[a-z][a-z0-9+\-.]*:/i.test(href);
@@ -208,6 +220,9 @@
             var href = link.getAttribute('href');
             if (!isInternalLink(href)) return;
 
+            // Skip if event was already handled (e.g. by smooth scroll in components.js)
+            if (e.defaultPrevented) return;
+
             // Evitar doble transición
             if (transitioning) return;
             transitioning = true;
@@ -228,6 +243,12 @@
                 for (var i = 0; i < pbTimers.length; i++) clearTimeout(pbTimers[i]);
                 progressBar.style.width = '90%';
             }
+
+            // Safety net: if navigation doesn't happen within 3s, clean up overlay
+            setTimeout(function () {
+                if (overlay) overlay.classList.remove('pto-active');
+                transitioning = false;
+            }, 3000);
 
             // Navegar después de la transición
             setTimeout(function () {

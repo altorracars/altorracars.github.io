@@ -193,6 +193,8 @@
                 const bannerImg = document.getElementById('brandBanner');
 
                 bannerImg.src = bannerPath;
+                var brandPosMap = { toyota: "center", kia: "top", renault: "center" };
+                if (brandPosMap[brandId]) bannerImg.dataset.brandPos = brandPosMap[brandId];
                 bannerImg.alt = brandInfo.nombre;
                 brandHero.style.display = 'block';
 

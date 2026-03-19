@@ -179,6 +179,9 @@
 
                 bannerImg.src = bannerPath;
                 bannerImg.alt = brandInfo.nombre;
+                // Per-brand positioning for close-up/front-on photos
+                var brandPosMap = { toyota: 'center', kia: 'top', renault: 'center' };
+                if (brandPosMap[brandId]) bannerImg.dataset.brandPos = brandPosMap[brandId];
                 brandHero.style.display = 'block';
 
                 // Fallback: si el banner falla, mostrar header simple

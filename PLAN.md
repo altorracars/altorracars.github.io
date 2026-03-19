@@ -1,155 +1,194 @@
-# Plan de Correcciones — 6 Fases
+# Plan de Correcciones — Bugs Pendientes (5 puntos)
 
-> **Última actualización:** 2026-03-19
-> **Estado general:** 4 de 6 fases completadas. Fases 1 y 3 pendientes (requieren assets de imagen).
-
----
-
-## FASE 1: Heroes de marcas acorde a cada marca (Punto 1)
-
-**Estado:** ⏳ Pendiente — requiere assets de imagen
-
-**Problema:** Los banners actuales (`multimedia/banner/b_{marca}.png`) son fotos de stock genéricas. Aunque ya muestran vehículos de la marca correcta (corregido en PR #324), no tienen un estilo visual consistente (fondo oscuro/elegante, logo integrado).
-
-**Estado actual de los banners (1920×800, JPEG guardados como .png):**
-| Marca | Vehículo mostrado | Composición | Notas |
-|-------|-------------------|-------------|-------|
-| Audi | R8 (trasera 3/4) | Buena | Sunset, road |
-| BMW | Serie 4 (frontal 3/4) | Buena | Bosque otoñal |
-| Chevrolet | Camaro SS (frontal 3/4) | Buena | Desierto sunset |
-| Citroën | — | Por verificar | — |
-| Fiat | — | Por verificar | — |
-| Ford | Expedition (frontal 3/4) | Aceptable | Valley of Fire, auto pequeño en cuadro |
-| Honda | — | Por verificar | — |
-| Hyundai | Tucson (trasera 3/4) | Buena | Terreno dramático |
-| Jeep | — | Por verificar | — |
-| Kia | SUV (close-up frontal) | Regular | Muy recortado, solo parrilla/techo |
-| Mazda | MX-5 (trasera) | Regular | Vista trasera, placa polaca visible |
-| Mitsubishi | — | Por verificar | — |
-| Nissan | — | Por verificar | — |
-| Peugeot | — | Por verificar | — |
-| Renault | Clio RS (close-up frontal) | Regular | Muy recortado, persona al fondo |
-| Suzuki | — | Por verificar | — |
-| Toyota | 4Runner (close-up parrilla) | Regular | Solo parrilla, muy cerrado |
-| Volkswagen | Golf GTI (frontal 3/4) | Buena | Placa irlandesa, en movimiento |
-
-**Solución pendiente:**
-- Reemplazar banners con composición "Regular" por imágenes más abiertas (3/4 view)
-- Idealmente todas con estilo consistente: fondo oscuro, vehículo como protagonista, logo visible
-- Formato: mantener 1920×800px, misma ruta `multimedia/banner/b_{marca}.png`
-
-**Archivos afectados:**
-- `multimedia/banner/b_*.png` (reemplazo selectivo de imágenes)
+> **Fecha:** 2026-03-19
+> **Contexto:** Estos 5 problemas persisten después de los PRs #321-#324.
 
 ---
 
-## FASE 2: Eliminar páginas de Nuevos y Usados (Punto 2)
+## FASE A: Imágenes hero incorrectas (Puntos 1, 2, 3)
 
-**Estado:** ✅ Completada — PR #323 (commit `a0f5a34`)
+### Problema
 
-**Cambios realizados:**
-1. `vehiculos-nuevos.html` y `vehiculos-usados.html` convertidos a redirects ligeros con `<meta http-equiv="refresh">` hacia `busqueda.html?tipo=nuevo` y `busqueda.html?tipo=usado`
-2. Agregado `<meta name="robots" content="noindex, follow">` y `<link rel="canonical">` apuntando a `busqueda.html`
-3. Header actualizado: submenú Vehículos queda SUV | Pickup | Sedán | Hatchback | Ver todos
-4. Referencias limpiadas en: `index.html` (JSON-LD), `404.html`, `favoritos.html`, `nosotros.html`, `manifest.json`, `js/render.js`, `js/performance.js`
+Tres banners de marca muestran vehículos incorrectos o no identificables:
 
----
+| # | Marca | Archivo | Problema actual |
+|---|-------|---------|-----------------|
+| 1 | Citroën | `multimedia/banner/b_citroen.png` | Muestra un auto viejo sin marca visible |
+| 2 | Honda | `multimedia/banner/b_honda.png` | El vehículo NO es Honda |
+| 3 | Mitsubishi | `multimedia/banner/b_mitsubishi.png` | No se ve el logo, marca no identificable |
 
-## FASE 3: Hero de contacto acorde a concesionario (Punto 3)
+### Solución
 
-**Estado:** ⏳ Pendiente — requiere asset de imagen
+Descargar imágenes correctas de fuentes libres (Unsplash, Pexels, Pixabay) o generar con IA:
 
-**Problema:** `multimedia/heroes/contacto-hero.jpg` muestra un pasillo de oficina genérico (paredes azul oscuro, muebles modernos), sin ninguna relación con un concesionario automotriz.
+- **Citroën:** Citroën C3 o C5 Aircross, vista 3/4, logo visible
+- **Honda:** Honda CR-V o Civic, vista 3/4, logo Honda visible en parrilla
+- **Mitsubishi:** Mitsubishi Outlander o L200, vista 3/4, logo visible
 
-**También:** `multimedia/heroes/resenas-hero.jpg` muestra un VW Beetle viejo y oxidado — no transmite profesionalismo para una página de reseñas.
+**Requisitos de imagen:**
+- Resolución: 1920×800px (consistente con banners existentes)
+- Formato: JPEG (guardado como .png por convención del sitio)
+- Composición: vehículo completo en vista 3/4, marca identificable
+- Sin marcas de agua
 
-**Solución pendiente:**
-- `contacto-hero.jpg` → Reemplazar con imagen de showroom/concesionario (sala de exhibición, recepción, equipo profesional)
-- `resenas-hero.jpg` → Reemplazar con imagen de clientes satisfechos o entrega de vehículo
-- Mantener mismas rutas y dimensiones (~1920×800px)
-- No requiere cambios de código
+### Archivos afectados
+- `multimedia/banner/b_citroen.png`
+- `multimedia/banner/b_honda.png`
+- `multimedia/banner/b_mitsubishi.png`
 
-**Archivos afectados:**
-- `multimedia/heroes/contacto-hero.jpg` (reemplazo)
-- `multimedia/heroes/resenas-hero.jpg` (reemplazo)
-
----
-
-## FASE 4: Posicionamiento correcto de héroes — focus en vehículos (Punto 4)
-
-**Estado:** ✅ Completada — PR #323 (commit `a0f5a34`) + commit `2a6d999`
-
-**Cambios realizados:**
-
-### Iteración 1 (PR #323):
-- `css/dark-theme.css`: `.brand-hero-bg` cambiado de `object-position: center center` a `center 40%`
-- Mismo ajuste en breakpoints responsive (768px y 480px)
-- `.gradient-hero-bg` también ajustado a `center 40%`
-
-### Iteración 2 (commit `2a6d999`):
-- Agregado sistema de overrides per-marca via `data-brand-pos` en el `<img>`:
-  - `data-brand-pos="center"` → `object-position: center center` (para Toyota, Renault — close-ups frontales)
-  - `data-brand-pos="top"` → `object-position: center 30%` (para Kia — close-up desde arriba)
-- CSS en `dark-theme.css`: selectores `body .brand-hero-bg[data-brand-pos="..."]` con especificidad suficiente para overridear media queries
-- JS aplicado en `marca.html` + las 18 páginas `marcas/*.html` via `brandPosMap`
+### Limitación
+No tengo capacidad de generar/descargar imágenes. Buscaré URLs de fuentes libres y las descargaré via `curl`, o el usuario las proporciona manualmente.
 
 ---
 
-## FASE 5: Submenú de marcas dinámico según inventario (Punto 5)
+## FASE B: Bug de "Ver todas" — bloqueo total del puntero (Punto 4)
 
-**Estado:** ✅ Completada — PR #323 (commit `a0f5a34`)
+### Problema
 
-**Cambios realizados:**
-1. `js/components.js`: nueva función `populateBrandsMenu()` que:
-   - Espera a que `vehicleDB` esté listo
-   - Consulta marcas con al menos 1 vehículo disponible
-   - Ordena por cantidad de inventario (mayor primero)
-   - Muestra top 10 marcas en el submenú
-   - Mantiene 8 marcas estáticas como placeholder mientras carga
-2. `snippets/header.html`: agregado `id` al `<ul>` de marcas para manipulación JS
-3. `index.html`: agregado `id="marcas"` a la sección del carrusel
-4. "Ver todas las marcas" ahora enlaza a `index.html#marcas`
+Al hacer click en "Ver todas" del submenú de Marcas:
+1. **No lleva a las coordenadas exactas** del carrusel de marcas
+2. **BLOQUEA COMPLETAMENTE el puntero** — no se puede hacer click en nada (menús, imágenes, enlaces)
 
-### Mejoras adicionales (commit `2a6d999`):
-- Smooth scroll mejorado: compensa altura del header fijo
-- Hash-on-load: navegación cross-page con anclas (`index.html#marcas`) funciona correctamente
-- Modals (Financiación, Vende tu Auto) ahora se cargan en todas las páginas via `snippets/modals.html`
+### Diagnóstico (causa raíz)
+
+**Bug de bloqueo del puntero:**
+
+La función `loadModalsIfNeeded()` en `js/components.js:28` **NO EXISTE** — nunca fue definida. Se llama pero falla silenciosamente. Esto significa que:
+
+1. Los modals de `snippets/modals.html` NUNCA se inyectan dinámicamente
+2. Los modals están hardcodeados SOLO en `index.html` (líneas 675-819)
+3. El CSS de `.modal-overlay` en `css/contact-forms.css` tiene:
+   ```css
+   .modal-overlay {
+       position: fixed;
+       top: 0; left: 0; right: 0; bottom: 0;
+       z-index: 9999;
+       display: none;
+   }
+   ```
+   Pero **NO tiene `pointer-events: none`** cuando está inactivo.
+
+4. Cuando se navega con hash (`index.html#marcas`), hay una race condition:
+   - El smooth scroll se ejecuta (línea 339, con 400ms delay)
+   - Pero el dropdown del menú puede quedar en estado `.active` sin cerrarse
+   - El overlay del dropdown o del menú móvil queda superpuesto
+
+5. **Problema adicional en el smooth scroll:**
+   - El click en "Ver todas" (`<a href="index.html#marcas">`) es interceptado por el handler de línea 344
+   - El `e.preventDefault()` impide la navegación, y `history.replaceState` cambia el hash
+   - Pero el menú dropdown/móvil NO se cierra explícitamente al hacer este click
+   - El body puede quedar con `overflow: hidden` y `position: fixed` (del menú móvil)
+
+### Solución
+
+1. **Definir `loadModalsIfNeeded()`** en `js/components.js`:
+   - Fetch `snippets/modals.html` e inyectarlo en el `<body>` de TODAS las páginas
+   - Cargar `js/contact-forms.js` dinámicamente después de inyectar los modals
+
+2. **Cerrar menú/dropdowns al hacer smooth scroll:**
+   - En el click handler de smooth scroll (línea 344-377), después de `e.preventDefault()`:
+     - Cerrar dropdowns: `document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active'))`
+     - Si menú móvil abierto: llamar a closeMenu() (o limpiar body classes)
+
+3. **Agregar `pointer-events: none` al CSS de `.modal-overlay`:**
+   ```css
+   .modal-overlay { pointer-events: none; }
+   .modal-overlay.active { pointer-events: auto; }
+   ```
+
+4. **Mejorar el smooth scroll:**
+   - Aumentar delay de 400ms a 600ms para dar tiempo a que los componentes carguen
+   - Verificar que el header no esté en estado `header--hidden` al scrollear
+
+### Archivos afectados
+- `js/components.js` — definir `loadModalsIfNeeded()`, cerrar menú al scroll
+- `css/contact-forms.css` — agregar `pointer-events: none`
 
 ---
 
-## FASE 6: Sincronización del sistema de Sitemaps
+## FASE C: Modals de Financiación y Vende tu Auto solo en index (Punto 5)
 
-**Estado:** ✅ Completada — PR #323 (commit `a0f5a34`)
+### Problema
 
-**Cambios realizados:**
+Los links "Financiación" y "Vende tu Auto" en el header (`data-modal="financiacion"` y `data-modal="vende-auto"`) NO funcionan en ninguna página excepto `index.html`.
 
-| Componente | Acción | Estado |
-|------------|--------|--------|
-| `sitemap.xml` | Removidas URLs de nuevos/usados | ✅ |
-| `scripts/generate-vehicles.mjs` | Removidas de lista estática | ✅ |
-| `js/admin-operations.js` | Removidas de `_buildSitemapXml()` | ✅ |
-| `index.html` JSON-LD | Removidas de SiteNavigationElement + BreadcrumbList | ✅ |
-| `manifest.json` | Shortcut actualizado a `busqueda.html` | ✅ |
-| `js/performance.js` | Removido prefetch de páginas eliminadas | ✅ |
-| `.github/workflows/generate-vehicles.yml` | Sin cambios necesarios | ✅ |
-| `functions/index.js` | Sin referencias a estas páginas | ✅ |
-| `robots.txt` | Solo referencia sitemap, sin cambios | ✅ |
-| Redirects (nuevos/usados) | Canonical + noindex agregados | ✅ |
+### Diagnóstico (causa raíz)
+
+Tres piezas faltan fuera de `index.html`:
+
+1. **El HTML de los modals** (`snippets/modals.html`) nunca se inyecta — `loadModalsIfNeeded()` no existe
+2. **El CSS de los modals** (`css/contact-forms.css`) no se carga en otras páginas
+3. **El JS de los modals** (`js/contact-forms.js`) solo se incluye como `<script>` en `index.html:928`
+
+### Solución
+
+Implementar `loadModalsIfNeeded()` en `js/components.js` que:
+
+```javascript
+function loadModalsIfNeeded() {
+    // No duplicar si ya hay modals en la página (como index.html que los tiene inline)
+    if (document.getElementById('vende-auto-modal')) return;
+
+    // 1. Inyectar HTML de modals
+    fetch('snippets/modals.html')
+        .then(r => r.ok ? r.text() : '')
+        .then(html => {
+            if (!html) return;
+            var container = document.createElement('div');
+            container.id = 'modals-container';
+            container.innerHTML = html;
+            document.body.appendChild(container);
+
+            // 2. Cargar CSS si no existe
+            if (!document.querySelector('link[href*="contact-forms.css"]')) {
+                var css = document.createElement('link');
+                css.rel = 'stylesheet';
+                css.href = 'css/contact-forms.css';
+                document.head.appendChild(css);
+            }
+
+            // 3. Cargar JS si no existe
+            if (!document.querySelector('script[src*="contact-forms.js"]')) {
+                var script = document.createElement('script');
+                script.src = 'js/contact-forms.js';
+                document.body.appendChild(script);
+            }
+        })
+        .catch(function() { /* Silently fail — modals are non-critical */ });
+}
+```
+
+### Archivos afectados
+- `js/components.js` — implementar `loadModalsIfNeeded()`
+- `css/contact-forms.css` — agregar `pointer-events: none` base (de Fase B)
+- **No tocar** `index.html` — ya tiene los modals inline, el guard `if (document.getElementById('vende-auto-modal')) return;` los protege
 
 ---
 
-## Resumen de estado
+## Orden de ejecución
 
-| Fase | Descripción | Estado | PR/Commit |
-|------|-------------|--------|-----------|
-| 1 | Heroes de marcas (imágenes) | ⏳ Pendiente | — |
-| 2 | Eliminar nuevos/usados | ✅ Completada | PR #323 |
-| 3 | Hero de contacto (imagen) | ⏳ Pendiente | — |
-| 4 | Posicionamiento de héroes (CSS) | ✅ Completada | PR #323 + `2a6d999` |
-| 5 | Submenú dinámico de marcas | ✅ Completada | PR #323 + `2a6d999` |
-| 6 | Sincronización de sitemaps | ✅ Completada | PR #323 |
+| Orden | Fase | Descripción | Dependencia |
+|-------|------|-------------|-------------|
+| 1 | **B** | Fix bloqueo de puntero + smooth scroll | Ninguna |
+| 2 | **C** | Modals en todas las páginas | Usa la misma función de Fase B |
+| 3 | **A** | Reemplazar imágenes de Citroën, Honda, Mitsubishi | Independiente |
 
-### Pendientes para completar Fases 1 y 3:
-- Proveer imágenes de reemplazo para banners de marca (especialmente Kia, Toyota, Renault, Mazda)
-- Proveer imagen de showroom/concesionario para `contacto-hero.jpg`
-- Proveer imagen profesional para `resenas-hero.jpg`
+**Nota:** Las fases B y C se resuelven juntas ya que ambas dependen de implementar `loadModalsIfNeeded()`.
+
+---
+
+## Resumen técnico de causa raíz
+
+```
+loadModalsIfNeeded() ← FUNCIÓN FANTASMA (llamada pero nunca definida)
+       │
+       ├── Bug 4 (bloqueo puntero):
+       │   ├── Modals no se inyectan → no se inicializan
+       │   ├── CSS .modal-overlay sin pointer-events:none
+       │   └── Menú no se cierra al smooth-scroll → body queda locked
+       │
+       └── Bug 5 (modals solo en index):
+           ├── HTML de modals hardcoded en index.html
+           ├── contact-forms.js solo cargado en index.html
+           └── contact-forms.css solo cargado en index.html
+```

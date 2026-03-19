@@ -1,4 +1,4 @@
-# Plan de Correcciones — 5 Puntos
+# Plan de Correcciones — 6 Fases
 
 ## FASE 1: Heroes de marcas acorde a cada marca (Punto 1)
 
@@ -36,15 +36,14 @@
 3. **Análisis de impacto — referencias a eliminar/actualizar:**
    - `snippets/header.html` → líneas 19-20 (enlaces directos)
    - `index.html` → líneas 129, 134, 222, 228 (structured data/JSON-LD)
-   - `sitemap.xml` → entradas de ambas páginas
    - `nosotros.html` → posibles enlaces internos
    - `404.html` → posibles enlaces
    - `favoritos.html` → posibles enlaces
-   - `manifest.json` → posibles shortcuts
+   - `manifest.json` → shortcut "Vehículos Usados" apunta a `/vehiculos-usados.html`
    - `js/performance.js` → prefetch de estas páginas
    - `js/render.js` → posibles enlaces a estas páginas
-   - `js/admin-operations.js` → posibles referencias
-   - `scripts/generate-vehicles.mjs` → generación de páginas
+   - `js/admin-operations.js` → páginas estáticas en `_buildSitemapXml()`
+   - `scripts/generate-vehicles.mjs` → páginas estáticas hardcodeadas en generador de sitemap
 
 4. **NO se toca:**
    - Filtros de nuevo/usado en `busqueda.html` (se mantienen)
@@ -56,7 +55,8 @@
 - `vehiculos-nuevos.html` — convertir a redirect
 - `vehiculos-usados.html` — convertir a redirect
 - `index.html` — limpiar JSON-LD
-- `sitemap.xml` — remover entradas
+- `manifest.json` — actualizar shortcut
+- `js/performance.js` — remover prefetch
 - Otros archivos con referencias (según impacto)
 
 ---
@@ -137,10 +137,66 @@
 
 ---
 
-## Orden de ejecución recomendado
+## FASE 6: Sincronización del sistema de Sitemaps (Nuevo)
 
-1. **FASE 2** (Eliminar páginas nuevos/usados) — Es la más impactante en navegación y la más independiente
-2. **FASE 5** (Submenú dinámico de marcas) — Complementa los cambios de navegación de Fase 2
-3. **FASE 4** (Posicionamiento de héroes) — CSS puro, rápido
-4. **FASE 1** (Imágenes de héroes de marcas) — Requiere assets nuevos
-5. **FASE 3** (Hero de contacto) — Requiere asset nuevo, independiente
+**Problema:** La eliminación de las páginas de nuevos/usados y los cambios de navegación deben reflejarse en todo el pipeline de generación de sitemaps: el archivo estático, el generador Node.js, el admin panel, el GitHub Actions workflow, y los datos estructurados.
+
+**El sistema de sitemaps tiene 4 capas que deben sincronizarse:**
+
+### 6.1 Archivo estático `sitemap.xml`
+- **Acción:** Remover las entradas de `vehiculos-nuevos.html` y `vehiculos-usados.html`
+- **Verificar:** que las URLs restantes sigan siendo correctas
+
+### 6.2 Script Node.js `scripts/generate-vehicles.mjs`
+- **Líneas ~350-369:** Lista de páginas estáticas hardcodeadas para el sitemap
+- **Acción:** Eliminar `vehiculos-nuevos.html` y `vehiculos-usados.html` de la lista
+- **Verificar:** que el generador no cree referencias a estas páginas en futuras ejecuciones
+
+### 6.3 Admin Panel `js/admin-operations.js`
+- **Función `_buildSitemapXml()` (~líneas 349-368):** Lista de páginas estáticas hardcodeadas
+- **Acción:** Eliminar ambas páginas de la lista estática
+- **Verificar:** que el botón "Generar Sitemap" del admin no las incluya
+
+### 6.4 Structured Data / JSON-LD en `index.html`
+- **Líneas ~129, 134:** SiteNavigationElement con URLs de nuevos/usados
+- **Líneas ~222, 228:** BreadcrumbList con las mismas URLs
+- **Acción:** Eliminar ambas entradas de los schemas
+- **Actualizar:** Agregar `busqueda.html` como reemplazo si no existe
+
+### 6.5 GitHub Actions `.github/workflows/generate-vehicles.yml`
+- **Validación del sitemap (~líneas 58-70):** Asegurar que la validación no falle por la ausencia de las páginas eliminadas
+- **Acción:** Revisar que el paso de validación no busque específicamente estas URLs
+
+### 6.6 Firebase Cloud Functions `functions/index.js`
+- **Revisar:** que `onVehicleChange` y `triggerSeoRegeneration` no tengan referencias a estas páginas
+- **Acción:** No se esperan cambios, pero verificar
+
+### 6.7 `robots.txt`
+- **Revisar:** No referencia directamente estas páginas, solo el sitemap
+- **Acción:** No se esperan cambios
+
+### 6.8 Canonical URLs y meta tags
+- **`vehiculos-nuevos.html`** y **`vehiculos-usados.html`** (que se convertirán en redirects):
+  - Agregar `<link rel="canonical" href="https://altorracars.github.io/busqueda.html">` para indicar a los buscadores la URL correcta
+  - Agregar `<meta name="robots" content="noindex, follow">` para que se desindexen gradualmente
+
+**Archivos afectados:**
+- `sitemap.xml` — remover 2 URLs
+- `scripts/generate-vehicles.mjs` — remover de lista estática
+- `js/admin-operations.js` — remover de `_buildSitemapXml()`
+- `index.html` — limpiar JSON-LD (SiteNavigationElement + BreadcrumbList)
+- `.github/workflows/generate-vehicles.yml` — verificar validación
+- `functions/index.js` — verificar (probablemente sin cambios)
+- `robots.txt` — verificar (probablemente sin cambios)
+- `vehiculos-nuevos.html` / `vehiculos-usados.html` — agregar canonical + noindex en los redirects
+
+---
+
+## Orden de ejecución
+
+1. **FASE 2** (Eliminar páginas nuevos/usados) — Cambios de navegación principales
+2. **FASE 6** (Sincronización de sitemaps) — Aplicar inmediatamente después de Fase 2 para que todo el pipeline quede coherente
+3. **FASE 5** (Submenú dinámico de marcas) — Complementa los cambios de navegación
+4. **FASE 4** (Posicionamiento de héroes) — CSS puro, rápido
+5. **FASE 1** (Imágenes de héroes de marcas) — Requiere assets nuevos
+6. **FASE 3** (Hero de contacto) — Requiere asset nuevo, independiente

@@ -27,6 +27,9 @@ async function loadAllComponents() {
     // Ensure modals are available on ALL pages (Financiación, Vende tu Auto)
     loadModalsIfNeeded();
 
+    // Close any open dropdowns/menus when navigating via hash (prevents pointer block)
+    closeMenuOnHashNav();
+
     // Dismissir page loader — header y footer ya están listos
     if (typeof window.dismissPageLoader === 'function') {
         window.dismissPageLoader();
@@ -321,6 +324,61 @@ if (document.readyState === 'loading') {
     loadAllComponents();
 }
 
+// Load modals HTML/CSS/JS dynamically on all pages
+function loadModalsIfNeeded() {
+    // Skip if modals already exist (e.g. index.html has them inline)
+    if (document.getElementById('vende-auto-modal')) return;
+
+    fetch('snippets/modals.html')
+        .then(function (r) { return r.ok ? r.text() : ''; })
+        .then(function (html) {
+            if (!html) return;
+
+            // Inject modal HTML into body
+            var container = document.createElement('div');
+            container.id = 'modals-container';
+            container.innerHTML = html;
+            document.body.appendChild(container);
+
+            // Load CSS if not already present
+            if (!document.querySelector('link[href*="contact-forms.css"]')) {
+                var css = document.createElement('link');
+                css.rel = 'stylesheet';
+                css.href = 'css/contact-forms.css';
+                document.head.appendChild(css);
+            }
+
+            // Load JS if not already present
+            if (!document.querySelector('script[src*="contact-forms.js"]')) {
+                var script = document.createElement('script');
+                script.src = 'js/contact-forms.js';
+                document.body.appendChild(script);
+            }
+        })
+        .catch(function () { /* Modals are non-critical */ });
+}
+
+// Ensure dropdowns and mobile menu close on hash-based navigation
+function closeMenuOnHashNav() {
+    window.addEventListener('hashchange', function () {
+        // Close all dropdowns
+        document.querySelectorAll('.dropdown.active').forEach(function (d) {
+            d.classList.remove('active');
+        });
+        // Close mobile menu if open
+        var navMenu = document.getElementById('navMenu');
+        var hamburger = document.getElementById('hamburger');
+        if (navMenu && navMenu.classList.contains('active')) {
+            navMenu.classList.remove('active');
+            if (hamburger) hamburger.classList.remove('active');
+            document.body.classList.remove('menu-open', 'nav-menu-active');
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        }
+    });
+}
+
 // Smooth scroll para links internos (incluye links tipo "index.html#section")
 document.addEventListener('DOMContentLoaded', function() {
     // Helper: scroll to an element accounting for fixed header
@@ -368,6 +426,22 @@ document.addEventListener('DOMContentLoaded', function() {
             var target = document.querySelector(hash);
             if (target) {
                 e.preventDefault();
+
+                // Close dropdowns and mobile menu before scrolling
+                document.querySelectorAll('.dropdown.active').forEach(function (d) {
+                    d.classList.remove('active');
+                });
+                var navMenu = document.getElementById('navMenu');
+                var hamburger = document.getElementById('hamburger');
+                if (navMenu && navMenu.classList.contains('active')) {
+                    navMenu.classList.remove('active');
+                    if (hamburger) hamburger.classList.remove('active');
+                    document.body.classList.remove('menu-open', 'nav-menu-active');
+                    document.body.style.overflow = '';
+                    document.body.style.position = '';
+                    document.body.style.width = '';
+                }
+
                 smoothScrollTo(target);
                 // Update URL hash without triggering default scroll
                 history.replaceState(null, '', hash);

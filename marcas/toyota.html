@@ -5,7 +5,7 @@
     <base href="/">
     <link rel="icon" type="image/png" href="/multimedia/logo-placeholder.png">
     <link rel="apple-touch-icon" href="/multimedia/logo-placeholder.png">
-    <meta name="description" content="Vehículos Toyota disponibles en ALTORRA CARS, Cartagena. 0 vehículos en inventario. Financiación disponible.">
+    <meta name="description" content="Vehículos Toyota disponibles en ALTORRA CARS, Cartagena. 2 vehículos en inventario. Financiación disponible.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -32,7 +32,7 @@
     @keyframes plSpin{to{transform:rotate(360deg)}}
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoDealer","name":"ALTORRA CARS - Toyota","url":"https://altorracars.github.io/marcas/toyota.html","brand":{"@type":"Brand","name":"Toyota"},"description":"Vehículos Toyota disponibles en ALTORRA CARS, Cartagena. 0 vehículos en inventario. Financiación disponible.","address":{"@type":"PostalAddress","addressLocality":"Cartagena","addressCountry":"CO"},"numberOfItems":0}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoDealer","name":"ALTORRA CARS - Toyota","url":"https://altorracars.github.io/marcas/toyota.html","brand":{"@type":"Brand","name":"Toyota"},"description":"Vehículos Toyota disponibles en ALTORRA CARS, Cartagena. 2 vehículos en inventario. Financiación disponible.","address":{"@type":"PostalAddress","addressLocality":"Cartagena","addressCountry":"CO"},"numberOfItems":2}</script>
 </head>
 <body>
     <!-- Page Loader -->
@@ -45,9 +45,10 @@
     <noscript>
         <div style="max-width:1200px;margin:100px auto;padding:24px;font-family:sans-serif">
             <h1>Vehículos Toyota en ALTORRA CARS</h1>
-            <p>Vehículos Toyota disponibles en ALTORRA CARS, Cartagena. 0 vehículos en inventario. Financiación disponible.</p>
+            <p>Vehículos Toyota disponibles en ALTORRA CARS, Cartagena. 2 vehículos en inventario. Financiación disponible.</p>
             <ul style="list-style:none;padding:0;line-height:2">
-
+                <li><a href="https://altorracars.github.io/vehiculos/toyota-corolla-cross-seg-2025-36.html">Toyota COROLLA CROSS SEG 2025</a></li>
+                <li><a href="https://altorracars.github.io/vehiculos/toyota-prado-txl-2021-37.html">Toyota PRADO TXL 2021</a></li>
             </ul>
             <p><a href="https://altorracars.github.io">Volver a ALTORRA CARS</a></p>
         </div>
@@ -192,9 +193,10 @@
                 const bannerImg = document.getElementById('brandBanner');
 
                 bannerImg.src = bannerPath;
-                var brandPosMap = { toyota: "center", kia: "top", renault: "center" };
-                if (brandPosMap[brandId]) bannerImg.dataset.brandPos = brandPosMap[brandId];
                 bannerImg.alt = brandInfo.nombre;
+                // Per-brand positioning for close-up/front-on photos
+                var brandPosMap = { toyota: 'center', kia: 'top', renault: 'center' };
+                if (brandPosMap[brandId]) bannerImg.dataset.brandPos = brandPosMap[brandId];
                 brandHero.style.display = 'block';
 
                 // Fallback: si el banner falla, mostrar header simple

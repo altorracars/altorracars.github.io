@@ -2,10 +2,10 @@
 # https://altorracars.github.io
 
 User-agent: *
+Allow: /
 Disallow: /admin.html
 Disallow: /admin-upload.html
 Disallow: /snippets/
-Disallow: /*.json$
 
 User-agent: Googlebot
 Allow: /
@@ -15,24 +15,5 @@ Allow: /multimedia/
 
 User-agent: Bingbot
 Allow: /
-
-# Block known scraping bots
-User-agent: AhrefsBot
-Disallow: /
-
-User-agent: SemrushBot
-Disallow: /
-
-User-agent: DotBot
-Disallow: /
-
-User-agent: MJ12bot
-Disallow: /
-
-User-agent: PetalBot
-Disallow: /
-
-User-agent: GPTBot
-Disallow: /
 
 Sitemap: https://altorracars.github.io/sitemap.xml

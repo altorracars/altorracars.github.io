@@ -1,0 +1,192 @@
+/* ═══════════════════════════════════════════════════════════
+   PERFORMANCE FIXES — ALTORRA CARS
+   Fixes scroll jank caused by non-compositable animations,
+   expensive backdrop-filter blur, and continuous off-screen
+   animations. All original visual effects preserved via
+   cheaper GPU-friendly alternatives.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 1. HEADER: Replace expensive backdrop-filter blur ────
+   backdrop-filter on a fixed/sticky element forces GPU
+   recomposition on EVERY scroll frame. Replace with
+   solid background (already at 0.95 opacity, blur invisible).
+   ──────────────────────────────────────────────────────── */
+body #header {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(10, 10, 10, 0.97) !important;
+}
+
+body #header.sticky {
+    background: rgba(10, 10, 10, 0.99) !important;
+}
+
+/* ── 2. VEHICLE CARDS: Remove backdrop-filter blur ────────
+   Cards have opaque dark backgrounds at 0.08 alpha.
+   blur(20px) saturate(180%) on 10-30 cards in a grid
+   = catastrophic. Replace with solid dark BG.
+   ──────────────────────────────────────────────────────── */
+body .vehicle-card,
+body .vehicles-grid .vehicle-card,
+body .featured-section .vehicle-card,
+body .new-vehicles-section .vehicle-card,
+body .used-vehicles-section .vehicle-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(22, 22, 22, 0.95) !important;
+}
+
+/* ── 3. DROPDOWN: Remove blur (appears briefly, not needed) */
+body .dropdown-menu {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(22, 22, 22, 0.98) !important;
+}
+
+/* ── 4. VEHICLE CARD shine effect: use transform not left ─
+   Animating `left` forces layout recalculation every frame.
+   Use translateX instead (compositable, GPU-only).
+   ──────────────────────────────────────────────────────── */
+body .vehicle-card::after {
+    left: 0 !important;
+    transform: translateX(-100%);
+    transition: transform 0.7s !important;
+}
+
+body .vehicle-card:hover::after {
+    left: 0 !important;
+    transform: translateX(100%);
+}
+
+/* ── 5. TRANSITION OPTIMIZATION ───────────────────────────
+   Never transition `all` — it animates every property
+   including layout-triggering ones. Be explicit.
+   ──────────────────────────────────────────────────────── */
+body .vehicle-card {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ── 6. HERO AMBIENT ORBS: Promote to GPU layer ──────────
+   blur(70px) on animating elements is expensive.
+   will-change + contain promotes to own layer.
+   ──────────────────────────────────────────────────────── */
+.hero-ambient::before,
+.hero-ambient::after {
+    will-change: transform;
+    contain: layout style;
+}
+
+/* ── 7. HERO PARTICLES: Promote to GPU layer ──────────── */
+.hero-particle {
+    will-change: transform, opacity;
+}
+
+/* ── 8. LAZY IMAGE: Use opacity-only transition ──────────
+   filter: blur() transition = repaint every frame.
+   Opacity-only is compositable and smooth.
+   ──────────────────────────────────────────────────────── */
+.lazy-image {
+    opacity: 0;
+    filter: none !important;
+    transition: opacity 0.35s ease !important;
+}
+
+.lazy-image.loaded {
+    opacity: 1;
+    filter: none !important;
+}
+
+/* ── 9. FW BANNER SCANLINE: Use transform not top ────────
+   Animating `top` triggers layout on every frame.
+   Use translateY (compositable).
+   ──────────────────────────────────────────────────────── */
+.fw-hud-scanline {
+    top: 0 !important;
+    will-change: transform, opacity !important;
+    animation-name: fw-depth-scan-fixed !important;
+}
+
+@keyframes fw-depth-scan-fixed {
+    0%   { transform: translateY(calc(5vh));   opacity: 0;  }
+    3%   { transform: translateY(calc(5vh));   opacity: .9; }
+    10%  { transform: translateY(calc(12vh));  }
+    28%  { transform: translateY(calc(32vh));  }
+    50%  { transform: translateY(calc(54vh));  }
+    73%  { transform: translateY(calc(76vh)); opacity: .70; }
+    87%  { transform: translateY(calc(90vh)); opacity: .40; }
+    92%  { transform: translateY(calc(94vh)); opacity: 0;   }
+    93%  { transform: translateY(calc(5vh));  opacity: 0;   }
+    100% { transform: translateY(calc(5vh));  opacity: 0;   }
+}
+
+/* ── 10. FW DATA RAIL: Remove expensive blur ──────────── */
+.fw-data-rail {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(8, 9, 14, 0.96) !important;
+}
+
+/* ── 11. HERO BADGE: Remove backdrop-filter ───────────── */
+.hero-badge {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ── 12. STOP ANIMATIONS WHEN OFF-SCREEN ─────────────────
+   CSS content-visibility: auto tells the browser to skip
+   rendering of off-screen sections entirely. This pauses
+   all animations, repaints, and layout for hidden sections.
+   ──────────────────────────────────────────────────────── */
+.hero,
+.brand-hero,
+.about-hero,
+.marcas-hero,
+.featured-week-wrap,
+.dest-section,
+.dest-visual {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
+}
+
+/* ── 13. DESTINATION HUD: Promote rotating elements ───── */
+.dest-hud-ring::after,
+.dest-hud-ring-arc {
+    will-change: transform;
+}
+
+.dest-visual-glow {
+    will-change: transform, opacity;
+}
+
+/* ── 14. GPU LAYER HINTS FOR FREQUENTLY ANIMATED ─────── */
+.brand-hero-bg,
+.marcas-hero-bg {
+    will-change: transform;
+}
+
+/* ── 15. PAUSE OFF-SCREEN ANIMATIONS (JS class toggle) ──
+   When .anim-paused is added by IntersectionObserver,
+   pause all child and pseudo-element animations.
+   ──────────────────────────────────────────────────────── */
+.anim-paused,
+.anim-paused *,
+.anim-paused::before,
+.anim-paused::after,
+.anim-paused *::before,
+.anim-paused *::after {
+    animation-play-state: paused !important;
+}
+
+/* ── 16. REDUCE MOTION for users who prefer it ─────────
+   Also helps with lower-end devices.
+   ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

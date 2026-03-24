@@ -6,41 +6,33 @@
    cheaper GPU-friendly alternatives.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── 1. HEADER: Replace expensive backdrop-filter blur ────
+/* ── 1. HEADER: Reduce backdrop-filter blur ───────────────
    backdrop-filter on a fixed/sticky element forces GPU
-   recomposition on EVERY scroll frame. Replace with
-   solid background (already at 0.95 opacity, blur invisible).
+   recomposition on EVERY scroll frame. Reduce from 15-20px
+   to 4px to keep a touch of glassmorphism with minimal cost.
    ──────────────────────────────────────────────────────── */
 body #header {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(10, 10, 10, 0.97) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
 }
 
-body #header.sticky {
-    background: rgba(10, 10, 10, 0.99) !important;
-}
-
-/* ── 2. VEHICLE CARDS: Remove backdrop-filter blur ────────
-   Cards have opaque dark backgrounds at 0.08 alpha.
+/* ── 2. VEHICLE CARDS: Reduce backdrop-filter blur ────────
    blur(20px) saturate(180%) on 10-30 cards in a grid
-   = catastrophic. Replace with solid dark BG.
+   is very expensive. Reduce to blur(4px) for subtle effect.
    ──────────────────────────────────────────────────────── */
 body .vehicle-card,
 body .vehicles-grid .vehicle-card,
 body .featured-section .vehicle-card,
 body .new-vehicles-section .vehicle-card,
 body .used-vehicles-section .vehicle-card {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(22, 22, 22, 0.95) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
 }
 
-/* ── 3. DROPDOWN: Remove blur (appears briefly, not needed) */
+/* ── 3. DROPDOWN: Reduce blur ──────────────────────────── */
 body .dropdown-menu {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(22, 22, 22, 0.98) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
 }
 
 /* ── 4. VEHICLE CARD shine effect: use transform not left ─
@@ -120,34 +112,19 @@ body .vehicle-card {
     100% { transform: translateY(calc(5vh));  opacity: 0;   }
 }
 
-/* ── 10. FW DATA RAIL: Remove expensive blur ──────────── */
+/* ── 10. FW DATA RAIL: Reduce blur ────────────────────── */
 .fw-data-rail {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(8, 9, 14, 0.96) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
 }
 
-/* ── 11. HERO BADGE: Remove backdrop-filter ───────────── */
+/* ── 11. HERO BADGE: Reduce backdrop-filter ───────────── */
 .hero-badge {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
 }
 
-/* ── 12. STOP ANIMATIONS WHEN OFF-SCREEN ─────────────────
-   CSS content-visibility: auto tells the browser to skip
-   rendering of off-screen sections entirely. This pauses
-   all animations, repaints, and layout for hidden sections.
-   ──────────────────────────────────────────────────────── */
-.hero,
-.brand-hero,
-.about-hero,
-.marcas-hero,
-.featured-week-wrap,
-.dest-section,
-.dest-visual {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 600px;
-}
+/* ── 12. (content-visibility removed — caused layout jumps) */
 
 /* ── 13. DESTINATION HUD: Promote rotating elements ───── */
 .dest-hud-ring::after,

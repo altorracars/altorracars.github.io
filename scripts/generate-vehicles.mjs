@@ -366,48 +366,24 @@ function generateSitemap(vehicles, slugMap, brandSlugMap = new Map()) {
         { loc: '/cookies.html',              freq: 'yearly',  prio: '0.3' },
     ];
 
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-`;
+    // Build clean XML without comments or extra blank lines (Google-compatible format)
+    const urls = [];
 
     // Static pages
     for (const p of staticPages) {
-        xml += `
-  <url>
-    <loc>${SITE_URL}${p.loc}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>${p.freq}</changefreq>
-    <priority>${p.prio}</priority>
-  </url>
-`;
+        urls.push(sitemapUrl(`${SITE_URL}${p.loc}`, today, p.freq, p.prio));
     }
 
-    // Brand pages — pre-rendered static URLs (no query strings)
-    if (brandSlugMap.size > 0) {
-        xml += '\n  <!-- Brand pages (pre-rendered static URLs) -->\n';
-        for (const [brandId, brandSlug] of brandSlugMap) {
-            xml += `  <url>
-    <loc>${SITE_URL}/marcas/${brandSlug}.html</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-`;
-        }
+    // Brand pages
+    for (const [brandId, brandSlug] of brandSlugMap) {
+        urls.push(sitemapUrl(`${SITE_URL}/marcas/${brandSlug}.html`, today, 'weekly', '0.7'));
     }
 
-    // Vehicle detail pages (pre-rendered)
-    xml += '\n  <!-- Vehicle detail pages (pre-rendered, SEO-friendly URLs) -->\n';
-
+    // Vehicle detail pages
     for (const v of vehicles) {
         const slug = slugMap.get(String(v.id));
         if (!slug) continue;
 
-        const marca = capitalize(v.marca || '');
-        const modelo = v.modelo || '';
-        const year = v.year || '';
-        const fullImage = getFullImage(v);
-        const imageTitle = `${marca} ${modelo} ${year}`.trim();
         let lastmod = today;
         if (v.updatedAt) {
             try {
@@ -420,22 +396,20 @@ function generateSitemap(vehicles, slugMap, brandSlugMap = new Map()) {
             } catch (_) { /* keep today */ }
         }
 
-        xml += `  <url>
-    <loc>${SITE_URL}/vehiculos/${slug}.html</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-`;
+        urls.push(sitemapUrl(`${SITE_URL}/vehiculos/${slug}.html`, lastmod, 'weekly', '0.8'));
     }
 
-    xml += '</urlset>\n';
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
 
     if (!xml.startsWith('<?xml') || !xml.includes('</urlset>')) {
         throw new Error('[generateSitemap] Output failed structural validation — aborting.');
     }
 
     return xml;
+}
+
+function sitemapUrl(loc, lastmod, changefreq, priority) {
+    return `    <url>\n        <loc>${loc}</loc>\n        <lastmod>${lastmod}</lastmod>\n        <changefreq>${changefreq}</changefreq>\n        <priority>${priority}</priority>\n    </url>`;
 }
 
 // ===================== Main =====================

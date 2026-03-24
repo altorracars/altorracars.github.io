@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="css/performance-fixes.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <!-- Page Loader — Critical Inline CSS -->
     <style>
     #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:24px;transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1)}
@@ -176,7 +176,7 @@
             <div class="hero-particle"></div>
             <div class="hero-particle"></div>
         </div>
-        <img src="multimedia/marcas-hero.jpg" alt="Showroom de veh&iacute;culos multimarca" class="marcas-hero-bg" fetchpriority="high" loading="eager">
+        <img src="multimedia/marcas-hero.jpg" alt="Showroom de veh&iacute;culos multimarca" class="marcas-hero-bg" fetchpriority="high" loading="eager" decoding="async">
         <div class="marcas-hero-content">
             <div class="marcas-hero-badge">
                 <span class="marcas-hero-badge-dot" aria-hidden="true"></span>

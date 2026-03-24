@@ -3,112 +3,112 @@
 
   <url>
     <loc>https://altorracars.github.io/</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/busqueda.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/vehiculos-suv.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/vehiculos-sedan.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/vehiculos-pickup.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/vehiculos-hatchback.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/vehiculos-camionetas.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/simulador-credito.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/comparar.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/resenas.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/nosotros.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/contacto.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/favoritos.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/terminos.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/privacidad.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
     <loc>https://altorracars.github.io/cookies.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -116,109 +116,109 @@
   <!-- Brand pages (pre-rendered static URLs) -->
   <url>
     <loc>https://altorracars.github.io/marcas/audi.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/bmw.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/chevrolet.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/citroen.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/fiat.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/ford.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/honda.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/hyundai.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/jeep.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/kia.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/mazda.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/mitsubishi.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/nissan.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/peugeot.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/renault.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/suzuki.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/toyota.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://altorracars.github.io/marcas/volkswagen.html</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -61,7 +61,7 @@ class VehicleDatabase {
 
         // STEP 2: Load from Firestore (reduced timeout for fast first paint)
         if (window.firebaseReady) {
-            var firebaseOk = await this._awaitFirebaseWithTimeout(8000);
+            var firebaseOk = await this._awaitFirebaseWithTimeout(5000);
             if (firebaseOk && window.db) {
                 var delays = [0, 2000]; // retry backoff (2 attempts)
                 for (var attempt = 0; attempt < 2; attempt++) {
@@ -105,14 +105,14 @@ class VehicleDatabase {
     }
 
     async loadFromFirestore() {
-        // PARALLEL queries with 12s timeout
+        // PARALLEL queries with 6s timeout (reduced from 12s — cache covers slow loads)
         var queryTimeout = new Promise(function(_, reject) {
-            setTimeout(function() { reject(new Error('Firestore query timeout (12s)')); }, 12000);
+            setTimeout(function() { reject(new Error('Firestore query timeout (6s)')); }, 6000);
         });
         var results = await Promise.race([
             Promise.all([
-                window.db.collection('vehiculos').get(),
-                window.db.collection('marcas').get()
+                window.db.collection('vehiculos').limit(200).get(),
+                window.db.collection('marcas').limit(50).get()
             ]),
             queryTimeout
         ]);
@@ -168,6 +168,8 @@ class VehicleDatabase {
         this._realtimeActive = true;
         this._initialLoadDone = true;
         var self = this;
+        // Debounce timer to batch rapid Firestore updates (prevents rapid DOM re-renders)
+        var _vehicleDebounce = null;
 
         // Vehicle listener
         this._listeners.vehicles = window.db.collection('vehiculos')
@@ -199,8 +201,12 @@ class VehicleDatabase {
                     self.vehicles = newVehicles;
                     self.normalizeVehicles();
                     self._saveToCache();
-                    console.log('[DB] Real-time update: ' + self.vehicles.length + ' vehicles');
-                    self._notifyChange('vehicles');
+                    // Debounce DOM updates — batch rapid Firestore changes (500ms)
+                    clearTimeout(_vehicleDebounce);
+                    _vehicleDebounce = setTimeout(function() {
+                        console.log('[DB] Real-time update: ' + self.vehicles.length + ' vehicles');
+                        self._notifyChange('vehicles');
+                    }, 500);
                 }
             }, function(err) {
                 console.warn('[DB] Vehicle listener error:', err.message);

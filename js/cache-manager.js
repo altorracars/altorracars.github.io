@@ -271,7 +271,7 @@
 
     /* ─── Polling periódico mientras el tab está abierto ─────────── */
     function startPolling() {
-        const INTERVAL = 3 * 60 * 1000; // 3 minutes (was 45s — reduced frequency to avoid noise)
+        const INTERVAL = 10 * 60 * 1000; // 10 minutes (reduced from 3m — real-time Firestore listener handles admin changes)
         setInterval(async function () {
             const remoteVer = await fetchDeployVersion();
             if (!remoteVer) return;

@@ -490,7 +490,7 @@ async function populateBrandsMenu() {
         ul.innerHTML = sorted.map(function (entry) {
             var brandId = entry[0];
             return '<li><a href="marca.html?marca=' + brandId + '">' + capitalize(brandId) + '</a></li>';
-        }).join('') + '<li><a href="index.html#marcas">Ver todas</a></li>';
+        }).join('') + '<li><a href="marcas.html">Ver todas</a></li>';
     } catch (e) {
         // Keep static placeholder on error
     }

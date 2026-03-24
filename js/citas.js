@@ -570,3 +570,12 @@ class AppointmentSystem {
 document.addEventListener('DOMContentLoaded', function() {
     window.appointmentSystem = new AppointmentSystem();
 });
+
+// BFCache cleanup: remove appointment modal on back/forward navigation
+window.addEventListener('pageshow', function (e) {
+    if (e.persisted) {
+        var modal = document.getElementById('appointment-modal');
+        if (modal) modal.remove();
+        document.body.style.overflow = '';
+    }
+});

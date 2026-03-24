@@ -411,3 +411,10 @@ if (document.readyState === 'loading') {
 } else {
     window.contactFormManager = new ContactFormManager();
 }
+
+// BFCache cleanup: close modals and reset body overflow on back/forward navigation
+window.addEventListener('pageshow', function (e) {
+    if (e.persisted && window.contactFormManager) {
+        window.contactFormManager.closeAllModals();
+    }
+});

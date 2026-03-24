@@ -69,7 +69,110 @@ curl -s https://altorracars.github.io/sitemap.xml | grep -c '<loc>'
 - `fix: clean sitemap.xml and robots.txt for Google Search Console indexing` — PR mergeado 24 mar 2026
 - `resolve merge conflict in sitemap.xml — keep clean format + add new vehicles`
 
-## Referencia: formato que funciona (Bersaglio Jewelry)
+---
+
+## Por qué Bersaglio Jewelry SÍ se indexa y Altorra Cars NO
+
+**Repo de referencia:** https://github.com/bersagliojewelry/bersagliojewelry.github.io
+**Sitio live:** https://bersagliojewelry.co
+
+### La diferencia principal: dominio propio
+
+Bersaglio usa un **dominio personalizado** (`bersagliojewelry.co`) mediante un archivo `CNAME` en `public/`. Google trata dominios propios con mayor autoridad que subdominios `*.github.io`. Esto afecta directamente:
+- **Crawl priority**: Google asigna más recursos de rastreo a dominios propios
+- **Canonical URLs**: todas las URLs apuntan a `bersagliojewelry.co`, nunca a `github.io`
+- **Trust signals**: un dominio `.co` da más confianza al crawler que un subdominio gratuito
+
+### Comparación técnica completa
+
+| Aspecto | Altorra Cars | Bersaglio Jewelry |
+|---------|-------------|-------------------|
+| **Dominio** | `altorracars.github.io` (subdominio gratuito) | `bersagliojewelry.co` (dominio propio via CNAME) |
+| **Build** | Sin build (archivos estáticos directo) | Vite + Terser minificación → `dist/` |
+| **Deploy** | GitHub Actions copia archivos al root | GitHub Actions build → deploy artifact `dist/` |
+| **Sitemap ubicación** | `sitemap.xml` en raíz del repo | `public/sitemap.xml` (Vite lo copia a `dist/`) |
+| **Sitemap generación** | Auto-generado por `generate-vehicles.mjs` | Manual/estático, 24 URLs curadas |
+| **Sitemap prioridades** | Todas iguales (0.8) | Jerarquía: homepage 1.0, colecciones 0.85-0.9, productos 0.8, legales 0.3 |
+| **robots.txt** | Simple: Allow + Sitemap | Estratégico: bloquea admin, carrito, wishlist, dist/ |
+| **URL canónica** | No tiene `<link rel="canonical">` | Sí: `<link rel="canonical" href="https://bersagliojewelry.co/">` |
+| **Meta robots** | No tiene | `<meta name="robots" content="index, follow">` |
+| **Open Graph** | No tiene / parcial | Completo: og:type, og:url, og:title, og:description, og:image (1200x630) |
+| **Twitter Cards** | No tiene | `summary_large_image` con todos los tags |
+| **Structured Data (JSON-LD)** | No tiene | 2 schemas: `JewelryStore` + `WebSite` con SearchAction |
+| **PWA** | No | Sí: manifest.json, service worker, offline.html |
+| **Performance hints** | No | preconnect, dns-prefetch, preload con fetchpriority="high" |
+
+### Lo que Bersaglio hace que Altorra Cars debería implementar
+
+#### 1. Dominio personalizado (IMPACTO ALTO)
+```
+# Archivo: public/CNAME (o CNAME en raíz)
+altorracars.co
+```
+- Comprar dominio (ej: `altorracars.co`, `altorracars.com`)
+- Crear archivo `CNAME` con el dominio
+- Configurar DNS del dominio → GitHub Pages
+- Actualizar TODAS las URLs en sitemap.xml, robots.txt, y meta tags
+
+#### 2. URL canónica en cada página (IMPACTO ALTO)
+```html
+<link rel="canonical" href="https://altorracars.github.io/">
+<meta name="robots" content="index, follow">
+```
+
+#### 3. Structured Data JSON-LD (IMPACTO MEDIO-ALTO)
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AutoDealer",
+  "name": "Altorra Cars",
+  "url": "https://altorracars.github.io",
+  "logo": "https://altorracars.github.io/logo.png",
+  "address": { ... },
+  "sameAs": [ /* redes sociales */ ]
+}
+</script>
+```
+
+#### 4. Open Graph y Twitter Cards (IMPACTO MEDIO)
+```html
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://altorracars.github.io/">
+<meta property="og:title" content="Altorra Cars - Vehículos Premium">
+<meta property="og:description" content="...">
+<meta property="og:image" content="https://altorracars.github.io/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+```
+
+#### 5. Prioridades diferenciadas en sitemap (IMPACTO BAJO)
+```xml
+<!-- Homepage -->
+<priority>1.0</priority>
+<!-- Páginas de marca (BMW, Porsche, etc.) -->
+<priority>0.9</priority>
+<!-- Vehículos individuales -->
+<priority>0.8</priority>
+<!-- Páginas legales/secundarias -->
+<priority>0.3</priority>
+```
+
+### Resumen: por qué Bersaglio se indexa de inmediato
+
+Bersaglio trata su repo de GitHub Pages como un **mecanismo de hosting**, no como el producto final. Implementa el playbook completo de SEO profesional:
+1. Dominio propio → mayor autoridad y crawl priority
+2. Canonical URLs → evita contenido duplicado con github.io
+3. Structured Data → Google entiende qué tipo de negocio es
+4. Meta tags completos → Open Graph + Twitter + robots
+5. Sitemap curado → prioridades y frecuencias estratégicas
+6. robots.txt inteligente → bloquea páginas sin valor SEO
+7. PWA + Performance → mejores Core Web Vitals → mejor ranking
+
+**Altorra Cars**, al corregir el formato del sitemap y robots.txt, resolvió el blocker técnico. Pero para igualar la velocidad de indexación de Bersaglio, necesita implementar al menos los puntos 1-4.
+
+### Referencia: formato de sitemap que funciona
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -81,7 +184,18 @@ curl -s https://altorracars.github.io/sitemap.xml | grep -c '<loc>'
     </url>
 </urlset>
 ```
-- Sin comentarios XML
-- Indentación de 4 espacios
-- Sin líneas en blanco entre entradas
-- robots.txt simple con `Allow: /` y `Sitemap:` al final
+
+### Referencia: robots.txt de Bersaglio
+```
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /admin-colecciones.html
+Disallow: /admin-consultas.html
+Disallow: /admin-piezas.html
+Disallow: /dist/
+Disallow: /carrito.html
+Disallow: /lista-deseos.html
+
+Sitemap: https://bersagliojewelry.co/sitemap.xml
+```

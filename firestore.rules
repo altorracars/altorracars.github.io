@@ -134,6 +134,14 @@ service cloud.firestore {
         || (isEditorOrAbove() && docId in ['counters', 'bookedSlots']);
     }
 
+    // ========== DRAFTS ACTIVOS (admin collaboration) ==========
+    // Stores active editing sessions so admins can see who is editing what
+    match /drafts_activos/{userId} {
+      allow read: if isEditorOrAbove();
+      allow write: if isEditorOrAbove() && request.auth.uid == userId;
+      allow delete: if isEditorOrAbove();
+    }
+
     // ========== SYSTEM (cache invalidation) ==========
     // system/meta — documento público que el cache-manager lee para detectar
     // cambios del admin o deploys de GitHub. lastModified se actualiza desde

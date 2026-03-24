@@ -41,20 +41,6 @@ jobs:
       - name: Generate vehicle pages from Firestore
         run: npm run generate
 
-      - name: Update deploy-info.json and bump cache versions
-        run: |
-          DEPLOY_TS="$(date -u +%Y%m%d%H%M%S)"
-          SHA_SHORT="${GITHUB_SHA:0:7}"
-
-          # 1. deploy-info.json — leído por cache-manager.js para detectar nuevos deploys
-          echo "{\"version\":\"${DEPLOY_TS}\",\"sha\":\"${SHA_SHORT}\",\"ref\":\"${GITHUB_REF_NAME}\"}" > data/deploy-info.json
-
-          # 2. Service Worker CACHE_VERSION — fuerza updatefound en todos los browsers
-          sed -i "s/const CACHE_VERSION = '[^']*'/const CACHE_VERSION = 'v${DEPLOY_TS}'/" service-worker.js
-
-          # 3. cache-manager.js APP_VERSION — detecta cambio en primera carga
-          sed -i "s/const APP_VERSION[[:space:]]*=[[:space:]]*'[^']*'/const APP_VERSION = '${DEPLOY_TS}'/" js/cache-manager.js
-
       - name: Validate sitemap.xml
         run: |
           if [ ! -s sitemap.xml ]; then
@@ -69,10 +55,28 @@ jobs:
           URL_COUNT=$(grep -c '<loc>' sitemap.xml || true)
           echo "sitemap.xml OK — ${URL_COUNT} URLs found."
 
-      - name: Check for changes
+      - name: Check for real content changes
         id: changes
         run: |
-          git diff --quiet vehiculos/ marcas/ data/ sitemap.xml service-worker.js js/cache-manager.js || echo "changed=true" >> $GITHUB_OUTPUT
+          # Only check for actual content changes (vehicle pages, sitemap, data files)
+          # Do NOT include deploy-info.json, service-worker.js, or cache-manager.js
+          # since those are bumped AFTER this check — prevents false-positive deploys
+          git diff --quiet vehiculos/ marcas/ data/vehicle-slugs.json data/brand-slugs.json sitemap.xml || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Bump cache versions (only when content changed)
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          DEPLOY_TS="$(date -u +%Y%m%d%H%M%S)"
+          SHA_SHORT="${GITHUB_SHA:0:7}"
+
+          # 1. deploy-info.json — read by cache-manager.js to detect new deploys
+          echo "{\"version\":\"${DEPLOY_TS}\",\"sha\":\"${SHA_SHORT}\",\"ref\":\"${GITHUB_REF_NAME}\"}" > data/deploy-info.json
+
+          # 2. Service Worker CACHE_VERSION — triggers updatefound in browsers
+          sed -i "s/const CACHE_VERSION = '[^']*'/const CACHE_VERSION = 'v${DEPLOY_TS}'/" service-worker.js
+
+          # 3. cache-manager.js APP_VERSION — detects change on first load
+          sed -i "s/const APP_VERSION[[:space:]]*=[[:space:]]*'[^']*'/const APP_VERSION = '${DEPLOY_TS}'/" js/cache-manager.js
 
       - name: Commit and push generated pages
         if: steps.changes.outputs.changed == 'true'

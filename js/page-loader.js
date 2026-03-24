@@ -264,10 +264,21 @@
         if (e.persisted) {
             // Página recuperada del bfcache — quitar overlay y loader
             transitioning = false;
-            if (overlay) overlay.classList.remove('pto-active');
+            if (overlay) {
+                overlay.classList.remove('pto-active');
+                // CRITICAL: clear inline pointer-events set during navigation
+                // (the inline style overrides the CSS rule and blocks all clicks)
+                overlay.style.pointerEvents = '';
+                overlay.style.opacity = '';
+            }
             dismissed = false;
             dismissLoader();
             completeProgressBar();
+
+            // Also clean up any modal overlays that might have .active state
+            var modals = document.querySelectorAll('.modal-overlay.active');
+            modals.forEach(function (m) { m.classList.remove('active'); });
+            document.body.style.overflow = '';
         }
     });
 

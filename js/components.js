@@ -381,6 +381,14 @@ function closeMenuOnHashNav() {
     window.addEventListener('hashchange', forceCloseAllMenus);
 }
 
+// BFCache cleanup: force-close mobile menu on back/forward navigation
+// DOMContentLoaded does NOT fire on bfcache restore, so we need pageshow
+window.addEventListener('pageshow', function (e) {
+    if (e.persisted) {
+        forceCloseAllMenus();
+    }
+});
+
 // Smooth scroll para links internos (incluye links tipo "index.html#section")
 document.addEventListener('DOMContentLoaded', function() {
     // Helper: scroll to an element accounting for fixed header

@@ -124,7 +124,22 @@ body .vehicle-card {
     -webkit-backdrop-filter: blur(4px) !important;
 }
 
-/* ── 12. (content-visibility removed — caused layout jumps) */
+/* ── 12. CONTENT-VISIBILITY: Skip rendering off-screen sections ──
+   content-visibility: auto tells the browser to skip rendering
+   sections until they're near the viewport. This is the #1
+   technique modern sites use for buttery scroll performance.
+   contain-intrinsic-size gives the browser a size estimate so
+   scrollbar doesn't jump.
+   ──────────────────────────────────────────────────────── */
+.categories-section,
+.brands-section,
+.featured-section,
+.commercial-section,
+#testimonials-section,
+.footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
+}
 
 /* ── 13. DESTINATION HUD: Promote rotating elements ───── */
 .dest-hud-ring::after,
@@ -166,4 +181,80 @@ body .vehicle-card {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* ── 17. LAYOUT CONTAINMENT on vehicle grids ─────────────
+   Contain layout so adding/removing cards doesn't trigger
+   global reflow. This is why premium sites scroll smoothly
+   even with complex card grids.
+   ──────────────────────────────────────────────────────── */
+.vehicles-grid,
+.categories-grid,
+.brands-carousel-wrapper {
+    contain: layout style;
+}
+
+/* ── 18. GPU LAYER for sticky elements ───────────────────
+   Sticky elements + backdrop-filter = repaint every scroll frame.
+   will-change: transform promotes them to their own GPU layer
+   so only compositing happens (no repaint).
+   ──────────────────────────────────────────────────────── */
+body #header {
+    will-change: transform;
+}
+
+.cookie-banner {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    will-change: transform, opacity;
+}
+
+.cookie-modal {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+}
+
+/* ── 19. HERO SEARCH: Reduce expensive blur ──────────── */
+.hero-search-inner {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+}
+
+.hero-search-dropdown {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ── 20. IMAGE RENDERING HINTS ───────────────────────────
+   Tells browser to optimize for speed when downscaling
+   large images. Modern browsers use this to choose the
+   fastest decoding path.
+   ──────────────────────────────────────────────────────── */
+img[loading="lazy"] {
+    content-visibility: auto;
+    decoding: async;
+}
+
+/* ── 21. CONTACT MODAL: Reduce blur + shadow ─────────── */
+.modal-container {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+}
+
+/* ── 22. SMOOTH SCROLL ANCHORING ─────────────────────────
+   Prevents unexpected scroll jumps when off-screen content
+   loads and changes height (e.g., lazy images, dynamic lists).
+   ──────────────────────────────────────────────────────── */
+body {
+    overflow-anchor: auto;
+}
+
+/* ── 23. FONT-DISPLAY OPTIMIZATION ───────────────────────
+   Ensure text is visible immediately with fallback font
+   while custom font loads (eliminates FOIT flash).
+   ──────────────────────────────────────────────────────── */
+body {
+    text-rendering: optimizeSpeed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }

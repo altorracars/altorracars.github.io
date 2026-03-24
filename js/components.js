@@ -1243,7 +1243,11 @@ if (typeof module !== 'undefined' && module.exports) {
 
         // Fix viewport height en iOS (100vh bug)
         fixViewportHeight();
-        window.addEventListener('resize', fixViewportHeight);
+        var _vhTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(_vhTimer);
+            _vhTimer = setTimeout(fixViewportHeight, 150);
+        });
     }
 
     function fixViewportHeight() {

@@ -166,6 +166,7 @@
     height: 100%;
     background: #b89658;
     width: 100%;
+    transform-origin: left;
     animation: progress 4s linear forwards;
 }
 
@@ -179,9 +180,9 @@
 
 @keyframes progress {
     from {
-        width: 100%;
+        transform: scaleX(1);
     }
     to {
-        width: 0%;
+        transform: scaleX(0);
     }
 }

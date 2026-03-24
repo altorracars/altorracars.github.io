@@ -282,12 +282,12 @@
     <link rel="stylesheet" href="css/dark-theme.css">
     <link rel="stylesheet" href="css/performance-fixes.css">
     <link rel="stylesheet" href="css/mobile-fixes.css">
-    <link rel="stylesheet" href="css/cookies.css">
 
-    <!-- Above-the-fold CSS (render-blocking — needed for layout) -->
-    <link rel="stylesheet" href="css/vehicles-cards-fix.css">
-    <link rel="stylesheet" href="css/brands-fixes.css">
-    <link rel="stylesheet" href="css/sidebar-filters-fix.css">
+    <!-- Below-fold + delayed CSS (deferred — not needed for first paint) -->
+    <link rel="stylesheet" href="css/cookies.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/vehicles-cards-fix.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/brands-fixes.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/sidebar-filters-fix.css" media="print" onload="this.media='all'">
 
     <!-- Non-critical CSS (deferred — loads after first paint) -->
     <link rel="stylesheet" href="css/featured-fixes.css" media="print" onload="this.media='all'">
@@ -479,7 +479,7 @@
             <div class="categories-grid">
                 <a href="vehiculos-suv.html" class="category-card">
                     <div class="category-image">
-                        <img src="multimedia/categories/suv.jpg?v=20260310" alt="SUV" loading="lazy">
+                        <img src="multimedia/categories/SUV.jpg" alt="SUV" loading="lazy">
                     </div>
                     <h3 class="category-name">SUV</h3>
                 </a>
@@ -493,14 +493,14 @@
 
                 <a href="vehiculos-sedan.html" class="category-card">
                     <div class="category-image">
-                        <img src="multimedia/categories/sedan.jpg?v=20260310" alt="Sedán" loading="lazy">
+                        <img src="multimedia/categories/SEDAN.jpg?v=20260310" alt="Sedán" loading="lazy">
                     </div>
                     <h3 class="category-name">Sedán</h3>
                 </a>
 
                 <a href="vehiculos-hatchback.html" class="category-card">
                     <div class="category-image">
-                        <img src="multimedia/categories/hatchback.jpg?v=20260310" alt="Hatchback" loading="lazy">
+                        <img src="multimedia/categories/HATCHBACK.jpg?v=20260310" alt="Hatchback" loading="lazy">
                     </div>
                     <h3 class="category-name">Hatchback</h3>
                 </a>
@@ -921,7 +921,7 @@
     </div>
 
     <!-- Firebase -->
-    <script src="js/firebase-config.js"></script>
+    <script src="js/firebase-config.js" defer></script>
 
     <!-- Scripts - Optimized Loading -->
     <script src="js/favorites-manager.js" defer></script>
@@ -955,6 +955,6 @@
 
         <script src="js/page-loader.js"></script>
     <!-- Cache Manager - Handles SW updates and cache invalidation -->
-    <script src="js/cache-manager.js"></script>
+    <script src="js/cache-manager.js" defer></script>
 </body>
 </html>

@@ -224,7 +224,7 @@
     <div id="footer-placeholder"></div>
 
     <!-- Firebase -->
-    <script src="js/firebase-config.js"></script>
+    <script src="js/firebase-config.js" defer></script>
     <script src="js/favorites-manager.js" defer></script>
     <script src="js/toast.js" defer></script>
     <script src="js/components.js" defer></script>
@@ -348,7 +348,7 @@
                 card.className = 'marca-card';
                 card.innerHTML =
                     '<img src="multimedia/Logos/' + name.replace(/\u00eb/,'e') + '.webp" alt="' + name + '" class="marca-card-logo" loading="lazy"' +
-                    ' onerror="this.src=\'multimedia/Logos/' + name.replace(/\u00eb/,'e') + '.png\';this.onerror=null;">' +
+                    ' onerror="this.style.opacity=\'0.3\';this.onerror=null;">' +
                     '<span class="marca-card-name">' + name + '</span>' +
                     '<span class="marca-card-count">Cargando...</span>';
                 grid.appendChild(card);

@@ -217,11 +217,12 @@ function initializeHeader() {
     let lastScroll = 0;
     let ticking = false;
     const HIDE_THRESHOLD = 80; // px mínimos antes de activar el ocultamiento
+    const _cachedHeader = document.getElementById('header');
 
     window.addEventListener('scroll', function() {
         if (!ticking) {
             window.requestAnimationFrame(function() {
-                const header = document.getElementById('header');
+                var header = _cachedHeader;
                 if (header) {
                     const currentScroll = window.pageYOffset || window.scrollY;
 

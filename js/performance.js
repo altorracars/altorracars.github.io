@@ -28,6 +28,7 @@ class PerformanceOptimizer {
         }
 
         this.optimizeScrollPerformance();
+        this.pauseOffScreenAnimations();
     }
 
     // ===== LAZY LOADING DE IMÁGENES AVANZADO =====
@@ -223,6 +224,43 @@ class PerformanceOptimizer {
 
         // Parallax REMOVED — was causing layout thrashing on every scroll frame.
         // The hero uses CSS background-attachment: fixed for a lightweight parallax effect.
+    }
+
+    // ===== PAUSE OFF-SCREEN ANIMATIONS =====
+    // Stops infinite CSS animations on sections that are not visible,
+    // saving GPU compositing and paint cycles.
+    pauseOffScreenAnimations() {
+        if (!('IntersectionObserver' in window)) return;
+
+        var sections = document.querySelectorAll(
+            '.hero, .brand-hero, .about-hero, .marcas-hero, ' +
+            '.featured-week-wrap, .dest-section, .dest-visual'
+        );
+
+        if (!sections.length) return;
+
+        var animObs = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                // Pause/resume all animations inside the section
+                var children = entry.target.querySelectorAll(
+                    '.hero-particle, .hero-ambient, .dest-hud-ring-arc, ' +
+                    '.dest-visual-glow, .fw-hud-scanline, .fw-hud-layer, ' +
+                    '[class*="dest-hud-ring"], .brand-hero-bg, .marcas-hero-bg'
+                );
+                var state = entry.isIntersecting ? 'running' : 'paused';
+                children.forEach(function(el) {
+                    el.style.animationPlayState = state;
+                });
+                // Also pause pseudo-element animations via class
+                if (entry.isIntersecting) {
+                    entry.target.classList.remove('anim-paused');
+                } else {
+                    entry.target.classList.add('anim-paused');
+                }
+            });
+        }, { rootMargin: '100px 0px' });
+
+        sections.forEach(function(sec) { animObs.observe(sec); });
     }
 
     // ===== UTILIDADES =====

@@ -202,21 +202,21 @@
         }
 
         function renderBrands() {
-            var brands = (typeof vehicleDB !== 'undefined' && vehicleDB.brands)
-                ? vehicleDB.brands : [];
-            var vehicles = (typeof vehicleDB !== 'undefined' && vehicleDB.getAll)
-                ? vehicleDB.getAll() : [];
+            var brands = (typeof vehicleDB !== 'undefined' && vehicleDB.getAllBrands)
+                ? vehicleDB.getAllBrands() : [];
+            var vehicles = (typeof vehicleDB !== 'undefined' && vehicleDB.getAllVehicles)
+                ? vehicleDB.getAllVehicles() : [];
 
             // Count available vehicles per brand
             var countMap = {};
-            var typeSet = new Set();
+            var categorySet = new Set();
             var totalAvailable = 0;
             vehicles.forEach(function (v) {
-                if (v.estado === 'disponible' && v.marca) {
+                if ((v.estado === 'disponible' || !v.estado) && v.marca) {
                     var key = v.marca.toLowerCase();
                     countMap[key] = (countMap[key] || 0) + 1;
                     totalAvailable++;
-                    if (v.tipo) typeSet.add(v.tipo);
+                    if (v.categoria) categorySet.add(v.categoria);
                 }
             });
 
@@ -242,7 +242,7 @@
             // Update stats
             document.getElementById('statBrands').textContent = sorted.length;
             document.getElementById('statVehicles').textContent = totalAvailable;
-            document.getElementById('statTypes').textContent = typeSet.size || '--';
+            document.getElementById('statTypes').textContent = categorySet.size || '--';
 
             // Build cards
             grid.innerHTML = '';
@@ -323,8 +323,19 @@
             }
         });
 
-        // Init
-        waitForDB(renderBrands);
+        // Init + real-time updates
+        waitForDB(function () {
+            renderBrands();
+            // Start real-time listeners so counts update live
+            if (typeof vehicleDB !== 'undefined') {
+                vehicleDB.startRealtime();
+                vehicleDB.onChange(function (changeType) {
+                    if (changeType === 'vehicles' || changeType === 'brands') {
+                        renderBrands();
+                    }
+                });
+            }
+        });
     })();
     </script>
 </body>

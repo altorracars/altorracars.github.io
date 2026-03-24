@@ -108,11 +108,25 @@
     }
 
     /* ─── Modal de actualización — centrado en pantalla ─────────── */
+    // Cross-page deduplication: if banner was shown recently (within 5 min),
+    // don't show it again on navigation to another page.
+    const BANNER_SHOWN_KEY = 'altorra_banner_shown_at';
+    const BANNER_DEDUP_MS  = 5 * 60 * 1000; // 5 minutes
+
     let _modalShown = false;
 
     function showUpdateBanner() {
         if (_modalShown) return;
+
+        // Cross-page dedup: skip if banner was shown recently on ANY page
+        var lastShown = Number(localStorage.getItem(BANNER_SHOWN_KEY) || 0);
+        if (lastShown && (Date.now() - lastShown) < BANNER_DEDUP_MS) {
+            _modalShown = true; // block further attempts on this page too
+            return;
+        }
+
         _modalShown = true;
+        localStorage.setItem(BANNER_SHOWN_KEY, Date.now().toString());
 
         if (!document.getElementById('altorra-update-styles')) {
             const style = document.createElement('style');
@@ -257,7 +271,7 @@
 
     /* ─── Polling periódico mientras el tab está abierto ─────────── */
     function startPolling() {
-        const INTERVAL = 45 * 1000; // 45 segundos
+        const INTERVAL = 3 * 60 * 1000; // 3 minutes (was 45s — reduced frequency to avoid noise)
         setInterval(async function () {
             const remoteVer = await fetchDeployVersion();
             if (!remoteVer) return;
@@ -423,6 +437,8 @@
 
             // Marcar período de gracia ANTES de cualquier otra operación.
             localStorage.setItem(UPDATE_GRACE_KEY, Date.now().toString());
+            // Clear banner dedup so it doesn't block legitimate future banners
+            localStorage.removeItem(BANNER_SHOWN_KEY);
 
             await this.invalidate();
             sessionStorage.clear();
@@ -457,16 +473,13 @@
             if (!('serviceWorker' in navigator)) return;
             navigator.serviceWorker.register('/service-worker.js')
                 .then((reg) => {
-                    // Revisar actualizaciones cada 5 minutos
+                    // Check for SW updates every 5 minutes
                     setInterval(() => reg.update(), 5 * 60 * 1000);
+                    // NOTE: We rely on SW_UPDATED message from activate event
+                    // (sent by service-worker.js) instead of updatefound here
+                    // to avoid duplicate banner triggers.
                     reg.addEventListener('updatefound', () => {
-                        const sw = reg.installing;
-                        sw.addEventListener('statechange', () => {
-                            if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-                                console.info('[SW] Nueva versión disponible');
-                                this.notifyUpdate();
-                            }
-                        });
+                        console.info('[SW] Update found — waiting for activation');
                     });
                 })
                 .catch(err => console.warn('[SW] Registro fallido:', err));

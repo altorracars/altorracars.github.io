@@ -45,6 +45,17 @@ service cloud.firestore {
 
       // Only Super Admin can delete
       allow delete: if isSuperAdmin();
+
+      // ========== VEHICLE AUDIT LOG (subcollection) ==========
+      match /auditLog/{logId} {
+        // Any authenticated admin can read the vehicle's audit trail
+        allow read: if isAuthenticated();
+        // Editor or above can create audit entries (auto-logged on vehicle changes)
+        allow create: if isEditorOrAbove();
+        // No one can update audit entries (immutable)
+        // Only Super Admin can delete (cleanup)
+        allow delete: if isSuperAdmin();
+      }
     }
 
     // ========== CONCESIONARIOS ==========

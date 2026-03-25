@@ -191,22 +191,33 @@
         if (!file) return;
         if (!window.storage) { AP.toast('Firebase Storage no disponible', 'error'); return; }
 
+        var allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+        if (allowed.indexOf(file.type) === -1) {
+            AP.toast('Formato no valido. Usa JPG, PNG, WebP o SVG.', 'error');
+            return;
+        }
+
         var status = $('brandLogoUploadStatus');
         status.style.display = 'block';
         status.style.color = '';
-        status.textContent = 'Subiendo logo...';
+        status.textContent = 'Comprimiendo y convirtiendo a WebP...';
 
-        // Compress if needed before uploading
-        var uploadPromise = (AP.compressImage && file.size > 200 * 1024)
-            ? AP.compressImage(file)
-            : Promise.resolve(file);
+        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.[^.]+$/, '');
+
+        // SVG: upload as-is (vector, no compression needed)
+        var uploadPromise;
+        if (file.type === 'image/svg+xml') {
+            uploadPromise = Promise.resolve(file);
+        } else {
+            // Always compress and convert to WebP (high quality for logos: 0.90, max 512px)
+            uploadPromise = AP.compressImage(file, { maxWidth: 512, quality: 0.90 });
+        }
 
         uploadPromise.then(function(processedFile) {
-            var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-            var ext = processedFile.name.split('.').pop() || 'webp';
-            // Use 'cars/' path which is typically allowed by existing Storage rules
-            var path = 'cars/brand_logo_' + Date.now() + '_' + safeName.replace(/\.[^.]+$/, '') + '.' + ext;
+            var ext = processedFile.type === 'image/svg+xml' ? 'svg' : 'webp';
+            var path = 'cars/brand_logo_' + Date.now() + '_' + safeName + '.' + ext;
 
+            status.textContent = 'Subiendo logo...';
             var ref = window.storage.ref(path);
             return ref.put(processedFile).then(function(snapshot) {
                 return snapshot.ref.getDownloadURL();
@@ -214,7 +225,7 @@
         }).then(function(url) {
             $('bLogo').value = url;
             updateLogoPreview(url);
-            status.textContent = 'Logo subido correctamente';
+            status.textContent = 'Logo subido correctamente (WebP)';
             status.style.color = 'var(--admin-success)';
             setTimeout(function() { status.style.display = 'none'; status.style.color = ''; }, 3000);
         }).catch(function(err) {

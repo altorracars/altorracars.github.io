@@ -277,6 +277,36 @@ Botón 📋 en cada fila de la tabla de vehículos que abre un modal con timelin
 
 ---
 
+## Correcciones Post-Fase 2 (Pre-Fase 3)
+
+### Marcas — Logo upload solo vía Firebase
+
+**Problema:** El modal de marcas tenía un campo de texto para pegar URLs o rutas de repositorio (`multimedia/Logos/...`). Algunas marcas no mostraban logo al guardar.
+
+**Solución:**
+- Eliminado el input de texto para URL/ruta de repositorio
+- `bLogo` es ahora un `<input type="hidden">` que solo se llena al subir vía Firebase Storage
+- Logo ya no es campo `required` — se puede guardar marca sin logo
+- Path de storage cambiado a `brands/logo_TIMESTAMP_FILENAME` (antes usaba `cars/`)
+- Agregado botón "Eliminar logo" (rojo) visible cuando hay logo cargado
+- Preview se gestiona via `updateLogoPreview()` centralizada
+
+**Archivos:**
+- `admin.html` — Modal de marca simplificado (línea 1309)
+- `js/admin-brands.js` — Funciones updateLogoPreview, delete logo handler
+
+### Hatchback — Imagen de categoría reemplazada
+
+**Problema:** La imagen de categoría Hatchback aparecía rota en el sitio público.
+
+**Solución:**
+- Reemplazado `multimedia/categories/HATCHBACK.jpg` con imagen de VW Polo (hatchback clásico 5 puertas)
+- Dimensiones: 1200x800px, JPEG quality 85, ~157KB
+- Cache buster actualizado: `?v=20260325`
+- La imagen muestra claramente el perfil de carrocería hatchback
+
+---
+
 ## Fase 3 — Funcionalidad Avanzada ⏳
 
 ### Objetivos planificados

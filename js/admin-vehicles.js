@@ -327,9 +327,12 @@
     }
 
     function savePriorityToFirestore(vehicleId, priority) {
+        var vehicle = AP.vehicles.find(function(v) { return v.id === vehicleId; });
+        var currentVersion = vehicle ? (vehicle._version || 0) : 0;
         return window.db.collection('vehiculos').doc(String(vehicleId)).update({
             prioridad: priority,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            _version: currentVersion + 1
         });
     }
 
@@ -1399,6 +1402,7 @@
             if (count >= 6) { AP.toast('Maximo 6 vehiculos destacados en banner.', 'error'); return; }
         }
         var auditUser = getAuditUser();
+        var currentVersion = vehicle._version || 0;
         window.db.collection('vehiculos').doc(String(id)).update({
             destacado: newVal,
             featuredWeek: newVal,
@@ -1406,7 +1410,8 @@
             updatedBy: auditUser.email,
             lastModifiedBy: auditUser.email,
             lastModifiedByName: auditUser.name,
-            lastModifiedAt: new Date().toISOString()
+            lastModifiedAt: new Date().toISOString(),
+            _version: currentVersion + 1
         }).then(function() {
             AP.toast(newVal ? 'Vehiculo destacado (aparece en banner)' : 'Vehiculo quitado de destacados', 'success');
             AP.writeAuditLog('vehicle_feature_toggle', 'vehiculo #' + id, newVal ? 'destacado' : 'sin destacar');

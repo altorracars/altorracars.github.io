@@ -46,7 +46,8 @@
                     var canonical = !!v.destacado; // destacado manda
                     if (!!v.featuredWeek !== canonical) {
                         window.db.collection('vehiculos').doc(String(v.id)).update({
-                            featuredWeek: canonical
+                            featuredWeek: canonical,
+                            _version: (v._version || 0) + 1
                         }).catch(function() { /* sin permisos — ignorar */ });
                     }
                 });

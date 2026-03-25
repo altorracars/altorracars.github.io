@@ -120,6 +120,10 @@
             return str.charAt(0).toUpperCase() + str.slice(1);
         },
 
+        timeAgo: function(val) {
+            return AP.formatTimeAgo(val);
+        },
+
         formatTimeAgo: function(isoString) {
             try {
                 var date = new Date(isoString);

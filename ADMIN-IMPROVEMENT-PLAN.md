@@ -26,7 +26,10 @@ rendimiento, UX/responsive, funcionalidad, seguridad/auditoría y pulido visual.
 
 ## Fase 1 — Rendimiento + Código Limpio + Auditoría por Vehículo ✅
 
-**Commit:** `55b3cd5` — `feat(admin): Phase 1 — admin panel performance & audit trail`
+**Commits:**
+- `55b3cd5` — `feat(admin): Phase 1 — admin panel performance & audit trail`
+- `edbcaaf` — `fix(rules): add Firestore rules for vehicle auditLog subcollection`
+- *(post-review)* — `fix(admin): add _version increment to all vehicle updates`
 
 **Archivos modificados:**
 - `admin.html` — 342 líneas cambiadas
@@ -34,6 +37,24 @@ rendimiento, UX/responsive, funcionalidad, seguridad/auditoría y pulido visual.
 - `js/admin-vehicles.js` — 110 líneas añadidas
 - `js/admin-operations.js` — 14 líneas añadidas
 - `js/admin-state.js` — 4 líneas añadidas
+- `firestore.rules` — 11 líneas añadidas (regla para subcollection auditLog)
+- `js/admin-sync.js` — 1 línea corregida (_version en sync featuredWeek)
+
+### Despliegues requeridos tras Fase 1
+
+```powershell
+firebase deploy --only firestore:rules   # ✅ Desplegado 2026-03-25
+```
+
+### Bugs encontrados y corregidos post-commit
+
+| Bug | Archivo | Impacto | Fix |
+|-----|---------|---------|-----|
+| `AP.timeAgo()` no existía | admin-state.js | Tabla de vehículos mostraría error JS | Agregado alias `timeAgo → formatTimeAgo` |
+| Firestore rules sin match para `vehiculos/{id}/auditLog` | firestore.rules | Audit log silenciosamente bloqueado por `deny all` | Agregada regla `match /auditLog/{logId}` |
+| `toggleDestacadoFn` sin `_version` | admin-vehicles.js | Toggle falla con `permission-denied` para editores | Agregado `_version: currentVersion + 1` |
+| `savePriorityToFirestore` sin `_version` | admin-vehicles.js | Reorder falla con `permission-denied` para editores | Agregado `_version: currentVersion + 1` |
+| `admin-sync.js` featuredWeek sin `_version` | admin-sync.js | Sync falla silenciosamente para editores | Agregado `_version: (v._version \|\| 0) + 1` |
 
 ### F1.1 — Scripts con `defer` (13 scripts)
 

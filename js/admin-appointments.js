@@ -23,6 +23,7 @@
     var appointmentFilterEl = $('appointmentFilter');
     if (appointmentFilterEl) {
         appointmentFilterEl.addEventListener('change', function() {
+            if (AP._pagination) AP._pagination.appointments.page = 1;
             renderAppointmentsTable();
         });
     }
@@ -33,12 +34,21 @@
         if (!body) return;
         var filterEl = $('appointmentFilter');
         var filter = filterEl ? filterEl.value : 'all';
-        var filtered = filter === 'all' ? AP.appointments : AP.appointments.filter(function(a) { return a.estado === filter; });
+        var filtered = filter === 'all' ? AP.appointments.slice() : AP.appointments.filter(function(a) { return a.estado === filter; });
+
+        if (AP._sorting && AP._sorting.appointments && AP._sorting.appointments.col) {
+            filtered = AP.sortData(filtered, 'appointments');
+        }
+
+        var totalFiltered = filtered.length;
 
         if (filtered.length === 0) {
-            body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay citas ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
+            body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay citas ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
+            if (AP.renderPagination) AP.renderPagination('appointmentsPagination', 'appointments', 0);
             return;
         }
+
+        if (AP.paginate) filtered = AP.paginate(filtered, 'appointments');
 
         body.innerHTML = filtered.map(function(a) {
             var estadoColors = {
@@ -82,6 +92,14 @@
                 '</td>' +
             '</tr>';
         }).join('');
+
+        document.querySelectorAll('#appointmentsTable th[data-sort]').forEach(function(th) {
+            var col = th.getAttribute('data-sort');
+            var text = th.textContent.replace(/[↑↓⇅]/g, '').trim();
+            th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('appointments', col) : '');
+        });
+
+        if (AP.renderPagination) AP.renderPagination('appointmentsPagination', 'appointments', totalFiltered);
     }
 
     // ========== DELETE APPOINTMENT ==========

@@ -100,18 +100,26 @@
         if (filter) {
             var q = filter.toLowerCase();
             filtered = AP.vehicles.filter(function(v) {
-                return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '')).toLowerCase().indexOf(q) >= 0;
+                return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '') + ' ' + (v.categoria || '') + ' ' + (v.color || '')).toLowerCase().indexOf(q) >= 0;
             });
         }
-        // In reorder mode sort by prioridad desc, otherwise by id
+        // In reorder mode sort by prioridad desc, otherwise by id or user sort
         if (_reorderMode) {
             filtered.sort(function(a, b) {
                 var pa = a.prioridad || 0, pb = b.prioridad || 0;
                 if (pa !== pb) return pb - pa;
                 return a.id - b.id;
             });
+        } else if (AP._sorting && AP._sorting.vehicles && AP._sorting.vehicles.col) {
+            filtered = AP.sortData(filtered, 'vehicles');
         } else {
             filtered.sort(function(a, b) { return a.id - b.id; });
+        }
+
+        var totalFiltered = filtered.length;
+        // Apply pagination (skip in reorder mode)
+        if (!_reorderMode && AP.paginate) {
+            filtered = AP.paginate(filtered, 'vehicles');
         }
 
         var maxPrio = 1;
@@ -181,6 +189,22 @@
         });
         if (!html) html = '<tr><td colspan="' + colCount + '" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
         $('vehiclesTableBody').innerHTML = html;
+
+        // Update sort indicators in headers
+        document.querySelectorAll('#vehiclesTable th[data-sort]').forEach(function(th) {
+            var col = th.getAttribute('data-sort');
+            var text = th.textContent.replace(/[↑↓⇅]/g, '').trim();
+            th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('vehicles', col) : '');
+        });
+
+        // Render pagination
+        if (!_reorderMode && AP.renderPagination) {
+            AP.renderPagination('vehiclesPagination', 'vehicles', totalFiltered);
+        }
+
+        // Update vehicle count
+        var countEl = $('vehiclesCount');
+        if (countEl) countEl.textContent = totalFiltered + ' vehiculo' + (totalFiltered !== 1 ? 's' : '');
 
         if (_reorderMode) initTableDragDrop();
     }
@@ -337,7 +361,10 @@
         });
     }
 
-    $('vehicleSearch').addEventListener('input', function() { renderVehiclesTable(this.value); });
+    $('vehicleSearch').addEventListener('input', function() {
+        if (AP._pagination) AP._pagination.vehicles.page = 1;
+        renderVehiclesTable(this.value);
+    });
 
     // ========== VEHICLE MODAL ==========
     function openModal() {

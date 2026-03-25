@@ -8,12 +8,20 @@
     function renderUsersTable() {
         if (!AP.users.length) {
             $('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No hay usuarios registrados</td></tr>';
+            if (AP.renderPagination) AP.renderPagination('usersPagination', 'users', 0);
             return;
         }
 
+        var sorted = AP.users.slice();
+        if (AP._sorting && AP._sorting.users && AP._sorting.users.col) {
+            sorted = AP.sortData(sorted, 'users');
+        }
+        var totalUsers = sorted.length;
+        if (AP.paginate) sorted = AP.paginate(sorted, 'users');
+
         var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : '';
         var html = '';
-        AP.users.forEach(function(u) {
+        sorted.forEach(function(u) {
             var rolLabel = u.rol === 'super_admin' ? 'Super Admin' : u.rol === 'editor' ? 'Editor' : 'Viewer';
             var rolClass = u.rol === 'super_admin' ? 'badge-destacado' : u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
             var estadoClass = u.estado === 'activo' ? 'badge-nuevo' : 'badge-usado';
@@ -32,6 +40,14 @@
         });
 
         $('usersTableBody').innerHTML = html;
+
+        document.querySelectorAll('th[data-table="users"][data-sort]').forEach(function(th) {
+            var col = th.getAttribute('data-sort');
+            var text = th.textContent.replace(/[↑↓⇅]/g, '').trim();
+            th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('users', col) : '');
+        });
+
+        if (AP.renderPagination) AP.renderPagination('usersPagination', 'users', totalUsers);
     }
 
     // ========== USER MODAL ==========

@@ -1697,6 +1697,156 @@ tbody tr:hover {
     padding: 2rem;
 }
 
+/* ========== F3.1: PAGINATION ========== */
+.pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--admin-border);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.pagination-info {
+    font-size: 0.8rem;
+    color: var(--admin-text-muted);
+}
+.pagination-controls {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+.pagination-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+.pagination-active {
+    background: var(--admin-gold) !important;
+    color: #000 !important;
+    font-weight: 700;
+    border-color: var(--admin-gold) !important;
+}
+
+/* ========== F3.3: SORTABLE COLUMNS ========== */
+th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+th[data-sort]:hover {
+    color: var(--admin-gold);
+}
+.sort-icon {
+    margin-left: 4px;
+    font-size: 0.7rem;
+}
+.sort-inactive {
+    opacity: 0.3;
+}
+.sort-asc, .sort-desc {
+    color: var(--admin-gold);
+    opacity: 1;
+}
+
+/* ========== F3.4: EXPORT BUTTON ========== */
+.btn-export {
+    gap: 4px;
+    font-size: 0.8rem;
+}
+
+/* ========== F3.5: PASSWORD STRENGTH ========== */
+.password-strength-bar {
+    height: 4px;
+    background: var(--admin-border);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+.password-strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s, background 0.3s;
+}
+.strength-weak .password-strength-fill { width: 20%; background: var(--admin-danger); }
+.strength-fair .password-strength-fill { width: 40%; background: #f97316; }
+.strength-good .password-strength-fill { width: 60%; background: var(--admin-warning); }
+.strength-strong .password-strength-fill { width: 80%; background: #22c55e; }
+.strength-excellent .password-strength-fill { width: 100%; background: var(--admin-success); }
+
+.password-strength-label {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+.password-rules {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+}
+.password-rules li {
+    padding: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.password-rules li.rule-pass { color: var(--admin-success); }
+.password-rules li.rule-fail { color: var(--admin-text-muted); }
+.rule-icon { font-size: 0.65rem; }
+
+/* ========== F3.2: GLOBAL SEARCH ========== */
+.global-search-wrapper {
+    position: relative;
+}
+.global-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 360px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    display: none;
+}
+.global-search-results.active { display: block; }
+.search-result-group {
+    padding: 0.25rem 0;
+}
+.search-result-group-title {
+    padding: 0.5rem 1rem 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--admin-text-muted);
+}
+.search-result-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    transition: background 0.1s;
+}
+.search-result-item:hover { background: rgba(255,255,255,0.05); }
+.search-result-badge {
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
 /* ========== F2.1 + F2.6: ENHANCED RESPONSIVE — 480px ========== */
 @media (max-width: 480px) {
     .stats-grid { grid-template-columns: 1fr; }
@@ -1729,4 +1879,11 @@ tbody tr:hover {
 
     .audit-entry-header { flex-direction: column; align-items: flex-start; }
     .audit-change-item { flex-direction: column; gap: 2px; }
+
+    /* F3: Pagination responsive */
+    .pagination-bar { flex-direction: column; align-items: center; gap: 0.5rem; }
+    .pagination-btn { min-width: 28px; height: 28px; font-size: 0.75rem; }
+
+    /* F3: Hide desktop global search, show mobile */
+    #globalSearch { display: none; }
 }

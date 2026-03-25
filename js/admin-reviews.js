@@ -203,7 +203,7 @@
 
         promise.then(function() {
             AP.toast(docId ? 'Reseña actualizada' : 'Reseña creada', 'success');
-            AP.writeAuditLog(docId ? 'editar' : 'crear', 'resena', name);
+            AP.writeAuditLog(docId ? 'review_update' : 'review_create', 'resena ' + name, name);
             closeReviewModal();
         }).catch(function(err) {
             AP.toast('Error: ' + err.message, 'error');
@@ -236,7 +236,7 @@
 
         db.collection('resenas').doc(_deleteReviewId).delete().then(function() {
             AP.toast('Reseña eliminada', 'success');
-            AP.writeAuditLog('eliminar', 'resena', review ? review.name : _deleteReviewId);
+            AP.writeAuditLog('review_delete', 'resena ' + (review ? review.name : _deleteReviewId), '');
             $('reviewDeleteConfirm').classList.remove('active');
             _deleteReviewId = null;
         }).catch(function(err) {

@@ -209,6 +209,10 @@
             return;
         }
 
+        // F4.5: Get current version for optimistic locking
+        var existingBanner = isEdit ? AP.banners.find(function(b) { return b._docId === existingId; }) : null;
+        var currentVersion = existingBanner ? (existingBanner._version || 0) : 0;
+
         var bannerData = {
             title: title,
             subtitle: $('bannerSubtitle').value.trim(),
@@ -219,7 +223,8 @@
             cta: $('bannerCta').value.trim(),
             active: $('bannerActive').checked,
             updatedAt: new Date().toISOString(),
-            updatedBy: (window.auth && auth.currentUser) ? auth.currentUser.email : 'unknown'
+            updatedBy: (window.auth && auth.currentUser) ? auth.currentUser.email : 'unknown',
+            _version: isEdit ? currentVersion + 1 : 1
         };
 
         // Only update image if a new one was uploaded
@@ -292,7 +297,8 @@
 
         db.collection('banners').doc(docId).update({
             active: !banner.active,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            _version: (banner._version || 0) + 1
         }).then(function() {
             AP.toast(banner.active ? 'Banner desactivado' : 'Banner activado');
         }).catch(function(err) {

@@ -19,7 +19,7 @@ rendimiento, UX/responsive, funcionalidad, seguridad/auditoría y pulido visual.
 | **1** | Rendimiento + Código Limpio + Auditoría por Vehículo | ✅ Completada |
 | **2** | UX, Responsive + Visualización de Autoría | ✅ Completada |
 | **3** | Funcionalidad Avanzada | ✅ Completada |
-| **4** | Auditoría Completa + Seguridad | ⏳ Pendiente |
+| **4** | Auditoría Completa + Seguridad | ✅ Completada |
 | **5** | Pulido Visual + Extras | ⏳ Pendiente |
 
 ---
@@ -463,17 +463,152 @@ Cache en localStorage con cola de escritura offline.
 
 ---
 
-## Fase 4 — Auditoría Completa + Seguridad ⏳
+## Correcciones Post-Fase 3
 
-### Objetivos planificados
+### Compresión automática WebP en todas las subidas de imágenes
 
-| ID | Tarea | Descripción |
-|----|-------|-------------|
-| F4.1 | Panel global de auditoría | Sección dedicada con filtros por usuario, acción, fecha |
-| F4.2 | Audit log para todas las entidades | Extender auditoría a marcas, usuarios, citas, banners |
-| F4.3 | Cifrado de datos sensibles | Encriptar campos críticos en Firestore |
-| F4.4 | Content Security Policy | Headers CSP para prevenir XSS |
-| F4.5 | Optimistic locking | Campo `_version` con transacciones para evitar conflictos |
+**Problema:** Las imágenes subidas desde el panel de admin se almacenaban en su formato original (JPG, PNG) sin optimización, consumiendo espacio innecesario en Firebase Storage y aumentando tiempos de carga.
+
+**Solución:** Se unificó toda la compresión de imágenes en `AP.compressImage()` (admin-state.js) con opciones contextuales por tipo de upload:
+
+| Tipo de Upload | Archivo | Max Width | Calidad | Formato Final |
+|---|---|---|---|---|
+| **Logos de marcas** | admin-brands.js | 512px | 0.90 | `.webp` |
+| **Fotos de vehículos** | admin-vehicles.js | 1200px | 0.75 | `.webp` |
+| **Banners/Hero** | admin-banners.js | 1920px | 0.85 | `.webp` |
+
+**Excepciones intencionales:**
+- **SVG logos:** Se suben sin compresión (formato vectorial, no aplica conversión a raster)
+- **Cutout PNG:** Se preserva como PNG (necesita canal alfa para transparencia del recorte)
+
+**Detalles técnicos:**
+- Compresión vía Canvas API → `toBlob('image/webp', quality)`
+- Fallback a JPEG si el navegador no soporta WebP
+- Eliminada función duplicada `compressBannerImage()` de admin-banners.js (~47 líneas)
+- `AP.compressImage(file, opts)` acepta: `maxWidth`, `quality`, `forceWebp`
+
+**Commit:** `e35869e` — `feat(admin): auto-compress all uploads to WebP with contextual quality`
+
+---
+
+## Fase 4 — Auditoría Completa + Seguridad ✅
+
+**Archivos creados/modificados:**
+- `admin.html` — ~80 líneas (sección auditoría, nav item, meta tags CSP)
+- `js/admin-activity.js` — Reescrito completo (~310 líneas): dashboard feed + panel de auditoría con filtros
+- `js/admin-table-utils.js` — ~5 líneas (paginación y sorting para tabla audit)
+- `js/admin-users.js` — ~3 líneas (audit log para CRUD usuarios)
+- `js/admin-reviews.js` — ~2 líneas (normalización de nombres de acción)
+- `js/admin-brands.js` — ~8 líneas (_version optimistic locking)
+- `js/admin-banners.js` — ~8 líneas (_version optimistic locking)
+- `css/admin.css` — ~45 líneas (estilos panel auditoría)
+- `firestore.rules` — Refactorizado: funciones validVersion(), isReasonableSize(), reglas endurecidas
+
+### F4.1 — Panel Global de Auditoría
+
+Nueva sección "Auditoría" en el panel de administración con:
+
+**Filtros:**
+- **Busqueda de texto** — filtra por usuario, acción, objetivo o detalles (debounce 250ms)
+- **Filtro por usuario** — dropdown que se auto-popula con los usuarios del audit log
+- **Filtro por acción** — 23 tipos de acción disponibles en dropdown
+- **Rango de fechas** — campos "Desde" y "Hasta" con date picker
+- **Botón "Limpiar filtros"** — resetea todos los filtros
+
+**Tabla de resultados:**
+- Columnas: Fecha, Usuario, Acción, Objetivo, Detalles
+- Paginación: 50 registros por página
+- Ordenamiento por columnas (fecha, usuario, acción)
+- Badges de color por categoría de acción
+- Exportar CSV con filtros aplicados
+
+**Categorías de acción con colores:**
+
+| Categoría | Color | Acciones |
+|-----------|-------|----------|
+| Vehículos | Azul (#58a6ff) | create, update, delete, sold, featured, reorder |
+| Marcas | Dorado (#d4af37) | create, update, delete |
+| Banners | Púrpura (#a371f7) | create, update, delete |
+| Citas | Verde (#3fb950) | confirmada, cancelada, delete, create_internal |
+| Usuarios | Rojo (#f85149) | create, update, delete |
+| Reseñas | Amarillo (#ffc837) | create, update, delete |
+| Aliados | Dorado (#d4af37) | create, update |
+| Sistema | Gris (#8b949e) | login, backup, sitemap, seo, lists |
+
+**Navegación:** Nuevo botón "Auditoría" en sidebar bajo sección "Sistema" con badge de conteo.
+
+### F4.2 — Audit Log para Todas las Entidades
+
+Completada la cobertura de audit log para entidades faltantes:
+
+| Entidad | Acciones Auditadas | Archivo |
+|---------|-------------------|---------|
+| **Usuarios** | `user_create`, `user_update`, `user_delete` | admin-users.js |
+| **Reseñas** | `review_create`, `review_update`, `review_delete` | admin-reviews.js (normalizado) |
+| Vehículos | Ya cubierto (Fase 1) | admin-vehicles.js |
+| Marcas | Ya cubierto | admin-brands.js |
+| Banners | Ya cubierto | admin-banners.js |
+| Citas | Ya cubierto | admin-appointments.js |
+| Aliados | Ya cubierto | admin-dealers.js |
+| Sistema | Ya cubierto | admin-operations.js |
+
+**Normalización:** Las reseñas usaban nombres genéricos (`crear`, `editar`, `eliminar`). Ahora usan el patrón estándar `review_create`, `review_update`, `review_delete`.
+
+### F4.3 — Endurecimiento de Firestore Security Rules
+
+**Mejoras aplicadas:**
+
+| Regla | Descripción |
+|-------|-------------|
+| `isReasonableSize()` | Límite de 1MB por documento para prevenir abuso |
+| Audit log inmutable | `auditLog` no permite `update`, solo `create` y `delete` (super_admin) |
+| Citas: delete solo super_admin | Cambio de `isEditorOrAbove()` a `isSuperAdmin()` para delete |
+| Funciones reutilizables | `validVersion()` y `validCreateVersion()` extraídas como helpers |
+
+**Headers de seguridad (meta tags):**
+```html
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+```
+
+> **Nota sobre CSP:** GitHub Pages no permite headers HTTP custom. Los meta tags CSP son limitados para este stack ya que Firebase SDK requiere `eval()` y CDN scripts dinámicos. Se aplican las protecciones compatibles sin romper funcionalidad.
+
+### F4.4 — Content Security Policy
+
+Aplicada via meta tags en `admin.html`:
+- `X-Content-Type-Options: nosniff` — Previene MIME sniffing
+- `Referrer-Policy: strict-origin-when-cross-origin` — Limita información enviada en referer
+
+La protección XSS principal se mantiene via `AP.escapeHtml()` en todo el rendering dinámico del panel.
+
+### F4.5 — Optimistic Locking (_version) Extendido
+
+`_version` ahora se aplica a todas las colecciones editables:
+
+| Colección | Create | Update | Delete | Archivo |
+|-----------|--------|--------|--------|---------|
+| `vehiculos` | `_version: 1` | `_version + 1` | — | admin-vehicles.js (ya existía) |
+| `marcas` | `_version: 1` | `_version + 1` | — | admin-brands.js (nuevo) |
+| `banners` | `_version: 1` | `_version + 1` | — | admin-banners.js (nuevo) |
+
+**Reglas Firestore:**
+```javascript
+function validVersion() {
+  return request.resource.data._version == resource.data._version + 1
+      || (resource.data._version == null && request.resource.data._version == 1);
+}
+```
+
+- Vehículos, marcas y banners requieren `_version` increment en updates (excepto super_admin)
+- Documentos sin `_version` (pre-existentes) se migran automáticamente con `null → 1`
+- Super admin puede hacer bypass del version check para edge cases
+
+### Despliegues requeridos tras Fase 4
+
+```powershell
+firebase deploy --only firestore:rules   # Reglas endurecidas + _version para marcas/banners
+firebase deploy --only storage           # Si no se deployó en Fase 3
+```
 
 ---
 

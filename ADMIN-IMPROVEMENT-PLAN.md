@@ -1,7 +1,7 @@
 # Plan de Mejora del Panel de Administración — Altorra Cars
 
 > Documento de seguimiento de fases, cambios aplicados y pendientes.
-> Última actualización: 2026-03-25 (Fase 3 completada)
+> Última actualización: 2026-03-25 (Fase 5 completada — Plan completo ✅)
 
 ---
 
@@ -20,7 +20,7 @@ rendimiento, UX/responsive, funcionalidad, seguridad/auditoría y pulido visual.
 | **2** | UX, Responsive + Visualización de Autoría | ✅ Completada |
 | **3** | Funcionalidad Avanzada | ✅ Completada |
 | **4** | Auditoría Completa + Seguridad | ✅ Completada |
-| **5** | Pulido Visual + Extras | ⏳ Pendiente |
+| **5** | Pulido Visual + Extras | ✅ Completada |
 
 ---
 
@@ -612,17 +612,115 @@ firebase deploy --only storage           # Si no se deployó en Fase 3
 
 ---
 
-## Fase 5 — Pulido Visual + Extras ⏳
+## Fase 5 — Pulido Visual + Extras ✅
 
-### Objetivos planificados
+**Archivos creados:**
+- `js/admin-phase5.js` — ~280 líneas (charts, theme toggle, wizard modal, notificaciones)
 
-| ID | Tarea | Descripción |
-|----|-------|-------------|
-| F5.1 | Micro-animaciones | Transiciones sutiles en botones, cards, modales |
-| F5.2 | Gráficos/Charts | Estadísticas visuales (ventas, inventario, tendencias) |
-| F5.3 | Toggle dark/light | Alternar entre tema oscuro y claro |
-| F5.4 | Push notifications | Alertas en tiempo real para eventos importantes |
-| F5.5 | Wizard modal | Formulario paso a paso para crear vehículos |
+**Archivos modificados:**
+- `admin.html` — ~50 líneas (chart containers, theme toggle, wizard steps, wizard nav)
+- `css/admin.css` — ~180 líneas (micro-animaciones, light mode, charts, wizard)
+
+### F5.1 — Micro-animaciones
+
+Transiciones sutiles añadidas a todo el panel:
+
+| Elemento | Animación | Duración |
+|----------|-----------|----------|
+| **Botones** | Lift + shadow en hover, scale down en active | 0.15-0.2s |
+| **Stat cards** | Lift (-2px) + shadow + border dorado en hover | 0.2s |
+| **Modal** | Slide-in + scale desde arriba | 0.25s (`modalSlideIn`) |
+| **Nav items** | Padding-left expand + fondo sutil en hover | 0.2s |
+| **Nav active** | Barra dorada lateral (3px) | — |
+| **Nav badges** | Pulso de sombra dorada | 2s loop (`badgePulse`) |
+| **Form inputs** | Glow dorado sutil en focus | 0.2s |
+| **Table containers** | Fade-in + slide-up al renderizar | 0.3s (`fadeInUp`) |
+| **Activity items** | Padding-left expand + fondo sutil en hover | 0.15-0.2s |
+| **Upload area** | Border dorado + fondo sutil en hover | 0.2s |
+| **Colores por tipo** | Shadow dorado, rojo, verde en botones primary/danger/success | 0.2s |
+
+### F5.2 — Gráficos/Charts en Dashboard
+
+4 gráficos visuales en el dashboard, **sin dependencias externas** (CSS puro + JS):
+
+| Gráfico | Tipo | Datos |
+|---------|------|-------|
+| **Inventario por Tipo** | Donut (conic-gradient) | Nuevos vs Usados con % |
+| **Vehículos por Categoría** | Barras horizontales | Top 8 categorías con colores |
+| **Estado del Inventario** | Donut (conic-gradient) | Disponible/Vendido/Reservado/Borrador |
+| **Actividad 7 días** | Barras diarias | Acciones del audit log por día |
+
+**Implementación técnica:**
+- Donut charts via `conic-gradient` CSS (sin canvas/SVG)
+- Bar charts via `div.mini-bar` con altura porcentual
+- Auto-actualización en cada `renderActivityFeed()`
+- Tooltips nativos con `title` attribute
+- Responsive: 1 columna en mobile
+
+### F5.3 — Toggle Dark/Light Mode
+
+Selector de tema claro/oscuro con persistencia.
+
+**Variables Light Mode:**
+```css
+:root.light-mode {
+    --admin-bg: #f5f6f8;
+    --admin-surface: #ffffff;
+    --admin-border: #d0d7de;
+    --admin-text: #1f2328;
+    --admin-text-muted: #636c76;
+    --admin-gold: #b8860b;
+    --admin-gold-dark: #996515;
+    ...
+}
+```
+
+**Funcionamiento:**
+- Botón circular en el header del dashboard (🌙/☀️)
+- Toggle clase `light-mode` en `<html>`
+- Persistencia via `localStorage('altorra_admin_theme')`
+- Overrides para sidebar, modales, tablas, formularios, badges, paginación, topbar
+- Carga instantánea al inicio (sin flash de tema incorrecto)
+
+### F5.4 — Notificaciones en Tiempo Real
+
+Sistema de alertas para acciones de otros usuarios.
+
+**Funcionamiento:**
+- Hook en `renderActivityFeed()` detecta nuevas entradas
+- Compara conteo actual vs previo del audit log
+- Solo notifica acciones de **otros usuarios** (no las propias)
+- Usa `AP.toast()` con tipo `info` para mostrar la notificación
+- Formato: "[usuario] [acción] — [objetivo]"
+
+**Ejemplo:** Si otro admin agrega un vehículo, aparece:
+> "juan actualizó vehiculo — Toyota Corolla 2024"
+
+### F5.5 — Wizard Modal para Vehículos
+
+Formulario paso a paso al crear nuevos vehículos.
+
+**6 pasos del wizard:**
+
+| Paso | Sección | Campos |
+|------|---------|--------|
+| 1 | Básica | Marca, Modelo, Año, Tipo, Categoría, Descripción |
+| 2 | Precio | Precio, Oferta, Kilometraje, Estado, Ubicación |
+| 3 | Specs | Transmisión, Combustible, Motor, Color, Puertas, etc. |
+| 4 | Estado | Destacado, Banner, Cutout, Opciones de publicación |
+| 5 | Fotos | Subida de imágenes, galería |
+| 6 | Extras | Features/Características del vehículo |
+
+**UI:**
+- Barra de progreso con círculos numerados y conectores
+- Pasos completados en verde con checkmark
+- Paso activo en dorado
+- Botones "← Anterior" y "Siguiente →"
+- Texto "Paso X de 6"
+- Validación de campos requeridos antes de avanzar
+- Animación slide-in al cambiar de paso (`wizardSlideIn`)
+- En modo **edición**: todos los pasos visibles (sin restricción de wizard)
+- Al cerrar modal: restaura visibilidad de todas las secciones
 
 ---
 

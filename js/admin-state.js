@@ -175,9 +175,24 @@
             return map[code] || serverMsg || 'Error desconocido: ' + (err.message || err.code || 'sin detalles');
         },
 
-        compressImage: function(file) {
+        /**
+         * Compress and convert image to WebP.
+         * @param {File} file - The image file to process
+         * @param {Object} [opts] - Optional overrides
+         * @param {number} [opts.maxWidth]  - Max width in px (default: UPLOAD_CONFIG.maxWidthPx = 1200)
+         * @param {number} [opts.quality]   - WebP quality 0-1 (default: UPLOAD_CONFIG.compressionQuality = 0.75)
+         * @param {boolean} [opts.forceWebp] - Always convert even if already webp (default: true)
+         * @returns {Promise<File>}
+         */
+        compressImage: function(file, opts) {
+            opts = opts || {};
+            var maxW = opts.maxWidth || AP.UPLOAD_CONFIG.maxWidthPx;
+            var quality = opts.quality != null ? opts.quality : AP.UPLOAD_CONFIG.compressionQuality;
+            var forceWebp = opts.forceWebp !== false;
+
             return new Promise(function(resolve, reject) {
-                if (file.size <= 200 * 1024 && file.type === 'image/webp') {
+                // Skip only if already webp, small, and not forced
+                if (!forceWebp && file.size <= 200 * 1024 && file.type === 'image/webp') {
                     resolve(file);
                     return;
                 }
@@ -188,7 +203,6 @@
 
                 reader.onload = function(e) {
                     img.onload = function() {
-                        var maxW = AP.UPLOAD_CONFIG.maxWidthPx;
                         var w = img.width;
                         var h = img.height;
 
@@ -204,18 +218,18 @@
                         ctx.drawImage(img, 0, 0, w, h);
 
                         var outputType = 'image/webp';
-                        var quality = AP.UPLOAD_CONFIG.compressionQuality;
 
                         canvas.toBlob(function(blob) {
                             if (!blob) {
+                                // WebP not supported — fallback to JPEG
                                 canvas.toBlob(function(jpegBlob) {
                                     if (!jpegBlob) { resolve(file); return; }
-                                    var name = file.name.replace(/\.[^.]+$/, '') + '_compressed.jpg';
+                                    var name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
                                     resolve(new File([jpegBlob], name, { type: 'image/jpeg' }));
                                 }, 'image/jpeg', quality);
                                 return;
                             }
-                            var name = file.name.replace(/\.[^.]+$/, '') + '_compressed.webp';
+                            var name = file.name.replace(/\.[^.]+$/, '') + '.webp';
                             resolve(new File([blob], name, { type: outputType }));
                         }, outputType, quality);
                     };

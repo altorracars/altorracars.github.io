@@ -1061,7 +1061,7 @@
         $('uploadError').style.display = 'none';
         var total = fileArray.length, done = 0, errors = 0;
         $('uploadProgress').style.display = 'block';
-        $('uploadStatus').textContent = 'Comprimiendo y subiendo 0 de ' + total + '...';
+        $('uploadStatus').textContent = 'Comprimiendo a WebP y subiendo 0 de ' + total + '...';
         $('progressFill').style.width = '0%';
         fileArray.forEach(function(file) {
             AP.compressImage(file).then(function(compressed) { return uploadFileToStorage(compressed); })
@@ -1086,8 +1086,9 @@
         return new Promise(function(resolve) {
             if (!window.storage) { resolve(false); return; }
             var timestamp = Date.now();
-            var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-            var path = AP.UPLOAD_CONFIG.storagePath + timestamp + '_' + safeName;
+            var baseName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.[^.]+$/, '');
+            var ext = (file.type === 'image/webp') ? 'webp' : (file.type === 'image/jpeg' ? 'jpg' : 'webp');
+            var path = AP.UPLOAD_CONFIG.storagePath + timestamp + '_' + baseName + '.' + ext;
             try {
                 var ref = window.storage.ref(path);
                 ref.put(file).then(function(snapshot) { return snapshot.ref.getDownloadURL(); })

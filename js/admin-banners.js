@@ -152,11 +152,11 @@
         if (file.size > 10 * 1024 * 1024) { AP.toast('Imagen demasiado grande (max 10MB)', 'error'); return; }
 
         $('bannerUploadProgress').style.display = 'block';
-        $('bannerUploadStatus').textContent = 'Comprimiendo...';
+        $('bannerUploadStatus').textContent = 'Comprimiendo a WebP...';
         $('bannerProgressFill').style.width = '20%';
 
-        // Compress to WebP with higher quality for banners (large display)
-        compressBannerImage(file).then(function(compressed) {
+        // Compress to WebP: 1920px max, 0.85 quality (higher for banners displayed full-width)
+        AP.compressImage(file, { maxWidth: 1920, quality: 0.85 }).then(function(compressed) {
             $('bannerUploadStatus').textContent = 'Subiendo...';
             $('bannerProgressFill').style.width = '50%';
 
@@ -185,53 +185,7 @@
         });
     }
 
-    function compressBannerImage(file) {
-        return new Promise(function(resolve, reject) {
-            // Skip compression for small WebP files
-            if (file.size <= 300 * 1024 && file.type === 'image/webp') {
-                resolve(file);
-                return;
-            }
-
-            var img = new Image();
-            var canvas = document.createElement('canvas');
-            var reader = new FileReader();
-
-            reader.onload = function(e) {
-                img.onload = function() {
-                    var maxW = 1920; // Banners need higher resolution
-                    var w = img.width;
-                    var h = img.height;
-
-                    if (w > maxW) {
-                        h = Math.round(h * (maxW / w));
-                        w = maxW;
-                    }
-
-                    canvas.width = w;
-                    canvas.height = h;
-
-                    var ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-
-                    canvas.toBlob(function(blob) {
-                        if (!blob) {
-                            canvas.toBlob(function(jpegBlob) {
-                                if (!jpegBlob) { resolve(file); return; }
-                                resolve(new File([jpegBlob], 'banner.jpg', { type: 'image/jpeg' }));
-                            }, 'image/jpeg', 0.85);
-                            return;
-                        }
-                        resolve(new File([blob], 'banner.webp', { type: 'image/webp' }));
-                    }, 'image/webp', 0.85); // Higher quality for banners
-                };
-                img.onerror = function() { reject(new Error('No se pudo leer la imagen')); };
-                img.src = e.target.result;
-            };
-            reader.onerror = function() { reject(new Error('No se pudo leer el archivo')); };
-            reader.readAsDataURL(file);
-        });
-    }
+    // compressBannerImage removed — now uses AP.compressImage({ maxWidth: 1920, quality: 0.85 })
 
     function removeBannerImage() {
         AP.bannerUploadedUrl = '';

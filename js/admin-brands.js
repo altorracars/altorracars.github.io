@@ -6,8 +6,17 @@
 
     // ========== BRANDS TABLE ==========
     function renderBrandsTable() {
+        var sorted = AP.brands.slice();
+        if (AP._sorting && AP._sorting.brands && AP._sorting.brands.col) {
+            sorted = AP.sortData(sorted, 'brands');
+        } else {
+            sorted.sort(function(a, b) { return a.nombre.localeCompare(b.nombre); });
+        }
+        var totalBrands = sorted.length;
+        if (AP.paginate) sorted = AP.paginate(sorted, 'brands');
+
         var html = '';
-        AP.brands.forEach(function(b) {
+        sorted.forEach(function(b) {
             var count = AP.vehicles.filter(function(v) { return v.marca === b.id; }).length;
 
             var actions = '';
@@ -31,6 +40,15 @@
 
         if (!html) html = '<tr><td colspan="6" style="text-align:center; padding:2rem;">No hay marcas</td></tr>';
         $('brandsTableBody').innerHTML = html;
+
+        // Sort indicators
+        document.querySelectorAll('th[data-table="brands"][data-sort]').forEach(function(th) {
+            var col = th.getAttribute('data-sort');
+            var text = th.textContent.replace(/[↑↓⇅]/g, '').trim();
+            th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('brands', col) : '');
+        });
+
+        if (AP.renderPagination) AP.renderPagination('brandsPagination', 'brands', totalBrands);
     }
 
     // ========== BRAND MODAL ==========

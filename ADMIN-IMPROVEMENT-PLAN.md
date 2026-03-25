@@ -1,7 +1,7 @@
 # Plan de Mejora del Panel de Administración — Altorra Cars
 
 > Documento de seguimiento de fases, cambios aplicados y pendientes.
-> Última actualización: 2026-03-25 (Fase 2 completada)
+> Última actualización: 2026-03-25 (Fase 3 completada)
 
 ---
 
@@ -18,7 +18,7 @@ rendimiento, UX/responsive, funcionalidad, seguridad/auditoría y pulido visual.
 |------|-------------|--------|
 | **1** | Rendimiento + Código Limpio + Auditoría por Vehículo | ✅ Completada |
 | **2** | UX, Responsive + Visualización de Autoría | ✅ Completada |
-| **3** | Funcionalidad Avanzada | ⏳ Pendiente |
+| **3** | Funcionalidad Avanzada | ✅ Completada |
 | **4** | Auditoría Completa + Seguridad | ⏳ Pendiente |
 | **5** | Pulido Visual + Extras | ⏳ Pendiente |
 
@@ -305,20 +305,161 @@ Botón 📋 en cada fila de la tabla de vehículos que abre un modal con timelin
 - Cache buster actualizado: `?v=20260325`
 - La imagen muestra claramente el perfil de carrocería hatchback
 
+### Merge conflict — HATCHBACK.jpg
+
+**Problema:** Al fusionar main con la rama de desarrollo, surgió conflicto en `multimedia/categories/HATCHBACK.jpg` (eliminado en main, modificado en nuestra rama).
+
+**Resolución:** Se mantuvo nuestra versión (VW Polo) ya que la imagen es necesaria para la categoría.
+
+**Commit:** `6cdaea2` — `merge: resolve HATCHBACK.jpg conflict — keep updated image`
+
 ---
 
-## Fase 3 — Funcionalidad Avanzada ⏳
+## Fase 3 — Funcionalidad Avanzada ✅
 
-### Objetivos planificados
+**Archivos creados:**
+- `js/admin-table-utils.js` — ~400 líneas (módulo nuevo: paginación, sorting, CSV, búsqueda global, password validation, offline cache)
 
-| ID | Tarea | Descripción |
-|----|-------|-------------|
-| F3.1 | Paginación de tablas | Paginación client-side para vehículos, marcas, usuarios |
-| F3.2 | Búsqueda global | Input de búsqueda que filtra en todas las entidades |
-| F3.3 | Ordenamiento por columnas | Click en headers de tabla para ordenar asc/desc |
-| F3.4 | Exportar CSV | Botón para descargar datos de vehículos en CSV |
-| F3.5 | Validación de contraseñas | Requisitos de seguridad en cambio de contraseña |
-| F3.6 | Modo offline | Cache local con sincronización al reconectar |
+**Archivos modificados:**
+- `admin.html` — ~35 líneas (pagination containers, sortable headers, CSV buttons, global search, password strength UI)
+- `css/admin.css` — ~140 líneas (pagination bar, sort icons, password strength, global search dropdown, responsive)
+- `js/admin-vehicles.js` — ~20 líneas (integración paginación + sorting + sort indicators)
+- `js/admin-brands.js` — ~15 líneas (integración paginación + sorting)
+- `js/admin-users.js` — ~15 líneas (integración paginación + sorting)
+- `js/admin-appointments.js` — ~20 líneas (integración paginación + sorting)
+- `js/admin-sync.js` — ~5 líneas (auto-cache, offline loading)
+
+### F3.1 — Paginación client-side de tablas
+
+Paginación integrada en 4 tablas principales con controles reutilizables:
+
+| Tabla | Page Size | Container ID |
+|-------|-----------|-------------|
+| Vehículos | 15 | `vehiclesPagination` |
+| Marcas | 20 | `brandsPagination` |
+| Usuarios | 20 | `usersPagination` |
+| Citas | 15 | `appointmentsPagination` |
+
+**Funcionalidades:**
+- Controles: Primera, Anterior, Números de página (max 5), Siguiente, Última
+- Info: "Mostrando X-Y de Z"
+- Auto-reset a página 1 al buscar, filtrar u ordenar
+- Se desactiva en modo reordenar (vehículos)
+- Botón activo con color dorado (admin-gold)
+
+**API:**
+- `AP.paginate(array, tableKey)` — devuelve slice paginado
+- `AP.setPage(tableKey, page)` — navega y re-renderiza
+- `AP.renderPagination(containerId, tableKey, totalItems)` — dibuja controles
+- `AP.getTotalPages(totalItems, tableKey)` — calcula total de páginas
+
+### F3.2 — Búsqueda global con filtrado
+
+Dos inputs de búsqueda: uno en el dashboard (escritorio) y otro en el topbar móvil.
+
+**Comportamiento:**
+- Busca en vehículos (marca, modelo, año, código, categoría), marcas (nombre, id), y citas (nombre, vehículo, email)
+- Debounce 200ms
+- Mínimo 2 caracteres para activar
+- Resultados agrupados por entidad con badges de estado
+- Click navega a la sección correspondiente y filtra
+- Se cierra al perder foco
+
+**Estructura dropdown:**
+- Vehículos: max 5 resultados con badge de estado
+- Marcas: max 3 resultados con ID
+- Citas: max 3 resultados con fecha
+
+### F3.3 — Ordenamiento por columnas
+
+Headers de tabla clickeables con indicadores visuales de dirección.
+
+**Columnas ordenables:**
+
+| Tabla | Columnas |
+|-------|----------|
+| Vehículos | Código, Vehículo (marca), Tipo, Precio, Estado |
+| Marcas | ID, Nombre |
+| Usuarios | Nombre, Email, Rol |
+| Citas | Cliente, Vehículo, Fecha, Estado |
+
+**Comportamiento:**
+- Click alterna: sin orden → ascendente → descendente
+- Indicador visual: ⇅ (inactivo), ↑ (asc), ↓ (desc)
+- Color dorado en header activo
+- Sorting se desactiva en modo reordenar (vehículos)
+- Ordena con `localeCompare` con opción `numeric: true`
+
+### F3.4 — Exportar CSV
+
+Botones de exportación en vehículos y citas.
+
+**Vehículos CSV (20 columnas):**
+```
+Codigo, Marca, Modelo, Ano, Tipo, Categoria, Precio, Precio Oferta,
+Estado, Kilometraje, Transmision, Combustible, Motor, Color, Destacado,
+Origen, Creado Por, Fecha Creacion, Modificado Por, Fecha Modificacion
+```
+
+**Citas CSV (9 columnas):**
+```
+Cliente, WhatsApp, Email, Vehiculo, Fecha, Hora, Estado, Tipo, Observaciones
+```
+
+**Detalles técnicos:**
+- UTF-8 BOM para compatibilidad con Excel
+- Escape de comillas y comas en valores
+- Nombre de archivo: `vehiculos_altorra_YYYY-MM-DD.csv` / `citas_altorra_YYYY-MM-DD.csv`
+- Toast de confirmación al exportar
+
+### F3.5 — Validación de contraseñas
+
+Validación en tiempo real al cambiar contraseña con indicador de fortaleza.
+
+**Requisitos:**
+- Mínimo 8 caracteres (antes eran 6)
+- Al menos una mayúscula
+- Al menos una minúscula
+- Al menos un número
+- Al menos un carácter especial (!@#$%...)
+
+**UI:**
+- Barra de fortaleza animada (5 niveles: muy débil → muy fuerte)
+- Colores: rojo → naranja → amarillo → verde → verde brillante
+- Lista de reglas con check marks en tiempo real (✓/○)
+- Botón de submit deshabilitado hasta cumplir todos los requisitos
+
+**Niveles de fortaleza:**
+| Score | Label | Color |
+|-------|-------|-------|
+| 1 | Muy débil | Rojo |
+| 2 | Débil | Naranja |
+| 3 | Aceptable | Amarillo |
+| 4 | Fuerte | Verde |
+| 5 | Muy fuerte | Verde brillante |
+
+### F3.6 — Modo offline con cache local
+
+Cache en localStorage con cola de escritura offline.
+
+**Cache de lectura:**
+- Auto-guarda datos al cargar exitosamente (vehículos, marcas, citas, aliados)
+- TTL: 30 minutos
+- Al estar offline, carga datos desde cache y muestra toast de advertencia
+- Prefijo: `altorra_admin_` para evitar colisiones
+
+**Cola de escritura offline:**
+- Operaciones pendientes se guardan en `altorra_admin_writeQueue`
+- Al reconectar se procesan automáticamente (2s delay)
+- Re-enqueue en caso de error parcial
+- Toast de progreso: "Sincronizando X cambio(s) pendiente(s)..."
+
+**API:**
+- `AP.cacheData(key, data)` — guarda en localStorage con timestamp
+- `AP.getCachedData(key)` — lee con validación de TTL
+- `AP.loadFromCacheIfOffline()` — carga datos si está offline
+- `AP.queueOfflineWrite(collection, docId, data, action)` — encola escritura
+- `AP.processOfflineQueue()` — procesa cola pendiente
 
 ---
 

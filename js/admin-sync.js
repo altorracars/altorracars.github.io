@@ -94,6 +94,8 @@
         if (AP._vehiclesLoaded && AP._brandsLoaded) {
             if (AP._loadingTimeout) { clearTimeout(AP._loadingTimeout); AP._loadingTimeout = null; }
             AP._retryCount = 0;
+            // F3.6: Auto-cache data for offline mode
+            if (AP._autoCacheData) AP._autoCacheData();
         }
     }
 
@@ -130,6 +132,8 @@
     }
 
     function loadData() {
+        // F3.6: Try loading from cache if offline
+        if (AP.loadFromCacheIfOffline && AP.loadFromCacheIfOffline()) return;
         // F2.2: Show skeleton loaders while data loads
         if (AP.showStatsSkeleton) AP.showStatsSkeleton();
         if (AP.showTableSkeleton) AP.showTableSkeleton('vehiclesTableBody', 8);

@@ -130,6 +130,9 @@
     }
 
     function loadData() {
+        // F2.2: Show skeleton loaders while data loads
+        if (AP.showStatsSkeleton) AP.showStatsSkeleton();
+        if (AP.showTableSkeleton) AP.showTableSkeleton('vehiclesTableBody', 8);
         startRealtimeSync();
         try {
             if (AP.loadAppointments) AP.loadAppointments();

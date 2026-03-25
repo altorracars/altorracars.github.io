@@ -123,7 +123,8 @@
             var estado = v.estado || 'disponible';
             var estadoInfo = AP.ESTADO_LABELS[estado] || AP.ESTADO_LABELS.disponible;
             var estadoBadge = '<span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span>';
-            var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ';
+            var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ' +
+                '<button class="btn btn-ghost btn-sm" onclick="adminPanel.showAuditTimeline(' + v.id + ')" title="Historial de cambios" style="font-size:0.75rem;">📋</button> ';
             var esVendido = estado === 'vendido';
             if (AP.canCreateOrEditInventory()) {
                 actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.toggleDestacado(' + v.id + ')" title="' + (v.destacado ? 'Quitar de destacados' : 'Marcar como destacado') + '" style="font-size:1rem;padding:2px 7px;">' + (v.destacado ? '⭐' : '☆') + '</button> ';
@@ -1419,6 +1420,82 @@
         }).catch(function(err) { AP.toast('Error: ' + (err.message || err), 'error'); });
     }
 
+    // ========== F2.5: AUDIT TIMELINE ==========
+    var AUDIT_ACTION_LABELS = {
+        created: 'Creado', edited: 'Editado', deleted: 'Eliminado',
+        featured: 'Destacado', sold: 'Vendido'
+    };
+
+    function showAuditTimeline(vehicleId) {
+        var v = AP.vehicles.find(function(x) { return x.id === vehicleId; });
+        var label = v ? ((v.marca || '') + ' ' + (v.modelo || '') + ' ' + (v.year || '')) : '#' + vehicleId;
+        var $ = AP.$;
+        $('auditTimelineTitle').textContent = 'Historial — ' + label.trim();
+        $('auditTimelineContent').innerHTML = '<div class="audit-loading"><span class="spinner"></span> Cargando historial...</div>';
+        $('auditTimelineModal').classList.add('active');
+
+        window.db.collection('vehiculos').doc(String(vehicleId))
+            .collection('auditLog').orderBy('timestamp', 'desc').limit(50).get()
+            .then(function(snap) {
+                if (snap.empty) {
+                    $('auditTimelineContent').innerHTML = '<div class="audit-empty">No hay registros de auditoría para este vehículo.</div>';
+                    return;
+                }
+                var html = '<div class="audit-timeline">';
+                snap.forEach(function(doc) {
+                    var e = doc.data();
+                    var actionLabel = AUDIT_ACTION_LABELS[e.action] || e.action;
+                    var dotClass = e.action || 'edited';
+                    var timeStr = e.timestamp ? AP.formatTimeAgo(typeof e.timestamp === 'number' ? new Date(e.timestamp).toISOString() : e.timestamp) : '';
+
+                    html += '<div class="audit-entry">';
+                    html += '<div class="audit-dot ' + dotClass + '"></div>';
+                    html += '<div class="audit-entry-header">';
+                    html += '<span class="audit-action">' + AP.escapeHtml(actionLabel) + '</span>';
+                    html += '<span class="audit-time">' + AP.escapeHtml(timeStr) + '</span>';
+                    html += '</div>';
+                    html += '<div class="audit-user">' + AP.escapeHtml(e.userName || e.user || 'Desconocido') + '</div>';
+
+                    if (e.changes && e.changes.length > 0 && e.action !== 'created') {
+                        html += '<div class="audit-changes">';
+                        e.changes.forEach(function(c) {
+                            html += '<div class="audit-change-item">';
+                            html += '<span class="audit-change-field">' + AP.escapeHtml(c.field) + '</span>';
+                            if (c.from !== null && c.from !== undefined) {
+                                html += '<span class="audit-change-from">' + AP.escapeHtml(String(c.from).substring(0, 60)) + '</span>';
+                            }
+                            html += '<span class="audit-change-to">' + AP.escapeHtml(String(c.to).substring(0, 60)) + '</span>';
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                    }
+
+                    if (e.saleDetails) {
+                        html += '<div class="audit-changes">';
+                        html += '<div class="audit-change-item"><span class="audit-change-field">Canal</span><span class="audit-change-to">' + AP.escapeHtml(e.saleDetails.canal || '') + '</span></div>';
+                        if (e.saleDetails.precioVenta) {
+                            html += '<div class="audit-change-item"><span class="audit-change-field">Precio venta</span><span class="audit-change-to">' + AP.formatPrice(e.saleDetails.precioVenta) + '</span></div>';
+                        }
+                        html += '</div>';
+                    }
+
+                    html += '</div>';
+                });
+                html += '</div>';
+                $('auditTimelineContent').innerHTML = html;
+            })
+            .catch(function(err) {
+                $('auditTimelineContent').innerHTML = '<div class="audit-empty">Error al cargar historial: ' + AP.escapeHtml(err.message) + '</div>';
+            });
+    }
+
+    AP.$('closeAuditTimeline').addEventListener('click', function() {
+        AP.$('auditTimelineModal').classList.remove('active');
+    });
+    AP.$('auditTimelineModal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('active');
+    });
+
     // ========== EXPOSE ==========
     AP.renderVehiclesTable = renderVehiclesTable;
     AP.populateBrandSelect = populateBrandSelect;
@@ -1430,6 +1507,7 @@
     AP.startDraftsListener = startDraftsListener;
     AP.loadDraftFromUser = loadDraftFromUser;
     AP.toggleDestacado = toggleDestacadoFn;
+    AP.showAuditTimeline = showAuditTimeline;
     AP.clearCutoutPng = clearCutoutPng;
     AP.renderCutoutPreview = renderCutoutPreview;
 })();

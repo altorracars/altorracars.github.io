@@ -40,7 +40,8 @@
         $('brandModal').classList.remove('active');
         $('brandForm').reset();
         $('bOriginalId').value = '';
-        $('brandLogoPreview').innerHTML = '';
+        $('bLogo').value = '';
+        updateLogoPreview('');
     }
 
     $('brandForm').addEventListener('submit', function(e) { e.preventDefault(); });
@@ -51,7 +52,8 @@
         $('brandModalTitle').textContent = 'Agregar Marca';
         $('bOriginalId').value = '';
         $('brandForm').reset();
-        $('brandLogoPreview').innerHTML = '';
+        $('bLogo').value = '';
+        updateLogoPreview('');
         $('bId').readOnly = false;
         openBrandModal();
     });
@@ -59,17 +61,18 @@
     $('closeBrandModal').addEventListener('click', closeBrandModalFn);
     $('cancelBrandModal').addEventListener('click', closeBrandModalFn);
 
-    // Logo preview
-    $('bLogo').addEventListener('input', function() {
-        var url = this.value.trim();
+    // Logo preview helper
+    function updateLogoPreview(url) {
         if (url) {
-            $('brandLogoPreview').innerHTML = '<img src="' + url + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#1a1a2e;padding:4px;" onerror="this.parentNode.innerHTML=\'<small style=color:var(--admin-danger)>URL no valida</small>\'">';
+            $('brandLogoPreview').innerHTML = '<img src="' + url + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#1a1a2e;padding:4px;" onerror="this.parentNode.innerHTML=\'<small style=color:var(--admin-danger)>Error al cargar logo</small>\'">';
+            $('btnDeleteBrandLogo').style.display = '';
         } else {
             $('brandLogoPreview').innerHTML = '';
+            $('btnDeleteBrandLogo').style.display = 'none';
         }
-    });
+    }
 
-    // Logo file upload
+    // Logo file upload via Firebase Storage
     $('btnUploadBrandLogo').addEventListener('click', function() {
         $('brandLogoFile').click();
     });
@@ -77,14 +80,15 @@
     $('brandLogoFile').addEventListener('change', function() {
         var file = this.files[0];
         if (!file) return;
-        if (!window.storage) { AP.toast('Storage no disponible', 'error'); return; }
+        if (!window.storage) { AP.toast('Firebase Storage no disponible', 'error'); return; }
 
         var status = $('brandLogoUploadStatus');
         status.style.display = 'block';
+        status.style.color = '';
         status.textContent = 'Subiendo logo...';
 
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var path = AP.UPLOAD_CONFIG.storagePath + 'logo_' + Date.now() + '_' + safeName;
+        var path = 'brands/logo_' + Date.now() + '_' + safeName;
 
         try {
             var ref = window.storage.ref(path);
@@ -92,7 +96,7 @@
                 return snapshot.ref.getDownloadURL();
             }).then(function(url) {
                 $('bLogo').value = url;
-                $('brandLogoPreview').innerHTML = '<img src="' + url + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#1a1a2e;padding:4px;">';
+                updateLogoPreview(url);
                 status.textContent = 'Logo subido correctamente';
                 status.style.color = 'var(--admin-success)';
                 setTimeout(function() { status.style.display = 'none'; status.style.color = ''; }, 3000);
@@ -108,6 +112,13 @@
         this.value = '';
     });
 
+    // Delete logo button
+    $('btnDeleteBrandLogo').addEventListener('click', function() {
+        $('bLogo').value = '';
+        updateLogoPreview('');
+        AP.toast('Logo eliminado. Guarda para confirmar.');
+    });
+
     // ========== EDIT BRAND ==========
     function editBrand(brandId) {
         if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos', 'error'); return; }
@@ -119,10 +130,7 @@
         $('bId').value = b.id;
         $('bNombre').value = b.nombre || '';
         $('bLogo').value = b.logo || '';
-
-        if (b.logo) {
-            $('brandLogoPreview').innerHTML = '<img src="' + b.logo + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#1a1a2e;padding:4px;">';
-        }
+        updateLogoPreview(b.logo || '');
 
         openBrandModal();
     }

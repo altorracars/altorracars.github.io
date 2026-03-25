@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: get user role from Firestore
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ========== VEHICLE & BRAND IMAGES ==========
+    // cars/ — vehicle images and brand logos
+    match /cars/{allPaths=**} {
+      // Anyone can read (public catalog images)
+      allow read: if true;
+      // Authenticated users can upload (max 5MB, images only)
+      allow write: if isAuthenticated()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // brands/ — brand logo uploads
+    match /brands/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // banners/ — promotional banner uploads
+    match /banners/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Default: deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

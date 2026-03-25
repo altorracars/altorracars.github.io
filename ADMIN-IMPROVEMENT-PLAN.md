@@ -1,7 +1,7 @@
 # Plan de Mejora del Panel de Administración — Altorra Cars
 
 > Documento de seguimiento de fases, cambios aplicados y pendientes.
-> Última actualización: 2026-03-25
+> Última actualización: 2026-03-25 (Fase 2 completada)
 
 ---
 
@@ -17,7 +17,7 @@ rendimiento, UX/responsive, funcionalidad, seguridad/auditoría y pulido visual.
 | Fase | Descripción | Estado |
 |------|-------------|--------|
 | **1** | Rendimiento + Código Limpio + Auditoría por Vehículo | ✅ Completada |
-| **2** | UX, Responsive + Visualización de Autoría | ⏳ Pendiente |
+| **2** | UX, Responsive + Visualización de Autoría | ✅ Completada |
 | **3** | Funcionalidad Avanzada | ⏳ Pendiente |
 | **4** | Auditoría Completa + Seguridad | ⏳ Pendiente |
 | **5** | Pulido Visual + Extras | ⏳ Pendiente |
@@ -183,18 +183,97 @@ En cada fila de la tabla se muestra:
 
 ---
 
-## Fase 2 — UX, Responsive + Visualización de Autoría ⏳
+## Fase 2 — UX, Responsive + Visualización de Autoría ✅
 
-### Objetivos planificados
+**Archivos modificados:**
+- `css/admin.css` — ~170 líneas añadidas (skeleton, timeline, transitions, responsive 480px)
+- `js/admin-vehicles.js` — ~75 líneas (audit timeline modal + botón en tabla)
+- `js/admin-state.js` — ~40 líneas (connectivity indicator + skeleton helpers)
+- `js/admin-sync.js` — 3 líneas (skeleton trigger en loadData)
+- `admin.html` — 15 líneas (audit timeline modal + connectivity bar)
 
-| ID | Tarea | Descripción |
-|----|-------|-------------|
-| F2.1 | Breakpoints responsive | Media queries para tablet (768px) y móvil (480px) en admin.css |
-| F2.2 | Skeleton loaders | Placeholders animados mientras cargan vehículos, marcas, stats |
-| F2.3 | Transiciones de sección | Animación suave al cambiar entre secciones del panel |
-| F2.4 | Indicador online/offline | Banner visible cuando se pierde conexión a internet |
-| F2.5 | Timeline de historial | Modal con timeline visual del audit log por vehículo |
-| F2.6 | Mejora de formularios mobile | Inputs, selects y grids adaptados a pantallas pequeñas |
+### F2.1 — Breakpoints responsive mejorados
+
+**Breakpoint 768px (tablet)** — mejorado con:
+- `form-grid-2` colapsa a 1 columna
+- `form-grid-auto` reduce minmax
+- Tabs horizontales con scroll (overflow-x: auto)
+- Touch targets mínimos: botones 38px, nav items 44px, inputs 40px, checkboxes 36px
+- Sidebar overlay activo en mobile
+
+**Breakpoint 480px (móvil)** — nuevo:
+- Stats grid: 1 columna
+- Modales full-screen (border-radius: 0, max-width: 100%)
+- Botones de modal footer en flex: 1 (full width)
+- Font-size: 16px en inputs (previene zoom en iOS)
+- Tabs con scroll horizontal y font reducido
+- Thumbnails más pequeños (36x24px)
+- Audit timeline entries en layout vertical
+
+### F2.2 — Skeleton loaders
+
+Placeholders animados con efecto shimmer mientras cargan los datos:
+
+```css
+.skeleton — gradient animado de 1.5s
+.skeleton-text — barra de 14px para texto
+.skeleton-stat — barra de 2.5rem para estadísticas
+.skeleton-img — placeholder de 60x40px para imágenes
+.skeleton-row — fila completa con flex layout
+```
+
+**Funciones JS:**
+- `AP.showStatsSkeleton()` — reemplaza stat-value con skeleton
+- `AP.showTableSkeleton(tbodyId, cols)` — genera 5 filas skeleton en tabla
+
+Se activan automáticamente al llamar `loadData()`.
+
+### F2.3 — Transiciones de sección
+
+```css
+.section.active { animation: sectionFadeIn 0.25s ease-out; }
+@keyframes sectionFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+```
+
+Transición suave de fade-in + slide-up al cambiar entre secciones del panel.
+
+### F2.4 — Indicador online/offline
+
+Banner fijo en la parte inferior de la pantalla:
+- **Offline:** fondo rojo, mensaje "Sin conexión a internet — Los cambios no se guardarán"
+- **Reconexión:** fondo verde, "Conexión restaurada", auto-desaparece en 3.5s con animación slideUpOut
+
+```html
+<div class="connectivity-bar" id="connectivityBar"></div>
+```
+
+Escucha los eventos `window.online` y `window.offline` nativos del navegador.
+
+### F2.5 — Timeline visual del audit log
+
+Botón 📋 en cada fila de la tabla de vehículos que abre un modal con timeline visual:
+
+- Consulta `vehiculos/{id}/auditLog` ordenado por timestamp desc, limit 50
+- Timeline vertical con puntos de colores por tipo de acción:
+  - Verde = creado
+  - Azul = editado
+  - Rojo = eliminado
+  - Dorado = destacado
+  - Púrpura = vendido
+- Muestra: acción, usuario, tiempo relativo, cambios campo a campo (from → to)
+- Para ventas muestra canal y precio
+- Loading state con spinner
+- Empty state si no hay registros
+
+### F2.6 — Mejora de formularios mobile
+
+- Min-height 40px en inputs, selects y textareas para touch targets
+- Font-size 16px en 480px para evitar zoom automático en iOS
+- Form sections con padding reducido
+- Checkboxes con min-height 36px y padding extra
 
 ---
 

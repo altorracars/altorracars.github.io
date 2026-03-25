@@ -295,6 +295,55 @@
         canDeleteReview:      function() { return AP.isSuperAdmin(); }
     };
 
+    // ========== F2.4: CONNECTIVITY INDICATOR ==========
+    var _connBar = null;
+    var _connTimer = null;
+    function initConnectivity() {
+        _connBar = document.getElementById('connectivityBar');
+        if (!_connBar) return;
+        window.addEventListener('offline', function() {
+            if (_connTimer) clearTimeout(_connTimer);
+            _connBar.className = 'connectivity-bar offline';
+            _connBar.textContent = '⚠ Sin conexión a internet — Los cambios no se guardarán';
+        });
+        window.addEventListener('online', function() {
+            _connBar.className = 'connectivity-bar back-online';
+            _connBar.textContent = '✓ Conexión restaurada';
+            _connTimer = setTimeout(function() {
+                _connBar.className = 'connectivity-bar';
+                _connBar.textContent = '';
+            }, 3500);
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initConnectivity);
+    } else {
+        initConnectivity();
+    }
+
+    // ========== F2.2: SKELETON LOADERS ==========
+    AP.showTableSkeleton = function(tbodyId, cols) {
+        var el = document.getElementById(tbodyId);
+        if (!el) return;
+        var html = '';
+        for (var i = 0; i < 5; i++) {
+            html += '<tr>';
+            for (var j = 0; j < cols; j++) {
+                if (j === 0) html += '<td><div class="skeleton skeleton-text-sm" style="width:70px;"></div></td>';
+                else if (j === 1) html += '<td><div class="skeleton skeleton-img"></div></td>';
+                else html += '<td><div class="skeleton skeleton-text" style="width:' + (50 + Math.random() * 40) + '%;"></div></td>';
+            }
+            html += '</tr>';
+        }
+        el.innerHTML = html;
+    };
+
+    AP.showStatsSkeleton = function() {
+        document.querySelectorAll('.stat-value').forEach(function(el) {
+            el.innerHTML = '<div class="skeleton skeleton-stat"></div>';
+        });
+    };
+
     window.AP = AP;
 
     // Compatibility alias: HTML onclick handlers reference adminPanel.xxx()

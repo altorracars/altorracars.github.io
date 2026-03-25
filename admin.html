@@ -193,7 +193,7 @@
             </div>
 
             <!-- RECENT ACTIVITY -->
-            <div class="table-container" style="margin-bottom: 1.5rem;">
+            <div class="table-container mb-lg">
                 <div class="table-header">
                     <h3>Actividad Reciente <span id="activityCount" style="font-size:0.75rem;color:var(--admin-text-muted);font-weight:400;"></span></h3>
                     <div style="display:flex;gap:0.5rem;align-items:center;">
@@ -224,7 +224,7 @@
             </div>
 
             <!-- SEO TOOLS -->
-            <div class="table-container" style="margin-top: 1.5rem;">
+            <div class="table-container mt-lg">
                 <div class="table-header">
                     <h3>SEO — Herramientas</h3>
                     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
@@ -283,7 +283,7 @@
                         </button>
                     </div>
                 </div>
-                <div style="overflow-x: auto;">
+                <div class="overflow-x-auto">
                     <table id="vehiclesTable">
                         <thead><tr>
                             <th class="col-drag" style="display:none;width:32px;"></th>
@@ -292,7 +292,7 @@
                             <th>Origen</th><th>Acciones</th>
                         </tr></thead>
                         <tbody id="vehiclesTableBody">
-                            <tr><td colspan="10" style="text-align:center;padding:2rem;">Cargando...</td></tr>
+                            <tr><td colspan="10" class="table-empty">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -309,10 +309,10 @@
                 </button>
             </div>
             <div class="table-container">
-                <div style="overflow-x: auto;">
+                <div class="overflow-x-auto">
                     <table>
                         <thead><tr><th>Logo</th><th>ID</th><th>Nombre</th><th>Descripcion</th><th>Vehiculos</th><th>Acciones</th></tr></thead>
-                        <tbody id="brandsTableBody"><tr><td colspan="6" style="text-align:center;padding:2rem;">Cargando...</td></tr></tbody>
+                        <tbody id="brandsTableBody"><tr><td colspan="6" class="table-empty">Cargando...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -342,10 +342,10 @@
                 </div>
             </div>
             <div class="table-container">
-                <div style="overflow-x: auto;">
+                <div class="overflow-x-auto">
                     <table>
                         <thead><tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
-                        <tbody id="usersTableBody"><tr><td colspan="5" style="text-align:center;padding:2rem;">Cargando...</td></tr></tbody>
+                        <tbody id="usersTableBody"><tr><td colspan="5" class="table-empty">Cargando...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -366,12 +366,12 @@
             </div>
 
             <!-- Availability Config Panel -->
-            <div class="stat-card" style="margin-bottom:1.5rem;">
+            <div class="stat-card mb-lg">
                 <h3 style="margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     Configuracion de Disponibilidad
                 </h3>
-                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Define los dias y horarios disponibles para agendar citas. Los usuarios veran en el calendario solo los dias y horas habilitados.</p>
+                <p class="admin-hint">Define los dias y horarios disponibles para agendar citas. Los usuarios veran en el calendario solo los dias y horas habilitados.</p>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:500px;">
                     <div class="form-group">
                         <label class="form-label">Hora inicio</label>
@@ -395,33 +395,33 @@
                 <div style="margin-top:0.75rem;">
                     <label class="form-label">Dias disponibles por defecto</label>
                     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;" id="availDays">
-                        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="1" checked> Lun</label>
-                        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="2" checked> Mar</label>
-                        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="3" checked> Mie</label>
-                        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="4" checked> Jue</label>
-                        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="5" checked> Vie</label>
-                        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="6"> Sab</label>
-                        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--admin-text);"><input type="checkbox" value="0"> Dom</label>
+                        <label class="availability-day-label"><input type="checkbox" value="1" checked> Lun</label>
+                        <label class="availability-day-label"><input type="checkbox" value="2" checked> Mar</label>
+                        <label class="availability-day-label"><input type="checkbox" value="3" checked> Mie</label>
+                        <label class="availability-day-label"><input type="checkbox" value="4" checked> Jue</label>
+                        <label class="availability-day-label"><input type="checkbox" value="5" checked> Vie</label>
+                        <label class="availability-day-label"><input type="checkbox" value="6"> Sab</label>
+                        <label class="availability-day-label"><input type="checkbox" value="0"> Dom</label>
                     </div>
                 </div>
-                <div style="margin-top:1rem;">
+                <div class="mt-md">
                     <label class="form-label">Intervalo de citas (minutos)</label>
                     <select id="availInterval" class="form-select" style="max-width:200px;">
                         <option value="30" selected>30 minutos</option>
                         <option value="60">1 hora</option>
                     </select>
                 </div>
-                <button class="btn btn-primary btn-sm" id="btnSaveAvailability" style="margin-top:1rem;">Guardar Disponibilidad</button>
+                <button class="btn btn-primary btn-sm" id="btnSaveAvailability" class="mt-md">Guardar Disponibilidad</button>
                 <div id="availabilityStatus" style="margin-top:0.5rem;font-size:0.8rem;"></div>
             </div>
 
             <!-- Calendar: Block Specific Dates -->
-            <div class="stat-card" style="margin-bottom:1.5rem;">
+            <div class="stat-card mb-lg">
                 <h3 style="margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     Calendario de Disponibilidad
                 </h3>
-                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Haz clic en un dia para bloquear horas especificas o el dia completo. Los numeros indican citas agendadas.</p>
+                <p class="admin-hint">Haz clic en un dia para bloquear horas especificas o el dia completo. Los numeros indican citas agendadas.</p>
                 <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
                     <button class="btn btn-ghost btn-sm" id="calPrevMonth">&larr; Mes anterior</button>
                     <h4 id="calMonthLabel" style="margin:0;min-width:180px;text-align:center;"></h4>
@@ -454,7 +454,7 @@
                 </select>
             </div>
 
-            <div class="stat-card" style="overflow-x:auto;">
+            <div class="stat-card overflow-x-auto">
                 <table class="admin-table" id="appointmentsTable">
                     <thead>
                         <tr>
@@ -469,7 +469,7 @@
                         </tr>
                     </thead>
                     <tbody id="appointmentsBody">
-                        <tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando citas...</td></tr>
+                        <tr><td colspan="8" class="table-empty">Cargando citas...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -489,20 +489,20 @@
             </div>
 
             <!-- Tabs de navegacion -->
-            <div style="display:flex;gap:4px;border-bottom:2px solid var(--admin-border,#30363d);margin-bottom:1.5rem;">
-                <button class="btn btn-ghost dealers-tab active" data-dealers-tab="aliados" style="border-radius:8px 8px 0 0;padding:0.6rem 1.25rem;font-weight:600;font-size:0.85rem;">Aliados</button>
-                <button class="btn btn-ghost dealers-tab" data-dealers-tab="propios" style="border-radius:8px 8px 0 0;padding:0.6rem 1.25rem;font-weight:600;font-size:0.85rem;">Vehiculos Propios</button>
-                <button class="btn btn-ghost dealers-tab" data-dealers-tab="operaciones" style="border-radius:8px 8px 0 0;padding:0.6rem 1.25rem;font-weight:600;font-size:0.85rem;">Operaciones</button>
+            <div class="admin-tabs">
+                <button class="btn btn-ghost dealers-tab active" data-dealers-tab="aliados" class="admin-tab-btn">Aliados</button>
+                <button class="btn btn-ghost dealers-tab" data-dealers-tab="propios" class="admin-tab-btn">Vehiculos Propios</button>
+                <button class="btn btn-ghost dealers-tab" data-dealers-tab="operaciones" class="admin-tab-btn">Operaciones</button>
             </div>
 
             <!-- TAB: Aliados -->
             <div id="dealersTabAliados" class="dealers-tab-content active">
-                <div class="stat-card" style="margin-bottom:1rem;padding:1rem;">
-                    <p style="font-size:0.85rem;color:var(--admin-text-muted);margin:0;">
+                <div class="stat-card mb-md p-md">
+                    <p class="admin-info-box">
                         Los aliados que agregues aqui aparecen en el formulario de vehiculos al seleccionar origen. Incluye concesionarios aliados (ej: Usados de la Costa) y personas que dejan vehiculos en consigna.
                     </p>
                 </div>
-                <div id="dealersList" class="stat-card" style="margin-bottom:1.5rem;">
+                <div id="dealersList" class="stat-card mb-lg">
                     <p style="text-align:center;color:var(--admin-text-muted);padding:1rem;">Cargando aliados...</p>
                 </div>
 
@@ -513,7 +513,7 @@
                         <p class="page-subtitle">Vehiculos agrupados por aliado/consignatario</p>
                     </div>
                 </div>
-                <div class="stat-card" style="overflow-x:auto;">
+                <div class="stat-card overflow-x-auto">
                     <table class="admin-table">
                         <thead>
                             <tr>
@@ -524,7 +524,7 @@
                             </tr>
                         </thead>
                         <tbody id="vehiclesByOriginBody">
-                            <tr><td colspan="4" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando...</td></tr>
+                            <tr><td colspan="4" class="table-empty">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -532,13 +532,13 @@
 
             <!-- TAB: Vehiculos Propios -->
             <div id="dealersTabPropios" class="dealers-tab-content" style="display:none;">
-                <div class="stat-card" style="margin-bottom:1rem;padding:1rem;">
-                    <p style="font-size:0.85rem;color:var(--admin-text-muted);margin:0;">
+                <div class="stat-card mb-md p-md">
+                    <p class="admin-info-box">
                         Vehiculos que pertenecen a ALTORRA. Al venderlos por nuestro canal, el ingreso total entra a nuestras cuentas.
                     </p>
                 </div>
                 <div id="propiosSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-bottom:1rem;"></div>
-                <div class="stat-card" style="overflow-x:auto;">
+                <div class="stat-card overflow-x-auto">
                     <table class="admin-table">
                         <thead>
                             <tr>
@@ -552,7 +552,7 @@
                             </tr>
                         </thead>
                         <tbody id="propiosTableBody">
-                            <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando...</td></tr>
+                            <tr><td colspan="7" class="table-empty">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -561,7 +561,7 @@
             <!-- TAB: Operaciones de Venta -->
             <div id="dealersTabOperaciones" class="dealers-tab-content" style="display:none;">
                 <div id="salesSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-bottom:1rem;"></div>
-                <div class="stat-card" style="overflow-x:auto;">
+                <div class="stat-card overflow-x-auto">
                     <table class="admin-table">
                         <thead>
                             <tr>
@@ -576,7 +576,7 @@
                             </tr>
                         </thead>
                         <tbody id="salesTrackingBody">
-                            <tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Sin operaciones registradas</td></tr>
+                            <tr><td colspan="8" class="table-empty">Sin operaciones registradas</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -614,8 +614,8 @@
             </div>
 
             <!-- Tabla de reseñas -->
-            <div class="admin-card" style="overflow-x:auto;">
-                <table class="data-table" style="width:100%;">
+            <div class="admin-card overflow-x-auto">
+                <table class="admin-table" style="width:100%;">
                     <thead>
                         <tr>
                             <th>Cliente</th>
@@ -635,30 +635,30 @@
 
         <!-- Review Modal -->
         <div class="modal-overlay" id="reviewModal">
-            <div class="modal" style="max-width:600px;">
+            <div class="modal modal-lg">
                 <div class="modal-header">
                     <h2 id="reviewModalTitle">Nueva Reseña</h2>
-                    <button class="btn-close" id="closeReviewModal">&times;</button>
+                    <button class="modal-close" id="closeReviewModal">&times;</button>
                 </div>
                 <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
                     <form id="reviewForm" autocomplete="off">
                         <input type="hidden" id="reviewId">
 
-                        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div class="form-row form-grid-2">
                             <div class="form-group">
                                 <label>Nombre del cliente *</label>
-                                <input type="text" id="reviewName" class="form-control" placeholder="Ej: Carlos Mendoza" required>
+                                <input type="text" id="reviewName" class="form-input" placeholder="Ej: Carlos Mendoza" required>
                             </div>
                             <div class="form-group">
                                 <label>Ciudad</label>
-                                <input type="text" id="reviewLocation" class="form-control" placeholder="Ej: Cartagena" value="Cartagena">
+                                <input type="text" id="reviewLocation" class="form-input" placeholder="Ej: Cartagena" value="Cartagena">
                             </div>
                         </div>
 
-                        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div class="form-row form-grid-2">
                             <div class="form-group">
                                 <label>Calificación *</label>
-                                <select id="reviewRating" class="form-control" required>
+                                <select id="reviewRating" class="form-input" required>
                                     <option value="5">5 Estrellas - Excelente</option>
                                     <option value="4">4 Estrellas - Muy bueno</option>
                                     <option value="3">3 Estrellas - Bueno</option>
@@ -668,22 +668,22 @@
                             </div>
                             <div class="form-group">
                                 <label>Vehículo comprado</label>
-                                <input type="text" id="reviewVehicle" class="form-control" placeholder="Ej: Toyota Hilux 2024">
+                                <input type="text" id="reviewVehicle" class="form-input" placeholder="Ej: Toyota Hilux 2024">
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-bottom:1rem;">
+                        <div class="form-group mb-md">
                             <label>Fuente de la reseña *</label>
-                            <select id="reviewSource" class="form-control" required>
+                            <select id="reviewSource" class="form-input" required>
                                 <option value="sitio_web">Sitio Web</option>
                                 <option value="google_maps">Google Maps</option>
                                 <option value="usuario_registrado">Usuario Registrado</option>
                             </select>
                         </div>
 
-                        <div class="form-group" style="margin-bottom:1rem;">
+                        <div class="form-group mb-md">
                             <label>Texto de la reseña *</label>
-                            <textarea id="reviewText" class="form-control" rows="4" placeholder="La experiencia completa del cliente..." required style="resize:vertical;"></textarea>
+                            <textarea id="reviewText" class="form-input" rows="4" placeholder="La experiencia completa del cliente..." required style="resize:vertical;"></textarea>
                         </div>
 
                         <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
@@ -706,8 +706,8 @@
         <!-- Review Delete Confirm -->
         <div class="modal-overlay" id="reviewDeleteConfirm">
             <div class="modal" style="max-width:420px;text-align:center;">
-                <div class="modal-body" style="padding:2rem;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="margin-bottom:1rem;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                <div class="modal-body modal-confirm-body">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="mb-md"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                     <h3 style="margin-bottom:0.5rem;">Eliminar Reseña</h3>
                     <p style="color:var(--admin-text-muted);font-size:0.9rem;">Esta acción no se puede deshacer. La reseña será eliminada permanentemente.</p>
                 </div>
@@ -725,14 +725,14 @@
                     <p class="page-subtitle">Gestiona las opciones de todos los desplegables del sistema (tipos, categorias, transmision, combustible, etc.)</p>
                 </div>
             </div>
-            <div class="stat-card" style="margin-bottom:1rem;padding:1rem;">
-                <p style="font-size:0.85rem;color:var(--admin-text-muted);margin:0;">
+            <div class="stat-card mb-md p-md">
+                <p class="admin-info-box">
                     Estos valores se sincronizan en toda la pagina: formularios de vehiculos, filtros publicos, busqueda avanzada y paginas de categoria.
                     Los cambios se aplican inmediatamente en todo el sitio.
                 </p>
             </div>
             <div id="listsContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:1.5rem;">
-                <p style="text-align:center;color:var(--admin-text-muted);padding:2rem;">Cargando listas...</p>
+                <p class="table-empty">Cargando listas...</p>
             </div>
         </div>
 
@@ -750,21 +750,21 @@
             </div>
 
             <!-- Tabs: Ubicaciones -->
-            <div style="display:flex;gap:4px;border-bottom:2px solid var(--admin-border,#30363d);margin-bottom:1.5rem;">
-                <button class="btn btn-ghost banners-tab active" data-banners-tab="hero" style="border-radius:8px 8px 0 0;padding:0.6rem 1.25rem;font-weight:600;font-size:0.85rem;">
+            <div class="admin-tabs">
+                <button class="btn btn-ghost banners-tab active" data-banners-tab="hero" class="admin-tab-btn">
                     Hero Principal
                 </button>
-                <button class="btn btn-ghost banners-tab" data-banners-tab="promocional" style="border-radius:8px 8px 0 0;padding:0.6rem 1.25rem;font-weight:600;font-size:0.85rem;">
+                <button class="btn btn-ghost banners-tab" data-banners-tab="promocional" class="admin-tab-btn">
                     Promocionales
                 </button>
-                <button class="btn btn-ghost banners-tab" data-banners-tab="categoria" style="border-radius:8px 8px 0 0;padding:0.6rem 1.25rem;font-weight:600;font-size:0.85rem;">
+                <button class="btn btn-ghost banners-tab" data-banners-tab="categoria" class="admin-tab-btn">
                     Categorias
                 </button>
             </div>
 
             <!-- TAB: Hero -->
             <div id="bannersTabHero" class="banners-tab-content active">
-                <div class="admin-card">
+                <div class="stat-card">
                     <p style="color:var(--admin-text-muted);margin-bottom:1rem;font-size:0.85rem;">
                         Banners para la seccion hero de la pagina principal. Se muestran en rotacion automatica.
                     </p>
@@ -776,7 +776,7 @@
 
             <!-- TAB: Promocionales -->
             <div id="bannersTabPromocional" class="banners-tab-content" style="display:none;">
-                <div class="admin-card">
+                <div class="stat-card">
                     <p style="color:var(--admin-text-muted);margin-bottom:1rem;font-size:0.85rem;">
                         Banners promocionales que se muestran entre secciones del sitio (ofertas, campanas, eventos).
                     </p>
@@ -788,7 +788,7 @@
 
             <!-- TAB: Categorias -->
             <div id="bannersTabCategoria" class="banners-tab-content" style="display:none;">
-                <div class="admin-card">
+                <div class="stat-card">
                     <p style="color:var(--admin-text-muted);margin-bottom:1rem;font-size:0.85rem;">
                         Banners para las paginas de categoria (Nuevos, Usados, Comerciales, etc).
                     </p>
@@ -801,29 +801,29 @@
 
         <!-- Banner Modal -->
         <div class="modal-overlay" id="bannerModal">
-            <div class="modal" style="max-width:650px;">
+            <div class="modal modal-xl">
                 <div class="modal-header">
                     <h2 id="bannerModalTitle">Nuevo Banner</h2>
-                    <button class="btn-close" id="closeBannerModal">&times;</button>
+                    <button class="modal-close" id="closeBannerModal">&times;</button>
                 </div>
                 <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
                     <form id="bannerForm" autocomplete="off">
                         <input type="hidden" id="bannerId">
 
-                        <div class="form-group" style="margin-bottom:1rem;">
+                        <div class="form-group mb-md">
                             <label>Titulo del Banner</label>
-                            <input type="text" id="bannerTitle" class="form-control" placeholder="Ej: Oferta de Temporada" required>
+                            <input type="text" id="bannerTitle" class="form-input" placeholder="Ej: Oferta de Temporada" required>
                         </div>
 
-                        <div class="form-group" style="margin-bottom:1rem;">
+                        <div class="form-group mb-md">
                             <label>Subtitulo (opcional)</label>
-                            <input type="text" id="bannerSubtitle" class="form-control" placeholder="Ej: Hasta 30% de descuento">
+                            <input type="text" id="bannerSubtitle" class="form-input" placeholder="Ej: Hasta 30% de descuento">
                         </div>
 
-                        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div class="form-row form-grid-2">
                             <div class="form-group">
                                 <label>Ubicacion</label>
-                                <select id="bannerPosition" class="form-control" required>
+                                <select id="bannerPosition" class="form-input" required>
                                     <option value="hero">Hero Principal</option>
                                     <option value="promocional">Promocional</option>
                                     <option value="categoria">Categoria</option>
@@ -831,13 +831,13 @@
                             </div>
                             <div class="form-group">
                                 <label>Orden (prioridad)</label>
-                                <input type="number" id="bannerOrder" class="form-control" value="0" min="0" max="99">
+                                <input type="number" id="bannerOrder" class="form-input" value="0" min="0" max="99">
                             </div>
                         </div>
 
                         <div class="form-group" style="margin-bottom:1rem;" id="bannerCatGroup">
                             <label>Categoria (solo para banners de categoria)</label>
-                            <select id="bannerCategory" class="form-control">
+                            <select id="bannerCategory" class="form-input">
                                 <option value="">-- Seleccionar --</option>
                                 <option value="nuevos">Vehiculos Nuevos</option>
                                 <option value="usados">Vehiculos Usados</option>
@@ -846,18 +846,18 @@
                             </select>
                         </div>
 
-                        <div class="form-group" style="margin-bottom:1rem;">
+                        <div class="form-group mb-md">
                             <label>Enlace (URL destino al hacer click)</label>
-                            <input type="text" id="bannerLink" class="form-control" placeholder="Ej: catalogo.html?tipo=nuevo">
+                            <input type="text" id="bannerLink" class="form-input" placeholder="Ej: catalogo.html?tipo=nuevo">
                         </div>
 
-                        <div class="form-group" style="margin-bottom:1rem;">
+                        <div class="form-group mb-md">
                             <label>Texto del boton CTA (opcional)</label>
-                            <input type="text" id="bannerCta" class="form-control" placeholder="Ej: Ver Ofertas">
+                            <input type="text" id="bannerCta" class="form-input" placeholder="Ej: Ver Ofertas">
                         </div>
 
                         <!-- Image Upload -->
-                        <div class="form-group" style="margin-bottom:1rem;">
+                        <div class="form-group mb-md">
                             <label>Imagen del Banner</label>
                             <div class="upload-zone" id="bannerDropZone" style="border:2px dashed var(--admin-border,#30363d);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:border-color 0.3s;">
                                 <div id="bannerPreviewArea">
@@ -875,7 +875,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-bottom:1rem;">
+                        <div class="form-group mb-md">
                             <label class="form-checkbox">
                                 <input type="checkbox" id="bannerActive" checked> Activo (visible en el sitio)
                             </label>
@@ -892,8 +892,8 @@
         <!-- Banner Delete Confirm -->
         <div class="modal-overlay" id="bannerDeleteConfirm">
             <div class="modal" style="max-width:420px;text-align:center;">
-                <div class="modal-body" style="padding:2rem;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="margin-bottom:1rem;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                <div class="modal-body modal-confirm-body">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="mb-md"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                     <h3 style="margin-bottom:0.5rem;">Eliminar Banner</h3>
                     <p style="color:var(--admin-text-muted);font-size:0.9rem;">Esta accion no se puede deshacer. El banner sera eliminado del sitio permanentemente.</p>
                 </div>
@@ -908,7 +908,7 @@
             <div class="page-header">
                 <div><h1>Configuracion</h1><p class="page-subtitle">Ajustes de tu cuenta y respaldo de datos</p></div>
             </div>
-            <div class="stat-card" style="max-width: 500px;">
+            <div class="stat-card card-narrow">
                 <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                     Cambiar Contrasena
@@ -923,12 +923,12 @@
             </div>
 
             <!-- BACKUP & RESTORE -->
-            <div class="stat-card" style="max-width: 500px; margin-top: 1.5rem;">
+            <div class="stat-card card-narrow mt-lg">
                 <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     Respaldo de Datos
                 </h3>
-                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Exporta o importa todos los vehiculos y marcas como archivo JSON.</p>
+                <p class="admin-hint">Exporta o importa todos los vehiculos y marcas como archivo JSON.</p>
                 <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
                     <button class="btn btn-primary btn-sm" id="btnExportJSON">Exportar JSON</button>
                     <button class="btn btn-ghost btn-sm" id="btnImportJSON">Importar JSON</button>
@@ -966,9 +966,34 @@
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-basica">
-                        <div class="form-row"><div class="form-group"><label class="form-label">Marca *</label><select id="vMarca" class="form-select" required><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Modelo *</label><input type="text" id="vModelo" class="form-input" required placeholder="Ej: Onix"></div></div>
-                        <div class="form-row-3"><div class="form-group"><label class="form-label">Ano *</label><input type="number" id="vYear" class="form-input" required min="1990" max="2030" placeholder="2024"></div><div class="form-group"><label class="form-label">Tipo *</label><select id="vTipo" class="form-select" required><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Categoria *</label><select id="vCategoria" class="form-select" required><option value="">Seleccionar...</option></select></div></div>
-                        <div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Descripcion</label><textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea></div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Marca *</label>
+                                <select id="vMarca" class="form-select" required><option value="">Seleccionar...</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Modelo *</label>
+                                <input type="text" id="vModelo" class="form-input" required placeholder="Ej: Onix">
+                            </div>
+                        </div>
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">Ano *</label>
+                                <input type="number" id="vYear" class="form-input" required min="1990" max="2030" placeholder="2024">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tipo *</label>
+                                <select id="vTipo" class="form-select" required><option value="">Seleccionar...</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Categoria *</label>
+                                <select id="vCategoria" class="form-select" required><option value="">Seleccionar...</option></select>
+                            </div>
+                        </div>
+                        <div class="form-group mt-sm">
+                            <label class="form-label">Descripcion</label>
+                            <textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea>
+                        </div>
                     </div>
                 </div>
 
@@ -980,8 +1005,36 @@
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-precio">
-                        <div class="form-row-3"><div class="form-group"><label class="form-label">Precio *</label><input type="number" id="vPrecio" class="form-input" required min="0" placeholder="75000000"></div><div class="form-group"><label class="form-label">Precio Oferta</label><input type="number" id="vPrecioOferta" class="form-input" min="0" placeholder="Vacio si no aplica" oninput="var cb=document.getElementById('vOferta');if(cb)cb.checked=!!this.value;"><small style="display:block;color:var(--admin-text-muted,#8b949e);font-size:0.72rem;margin-top:3px;">Ingresa precio menor al normal para activar "En Oferta" automaticamente</small></div><div class="form-group"><label class="form-label">Kilometraje *</label><input type="number" id="vKm" class="form-input" required min="0" placeholder="0"></div></div>
-                        <div class="form-row"><div class="form-group"><label class="form-label">Estado del vehiculo</label><select id="vEstado" class="form-select"><option value="disponible">Disponible</option><option value="reservado">Reservado</option><option value="vendido">Vendido</option><option value="borrador">Borrador</option></select></div><div class="form-group"><label class="form-label">Ubicacion</label><input type="text" id="vUbicacion" class="form-input" placeholder="Barranquilla" value="Barranquilla"></div></div>
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">Precio *</label>
+                                <input type="number" id="vPrecio" class="form-input" required min="0" placeholder="75000000">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Precio Oferta</label>
+                                <input type="number" id="vPrecioOferta" class="form-input" min="0" placeholder="Vacio si no aplica" oninput="var cb=document.getElementById('vOferta');if(cb)cb.checked=!!this.value;">
+                                <small class="text-xs text-muted" style="display:block;margin-top:3px;">Ingresa precio menor al normal para activar "En Oferta" automaticamente</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Kilometraje *</label>
+                                <input type="number" id="vKm" class="form-input" required min="0" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Estado del vehiculo</label>
+                                <select id="vEstado" class="form-select">
+                                    <option value="disponible">Disponible</option>
+                                    <option value="reservado">Reservado</option>
+                                    <option value="vendido">Vendido</option>
+                                    <option value="borrador">Borrador</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Ubicacion</label>
+                                <input type="text" id="vUbicacion" class="form-input" placeholder="Barranquilla" value="Barranquilla">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -993,10 +1046,58 @@
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-specs">
-                        <div class="form-row"><div class="form-group"><label class="form-label">Transmision *</label><select id="vTransmision" class="form-select" required><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Combustible *</label><select id="vCombustible" class="form-select" required><option value="">Seleccionar...</option></select></div></div>
-                        <div class="form-row-3"><div class="form-group"><label class="form-label">Motor</label><input type="text" id="vMotor" class="form-input" placeholder="1.0L Turbo"></div><div class="form-group"><label class="form-label">Potencia</label><input type="text" id="vPotencia" class="form-input" placeholder="116 HP"></div><div class="form-group"><label class="form-label">Cilindraje</label><input type="text" id="vCilindraje" class="form-input" placeholder="1000 cc"></div></div>
-                        <div class="form-row-3"><div class="form-group"><label class="form-label">Traccion</label><select id="vTraccion" class="form-select"><option value="">Seleccionar...</option></select></div><div class="form-group"><label class="form-label">Direccion</label><select id="vDireccion" class="form-select"><option value="Electrica">Electrica</option></select></div><div class="form-group"><label class="form-label">Color</label><input type="text" id="vColor" class="form-input" placeholder="Blanco"></div></div>
-                        <div class="form-row-3"><div class="form-group"><label class="form-label">Puertas</label><input type="number" id="vPuertas" class="form-input" min="2" max="5" placeholder="5"></div><div class="form-group"><label class="form-label">Pasajeros</label><input type="number" id="vPasajeros" class="form-input" min="2" max="9" placeholder="5"></div><div class="form-group"><label class="form-label">Placa</label><input type="text" id="vPlaca" class="form-input" placeholder="Disponible al contactar"></div></div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Transmision *</label>
+                                <select id="vTransmision" class="form-select" required><option value="">Seleccionar...</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Combustible *</label>
+                                <select id="vCombustible" class="form-select" required><option value="">Seleccionar...</option></select>
+                            </div>
+                        </div>
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">Motor</label>
+                                <input type="text" id="vMotor" class="form-input" placeholder="1.0L Turbo">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Potencia</label>
+                                <input type="text" id="vPotencia" class="form-input" placeholder="116 HP">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Cilindraje</label>
+                                <input type="text" id="vCilindraje" class="form-input" placeholder="1000 cc">
+                            </div>
+                        </div>
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">Traccion</label>
+                                <select id="vTraccion" class="form-select"><option value="">Seleccionar...</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Direccion</label>
+                                <select id="vDireccion" class="form-select"><option value="Electrica">Electrica</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Color</label>
+                                <input type="text" id="vColor" class="form-input" placeholder="Blanco">
+                            </div>
+                        </div>
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">Puertas</label>
+                                <input type="number" id="vPuertas" class="form-input" min="2" max="5" placeholder="5">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Pasajeros</label>
+                                <input type="number" id="vPasajeros" class="form-input" min="2" max="9" placeholder="5">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Placa</label>
+                                <input type="text" id="vPlaca" class="form-input" placeholder="Disponible al contactar">
+                            </div>
+                        </div>
                         <div class="form-group"><label class="form-label">Codigo Fasecolda</label><input type="text" id="vFasecolda" class="form-input" placeholder="Consultar"></div>
                     </div>
                 </div>
@@ -1069,7 +1170,7 @@
                             <label class="form-checkbox"><input type="checkbox" id="vRevision" checked> Revision Tecnico-Mecanica</label>
                             <label class="form-checkbox"><input type="checkbox" id="vPeritaje" checked> Peritaje Realizado</label>
                         </div>
-                        <div class="form-row" style="margin-top:1rem;">
+                        <div class="form-row mt-md">
                             <div class="form-group">
                                 <label class="form-label">Origen del vehiculo</label>
                                 <select id="vConcesionario" class="form-select">
@@ -1198,7 +1299,7 @@
 
 <!-- DELETE CONFIRM -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal" style="max-width:400px;"><div class="modal-header"><h2>Eliminar Vehiculo</h2><button class="modal-close" id="closeDeleteModal">&times;</button></div>
+    <div class="modal modal-sm"><div class="modal-header"><h2>Eliminar Vehiculo</h2><button class="modal-close" id="closeDeleteModal">&times;</button></div>
         <div class="modal-body"><p>Estas seguro de eliminar <strong id="deleteVehicleName"></strong>?</p><p style="color:var(--admin-danger);margin-top:0.5rem;font-size:0.875rem;">Esta accion no se puede deshacer.</p></div>
         <div class="modal-footer"><button class="btn btn-ghost" id="cancelDelete">Cancelar</button><button class="btn btn-danger" id="confirmDelete">Eliminar</button></div>
     </div>
@@ -1206,7 +1307,7 @@
 
 <!-- BRAND MODAL -->
 <div class="modal-overlay" id="brandModal">
-    <div class="modal" style="max-width:500px;"><div class="modal-header"><h2 id="brandModalTitle">Agregar Marca</h2><button class="modal-close" id="closeBrandModal">&times;</button></div>
+    <div class="modal modal-md"><div class="modal-header"><h2 id="brandModalTitle">Agregar Marca</h2><button class="modal-close" id="closeBrandModal">&times;</button></div>
         <div class="modal-body"><form id="brandForm"><input type="hidden" id="bOriginalId"><input type="hidden" id="bId"><input type="hidden" id="bDescripcion"><div class="form-group"><label class="form-label">Nombre de la marca *</label><input type="text" id="bNombre" class="form-input" required placeholder="Ej: Toyota"></div><div class="form-group"><label class="form-label">Logo de la marca *</label><div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;"><button type="button" class="btn btn-ghost btn-sm" id="btnUploadBrandLogo" style="white-space:nowrap;">Subir archivo</button><span style="color:var(--admin-text-muted);font-size:0.8rem;">o pega una URL:</span></div><input type="file" id="brandLogoFile" accept="image/png,image/webp,image/jpeg,image/svg+xml" style="display:none"><input type="text" id="bLogo" class="form-input" required placeholder="multimedia/Logos/Toyota.webp"><div id="brandLogoUploadStatus" style="display:none;margin-top:0.5rem;font-size:0.8rem;color:var(--admin-text-muted);"></div><div id="brandLogoPreview" style="margin-top:0.5rem;"></div></div></form></div>
         <div class="modal-footer"><button class="btn btn-ghost" id="cancelBrandModal">Cancelar</button><button class="btn btn-primary" id="saveBrand">Guardar Marca</button></div>
     </div>
@@ -1214,7 +1315,7 @@
 
 <!-- BRAND DELETE -->
 <div class="modal-overlay" id="deleteBrandModal">
-    <div class="modal" style="max-width:400px;"><div class="modal-header"><h2>Eliminar Marca</h2><button class="modal-close" id="closeDeleteBrandModal">&times;</button></div>
+    <div class="modal modal-sm"><div class="modal-header"><h2>Eliminar Marca</h2><button class="modal-close" id="closeDeleteBrandModal">&times;</button></div>
         <div class="modal-body"><p>Estas seguro de eliminar la marca <strong id="deleteBrandName"></strong>?</p><p style="color:var(--admin-danger);margin-top:0.5rem;font-size:0.875rem;">Los vehiculos asociados quedaran sin marca valida.</p></div>
         <div class="modal-footer"><button class="btn btn-ghost" id="cancelDeleteBrand">Cancelar</button><button class="btn btn-danger" id="confirmDeleteBrand">Eliminar</button></div>
     </div>
@@ -1222,7 +1323,7 @@
 
 <!-- USER MODAL -->
 <div class="modal-overlay" id="userModal">
-    <div class="modal" style="max-width:500px;"><div class="modal-header"><h2 id="userModalTitle">Crear Usuario</h2><button class="modal-close" id="closeUserModal">&times;</button></div>
+    <div class="modal modal-md"><div class="modal-header"><h2 id="userModalTitle">Crear Usuario</h2><button class="modal-close" id="closeUserModal">&times;</button></div>
         <div class="modal-body"><form id="userForm"><input type="hidden" id="uOriginalUid"><div class="form-group"><label class="form-label">Nombre *</label><input type="text" id="uNombre" class="form-input" required placeholder="Juan Perez"></div><div class="form-group"><label class="form-label">Email *</label><input type="email" id="uEmail" class="form-input" required placeholder="usuario@altorracars.com"></div><div class="form-group" id="uPasswordGroup"><label class="form-label">Contrasena del nuevo usuario *</label><input type="password" id="uPassword" class="form-input" required minlength="6" placeholder="Minimo 6 caracteres"></div><div class="form-group"><label class="form-label">Rol *</label><select id="uRol" class="form-select" required><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="super_admin">Super Admin</option></select></div></form></div>
         <div class="modal-footer"><button class="btn btn-ghost" id="cancelUserModal">Cancelar</button><button class="btn btn-primary" id="saveUser">Crear Usuario</button></div>
     </div>
@@ -1230,7 +1331,7 @@
 
 <!-- DEALER MODAL -->
 <div class="modal-overlay" id="dealerModal">
-    <div class="modal" style="max-width:500px;">
+    <div class="modal modal-md">
         <div class="modal-header"><h2 id="dealerModalTitle">Agregar Aliado</h2><button class="modal-close" id="closeDealerModal">&times;</button></div>
         <div class="modal-body">
             <form id="dealerForm">
@@ -1254,7 +1355,7 @@
         <div class="modal-body">
             <form id="appointmentManageForm">
                 <input type="hidden" id="amDocId">
-                <div id="amClientInfo" style="padding:0.75rem;background:rgba(212,175,55,0.1);border:1px solid var(--admin-gold);border-radius:8px;margin-bottom:1rem;font-size:0.85rem;"></div>
+                <div id="amClientInfo" class="admin-highlight-box"></div>
                 <div class="form-group">
                     <label class="form-label">Estado</label>
                     <select id="amEstado" class="form-select">
@@ -1289,7 +1390,7 @@
     <div class="modal" style="max-width:580px;">
         <div class="modal-header"><h2>Agendar Cita Interna</h2><button class="modal-close" id="closeInternalApptModal">&times;</button></div>
         <div class="modal-body">
-            <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Crea una cita directamente como admin (consignacion, inspeccion, visita interna).</p>
+            <p class="admin-hint">Crea una cita directamente como admin (consignacion, inspeccion, visita interna).</p>
             <form id="internalApptForm">
                 <div class="form-group">
                     <label class="form-label">Tipo de cita *</label>
@@ -1338,7 +1439,7 @@
     <div class="modal" style="max-width:480px;">
         <div class="modal-header"><h2 id="bhModalTitle">Bloquear Horas</h2><button class="modal-close" id="closeBlockedHoursModal">&times;</button></div>
         <div class="modal-body">
-            <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:1rem;">Selecciona las horas a bloquear para este dia. Las horas bloqueadas no estaran disponibles para los clientes.</p>
+            <p class="admin-hint">Selecciona las horas a bloquear para este dia. Las horas bloqueadas no estaran disponibles para los clientes.</p>
             <div id="bhDateLabel" style="font-size:0.95rem;font-weight:600;margin-bottom:1rem;color:var(--admin-gold);"></div>
             <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
                 <button class="btn btn-ghost btn-sm" id="bhBlockAll">Bloquear todo el dia</button>
@@ -1355,13 +1456,13 @@
 
 <!-- SOLD VEHICLE MODAL -->
 <div class="modal-overlay" id="soldModal">
-    <div class="modal" style="max-width:600px;">
+    <div class="modal modal-lg">
         <div class="modal-header"><h2>Registrar Operacion de Venta</h2><button class="modal-close" id="closeSoldModal">&times;</button></div>
         <div class="modal-body">
             <form id="soldForm">
                 <input type="hidden" id="soldVehicleId">
                 <input type="hidden" id="soldOrigenTipo">
-                <div id="soldVehicleInfo" style="padding:0.75rem;background:rgba(212,175,55,0.1);border:1px solid var(--admin-gold);border-radius:8px;margin-bottom:1rem;font-size:0.85rem;"></div>
+                <div id="soldVehicleInfo" class="admin-highlight-box"></div>
                 <div id="soldOrigenInfo" style="padding:0.5rem 0.75rem;border-radius:8px;margin-bottom:1rem;font-size:0.8rem;"></div>
 
                 <div class="form-group">
@@ -1405,22 +1506,21 @@
 <!-- TOAST -->
 <div class="admin-toast" id="adminToast"></div>
 
-<!-- SCRIPTS -->
+<!-- SCRIPTS (defer preserves execution order, unblocks HTML parser) -->
 <script src="js/firebase-config.js" defer></script>
-<script src="js/dynamic-lists.js"></script>
-<!-- Modular Admin (replaces monolithic admin-panel.js) -->
-<script src="js/admin-state.js"></script>
-<script src="js/admin-auth.js"></script>
-<script src="js/admin-sync.js"></script>
-<script src="js/admin-activity.js"></script>
-<script src="js/admin-vehicles.js"></script>
-<script src="js/admin-brands.js"></script>
-<script src="js/admin-users.js"></script>
-<script src="js/admin-appointments.js"></script>
-<script src="js/admin-dealers.js"></script>
-<script src="js/admin-lists.js"></script>
-<script src="js/admin-banners.js"></script>
-<script src="js/admin-reviews.js"></script>
-<script src="js/admin-operations.js"></script>
+<script src="js/dynamic-lists.js" defer></script>
+<script src="js/admin-state.js" defer></script>
+<script src="js/admin-auth.js" defer></script>
+<script src="js/admin-sync.js" defer></script>
+<script src="js/admin-activity.js" defer></script>
+<script src="js/admin-vehicles.js" defer></script>
+<script src="js/admin-brands.js" defer></script>
+<script src="js/admin-users.js" defer></script>
+<script src="js/admin-appointments.js" defer></script>
+<script src="js/admin-dealers.js" defer></script>
+<script src="js/admin-lists.js" defer></script>
+<script src="js/admin-banners.js" defer></script>
+<script src="js/admin-reviews.js" defer></script>
+<script src="js/admin-operations.js" defer></script>
 </body>
 </html>

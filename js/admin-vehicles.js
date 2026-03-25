@@ -4,6 +4,60 @@
     var AP = window.AP;
     var $ = AP.$;
 
+    // ========== VEHICLE AUDIT TRAIL ==========
+    // Returns current user info for audit fields
+    function getAuditUser() {
+        var user = window.auth && window.auth.currentUser;
+        var profile = AP.currentUserProfile;
+        return {
+            email: user ? user.email : 'unknown',
+            name: profile ? (profile.nombre || profile.name || user.email) : (user ? user.email : 'unknown')
+        };
+    }
+
+    // Compute diff between old and new vehicle data (only meaningful fields)
+    var AUDIT_FIELDS = ['marca', 'modelo', 'year', 'tipo', 'categoria', 'precio', 'precioOferta',
+        'kilometraje', 'transmision', 'combustible', 'motor', 'color', 'estado', 'ubicacion',
+        'destacado', 'descripcion', 'imagen', 'concesionario', 'oferta', 'featuredOrder'];
+
+    function computeChanges(oldData, newData) {
+        if (!oldData) return [{ field: '(nuevo)', from: null, to: 'creado' }];
+        var changes = [];
+        AUDIT_FIELDS.forEach(function(field) {
+            var oldVal = oldData[field];
+            var newVal = newData[field];
+            // Normalize for comparison
+            if (oldVal === undefined) oldVal = null;
+            if (newVal === undefined) newVal = null;
+            if (typeof oldVal === 'number' && typeof newVal === 'number') {
+                if (oldVal !== newVal) changes.push({ field: field, from: oldVal, to: newVal });
+            } else if (String(oldVal || '') !== String(newVal || '')) {
+                changes.push({ field: field, from: oldVal, to: newVal });
+            }
+        });
+        return changes;
+    }
+
+    // Write an entry to vehiculos/{id}/auditLog subcollection
+    function logVehicleAction(vehicleId, action, changes, extraData) {
+        if (!window.db || !vehicleId) return Promise.resolve();
+        var auditUser = getAuditUser();
+        var entry = {
+            action: action,
+            user: auditUser.email,
+            userName: auditUser.name,
+            timestamp: Date.now(),
+            changes: changes || [],
+            vehicleId: vehicleId
+        };
+        if (extraData) {
+            Object.keys(extraData).forEach(function(k) { entry[k] = extraData[k]; });
+        }
+        return window.db.collection('vehiculos').doc(String(vehicleId))
+            .collection('auditLog').add(entry)
+            .catch(function(err) { console.warn('[Audit] Failed to log action:', err.message); });
+    }
+
     // ========== UNIQUE VEHICLE CODE ==========
     // Format: ALT-YYYYMM-XXXX (auto-generated, immutable, never reused)
     function generateUniqueCode() {
@@ -112,7 +166,10 @@
                 dragCell +
                 '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + AP.escapeHtml(v.codigoUnico || '—') + '</code></td>' +
                 '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
-                '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small></td>' +
+                '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small>' +
+                (v.createdByName || v.createdBy ? '<br><small style="color:#6e7681;font-size:0.65rem;" title="Creado ' + (v.createdAt ? AP.timeAgo(v.createdAt) : '') + '">Creado por: ' + AP.escapeHtml(v.createdByName || v.createdBy || '') + '</small>' : '') +
+                (v.lastModifiedByName && v.lastModifiedBy !== v.createdBy ? '<br><small style="color:#d4af37;font-size:0.65rem;" title="' + (v.lastModifiedAt || '') + '">Mod: ' + AP.escapeHtml(v.lastModifiedByName) + ' ' + (v.lastModifiedAt ? AP.timeAgo(v.lastModifiedAt) : '') + '</small>' : '') +
+                '</td>' +
                 '<td><span class="badge badge-' + v.tipo + '">' + v.tipo + '</span></td>' +
                 '<td>' + AP.formatPrice(v.precio) + (v.precioOferta ? '<br><small style="color: var(--admin-warning);">' + AP.formatPrice(v.precioOferta) + '</small>' : '') + '</td>' +
                 '<td>' + estadoBadge + '</td>' +
@@ -722,9 +779,10 @@
     }
 
     // ========== BUILD & SAVE ==========
-    function buildVehicleData(id, codigoUnico) {
+    function buildVehicleData(id, codigoUnico, isNew) {
         var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value) : null;
-        var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
+        var auditUser = getAuditUser();
+        var userEmail = auditUser.email;
         var vehicleData = {
             id: id, codigoUnico: codigoUnico || $('vCodigoUnico').value || '',
             marca: $('vMarca').value, modelo: $('vModelo').value.trim(),
@@ -750,9 +808,19 @@
             caracteristicas: collectAllFeatures(),
             concesionario: $('vConcesionario') ? $('vConcesionario').value : '',
             consignaParticular: ($('vConcesionario') && $('vConcesionario').value === '_particular' && $('vConsignaParticular')) ? $('vConsignaParticular').value.trim() : '',
-            updatedAt: new Date().toISOString(), updatedBy: userEmail
+            updatedAt: new Date().toISOString(), updatedBy: userEmail,
+            // Audit trail fields
+            lastModifiedBy: auditUser.email,
+            lastModifiedByName: auditUser.name,
+            lastModifiedAt: new Date().toISOString()
         };
         if (vehicleData.imagen && vehicleData.imagenes.indexOf(vehicleData.imagen) === -1) vehicleData.imagenes.unshift(vehicleData.imagen);
+        // Set createdBy only on new vehicles (preserve original creator on edits)
+        if (isNew) {
+            vehicleData.createdBy = auditUser.email;
+            vehicleData.createdByName = auditUser.name;
+            vehicleData.createdAt = new Date().toISOString();
+        }
         return vehicleData;
     }
 
@@ -853,13 +921,19 @@
             var id = parseInt(existingId);
             var editingVehicle = AP.vehicles.find(function(v) { return v.id === id; });
             var expectedVersion = editingVehicle ? (editingVehicle._version || 0) : null;
-            vehicleData = buildVehicleData(id);
+            vehicleData = buildVehicleData(id, null, false);
+            // Preserve original creator from existing data
+            if (editingVehicle) {
+                if (editingVehicle.createdBy) vehicleData.createdBy = editingVehicle.createdBy;
+                if (editingVehicle.createdByName) vehicleData.createdByName = editingVehicle.createdByName;
+                if (editingVehicle.createdAt) vehicleData.createdAt = editingVehicle.createdAt;
+            }
             savePromise = saveExistingVehicle(vehicleData, id, expectedVersion);
         } else {
             // Generate unique code atomically, then save vehicle
             var candidateId = getNextId();
             savePromise = generateUniqueCode().then(function(code) {
-                vehicleData = buildVehicleData(candidateId, code);
+                vehicleData = buildVehicleData(candidateId, code, true);
                 return saveNewVehicle(vehicleData, candidateId, 10);
             });
         }
@@ -868,6 +942,16 @@
             var label = (vehicleData.marca || '') + ' ' + (vehicleData.modelo || '') + ' ' + (vehicleData.year || '');
             var codeLabel = vehicleData.codigoUnico ? ' [' + vehicleData.codigoUnico + ']' : '';
             AP.writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id + codeLabel, label.trim());
+            // Per-vehicle audit log entry
+            if (isEdit) {
+                var oldData = AP.vehicles.find(function(v) { return v.id === parseInt(existingId); });
+                var changes = computeChanges(oldData, vehicleData);
+                if (changes.length > 0) {
+                    logVehicleAction(vehicleData.id, 'edited', changes);
+                }
+            } else {
+                logVehicleAction(vehicleData.id, 'created', [{ field: '(nuevo)', from: null, to: label.trim() }]);
+            }
             AP.toast(isEdit ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo ' + vehicleData.codigoUnico + ' agregado');
             clearDraftFromFirestore();
             closeModalFn(true);
@@ -905,8 +989,12 @@
         btn.disabled = true;
         btn.textContent = 'Eliminando...';
         var deletingId = AP.deleteTargetId;
+        var deletingVehicle = AP.vehicles.find(function(v) { return v.id === deletingId; });
+        var deleteLabel = deletingVehicle ? (deletingVehicle.marca + ' ' + deletingVehicle.modelo + ' ' + deletingVehicle.year) : '';
+        // Log deletion BEFORE deleting (subcollection survives parent delete in Firestore)
+        logVehicleAction(deletingId, 'deleted', [], { vehicleLabel: deleteLabel });
         window.db.collection('vehiculos').doc(String(AP.deleteTargetId)).delete().then(function() {
-            AP.writeAuditLog('vehicle_delete', 'vehiculo #' + deletingId, '');
+            AP.writeAuditLog('vehicle_delete', 'vehiculo #' + deletingId, deleteLabel);
             AP.toast('Vehiculo eliminado');
             $('deleteModal').classList.remove('active');
             AP.deleteTargetId = null;
@@ -1310,15 +1398,19 @@
             var count = AP.vehicles.filter(function(v) { return v.destacado; }).length;
             if (count >= 6) { AP.toast('Maximo 6 vehiculos destacados en banner.', 'error'); return; }
         }
-        var userEmail = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'unknown';
+        var auditUser = getAuditUser();
         window.db.collection('vehiculos').doc(String(id)).update({
             destacado: newVal,
             featuredWeek: newVal,
             updatedAt: new Date().toISOString(),
-            updatedBy: userEmail
+            updatedBy: auditUser.email,
+            lastModifiedBy: auditUser.email,
+            lastModifiedByName: auditUser.name,
+            lastModifiedAt: new Date().toISOString()
         }).then(function() {
             AP.toast(newVal ? 'Vehiculo destacado (aparece en banner)' : 'Vehiculo quitado de destacados', 'success');
             AP.writeAuditLog('vehicle_feature_toggle', 'vehiculo #' + id, newVal ? 'destacado' : 'sin destacar');
+            logVehicleAction(id, 'featured', [{ field: 'destacado', from: !newVal, to: newVal }]);
         }).catch(function(err) { AP.toast('Error: ' + (err.message || err), 'error'); });
     }
 

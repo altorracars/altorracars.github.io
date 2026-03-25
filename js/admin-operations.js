@@ -226,6 +226,9 @@
                 observacionesVenta: ($('soldObservaciones').value || '').trim(),
                 updatedAt: new Date().toISOString(),
                 updatedBy: window.auth.currentUser.email,
+                lastModifiedBy: window.auth.currentUser.email,
+                lastModifiedByName: (AP.currentUserProfile ? (AP.currentUserProfile.nombre || AP.currentUserProfile.name || '') : '') || window.auth.currentUser.email,
+                lastModifiedAt: new Date().toISOString(),
                 _version: currentVersion + 1
             };
 
@@ -240,6 +243,17 @@
                     logDetail += ' | venta aliado: ' + AP.formatPrice(precioVenta) + ' | comision: ' + AP.formatPrice(comisionAltorra);
                 }
                 AP.writeAuditLog('vehicle_sold', 'vehiculo #' + vehicleId + soldCode, logDetail);
+                // Per-vehicle audit log
+                window.db.collection('vehiculos').doc(String(vehicleId))
+                    .collection('auditLog').add({
+                        action: 'sold',
+                        user: window.auth.currentUser.email,
+                        userName: updateData.lastModifiedByName,
+                        timestamp: Date.now(),
+                        changes: [{ field: 'estado', from: v ? v.estado : 'disponible', to: 'vendido' }],
+                        vehicleId: vehicleId,
+                        saleDetails: { canal: canal, origenTipo: origenTipo, precioVenta: precioVenta }
+                    }).catch(function() {});
                 $('soldModal').classList.remove('active');
             }).catch(function(err) {
                 AP.toast('Error: ' + err.message, 'error');

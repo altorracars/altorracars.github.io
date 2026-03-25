@@ -287,6 +287,10 @@
         var brandId = isEdit ? originalId : generateBrandId(nombre);
 
         var userEmail = window.auth.currentUser ? window.auth.currentUser.email : 'admin';
+        // F4.5: Get current version for optimistic locking
+        var existingBrand = AP.brands.find(function(x) { return x.id === brandId; });
+        var currentVersion = existingBrand ? (existingBrand._version || 0) : 0;
+
         var brandData = {
             id: brandId,
             nombre: nombre,
@@ -294,14 +298,15 @@
             logo: resolveLogoUrl($('bLogo').value.trim()),
             updatedAt: new Date().toISOString(),
             updatedBy: userEmail,
-            _type: 'marca'
+            _type: 'marca',
+            _version: isEdit ? currentVersion + 1 : 1
         };
 
         var btn = $('saveBrand');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
-        window.db.collection('marcas').doc(brandId).set(brandData)
+        window.db.collection('marcas').doc(brandId).set(brandData, { merge: true })
             .then(function() {
                 AP.writeAuditLog(isEdit ? 'brand_update' : 'brand_create', 'marca ' + brandId, brandData.nombre);
                 AP.toast(isEdit ? 'Marca actualizada' : 'Marca agregada');

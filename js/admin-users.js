@@ -128,6 +128,7 @@
             updateUserRole({ uid: originalUid, nombre: nombre, rol: rol })
                 .then(function(result) {
                     AP.toast(result.data.message || 'Usuario actualizado');
+                    AP.writeAuditLog('user_update', 'usuario ' + nombre, 'rol: ' + rol);
                     closeUserModalFn();
                     AP.loadUsers();
                 })
@@ -143,6 +144,7 @@
             createManagedUser({ nombre: nombre, email: email, password: password, rol: rol })
                 .then(function(result) {
                     AP.toast(result.data.message || 'Usuario creado exitosamente');
+                    AP.writeAuditLog('user_create', 'usuario ' + nombre, email + ' — rol: ' + rol);
                     closeUserModalFn();
                     AP.loadUsers();
                 })
@@ -188,6 +190,7 @@
         deleteManagedUser({ uid: uid })
             .then(function(result) {
                 AP.toast(result.data.message || 'Usuario eliminado completamente');
+                AP.writeAuditLog('user_delete', 'usuario ' + (u.nombre || u.email), u.email);
                 AP.loadUsers();
             })
             .catch(function(err) {

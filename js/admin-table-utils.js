@@ -9,7 +9,8 @@
         vehicles:     { page: 1, pageSize: 15 },
         brands:       { page: 1, pageSize: 20 },
         users:        { page: 1, pageSize: 20 },
-        appointments: { page: 1, pageSize: 15 }
+        appointments: { page: 1, pageSize: 15 },
+        audit:        { page: 1, pageSize: 50 }
     };
 
     // ========== SORTING STATE ==========
@@ -17,7 +18,8 @@
         vehicles:     { col: null, dir: 'asc' },
         brands:       { col: null, dir: 'asc' },
         users:        { col: null, dir: 'asc' },
-        appointments: { col: null, dir: 'asc' }
+        appointments: { col: null, dir: 'asc' },
+        audit:        { col: null, dir: 'asc' }
     };
 
     // ========== PAGINATION HELPERS ==========
@@ -43,7 +45,8 @@
             vehicles: function() { AP.renderVehiclesTable($('vehicleSearch') ? $('vehicleSearch').value : ''); },
             brands: function() { if (AP.renderBrandsTable) AP.renderBrandsTable(); },
             users: function() { if (AP.renderUsersTable) AP.renderUsersTable(); },
-            appointments: function() { if (AP.renderAppointmentsTable) AP.renderAppointmentsTable(); }
+            appointments: function() { if (AP.renderAppointmentsTable) AP.renderAppointmentsTable(); },
+            audit: function() { if (AP.renderAuditTable) AP.renderAuditTable(); }
         };
         if (renders[tableKey]) renders[tableKey]();
     };

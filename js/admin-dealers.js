@@ -70,7 +70,7 @@
                     '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.75rem;">' +
                         '<div><h4 style="margin:0;color:var(--admin-gold);">' + AP.escapeHtml(d.nombre || 'Sin nombre') + '</h4>' +
                         '<small style="color:var(--admin-text-muted);">' + AP.escapeHtml(d.ciudad || '') + (d.direccion ? ' - ' + AP.escapeHtml(d.direccion) : '') + '</small></div>' +
-                        (AP.isSuperAdmin() ? '<button class="btn btn-sm btn-ghost" onclick="adminPanel.editDealer(\'' + AP.escapeHtml(d._docId) + '\')" style="font-size:0.75rem;">Editar</button>' : '') +
+                        (AP.isSuperAdmin() ? '<button class="btn btn-sm btn-ghost" data-action="editDealer" data-id="' + AP.escapeHtml(d._docId) + '" style="font-size:0.75rem;">Editar</button>' : '') +
                     '</div>' +
                     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;text-align:center;">' +
                         '<div style="background:rgba(63,185,80,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:1.25rem;font-weight:800;color:var(--admin-success);">' + active + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Activos</div></div>' +
@@ -247,6 +247,15 @@
             if (targetEl) { targetEl.style.display = ''; targetEl.classList.add('active'); }
         });
     });
+
+    // F6.4: Event delegation for dealer actions
+    var dealersSection = $('sec-dealers');
+    if (dealersSection) {
+        dealersSection.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-action="editDealer"]');
+            if (btn) editDealer(btn.getAttribute('data-id'));
+        });
+    }
 
     // ========== EXPOSE ==========
     AP.loadDealers = loadDealers;

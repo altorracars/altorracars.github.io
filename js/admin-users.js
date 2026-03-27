@@ -33,8 +33,8 @@
                 '<td><span class="badge ' + rolClass + '">' + rolLabel + '</span></td>' +
                 '<td><span class="badge ' + estadoClass + '">' + (u.estado || 'activo') + '</span></td>' +
                 '<td>' +
-                    '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editUser(\'' + u._docId + '\')">Editar</button> ' +
-                    (isSelf ? '' : '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteUser(\'' + u._docId + '\')">Eliminar</button>') +
+                    '<button class="btn btn-ghost btn-sm" data-action="editUser" data-id="' + AP.escapeHtml(u._docId) + '">Editar</button> ' +
+                    (isSelf ? '' : '<button class="btn btn-danger btn-sm" data-action="deleteUser" data-id="' + AP.escapeHtml(u._docId) + '">Eliminar</button>') +
                 '</td>' +
             '</tr>';
         });
@@ -200,6 +200,18 @@
                 AP._deletingUser = false;
                 document.querySelectorAll('#usersTableBody .btn-danger').forEach(function(b) { b.disabled = false; });
             });
+    }
+
+    // F6.4: Event delegation for user actions
+    var usersBody = $('usersTableBody');
+    if (usersBody) {
+        usersBody.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            var id = btn.getAttribute('data-id');
+            if (btn.getAttribute('data-action') === 'editUser') editUser(id);
+            else if (btn.getAttribute('data-action') === 'deleteUser') deleteUserFn(id);
+        });
     }
 
     // ========== EXPOSE ==========

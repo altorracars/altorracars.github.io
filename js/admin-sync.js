@@ -109,7 +109,7 @@
         var vBody = $('vehiclesTableBody');
         if (vBody && AP.vehicles.length === 0) {
             vBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#f85149;">' +
-                'Error al cargar vehiculos. <a href="#" onclick="adminPanel.retryLoad();return false;" style="color:#58a6ff;text-decoration:underline;">Reintentar</a>' +
+                'Error al cargar vehiculos. <a href="#" data-action="retryLoad" style="color:#58a6ff;text-decoration:underline;">Reintentar</a>' +
                 '</td></tr>';
         }
         AP.toast('No se pudieron cargar los datos. Verifica tu conexion a internet.', 'error');
@@ -254,6 +254,15 @@
     // Estimator events
     var estVisitas = $('estVisitas');
     if (estVisitas) estVisitas.addEventListener('input', function() { updateEstimator(); });
+
+    // F6.4: Event delegation for retry link
+    var vBody = $('vehiclesTableBody');
+    if (vBody) {
+        vBody.addEventListener('click', function(e) {
+            var link = e.target.closest('[data-action="retryLoad"]');
+            if (link) { e.preventDefault(); retryLoad(); }
+        });
+    }
 
     // Expose
     AP.loadData = loadData;

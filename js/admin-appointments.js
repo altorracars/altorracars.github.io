@@ -87,8 +87,8 @@
                 '<td><span style="color:var(--' + tipoColor + ');font-size:0.8rem;">' + tipoLabel + '</span></td>' +
                 '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + AP.escapeHtml(a.observaciones || a.comentarios || '-') + '</td>' +
                 '<td style="white-space:nowrap;">' +
-                    (AP.RBAC.canManageAppointment() ? '<button class="btn btn-sm btn-ghost" onclick="adminPanel.manageAppointment(\'' + a._docId + '\')" title="Gestionar">Gestionar</button>' : '') +
-                    (AP.RBAC.canDeleteAppointment() ? ' <button class="btn btn-sm btn-danger" onclick="adminPanel.deleteAppointment(\'' + a._docId + '\')" title="Eliminar">&times;</button>' : '') +
+                    (AP.RBAC.canManageAppointment() ? '<button class="btn btn-sm btn-ghost" data-action="manageAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Gestionar">Gestionar</button>' : '') +
+                    (AP.RBAC.canDeleteAppointment() ? ' <button class="btn btn-sm btn-danger" data-action="deleteAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Eliminar">&times;</button>' : '') +
                 '</td>' +
             '</tr>';
         }).join('');
@@ -353,7 +353,7 @@
 
             html += '<div style="text-align:center;padding:6px 4px;border-radius:8px;' +
                 'background:' + bgColor + ';color:' + textColor + ';cursor:' + cursor + ';border:1px solid ' + border + ';min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;"' +
-                (clickable ? ' onclick="adminPanel.openDayManager(\'' + dateStr + '\')"' : '') +
+                (clickable ? ' data-action="openDayManager" data-date="' + dateStr + '"' : '') +
                 ' title="' + title + '">' +
                 inner + '</div>';
         }
@@ -600,6 +600,19 @@
             }
             renderAdminCalendar();
         }).catch(function() { renderAdminCalendar(); });
+    }
+
+    // F6.4: Event delegation for appointment actions
+    var citasSection = $('sec-citas');
+    if (citasSection) {
+        citasSection.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            var action = btn.getAttribute('data-action');
+            if (action === 'manageAppointment') manageAppointment(btn.getAttribute('data-id'));
+            else if (action === 'deleteAppointment') deleteAppointment(btn.getAttribute('data-id'));
+            else if (action === 'openDayManager') openDayManager(btn.getAttribute('data-date'));
+        });
     }
 
     // ========== EXPOSE ==========

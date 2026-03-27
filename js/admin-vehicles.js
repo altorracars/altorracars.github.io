@@ -131,23 +131,23 @@
             var estado = v.estado || 'disponible';
             var estadoInfo = AP.ESTADO_LABELS[estado] || AP.ESTADO_LABELS.disponible;
             var estadoBadge = '<span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span>';
-            var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ' +
-                '<button class="btn btn-ghost btn-sm" onclick="adminPanel.showAuditTimeline(' + v.id + ')" title="Historial de cambios" style="font-size:0.75rem;">📋</button> ';
+            var actions = '<button class="btn btn-ghost btn-sm" data-action="previewVehicle" data-id="' + v.id + '" title="Vista previa">👁</button> ' +
+                '<button class="btn btn-ghost btn-sm" data-action="showAuditTimeline" data-id="' + v.id + '" title="Historial de cambios" style="font-size:0.75rem;">📋</button> ';
             var esVendido = estado === 'vendido';
             if (AP.canCreateOrEditInventory()) {
-                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.toggleDestacado(' + v.id + ')" title="' + (v.destacado ? 'Quitar de destacados' : 'Marcar como destacado') + '" style="font-size:1rem;padding:2px 7px;">' + (v.destacado ? '⭐' : '☆') + '</button> ';
+                actions += '<button class="btn btn-ghost btn-sm" data-action="toggleDestacado" data-id="' + v.id + '" title="' + (v.destacado ? 'Quitar de destacados' : 'Marcar como destacado') + '" style="font-size:1rem;padding:2px 7px;">' + (v.destacado ? '⭐' : '☆') + '</button> ';
                 if (esVendido && !AP.isSuperAdmin()) {
                     actions += '<button class="btn btn-ghost btn-sm" disabled title="Solo Super Admin puede editar vehiculos vendidos" style="opacity:0.4;cursor:not-allowed;">Editar</button> ';
                     actions += '<span style="font-size:0.65rem;color:var(--admin-danger,#ef4444);">Protegido</span> ';
                 } else {
-                    actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
+                    actions += '<button class="btn btn-ghost btn-sm" data-action="editVehicle" data-id="' + v.id + '">Editar</button> ';
                 }
                 if (estado === 'disponible') {
-                    actions += '<button class="btn btn-sm" style="color:var(--admin-info);border-color:var(--admin-info);" onclick="adminPanel.markAsSold(' + v.id + ')">Gestionar Operacion</button> ';
+                    actions += '<button class="btn btn-sm" style="color:var(--admin-info);border-color:var(--admin-info);" data-action="markAsSold" data-id="' + v.id + '">Gestionar Operacion</button> ';
                 }
             }
             if (AP.canDeleteInventory()) {
-                actions += '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteVehicle(' + v.id + ')">Eliminar</button>';
+                actions += '<button class="btn btn-danger btn-sm" data-action="deleteVehicle" data-id="' + v.id + '">Eliminar</button>';
             }
             var origen = 'Propio';
             if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
@@ -1117,7 +1117,7 @@
                 '<div class="img-drag-handle" title="Arrastra para reordenar">☰</div>' +
                 '<img src="' + url + '" alt="Foto ' + (i + 1) + '" onerror="this.style.opacity=\'0.3\'">' +
                 (isMain ? '<span class="img-badge">PRINCIPAL</span>' : '<span class="img-badge img-badge-num">' + (i + 1) + '</span>') +
-                '<button type="button" class="remove-img" onclick="adminPanel.removeImage(' + i + ')">&times;</button>' +
+                '<button type="button" class="remove-img" data-action="removeImage" data-idx="' + i + '">&times;</button>' +
             '</div>';
         });
         container.innerHTML = html;
@@ -1394,7 +1394,7 @@
             var editingLabel = d.vehicleId ? ('Editando #' + d.vehicleId) : 'Nuevo vehiculo';
             var btnHtml = isOwn
                 ? '<span style="color:var(--admin-success);font-size:0.7rem;font-weight:500;">Tu borrador</span>'
-                : '<button class="btn btn-ghost btn-sm" onclick="adminPanel.loadDraftFromUser(\'' + AP.escapeHtml(d.userId || '') + '\')">Continuar</button>';
+                : '<button class="btn btn-ghost btn-sm" data-action="loadDraftFromUser" data-user-id="' + AP.escapeHtml(d.userId || '') + '">Continuar</button>';
 
             return '<div class="draft-item">'
                 + '<div class="draft-item-info">'
@@ -1538,4 +1538,26 @@
     AP.showAuditTimeline = showAuditTimeline;
     AP.clearCutoutPng = clearCutoutPng;
     AP.renderCutoutPreview = renderCutoutPreview;
+
+    // F6.4: Event delegation for vehicle table actions
+    var vehicleActions = {
+        previewVehicle: function(id) { previewVehicle(parseInt(id, 10)); },
+        showAuditTimeline: function(id) { showAuditTimeline(parseInt(id, 10)); },
+        toggleDestacado: function(id) { toggleDestacadoFn(parseInt(id, 10)); },
+        editVehicle: function(id) { editVehicle(parseInt(id, 10)); },
+        markAsSold: function(id) { AP.markAsSold(parseInt(id, 10)); },
+        deleteVehicle: function(id) { deleteVehicleFn(parseInt(id, 10)); },
+        removeImage: function(_, btn) { removeImage(parseInt(btn.getAttribute('data-idx'), 10)); },
+        loadDraftFromUser: function(_, btn) { loadDraftFromUser(btn.getAttribute('data-user-id')); }
+    };
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        var action = btn.getAttribute('data-action');
+        var handler = vehicleActions[action];
+        if (handler) {
+            e.preventDefault();
+            handler(btn.getAttribute('data-id'), btn);
+        }
+    });
 })();

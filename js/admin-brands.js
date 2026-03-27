@@ -306,7 +306,9 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
-        window.db.collection('marcas').doc(brandId).set(brandData, { merge: true })
+        var docRef = window.db.collection('marcas').doc(brandId);
+        var saveOp = isEdit ? docRef.update(brandData) : docRef.set(brandData);
+        saveOp
             .then(function() {
                 AP.writeAuditLog(isEdit ? 'brand_update' : 'brand_create', 'marca ' + brandId, brandData.nombre);
                 AP.toast(isEdit ? 'Marca actualizada' : 'Marca agregada');

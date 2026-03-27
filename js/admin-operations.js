@@ -62,7 +62,7 @@
 
             return '<tr>' +
                 '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + AP.escapeHtml(v.codigoUnico || '—') + '</code></td>' +
-                '<td><strong>' + marca + ' ' + (v.modelo || '') + '</strong><br><small>' + (v.year || '') + '</small></td>' +
+                '<td><strong>' + AP.escapeHtml(marca) + ' ' + AP.escapeHtml(v.modelo || '') + '</strong><br><small>' + AP.escapeHtml(v.year || '') + '</small></td>' +
                 '<td style="font-size:0.8rem;">' + AP.escapeHtml(origen) + '</td>' +
                 '<td>' + canalBadge + '</td>' +
                 '<td>' + (esAltorra ? AP.formatPrice(v.precioVenta || v.precioCierre || 0) : '-') + '</td>' +
@@ -111,8 +111,8 @@
         $('soldVehicleId').value = vehicleId;
         $('soldOrigenTipo').value = esPropio ? 'propio' : 'aliado';
         var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
-        var codeInfo = v.codigoUnico ? '<code style="color:var(--admin-accent);">' + v.codigoUnico + '</code> — ' : '';
-        $('soldVehicleInfo').innerHTML = codeInfo + '<strong>' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</strong><br>Precio publicado: ' + AP.formatPrice(v.precio);
+        var codeInfo = v.codigoUnico ? '<code style="color:var(--admin-accent);">' + AP.escapeHtml(v.codigoUnico) + '</code> — ' : '';
+        $('soldVehicleInfo').innerHTML = codeInfo + '<strong>' + AP.escapeHtml(marca) + ' ' + AP.escapeHtml(v.modelo || '') + ' ' + AP.escapeHtml(v.year || '') + '</strong><br>Precio publicado: ' + AP.formatPrice(v.precio);
 
         var origenInfo = $('soldOrigenInfo');
         if (origenInfo) {
@@ -333,7 +333,7 @@
                         AP.loadData();
                     }).catch(function(err) {
                         AP.toast('Error de importacion: ' + err.message, 'error');
-                        statusEl.innerHTML = '<span style="color:var(--admin-danger);">Error: ' + err.message + '</span>';
+                        statusEl.innerHTML = '<span style="color:var(--admin-danger);">Error: ' + AP.escapeHtml(err.message) + '</span>';
                     });
                 } catch (err) {
                     AP.toast('Error al leer archivo JSON: ' + err.message, 'error');

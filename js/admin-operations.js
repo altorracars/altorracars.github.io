@@ -185,8 +185,8 @@
     var confirmSoldBtn = $('confirmSold');
     if (confirmSoldBtn) {
         confirmSoldBtn.addEventListener('click', function() {
-            var vehicleId = parseInt($('soldVehicleId').value);
-            if (!vehicleId) return;
+            var vehicleId = parseInt($('soldVehicleId').value, 10);
+            if (!vehicleId || isNaN(vehicleId)) return;
             var canal = $('soldCanal').value;
             if (!canal) { AP.toast('Selecciona el canal de venta', 'error'); return; }
 
@@ -200,13 +200,13 @@
 
             if (canal === 'altorra') {
                 if (origenTipo === 'propio') {
-                    precioVenta = parseInt($('soldPrecio').value) || 0;
-                    utilidadAltorra = parseInt($('soldUtilidad').value) || 0;
+                    precioVenta = parseInt($('soldPrecio').value, 10) || 0;
+                    utilidadAltorra = parseInt($('soldUtilidad').value, 10) || 0;
                     responsable = ($('soldResponsable').value || '').trim();
                     if (!precioVenta || !responsable) { AP.toast('Precio de venta y responsable son requeridos', 'error'); return; }
                 } else {
-                    precioVenta = parseInt($('soldPrecioAliado').value) || 0;
-                    comisionAltorra = parseInt($('soldComision').value) || 0;
+                    precioVenta = parseInt($('soldPrecioAliado').value, 10) || 0;
+                    comisionAltorra = parseInt($('soldComision').value, 10) || 0;
                     responsable = ($('soldResponsableAliado').value || '').trim();
                     if (!comisionAltorra || !responsable) { AP.toast('Comision ALTORRA y responsable son requeridos', 'error'); return; }
                 }

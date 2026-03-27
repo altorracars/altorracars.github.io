@@ -47,7 +47,7 @@
 
     function updateReviewStats() {
         var total = AP.reviews.length;
-        var sum = AP.reviews.reduce(function(acc, r) { return acc + (parseInt(r.rating) || 0); }, 0);
+        var sum = AP.reviews.reduce(function(acc, r) { return acc + (parseInt(r.rating, 10) || 0); }, 0);
         var avg = total > 0 ? (sum / total).toFixed(1) : '0.0';
         var featured = AP.reviews.filter(function(r) { return r.featured; }).length;
 
@@ -115,7 +115,7 @@
                         '</div>' +
                     '</div>' +
                 '</td>' +
-                '<td><div style="display:flex;gap:1px;">' + renderStarsSmall(parseInt(r.rating) || 0) + '</div></td>' +
+                '<td><div style="display:flex;gap:1px;">' + renderStarsSmall(parseInt(r.rating, 10) || 0) + '</div></td>' +
                 '<td style="font-size:0.85rem;">' + AP.escapeHtml(r.vehicle || '-') + '</td>' +
                 '<td style="font-size:0.8rem;color:var(--admin-text-muted);">' + AP.escapeHtml(sourceLabel) + '</td>' +
                 '<td>' + featuredBadge + '</td>' +
@@ -159,7 +159,7 @@
     function saveReview() {
         var name = $('reviewName').value.trim();
         var location = $('reviewLocation').value.trim();
-        var rating = parseInt($('reviewRating').value) || 5;
+        var rating = parseInt($('reviewRating').value, 10) || 5;
         var vehicle = $('reviewVehicle').value.trim();
         var text = $('reviewText').value.trim();
         var source = $('reviewSource').value || 'sitio_web';

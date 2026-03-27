@@ -217,7 +217,7 @@
             title: title,
             subtitle: $('bannerSubtitle').value.trim(),
             position: $('bannerPosition').value,
-            order: parseInt($('bannerOrder').value) || 0,
+            order: parseInt($('bannerOrder').value, 10) || 0,
             category: $('bannerCategory').value || '',
             link: $('bannerLink').value.trim(),
             cta: $('bannerCta').value.trim(),

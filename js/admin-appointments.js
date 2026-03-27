@@ -314,7 +314,7 @@
         today.setHours(0,0,0,0);
 
         var availDays = [];
-        document.querySelectorAll('#availDays input:checked').forEach(function(cb) { availDays.push(parseInt(cb.value)); });
+        document.querySelectorAll('#availDays input:checked').forEach(function(cb) { availDays.push(parseInt(cb.value, 10)); });
 
         for (var i = 0; i < firstDay; i++) { html += '<div></div>'; }
 
@@ -373,9 +373,9 @@
         if (bhTitle) bhTitle.textContent = 'Gestionar: ' + dateStr;
 
         // Generate time slot toggles
-        var startHour = parseInt(($('availStartHour') || {}).value) || 8;
-        var endHour = parseInt(($('availEndHour') || {}).value) || 18;
-        var interval = parseInt(($('availInterval') || {}).value) || 30;
+        var startHour = parseInt(($('availStartHour') || {}).value, 10) || 8;
+        var endHour = parseInt(($('availEndHour') || {}).value, 10) || 18;
+        var interval = parseInt(($('availInterval') || {}).value, 10) || 30;
 
         var slots = [];
         for (var hour = startHour; hour < endHour; hour++) {
@@ -551,11 +551,11 @@
     if (btnSaveAvail) {
         btnSaveAvail.addEventListener('click', function() {
             if (!AP.isSuperAdmin()) { AP.toast('Solo Super Admin puede cambiar disponibilidad', 'error'); return; }
-            var startHour = parseInt($('availStartHour').value);
-            var endHour = parseInt($('availEndHour').value);
-            var interval = $('availInterval') ? parseInt($('availInterval').value) : 30;
+            var startHour = parseInt($('availStartHour').value, 10);
+            var endHour = parseInt($('availEndHour').value, 10);
+            var interval = $('availInterval') ? parseInt($('availInterval').value, 10) : 30;
             var days = [];
-            document.querySelectorAll('#availDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value)); });
+            document.querySelectorAll('#availDays input:checked').forEach(function(cb) { days.push(parseInt(cb.value, 10)); });
             var blockedList = Object.keys(AP.blockedDates).filter(function(k) { return AP.blockedDates[k]; });
             var blockedHoursObj = AP.blockedHours || {};
             window.db.collection('config').doc('availability').set({
@@ -586,7 +586,7 @@
             if (data.interval && $('availInterval')) $('availInterval').value = data.interval;
             if (data.days) {
                 document.querySelectorAll('#availDays input').forEach(function(cb) {
-                    cb.checked = data.days.indexOf(parseInt(cb.value)) !== -1;
+                    cb.checked = data.days.indexOf(parseInt(cb.value, 10)) !== -1;
                 });
             }
             if (data.blockedDates) {

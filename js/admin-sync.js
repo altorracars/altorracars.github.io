@@ -187,7 +187,7 @@
         $('statMarcas').textContent = AP.brands.length;
         $('statVendidos').textContent = AP.vehicles.filter(function(v) { return v.estado === 'vendido'; }).length;
         var citasEl = $('statCitas');
-        if (citasEl) citasEl.textContent = AP.appointments.length > 0 ? AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length : '-';
+        if (citasEl) citasEl.textContent = (AP.appointments && AP.appointments.length > 0) ? AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length : '-';
     }
 
     function updateNavBadges() {
@@ -218,7 +218,7 @@
         var storagePct = (storageUsedGB / AP.FREE_TIER.storageGB) * 100;
 
         var visitsInput = $('estVisitas');
-        var monthlyVisits = visitsInput ? (parseInt(visitsInput.value) || 500) : 500;
+        var monthlyVisits = visitsInput ? (parseInt(visitsInput.value, 10) || 500) : 500;
         var avgImagesPerVisit = 8;
         var egressGB = (monthlyVisits * avgImagesPerVisit * avgSizeKB) / (1024 * 1024);
         var egressPct = (egressGB / AP.FREE_TIER.egressGB) * 100;

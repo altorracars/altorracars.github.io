@@ -289,8 +289,8 @@
                 this.classList.remove('drag-over-top', 'drag-over-bottom');
                 if (this === _dragSrcRow || !_dragSrcRow) return;
 
-                var srcId = parseInt(_dragSrcRow.getAttribute('data-vehicle-id'));
-                var targetId = parseInt(this.getAttribute('data-vehicle-id'));
+                var srcId = parseInt(_dragSrcRow.getAttribute('data-vehicle-id'), 10);
+                var targetId = parseInt(this.getAttribute('data-vehicle-id'), 10);
                 handlePrioritySwap(srcId, targetId);
                 _dragSrcRow = null;
             });
@@ -331,7 +331,7 @@
             );
             if (confirm) {
                 // Shift conflicting vehicle down by 1
-                var shiftedPrio = Math.max(0, newSrcPrio - 1);
+                var shiftedPrio = newSrcPrio + 1;
                 savePriorityToFirestore(collision.id, shiftedPrio);
             }
         }
@@ -378,7 +378,7 @@
     function updateFeaturedCounter() {
         var counter = $('featuredCounter');
         if (!counter) return;
-        var editId = $('vId').value ? parseInt($('vId').value) : null;
+        var editId = $('vId').value ? parseInt($('vId').value, 10) : null;
         var count = AP.vehicles.filter(function(v) { return v.destacado && v.id !== editId; }).length;
         counter.textContent = '(' + count + '/6)';
         counter.style.color = count >= 6 ? '#ef4444' : '#b89658';
@@ -811,20 +811,20 @@
 
     // ========== BUILD & SAVE ==========
     function buildVehicleData(id, codigoUnico, isNew) {
-        var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value) : null;
+        var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value, 10) : null;
         var auditUser = getAuditUser();
         var userEmail = auditUser.email;
         var vehicleData = {
             id: id, codigoUnico: codigoUnico || $('vCodigoUnico').value || '',
             marca: $('vMarca').value, modelo: $('vModelo').value.trim(),
-            year: parseInt($('vYear').value), tipo: $('vTipo').value, categoria: $('vCategoria').value,
-            precio: parseInt($('vPrecio').value), precioOferta: precioOferta, oferta: !!precioOferta,
-            kilometraje: parseInt($('vKm').value) || 0, transmision: $('vTransmision').value,
+            year: parseInt($('vYear').value, 10), tipo: $('vTipo').value, categoria: $('vCategoria').value,
+            precio: parseInt($('vPrecio').value, 10), precioOferta: precioOferta, oferta: !!precioOferta,
+            kilometraje: parseInt($('vKm').value, 10) || 0, transmision: $('vTransmision').value,
             combustible: $('vCombustible').value, motor: $('vMotor').value || '',
             potencia: $('vPotencia').value || '', cilindraje: $('vCilindraje').value || '',
             traccion: $('vTraccion').value || '', direccion: $('vDireccion').value || 'Electrica',
-            color: AP.toTitleCase($('vColor').value), puertas: parseInt($('vPuertas').value) || 5,
-            pasajeros: parseInt($('vPasajeros').value) || 5, asientos: parseInt($('vPasajeros').value) || 5,
+            color: AP.toTitleCase($('vColor').value), puertas: parseInt($('vPuertas').value, 10) || 5,
+            pasajeros: parseInt($('vPasajeros').value, 10) || 5, asientos: parseInt($('vPasajeros').value, 10) || 5,
             ubicacion: $('vUbicacion').value || 'Cartagena', placa: $('vPlaca').value || 'Disponible al contactar',
             codigoFasecolda: $('vFasecolda').value || 'Consultar',
             revisionTecnica: $('vRevision').checked, peritaje: $('vPeritaje').checked,
@@ -832,7 +832,7 @@
             destacado: $('vDestacado').checked,
             featuredWeek: $('vDestacado').checked, /* siempre igual a destacado — campo legacy */
             prioridad: (function() { var ex = AP.vehicles.find(function(v) { return v.id === id; }); return ex ? (ex.prioridad || 0) : 0; })(),
-            featuredOrder: $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value) || null) : null,
+            featuredOrder: $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value, 10) || null) : null,
             featuredCutoutPng: $('vFeaturedCutoutPng') ? ($('vFeaturedCutoutPng').value.trim() || null) : null,
             imagen: AP.uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
             imagenes: AP.uploadedImageUrls.length ? AP.uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
@@ -891,7 +891,7 @@
         if (!validateAndHighlightFields()) { AP.toast('Completa los campos requeridos marcados en rojo', 'error'); return; }
 
         // Fase 22: Proteccion vehiculos vendidos en save
-        var _editingId = $('vId').value ? parseInt($('vId').value) : null;
+        var _editingId = $('vId').value ? parseInt($('vId').value, 10) : null;
         if (_editingId) {
             var _originalVehicle = AP.vehicles.find(function(v) { return v.id === _editingId; });
             if (_originalVehicle && _originalVehicle.estado === 'vendido' && !AP.isSuperAdmin()) {
@@ -915,7 +915,7 @@
 
         // Limitar maximo 6 vehiculos destacados (= banner)
         if ($('vDestacado').checked) {
-            var editId = $('vId').value ? parseInt($('vId').value) : null;
+            var editId = $('vId').value ? parseInt($('vId').value, 10) : null;
             var otherDestacados = AP.vehicles.filter(function(v) {
                 return v.destacado && v.id !== editId;
             });
@@ -925,7 +925,7 @@
             }
 
             // Detectar orden duplicado en banner
-            var fwOrder = $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value) || null) : null;
+            var fwOrder = $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value, 10) || null) : null;
             if (fwOrder !== null) {
                 var orderConflict = otherDestacados.find(function(v) { return v.featuredOrder === fwOrder; });
                 if (orderConflict) {
@@ -949,7 +949,7 @@
 
         var vehicleData, savePromise;
         if (isEdit) {
-            var id = parseInt(existingId);
+            var id = parseInt(existingId, 10);
             var editingVehicle = AP.vehicles.find(function(v) { return v.id === id; });
             var expectedVersion = editingVehicle ? (editingVehicle._version || 0) : null;
             vehicleData = buildVehicleData(id, null, false);
@@ -975,7 +975,7 @@
             AP.writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id + codeLabel, label.trim());
             // Per-vehicle audit log entry
             if (isEdit) {
-                var oldData = AP.vehicles.find(function(v) { return v.id === parseInt(existingId); });
+                var oldData = AP.vehicles.find(function(v) { return v.id === parseInt(existingId, 10); });
                 var changes = computeChanges(oldData, vehicleData);
                 if (changes.length > 0) {
                     logVehicleAction(vehicleData.id, 'edited', changes);
@@ -1056,7 +1056,7 @@
         var invalidType = fileArray.filter(function(f) { return AP.UPLOAD_CONFIG.allowedTypes.indexOf(f.type) === -1; });
         if (invalidType.length) { showUploadError('Formatos permitidos: JPG, PNG, WebP.'); return; }
         var maxBytes = AP.UPLOAD_CONFIG.maxFileSizeMB * 1024 * 1024;
-        var oversized = fileArray.filter(function(f) { return f.size > maxBytes * 5; });
+        var oversized = fileArray.filter(function(f) { return f.size > maxBytes; });
         if (oversized.length) { showUploadError('Imagenes demasiado grandes (max 10MB).'); return; }
         $('uploadError').style.display = 'none';
         var total = fileArray.length, done = 0, errors = 0;
@@ -1131,13 +1131,13 @@
     function initImageDragDrop(container) {
         var items = container.querySelectorAll('.uploaded-img');
         items.forEach(function(item) {
-            item.addEventListener('dragstart', function(e) { AP._dragSrcIdx = parseInt(this.getAttribute('data-idx')); this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+            item.addEventListener('dragstart', function(e) { AP._dragSrcIdx = parseInt(this.getAttribute('data-idx'), 10); this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
             item.addEventListener('dragend', function() { this.classList.remove('dragging'); container.querySelectorAll('.uploaded-img').forEach(function(el) { el.classList.remove('drag-over'); }); });
             item.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; this.classList.add('drag-over'); });
             item.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
             item.addEventListener('drop', function(e) {
                 e.preventDefault(); this.classList.remove('drag-over');
-                var targetIdx = parseInt(this.getAttribute('data-idx'));
+                var targetIdx = parseInt(this.getAttribute('data-idx'), 10);
                 if (AP._dragSrcIdx !== null && AP._dragSrcIdx !== targetIdx) {
                     var moved = AP.uploadedImageUrls.splice(AP._dragSrcIdx, 1)[0];
                     AP.uploadedImageUrls.splice(targetIdx, 0, moved);
@@ -1253,12 +1253,12 @@
     var featuredOrderEl = $('vFeaturedOrder');
     if (featuredOrderEl) {
         featuredOrderEl.addEventListener('input', function() {
-            var orderVal = parseInt(this.value) || null;
+            var orderVal = parseInt(this.value, 10) || null;
             this.classList.remove('field-error');
             var errEl = this.parentElement.querySelector('.field-error-msg');
             if (errEl) errEl.remove();
             if (!orderVal) return;
-            var editId = $('vId').value ? parseInt($('vId').value) : null;
+            var editId = $('vId').value ? parseInt($('vId').value, 10) : null;
             var conflict = AP.vehicles.find(function(v) {
                 return v.destacado && v.id !== editId && v.featuredOrder === orderVal;
             });

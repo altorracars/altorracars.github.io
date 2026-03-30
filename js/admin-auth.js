@@ -191,7 +191,28 @@
         resetLoginBtn();
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'flex';
-        $('adminEmail').textContent = user.email + ' (' + (AP.currentUserRole === 'super_admin' ? 'Super Admin' : AP.currentUserRole === 'editor' ? 'Editor' : 'Viewer') + ')';
+        var rolLabel = AP.currentUserRole === 'super_admin' ? 'Super Admin' : AP.currentUserRole === 'editor' ? 'Editor' : 'Viewer';
+        var userName = (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0];
+        $('adminEmail').textContent = user.email + ' (' + rolLabel + ')';
+
+        // F7.2: Sidebar profile
+        var profileEl = $('sidebarProfile');
+        if (profileEl) {
+            profileEl.style.display = '';
+            var initials = userName.split(' ').map(function(w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join('');
+            $('sidebarAvatar').textContent = initials;
+            $('sidebarUserName').textContent = userName;
+            $('sidebarUserRole').textContent = rolLabel;
+        }
+
+        // F7.4: Welcome message
+        var welcomeEl = $('dashboardWelcome');
+        if (welcomeEl) {
+            var hour = new Date().getHours();
+            var greeting = hour < 12 ? 'Buenos dias' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
+            welcomeEl.textContent = greeting + ', ' + userName.split(' ')[0];
+        }
+
         recordSessionStart();
         AP.writeAuditLog('login', 'sesion', user.email);
         startInactivityTracking();
@@ -302,6 +323,45 @@
                 }
             });
     });
+
+    // F7.1: Password reset
+    var forgotLink = $('forgotPasswordLink');
+    if (forgotLink) {
+        forgotLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            var email = $('loginEmail').value.trim();
+            var msgEl = $('forgotPasswordMsg');
+            if (!email) {
+                msgEl.style.display = 'block';
+                msgEl.style.color = 'var(--admin-warning)';
+                msgEl.textContent = 'Ingresa tu correo electronico arriba primero.';
+                $('loginEmail').focus();
+                return;
+            }
+            forgotLink.style.pointerEvents = 'none';
+            forgotLink.textContent = 'Enviando...';
+            window.firebaseReady.then(function() {
+                return window.auth.sendPasswordResetEmail(email);
+            }).then(function() {
+                msgEl.style.display = 'block';
+                msgEl.style.color = 'var(--admin-success,#3fb950)';
+                msgEl.textContent = 'Correo de restablecimiento enviado a ' + email + '. Revisa tu bandeja de entrada.';
+            }).catch(function(err) {
+                msgEl.style.display = 'block';
+                msgEl.style.color = 'var(--admin-danger)';
+                if (err.code === 'auth/user-not-found') {
+                    msgEl.textContent = 'No existe una cuenta con ese correo.';
+                } else if (err.code === 'auth/invalid-email') {
+                    msgEl.textContent = 'Correo electronico invalido.';
+                } else {
+                    msgEl.textContent = 'Error: ' + err.message;
+                }
+            }).finally(function() {
+                forgotLink.style.pointerEvents = '';
+                forgotLink.textContent = '¿Olvidaste tu contrasena?';
+            });
+        });
+    }
 
     $('logoutBtn').addEventListener('click', function() {
         clearSessionStart();

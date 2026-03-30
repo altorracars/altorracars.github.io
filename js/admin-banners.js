@@ -377,6 +377,12 @@
     // Init upload handlers
     initBannerUpload();
 
+    // Bind cancel delete button (migrated from inline onclick)
+    var cancelDelBanner = $('cancelDeleteBanner');
+    if (cancelDelBanner) cancelDelBanner.addEventListener('click', function() {
+        $('bannerDeleteConfirm').classList.remove('active');
+    });
+
     // ========== EXPOSE ==========
     AP.subscribeBanners = subscribeBanners;
     AP.editBanner = editBanner;

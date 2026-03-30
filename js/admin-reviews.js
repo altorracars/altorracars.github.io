@@ -260,6 +260,12 @@
     var btnConfirmDelete = $('confirmDeleteReview');
     if (btnConfirmDelete) btnConfirmDelete.addEventListener('click', deleteReview);
 
+    // Bind cancel delete button (migrated from inline onclick)
+    var cancelDelReview = $('cancelDeleteReview');
+    if (cancelDelReview) cancelDelReview.addEventListener('click', function() {
+        $('reviewDeleteConfirm').classList.remove('active');
+    });
+
     // ========== EXPOSE ==========
     AP.subscribeReviews = subscribeReviews;
     AP.editReview = editReview;

@@ -131,23 +131,23 @@
             var estado = v.estado || 'disponible';
             var estadoInfo = AP.ESTADO_LABELS[estado] || AP.ESTADO_LABELS.disponible;
             var estadoBadge = '<span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span>';
-            var actions = '<button class="btn btn-ghost btn-sm" onclick="adminPanel.previewVehicle(' + v.id + ')" title="Vista previa">👁</button> ' +
-                '<button class="btn btn-ghost btn-sm" onclick="adminPanel.showAuditTimeline(' + v.id + ')" title="Historial de cambios" style="font-size:0.75rem;">📋</button> ';
+            var actions = '<button class="btn btn-ghost btn-sm" data-action="previewVehicle" data-id="' + v.id + '" title="Vista previa">👁</button> ' +
+                '<button class="btn btn-ghost btn-sm" data-action="showAuditTimeline" data-id="' + v.id + '" title="Historial de cambios" style="font-size:0.75rem;">📋</button> ';
             var esVendido = estado === 'vendido';
             if (AP.canCreateOrEditInventory()) {
-                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.toggleDestacado(' + v.id + ')" title="' + (v.destacado ? 'Quitar de destacados' : 'Marcar como destacado') + '" style="font-size:1rem;padding:2px 7px;">' + (v.destacado ? '⭐' : '☆') + '</button> ';
+                actions += '<button class="btn btn-ghost btn-sm" data-action="toggleDestacado" data-id="' + v.id + '" title="' + (v.destacado ? 'Quitar de destacados' : 'Marcar como destacado') + '" style="font-size:1rem;padding:2px 7px;">' + (v.destacado ? '⭐' : '☆') + '</button> ';
                 if (esVendido && !AP.isSuperAdmin()) {
                     actions += '<button class="btn btn-ghost btn-sm" disabled title="Solo Super Admin puede editar vehiculos vendidos" style="opacity:0.4;cursor:not-allowed;">Editar</button> ';
                     actions += '<span style="font-size:0.65rem;color:var(--admin-danger,#ef4444);">Protegido</span> ';
                 } else {
-                    actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editVehicle(' + v.id + ')">Editar</button> ';
+                    actions += '<button class="btn btn-ghost btn-sm" data-action="editVehicle" data-id="' + v.id + '">Editar</button> ';
                 }
                 if (estado === 'disponible') {
-                    actions += '<button class="btn btn-sm" style="color:var(--admin-info);border-color:var(--admin-info);" onclick="adminPanel.markAsSold(' + v.id + ')">Gestionar Operacion</button> ';
+                    actions += '<button class="btn btn-sm" style="color:var(--admin-info);border-color:var(--admin-info);" data-action="markAsSold" data-id="' + v.id + '">Gestionar Operacion</button> ';
                 }
             }
             if (AP.canDeleteInventory()) {
-                actions += '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteVehicle(' + v.id + ')">Eliminar</button>';
+                actions += '<button class="btn btn-danger btn-sm" data-action="deleteVehicle" data-id="' + v.id + '">Eliminar</button>';
             }
             var origen = 'Propio';
             if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
@@ -289,8 +289,8 @@
                 this.classList.remove('drag-over-top', 'drag-over-bottom');
                 if (this === _dragSrcRow || !_dragSrcRow) return;
 
-                var srcId = parseInt(_dragSrcRow.getAttribute('data-vehicle-id'));
-                var targetId = parseInt(this.getAttribute('data-vehicle-id'));
+                var srcId = parseInt(_dragSrcRow.getAttribute('data-vehicle-id'), 10);
+                var targetId = parseInt(this.getAttribute('data-vehicle-id'), 10);
                 handlePrioritySwap(srcId, targetId);
                 _dragSrcRow = null;
             });
@@ -331,7 +331,7 @@
             );
             if (confirm) {
                 // Shift conflicting vehicle down by 1
-                var shiftedPrio = Math.max(0, newSrcPrio - 1);
+                var shiftedPrio = newSrcPrio + 1;
                 savePriorityToFirestore(collision.id, shiftedPrio);
             }
         }
@@ -378,7 +378,7 @@
     function updateFeaturedCounter() {
         var counter = $('featuredCounter');
         if (!counter) return;
-        var editId = $('vId').value ? parseInt($('vId').value) : null;
+        var editId = $('vId').value ? parseInt($('vId').value, 10) : null;
         var count = AP.vehicles.filter(function(v) { return v.destacado && v.id !== editId; }).length;
         counter.textContent = '(' + count + '/6)';
         counter.style.color = count >= 6 ? '#ef4444' : '#b89658';
@@ -811,20 +811,20 @@
 
     // ========== BUILD & SAVE ==========
     function buildVehicleData(id, codigoUnico, isNew) {
-        var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value) : null;
+        var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value, 10) : null;
         var auditUser = getAuditUser();
         var userEmail = auditUser.email;
         var vehicleData = {
             id: id, codigoUnico: codigoUnico || $('vCodigoUnico').value || '',
             marca: $('vMarca').value, modelo: $('vModelo').value.trim(),
-            year: parseInt($('vYear').value), tipo: $('vTipo').value, categoria: $('vCategoria').value,
-            precio: parseInt($('vPrecio').value), precioOferta: precioOferta, oferta: !!precioOferta,
-            kilometraje: parseInt($('vKm').value) || 0, transmision: $('vTransmision').value,
+            year: parseInt($('vYear').value, 10), tipo: $('vTipo').value, categoria: $('vCategoria').value,
+            precio: parseInt($('vPrecio').value, 10), precioOferta: precioOferta, oferta: !!precioOferta,
+            kilometraje: parseInt($('vKm').value, 10) || 0, transmision: $('vTransmision').value,
             combustible: $('vCombustible').value, motor: $('vMotor').value || '',
             potencia: $('vPotencia').value || '', cilindraje: $('vCilindraje').value || '',
             traccion: $('vTraccion').value || '', direccion: $('vDireccion').value || 'Electrica',
-            color: AP.toTitleCase($('vColor').value), puertas: parseInt($('vPuertas').value) || 5,
-            pasajeros: parseInt($('vPasajeros').value) || 5, asientos: parseInt($('vPasajeros').value) || 5,
+            color: AP.toTitleCase($('vColor').value), puertas: parseInt($('vPuertas').value, 10) || 5,
+            pasajeros: parseInt($('vPasajeros').value, 10) || 5, asientos: parseInt($('vPasajeros').value, 10) || 5,
             ubicacion: $('vUbicacion').value || 'Cartagena', placa: $('vPlaca').value || 'Disponible al contactar',
             codigoFasecolda: $('vFasecolda').value || 'Consultar',
             revisionTecnica: $('vRevision').checked, peritaje: $('vPeritaje').checked,
@@ -832,7 +832,7 @@
             destacado: $('vDestacado').checked,
             featuredWeek: $('vDestacado').checked, /* siempre igual a destacado — campo legacy */
             prioridad: (function() { var ex = AP.vehicles.find(function(v) { return v.id === id; }); return ex ? (ex.prioridad || 0) : 0; })(),
-            featuredOrder: $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value) || null) : null,
+            featuredOrder: $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value, 10) || null) : null,
             featuredCutoutPng: $('vFeaturedCutoutPng') ? ($('vFeaturedCutoutPng').value.trim() || null) : null,
             imagen: AP.uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
             imagenes: AP.uploadedImageUrls.length ? AP.uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
@@ -891,7 +891,7 @@
         if (!validateAndHighlightFields()) { AP.toast('Completa los campos requeridos marcados en rojo', 'error'); return; }
 
         // Fase 22: Proteccion vehiculos vendidos en save
-        var _editingId = $('vId').value ? parseInt($('vId').value) : null;
+        var _editingId = $('vId').value ? parseInt($('vId').value, 10) : null;
         if (_editingId) {
             var _originalVehicle = AP.vehicles.find(function(v) { return v.id === _editingId; });
             if (_originalVehicle && _originalVehicle.estado === 'vendido' && !AP.isSuperAdmin()) {
@@ -915,7 +915,7 @@
 
         // Limitar maximo 6 vehiculos destacados (= banner)
         if ($('vDestacado').checked) {
-            var editId = $('vId').value ? parseInt($('vId').value) : null;
+            var editId = $('vId').value ? parseInt($('vId').value, 10) : null;
             var otherDestacados = AP.vehicles.filter(function(v) {
                 return v.destacado && v.id !== editId;
             });
@@ -925,7 +925,7 @@
             }
 
             // Detectar orden duplicado en banner
-            var fwOrder = $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value) || null) : null;
+            var fwOrder = $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value, 10) || null) : null;
             if (fwOrder !== null) {
                 var orderConflict = otherDestacados.find(function(v) { return v.featuredOrder === fwOrder; });
                 if (orderConflict) {
@@ -949,7 +949,7 @@
 
         var vehicleData, savePromise;
         if (isEdit) {
-            var id = parseInt(existingId);
+            var id = parseInt(existingId, 10);
             var editingVehicle = AP.vehicles.find(function(v) { return v.id === id; });
             var expectedVersion = editingVehicle ? (editingVehicle._version || 0) : null;
             vehicleData = buildVehicleData(id, null, false);
@@ -975,7 +975,7 @@
             AP.writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id + codeLabel, label.trim());
             // Per-vehicle audit log entry
             if (isEdit) {
-                var oldData = AP.vehicles.find(function(v) { return v.id === parseInt(existingId); });
+                var oldData = AP.vehicles.find(function(v) { return v.id === parseInt(existingId, 10); });
                 var changes = computeChanges(oldData, vehicleData);
                 if (changes.length > 0) {
                     logVehicleAction(vehicleData.id, 'edited', changes);
@@ -1056,7 +1056,7 @@
         var invalidType = fileArray.filter(function(f) { return AP.UPLOAD_CONFIG.allowedTypes.indexOf(f.type) === -1; });
         if (invalidType.length) { showUploadError('Formatos permitidos: JPG, PNG, WebP.'); return; }
         var maxBytes = AP.UPLOAD_CONFIG.maxFileSizeMB * 1024 * 1024;
-        var oversized = fileArray.filter(function(f) { return f.size > maxBytes * 5; });
+        var oversized = fileArray.filter(function(f) { return f.size > maxBytes; });
         if (oversized.length) { showUploadError('Imagenes demasiado grandes (max 10MB).'); return; }
         $('uploadError').style.display = 'none';
         var total = fileArray.length, done = 0, errors = 0;
@@ -1117,7 +1117,7 @@
                 '<div class="img-drag-handle" title="Arrastra para reordenar">☰</div>' +
                 '<img src="' + url + '" alt="Foto ' + (i + 1) + '" onerror="this.style.opacity=\'0.3\'">' +
                 (isMain ? '<span class="img-badge">PRINCIPAL</span>' : '<span class="img-badge img-badge-num">' + (i + 1) + '</span>') +
-                '<button type="button" class="remove-img" onclick="adminPanel.removeImage(' + i + ')">&times;</button>' +
+                '<button type="button" class="remove-img" data-action="removeImage" data-idx="' + i + '">&times;</button>' +
             '</div>';
         });
         container.innerHTML = html;
@@ -1131,13 +1131,13 @@
     function initImageDragDrop(container) {
         var items = container.querySelectorAll('.uploaded-img');
         items.forEach(function(item) {
-            item.addEventListener('dragstart', function(e) { AP._dragSrcIdx = parseInt(this.getAttribute('data-idx')); this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+            item.addEventListener('dragstart', function(e) { AP._dragSrcIdx = parseInt(this.getAttribute('data-idx'), 10); this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
             item.addEventListener('dragend', function() { this.classList.remove('dragging'); container.querySelectorAll('.uploaded-img').forEach(function(el) { el.classList.remove('drag-over'); }); });
             item.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; this.classList.add('drag-over'); });
             item.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
             item.addEventListener('drop', function(e) {
                 e.preventDefault(); this.classList.remove('drag-over');
-                var targetIdx = parseInt(this.getAttribute('data-idx'));
+                var targetIdx = parseInt(this.getAttribute('data-idx'), 10);
                 if (AP._dragSrcIdx !== null && AP._dragSrcIdx !== targetIdx) {
                     var moved = AP.uploadedImageUrls.splice(AP._dragSrcIdx, 1)[0];
                     AP.uploadedImageUrls.splice(targetIdx, 0, moved);
@@ -1253,12 +1253,12 @@
     var featuredOrderEl = $('vFeaturedOrder');
     if (featuredOrderEl) {
         featuredOrderEl.addEventListener('input', function() {
-            var orderVal = parseInt(this.value) || null;
+            var orderVal = parseInt(this.value, 10) || null;
             this.classList.remove('field-error');
             var errEl = this.parentElement.querySelector('.field-error-msg');
             if (errEl) errEl.remove();
             if (!orderVal) return;
-            var editId = $('vId').value ? parseInt($('vId').value) : null;
+            var editId = $('vId').value ? parseInt($('vId').value, 10) : null;
             var conflict = AP.vehicles.find(function(v) {
                 return v.destacado && v.id !== editId && v.featuredOrder === orderVal;
             });
@@ -1394,7 +1394,7 @@
             var editingLabel = d.vehicleId ? ('Editando #' + d.vehicleId) : 'Nuevo vehiculo';
             var btnHtml = isOwn
                 ? '<span style="color:var(--admin-success);font-size:0.7rem;font-weight:500;">Tu borrador</span>'
-                : '<button class="btn btn-ghost btn-sm" onclick="adminPanel.loadDraftFromUser(\'' + AP.escapeHtml(d.userId || '') + '\')">Continuar</button>';
+                : '<button class="btn btn-ghost btn-sm" data-action="loadDraftFromUser" data-user-id="' + AP.escapeHtml(d.userId || '') + '">Continuar</button>';
 
             return '<div class="draft-item">'
                 + '<div class="draft-item-info">'
@@ -1528,6 +1528,7 @@
     AP.renderVehiclesTable = renderVehiclesTable;
     AP.populateBrandSelect = populateBrandSelect;
     AP.editVehicle = editVehicle;
+    AP._editVehicleOriginal = editVehicle; // F6.2: safe reference for phase5 lazy-bind
     AP.deleteVehicle = deleteVehicleFn;
     AP.removeImage = removeImage;
     AP.previewVehicle = previewVehicle;
@@ -1538,4 +1539,26 @@
     AP.showAuditTimeline = showAuditTimeline;
     AP.clearCutoutPng = clearCutoutPng;
     AP.renderCutoutPreview = renderCutoutPreview;
+
+    // F6.4: Event delegation for vehicle table actions
+    var vehicleActions = {
+        previewVehicle: function(id) { previewVehicle(parseInt(id, 10)); },
+        showAuditTimeline: function(id) { showAuditTimeline(parseInt(id, 10)); },
+        toggleDestacado: function(id) { toggleDestacadoFn(parseInt(id, 10)); },
+        editVehicle: function(id) { editVehicle(parseInt(id, 10)); },
+        markAsSold: function(id) { AP.markAsSold(parseInt(id, 10)); },
+        deleteVehicle: function(id) { deleteVehicleFn(parseInt(id, 10)); },
+        removeImage: function(_, btn) { removeImage(parseInt(btn.getAttribute('data-idx'), 10)); },
+        loadDraftFromUser: function(_, btn) { loadDraftFromUser(btn.getAttribute('data-user-id')); }
+    };
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        var action = btn.getAttribute('data-action');
+        var handler = vehicleActions[action];
+        if (handler) {
+            e.preventDefault();
+            handler(btn.getAttribute('data-id'), btn);
+        }
+    });
 })();

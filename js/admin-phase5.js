@@ -156,7 +156,9 @@
 
         AP.auditLogEntries.forEach(function(entry) {
             if (!entry.timestamp) return;
-            var ts = typeof entry.timestamp === 'number' ? entry.timestamp : new Date(entry.timestamp).getTime();
+            var ts = typeof entry.timestamp === 'number' ? entry.timestamp :
+                (entry.timestamp && typeof entry.timestamp.toDate === 'function') ? entry.timestamp.toDate().getTime() :
+                new Date(entry.timestamp).getTime();
             days.forEach(function(day) {
                 if (ts >= day.start && ts < day.start + dayMs) day.count++;
             });
@@ -337,9 +339,13 @@
     }
 
     // On edit, show all sections (no wizard stepping) but keep step indicators
-    var _origEditVehicle = AP.editVehicle;
-    if (_origEditVehicle) {
+    // F6.2: Lazy-bind to avoid undefined if phase5 loads before admin-vehicles
+    var _origEditVehicle = null;
+    (function() {
+        _origEditVehicle = AP.editVehicle;
         AP.editVehicle = function(id) {
+            if (!_origEditVehicle) _origEditVehicle = AP._editVehicleOriginal;
+            if (!_origEditVehicle) { AP.toast('Error: modulo de vehiculos no cargado', 'error'); return; }
             _origEditVehicle(id);
             setTimeout(function() {
                 showAllSections();
@@ -359,7 +365,7 @@
                 if (nextBtn) nextBtn.style.display = 'none';
             }, 100);
         };
-    }
+    })();
 
     // Init wizard and chart rendering
     if (document.readyState === 'loading') {

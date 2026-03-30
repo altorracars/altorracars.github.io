@@ -104,7 +104,7 @@
         var btn = e.target.closest('.pagination-btn');
         if (!btn || btn.disabled) return;
         var tableKey = btn.getAttribute('data-table');
-        var page = parseInt(btn.getAttribute('data-page'));
+        var page = parseInt(btn.getAttribute('data-page'), 10);
         if (tableKey && page) AP.setPage(tableKey, page);
     });
 

@@ -41,7 +41,7 @@
                 return '<div class="list-item-row" style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid var(--admin-border);">' +
                     '<input type="text" class="form-input" value="' + AP.escapeHtml(val) + '" data-list="' + key + '" data-idx="' + idx + '" data-field="value" style="flex:1;padding:0.3rem 0.5rem;font-size:0.85rem;" placeholder="Valor">' +
                     '<input type="text" class="form-input" value="' + AP.escapeHtml(label) + '" data-list="' + key + '" data-idx="' + idx + '" data-field="label" style="flex:1;padding:0.3rem 0.5rem;font-size:0.85rem;" placeholder="Etiqueta">' +
-                    '<button class="btn btn-danger btn-sm" style="padding:0.2rem 0.5rem;font-size:0.75rem;" onclick="adminPanel.removeListItem(\'' + key + '\',' + idx + ')">&times;</button>' +
+                    '<button class="btn btn-danger btn-sm" style="padding:0.2rem 0.5rem;font-size:0.75rem;" data-action="removeListItem" data-list="' + key + '" data-idx="' + idx + '">&times;</button>' +
                 '</div>';
             }).join('');
 
@@ -50,8 +50,8 @@
                 '<p style="font-size:0.75rem;color:var(--admin-text-muted);margin:0 0 0.75rem;">' + info.desc + '</p>' +
                 '<div id="list-items-' + key + '">' + itemsHtml + '</div>' +
                 '<div style="display:flex;gap:0.5rem;margin-top:0.75rem;">' +
-                    '<button class="btn btn-ghost btn-sm" onclick="adminPanel.addListItem(\'' + key + '\')" style="font-size:0.8rem;">+ Agregar</button>' +
-                    '<button class="btn btn-primary btn-sm" onclick="adminPanel.saveList(\'' + key + '\')" style="font-size:0.8rem;">Guardar</button>' +
+                    '<button class="btn btn-ghost btn-sm" data-action="addListItem" data-list="' + key + '" style="font-size:0.8rem;">+ Agregar</button>' +
+                    '<button class="btn btn-primary btn-sm" data-action="saveList" data-list="' + key + '" style="font-size:0.8rem;">Guardar</button>' +
                 '</div>';
             container.appendChild(card);
         });
@@ -68,7 +68,7 @@
         row.innerHTML =
             '<input type="text" class="form-input" data-list="' + listKey + '" data-idx="' + idx + '" data-field="value" style="flex:1;padding:0.3rem 0.5rem;font-size:0.85rem;" placeholder="Valor (ej: hibrido)">' +
             '<input type="text" class="form-input" data-list="' + listKey + '" data-idx="' + idx + '" data-field="label" style="flex:1;padding:0.3rem 0.5rem;font-size:0.85rem;" placeholder="Etiqueta (ej: Hibrido)">' +
-            '<button class="btn btn-danger btn-sm" style="padding:0.2rem 0.5rem;font-size:0.75rem;" onclick="this.parentElement.remove()">&times;</button>';
+            '<button class="btn btn-danger btn-sm" style="padding:0.2rem 0.5rem;font-size:0.75rem;" data-action="removeNewListItem">&times;</button>';
         container.appendChild(row);
         row.querySelector('input').focus();
     }
@@ -108,6 +108,21 @@
             }
         }).catch(function(err) {
             AP.toast('Error: ' + err.message, 'error');
+        });
+    }
+
+    // F6.4: Event delegation for list actions
+    var listsContainer = $('sec-lists');
+    if (listsContainer) {
+        listsContainer.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            var action = btn.getAttribute('data-action');
+            var listKey = btn.getAttribute('data-list');
+            if (action === 'removeListItem') removeListItem(listKey, parseInt(btn.getAttribute('data-idx'), 10));
+            else if (action === 'addListItem') addListItem(listKey);
+            else if (action === 'saveList') saveList(listKey);
+            else if (action === 'removeNewListItem') btn.closest('.list-item-row').remove();
         });
     }
 

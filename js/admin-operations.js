@@ -62,7 +62,7 @@
 
             return '<tr>' +
                 '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + AP.escapeHtml(v.codigoUnico || '—') + '</code></td>' +
-                '<td><strong>' + marca + ' ' + (v.modelo || '') + '</strong><br><small>' + (v.year || '') + '</small></td>' +
+                '<td><strong>' + AP.escapeHtml(marca) + ' ' + AP.escapeHtml(v.modelo || '') + '</strong><br><small>' + AP.escapeHtml(v.year || '') + '</small></td>' +
                 '<td style="font-size:0.8rem;">' + AP.escapeHtml(origen) + '</td>' +
                 '<td>' + canalBadge + '</td>' +
                 '<td>' + (esAltorra ? AP.formatPrice(v.precioVenta || v.precioCierre || 0) : '-') + '</td>' +
@@ -111,8 +111,8 @@
         $('soldVehicleId').value = vehicleId;
         $('soldOrigenTipo').value = esPropio ? 'propio' : 'aliado';
         var marca = v.marca ? (v.marca.charAt(0).toUpperCase() + v.marca.slice(1)) : '';
-        var codeInfo = v.codigoUnico ? '<code style="color:var(--admin-accent);">' + v.codigoUnico + '</code> — ' : '';
-        $('soldVehicleInfo').innerHTML = codeInfo + '<strong>' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</strong><br>Precio publicado: ' + AP.formatPrice(v.precio);
+        var codeInfo = v.codigoUnico ? '<code style="color:var(--admin-accent);">' + AP.escapeHtml(v.codigoUnico) + '</code> — ' : '';
+        $('soldVehicleInfo').innerHTML = codeInfo + '<strong>' + AP.escapeHtml(marca) + ' ' + AP.escapeHtml(v.modelo || '') + ' ' + AP.escapeHtml(v.year || '') + '</strong><br>Precio publicado: ' + AP.formatPrice(v.precio);
 
         var origenInfo = $('soldOrigenInfo');
         if (origenInfo) {
@@ -185,8 +185,8 @@
     var confirmSoldBtn = $('confirmSold');
     if (confirmSoldBtn) {
         confirmSoldBtn.addEventListener('click', function() {
-            var vehicleId = parseInt($('soldVehicleId').value);
-            if (!vehicleId) return;
+            var vehicleId = parseInt($('soldVehicleId').value, 10);
+            if (!vehicleId || isNaN(vehicleId)) return;
             var canal = $('soldCanal').value;
             if (!canal) { AP.toast('Selecciona el canal de venta', 'error'); return; }
 
@@ -200,13 +200,13 @@
 
             if (canal === 'altorra') {
                 if (origenTipo === 'propio') {
-                    precioVenta = parseInt($('soldPrecio').value) || 0;
-                    utilidadAltorra = parseInt($('soldUtilidad').value) || 0;
+                    precioVenta = parseInt($('soldPrecio').value, 10) || 0;
+                    utilidadAltorra = parseInt($('soldUtilidad').value, 10) || 0;
                     responsable = ($('soldResponsable').value || '').trim();
                     if (!precioVenta || !responsable) { AP.toast('Precio de venta y responsable son requeridos', 'error'); return; }
                 } else {
-                    precioVenta = parseInt($('soldPrecioAliado').value) || 0;
-                    comisionAltorra = parseInt($('soldComision').value) || 0;
+                    precioVenta = parseInt($('soldPrecioAliado').value, 10) || 0;
+                    comisionAltorra = parseInt($('soldComision').value, 10) || 0;
                     responsable = ($('soldResponsableAliado').value || '').trim();
                     if (!comisionAltorra || !responsable) { AP.toast('Comision ALTORRA y responsable son requeridos', 'error'); return; }
                 }
@@ -291,12 +291,37 @@
             if (!file) return;
             if (!AP.isSuperAdmin()) { AP.toast('Solo Super Admin puede importar datos', 'error'); return; }
 
+            // F6.10: Validate MIME type
+            if (file.type && file.type !== 'application/json' && file.type !== 'text/plain') {
+                AP.toast('Formato no valido. Solo se aceptan archivos .json', 'error');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                AP.toast('Archivo demasiado grande (max 10MB)', 'error');
+                return;
+            }
+
             var reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     var data = JSON.parse(e.target.result);
                     if (!data.vehiculos && !data.marcas) {
                         AP.toast('Archivo JSON invalido: no contiene vehiculos ni marcas.', 'error');
+                        return;
+                    }
+
+                    // F6.10: Schema validation
+                    var invalid = 0;
+                    (data.vehiculos || []).forEach(function(v) {
+                        if (!v.id || typeof v.id !== 'number') invalid++;
+                        else if (!v.marca || typeof v.marca !== 'string') invalid++;
+                    });
+                    (data.marcas || []).forEach(function(b) {
+                        if (!b.id || typeof b.id !== 'string') invalid++;
+                        else if (!b.nombre || typeof b.nombre !== 'string') invalid++;
+                    });
+                    if (invalid > 0) {
+                        AP.toast('Datos invalidos: ' + invalid + ' registros sin campos requeridos (id, marca/nombre)', 'error');
                         return;
                     }
 
@@ -312,7 +337,7 @@
                     var count = 0;
 
                     (data.vehiculos || []).forEach(function(v) {
-                        if (!v.id) return;
+                        if (!v.id || typeof v.id !== 'number') return;
                         v.updatedAt = new Date().toISOString();
                         v.updatedBy = window.auth.currentUser ? window.auth.currentUser.email : 'import';
                         if (!v._version) v._version = 1;
@@ -333,7 +358,7 @@
                         AP.loadData();
                     }).catch(function(err) {
                         AP.toast('Error de importacion: ' + err.message, 'error');
-                        statusEl.innerHTML = '<span style="color:var(--admin-danger);">Error: ' + err.message + '</span>';
+                        statusEl.innerHTML = '<span style="color:var(--admin-danger);">Error: ' + AP.escapeHtml(err.message) + '</span>';
                     });
                 } catch (err) {
                     AP.toast('Error al leer archivo JSON: ' + err.message, 'error');

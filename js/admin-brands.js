@@ -105,10 +105,10 @@
 
             var actions = '';
             if (AP.canCreateOrEditInventory()) {
-                actions += '<button class="btn btn-ghost btn-sm" onclick="adminPanel.editBrand(\'' + b.id + '\')">Editar</button> ';
+                actions += '<button class="btn btn-ghost btn-sm" data-action="editBrand" data-id="' + AP.escapeHtml(b.id) + '">Editar</button> ';
             }
             if (AP.canDeleteInventory()) {
-                actions += '<button class="btn btn-danger btn-sm" onclick="adminPanel.deleteBrand(\'' + b.id + '\')">Eliminar</button>';
+                actions += '<button class="btn btn-danger btn-sm" data-action="deleteBrand" data-id="' + AP.escapeHtml(b.id) + '">Eliminar</button>';
             }
             if (!actions) actions = '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Solo lectura</span>';
 
@@ -306,7 +306,9 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
-        window.db.collection('marcas').doc(brandId).set(brandData, { merge: true })
+        var docRef = window.db.collection('marcas').doc(brandId);
+        var saveOp = isEdit ? docRef.update(brandData) : docRef.set(brandData);
+        saveOp
             .then(function() {
                 AP.writeAuditLog(isEdit ? 'brand_update' : 'brand_create', 'marca ' + brandId, brandData.nombre);
                 AP.toast(isEdit ? 'Marca actualizada' : 'Marca agregada');
@@ -363,6 +365,18 @@
                 btn.textContent = 'Eliminar';
             });
     });
+
+    // F6.4: Event delegation for brand actions
+    var brandsBody = $('brandsTableBody');
+    if (brandsBody) {
+        brandsBody.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            var id = btn.getAttribute('data-id');
+            if (btn.getAttribute('data-action') === 'editBrand') editBrand(id);
+            else if (btn.getAttribute('data-action') === 'deleteBrand') deleteBrandFn(id);
+        });
+    }
 
     // ========== EXPOSE ==========
     AP.renderBrandsTable = renderBrandsTable;

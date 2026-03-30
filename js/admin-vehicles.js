@@ -1528,6 +1528,7 @@
     AP.renderVehiclesTable = renderVehiclesTable;
     AP.populateBrandSelect = populateBrandSelect;
     AP.editVehicle = editVehicle;
+    AP._editVehicleOriginal = editVehicle; // F6.2: safe reference for phase5 lazy-bind
     AP.deleteVehicle = deleteVehicleFn;
     AP.removeImage = removeImage;
     AP.previewVehicle = previewVehicle;

@@ -339,9 +339,13 @@
     }
 
     // On edit, show all sections (no wizard stepping) but keep step indicators
-    var _origEditVehicle = AP.editVehicle;
-    if (_origEditVehicle) {
+    // F6.2: Lazy-bind to avoid undefined if phase5 loads before admin-vehicles
+    var _origEditVehicle = null;
+    (function() {
+        _origEditVehicle = AP.editVehicle;
         AP.editVehicle = function(id) {
+            if (!_origEditVehicle) _origEditVehicle = AP._editVehicleOriginal;
+            if (!_origEditVehicle) { AP.toast('Error: modulo de vehiculos no cargado', 'error'); return; }
             _origEditVehicle(id);
             setTimeout(function() {
                 showAllSections();
@@ -361,7 +365,7 @@
                 if (nextBtn) nextBtn.style.display = 'none';
             }, 100);
         };
-    }
+    })();
 
     // Init wizard and chart rendering
     if (document.readyState === 'loading') {

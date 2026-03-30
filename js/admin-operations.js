@@ -291,12 +291,37 @@
             if (!file) return;
             if (!AP.isSuperAdmin()) { AP.toast('Solo Super Admin puede importar datos', 'error'); return; }
 
+            // F6.10: Validate MIME type
+            if (file.type && file.type !== 'application/json' && file.type !== 'text/plain') {
+                AP.toast('Formato no valido. Solo se aceptan archivos .json', 'error');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                AP.toast('Archivo demasiado grande (max 10MB)', 'error');
+                return;
+            }
+
             var reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     var data = JSON.parse(e.target.result);
                     if (!data.vehiculos && !data.marcas) {
                         AP.toast('Archivo JSON invalido: no contiene vehiculos ni marcas.', 'error');
+                        return;
+                    }
+
+                    // F6.10: Schema validation
+                    var invalid = 0;
+                    (data.vehiculos || []).forEach(function(v) {
+                        if (!v.id || typeof v.id !== 'number') invalid++;
+                        else if (!v.marca || typeof v.marca !== 'string') invalid++;
+                    });
+                    (data.marcas || []).forEach(function(b) {
+                        if (!b.id || typeof b.id !== 'string') invalid++;
+                        else if (!b.nombre || typeof b.nombre !== 'string') invalid++;
+                    });
+                    if (invalid > 0) {
+                        AP.toast('Datos invalidos: ' + invalid + ' registros sin campos requeridos (id, marca/nombre)', 'error');
                         return;
                     }
 
@@ -312,7 +337,7 @@
                     var count = 0;
 
                     (data.vehiculos || []).forEach(function(v) {
-                        if (!v.id) return;
+                        if (!v.id || typeof v.id !== 'number') return;
                         v.updatedAt = new Date().toISOString();
                         v.updatedBy = window.auth.currentUser ? window.auth.currentUser.email : 'import';
                         if (!v._version) v._version = 1;

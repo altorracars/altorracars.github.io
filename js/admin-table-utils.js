@@ -571,4 +571,10 @@
         initPasswordValidation();
     }
 
+    // F7.5: Bind CSV export buttons (migrated from inline onclick)
+    var btnExpVehicles = $('btnExportVehiclesCSV');
+    if (btnExpVehicles) btnExpVehicles.addEventListener('click', function() { AP.exportVehiclesCSV(); });
+    var btnExpAppts = $('btnExportAppointmentsCSV');
+    if (btnExpAppts) btnExpAppts.addEventListener('click', function() { AP.exportAppointmentsCSV(); });
+
 })();

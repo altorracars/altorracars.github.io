@@ -152,8 +152,9 @@
 
 ---
 
-### Fase 7 — Login & Identidad de Usuario
+### Fase 7 — Login & Identidad de Usuario ✅ Completada
 > Prioridad: Alta | Impacto: Alto | Complejidad: Baja
+> Commit: a7ee40c (incluye migracion de TODOS los onclick/oninput restantes en admin.html)
 
 | ID | Tarea | Resuelve |
 |----|-------|----------|
@@ -248,7 +249,7 @@
 | Fase | Nombre | Items | Complejidad | Impacto | Estado |
 |------|--------|-------|-------------|---------|--------|
 | **6** | Seguridad & Bugs Criticos | 10 | Media | **Critico** | ✅ Completada |
-| **7** | Login & Identidad | 5 | Baja | Alto | Pendiente |
+| **7** | Login & Identidad | 5 | Baja | Alto | ✅ Completada |
 | **8** | Dashboard Inteligente | 5 | Media | Alto | Pendiente |
 | **9** | Performance & CSS | 10 | Media | Alto | Pendiente |
 | **10** | Productividad & Atajos | 8 | Media | Alto | Pendiente |
@@ -269,6 +270,6 @@
 | **Archivos auditados** | 14 |
 | **Lineas de codigo revisadas** | ~6,500 |
 
-**Recomendacion:** Continuar con **Fase 7** (Login & Identidad) — rapida, alto impacto visual vs Bersaglio.
+**Recomendacion:** Continuar con **Fase 8** (Dashboard Inteligente) — acciones rapidas, stats clickeables, badge citas.
 
-> Ultima actualizacion: 2026-03-30 (Fase 6 completada)
+> Ultima actualizacion: 2026-03-30 (Fase 7 completada)

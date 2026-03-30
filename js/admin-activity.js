@@ -461,6 +461,18 @@
     AP.clearAllActivity = clearAllActivity;
     AP.clearAuditFilters = clearAuditFilters;
     AP.exportAuditCSV = exportAuditCSV;
+
+    // F7.5: Bind HTML buttons (migrated from inline onclick)
+    var btnSelect = $('btnSelectActivity');
+    if (btnSelect) btnSelect.addEventListener('click', toggleActivitySelectMode);
+    var btnClearAll = $('btnClearAllActivity');
+    if (btnClearAll) btnClearAll.addEventListener('click', clearAllActivity);
+    var btnDelSel = $('btnDeleteSelectedActivity');
+    if (btnDelSel) btnDelSel.addEventListener('click', deleteSelectedActivity);
+    var btnExportAudit = $('btnExportAuditCSV');
+    if (btnExportAudit) btnExportAudit.addEventListener('click', exportAuditCSV);
+    var btnClearFilters = $('btnClearAuditFilters');
+    if (btnClearFilters) btnClearFilters.addEventListener('click', clearAuditFilters);
     AP.getActivityIcon = getActivityIcon;
     AP.getActivityText = getActivityText;
     AP.ACTION_CATEGORIES = ACTION_CATEGORIES;

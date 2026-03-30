@@ -54,6 +54,10 @@
             <div id="loginRateLimit" style="display:none; color:var(--admin-warning); font-size:0.8rem; margin-bottom:0.75rem; text-align:center;"></div>
             <div id="loginError" style="color: var(--admin-danger); font-size: 0.8rem; margin-bottom: 0.75rem; display: none;"></div>
             <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Iniciar Sesion</button>
+            <div style="text-align:center;margin-top:0.75rem;">
+                <a href="#" id="forgotPasswordLink" style="color:var(--admin-accent,#58a6ff);font-size:0.8rem;text-decoration:none;">¿Olvidaste tu contrasena?</a>
+            </div>
+            <div id="forgotPasswordMsg" style="display:none;font-size:0.8rem;margin-top:0.5rem;text-align:center;"></div>
         </form>
     </div>
 </div>
@@ -142,7 +146,20 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             Configuracion
         </button>
+        <!-- F7.3: Ver sitio -->
+        <a class="nav-item" href="/" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <span>Ver sitio</span>
+        </a>
         <div class="nav-divider"></div>
+        <!-- F7.2: Perfil de usuario -->
+        <div class="sidebar-profile" id="sidebarProfile" style="display:none;">
+            <div class="sidebar-profile-avatar" id="sidebarAvatar"></div>
+            <div class="sidebar-profile-info">
+                <div class="sidebar-profile-name" id="sidebarUserName"></div>
+                <div class="sidebar-profile-role" id="sidebarUserRole"></div>
+            </div>
+        </div>
         <button class="nav-item nav-item-logout" id="logoutBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Cerrar Sesion
@@ -156,7 +173,7 @@
         <div id="sec-dashboard" class="section active">
             <div class="page-header">
                 <div>
-                    <h1>Dashboard</h1>
+                    <h1 id="dashboardWelcome">Dashboard</h1>
                     <p class="page-subtitle" id="adminEmail"></p>
                 </div>
                 <div style="display:flex;gap:0.75rem;align-items:center;">
@@ -243,12 +260,12 @@
                 <div class="table-header">
                     <h3>Actividad Reciente <span id="activityCount" style="font-size:0.75rem;color:var(--admin-text-muted);font-weight:400;"></span></h3>
                     <div style="display:flex;gap:0.5rem;align-items:center;">
-                        <button class="btn btn-ghost btn-sm" id="btnSelectActivity" onclick="adminPanel.toggleActivitySelect()">Seleccionar</button>
-                        <button class="btn btn-danger btn-sm" onclick="adminPanel.clearAllActivity()" title="Limpiar todo">Limpiar todo</button>
+                        <button class="btn btn-ghost btn-sm" id="btnSelectActivity" data-action="toggleActivitySelect">Seleccionar</button>
+                        <button class="btn btn-danger btn-sm" id="btnClearAllActivity" data-action="clearAllActivity" title="Limpiar todo">Limpiar todo</button>
                     </div>
                 </div>
                 <div id="activitySelectActions" style="display:none;padding:0.5rem 1rem;gap:0.5rem;align-items:center;border-bottom:1px solid var(--admin-border);">
-                    <button class="btn btn-danger btn-sm" id="btnDeleteSelectedActivity" onclick="adminPanel.deleteSelectedActivity()" disabled>Eliminar seleccionados (0)</button>
+                    <button class="btn btn-danger btn-sm" id="btnDeleteSelectedActivity" data-action="deleteSelectedActivity" disabled>Eliminar seleccionados (0)</button>
                 </div>
                 <div class="activity-feed" id="activityFeed">
                     <div class="activity-empty">Sin actividad reciente</div>
@@ -323,7 +340,7 @@
                     <h3>Inventario</h3>
                     <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
                         <input type="text" class="search-input" id="vehicleSearch" placeholder="Buscar por marca, modelo, ano...">
-                        <button class="btn btn-ghost btn-sm btn-export" onclick="AP.exportVehiclesCSV()" title="Exportar CSV">
+                        <button class="btn btn-ghost btn-sm btn-export" id="btnExportVehiclesCSV" title="Exportar CSV">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                             CSV
                         </button>
@@ -509,7 +526,7 @@
 
             <div class="stat-card overflow-x-auto">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
-                    <button class="btn btn-ghost btn-sm btn-export" onclick="AP.exportAppointmentsCSV()" title="Exportar CSV">
+                    <button class="btn btn-ghost btn-sm btn-export" id="btnExportAppointmentsCSV" title="Exportar CSV">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         CSV
                     </button>
@@ -772,7 +789,7 @@
                     <p style="color:var(--admin-text-muted);font-size:0.9rem;">Esta acción no se puede deshacer. La reseña será eliminada permanentemente.</p>
                 </div>
                 <div class="modal-footer" style="display:flex;gap:0.75rem;justify-content:center;padding:1rem 1.5rem;border-top:1px solid var(--admin-border,#30363d);">
-                    <button class="btn btn-ghost" onclick="document.getElementById('reviewDeleteConfirm').classList.remove('active')">Cancelar</button>
+                    <button class="btn btn-ghost" id="cancelDeleteReview">Cancelar</button>
                     <button class="btn" id="confirmDeleteReview" style="background:#ef4444;color:white;">Eliminar</button>
                 </div>
             </div>
@@ -958,7 +975,7 @@
                     <p style="color:var(--admin-text-muted);font-size:0.9rem;">Esta accion no se puede deshacer. El banner sera eliminado del sitio permanentemente.</p>
                 </div>
                 <div class="modal-footer" style="display:flex;gap:0.75rem;justify-content:center;padding:1rem 1.5rem;border-top:1px solid var(--admin-border,#30363d);">
-                    <button class="btn btn-ghost" onclick="document.getElementById('bannerDeleteConfirm').classList.remove('active')">Cancelar</button>
+                    <button class="btn btn-ghost" id="cancelDeleteBanner">Cancelar</button>
                     <button class="btn" id="confirmDeleteBanner" style="background:#ef4444;color:white;">Eliminar</button>
                 </div>
             </div>
@@ -969,7 +986,7 @@
             <div class="page-header">
                 <div><h1>Auditoria</h1><p class="page-subtitle">Registro completo de todas las acciones del sistema</p></div>
                 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                    <button class="btn btn-ghost btn-sm btn-export" onclick="AP.exportAuditCSV()" title="Exportar CSV">
+                    <button class="btn btn-ghost btn-sm btn-export" id="btnExportAuditCSV" title="Exportar CSV">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         CSV
                     </button>
@@ -1027,7 +1044,7 @@
                             <input type="date" id="auditFilterTo" class="form-input">
                         </div>
                         <div class="form-group audit-filter-group" style="align-self:flex-end;">
-                            <button class="btn btn-ghost btn-sm" onclick="AP.clearAuditFilters()">Limpiar filtros</button>
+                            <button class="btn btn-ghost btn-sm" id="btnClearAuditFilters">Limpiar filtros</button>
                         </div>
                     </div>
                 </div>
@@ -1191,7 +1208,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Precio Oferta</label>
-                                <input type="number" id="vPrecioOferta" class="form-input" min="0" placeholder="Vacio si no aplica" oninput="var cb=document.getElementById('vOferta');if(cb)cb.checked=!!this.value;">
+                                <input type="number" id="vPrecioOferta" class="form-input" min="0" placeholder="Vacio si no aplica">
                                 <small class="text-xs text-muted" style="display:block;margin-top:3px;">Ingresa precio menor al normal para activar "En Oferta" automaticamente</small>
                             </div>
                             <div class="form-group">
@@ -1328,9 +1345,9 @@
                                 </div>
                                 <div id="cutoutPreviewArea" style="display:none;margin-bottom:0.6rem;position:relative;width:100%;max-width:260px;background-image:repeating-conic-gradient(#2a2d35 0% 25%,#1c1f27 0% 50%);background-size:16px 16px;border-radius:6px;border:1px solid rgba(212,175,55,0.25);overflow:hidden;min-height:90px;align-items:center;justify-content:center;">
                                     <img id="cutoutPreviewImg" src="" alt="Cutout preview" style="max-width:100%;max-height:120px;object-fit:contain;display:block;">
-                                    <button type="button" id="btnCutoutClear" onclick="adminPanel.clearCutoutPng()" title="Quitar imagen recortada" style="position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(248,81,73,0.85);border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+                                    <button type="button" id="btnCutoutClear" title="Quitar imagen recortada" style="position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(248,81,73,0.85);border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
                                 </div>
-                                <div id="cutoutUploadArea" style="border:1.5px dashed rgba(212,175,55,0.32);border-radius:6px;padding:0.75rem 1rem;text-align:center;cursor:pointer;background:rgba(212,175,55,0.03);transition:background 0.2s;" onclick="document.getElementById('cutoutFileInput').click()">
+                                <div id="cutoutUploadArea" style="border:1.5px dashed rgba(212,175,55,0.32);border-radius:6px;padding:0.75rem 1rem;text-align:center;cursor:pointer;background:rgba(212,175,55,0.03);transition:background 0.2s;">
                                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.6)" stroke-width="1.5" style="display:block;margin:0 auto 5px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                     <span style="font-size:0.75rem;color:rgba(255,255,255,0.55);">Subir PNG transparente</span>
                                     <input type="file" id="cutoutFileInput" accept="image/png" style="display:none">
@@ -1339,7 +1356,7 @@
                                 <div id="cutoutUploadError" style="display:none;margin-top:0.4rem;padding:0.5rem 0.75rem;background:rgba(248,81,73,0.1);border:1px solid var(--admin-danger);border-radius:6px;font-size:0.78rem;color:var(--admin-danger);"></div>
                                 <div style="margin-top:0.5rem;">
                                     <label class="form-label" style="font-size:0.7rem;color:var(--admin-text-muted,#8b949e);">O pega la URL directamente:</label>
-                                    <input type="url" id="vFeaturedCutoutPng" class="form-input" placeholder="https://... / multimedia/vehicles/cutout.png" style="font-size:0.8rem;" oninput="adminPanel.renderCutoutPreview(this.value)">
+                                    <input type="url" id="vFeaturedCutoutPng" class="form-input" placeholder="https://... / multimedia/vehicles/cutout.png" style="font-size:0.8rem;">
                                 </div>
                             </div>
                         </div>

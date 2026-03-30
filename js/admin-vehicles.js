@@ -1208,6 +1208,12 @@
         var area = $('cutoutPreviewArea');
         var img  = $('cutoutPreviewImg');
         if (!area || !img) return;
+        // F7.5: Block dangerous protocols
+        var trimmed = (url || '').trim().toLowerCase();
+        if (trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('multimedia/')) {
+            area.style.display = 'none';
+            return;
+        }
         if (url && url.trim()) {
             img.src = url.trim();
             area.style.display = 'flex';
@@ -1222,6 +1228,30 @@
         renderCutoutPreview('');
         AP.toast('Imagen recortada eliminada', 'info');
     }
+
+    // F7.5: Cutout preview listener (migrated from inline oninput)
+    var cutoutInput = $('vFeaturedCutoutPng');
+    if (cutoutInput) {
+        cutoutInput.addEventListener('input', function() { renderCutoutPreview(this.value); });
+    }
+
+    // Auto-check "En Oferta" when precio oferta is entered (migrated from inline oninput)
+    var precioOfertaInput = $('vPrecioOferta');
+    if (precioOfertaInput) {
+        precioOfertaInput.addEventListener('input', function() {
+            var cb = $('vOferta');
+            if (cb) cb.checked = !!this.value;
+        });
+    }
+
+    // Cutout buttons (migrated from inline onclick)
+    var btnCutoutClear = $('btnCutoutClear');
+    if (btnCutoutClear) btnCutoutClear.addEventListener('click', function() { clearCutoutPng(); });
+    var cutoutUploadArea = $('cutoutUploadArea');
+    if (cutoutUploadArea) cutoutUploadArea.addEventListener('click', function() {
+        var fi = $('cutoutFileInput');
+        if (fi) fi.click();
+    });
 
     // ========== CONCESIONARIO TOGGLE ==========
     function toggleConsignaField() {

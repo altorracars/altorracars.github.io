@@ -115,6 +115,15 @@
             return div.innerHTML;
         },
 
+        // F0.3: Safe closest() — handles SVG child nodes and text nodes
+        closestAction: function(e) {
+            var el = e.target;
+            if (!el) return null;
+            if (el.nodeType !== 1) el = el.parentElement;
+            if (!el || typeof el.closest !== 'function') return null;
+            return el.closest('[data-action]');
+        },
+
         capitalize: function(str) {
             if (!str) return '';
             return str.charAt(0).toUpperCase() + str.slice(1);

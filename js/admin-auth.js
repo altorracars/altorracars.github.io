@@ -460,7 +460,7 @@
     var quickActionsEl = $('quickActions');
     if (quickActionsEl) {
         quickActionsEl.addEventListener('click', function(e) {
-            var btn = e.target.closest('[data-action]');
+            var btn = AP.closestAction(e);
             if (!btn) return;
             var action = btn.getAttribute('data-action');
             if (action === 'quickNewVehicle') {
@@ -481,7 +481,8 @@
             'statVendidos': 'vehicles', 'statCitas': 'appointments'
         };
         statsGrid.addEventListener('click', function(e) {
-            var card = e.target.closest('.stat-card');
+            var _el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+            var card = _el && _el.closest ? _el.closest('.stat-card') : null;
             if (!card) return;
             var valueEl = card.querySelector('.stat-value');
             if (!valueEl) return;

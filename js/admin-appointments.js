@@ -606,7 +606,7 @@
     var citasSection = $('sec-citas');
     if (citasSection) {
         citasSection.addEventListener('click', function(e) {
-            var btn = e.target.closest('[data-action]');
+            var btn = AP.closestAction(e);
             if (!btn) return;
             var action = btn.getAttribute('data-action');
             if (action === 'manageAppointment') manageAppointment(btn.getAttribute('data-id'));

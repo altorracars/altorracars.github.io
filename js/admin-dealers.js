@@ -252,7 +252,8 @@
     var dealersSection = $('sec-dealers');
     if (dealersSection) {
         dealersSection.addEventListener('click', function(e) {
-            var btn = e.target.closest('[data-action="editDealer"]');
+            var el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+            var btn = el && el.closest ? el.closest('[data-action="editDealer"]') : null;
             if (btn) editDealer(btn.getAttribute('data-id'));
         });
     }

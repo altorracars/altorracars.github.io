@@ -38,19 +38,10 @@
             AP._vehiclesLoaded = true;
             AP.vehicles = snap.docs.map(function(d) { return d.data(); });
 
-            // Migración única: destacado es el campo canónico — featuredWeek lo sigue.
-            // NUNCA promover un vehículo por featuredWeek: evita que vehículos
-            // limpiados en admin reaparezcan en el banner.
+            // F0.5: Automatic schema migration — runs once on first load
+            // Idempotent: only touches vehicles missing required fields
             if (!_vehiclesInitialized && window.db && AP.canCreateOrEditInventory && AP.canCreateOrEditInventory()) {
-                AP.vehicles.forEach(function(v) {
-                    var canonical = !!v.destacado; // destacado manda
-                    if (!!v.featuredWeek !== canonical) {
-                        window.db.collection('vehiculos').doc(String(v.id)).update({
-                            featuredWeek: canonical,
-                            _version: (v._version || 0) + 1
-                        }).catch(function() { /* sin permisos — ignorar */ });
-                    }
-                });
+                migrateVehicleSchema(AP.vehicles);
             }
 
             // Primer snapshot = carga inicial; los siguientes = cambios reales del admin
@@ -157,6 +148,131 @@
                 if (AP.loadBlockedDates) AP.loadBlockedDates();
             });
         }
+    }
+
+    // ========== F0.5: VEHICLE SCHEMA MIGRATION ==========
+    // Runs once on first snapshot. Idempotent, non-destructive, parallel.
+    // Generates codigoUnico for legacy vehicles, fills missing defaults.
+    var _migrationRan = false;
+    function migrateVehicleSchema(vehicles) {
+        if (_migrationRan) return;
+        _migrationRan = true;
+
+        // Schema defaults — only applied if field is missing/falsy
+        var DEFAULTS = {
+            estado: 'disponible',
+            tipo: 'usado',
+            direccion: 'Electrica',
+            ubicacion: 'Cartagena',
+            puertas: 5,
+            pasajeros: 5,
+            asientos: 5,
+            placa: 'Disponible al contactar',
+            codigoFasecolda: 'Consultar',
+            revisionTecnica: true,
+            peritaje: true,
+            destacado: false,
+            featuredWeek: false,
+            prioridad: 0,
+            oferta: false
+        };
+
+        // Find vehicles needing migration
+        var toMigrate = vehicles.filter(function(v) {
+            if (!v.codigoUnico) return true;
+            if (!v._version && v._version !== 0) return true;
+            if (!v.estado) return true;
+            // featuredWeek must match destacado
+            if (!!v.featuredWeek !== !!v.destacado) return true;
+            return false;
+        });
+
+        if (toMigrate.length === 0) return;
+
+        // Get the current code sequence counter
+        var counterRef = window.db.collection('config').doc('counters');
+        counterRef.get().then(function(counterDoc) {
+            var currentSeq = counterDoc.exists ? (counterDoc.data().vehicleCodeSeq || 0) : 0;
+            var needsCodes = toMigrate.filter(function(v) { return !v.codigoUnico; });
+            var newSeq = currentSeq + needsCodes.length;
+
+            // Generate codes for vehicles without one
+            var codeIndex = 0;
+            var now = new Date();
+            var yyyy = now.getFullYear();
+            var mm = String(now.getMonth() + 1).padStart(2, '0');
+
+            // Build batch updates (max 500 per batch)
+            var batches = [window.db.batch()];
+            var batchCount = 0;
+            var totalMigrated = 0;
+
+            toMigrate.forEach(function(v) {
+                var patch = {};
+                var needsUpdate = false;
+
+                // Generate codigoUnico if missing
+                if (!v.codigoUnico) {
+                    codeIndex++;
+                    var seq = String(currentSeq + codeIndex).padStart(4, '0');
+                    patch.codigoUnico = 'ALT-' + yyyy + mm + '-' + seq;
+                    needsUpdate = true;
+                }
+
+                // Add _version if missing
+                if (!v._version && v._version !== 0) {
+                    patch._version = 1;
+                    needsUpdate = true;
+                }
+
+                // Fill missing defaults
+                Object.keys(DEFAULTS).forEach(function(key) {
+                    if (v[key] === undefined || v[key] === null || v[key] === '') {
+                        // Don't overwrite explicit false/0 values
+                        if (typeof DEFAULTS[key] === 'boolean' && v[key] === false) return;
+                        if (typeof DEFAULTS[key] === 'number' && v[key] === 0) return;
+                        patch[key] = DEFAULTS[key];
+                        needsUpdate = true;
+                    }
+                });
+
+                // Sync featuredWeek with destacado
+                if (!!v.featuredWeek !== !!v.destacado) {
+                    patch.featuredWeek = !!v.destacado;
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate) {
+                    if (batchCount >= 499) {
+                        batches.push(window.db.batch());
+                        batchCount = 0;
+                    }
+                    var ref = window.db.collection('vehiculos').doc(String(v.id));
+                    batches[batches.length - 1].update(ref, patch);
+                    batchCount++;
+                    totalMigrated++;
+                }
+            });
+
+            if (totalMigrated === 0) return;
+
+            // Update counter if codes were generated
+            if (needsCodes.length > 0) {
+                batches[batches.length - 1].set(counterRef, { vehicleCodeSeq: newSeq }, { merge: true });
+            }
+
+            // Commit all batches in parallel
+            Promise.all(batches.map(function(b) { return b.commit(); }))
+                .then(function() {
+                    AP.toast(totalMigrated + ' vehiculo(s) migrados al nuevo esquema', 'info');
+                    AP.writeAuditLog('vehicle_migration', 'sistema', 'Migrados ' + totalMigrated + ' vehiculos (codigos, defaults, version)');
+                })
+                .catch(function(err) {
+                    console.warn('[Migration] Error:', err.message);
+                });
+        }).catch(function(err) {
+            console.warn('[Migration] Could not read counter:', err.message);
+        });
     }
 
     function loadUsers() {
@@ -284,7 +400,8 @@
     var vBody = $('vehiclesTableBody');
     if (vBody) {
         vBody.addEventListener('click', function(e) {
-            var link = e.target.closest('[data-action="retryLoad"]');
+            var el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+            var link = el && el.closest ? el.closest('[data-action="retryLoad"]') : null;
             if (link) { e.preventDefault(); retryLoad(); }
         });
     }

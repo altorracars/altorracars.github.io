@@ -244,32 +244,103 @@
 
 ---
 
-## Resumen Ejecutivo
+## Estadisticas de la Auditoria Original
+
+| Metrica | Cantidad |
+|---------|----------|
+| **Bugs encontrados** | 14 + 6 (Fase 0) |
+| **Vulnerabilidades XSS** | 12 |
+| **Problemas de performance** | 10 |
+| **Gaps de accesibilidad** | 12 |
+| **Gaps de UX** | 20 |
+| **Mejoras tecnologicas** | 15 |
+| **Total issues resueltos** | **89** |
+| **Archivos modificados** | 16+ |
+
+---
+
+## Fase 0 — Resolucion Critica del CRUD de Vehiculos
+
+> Prioridad: **CRITICA** | Ejecutada: 2026-03-31
+> Contexto: Errores reportados en produccion al crear/actualizar vehiculos desde admin panel
+
+### Bugs Encontrados y Resueltos
+
+| ID | Severidad | Archivo | Problema | Solucion |
+|----|-----------|---------|----------|----------|
+| F0.1a | **CRITICA** | admin-vehicles.js:960 | `transaction.set()` en update existente causa que Firestore evalúe ambiguamente create vs update en Security Rules, provocando `permission-denied` (403) | Cambiado a `transaction.update()` que Firestore evalúa exclusivamente como `update` rule |
+| F0.1b | **CRITICA** | firestore.rules:6-25 | `getUserRole()` podia explotar si doc de usuario no existia bajo auth.uid, causando `permission-denied` silencioso | Reorganizado: `hasProfile()` valida existencia primero, `getUserRole()` solo se llama despues de confirmar que el doc existe |
+| F0.2 | **ALTA** | firebase-config.js | Sin `enablePersistence()` — escrituras fallaban con `[code=unavailable]` y `ERR_NAME_NOT_RESOLVED` durante micro-cortes de red | Habilitado `db.enablePersistence({ synchronizeTabs: true })` para encolar writes offline en IndexedDB |
+| F0.3 | **ALTA** | 12 archivos admin-*.js | `e.target.closest()` crasheaba con `TypeError: is not a function` al hacer click en SVG child nodes (paths, polylines) dentro de botones | Creado helper `AP.closestAction(e)` que verifica `nodeType` antes de llamar `closest()`. Aplicado en 12 event listeners delegados |
+| F0.4 | **MEDIA** | admin-vehicles.js:1721 | Batch delete usaba `collection('vehicles')` (ingles) en vez de `collection('vehiculos')`. Las rules no tenian match para esa coleccion → `permission-denied` | Corregido a `collection('vehiculos')` |
+| F0.5 | **ALTA** | admin-sync.js | Vehiculos creados en versiones anteriores de la plataforma no tenian `codigoUnico`, `_version`, ni campos default | Sistema de migracion automatica que se ejecuta en cada carga del admin |
+
+### F0.5: Sistema de Migracion Automatica de Vehiculos
+
+**Ubicacion:** `admin-sync.js` → funcion `migrateVehicleSchema()`
+
+**Comportamiento:**
+- Se ejecuta **una vez por sesion** en el primer snapshot de vehiculos
+- **Idempotente**: solo toca vehiculos que les faltan campos requeridos
+- **No destructiva**: nunca sobreescribe datos existentes
+- **Paralela**: usa Firestore batch writes (max 500 por batch)
+- **Auditable**: registra la migracion en el audit log
+
+**Campos que migra:**
+
+| Campo | Valor por defecto | Condicion |
+|-------|-------------------|-----------|
+| `codigoUnico` | `ALT-YYYYMM-XXXX` (secuencial atomico) | Si no existe |
+| `_version` | `1` | Si no existe |
+| `estado` | `'disponible'` | Si vacio/null |
+| `tipo` | `'usado'` | Si vacio/null |
+| `direccion` | `'Electrica'` | Si vacio/null |
+| `ubicacion` | `'Cartagena'` | Si vacio/null |
+| `puertas` | `5` | Si vacio/null |
+| `pasajeros` / `asientos` | `5` | Si vacio/null |
+| `placa` | `'Disponible al contactar'` | Si vacio/null |
+| `destacado` / `featuredWeek` | `false` | Si undefined |
+| `prioridad` | `0` | Si undefined |
+
+**Cuando agregar nuevos campos:** Al agregar un campo nuevo al schema de vehiculos, solo agregar una entrada en el objeto `DEFAULTS` dentro de `migrateVehicleSchema()` y la proxima vez que cualquier admin cargue el panel, se migraran automaticamente.
+
+### Archivos Modificados en Fase 0
+
+| Archivo | Cambios |
+|---------|---------|
+| `firestore.rules` | Rules defensivas: `hasProfile()` antes de `getUserRole()` |
+| `js/firebase-config.js` | `enablePersistence({ synchronizeTabs: true })` |
+| `js/admin-state.js` | Helper `AP.closestAction(e)` para SVG-safe event delegation |
+| `js/admin-vehicles.js` | `set()`→`update()` en transaccion, mejor error handling, fix coleccion batch delete |
+| `js/admin-sync.js` | `migrateVehicleSchema()` completa con batch writes |
+| `js/admin-auth.js` | Guard `closestAction` en quick actions y stat cards |
+| `js/admin-brands.js` | Guard `closestAction` en delegated listeners |
+| `js/admin-lists.js` | Guard `closestAction` en delegated listeners |
+| `js/admin-users.js` | Guard `closestAction` en delegated listeners |
+| `js/admin-dealers.js` | Guard safe `closest()` en delegated listener |
+| `js/admin-appointments.js` | Guard `closestAction` en delegated listeners |
+| `js/admin-table-utils.js` | Guard safe `closest()` en pagination, sort, search |
+
+---
+
+## Resumen Ejecutivo — Historico Completo
+
+### Fases 1-5 (Pre-auditoria)
+Implementadas en sesiones anteriores: table utils, audit logging, seguridad basica, visual polish, charts/wizard.
+
+### Fases 6-11 (Post-auditoria profunda)
 
 | Fase | Nombre | Items | Complejidad | Impacto | Estado |
 |------|--------|-------|-------------|---------|--------|
+| **0** | Resolucion Critica CRUD | 6 | Alta | **Critico** | ✅ Completada |
 | **6** | Seguridad & Bugs Criticos | 10 | Media | **Critico** | ✅ Completada |
 | **7** | Login & Identidad | 5 | Baja | Alto | ✅ Completada |
 | **8** | Dashboard Inteligente | 5 | Media | Alto | ✅ Completada |
 | **9** | Performance & CSS | 10 | Media | Alto | ✅ Completada |
 | **10** | Productividad & Atajos | 8 | Media | Alto | ✅ Completada |
 | **11** | Accesibilidad | 8 | Baja | Medio | ✅ Completada |
-| **12** | Notificaciones (Futuro) | 7 | Alta | Alto | Pendiente |
+| **12** | Notificaciones & Avanzado | 7 | Alta | Alto | Pendiente |
 
-### Estadisticas de la Auditoria
+**Proximos pasos:** Fase 1 (Auditoria y limpieza de codigo muerto) → Fase 2 (Fase 12: Email, 2FA, Sesiones activas con RTDB)
 
-| Metrica | Cantidad |
-|---------|----------|
-| **Bugs encontrados** | 14 |
-| **Vulnerabilidades XSS** | 12 |
-| **Problemas de performance** | 10 |
-| **Gaps de accesibilidad** | 12 |
-| **Gaps de UX** | 20 |
-| **Mejoras tecnologicas** | 15 |
-| **Total issues** | **83** |
-| **Archivos auditados** | 14 |
-| **Lineas de codigo revisadas** | ~6,500 |
-
-**Recomendacion:** Fase 12 (Notificaciones) es la ultima fase pendiente.
-
-> Ultima actualizacion: 2026-03-31 (Fase 11 completada)
+> Ultima actualizacion: 2026-03-31 (Fase 0 completada — CRUD fix critico)

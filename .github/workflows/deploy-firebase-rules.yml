@@ -1,0 +1,48 @@
+# Deploy Firestore & Storage security rules to Firebase
+# Requires FIREBASE_SERVICE_ACCOUNT secret configured in repo settings
+#
+# To set up:
+# 1. In Firebase Console > Project Settings > Service Accounts > Generate new private key
+# 2. In GitHub > Repo Settings > Secrets > New repository secret
+#    Name: FIREBASE_SERVICE_ACCOUNT
+#    Value: (paste the entire JSON key file content)
+
+name: Deploy Firebase Rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'storage.rules'
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Firebase
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy Firestore and Storage rules
+        run: |
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json
+          firebase deploy --only firestore:rules,storage --project altorra-cars
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f /tmp/sa-key.json

@@ -2243,3 +2243,18 @@ input[type="checkbox"] { transition: all 0.15s ease; }
     .audit-filter-group { min-width: 100%; }
     .audit-details-cell { max-width: 120px; }
 }
+
+/* F10.4: Batch actions bar */
+.batch-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid var(--admin-gold);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+}
+.batch-bar span { font-weight: 600; color: var(--admin-gold); }

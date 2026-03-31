@@ -380,15 +380,22 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto">
+                    <div id="vehicleBatchBar" class="batch-bar" style="display:none;">
+                        <span id="vehicleBatchCount">0 seleccionados</span>
+                        <button class="btn btn-danger btn-sm" id="btnBatchDeleteVehicles">Eliminar seleccionados</button>
+                        <button class="btn btn-ghost btn-sm" id="btnBatchExportVehicles">Exportar seleccion CSV</button>
+                        <button class="btn btn-ghost btn-sm" id="btnBatchDeselectAll">Deseleccionar</button>
+                    </div>
                     <table id="vehiclesTable">
                         <thead><tr>
+                            <th style="width:32px;"><input type="checkbox" id="vehicleSelectAll" title="Seleccionar todos"></th>
                             <th class="col-drag" style="display:none;width:32px;"></th>
                             <th data-sort="codigoUnico" data-table="vehicles">Codigo</th><th>Imagen</th><th data-sort="marca" data-table="vehicles">Vehiculo</th><th data-sort="tipo" data-table="vehicles">Tipo</th><th data-sort="precio" data-table="vehicles">Precio</th><th data-sort="estado" data-table="vehicles">Estado</th>
                             <th class="col-pos" style="display:none;width:80px;">Pos.</th>
                             <th>Origen</th><th>Acciones</th>
                         </tr></thead>
                         <tbody id="vehiclesTableBody">
-                            <tr><td colspan="10" class="table-empty">Cargando...</td></tr>
+                            <tr><td colspan="11" class="table-empty">Cargando...</td></tr>
                         </tbody>
                     </table>
                     <div id="vehiclesPagination"></div>

@@ -46,6 +46,17 @@
             window.db = db;
             window.auth = auth;
 
+            // F0.2: Enable offline persistence — queues writes during network issues
+            db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+                if (err.code === 'failed-precondition') {
+                    // Multiple tabs open — only one can enable persistence
+                    console.warn('[Firestore] Persistence disabled: multiple tabs open');
+                } else if (err.code === 'unimplemented') {
+                    // Browser doesn't support IndexedDB
+                    console.warn('[Firestore] Persistence disabled: browser not supported');
+                }
+            });
+
             // Inicializar system/meta si no existe (necesario para el cache inteligente)
             db.doc('system/meta').get().then(function(snap) {
                 if (!snap.exists) {

@@ -370,7 +370,7 @@
     var brandsBody = $('brandsTableBody');
     if (brandsBody) {
         brandsBody.addEventListener('click', function(e) {
-            var btn = e.target.closest('[data-action]');
+            var btn = AP.closestAction(e);
             if (!btn) return;
             var id = btn.getAttribute('data-id');
             if (btn.getAttribute('data-action') === 'editBrand') editBrand(id);

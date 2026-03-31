@@ -101,7 +101,8 @@
 
     // Delegated click handler for pagination buttons
     document.addEventListener('click', function(e) {
-        var btn = e.target.closest('.pagination-btn');
+        var _el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+        var btn = _el && _el.closest ? _el.closest('.pagination-btn') : null;
         if (!btn || btn.disabled) return;
         var tableKey = btn.getAttribute('data-table');
         var page = parseInt(btn.getAttribute('data-page'), 10);
@@ -151,7 +152,8 @@
 
     // Delegated click handler for sortable headers
     document.addEventListener('click', function(e) {
-        var th = e.target.closest('th[data-sort]');
+        var _el2 = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+        var th = _el2 && _el2.closest ? _el2.closest('th[data-sort]') : null;
         if (!th) return;
         var tableKey = th.getAttribute('data-table');
         var col = th.getAttribute('data-sort');
@@ -472,7 +474,8 @@
 
     // Navigate to section on result click
     document.addEventListener('click', function(e) {
-        var item = e.target.closest('.search-result-item[data-action="nav"]');
+        var _el3 = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+        var item = _el3 && _el3.closest ? _el3.closest('.search-result-item[data-action="nav"]') : null;
         if (!item) return;
         var section = item.getAttribute('data-section');
         var searchVal = item.getAttribute('data-search') || '';

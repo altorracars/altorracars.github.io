@@ -115,7 +115,7 @@
     var listsContainer = $('sec-lists');
     if (listsContainer) {
         listsContainer.addEventListener('click', function(e) {
-            var btn = e.target.closest('[data-action]');
+            var btn = AP.closestAction(e);
             if (!btn) return;
             var action = btn.getAttribute('data-action');
             var listKey = btn.getAttribute('data-list');

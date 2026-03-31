@@ -2,26 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper: check if caller has a valid profile
+    function hasProfile() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
     // Helper: get the caller's role from usuarios collection
+    // Safe: only called after hasProfile() confirms doc exists
     function getUserRole() {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol;
     }
 
-    // Helper: check if caller has a valid profile
-    function hasProfile() {
-      return exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
-    }
-
     function isSuperAdmin() {
-      return request.auth != null && hasProfile() && getUserRole() == 'super_admin';
+      return hasProfile() && getUserRole() == 'super_admin';
     }
 
     function isEditorOrAbove() {
-      return request.auth != null && hasProfile() && getUserRole() in ['super_admin', 'editor'];
+      return hasProfile() && getUserRole() in ['super_admin', 'editor'];
     }
 
     function isAuthenticated() {
-      return request.auth != null && hasProfile();
+      return hasProfile();
     }
 
     // F4.5: Optimistic locking — validate _version increment
@@ -50,10 +52,11 @@ service cloud.firestore {
         && validCreateVersion()
         && isReasonableSize();
 
-      // Editor or Super Admin can update (must increment _version)
-      // Super Admin can always update (bypass version check for edge cases)
+      // Super Admin can always update (bypass version check for migrations/edge cases)
+      // Editor must increment _version on each update
       allow update: if isReasonableSize()
-        && (isSuperAdmin() || (isEditorOrAbove() && validVersion()));
+        && (isSuperAdmin()
+            || (isEditorOrAbove() && validVersion()));
 
       // Only Super Admin can delete
       allow delete: if isSuperAdmin();

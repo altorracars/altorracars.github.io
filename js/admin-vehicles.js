@@ -951,13 +951,14 @@
         var docRef = window.db.collection('vehiculos').doc(String(id));
         return window.db.runTransaction(function(transaction) {
             return transaction.get(docRef).then(function(doc) {
-                var currentVersion = doc.exists ? (doc.data()._version || 0) : 0;
+                if (!doc.exists) throw { code: 'not-found', message: 'El vehiculo #' + id + ' ya no existe en la base de datos.' };
+                var currentVersion = doc.data()._version || 0;
                 if (expectedVersion !== null && currentVersion !== expectedVersion) {
                     var lastEditor = doc.data().updatedBy || 'otro usuario';
                     throw { code: 'version-conflict', message: 'Este vehiculo fue modificado por ' + lastEditor + ' mientras lo editabas. Cierra el formulario y vuelve a abrirlo.' };
                 }
                 vehicleData._version = currentVersion + 1;
-                transaction.set(docRef, vehicleData);
+                transaction.update(docRef, vehicleData);
             });
         });
     }
@@ -1085,7 +1086,9 @@
             closeModalFn(true);
         }).catch(function(err) {
             if (err.code === 'version-conflict') AP.toast(err.message, 'error');
-            else if (err.code === 'permission-denied') AP.toast('Sin permisos para esta accion.', 'error');
+            else if (err.code === 'permission-denied') AP.toast('Sin permisos para esta accion. Verifica tu rol en Firestore y que las rules esten desplegadas.', 'error');
+            else if (err.code === 'unavailable' || err.code === 'deadline-exceeded') AP.toast('Error de conexion. El cambio se guardara automaticamente cuando vuelva la red.', 'info');
+            else if (err.code === 'not-found') AP.toast(err.message || 'Documento no encontrado.', 'error');
             else AP.toast('Error: ' + (err.message || err), 'error');
         }).finally(function() {
             btn.disabled = false;
@@ -1680,7 +1683,7 @@
         loadDraftFromUser: function(_, btn) { loadDraftFromUser(btn.getAttribute('data-user-id')); }
     };
     document.addEventListener('click', function(e) {
-        var btn = e.target.closest('[data-action]');
+        var btn = AP.closestAction(e);
         if (!btn) return;
         var action = btn.getAttribute('data-action');
         var handler = vehicleActions[action];
@@ -1718,7 +1721,7 @@
         if (ids.length === 0) return;
         if (!confirm('¿Eliminar ' + ids.length + ' vehiculos? Esta accion no se puede deshacer.')) return;
         var batch = window.db.batch();
-        ids.forEach(function(id) { batch.delete(window.db.collection('vehicles').doc(String(id))); });
+        ids.forEach(function(id) { batch.delete(window.db.collection('vehiculos').doc(String(id))); });
         batch.commit().then(function() {
             AP.toast(ids.length + ' vehiculos eliminados');
             updateBatchBar();

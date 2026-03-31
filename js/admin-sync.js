@@ -285,23 +285,28 @@
         });
     }
 
-    // Diagnostic: verify Firestore rules are deployed and allow writes for this role
+    // Diagnostic: verify Firestore rules are deployed and allow role-based writes
     var _ruleCheckDone = false;
     function checkFirestoreRulesDeployed() {
         if (_ruleCheckDone || !window.db || !AP.currentUserRole) return;
         _ruleCheckDone = true;
-        // Try writing a timestamp to system/meta (allowed by rules for editor+)
-        var testRef = window.db.collection('system').doc('meta');
-        testRef.set({ rulesCheck: Date.now() }, { merge: true })
-            .then(function() {
-                console.info('[Rules] Firestore security rules are active and allow writes.');
-            })
-            .catch(function(err) {
-                if (err.code === 'permission-denied') {
-                    console.error('[Rules] CRITICAL: Firestore rules are NOT deployed or are outdated. Run: firebase deploy --only firestore:rules');
-                    AP.toast('Las reglas de Firestore no estan desplegadas. Ejecuta: firebase deploy --only firestore:rules', 'error');
-                }
-            });
+        // Test 1: auditLog create (requires isEditorOrAbove() — no fallback)
+        var testId = '_rulesCheck_' + Date.now();
+        var testRef = window.db.collection('auditLog').doc(testId);
+        testRef.set({
+            action: 'rules_check',
+            user: (AP.currentUserProfile && AP.currentUserProfile.email) || 'unknown',
+            timestamp: new Date().toISOString()
+        }).then(function() {
+            console.info('[Rules] Firestore rules OK: role-based writes work (auditLog create passed).');
+            // Clean up test document
+            return testRef.delete().catch(function() {});
+        }).catch(function(err) {
+            if (err.code === 'permission-denied') {
+                console.error('[Rules] CRITICAL: Role-based writes DENIED. Your role "' + AP.currentUserRole + '" is not recognized by Firestore rules. Deploy rules: firebase deploy --only firestore:rules');
+                AP.toast('Error de permisos: las reglas de Firestore no reconocen tu rol. Redespliega con: firebase deploy --only firestore:rules', 'error');
+            }
+        });
     }
     AP.checkFirestoreRulesDeployed = checkFirestoreRulesDeployed;
 

@@ -84,6 +84,27 @@
                 console.warn('Deferred Firebase SDKs failed:', err);
             });
 
+            // Troubleshooting: clear stale offline writes from IndexedDB
+            // Call window.clearFirestoreCache() from browser console if permission errors persist
+            window.clearFirestoreCache = function() {
+                console.info('[Cache] Terminating Firestore and clearing persistence...');
+                firebase.firestore().terminate().then(function() {
+                    return firebase.firestore().clearPersistence();
+                }).then(function() {
+                    console.info('[Cache] Persistence cleared. Reloading...');
+                    window.location.reload();
+                }).catch(function(err) {
+                    console.error('[Cache] Error clearing persistence:', err);
+                    // Fallback: delete IndexedDB directly
+                    var dbNames = ['firestore/[DEFAULT]/altorra-cars/main'];
+                    dbNames.forEach(function(name) {
+                        indexedDB.deleteDatabase(name);
+                    });
+                    console.info('[Cache] IndexedDB deleted. Reloading...');
+                    window.location.reload();
+                });
+            };
+
             console.log('Firebase core ready (Auth + Firestore)');
             return { app: app, db: db, auth: auth };
         })

@@ -47,16 +47,15 @@ service cloud.firestore {
       // Public catalog — anyone can browse the inventory
       allow read: if true;
 
-      // Editor or Super Admin can create (must include _version = 1)
-      allow create: if isEditorOrAbove()
-        && validCreateVersion()
-        && isReasonableSize();
+      // Super Admin can always create (bypass version/size checks for edge cases)
+      // Editor must include _version = 1 and respect size limit
+      allow create: if isSuperAdmin()
+        || (isEditorOrAbove() && validCreateVersion() && isReasonableSize());
 
-      // Super Admin can always update (bypass version check for migrations/edge cases)
-      // Editor must increment _version on each update
-      allow update: if isReasonableSize()
-        && (isSuperAdmin()
-            || (isEditorOrAbove() && validVersion()));
+      // Super Admin can always update (bypass version/size checks for migrations)
+      // Editor must increment _version on each update and respect size limit
+      allow update: if isSuperAdmin()
+        || (isEditorOrAbove() && validVersion() && isReasonableSize());
 
       // Only Super Admin can delete
       allow delete: if isSuperAdmin();
@@ -82,9 +81,9 @@ service cloud.firestore {
       allow read: if true;
 
       // F4.5: Editor+ can create with _version=1, update with _version+1
-      allow create: if isEditorOrAbove() && isReasonableSize();
-      allow update: if isReasonableSize()
-        && (isSuperAdmin() || (isEditorOrAbove() && validVersion()));
+      allow create: if isSuperAdmin() || (isEditorOrAbove() && isReasonableSize());
+      allow update: if isSuperAdmin()
+        || (isEditorOrAbove() && validVersion() && isReasonableSize());
 
       allow delete: if isSuperAdmin();
     }
@@ -113,9 +112,9 @@ service cloud.firestore {
       allow read: if true;
 
       // F4.5: Version-controlled banners
-      allow create: if isEditorOrAbove() && isReasonableSize();
-      allow update: if isReasonableSize()
-        && (isSuperAdmin() || (isEditorOrAbove() && validVersion()));
+      allow create: if isSuperAdmin() || (isEditorOrAbove() && isReasonableSize());
+      allow update: if isSuperAdmin()
+        || (isEditorOrAbove() && validVersion() && isReasonableSize());
 
       allow delete: if isSuperAdmin();
     }

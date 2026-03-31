@@ -429,9 +429,66 @@
             this.classList.add('active');
             document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
             $('sec-' + section).classList.add('active');
+            // F8.3: Mark citas visit timestamp
+            if (section === 'appointments') {
+                localStorage.setItem('ac_citas_last_visit', String(Date.now()));
+                var aBadge = $('navBadgeAppointments');
+                if (aBadge) { aBadge.textContent = ''; aBadge.classList.remove('badge-unread'); }
+            }
             closeMobileMenu();
         });
     });
+
+    // F8.1: Quick actions + F8.2: Clickable stats
+    function navigateToSection(section) {
+        document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+        var navBtn = document.querySelector('.nav-item[data-section="' + section + '"]');
+        if (navBtn) navBtn.classList.add('active');
+        document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+        var sec = $('sec-' + section);
+        if (sec) sec.classList.add('active');
+        if (section === 'appointments') {
+            localStorage.setItem('ac_citas_last_visit', String(Date.now()));
+            var aBadge = $('navBadgeAppointments');
+            if (aBadge) { aBadge.textContent = ''; aBadge.classList.remove('badge-unread'); }
+        }
+        closeMobileMenu();
+    }
+    AP.navigateToSection = navigateToSection;
+
+    var quickActionsEl = $('quickActions');
+    if (quickActionsEl) {
+        quickActionsEl.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            var action = btn.getAttribute('data-action');
+            if (action === 'quickNewVehicle') {
+                navigateToSection('vehicles');
+                setTimeout(function() { var addBtn = $('btnAddVehicle'); if (addBtn) addBtn.click(); }, 150);
+            } else if (action === 'quickGoTo') {
+                navigateToSection(btn.getAttribute('data-section'));
+            }
+        });
+    }
+
+    // F8.2: Clickable stat cards
+    var statsGrid = document.querySelector('.stats-grid');
+    if (statsGrid) {
+        var statMap = {
+            'statTotal': 'vehicles', 'statNuevos': 'vehicles', 'statUsados': 'vehicles',
+            'statOfertas': 'vehicles', 'statDestacados': 'vehicles', 'statMarcas': 'brands',
+            'statVendidos': 'vehicles', 'statCitas': 'appointments'
+        };
+        statsGrid.addEventListener('click', function(e) {
+            var card = e.target.closest('.stat-card');
+            if (!card) return;
+            var valueEl = card.querySelector('.stat-value');
+            if (!valueEl) return;
+            var section = statMap[valueEl.id];
+            if (section) navigateToSection(section);
+        });
+        statsGrid.style.cursor = 'pointer';
+    }
 
     // ========== COLLAPSIBLE FORM SECTIONS ==========
     document.querySelectorAll('.form-section-title[data-toggle]').forEach(function(title) {

@@ -75,7 +75,7 @@
 
         if (batch && batchCount > 0) {
             batch.commit().then(function() {
-                console.log('[Brands] Auto-migrated ' + batchCount + ' logo path(s) to .webp');
+                // migrated silently
             }).catch(function(err) {
                 console.warn('[Brands] Logo migration failed:', err.message);
             });
@@ -113,7 +113,7 @@
             if (!actions) actions = '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Solo lectura</span>';
 
             var imgTag = logoUrl
-                ? '<img class="vehicle-thumb" src="' + AP.escapeHtml(logoUrl) + '" alt="' + AP.escapeHtml(b.nombre) + '" onerror="this.style.opacity=\'0.3\';this.onerror=null;" style="width:40px;height:40px;object-fit:contain;">'
+                ? '<img class="vehicle-thumb" src="' + AP.escapeHtml(logoUrl) + '" alt="' + AP.escapeHtml(b.nombre) + '" loading="lazy" onerror="this.style.opacity=\'0.3\';this.onerror=null;" style="width:40px;height:40px;object-fit:contain;">'
                 : '<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--admin-border);border-radius:6px;color:var(--admin-text-muted);font-size:0.6rem;">Sin logo</div>';
 
             html += '<tr>' +

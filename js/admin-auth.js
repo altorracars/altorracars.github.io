@@ -408,6 +408,7 @@
     if (hamburgerBtn) hamburgerBtn.addEventListener('click', function() {
         var isOpen = sidebar.classList.toggle('open');
         hamburgerBtn.classList.toggle('active', isOpen);
+        hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
         sidebarOverlay.classList.toggle('active', isOpen);
     });
     if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeMobileMenu);
@@ -502,9 +503,53 @@
         });
     });
 
+    // ========== F10.1: KEYBOARD SHORTCUTS ==========
+    document.addEventListener('keydown', function(e) {
+        // Only active when admin panel is visible
+        if (!AP.currentUser) return;
+
+        // Esc = close active modal
+        if (e.key === 'Escape') {
+            var activeModal = document.querySelector('.modal-overlay.active');
+            if (activeModal) {
+                e.preventDefault();
+                var closeBtn = activeModal.querySelector('.modal-close');
+                if (closeBtn) closeBtn.click();
+            }
+            return;
+        }
+
+        // Ctrl+S / Cmd+S = save in active modal
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            var modal = document.querySelector('.modal-overlay.active');
+            if (modal) {
+                e.preventDefault();
+                var saveBtn = modal.querySelector('.btn-primary[id*="save"], .btn-primary[id*="Save"]');
+                if (saveBtn && !saveBtn.disabled) saveBtn.click();
+            }
+            return;
+        }
+
+        // Ctrl+N / Cmd+N = new vehicle (only when no modal is open)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            var openModal = document.querySelector('.modal-overlay.active');
+            if (!openModal) {
+                e.preventDefault();
+                var addBtn = $('btnAddVehicle');
+                if (addBtn && addBtn.offsetParent !== null) addBtn.click();
+            }
+            return;
+        }
+    });
+
     // ========== EXPOSE ==========
     AP.initAuth              = initAuth;
     AP.stopInactivityTracking = stopInactivityTracking;
+
+    // F11.7: Sync aria-required with required attribute
+    document.querySelectorAll('[required]').forEach(function(el) {
+        el.setAttribute('aria-required', 'true');
+    });
 
     // Inicializar UI de rate limit y arrancar auth
     updateRateLimitUI();

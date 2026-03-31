@@ -94,13 +94,22 @@
     // ========== VEHICLES TABLE ==========
     var _reorderMode = false;
     var _dragSrcRow = null;
+    var _searchTimer = null;
+
+    // F9.2: Build cached search string per vehicle
+    function _buildSearchStr(v) {
+        if (!v._searchStr) {
+            v._searchStr = (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '') + ' ' + (v.categoria || '') + ' ' + (v.color || '')).toLowerCase();
+        }
+        return v._searchStr;
+    }
 
     function renderVehiclesTable(filter) {
         var filtered = AP.vehicles;
         if (filter) {
             var q = filter.toLowerCase();
             filtered = filtered.filter(function(v) {
-                return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '') + ' ' + (v.categoria || '') + ' ' + (v.color || '')).toLowerCase().indexOf(q) >= 0;
+                return _buildSearchStr(v).indexOf(q) >= 0;
             });
         }
         // F8.5: Advanced filters
@@ -151,7 +160,8 @@
                     actions += '<button class="btn btn-ghost btn-sm" disabled title="Solo Super Admin puede editar vehiculos vendidos" style="opacity:0.4;cursor:not-allowed;">Editar</button> ';
                     actions += '<span style="font-size:0.65rem;color:var(--admin-danger,#ef4444);">Protegido</span> ';
                 } else {
-                    actions += '<button class="btn btn-ghost btn-sm" data-action="editVehicle" data-id="' + v.id + '">Editar</button> ';
+                    actions += '<button class="btn btn-ghost btn-sm" data-action="editVehicle" data-id="' + v.id + '">Editar</button> ' +
+                        '<button class="btn btn-ghost btn-sm" data-action="duplicateVehicle" data-id="' + v.id + '" title="Duplicar vehiculo">📄</button> ';
                 }
                 if (estado === 'disponible') {
                     actions += '<button class="btn btn-sm" style="color:var(--admin-info);border-color:var(--admin-info);" data-action="markAsSold" data-id="' + v.id + '">Gestionar Operacion</button> ';
@@ -183,9 +193,10 @@
             '</td>' : '';
 
             html += '<tr data-vehicle-id="' + v.id + '"' + (_reorderMode ? ' draggable="true"' : '') + '>' +
+                '<td><input type="checkbox" class="vehicle-cb" data-vid="' + v.id + '"></td>' +
                 dragCell +
                 '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + AP.escapeHtml(v.codigoUnico || '—') + '</code></td>' +
-                '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
+                '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" loading="lazy" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
                 '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small>' +
                 (v.createdByName || v.createdBy ? '<br><small style="color:#6e7681;font-size:0.65rem;" title="Creado ' + (v.createdAt ? AP.timeAgo(v.createdAt) : '') + '">Creado por: ' + AP.escapeHtml(v.createdByName || v.createdBy || '') + '</small>' : '') +
                 (v.lastModifiedByName && v.lastModifiedBy !== v.createdBy ? '<br><small style="color:#d4af37;font-size:0.65rem;" title="' + (v.lastModifiedAt || '') + '">Mod: ' + AP.escapeHtml(v.lastModifiedByName) + ' ' + (v.lastModifiedAt ? AP.timeAgo(v.lastModifiedAt) : '') + '</small>' : '') +
@@ -372,9 +383,14 @@
         });
     }
 
+    // F9.1: Debounced vehicle search (300ms)
     $('vehicleSearch').addEventListener('input', function() {
-        if (AP._pagination) AP._pagination.vehicles.page = 1;
-        renderVehiclesTable(this.value);
+        var val = this.value;
+        clearTimeout(_searchTimer);
+        _searchTimer = setTimeout(function() {
+            if (AP._pagination) AP._pagination.vehicles.page = 1;
+            renderVehiclesTable(val);
+        }, 300);
     });
 
     // F8.5: Advanced filter listeners
@@ -821,6 +837,26 @@
         openModal();
     }
 
+    // F10.3: Duplicate vehicle
+    function duplicateVehicle(id) {
+        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos', 'error'); return; }
+        var v = AP.vehicles.find(function(x) { return x.id === id; });
+        if (!v) return;
+        editVehicle(id);
+        // After modal opens, clear identity fields to create new
+        setTimeout(function() {
+            $('vId').value = '';
+            $('vCodigoUnico').value = '';
+            $('codigoUnicoDisplay').style.display = 'none';
+            $('vPlaca').value = '';
+            $('vEstado').value = 'disponible';
+            $('vEstado').disabled = false;
+            $('vPrioridad').value = 0;
+            $('modalTitle').textContent = 'Duplicar Vehiculo (copia de ' + (v.codigoUnico || '#' + id) + ')';
+            AP.toast('Vehiculo duplicado. Modifica los datos y guarda.', 'info');
+        }, 350);
+    }
+
     // ========== FEATURES ==========
     function collectAllFeatures() {
         var features = [];
@@ -981,8 +1017,29 @@
             }
         }
 
+        // F10.7: Duplicate plate detection
+        var placa = ($('vPlaca').value || '').trim().toUpperCase();
+        if (placa) {
+            var editingId = $('vId').value ? parseInt($('vId').value, 10) : null;
+            var placaDup = AP.vehicles.find(function(v) {
+                return v.id !== editingId && (v.placa || '').trim().toUpperCase() === placa;
+            });
+            if (placaDup) {
+                var dupName = (placaDup.marca || '') + ' ' + (placaDup.modelo || '') + ' (' + (placaDup.codigoUnico || '#' + placaDup.id) + ')';
+                if (!confirm('La placa ' + placa + ' ya existe en: ' + dupName.trim() + '. ¿Deseas continuar de todos modos?')) return;
+            }
+        }
+
+        // F10.8: Confirmation before save
         var existingId = $('vId').value;
         var isEdit = !!existingId;
+        var marca = $('vMarca').value || '';
+        var modelo = $('vModelo').value || '';
+        var confirmMsg = isEdit
+            ? '¿Confirmas guardar los cambios en ' + marca + ' ' + modelo + '?'
+            : '¿Confirmas agregar el vehiculo ' + marca + ' ' + modelo + '?';
+        if (!confirm(confirmMsg)) return;
+
         var btn = $('saveVehicle');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
@@ -1616,6 +1673,7 @@
         showAuditTimeline: function(id) { showAuditTimeline(parseInt(id, 10)); },
         toggleDestacado: function(id) { toggleDestacadoFn(parseInt(id, 10)); },
         editVehicle: function(id) { editVehicle(parseInt(id, 10)); },
+        duplicateVehicle: function(id) { duplicateVehicle(parseInt(id, 10)); },
         markAsSold: function(id) { AP.markAsSold(parseInt(id, 10)); },
         deleteVehicle: function(id) { deleteVehicleFn(parseInt(id, 10)); },
         removeImage: function(_, btn) { removeImage(parseInt(btn.getAttribute('data-idx'), 10)); },
@@ -1630,5 +1688,60 @@
             e.preventDefault();
             handler(btn.getAttribute('data-id'), btn);
         }
+    });
+
+    // F10.4: Batch selection
+    function updateBatchBar() {
+        var checked = document.querySelectorAll('.vehicle-cb:checked');
+        var bar = $('vehicleBatchBar');
+        var count = $('vehicleBatchCount');
+        if (bar) bar.style.display = checked.length > 0 ? 'flex' : 'none';
+        if (count) count.textContent = checked.length + ' seleccionados';
+    }
+
+    var selectAll = $('vehicleSelectAll');
+    if (selectAll) selectAll.addEventListener('change', function() {
+        var val = this.checked;
+        document.querySelectorAll('.vehicle-cb').forEach(function(cb) { cb.checked = val; });
+        updateBatchBar();
+    });
+
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('vehicle-cb')) updateBatchBar();
+    });
+
+    var btnBatchDel = $('btnBatchDeleteVehicles');
+    if (btnBatchDel) btnBatchDel.addEventListener('click', function() {
+        if (!AP.canDeleteInventory()) { AP.toast('No tienes permisos', 'error'); return; }
+        var ids = [];
+        document.querySelectorAll('.vehicle-cb:checked').forEach(function(cb) { ids.push(parseInt(cb.getAttribute('data-vid'), 10)); });
+        if (ids.length === 0) return;
+        if (!confirm('¿Eliminar ' + ids.length + ' vehiculos? Esta accion no se puede deshacer.')) return;
+        var batch = window.db.batch();
+        ids.forEach(function(id) { batch.delete(window.db.collection('vehicles').doc(String(id))); });
+        batch.commit().then(function() {
+            AP.toast(ids.length + ' vehiculos eliminados');
+            updateBatchBar();
+        }).catch(function(err) { AP.toast('Error: ' + err.message, 'error'); });
+    });
+
+    var btnBatchExport = $('btnBatchExportVehicles');
+    if (btnBatchExport) btnBatchExport.addEventListener('click', function() {
+        var ids = [];
+        document.querySelectorAll('.vehicle-cb:checked').forEach(function(cb) { ids.push(parseInt(cb.getAttribute('data-vid'), 10)); });
+        if (ids.length === 0) return;
+        var selected = AP.vehicles.filter(function(v) { return ids.indexOf(v.id) >= 0; });
+        var headers = ['Codigo', 'Marca', 'Modelo', 'Ano', 'Tipo', 'Precio', 'Estado', 'Placa'];
+        var rows = selected.map(function(v) {
+            return [v.codigoUnico || '', v.marca || '', v.modelo || '', v.year || '', v.tipo || '', v.precio || '', v.estado || '', v.placa || ''];
+        });
+        AP.exportCSV('vehiculos_seleccion_' + new Date().toISOString().slice(0, 10) + '.csv', headers, rows);
+    });
+
+    var btnDeselect = $('btnBatchDeselectAll');
+    if (btnDeselect) btnDeselect.addEventListener('click', function() {
+        document.querySelectorAll('.vehicle-cb:checked').forEach(function(cb) { cb.checked = false; });
+        if (selectAll) selectAll.checked = false;
+        updateBatchBar();
     });
 })();

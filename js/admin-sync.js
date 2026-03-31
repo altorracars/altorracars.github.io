@@ -130,6 +130,7 @@
         if (AP.showStatsSkeleton) AP.showStatsSkeleton();
         if (AP.showTableSkeleton) AP.showTableSkeleton('vehiclesTableBody', 8);
         startRealtimeSync();
+        checkFirestoreRulesDeployed();
         try {
             if (AP.loadAppointments) AP.loadAppointments();
             if (AP.loadDealers) AP.loadDealers();
@@ -219,11 +220,9 @@
                     needsUpdate = true;
                 }
 
-                // Add _version if missing
-                if (!v._version && v._version !== 0) {
-                    patch._version = 1;
-                    needsUpdate = true;
-                }
+                // Track if _version itself is missing (needs initialization)
+                var versionMissing = !v._version && v._version !== 0;
+                if (versionMissing) needsUpdate = true;
 
                 // Fill missing defaults
                 Object.keys(DEFAULTS).forEach(function(key) {
@@ -243,6 +242,13 @@
                 }
 
                 if (needsUpdate) {
+                    // Always increment _version so the write passes validVersion() in Firestore rules
+                    // This ensures editors (not just super_admin) can run migrations
+                    if (versionMissing) {
+                        patch._version = 1;
+                    } else {
+                        patch._version = (v._version || 0) + 1;
+                    }
                     if (batchCount >= 499) {
                         batches.push(window.db.batch());
                         batchCount = 0;
@@ -268,12 +274,36 @@
                     AP.writeAuditLog('vehicle_migration', 'sistema', 'Migrados ' + totalMigrated + ' vehiculos (codigos, defaults, version)');
                 })
                 .catch(function(err) {
-                    console.warn('[Migration] Error:', err.message);
+                    if (err.code === 'permission-denied') {
+                        console.error('[Migration] Permission denied — Firestore rules may not be deployed. Run: firebase deploy --only firestore:rules');
+                    } else {
+                        console.warn('[Migration] Error:', err.message);
+                    }
                 });
         }).catch(function(err) {
             console.warn('[Migration] Could not read counter:', err.message);
         });
     }
+
+    // Diagnostic: verify Firestore rules are deployed and allow writes for this role
+    var _ruleCheckDone = false;
+    function checkFirestoreRulesDeployed() {
+        if (_ruleCheckDone || !window.db || !AP.currentUserRole) return;
+        _ruleCheckDone = true;
+        // Try writing a timestamp to system/meta (allowed by rules for editor+)
+        var testRef = window.db.collection('system').doc('meta');
+        testRef.set({ rulesCheck: Date.now() }, { merge: true })
+            .then(function() {
+                console.info('[Rules] Firestore security rules are active and allow writes.');
+            })
+            .catch(function(err) {
+                if (err.code === 'permission-denied') {
+                    console.error('[Rules] CRITICAL: Firestore rules are NOT deployed or are outdated. Run: firebase deploy --only firestore:rules');
+                    AP.toast('Las reglas de Firestore no estan desplegadas. Ejecuta: firebase deploy --only firestore:rules', 'error');
+                }
+            });
+    }
+    AP.checkFirestoreRulesDeployed = checkFirestoreRulesDeployed;
 
     function loadUsers() {
         if (!AP.canManageUsers()) return;

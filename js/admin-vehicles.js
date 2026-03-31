@@ -94,13 +94,22 @@
     // ========== VEHICLES TABLE ==========
     var _reorderMode = false;
     var _dragSrcRow = null;
+    var _searchTimer = null;
+
+    // F9.2: Build cached search string per vehicle
+    function _buildSearchStr(v) {
+        if (!v._searchStr) {
+            v._searchStr = (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '') + ' ' + (v.categoria || '') + ' ' + (v.color || '')).toLowerCase();
+        }
+        return v._searchStr;
+    }
 
     function renderVehiclesTable(filter) {
         var filtered = AP.vehicles;
         if (filter) {
             var q = filter.toLowerCase();
             filtered = filtered.filter(function(v) {
-                return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '') + ' ' + (v.categoria || '') + ' ' + (v.color || '')).toLowerCase().indexOf(q) >= 0;
+                return _buildSearchStr(v).indexOf(q) >= 0;
             });
         }
         // F8.5: Advanced filters
@@ -185,7 +194,7 @@
             html += '<tr data-vehicle-id="' + v.id + '"' + (_reorderMode ? ' draggable="true"' : '') + '>' +
                 dragCell +
                 '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + AP.escapeHtml(v.codigoUnico || '—') + '</code></td>' +
-                '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
+                '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" loading="lazy" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
                 '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small>' +
                 (v.createdByName || v.createdBy ? '<br><small style="color:#6e7681;font-size:0.65rem;" title="Creado ' + (v.createdAt ? AP.timeAgo(v.createdAt) : '') + '">Creado por: ' + AP.escapeHtml(v.createdByName || v.createdBy || '') + '</small>' : '') +
                 (v.lastModifiedByName && v.lastModifiedBy !== v.createdBy ? '<br><small style="color:#d4af37;font-size:0.65rem;" title="' + (v.lastModifiedAt || '') + '">Mod: ' + AP.escapeHtml(v.lastModifiedByName) + ' ' + (v.lastModifiedAt ? AP.timeAgo(v.lastModifiedAt) : '') + '</small>' : '') +
@@ -372,9 +381,14 @@
         });
     }
 
+    // F9.1: Debounced vehicle search (300ms)
     $('vehicleSearch').addEventListener('input', function() {
-        if (AP._pagination) AP._pagination.vehicles.page = 1;
-        renderVehiclesTable(this.value);
+        var val = this.value;
+        clearTimeout(_searchTimer);
+        _searchTimer = setTimeout(function() {
+            if (AP._pagination) AP._pagination.vehicles.page = 1;
+            renderVehiclesTable(val);
+        }, 300);
     });
 
     // F8.5: Advanced filter listeners

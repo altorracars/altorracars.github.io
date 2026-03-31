@@ -179,14 +179,23 @@
         });
     }
 
+    // F9.3: Single-pass updateStats with accumulator
     function updateStats() {
+        var s = { nuevos: 0, usados: 0, ofertas: 0, destacados: 0, vendidos: 0 };
+        AP.vehicles.forEach(function(v) {
+            if (v.tipo === 'nuevo') s.nuevos++;
+            else if (v.tipo === 'usado') s.usados++;
+            if (v.oferta || v.precioOferta) s.ofertas++;
+            if (v.destacado) s.destacados++;
+            if (v.estado === 'vendido') s.vendidos++;
+        });
         $('statTotal').textContent = AP.vehicles.length;
-        $('statNuevos').textContent = AP.vehicles.filter(function(v) { return v.tipo === 'nuevo'; }).length;
-        $('statUsados').textContent = AP.vehicles.filter(function(v) { return v.tipo === 'usado'; }).length;
-        $('statOfertas').textContent = AP.vehicles.filter(function(v) { return v.oferta || v.precioOferta; }).length;
-        $('statDestacados').textContent = AP.vehicles.filter(function(v) { return v.destacado; }).length;
+        $('statNuevos').textContent = s.nuevos;
+        $('statUsados').textContent = s.usados;
+        $('statOfertas').textContent = s.ofertas;
+        $('statDestacados').textContent = s.destacados;
         $('statMarcas').textContent = AP.brands.length;
-        $('statVendidos').textContent = AP.vehicles.filter(function(v) { return v.estado === 'vendido'; }).length;
+        $('statVendidos').textContent = s.vendidos;
         var citasEl = $('statCitas');
         if (citasEl) citasEl.textContent = (AP.appointments && AP.appointments.length > 0) ? AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length : '-';
     }

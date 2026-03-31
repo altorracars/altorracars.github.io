@@ -57,6 +57,7 @@
             if (_vehiclesInitialized) signalCacheInvalidation();
             _vehiclesInitialized = true;
             if (AP.renderVehiclesTable) AP.renderVehiclesTable();
+            if (AP._populateVehicleFilters) AP._populateVehicleFilters();
             if (AP.updateStats) AP.updateStats();
             if (AP.renderActivityFeed) AP.renderActivityFeed();
             if (AP.updateEstimator) AP.updateEstimator();
@@ -195,6 +196,21 @@
         var bBadge = $('navBadgeBrands');
         if (vBadge) vBadge.textContent = AP.vehicles.length || '';
         if (bBadge) bBadge.textContent = AP.brands.length || '';
+
+        // F8.3: Unread appointments badge
+        var aBadge = $('navBadgeAppointments');
+        if (aBadge && AP.appointments) {
+            var lastVisit = parseInt(localStorage.getItem('ac_citas_last_visit') || '0', 10);
+            var unread = AP.appointments.filter(function(a) {
+                if (!a.createdAt) return false;
+                var ts = typeof a.createdAt === 'number' ? a.createdAt :
+                    (a.createdAt && typeof a.createdAt.toDate === 'function') ? a.createdAt.toDate().getTime() :
+                    new Date(a.createdAt).getTime();
+                return ts > lastVisit;
+            }).length;
+            aBadge.textContent = unread > 0 ? unread : '';
+            aBadge.classList.toggle('badge-unread', unread > 0);
+        }
     }
 
     function updateEstimator() {

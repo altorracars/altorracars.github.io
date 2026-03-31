@@ -99,9 +99,20 @@
         var filtered = AP.vehicles;
         if (filter) {
             var q = filter.toLowerCase();
-            filtered = AP.vehicles.filter(function(v) {
+            filtered = filtered.filter(function(v) {
                 return (v.marca + ' ' + v.modelo + ' ' + v.year + ' ' + (v.estado || '') + ' ' + (v.codigoUnico || '') + ' ' + (v.categoria || '') + ' ' + (v.color || '')).toLowerCase().indexOf(q) >= 0;
             });
+        }
+        // F8.5: Advanced filters
+        var fEstado = $('vehicleFilterEstado');
+        var fDealer = $('vehicleFilterDealer');
+        if (fEstado && fEstado.value) {
+            var est = fEstado.value.toLowerCase();
+            filtered = filtered.filter(function(v) { return (v.estado || '').toLowerCase() === est; });
+        }
+        if (fDealer && fDealer.value) {
+            var dlr = fDealer.value;
+            filtered = filtered.filter(function(v) { return v.concesionario === dlr; });
         }
         // In reorder mode sort by prioridad desc, otherwise by id or user sort
         if (_reorderMode) {
@@ -365,6 +376,35 @@
         if (AP._pagination) AP._pagination.vehicles.page = 1;
         renderVehiclesTable(this.value);
     });
+
+    // F8.5: Advanced filter listeners
+    var fEstado = $('vehicleFilterEstado');
+    if (fEstado) fEstado.addEventListener('change', function() {
+        if (AP._pagination) AP._pagination.vehicles.page = 1;
+        renderVehiclesTable($('vehicleSearch').value);
+    });
+    var fDealer = $('vehicleFilterDealer');
+    if (fDealer) fDealer.addEventListener('change', function() {
+        if (AP._pagination) AP._pagination.vehicles.page = 1;
+        renderVehiclesTable($('vehicleSearch').value);
+    });
+
+    // F8.5: Populate dealer filter when vehicles load
+    AP._populateVehicleFilters = function() {
+        var sel = $('vehicleFilterDealer');
+        if (!sel) return;
+        var dealers = {};
+        AP.vehicles.forEach(function(v) {
+            if (v.concesionario) dealers[v.concesionario] = true;
+        });
+        var opts = '<option value="">Concesionario</option>';
+        Object.keys(dealers).sort().forEach(function(d) {
+            var name = (AP.dealers && AP.dealers.find(function(dl) { return dl.id === d; }));
+            var label = name ? (name.nombre || d) : d;
+            opts += '<option value="' + AP.escapeHtml(d) + '">' + AP.escapeHtml(label) + '</option>';
+        });
+        sel.innerHTML = opts;
+    };
 
     // ========== VEHICLE MODAL ==========
     function openModal() {

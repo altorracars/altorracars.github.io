@@ -64,23 +64,57 @@
     }
 
     // ========== AUDIT LOG SUBSCRIPTION ==========
+    // F8.4: Reduced limit from 500 to 200 for real-time feed (saves Firestore reads)
+    var AUDIT_REALTIME_LIMIT = 200;
+
     function loadAuditLog() {
         if (AP.unsubAuditLog) AP.unsubAuditLog();
         AP.unsubAuditLog = window.db.collection('auditLog')
             .orderBy('timestamp', 'desc')
-            .limit(500)
+            .limit(AUDIT_REALTIME_LIMIT)
             .onSnapshot(function(snap) {
                 AP.auditLogEntries = snap.docs.map(function(doc) {
                     var data = doc.data();
                     data._docId = doc.id;
                     return data;
                 });
+                // Store last doc for cursor-based pagination
+                AP._auditLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+                AP._auditHasMore = snap.docs.length >= AUDIT_REALTIME_LIMIT;
                 renderActivityFeed();
                 renderAuditTable();
                 updateAuditUserFilter();
             }, function(err) {
                 console.warn('[AuditLog] Error loading:', err);
                 renderActivityFeedFallback();
+            });
+    }
+
+    // F8.4: Load more audit entries using Firestore cursor
+    function loadMoreAuditEntries() {
+        if (!AP._auditLastDoc || !AP._auditHasMore) return;
+        var btn = $('btnLoadMoreAudit');
+        if (btn) { btn.disabled = true; btn.textContent = 'Cargando...'; }
+        window.db.collection('auditLog')
+            .orderBy('timestamp', 'desc')
+            .startAfter(AP._auditLastDoc)
+            .limit(AUDIT_REALTIME_LIMIT)
+            .get()
+            .then(function(snap) {
+                var newEntries = snap.docs.map(function(doc) {
+                    var data = doc.data();
+                    data._docId = doc.id;
+                    return data;
+                });
+                AP.auditLogEntries = AP.auditLogEntries.concat(newEntries);
+                AP._auditLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+                AP._auditHasMore = snap.docs.length >= AUDIT_REALTIME_LIMIT;
+                renderAuditTable();
+                updateAuditUserFilter();
+            })
+            .catch(function() { AP.toast('Error al cargar mas registros', 'error'); })
+            .finally(function() {
+                if (btn) { btn.disabled = false; btn.textContent = 'Cargar mas registros'; }
             });
     }
 
@@ -352,6 +386,10 @@
         });
 
         if (AP.renderPagination) AP.renderPagination('auditPagination', 'audit', totalCount);
+
+        // F8.4: Show/hide load more button
+        var btnMore = $('btnLoadMoreAudit');
+        if (btnMore) btnMore.style.display = AP._auditHasMore ? '' : 'none';
     }
 
     function updateAuditUserFilter() {
@@ -461,6 +499,7 @@
     AP.clearAllActivity = clearAllActivity;
     AP.clearAuditFilters = clearAuditFilters;
     AP.exportAuditCSV = exportAuditCSV;
+    AP.loadMoreAuditEntries = loadMoreAuditEntries;
 
     // F7.5: Bind HTML buttons (migrated from inline onclick)
     var btnSelect = $('btnSelectActivity');
@@ -473,6 +512,8 @@
     if (btnExportAudit) btnExportAudit.addEventListener('click', exportAuditCSV);
     var btnClearFilters = $('btnClearAuditFilters');
     if (btnClearFilters) btnClearFilters.addEventListener('click', clearAuditFilters);
+    var btnLoadMore = $('btnLoadMoreAudit');
+    if (btnLoadMore) btnLoadMore.addEventListener('click', loadMoreAuditEntries);
     AP.getActivityIcon = getActivityIcon;
     AP.getActivityText = getActivityText;
     AP.ACTION_CATEGORIES = ACTION_CATEGORIES;

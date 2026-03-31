@@ -2258,3 +2258,24 @@ input[type="checkbox"] { transition: all 0.15s ease; }
     flex-wrap: wrap;
 }
 .batch-bar span { font-weight: 600; color: var(--admin-gold); }
+
+/* F11.6: Focus-visible styles for keyboard navigation */
+:focus-visible {
+    outline: 2px solid var(--admin-gold);
+    outline-offset: 2px;
+}
+.btn:focus-visible,
+.nav-item:focus-visible,
+.form-input:focus-visible,
+.form-select:focus-visible,
+.form-textarea:focus-visible {
+    outline: 2px solid var(--admin-gold);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
+}
+table td:focus-visible,
+table th:focus-visible,
+.admin-tab-btn:focus-visible {
+    outline: 2px solid var(--admin-gold);
+    outline-offset: -2px;
+}

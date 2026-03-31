@@ -408,6 +408,7 @@
     if (hamburgerBtn) hamburgerBtn.addEventListener('click', function() {
         var isOpen = sidebar.classList.toggle('open');
         hamburgerBtn.classList.toggle('active', isOpen);
+        hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
         sidebarOverlay.classList.toggle('active', isOpen);
     });
     if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeMobileMenu);
@@ -544,6 +545,11 @@
     // ========== EXPOSE ==========
     AP.initAuth              = initAuth;
     AP.stopInactivityTracking = stopInactivityTracking;
+
+    // F11.7: Sync aria-required with required attribute
+    document.querySelectorAll('[required]').forEach(function(el) {
+        el.setAttribute('aria-required', 'true');
+    });
 
     // Inicializar UI de rate limit y arrancar auth
     updateRateLimitUI();

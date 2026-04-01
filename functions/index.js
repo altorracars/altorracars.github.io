@@ -1,16 +1,125 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 
 admin.initializeApp();
 
 const db = admin.firestore();
 
-// ========== SEO PAGE GENERATION TRIGGER ==========
-// GitHub Personal Access Token stored in Firebase Secret Manager
-// Set it with: firebase functions:secrets:set GITHUB_PAT
+// ========== SECRETS ==========
+// Set with: firebase functions:secrets:set GITHUB_PAT
 const githubPat = defineSecret('GITHUB_PAT');
+// Set with: firebase functions:secrets:set EMAIL_USER
+// Set with: firebase functions:secrets:set EMAIL_PASS
+const emailUser = defineSecret('EMAIL_USER');
+const emailPass = defineSecret('EMAIL_PASS');
+
+// ========== F12.1: EMAIL NOTIFICATION ON NEW APPOINTMENT ==========
+/**
+ * Firestore trigger: sends an email notification when a new cita is created.
+ * Idempotent: checks emailSent field to avoid duplicate emails.
+ * Uses Gmail SMTP via Nodemailer (free tier: 500 emails/day).
+ *
+ * Setup required (one-time, in PowerShell):
+ *   firebase functions:secrets:set EMAIL_USER   → your Gmail address
+ *   firebase functions:secrets:set EMAIL_PASS   → your Gmail App Password
+ *     (Generate at: https://myaccount.google.com/apppasswords)
+ */
+exports.onNewAppointment = onDocumentCreated({
+    document: 'citas/{citaId}',
+    region: 'us-central1',
+    secrets: [emailUser, emailPass]
+}, async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+
+    const cita = snap.data();
+    const citaId = event.params.citaId;
+
+    // Idempotency: skip if email was already sent
+    if (cita.emailSent === true) {
+        console.log('[Email] Skipped cita ' + citaId + ' — email already sent');
+        return;
+    }
+
+    // Skip if email credentials are not configured
+    const user = emailUser.value();
+    const pass = emailPass.value();
+    if (!user || !pass) {
+        console.warn('[Email] EMAIL_USER or EMAIL_PASS not configured. Run: firebase functions:secrets:set EMAIL_USER / EMAIL_PASS');
+        return;
+    }
+
+    // Build email content
+    const nombre = cita.nombre || 'Sin nombre';
+    const whatsapp = cita.whatsapp || 'No proporcionado';
+    const email = cita.email || 'No proporcionado';
+    const fecha = cita.fecha || 'Sin fecha';
+    const hora = cita.hora || 'Sin hora';
+    const vehiculo = cita.vehiculo || 'General';
+    const tipoCita = cita.tipoCita || 'visita';
+    const origen = cita.origen === 'admin' ? 'Panel Admin' : 'Sitio Web';
+    const comentarios = cita.comentarios || 'Ninguno';
+
+    const tipoLabels = {
+        visita: 'Visita',
+        consignacion: 'Consignacion',
+        inspeccion: 'Inspeccion',
+        prueba: 'Prueba de manejo',
+        entrega: 'Entrega'
+    };
+
+    const subject = 'Nueva cita: ' + nombre + ' — ' + (tipoLabels[tipoCita] || tipoCita) + ' (' + fecha + ')';
+
+    const html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
+        + '<div style="background:#1a1a2e;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center">'
+        + '<h2 style="margin:0;color:#f0c040">ALTORRA CARS</h2>'
+        + '<p style="margin:5px 0 0;opacity:0.8">Nueva cita agendada</p>'
+        + '</div>'
+        + '<div style="border:1px solid #ddd;border-top:none;padding:20px;border-radius:0 0 8px 8px">'
+        + '<table style="width:100%;border-collapse:collapse">'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Cliente</td><td style="padding:8px 0">' + nombre + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">WhatsApp</td><td style="padding:8px 0">' + whatsapp + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Email</td><td style="padding:8px 0">' + email + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Vehiculo</td><td style="padding:8px 0">' + vehiculo + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Tipo</td><td style="padding:8px 0">' + (tipoLabels[tipoCita] || tipoCita) + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Fecha</td><td style="padding:8px 0">' + fecha + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Hora</td><td style="padding:8px 0">' + hora + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Origen</td><td style="padding:8px 0">' + origen + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Comentarios</td><td style="padding:8px 0">' + comentarios + '</td></tr>'
+        + '</table>'
+        + '<div style="margin-top:20px;padding:12px;background:#f8f9fa;border-radius:6px;text-align:center">'
+        + '<a href="https://altorracars.github.io/admin.html" style="color:#1a1a2e;font-weight:bold">Ir al Panel Admin</a>'
+        + '</div>'
+        + '</div>'
+        + '</body></html>';
+
+    // Send email via Gmail SMTP
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: user, pass: pass }
+        });
+
+        await transporter.sendMail({
+            from: '"ALTORRA CARS" <' + user + '>',
+            to: user,
+            subject: subject,
+            html: html
+        });
+
+        // Mark as sent (idempotency flag)
+        await snap.ref.update({ emailSent: true });
+        console.log('[Email] Notification sent for cita ' + citaId + ' (' + nombre + ')');
+    } catch (err) {
+        console.error('[Email] Failed to send for cita ' + citaId + ':', err.message);
+        // Don't mark emailSent — will retry on next function invocation if needed
+    }
+});
+
+// ========== SEO PAGE GENERATION TRIGGER ==========
 
 // Debounce: only trigger once per 5 minutes max
 let _lastDispatchTime = 0;

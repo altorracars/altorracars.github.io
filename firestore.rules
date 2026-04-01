@@ -37,25 +37,25 @@ service cloud.firestore {
       return request.resource.data._version == 1;
     }
 
-    // F4.3: Size limits — prevent abuse
-    function isReasonableSize() {
-      return request.resource.size < 1048576; // 1MB max per document
-    }
+    // F4.3: Size limits — Firestore enforces 1MB natively.
+    // This helper is kept for documentation but removed from rules
+    // to avoid false denials with request.resource.size edge cases.
+    // function isReasonableSize() {
+    //   return request.resource.size < 1048576;
+    // }
 
     // ========== VEHICULOS ==========
     match /vehiculos/{vehiculoId} {
       // Public catalog — anyone can browse the inventory
       allow read: if true;
 
-      // Super Admin can always create (bypass version/size checks for edge cases)
-      // Editor must include _version = 1 and respect size limit
+      // Super Admin bypasses version check; Editor must set _version = 1
       allow create: if isSuperAdmin()
-        || (isEditorOrAbove() && validCreateVersion() && isReasonableSize());
+        || (isEditorOrAbove() && validCreateVersion());
 
-      // Super Admin can always update (bypass version/size checks for migrations)
-      // Editor must increment _version on each update and respect size limit
+      // Super Admin bypasses version check; Editor must increment _version
       allow update: if isSuperAdmin()
-        || (isEditorOrAbove() && validVersion() && isReasonableSize());
+        || (isEditorOrAbove() && validVersion());
 
       // Only Super Admin can delete
       allow delete: if isSuperAdmin();
@@ -71,8 +71,8 @@ service cloud.firestore {
     // ========== CONCESIONARIOS ==========
     match /concesionarios/{concesionarioId} {
       allow read: if isAuthenticated();
-      allow create: if isSuperAdmin() && isReasonableSize();
-      allow update: if isSuperAdmin() && isReasonableSize();
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
 
@@ -80,10 +80,10 @@ service cloud.firestore {
     match /marcas/{marcaId} {
       allow read: if true;
 
-      // F4.5: Editor+ can create with _version=1, update with _version+1
-      allow create: if isSuperAdmin() || (isEditorOrAbove() && isReasonableSize());
+      // F4.5: Editor+ can create, update with version control
+      allow create: if isSuperAdmin() || isEditorOrAbove();
       allow update: if isSuperAdmin()
-        || (isEditorOrAbove() && validVersion() && isReasonableSize());
+        || (isEditorOrAbove() && validVersion());
 
       allow delete: if isSuperAdmin();
     }
@@ -102,8 +102,8 @@ service cloud.firestore {
     // ========== RESENAS ==========
     match /resenas/{resenaId} {
       allow read: if true;
-      allow create: if isEditorOrAbove() && isReasonableSize();
-      allow update: if isEditorOrAbove() && isReasonableSize();
+      allow create: if isEditorOrAbove();
+      allow update: if isEditorOrAbove();
       allow delete: if isSuperAdmin();
     }
 
@@ -112,9 +112,9 @@ service cloud.firestore {
       allow read: if true;
 
       // F4.5: Version-controlled banners
-      allow create: if isSuperAdmin() || (isEditorOrAbove() && isReasonableSize());
+      allow create: if isSuperAdmin() || isEditorOrAbove();
       allow update: if isSuperAdmin()
-        || (isEditorOrAbove() && validVersion() && isReasonableSize());
+        || (isEditorOrAbove() && validVersion());
 
       allow delete: if isSuperAdmin();
     }
@@ -130,7 +130,7 @@ service cloud.firestore {
     match /citas/{citaId} {
       allow read: if isAuthenticated();
       allow create: if true; // Public can request appointments
-      allow update: if isEditorOrAbove() && isReasonableSize();
+      allow update: if isEditorOrAbove();
       allow delete: if isSuperAdmin();
     }
 

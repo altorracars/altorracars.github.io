@@ -403,24 +403,22 @@ class AppointmentSystem {
         }).then(function() {
             self.showConfirmation(modal, nombre, fecha, hora);
         }).catch(function(err) {
+            console.error('[Citas] Error al agendar:', err);
             if (err && err.message === 'SLOT_TAKEN') {
                 alert('Lo sentimos, este horario acaba de ser reservado por otra persona. Por favor selecciona otro horario.');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Enviar Solicitud de Cita';
-                }
-                // Refresh time slots to show updated availability
-                self.showTimeSlots(modal);
             } else {
-                // Firestore might be unavailable, still show confirmation
-                self.showConfirmation(modal, nombre, fecha, hora);
+                alert('Hubo un error al guardar tu cita. Por favor intenta de nuevo o contactanos por WhatsApp.');
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Enviar Solicitud de Cita';
             }
         });
     }
 
     // ===== ATOMIC SLOT BOOKING =====
     async bookSlotAtomically(fecha, hora) {
-        if (!window.db) return Promise.resolve();
+        if (!window.db) return Promise.reject(new Error('FIRESTORE_NOT_READY'));
         var bookedRef = window.db.collection('config').doc('bookedSlots');
         return window.db.runTransaction(function(transaction) {
             return transaction.get(bookedRef).then(function(doc) {
@@ -506,14 +504,11 @@ class AppointmentSystem {
 
     // ===== GUARDAR CITA EN FIRESTORE =====
     saveAppointmentToFirestore(data) {
-        try {
-            if (window.db) {
-                return window.db.collection('citas').add(data);
-            }
-        } catch (e) {
-            console.warn('[Citas] Firestore no disponible');
+        if (!window.db) {
+            console.error('[Citas] Firestore no inicializado');
+            return Promise.reject(new Error('FIRESTORE_NOT_READY'));
         }
-        return Promise.resolve();
+        return window.db.collection('citas').add(data);
     }
 
     // ===== EVENT LISTENERS GLOBALES =====

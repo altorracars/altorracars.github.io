@@ -146,8 +146,12 @@ service cloud.firestore {
     // ========== CONFIG ==========
     match /config/{docId} {
       allow read: if true;
+      // bookedSlots: public can update (atomic slot booking from public forms)
+      // counters: editor+ can update
+      // everything else: super_admin only
       allow write: if isSuperAdmin()
-        || (isEditorOrAbove() && docId in ['counters', 'bookedSlots']);
+        || (isEditorOrAbove() && docId in ['counters', 'bookedSlots'])
+        || (docId == 'bookedSlots');
     }
 
     // ========== DRAFTS ACTIVOS (admin collaboration) ==========

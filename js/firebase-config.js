@@ -47,23 +47,17 @@
             window.auth = auth;
 
             // F0.2: Enable offline persistence — queues writes during network issues
-            // Use modern cache API to avoid deprecation warning (SDK 11+)
-            if (typeof firebase.firestore.persistentLocalCache === 'function') {
-                db.settings({
-                    localCache: firebase.firestore.persistentLocalCache({
-                        tabManager: firebase.firestore.persistentMultipleTabManager()
-                    })
-                });
-            } else {
-                // Legacy fallback for older SDK versions
-                db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
-                    if (err.code === 'failed-precondition') {
-                        console.warn('[Firestore] Persistence disabled: multiple tabs open');
-                    } else if (err.code === 'unimplemented') {
-                        console.warn('[Firestore] Persistence disabled: browser not supported');
-                    }
-                });
-            }
+            // Note: The deprecation warning about enableMultiTabIndexedDbPersistence()
+            // is expected — the modern API (persistentLocalCache) requires the modular SDK.
+            // The compat SDK only supports enablePersistence(). Safe to ignore until
+            // a full migration to the modular SDK is done.
+            db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+                if (err.code === 'failed-precondition') {
+                    console.warn('[Firestore] Persistence disabled: multiple tabs open');
+                } else if (err.code === 'unimplemented') {
+                    console.warn('[Firestore] Persistence disabled: browser not supported');
+                }
+            });
 
             // Inicializar system/meta si no existe (necesario para el cache inteligente)
             db.doc('system/meta').get().then(function(snap) {

@@ -603,7 +603,7 @@
     }
 
     // F6.4: Event delegation for appointment actions
-    var citasSection = $('sec-citas');
+    var citasSection = $('sec-appointments');
     if (citasSection) {
         citasSection.addEventListener('click', function(e) {
             var btn = AP.closestAction(e);

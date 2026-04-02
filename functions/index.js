@@ -1,5 +1,5 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
@@ -116,6 +116,98 @@ exports.onNewAppointment = onDocumentCreated({
     } catch (err) {
         console.error('[Email] Failed to send for cita ' + citaId + ':', err.message);
         // Don't mark emailSent — will retry on next function invocation if needed
+    }
+});
+
+// ========== F12.1b: EMAIL TO CLIENT WHEN APPOINTMENT IS CONFIRMED ==========
+/**
+ * Firestore trigger: sends a confirmation email to the CLIENT when
+ * their appointment status changes to "confirmada".
+ * Idempotent: checks confirmationEmailSent field to avoid duplicates.
+ */
+exports.onAppointmentConfirmed = onDocumentUpdated({
+    document: 'citas/{citaId}',
+    region: 'us-central1',
+    secrets: [emailUser, emailPass]
+}, async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+    const citaId = event.params.citaId;
+
+    // Only fire when estado changes TO "confirmada"
+    if (before.estado === after.estado || after.estado !== 'confirmada') {
+        return;
+    }
+
+    // Idempotency: skip if confirmation email was already sent
+    if (after.confirmationEmailSent === true) {
+        console.log('[ConfEmail] Skipped cita ' + citaId + ' — confirmation email already sent');
+        return;
+    }
+
+    // Client must have an email
+    const clientEmail = after.email;
+    if (!clientEmail || clientEmail === 'No proporcionado' || !clientEmail.includes('@')) {
+        console.log('[ConfEmail] Skipped cita ' + citaId + ' — no valid client email');
+        return;
+    }
+
+    // Skip if credentials are not configured
+    const user = emailUser.value();
+    const pass = emailPass.value();
+    if (!user || !pass) {
+        console.warn('[ConfEmail] EMAIL_USER or EMAIL_PASS not configured.');
+        return;
+    }
+
+    const nombre = after.nombre || 'Cliente';
+    const fecha = after.fecha || 'Sin fecha';
+    const hora = after.hora || 'Sin hora';
+    const vehiculo = after.vehiculo || 'General';
+
+    const subject = 'Tu cita en ALTORRA CARS ha sido confirmada — ' + fecha + ' a las ' + hora;
+
+    const html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
+        + '<div style="background:#1a1a2e;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center">'
+        + '<h2 style="margin:0;color:#f0c040">ALTORRA CARS</h2>'
+        + '<p style="margin:5px 0 0;opacity:0.8">Confirmacion de cita</p>'
+        + '</div>'
+        + '<div style="border:1px solid #ddd;border-top:none;padding:20px;border-radius:0 0 8px 8px">'
+        + '<p style="font-size:1.1rem;">Hola <strong>' + nombre + '</strong>,</p>'
+        + '<p>Tu cita ha sido <strong style="color:#16a34a;">confirmada</strong>. Aqui estan los detalles:</p>'
+        + '<table style="width:100%;border-collapse:collapse;margin:16px 0">'
+        + '<tr><td style="padding:10px;font-weight:bold;color:#555;border-bottom:1px solid #eee">Fecha</td><td style="padding:10px;border-bottom:1px solid #eee">' + fecha + '</td></tr>'
+        + '<tr><td style="padding:10px;font-weight:bold;color:#555;border-bottom:1px solid #eee">Hora</td><td style="padding:10px;border-bottom:1px solid #eee">' + hora + '</td></tr>'
+        + '<tr><td style="padding:10px;font-weight:bold;color:#555;border-bottom:1px solid #eee">Vehiculo</td><td style="padding:10px;border-bottom:1px solid #eee">' + vehiculo + '</td></tr>'
+        + '</table>'
+        + '<div style="margin-top:20px;padding:16px;background:#f0fdf4;border-radius:8px;border-left:4px solid #16a34a;">'
+        + '<p style="margin:0;color:#166534;font-weight:600;">Te esperamos!</p>'
+        + '<p style="margin:8px 0 0;color:#166534;font-size:0.9rem;">Si necesitas reprogramar o cancelar, contactanos por WhatsApp.</p>'
+        + '</div>'
+        + '<div style="margin-top:20px;text-align:center;font-size:0.8rem;color:#999;">'
+        + '<p>ALTORRA CARS — Tu proximo vehiculo te espera</p>'
+        + '</div>'
+        + '</div>'
+        + '</body></html>';
+
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: user, pass: pass }
+        });
+
+        await transporter.sendMail({
+            from: '"ALTORRA CARS" <' + user + '>',
+            to: clientEmail,
+            subject: subject,
+            html: html
+        });
+
+        // Mark as sent (idempotency flag)
+        await event.data.after.ref.update({ confirmationEmailSent: true });
+        console.log('[ConfEmail] Confirmation sent to ' + clientEmail + ' for cita ' + citaId);
+    } catch (err) {
+        console.error('[ConfEmail] Failed for cita ' + citaId + ':', err.message);
     }
 });
 

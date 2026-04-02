@@ -220,7 +220,7 @@ class AppointmentSystem {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">\
                                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>\
                             </svg>\
-                            <span>Tu cita quedara en estado <strong>pendiente</strong> hasta ser confirmada por nuestro equipo. Te contactaremos por WhatsApp para confirmar.</span>\
+                            <span>Tu cita quedara en estado <strong>pendiente</strong> hasta ser confirmada por nuestro equipo. Te contactaremos por <strong>correo electronico</strong> y <strong>WhatsApp</strong> para confirmar.</span>\
                         </div>\
                         <button type="submit" class="btn-submit-appointment">\
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">\
@@ -482,7 +482,7 @@ class AppointmentSystem {
                             </svg>\
                             <span style="font-size:0.85rem;color:#92400e;line-height:1.5;">\
                                 <strong>Pendiente de confirmacion:</strong> Tu cita queda en estado pendiente hasta ser confirmada por nuestro equipo. \
-                                Te contactaremos por <strong>WhatsApp</strong> para confirmar la cita oficialmente.\
+                                Te contactaremos por <strong>correo electronico</strong> y <strong>WhatsApp</strong> para confirmar la cita oficialmente.\
                             </span>\
                         </div>\
                     </div>\

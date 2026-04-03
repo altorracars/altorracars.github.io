@@ -317,35 +317,39 @@ class ContactFormManager {
         const precio = formData.get('precio');
         const comentarios = formData.get('comentarios');
 
-        // Construir mensaje de WhatsApp
-        const mensaje = `*VENTA DE VEHICULO*
+        // Save to Firestore solicitudes collection
+        if (window.db) {
+            window.db.collection('solicitudes').add({
+                nombre: nombre,
+                telefono: telefono,
+                prefijoPais: '+57',
+                email: email || 'No proporcionado',
+                tipo: 'consignacion_venta',
+                origen: 'vende_tu_auto',
+                requiereCita: false,
+                vehiculo: marca + ' ' + modelo + ' ' + year,
+                datosExtra: {
+                    marcaVehiculo: marca, modeloVehiculo: modelo,
+                    yearVehiculo: year, kmVehiculo: kilometraje,
+                    precioEsperado: precio
+                },
+                comentarios: comentarios || '',
+                estado: 'pendiente',
+                observaciones: '',
+                createdAt: new Date().toISOString()
+            }).catch(function(err) { console.warn('[Solicitudes] Error saving vende tu auto:', err); });
+        }
 
-INFORMACION DEL CLIENTE:
-- Nombre: ${nombre}
-- Telefono: ${telefono}
-- Email: ${email}
-
-INFORMACION DEL VEHICULO:
-- Marca: ${marca}
-- Modelo: ${modelo}
-- Ano: ${year}
-- Kilometraje: ${kilometraje} km
-- Precio esperado: ${precio}
-
-Comentarios adicionales:
-${comentarios || 'Ninguno'}`;
-
-        // Redirigir a WhatsApp
+        // Also redirect to WhatsApp
+        const mensaje = `*VENTA DE VEHICULO*\n\nCliente: ${nombre}\nTelefono: ${telefono}\nEmail: ${email}\n\nVehiculo: ${marca} ${modelo} ${year}\nKilometraje: ${kilometraje} km\nPrecio esperado: ${precio}\n\nComentarios: ${comentarios || 'Ninguno'}`;
         const whatsappUrl = `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(mensaje)}`;
         window.open(whatsappUrl, '_blank');
 
-        // Cerrar modal y resetear formulario
         this.closeAllModals();
         form.reset();
 
-        // Mostrar notificación si toast está disponible
         if (typeof toast !== 'undefined') {
-            toast.success('Te redirigiremos a WhatsApp para completar tu solicitud', 'Formulario enviado');
+            toast.success('Solicitud enviada. Te redirigimos a WhatsApp.', 'Enviado');
         }
     }
 
@@ -366,39 +370,39 @@ ${comentarios || 'Ninguno'}`;
         const ciudad = formData.get('ciudad');
         const comentarios = formData.get('comentarios');
 
-        // Construir mensaje de WhatsApp
-        const mensaje = `*SOLICITUD DE FINANCIACION*
+        // Save to Firestore solicitudes collection
+        if (window.db) {
+            window.db.collection('solicitudes').add({
+                nombre: nombre,
+                telefono: telefono,
+                prefijoPais: '+57',
+                email: email || 'No proporcionado',
+                tipo: 'financiacion',
+                origen: 'financiacion',
+                requiereCita: false,
+                vehiculo: vehiculoInteres || 'No especificado',
+                datosExtra: {
+                    precioVehiculo: precioVehiculo, cuotaInicial: cuotaInicial,
+                    plazo: plazo, ingresos: ingresos,
+                    situacionLaboral: situacion, ciudad: ciudad
+                },
+                comentarios: comentarios || '',
+                estado: 'pendiente',
+                observaciones: '',
+                createdAt: new Date().toISOString()
+            }).catch(function(err) { console.warn('[Solicitudes] Error saving financiacion:', err); });
+        }
 
-INFORMACION DEL CLIENTE:
-- Nombre: ${nombre}
-- Telefono: ${telefono}
-- Email: ${email}
-- Ciudad: ${ciudad || 'No indicada'}
-- Situacion laboral: ${situacion || 'No indicada'}
-
-INFORMACION DEL VEHICULO:
-- Vehiculo de interes: ${vehiculoInteres}
-- Precio del vehiculo: ${precioVehiculo}
-- Cuota inicial disponible: ${cuotaInicial}
-- Plazo deseado: ${plazo}
-
-INFORMACION FINANCIERA:
-- Ingresos mensuales: ${ingresos}
-
-Comentarios adicionales:
-${comentarios || 'Ninguno'}`;
-
-        // Redirigir a WhatsApp
+        // Also redirect to WhatsApp
+        const mensaje = `*SOLICITUD DE FINANCIACION*\n\nCliente: ${nombre}\nTelefono: ${telefono}\nEmail: ${email}\nCiudad: ${ciudad || 'No indicada'}\n\nVehiculo: ${vehiculoInteres}\nPrecio: ${precioVehiculo}\nCuota inicial: ${cuotaInicial}\nPlazo: ${plazo}\nIngresos: ${ingresos}\nSituacion: ${situacion}\n\nComentarios: ${comentarios || 'Ninguno'}`;
         const whatsappUrl = `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(mensaje)}`;
         window.open(whatsappUrl, '_blank');
 
-        // Cerrar modal y resetear formulario
         this.closeAllModals();
         form.reset();
 
-        // Mostrar notificación si toast está disponible
         if (typeof toast !== 'undefined') {
-            toast.success('Te redirigiremos a WhatsApp para completar tu solicitud', 'Formulario enviado');
+            toast.success('Solicitud enviada. Te redirigimos a WhatsApp.', 'Enviado');
         }
     }
 }

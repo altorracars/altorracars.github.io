@@ -48,8 +48,9 @@
         'vehicle_sold': 'vehiculos', 'vehicle_feature_toggle': 'vehiculos', 'reordenar': 'vehiculos',
         'brand_create': 'marcas', 'brand_update': 'marcas', 'brand_delete': 'marcas',
         'banner_create': 'banners', 'banner_update': 'banners', 'banner_delete': 'banners',
-        'appointment_confirmada': 'citas', 'appointment_cancelada': 'citas',
-        'appointment_delete': 'citas', 'appointment_create_internal': 'citas',
+        'appointment_confirmada': 'solicitudes', 'appointment_cancelada': 'solicitudes',
+        'appointment_reprogramada': 'solicitudes', 'appointment_completada': 'solicitudes',
+        'appointment_delete': 'solicitudes', 'appointment_create_internal': 'solicitudes',
         'dealer_create': 'aliados', 'dealer_update': 'aliados',
         'user_create': 'usuarios', 'user_update': 'usuarios', 'user_delete': 'usuarios',
         'review_create': 'resenas', 'review_update': 'resenas', 'review_delete': 'resenas'

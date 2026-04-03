@@ -2233,6 +2233,7 @@ input[type="checkbox"] { transition: all 0.15s ease; }
 .audit-cat-marcas { background: rgba(210, 153, 34, 0.12); color: #d4af37; }
 .audit-cat-banners { background: rgba(163, 113, 247, 0.12); color: var(--admin-purple); }
 .audit-cat-citas { background: rgba(63, 185, 80, 0.12); color: #3fb950; }
+.audit-cat-solicitudes { background: rgba(63, 185, 80, 0.12); color: #3fb950; }
 .audit-cat-aliados { background: rgba(210, 153, 34, 0.12); color: #d4af37; }
 .audit-cat-usuarios { background: rgba(248, 81, 73, 0.12); color: #f85149; }
 .audit-cat-resenas { background: rgba(255, 200, 55, 0.12); color: #ffc837; }

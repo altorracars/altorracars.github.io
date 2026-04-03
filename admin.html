@@ -62,6 +62,33 @@
     </div>
 </div>
 
+<!-- 2FA VERIFICATION SCREEN -->
+<div id="twoFaScreen" class="login-container" style="display:none;">
+    <div class="login-box">
+        <div class="login-logo">
+            <h1>ALTORRA CARS</h1>
+            <p>Verificacion en 2 pasos</p>
+        </div>
+        <p style="text-align:center;font-size:0.85rem;color:var(--admin-text-muted);margin-bottom:1rem;" id="twoFaInfo">
+            Enviamos un codigo de verificacion a tu telefono registrado.
+        </p>
+        <form id="twoFaForm" autocomplete="off">
+            <div class="form-group">
+                <label class="form-label" for="twoFaCode">Codigo de 6 digitos</label>
+                <input type="text" id="twoFaCode" class="form-input" required maxlength="6" pattern="[0-9]{6}" placeholder="123456" autocomplete="one-time-code" inputmode="numeric" style="text-align:center;font-size:1.4rem;letter-spacing:0.5rem;">
+            </div>
+            <div id="twoFaError" style="color:var(--admin-danger);font-size:0.8rem;margin-bottom:0.75rem;display:none;text-align:center;"></div>
+            <button type="submit" class="btn btn-primary btn-block" id="twoFaBtn">Verificar</button>
+            <div style="text-align:center;margin-top:0.75rem;">
+                <a href="#" id="twoFaResend" style="color:var(--admin-accent,#58a6ff);font-size:0.8rem;text-decoration:none;">Reenviar codigo</a>
+                <span style="margin:0 0.5rem;color:var(--admin-text-muted);">|</span>
+                <a href="#" id="twoFaCancel" style="color:var(--admin-text-muted);font-size:0.8rem;text-decoration:none;">Cancelar</a>
+            </div>
+        </form>
+        <div id="recaptcha-container"></div>
+    </div>
+</div>
+
 <!-- ADMIN PANEL -->
 <div id="adminPanel" class="admin-layout" style="display: none;">
 
@@ -1609,7 +1636,7 @@
 <!-- USER MODAL -->
 <div class="modal-overlay" role="dialog" aria-modal="true" id="userModal">
     <div class="modal modal-md"><div class="modal-header"><h2 id="userModalTitle">Crear Usuario</h2><button class="modal-close" aria-label="Cerrar" id="closeUserModal">&times;</button></div>
-        <div class="modal-body"><form id="userForm"><input type="hidden" id="uOriginalUid"><div class="form-group"><label class="form-label">Nombre *</label><input type="text" id="uNombre" class="form-input" required placeholder="Juan Perez"></div><div class="form-group"><label class="form-label">Email *</label><input type="email" id="uEmail" class="form-input" required placeholder="usuario@altorracars.com"></div><div class="form-group" id="uPasswordGroup"><label class="form-label">Contrasena del nuevo usuario *</label><input type="password" id="uPassword" class="form-input" required minlength="6" placeholder="Minimo 6 caracteres"></div><div class="form-group"><label class="form-label">Rol *</label><select id="uRol" class="form-select" required><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="super_admin">Super Admin</option></select></div></form></div>
+        <div class="modal-body"><form id="userForm"><input type="hidden" id="uOriginalUid"><div class="form-group"><label class="form-label">Nombre *</label><input type="text" id="uNombre" class="form-input" required placeholder="Juan Perez"></div><div class="form-group"><label class="form-label">Email *</label><input type="email" id="uEmail" class="form-input" required placeholder="usuario@altorracars.com"></div><div class="form-group" id="uPasswordGroup"><label class="form-label">Contrasena del nuevo usuario *</label><input type="password" id="uPassword" class="form-input" required minlength="6" placeholder="Minimo 6 caracteres"></div><div class="form-group"><label class="form-label">Rol *</label><select id="uRol" class="form-select" required><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="super_admin">Super Admin</option></select></div><div class="form-group" style="border-top:1px solid var(--admin-border);padding-top:0.75rem;margin-top:0.5rem;"><label class="form-label" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;"><input type="checkbox" id="uHabilitar2FA" style="width:auto;"> Habilitar verificacion en 2 pasos (SMS)</label></div><div id="u2FAPhoneGroup" style="display:none;"><div class="form-group" style="display:flex;gap:0.5rem;"><div style="flex:0 0 110px;"><label class="form-label" for="u2FAPais">Prefijo</label><select id="u2FAPais" class="form-select" style="font-size:0.85rem;"><option value="+57">+57 CO</option><option value="+58">+58 VE</option><option value="+593">+593 EC</option><option value="+507">+507 PA</option><option value="+52">+52 MX</option><option value="+1">+1 US</option><option value="+51">+51 PE</option><option value="+56">+56 CL</option><option value="+54">+54 AR</option><option value="+34">+34 ES</option></select></div><div style="flex:1;"><label class="form-label" for="u2FAPhone">Telefono 2FA</label><input type="tel" id="u2FAPhone" class="form-input" placeholder="3001234567"></div></div></div></form></div>
         <div class="modal-footer"><button class="btn btn-ghost" id="cancelUserModal">Cancelar</button><button class="btn btn-primary" id="saveUser">Crear Usuario</button></div>
     </div>
 </div>

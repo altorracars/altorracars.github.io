@@ -20,7 +20,7 @@ if (contactForm) {
             window.db.collection('solicitudes').add({
                 nombre: data.nombre || '',
                 telefono: data.telefono || '',
-                prefijoPais: '+57',
+                prefijoPais: (document.getElementById('contacto-pais') || {}).value || '+57',
                 email: data.email || 'No proporcionado',
                 tipo: tipoMap[data.asunto] || 'consulta_general',
                 origen: 'contacto',

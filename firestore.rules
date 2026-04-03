@@ -126,10 +126,18 @@ service cloud.firestore {
       allow update, delete: if isSuperAdmin();
     }
 
-    // ========== CITAS ==========
+    // ========== CITAS (legacy — mantener para transición) ==========
     match /citas/{citaId} {
       allow read: if isAuthenticated();
       allow create: if true; // Public can request appointments
+      allow update: if isEditorOrAbove();
+      allow delete: if isSuperAdmin();
+    }
+
+    // ========== SOLICITUDES (unified communications system) ==========
+    match /solicitudes/{solicitudId} {
+      allow read: if isAuthenticated();
+      allow create: if true; // Public forms can create solicitudes
       allow update: if isEditorOrAbove();
       allow delete: if isSuperAdmin();
     }

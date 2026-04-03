@@ -1,13 +1,64 @@
-// Admin Panel — Appointments, Calendar & Availability (Fase 19)
+// Admin Panel — Solicitudes, Calendar & Availability
 (function() {
     'use strict';
     var AP = window.AP;
     var $ = AP.$;
 
-    // ========== LOAD APPOINTMENTS ==========
+    // ========== LABELS ==========
+    var TIPO_LABELS = {
+        test_drive: 'Prueba de manejo', compra: 'Quiero comprar',
+        consulta_vehiculo: 'Consulta vehiculo', llamada: 'Agendar llamada',
+        consignacion_venta: 'Vender mi auto', financiacion: 'Financiacion',
+        consulta_general: 'Consulta general', peritaje: 'Peritaje',
+        otro: 'Otro asunto', visita: 'Visita presencial',
+        consignacion: 'Consignacion', inspeccion: 'Inspeccion vehicular',
+        prueba: 'Prueba de manejo', entrega: 'Entrega de vehiculo',
+        llamada_telefonica: 'Llamada telefonica', seguimiento: 'Seguimiento',
+        financiacion_admin: 'Financiacion'
+    };
+    var ORIGEN_LABELS = {
+        vehiculo: 'Pag. vehiculo', index: 'Pag. principal',
+        contacto: 'Contacto', vende_tu_auto: 'Vende tu auto',
+        financiacion: 'Financiacion', admin: 'Panel Admin', cliente: 'Sitio Web'
+    };
+    function tipoLabel(t) { return TIPO_LABELS[t] || (t ? t.charAt(0).toUpperCase() + t.slice(1) : 'General'); }
+    function origenLabel(o) { return ORIGEN_LABELS[o] || (o ? o.charAt(0).toUpperCase() + o.slice(1) : 'Web'); }
+
+    // ========== WHATSAPP HELPERS ==========
+    function buildWhatsappMessage(sol, nuevoEstado) {
+        var nombre = sol.nombre || 'Cliente';
+        var tipo = tipoLabel(sol.tipo || sol.tipoCita || '');
+        var fecha = sol.fecha || '';
+        var hora = sol.hora || '';
+        var vehiculo = sol.vehiculo || '';
+        var obs = sol.observaciones || '';
+        var msgs = {
+            confirmada: 'Hola ' + nombre + ', te confirmamos tu solicitud de *' + tipo + '*'
+                + (vehiculo ? ' para el vehiculo *' + vehiculo + '*' : '')
+                + (fecha ? ' el dia *' + fecha + '*' : '') + (hora ? ' a las *' + hora + '*' : '')
+                + '. Te esperamos! — ALTORRA CARS',
+            reprogramada: 'Hola ' + nombre + ', tu solicitud de *' + tipo + '* ha sido reprogramada'
+                + (fecha ? ' para el *' + fecha + '*' : '') + (hora ? ' a las *' + hora + '*' : '')
+                + '. Si necesitas otro horario, contactanos. — ALTORRA CARS',
+            cancelada: 'Hola ' + nombre + ', lamentamos informarte que tu solicitud de *' + tipo + '* ha sido cancelada.'
+                + (obs ? ' Motivo: ' + obs : '') + ' Si deseas agendar otra, visitanos en altorracars.github.io — ALTORRA CARS',
+            completada: 'Hola ' + nombre + ', tu solicitud de *' + tipo + '* ha sido completada. Gracias por confiar en ALTORRA CARS!',
+            pendiente: 'Hola ' + nombre + ', hemos recibido tu solicitud de *' + tipo + '*'
+                + (fecha ? ' para el *' + fecha + '*' : '') + '. En breve te confirmaremos. — ALTORRA CARS'
+        };
+        return msgs[nuevoEstado] || msgs.pendiente;
+    }
+    function buildWhatsappUrl(sol, message) {
+        var prefix = (sol.prefijoPais || '+57').replace('+', '');
+        var phone = (sol.telefono || sol.whatsapp || '').replace(/[^0-9]/g, '');
+        if (!phone) return '';
+        return 'https://wa.me/' + prefix + phone + '?text=' + encodeURIComponent(message);
+    }
+
+    // ========== LOAD SOLICITUDES ==========
     function loadAppointments() {
         if (AP.unsubAppointments) AP.unsubAppointments();
-        AP.unsubAppointments = window.db.collection('citas').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
+        AP.unsubAppointments = window.db.collection('solicitudes').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
             AP.appointments = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
             renderAppointmentsTable();
             renderAdminCalendar(); // refresh calendar counts
@@ -15,11 +66,11 @@
             var badge = $('navBadgeAppointments');
             if (badge) badge.textContent = pending > 0 ? pending : '';
         }, function(err) {
-            console.warn('[Citas] Error loading appointments:', err);
+            console.warn('[Solicitudes] Error loading:', err);
         });
     }
 
-    // ========== APPOINTMENT FILTER ==========
+    // ========== FILTERS ==========
     var appointmentFilterEl = $('appointmentFilter');
     if (appointmentFilterEl) {
         appointmentFilterEl.addEventListener('change', function() {
@@ -27,14 +78,35 @@
             renderAppointmentsTable();
         });
     }
+    var tipoFilterEl = $('tipoFilter');
+    if (tipoFilterEl) {
+        tipoFilterEl.addEventListener('change', function() {
+            if (AP._pagination) AP._pagination.appointments.page = 1;
+            renderAppointmentsTable();
+        });
+    }
+    var origenFilterEl = $('origenFilter');
+    if (origenFilterEl) {
+        origenFilterEl.addEventListener('change', function() {
+            if (AP._pagination) AP._pagination.appointments.page = 1;
+            renderAppointmentsTable();
+        });
+    }
 
-    // ========== APPOINTMENTS TABLE ==========
+    // ========== SOLICITUDES TABLE ==========
     function renderAppointmentsTable() {
         var body = $('appointmentsBody');
         if (!body) return;
+
         var filterEl = $('appointmentFilter');
         var filter = filterEl ? filterEl.value : 'all';
-        var filtered = filter === 'all' ? AP.appointments.slice() : AP.appointments.filter(function(a) { return a.estado === filter; });
+        var tipoF = tipoFilterEl ? tipoFilterEl.value : 'all';
+        var origenF = origenFilterEl ? origenFilterEl.value : 'all';
+
+        var filtered = AP.appointments.slice();
+        if (filter !== 'all') filtered = filtered.filter(function(a) { return a.estado === filter; });
+        if (tipoF !== 'all') filtered = filtered.filter(function(a) { return (a.tipo || a.tipoCita || '') === tipoF; });
+        if (origenF !== 'all') filtered = filtered.filter(function(a) { return (a.origen || '') === origenF; });
 
         if (AP._sorting && AP._sorting.appointments && AP._sorting.appointments.col) {
             filtered = AP.sortData(filtered, 'appointments');
@@ -43,7 +115,7 @@
         var totalFiltered = filtered.length;
 
         if (filtered.length === 0) {
-            body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay citas ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
+            body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--admin-text-muted);padding:2rem;">No hay solicitudes ' + (filter === 'all' ? '' : filter + 's') + '</td></tr>';
             if (AP.renderPagination) AP.renderPagination('appointmentsPagination', 'appointments', 0);
             return;
         }
@@ -52,40 +124,37 @@
 
         body.innerHTML = filtered.map(function(a) {
             var estadoColors = {
-                pendiente: 'admin-warning',
-                confirmada: 'admin-success',
-                reprogramada: 'admin-info',
-                completada: 'admin-gold',
-                cancelada: 'admin-danger'
+                pendiente: 'admin-warning', confirmada: 'admin-success',
+                reprogramada: 'admin-info', completada: 'admin-gold', cancelada: 'admin-danger'
             };
             var estadoClass = estadoColors[a.estado] || 'admin-warning';
-            var estadoLabel = a.estado ? (a.estado.charAt(0).toUpperCase() + a.estado.slice(1)) : 'Pendiente';
-            var whatsappNum = a.whatsapp || a.telefono || '';
+            var estadoLbl = a.estado ? (a.estado.charAt(0).toUpperCase() + a.estado.slice(1)) : 'Pendiente';
 
-            // Type/origin badge
-            var tipoCita = a.tipoCita || '';
+            var prefix = (a.prefijoPais || '').replace('+', '');
+            var phone = a.telefono || a.whatsapp || '';
+            var phoneClean = phone.replace(/[^0-9]/g, '');
+            var waNum = prefix ? prefix + phoneClean : phoneClean;
+
+            var tipo = a.tipo || a.tipoCita || '';
             var origen = a.origen || 'cliente';
-            var tipoLabel = '';
-            if (tipoCita) {
-                tipoLabel = tipoCita.charAt(0).toUpperCase() + tipoCita.slice(1);
-            } else {
-                tipoLabel = origen === 'admin' ? 'Interna' : 'Visita';
-            }
-            var tipoColor = origen === 'admin' ? 'admin-info' : 'admin-text-muted';
+            var tLabel = tipoLabel(tipo);
+            var oLabel = origenLabel(origen);
+            var origenColor = origen === 'admin' ? 'admin-info' : 'admin-text-muted';
 
             return '<tr>' +
                 '<td><strong>' + AP.escapeHtml(a.nombre || '-') + '</strong></td>' +
                 '<td>' +
                     '<div style="font-size:0.85rem;display:flex;align-items:center;gap:4px;">' +
-                        (whatsappNum ? '<a href="https://wa.me/' + whatsappNum.replace(/[^0-9]/g, '') + '" target="_blank" style="color:var(--admin-success);text-decoration:none;" title="Abrir WhatsApp">' + AP.escapeHtml(whatsappNum) + ' </a>' : AP.escapeHtml(whatsappNum || '-')) +
+                        (waNum ? '<a href="https://wa.me/' + waNum + '" target="_blank" style="color:var(--admin-success);text-decoration:none;" title="WhatsApp">' + AP.escapeHtml((a.prefijoPais || '') + ' ' + phone) + '</a>' : AP.escapeHtml(phone || '-')) +
                     '</div>' +
                     '<div style="font-size:0.75rem;color:var(--admin-text-muted);">' + AP.escapeHtml(a.email || '-') + '</div>' +
                 '</td>' +
-                '<td>' + AP.escapeHtml(a.vehiculo || 'General') + '</td>' +
-                '<td><div>' + AP.escapeHtml(a.fecha || '-') + '</div><div style="font-weight:600;">' + AP.escapeHtml(a.hora || '-') + '</div></td>' +
-                '<td><span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLabel + '</span></td>' +
-                '<td><span style="color:var(--' + tipoColor + ');font-size:0.8rem;">' + tipoLabel + '</span></td>' +
-                '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + AP.escapeHtml(a.observaciones || a.comentarios || '-') + '</td>' +
+                '<td><span style="font-size:0.8rem;font-weight:600;">' + AP.escapeHtml(tLabel) + '</span></td>' +
+                '<td><span style="color:var(--' + origenColor + ');font-size:0.75rem;">' + AP.escapeHtml(oLabel) + '</span></td>' +
+                '<td>' + AP.escapeHtml(a.vehiculo || '-') + '</td>' +
+                '<td>' + (a.fecha ? '<div>' + AP.escapeHtml(a.fecha) + '</div><div style="font-weight:600;">' + AP.escapeHtml(a.hora || '-') + '</div>' : '<span style="color:var(--admin-text-muted);font-size:0.8rem;">N/A</span>') + '</td>' +
+                '<td><span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLbl + '</span></td>' +
+                '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + AP.escapeHtml(a.observaciones || a.comentarios || a.mensaje || '-') + '</td>' +
                 '<td style="white-space:nowrap;">' +
                     (AP.RBAC.canManageAppointment() ? '<button class="btn btn-sm btn-ghost" data-action="manageAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Gestionar">Gestionar</button>' : '') +
                     (AP.RBAC.canDeleteAppointment() ? ' <button class="btn btn-sm btn-danger" data-action="deleteAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Eliminar">&times;</button>' : '') +
@@ -104,37 +173,87 @@
 
     // ========== DELETE APPOINTMENT ==========
     function deleteAppointment(docId) {
-        if (!AP.RBAC.canDeleteAppointment()) { AP.toast('Solo Super Admin puede eliminar citas', 'error'); return; }
-        if (!confirm('Eliminar esta cita? Esta accion no se puede deshacer.')) return;
-        window.db.collection('citas').doc(docId).delete().then(function() {
-            AP.toast('Cita eliminada');
-            AP.writeAuditLog('appointment_delete', 'cita ' + docId, '');
+        if (!AP.RBAC.canDeleteAppointment()) { AP.toast('Solo Super Admin puede eliminar solicitudes', 'error'); return; }
+        if (!confirm('Eliminar esta solicitud? Esta accion no se puede deshacer.')) return;
+        window.db.collection('solicitudes').doc(docId).delete().then(function() {
+            AP.toast('Solicitud eliminada');
+            AP.writeAuditLog('appointment_delete', 'solicitud ' + docId, '');
         }).catch(function(err) {
             AP.toast('Error: ' + err.message, 'error');
         });
     }
 
-    // ========== MANAGE APPOINTMENT MODAL ==========
+    // ========== MANAGE SOLICITUD MODAL ==========
+    var _currentManageSol = null;
+
     function manageAppointment(docId) {
         var a = AP.appointments.find(function(x) { return x._docId === docId; });
         if (!a) return;
+        _currentManageSol = a;
 
         $('amDocId').value = docId;
         $('amEstado').value = a.estado || 'pendiente';
         $('amObservaciones').value = a.observaciones || '';
 
+        var prefix = (a.prefijoPais || '').replace('+', '');
+        var phone = (a.telefono || a.whatsapp || '').replace(/[^0-9]/g, '');
+        var waNum = prefix ? prefix + phone : phone;
+
         $('amClientInfo').innerHTML =
             '<strong>' + AP.escapeHtml(a.nombre || '') + '</strong><br>' +
-            'WhatsApp: <a href="https://wa.me/' + (a.whatsapp || a.telefono || '').replace(/[^0-9]/g, '') + '" target="_blank" style="color:var(--admin-success);">' + AP.escapeHtml(a.whatsapp || a.telefono || '-') + '</a><br>' +
+            'Telefono: <a href="https://wa.me/' + waNum + '" target="_blank" style="color:var(--admin-success);">' + AP.escapeHtml((a.prefijoPais || '') + ' ' + (a.telefono || a.whatsapp || '-')) + '</a><br>' +
             'Email: ' + AP.escapeHtml(a.email || '-') + '<br>' +
-            'Vehiculo: ' + AP.escapeHtml(a.vehiculo || 'General') + '<br>' +
-            'Fecha: ' + AP.escapeHtml(a.fecha || '-') + ' | Hora: ' + AP.escapeHtml(a.hora || '-') + '<br>' +
-            (a.tipoCita ? 'Tipo: ' + AP.escapeHtml(a.tipoCita) + '<br>' : '') +
-            (a.origen === 'admin' ? '<span style="color:var(--admin-info);">Cita interna (admin)</span><br>' : '') +
-            'Comentarios: ' + AP.escapeHtml(a.comentarios || '-');
+            'Vehiculo: ' + AP.escapeHtml(a.vehiculo || '-') + '<br>' +
+            (a.fecha ? 'Fecha: ' + AP.escapeHtml(a.fecha) + (a.hora ? ' | Hora: ' + AP.escapeHtml(a.hora) : '') + '<br>' : '') +
+            'Tipo: <strong>' + AP.escapeHtml(tipoLabel(a.tipo || a.tipoCita || '')) + '</strong><br>' +
+            'Origen: ' + AP.escapeHtml(origenLabel(a.origen || '')) +
+            (a.comentarios ? '<br>Comentarios: ' + AP.escapeHtml(a.comentarios) : '') +
+            (a.mensaje ? '<br>Mensaje: ' + AP.escapeHtml(a.mensaje) : '');
 
+        // Show datosExtra if present
+        var extraEl = $('amDatosExtra');
+        if (extraEl) {
+            var datos = a.datosExtra;
+            if (datos && typeof datos === 'object' && Object.keys(datos).length > 0) {
+                var extraLabels = {
+                    precioVehiculo: 'Precio vehiculo', cuotaInicial: 'Cuota inicial',
+                    plazo: 'Plazo', ingresos: 'Ingresos', situacionLaboral: 'Situacion laboral',
+                    ciudad: 'Ciudad', marcaVehiculo: 'Marca', modeloVehiculo: 'Modelo',
+                    yearVehiculo: 'Ano', kmVehiculo: 'Kilometraje', precioEsperado: 'Precio esperado'
+                };
+                var extraHtml = '<strong style="font-size:0.85rem;">Datos adicionales:</strong><br>';
+                Object.keys(datos).forEach(function(k) {
+                    if (datos[k]) extraHtml += '<span style="font-size:0.8rem;">' + AP.escapeHtml(extraLabels[k] || k) + ': <strong>' + AP.escapeHtml(String(datos[k])) + '</strong></span><br>';
+                });
+                extraEl.innerHTML = extraHtml;
+                extraEl.style.display = '';
+            } else {
+                extraEl.style.display = 'none';
+            }
+        }
+
+        // WhatsApp preview
+        updateWhatsappPreview(a);
         toggleReprogramarGroup();
         $('appointmentModal').classList.add('active');
+    }
+
+    function updateWhatsappPreview(sol) {
+        var section = $('amWhatsappSection');
+        var preview = $('amWhatsappPreview');
+        var btn = $('amWhatsappBtn');
+        if (!section || !preview || !btn) return;
+        var estado = $('amEstado').value;
+        var merged = Object.assign({}, sol, { observaciones: $('amObservaciones').value || sol.observaciones });
+        if (estado === 'reprogramada') {
+            if ($('amNuevaFecha').value) merged.fecha = $('amNuevaFecha').value;
+            if ($('amNuevaHora').value) merged.hora = $('amNuevaHora').value;
+        }
+        var msg = buildWhatsappMessage(merged, estado);
+        preview.textContent = msg;
+        var url = buildWhatsappUrl(sol, msg);
+        if (url) { btn.href = url; section.style.display = ''; }
+        else { section.style.display = 'none'; }
     }
 
     function toggleReprogramarGroup() {
@@ -144,7 +263,10 @@
     }
 
     var amEstadoEl = $('amEstado');
-    if (amEstadoEl) amEstadoEl.addEventListener('change', toggleReprogramarGroup);
+    if (amEstadoEl) amEstadoEl.addEventListener('change', function() {
+        toggleReprogramarGroup();
+        if (_currentManageSol) updateWhatsappPreview(_currentManageSol);
+    });
 
     var closeAppModal = $('closeAppointmentModal');
     if (closeAppModal) closeAppModal.addEventListener('click', function() { $('appointmentModal').classList.remove('active'); });
@@ -172,15 +294,18 @@
                 if (nuevaHora) updateData.hora = nuevaHora;
             }
 
-            window.db.collection('citas').doc(docId).update(updateData).then(function() {
-                AP.toast('Cita actualizada a: ' + updateData.estado);
-                AP.writeAuditLog('appointment_' + updateData.estado, 'cita ' + docId, updateData.observaciones || '');
+            window.db.collection('solicitudes').doc(docId).update(updateData).then(function() {
+                AP.toast('Solicitud actualizada a: ' + updateData.estado);
+                AP.writeAuditLog('appointment_' + updateData.estado, 'solicitud ' + docId, updateData.observaciones || '');
                 var filterEl = $('appointmentFilter');
                 if (filterEl) filterEl.value = updateData.estado;
-                $('appointmentModal').classList.remove('active');
+                // Update WhatsApp preview so admin can send the message
+                if (_currentManageSol) {
+                    updateWhatsappPreview(Object.assign({}, _currentManageSol, updateData));
+                }
             }).catch(function(err) {
                 if (err.code === 'permission-denied') {
-                    AP.toast('Sin permisos para actualizar citas. Verifica tu rol y las Firestore Rules.', 'error');
+                    AP.toast('Sin permisos para actualizar. Verifica tu rol y las Firestore Rules.', 'error');
                 } else {
                     AP.toast('Error: ' + err.message, 'error');
                 }
@@ -192,7 +317,7 @@
     var btnCreateIA = $('btnCreateInternalAppt');
     if (btnCreateIA) {
         btnCreateIA.addEventListener('click', function() {
-            if (!AP.isEditorOrAbove() && !AP.isSuperAdmin()) { AP.toast('Sin permisos para crear citas', 'error'); return; }
+            if (!AP.isEditorOrAbove() && !AP.isSuperAdmin()) { AP.toast('Sin permisos para crear solicitudes', 'error'); return; }
             // Set default date to tomorrow
             var tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -216,22 +341,26 @@
             var whatsapp = ($('iaWhatsapp').value || '').trim();
             var fecha = ($('iaFecha').value || '').trim();
             var hora = ($('iaHora').value || '').trim();
+            var countrySelect = $('iaCountry');
+            var prefijo = countrySelect ? countrySelect.value : '+57';
 
-            if (!nombre || !whatsapp || !fecha || !hora) {
-                AP.toast('Completa los campos obligatorios', 'error');
+            if (!nombre || !whatsapp) {
+                AP.toast('Nombre y telefono son obligatorios', 'error');
                 return;
             }
 
             var data = {
                 nombre: nombre,
-                whatsapp: whatsapp,
                 telefono: whatsapp,
+                whatsapp: whatsapp,
+                prefijoPais: prefijo,
                 email: ($('iaEmail').value || '').trim() || 'No proporcionado',
                 vehiculo: ($('iaVehiculo').value || '').trim() || 'General',
-                fecha: fecha,
-                hora: hora,
+                fecha: fecha || '',
+                hora: hora || '',
+                requiereCita: !!(fecha && hora),
                 estado: $('iaEstado').value || 'confirmada',
-                tipoCita: $('iaType').value || 'visita',
+                tipo: $('iaType').value || 'visita',
                 origen: 'admin',
                 observaciones: ($('iaObservaciones').value || '').trim(),
                 comentarios: '',
@@ -242,12 +371,14 @@
             saveIABtn.disabled = true;
             saveIABtn.textContent = 'Creando...';
 
-            // Book slot atomically then save
-            bookSlotAtomically(fecha, hora).then(function() {
-                return window.db.collection('citas').add(data);
-            }).then(function() {
-                AP.toast('Cita interna creada para ' + fecha + ' a las ' + hora);
-                AP.writeAuditLog('appointment_create_internal', nombre + ' - ' + data.tipoCita, fecha + ' ' + hora);
+            // Book slot atomically if date/time provided, otherwise just save
+            var savePromise = (fecha && hora)
+                ? bookSlotAtomically(fecha, hora).then(function() { return window.db.collection('solicitudes').add(data); })
+                : window.db.collection('solicitudes').add(data);
+
+            savePromise.then(function() {
+                AP.toast('Solicitud creada' + (fecha ? ' para ' + fecha + (hora ? ' a las ' + hora : '') : ''));
+                AP.writeAuditLog('appointment_create_internal', nombre + ' - ' + data.tipo, (fecha || '') + ' ' + (hora || ''));
                 $('internalApptModal').classList.remove('active');
                 $('internalApptForm').reset();
             }).catch(function(err) {
@@ -258,7 +389,7 @@
                 }
             }).finally(function() {
                 saveIABtn.disabled = false;
-                saveIABtn.textContent = 'Crear Cita';
+                saveIABtn.textContent = 'Crear Solicitud';
             });
         });
     }

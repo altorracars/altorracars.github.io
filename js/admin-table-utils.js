@@ -222,7 +222,7 @@
             ];
         });
         var date = new Date().toISOString().slice(0, 10);
-        AP.exportCSV('citas_altorra_' + date + '.csv', headers, rows);
+        AP.exportCSV('solicitudes_altorra_' + date + '.csv', headers, rows);
     };
 
     // ========== PASSWORD VALIDATION ==========

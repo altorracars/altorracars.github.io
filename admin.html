@@ -114,7 +114,7 @@
         <div class="nav-category">Comercial</div>
         <button class="nav-item" data-section="appointments">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
-            <span>Citas</span>
+            <span>Solicitudes</span>
             <span class="nav-badge" id="navBadgeAppointments"></span>
         </button>
         <button class="nav-item" data-section="dealers">
@@ -224,7 +224,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon si-purple"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                    <div class="stat-label">Citas Pendientes</div>
+                    <div class="stat-label">Solicitudes Pendientes</div>
                     <div class="stat-value" id="statCitas">-</div>
                 </div>
             </div>
@@ -239,9 +239,9 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                     <span>Marcas</span>
                 </button>
-                <button class="quick-action-btn" data-action="quickGoTo" data-section="appointments" title="Ver citas">
+                <button class="quick-action-btn" data-action="quickGoTo" data-section="appointments" title="Ver solicitudes">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span>Citas</span>
+                    <span>Solicitudes</span>
                 </button>
                 <button class="quick-action-btn" data-action="quickGoTo" data-section="dealers" title="Aliados">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/><path d="M1 21h22"/><path d="M10 9h4"/></svg>
@@ -462,12 +462,12 @@
         <div id="sec-appointments" class="section">
             <div class="page-header">
                 <div>
-                    <h1>Agenda de Citas</h1>
-                    <p class="page-subtitle">Gestiona la disponibilidad del calendario y las solicitudes de visita</p>
+                    <h1>Centro de Solicitudes</h1>
+                    <p class="page-subtitle">Gestiona citas, consultas, financiaciones, consignaciones y todas las solicitudes</p>
                 </div>
                 <button class="btn btn-primary" id="btnCreateInternalAppt">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Agendar Cita Interna
+                    Nueva Solicitud Interna
                 </button>
             </div>
 
@@ -545,8 +545,8 @@
             <!-- Appointment Requests Management -->
             <div class="page-header" style="margin-top:1.5rem;">
                 <div>
-                    <h2 style="font-size:1.25rem;">Solicitudes de Citas</h2>
-                    <p class="page-subtitle">Todas las solicitudes de visita de clientes con datos de contacto</p>
+                    <h2 style="font-size:1.25rem;">Solicitudes</h2>
+                    <p class="page-subtitle">Todas las solicitudes de clientes — citas, consultas, financiaciones, consignaciones</p>
                 </div>
             </div>
             <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem;">
@@ -557,6 +557,38 @@
                     <option value="reprogramada">Reprogramadas</option>
                     <option value="completada">Completadas</option>
                     <option value="cancelada">Canceladas</option>
+                </select>
+                <select id="tipoFilter" class="form-select" style="min-width:170px;">
+                    <option value="all">Todos los tipos</option>
+                    <optgroup label="Desde la web">
+                        <option value="test_drive">Prueba de manejo</option>
+                        <option value="compra">Quiero comprar</option>
+                        <option value="consulta_vehiculo">Consulta vehiculo</option>
+                        <option value="llamada">Agendar llamada</option>
+                        <option value="consignacion_venta">Vender mi auto</option>
+                        <option value="financiacion">Financiacion</option>
+                        <option value="consulta_general">Consulta general</option>
+                        <option value="peritaje">Peritaje</option>
+                    </optgroup>
+                    <optgroup label="Desde admin">
+                        <option value="visita">Visita presencial</option>
+                        <option value="consignacion">Consignacion</option>
+                        <option value="inspeccion">Inspeccion vehicular</option>
+                        <option value="prueba">Prueba de manejo (admin)</option>
+                        <option value="entrega">Entrega vehiculo</option>
+                        <option value="llamada_telefonica">Llamada telefonica</option>
+                        <option value="seguimiento">Seguimiento</option>
+                        <option value="financiacion_admin">Financiacion (admin)</option>
+                    </optgroup>
+                </select>
+                <select id="origenFilter" class="form-select" style="min-width:150px;">
+                    <option value="all">Todos los origenes</option>
+                    <option value="vehiculo">Pagina vehiculo</option>
+                    <option value="index">Pagina principal</option>
+                    <option value="contacto">Contacto</option>
+                    <option value="vende_tu_auto">Vende tu auto</option>
+                    <option value="financiacion">Financiacion</option>
+                    <option value="admin">Panel Admin</option>
                 </select>
             </div>
 
@@ -571,17 +603,18 @@
                     <thead>
                         <tr>
                             <th data-sort="nombre" data-table="appointments">Cliente</th>
-                            <th>WhatsApp / Email</th>
+                            <th>Telefono / Email</th>
+                            <th data-sort="tipo" data-table="appointments">Tipo</th>
+                            <th>Origen</th>
                             <th data-sort="vehiculo" data-table="appointments">Vehiculo</th>
                             <th data-sort="fecha" data-table="appointments">Fecha / Hora</th>
                             <th data-sort="estado" data-table="appointments">Estado</th>
-                            <th>Tipo</th>
                             <th>Observaciones</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="appointmentsBody">
-                        <tr><td colspan="8" class="table-empty">Cargando citas...</td></tr>
+                        <tr><td colspan="9" class="table-empty">Cargando solicitudes...</td></tr>
                     </tbody>
                 </table>
                 <div id="appointmentsPagination"></div>
@@ -1589,14 +1622,15 @@
     </div>
 </div>
 
-<!-- APPOINTMENT MANAGEMENT MODAL -->
+<!-- SOLICITUD MANAGEMENT MODAL -->
 <div class="modal-overlay" role="dialog" aria-modal="true" id="appointmentModal">
-    <div class="modal" style="max-width:550px;">
-        <div class="modal-header"><h2 id="appointmentModalTitle">Gestionar Cita</h2><button class="modal-close" aria-label="Cerrar" id="closeAppointmentModal">&times;</button></div>
+    <div class="modal" style="max-width:600px;">
+        <div class="modal-header"><h2 id="appointmentModalTitle">Gestionar Solicitud</h2><button class="modal-close" aria-label="Cerrar" id="closeAppointmentModal">&times;</button></div>
         <div class="modal-body">
             <form id="appointmentManageForm">
                 <input type="hidden" id="amDocId">
                 <div id="amClientInfo" class="admin-highlight-box"></div>
+                <div id="amDatosExtra" class="admin-highlight-box" style="display:none;margin-top:0.75rem;background:rgba(240,192,64,0.08);border-left:3px solid var(--admin-gold);"></div>
                 <div class="form-group">
                     <label class="form-label">Estado</label>
                     <select id="amEstado" class="form-select">
@@ -1615,9 +1649,18 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Observaciones</label>
-                    <textarea id="amObservaciones" class="form-textarea" rows="3" placeholder="Notas sobre la cita..."></textarea>
+                    <textarea id="amObservaciones" class="form-textarea" rows="3" placeholder="Notas sobre esta solicitud..."></textarea>
                 </div>
             </form>
+            <!-- WhatsApp Auto-Message Button -->
+            <div id="amWhatsappSection" style="margin-top:1rem;padding:12px;background:rgba(37,211,102,0.08);border-radius:8px;border:1px solid rgba(37,211,102,0.2);display:none;">
+                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:0.5rem;">Mensaje predefinido para WhatsApp:</p>
+                <div id="amWhatsappPreview" style="font-size:0.8rem;color:var(--admin-text);background:var(--admin-card);padding:8px;border-radius:6px;margin-bottom:0.5rem;white-space:pre-wrap;max-height:120px;overflow-y:auto;"></div>
+                <a id="amWhatsappBtn" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#25d366;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;font-size:0.85rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.625-1.469A11.96 11.96 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.17 0-4.207-.593-5.963-1.625l-.427-.253-2.746.872.873-2.682-.278-.44A9.72 9.72 0 012.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75z"/></svg>
+                    Enviar por WhatsApp
+                </a>
+            </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-ghost" id="cancelAppointmentModal">Cancelar</button>
@@ -1626,34 +1669,54 @@
     </div>
 </div>
 
-<!-- INTERNAL APPOINTMENT MODAL -->
+<!-- INTERNAL SOLICITUD MODAL -->
 <div class="modal-overlay" role="dialog" aria-modal="true" id="internalApptModal">
     <div class="modal" style="max-width:580px;">
-        <div class="modal-header"><h2>Agendar Cita Interna</h2><button class="modal-close" aria-label="Cerrar" id="closeInternalApptModal">&times;</button></div>
+        <div class="modal-header"><h2>Nueva Solicitud Interna</h2><button class="modal-close" aria-label="Cerrar" id="closeInternalApptModal">&times;</button></div>
         <div class="modal-body">
-            <p class="admin-hint">Crea una cita directamente como admin (consignacion, inspeccion, visita interna).</p>
+            <p class="admin-hint">Crea una solicitud directamente (visita, consignacion, inspeccion, llamada, seguimiento, financiacion).</p>
             <form id="internalApptForm">
                 <div class="form-group">
-                    <label class="form-label">Tipo de cita *</label>
+                    <label class="form-label">Tipo de solicitud *</label>
                     <select id="iaType" class="form-select" required>
                         <option value="visita">Visita presencial</option>
                         <option value="consignacion">Consignacion</option>
                         <option value="inspeccion">Inspeccion vehicular</option>
                         <option value="prueba">Prueba de manejo</option>
                         <option value="entrega">Entrega de vehiculo</option>
+                        <option value="llamada_telefonica">Llamada telefonica</option>
+                        <option value="seguimiento">Seguimiento</option>
+                        <option value="financiacion_admin">Financiacion</option>
                     </select>
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">Nombre del cliente *</label><input type="text" id="iaNombre" class="form-input" required placeholder="Nombre completo"></div>
-                    <div class="form-group"><label class="form-label">WhatsApp *</label><input type="tel" id="iaWhatsapp" class="form-input" required placeholder="3001234567"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:0 0 120px;">
+                        <label class="form-label">Pais *</label>
+                        <select id="iaCountry" class="form-select">
+                            <option value="+57">CO +57</option>
+                            <option value="+58">VE +58</option>
+                            <option value="+593">EC +593</option>
+                            <option value="+507">PA +507</option>
+                            <option value="+52">MX +52</option>
+                            <option value="+1">US +1</option>
+                            <option value="+51">PE +51</option>
+                            <option value="+56">CL +56</option>
+                            <option value="+54">AR +54</option>
+                            <option value="+34">ES +34</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label">Telefono / WhatsApp *</label><input type="tel" id="iaWhatsapp" class="form-input" required placeholder="3001234567"></div>
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">Email</label><input type="email" id="iaEmail" class="form-input" placeholder="correo@ejemplo.com"></div>
-                    <div class="form-group"><label class="form-label">Vehiculo relacionado</label><input type="text" id="iaVehiculo" class="form-input" placeholder="Marca Modelo Año"></div>
+                    <div class="form-group"><label class="form-label">Vehiculo relacionado</label><input type="text" id="iaVehiculo" class="form-input" placeholder="Marca Modelo Ano"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label class="form-label">Fecha *</label><input type="date" id="iaFecha" class="form-input" required></div>
-                    <div class="form-group"><label class="form-label">Hora *</label><input type="time" id="iaHora" class="form-input" required></div>
+                    <div class="form-group"><label class="form-label">Fecha</label><input type="date" id="iaFecha" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">Hora</label><input type="time" id="iaHora" class="form-input"></div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Estado inicial</label>
@@ -1664,13 +1727,13 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Observaciones</label>
-                    <textarea id="iaObservaciones" class="form-textarea" rows="2" placeholder="Notas internas sobre la cita..."></textarea>
+                    <textarea id="iaObservaciones" class="form-textarea" rows="2" placeholder="Notas internas..."></textarea>
                 </div>
             </form>
         </div>
         <div class="modal-footer">
             <button class="btn btn-ghost" id="cancelInternalApptModal">Cancelar</button>
-            <button class="btn btn-primary" id="saveInternalAppt">Crear Cita</button>
+            <button class="btn btn-primary" id="saveInternalAppt">Crear Solicitud</button>
         </div>
     </div>
 </div>

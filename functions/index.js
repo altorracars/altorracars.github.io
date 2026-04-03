@@ -16,9 +16,49 @@ const githubPat = defineSecret('GITHUB_PAT');
 const emailUser = defineSecret('EMAIL_USER');
 const emailPass = defineSecret('EMAIL_PASS');
 
-// ========== F12.1: EMAIL NOTIFICATION ON NEW APPOINTMENT ==========
+// ========== SOLICITUDES: SHARED HELPERS ==========
+
+const TIPO_LABELS = {
+    // Client-side types
+    test_drive: 'Prueba de manejo',
+    compra: 'Quiero comprar',
+    consulta_vehiculo: 'Consulta sobre vehiculo',
+    llamada: 'Agendar llamada',
+    consignacion_venta: 'Vender mi auto / Consignacion',
+    financiacion: 'Solicitud de financiacion',
+    consulta_general: 'Consulta general',
+    peritaje: 'Peritaje / Inspeccion',
+    otro: 'Otro asunto',
+    // Admin-side types
+    visita: 'Visita presencial',
+    consignacion: 'Consignacion',
+    inspeccion: 'Inspeccion vehicular',
+    prueba: 'Prueba de manejo',
+    entrega: 'Entrega de vehiculo',
+    llamada_telefonica: 'Llamada telefonica',
+    seguimiento: 'Seguimiento',
+    financiacion_admin: 'Financiacion'
+};
+
+const ORIGEN_LABELS = {
+    vehiculo: 'Pagina de vehiculo',
+    index: 'Pagina principal',
+    contacto: 'Formulario de contacto',
+    vende_tu_auto: 'Vende tu auto',
+    financiacion: 'Formulario financiacion',
+    admin: 'Panel Admin'
+};
+
+function getTipoLabel(tipo) { return TIPO_LABELS[tipo] || (tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : 'General'); }
+function getOrigenLabel(origen) { return ORIGEN_LABELS[origen] || (origen ? origen.charAt(0).toUpperCase() + origen.slice(1) : 'Sitio Web'); }
+
+function createTransporter(user, pass) {
+    return nodemailer.createTransport({ service: 'gmail', auth: { user: user, pass: pass } });
+}
+
+// ========== F12.1: EMAIL TO ADMIN ON NEW SOLICITUD ==========
 /**
- * Firestore trigger: sends an email notification when a new cita is created.
+ * Firestore trigger: sends an email notification to ADMIN when a new solicitud is created.
  * Idempotent: checks emailSent field to avoid duplicate emails.
  * Uses Gmail SMTP via Nodemailer (free tier: 500 emails/day).
  *
@@ -27,67 +67,77 @@ const emailPass = defineSecret('EMAIL_PASS');
  *   firebase functions:secrets:set EMAIL_PASS   → your Gmail App Password
  *     (Generate at: https://myaccount.google.com/apppasswords)
  */
-exports.onNewAppointment = onDocumentCreated({
-    document: 'citas/{citaId}',
+exports.onNewSolicitud = onDocumentCreated({
+    document: 'solicitudes/{solicitudId}',
     region: 'us-central1',
     secrets: [emailUser, emailPass]
 }, async (event) => {
     const snap = event.data;
     if (!snap) return;
 
-    const cita = snap.data();
-    const citaId = event.params.citaId;
+    const sol = snap.data();
+    const solId = event.params.solicitudId;
 
     // Idempotency: skip if email was already sent
-    if (cita.emailSent === true) {
-        console.log('[Email] Skipped cita ' + citaId + ' — email already sent');
+    if (sol.emailSent === true) {
+        console.log('[Email] Skipped solicitud ' + solId + ' — email already sent');
         return;
     }
 
-    // Skip if email credentials are not configured
     const user = emailUser.value();
     const pass = emailPass.value();
     if (!user || !pass) {
-        console.warn('[Email] EMAIL_USER or EMAIL_PASS not configured. Run: firebase functions:secrets:set EMAIL_USER / EMAIL_PASS');
+        console.warn('[Email] EMAIL_USER or EMAIL_PASS not configured.');
         return;
     }
 
-    // Build email content
-    const nombre = cita.nombre || 'Sin nombre';
-    const whatsapp = cita.whatsapp || 'No proporcionado';
-    const email = cita.email || 'No proporcionado';
-    const fecha = cita.fecha || 'Sin fecha';
-    const hora = cita.hora || 'Sin hora';
-    const vehiculo = cita.vehiculo || 'General';
-    const tipoCita = cita.tipoCita || 'visita';
-    const origen = cita.origen === 'admin' ? 'Panel Admin' : 'Sitio Web';
-    const comentarios = cita.comentarios || 'Ninguno';
+    const nombre = sol.nombre || 'Sin nombre';
+    const telefono = sol.telefono || 'No proporcionado';
+    const prefijo = sol.prefijoPais || '';
+    const email = sol.email || 'No proporcionado';
+    const fecha = sol.fecha || 'No aplica';
+    const hora = sol.hora || 'No aplica';
+    const vehiculo = sol.vehiculo || 'General';
+    const tipo = sol.tipo || 'consulta_general';
+    const origen = sol.origen || 'index';
+    const comentarios = sol.comentarios || sol.mensaje || 'Ninguno';
 
-    const tipoLabels = {
-        visita: 'Visita',
-        consignacion: 'Consignacion',
-        inspeccion: 'Inspeccion',
-        prueba: 'Prueba de manejo',
-        entrega: 'Entrega'
-    };
+    // Build extra data rows for specific types
+    let extraRows = '';
+    const datos = sol.datosExtra || {};
+    if (tipo === 'financiacion' || tipo === 'financiacion_admin') {
+        if (datos.precioVehiculo) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Precio vehiculo</td><td style="padding:8px 0">$' + datos.precioVehiculo + '</td></tr>';
+        if (datos.cuotaInicial) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Cuota inicial</td><td style="padding:8px 0">$' + datos.cuotaInicial + '</td></tr>';
+        if (datos.plazo) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Plazo</td><td style="padding:8px 0">' + datos.plazo + ' meses</td></tr>';
+        if (datos.ingresos) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Ingresos mensuales</td><td style="padding:8px 0">$' + datos.ingresos + '</td></tr>';
+        if (datos.situacionLaboral) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Situacion laboral</td><td style="padding:8px 0">' + datos.situacionLaboral + '</td></tr>';
+    }
+    if (tipo === 'consignacion_venta') {
+        if (datos.marcaVehiculo) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Marca</td><td style="padding:8px 0">' + datos.marcaVehiculo + '</td></tr>';
+        if (datos.modeloVehiculo) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Modelo</td><td style="padding:8px 0">' + datos.modeloVehiculo + '</td></tr>';
+        if (datos.yearVehiculo) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Ano</td><td style="padding:8px 0">' + datos.yearVehiculo + '</td></tr>';
+        if (datos.kmVehiculo) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Kilometraje</td><td style="padding:8px 0">' + datos.kmVehiculo + ' km</td></tr>';
+        if (datos.precioEsperado) extraRows += '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Precio esperado</td><td style="padding:8px 0">$' + datos.precioEsperado + '</td></tr>';
+    }
 
-    const subject = 'Nueva cita: ' + nombre + ' — ' + (tipoLabels[tipoCita] || tipoCita) + ' (' + fecha + ')';
+    const subject = 'Nueva solicitud: ' + nombre + ' — ' + getTipoLabel(tipo);
 
     const html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
         + '<div style="background:#1a1a2e;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center">'
         + '<h2 style="margin:0;color:#f0c040">ALTORRA CARS</h2>'
-        + '<p style="margin:5px 0 0;opacity:0.8">Nueva cita agendada</p>'
+        + '<p style="margin:5px 0 0;opacity:0.8">Nueva solicitud recibida</p>'
         + '</div>'
         + '<div style="border:1px solid #ddd;border-top:none;padding:20px;border-radius:0 0 8px 8px">'
         + '<table style="width:100%;border-collapse:collapse">'
         + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Cliente</td><td style="padding:8px 0">' + nombre + '</td></tr>'
-        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">WhatsApp</td><td style="padding:8px 0">' + whatsapp + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Telefono</td><td style="padding:8px 0">' + prefijo + ' ' + telefono + '</td></tr>'
         + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Email</td><td style="padding:8px 0">' + email + '</td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Tipo</td><td style="padding:8px 0"><strong>' + getTipoLabel(tipo) + '</strong></td></tr>'
+        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Origen</td><td style="padding:8px 0">' + getOrigenLabel(origen) + '</td></tr>'
         + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Vehiculo</td><td style="padding:8px 0">' + vehiculo + '</td></tr>'
-        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Tipo</td><td style="padding:8px 0">' + (tipoLabels[tipoCita] || tipoCita) + '</td></tr>'
-        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Fecha</td><td style="padding:8px 0">' + fecha + '</td></tr>'
-        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Hora</td><td style="padding:8px 0">' + hora + '</td></tr>'
-        + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Origen</td><td style="padding:8px 0">' + origen + '</td></tr>'
+        + (sol.requiereCita !== false ? '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Fecha</td><td style="padding:8px 0">' + fecha + '</td></tr>' : '')
+        + (sol.requiereCita !== false ? '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Hora</td><td style="padding:8px 0">' + hora + '</td></tr>' : '')
+        + extraRows
         + '<tr><td style="padding:8px 0;font-weight:bold;color:#555">Comentarios</td><td style="padding:8px 0">' + comentarios + '</td></tr>'
         + '</table>'
         + '<div style="margin-top:20px;padding:12px;background:#f8f9fa;border-radius:6px;text-align:center">'
@@ -96,13 +146,8 @@ exports.onNewAppointment = onDocumentCreated({
         + '</div>'
         + '</body></html>';
 
-    // Send email via Gmail SMTP
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: { user: user, pass: pass }
-        });
-
+        const transporter = createTransporter(user, pass);
         await transporter.sendMail({
             from: '"ALTORRA CARS" <' + user + '>',
             to: user,
@@ -110,79 +155,127 @@ exports.onNewAppointment = onDocumentCreated({
             html: html
         });
 
-        // Mark as sent (idempotency flag)
         await snap.ref.update({ emailSent: true });
-        console.log('[Email] Notification sent for cita ' + citaId + ' (' + nombre + ')');
+        console.log('[Email] Admin notification sent for solicitud ' + solId + ' (' + nombre + ')');
     } catch (err) {
-        console.error('[Email] Failed to send for cita ' + citaId + ':', err.message);
-        // Don't mark emailSent — will retry on next function invocation if needed
+        console.error('[Email] Failed for solicitud ' + solId + ':', err.message);
     }
 });
 
-// ========== F12.1b: EMAIL TO CLIENT WHEN APPOINTMENT IS CONFIRMED ==========
+// ========== F12.1b: EMAIL TO CLIENT ON STATUS CHANGE ==========
 /**
- * Firestore trigger: sends a confirmation email to the CLIENT when
- * their appointment status changes to "confirmada".
- * Idempotent: checks confirmationEmailSent field to avoid duplicates.
+ * Firestore trigger: sends an email to the CLIENT when their solicitud
+ * status changes to confirmada, reprogramada, cancelada, or completada.
+ * Idempotent: uses statusEmailSent_{estado} field to avoid duplicates.
  */
-exports.onAppointmentConfirmed = onDocumentUpdated({
-    document: 'citas/{citaId}',
+exports.onSolicitudStatusChanged = onDocumentUpdated({
+    document: 'solicitudes/{solicitudId}',
     region: 'us-central1',
     secrets: [emailUser, emailPass]
 }, async (event) => {
     const before = event.data.before.data();
     const after = event.data.after.data();
-    const citaId = event.params.citaId;
+    const solId = event.params.solicitudId;
 
-    // Only fire when estado changes TO "confirmada"
-    if (before.estado === after.estado || after.estado !== 'confirmada') {
+    // Only fire when estado actually changes
+    if (before.estado === after.estado) return;
+
+    const newEstado = after.estado;
+    // Only send email for these statuses
+    if (!['confirmada', 'reprogramada', 'cancelada', 'completada'].includes(newEstado)) return;
+
+    // Idempotency: per-status flag
+    const sentFlag = 'statusEmailSent_' + newEstado;
+    if (after[sentFlag] === true) {
+        console.log('[StatusEmail] Skipped solicitud ' + solId + ' — ' + newEstado + ' email already sent');
         return;
     }
 
-    // Idempotency: skip if confirmation email was already sent
-    if (after.confirmationEmailSent === true) {
-        console.log('[ConfEmail] Skipped cita ' + citaId + ' — confirmation email already sent');
-        return;
-    }
-
-    // Client must have an email
+    // Client must have a valid email
     const clientEmail = after.email;
     if (!clientEmail || clientEmail === 'No proporcionado' || !clientEmail.includes('@')) {
-        console.log('[ConfEmail] Skipped cita ' + citaId + ' — no valid client email');
+        console.log('[StatusEmail] Skipped solicitud ' + solId + ' — no valid client email');
         return;
     }
 
-    // Skip if credentials are not configured
     const user = emailUser.value();
     const pass = emailPass.value();
     if (!user || !pass) {
-        console.warn('[ConfEmail] EMAIL_USER or EMAIL_PASS not configured.');
+        console.warn('[StatusEmail] EMAIL_USER or EMAIL_PASS not configured.');
         return;
     }
 
     const nombre = after.nombre || 'Cliente';
-    const fecha = after.fecha || 'Sin fecha';
-    const hora = after.hora || 'Sin hora';
+    const fecha = after.fecha || '';
+    const hora = after.hora || '';
     const vehiculo = after.vehiculo || 'General';
+    const tipoLabel = getTipoLabel(after.tipo);
+    const observaciones = after.observaciones || '';
 
-    const subject = 'Tu cita en ALTORRA CARS ha sido confirmada — ' + fecha + ' a las ' + hora;
+    // Status-specific email content
+    const statusConfig = {
+        confirmada: {
+            subject: 'Tu solicitud en ALTORRA CARS ha sido confirmada',
+            subtitle: 'Solicitud confirmada',
+            icon: '&#10004;',
+            color: '#16a34a',
+            bgColor: '#f0fdf4',
+            borderColor: '#16a34a',
+            message: 'Tu solicitud de <strong>' + tipoLabel + '</strong> ha sido <strong style="color:#16a34a;">confirmada</strong>.',
+            footer: 'Te esperamos! Si necesitas hacer cambios, contactanos por WhatsApp o correo electronico.'
+        },
+        reprogramada: {
+            subject: 'Tu solicitud en ALTORRA CARS ha sido reprogramada',
+            subtitle: 'Solicitud reprogramada',
+            icon: '&#128197;',
+            color: '#2563eb',
+            bgColor: '#eff6ff',
+            borderColor: '#2563eb',
+            message: 'Tu solicitud de <strong>' + tipoLabel + '</strong> ha sido <strong style="color:#2563eb;">reprogramada</strong>.'
+                + (fecha ? '<br>Nueva fecha: <strong>' + fecha + '</strong>' : '')
+                + (hora ? ' a las <strong>' + hora + '</strong>' : ''),
+            footer: 'Si la nueva fecha no te funciona, contactanos para coordinar otra opcion.'
+        },
+        cancelada: {
+            subject: 'Tu solicitud en ALTORRA CARS ha sido cancelada',
+            subtitle: 'Solicitud cancelada',
+            icon: '&#10006;',
+            color: '#dc2626',
+            bgColor: '#fef2f2',
+            borderColor: '#dc2626',
+            message: 'Lamentamos informarte que tu solicitud de <strong>' + tipoLabel + '</strong> ha sido <strong style="color:#dc2626;">cancelada</strong>.'
+                + (observaciones ? '<br><em>Motivo: ' + observaciones + '</em>' : ''),
+            footer: 'Si deseas agendar una nueva solicitud, visitanos en altorracars.github.io o contactanos por WhatsApp.'
+        },
+        completada: {
+            subject: 'Gracias por tu visita — ALTORRA CARS',
+            subtitle: 'Solicitud completada',
+            icon: '&#11088;',
+            color: '#d97706',
+            bgColor: '#fffbeb',
+            borderColor: '#d97706',
+            message: 'Tu solicitud de <strong>' + tipoLabel + '</strong> ha sido marcada como <strong style="color:#d97706;">completada</strong>. Gracias por confiar en nosotros!',
+            footer: 'Fue un placer atenderte. Si necesitas algo mas, estamos a tu disposicion.'
+        }
+    };
+
+    const cfg = statusConfig[newEstado];
 
     const html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
         + '<div style="background:#1a1a2e;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center">'
         + '<h2 style="margin:0;color:#f0c040">ALTORRA CARS</h2>'
-        + '<p style="margin:5px 0 0;opacity:0.8">Confirmacion de cita</p>'
+        + '<p style="margin:5px 0 0;opacity:0.8">' + cfg.subtitle + '</p>'
         + '</div>'
         + '<div style="border:1px solid #ddd;border-top:none;padding:20px;border-radius:0 0 8px 8px">'
         + '<p style="font-size:1.1rem;">Hola <strong>' + nombre + '</strong>,</p>'
-        + '<p>Tu cita ha sido <strong style="color:#16a34a;">confirmada</strong>. Aqui estan los detalles:</p>'
-        + '<table style="width:100%;border-collapse:collapse;margin:16px 0">'
-        + '<tr><td style="padding:10px;font-weight:bold;color:#555;border-bottom:1px solid #eee">Fecha</td><td style="padding:10px;border-bottom:1px solid #eee">' + fecha + '</td></tr>'
-        + '<tr><td style="padding:10px;font-weight:bold;color:#555;border-bottom:1px solid #eee">Hora</td><td style="padding:10px;border-bottom:1px solid #eee">' + hora + '</td></tr>'
-        + '<tr><td style="padding:10px;font-weight:bold;color:#555;border-bottom:1px solid #eee">Vehiculo</td><td style="padding:10px;border-bottom:1px solid #eee">' + vehiculo + '</td></tr>'
-        + '</table>'
-        + '<div style="margin-top:20px;padding:16px;background:#f0fdf4;border-radius:8px;border-left:4px solid #16a34a;">'
-        + '<p style="margin:0;color:#166534;font-weight:600;">Te esperamos!</p>'
-        + '<p style="margin:8px 0 0;color:#166534;font-size:0.9rem;">Si necesitas reprogramar o cancelar, contactanos por WhatsApp.</p>'
+        + '<p>' + cfg.message + '</p>'
+        + (fecha ? '<table style="width:100%;border-collapse:collapse;margin:16px 0">'
+            + '<tr><td style="padding:10px;font-weight:bold;color:#555;border-bottom:1px solid #eee">Fecha</td><td style="padding:10px;border-bottom:1px solid #eee">' + fecha + '</td></tr>'
+            + (hora ? '<tr><td style="padding:10px;font-weight:bold;color:#555;border-bottom:1px solid #eee">Hora</td><td style="padding:10px;border-bottom:1px solid #eee">' + hora + '</td></tr>' : '')
+            + '<tr><td style="padding:10px;font-weight:bold;color:#555;border-bottom:1px solid #eee">Vehiculo</td><td style="padding:10px;border-bottom:1px solid #eee">' + vehiculo + '</td></tr>'
+            + '</table>' : '')
+        + '<div style="margin-top:20px;padding:16px;background:' + cfg.bgColor + ';border-radius:8px;border-left:4px solid ' + cfg.borderColor + ';">'
+        + '<p style="margin:0;color:' + cfg.color + ';font-size:0.9rem;">' + cfg.footer + '</p>'
         + '</div>'
         + '<div style="margin-top:20px;text-align:center;font-size:0.8rem;color:#999;">'
         + '<p>ALTORRA CARS — Tu proximo vehiculo te espera</p>'
@@ -191,23 +284,20 @@ exports.onAppointmentConfirmed = onDocumentUpdated({
         + '</body></html>';
 
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: { user: user, pass: pass }
-        });
-
+        const transporter = createTransporter(user, pass);
         await transporter.sendMail({
             from: '"ALTORRA CARS" <' + user + '>',
             to: clientEmail,
-            subject: subject,
+            subject: cfg.subject,
             html: html
         });
 
-        // Mark as sent (idempotency flag)
-        await event.data.after.ref.update({ confirmationEmailSent: true });
-        console.log('[ConfEmail] Confirmation sent to ' + clientEmail + ' for cita ' + citaId);
+        const updateData = {};
+        updateData[sentFlag] = true;
+        await event.data.after.ref.update(updateData);
+        console.log('[StatusEmail] ' + newEstado + ' email sent to ' + clientEmail + ' for solicitud ' + solId);
     } catch (err) {
-        console.error('[ConfEmail] Failed for cita ' + citaId + ':', err.message);
+        console.error('[StatusEmail] Failed for solicitud ' + solId + ' (' + newEstado + '):', err.message);
     }
 });
 

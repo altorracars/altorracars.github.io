@@ -222,6 +222,10 @@
         // Render pagination
         if (!_reorderMode && AP.renderPagination) {
             AP.renderPagination('vehiclesPagination', 'vehicles', totalFiltered);
+        } else {
+            // Clear pagination UI in reorder mode
+            var pagEl = $('vehiclesPagination');
+            if (pagEl) pagEl.innerHTML = '';
         }
 
         // Update vehicle count
@@ -238,6 +242,10 @@
             return;
         }
         _reorderMode = !_reorderMode;
+        // Reset pagination to page 1 when toggling reorder mode
+        if (AP._pagination && AP._pagination.vehicles) {
+            AP._pagination.vehicles.page = 1;
+        }
         var btn = $('toggleReorderMode');
         if (btn) {
             btn.classList.toggle('active', _reorderMode);

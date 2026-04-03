@@ -10,6 +10,7 @@
     const FIREBASE_CONFIG = {
         apiKey: "AIzaSyD9MJrON70mPqZxQqhndgQHNkTZUnnaQIs",
         authDomain: "altorra-cars.firebaseapp.com",
+        databaseURL: "https://altorra-cars-default-rtdb.firebaseio.com",
         projectId: "altorra-cars",
         storageBucket: "altorra-cars.firebasestorage.app",
         messagingSenderId: "235148219730",
@@ -76,12 +77,14 @@
             Promise.all([
                 loadScript(CDN_BASE + '/firebase-storage-compat.js'),
                 loadScript(CDN_BASE + '/firebase-functions-compat.js'),
-                loadScript(CDN_BASE + '/firebase-analytics-compat.js')
+                loadScript(CDN_BASE + '/firebase-analytics-compat.js'),
+                loadScript(CDN_BASE + '/firebase-database-compat.js')
             ]).then(function() {
                 window.storage = firebase.storage();
                 window.functions = firebase.functions();
                 window.firebaseAnalytics = firebase.analytics();
-                console.log('Firebase deferred SDKs loaded (Storage, Functions, Analytics)');
+                window.rtdb = firebase.database();
+                console.log('Firebase deferred SDKs loaded (Storage, Functions, Analytics, RTDB)');
             }).catch(function(err) {
                 console.warn('Deferred Firebase SDKs failed:', err);
             });

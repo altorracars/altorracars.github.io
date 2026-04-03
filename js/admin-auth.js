@@ -216,9 +216,83 @@
         recordSessionStart();
         AP.writeAuditLog('login', 'sesion', user.email);
         startInactivityTracking();
+        startPresence(user);
         applyRolePermissions();
         AP.loadData();
+        loadActiveSessions();
     }
+
+    // ========== F12.7: RTDB PRESENCE (ACTIVE SESSIONS) ==========
+    function startPresence(user) {
+        if (!window.rtdb) {
+            // RTDB not loaded yet, retry in 2s
+            setTimeout(function() { startPresence(user); }, 2000);
+            return;
+        }
+        var uid = user.uid;
+        var presenceRef = window.rtdb.ref('presence/' + uid);
+        var connectedRef = window.rtdb.ref('.info/connected');
+
+        connectedRef.on('value', function(snap) {
+            if (snap.val() !== true) return;
+            var sessionData = {
+                email: user.email,
+                nombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0],
+                rol: AP.currentUserRole || 'viewer',
+                lastSeen: firebase.database.ServerValue.TIMESTAMP,
+                online: true
+            };
+            // When disconnects, mark offline
+            presenceRef.onDisconnect().update({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+            // Set online now
+            presenceRef.update(sessionData);
+        });
+
+        AP._presenceRef = presenceRef;
+    }
+
+    function stopPresence() {
+        if (AP._presenceRef) {
+            AP._presenceRef.update({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+            AP._presenceRef = null;
+        }
+    }
+
+    function loadActiveSessions() {
+        if (!window.rtdb) return;
+        var listEl = $('activeSessionsList');
+        if (!listEl) return;
+
+        window.rtdb.ref('presence').orderByChild('online').equalTo(true).on('value', function(snap) {
+            var sessions = [];
+            snap.forEach(function(child) {
+                sessions.push(Object.assign({ uid: child.key }, child.val()));
+            });
+
+            if (sessions.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center;color:var(--admin-text-muted);padding:1rem;font-size:0.85rem;">Nadie conectado</div>';
+                return;
+            }
+
+            listEl.innerHTML = sessions.map(function(s) {
+                var rolColors = { super_admin: 'admin-danger', editor: 'admin-info', viewer: 'admin-text-muted' };
+                var rolLabel = s.rol === 'super_admin' ? 'Super Admin' : s.rol === 'editor' ? 'Editor' : 'Viewer';
+                var initials = (s.nombre || '?').split(' ').map(function(w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join('');
+                return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--admin-border);">' +
+                    '<div style="width:32px;height:32px;border-radius:50%;background:var(--admin-gold);color:#1a1a2e;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;">' + initials + '</div>' +
+                    '<div style="flex:1;">' +
+                        '<div style="font-weight:600;font-size:0.85rem;">' + (s.nombre || s.email) + '</div>' +
+                        '<div style="font-size:0.75rem;color:var(--' + (rolColors[s.rol] || 'admin-text-muted') + ');">' + rolLabel + '</div>' +
+                    '</div>' +
+                    '<div style="width:8px;height:8px;border-radius:50%;background:#3fb950;flex-shrink:0;" title="En linea"></div>' +
+                '</div>';
+            }).join('');
+        });
+    }
+
+    AP.startPresence = startPresence;
+    AP.stopPresence = stopPresence;
+    AP.loadActiveSessions = loadActiveSessions;
 
     function applyRolePermissions() {
         var usersNav = document.querySelector('.nav-item[data-section="users"]');
@@ -365,6 +439,7 @@
 
     $('logoutBtn').addEventListener('click', function() {
         clearSessionStart();
+        stopPresence();
         window.firebaseReady.then(function() { window.auth.signOut(); });
     });
 

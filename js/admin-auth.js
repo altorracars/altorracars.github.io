@@ -57,6 +57,135 @@
         return (Date.now() - start) > AP.SESSION_MAX_MS;
     }
 
+    // ========== F12.3: 2FA STATE ==========
+    var _2faVerificationId = null;
+    var _2faPendingUser = null;
+    var _2faRecaptchaVerifier = null;
+
+    function init2FARecaptcha() {
+        if (_2faRecaptchaVerifier) return;
+        _2faRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            size: 'invisible',
+            callback: function() { /* solved */ }
+        });
+    }
+
+    function send2FACode(phoneNumber) {
+        init2FARecaptcha();
+        var provider = new firebase.auth.PhoneAuthProvider();
+        return provider.verifyPhoneNumber(phoneNumber, _2faRecaptchaVerifier)
+            .then(function(verificationId) {
+                _2faVerificationId = verificationId;
+                return verificationId;
+            });
+    }
+
+    function show2FAScreen(user, phone) {
+        _2faPendingUser = user;
+        $('loginScreen').style.display = 'none';
+        $('adminPanel').style.display = 'none';
+        $('twoFaScreen').style.display = 'flex';
+        $('twoFaCode').value = '';
+        $('twoFaError').style.display = 'none';
+        $('twoFaBtn').disabled = false;
+        $('twoFaBtn').textContent = 'Verificar';
+
+        var masked = phone.slice(0, -4).replace(/./g, '*') + phone.slice(-4);
+        $('twoFaInfo').textContent = 'Enviamos un codigo de verificacion al numero ' + masked;
+
+        send2FACode(phone).then(function() {
+            $('twoFaCode').focus();
+        }).catch(function(err) {
+            $('twoFaError').style.display = 'block';
+            $('twoFaError').textContent = 'Error al enviar SMS: ' + err.message;
+        });
+    }
+
+    function verify2FACode(code) {
+        if (!_2faVerificationId) return Promise.reject(new Error('No verification ID'));
+        var credential = firebase.auth.PhoneAuthProvider.credential(_2faVerificationId, code);
+        // Validate the code by updating phone on auth user (idempotent if same phone)
+        return _2faPendingUser.updatePhoneNumber(credential);
+    }
+
+    function hide2FAScreen() {
+        $('twoFaScreen').style.display = 'none';
+        _2faVerificationId = null;
+        _2faPendingUser = null;
+    }
+
+    // 2FA form submit
+    var twoFaForm = $('twoFaForm');
+    if (twoFaForm) {
+        twoFaForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var code = $('twoFaCode').value.trim();
+            if (code.length !== 6) return;
+
+            $('twoFaBtn').disabled = true;
+            $('twoFaBtn').textContent = 'Verificando...';
+            $('twoFaError').style.display = 'none';
+
+            verify2FACode(code).then(function() {
+                _2faVerified = true;
+                hide2FAScreen();
+                // Re-trigger profile load → showAdmin (now _2faVerified=true skips 2FA check)
+                loadUserProfile(_2faPendingUser || window.auth.currentUser);
+            }).catch(function(err) {
+                $('twoFaBtn').disabled = false;
+                $('twoFaBtn').textContent = 'Verificar';
+                $('twoFaError').style.display = 'block';
+                if (err.code === 'auth/invalid-verification-code') {
+                    $('twoFaError').textContent = 'Codigo incorrecto. Intenta de nuevo.';
+                } else if (err.code === 'auth/code-expired') {
+                    $('twoFaError').textContent = 'Codigo expirado. Haz clic en "Reenviar codigo".';
+                } else {
+                    $('twoFaError').textContent = 'Error: ' + err.message;
+                }
+            });
+        });
+    }
+
+    // Resend code
+    var twoFaResend = $('twoFaResend');
+    if (twoFaResend) {
+        twoFaResend.addEventListener('click', function(e) {
+            e.preventDefault();
+            var profile = AP.currentUserProfile;
+            if (!profile || !profile.telefono2FA) return;
+            var phone = (profile.prefijo2FA || '+57') + profile.telefono2FA;
+            twoFaResend.textContent = 'Enviando...';
+            twoFaResend.style.pointerEvents = 'none';
+            // Reset reCAPTCHA for re-send
+            if (_2faRecaptchaVerifier) {
+                _2faRecaptchaVerifier.clear();
+                _2faRecaptchaVerifier = null;
+            }
+            send2FACode(phone).then(function() {
+                twoFaResend.textContent = 'Codigo reenviado';
+                setTimeout(function() {
+                    twoFaResend.textContent = 'Reenviar codigo';
+                    twoFaResend.style.pointerEvents = '';
+                }, 5000);
+            }).catch(function(err) {
+                twoFaResend.textContent = 'Reenviar codigo';
+                twoFaResend.style.pointerEvents = '';
+                $('twoFaError').style.display = 'block';
+                $('twoFaError').textContent = 'Error: ' + err.message;
+            });
+        });
+    }
+
+    // Cancel 2FA → sign out
+    var twoFaCancel = $('twoFaCancel');
+    if (twoFaCancel) {
+        twoFaCancel.addEventListener('click', function(e) {
+            e.preventDefault();
+            hide2FAScreen();
+            window.auth.signOut();
+        });
+    }
+
     // ========== INACTIVITY TRACKING ==========
     function clearInactivityTimers() {
         if (AP.inactivityTimerId)  { clearTimeout(AP.inactivityTimerId);  AP.inactivityTimerId  = null; }
@@ -127,14 +256,18 @@
                         } else {
                             AP.currentUserProfile = null;
                             AP.currentUserRole = null;
+                            _2faVerified = false;
                             clearSessionStart();
                             stopInactivityTracking();
+                            hide2FAScreen();
                             showLogin();
                         }
                     });
                 });
         });
     }
+
+    var _2faVerified = false;
 
     function loadUserProfile(authUser) {
         window.db.collection('usuarios').doc(authUser.uid).get()
@@ -143,6 +276,14 @@
                     AP.currentUserProfile = doc.data();
                     AP.currentUserProfile._docId = doc.id;
                     AP.currentUserRole = AP.currentUserProfile.rol;
+
+                    // F12.3: Check if 2FA is required
+                    if (AP.currentUserProfile.habilitado2FA && AP.currentUserProfile.telefono2FA && !_2faVerified) {
+                        var phone = (AP.currentUserProfile.prefijo2FA || '+57') + AP.currentUserProfile.telefono2FA;
+                        show2FAScreen(authUser, phone);
+                        return;
+                    }
+                    _2faVerified = false; // reset for next login
                     showAdmin(authUser);
                 } else {
                     showAccessDenied(authUser.email, authUser.uid, 'No tienes perfil administrativo asignado. Un Super Admin debe crearlo.');
@@ -440,6 +581,7 @@
     $('logoutBtn').addEventListener('click', function() {
         clearSessionStart();
         stopPresence();
+        _2faVerified = false;
         window.firebaseReady.then(function() { window.auth.signOut(); });
     });
 

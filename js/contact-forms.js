@@ -317,12 +317,14 @@ class ContactFormManager {
         const precio = formData.get('precio');
         const comentarios = formData.get('comentarios');
 
+        var prefijoPais = (document.getElementById('vende-pais') || {}).value || '+57';
+
         // Save to Firestore solicitudes collection
         if (window.db) {
             window.db.collection('solicitudes').add({
                 nombre: nombre,
                 telefono: telefono,
-                prefijoPais: '+57',
+                prefijoPais: prefijoPais,
                 email: email || 'No proporcionado',
                 tipo: 'consignacion_venta',
                 origen: 'vende_tu_auto',
@@ -370,12 +372,14 @@ class ContactFormManager {
         const ciudad = formData.get('ciudad');
         const comentarios = formData.get('comentarios');
 
+        var prefijoPais = (document.getElementById('fin-pais') || {}).value || '+57';
+
         // Save to Firestore solicitudes collection
         if (window.db) {
             window.db.collection('solicitudes').add({
                 nombre: nombre,
                 telefono: telefono,
-                prefijoPais: '+57',
+                prefijoPais: prefijoPais,
                 email: email || 'No proporcionado',
                 tipo: 'financiacion',
                 origen: 'financiacion',

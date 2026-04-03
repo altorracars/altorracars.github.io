@@ -27,8 +27,10 @@
             var estadoClass = u.estado === 'activo' ? 'badge-nuevo' : 'badge-usado';
             var isSelf = u._docId === currentUid;
 
+            var twoFaBadge = u.habilitado2FA ? ' <span class="badge badge-destacado" style="font-size:0.65rem;" title="2FA activo">2FA</span>' : '';
+
             html += '<tr>' +
-                '<td><strong>' + (u.nombre || '-') + '</strong>' + (isSelf ? ' <small style="color:var(--admin-gold);">(tu)</small>' : '') + '</td>' +
+                '<td><strong>' + (u.nombre || '-') + '</strong>' + (isSelf ? ' <small style="color:var(--admin-gold);">(tu)</small>' : '') + twoFaBadge + '</td>' +
                 '<td>' + (u.email || '-') + '</td>' +
                 '<td><span class="badge ' + rolClass + '">' + rolLabel + '</span></td>' +
                 '<td><span class="badge ' + estadoClass + '">' + (u.estado || 'activo') + '</span></td>' +
@@ -61,6 +63,9 @@
         $('uPassword').required = true;
         $('uEmail').readOnly = false;
         $('saveUser').textContent = 'Crear Usuario';
+        // F12.3: Reset 2FA fields
+        $('uHabilitar2FA').checked = false;
+        $('u2FAPhoneGroup').style.display = 'none';
     }
 
     $('btnAddUser').addEventListener('click', function() {
@@ -80,6 +85,14 @@
     $('userForm').addEventListener('submit', function(e) { e.preventDefault(); });
     $('userForm').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
 
+    // F12.3: Toggle 2FA phone fields visibility
+    var u2faCheck = $('uHabilitar2FA');
+    if (u2faCheck) {
+        u2faCheck.addEventListener('change', function() {
+            $('u2FAPhoneGroup').style.display = this.checked ? '' : 'none';
+        });
+    }
+
     // ========== EDIT USER ==========
     function editUser(uid) {
         if (!AP.canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
@@ -95,6 +108,14 @@
         $('uPasswordGroup').style.display = 'none';
         $('uPassword').required = false;
         $('saveUser').textContent = 'Guardar Cambios';
+
+        // F12.3: Populate 2FA fields
+        var has2fa = !!u.habilitado2FA;
+        $('uHabilitar2FA').checked = has2fa;
+        $('u2FAPhoneGroup').style.display = has2fa ? '' : 'none';
+        $('u2FAPais').value = u.prefijo2FA || '+57';
+        $('u2FAPhone').value = u.telefono2FA || '';
+
         openUserModal();
     }
 
@@ -123,7 +144,24 @@
             return;
         }
 
+        // F12.3: Collect 2FA settings
+        var habilitado2FA = $('uHabilitar2FA').checked;
+        var prefijo2FA = $('u2FAPais').value;
+        var telefono2FA = $('u2FAPhone').value.trim();
+
         if (isEdit) {
+            // Save 2FA settings directly to Firestore profile
+            var twoFaData = { habilitado2FA: habilitado2FA };
+            if (habilitado2FA && telefono2FA) {
+                twoFaData.prefijo2FA = prefijo2FA;
+                twoFaData.telefono2FA = telefono2FA;
+            } else {
+                twoFaData.prefijo2FA = '';
+                twoFaData.telefono2FA = '';
+                twoFaData.habilitado2FA = false;
+            }
+            window.db.collection('usuarios').doc(originalUid).update(twoFaData).catch(function() {});
+
             var updateUserRole = window.functions.httpsCallable('updateUserRoleV2');
             updateUserRole({ uid: originalUid, nombre: nombre, rol: rol })
                 .then(function(result) {

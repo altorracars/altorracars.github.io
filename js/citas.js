@@ -185,21 +185,47 @@ class AppointmentSystem {
                         </div>' : '') + '\
                     <form id="appointmentForm" class="appointment-form">\
                         <div class="form-section">\
+                            <label class="form-section-label">Que te interesa?</label>\
+                            <div class="appointment-form-group">\
+                                <select name="tipo" class="form-input" style="padding:10px;font-size:0.95rem;">\
+                                    <option value="test_drive">Prueba de manejo (Test Drive)</option>\
+                                    <option value="compra">Quiero comprar este vehiculo</option>\
+                                    <option value="consulta_vehiculo">Consulta sobre este vehiculo</option>\
+                                    <option value="llamada">Agendar una llamada</option>\
+                                </select>\
+                            </div>\
+                        </div>\
+                        <div class="form-section">\
                             <label class="form-section-label">Tus datos</label>\
                             <div class="appointment-form-group">\
                                 <label class="form-label required">Nombre completo</label>\
                                 <input type="text" name="nombre" class="form-input" required placeholder="Ej: Juan Perez">\
                             </div>\
                             <div class="appointment-form-row">\
+                                <div class="appointment-form-group" style="flex:0 0 110px;">\
+                                    <label class="form-label required">Pais</label>\
+                                    <select name="pais" class="form-input" style="padding:10px;">\
+                                        <option value="+57">CO +57</option>\
+                                        <option value="+58">VE +58</option>\
+                                        <option value="+593">EC +593</option>\
+                                        <option value="+507">PA +507</option>\
+                                        <option value="+52">MX +52</option>\
+                                        <option value="+1">US +1</option>\
+                                        <option value="+51">PE +51</option>\
+                                        <option value="+56">CL +56</option>\
+                                        <option value="+54">AR +54</option>\
+                                        <option value="+34">ES +34</option>\
+                                    </select>\
+                                </div>\
                                 <div class="appointment-form-group">\
                                     <label class="form-label required">WhatsApp</label>\
                                     <input type="tel" name="telefono" class="form-input" required placeholder="3001234567">\
-                                    <span class="form-hint">Se requiere WhatsApp para ser contactado y confirmar la cita</span>\
                                 </div>\
-                                <div class="appointment-form-group">\
-                                    <label class="form-label">Email</label>\
-                                    <input type="email" name="email" class="form-input" placeholder="correo@ejemplo.com">\
-                                </div>\
+                            </div>\
+                            <div class="appointment-form-group">\
+                                <label class="form-label">Email</label>\
+                                <input type="email" name="email" class="form-input" placeholder="correo@ejemplo.com">\
+                                <span class="form-hint">Te notificaremos por correo electronico y WhatsApp</span>\
                             </div>\
                         </div>\
                         <div class="form-section">\
@@ -370,7 +396,9 @@ class AppointmentSystem {
 
         var nombre = formData.get('nombre');
         var telefono = formData.get('telefono');
+        var prefijoPais = formData.get('pais') || '+57';
         var email = formData.get('email') || 'No proporcionado';
+        var tipo = formData.get('tipo') || 'consulta_vehiculo';
         var fecha = formData.get('fecha');
         var hora = formData.get('hora');
         var comentarios = formData.get('comentarios') || 'Ninguno';
@@ -382,16 +410,19 @@ class AppointmentSystem {
             submitBtn.textContent = 'Reservando...';
         }
 
-        // Atomic booking: reserve the slot first, then save the appointment
+        // Atomic booking: reserve the slot first, then save the solicitud
         this.bookSlotAtomically(fecha, hora).then(function() {
-            // Slot reserved successfully, now save the full appointment
             return self.saveAppointmentToFirestore({
                 nombre: nombre,
                 whatsapp: telefono,
                 telefono: telefono,
+                prefijoPais: prefijoPais,
                 email: email,
+                tipo: tipo,
+                origen: 'vehiculo',
                 fecha: fecha,
                 hora: hora,
+                requiereCita: true,
                 comentarios: comentarios,
                 vehiculo: vehicleInfo.marca ? (vehicleInfo.marca + ' ' + vehicleInfo.modelo + ' ' + (vehicleInfo.year || '')) : '',
                 vehiculoId: vehicleInfo.id || '',
@@ -508,7 +539,7 @@ class AppointmentSystem {
             console.error('[Citas] Firestore no inicializado');
             return Promise.reject(new Error('FIRESTORE_NOT_READY'));
         }
-        return window.db.collection('citas').add(data);
+        return window.db.collection('solicitudes').add(data);
     }
 
     // ===== EVENT LISTENERS GLOBALES =====

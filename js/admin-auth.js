@@ -57,11 +57,218 @@
         return (Date.now() - start) > AP.SESSION_MAX_MS;
     }
 
-    // ========== F12.3: 2FA STATE ==========
+    // ========== F12.3: 2FA STATE + TRUSTED DEVICES ==========
     var _2faVerificationId = null;
     var _2faPendingUser = null;
     var _2faRecaptchaVerifier = null;
+    var TRUST_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
 
+    // ── Trusted Device Helpers ──────────────────────────────
+    function generateDeviceToken() {
+        var arr = new Uint8Array(32);
+        crypto.getRandomValues(arr);
+        return Array.from(arr, function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    }
+
+    function getDeviceInfo() {
+        var ua = navigator.userAgent;
+        var browser = 'Desconocido';
+        if (ua.indexOf('Edg/') > -1) browser = 'Edge';
+        else if (ua.indexOf('OPR/') > -1 || ua.indexOf('Opera') > -1) browser = 'Opera';
+        else if (ua.indexOf('Chrome/') > -1) browser = 'Chrome';
+        else if (ua.indexOf('Safari/') > -1) browser = 'Safari';
+        else if (ua.indexOf('Firefox/') > -1) browser = 'Firefox';
+
+        var os = 'Desconocido';
+        if (ua.indexOf('Windows') > -1) os = 'Windows';
+        else if (ua.indexOf('Mac OS') > -1) os = 'macOS';
+        else if (ua.indexOf('Android') > -1) os = 'Android';
+        else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) os = 'iOS';
+        else if (ua.indexOf('Linux') > -1) os = 'Linux';
+
+        return { browser: browser, os: os, userAgent: ua.substring(0, 200) };
+    }
+
+    function getTrustKey(uid) {
+        return 'ac_2fa_trust_' + uid;
+    }
+
+    function isDeviceTrusted(uid, trustedDevices) {
+        try {
+            var stored = JSON.parse(localStorage.getItem(getTrustKey(uid)));
+            if (!stored || !stored.token || !stored.expires) return false;
+            if (Date.now() > stored.expires) {
+                localStorage.removeItem(getTrustKey(uid));
+                return false;
+            }
+            // Verify token exists in Firestore list
+            if (!trustedDevices || !trustedDevices.length) return false;
+            var match = trustedDevices.find(function(d) { return d.token === stored.token && d.expiresAt > Date.now(); });
+            return !!match;
+        } catch (e) { return false; }
+    }
+
+    function saveDeviceTrust(uid) {
+        var token = generateDeviceToken();
+        var now = Date.now();
+        var expires = now + TRUST_DURATION_MS;
+        var device = getDeviceInfo();
+
+        // Save to localStorage
+        localStorage.setItem(getTrustKey(uid), JSON.stringify({
+            token: token,
+            expires: expires
+        }));
+
+        // Save to Firestore (add to trustedDevices array)
+        var deviceEntry = {
+            token: token,
+            browser: device.browser,
+            os: device.os,
+            createdAt: now,
+            expiresAt: expires,
+            lastUsed: now
+        };
+
+        return window.db.collection('usuarios').doc(uid).get().then(function(doc) {
+            var existing = (doc.exists && doc.data().trustedDevices) || [];
+            // Remove expired devices while we're at it
+            var active = existing.filter(function(d) { return d.expiresAt > now; });
+            active.push(deviceEntry);
+            return window.db.collection('usuarios').doc(uid).update({ trustedDevices: active });
+        });
+    }
+
+    function updateDeviceLastUsed(uid) {
+        try {
+            var stored = JSON.parse(localStorage.getItem(getTrustKey(uid)));
+            if (!stored || !stored.token) return;
+            window.db.collection('usuarios').doc(uid).get().then(function(doc) {
+                if (!doc.exists) return;
+                var devices = doc.data().trustedDevices || [];
+                var updated = false;
+                devices.forEach(function(d) {
+                    if (d.token === stored.token) { d.lastUsed = Date.now(); updated = true; }
+                });
+                if (updated) window.db.collection('usuarios').doc(uid).update({ trustedDevices: devices });
+            });
+        } catch (e) { /* ignore */ }
+    }
+
+    function revokeDevice(uid, token) {
+        return window.db.collection('usuarios').doc(uid).get().then(function(doc) {
+            if (!doc.exists) return;
+            var devices = (doc.data().trustedDevices || []).filter(function(d) { return d.token !== token; });
+            return window.db.collection('usuarios').doc(uid).update({ trustedDevices: devices });
+        }).then(function() {
+            // If we revoked our own device, clear localStorage
+            try {
+                var stored = JSON.parse(localStorage.getItem(getTrustKey(uid)));
+                if (stored && stored.token === token) localStorage.removeItem(getTrustKey(uid));
+            } catch (e) { /* ignore */ }
+        });
+    }
+
+    function revokeAllDevices(uid) {
+        return window.db.collection('usuarios').doc(uid).update({ trustedDevices: [] }).then(function() {
+            localStorage.removeItem(getTrustKey(uid));
+        });
+    }
+
+    function renderTrustedDevices() {
+        var listEl = $('trustedDevicesList');
+        var revokeAllBtn = $('btnRevokeAllDevices');
+        if (!listEl) return;
+
+        var user = window.auth.currentUser;
+        if (!user) return;
+        var uid = user.uid;
+
+        window.db.collection('usuarios').doc(uid).get().then(function(doc) {
+            if (!doc.exists) return;
+            var devices = (doc.data().trustedDevices || []).filter(function(d) { return d.expiresAt > Date.now(); });
+
+            if (!devices.length) {
+                listEl.innerHTML = '<div style="text-align:center;color:var(--admin-text-muted);padding:0.75rem;font-size:0.85rem;">No hay dispositivos de confianza</div>';
+                if (revokeAllBtn) revokeAllBtn.style.display = 'none';
+                return;
+            }
+
+            // Check which is the current device
+            var currentToken = null;
+            try {
+                var stored = JSON.parse(localStorage.getItem(getTrustKey(uid)));
+                if (stored) currentToken = stored.token;
+            } catch (e) { /* ignore */ }
+
+            var icons = { Chrome: '🌐', Firefox: '🦊', Safari: '🧭', Edge: '🔷', Opera: '🔴', Desconocido: '💻' };
+            var html = '';
+            devices.sort(function(a, b) { return (b.lastUsed || b.createdAt) - (a.lastUsed || a.createdAt); });
+            devices.forEach(function(d) {
+                var isCurrent = d.token === currentToken;
+                var icon = icons[d.browser] || icons.Desconocido;
+                var daysLeft = Math.ceil((d.expiresAt - Date.now()) / (24 * 60 * 60 * 1000));
+                var lastUsedStr = d.lastUsed ? new Date(d.lastUsed).toLocaleDateString('es-CO', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'N/A';
+
+                html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--admin-border);">' +
+                    '<div style="font-size:1.5rem;flex-shrink:0;">' + icon + '</div>' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-weight:600;font-size:0.85rem;">' + d.browser + ' en ' + d.os +
+                            (isCurrent ? ' <span style="color:var(--admin-success,#3fb950);font-size:0.75rem;font-weight:400;">(este dispositivo)</span>' : '') +
+                        '</div>' +
+                        '<div style="font-size:0.75rem;color:var(--admin-text-muted);">Ultimo uso: ' + lastUsedStr + ' · Expira en ' + daysLeft + ' dia' + (daysLeft !== 1 ? 's' : '') + '</div>' +
+                    '</div>' +
+                    '<button class="btn btn-ghost btn-sm" data-action="revokeDevice" data-token="' + d.token + '" style="color:var(--admin-danger);font-size:0.75rem;flex-shrink:0;">Revocar</button>' +
+                '</div>';
+            });
+
+            listEl.innerHTML = html;
+            if (revokeAllBtn) revokeAllBtn.style.display = devices.length > 1 ? '' : 'none';
+        });
+    }
+
+    // Delegated click for revoke buttons
+    var trustedDevicesListEl = $('trustedDevicesList');
+    if (trustedDevicesListEl) {
+        trustedDevicesListEl.addEventListener('click', function(e) {
+            var btn = e.target.closest ? e.target.closest('[data-action="revokeDevice"]') : null;
+            if (!btn) return;
+            var token = btn.getAttribute('data-token');
+            var uid = window.auth.currentUser ? window.auth.currentUser.uid : null;
+            if (!uid || !token) return;
+            btn.disabled = true;
+            btn.textContent = '...';
+            revokeDevice(uid, token).then(function() {
+                AP.toast('Dispositivo revocado', 'success');
+                renderTrustedDevices();
+            }).catch(function() {
+                AP.toast('Error al revocar', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Revocar';
+            });
+        });
+    }
+
+    // Revoke all button
+    var revokeAllBtn = $('btnRevokeAllDevices');
+    if (revokeAllBtn) {
+        revokeAllBtn.addEventListener('click', function() {
+            if (!confirm('¿Revocar TODOS los dispositivos de confianza?\n\nEn el proximo inicio de sesion deberas verificar con SMS en todos los dispositivos.')) return;
+            var uid = window.auth.currentUser ? window.auth.currentUser.uid : null;
+            if (!uid) return;
+            revokeAllBtn.disabled = true;
+            revokeAllDevices(uid).then(function() {
+                AP.toast('Todos los dispositivos revocados', 'success');
+                renderTrustedDevices();
+            }).catch(function() {
+                AP.toast('Error al revocar', 'error');
+            }).finally(function() {
+                revokeAllBtn.disabled = false;
+            });
+        });
+    }
+
+    // ── 2FA Core ────────────────────────────────────────────
     function init2FARecaptcha() {
         if (_2faRecaptchaVerifier) return;
         _2faRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
@@ -89,6 +296,8 @@
         $('twoFaError').style.display = 'none';
         $('twoFaBtn').disabled = false;
         $('twoFaBtn').textContent = 'Verificar';
+        var trustCheck = $('twoFaTrustDevice');
+        if (trustCheck) trustCheck.checked = true;
 
         var masked = phone.slice(0, -4).replace(/./g, '*') + phone.slice(-4);
         $('twoFaInfo').textContent = 'Enviamos un codigo de verificacion al numero ' + masked;
@@ -104,7 +313,6 @@
     function verify2FACode(code) {
         if (!_2faVerificationId) return Promise.reject(new Error('No verification ID'));
         var credential = firebase.auth.PhoneAuthProvider.credential(_2faVerificationId, code);
-        // Validate the code by updating phone on auth user (idempotent if same phone)
         return _2faPendingUser.updatePhoneNumber(credential);
     }
 
@@ -122,15 +330,27 @@
             var code = $('twoFaCode').value.trim();
             if (code.length !== 6) return;
 
+            var pendingUser = _2faPendingUser;
             $('twoFaBtn').disabled = true;
             $('twoFaBtn').textContent = 'Verificando...';
             $('twoFaError').style.display = 'none';
 
             verify2FACode(code).then(function() {
                 _2faVerified = true;
+
+                // Save trusted device if checkbox is checked
+                var trustCheck = $('twoFaTrustDevice');
+                var shouldTrust = trustCheck && trustCheck.checked;
+                var uid = pendingUser ? pendingUser.uid : (window.auth.currentUser ? window.auth.currentUser.uid : null);
+
+                if (shouldTrust && uid) {
+                    saveDeviceTrust(uid).catch(function(err) {
+                        console.warn('[2FA] Error saving device trust:', err);
+                    });
+                }
+
                 hide2FAScreen();
-                // Re-trigger profile load → showAdmin (now _2faVerified=true skips 2FA check)
-                loadUserProfile(_2faPendingUser || window.auth.currentUser);
+                loadUserProfile(pendingUser || window.auth.currentUser);
             }).catch(function(err) {
                 $('twoFaBtn').disabled = false;
                 $('twoFaBtn').textContent = 'Verificar';
@@ -156,7 +376,6 @@
             var phone = (profile.prefijo2FA || '+57') + profile.telefono2FA;
             twoFaResend.textContent = 'Enviando...';
             twoFaResend.style.pointerEvents = 'none';
-            // Reset reCAPTCHA for re-send
             if (_2faRecaptchaVerifier) {
                 _2faRecaptchaVerifier.clear();
                 _2faRecaptchaVerifier = null;
@@ -279,6 +498,12 @@
 
                     // F12.3: Check if 2FA is required
                     if (AP.currentUserProfile.habilitado2FA && AP.currentUserProfile.telefono2FA && !_2faVerified) {
+                        // Check if this device is trusted (skip SMS)
+                        if (isDeviceTrusted(authUser.uid, AP.currentUserProfile.trustedDevices)) {
+                            updateDeviceLastUsed(authUser.uid);
+                            showAdmin(authUser);
+                            return;
+                        }
                         var phone = (AP.currentUserProfile.prefijo2FA || '+57') + AP.currentUserProfile.telefono2FA;
                         show2FAScreen(authUser, phone);
                         return;
@@ -361,6 +586,12 @@
         applyRolePermissions();
         AP.loadData();
         loadActiveSessions();
+        // Show trusted devices card only if 2FA is active for this user
+        var tdCard = $('trustedDevicesCard');
+        if (tdCard) {
+            tdCard.style.display = (AP.currentUserProfile && AP.currentUserProfile.habilitado2FA) ? '' : 'none';
+        }
+        renderTrustedDevices();
     }
 
     // ========== F12.7: RTDB PRESENCE (ACTIVE SESSIONS) ==========
@@ -433,6 +664,7 @@
 
     AP.startPresence = startPresence;
     AP.stopPresence = stopPresence;
+    AP.renderTrustedDevices = renderTrustedDevices;
     AP.loadActiveSessions = loadActiveSessions;
 
     function applyRolePermissions() {

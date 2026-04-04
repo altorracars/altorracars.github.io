@@ -78,6 +78,12 @@
                 <input type="text" id="twoFaCode" class="form-input" required maxlength="6" pattern="[0-9]{6}" placeholder="123456" autocomplete="one-time-code" inputmode="numeric" style="text-align:center;font-size:1.4rem;letter-spacing:0.5rem;">
             </div>
             <div id="twoFaError" style="color:var(--admin-danger);font-size:0.8rem;margin-bottom:0.75rem;display:none;text-align:center;"></div>
+            <div class="form-group" style="margin-bottom:0.75rem;">
+                <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:var(--admin-text-muted);cursor:pointer;">
+                    <input type="checkbox" id="twoFaTrustDevice" checked style="width:auto;">
+                    Confiar en este dispositivo por 30 dias
+                </label>
+            </div>
             <button type="submit" class="btn btn-primary btn-block" id="twoFaBtn">Verificar</button>
             <div style="text-align:center;margin-top:0.75rem;">
                 <a href="#" id="twoFaResend" style="color:var(--admin-accent,#58a6ff);font-size:0.8rem;text-decoration:none;">Reenviar codigo</a>
@@ -1212,6 +1218,19 @@
                     </div>
                     <button type="submit" class="btn btn-primary" id="btnChangePassword">Actualizar Contrasena</button>
                 </form>
+            </div>
+
+            <!-- TRUSTED DEVICES / ACTIVE SESSIONS -->
+            <div class="stat-card card-narrow mt-lg" id="trustedDevicesCard">
+                <h3 style="margin-bottom: 0.5rem; display:flex; align-items:center; gap:0.5rem;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    Dispositivos de Confianza
+                </h3>
+                <p class="admin-hint" style="margin-bottom:0.75rem;">Estos dispositivos pueden acceder sin verificacion SMS durante 30 dias. Si no reconoces alguno, revocalo de inmediato.</p>
+                <div id="trustedDevicesList" style="margin-bottom:0.75rem;">
+                    <div style="text-align:center;color:var(--admin-text-muted);padding:1rem;font-size:0.85rem;">Cargando...</div>
+                </div>
+                <button class="btn btn-danger btn-sm" id="btnRevokeAllDevices" style="display:none;">Revocar todos los dispositivos</button>
             </div>
 
             <!-- BACKUP & RESTORE -->

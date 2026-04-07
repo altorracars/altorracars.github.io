@@ -4,39 +4,44 @@
     var AP = window.AP;
     var $ = AP.$;
 
-    // ========== RATE LIMITING (localStorage + Firestore block) ==========
-    var RL_ATTEMPTS_KEY = 'ac_login_attempts';
-    var RL_LOCKOUT_KEY  = 'ac_login_lockout';
+    // ========== RATE LIMITING (per-email in localStorage + Firestore block) ==========
     var RL_MAX_ATTEMPTS = 5;
-    var RL_LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutos (bloqueo temporal local)
 
-    function getRateLimitState() {
-        var lockoutUntil = parseInt(localStorage.getItem(RL_LOCKOUT_KEY) || '0', 10);
-        if (Date.now() < lockoutUntil) {
-            return { locked: true, remainingMs: lockoutUntil - Date.now() };
-        }
-        var attempts = parseInt(localStorage.getItem(RL_ATTEMPTS_KEY) || '0', 10);
-        return { locked: false, attempts: attempts };
+    function rlKey(email) {
+        // Encode email to create a safe localStorage key
+        var safe = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        return 'ac_rl_' + safe;
+    }
+
+    function getRateLimitState(email) {
+        if (!email) return { locked: false, attempts: 0 };
+        try {
+            var data = JSON.parse(localStorage.getItem(rlKey(email)));
+            if (!data) return { locked: false, attempts: 0 };
+            if (data.blocked) return { locked: true };
+            return { locked: false, attempts: data.attempts || 0 };
+        } catch (e) { return { locked: false, attempts: 0 }; }
     }
 
     function recordFailedAttempt(email) {
-        var attempts = parseInt(localStorage.getItem(RL_ATTEMPTS_KEY) || '0', 10) + 1;
+        if (!email) return 0;
+        var key = rlKey(email);
+        var data;
+        try { data = JSON.parse(localStorage.getItem(key)) || {}; } catch (e) { data = {}; }
+        var attempts = (data.attempts || 0) + 1;
+
         if (attempts >= RL_MAX_ATTEMPTS) {
-            localStorage.setItem(RL_LOCKOUT_KEY, String(Date.now() + RL_LOCKOUT_MS));
-            localStorage.removeItem(RL_ATTEMPTS_KEY);
+            localStorage.setItem(key, JSON.stringify({ blocked: true, attempts: attempts }));
             // Bloquear permanentemente en Firestore
-            if (email && window.db) {
-                blockUserByEmail(email);
-            }
+            if (window.db) blockUserByEmail(email);
         } else {
-            localStorage.setItem(RL_ATTEMPTS_KEY, String(attempts));
+            localStorage.setItem(key, JSON.stringify({ attempts: attempts }));
         }
         return attempts;
     }
 
-    function clearRateLimit() {
-        localStorage.removeItem(RL_ATTEMPTS_KEY);
-        localStorage.removeItem(RL_LOCKOUT_KEY);
+    function clearRateLimit(email) {
+        if (email) localStorage.removeItem(rlKey(email));
     }
 
     function formatMs(ms) {
@@ -722,7 +727,11 @@
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
         $('loginForm').reset();
-        updateRateLimitUI();
+        // Clear rate limit UI on fresh login screen (per-email check happens on submit)
+        var rlEl = $('loginRateLimit');
+        if (rlEl) rlEl.style.display = 'none';
+        var errEl = $('loginError');
+        if (errEl) errEl.style.display = 'none';
     }
 
     function showAdmin(user) {
@@ -855,15 +864,16 @@
         btn.innerHTML = 'Iniciar Sesion';
     }
 
-    function updateRateLimitUI() {
+    function updateRateLimitUI(email) {
         var rateLimitEl = $('loginRateLimit');
         var btn         = $('loginBtn');
         if (!rateLimitEl) return;
-        var state = getRateLimitState();
+        var state = getRateLimitState(email);
         if (state.locked) {
             rateLimitEl.style.display = 'block';
-            rateLimitEl.textContent   = 'Cuenta bloqueada por seguridad. Comunicate con el administrador para desbloquear tu acceso.';
-            btn.disabled = true;
+            rateLimitEl.textContent   = 'Esta cuenta ha sido bloqueada por seguridad. Comunicate con el administrador.';
+            // Don't disable the button — other accounts can still log in
+            btn.disabled = false;
         } else {
             rateLimitEl.style.display = 'none';
             btn.disabled = false;
@@ -872,6 +882,14 @@
                 rateLimitEl.textContent   = 'Intentos fallidos: ' + state.attempts + '/' + RL_MAX_ATTEMPTS + '. Siguiente bloqueo tras ' + (RL_MAX_ATTEMPTS - state.attempts) + ' intento(s) mas.';
             }
         }
+    }
+
+    // Update rate limit UI when email field changes
+    var loginEmailField = $('loginEmail');
+    if (loginEmailField) {
+        loginEmailField.addEventListener('blur', function() {
+            updateRateLimitUI(this.value.trim());
+        });
     }
 
     // Mostrar/ocultar contraseña
@@ -899,10 +917,10 @@
         var btn     = $('loginBtn');
         if (!email || !pass) return;
 
-        // Verificar rate limit antes de intentar
-        var rlState = getRateLimitState();
+        // Verificar rate limit para este email específico
+        var rlState = getRateLimitState(email);
         if (rlState.locked) {
-            updateRateLimitUI();
+            updateRateLimitUI(email);
             return;
         }
 
@@ -921,7 +939,7 @@
             })
             .then(function() {
                 clearTimeout(loginTimeout);
-                clearRateLimit(); // login exitoso → resetear contador
+                clearRateLimit(email); // login exitoso → resetear contador
             })
             .catch(function(error) {
                 clearTimeout(loginTimeout);
@@ -929,7 +947,7 @@
                 errEl.style.display = 'block';
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                     var failCount = recordFailedAttempt(email);
-                    updateRateLimitUI();
+                    updateRateLimitUI(email);
                     if (failCount >= RL_MAX_ATTEMPTS) {
                         errEl.textContent = 'Cuenta bloqueada por seguridad. Comunicate con el administrador.';
                     } else {
@@ -1175,7 +1193,6 @@
         el.setAttribute('aria-required', 'true');
     });
 
-    // Inicializar UI de rate limit y arrancar auth
-    updateRateLimitUI();
+    // Arrancar auth (rate limit UI se actualiza per-email al hacer submit)
     initAuth();
 })();

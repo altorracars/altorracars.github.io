@@ -24,20 +24,27 @@
         sorted.forEach(function(u) {
             var rolLabel = u.rol === 'super_admin' ? 'Super Admin' : u.rol === 'editor' ? 'Editor' : 'Viewer';
             var rolClass = u.rol === 'super_admin' ? 'badge-destacado' : u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
-            var estadoClass = u.estado === 'activo' ? 'badge-nuevo' : 'badge-usado';
+            var isBlocked = !!u.bloqueado;
+            var estadoLabel = isBlocked ? 'BLOQUEADO' : (u.estado || 'activo');
+            var estadoClass = isBlocked ? 'badge-danger' : (u.estado === 'activo' ? 'badge-nuevo' : 'badge-usado');
             var isSelf = u._docId === currentUid;
 
             var twoFaBadge = u.habilitado2FA ? ' <span class="badge badge-destacado" style="font-size:0.65rem;" title="2FA activo">2FA</span>' : '';
 
-            html += '<tr>' +
+            var actionsHtml = '<button class="btn btn-ghost btn-sm" data-action="editUser" data-id="' + AP.escapeHtml(u._docId) + '">Editar</button> ';
+            if (isBlocked && !isSelf) {
+                actionsHtml += '<button class="btn btn-primary btn-sm" data-action="unlockUser" data-id="' + AP.escapeHtml(u._docId) + '" style="font-size:0.7rem;">Desbloquear</button> ';
+            }
+            if (!isSelf) {
+                actionsHtml += '<button class="btn btn-danger btn-sm" data-action="deleteUser" data-id="' + AP.escapeHtml(u._docId) + '">Eliminar</button>';
+            }
+
+            html += '<tr' + (isBlocked ? ' style="opacity:0.7;background:rgba(248,81,73,0.05);"' : '') + '>' +
                 '<td><strong>' + (u.nombre || '-') + '</strong>' + (isSelf ? ' <small style="color:var(--admin-gold);">(tu)</small>' : '') + twoFaBadge + '</td>' +
                 '<td>' + (u.email || '-') + '</td>' +
                 '<td><span class="badge ' + rolClass + '">' + rolLabel + '</span></td>' +
-                '<td><span class="badge ' + estadoClass + '">' + (u.estado || 'activo') + '</span></td>' +
-                '<td>' +
-                    '<button class="btn btn-ghost btn-sm" data-action="editUser" data-id="' + AP.escapeHtml(u._docId) + '">Editar</button> ' +
-                    (isSelf ? '' : '<button class="btn btn-danger btn-sm" data-action="deleteUser" data-id="' + AP.escapeHtml(u._docId) + '">Eliminar</button>') +
-                '</td>' +
+                '<td><span class="badge ' + estadoClass + '">' + estadoLabel + '</span></td>' +
+                '<td>' + actionsHtml + '</td>' +
             '</tr>';
         });
 
@@ -249,6 +256,22 @@
             var id = btn.getAttribute('data-id');
             if (btn.getAttribute('data-action') === 'editUser') editUser(id);
             else if (btn.getAttribute('data-action') === 'deleteUser') deleteUserFn(id);
+            else if (btn.getAttribute('data-action') === 'unlockUser') unlockUserFn(id);
+        });
+    }
+
+    // ========== UNLOCK USER ==========
+    function unlockUserFn(uid) {
+        if (!AP.canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        var u = AP.users.find(function(x) { return x._docId === uid; });
+        if (!u) return;
+        if (!confirm('¿Desbloquear la cuenta de "' + (u.nombre || u.email) + '"?\n\nEl usuario podra iniciar sesion nuevamente.')) return;
+        AP.unblockUser(uid).then(function() {
+            AP.toast('Usuario desbloqueado: ' + (u.nombre || u.email), 'success');
+            AP.writeAuditLog('user_unlock', 'usuario ' + (u.nombre || u.email), u.email);
+            AP.loadUsers();
+        }).catch(function(err) {
+            AP.toast('Error al desbloquear: ' + err.message, 'error');
         });
     }
 

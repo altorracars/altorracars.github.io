@@ -4,11 +4,11 @@
     var AP = window.AP;
     var $ = AP.$;
 
-    // ========== RATE LIMITING (localStorage) ==========
+    // ========== RATE LIMITING (localStorage + Firestore block) ==========
     var RL_ATTEMPTS_KEY = 'ac_login_attempts';
     var RL_LOCKOUT_KEY  = 'ac_login_lockout';
     var RL_MAX_ATTEMPTS = 5;
-    var RL_LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutos
+    var RL_LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutos (bloqueo temporal local)
 
     function getRateLimitState() {
         var lockoutUntil = parseInt(localStorage.getItem(RL_LOCKOUT_KEY) || '0', 10);
@@ -19,11 +19,15 @@
         return { locked: false, attempts: attempts };
     }
 
-    function recordFailedAttempt() {
+    function recordFailedAttempt(email) {
         var attempts = parseInt(localStorage.getItem(RL_ATTEMPTS_KEY) || '0', 10) + 1;
         if (attempts >= RL_MAX_ATTEMPTS) {
             localStorage.setItem(RL_LOCKOUT_KEY, String(Date.now() + RL_LOCKOUT_MS));
             localStorage.removeItem(RL_ATTEMPTS_KEY);
+            // Bloquear permanentemente en Firestore
+            if (email && window.db) {
+                blockUserByEmail(email);
+            }
         } else {
             localStorage.setItem(RL_ATTEMPTS_KEY, String(attempts));
         }
@@ -39,6 +43,30 @@
         var mins = Math.ceil(ms / 60000);
         return mins + ' minuto' + (mins !== 1 ? 's' : '');
     }
+
+    // Bloquear usuario en Firestore buscando por email
+    function blockUserByEmail(email) {
+        window.db.collection('usuarios').where('email', '==', email).get()
+            .then(function(snap) {
+                snap.forEach(function(doc) {
+                    doc.ref.update({
+                        bloqueado: true,
+                        bloqueadoEn: new Date().toISOString(),
+                        motivoBloqueo: 'Demasiados intentos fallidos de inicio de sesion'
+                    });
+                });
+            }).catch(function() { /* ignore errors silently */ });
+    }
+
+    // Desbloquear usuario (usado por super_admin desde admin-users)
+    function unblockUser(uid) {
+        return window.db.collection('usuarios').doc(uid).update({
+            bloqueado: false,
+            bloqueadoEn: '',
+            motivoBloqueo: ''
+        });
+    }
+    AP.unblockUser = unblockUser;
 
     // ========== SESSION EXPIRY (8h absoluta) ==========
     var SESSION_START_KEY = 'ac_session_start';
@@ -405,6 +433,139 @@
         });
     }
 
+    // ========== SUPER ADMIN SELF-UNLOCK ==========
+    var _unlockVerificationId = null;
+    var _unlockPendingUser = null;
+    var _unlockRecaptchaVerifier = null;
+
+    function showSuperAdminUnlock(user) {
+        _unlockPendingUser = user;
+        $('loginScreen').style.display = 'none';
+        $('adminPanel').style.display = 'none';
+        $('twoFaScreen').style.display = 'none';
+        $('unlockScreen').style.display = 'flex';
+        $('unlockCode').value = '';
+        $('unlockError').style.display = 'none';
+        $('unlockBtn').disabled = false;
+        $('unlockBtn').textContent = 'Desbloquear cuenta';
+
+        var phone = (AP.currentUserProfile.prefijo2FA || '+57') + AP.currentUserProfile.telefono2FA;
+        var masked = phone.slice(0, -4).replace(/./g, '*') + phone.slice(-4);
+        $('unlockInfo').textContent = 'Tu cuenta fue bloqueada por seguridad. Enviamos un codigo de verificacion al numero ' + masked + ' para confirmar tu identidad.';
+
+        sendUnlockCode(phone).then(function() {
+            $('unlockCode').focus();
+        }).catch(function(err) {
+            $('unlockError').style.display = 'block';
+            $('unlockError').textContent = 'Error al enviar SMS: ' + err.message;
+        });
+    }
+
+    function sendUnlockCode(phoneNumber) {
+        if (!_unlockRecaptchaVerifier) {
+            _unlockRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('unlock-recaptcha-container', {
+                size: 'invisible',
+                callback: function() { /* solved */ }
+            });
+        }
+        var provider = new firebase.auth.PhoneAuthProvider();
+        return provider.verifyPhoneNumber(phoneNumber, _unlockRecaptchaVerifier)
+            .then(function(verificationId) {
+                _unlockVerificationId = verificationId;
+                return verificationId;
+            });
+    }
+
+    function hideUnlockScreen() {
+        $('unlockScreen').style.display = 'none';
+        _unlockVerificationId = null;
+        _unlockPendingUser = null;
+    }
+
+    // Unlock form submit
+    var unlockForm = $('unlockForm');
+    if (unlockForm) {
+        unlockForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var code = $('unlockCode').value.trim();
+            if (code.length !== 6) return;
+
+            var pendingUser = _unlockPendingUser;
+            $('unlockBtn').disabled = true;
+            $('unlockBtn').textContent = 'Verificando...';
+            $('unlockError').style.display = 'none';
+
+            if (!_unlockVerificationId) {
+                $('unlockError').style.display = 'block';
+                $('unlockError').textContent = 'No hay codigo pendiente. Haz clic en reenviar.';
+                $('unlockBtn').disabled = false;
+                $('unlockBtn').textContent = 'Desbloquear cuenta';
+                return;
+            }
+
+            var credential = firebase.auth.PhoneAuthProvider.credential(_unlockVerificationId, code);
+            pendingUser.updatePhoneNumber(credential).then(function() {
+                // Code verified — unblock in Firestore
+                return unblockUser(pendingUser.uid);
+            }).then(function() {
+                clearRateLimit();
+                hideUnlockScreen();
+                AP.toast('Cuenta desbloqueada exitosamente', 'success');
+                _2faVerified = true;
+                loadUserProfile(pendingUser);
+            }).catch(function(err) {
+                $('unlockBtn').disabled = false;
+                $('unlockBtn').textContent = 'Desbloquear cuenta';
+                $('unlockError').style.display = 'block';
+                if (err.code === 'auth/invalid-verification-code') {
+                    $('unlockError').textContent = 'Codigo incorrecto. Intenta de nuevo.';
+                } else if (err.code === 'auth/code-expired') {
+                    $('unlockError').textContent = 'Codigo expirado. Haz clic en "Reenviar codigo".';
+                } else {
+                    $('unlockError').textContent = 'Error: ' + err.message;
+                }
+            });
+        });
+    }
+
+    // Resend unlock code
+    var unlockResend = $('unlockResend');
+    if (unlockResend) {
+        unlockResend.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!AP.currentUserProfile || !AP.currentUserProfile.telefono2FA) return;
+            var phone = (AP.currentUserProfile.prefijo2FA || '+57') + AP.currentUserProfile.telefono2FA;
+            unlockResend.textContent = 'Enviando...';
+            unlockResend.style.pointerEvents = 'none';
+            if (_unlockRecaptchaVerifier) {
+                _unlockRecaptchaVerifier.clear();
+                _unlockRecaptchaVerifier = null;
+            }
+            sendUnlockCode(phone).then(function() {
+                unlockResend.textContent = 'Codigo reenviado';
+                setTimeout(function() {
+                    unlockResend.textContent = 'Reenviar codigo';
+                    unlockResend.style.pointerEvents = '';
+                }, 5000);
+            }).catch(function(err) {
+                unlockResend.textContent = 'Reenviar codigo';
+                unlockResend.style.pointerEvents = '';
+                $('unlockError').style.display = 'block';
+                $('unlockError').textContent = 'Error: ' + err.message;
+            });
+        });
+    }
+
+    // Cancel unlock → sign out
+    var unlockCancel = $('unlockCancel');
+    if (unlockCancel) {
+        unlockCancel.addEventListener('click', function(e) {
+            e.preventDefault();
+            hideUnlockScreen();
+            window.auth.signOut();
+        });
+    }
+
     // ========== INACTIVITY TRACKING ==========
     function clearInactivityTimers() {
         if (AP.inactivityTimerId)  { clearTimeout(AP.inactivityTimerId);  AP.inactivityTimerId  = null; }
@@ -479,6 +640,7 @@
                             clearSessionStart();
                             stopInactivityTracking();
                             hide2FAScreen();
+                            hideUnlockScreen();
                             showLogin();
                         }
                     });
@@ -495,6 +657,17 @@
                     AP.currentUserProfile = doc.data();
                     AP.currentUserProfile._docId = doc.id;
                     AP.currentUserRole = AP.currentUserProfile.rol;
+
+                    // Check if user is blocked
+                    if (AP.currentUserProfile.bloqueado) {
+                        // Super Admin can self-unlock via SMS
+                        if (AP.currentUserProfile.rol === 'super_admin' && AP.currentUserProfile.telefono2FA) {
+                            showSuperAdminUnlock(authUser);
+                            return;
+                        }
+                        showAccessDenied(authUser.email, authUser.uid, 'Tu cuenta ha sido bloqueada por seguridad.\nComunicate con el administrador para desbloquearla.');
+                        return;
+                    }
 
                     // F12.3: Check if 2FA is required
                     if (AP.currentUserProfile.habilitado2FA && AP.currentUserProfile.telefono2FA && !_2faVerified) {
@@ -534,12 +707,11 @@
         var msg = 'Acceso denegado para ' + email + '.';
         if (reason) msg += '\n' + reason;
         else        msg += '\nNo tienes un perfil de administrador.';
-        if (uid) {
-            msg += '\n\nTu UID: ' + uid;
-            msg += '\nCompartelo con el Super Admin para que te cree un perfil.';
-        }
+        msg += '\n\nContacta al Super Admin para obtener acceso.';
         errEl.style.whiteSpace = 'pre-line';
         errEl.textContent = msg;
+        // Log UID only to console for debugging (never expose to UI)
+        if (uid) console.log('[Auth] Access denied for UID:', uid);
         window.auth.signOut();
     }
 
@@ -690,10 +862,8 @@
         var state = getRateLimitState();
         if (state.locked) {
             rateLimitEl.style.display = 'block';
-            rateLimitEl.textContent   = '🔒 Demasiados intentos fallidos. Espera ' + formatMs(state.remainingMs) + ' antes de intentar de nuevo.';
+            rateLimitEl.textContent   = 'Cuenta bloqueada por seguridad. Comunicate con el administrador para desbloquear tu acceso.';
             btn.disabled = true;
-            // Actualizar countdown cada 30s
-            setTimeout(updateRateLimitUI, 30000);
         } else {
             rateLimitEl.style.display = 'none';
             btn.disabled = false;
@@ -758,9 +928,13 @@
                 resetLoginBtn();
                 errEl.style.display = 'block';
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    recordFailedAttempt();
+                    var failCount = recordFailedAttempt(email);
                     updateRateLimitUI();
-                    errEl.textContent = 'Correo o contrasena incorrectos';
+                    if (failCount >= RL_MAX_ATTEMPTS) {
+                        errEl.textContent = 'Cuenta bloqueada por seguridad. Comunicate con el administrador.';
+                    } else {
+                        errEl.textContent = 'Correo o contrasena incorrectos';
+                    }
                 } else if (error.code === 'auth/too-many-requests') {
                     errEl.textContent = 'Demasiados intentos. Espera un momento.';
                 } else if (error.code === 'auth/network-request-failed') {

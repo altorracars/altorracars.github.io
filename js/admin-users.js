@@ -12,6 +12,27 @@
             return;
         }
 
+        // Check loginAttempts for each user to detect cross-device blocks
+        var emailsToCheck = AP.users.filter(function(u) { return u.email; }).map(function(u) { return u.email; });
+        var blockPromises = emailsToCheck.map(function(email) {
+            var hash = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            return window.db.collection('loginAttempts').doc(hash).get()
+                .then(function(doc) {
+                    return { email: email.toLowerCase(), blocked: doc.exists && doc.data().bloqueado };
+                })
+                .catch(function() { return { email: email.toLowerCase(), blocked: false }; });
+        });
+
+        Promise.all(blockPromises).then(function(blockResults) {
+            var blockMap = {};
+            blockResults.forEach(function(r) { blockMap[r.email] = r.blocked; });
+            _renderUsersTableWithBlocks(blockMap);
+        }).catch(function() {
+            _renderUsersTableWithBlocks({});
+        });
+    }
+
+    function _renderUsersTableWithBlocks(blockMap) {
         var sorted = AP.users.slice();
         if (AP._sorting && AP._sorting.users && AP._sorting.users.col) {
             sorted = AP.sortData(sorted, 'users');
@@ -24,7 +45,8 @@
         sorted.forEach(function(u) {
             var rolLabel = u.rol === 'super_admin' ? 'Super Admin' : u.rol === 'editor' ? 'Editor' : 'Viewer';
             var rolClass = u.rol === 'super_admin' ? 'badge-destacado' : u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
-            var isBlocked = !!u.bloqueado;
+            // Check both usuarios.bloqueado AND loginAttempts
+            var isBlocked = !!u.bloqueado || !!(u.email && blockMap[u.email.toLowerCase()]);
             var estadoLabel = isBlocked ? 'BLOQUEADO' : (u.estado || 'activo');
             var estadoClass = isBlocked ? 'badge-danger' : (u.estado === 'activo' ? 'badge-nuevo' : 'badge-usado');
             var isSelf = u._docId === currentUid;

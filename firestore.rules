@@ -142,6 +142,13 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ========== LOGIN ATTEMPTS (cross-device account locking) ==========
+    match /loginAttempts/{emailHash} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+
     // ========== AUDIT LOG ==========
     match /auditLog/{logId} {
       allow read: if isAuthenticated();

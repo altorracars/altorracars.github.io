@@ -1,19 +1,7 @@
-# robots.txt — ALTORRA CARS
-# https://altorracars.github.io
-
 User-agent: *
 Allow: /
 Disallow: /admin.html
 Disallow: /admin-upload.html
 Disallow: /snippets/
-
-User-agent: Googlebot
-Allow: /
-
-User-agent: Googlebot-Image
-Allow: /multimedia/
-
-User-agent: Bingbot
-Allow: /
 
 Sitemap: https://altorracars.github.io/sitemap.xml

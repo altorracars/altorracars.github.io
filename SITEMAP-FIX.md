@@ -4,7 +4,7 @@
 Google Search Console muestra "No se ha podido leer el sitemap" para `https://altorracars.github.io/sitemap.xml`.
 Bersaglio Jewelry (`bersagliojewelry.co`) se indexó de inmediato; Altorra Cars no.
 
-## Diagnóstico realizado (24 mar 2026)
+## Diagnóstico #1 (24 mar 2026)
 
 ### Causas identificadas y corregidas
 | Problema | Archivo | Fix aplicado |
@@ -16,31 +16,50 @@ Bersaglio Jewelry (`bersagliojewelry.co`) se indexó de inmediato; Altorra Cars 
 | Líneas en blanco entre entradas XML | `sitemap.xml` | Eliminadas |
 | Script de generación inyectaba formato sucio | `generate-vehicles.mjs` | Reescrito `generateSitemap()` |
 
-### Verificaciones realizadas
-- `curl` como Googlebot: HTTP 200, `content-type: application/xml`, 13126 bytes, sin redirects
-- `xmllint --noout sitemap.xml`: XML válido
-- URLs de vehículos y marcas en sitemap: todas retornan HTTP 200
-- `robots.txt` sirve correctamente con directiva `Sitemap:` visible
-- No hay bloqueo de Googlebot en ningún nivel
+**Resultado**: Google Search Console siguió mostrando "No se ha podido obtener" al 8 abr 2026. El fix técnico fue correcto pero Google no reintentó el fetch.
 
-### Descartado como causa
-- **No tener dominio pago** no impide indexación (github.io funciona), pero Google da menor prioridad de crawl a subdominios `.github.io` vs dominios propios
-- **La ubicación del sitemap en la raíz** (vs `public/` en Bersaglio) es correcta para un sitio estático sin bundler
-- **La arquitectura Jamstack** (Firestore + GitHub Actions + GitHub Pages) no afecta la indexación
+---
 
-## Acciones pendientes
+## Diagnóstico #2 (8 abr 2026)
 
-### Inmediato (hacer manualmente en Google Search Console)
-- [ ] Ir a Search Console > Sitemaps
-- [ ] Eliminar el sitemap actual (`/sitemap.xml`) — click en 3 puntos → Eliminar
-- [ ] Volver a enviarlo: escribir `sitemap.xml` → ENVIAR
-- [ ] Esperar 5-10 minutos y verificar el estado
+### Verificación técnica actual
+- `curl -sI` como Googlebot: **HTTP/2 200**, `content-type: application/xml`, 13121 bytes
+- XML válido, sin BOM, sin caracteres ocultos
+- Todas las URLs del sitemap retornan HTTP 200
+- `robots.txt` sirve correctamente con directiva `Sitemap:`
+- No hay archivos `_headers` ni redirecciones que afecten el sitemap
 
-### Si sigue fallando después de re-enviar (esperar hasta 48h — 26 mar 2026)
-- [ ] Verificar estado en Search Console nuevamente
-- [ ] Usar "Inspección de URLs" en Search Console → pegar `https://altorracars.github.io/sitemap.xml` → ver diagnóstico de Google
-- [ ] Si persiste el error, considerar comprar un dominio personalizado (ej: `altorracars.co`) — esto mejora crawl priority y elimina limitaciones de subdominios github.io
-- [ ] Verificar que el GitHub Actions workflow no haya regenerado el sitemap con formato viejo (revisar último commit en main que toque `sitemap.xml`)
+### Nuevas causas identificadas y corregidas
+| Problema | Archivo | Fix aplicado |
+|----------|---------|-------------|
+| `robots.txt` con bloques User-agent redundantes (Googlebot, Bingbot, Googlebot-Image) que añaden ruido | `robots.txt` | Simplificado a un solo bloque `User-agent: *` como Bersaglio |
+| `generateSitemap()` usaba `today` como `lastmod` para TODAS las páginas estáticas en cada ejecución (cada 4h) — Google ignora lastmod si siempre muestra la fecha actual | `generate-vehicles.mjs` | Páginas estáticas ahora usan fecha fija; solo se actualiza cuando el contenido realmente cambia |
+| `changefreq: daily` en homepage y búsqueda — agresivo para páginas que no cambian a diario | `sitemap.xml` + `generate-vehicles.mjs` | Cambiado a `weekly` |
+
+### Por qué Google no reintentó desde el 24 de marzo
+Google Search Console hizo un fetch el 24 mar 2026 (cuando el sitemap aún tenía problemas), recibió un error, y marcó el sitemap como "No se ha podido obtener". Desde entonces **no ha reintentado** (última lectura: 24/3/26). Esto es normal para subdominios `.github.io` — Google les da menor prioridad de crawl.
+
+## Acciones para el usuario (Google Search Console)
+
+### Paso 1: Re-enviar el sitemap
+1. Ir a [Search Console > Sitemaps](https://search.google.com/search-console/sitemaps)
+2. Hacer click en los 3 puntos junto a `/sitemap.xml` → **Eliminar sitemap**
+3. En "Añadir un sitemap", escribir `sitemap.xml` → **ENVIAR**
+4. Esperar 5-10 minutos y verificar que el estado cambie a "Correcto"
+
+### Paso 2: Forzar re-indexación
+1. Ir a **Inspección de URLs** en Search Console
+2. Pegar: `https://altorracars.github.io/sitemap.xml`
+3. Click en **Solicitar indexación**
+4. Repetir para la homepage: `https://altorracars.github.io/`
+
+### Paso 3: Ping a Google (opcional, para acelerar)
+Abrir estas URLs en el navegador para notificar a Google de la actualización:
+- `https://www.google.com/ping?sitemap=https://altorracars.github.io/sitemap.xml`
+
+### Paso 4: Verificar en 48h
+- Si el estado cambió a "Correcto" y muestra páginas descubiertas → resuelto
+- Si sigue en error → considerar dominio personalizado (ver sección abajo)
 
 ### Verificación técnica rápida (para Claude en futuras sesiones)
 ```bash

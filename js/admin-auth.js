@@ -695,16 +695,6 @@
                 checkFirestoreBlock(userEmail).then(function(laState) {
                     var isBlocked = isBlockedInProfile || laState.blocked;
 
-                    // Sync: if loginAttempts says blocked but usuarios doesn't, update usuarios
-                    if (laState.blocked && !isBlockedInProfile) {
-                        window.db.collection('usuarios').doc(authUser.uid).update({
-                            bloqueado: true,
-                            bloqueadoEn: new Date().toISOString(),
-                            motivoBloqueo: 'Demasiados intentos fallidos de inicio de sesion'
-                        }).catch(function() { /* ignore — may fail if not super_admin */ });
-                        AP.currentUserProfile.bloqueado = true;
-                    }
-
                     if (isBlocked) {
                         if (AP.currentUserProfile.rol === 'super_admin' && AP.currentUserProfile.telefono2FA) {
                             showSuperAdminUnlock(authUser);
@@ -975,7 +965,7 @@
                     updateRateLimitUI(email);
                 });
             } else if (error.code === 'auth/too-many-requests') {
-                errEl.textContent = 'Demasiados intentos. Espera un momento.';
+                errEl.textContent = 'Firebase ha bloqueado temporalmente este dispositivo por demasiados intentos. Espera unos minutos antes de intentar de nuevo.';
             } else if (error.code === 'auth/network-request-failed') {
                 errEl.textContent = 'Sin conexion a internet. Verifica tu red.';
             } else {

@@ -347,34 +347,36 @@ ${disponibles.slice(0, 20).map(v => {
 function generateSitemap(vehicles, slugMap, brandSlugMap = new Map()) {
     const today = new Date().toISOString().split('T')[0];
 
+    // Static pages use fixed lastmod dates — only update these when the page
+    // content actually changes.  Google ignores lastmod if every page always
+    // shows "today": https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
     const staticPages = [
-        { loc: '/',                          freq: 'daily',   prio: '1.0' },
-        { loc: '/busqueda.html',             freq: 'daily',   prio: '0.9' },
-        { loc: '/vehiculos-suv.html',        freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-sedan.html',      freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-pickup.html',     freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-hatchback.html',  freq: 'weekly',  prio: '0.8' },
-        { loc: '/vehiculos-camionetas.html', freq: 'weekly',  prio: '0.8' },
-        { loc: '/simulador-credito.html',    freq: 'monthly', prio: '0.7' },
-        { loc: '/comparar.html',             freq: 'monthly', prio: '0.6' },
-        { loc: '/resenas.html',              freq: 'monthly', prio: '0.6' },
-        { loc: '/nosotros.html',             freq: 'monthly', prio: '0.6' },
-        { loc: '/contacto.html',             freq: 'monthly', prio: '0.6' },
-        { loc: '/favoritos.html',            freq: 'monthly', prio: '0.5' },
-        { loc: '/terminos.html',             freq: 'yearly',  prio: '0.3' },
-        { loc: '/privacidad.html',           freq: 'yearly',  prio: '0.3' },
-        { loc: '/cookies.html',              freq: 'yearly',  prio: '0.3' },
+        { loc: '/',                          freq: 'weekly',  prio: '1.0',  lastmod: '2026-04-08' },
+        { loc: '/busqueda.html',             freq: 'weekly',  prio: '0.9',  lastmod: '2026-04-08' },
+        { loc: '/vehiculos-suv.html',        freq: 'weekly',  prio: '0.8',  lastmod: '2026-04-08' },
+        { loc: '/vehiculos-sedan.html',      freq: 'weekly',  prio: '0.8',  lastmod: '2026-04-08' },
+        { loc: '/vehiculos-pickup.html',     freq: 'weekly',  prio: '0.8',  lastmod: '2026-04-08' },
+        { loc: '/vehiculos-hatchback.html',  freq: 'weekly',  prio: '0.8',  lastmod: '2026-04-08' },
+        { loc: '/vehiculos-camionetas.html', freq: 'weekly',  prio: '0.8',  lastmod: '2026-04-08' },
+        { loc: '/simulador-credito.html',    freq: 'monthly', prio: '0.7',  lastmod: '2026-04-08' },
+        { loc: '/comparar.html',             freq: 'monthly', prio: '0.6',  lastmod: '2026-04-08' },
+        { loc: '/resenas.html',              freq: 'monthly', prio: '0.6',  lastmod: '2026-04-08' },
+        { loc: '/nosotros.html',             freq: 'monthly', prio: '0.6',  lastmod: '2026-04-08' },
+        { loc: '/contacto.html',             freq: 'monthly', prio: '0.6',  lastmod: '2026-04-08' },
+        { loc: '/favoritos.html',            freq: 'monthly', prio: '0.5',  lastmod: '2026-04-08' },
+        { loc: '/terminos.html',             freq: 'yearly',  prio: '0.3',  lastmod: '2026-04-08' },
+        { loc: '/privacidad.html',           freq: 'yearly',  prio: '0.3',  lastmod: '2026-04-08' },
+        { loc: '/cookies.html',              freq: 'yearly',  prio: '0.3',  lastmod: '2026-04-08' },
     ];
 
-    // Build clean XML without comments or extra blank lines (Google-compatible format)
     const urls = [];
 
-    // Static pages
+    // Static pages — fixed lastmod
     for (const p of staticPages) {
-        urls.push(sitemapUrl(`${SITE_URL}${p.loc}`, today, p.freq, p.prio));
+        urls.push(sitemapUrl(`${SITE_URL}${p.loc}`, p.lastmod, p.freq, p.prio));
     }
 
-    // Brand pages
+    // Brand pages — use today since inventory changes with vehicles
     for (const [brandId, brandSlug] of brandSlugMap) {
         urls.push(sitemapUrl(`${SITE_URL}/marcas/${brandSlug}.html`, today, 'weekly', '0.7'));
     }

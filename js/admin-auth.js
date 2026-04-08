@@ -4,67 +4,71 @@
     var AP = window.AP;
     var $ = AP.$;
 
-    // ========== RATE LIMITING (per-email in localStorage + Firestore block) ==========
+    // ========== RATE LIMITING (Firestore loginAttempts — cross-device) ==========
     var RL_MAX_ATTEMPTS = 5;
 
-    function rlKey(email) {
-        // Encode email to create a safe localStorage key
-        var safe = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        return 'ac_rl_' + safe;
+    function emailHash(email) {
+        // Create a safe Firestore document ID from email
+        return email.toLowerCase().replace(/[^a-z0-9]/g, '_');
     }
 
-    function getRateLimitState(email) {
-        if (!email) return { locked: false, attempts: 0 };
-        try {
-            var data = JSON.parse(localStorage.getItem(rlKey(email)));
-            if (!data) return { locked: false, attempts: 0 };
-            if (data.blocked) return { locked: true };
-            return { locked: false, attempts: data.attempts || 0 };
-        } catch (e) { return { locked: false, attempts: 0 }; }
+    // Check if account is blocked in Firestore (async)
+    function checkFirestoreBlock(email) {
+        if (!email || !window.db) return Promise.resolve({ blocked: false, attempts: 0 });
+        return window.db.collection('loginAttempts').doc(emailHash(email)).get()
+            .then(function(doc) {
+                if (!doc.exists) return { blocked: false, attempts: 0 };
+                var data = doc.data();
+                return { blocked: !!data.bloqueado, attempts: data.intentos || 0 };
+            })
+            .catch(function() { return { blocked: false, attempts: 0 }; });
     }
 
+    // Record failed attempt in Firestore (works without auth — public write)
     function recordFailedAttempt(email) {
-        if (!email) return 0;
-        var key = rlKey(email);
-        var data;
-        try { data = JSON.parse(localStorage.getItem(key)) || {}; } catch (e) { data = {}; }
-        var attempts = (data.attempts || 0) + 1;
-
-        if (attempts >= RL_MAX_ATTEMPTS) {
-            localStorage.setItem(key, JSON.stringify({ blocked: true, attempts: attempts }));
-            // Bloquear permanentemente en Firestore
-            if (window.db) blockUserByEmail(email);
-        } else {
-            localStorage.setItem(key, JSON.stringify({ attempts: attempts }));
-        }
-        return attempts;
+        if (!email || !window.db) return Promise.resolve(0);
+        var docRef = window.db.collection('loginAttempts').doc(emailHash(email));
+        return docRef.get().then(function(doc) {
+            var current = doc.exists ? (doc.data().intentos || 0) : 0;
+            var newCount = current + 1;
+            var data = {
+                email: email.toLowerCase(),
+                intentos: newCount,
+                ultimoIntento: new Date().toISOString()
+            };
+            if (newCount >= RL_MAX_ATTEMPTS) {
+                data.bloqueado = true;
+                data.bloqueadoEn = new Date().toISOString();
+            }
+            return (doc.exists ? docRef.update(data) : docRef.set(data)).then(function() {
+                return newCount;
+            });
+        }).catch(function() { return 0; });
     }
 
-    function clearRateLimit(email) {
-        if (email) localStorage.removeItem(rlKey(email));
+    // Clear attempts on successful login (requires auth — called after login)
+    function clearLoginAttempts(email) {
+        if (!email || !window.db) return;
+        window.db.collection('loginAttempts').doc(emailHash(email)).delete().catch(function() {
+            // If delete fails (non-admin), just reset the fields
+            window.db.collection('loginAttempts').doc(emailHash(email)).update({
+                intentos: 0,
+                bloqueado: false
+            }).catch(function() { /* ignore */ });
+        });
     }
 
-    function formatMs(ms) {
-        var mins = Math.ceil(ms / 60000);
-        return mins + ' minuto' + (mins !== 1 ? 's' : '');
-    }
-
-    // Bloquear usuario en Firestore buscando por email
-    function blockUserByEmail(email) {
-        window.db.collection('usuarios').where('email', '==', email).get()
-            .then(function(snap) {
-                snap.forEach(function(doc) {
-                    doc.ref.update({
-                        bloqueado: true,
-                        bloqueadoEn: new Date().toISOString(),
-                        motivoBloqueo: 'Demasiados intentos fallidos de inicio de sesion'
-                    });
-                });
-            }).catch(function() { /* ignore errors silently */ });
-    }
-
-    // Desbloquear usuario (usado por super_admin desde admin-users)
+    // Unblock user (super_admin from admin-users panel)
     function unblockUser(uid) {
+        // Find email from users array to also clear loginAttempts
+        var u = (AP.users || []).find(function(x) { return x._docId === uid; });
+        if (u && u.email) {
+            window.db.collection('loginAttempts').doc(emailHash(u.email)).delete().catch(function() {
+                window.db.collection('loginAttempts').doc(emailHash(u.email)).update({
+                    intentos: 0, bloqueado: false
+                }).catch(function() { /* ignore */ });
+            });
+        }
         return window.db.collection('usuarios').doc(uid).update({
             bloqueado: false,
             bloqueadoEn: '',
@@ -510,10 +514,11 @@
 
             var credential = firebase.auth.PhoneAuthProvider.credential(_unlockVerificationId, code);
             pendingUser.updatePhoneNumber(credential).then(function() {
-                // Code verified — unblock in Firestore
+                // Code verified — unblock in Firestore + clear loginAttempts
+                var email = (AP.currentUserProfile && AP.currentUserProfile.email) || pendingUser.email;
+                clearLoginAttempts(email);
                 return unblockUser(pendingUser.uid);
             }).then(function() {
-                clearRateLimit();
                 hideUnlockScreen();
                 AP.toast('Cuenta desbloqueada exitosamente', 'success');
                 _2faVerified = true;
@@ -655,42 +660,62 @@
 
     var _2faVerified = false;
 
+    // After block check passes, handle 2FA or go to admin
+    function continueAfterBlockCheck(authUser) {
+        if (AP.currentUserProfile.habilitado2FA && AP.currentUserProfile.telefono2FA && !_2faVerified) {
+            if (isDeviceTrusted(authUser.uid, AP.currentUserProfile.trustedDevices)) {
+                updateDeviceLastUsed(authUser.uid);
+                showAdmin(authUser);
+                return;
+            }
+            var phone = (AP.currentUserProfile.prefijo2FA || '+57') + AP.currentUserProfile.telefono2FA;
+            show2FAScreen(authUser, phone);
+            return;
+        }
+        _2faVerified = false;
+        showAdmin(authUser);
+    }
+
     function loadUserProfile(authUser) {
         window.db.collection('usuarios').doc(authUser.uid).get()
             .then(function(doc) {
-                if (doc.exists) {
-                    AP.currentUserProfile = doc.data();
-                    AP.currentUserProfile._docId = doc.id;
-                    AP.currentUserRole = AP.currentUserProfile.rol;
+                if (!doc.exists) {
+                    showAccessDenied(authUser.email, authUser.uid, 'No tienes perfil administrativo asignado. Un Super Admin debe crearlo.');
+                    return;
+                }
 
-                    // Check if user is blocked
-                    if (AP.currentUserProfile.bloqueado) {
-                        // Super Admin can self-unlock via SMS
+                AP.currentUserProfile = doc.data();
+                AP.currentUserProfile._docId = doc.id;
+                AP.currentUserRole = AP.currentUserProfile.rol;
+
+                // Check if user is blocked (both usuarios doc AND loginAttempts collection)
+                var userEmail = AP.currentUserProfile.email || authUser.email;
+                var isBlockedInProfile = !!AP.currentUserProfile.bloqueado;
+
+                checkFirestoreBlock(userEmail).then(function(laState) {
+                    var isBlocked = isBlockedInProfile || laState.blocked;
+
+                    // Sync: if loginAttempts says blocked but usuarios doesn't, update usuarios
+                    if (laState.blocked && !isBlockedInProfile) {
+                        window.db.collection('usuarios').doc(authUser.uid).update({
+                            bloqueado: true,
+                            bloqueadoEn: new Date().toISOString(),
+                            motivoBloqueo: 'Demasiados intentos fallidos de inicio de sesion'
+                        }).catch(function() { /* ignore — may fail if not super_admin */ });
+                        AP.currentUserProfile.bloqueado = true;
+                    }
+
+                    if (isBlocked) {
                         if (AP.currentUserProfile.rol === 'super_admin' && AP.currentUserProfile.telefono2FA) {
                             showSuperAdminUnlock(authUser);
-                            return;
+                        } else {
+                            showAccessDenied(authUser.email, authUser.uid, 'Tu cuenta ha sido bloqueada por seguridad.\nComunicate con el administrador para desbloquearla.');
                         }
-                        showAccessDenied(authUser.email, authUser.uid, 'Tu cuenta ha sido bloqueada por seguridad.\nComunicate con el administrador para desbloquearla.');
                         return;
                     }
 
-                    // F12.3: Check if 2FA is required
-                    if (AP.currentUserProfile.habilitado2FA && AP.currentUserProfile.telefono2FA && !_2faVerified) {
-                        // Check if this device is trusted (skip SMS)
-                        if (isDeviceTrusted(authUser.uid, AP.currentUserProfile.trustedDevices)) {
-                            updateDeviceLastUsed(authUser.uid);
-                            showAdmin(authUser);
-                            return;
-                        }
-                        var phone = (AP.currentUserProfile.prefijo2FA || '+57') + AP.currentUserProfile.telefono2FA;
-                        show2FAScreen(authUser, phone);
-                        return;
-                    }
-                    _2faVerified = false; // reset for next login
-                    showAdmin(authUser);
-                } else {
-                    showAccessDenied(authUser.email, authUser.uid, 'No tienes perfil administrativo asignado. Un Super Admin debe crearlo.');
-                }
+                    continueAfterBlockCheck(authUser);
+                });
             })
             .catch(function(err) {
                 if (err.code === 'permission-denied') {
@@ -866,22 +891,19 @@
 
     function updateRateLimitUI(email) {
         var rateLimitEl = $('loginRateLimit');
-        var btn         = $('loginBtn');
         if (!rateLimitEl) return;
-        var state = getRateLimitState(email);
-        if (state.locked) {
-            rateLimitEl.style.display = 'block';
-            rateLimitEl.textContent   = 'Esta cuenta ha sido bloqueada por seguridad. Comunicate con el administrador.';
-            // Don't disable the button — other accounts can still log in
-            btn.disabled = false;
-        } else {
-            rateLimitEl.style.display = 'none';
-            btn.disabled = false;
-            if (state.attempts > 0) {
+        if (!email) { rateLimitEl.style.display = 'none'; return; }
+        checkFirestoreBlock(email).then(function(state) {
+            if (state.blocked) {
                 rateLimitEl.style.display = 'block';
-                rateLimitEl.textContent   = 'Intentos fallidos: ' + state.attempts + '/' + RL_MAX_ATTEMPTS + '. Siguiente bloqueo tras ' + (RL_MAX_ATTEMPTS - state.attempts) + ' intento(s) mas.';
+                rateLimitEl.textContent = 'Esta cuenta ha sido bloqueada por seguridad. Comunicate con el administrador.';
+            } else if (state.attempts > 0) {
+                rateLimitEl.style.display = 'block';
+                rateLimitEl.textContent = 'Intentos fallidos: ' + state.attempts + '/' + RL_MAX_ATTEMPTS + '. Siguiente bloqueo tras ' + (RL_MAX_ATTEMPTS - state.attempts) + ' intento(s) mas.';
+            } else {
+                rateLimitEl.style.display = 'none';
             }
-        }
+        });
     }
 
     // Update rate limit UI when email field changes
@@ -917,50 +939,49 @@
         var btn     = $('loginBtn');
         if (!email || !pass) return;
 
-        // Verificar rate limit para este email específico
-        var rlState = getRateLimitState(email);
-        if (rlState.locked) {
-            updateRateLimitUI(email);
-            return;
-        }
-
         btn.disabled = true;
-        btn.innerHTML = '<span class="btn-spinner"></span> Ingresando...';
+        btn.innerHTML = '<span class="btn-spinner"></span> Verificando...';
         errEl.style.display = 'none';
 
-        var loginTimeout = setTimeout(function() {
-            resetLoginBtn();
-            errEl.style.display = 'block';
-            errEl.textContent = 'Tiempo de espera agotado. Verifica tu conexion e intenta de nuevo.';
-        }, 15000);
-
+        // Step 1: Check Firestore for cross-device block BEFORE attempting auth
         window.firebaseReady.then(function() {
-                return window.auth.signInWithEmailAndPassword(email, pass);
-            })
-            .then(function() {
-                clearTimeout(loginTimeout);
-                clearRateLimit(email); // login exitoso → resetear contador
-            })
-            .catch(function(error) {
-                clearTimeout(loginTimeout);
+            return checkFirestoreBlock(email);
+        }).then(function(state) {
+            if (state.blocked) {
                 resetLoginBtn();
                 errEl.style.display = 'block';
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    var failCount = recordFailedAttempt(email);
-                    updateRateLimitUI(email);
+                errEl.textContent = 'Cuenta bloqueada por seguridad. Comunicate con el administrador para desbloquear tu acceso.';
+                updateRateLimitUI(email);
+                return Promise.reject({ _handled: true });
+            }
+            // Step 2: Not blocked — attempt Firebase Auth
+            btn.innerHTML = '<span class="btn-spinner"></span> Ingresando...';
+            return window.auth.signInWithEmailAndPassword(email, pass);
+        }).then(function() {
+            // Login successful — clear attempts in Firestore
+            clearLoginAttempts(email);
+        }).catch(function(error) {
+            if (error && error._handled) return; // already handled above
+            resetLoginBtn();
+            errEl.style.display = 'block';
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                recordFailedAttempt(email).then(function(failCount) {
                     if (failCount >= RL_MAX_ATTEMPTS) {
                         errEl.textContent = 'Cuenta bloqueada por seguridad. Comunicate con el administrador.';
+                        // Also block in usuarios collection (will succeed after admin logs in and syncs)
                     } else {
-                        errEl.textContent = 'Correo o contrasena incorrectos';
+                        errEl.textContent = 'Correo o contrasena incorrectos. Intento ' + failCount + ' de ' + RL_MAX_ATTEMPTS + '.';
                     }
-                } else if (error.code === 'auth/too-many-requests') {
-                    errEl.textContent = 'Demasiados intentos. Espera un momento.';
-                } else if (error.code === 'auth/network-request-failed') {
-                    errEl.textContent = 'Sin conexion a internet. Verifica tu red.';
-                } else {
-                    errEl.textContent = 'Error: ' + error.message;
-                }
-            });
+                    updateRateLimitUI(email);
+                });
+            } else if (error.code === 'auth/too-many-requests') {
+                errEl.textContent = 'Demasiados intentos. Espera un momento.';
+            } else if (error.code === 'auth/network-request-failed') {
+                errEl.textContent = 'Sin conexion a internet. Verifica tu red.';
+            } else {
+                errEl.textContent = 'Error: ' + error.message;
+            }
+        });
     });
 
     // F7.1: Password reset

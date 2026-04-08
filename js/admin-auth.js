@@ -676,9 +676,27 @@
         showAdmin(authUser);
     }
 
+    // Network error detection for Firestore
+    function isNetworkError(err) {
+        if (!err) return false;
+        var code = err.code || '';
+        var msg = (err.message || '').toLowerCase();
+        return code === 'unavailable'
+            || code === 'deadline-exceeded'
+            || msg.indexOf('network') !== -1
+            || msg.indexOf('offline') !== -1
+            || msg.indexOf('failed to get document') !== -1
+            || msg.indexOf('err_internet') !== -1
+            || msg.indexOf('err_network') !== -1;
+    }
+
+    var _profileRetryCount = 0;
+    var _profileRetryMax = 3;
+
     function loadUserProfile(authUser) {
         window.db.collection('usuarios').doc(authUser.uid).get()
             .then(function(doc) {
+                _profileRetryCount = 0; // reset on success
                 if (!doc.exists) {
                     showAccessDenied(authUser.email, authUser.uid, 'No tienes perfil administrativo asignado. Un Super Admin debe crearlo.');
                     return;
@@ -709,15 +727,30 @@
             })
             .catch(function(err) {
                 if (err.code === 'permission-denied') {
+                    _profileRetryCount = 0;
                     showAccessDenied(authUser.email, authUser.uid, 'Las reglas de seguridad impiden leer tu perfil. Contacta al Super Admin.');
+                } else if (isNetworkError(err) && _profileRetryCount < _profileRetryMax) {
+                    // Network error — retry instead of signing out
+                    _profileRetryCount++;
+                    var delay = _profileRetryCount * 2000; // 2s, 4s, 6s
+                    console.warn('[Auth] Error de red al cargar perfil (intento ' + _profileRetryCount + '/' + _profileRetryMax + '), reintentando en ' + (delay/1000) + 's...', err.message);
+                    var errEl = $('loginError');
+                    if (errEl) {
+                        errEl.style.display = 'block';
+                        errEl.style.whiteSpace = 'pre-line';
+                        errEl.textContent = 'Problema de conexion. Reintentando... (' + _profileRetryCount + '/' + _profileRetryMax + ')';
+                    }
+                    setTimeout(function() { loadUserProfile(authUser); }, delay);
                 } else {
-                    showAccessDenied(authUser.email, authUser.uid, 'Error al cargar perfil: ' + err.message);
+                    _profileRetryCount = 0;
+                    showAccessDenied(authUser.email, authUser.uid, 'Error al cargar perfil: ' + err.message + '\n\nVerifica tu conexion a internet e intenta de nuevo.');
                 }
             });
     }
 
     function showAccessDenied(email, uid, reason) {
         stopInactivityTracking();
+        stopPresence();
         clearSessionStart();
         resetLoginBtn();
         $('loginScreen').style.display = 'flex';
@@ -797,12 +830,27 @@
             setTimeout(function() { startPresence(user); }, 2000);
             return;
         }
+        // Guard: don't start presence if user is no longer signed in
+        if (!window.auth.currentUser || window.auth.currentUser.uid !== user.uid) return;
+
         var uid = user.uid;
         var presenceRef = window.rtdb.ref('presence/' + uid);
         var connectedRef = window.rtdb.ref('.info/connected');
 
+        // Clean up any existing listener before adding a new one
+        if (AP._presenceConnectedRef) {
+            AP._presenceConnectedRef.off();
+        }
+        AP._presenceConnectedRef = connectedRef;
+
         connectedRef.on('value', function(snap) {
             if (snap.val() !== true) return;
+            // Guard: verify user is still signed in before writing
+            if (!window.auth.currentUser || window.auth.currentUser.uid !== uid) {
+                connectedRef.off();
+                AP._presenceConnectedRef = null;
+                return;
+            }
             var sessionData = {
                 email: user.email,
                 nombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0],
@@ -813,15 +861,22 @@
             // When disconnects, mark offline
             presenceRef.onDisconnect().update({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
             // Set online now
-            presenceRef.update(sessionData);
+            presenceRef.update(sessionData).catch(function(err) {
+                console.warn('[Presence] Error updating presence:', err.message);
+            });
         });
 
         AP._presenceRef = presenceRef;
     }
 
     function stopPresence() {
+        // Stop listening for connection changes
+        if (AP._presenceConnectedRef) {
+            AP._presenceConnectedRef.off();
+            AP._presenceConnectedRef = null;
+        }
         if (AP._presenceRef) {
-            AP._presenceRef.update({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+            AP._presenceRef.update({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP }).catch(function() {});
             AP._presenceRef = null;
         }
     }

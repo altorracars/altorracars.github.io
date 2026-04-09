@@ -126,6 +126,31 @@
         return { browser: browser, os: os, userAgent: ua.substring(0, 200) };
     }
 
+    // Fetch approximate location from IP (no user permission needed).
+    // Returns { city, region, country, ip } or defaults on failure.
+    function fetchLocationInfo() {
+        return fetch('https://ipapi.co/json/')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                // Anonymize IP: keep first 3 octets for IPv4 (e.g. 190.28.123.xxx)
+                var ip = data.ip || '';
+                var parts = ip.split('.');
+                var maskedIp = parts.length === 4
+                    ? parts[0] + '.' + parts[1] + '.' + parts[2] + '.***'
+                    : ip.substring(0, ip.lastIndexOf(':')) + ':***';
+                return {
+                    city: data.city || 'Desconocida',
+                    region: data.region || '',
+                    country: data.country_name || '',
+                    ip: maskedIp,
+                    timezone: data.timezone || ''
+                };
+            })
+            .catch(function() {
+                return { city: 'Desconocida', region: '', country: '', ip: '', timezone: '' };
+            });
+    }
+
     function getTrustKey(uid) {
         return 'ac_2fa_trust_' + uid;
     }
@@ -157,22 +182,29 @@
             expires: expires
         }));
 
-        // Save to Firestore (add to trustedDevices array)
-        var deviceEntry = {
-            token: token,
-            browser: device.browser,
-            os: device.os,
-            createdAt: now,
-            expiresAt: expires,
-            lastUsed: now
-        };
+        // Fetch location then save to Firestore
+        return fetchLocationInfo().then(function(loc) {
+            var deviceEntry = {
+                token: token,
+                browser: device.browser,
+                os: device.os,
+                city: loc.city,
+                region: loc.region,
+                country: loc.country,
+                ip: loc.ip,
+                timezone: loc.timezone,
+                createdAt: now,
+                expiresAt: expires,
+                lastUsed: now
+            };
 
-        return window.db.collection('usuarios').doc(uid).get().then(function(doc) {
-            var existing = (doc.exists && doc.data().trustedDevices) || [];
-            // Remove expired devices while we're at it
-            var active = existing.filter(function(d) { return d.expiresAt > now; });
-            active.push(deviceEntry);
-            return window.db.collection('usuarios').doc(uid).update({ trustedDevices: active });
+            return window.db.collection('usuarios').doc(uid).get().then(function(doc) {
+                var existing = (doc.exists && doc.data().trustedDevices) || [];
+                // Remove expired devices while we're at it
+                var active = existing.filter(function(d) { return d.expiresAt > now; });
+                active.push(deviceEntry);
+                return window.db.collection('usuarios').doc(uid).update({ trustedDevices: active });
+            });
         });
     }
 
@@ -180,15 +212,26 @@
         try {
             var stored = JSON.parse(localStorage.getItem(getTrustKey(uid)));
             if (!stored || !stored.token) return;
-            window.db.collection('usuarios').doc(uid).get().then(function(doc) {
-                if (!doc.exists) return;
-                var devices = doc.data().trustedDevices || [];
-                var updated = false;
-                devices.forEach(function(d) {
-                    if (d.token === stored.token) { d.lastUsed = Date.now(); updated = true; }
+            // Update lastUsed + refresh location in background
+            fetchLocationInfo().then(function(loc) {
+                return window.db.collection('usuarios').doc(uid).get().then(function(doc) {
+                    if (!doc.exists) return;
+                    var devices = doc.data().trustedDevices || [];
+                    var updated = false;
+                    devices.forEach(function(d) {
+                        if (d.token === stored.token) {
+                            d.lastUsed = Date.now();
+                            d.city = loc.city;
+                            d.region = loc.region;
+                            d.country = loc.country;
+                            d.ip = loc.ip;
+                            d.timezone = loc.timezone;
+                            updated = true;
+                        }
+                    });
+                    if (updated) window.db.collection('usuarios').doc(uid).update({ trustedDevices: devices });
                 });
-                if (updated) window.db.collection('usuarios').doc(uid).update({ trustedDevices: devices });
-            });
+            }).catch(function() { /* ignore location fetch failure */ });
         } catch (e) { /* ignore */ }
     }
 
@@ -247,12 +290,21 @@
                 var daysLeft = Math.ceil((d.expiresAt - Date.now()) / (24 * 60 * 60 * 1000));
                 var lastUsedStr = d.lastUsed ? new Date(d.lastUsed).toLocaleDateString('es-CO', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'N/A';
 
+                // Build location string
+                var locationParts = [];
+                if (d.city && d.city !== 'Desconocida') locationParts.push(AP.escapeHtml(d.city));
+                if (d.region) locationParts.push(AP.escapeHtml(d.region));
+                if (d.country) locationParts.push(AP.escapeHtml(d.country));
+                var locationStr = locationParts.length ? locationParts.join(', ') : '';
+                var ipStr = d.ip ? ' · IP: ' + AP.escapeHtml(d.ip) : '';
+
                 html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--admin-border);">' +
                     '<div style="font-size:1.5rem;flex-shrink:0;">' + icon + '</div>' +
                     '<div style="flex:1;min-width:0;">' +
-                        '<div style="font-weight:600;font-size:0.85rem;">' + d.browser + ' en ' + d.os +
+                        '<div style="font-weight:600;font-size:0.85rem;">' + AP.escapeHtml(d.browser) + ' en ' + AP.escapeHtml(d.os) +
                             (isCurrent ? ' <span style="color:var(--admin-success,#3fb950);font-size:0.75rem;font-weight:400;">(este dispositivo)</span>' : '') +
                         '</div>' +
+                        (locationStr ? '<div style="font-size:0.75rem;color:var(--admin-text-muted);">📍 ' + locationStr + ipStr + '</div>' : '') +
                         '<div style="font-size:0.75rem;color:var(--admin-text-muted);">Ultimo uso: ' + lastUsedStr + ' · Expira en ' + daysLeft + ' dia' + (daysLeft !== 1 ? 's' : '') + '</div>' +
                     '</div>' +
                     '<button class="btn btn-ghost btn-sm" data-action="revokeDevice" data-token="' + d.token + '" style="color:var(--admin-danger);font-size:0.75rem;flex-shrink:0;">Revocar</button>' +
@@ -850,6 +902,16 @@
         }
         AP._presenceConnectedRef = connectedRef;
 
+        // Fetch location once for this session
+        var device = getDeviceInfo();
+        fetchLocationInfo().then(function(loc) {
+            AP._presenceLocation = loc;
+            AP._presenceDevice = device;
+        }).catch(function() {
+            AP._presenceLocation = { city: '', region: '', country: '', ip: '' };
+            AP._presenceDevice = device;
+        });
+
         connectedRef.on('value', function(snap) {
             if (snap.val() !== true) return;
             // Guard: verify user is still signed in before writing
@@ -858,10 +920,18 @@
                 AP._presenceConnectedRef = null;
                 return;
             }
+            var loc = AP._presenceLocation || {};
+            var dev = AP._presenceDevice || device;
             var sessionData = {
                 email: user.email,
                 nombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0],
                 rol: AP.currentUserRole || 'viewer',
+                browser: dev.browser,
+                os: dev.os,
+                city: loc.city || '',
+                region: loc.region || '',
+                country: loc.country || '',
+                ip: loc.ip || '',
                 lastSeen: firebase.database.ServerValue.TIMESTAMP,
                 online: true
             };
@@ -957,11 +1027,21 @@
                 var nombre = AP.escapeHtml(s.nombre || s.email || '?');
                 var initials = (s.nombre || '?').split(' ').map(function(w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join('');
                 var isSelf = window.auth.currentUser && s.uid === window.auth.currentUser.uid;
+
+                // Build location + device line
+                var detailParts = [];
+                if (s.city) detailParts.push(AP.escapeHtml(s.city));
+                if (s.country) detailParts.push(AP.escapeHtml(s.country));
+                var locationStr = detailParts.length ? '📍 ' + detailParts.join(', ') : '';
+                var deviceStr = s.browser ? AP.escapeHtml(s.browser) + '/' + AP.escapeHtml(s.os || '?') : '';
+                var detailLine = [locationStr, deviceStr].filter(Boolean).join(' · ');
+
                 return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--admin-border);">' +
                     '<div style="width:32px;height:32px;border-radius:50%;background:var(--admin-gold);color:#1a1a2e;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;">' + AP.escapeHtml(initials) + '</div>' +
-                    '<div style="flex:1;">' +
+                    '<div style="flex:1;min-width:0;">' +
                         '<div style="font-weight:600;font-size:0.85rem;">' + nombre + (isSelf ? ' <span style="font-size:0.7rem;color:var(--admin-text-muted);">(tu)</span>' : '') + '</div>' +
                         '<div style="font-size:0.75rem;color:var(--' + (rolColors[s.rol] || 'admin-text-muted') + ');">' + rolLabel + '</div>' +
+                        (detailLine ? '<div style="font-size:0.7rem;color:var(--admin-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + detailLine + '</div>' : '') +
                     '</div>' +
                     '<div style="width:8px;height:8px;border-radius:50%;background:#3fb950;flex-shrink:0;" title="En linea"></div>' +
                 '</div>';

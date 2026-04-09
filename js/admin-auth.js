@@ -885,28 +885,66 @@
     var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
 
     // Hardware-based device fingerprint — survives cache clear, no storage needed.
-    // Combines immutable hardware/browser properties into a deterministic hash.
-    // Two different physical devices will almost always produce different IDs,
-    // while the same device always produces the same ID.
+    // Combines immutable hardware/browser properties + GPU + canvas rendering
+    // into a deterministic hash. Practically impossible for two different
+    // physical devices to produce the same ID.
     function getDeviceId() {
         var components = [
+            // Screen
             screen.width + 'x' + screen.height,
             screen.colorDepth,
+            screen.pixelDepth,
+            window.devicePixelRatio || 1,
+            // Hardware
             navigator.hardwareConcurrency || 'na',
             navigator.deviceMemory || 'na',
             navigator.platform || 'na',
-            new Date().getTimezoneOffset(),
             navigator.maxTouchPoints || 0,
-            navigator.language || 'na'
+            // Locale
+            new Date().getTimezoneOffset(),
+            navigator.language || 'na',
+            navigator.languages ? navigator.languages.join(',') : 'na'
         ];
-        // Simple hash: convert string to a 32-bit integer
+
+        // WebGL GPU fingerprint — extracts the exact GPU model
+        try {
+            var canvas = document.createElement('canvas');
+            var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (gl) {
+                var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+                if (dbg) {
+                    components.push(gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL));
+                    components.push(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL));
+                }
+                components.push(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+                components.push(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE));
+            }
+        } catch (e) { /* WebGL not available */ }
+
+        // Canvas fingerprint — same text renders differently per GPU/driver/OS
+        try {
+            var cv = document.createElement('canvas');
+            cv.width = 200; cv.height = 50;
+            var ctx = cv.getContext('2d');
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#f60';
+            ctx.fillRect(50, 0, 100, 50);
+            ctx.fillStyle = '#069';
+            ctx.fillText('Altorra.fp', 2, 15);
+            ctx.fillStyle = 'rgba(102,204,0,0.7)';
+            ctx.fillText('Altorra.fp', 4, 17);
+            components.push(cv.toDataURL().slice(-50));
+        } catch (e) { /* Canvas not available */ }
+
+        // Hash all components into a deterministic string
         var str = components.join('|');
-        var hash = 0;
+        var h1 = 0, h2 = 0;
         for (var i = 0; i < str.length; i++) {
-            hash = ((hash << 5) - hash) + str.charCodeAt(i);
-            hash |= 0; // Convert to 32-bit integer
+            h1 = ((h1 << 5) - h1) + str.charCodeAt(i); h1 |= 0;
+            h2 = ((h2 << 7) + h2) ^ str.charCodeAt(i); h2 |= 0;
         }
-        return 'dev_' + Math.abs(hash).toString(36);
+        return 'dev_' + Math.abs(h1).toString(36) + Math.abs(h2).toString(36);
     }
 
     function startPresence(user) {

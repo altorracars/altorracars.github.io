@@ -538,25 +538,35 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 **2FA** (parcialmente implementado):
 - Opcional por usuario (`habilitado2FA`)
 - Verificacion por SMS via Firebase Auth
-- Dispositivos de confianza por 30 dias
 - Super admin puede auto-desbloquear cuenta con codigo temporal
+
+**Dispositivos de confianza** (`admin-auth.js`):
+- Duracion: 30 dias (`TRUST_DURATION_MS`)
+- Token aleatorio guardado en localStorage + array `trustedDevices` en Firestore `usuarios/{uid}`
+- Cada entrada almacena: token, browser, os, city, region, country, ip (anonimizada), timezone, createdAt, expiresAt, lastUsed
+- `fetchLocationInfo()` obtiene geolocalizacion por IP via `ipapi.co/json/` (sin API key, sin permisos)
+- IP anonimizada: ultimo octeto reemplazado con `***` (ej: `190.28.123.***`)
+- Ubicacion se refresca en cada login (`updateDeviceLastUsed`)
+- UI muestra: navegador, OS, ubicacion con pin, IP anonimizada, ultimo uso, dias restantes
+- Acciones: revocar individual o revocar todos
 
 ### 6.5 Sistema de Presencia y Sesiones Activas (RTDB)
 
 **Ubicacion**: `admin-auth.js` → `startPresence()`, `stopPresence()`, `loadActiveSessions()`
 
 **Escritura** (`startPresence`):
-- Escribe en `/presence/{uid}` con datos: email, nombre, rol, lastSeen, online
+- Escribe en `/presence/{uid}` con datos: email, nombre, rol, browser, os, city, region, country, ip, lastSeen, online
 - Usa `.info/connected` para detectar conexion/desconexion de RTDB
 - `onDisconnect()` marca `online: false` automaticamente al perder conexion
 - Heartbeat cada 2 min actualiza `lastSeen` (mantiene sesion fresca para deteccion de stale)
 - Guards de autenticacion: verifica `auth.currentUser` antes de cada write
+- Geolocalizacion por IP via `fetchLocationInfo()` al iniciar sesion
 
 **Lectura** (`loadActiveSessions`):
 - Query realtime: `presence.orderByChild('online').equalTo(true)`
 - Filtra sesiones stale: descarta sesiones con `lastSeen` > 5 min (tab cerrada sin onDisconnect limpio)
 - Auto-limpia entradas propias stale
-- Muestra etiqueta "(tu)" para la sesion del usuario actual
+- Muestra: nombre, rol, ubicacion (ciudad/pais), navegador/OS, indicador "(tu)"
 - Retry automatico si RTDB no esta cargado (SDK diferido)
 - Error callback muestra "No se pudieron cargar" en vez de "Cargando..." infinito
 
@@ -566,7 +576,7 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 - Desuscribe listener de sesiones activas (`_activeSessionsRef`)
 - Marca `online: false` en RTDB
 
-**Propiedades en `AP`**: `_presenceRef`, `_presenceConnectedRef`, `_presenceHeartbeat`, `_activeSessionsRef`
+**Propiedades en `AP`**: `_presenceRef`, `_presenceConnectedRef`, `_presenceHeartbeat`, `_activeSessionsRef`, `_presenceLocation`, `_presenceDevice`
 
 ### 6.6 Sistema de Drafts (Borradores)
 

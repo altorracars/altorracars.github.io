@@ -915,7 +915,10 @@
         try {
             var prevKey = sessionStorage.getItem(PRESENCE_SESSION_KEY);
             if (prevKey) {
-                window.rtdb.ref('presence/' + prevKey).remove().catch(function() {});
+                var prevRef = window.rtdb.ref('presence/' + prevKey);
+                prevRef.once('value').then(function(snap) {
+                    if (snap.exists()) prevRef.remove();
+                }).catch(function() {});
             }
         } catch (e) { /* sessionStorage not available */ }
 

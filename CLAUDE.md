@@ -431,3 +431,128 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 | `config/bookedSlots` | Disponibilidad de citas |
 | `system/meta` | lastModified (senal de cache invalidation) |
 | `drafts_activos/{uid}` | Borradores activos visibles para colaboracion |
+
+---
+
+## 6. Sistemas Clave
+
+### 6.1 Pipeline Firestore → GitHub Pages
+
+**Flujo**: Firestore (datos) → GitHub Actions → generate-vehicles.mjs → HTML estatico → GitHub Pages
+
+**Triggers** (`.github/workflows/generate-vehicles.yml`):
+1. Push a `main`
+2. Cron cada 4 horas
+3. `repository_dispatch` (webhook desde Cloud Function)
+4. `workflow_dispatch` (manual desde GitHub UI)
+
+**Que genera `generate-vehicles.mjs`**:
+- `vehiculos/{slug}.html` — pagina por vehiculo con meta OG, Twitter Cards, JSON-LD (Car), noscript SEO
+- `marcas/{slug}.html` — pagina por marca con listado de vehiculos, JSON-LD (AutoDealer)
+- `data/vehicle-slugs.json` — mapa id→slug (inmutable, nunca se reutiliza un slug)
+- `data/brand-slugs.json` — mapa brandId→slug
+- `sitemap.xml` — con lastmod fijo para estaticas, dinamico para vehiculos
+
+**Slugs**: `marca-modelo-year-id` normalizado (sin acentos, lowercase). Inmutables una vez creados.
+
+**Variables inyectadas**: `PRERENDERED_VEHICLE_ID` y `PRERENDERED_BRAND_ID` en cada pagina generada para que el JS del frontend cargue datos sin query params.
+
+**Post-generacion** (solo si hay cambios reales):
+- `data/deploy-info.json` → `{version: "YYYYMMDDHHMMSS", sha, ref}`
+- `service-worker.js` → bump `CACHE_VERSION`
+- `js/cache-manager.js` → bump `APP_VERSION`
+- Commit con `[skip ci]` para evitar loop recursivo
+
+### 6.2 Cache de 4 Capas (`cache-manager.js`)
+
+| Capa | Almacenamiento | Persistencia | Uso |
+|------|---------------|-------------|-----|
+| L1 | Memory (Map) | Session | Lectura rapida |
+| L2 | IndexedDB (`app-data`, `cache-meta`) | Permanente | Entre sesiones |
+| L3 | localStorage (`altorra-db-cache`) | Permanente | Usado por database.js |
+| L4 | Service Worker Cache | Permanente | Assets estaticos |
+
+**Dos senales de invalidacion:**
+
+1. **Admin cambia datos** → `admin-sync.js` escribe `system/meta.lastModified` → cache-manager tiene listener realtime → `AltorraCache.invalidate()` limpia L1/L2/L3
+2. **GitHub deploy** → `deploy-info.json` cambia → cache-manager lo poll cada 10 min → si version cambio → muestra banner "Nueva version disponible" → `AltorraCache.clearAndReload()` limpia TODO + recarga
+
+**Grace period**: 30s despues de clearAndReload para evitar loop infinito de recargas.
+
+**API publica**: `window.AltorraCache.get()`, `.set()`, `.invalidate()`, `.clearAndReload()`, `.validateWithFirestore()`, `.validateDeployVersion()`
+
+### 6.3 Service Worker (`service-worker.js`)
+
+| Tipo de request | Estrategia |
+|----------------|-----------|
+| `.json` | Network Only (siempre fresco) |
+| HTML pages | Network First → cache fallback → /index.html |
+| Hero/banner/category images | Network First (cambian con deploys) |
+| CSS, JS, logos | Stale-While-Revalidate |
+| Otros assets | Stale-While-Revalidate |
+
+**Precache**: Solo logos de marcas (inmutables). NO precachea HTML ni vehiculos.
+**Install**: `skipWaiting()` inmediato.
+**Activate**: Limpia caches viejos. Envia `SW_UPDATED` a clients solo en updates reales.
+
+### 6.4 Admin Panel (SPA)
+
+**Patron de estado**: Objeto global `window.AP` (AdminPanel) con:
+- Arrays de datos: `vehicles`, `brands`, `users`, `dealers`, `appointments`, `reviews`, `banners`
+- Perfil: `currentUserProfile`, `currentUserRole`
+- Funciones unsubscribe de listeners Firestore
+- Helpers: `$()`, `toast()`, `escapeHtml()`, `formatPrice()`, `closestAction()`
+
+**Navegacion**: Secciones por `data-section` attributes. Sidebar links muestran/ocultan secciones.
+
+**Sesion**:
+- Inactividad: 30 min timeout (warning a los 28 min)
+- Sesion maxima: 8 horas absoluto
+- Tracking: mousemove, click, scroll, keydown
+- Persistence: `Auth.Persistence.LOCAL` (sesion sobrevive cierre de tab)
+
+**2FA** (parcialmente implementado):
+- Opcional por usuario (`habilitado2FA`)
+- Verificacion por SMS via Firebase Auth
+- Dispositivos de confianza por 30 dias
+- Super admin puede auto-desbloquear cuenta con codigo temporal
+
+### 6.5 Sistema de Drafts (Borradores)
+
+- Auto-guardado cada 10s mientras se edita un vehiculo
+- Almacenados en `usuarios/{uid}/drafts/vehicleDraft`
+- Visibilidad compartida via `drafts_activos/{userId}` (otros editores ven quien esta editando)
+- Al abrir modal: pregunta si restaurar draft existente
+- Al cerrar modal: pregunta si guardar cambios no guardados
+- Dirty check evita writes redundantes
+
+### 6.6 Migracion Automatica de Schema
+
+**Ubicacion**: `admin-sync.js` → `migrateVehicleSchema()`
+**Ejecucion**: Una vez por sesion, en el primer snapshot de vehiculos
+**Comportamiento**: Idempotente, no destructivo, usa batch writes (max 500)
+
+Para agregar un campo nuevo: agregar entrada en `DEFAULTS` dentro de `migrateVehicleSchema()`.
+
+Campos que migra: codigoUnico, _version, estado, tipo, direccion, ubicacion, puertas, pasajeros, placa, destacado, prioridad.
+
+### 6.7 Formularios Publicos
+
+**"Vende tu Auto"** (wizard 3 pasos):
+1. Datos de contacto (nombre, telefono, email)
+2. Datos del vehiculo (marca, modelo, year, km, precio esperado)
+3. Resumen + confirmacion
+→ Guarda en `solicitudes` con tipo `consignacion_venta` + abre WhatsApp
+
+**"Financiacion"** (formulario unico):
+- Datos contacto + vehiculo de interes + cuota inicial, plazo, ingresos, situacion laboral
+→ Guarda en `solicitudes` con tipo `financiacion` + abre WhatsApp
+
+**WhatsApp**: Todos los formularios abren chat con mensaje pre-formateado al +573235016747
+
+### 6.8 CodigoUnico (Auto-generado)
+
+- Formato: `ALT-YYYYMM-XXXX` (ej: `ALT-202604-0042`)
+- Secuencia atomica en `config/counters.vehicleCodeSeq` (transaction)
+- Inmutable una vez creado, nunca reutilizado
+- Generado en `admin-vehicles.js` al crear vehiculo

@@ -556,3 +556,186 @@ Campos que migra: codigoUnico, _version, estado, tipo, direccion, ubicacion, pue
 - Secuencia atomica en `config/counters.vehicleCodeSeq` (transaction)
 - Inmutable una vez creado, nunca reutilizado
 - Generado en `admin-vehicles.js` al crear vehiculo
+
+---
+
+## 7. Patrones y Convenciones del Codigo
+
+### Event Delegation (NO usar onclick inline)
+
+```javascript
+// CORRECTO — event delegation con data-action
+container.addEventListener('click', function(e) {
+    var btn = AP.closestAction(e); // SVG-safe closest()
+    if (!btn) return;
+    var action = btn.dataset.action;
+    // ...
+});
+
+// INCORRECTO — NUNCA usar onclick inline (vulnerabilidad XSS)
+// <button onclick="doSomething('${variable}')">
+```
+
+`AP.closestAction(e)` verifica `nodeType` antes de `closest()` para evitar crash con SVG child nodes.
+
+### Escapar datos de usuario en HTML
+
+```javascript
+// SIEMPRE usar AP.escapeHtml() al insertar datos en innerHTML
+cell.innerHTML = '<span>' + AP.escapeHtml(vehiculo.marca) + '</span>';
+```
+
+### Firestore: create vs update
+
+```javascript
+// Crear: usar set() SIN merge
+transaction.set(docRef, data);
+
+// Actualizar: usar update() o transaction.update()
+transaction.update(docRef, data);
+
+// NUNCA usar set(data, { merge: true }) para creacion — las rules
+// evaluan ambiguamente y puede fallar con permission-denied
+```
+
+### Sitemap: lastmod
+
+Las paginas estaticas en `generate-vehicles.mjs` usan fechas fijas de lastmod.
+Solo actualizar la fecha cuando el contenido de la pagina realmente cambia.
+Google ignora lastmod si siempre muestra la fecha actual.
+
+### Subida de imagenes
+
+```javascript
+AP.UPLOAD_CONFIG = {
+    maxFileSizeMB: 2,
+    maxWidthPx: 1200,
+    compressionQuality: 0.75,
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    storagePath: 'cars/'
+}
+```
+
+Las imagenes se comprimen client-side antes de subir a Firebase Storage.
+
+### Cache invalidation desde admin
+
+Despues de cualquier write a Firestore desde el admin, llamar:
+```javascript
+// admin-sync.js: signalCacheInvalidation()
+db.doc('system/meta').update({ lastModified: Date.now() });
+```
+Esto dispara la invalidacion en el sitio publico via cache-manager.js.
+
+---
+
+## 8. Errores Conocidos y Soluciones
+
+### "Access denied for UID" al hacer login
+
+**Causa**: Error de red impide cargar perfil de Firestore → el codigo trataba
+cualquier error como "acceso denegado" y hacia signOut.
+
+**Fix aplicado** (2026-04-08): `loadUserProfile` ahora reintenta hasta 3 veces
+con backoff (2s, 4s, 6s) para errores de red antes de rendirse. Solo hace
+signOut para errores reales de permisos.
+
+**Si persiste**: Verificar que las reglas de Firestore esten desplegadas:
+```bash
+firebase deploy --only firestore:rules
+```
+
+### Errores de presencia "permission_denied" en RTDB
+
+**Causa**: Listeners de presencia escribian a `/presence/{uid}` despues de que
+el usuario fue deslogueado, causando permission_denied.
+
+**Fix aplicado** (2026-04-08): Guards en `startPresence()` verifican que el
+usuario sigue autenticado antes de cada escritura. `stopPresence()` limpia
+listeners. `showAccessDenied()` llama a `stopPresence()`.
+
+**Si persiste**: Verificar que las reglas de RTDB esten desplegadas:
+```bash
+firebase deploy --only database
+```
+
+### "Failed to obtain primary lease" en Firestore
+
+**Causa**: Multiples tabs abiertas compiten por el lease de IndexedDB.
+
+**Fix**: Cerrar tabs duplicadas. Si persiste, ejecutar en consola del navegador:
+```javascript
+window.clearFirestoreCache()
+```
+
+### Sitemap no se sincroniza en Google Search Console
+
+**Documentado en**: `SITEMAP-FIX.md`
+
+**Causa**: Google intento fetchar el sitemap cuando tenia errores, no reintento.
+
+**Fix**: Re-enviar sitemap en Search Console + ping a Google.
+Ver `SITEMAP-FIX.md` para pasos detallados.
+
+### Modals de financiacion/venta no funcionan fuera de index.html
+
+**Fix aplicado**: `loadModalsIfNeeded()` en `components.js` inyecta modals
+dinamicamente en todas las paginas desde `snippets/modals.html`.
+
+### Bloqueo de puntero al usar "Ver todas" en menu de marcas
+
+**Fix aplicado**: `pointer-events: none` en `.modal-overlay` inactivo +
+cierre de dropdowns/menu al hacer smooth scroll.
+
+---
+
+## 9. Fases Completadas (Historico)
+
+> No reimplementar — ya estan en produccion.
+
+| Fase | Descripcion | Estado |
+|------|-------------|--------|
+| 1-5 | Admin panel: rendimiento, UX, responsive, seguridad basica, visual polish | Completada |
+| 0 | Fix critico CRUD vehiculos (set→update, rules, persistence, SVG events) | Completada |
+| 6 | Seguridad: XSS, file validation, event delegation, parseInt radix | Completada |
+| 7 | Login: reset password, perfil sidebar, bienvenida, URL validation | Completada |
+| 8 | Dashboard: acciones rapidas, stats clickeables, badge citas, paginacion auditLog | Completada |
+| 9 | Performance: debounce, CSS variables, lazy images, breakpoints, z-index | Completada |
+| 10 | Productividad: atajos teclado, duplicar vehiculo, batch ops, export CSV | Completada |
+| 11 | Accesibilidad: ARIA roles, labels, focus styles, live regions | Completada |
+
+---
+
+## 10. Fase 12 — Pendiente (Futuro)
+
+| ID | Tarea | Complejidad |
+|----|-------|-------------|
+| F12.1 | Notificacion por email al recibir cita (Cloud Function trigger) | Alta |
+| F12.2 | Preview en tiempo real del vehiculo como se vera en el sitio | Media |
+| F12.3 | 2FA opcional via Firebase Auth (parcialmente implementado) | Media |
+| F12.4 | Historial de cambios con rollback visual (timeline + revert) | Alta |
+| F12.5 | Buscador/filtro en lista de aliados + filtro por rango de fechas | Media |
+| F12.6 | Virtual scrolling para tablas grandes (+100 filas) | Media |
+| F12.7 | Indicadores de sesiones activas por usuario | Completado (RTDB presence) |
+
+---
+
+## 11. SEO
+
+Ver `SITEMAP-FIX.md` para estado detallado del sitemap y Google Search Console.
+
+### Implementado
+- Meta tags completos en todas las paginas (description, keywords, OG, Twitter Cards)
+- `<link rel="canonical">` en todas las paginas
+- `<meta name="robots" content="index, follow">`
+- Structured Data JSON-LD: AutoDealer + WebSite + FAQ + Car (en paginas de vehiculo)
+- Sitemap auto-generado con prioridades diferenciadas y lastmod fijo
+- robots.txt limpio (un solo User-agent block)
+- Paginas de vehiculo pre-renderizadas con noscript SEO fallback
+- google8d667a72b0e3536b.html (verificacion Search Console)
+- `<link rel="sitemap">` en head de index.html
+- Preconnect a fonts.googleapis.com, firestore.googleapis.com
+
+### Pendiente
+- Dominio personalizado (mejoraria crawl priority de Google)
+- Re-enviar sitemap en Search Console (ver SITEMAP-FIX.md)

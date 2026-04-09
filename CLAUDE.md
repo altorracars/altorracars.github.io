@@ -568,7 +568,8 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 - Usa `.info/connected` para detectar conexion/desconexion de RTDB
 - `onDisconnect().remove()` elimina el nodo al perder conexion (desaparicion instantanea)
 - Heartbeat cada 2 min actualiza `lastSeen` (mantiene sesion fresca para deteccion de stale)
-- Guards de autenticacion: verifica `auth.currentUser` antes de cada write
+- Guards de autenticacion: verifica `auth.currentUser` + `_presenceActive` flag antes de cada write
+- Orphan cleanup: busca sesiones huerfanas con mismo `uid + deviceId`, las elimina (excluye el push key nuevo)
 - Geolocalizacion por IP via `fetchLocationInfo()` al iniciar sesion
 
 **Lectura** (`loadActiveSessions`):
@@ -580,10 +581,13 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 - Error callback muestra "No se pudieron cargar" en vez de "Cargando..." infinito
 
 **Limpieza** (`stopPresence`):
+- Pone `_presenceActive = false` PRIMERO (previene set() de callbacks pendientes)
 - Detiene heartbeat interval
 - Desuscribe listener de `.info/connected`
 - Desuscribe listener de sesiones activas (`_activeSessionsRef`)
+- Cancela `onDisconnect()` para evitar removes duplicados
 - Elimina nodo de sesion con `remove()` (desaparece instantaneamente en todos los clientes)
+- Se llama ANTES de `auth.signOut()` en TODOS los paths de logout
 
 **Propiedades en `AP`**: `_presenceRef`, `_presenceConnectedRef`, `_presenceHeartbeat`, `_activeSessionsRef`, `_presenceLocation`, `_presenceDevice`
 
@@ -717,12 +721,18 @@ firebase deploy --only firestore:rules
 
 ### Errores de presencia "permission_denied" en RTDB
 
-**Causa**: Listeners de presencia escribian a `/presence/{uid}` despues de que
-el usuario fue deslogueado, causando permission_denied.
+**Causa**: Multiples problemas combinados:
+1. Listeners de presencia escribian a `/presence/` despues de que el usuario fue deslogueado
+2. No todos los paths de `signOut()` llamaban a `stopPresence()` primero (inactividad, sesion expirada, password change, mobile logout)
+3. Race condition: `.info/connected` podia disparar `set()` despues de que `off()` fue llamado
+4. Orphan cleanup podia eliminar la sesion recien creada por race condition con el cache local
 
-**Fix aplicado** (2026-04-08): Guards en `startPresence()` verifican que el
-usuario sigue autenticado antes de cada escritura. `stopPresence()` limpia
-listeners. `showAccessDenied()` llama a `stopPresence()`.
+**Fix aplicado** (2026-04-09):
+- `_presenceActive` flag: el connected callback verifica este flag antes de llamar `set()`. Se pone `false` en `stopPresence()` ANTES de limpiar listeners
+- `stopPresence()` ahora cancela `onDisconnect()` antes de hacer `remove()`
+- `stopPresence()` se llama ANTES de `signOut()` en TODOS los paths: logout button, mobile logout, inactivity timeout, session expired, access denied, 2FA cancel, unlock cancel, password change invalid, `onAuthStateChanged(null)` safety net
+- Orphan cleanup ahora excluye `presenceRef.key` para evitar borrar la sesion recien creada
+- Push ref se crea ANTES del orphan cleanup para que el key exista en el callback
 
 **Si persiste**: Verificar que las reglas de RTDB esten desplegadas:
 ```bash

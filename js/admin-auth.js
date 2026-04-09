@@ -495,6 +495,7 @@
         twoFaCancel.addEventListener('click', function(e) {
             e.preventDefault();
             hide2FAScreen();
+            stopPresence();
             window.auth.signOut();
         });
     }
@@ -629,6 +630,7 @@
         unlockCancel.addEventListener('click', function(e) {
             e.preventDefault();
             hideUnlockScreen();
+            stopPresence();
             window.auth.signOut();
         });
     }
@@ -652,6 +654,7 @@
         clearInactivityTimers();
         if (!window.auth || !window.auth.currentUser) return;
         AP.toast('Sesion cerrada por inactividad (30 minutos).', 'info');
+        stopPresence();
         window.auth.signOut();
     }
 
@@ -696,6 +699,7 @@
                             if (isSessionExpired()) {
                                 clearSessionStart();
                                 AP.toast('Sesion expirada (8 horas). Inicia sesion de nuevo.', 'info');
+                                stopPresence();
                                 window.auth.signOut();
                                 return;
                             }
@@ -706,6 +710,7 @@
                             _2faVerified = false;
                             clearSessionStart();
                             stopInactivityTracking();
+                            stopPresence();
                             hide2FAScreen();
                             hideUnlockScreen();
                             showLogin();
@@ -884,6 +889,10 @@
     // Heartbeat interval: update lastSeen every 2 minutes so stale detection works
     var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
 
+    // Flag to prevent set() calls after stopPresence() has been called.
+    // Handles race conditions where .info/connected fires after listener removal.
+    var _presenceActive = false;
+
     // Hardware-based device fingerprint — survives cache clear, no storage needed.
     // Combines immutable hardware/browser properties + GPU + canvas rendering
     // into a deterministic hash. Practically impossible for two different
@@ -972,25 +981,28 @@
             AP._presenceHeartbeat = null;
         }
 
+        // Create ONE session node for this device/tab FIRST (before orphan cleanup)
+        var device = getDeviceInfo();
+        var deviceId = getDeviceId();
+        var presenceRef = window.rtdb.ref('presence').push();
+        AP._presenceRef = presenceRef;
+        AP._presenceConnectedRef = connectedRef;
+        _presenceActive = true;
+
         // Clean up orphaned sessions from this same device (same uid + deviceId).
         // Handles: cache clear, page refresh, mobile kill, or any case where
         // onDisconnect didn't fire. Keeps sessions from other devices intact.
-        var device = getDeviceInfo();
-        var deviceId = getDeviceId();
+        // Excludes the NEW push key to avoid a race condition where this cleanup
+        // deletes the session we just created.
         window.rtdb.ref('presence').orderByChild('online').equalTo(true)
             .once('value').then(function(snap) {
                 snap.forEach(function(child) {
                     var d = child.val();
-                    if (d.uid === uid && d.deviceId === deviceId) {
+                    if (d.uid === uid && d.deviceId === deviceId && child.key !== presenceRef.key) {
                         child.ref.remove().catch(function() {});
                     }
                 });
             }).catch(function() {});
-
-        // Create ONE session node for this device/tab
-        var presenceRef = window.rtdb.ref('presence').push();
-        AP._presenceRef = presenceRef;
-        AP._presenceConnectedRef = connectedRef;
 
         // Fetch location once for this session
         fetchLocationInfo().then(function(loc) {
@@ -1003,6 +1015,8 @@
 
         connectedRef.on('value', function(snap) {
             if (snap.val() !== true) return;
+            // Guard: presence was stopped (logout in progress)
+            if (!_presenceActive) return;
             // Guard: verify user is still signed in before writing
             if (!window.auth.currentUser || window.auth.currentUser.uid !== uid) {
                 connectedRef.off();
@@ -1029,15 +1043,18 @@
             // Write session data first, THEN register onDisconnect.
             // onDisconnect requires the node to exist for rules to pass.
             presenceRef.set(sessionData).then(function() {
+                if (!_presenceActive) return; // Don't register onDisconnect if stopped
                 presenceRef.onDisconnect().remove();
             }).catch(function(err) {
-                console.warn('[Presence] Error updating presence:', err.message);
+                if (_presenceActive) {
+                    console.warn('[Presence] Error updating presence:', err.message);
+                }
             });
         });
 
         // Heartbeat: keep lastSeen fresh so stale-session filter works
         AP._presenceHeartbeat = setInterval(function() {
-            if (!window.auth.currentUser || window.auth.currentUser.uid !== uid) {
+            if (!_presenceActive || !window.auth.currentUser || window.auth.currentUser.uid !== uid) {
                 clearInterval(AP._presenceHeartbeat);
                 AP._presenceHeartbeat = null;
                 return;
@@ -1056,6 +1073,8 @@
     }
 
     function stopPresence() {
+        // Prevent any pending connected-callback from calling set()
+        _presenceActive = false;
         // Stop heartbeat
         if (AP._presenceHeartbeat) {
             clearInterval(AP._presenceHeartbeat);
@@ -1076,8 +1095,10 @@
             window.removeEventListener('beforeunload', AP._presenceBeforeUnload);
             AP._presenceBeforeUnload = null;
         }
-        // Remove this session node (instant disappearance for other clients)
+        // Cancel onDisconnect and remove this session node.
+        // Must happen BEFORE auth.signOut() so the user is still authenticated.
         if (AP._presenceRef) {
+            AP._presenceRef.onDisconnect().cancel().catch(function() {});
             AP._presenceRef.remove().catch(function() {});
             AP._presenceRef = null;
         }
@@ -1329,6 +1350,7 @@
         var currentUser = window.auth.currentUser;
         if (!currentUser || !currentUser.email) {
             AP.toast('Sesion invalida. Inicia sesion de nuevo.', 'error');
+            stopPresence();
             window.auth.signOut();
             return;
         }
@@ -1370,6 +1392,7 @@
     var mobileLogoutBtn = $('mobileLogoutBtn');
     if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', function() {
         clearSessionStart();
+        stopPresence();
         if (window.auth) window.auth.signOut();
     });
 

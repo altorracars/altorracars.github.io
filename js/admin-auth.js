@@ -127,27 +127,30 @@
     }
 
     // Fetch approximate location from IP (no user permission needed).
-    // Uses freeipapi.com (HTTPS, CORS-enabled, no API key required).
+    // Uses ipwho.is (HTTPS, CORS-enabled, no API key, 10k req/month free).
     // Returns { city, region, country, ip, timezone } or defaults on failure.
     var _locationCache = null;
     function fetchLocationInfo() {
         // Cache location per page load — IP doesn't change within a session
         if (_locationCache) return Promise.resolve(_locationCache);
-        return fetch('https://freeipapi.com/api/json')
+        return fetch('https://ipwho.is/')
             .then(function(res) { return res.json(); })
             .then(function(data) {
+                if (!data.success) {
+                    return { city: '', region: '', country: '', ip: '', timezone: '' };
+                }
                 // Anonymize IP: mask last octet for IPv4 (e.g. 190.28.123.xxx)
-                var ip = data.ipAddress || '';
+                var ip = data.ip || '';
                 var parts = ip.split('.');
                 var maskedIp = parts.length === 4
                     ? parts[0] + '.' + parts[1] + '.' + parts[2] + '.***'
                     : ip.substring(0, ip.lastIndexOf(':')) + ':***';
                 _locationCache = {
-                    city: data.cityName || 'Desconocida',
-                    region: data.regionName || '',
-                    country: data.countryName || '',
+                    city: data.city || '',
+                    region: data.region || '',
+                    country: data.country || '',
                     ip: maskedIp,
-                    timezone: data.timeZone || ''
+                    timezone: data.timezone && data.timezone.id ? data.timezone.id : ''
                 };
                 return _locationCache;
             })

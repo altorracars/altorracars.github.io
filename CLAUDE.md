@@ -325,13 +325,19 @@ drafts_activos/{uid} — read/write: editor+ (own uid only)
 ```json
 {
   "presence": {
+    ".read": "auth != null",
+    ".indexOn": ["online"],
     "$uid": {
-      ".read": true,
       ".write": "$uid === auth.uid"
     }
   }
 }
 ```
+
+- `.read: auth != null` a nivel `/presence` permite que `loadActiveSessions()` lea todos los nodos (solo usuarios autenticados)
+- `.indexOn: ["online"]` requerido por la query `orderByChild('online').equalTo(true)`
+- `.write` sigue restringido: cada usuario solo puede escribir su propio nodo `/presence/{uid}`
+- **Deploy manual obligatorio**: `firebase deploy --only database` despues de cambiar reglas
 
 ### Checklist de no-regresion RBAC
 
@@ -535,7 +541,34 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 - Dispositivos de confianza por 30 dias
 - Super admin puede auto-desbloquear cuenta con codigo temporal
 
-### 6.5 Sistema de Drafts (Borradores)
+### 6.5 Sistema de Presencia y Sesiones Activas (RTDB)
+
+**Ubicacion**: `admin-auth.js` → `startPresence()`, `stopPresence()`, `loadActiveSessions()`
+
+**Escritura** (`startPresence`):
+- Escribe en `/presence/{uid}` con datos: email, nombre, rol, lastSeen, online
+- Usa `.info/connected` para detectar conexion/desconexion de RTDB
+- `onDisconnect()` marca `online: false` automaticamente al perder conexion
+- Heartbeat cada 2 min actualiza `lastSeen` (mantiene sesion fresca para deteccion de stale)
+- Guards de autenticacion: verifica `auth.currentUser` antes de cada write
+
+**Lectura** (`loadActiveSessions`):
+- Query realtime: `presence.orderByChild('online').equalTo(true)`
+- Filtra sesiones stale: descarta sesiones con `lastSeen` > 5 min (tab cerrada sin onDisconnect limpio)
+- Auto-limpia entradas propias stale
+- Muestra etiqueta "(tu)" para la sesion del usuario actual
+- Retry automatico si RTDB no esta cargado (SDK diferido)
+- Error callback muestra "No se pudieron cargar" en vez de "Cargando..." infinito
+
+**Limpieza** (`stopPresence`):
+- Detiene heartbeat interval
+- Desuscribe listener de `.info/connected`
+- Desuscribe listener de sesiones activas (`_activeSessionsRef`)
+- Marca `online: false` en RTDB
+
+**Propiedades en `AP`**: `_presenceRef`, `_presenceConnectedRef`, `_presenceHeartbeat`, `_activeSessionsRef`
+
+### 6.6 Sistema de Drafts (Borradores)
 
 - Auto-guardado cada 10s mientras se edita un vehiculo
 - Almacenados en `usuarios/{uid}/drafts/vehicleDraft`
@@ -544,7 +577,7 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 - Al cerrar modal: pregunta si guardar cambios no guardados
 - Dirty check evita writes redundantes
 
-### 6.6 Migracion Automatica de Schema
+### 6.7 Migracion Automatica de Schema
 
 **Ubicacion**: `admin-sync.js` → `migrateVehicleSchema()`
 **Ejecucion**: Una vez por sesion, en el primer snapshot de vehiculos
@@ -554,7 +587,7 @@ Para agregar un campo nuevo: agregar entrada en `DEFAULTS` dentro de `migrateVeh
 
 Campos que migra: codigoUnico, _version, estado, tipo, direccion, ubicacion, puertas, pasajeros, placa, destacado, prioridad.
 
-### 6.7 Formularios Publicos
+### 6.8 Formularios Publicos
 
 **"Vende tu Auto"** (wizard 3 pasos):
 1. Datos de contacto (nombre, telefono, email)
@@ -568,7 +601,7 @@ Campos que migra: codigoUnico, _version, estado, tipo, direccion, ubicacion, pue
 
 **WhatsApp**: Todos los formularios abren chat con mensaje pre-formateado al +573235016747
 
-### 6.8 CodigoUnico (Auto-generado)
+### 6.9 CodigoUnico (Auto-generado)
 
 - Formato: `ALT-YYYYMM-XXXX` (ej: `ALT-202604-0042`)
 - Secuencia atomica en `config/counters.vehicleCodeSeq` (transaction)
@@ -677,6 +710,21 @@ listeners. `showAccessDenied()` llama a `stopPresence()`.
 firebase deploy --only database
 ```
 
+### Widget "Sesiones Activas" siempre mostraba "Cargando..."
+
+**Causa**: Tres problemas combinados:
+1. `loadActiveSessions()` hacia `return` silencioso si `window.rtdb` no estaba cargado (SDK diferido), sin reintento
+2. Reglas RTDB solo permitian `.read` a nivel `/presence/$uid`, no a nivel `/presence` (la query necesita leer toda la coleccion)
+3. No habia `.indexOn: ["online"]` — RTDB rechaza queries `orderByChild` sin indice
+
+**Fix aplicado** (2026-04-09):
+- `database.rules.json`: `.read: "auth != null"` a nivel `/presence` + `.indexOn: ["online"]`
+- `loadActiveSessions()`: retry cuando RTDB no esta listo + error callback + filtro de sesiones stale (>5 min)
+- `startPresence()`: heartbeat cada 2 min para mantener `lastSeen` fresco
+- `stopPresence()`: limpia heartbeat + listener de sesiones activas
+
+**Requiere deploy manual**: `firebase deploy --only database`
+
 ### "Failed to obtain primary lease" en Firestore
 
 **Causa**: Multiples tabs abiertas compiten por el lease de IndexedDB.
@@ -734,7 +782,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | F12.4 | Historial de cambios con rollback visual (timeline + revert) | Alta |
 | F12.5 | Buscador/filtro en lista de aliados + filtro por rango de fechas | Media |
 | F12.6 | Virtual scrolling para tablas grandes (+100 filas) | Media |
-| F12.7 | Indicadores de sesiones activas por usuario | Completado (RTDB presence) |
+| F12.7 | Indicadores de sesiones activas por usuario | Completado (RTDB presence + heartbeat + stale detection) |
 
 ---
 

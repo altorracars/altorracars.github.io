@@ -205,3 +205,229 @@ Fragmentos HTML inyectados dinamicamente por `components.js`:
 |---------|-----------|
 | `index.js` | 3 funciones V2: createManagedUserV2, deleteManagedUserV2, updateUserRoleV2 |
 | `package.json` | Dependencias de Cloud Functions |
+
+---
+
+## 3. Firebase
+
+### Config
+
+```
+Project ID: altorra-cars
+Auth Domain: altorra-cars.firebaseapp.com
+RTDB URL: https://altorra-cars-default-rtdb.firebaseio.com
+Storage: altorra-cars.firebasestorage.app
+```
+
+### Deploy de reglas (manual, NO automatico)
+
+```bash
+firebase deploy --only firestore:rules
+firebase deploy --only database
+firebase deploy --only storage
+firebase deploy --only functions
+```
+
+> Un cambio en las reglas del repo NO se aplica automaticamente a Firebase.
+> Siempre desplegar manualmente despues de modificar reglas.
+
+### SDK en el frontend
+
+`firebase-config.js` carga el SDK compat v11.3.0 desde CDN en 2 fases:
+1. **Critico** (bloquea login): firebase-app + firebase-auth + firebase-firestore
+2. **Diferido** (background): firebase-storage + firebase-functions + firebase-analytics + firebase-database
+
+Persistence habilitada: `db.enablePersistence({ synchronizeTabs: true })`
+
+Objetos globales: `window.db`, `window.auth`, `window.storage`, `window.functions`, `window.rtdb`, `window.firebaseAnalytics`
+
+Troubleshooting: `window.clearFirestoreCache()` limpia IndexedDB y recarga.
+
+---
+
+## 4. RBAC (Control de Acceso por Roles)
+
+### Roles
+
+| Rol | Permisos |
+|-----|----------|
+| `super_admin` | Acceso total. Gestiona usuarios, vehiculos, marcas, aliados, config |
+| `editor` | Crea/edita vehiculos y marcas. No gestiona usuarios ni elimina |
+| `viewer` | Solo lectura en panel admin |
+
+### Helpers RBAC en admin-state.js
+
+```javascript
+AP.isSuperAdmin()           // rol === 'super_admin'
+AP.isEditor()               // rol === 'editor'
+AP.isViewer()               // rol === 'viewer'
+AP.canManageUsers()         // solo super_admin
+AP.canCreateOrEditInventory() // editor+
+AP.canDeleteInventory()     // solo super_admin
+AP.isEditorOrAbove()        // editor o super_admin
+```
+
+### Firestore Rules (resumen)
+
+```
+vehiculos/{id}       — read: public | create/update: editor+ (con _version) | delete: super_admin
+usuarios/{uid}       — read: own doc OR super_admin | write: super_admin only
+marcas/{id}          — read: public | write: editor+ (con _version)
+banners/{id}         — read: public | write: editor+ (con _version)
+solicitudes/{id}     — read: authenticated | create: public | update: editor+ | delete: super_admin
+citas/{id}           — read: authenticated | create: public | update: editor+ | delete: super_admin
+leads/{id}           — read: authenticated | create: public | delete: super_admin
+resenas/{id}         — read: public | create/update: editor+ | delete: super_admin
+concesionarios/{id}  — read: authenticated | write: super_admin only
+loginAttempts/{hash} — read/write: public (rate limiting cross-device)
+auditLog/{id}        — read: authenticated | create: editor+ | delete: super_admin (INMUTABLE)
+config/{docId}       — read: public | write: varies (bookedSlots: public, counters: editor+)
+system/{docId}       — read: public | write: editor+ (cache invalidation)
+drafts_activos/{uid} — read/write: editor+ (own uid only)
+```
+
+### Optimistic Locking (`_version`)
+
+- Editores DEBEN incrementar `_version` en cada update
+- Super Admin puede editar SIN incrementar (bypass en rules)
+- Creacion: `_version = 1`
+- Update: `_version = resource.data._version + 1`
+- Previene conflictos en edicion concurrente
+
+### Cloud Functions (V2 — activas)
+
+| Funcion | Guard | Accion |
+|---------|-------|--------|
+| `createManagedUserV2` | `verifySuperAdminV2` | Crea Auth user + doc en `usuarios/{uid}` |
+| `deleteManagedUserV2` | `verifySuperAdminV2` + self-delete protection | Elimina doc + Auth user |
+| `updateUserRoleV2` | `verifySuperAdminV2` | Actualiza rol, nombre en `usuarios/{uid}` |
+
+### RTDB Rules (Realtime Database)
+
+```json
+{
+  "presence": {
+    "$uid": {
+      ".read": true,
+      ".write": "$uid === auth.uid"
+    }
+  }
+}
+```
+
+### Checklist de no-regresion RBAC
+
+Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
+
+1. super_admin puede loguear y ver seccion de gestion de usuarios
+2. super_admin puede crear usuario (rol editor)
+3. Nuevo usuario aparece en la lista inmediatamente
+4. super_admin puede editar rol (editor → viewer)
+5. super_admin puede eliminar usuario
+6. editor NO ve seccion de gestion de usuarios
+7. viewer NO ve seccion de gestion de usuarios
+8. editor PUEDE crear/editar vehiculos y marcas
+9. editor NO puede eliminar vehiculos ni marcas
+10. viewer solo lectura (sin botones de crear/editar/eliminar)
+11. super_admin NO puede eliminarse a si mismo
+
+---
+
+## 5. Firestore Schema (Colecciones y Campos)
+
+### vehiculos/{id}
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| marca | string | Nombre de la marca |
+| modelo | string | Nombre del modelo |
+| year | number | Ano del vehiculo |
+| tipo | string | "nuevo" o "usado" |
+| categoria | string | "suv", "sedan", "pickup", "hatchback", "camioneta" |
+| precio | number | Precio de lista en COP |
+| precioOferta | number | Precio promocional (opcional) |
+| kilometraje | number | Kilometraje en km |
+| transmision | string | "Manual", "Automatica" |
+| combustible | string | "Gasolina", "Diesel", "Hibrido", "Electrico" |
+| motor | string | Descripcion del motor |
+| potencia | number | Caballos de fuerza |
+| cilindraje | string | CC del motor |
+| traccion | string | "Delantera", "Trasera", "4x4" |
+| direccion | string | "Hidraulica", "Electrica" |
+| color | string | Color del vehiculo |
+| puertas | number | Default: 5 |
+| pasajeros / asientos | number | Default: 5 |
+| ubicacion | string | Default: "Cartagena" |
+| placa | string | Placa o "Disponible al contactar" |
+| codigoFasecolda | string | Codigo tecnico o "Consultar" |
+| codigoUnico | string | `ALT-YYYYMM-XXXX` (auto-generado, inmutable, nunca reutilizado) |
+| descripcion | string | Descripcion larga |
+| estado | string | "disponible", "reservado", "vendido", "borrador" |
+| imagen | string | URL imagen principal |
+| imagenes | array | URLs de todas las imagenes |
+| caracteristicas | array | ["ABS", "Aire acondicionado", ...] |
+| destacado | boolean | Destacado en homepage |
+| featuredOrder | number | Orden de destacado |
+| featuredCutoutPng | string | URL imagen recortada PNG |
+| oferta | boolean | Tiene precio promocional |
+| prioridad | number | Prioridad de destacado (0-100) |
+| concesionario | string | Referencia al aliado ("_particular" = consignacion) |
+| consignaParticular | string | Nombre del dueno si es consignacion |
+| revisionTecnica | boolean | Default: true |
+| peritaje | boolean | Default: true |
+| _version | number | Optimistic locking |
+| createdAt | timestamp | Fecha de creacion |
+| createdBy / createdByName | string | Quien lo creo |
+| lastModifiedAt | timestamp | Ultima edicion |
+| lastModifiedBy / lastModifiedByName | string | Quien lo edito |
+| updatedAt | timestamp | Para lastmod en sitemap |
+
+**Subcollection**: `vehiculos/{id}/auditLog/{logId}` — action, user, userName, timestamp, changes[]
+
+### usuarios/{uid}
+
+| Campo | Tipo |
+|-------|------|
+| uid | string (Firebase Auth UID) |
+| email | string |
+| nombre | string |
+| rol | string ("super_admin", "editor", "viewer") |
+| estado | string ("activo") |
+| bloqueado | boolean |
+| habilitado2FA | boolean |
+| telefono2FA | string |
+| prefijo2FA | string (default "+57") |
+| trustedDevices | array |
+| creadoEn / creadoPor | timestamp / string |
+
+**Subcollection**: `usuarios/{uid}/drafts/{draftId}` — borradores de vehiculos en edicion
+
+### solicitudes/{id} (sistema unificado de comunicaciones)
+
+| Campo | Tipo |
+|-------|------|
+| nombre, telefono, email | string |
+| prefijoPais | string (default "+57") |
+| tipo | string ("consignacion_venta", "financiacion", "contacto_general") |
+| origen | string ("vende_tu_auto", "financiacion", "form_contacto") |
+| vehiculo | string |
+| datosExtra | object (datos especificos del tipo) |
+| comentarios | string |
+| estado | string ("pendiente", "contactado", "completado", "rechazado") |
+| observaciones | string (notas del admin) |
+| createdAt | timestamp |
+
+### Otras colecciones
+
+| Coleccion | Campos clave |
+|-----------|-------------|
+| `marcas/{id}` | nombre, logo, descripcion, _version |
+| `concesionarios/{id}` | nombre, telefono, responsable, direccion |
+| `resenas/{id}` | nombre, calificacion (1-5), comentario, estado |
+| `banners/{id}` | titulo, imagen, enlace, position, active, order, _version |
+| `loginAttempts/{hash}` | email, intentos, bloqueado, ultimoIntento |
+| `auditLog/{id}` | action, user, timestamp, details (INMUTABLE) |
+| `config/counters` | vehicleCodeSeq (para codigoUnico) |
+| `config/bookedSlots` | Disponibilidad de citas |
+| `system/meta` | lastModified (senal de cache invalidation) |
+| `drafts_activos/{uid}` | Borradores activos visibles para colaboracion |

@@ -327,16 +327,21 @@ drafts_activos/{uid} — read/write: editor+ (own uid only)
   "presence": {
     ".read": "auth != null",
     ".indexOn": ["online"],
-    "$uid": {
-      ".write": "$uid === auth.uid"
+    "$sessionId": {
+      ".write": "(!data.exists() && newData.child('uid').val() === auth.uid) || data.child('uid').val() === auth.uid",
+      ".validate": "newData.hasChild('uid') && newData.child('uid').val() === auth.uid"
     }
   }
 }
 ```
 
-- `.read: auth != null` a nivel `/presence` permite que `loadActiveSessions()` lea todos los nodos (solo usuarios autenticados)
+- Estructura: `/presence/{sessionId}` — un nodo por dispositivo/tab (no por usuario)
+- Cada sesion se crea con `push()` y contiene campo `uid` para identificar al dueno
+- `.read: auth != null` a nivel `/presence` permite que `loadActiveSessions()` lea todos los nodos
 - `.indexOn: ["online"]` requerido por la query `orderByChild('online').equalTo(true)`
-- `.write` sigue restringido: cada usuario solo puede escribir su propio nodo `/presence/{uid}`
+- `.write`: solo el dueno (`uid === auth.uid`) puede crear, actualizar o eliminar su sesion
+- `.validate`: asegura que siempre exista campo `uid` y que coincida con auth
+- `onDisconnect().remove()` elimina el nodo al desconectarse (desaparicion instantanea)
 - **Deploy manual obligatorio**: `firebase deploy --only database` despues de cambiar reglas
 
 ### Checklist de no-regresion RBAC
@@ -554,10 +559,12 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 
 **Ubicacion**: `admin-auth.js` → `startPresence()`, `stopPresence()`, `loadActiveSessions()`
 
+**Arquitectura**: `/presence/{sessionId}` — un nodo por dispositivo/tab, no por usuario. Permite que el mismo usuario aparezca en multiples dispositivos simultaneamente, y que multiples usuarios se vean entre si.
+
 **Escritura** (`startPresence`):
-- Escribe en `/presence/{uid}` con datos: email, nombre, rol, browser, os, city, region, country, ip, lastSeen, online
+- Crea nodo con `push()` en `/presence/` con datos: uid, email, nombre, rol, browser, os, city, region, country, ip, lastSeen, online
 - Usa `.info/connected` para detectar conexion/desconexion de RTDB
-- `onDisconnect()` marca `online: false` automaticamente al perder conexion
+- `onDisconnect().remove()` elimina el nodo al perder conexion (desaparicion instantanea)
 - Heartbeat cada 2 min actualiza `lastSeen` (mantiene sesion fresca para deteccion de stale)
 - Guards de autenticacion: verifica `auth.currentUser` antes de cada write
 - Geolocalizacion por IP via `fetchLocationInfo()` al iniciar sesion
@@ -565,7 +572,7 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 **Lectura** (`loadActiveSessions`):
 - Query realtime: `presence.orderByChild('online').equalTo(true)`
 - Filtra sesiones stale: descarta sesiones con `lastSeen` > 5 min (tab cerrada sin onDisconnect limpio)
-- Auto-limpia entradas propias stale
+- Auto-limpia entradas propias stale (via `remove()`)
 - Muestra: nombre, rol, ubicacion (ciudad/pais), navegador/OS, indicador "(tu)"
 - Retry automatico si RTDB no esta cargado (SDK diferido)
 - Error callback muestra "No se pudieron cargar" en vez de "Cargando..." infinito
@@ -574,7 +581,7 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 - Detiene heartbeat interval
 - Desuscribe listener de `.info/connected`
 - Desuscribe listener de sesiones activas (`_activeSessionsRef`)
-- Marca `online: false` en RTDB
+- Elimina nodo de sesion con `remove()` (desaparece instantaneamente en todos los clientes)
 
 **Propiedades en `AP`**: `_presenceRef`, `_presenceConnectedRef`, `_presenceHeartbeat`, `_activeSessionsRef`, `_presenceLocation`, `_presenceDevice`
 

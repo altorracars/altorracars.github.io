@@ -889,10 +889,14 @@
         if (!window.auth.currentUser || window.auth.currentUser.uid !== user.uid) return;
 
         var uid = user.uid;
-        var presenceRef = window.rtdb.ref('presence/' + uid);
+        // Each device/tab gets its own session node via push()
+        var presenceRef = window.rtdb.ref('presence').push();
         var connectedRef = window.rtdb.ref('.info/connected');
 
-        // Clean up any existing listener and heartbeat before adding new ones
+        // Clean up any existing session and listeners before starting
+        if (AP._presenceRef) {
+            AP._presenceRef.remove().catch(function() {});
+        }
         if (AP._presenceConnectedRef) {
             AP._presenceConnectedRef.off();
         }
@@ -923,6 +927,7 @@
             var loc = AP._presenceLocation || {};
             var dev = AP._presenceDevice || device;
             var sessionData = {
+                uid: uid,
                 email: user.email,
                 nombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0],
                 rol: AP.currentUserRole || 'viewer',
@@ -935,10 +940,10 @@
                 lastSeen: firebase.database.ServerValue.TIMESTAMP,
                 online: true
             };
-            // When disconnects, mark offline
-            presenceRef.onDisconnect().update({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+            // When disconnects, remove this session node entirely
+            presenceRef.onDisconnect().remove();
             // Set online now
-            presenceRef.update(sessionData).catch(function(err) {
+            presenceRef.set(sessionData).catch(function(err) {
                 console.warn('[Presence] Error updating presence:', err.message);
             });
         });
@@ -972,15 +977,15 @@
             AP._activeSessionsRef.off();
             AP._activeSessionsRef = null;
         }
+        // Remove this session node (instant disappearance for other clients)
         if (AP._presenceRef) {
-            AP._presenceRef.update({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP }).catch(function() {});
+            AP._presenceRef.remove().catch(function() {});
             AP._presenceRef = null;
         }
     }
 
     // Max age for a session to be considered "active" (5 minutes).
-    // If lastSeen is older than this, the session is stale (e.g. tab closed
-    // without clean onDisconnect firing).
+    // Safety net for sessions whose onDisconnect didn't fire cleanly.
     var PRESENCE_STALE_MS = 5 * 60 * 1000;
 
     function loadActiveSessions() {
@@ -1002,18 +1007,19 @@
 
         sessionsRef.on('value', function(snap) {
             var now = Date.now();
+            var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : null;
             var sessions = [];
             snap.forEach(function(child) {
                 var data = child.val();
                 // Filter out stale sessions (lastSeen older than threshold)
                 if (data.lastSeen && (now - data.lastSeen) > PRESENCE_STALE_MS) {
                     // Clean up stale entry if it belongs to us
-                    if (window.auth.currentUser && child.key === window.auth.currentUser.uid) {
-                        child.ref.update({ online: false });
+                    if (currentUid && data.uid === currentUid) {
+                        child.ref.remove();
                     }
                     return;
                 }
-                sessions.push(Object.assign({ uid: child.key }, data));
+                sessions.push(Object.assign({ sessionKey: child.key }, data));
             });
 
             if (sessions.length === 0) {
@@ -1026,7 +1032,7 @@
                 var rolLabel = s.rol === 'super_admin' ? 'Super Admin' : s.rol === 'editor' ? 'Editor' : 'Viewer';
                 var nombre = AP.escapeHtml(s.nombre || s.email || '?');
                 var initials = (s.nombre || '?').split(' ').map(function(w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join('');
-                var isSelf = window.auth.currentUser && s.uid === window.auth.currentUser.uid;
+                var isSelf = currentUid && s.uid === currentUid;
 
                 // Build location + device line
                 var detailParts = [];

@@ -549,7 +549,9 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 - Duracion: 30 dias (`TRUST_DURATION_MS`)
 - Token aleatorio guardado en localStorage + array `trustedDevices` en Firestore `usuarios/{uid}`
 - Cada entrada almacena: token, browser, os, city, region, country, ip (anonimizada), timezone, createdAt, expiresAt, lastUsed
-- `fetchLocationInfo()` obtiene geolocalizacion por IP via `ipwho.is/` (HTTPS, CORS, sin API key, sin permisos)
+- `fetchLocationInfo()` obtiene geolocalizacion por IP via `get.geojs.io/v1/ip/geo.json` (HTTPS, CORS `*`, sin API key, sin permisos)
+- IP anonimizada: ultimo octeto reemplazado con `***` (ej: `190.28.123.***`)
+- Resultado cacheado por page load (`_locationCache`) para evitar llamadas redundantes
 - IP anonimizada: ultimo octeto reemplazado con `***` (ej: `190.28.123.***`)
 - Ubicacion se refresca en cada login (`updateDeviceLastUsed`)
 - UI muestra: navegador, OS, ubicacion con pin, IP anonimizada, ultimo uso, dias restantes

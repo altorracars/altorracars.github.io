@@ -884,22 +884,29 @@
     // Heartbeat interval: update lastSeen every 2 minutes so stale detection works
     var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
 
-    // Persistent device ID — unique per browser+device, survives page refresh.
-    // If localStorage is cleared, a new ID is generated and stale filter (5 min)
-    // cleans the orphaned session.
-    var DEVICE_ID_KEY = 'altorra_device_id';
+    // Hardware-based device fingerprint — survives cache clear, no storage needed.
+    // Combines immutable hardware/browser properties into a deterministic hash.
+    // Two different physical devices will almost always produce different IDs,
+    // while the same device always produces the same ID.
     function getDeviceId() {
-        try {
-            var id = localStorage.getItem(DEVICE_ID_KEY);
-            if (!id) {
-                id = Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
-                localStorage.setItem(DEVICE_ID_KEY, id);
-            }
-            return id;
-        } catch (e) {
-            // localStorage unavailable, use a session-only fallback
-            return 'tmp_' + Date.now().toString(36);
+        var components = [
+            screen.width + 'x' + screen.height,
+            screen.colorDepth,
+            navigator.hardwareConcurrency || 'na',
+            navigator.deviceMemory || 'na',
+            navigator.platform || 'na',
+            new Date().getTimezoneOffset(),
+            navigator.maxTouchPoints || 0,
+            navigator.language || 'na'
+        ];
+        // Simple hash: convert string to a 32-bit integer
+        var str = components.join('|');
+        var hash = 0;
+        for (var i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0; // Convert to 32-bit integer
         }
+        return 'dev_' + Math.abs(hash).toString(36);
     }
 
     function startPresence(user) {

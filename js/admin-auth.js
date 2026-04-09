@@ -884,6 +884,24 @@
     // Heartbeat interval: update lastSeen every 2 minutes so stale detection works
     var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
 
+    // Persistent device ID — unique per browser+device, survives page refresh.
+    // If localStorage is cleared, a new ID is generated and stale filter (5 min)
+    // cleans the orphaned session.
+    var DEVICE_ID_KEY = 'altorra_device_id';
+    function getDeviceId() {
+        try {
+            var id = localStorage.getItem(DEVICE_ID_KEY);
+            if (!id) {
+                id = Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+                localStorage.setItem(DEVICE_ID_KEY, id);
+            }
+            return id;
+        } catch (e) {
+            // localStorage unavailable, use a session-only fallback
+            return 'tmp_' + Date.now().toString(36);
+        }
+    }
+
     function startPresence(user) {
         if (!window.rtdb) {
             // RTDB not loaded yet, retry in 2s
@@ -909,15 +927,16 @@
             AP._presenceHeartbeat = null;
         }
 
-        // Clean up orphaned sessions from this same device (same uid + browser + os).
+        // Clean up orphaned sessions from this same device (same uid + deviceId).
         // Handles: cache clear, page refresh, mobile kill, or any case where
         // onDisconnect didn't fire. Keeps sessions from other devices intact.
         var device = getDeviceInfo();
+        var deviceId = getDeviceId();
         window.rtdb.ref('presence').orderByChild('online').equalTo(true)
             .once('value').then(function(snap) {
                 snap.forEach(function(child) {
                     var d = child.val();
-                    if (d.uid === uid && d.browser === device.browser && d.os === device.os) {
+                    if (d.uid === uid && d.deviceId === deviceId) {
                         child.ref.remove().catch(function() {});
                     }
                 });
@@ -949,6 +968,7 @@
             var dev = AP._presenceDevice || device;
             var sessionData = {
                 uid: uid,
+                deviceId: deviceId,
                 email: user.email,
                 nombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0],
                 rol: AP.currentUserRole || 'viewer',

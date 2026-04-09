@@ -884,8 +884,6 @@
     // Heartbeat interval: update lastSeen every 2 minutes so stale detection works
     var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
 
-    var PRESENCE_SESSION_KEY = 'altorra_presence_id';
-
     function startPresence(user) {
         if (!window.rtdb) {
             // RTDB not loaded yet, retry in 2s
@@ -911,28 +909,26 @@
             AP._presenceHeartbeat = null;
         }
 
-        // Clean up previous session from this tab (survives page refresh via sessionStorage)
-        try {
-            var prevKey = sessionStorage.getItem(PRESENCE_SESSION_KEY);
-            if (prevKey) {
-                var prevRef = window.rtdb.ref('presence/' + prevKey);
-                prevRef.once('value').then(function(snap) {
-                    if (snap.exists()) prevRef.remove();
-                }).catch(function() {});
-            }
-        } catch (e) { /* sessionStorage not available */ }
+        // Clean up orphaned sessions from this same device (same uid + browser + os).
+        // Handles: cache clear, page refresh, mobile kill, or any case where
+        // onDisconnect didn't fire. Keeps sessions from other devices intact.
+        var device = getDeviceInfo();
+        window.rtdb.ref('presence').orderByChild('online').equalTo(true)
+            .once('value').then(function(snap) {
+                snap.forEach(function(child) {
+                    var d = child.val();
+                    if (d.uid === uid && d.browser === device.browser && d.os === device.os) {
+                        child.ref.remove().catch(function() {});
+                    }
+                });
+            }).catch(function() {});
 
-        // Create ONE session node for this device/tab (outside the reconnect listener)
+        // Create ONE session node for this device/tab
         var presenceRef = window.rtdb.ref('presence').push();
         AP._presenceRef = presenceRef;
         AP._presenceConnectedRef = connectedRef;
 
-        // Save push key so we can clean up on page refresh
-        try { sessionStorage.setItem(PRESENCE_SESSION_KEY, presenceRef.key); }
-        catch (e) { /* ignore */ }
-
         // Fetch location once for this session
-        var device = getDeviceInfo();
         fetchLocationInfo().then(function(loc) {
             AP._presenceLocation = loc;
             AP._presenceDevice = device;
@@ -1020,9 +1016,6 @@
             AP._presenceRef.remove().catch(function() {});
             AP._presenceRef = null;
         }
-        // Clear session key
-        try { sessionStorage.removeItem(PRESENCE_SESSION_KEY); }
-        catch (e) { /* ignore */ }
     }
 
     // Max age for a session to be considered "active" (5 minutes).

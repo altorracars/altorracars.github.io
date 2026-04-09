@@ -1,17 +1,20 @@
 # CLAUDE.md — Altorra Cars Knowledge Base
 
 > Referencia unica para Claude. Evita reprocesos en parches, errores y mejoras.
-> Ultima actualizacion: 2026-04-08
+> Ultima actualizacion: 2026-04-09
 
 ---
 
-## Arquitectura
+## 1. Arquitectura General
 
 - **Tipo**: Sitio estatico (GitHub Pages) + Firebase backend
 - **Dominio**: `altorracars.github.io` (sin dominio propio)
 - **Repo**: `altorracars/altorracars.github.io`
 - **Deploy**: Push a `main` → GitHub Pages auto-deploy
 - **CI**: GitHub Actions genera paginas de vehiculos cada 4h desde Firestore
+- **Negocio**: Compra/venta de carros usados en Cartagena, Colombia
+- **Empresa**: ALTORRA Company SAS
+- **Color brand**: `#b89658` (dorado)
 
 ### Stack
 
@@ -19,271 +22,186 @@
 |------|-----------|
 | Frontend | HTML/CSS/JS vanilla (sin framework, sin bundler) |
 | Backend | Firebase: Auth, Firestore, RTDB, Storage, Functions, Analytics |
-| SDK | Firebase Compat SDK v11.3.0 (cargado desde CDN) |
-| Generacion | `scripts/generate-vehicles.mjs` (Node.js) — genera HTML estatico desde Firestore |
-| PWA | Service Worker + manifest.json + cache-manager.js |
-
-### Estructura de archivos clave
-
-```
-/ (raiz = sitio publico)
-├── index.html                    — Homepage publica
-├── admin.html                    — Panel de administracion (SPA)
-├── sitemap.xml                   — Auto-generado por generate-vehicles.mjs
-├── robots.txt                    — SEO: un solo bloque User-agent: *
-├── vehiculos/                    — Paginas HTML individuales por vehiculo (auto-generadas)
-├── marcas/                       — Paginas HTML por marca (auto-generadas)
-├── js/
-│   ├── firebase-config.js        — Inicializacion Firebase + persistence + SDK loading
-│   ├── admin-auth.js             — Auth, RBAC, login, 2FA, rate limiting, presencia RTDB
-│   ├── admin-vehicles.js         — CRUD vehiculos, imagenes, drafts, wizard
-│   ├── admin-sync.js             — Listeners Firestore, migracion de schema, stats
-│   ├── admin-brands.js           — Gestion de marcas
-│   ├── admin-dealers.js          — Gestion de aliados/concesionarios
-│   ├── admin-operations.js       — Ventas, exportacion, GitHub deploy
-│   ├── admin-users.js            — Gestion de usuarios (solo super_admin)
-│   ├── admin-appointments.js     — Gestion de citas/solicitudes
-│   ├── admin-lists.js            — Leads, resenas
-│   ├── admin-state.js            — Estado global AP, helpers (escapeHtml, closestAction)
-│   ├── admin-table-utils.js      — Paginacion, sort, search de tablas
-│   ├── admin-phase5.js           — Wizard, charts, theme toggle
-│   ├── components.js             — Componentes publicos (header, footer, modals, smooth scroll)
-│   ├── database.js               — Lectura publica de Firestore para catalogo
-│   ├── render.js                 — Renderizado de cards de vehiculos
-│   ├── contact-forms.js          — Modals de contacto/financiacion/venta
-│   ├── cache-manager.js          — Cache inteligente con version check
-│   └── service-worker.js         — PWA offline support
-├── scripts/
-│   └── generate-vehicles.mjs     — Generador de paginas estaticas + sitemap
-├── firestore.rules               — Reglas de seguridad Firestore
-├── database.rules.json           — Reglas de seguridad Realtime Database
-├── storage.rules                 — Reglas de Firebase Storage
-└── functions/                    — Cloud Functions (createManagedUser, etc.)
-```
+| SDK | Firebase Compat SDK v11.3.0 (cargado desde CDN, NO modular) |
+| Generacion | `scripts/generate-vehicles.mjs` (Node.js, Firebase modular SDK v12) |
+| PWA | Service Worker + manifest.json + cache-manager.js (4 capas) |
+| Linting | Biome 1.9.4 (`npm run lint`, `npm run format`) |
+| Package | `npm run generate` ejecuta el generador de paginas |
 
 ---
 
-## Firebase Config
+## 2. Estructura Completa de Archivos
 
-```
-Project ID: altorra-cars
-Auth Domain: altorra-cars.firebaseapp.com
-RTDB URL: https://altorra-cars-default-rtdb.firebaseio.com
-Storage: altorra-cars.firebasestorage.app
-```
+### Paginas HTML publicas
 
-### Deploy de reglas
+| Archivo | Proposito |
+|---------|-----------|
+| `index.html` | Homepage: hero, vehiculos destacados, marcas, categorias |
+| `busqueda.html` | Catalogo completo con filtros avanzados |
+| `detalle-vehiculo.html` | Template para paginas de vehiculo (usado por generate-vehicles.mjs) |
+| `marca.html` | Pagina individual de marca (carga dinamica por query param o prerendered) |
+| `marcas.html` | Listado de todas las marcas disponibles |
+| `vehiculos-suv.html` | Catalogo filtrado: SUVs |
+| `vehiculos-sedan.html` | Catalogo filtrado: sedanes |
+| `vehiculos-pickup.html` | Catalogo filtrado: pickups |
+| `vehiculos-hatchback.html` | Catalogo filtrado: hatchbacks |
+| `vehiculos-camionetas.html` | Catalogo filtrado: camionetas |
+| `vehiculos-nuevos.html` | Catalogo filtrado: vehiculos nuevos |
+| `vehiculos-usados.html` | Catalogo filtrado: vehiculos usados |
+| `comparar.html` | Comparador lado a lado de vehiculos |
+| `simulador-credito.html` | Calculadora de financiamiento |
+| `favoritos.html` | Vehiculos guardados por el usuario (localStorage) |
+| `resenas.html` | Resenas/testimonios de clientes |
+| `contacto.html` | Formulario de contacto general |
+| `nosotros.html` | Pagina "Sobre nosotros" |
+| `terminos.html` | Terminos y condiciones |
+| `privacidad.html` | Politica de privacidad |
+| `cookies.html` | Politica de cookies con banner de consentimiento |
+| `404.html` | Pagina de error 404 personalizada |
 
-```bash
-firebase deploy --only firestore:rules
-firebase deploy --only database
-firebase deploy --only storage
-firebase deploy --only functions
-```
+### Paginas admin / internas
 
-> Las reglas en el repo (firestore.rules, database.rules.json) deben desplegarse manualmente.
-> Un cambio en las reglas del repo NO se aplica automaticamente a Firebase.
+| Archivo | Proposito |
+|---------|-----------|
+| `admin.html` | Panel de administracion (SPA completa) |
+| `admin-upload.html` | Subida de imagenes (auxiliar) |
+| `google8d667a72b0e3536b.html` | Verificacion de Google Search Console |
 
----
+### Directorios auto-generados
 
-## RBAC (Control de Acceso por Roles)
+| Directorio | Contenido | Generado por |
+|------------|-----------|-------------|
+| `vehiculos/` | `{slug}.html` por vehiculo (ej: `chevrolet-equinox-ls-2018-1.html`) | generate-vehicles.mjs |
+| `marcas/` | `{slug}.html` por marca (ej: `toyota.html`) | generate-vehicles.mjs |
 
-### Roles
+### JavaScript — Sitio publico (`js/`)
 
-| Rol | Permisos |
-|-----|----------|
-| `super_admin` | Acceso total. Gestiona usuarios, vehiculos, marcas, config |
-| `editor` | Crea/edita vehiculos y marcas. No gestiona usuarios |
-| `viewer` | Solo lectura en panel admin |
+| Archivo | Proposito |
+|---------|-----------|
+| `firebase-config.js` | Init Firebase app + Auth + Firestore + persistence + deferred SDKs |
+| `components.js` | Header/footer dinamicos (fetch snippets), smooth scroll, loadModalsIfNeeded() |
+| `database.js` | Lectura publica de Firestore: vehiculos, marcas, banners. Cache en localStorage |
+| `render.js` | Renderizado de cards de vehiculos en el DOM |
+| `contact-forms.js` | Modals: "Vende tu Auto" (wizard 3 pasos) + "Financiacion". Guarda en Firestore `solicitudes` |
+| `contact.js` | Formulario de contacto general |
+| `cache-manager.js` | Cache inteligente de 4 capas (Memory → IndexedDB → localStorage → SW) |
+| `favorites-manager.js` | Gestion de favoritos en localStorage |
+| `filtros-avanzados.js` | Filtros sidebar: marca, precio, year, km, tipo, categoria |
+| `comparador.js` | Logica del comparador de vehiculos |
+| `cookies.js` | Banner de consentimiento de cookies |
+| `citas.js` | Formulario publico de solicitud de citas |
+| `dynamic-lists.js` | Listados dinamicos de vehiculos por categoria/marca |
+| `featured-week-banner.js` | Banner de vehiculo destacado de la semana |
+| `historial-visitas.js` | Tracking de vehiculos visitados recientemente |
+| `page-loader.js` | Animacion de carga de pagina |
+| `performance.js` | Lazy loading de imagenes, IntersectionObserver |
+| `reviews.js` | Renderizado publico de resenas |
+| `simulador/` | Directorio con logica del simulador de credito |
+| `toast.js` | Sistema de notificaciones toast |
+| `main.js` | Punto de entrada general (legacy) |
 
-### Firestore Rules (resumen)
+### JavaScript — Panel admin (`js/admin-*.js`)
 
-```
-vehiculos/{id}    — read: public | create/update: editor+ | delete: super_admin
-usuarios/{uid}    — read: own doc OR super_admin | write: super_admin only
-marcas/{id}       — read: public | write: editor+
-loginAttempts/{h} — read/write: public (para rate limiting cross-device)
-leads, citas      — read: authenticated | create: public | delete: super_admin
-```
+| Archivo | Proposito |
+|---------|-----------|
+| `admin-state.js` | Estado global `window.AP`, RBAC helpers, escapeHtml, closestAction, formatPrice |
+| `admin-auth.js` | Login, logout, 2FA, rate limiting, presencia RTDB, session timeout |
+| `admin-sync.js` | Listeners realtime Firestore, migracion de schema, stats, cache invalidation |
+| `admin-vehicles.js` | CRUD vehiculos, imagenes, drafts, wizard, drag-reorder destacados |
+| `admin-brands.js` | CRUD de marcas |
+| `admin-dealers.js` | Gestion de aliados/concesionarios |
+| `admin-users.js` | Gestion de usuarios (solo super_admin) |
+| `admin-appointments.js` | Gestion de citas/solicitudes |
+| `admin-operations.js` | Registro de ventas, exportacion, deploy a GitHub |
+| `admin-lists.js` | Leads |
+| `admin-reviews.js` | Gestion de resenas |
+| `admin-banners.js` | Gestion de banners promocionales |
+| `admin-activity.js` | Visor de audit log |
+| `admin-table-utils.js` | Paginacion, sort, search, export CSV para tablas |
+| `admin-phase5.js` | Wizard avanzado, charts de actividad, theme toggle |
 
-### Cloud Functions (V2 — activas)
+### CSS (`css/`)
 
-| Funcion | Llamada desde | Guard |
-|---------|---------------|-------|
-| `createManagedUserV2` | admin-users.js | `verifySuperAdminV2` |
-| `deleteManagedUserV2` | admin-users.js | `verifySuperAdminV2` + self-delete protection |
-| `updateUserRoleV2` | admin-users.js | `verifySuperAdminV2` |
+| Archivo | Proposito |
+|---------|-----------|
+| `style.css` | Estilos principales del sitio publico |
+| `dark-theme.css` | Variante dark mode |
+| `admin.css` | Estilos del panel admin |
+| `hero.css` | Hero banner de homepage |
+| `contact-forms.css` | Modals de contacto/financiacion |
+| `toast-notifications.css` | Notificaciones toast |
+| `comparador.css` | Estilos del comparador |
+| `calculadora-financiamiento.css` | Simulador de credito |
+| `cookies.css` | Banner de cookies |
+| `citas.css` | Formulario de citas |
+| `reviews.css` | Seccion de resenas |
+| `filtros-avanzados.css` | Filtros sidebar |
+| `favorites-page.css` | Pagina de favoritos |
+| `favorites-fix.css` | Fixes de favoritos |
+| `favorites-empty-fullpage.css` | Estado vacio de favoritos |
+| `featured-week-banner.css` | Banner vehiculo destacado |
+| `featured-fixes.css` | Fixes de destacados |
+| `vehicles-cards-fix.css` | Fixes de cards de vehiculos |
+| `brands-fixes.css` | Fixes de paginas de marcas |
+| `sidebar-filters-fix.css` | Fixes de sidebar |
+| `footer-fixes.css` | Fixes de footer |
+| `mobile-fixes.css` | Ajustes responsive mobile |
+| `performance-fixes.css` | Optimizaciones CSS |
+| `animaciones.css` | Animaciones y transiciones |
+| `historial-visitas.css` | Widget de historial de visitas |
+| `page-loader.css` | Animacion de carga |
 
-### Checklist de no-regresion RBAC
+### Snippets (`snippets/`)
 
-Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
+Fragmentos HTML inyectados dinamicamente por `components.js`:
 
-1. super_admin puede loguear y ver seccion de gestion de usuarios
-2. super_admin puede crear usuario (rol editor)
-3. Nuevo usuario aparece en la lista inmediatamente
-4. super_admin puede editar rol (editor → viewer)
-5. super_admin puede eliminar usuario
-6. editor NO ve seccion de gestion de usuarios
-7. viewer NO ve seccion de gestion de usuarios
-8. editor PUEDE crear/editar vehiculos y marcas
-9. editor NO puede eliminar vehiculos ni marcas
-10. viewer solo lectura (sin botones de crear/editar/eliminar)
-11. super_admin NO puede eliminarse a si mismo
+| Archivo | Contenido |
+|---------|-----------|
+| `header.html` | Navegacion principal, menu mobile, dropdowns de marcas/categorias |
+| `footer.html` | Footer con links, redes sociales, info de contacto |
+| `modals.html` | Modals de "Vende tu Auto" y "Financiacion" |
+| `seo-meta.html` | Meta tags SEO reutilizables |
 
----
+### Data (`data/`)
 
-## Patrones y Convenciones del Codigo
+| Archivo | Contenido | Generado por |
+|---------|-----------|-------------|
+| `vehicle-slugs.json` | Mapa `{id: slug}` para URLs de vehiculos | generate-vehicles.mjs |
+| `brand-slugs.json` | Mapa `{brandId: slug}` para URLs de marcas | generate-vehicles.mjs |
+| `deploy-info.json` | `{version, sha, ref}` — señal de nuevo deploy | GitHub Actions |
 
-### Event Delegation (NO usar onclick inline)
+### Multimedia (`multimedia/`)
 
-```javascript
-// CORRECTO — event delegation con data-action
-container.addEventListener('click', function(e) {
-    var btn = AP.closestAction(e); // SVG-safe closest()
-    if (!btn) return;
-    var action = btn.dataset.action;
-    // ...
-});
+| Directorio | Contenido |
+|------------|-----------|
+| `Logos/` | Logos de marcas de vehiculos |
+| `banner/` | Banners de marca (ej: `b_toyota.png`, `b_chevrolet.png`) |
+| `categories/` | Imagenes de categorias (SUV, sedan, pickup, etc.) |
+| `heroes/` | Imagenes hero de paginas internas |
+| `vehicles/` | Fotos de vehiculos subidas desde admin |
+| `heroindex.webp` | Hero principal del homepage |
+| `logo-placeholder.png` | Logo de Altorra Cars |
+| `hero-car.jpg` | Imagen hero genérica |
 
-// INCORRECTO — NUNCA usar onclick inline (vulnerabilidad XSS)
-// <button onclick="doSomething('${variable}')">
-```
+### Archivos de configuracion raiz
 
-### Escapar datos de usuario en HTML
+| Archivo | Proposito |
+|---------|-----------|
+| `firebase.json` | Config de deploy Firebase (rules, functions) |
+| `firestore.rules` | Reglas de seguridad Firestore |
+| `database.rules.json` | Reglas de seguridad Realtime Database |
+| `storage.rules` | Reglas de Firebase Storage |
+| `package.json` | Scripts: `generate`, `lint`, `format`. Dep: firebase v12 |
+| `manifest.json` | PWA manifest (standalone, es-CO, shortcuts) |
+| `sitemap.xml` | Sitemap auto-generado |
+| `robots.txt` | SEO: Allow + Disallow admin + Sitemap directive |
+| `service-worker.js` | SW en raiz (scope: /) |
+| `.nojekyll` | Evita procesamiento Jekyll en GitHub Pages |
+| `.github/workflows/generate-vehicles.yml` | CI: genera paginas cada 4h |
 
-```javascript
-// SIEMPRE usar AP.escapeHtml() al insertar datos en innerHTML
-cell.innerHTML = '<span>' + AP.escapeHtml(vehiculo.marca) + '</span>';
-```
+### Cloud Functions (`functions/`)
 
-### Firestore: create vs update
-
-```javascript
-// Crear: usar set() SIN merge
-transaction.set(docRef, data);
-
-// Actualizar: usar update() o transaction.update()
-transaction.update(docRef, data);
-
-// NUNCA usar set(data, { merge: true }) para creacion — las rules
-// evaluan ambiguamente y puede fallar con permission-denied
-```
-
-### Migracion de schema de vehiculos
-
-Al agregar un campo nuevo al schema de vehiculos, agregar una entrada en el
-objeto `DEFAULTS` dentro de `migrateVehicleSchema()` en `admin-sync.js`.
-La proxima carga del admin migrara automaticamente todos los vehiculos existentes.
-
-### Sitemap: lastmod
-
-Las paginas estaticas en `generate-vehicles.mjs` usan fechas fijas de lastmod.
-Solo actualizar la fecha cuando el contenido de la pagina realmente cambia.
-Google ignora lastmod si siempre muestra la fecha actual.
-
----
-
-## Errores Conocidos y Soluciones
-
-### "Access denied for UID" al hacer login
-
-**Causa**: Error de red impide cargar perfil de Firestore → el codigo trataba
-cualquier error como "acceso denegado" y hacia signOut.
-
-**Fix aplicado** (2026-04-08): `loadUserProfile` ahora reintenta hasta 3 veces
-con backoff (2s, 4s, 6s) para errores de red antes de rendirse. Solo hace
-signOut para errores reales de permisos.
-
-**Si persiste**: Verificar que las reglas de Firestore esten desplegadas:
-```bash
-firebase deploy --only firestore:rules
-```
-
-### Errores de presencia "permission_denied" en RTDB
-
-**Causa**: Listeners de presencia escribian a `/presence/{uid}` despues de que
-el usuario fue deslogueado, causando permission_denied.
-
-**Fix aplicado** (2026-04-08): Guards en `startPresence()` verifican que el
-usuario sigue autenticado antes de cada escritura. `stopPresence()` limpia
-listeners. `showAccessDenied()` llama a `stopPresence()`.
-
-**Si persiste**: Verificar que las reglas de RTDB esten desplegadas:
-```bash
-firebase deploy --only database
-```
-
-### "Failed to obtain primary lease" en Firestore
-
-**Causa**: Multiples tabs abiertas compiten por el lease de IndexedDB.
-
-**Fix**: Cerrar tabs duplicadas. Si persiste, ejecutar en consola del navegador:
-```javascript
-window.clearFirestoreCache()
-```
-
-### Sitemap no se sincroniza en Google Search Console
-
-**Documentado en**: `SITEMAP-FIX.md`
-
-**Causa**: Google intento fetchar el sitemap cuando tenia errores, no reintento.
-
-**Fix**: Re-enviar sitemap en Search Console + ping a Google.
-Ver `SITEMAP-FIX.md` para pasos detallados.
-
-### Modals de financiacion/venta no funcionan fuera de index.html
-
-**Fix aplicado**: `loadModalsIfNeeded()` en `components.js` inyecta modals
-dinamicamente en todas las paginas.
-
-### Bloqueo de puntero al usar "Ver todas" en menu de marcas
-
-**Fix aplicado**: `pointer-events: none` en `.modal-overlay` inactivo +
-cierre de dropdowns/menu al hacer smooth scroll.
-
----
-
-## Fases Completadas (Historico)
-
-> No reimplementar — ya estan en produccion.
-
-| Fase | Descripcion | Estado |
-|------|-------------|--------|
-| 1-5 | Admin panel: rendimiento, UX, responsive, seguridad basica, visual polish | Completada |
-| 0 | Fix critico CRUD vehiculos (set→update, rules, persistence, SVG events) | Completada |
-| 6 | Seguridad: XSS, file validation, event delegation, parseInt radix | Completada |
-| 7 | Login: reset password, perfil sidebar, bienvenida, URL validation | Completada |
-| 8 | Dashboard: acciones rapidas, stats clickeables, badge citas, paginacion auditLog | Completada |
-| 9 | Performance: debounce, CSS variables, lazy images, breakpoints, z-index | Completada |
-| 10 | Productividad: atajos teclado, duplicar vehiculo, batch ops, export CSV | Completada |
-| 11 | Accesibilidad: ARIA roles, labels, focus styles, live regions | Completada |
-
----
-
-## Fase 12 — Pendiente (Futuro)
-
-| ID | Tarea | Complejidad |
-|----|-------|-------------|
-| F12.1 | Notificacion por email al recibir cita (Cloud Function trigger) | Alta |
-| F12.2 | Preview en tiempo real del vehiculo como se vera en el sitio | Media |
-| F12.3 | 2FA opcional via Firebase Auth (ya parcialmente implementado) | Media |
-| F12.4 | Historial de cambios con rollback visual (timeline + revert) | Alta |
-| F12.5 | Buscador/filtro en lista de aliados + filtro por rango de fechas | Media |
-| F12.6 | Virtual scrolling para tablas grandes (+100 filas) | Media |
-| F12.7 | Indicadores de sesiones activas por usuario (ya implementado via RTDB presence) | Completado |
-
----
-
-## SEO
-
-Ver `SITEMAP-FIX.md` para estado detallado del sitemap y Google Search Console.
-
-### Implementado
-- Meta tags completos (description, keywords, OG, Twitter Cards)
-- `<link rel="canonical">` en todas las paginas
-- Structured Data JSON-LD (AutoDealer + WebSite)
-- Sitemap auto-generado con prioridades diferenciadas
-- robots.txt limpio
-
-### Pendiente
-- Dominio personalizado (mejoraria crawl priority de Google)
+| Archivo | Contenido |
+|---------|-----------|
+| `index.js` | 3 funciones V2: createManagedUserV2, deleteManagedUserV2, updateUserRoleV2 |
+| `package.json` | Dependencias de Cloud Functions |

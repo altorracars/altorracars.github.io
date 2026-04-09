@@ -884,6 +884,69 @@
     // Heartbeat interval: update lastSeen every 2 minutes so stale detection works
     var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
 
+    // Hardware-based device fingerprint — survives cache clear, no storage needed.
+    // Combines immutable hardware/browser properties + GPU + canvas rendering
+    // into a deterministic hash. Practically impossible for two different
+    // physical devices to produce the same ID.
+    function getDeviceId() {
+        var components = [
+            // Screen
+            screen.width + 'x' + screen.height,
+            screen.colorDepth,
+            screen.pixelDepth,
+            window.devicePixelRatio || 1,
+            // Hardware
+            navigator.hardwareConcurrency || 'na',
+            navigator.deviceMemory || 'na',
+            navigator.platform || 'na',
+            navigator.maxTouchPoints || 0,
+            // Locale
+            new Date().getTimezoneOffset(),
+            navigator.language || 'na',
+            navigator.languages ? navigator.languages.join(',') : 'na'
+        ];
+
+        // WebGL GPU fingerprint — extracts the exact GPU model
+        try {
+            var canvas = document.createElement('canvas');
+            var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (gl) {
+                var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+                if (dbg) {
+                    components.push(gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL));
+                    components.push(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL));
+                }
+                components.push(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+                components.push(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE));
+            }
+        } catch (e) { /* WebGL not available */ }
+
+        // Canvas fingerprint — same text renders differently per GPU/driver/OS
+        try {
+            var cv = document.createElement('canvas');
+            cv.width = 200; cv.height = 50;
+            var ctx = cv.getContext('2d');
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#f60';
+            ctx.fillRect(50, 0, 100, 50);
+            ctx.fillStyle = '#069';
+            ctx.fillText('Altorra.fp', 2, 15);
+            ctx.fillStyle = 'rgba(102,204,0,0.7)';
+            ctx.fillText('Altorra.fp', 4, 17);
+            components.push(cv.toDataURL().slice(-50));
+        } catch (e) { /* Canvas not available */ }
+
+        // Hash all components into a deterministic string
+        var str = components.join('|');
+        var h1 = 0, h2 = 0;
+        for (var i = 0; i < str.length; i++) {
+            h1 = ((h1 << 5) - h1) + str.charCodeAt(i); h1 |= 0;
+            h2 = ((h2 << 7) + h2) ^ str.charCodeAt(i); h2 |= 0;
+        }
+        return 'dev_' + Math.abs(h1).toString(36) + Math.abs(h2).toString(36);
+    }
+
     function startPresence(user) {
         if (!window.rtdb) {
             // RTDB not loaded yet, retry in 2s
@@ -909,15 +972,16 @@
             AP._presenceHeartbeat = null;
         }
 
-        // Clean up orphaned sessions from this same device (same uid + browser + os).
+        // Clean up orphaned sessions from this same device (same uid + deviceId).
         // Handles: cache clear, page refresh, mobile kill, or any case where
         // onDisconnect didn't fire. Keeps sessions from other devices intact.
         var device = getDeviceInfo();
+        var deviceId = getDeviceId();
         window.rtdb.ref('presence').orderByChild('online').equalTo(true)
             .once('value').then(function(snap) {
                 snap.forEach(function(child) {
                     var d = child.val();
-                    if (d.uid === uid && d.browser === device.browser && d.os === device.os) {
+                    if (d.uid === uid && d.deviceId === deviceId) {
                         child.ref.remove().catch(function() {});
                     }
                 });
@@ -949,6 +1013,7 @@
             var dev = AP._presenceDevice || device;
             var sessionData = {
                 uid: uid,
+                deviceId: deviceId,
                 email: user.email,
                 nombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0],
                 rol: AP.currentUserRole || 'viewer',

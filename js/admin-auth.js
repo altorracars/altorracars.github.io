@@ -127,31 +127,32 @@
     }
 
     // Fetch approximate location from IP (no user permission needed).
-    // Uses ip-api.com (free, CORS-enabled for browser requests).
+    // Uses freeipapi.com (HTTPS, CORS-enabled, no API key required).
     // Returns { city, region, country, ip, timezone } or defaults on failure.
+    var _locationCache = null;
     function fetchLocationInfo() {
-        return fetch('http://ip-api.com/json/?fields=status,city,regionName,country,query,timezone')
+        // Cache location per page load — IP doesn't change within a session
+        if (_locationCache) return Promise.resolve(_locationCache);
+        return fetch('https://freeipapi.com/api/json')
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                if (data.status !== 'success') {
-                    return { city: 'Desconocida', region: '', country: '', ip: '', timezone: '' };
-                }
                 // Anonymize IP: mask last octet for IPv4 (e.g. 190.28.123.xxx)
-                var ip = data.query || '';
+                var ip = data.ipAddress || '';
                 var parts = ip.split('.');
                 var maskedIp = parts.length === 4
                     ? parts[0] + '.' + parts[1] + '.' + parts[2] + '.***'
                     : ip.substring(0, ip.lastIndexOf(':')) + ':***';
-                return {
-                    city: data.city || 'Desconocida',
+                _locationCache = {
+                    city: data.cityName || 'Desconocida',
                     region: data.regionName || '',
-                    country: data.country || '',
+                    country: data.countryName || '',
                     ip: maskedIp,
-                    timezone: data.timezone || ''
+                    timezone: data.timeZone || ''
                 };
+                return _locationCache;
             })
             .catch(function() {
-                return { city: 'Desconocida', region: '', country: '', ip: '', timezone: '' };
+                return { city: '', region: '', country: '', ip: '', timezone: '' };
             });
     }
 
@@ -883,6 +884,8 @@
     // Heartbeat interval: update lastSeen every 2 minutes so stale detection works
     var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
 
+    var PRESENCE_SESSION_KEY = 'altorra_presence_id';
+
     function startPresence(user) {
         if (!window.rtdb) {
             // RTDB not loaded yet, retry in 2s
@@ -908,10 +911,22 @@
             AP._presenceHeartbeat = null;
         }
 
+        // Clean up previous session from this tab (survives page refresh via sessionStorage)
+        try {
+            var prevKey = sessionStorage.getItem(PRESENCE_SESSION_KEY);
+            if (prevKey) {
+                window.rtdb.ref('presence/' + prevKey).remove().catch(function() {});
+            }
+        } catch (e) { /* sessionStorage not available */ }
+
         // Create ONE session node for this device/tab (outside the reconnect listener)
         var presenceRef = window.rtdb.ref('presence').push();
         AP._presenceRef = presenceRef;
         AP._presenceConnectedRef = connectedRef;
+
+        // Save push key so we can clean up on page refresh
+        try { sessionStorage.setItem(PRESENCE_SESSION_KEY, presenceRef.key); }
+        catch (e) { /* ignore */ }
 
         // Fetch location once for this session
         var device = getDeviceInfo();
@@ -1001,6 +1016,9 @@
             AP._presenceRef.remove().catch(function() {});
             AP._presenceRef = null;
         }
+        // Clear session key
+        try { sessionStorage.removeItem(PRESENCE_SESSION_KEY); }
+        catch (e) { /* ignore */ }
     }
 
     // Max age for a session to be considered "active" (5 minutes).
@@ -1027,12 +1045,16 @@
         sessionsRef.on('value', function(snap) {
             var now = Date.now();
             var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : null;
+            var mySessionKey = AP._presenceRef ? AP._presenceRef.key : null;
             var sessions = [];
             snap.forEach(function(child) {
                 var data = child.val();
+                // Skip legacy nodes (old format without uid field)
+                if (!data.uid) return;
                 var isStale = data.lastSeen && (now - data.lastSeen) > PRESENCE_STALE_MS;
+                var isMine = currentUid && data.uid === currentUid;
                 // Remove stale sessions that belong to us (orphaned from closed tabs)
-                if (isStale && currentUid && data.uid === currentUid) {
+                if (isStale && isMine) {
                     child.ref.remove();
                     return;
                 }

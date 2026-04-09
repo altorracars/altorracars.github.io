@@ -127,21 +127,25 @@
     }
 
     // Fetch approximate location from IP (no user permission needed).
-    // Returns { city, region, country, ip } or defaults on failure.
+    // Uses ip-api.com (free, CORS-enabled for browser requests).
+    // Returns { city, region, country, ip, timezone } or defaults on failure.
     function fetchLocationInfo() {
-        return fetch('https://ipapi.co/json/')
+        return fetch('http://ip-api.com/json/?fields=status,city,regionName,country,query,timezone')
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                // Anonymize IP: keep first 3 octets for IPv4 (e.g. 190.28.123.xxx)
-                var ip = data.ip || '';
+                if (data.status !== 'success') {
+                    return { city: 'Desconocida', region: '', country: '', ip: '', timezone: '' };
+                }
+                // Anonymize IP: mask last octet for IPv4 (e.g. 190.28.123.xxx)
+                var ip = data.query || '';
                 var parts = ip.split('.');
                 var maskedIp = parts.length === 4
                     ? parts[0] + '.' + parts[1] + '.' + parts[2] + '.***'
                     : ip.substring(0, ip.lastIndexOf(':')) + ':***';
                 return {
                     city: data.city || 'Desconocida',
-                    region: data.region || '',
-                    country: data.country_name || '',
+                    region: data.regionName || '',
+                    country: data.country || '',
                     ip: maskedIp,
                     timezone: data.timezone || ''
                 };
@@ -889,13 +893,12 @@
         if (!window.auth.currentUser || window.auth.currentUser.uid !== user.uid) return;
 
         var uid = user.uid;
-        // Each device/tab gets its own session node via push()
-        var presenceRef = window.rtdb.ref('presence').push();
         var connectedRef = window.rtdb.ref('.info/connected');
 
         // Clean up any existing session and listeners before starting
         if (AP._presenceRef) {
             AP._presenceRef.remove().catch(function() {});
+            AP._presenceRef = null;
         }
         if (AP._presenceConnectedRef) {
             AP._presenceConnectedRef.off();
@@ -904,6 +907,10 @@
             clearInterval(AP._presenceHeartbeat);
             AP._presenceHeartbeat = null;
         }
+
+        // Create ONE session node for this device/tab (outside the reconnect listener)
+        var presenceRef = window.rtdb.ref('presence').push();
+        AP._presenceRef = presenceRef;
         AP._presenceConnectedRef = connectedRef;
 
         // Fetch location once for this session
@@ -940,9 +947,9 @@
                 lastSeen: firebase.database.ServerValue.TIMESTAMP,
                 online: true
             };
-            // When disconnects, remove this session node entirely
+            // Re-register onDisconnect on every reconnect (Firebase clears it on disconnect)
             presenceRef.onDisconnect().remove();
-            // Set online now
+            // Write/overwrite the SAME session node
             presenceRef.set(sessionData).catch(function(err) {
                 console.warn('[Presence] Error updating presence:', err.message);
             });
@@ -958,7 +965,14 @@
             presenceRef.update({ lastSeen: firebase.database.ServerValue.TIMESTAMP }).catch(function() {});
         }, PRESENCE_HEARTBEAT_MS);
 
-        AP._presenceRef = presenceRef;
+        // Fallback: clean up on page close (mobile browsers may not fire onDisconnect)
+        AP._presenceBeforeUnload = function() {
+            if (presenceRef) {
+                // sendBeacon is not available for RTDB, so use synchronous remove
+                try { presenceRef.remove(); } catch (e) { /* ignore */ }
+            }
+        };
+        window.addEventListener('beforeunload', AP._presenceBeforeUnload);
     }
 
     function stopPresence() {
@@ -976,6 +990,11 @@
         if (AP._activeSessionsRef) {
             AP._activeSessionsRef.off();
             AP._activeSessionsRef = null;
+        }
+        // Remove beforeunload listener
+        if (AP._presenceBeforeUnload) {
+            window.removeEventListener('beforeunload', AP._presenceBeforeUnload);
+            AP._presenceBeforeUnload = null;
         }
         // Remove this session node (instant disappearance for other clients)
         if (AP._presenceRef) {
@@ -1011,14 +1030,14 @@
             var sessions = [];
             snap.forEach(function(child) {
                 var data = child.val();
-                // Filter out stale sessions (lastSeen older than threshold)
-                if (data.lastSeen && (now - data.lastSeen) > PRESENCE_STALE_MS) {
-                    // Clean up stale entry if it belongs to us
-                    if (currentUid && data.uid === currentUid) {
-                        child.ref.remove();
-                    }
+                var isStale = data.lastSeen && (now - data.lastSeen) > PRESENCE_STALE_MS;
+                // Remove stale sessions that belong to us (orphaned from closed tabs)
+                if (isStale && currentUid && data.uid === currentUid) {
+                    child.ref.remove();
                     return;
                 }
+                // Hide stale sessions from other users (we can't delete those)
+                if (isStale) return;
                 sessions.push(Object.assign({ sessionKey: child.key }, data));
             });
 

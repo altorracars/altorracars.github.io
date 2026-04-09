@@ -962,10 +962,11 @@
                 lastSeen: firebase.database.ServerValue.TIMESTAMP,
                 online: true
             };
-            // Re-register onDisconnect on every reconnect (Firebase clears it on disconnect)
-            presenceRef.onDisconnect().remove();
-            // Write/overwrite the SAME session node
-            presenceRef.set(sessionData).catch(function(err) {
+            // Write session data first, THEN register onDisconnect.
+            // onDisconnect requires the node to exist for rules to pass.
+            presenceRef.set(sessionData).then(function() {
+                presenceRef.onDisconnect().remove();
+            }).catch(function(err) {
                 console.warn('[Presence] Error updating presence:', err.message);
             });
         });

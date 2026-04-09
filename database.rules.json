@@ -1,8 +1,9 @@
 {
   "rules": {
     "presence": {
+      ".read": "auth != null",
+      ".indexOn": ["online"],
       "$uid": {
-        ".read": true,
         ".write": "$uid === auth.uid"
       }
     },

@@ -824,6 +824,9 @@
     }
 
     // ========== F12.7: RTDB PRESENCE (ACTIVE SESSIONS) ==========
+    // Heartbeat interval: update lastSeen every 2 minutes so stale detection works
+    var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
+
     function startPresence(user) {
         if (!window.rtdb) {
             // RTDB not loaded yet, retry in 2s
@@ -837,9 +840,13 @@
         var presenceRef = window.rtdb.ref('presence/' + uid);
         var connectedRef = window.rtdb.ref('.info/connected');
 
-        // Clean up any existing listener before adding a new one
+        // Clean up any existing listener and heartbeat before adding new ones
         if (AP._presenceConnectedRef) {
             AP._presenceConnectedRef.off();
+        }
+        if (AP._presenceHeartbeat) {
+            clearInterval(AP._presenceHeartbeat);
+            AP._presenceHeartbeat = null;
         }
         AP._presenceConnectedRef = connectedRef;
 
@@ -866,10 +873,25 @@
             });
         });
 
+        // Heartbeat: keep lastSeen fresh so stale-session filter works
+        AP._presenceHeartbeat = setInterval(function() {
+            if (!window.auth.currentUser || window.auth.currentUser.uid !== uid) {
+                clearInterval(AP._presenceHeartbeat);
+                AP._presenceHeartbeat = null;
+                return;
+            }
+            presenceRef.update({ lastSeen: firebase.database.ServerValue.TIMESTAMP }).catch(function() {});
+        }, PRESENCE_HEARTBEAT_MS);
+
         AP._presenceRef = presenceRef;
     }
 
     function stopPresence() {
+        // Stop heartbeat
+        if (AP._presenceHeartbeat) {
+            clearInterval(AP._presenceHeartbeat);
+            AP._presenceHeartbeat = null;
+        }
         // Stop listening for connection changes
         if (AP._presenceConnectedRef) {
             AP._presenceConnectedRef.off();
@@ -885,6 +907,11 @@
             AP._presenceRef = null;
         }
     }
+
+    // Max age for a session to be considered "active" (5 minutes).
+    // If lastSeen is older than this, the session is stale (e.g. tab closed
+    // without clean onDisconnect firing).
+    var PRESENCE_STALE_MS = 5 * 60 * 1000;
 
     function loadActiveSessions() {
         if (!window.rtdb) {
@@ -904,9 +931,19 @@
         AP._activeSessionsRef = sessionsRef;
 
         sessionsRef.on('value', function(snap) {
+            var now = Date.now();
             var sessions = [];
             snap.forEach(function(child) {
-                sessions.push(Object.assign({ uid: child.key }, child.val()));
+                var data = child.val();
+                // Filter out stale sessions (lastSeen older than threshold)
+                if (data.lastSeen && (now - data.lastSeen) > PRESENCE_STALE_MS) {
+                    // Clean up stale entry if it belongs to us
+                    if (window.auth.currentUser && child.key === window.auth.currentUser.uid) {
+                        child.ref.update({ online: false });
+                    }
+                    return;
+                }
+                sessions.push(Object.assign({ uid: child.key }, data));
             });
 
             if (sessions.length === 0) {
@@ -919,17 +956,17 @@
                 var rolLabel = s.rol === 'super_admin' ? 'Super Admin' : s.rol === 'editor' ? 'Editor' : 'Viewer';
                 var nombre = AP.escapeHtml(s.nombre || s.email || '?');
                 var initials = (s.nombre || '?').split(' ').map(function(w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join('');
+                var isSelf = window.auth.currentUser && s.uid === window.auth.currentUser.uid;
                 return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--admin-border);">' +
                     '<div style="width:32px;height:32px;border-radius:50%;background:var(--admin-gold);color:#1a1a2e;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;">' + AP.escapeHtml(initials) + '</div>' +
                     '<div style="flex:1;">' +
-                        '<div style="font-weight:600;font-size:0.85rem;">' + nombre + '</div>' +
+                        '<div style="font-weight:600;font-size:0.85rem;">' + nombre + (isSelf ? ' <span style="font-size:0.7rem;color:var(--admin-text-muted);">(tu)</span>' : '') + '</div>' +
                         '<div style="font-size:0.75rem;color:var(--' + (rolColors[s.rol] || 'admin-text-muted') + ');">' + rolLabel + '</div>' +
                     '</div>' +
                     '<div style="width:8px;height:8px;border-radius:50%;background:#3fb950;flex-shrink:0;" title="En linea"></div>' +
                 '</div>';
             }).join('');
         }, function(err) {
-            // Error callback for the RTDB listener
             console.warn('[Presence] Error loading active sessions:', err.message);
             listEl.innerHTML = '<div style="text-align:center;color:var(--admin-text-muted);padding:1rem;font-size:0.85rem;">No se pudieron cargar las sesiones</div>';
         });

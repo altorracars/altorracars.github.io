@@ -875,6 +875,11 @@
             AP._presenceConnectedRef.off();
             AP._presenceConnectedRef = null;
         }
+        // Stop listening for active sessions
+        if (AP._activeSessionsRef) {
+            AP._activeSessionsRef.off();
+            AP._activeSessionsRef = null;
+        }
         if (AP._presenceRef) {
             AP._presenceRef.update({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP }).catch(function() {});
             AP._presenceRef = null;
@@ -882,11 +887,23 @@
     }
 
     function loadActiveSessions() {
-        if (!window.rtdb) return;
+        if (!window.rtdb) {
+            // RTDB not loaded yet (deferred SDK), retry in 2s
+            setTimeout(function() { loadActiveSessions(); }, 2000);
+            return;
+        }
         var listEl = $('activeSessionsList');
         if (!listEl) return;
 
-        window.rtdb.ref('presence').orderByChild('online').equalTo(true).on('value', function(snap) {
+        // Clean up previous listener if any
+        if (AP._activeSessionsRef) {
+            AP._activeSessionsRef.off();
+        }
+
+        var sessionsRef = window.rtdb.ref('presence').orderByChild('online').equalTo(true);
+        AP._activeSessionsRef = sessionsRef;
+
+        sessionsRef.on('value', function(snap) {
             var sessions = [];
             snap.forEach(function(child) {
                 sessions.push(Object.assign({ uid: child.key }, child.val()));
@@ -900,16 +917,21 @@
             listEl.innerHTML = sessions.map(function(s) {
                 var rolColors = { super_admin: 'admin-danger', editor: 'admin-info', viewer: 'admin-text-muted' };
                 var rolLabel = s.rol === 'super_admin' ? 'Super Admin' : s.rol === 'editor' ? 'Editor' : 'Viewer';
+                var nombre = AP.escapeHtml(s.nombre || s.email || '?');
                 var initials = (s.nombre || '?').split(' ').map(function(w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join('');
                 return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--admin-border);">' +
-                    '<div style="width:32px;height:32px;border-radius:50%;background:var(--admin-gold);color:#1a1a2e;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;">' + initials + '</div>' +
+                    '<div style="width:32px;height:32px;border-radius:50%;background:var(--admin-gold);color:#1a1a2e;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;">' + AP.escapeHtml(initials) + '</div>' +
                     '<div style="flex:1;">' +
-                        '<div style="font-weight:600;font-size:0.85rem;">' + (s.nombre || s.email) + '</div>' +
+                        '<div style="font-weight:600;font-size:0.85rem;">' + nombre + '</div>' +
                         '<div style="font-size:0.75rem;color:var(--' + (rolColors[s.rol] || 'admin-text-muted') + ');">' + rolLabel + '</div>' +
                     '</div>' +
                     '<div style="width:8px;height:8px;border-radius:50%;background:#3fb950;flex-shrink:0;" title="En linea"></div>' +
                 '</div>';
             }).join('');
+        }, function(err) {
+            // Error callback for the RTDB listener
+            console.warn('[Presence] Error loading active sessions:', err.message);
+            listEl.innerHTML = '<div style="text-align:center;color:var(--admin-text-muted);padding:1rem;font-size:0.85rem;">No se pudieron cargar las sesiones</div>';
         });
     }
 

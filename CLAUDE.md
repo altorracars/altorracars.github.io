@@ -203,8 +203,26 @@ Fragmentos HTML inyectados dinamicamente por `components.js`:
 
 | Archivo | Contenido |
 |---------|-----------|
-| `index.js` | 3 funciones V2: createManagedUserV2, deleteManagedUserV2, updateUserRoleV2 |
-| `package.json` | Dependencias de Cloud Functions |
+| `index.js` | Cloud Functions V2 + triggers Firestore + email via nodemailer |
+| `package.json` | Node 22, firebase-admin v13, firebase-functions v7, nodemailer |
+
+**Secrets requeridos**: `EMAIL_USER`, `EMAIL_PASS` (Gmail SMTP), `GITHUB_PAT`
+
+### Otros directorios
+
+| Directorio | Contenido |
+|------------|-----------|
+| `v/` | Paginas legacy de vehiculos por ID (backward compat) |
+| `backups/` | Snapshots de Firestore |
+| `public/` | `_redirects` (Netlify legacy, no usado en GitHub Pages) |
+| `js/simulador/` | Logica del simulador de credito (simulator.js, ui.js, data.js, finance.js) |
+
+### GitHub Actions (`.github/workflows/`)
+
+| Workflow | Trigger | Accion |
+|----------|---------|--------|
+| `generate-vehicles.yml` | Push main, cron 4h, dispatch | Genera vehiculos + sitemap + bump cache |
+| `deploy-firebase-rules.yml` | Push main (si cambian rules) | Deploy Firestore + Storage rules |
 
 ---
 

@@ -6,6 +6,7 @@
 
     // ========== RATE LIMITING (Firestore loginAttempts — cross-device) ==========
     var RL_MAX_ATTEMPTS = 5;
+    var RL_MAX_ATTEMPTS_SUPER_ADMIN = 10; // Super admins get more attempts before lockout
 
     function emailHash(email) {
         // Create a safe Firestore document ID from email
@@ -13,13 +14,34 @@
     }
 
     // Check if account is blocked in Firestore (async)
+    // Auto-unblocks after _2FA_AUTO_UNBLOCK_MS (15 min) to prevent permanent lockout
     function checkFirestoreBlock(email) {
         if (!email || !window.db) return Promise.resolve({ blocked: false, attempts: 0 });
-        return window.db.collection('loginAttempts').doc(emailHash(email)).get()
+        var docRef = window.db.collection('loginAttempts').doc(emailHash(email));
+        return docRef.get()
             .then(function(doc) {
                 if (!doc.exists) return { blocked: false, attempts: 0 };
                 var data = doc.data();
-                return { blocked: !!data.bloqueado, attempts: data.intentos || 0 };
+                var isBlocked = !!data.bloqueado;
+
+                // Auto-unblock: if blocked more than 15 minutes ago, clear block
+                if (isBlocked && data.bloqueadoEn) {
+                    var blockedAt = new Date(data.bloqueadoEn).getTime();
+                    if (!isNaN(blockedAt) && (Date.now() - blockedAt) > _2FA_AUTO_UNBLOCK_MS) {
+                        // Auto-clear the block — user waited enough
+                        docRef.update({
+                            intentos: 0,
+                            bloqueado: false,
+                            bloqueadoEn: '',
+                            autoDesbloqueado: true,
+                            autoDesbloqueadoEn: new Date().toISOString()
+                        }).catch(function() { /* best effort */ });
+                        console.info('[Auth] Auto-unblock triggered for', email, '(blocked >', Math.round(_2FA_AUTO_UNBLOCK_MS / 60000), 'min ago)');
+                        return { blocked: false, attempts: 0 };
+                    }
+                }
+
+                return { blocked: isBlocked, attempts: data.intentos || 0 };
             })
             .catch(function() { return { blocked: false, attempts: 0 }; });
     }
@@ -99,6 +121,70 @@
     var _2faPendingUser = null;
     var _2faRecaptchaVerifier = null;
     var TRUST_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
+
+    // ── 2FA Security Constants ─────────────────────────────
+    var _2FA_MAX_CODE_ATTEMPTS = 5;      // Max wrong codes before requiring resend
+    var _2FA_RESEND_COOLDOWN_SECS = 30;  // Seconds between resends
+    var _2FA_MAX_RESENDS = 5;            // Max resends per session
+    var _2FA_AUTO_UNBLOCK_MS = 15 * 60 * 1000; // 15 min auto-unblock for login attempts
+
+    // ── 2FA State Tracking ─────────────────────────────────
+    var _2faCodeAttempts = 0;            // Failed code verifications for current code
+    var _2faResendCount = 0;             // Resends used this session
+    var _2faResendTimerId = null;        // Countdown timer interval
+    var _2faCodeLocked = false;          // Locked out from too many bad codes
+
+    // Same for unlock screen
+    var _unlockCodeAttempts = 0;
+    var _unlockResendCount = 0;
+    var _unlockResendTimerId = null;
+    var _unlockCodeLocked = false;
+
+    // ── 2FA Cooldown/Status Helpers ────────────────────────
+    function startResendCooldown(linkEl, timerPrefix, isUnlock) {
+        var remaining = _2FA_RESEND_COOLDOWN_SECS;
+        linkEl.style.pointerEvents = 'none';
+        linkEl.style.opacity = '0.5';
+        linkEl.textContent = 'Reenviar codigo (' + remaining + 's)';
+
+        var timerId = setInterval(function() {
+            remaining--;
+            if (remaining <= 0) {
+                clearInterval(timerId);
+                linkEl.style.pointerEvents = '';
+                linkEl.style.opacity = '';
+                var resendCount = isUnlock ? _unlockResendCount : _2faResendCount;
+                if (resendCount >= _2FA_MAX_RESENDS) {
+                    linkEl.textContent = 'Limite de reenvios alcanzado';
+                    linkEl.style.pointerEvents = 'none';
+                    linkEl.style.opacity = '0.5';
+                } else {
+                    linkEl.textContent = 'Reenviar codigo';
+                }
+                if (isUnlock) { _unlockResendTimerId = null; }
+                else { _2faResendTimerId = null; }
+            } else {
+                linkEl.textContent = 'Reenviar codigo (' + remaining + 's)';
+            }
+        }, 1000);
+
+        if (isUnlock) { _unlockResendTimerId = timerId; }
+        else { _2faResendTimerId = timerId; }
+    }
+
+    function show2FAStatus(screenPrefix, message, type) {
+        var errEl = $(screenPrefix + 'Error');
+        if (!errEl) return;
+        errEl.style.display = 'block';
+        errEl.textContent = message;
+        if (type === 'warning') {
+            errEl.style.color = 'var(--admin-warning, #d29922)';
+        } else if (type === 'info') {
+            errEl.style.color = 'var(--admin-accent, #58a6ff)';
+        } else {
+            errEl.style.color = 'var(--admin-danger)';
+        }
+    }
 
     // ── Trusted Device Helpers ──────────────────────────────
     function generateDeviceToken() {
@@ -363,6 +449,32 @@
         });
     }
 
+    // ── SMS Error Formatting ───────────────────────────────
+    function formatSMSError(err) {
+        var code = err.code || '';
+        var msg = err.message || '';
+        if (code === 'auth/invalid-phone-number') {
+            return 'Numero de telefono invalido. Verifica el numero en la configuracion de tu cuenta.';
+        } else if (code === 'auth/too-many-requests') {
+            return 'Demasiados intentos de envio de SMS. Firebase ha bloqueado temporalmente los envios. Espera unos minutos antes de intentar de nuevo.';
+        } else if (code === 'auth/quota-exceeded') {
+            return 'Cuota de SMS excedida en Firebase. Contacta al administrador para verificar el plan de Firebase (requiere plan Blaze para SMS en produccion).';
+        } else if (code === 'auth/captcha-check-failed') {
+            return 'Verificacion reCAPTCHA fallida. Recarga la pagina e intenta de nuevo.';
+        } else if (code === 'auth/missing-phone-number') {
+            return 'No hay numero de telefono configurado para 2FA. Contacta al administrador.';
+        } else if (code === 'auth/unverified-email') {
+            return 'El correo electronico no esta verificado. Contacta al administrador.';
+        } else if (code === 'auth/network-request-failed') {
+            return 'Error de conexion. Verifica tu internet e intenta de nuevo.';
+        } else if (code === 'auth/internal-error' || code === 'auth/app-not-authorized') {
+            return 'Error de configuracion de Firebase Phone Auth. Verifica: 1) Plan Blaze activo, 2) Phone Auth habilitado en Firebase Console, 3) Dominio autorizado en Authentication > Settings.';
+        } else if (msg.toLowerCase().indexOf('billing') !== -1 || msg.toLowerCase().indexOf('blaze') !== -1) {
+            return 'Firebase requiere el plan Blaze (pago) para enviar SMS. Contacta al administrador.';
+        }
+        return 'Error al enviar SMS: ' + (msg || code || 'Error desconocido') + '. Si el problema persiste, verifica la configuracion de Firebase Phone Auth.';
+    }
+
     // ── 2FA Core ────────────────────────────────────────────
     function init2FARecaptcha() {
         if (_2faRecaptchaVerifier) return;
@@ -384,6 +496,11 @@
 
     function show2FAScreen(user, phone) {
         _2faPendingUser = user;
+        // Reset 2FA security state
+        _2faCodeAttempts = 0;
+        _2faCodeLocked = false;
+        if (_2faResendTimerId) { clearInterval(_2faResendTimerId); _2faResendTimerId = null; }
+
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'none';
         $('twoFaScreen').style.display = 'flex';
@@ -397,11 +514,15 @@
         var masked = phone.slice(0, -4).replace(/./g, '*') + phone.slice(-4);
         $('twoFaInfo').textContent = 'Enviamos un codigo de verificacion al numero ' + masked;
 
+        // Start resend cooldown on initial send
+        var resendLink = $('twoFaResend');
+        if (resendLink) startResendCooldown(resendLink, 'twoFa', false);
+
         send2FACode(phone).then(function() {
             $('twoFaCode').focus();
         }).catch(function(err) {
-            $('twoFaError').style.display = 'block';
-            $('twoFaError').textContent = 'Error al enviar SMS: ' + err.message;
+            var errMsg = formatSMSError(err);
+            show2FAStatus('twoFa', errMsg, 'error');
         });
     }
 
@@ -415,13 +536,23 @@
         $('twoFaScreen').style.display = 'none';
         _2faVerificationId = null;
         _2faPendingUser = null;
+        _2faCodeAttempts = 0;
+        _2faCodeLocked = false;
+        if (_2faResendTimerId) { clearInterval(_2faResendTimerId); _2faResendTimerId = null; }
     }
 
-    // 2FA form submit
+    // 2FA form submit — with rate limiting on code verification
     var twoFaForm = $('twoFaForm');
     if (twoFaForm) {
         twoFaForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            // Check if locked out from too many bad codes
+            if (_2faCodeLocked) {
+                show2FAStatus('twoFa', 'Demasiados intentos fallidos. Haz clic en "Reenviar codigo" para obtener un nuevo codigo.', 'warning');
+                return;
+            }
+
             var code = $('twoFaCode').value.trim();
             if (code.length !== 6) return;
 
@@ -432,6 +563,7 @@
 
             verify2FACode(code).then(function() {
                 _2faVerified = true;
+                _2faCodeAttempts = 0;
 
                 // Save trusted device if checkbox is checked
                 var trustCheck = $('twoFaTrustDevice');
@@ -447,45 +579,76 @@
                 hide2FAScreen();
                 loadUserProfile(pendingUser || window.auth.currentUser);
             }).catch(function(err) {
+                _2faCodeAttempts++;
+                var remaining = _2FA_MAX_CODE_ATTEMPTS - _2faCodeAttempts;
+
                 $('twoFaBtn').disabled = false;
                 $('twoFaBtn').textContent = 'Verificar';
-                $('twoFaError').style.display = 'block';
+
                 if (err.code === 'auth/invalid-verification-code') {
-                    $('twoFaError').textContent = 'Codigo incorrecto. Intenta de nuevo.';
+                    if (remaining <= 0) {
+                        _2faCodeLocked = true;
+                        $('twoFaCode').value = '';
+                        $('twoFaCode').disabled = true;
+                        $('twoFaBtn').disabled = true;
+                        show2FAStatus('twoFa', 'Codigo bloqueado: ' + _2FA_MAX_CODE_ATTEMPTS + ' intentos fallidos. Haz clic en "Reenviar codigo" para recibir un nuevo codigo.', 'warning');
+                    } else {
+                        show2FAStatus('twoFa', 'Codigo incorrecto. ' + remaining + ' intento' + (remaining === 1 ? '' : 's') + ' restante' + (remaining === 1 ? '' : 's') + '.', 'error');
+                    }
                 } else if (err.code === 'auth/code-expired') {
-                    $('twoFaError').textContent = 'Codigo expirado. Haz clic en "Reenviar codigo".';
+                    show2FAStatus('twoFa', 'Codigo expirado. Haz clic en "Reenviar codigo" para recibir uno nuevo.', 'warning');
                 } else {
-                    $('twoFaError').textContent = 'Error: ' + err.message;
+                    show2FAStatus('twoFa', 'Error: ' + err.message, 'error');
                 }
             });
         });
     }
 
-    // Resend code
+    // Resend code — with cooldown timer and max resends
     var twoFaResend = $('twoFaResend');
     if (twoFaResend) {
         twoFaResend.addEventListener('click', function(e) {
             e.preventDefault();
+
+            // Check max resends
+            if (_2faResendCount >= _2FA_MAX_RESENDS) {
+                show2FAStatus('twoFa', 'Limite de reenvios alcanzado (' + _2FA_MAX_RESENDS + '). Cancela e inicia sesion de nuevo.', 'warning');
+                return;
+            }
+
             var profile = AP.currentUserProfile;
             if (!profile || !profile.telefono2FA) return;
             var phone = (profile.prefijo2FA || '+57') + profile.telefono2FA;
+
             twoFaResend.textContent = 'Enviando...';
             twoFaResend.style.pointerEvents = 'none';
+
             if (_2faRecaptchaVerifier) {
                 _2faRecaptchaVerifier.clear();
                 _2faRecaptchaVerifier = null;
             }
+
             send2FACode(phone).then(function() {
-                twoFaResend.textContent = 'Codigo reenviado';
-                setTimeout(function() {
-                    twoFaResend.textContent = 'Reenviar codigo';
-                    twoFaResend.style.pointerEvents = '';
-                }, 5000);
+                _2faResendCount++;
+                // Reset code attempt counter — new code, fresh attempts
+                _2faCodeAttempts = 0;
+                _2faCodeLocked = false;
+                $('twoFaCode').disabled = false;
+                $('twoFaCode').value = '';
+                $('twoFaBtn').disabled = false;
+                $('twoFaBtn').textContent = 'Verificar';
+
+                var remainingResends = _2FA_MAX_RESENDS - _2faResendCount;
+                show2FAStatus('twoFa', 'Nuevo codigo enviado. ' + remainingResends + ' reenvio' + (remainingResends === 1 ? '' : 's') + ' disponible' + (remainingResends === 1 ? '' : 's') + '.', 'info');
+                $('twoFaCode').focus();
+
+                // Start cooldown for next resend
+                startResendCooldown(twoFaResend, 'twoFa', false);
             }).catch(function(err) {
-                twoFaResend.textContent = 'Reenviar codigo';
                 twoFaResend.style.pointerEvents = '';
-                $('twoFaError').style.display = 'block';
-                $('twoFaError').textContent = 'Error: ' + err.message;
+                twoFaResend.style.opacity = '';
+                twoFaResend.textContent = 'Reenviar codigo';
+                show2FAStatus('twoFa', formatSMSError(err), 'error');
             });
         });
     }
@@ -508,11 +671,17 @@
 
     function showSuperAdminUnlock(user) {
         _unlockPendingUser = user;
+        // Reset unlock security state
+        _unlockCodeAttempts = 0;
+        _unlockCodeLocked = false;
+        if (_unlockResendTimerId) { clearInterval(_unlockResendTimerId); _unlockResendTimerId = null; }
+
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'none';
         $('twoFaScreen').style.display = 'none';
         $('unlockScreen').style.display = 'flex';
         $('unlockCode').value = '';
+        $('unlockCode').disabled = false;
         $('unlockError').style.display = 'none';
         $('unlockBtn').disabled = false;
         $('unlockBtn').textContent = 'Desbloquear cuenta';
@@ -521,11 +690,14 @@
         var masked = phone.slice(0, -4).replace(/./g, '*') + phone.slice(-4);
         $('unlockInfo').textContent = 'Tu cuenta fue bloqueada por seguridad. Enviamos un codigo de verificacion al numero ' + masked + ' para confirmar tu identidad.';
 
+        // Start resend cooldown on initial send
+        var resendLink = $('unlockResend');
+        if (resendLink) startResendCooldown(resendLink, 'unlock', true);
+
         sendUnlockCode(phone).then(function() {
             $('unlockCode').focus();
         }).catch(function(err) {
-            $('unlockError').style.display = 'block';
-            $('unlockError').textContent = 'Error al enviar SMS: ' + err.message;
+            show2FAStatus('unlock', formatSMSError(err), 'error');
         });
     }
 
@@ -548,13 +720,23 @@
         $('unlockScreen').style.display = 'none';
         _unlockVerificationId = null;
         _unlockPendingUser = null;
+        _unlockCodeAttempts = 0;
+        _unlockCodeLocked = false;
+        if (_unlockResendTimerId) { clearInterval(_unlockResendTimerId); _unlockResendTimerId = null; }
     }
 
-    // Unlock form submit
+    // Unlock form submit — with rate limiting on code verification
     var unlockForm = $('unlockForm');
     if (unlockForm) {
         unlockForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            // Check if locked out from too many bad codes
+            if (_unlockCodeLocked) {
+                show2FAStatus('unlock', 'Demasiados intentos fallidos. Haz clic en "Reenviar codigo" para obtener un nuevo codigo.', 'warning');
+                return;
+            }
+
             var code = $('unlockCode').value.trim();
             if (code.length !== 6) return;
 
@@ -564,8 +746,7 @@
             $('unlockError').style.display = 'none';
 
             if (!_unlockVerificationId) {
-                $('unlockError').style.display = 'block';
-                $('unlockError').textContent = 'No hay codigo pendiente. Haz clic en reenviar.';
+                show2FAStatus('unlock', 'No hay codigo pendiente. Haz clic en "Reenviar codigo".', 'warning');
                 $('unlockBtn').disabled = false;
                 $('unlockBtn').textContent = 'Desbloquear cuenta';
                 return;
@@ -574,6 +755,7 @@
             var credential = firebase.auth.PhoneAuthProvider.credential(_unlockVerificationId, code);
             pendingUser.updatePhoneNumber(credential).then(function() {
                 // Code verified — unblock in Firestore + clear loginAttempts
+                _unlockCodeAttempts = 0;
                 var email = (AP.currentUserProfile && AP.currentUserProfile.email) || pendingUser.email;
                 clearLoginAttempts(email);
                 return unblockUser(pendingUser.uid);
@@ -583,44 +765,75 @@
                 _2faVerified = true;
                 loadUserProfile(pendingUser);
             }).catch(function(err) {
+                _unlockCodeAttempts++;
+                var remaining = _2FA_MAX_CODE_ATTEMPTS - _unlockCodeAttempts;
+
                 $('unlockBtn').disabled = false;
                 $('unlockBtn').textContent = 'Desbloquear cuenta';
-                $('unlockError').style.display = 'block';
+
                 if (err.code === 'auth/invalid-verification-code') {
-                    $('unlockError').textContent = 'Codigo incorrecto. Intenta de nuevo.';
+                    if (remaining <= 0) {
+                        _unlockCodeLocked = true;
+                        $('unlockCode').value = '';
+                        $('unlockCode').disabled = true;
+                        $('unlockBtn').disabled = true;
+                        show2FAStatus('unlock', 'Codigo bloqueado: ' + _2FA_MAX_CODE_ATTEMPTS + ' intentos fallidos. Haz clic en "Reenviar codigo" para recibir un nuevo codigo.', 'warning');
+                    } else {
+                        show2FAStatus('unlock', 'Codigo incorrecto. ' + remaining + ' intento' + (remaining === 1 ? '' : 's') + ' restante' + (remaining === 1 ? '' : 's') + '.', 'error');
+                    }
                 } else if (err.code === 'auth/code-expired') {
-                    $('unlockError').textContent = 'Codigo expirado. Haz clic en "Reenviar codigo".';
+                    show2FAStatus('unlock', 'Codigo expirado. Haz clic en "Reenviar codigo" para recibir uno nuevo.', 'warning');
                 } else {
-                    $('unlockError').textContent = 'Error: ' + err.message;
+                    show2FAStatus('unlock', 'Error: ' + err.message, 'error');
                 }
             });
         });
     }
 
-    // Resend unlock code
+    // Resend unlock code — with cooldown timer and max resends
     var unlockResend = $('unlockResend');
     if (unlockResend) {
         unlockResend.addEventListener('click', function(e) {
             e.preventDefault();
+
+            // Check max resends
+            if (_unlockResendCount >= _2FA_MAX_RESENDS) {
+                show2FAStatus('unlock', 'Limite de reenvios alcanzado (' + _2FA_MAX_RESENDS + '). Espera 15 minutos para el desbloqueo automatico.', 'warning');
+                return;
+            }
+
             if (!AP.currentUserProfile || !AP.currentUserProfile.telefono2FA) return;
             var phone = (AP.currentUserProfile.prefijo2FA || '+57') + AP.currentUserProfile.telefono2FA;
+
             unlockResend.textContent = 'Enviando...';
             unlockResend.style.pointerEvents = 'none';
+
             if (_unlockRecaptchaVerifier) {
                 _unlockRecaptchaVerifier.clear();
                 _unlockRecaptchaVerifier = null;
             }
+
             sendUnlockCode(phone).then(function() {
-                unlockResend.textContent = 'Codigo reenviado';
-                setTimeout(function() {
-                    unlockResend.textContent = 'Reenviar codigo';
-                    unlockResend.style.pointerEvents = '';
-                }, 5000);
+                _unlockResendCount++;
+                // Reset code attempt counter — new code, fresh attempts
+                _unlockCodeAttempts = 0;
+                _unlockCodeLocked = false;
+                $('unlockCode').disabled = false;
+                $('unlockCode').value = '';
+                $('unlockBtn').disabled = false;
+                $('unlockBtn').textContent = 'Desbloquear cuenta';
+
+                var remainingResends = _2FA_MAX_RESENDS - _unlockResendCount;
+                show2FAStatus('unlock', 'Nuevo codigo enviado. ' + remainingResends + ' reenvio' + (remainingResends === 1 ? '' : 's') + ' disponible' + (remainingResends === 1 ? '' : 's') + '.', 'info');
+                $('unlockCode').focus();
+
+                // Start cooldown for next resend
+                startResendCooldown(unlockResend, 'unlock', true);
             }).catch(function(err) {
-                unlockResend.textContent = 'Reenviar codigo';
                 unlockResend.style.pointerEvents = '';
-                $('unlockError').style.display = 'block';
-                $('unlockError').textContent = 'Error: ' + err.message;
+                unlockResend.style.opacity = '';
+                unlockResend.textContent = 'Reenviar codigo';
+                show2FAStatus('unlock', formatSMSError(err), 'error');
             });
         });
     }
@@ -772,13 +985,30 @@
                 // Check if user is blocked (both usuarios doc AND loginAttempts collection)
                 var userEmail = AP.currentUserProfile.email || authUser.email;
                 var isBlockedInProfile = !!AP.currentUserProfile.bloqueado;
+                var isSuperAdmin = AP.currentUserProfile.rol === 'super_admin';
 
                 checkFirestoreBlock(userEmail).then(function(laState) {
                     var isBlocked = isBlockedInProfile || laState.blocked;
 
+                    // Super admin auto-unblock: if loginAttempts was auto-cleared but
+                    // usuarios.bloqueado is still true, clear it too
+                    if (isSuperAdmin && isBlockedInProfile && !laState.blocked) {
+                        window.db.collection('usuarios').doc(authUser.uid).update({
+                            bloqueado: false,
+                            bloqueadoEn: '',
+                            motivoBloqueo: ''
+                        }).catch(function() { /* best effort */ });
+                        isBlocked = false;
+                        AP.currentUserProfile.bloqueado = false;
+                        console.info('[Auth] Super admin auto-unblocked (profile sync)');
+                    }
+
                     if (isBlocked) {
-                        if (AP.currentUserProfile.rol === 'super_admin' && AP.currentUserProfile.telefono2FA) {
+                        if (isSuperAdmin && AP.currentUserProfile.telefono2FA) {
                             showSuperAdminUnlock(authUser);
+                        } else if (isSuperAdmin && !AP.currentUserProfile.telefono2FA) {
+                            // Super admin without 2FA phone — show specific message
+                            showAccessDenied(authUser.email, authUser.uid, 'Tu cuenta fue bloqueada por seguridad.\nComo Super Admin sin 2FA configurado, espera 15 minutos para el desbloqueo automatico o contacta a otro administrador.');
                         } else {
                             showAccessDenied(authUser.email, authUser.uid, 'Tu cuenta ha sido bloqueada por seguridad.\nComunicate con el administrador para desbloquearla.');
                         }
@@ -1223,7 +1453,7 @@
         checkFirestoreBlock(email).then(function(state) {
             if (state.blocked) {
                 rateLimitEl.style.display = 'block';
-                rateLimitEl.textContent = 'Esta cuenta ha sido bloqueada por seguridad. Comunicate con el administrador.';
+                rateLimitEl.textContent = 'Cuenta bloqueada por seguridad. Se desbloqueara automaticamente en 15 minutos.';
             } else if (state.attempts > 0) {
                 rateLimitEl.style.display = 'block';
                 rateLimitEl.textContent = 'Intentos fallidos: ' + state.attempts + '/' + RL_MAX_ATTEMPTS + '. Siguiente bloqueo tras ' + (RL_MAX_ATTEMPTS - state.attempts) + ' intento(s) mas.';
@@ -1277,7 +1507,7 @@
             if (state.blocked) {
                 resetLoginBtn();
                 errEl.style.display = 'block';
-                errEl.textContent = 'Cuenta bloqueada por seguridad. Comunicate con el administrador para desbloquear tu acceso.';
+                errEl.textContent = 'Cuenta bloqueada por seguridad. Se desbloqueara automaticamente en 15 minutos, o contacta al administrador.';
                 updateRateLimitUI(email);
                 return Promise.reject({ _handled: true });
             }
@@ -1294,8 +1524,7 @@
             if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                 recordFailedAttempt(email).then(function(failCount) {
                     if (failCount >= RL_MAX_ATTEMPTS) {
-                        errEl.textContent = 'Cuenta bloqueada por seguridad. Comunicate con el administrador.';
-                        // Also block in usuarios collection (will succeed after admin logs in and syncs)
+                        errEl.textContent = 'Cuenta bloqueada por seguridad. Se desbloqueara automaticamente en 15 minutos.';
                     } else {
                         errEl.textContent = 'Correo o contrasena incorrectos. Intento ' + failCount + ' de ' + RL_MAX_ATTEMPTS + '.';
                     }

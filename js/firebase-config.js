@@ -47,6 +47,9 @@
             window.db = db;
             window.auth = auth;
 
+            // Set language for SMS verification codes (Spanish)
+            auth.useDeviceLanguage();
+
             // F0.2: Enable offline persistence — queues writes during network issues
             // Note: The deprecation warning about enableMultiTabIndexedDbPersistence()
             // is expected — the modern API (persistentLocalCache) requires the modular SDK.

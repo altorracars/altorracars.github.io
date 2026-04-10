@@ -476,18 +476,47 @@
     }
 
     // ── 2FA Core ────────────────────────────────────────────
-    function init2FARecaptcha() {
-        if (_2faRecaptchaVerifier) return;
-        _2faRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+
+    // Clean a reCAPTCHA container before creating a new verifier.
+    // After .clear(), the container retains leftover DOM from the previous
+    // verifier which can prevent a new one from initializing correctly.
+    function cleanRecaptchaContainer(containerId) {
+        var el = $(containerId);
+        if (el) el.innerHTML = '';
+    }
+
+    // Create and render a reCAPTCHA verifier, returning a Promise that
+    // resolves to the verifier. The explicit .render() call is required
+    // in Firebase SDK v11.x — without it the Enterprise→v2 fallback may
+    // not complete, leaving the invisible widget in a broken state.
+    function createRecaptchaVerifier(containerId) {
+        cleanRecaptchaContainer(containerId);
+        var verifier = new firebase.auth.RecaptchaVerifier(containerId, {
             size: 'invisible',
-            callback: function() { /* solved */ }
+            callback: function() { /* solved */ },
+            'expired-callback': function() {
+                // reCAPTCHA expired — will be recreated on next send
+                console.warn('[2FA] reCAPTCHA expired, will refresh on next attempt');
+            }
+        });
+        // Explicitly render so the Enterprise→v2 fallback completes
+        return verifier.render().then(function() {
+            return verifier;
         });
     }
 
     function send2FACode(phoneNumber) {
-        init2FARecaptcha();
-        var provider = new firebase.auth.PhoneAuthProvider();
-        return provider.verifyPhoneNumber(phoneNumber, _2faRecaptchaVerifier)
+        // Always create a fresh verifier to avoid stale/expired state
+        if (_2faRecaptchaVerifier) {
+            _2faRecaptchaVerifier.clear();
+            _2faRecaptchaVerifier = null;
+        }
+        return createRecaptchaVerifier('recaptcha-container')
+            .then(function(verifier) {
+                _2faRecaptchaVerifier = verifier;
+                var provider = new firebase.auth.PhoneAuthProvider();
+                return provider.verifyPhoneNumber(phoneNumber, _2faRecaptchaVerifier);
+            })
             .then(function(verificationId) {
                 _2faVerificationId = verificationId;
                 return verificationId;
@@ -623,11 +652,6 @@
             twoFaResend.textContent = 'Enviando...';
             twoFaResend.style.pointerEvents = 'none';
 
-            if (_2faRecaptchaVerifier) {
-                _2faRecaptchaVerifier.clear();
-                _2faRecaptchaVerifier = null;
-            }
-
             send2FACode(phone).then(function() {
                 _2faResendCount++;
                 // Reset code attempt counter — new code, fresh attempts
@@ -702,14 +726,17 @@
     }
 
     function sendUnlockCode(phoneNumber) {
-        if (!_unlockRecaptchaVerifier) {
-            _unlockRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('unlock-recaptcha-container', {
-                size: 'invisible',
-                callback: function() { /* solved */ }
-            });
+        // Always create a fresh verifier to avoid stale/expired state
+        if (_unlockRecaptchaVerifier) {
+            _unlockRecaptchaVerifier.clear();
+            _unlockRecaptchaVerifier = null;
         }
-        var provider = new firebase.auth.PhoneAuthProvider();
-        return provider.verifyPhoneNumber(phoneNumber, _unlockRecaptchaVerifier)
+        return createRecaptchaVerifier('unlock-recaptcha-container')
+            .then(function(verifier) {
+                _unlockRecaptchaVerifier = verifier;
+                var provider = new firebase.auth.PhoneAuthProvider();
+                return provider.verifyPhoneNumber(phoneNumber, _unlockRecaptchaVerifier);
+            })
             .then(function(verificationId) {
                 _unlockVerificationId = verificationId;
                 return verificationId;
@@ -807,11 +834,6 @@
 
             unlockResend.textContent = 'Enviando...';
             unlockResend.style.pointerEvents = 'none';
-
-            if (_unlockRecaptchaVerifier) {
-                _unlockRecaptchaVerifier.clear();
-                _unlockRecaptchaVerifier = null;
-            }
 
             sendUnlockCode(phone).then(function() {
                 _unlockResendCount++;

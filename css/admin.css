@@ -2267,6 +2267,222 @@ input[type="checkbox"] { transition: all 0.15s ease; }
 }
 .batch-bar span { font-weight: 600; color: var(--admin-gold); }
 
+/* ========== VEHICLE ACTION BUTTONS ========== */
+.v-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-wrap: wrap;
+}
+
+/* Divider between action groups */
+.v-actions .v-act-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--admin-border);
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+/* Base icon button */
+.v-act {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--admin-text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    flex-shrink: 0;
+    padding: 0;
+    font-size: 0;
+    line-height: 1;
+}
+
+.v-act .lucide, .v-act [data-lucide] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.v-act:hover:not(:disabled) {
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    border-color: var(--admin-border);
+    transform: translateY(-1px);
+}
+
+.v-act:active:not(:disabled) {
+    transform: translateY(0) scale(0.93);
+}
+
+.v-act:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* --- Color variants --- */
+.v-act--info:hover:not(:disabled) {
+    color: var(--admin-info, #58a6ff);
+    background: rgba(88, 166, 255, 0.1);
+    border-color: rgba(88, 166, 255, 0.25);
+}
+
+.v-act--gold:hover:not(:disabled) {
+    color: var(--admin-gold, #b89658);
+    background: rgba(184, 150, 88, 0.1);
+    border-color: rgba(184, 150, 88, 0.25);
+}
+
+.v-act--gold.v-act--active {
+    color: var(--admin-gold, #b89658);
+    background: rgba(184, 150, 88, 0.15);
+    border-color: rgba(184, 150, 88, 0.3);
+}
+
+.v-act--success:hover:not(:disabled) {
+    color: var(--admin-success, #3fb950);
+    background: rgba(63, 185, 80, 0.1);
+    border-color: rgba(63, 185, 80, 0.25);
+}
+
+.v-act--warning:hover:not(:disabled) {
+    color: var(--admin-warning, #f59e0b);
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.25);
+}
+
+.v-act--danger:hover:not(:disabled) {
+    color: var(--admin-danger, #f85149);
+    background: rgba(248, 81, 73, 0.1);
+    border-color: rgba(248, 81, 73, 0.25);
+}
+
+/* Sold operation button (text + icon, special style) */
+.v-act--operation {
+    width: auto;
+    padding: 0 10px;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--admin-info, #58a6ff);
+    border-color: var(--admin-info, #58a6ff);
+    border-width: 1px;
+    border-style: solid;
+}
+
+.v-act--operation:hover:not(:disabled) {
+    background: rgba(88, 166, 255, 0.12);
+    color: var(--admin-info, #58a6ff);
+    border-color: var(--admin-info, #58a6ff);
+}
+
+/* Protected badge for sold vehicles */
+.v-act-protected {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--admin-danger, #ef4444);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(248, 81, 73, 0.08);
+    white-space: nowrap;
+}
+
+.v-act-protected .lucide, .v-act-protected [data-lucide] {
+    width: 11px;
+    height: 11px;
+}
+
+/* --- Tooltip (native title works, but this adds a styled fallback) --- */
+.v-act[title]::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    background: var(--admin-surface-hover, #2a2a2a);
+    color: var(--admin-text);
+    font-size: 0.68rem;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 100;
+    border: 1px solid var(--admin-border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+.v-act[title]:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
+/* Hide custom tooltip on touch devices (use native) */
+@media (hover: none) {
+    .v-act[title]::after { display: none; }
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .v-act {
+        width: 30px;
+        height: 30px;
+    }
+    .v-act .lucide, .v-act [data-lucide] {
+        width: 14px;
+        height: 14px;
+    }
+    .v-actions .v-act-sep {
+        height: 16px;
+        margin: 0 2px;
+    }
+    .v-act--operation {
+        font-size: 0.65rem;
+        padding: 0 7px;
+        height: 28px;
+    }
+}
+
+@media (max-width: 480px) {
+    .v-actions {
+        gap: 1px;
+    }
+    .v-act {
+        width: 28px;
+        height: 28px;
+        border-radius: 5px;
+    }
+    .v-act .lucide, .v-act [data-lucide] {
+        width: 13px;
+        height: 13px;
+    }
+    .v-actions .v-act-sep {
+        display: none;
+    }
+}
+
+/* Light mode adjustments */
+:root.light-mode .v-act:hover:not(:disabled) {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.1);
+}
+:root.light-mode .v-act[title]::after {
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
 /* F11.6: Focus-visible styles for keyboard navigation */
 :focus-visible {
     outline: 2px solid var(--admin-gold);

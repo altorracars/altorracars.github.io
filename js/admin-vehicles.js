@@ -151,25 +151,34 @@
             var estado = v.estado || 'disponible';
             var estadoInfo = AP.ESTADO_LABELS[estado] || AP.ESTADO_LABELS.disponible;
             var estadoBadge = '<span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span>';
-            var actions = '<button class="btn btn-ghost btn-sm" data-action="previewVehicle" data-id="' + v.id + '" title="Vista previa">👁</button> ' +
-                '<button class="btn btn-ghost btn-sm" data-action="showAuditTimeline" data-id="' + v.id + '" title="Historial de cambios" style="font-size:0.75rem;">📋</button> ';
             var esVendido = estado === 'vendido';
+            var actions = '<div class="v-actions">';
+            // Group 1: View actions (always visible)
+            actions += '<button class="v-act v-act--info" data-action="previewVehicle" data-id="' + v.id + '" title="Vista previa"><i data-lucide="eye"></i></button>';
+            actions += '<button class="v-act v-act--info" data-action="showAuditTimeline" data-id="' + v.id + '" title="Historial"><i data-lucide="clock-3"></i></button>';
             if (AP.canCreateOrEditInventory()) {
-                actions += '<button class="btn btn-ghost btn-sm" data-action="toggleDestacado" data-id="' + v.id + '" title="' + (v.destacado ? 'Quitar de destacados' : 'Marcar como destacado') + '" style="font-size:1rem;padding:2px 7px;">' + (v.destacado ? '⭐' : '☆') + '</button> ';
+                // Separator
+                actions += '<span class="v-act-sep"></span>';
+                // Group 2: Edit actions
+                actions += '<button class="v-act v-act--gold' + (v.destacado ? ' v-act--active' : '') + '" data-action="toggleDestacado" data-id="' + v.id + '" title="' + (v.destacado ? 'Quitar destacado' : 'Destacar') + '"><i data-lucide="' + (v.destacado ? 'star' : 'star') + '"></i></button>';
                 if (esVendido && !AP.isSuperAdmin()) {
-                    actions += '<button class="btn btn-ghost btn-sm" disabled title="Solo Super Admin puede editar vehiculos vendidos" style="opacity:0.4;cursor:not-allowed;">Editar</button> ';
-                    actions += '<span style="font-size:0.65rem;color:var(--admin-danger,#ef4444);">Protegido</span> ';
+                    actions += '<button class="v-act" disabled title="Solo Super Admin edita vendidos"><i data-lucide="pencil"></i></button>';
+                    actions += '<span class="v-act-protected"><i data-lucide="shield-alert"></i>Protegido</span>';
                 } else {
-                    actions += '<button class="btn btn-ghost btn-sm" data-action="editVehicle" data-id="' + v.id + '">Editar</button> ' +
-                        '<button class="btn btn-ghost btn-sm" data-action="duplicateVehicle" data-id="' + v.id + '" title="Duplicar vehiculo">📄</button> ';
+                    actions += '<button class="v-act v-act--success" data-action="editVehicle" data-id="' + v.id + '" title="Editar"><i data-lucide="pencil"></i></button>';
+                    actions += '<button class="v-act v-act--info" data-action="duplicateVehicle" data-id="' + v.id + '" title="Duplicar"><i data-lucide="copy"></i></button>';
                 }
                 if (estado === 'disponible') {
-                    actions += '<button class="btn btn-sm" style="color:var(--admin-info);border-color:var(--admin-info);" data-action="markAsSold" data-id="' + v.id + '">Gestionar Operacion</button> ';
+                    actions += '<button class="v-act v-act--operation" data-action="markAsSold" data-id="' + v.id + '" title="Gestionar operacion"><i data-lucide="handshake"></i>Operacion</button>';
                 }
             }
             if (AP.canDeleteInventory()) {
-                actions += '<button class="btn btn-danger btn-sm" data-action="deleteVehicle" data-id="' + v.id + '">Eliminar</button>';
+                // Separator before danger zone
+                actions += '<span class="v-act-sep"></span>';
+                // Group 3: Danger
+                actions += '<button class="v-act v-act--danger" data-action="deleteVehicle" data-id="' + v.id + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
             }
+            actions += '</div>';
             var origen = 'Propio';
             if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
                 var dealer = AP.dealers.find(function(x) { return x._docId === v.concesionario; });
@@ -182,7 +191,7 @@
             var barPct = maxPrio > 0 ? Math.round((prio / maxPrio) * 100) : 0;
             var barColor = prio === 0 ? '#333' : prio >= 70 ? '#b89658' : prio >= 30 ? '#f59e0b' : '#6b7280';
 
-            var dragCell = _reorderMode ? '<td class="col-drag" style="cursor:grab;text-align:center;color:var(--admin-text-muted);font-size:1.1rem;" title="Arrastra para reordenar">☰</td>' : '';
+            var dragCell = _reorderMode ? '<td class="col-drag" style="cursor:grab;text-align:center;color:var(--admin-text-muted);" title="Arrastra para reordenar"><i data-lucide="grip-vertical" style="width:16px;height:16px;"></i></td>' : '';
             var posCell = _reorderMode ? '<td class="col-pos" style="min-width:70px;">' +
                 '<div style="display:flex;align-items:center;gap:6px;">' +
                     '<span style="font-weight:700;font-size:0.8rem;min-width:22px;color:' + (prio > 0 ? '#b89658' : 'var(--admin-text-muted)') + ';">' + prio + '</span>' +
@@ -211,6 +220,7 @@
         });
         if (!html) html = '<tr><td colspan="' + colCount + '" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
         $('vehiclesTableBody').innerHTML = html;
+        AP.refreshIcons();
 
         // Update sort indicators in headers
         document.querySelectorAll('#vehiclesTable th[data-sort]').forEach(function(th) {
@@ -1222,13 +1232,14 @@
         AP.uploadedImageUrls.forEach(function(url, i) {
             var isMain = (i === 0);
             html += '<div class="uploaded-img' + (isMain ? ' main-img' : '') + '" draggable="true" data-idx="' + i + '">' +
-                '<div class="img-drag-handle" title="Arrastra para reordenar">☰</div>' +
+                '<div class="img-drag-handle" title="Arrastra para reordenar"><i data-lucide="grip-vertical" style="width:14px;height:14px;"></i></div>' +
                 '<img src="' + url + '" alt="Foto ' + (i + 1) + '" onerror="this.style.opacity=\'0.3\'">' +
                 (isMain ? '<span class="img-badge">PRINCIPAL</span>' : '<span class="img-badge img-badge-num">' + (i + 1) + '</span>') +
                 '<button type="button" class="remove-img" data-action="removeImage" data-idx="' + i + '">&times;</button>' +
             '</div>';
         });
         container.innerHTML = html;
+        AP.refreshIcons();
         $('vImagen').value = AP.uploadedImageUrls[0] || '';
         $('vImagenes').value = AP.uploadedImageUrls.join('\n');
         initImageDragDrop(container);

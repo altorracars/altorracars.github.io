@@ -21,7 +21,10 @@
 
     function updateThemeIcon(isLight) {
         var icon = $('themeIcon');
-        if (icon) icon.textContent = isLight ? '☀️' : '🌙';
+        if (icon) {
+            icon.innerHTML = '<i data-lucide="' + (isLight ? 'sun' : 'moon') + '"></i>';
+            AP.refreshIcons();
+        }
     }
 
     var toggleBtn = $('themeToggle');

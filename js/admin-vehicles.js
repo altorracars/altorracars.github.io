@@ -220,12 +220,11 @@
         });
         if (!html) html = '<tr><td colspan="' + colCount + '" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
         $('vehiclesTableBody').innerHTML = html;
-        AP.refreshIcons();
 
         // Update sort indicators in headers
         document.querySelectorAll('#vehiclesTable th[data-sort]').forEach(function(th) {
             var col = th.getAttribute('data-sort');
-            var text = th.textContent.replace(/[↑↓⇅]/g, '').trim();
+            var si = th.querySelector('.sort-icon'); if (si) si.remove(); var text = th.textContent.trim();
             th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('vehicles', col) : '');
         });
 
@@ -242,6 +241,7 @@
         var countEl = $('vehiclesCount');
         if (countEl) countEl.textContent = totalFiltered + ' vehiculo' + (totalFiltered !== 1 ? 's' : '');
 
+        AP.refreshIcons();
         if (_reorderMode) initTableDragDrop();
     }
 
@@ -474,8 +474,8 @@
             toggleBtn.style.background  = isDestacado ? 'rgba(212,175,55,0.08)' : '';
         }
         if (starEl) {
-            starEl.textContent = isDestacado ? '\u2605' : '\u2606';
-            starEl.style.color = isDestacado ? '#d4af37' : '';
+            starEl.innerHTML = '<i data-lucide="star" style="width:20px;height:20px;color:' + (isDestacado ? '#d4af37' : 'var(--admin-text-muted)') + ';' + (isDestacado ? 'fill:#d4af37;' : '') + '"></i>';
+            AP.refreshIcons();
         }
 
         /* Mostrar/ocultar campos de banner inline */

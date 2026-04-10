@@ -707,12 +707,14 @@ Esto dispara la invalidacion en el sitio publico via cache-manager.js.
 
 ### "Access denied for UID" al hacer login
 
-**Causa**: Error de red impide cargar perfil de Firestore → el codigo trataba
-cualquier error como "acceso denegado" y hacia signOut.
+**Causa**: Dos problemas combinados:
+1. Error de red impide cargar perfil de Firestore → el codigo trataba cualquier error como "acceso denegado" y hacia signOut
+2. `showAccessDenied()` llamaba a `signOut()`, que disparaba `onAuthStateChanged(null)` → `showLogin()` → **ocultaba el mensaje de error** antes de que el usuario pudiera leerlo
 
-**Fix aplicado** (2026-04-08): `loadUserProfile` ahora reintenta hasta 3 veces
-con backoff (2s, 4s, 6s) para errores de red antes de rendirse. Solo hace
-signOut para errores reales de permisos.
+**Fix aplicado** (2026-04-08 / 2026-04-10):
+- `loadUserProfile` reintenta hasta 3 veces con backoff (2s, 4s, 6s) para errores de red
+- `_accessDeniedShown` flag: `showLogin()` no oculta el error si `showAccessDenied` lo puso visible
+- `console.warn('[Auth] Reason:', reason)` para diagnostico en consola
 
 **Si persiste**: Verificar que las reglas de Firestore esten desplegadas:
 ```bash

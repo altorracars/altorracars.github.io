@@ -68,12 +68,6 @@
             storagePath: 'cars/'
         },
 
-        FREE_TIER: {
-            storageGB: 5,
-            egressGB: 100,
-            classAOps: 5000,
-            classBOps: 50000
-        },
 
         // ========== DRAFT STATE ==========
         draftInterval: null,
@@ -343,6 +337,12 @@
     } else {
         initConnectivity();
     }
+
+    // ========== LUCIDE ICONS HELPER ==========
+    // Refresh Lucide icons after dynamic content renders (tables, modals, etc.)
+    AP.refreshIcons = function() {
+        if (window.lucide) lucide.createIcons();
+    };
 
     // ========== F2.2: SKELETON LOADERS ==========
     AP.showTableSkeleton = function(tbodyId, cols) {

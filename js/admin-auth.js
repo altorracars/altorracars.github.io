@@ -811,6 +811,7 @@
     }
 
     function showAccessDenied(email, uid, reason) {
+        _accessDeniedShown = true;
         stopInactivityTracking();
         stopPresence();
         clearSessionStart();
@@ -825,10 +826,16 @@
         msg += '\n\nContacta al Super Admin para obtener acceso.';
         errEl.style.whiteSpace = 'pre-line';
         errEl.textContent = msg;
-        // Log UID only to console for debugging (never expose to UI)
+        // Log UID and reason to console for debugging (never expose UID to UI)
         if (uid) console.log('[Auth] Access denied for UID:', uid);
+        if (reason) console.warn('[Auth] Reason:', reason);
         window.auth.signOut();
     }
+
+    // Flag to prevent showLogin() from hiding the access denied error message.
+    // Without this, signOut() → onAuthStateChanged(null) → showLogin() hides the error
+    // before the user can read it.
+    var _accessDeniedShown = false;
 
     function showLogin() {
         stopInactivityTracking();
@@ -840,8 +847,13 @@
         // Clear rate limit UI on fresh login screen (per-email check happens on submit)
         var rlEl = $('loginRateLimit');
         if (rlEl) rlEl.style.display = 'none';
-        var errEl = $('loginError');
-        if (errEl) errEl.style.display = 'none';
+        // Preserve error message if showAccessDenied is active
+        if (_accessDeniedShown) {
+            _accessDeniedShown = false;
+        } else {
+            var errEl = $('loginError');
+            if (errEl) errEl.style.display = 'none';
+        }
     }
 
     function showAdmin(user) {

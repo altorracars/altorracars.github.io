@@ -51,7 +51,7 @@
             if (AP._populateVehicleFilters) AP._populateVehicleFilters();
             if (AP.updateStats) AP.updateStats();
             if (AP.renderActivityFeed) AP.renderActivityFeed();
-            if (AP.updateEstimator) AP.updateEstimator();
+
             if (AP.updateNavBadges) AP.updateNavBadges();
             if (AP.renderVehiclesByOrigin) AP.renderVehiclesByOrigin();
             if (AP.renderDealersList) AP.renderDealersList();
@@ -373,64 +373,6 @@
         }
     }
 
-    function updateEstimator() {
-        var el = $('storageEstimator');
-        if (!el) return;
-
-        var totalImages = 0;
-        AP.vehicles.forEach(function(v) {
-            if (v.imagenes && v.imagenes.length) {
-                v.imagenes.forEach(function(url) {
-                    if (url && (url.indexOf('firebasestorage') >= 0 || url.indexOf('storage.googleapis') >= 0)) {
-                        totalImages++;
-                    }
-                });
-            }
-        });
-
-        var avgSizeKB = 150;
-        var storageUsedMB = (totalImages * avgSizeKB) / 1024;
-        var storageUsedGB = storageUsedMB / 1024;
-        var storagePct = (storageUsedGB / AP.FREE_TIER.storageGB) * 100;
-
-        var visitsInput = $('estVisitas');
-        var monthlyVisits = visitsInput ? (parseInt(visitsInput.value, 10) || 500) : 500;
-        var avgImagesPerVisit = 8;
-        var egressGB = (monthlyVisits * avgImagesPerVisit * avgSizeKB) / (1024 * 1024);
-        var egressPct = (egressGB / AP.FREE_TIER.egressGB) * 100;
-
-        var classAUsed = totalImages;
-        var classAPct = (classAUsed / AP.FREE_TIER.classAOps) * 100;
-        var classBUsed = monthlyVisits * avgImagesPerVisit;
-        var classBPct = (classBUsed / AP.FREE_TIER.classBOps) * 100;
-        var maxPct = Math.max(storagePct, egressPct, classAPct, classBPct);
-
-        function renderEstBar(label, value, detail, pct) {
-            var color = pct >= 90 ? 'var(--admin-danger)' : pct >= 70 ? 'var(--admin-warning)' : 'var(--admin-success)';
-            var clampedPct = Math.min(pct, 100);
-            return '<div class="est-item"><div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:2px;"><span>' + label + '</span><span style="color:var(--admin-text-muted);">' + detail + '</span></div><div style="height:6px;background:var(--admin-border);border-radius:3px;overflow:hidden;"><div style="height:100%;width:' + clampedPct + '%;background:' + color + ';border-radius:3px;transition:width 0.3s;"></div></div></div>';
-        }
-
-        var html = '<div class="est-grid">' +
-            renderEstBar('Almacenamiento', storageUsedMB.toFixed(1) + ' MB', storageUsedGB.toFixed(3) + ' / ' + AP.FREE_TIER.storageGB + ' GB', storagePct) +
-            renderEstBar('Egreso mensual', egressGB.toFixed(2) + ' GB', egressGB.toFixed(2) + ' / ' + AP.FREE_TIER.egressGB + ' GB', egressPct) +
-            renderEstBar('Op. Clase A (subidas)', classAUsed, classAUsed + ' / ' + AP.FREE_TIER.classAOps.toLocaleString(), classAPct) +
-            renderEstBar('Op. Clase B (lecturas)', classBUsed.toLocaleString(), classBUsed.toLocaleString() + ' / ' + AP.FREE_TIER.classBOps.toLocaleString(), classBPct) +
-        '</div>';
-
-        if (maxPct >= 70) {
-            html += '<div style="margin-top:0.75rem;padding:0.5rem 0.75rem;background:rgba(210,153,34,0.15);border:1px solid var(--admin-warning);border-radius:6px;font-size:0.8rem;color:var(--admin-warning);">Te estas acercando al limite gratuito. Considera reducir imagenes o visitas.</div>';
-        } else {
-            html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--admin-text-muted);">' + totalImages + ' imagenes en Storage | Compresion automatica activa (~150KB/img)</div>';
-        }
-
-        el.innerHTML = html;
-    }
-
-    // Estimator events
-    var estVisitas = $('estVisitas');
-    if (estVisitas) estVisitas.addEventListener('input', function() { updateEstimator(); });
-
     // F6.4: Event delegation for retry link
     var vBody = $('vehiclesTableBody');
     if (vBody) {
@@ -448,6 +390,6 @@
     AP.retryLoad = retryLoad;
     AP.updateStats = updateStats;
     AP.updateNavBadges = updateNavBadges;
-    AP.updateEstimator = updateEstimator;
+
     AP.signalCacheInvalidation = signalCacheInvalidation;
 })();

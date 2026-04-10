@@ -16,6 +16,8 @@
     <link rel="icon" type="image/png" href="/multimedia/logo-placeholder.png">
     <link rel="apple-touch-icon" href="/multimedia/logo-placeholder.png">
     <link rel="stylesheet" href="css/admin.css">
+    <!-- Lucide Icons — professional SVG icon library -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 </head>
 <body>
 
@@ -45,7 +47,7 @@
                 <div class="login-password-wrap">
                     <input type="password" id="loginPassword" class="form-input" required aria-required="true" placeholder="Tu contrasena" autocomplete="current-password">
                     <button type="button" class="login-eye-btn" id="togglePasswordBtn" tabindex="-1" aria-label="Mostrar contrasena">
-                        <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <i data-lucide="eye" id="eyeIcon" width="18" height="18"></i>
                     </button>
                 </div>
             </div>
@@ -148,24 +150,24 @@
 
         <!-- Dashboard (standalone) -->
         <button class="nav-item active" data-section="dashboard">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+            <i data-lucide="layout-dashboard"></i>
             Dashboard
         </button>
 
         <!-- INVENTARIO -->
         <div class="nav-category">Inventario</div>
         <button class="nav-item" data-section="vehicles">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M5 17H3v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2"/><path d="M9 17h6"/><path d="M14 7l4 5"/></svg>
+            <i data-lucide="car"></i>
             <span>Vehiculos</span>
             <span class="nav-badge" id="navBadgeVehicles"></span>
         </button>
         <button class="nav-item" data-section="brands">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <i data-lucide="tag"></i>
             <span>Marcas</span>
             <span class="nav-badge" id="navBadgeBrands"></span>
         </button>
         <button class="nav-item" data-section="banners">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <i data-lucide="image"></i>
             <span>Banners</span>
             <span class="nav-badge" id="navBadgeBanners"></span>
         </button>
@@ -173,42 +175,42 @@
         <!-- COMERCIAL -->
         <div class="nav-category">Comercial</div>
         <button class="nav-item" data-section="appointments">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+            <i data-lucide="inbox"></i>
             <span>Solicitudes</span>
             <span class="nav-badge" id="navBadgeAppointments"></span>
         </button>
         <button class="nav-item" data-section="dealers">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/><path d="M1 21h22"/><path d="M10 9h4"/><path d="M10 13h4"/><path d="M10 17h4"/><path d="M20 21V10l-4-3"/><path d="M4 21V10l4-3"/></svg>
+            <i data-lucide="handshake"></i>
             <span>Aliados</span>
         </button>
         <button class="nav-item" data-section="reviews">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <i data-lucide="star"></i>
             <span>Reseñas</span>
             <span class="nav-badge" id="navBadgeReviews"></span>
         </button>
         <button class="nav-item" data-section="lists">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+            <i data-lucide="clipboard-list"></i>
             <span>Listas</span>
         </button>
 
         <!-- SISTEMA -->
         <div class="nav-category">Sistema</div>
         <button class="nav-item" data-section="audit">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <i data-lucide="scroll-text"></i>
             <span>Auditoria</span>
             <span class="nav-badge" id="navBadgeAudit"></span>
         </button>
         <button class="nav-item" data-section="users">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <i data-lucide="users"></i>
             Usuarios
         </button>
         <button class="nav-item" data-section="settings">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            <i data-lucide="settings"></i>
             Configuracion
         </button>
         <!-- F7.3: Ver sitio -->
         <a class="nav-item" href="/" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <i data-lucide="external-link"></i>
             <span>Ver sitio</span>
         </a>
         <div class="nav-divider"></div>
@@ -221,7 +223,7 @@
             </div>
         </div>
         <button class="nav-item nav-item-logout" id="logoutBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <i data-lucide="log-out"></i>
             Cerrar Sesion
         </button>
     </nav>
@@ -248,42 +250,42 @@
             </div>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon si-blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M5 17H3v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2"/><path d="M9 17h6"/></svg></div>
+                    <div class="stat-icon si-blue"><i data-lucide="car" width="22" height="22"></i></div>
                     <div class="stat-label">Total Vehiculos</div>
                     <div class="stat-value" id="statTotal">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon si-green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+                    <div class="stat-icon si-green"><i data-lucide="sparkles" width="22" height="22"></i></div>
                     <div class="stat-label">Nuevos</div>
                     <div class="stat-value" id="statNuevos">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon si-purple"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-icon si-purple"><i data-lucide="history" width="22" height="22"></i></div>
                     <div class="stat-label">Usados</div>
                     <div class="stat-value" id="statUsados">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon si-gold"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+                    <div class="stat-icon si-gold"><i data-lucide="percent" width="22" height="22"></i></div>
                     <div class="stat-label">En Oferta</div>
                     <div class="stat-value" id="statOfertas">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon si-gold"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+                    <div class="stat-icon si-gold"><i data-lucide="star" width="22" height="22"></i></div>
                     <div class="stat-label">Destacados</div>
                     <div class="stat-value" id="statDestacados">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon si-blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/></svg></div>
+                    <div class="stat-icon si-blue"><i data-lucide="tag" width="22" height="22"></i></div>
                     <div class="stat-label">Marcas</div>
                     <div class="stat-value" id="statMarcas">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon si-gold"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+                    <div class="stat-icon si-gold"><i data-lucide="circle-check" width="22" height="22"></i></div>
                     <div class="stat-label">Vendidos</div>
                     <div class="stat-value" id="statVendidos">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon si-purple"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                    <div class="stat-icon si-purple"><i data-lucide="inbox" width="22" height="22"></i></div>
                     <div class="stat-label">Solicitudes Pendientes</div>
                     <div class="stat-value" id="statCitas">-</div>
                 </div>
@@ -292,19 +294,19 @@
             <!-- F8.1: ACCIONES RAPIDAS -->
             <div class="quick-actions" id="quickActions">
                 <button class="quick-action-btn" data-action="quickNewVehicle" title="Nuevo vehiculo">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <i data-lucide="plus" width="20" height="20"></i>
                     <span>Nuevo vehiculo</span>
                 </button>
                 <button class="quick-action-btn" data-action="quickGoTo" data-section="brands" title="Gestionar marcas">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    <i data-lucide="tag" width="20" height="20"></i>
                     <span>Marcas</span>
                 </button>
                 <button class="quick-action-btn" data-action="quickGoTo" data-section="appointments" title="Ver solicitudes">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <i data-lucide="inbox" width="20" height="20"></i>
                     <span>Solicitudes</span>
                 </button>
                 <button class="quick-action-btn" data-action="quickGoTo" data-section="dealers" title="Aliados">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/><path d="M1 21h22"/><path d="M10 9h4"/></svg>
+                    <i data-lucide="handshake" width="20" height="20"></i>
                     <span>Aliados</span>
                 </button>
             </div>
@@ -363,20 +365,6 @@
                 </div>
             </div>
 
-            <!-- STORAGE ESTIMATOR -->
-            <div class="table-container">
-                <div class="table-header">
-                    <h3>Consumo Storage (Free Tier)</h3>
-                    <div style="display:flex;align-items:center;gap:0.5rem;">
-                        <label style="font-size:0.75rem;color:var(--admin-text-muted);">Visitas/mes:</label>
-                        <input type="number" id="estVisitas" class="search-input" value="500" min="0" max="100000" style="width:100px;">
-                    </div>
-                </div>
-                <div style="padding:1rem 1.25rem;" id="storageEstimator">
-                    <span style="color:var(--admin-text-muted);font-size:0.875rem;">Cargando datos...</span>
-                </div>
-            </div>
-
             <!-- SEO TOOLS -->
             <div class="table-container mt-lg">
                 <div class="table-header">
@@ -413,14 +401,14 @@
             <div class="page-header">
                 <div><h1>Vehiculos</h1><p class="page-subtitle" id="vehiclesCount"></p></div>
                 <button class="btn btn-primary" id="btnAddVehicle">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <i data-lucide="plus" width="16" height="16"></i>
                     Agregar Vehiculo
                 </button>
             </div>
             <!-- Fase 18: Active Drafts Panel -->
             <div class="active-drafts-panel" id="activeDraftsPanel" style="display:none;">
                 <div class="active-drafts-header">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <i data-lucide="pencil" width="16" height="16"></i>
                     <span>Borradores activos</span>
                 </div>
                 <div class="active-drafts-list" id="activeDraftsList"></div>
@@ -441,11 +429,11 @@
                             <option value="">Concesionario</option>
                         </select>
                         <button class="btn btn-ghost btn-sm btn-export" id="btnExportVehiclesCSV" title="Exportar CSV">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <i data-lucide="download" width="14" height="14"></i>
                             CSV
                         </button>
                         <button class="btn btn-ghost btn-sm" id="toggleReorderMode" title="Modo reordenar" style="white-space:nowrap;gap:6px;display:flex;align-items:center;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/><polyline points="7 3 3 6 7 9"/><polyline points="17 15 21 18 17 21"/></svg>
+                            <i data-lucide="arrow-down-up" width="16" height="16"></i>
                             <span>Reordenar</span>
                         </button>
                     </div>
@@ -479,7 +467,7 @@
             <div class="page-header">
                 <div><h1>Marcas</h1><p class="page-subtitle" id="brandsCount"></p></div>
                 <button class="btn btn-primary" id="btnAddBrand">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <i data-lucide="plus" width="16" height="16"></i>
                     Agregar Marca
                 </button>
             </div>
@@ -499,21 +487,21 @@
             <div class="page-header">
                 <div><h1>Usuarios</h1><p class="page-subtitle">Gestiona los accesos al panel de administracion</p></div>
                 <button class="btn btn-primary" id="btnAddUser">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <i data-lucide="plus" width="16" height="16"></i>
                     Crear Usuario
                 </button>
             </div>
             <div class="roles-info">
                 <div class="role-card">
-                    <div class="role-icon ri-gold"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                    <div class="role-icon ri-gold"><i data-lucide="shield" width="18" height="18"></i></div>
                     <div><strong>Super Admin</strong><p>Acceso total: vehiculos, marcas, usuarios, configuracion</p></div>
                 </div>
                 <div class="role-card">
-                    <div class="role-icon ri-blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+                    <div class="role-icon ri-blue"><i data-lucide="pencil" width="18" height="18"></i></div>
                     <div><strong>Editor</strong><p>Puede crear y editar vehiculos y marcas</p></div>
                 </div>
                 <div class="role-card">
-                    <div class="role-icon ri-gray"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+                    <div class="role-icon ri-gray"><i data-lucide="eye" width="18" height="18"></i></div>
                     <div><strong>Viewer</strong><p>Solo puede ver la informacion, sin editar</p></div>
                 </div>
             </div>
@@ -537,7 +525,7 @@
                     <p class="page-subtitle">Gestiona citas, consultas, financiaciones, consignaciones y todas las solicitudes</p>
                 </div>
                 <button class="btn btn-primary" id="btnCreateInternalAppt">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <i data-lucide="plus" width="16" height="16"></i>
                     Nueva Solicitud Interna
                 </button>
             </div>
@@ -545,7 +533,7 @@
             <!-- Availability Config Panel -->
             <div class="stat-card mb-lg">
                 <h3 style="margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <i data-lucide="clock" width="18" height="18" style="color:var(--admin-gold);"></i>
                     Configuracion de Disponibilidad
                 </h3>
                 <p class="admin-hint">Define los dias y horarios disponibles para agendar citas. Los usuarios veran en el calendario solo los dias y horas habilitados.</p>
@@ -595,7 +583,7 @@
             <!-- Calendar: Block Specific Dates -->
             <div class="stat-card mb-lg">
                 <h3 style="margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <i data-lucide="calendar" width="18" height="18" style="color:var(--admin-gold);"></i>
                     Calendario de Disponibilidad
                 </h3>
                 <p class="admin-hint">Haz clic en un dia para bloquear horas especificas o el dia completo. Los numeros indican citas agendadas.</p>
@@ -666,7 +654,7 @@
             <div class="stat-card overflow-x-auto">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
                     <button class="btn btn-ghost btn-sm btn-export" id="btnExportAppointmentsCSV" title="Exportar CSV">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <i data-lucide="download" width="14" height="14"></i>
                         CSV
                     </button>
                 </div>
@@ -700,7 +688,7 @@
                     <p class="page-subtitle">Gestiona aliados comerciales, consignatarios y controla tus operaciones de venta</p>
                 </div>
                 <button class="btn btn-primary" id="btnAddDealer">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <i data-lucide="plus" width="16" height="16"></i>
                     Agregar Aliado
                 </button>
             </div>
@@ -809,7 +797,7 @@
                     <p class="page-subtitle">Gestiona los testimonios que se muestran en el sitio web</p>
                 </div>
                 <button class="btn btn-primary" id="btnAddReview">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <i data-lucide="plus" width="16" height="16"></i>
                     Nueva Reseña
                 </button>
             </div>
@@ -924,7 +912,7 @@
         <div class="modal-overlay" role="dialog" aria-modal="true" id="reviewDeleteConfirm">
             <div class="modal" style="max-width:420px;text-align:center;">
                 <div class="modal-body modal-confirm-body">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="mb-md"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    <i data-lucide="circle-x" width="48" height="48" style="color:#ef4444;" class="mb-md"></i>
                     <h3 style="margin-bottom:0.5rem;">Eliminar Reseña</h3>
                     <p style="color:var(--admin-text-muted);font-size:0.9rem;">Esta acción no se puede deshacer. La reseña será eliminada permanentemente.</p>
                 </div>
@@ -961,7 +949,7 @@
                     <p class="page-subtitle">Gestiona los banners visuales del sitio web</p>
                 </div>
                 <button class="btn btn-primary" id="btnAddBanner">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <i data-lucide="plus" width="16" height="16"></i>
                     Nuevo Banner
                 </button>
             </div>
@@ -1078,7 +1066,7 @@
                             <label>Imagen del Banner</label>
                             <div class="upload-zone" id="bannerDropZone" style="border:2px dashed var(--admin-border,#30363d);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:border-color 0.3s;">
                                 <div id="bannerPreviewArea">
-                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4;margin-bottom:0.5rem;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                    <i data-lucide="image" width="40" height="40" style="opacity:0.4;margin-bottom:0.5rem;"></i>
                                     <p style="color:var(--admin-text-muted);font-size:0.85rem;">Arrastra una imagen o haz click para seleccionar</p>
                                     <p style="color:var(--admin-text-muted);font-size:0.75rem;margin-top:0.25rem;">Recomendado: 1920x600px (hero), 1200x400px (promo). Se comprime a WebP automaticamente.</p>
                                 </div>
@@ -1110,7 +1098,7 @@
         <div class="modal-overlay" role="dialog" aria-modal="true" id="bannerDeleteConfirm">
             <div class="modal" style="max-width:420px;text-align:center;">
                 <div class="modal-body modal-confirm-body">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" class="mb-md"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    <i data-lucide="circle-x" width="48" height="48" style="color:#ef4444;" class="mb-md"></i>
                     <h3 style="margin-bottom:0.5rem;">Eliminar Banner</h3>
                     <p style="color:var(--admin-text-muted);font-size:0.9rem;">Esta accion no se puede deshacer. El banner sera eliminado del sitio permanentemente.</p>
                 </div>
@@ -1127,7 +1115,7 @@
                 <div><h1>Auditoria</h1><p class="page-subtitle">Registro completo de todas las acciones del sistema</p></div>
                 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
                     <button class="btn btn-ghost btn-sm btn-export" id="btnExportAuditCSV" title="Exportar CSV">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <i data-lucide="download" width="14" height="14"></i>
                         CSV
                     </button>
                 </div>
@@ -1222,7 +1210,7 @@
             </div>
             <div class="stat-card card-narrow">
                 <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    <i data-lucide="lock" width="18" height="18" style="color:var(--admin-gold);"></i>
                     Cambiar Contrasena
                 </h3>
                 <form id="changePasswordForm">
@@ -1250,7 +1238,7 @@
             <!-- TRUSTED DEVICES / ACTIVE SESSIONS -->
             <div class="stat-card card-narrow mt-lg" id="trustedDevicesCard">
                 <h3 style="margin-bottom: 0.5rem; display:flex; align-items:center; gap:0.5rem;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    <i data-lucide="monitor" width="18" height="18" style="color:var(--admin-gold);"></i>
                     Dispositivos de Confianza
                 </h3>
                 <p class="admin-hint" style="margin-bottom:0.75rem;">Estos dispositivos pueden acceder sin verificacion SMS durante 30 dias. Si no reconoces alguno, revocalo de inmediato.</p>
@@ -1263,7 +1251,7 @@
             <!-- BACKUP & RESTORE -->
             <div class="stat-card card-narrow mt-lg">
                 <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--admin-gold)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <i data-lucide="upload" width="18" height="18" style="color:var(--admin-gold);"></i>
                     Respaldo de Datos
                 </h3>
                 <p class="admin-hint">Exporta o importa todos los vehiculos y marcas como archivo JSON.</p>
@@ -1313,7 +1301,7 @@
                 <!-- Seccion: Info Basica -->
                 <div class="form-section">
                     <div class="form-section-title" data-toggle="sec-basica">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M5 17H3v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2"/><path d="M9 17h6"/></svg>
+                        <i data-lucide="car" width="16" height="16"></i>
                         Informacion Basica
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
@@ -1352,7 +1340,7 @@
                 <!-- Seccion: Precio -->
                 <div class="form-section">
                     <div class="form-section-title" data-toggle="sec-precio">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                        <i data-lucide="dollar-sign" width="16" height="16"></i>
                         Precio y Disponibilidad
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
@@ -1393,7 +1381,7 @@
                 <!-- Seccion: Especificaciones -->
                 <div class="form-section">
                     <div class="form-section-title" data-toggle="sec-specs">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9"/></svg>
+                        <i data-lucide="settings" width="16" height="16"></i>
                         Especificaciones Tecnicas
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
@@ -1457,7 +1445,7 @@
                 <!-- Seccion: Publicacion y Destacado -->
                 <div class="form-section">
                     <div class="form-section-title" data-toggle="sec-estado">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <i data-lucide="star" width="16" height="16"></i>
                         Publicacion y Destacado
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
@@ -1504,7 +1492,7 @@
                                     <button type="button" id="btnCutoutClear" title="Quitar imagen recortada" style="position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(248,81,73,0.85);border:none;color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
                                 </div>
                                 <div id="cutoutUploadArea" style="border:1.5px dashed rgba(212,175,55,0.32);border-radius:6px;padding:0.75rem 1rem;text-align:center;cursor:pointer;background:rgba(212,175,55,0.03);transition:background 0.2s;">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.6)" stroke-width="1.5" style="display:block;margin:0 auto 5px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <i data-lucide="upload" width="22" height="22" style="display:block;margin:0 auto 5px;color:rgba(212,175,55,0.6);"></i>
                                     <span style="font-size:0.75rem;color:rgba(255,255,255,0.55);">Subir PNG transparente</span>
                                     <input type="file" id="cutoutFileInput" accept="image/png" style="display:none">
                                 </div>
@@ -1536,13 +1524,13 @@
                 <!-- Seccion: Fotos -->
                 <div class="form-section">
                     <div class="form-section-title" data-toggle="sec-fotos">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <i data-lucide="image" width="16" height="16"></i>
                         Fotos del Vehiculo
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-fotos">
                         <div class="upload-area" id="uploadArea">
-                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--admin-text-muted)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <i data-lucide="upload" width="36" height="36" style="color:var(--admin-text-muted);"></i>
                             <p><strong>Haz clic aqui</strong> o arrastra las fotos</p>
                             <p class="upload-hint">JPG, PNG o WebP — Se comprimen automaticamente a ~150KB</p>
                             <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp" style="display:none">
@@ -1558,7 +1546,7 @@
                 <!-- Seccion: Caracteristicas -->
                 <div class="form-section">
                     <div class="form-section-title" data-toggle="sec-features">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                        <i data-lucide="list" width="16" height="16"></i>
                         Caracteristicas
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
@@ -1644,11 +1632,11 @@
         <div class="modal-footer">
             <button class="btn btn-ghost" id="cancelModal">Cancelar</button>
             <button class="btn btn-warning" id="saveDraftBtn" title="Guardar borrador para continuar despues">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 0l-3-3m3 3l3-3"/><rect x="3" y="10" width="18" height="12" rx="2"/></svg>
+                <i data-lucide="hard-drive-upload" width="16" height="16"></i>
                 Guardar Borrador
             </button>
             <button class="btn btn-primary" id="saveVehicle">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <i data-lucide="save" width="16" height="16"></i>
                 Guardar Vehiculo
             </button>
         </div>
@@ -1930,5 +1918,17 @@
 <script src="js/admin-reviews.js" defer></script>
 <script src="js/admin-operations.js" defer></script>
 <script src="js/admin-phase5.js" defer></script>
+<script>
+// Initialize Lucide icons when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.lucide) {
+        lucide.createIcons();
+    } else {
+        // Lucide loaded with defer, wait for it
+        var lucideScript = document.querySelector('script[src*="lucide"]');
+        if (lucideScript) lucideScript.addEventListener('load', function() { lucide.createIcons(); });
+    }
+});
+</script>
 </body>
 </html>

@@ -144,10 +144,10 @@
 
     AP.getSortIndicator = function(tableKey, col) {
         var s = AP._sorting[tableKey];
-        if (!s || s.col !== col) return '<span class="sort-icon sort-inactive">⇅</span>';
+        if (!s || s.col !== col) return '<span class="sort-icon sort-inactive"><i data-lucide="arrow-up-down" style="width:12px;height:12px;opacity:0.4;"></i></span>';
         return s.dir === 'asc'
-            ? '<span class="sort-icon sort-asc">↑</span>'
-            : '<span class="sort-icon sort-desc">↓</span>';
+            ? '<span class="sort-icon sort-asc"><i data-lucide="chevron-up" style="width:12px;height:12px;"></i></span>'
+            : '<span class="sort-icon sort-desc"><i data-lucide="chevron-down" style="width:12px;height:12px;"></i></span>';
     };
 
     // Delegated click handler for sortable headers

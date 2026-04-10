@@ -103,14 +103,16 @@
             var count = AP.vehicles.filter(function(v) { return v.marca === b.id; }).length;
             var logoUrl = getBrandLogoUrl(b);
 
-            var actions = '';
+            var actions = '<div class="v-actions">';
             if (AP.canCreateOrEditInventory()) {
-                actions += '<button class="btn btn-ghost btn-sm" data-action="editBrand" data-id="' + AP.escapeHtml(b.id) + '">Editar</button> ';
+                actions += '<button class="v-act v-act--success" data-action="editBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Editar"><i data-lucide="pencil"></i></button>';
             }
             if (AP.canDeleteInventory()) {
-                actions += '<button class="btn btn-danger btn-sm" data-action="deleteBrand" data-id="' + AP.escapeHtml(b.id) + '">Eliminar</button>';
+                actions += '<span class="v-act-sep"></span>';
+                actions += '<button class="v-act v-act--danger" data-action="deleteBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
             }
-            if (!actions) actions = '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Solo lectura</span>';
+            actions += '</div>';
+            if (!AP.canCreateOrEditInventory() && !AP.canDeleteInventory()) actions = '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Solo lectura</span>';
 
             var imgTag = logoUrl
                 ? '<img class="vehicle-thumb" src="' + AP.escapeHtml(logoUrl) + '" alt="' + AP.escapeHtml(b.nombre) + '" loading="lazy" onerror="this.style.opacity=\'0.3\';this.onerror=null;" style="width:40px;height:40px;object-fit:contain;">'
@@ -132,11 +134,12 @@
         // Sort indicators
         document.querySelectorAll('th[data-table="brands"][data-sort]').forEach(function(th) {
             var col = th.getAttribute('data-sort');
-            var text = th.textContent.replace(/[↑↓⇅]/g, '').trim();
+            var si = th.querySelector('.sort-icon'); if (si) si.remove(); var text = th.textContent.trim();
             th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('brands', col) : '');
         });
 
         if (AP.renderPagination) AP.renderPagination('brandsPagination', 'brands', totalBrands);
+        AP.refreshIcons();
     }
 
     // ========== BRAND MODAL ==========

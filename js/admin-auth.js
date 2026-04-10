@@ -286,7 +286,7 @@
                 if (stored) currentToken = stored.token;
             } catch (e) { /* ignore */ }
 
-            var icons = { Chrome: '🌐', Firefox: '🦊', Safari: '🧭', Edge: '🔷', Opera: '🔴', Desconocido: '💻' };
+            var icons = { Chrome: 'chrome', Firefox: 'globe', Safari: 'compass', Edge: 'diamond', Opera: 'circle-dot', Desconocido: 'monitor' };
             var html = '';
             devices.sort(function(a, b) { return (b.lastUsed || b.createdAt) - (a.lastUsed || a.createdAt); });
             devices.forEach(function(d) {
@@ -304,12 +304,12 @@
                 var ipStr = d.ip ? ' · IP: ' + AP.escapeHtml(d.ip) : '';
 
                 html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--admin-border);">' +
-                    '<div style="font-size:1.5rem;flex-shrink:0;">' + icon + '</div>' +
+                    '<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:rgba(184,150,88,0.1);color:var(--admin-gold);"><i data-lucide="' + icon + '" style="width:18px;height:18px;"></i></div>' +
                     '<div style="flex:1;min-width:0;">' +
                         '<div style="font-weight:600;font-size:0.85rem;">' + AP.escapeHtml(d.browser) + ' en ' + AP.escapeHtml(d.os) +
                             (isCurrent ? ' <span style="color:var(--admin-success,#3fb950);font-size:0.75rem;font-weight:400;">(este dispositivo)</span>' : '') +
                         '</div>' +
-                        (locationStr ? '<div style="font-size:0.75rem;color:var(--admin-text-muted);">📍 ' + locationStr + ipStr + '</div>' : '') +
+                        (locationStr ? '<div style="font-size:0.75rem;color:var(--admin-text-muted);"><i data-lucide="map-pin" style="width:10px;height:10px;display:inline-block;vertical-align:middle;margin-right:2px;"></i>' + locationStr + ipStr + '</div>' : '') +
                         '<div style="font-size:0.75rem;color:var(--admin-text-muted);">Ultimo uso: ' + lastUsedStr + ' · Expira en ' + daysLeft + ' dia' + (daysLeft !== 1 ? 's' : '') + '</div>' +
                     '</div>' +
                     '<button class="btn btn-ghost btn-sm" data-action="revokeDevice" data-token="' + d.token + '" style="color:var(--admin-danger);font-size:0.75rem;flex-shrink:0;">Revocar</button>' +
@@ -317,6 +317,7 @@
             });
 
             listEl.innerHTML = html;
+            AP.refreshIcons();
             if (revokeAllBtn) revokeAllBtn.style.display = devices.length > 1 ? '' : 'none';
         });
     }
@@ -664,7 +665,7 @@
         // Aviso 1 minuto antes del cierre
         if (AP.INACTIVITY_TIMEOUT_MS > 60000) {
             AP.inactivityWarningId = setTimeout(function() {
-                AP.toast('⚠️ Tu sesion se cerrara en 1 minuto por inactividad.', 'warning');
+                AP.toast('Tu sesion se cerrara en 1 minuto por inactividad.', 'warning');
             }, AP.INACTIVITY_WARNING_MS);
         }
         AP.inactivityTimerId = setTimeout(handleInactivityTimeout, AP.INACTIVITY_TIMEOUT_MS);
@@ -1174,7 +1175,7 @@
                 var detailParts = [];
                 if (s.city) detailParts.push(AP.escapeHtml(s.city));
                 if (s.country) detailParts.push(AP.escapeHtml(s.country));
-                var locationStr = detailParts.length ? '📍 ' + detailParts.join(', ') : '';
+                var locationStr = detailParts.length ? detailParts.join(', ') : '';
                 var deviceStr = s.browser ? AP.escapeHtml(s.browser) + '/' + AP.escapeHtml(s.os || '?') : '';
                 var detailLine = [locationStr, deviceStr].filter(Boolean).join(' · ');
 

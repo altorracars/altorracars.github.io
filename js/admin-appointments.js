@@ -164,7 +164,7 @@
 
         document.querySelectorAll('#appointmentsTable th[data-sort]').forEach(function(th) {
             var col = th.getAttribute('data-sort');
-            var text = th.textContent.replace(/[↑↓⇅]/g, '').trim();
+            var si = th.querySelector('.sort-icon'); if (si) si.remove(); var text = th.textContent.trim();
             th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('appointments', col) : '');
         });
 

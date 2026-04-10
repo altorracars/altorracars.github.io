@@ -53,13 +53,16 @@
 
             var twoFaBadge = u.habilitado2FA ? ' <span class="badge badge-destacado" style="font-size:0.65rem;" title="2FA activo">2FA</span>' : '';
 
-            var actionsHtml = '<button class="btn btn-ghost btn-sm" data-action="editUser" data-id="' + AP.escapeHtml(u._docId) + '">Editar</button> ';
+            var actionsHtml = '<div class="v-actions">';
+            actionsHtml += '<button class="v-act v-act--success" data-action="editUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Editar"><i data-lucide="pencil"></i></button>';
             if (isBlocked && !isSelf) {
-                actionsHtml += '<button class="btn btn-primary btn-sm" data-action="unlockUser" data-id="' + AP.escapeHtml(u._docId) + '" style="font-size:0.7rem;">Desbloquear</button> ';
+                actionsHtml += '<button class="v-act v-act--warning" data-action="unlockUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Desbloquear"><i data-lucide="lock-open"></i></button>';
             }
             if (!isSelf) {
-                actionsHtml += '<button class="btn btn-danger btn-sm" data-action="deleteUser" data-id="' + AP.escapeHtml(u._docId) + '">Eliminar</button>';
+                actionsHtml += '<span class="v-act-sep"></span>';
+                actionsHtml += '<button class="v-act v-act--danger" data-action="deleteUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
             }
+            actionsHtml += '</div>';
 
             html += '<tr' + (isBlocked ? ' style="opacity:0.7;background:rgba(248,81,73,0.05);"' : '') + '>' +
                 '<td><strong>' + (u.nombre || '-') + '</strong>' + (isSelf ? ' <small style="color:var(--admin-gold);">(tu)</small>' : '') + twoFaBadge + '</td>' +
@@ -74,11 +77,12 @@
 
         document.querySelectorAll('th[data-table="users"][data-sort]').forEach(function(th) {
             var col = th.getAttribute('data-sort');
-            var text = th.textContent.replace(/[↑↓⇅]/g, '').trim();
+            var si = th.querySelector('.sort-icon'); if (si) si.remove(); var text = th.textContent.trim();
             th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('users', col) : '');
         });
 
         if (AP.renderPagination) AP.renderPagination('usersPagination', 'users', totalUsers);
+        AP.refreshIcons();
     }
 
     // ========== USER MODAL ==========

@@ -91,17 +91,15 @@
                 ? '<span style="display:inline-block;padding:2px 8px;background:rgba(184,150,88,0.2);color:var(--admin-gold);border-radius:4px;font-size:0.75rem;font-weight:600;">Sí</span>'
                 : '<span style="color:var(--admin-text-muted);font-size:0.8rem;">No</span>';
 
-            var actions = '';
+            var actions = '<div class="v-actions">';
             if (canEdit) {
-                actions += '<button class="btn btn-ghost btn-sm" onclick="AP.editReview(\'' + r._docId + '\')" title="Editar">' +
-                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
-                    '</button>';
+                actions += '<button class="v-act v-act--success" onclick="AP.editReview(\'' + r._docId + '\')" title="Editar"><i data-lucide="pencil"></i></button>';
             }
             if (canDelete) {
-                actions += '<button class="btn btn-ghost btn-sm" onclick="AP.deleteReviewConfirm(\'' + r._docId + '\')" title="Eliminar" style="color:var(--admin-danger);">' +
-                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>' +
-                    '</button>';
+                if (canEdit) actions += '<span class="v-act-sep"></span>';
+                actions += '<button class="v-act v-act--danger" onclick="AP.deleteReviewConfirm(\'' + r._docId + '\')" title="Eliminar"><i data-lucide="trash-2"></i></button>';
             }
+            actions += '</div>';
 
             return '<tr>' +
                 '<td>' +
@@ -109,7 +107,7 @@
                         '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#b89658,#916652);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;flex-shrink:0;">' + initials + '</div>' +
                         '<div>' +
                             '<div style="font-weight:600;font-size:0.85rem;">' + AP.escapeHtml(r.name || '') +
-                                (r.verified ? ' <svg width="12" height="12" viewBox="0 0 24 24" fill="#10b981" style="vertical-align:middle;"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' : '') +
+                                (r.verified ? ' <i data-lucide="check-circle" style="width:12px;height:12px;color:#10b981;vertical-align:middle;display:inline-block;"></i>' : '') +
                             '</div>' +
                             '<div style="font-size:0.75rem;color:var(--admin-text-muted);">' + AP.escapeHtml(r.location || '') + '</div>' +
                         '</div>' +
@@ -122,6 +120,7 @@
                 '<td style="text-align:right;"><div style="display:flex;gap:4px;justify-content:flex-end;">' + actions + '</div></td>' +
             '</tr>';
         }).join('');
+        AP.refreshIcons();
     }
 
     // ========== MODAL: OPEN / CLOSE ==========

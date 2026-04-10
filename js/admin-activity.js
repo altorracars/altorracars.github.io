@@ -6,19 +6,19 @@
 
     // ========== ACTION METADATA ==========
     var ACTION_ICONS = {
-        'login': '🔑', 'vehicle_create': '➕', 'vehicle_update': '✏️',
-        'vehicle_delete': '🗑️', 'vehicle_sold': '💰', 'vehicle_feature_toggle': '⭐',
-        'brand_create': '🏷️', 'brand_update': '🏷️', 'brand_delete': '🗑️',
-        'dealer_create': '🏢', 'dealer_update': '🏢',
-        'backup_export': '📦', 'backup_import': '📥',
-        'list_update': '📋', 'appointment_confirmada': '📅',
-        'appointment_cancelada': '❌', 'appointment_delete': '🗑️',
-        'appointment_create_internal': '📅',
-        'banner_create': '🖼️', 'banner_update': '🖼️', 'banner_delete': '🗑️',
-        'user_create': '👤', 'user_update': '👤', 'user_delete': '👤',
-        'review_create': '⭐', 'review_update': '⭐', 'review_delete': '🗑️',
-        'reordenar': '↕️', 'sitemap': '🗺️', 'seo_regenerate': '🔄',
-        'crear': '➕', 'editar': '✏️', 'eliminar': '🗑️'
+        'login': 'key', 'vehicle_create': 'plus', 'vehicle_update': 'pencil',
+        'vehicle_delete': 'trash-2', 'vehicle_sold': 'dollar-sign', 'vehicle_feature_toggle': 'star',
+        'brand_create': 'tag', 'brand_update': 'tag', 'brand_delete': 'trash-2',
+        'dealer_create': 'building-2', 'dealer_update': 'building-2',
+        'backup_export': 'package', 'backup_import': 'download',
+        'list_update': 'clipboard-list', 'appointment_confirmada': 'calendar-check',
+        'appointment_cancelada': 'x-circle', 'appointment_delete': 'trash-2',
+        'appointment_create_internal': 'calendar-plus',
+        'banner_create': 'image', 'banner_update': 'image', 'banner_delete': 'trash-2',
+        'user_create': 'user-plus', 'user_update': 'user-cog', 'user_delete': 'user-x',
+        'review_create': 'message-square-plus', 'review_update': 'message-square', 'review_delete': 'trash-2',
+        'reordenar': 'arrow-up-down', 'sitemap': 'map', 'seo_regenerate': 'refresh-cw',
+        'crear': 'plus', 'editar': 'pencil', 'eliminar': 'trash-2'
     };
 
     var ACTION_TEXTS = {
@@ -57,7 +57,8 @@
     };
 
     function getActivityIcon(action) {
-        return ACTION_ICONS[action] || '📝';
+        var iconName = ACTION_ICONS[action] || 'file-text';
+        return '<i data-lucide="' + iconName + '"></i>';
     }
 
     function getActivityText(item) {
@@ -171,6 +172,7 @@
         }
 
         feed.innerHTML = html;
+        AP.refreshIcons();
         updateActivityControls(allItems.length);
 
         if (AP.activitySelectMode) {
@@ -206,10 +208,11 @@
             var who = item.updatedBy || 'Admin';
             if (who.indexOf('@') > 0) who = who.split('@')[0];
             var when = item.updatedAt ? AP.formatTimeAgo(item.updatedAt) : '';
-            var icon = item._actType === 'brand' ? '🏷️' : (item._version === 1 ? '➕' : '✏️');
+            var iconName = item._actType === 'brand' ? 'tag' : (item._version === 1 ? 'plus' : 'pencil');
             var name = item._actType === 'brand' ? (item.nombre || '') : ((item.marca ? AP.capitalize(item.marca) : '') + ' ' + (item.modelo || '') + ' ' + (item.year || '')).trim();
-            return '<div class="activity-item"><span class="activity-icon">' + icon + '</span><div class="activity-content"><span class="activity-who">' + AP.escapeHtml(who) + '</span> actualizo <span class="activity-vehicle">' + AP.escapeHtml(name) + '</span><div class="activity-time">' + when + '</div></div></div>';
+            return '<div class="activity-item"><span class="activity-icon"><i data-lucide="' + iconName + '"></i></span><div class="activity-content"><span class="activity-who">' + AP.escapeHtml(who) + '</span> actualizo <span class="activity-vehicle">' + AP.escapeHtml(name) + '</span><div class="activity-time">' + when + '</div></div></div>';
         }).join('');
+        AP.refreshIcons();
     }
 
     function updateActivityControls(count) {
@@ -382,7 +385,7 @@
         // Sort indicators
         document.querySelectorAll('th[data-table="audit"][data-sort]').forEach(function(th) {
             var col = th.getAttribute('data-sort');
-            var text = th.textContent.replace(/[↑↓⇅]/g, '').trim();
+            var si = th.querySelector('.sort-icon'); if (si) si.remove(); var text = th.textContent.trim();
             th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('audit', col) : '');
         });
 
@@ -391,6 +394,7 @@
         // F8.4: Show/hide load more button
         var btnMore = $('btnLoadMoreAudit');
         if (btnMore) btnMore.style.display = AP._auditHasMore ? '' : 'none';
+        AP.refreshIcons();
     }
 
     function updateAuditUserFilter() {

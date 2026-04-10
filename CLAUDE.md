@@ -541,10 +541,16 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 - Tracking: mousemove, click, scroll, keydown
 - Persistence: `Auth.Persistence.LOCAL` (sesion sobrevive cierre de tab)
 
-**2FA** (parcialmente implementado):
+**2FA** (implementado con seguridad reforzada):
 - Opcional por usuario (`habilitado2FA`)
-- Verificacion por SMS via Firebase Auth
+- Verificacion por SMS via Firebase Auth Phone Provider + reCAPTCHA invisible
+- Rate limiting en verificacion de codigo: max 5 intentos por codigo, luego requiere reenvio
+- Cooldown de reenvio: 30 segundos entre reenvios con countdown visual
+- Max 5 reenvios por sesion (previene abuso de SMS)
+- Mensajes de error diagnosticos para problemas de SMS (billing, config, red)
 - Super admin puede auto-desbloquear cuenta con codigo temporal
+- Auto-desbloqueo de cuentas bloqueadas despues de 15 minutos
+- Super admin sync: si `loginAttempts` fue auto-desbloqueado, sincroniza `usuarios.bloqueado`
 
 **Dispositivos de confianza** (`admin-auth.js`):
 - Duracion: 30 dias (`TRUST_DURATION_MS`)
@@ -877,6 +883,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | Integrar Lucide Icons | admin.html, admin-state.js, css/admin.css | 59+ SVGs inline → `<i data-lucide>`, CDN v0.468.0, `AP.refreshIcons()` |
 | Rediseño botones vehiculos | admin-vehicles.js, css/admin.css | Emojis → Lucide icons, grupos visuales, tooltips CSS, responsive 3 breakpoints |
 | Lucide en todo el admin | 13 archivos | Emojis en actividad, brands, users, reviews, banners, dealers, sort indicators, theme toggle, devices, sesiones → todo Lucide |
+| Seguridad 2FA reforzada | admin-auth.js | Rate limiting 5 intentos/codigo, cooldown 30s reenvio, max 5 reenvios/sesion, auto-unblock 15 min, error diagnostico SMS, proteccion super_admin |
 
 ---
 
@@ -886,7 +893,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 |----|-------|-------------|
 | F12.1 | Notificacion por email al recibir cita (Cloud Function trigger) | Alta |
 | F12.2 | Preview en tiempo real del vehiculo como se vera en el sitio | Media |
-| F12.3 | 2FA opcional via Firebase Auth (parcialmente implementado) | Media |
+| F12.3 | 2FA opcional via Firebase Auth (implementado, seguridad reforzada) | Completado |
 | F12.4 | Historial de cambios con rollback visual (timeline + revert) | Alta |
 | F12.5 | Buscador/filtro en lista de aliados + filtro por rango de fechas | Media |
 | F12.6 | Virtual scrolling para tablas grandes (+100 filas) | Media |

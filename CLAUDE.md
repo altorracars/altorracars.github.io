@@ -1,7 +1,7 @@
 # CLAUDE.md — Altorra Cars Knowledge Base
 
 > Referencia unica para Claude. Evita reprocesos en parches, errores y mejoras.
-> Ultima actualizacion: 2026-04-09
+> Ultima actualizacion: 2026-04-10
 
 ---
 
@@ -25,6 +25,7 @@
 | SDK | Firebase Compat SDK v11.3.0 (cargado desde CDN, NO modular) |
 | Generacion | `scripts/generate-vehicles.mjs` (Node.js, Firebase modular SDK v12) |
 | PWA | Service Worker + manifest.json + cache-manager.js (4 capas) |
+| Iconos | Lucide Icons v0.468.0 via CDN (admin panel) |
 | Linting | Biome 1.9.4 (`npm run lint`, `npm run format`) |
 | Package | `npm run generate` ejecuta el generador de paginas |
 
@@ -104,7 +105,7 @@
 
 | Archivo | Proposito |
 |---------|-----------|
-| `admin-state.js` | Estado global `window.AP`, RBAC helpers, escapeHtml, closestAction, formatPrice |
+| `admin-state.js` | Estado global `window.AP`, RBAC helpers, escapeHtml, closestAction, formatPrice, refreshIcons |
 | `admin-auth.js` | Login, logout, 2FA, rate limiting, presencia RTDB, session timeout |
 | `admin-sync.js` | Listeners realtime Firestore, migracion de schema, stats, cache invalidation |
 | `admin-vehicles.js` | CRUD vehiculos, imagenes, drafts, wizard, drag-reorder destacados |
@@ -530,7 +531,7 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 - Arrays de datos: `vehicles`, `brands`, `users`, `dealers`, `appointments`, `reviews`, `banners`
 - Perfil: `currentUserProfile`, `currentUserRole`
 - Funciones unsubscribe de listeners Firestore
-- Helpers: `$()`, `toast()`, `escapeHtml()`, `formatPrice()`, `closestAction()`
+- Helpers: `$()`, `toast()`, `escapeHtml()`, `formatPrice()`, `closestAction()`, `refreshIcons()`
 
 **Navegacion**: Secciones por `data-section` attributes. Sidebar links muestran/ocultan secciones.
 
@@ -692,6 +693,60 @@ AP.UPLOAD_CONFIG = {
 
 Las imagenes se comprimen client-side antes de subir a Firebase Storage.
 
+### Lucide Icons (Admin Panel)
+
+Libreria de iconos profesional integrada en `admin.html`. Reemplaza los 59+ SVGs inline y emojis que habia antes.
+
+**CDN**: `https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js` (cargado con `defer`)
+
+**Uso en HTML estatico**:
+```html
+<i data-lucide="icon-name"></i>
+```
+
+**Inicializacion**: `lucide.createIcons()` se llama en `DOMContentLoaded`. Si el script carga despues, se escucha su evento `load`.
+
+**Despues de renders dinamicos**: Llamar `AP.refreshIcons()` para que Lucide procese los nuevos `<i data-lucide>` inyectados en el DOM.
+
+```javascript
+// Despues de innerHTML con iconos Lucide
+container.innerHTML = htmlConIcones;
+AP.refreshIcons(); // Convierte <i data-lucide="x"> en SVGs
+```
+
+**Sizing en CSS** (`admin.css`):
+```css
+.nav-item [data-lucide]    { width: 18px; height: 18px; }
+.stat-icon [data-lucide]   { width: 22px; height: 22px; }
+.btn [data-lucide]         { width: 16px; height: 16px; }
+.quick-action-btn [data-lucide] { width: 20px; height: 20px; }
+.v-act [data-lucide]       { width: 16px; height: 16px; }
+```
+
+**Excepcion**: El logo de WhatsApp sigue siendo SVG inline (icono de marca, no esta en Lucide).
+
+### Botones de Accion de Vehiculos
+
+Los botones de accion en la tabla de vehiculos usan un sistema icon-only con tooltips CSS.
+
+**Clases CSS**:
+- `.v-actions` — contenedor flex con gap y wrap
+- `.v-act` — boton icono base (32px, transparente, hover con color)
+- `.v-act-sep` — separador vertical entre grupos
+- `.v-act--info/--gold/--success/--warning/--danger` — variantes de color en hover
+- `.v-act--active` — estado activo persistente (ej: vehiculo ya destacado)
+- `.v-act--operation` — boton con texto + icono (caso especial: "Operacion")
+- `.v-act-protected` — badge para vehiculos vendidos protegidos
+
+**Grupos visuales** (separados por `.v-act-sep`):
+1. **Ver**: eye (vista previa), clock-3 (historial) — siempre visible
+2. **Editar**: star (destacar), pencil (editar), copy (duplicar), handshake (operacion) — editor+
+3. **Peligro**: trash-2 (eliminar) — solo super_admin
+
+**Responsive**: 3 breakpoints (32px desktop, 30px tablet, 28px mobile). Los separadores se ocultan en <480px.
+
+**Tooltips CSS**: `::after` con `content: attr(title)`. Se desactivan en `@media (hover: none)` para touch.
+
 ### Cache invalidation desde admin
 
 Despues de cualquier write a Firestore desde el admin, llamar:
@@ -779,6 +834,17 @@ Ver `SITEMAP-FIX.md` para pasos detallados.
 **Fix aplicado**: `loadModalsIfNeeded()` en `components.js` inyecta modals
 dinamicamente en todas las paginas desde `snippets/modals.html`.
 
+### Storage Estimator eliminado (2026-04-10)
+
+**Seccion eliminada**: "Consumo Storage (Free Tier)" en el dashboard admin.
+
+**Razon**: Usaba calculos hardcodeados/aproximados (`FREE_TIER.storageMB`, `FREE_TIER.firestoreDocsFree`) que no median datos reales de Firebase. No existe API client-side para medir consumo real de Storage/Firestore en el tier gratuito.
+
+**Archivos modificados**:
+- `admin.html`: Eliminada seccion HTML (lineas 366-378)
+- `admin-state.js`: Eliminadas constantes `FREE_TIER`
+- `admin-sync.js`: Eliminada funcion `updateEstimator()` (~53 lineas), su event listener y llamada init
+
 ### Bloqueo de puntero al usar "Ver todas" en menu de marcas
 
 **Fix aplicado**: `pointer-events: none` en `.modal-overlay` inactivo +
@@ -800,6 +866,16 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | 9 | Performance: debounce, CSS variables, lazy images, breakpoints, z-index | Completada |
 | 10 | Productividad: atajos teclado, duplicar vehiculo, batch ops, export CSV | Completada |
 | 11 | Accesibilidad: ARIA roles, labels, focus styles, live regions | Completada |
+
+### Mejoras aplicadas 2026-04-08 — 2026-04-10
+
+| Cambio | Archivos | Descripcion |
+|--------|----------|-------------|
+| Fix presencia RTDB | admin-auth.js, database.rules.json | `_presenceActive` flag, stopPresence antes de signOut en 8 paths, orphan cleanup safe |
+| Fix Access Denied invisible | admin-auth.js | `_accessDeniedShown` flag, retry con backoff en loadUserProfile |
+| Eliminar Storage Estimator | admin.html, admin-state.js, admin-sync.js | Seccion "Consumo Storage" usaba datos falsos, eliminada |
+| Integrar Lucide Icons | admin.html, admin-state.js, css/admin.css | 59+ SVGs inline → `<i data-lucide>`, CDN v0.468.0, `AP.refreshIcons()` |
+| Rediseño botones vehiculos | admin-vehicles.js, css/admin.css | Emojis → Lucide icons, grupos visuales, tooltips CSS, responsive 3 breakpoints |
 
 ---
 

@@ -27,6 +27,9 @@ async function loadAllComponents() {
     // Ensure modals are available on ALL pages (Financiación, Vende tu Auto)
     loadModalsIfNeeded();
 
+    // Cargar modal de autenticación pública en todas las páginas
+    loadAuthSystem();
+
     // Close any open dropdowns/menus when navigating via hash (prevents pointer block)
     closeMenuOnHashNav();
 
@@ -53,6 +56,63 @@ async function loadAllComponents() {
 
     // Cargar sistema de cookies dinamicamente
     loadCookieSystem();
+}
+
+// ── Sistema de Autenticación Pública ────────────────────────
+// Carga Lucide (si no está ya), el modal HTML, CSS y auth.js
+function loadAuthSystem() {
+    // No cargar en admin.html — tiene su propia auth
+    if (window.location.pathname.indexOf('admin') !== -1) return;
+
+    // 1. Lucide Icons CDN (misma versión que admin)
+    if (!window.lucide && !document.querySelector('script[src*="lucide"]')) {
+        var lucideScript = document.createElement('script');
+        lucideScript.src = 'https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js';
+        lucideScript.defer = true;
+        lucideScript.onload = function() {
+            // Crear iconos en el auth modal si ya está en el DOM
+            var modal = document.getElementById('auth-modal');
+            if (modal && window.lucide) window.lucide.createIcons({ nodes: [modal] });
+            // Crear iconos en el header (área de usuario si ya está logueado)
+            var hdr = document.getElementById('headerUserArea');
+            if (hdr && window.lucide) window.lucide.createIcons({ nodes: [hdr] });
+        };
+        document.head.appendChild(lucideScript);
+    }
+
+    // 2. CSS del auth modal
+    if (!document.querySelector('link[href*="auth.css"]')) {
+        var cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.href = 'css/auth.css';
+        document.head.appendChild(cssLink);
+    }
+
+    // 3. CSS del header user area (dropdown)
+    if (!document.querySelector('link[href*="auth-header.css"]')) {
+        var cssLink2 = document.createElement('link');
+        cssLink2.rel = 'stylesheet';
+        cssLink2.href = 'css/auth-header.css';
+        document.head.appendChild(cssLink2);
+    }
+
+    // 4. HTML del modal — inyectar en body
+    if (!document.getElementById('auth-modal')) {
+        fetch('snippets/auth-modal.html')
+            .then(function(r) { return r.text(); })
+            .then(function(html) {
+                var div = document.createElement('div');
+                div.innerHTML = html;
+                document.body.appendChild(div.firstElementChild);
+                // 5. JS de auth — cargar después de tener el DOM del modal
+                if (!document.querySelector('script[src*="auth.js"]')) {
+                    var script = document.createElement('script');
+                    script.src = 'js/auth.js';
+                    document.body.appendChild(script);
+                }
+            })
+            .catch(function(e) { console.warn('[Auth] No se pudo cargar auth-modal.html', e); });
+    }
 }
 
 // Cargar CSS y JS de cookies
@@ -454,12 +514,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }, true); // Use capture phase to fire BEFORE page-loader's bubble handler
 });
 
-// Auth "coming soon" placeholder — visual only, no real auth yet
+// Auth: _authComingSoon is now overridden by auth.js to open the login modal.
+// Kept as fallback in case auth.js hasn't loaded yet.
 window._authComingSoon = function() {
+    if (window.AltorraAuth) { window.AltorraAuth.open('login'); return; }
     if (typeof showToast === 'function') {
-        showToast('Próximamente podrás crear tu cuenta e iniciar sesión', 'info');
-    } else {
-        alert('Próximamente podrás crear tu cuenta e iniciar sesión');
+        showToast('Cargando... intenta de nuevo en un momento.', 'info');
     }
 };
 

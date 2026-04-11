@@ -345,10 +345,19 @@
         }).catch(function () {});
     }
 
-    // ── Auth state change → actualizar header ───────────────
+    // ── Auth state change → actualizar header + datos per-user ─
     function onAuthStateChanged(user) {
         _currentUser = user;
         updateHeaderAuthState(user);
+
+        // Sync per-user data with Firestore
+        if (user) {
+            if (window.favoritesManager) window.favoritesManager.setUser(user.uid);
+            if (window.vehicleHistory)   window.vehicleHistory.setUser(user.uid);
+        } else {
+            if (window.favoritesManager) window.favoritesManager.clearUser();
+            if (window.vehicleHistory)   window.vehicleHistory.clearUser();
+        }
     }
 
     // ── Actualizar botones del header ────────────────────────

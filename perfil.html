@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/multimedia/logo-placeholder.png">
+    <link rel="apple-touch-icon" href="/multimedia/logo-placeholder.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Mi Perfil | ALTORRA CARS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile-fixes.css">
+    <link rel="stylesheet" href="css/footer-fixes.css">
+    <link rel="stylesheet" href="css/toast-notifications.css">
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/performance-fixes.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <style>
+    /* ── Page Loader (inline critical) ── */
+    #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:24px;transition:opacity .5s,visibility .5s;}
+    #page-loader.pl-done{opacity:0;visibility:hidden;pointer-events:none;}
+    .pl-logo{width:68px;height:68px;object-fit:contain;animation:plPulse 2s ease-in-out infinite;}
+    .pl-ring{width:48px;height:48px;border:3px solid rgba(184,150,88,.18);border-top-color:#b89658;border-radius:50%;animation:plSpin .8s linear infinite;}
+    @keyframes plPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.93)}}
+    @keyframes plSpin{to{transform:rotate(360deg)}}
+
+    /* ── Profile page ── */
+    body{background:#0a0a0a;}
+    .profile-main{padding:3rem 0 4rem;min-height:60vh;}
+    .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:780px;margin:0 auto;}
+
+    /* Card base */
+    .pf-card{background:#151515;border:1px solid #222;border-radius:14px;padding:1.8rem;transition:border-color .2s;}
+    .pf-card:hover{border-color:#333;}
+    .pf-card-title{font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;color:#888;margin:0 0 1rem;font-weight:600;}
+
+    /* Avatar + name */
+    .pf-header{grid-column:1/-1;display:flex;align-items:center;gap:1.2rem;padding:2rem 1.8rem;}
+    .pf-avatar{width:64px;height:64px;border-radius:50%;background:#b89658;color:#fff;font-size:1.4rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .pf-name{font-size:1.25rem;font-weight:600;color:#fff;margin:0;}
+    .pf-email{font-size:.88rem;color:#999;margin:.2rem 0 0;}
+    .pf-badge{display:inline-block;padding:3px 10px;border-radius:20px;background:rgba(184,150,88,.15);color:#b89658;font-size:.72rem;font-weight:600;margin-top:.4rem;}
+
+    /* Info rows */
+    .pf-row{display:flex;justify-content:space-between;align-items:center;padding:.7rem 0;border-bottom:1px solid #1e1e1e;}
+    .pf-row:last-child{border-bottom:none;}
+    .pf-label{color:#888;font-size:.85rem;}
+    .pf-value{color:#e0e0e0;font-size:.88rem;font-weight:500;text-align:right;word-break:break-all;}
+
+    /* Edit form */
+    .pf-edit-form{display:none;}
+    .pf-edit-form.active{display:block;}
+    .pf-input{width:100%;padding:.55rem .8rem;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#e0e0e0;font-size:.88rem;margin-top:.35rem;transition:border-color .2s;}
+    .pf-input:focus{border-color:#b89658;outline:none;box-shadow:0 0 0 2px rgba(184,150,88,.15);}
+    .pf-field{margin-bottom:.9rem;}
+    .pf-field label{display:block;font-size:.8rem;color:#999;font-weight:500;}
+
+    /* Buttons */
+    .pf-btn{display:inline-flex;align-items:center;gap:6px;padding:.55rem 1.1rem;border-radius:8px;font-size:.84rem;font-weight:600;cursor:pointer;transition:background .18s,transform .12s;border:none;}
+    .pf-btn:hover{transform:translateY(-1px);}
+    .pf-btn-gold{background:#b89658;color:#fff;}
+    .pf-btn-gold:hover{background:#a5843e;}
+    .pf-btn-outline{background:transparent;border:1px solid #444;color:#ccc;}
+    .pf-btn-outline:hover{border-color:#b89658;color:#b89658;}
+    .pf-btn-danger{background:transparent;border:1px solid #444;color:#d93025;}
+    .pf-btn-danger:hover{border-color:#d93025;background:rgba(217,48,37,.08);}
+    .pf-btn-group{display:flex;gap:.6rem;margin-top:1rem;}
+
+    /* Stats */
+    .pf-stats{display:flex;gap:1rem;}
+    .pf-stat{flex:1;text-align:center;padding:.9rem;background:#1a1a1a;border-radius:10px;}
+    .pf-stat-num{font-size:1.5rem;font-weight:700;color:#b89658;}
+    .pf-stat-label{font-size:.75rem;color:#888;margin-top:.2rem;}
+
+    /* Not logged in */
+    .pf-not-auth{grid-column:1/-1;text-align:center;padding:4rem 2rem;}
+    .pf-not-auth h2{color:#fff;font-size:1.3rem;margin:1rem 0 .5rem;}
+    .pf-not-auth p{color:#999;font-size:.92rem;margin-bottom:1.5rem;}
+
+    /* Password change */
+    .pf-pass-msg{padding:.5rem .8rem;border-radius:6px;font-size:.82rem;margin-top:.5rem;display:none;}
+    .pf-pass-msg.success{display:block;background:rgba(34,160,107,.1);color:#22a06b;border:1px solid rgba(34,160,107,.2);}
+    .pf-pass-msg.error{display:block;background:rgba(217,48,37,.1);color:#d93025;border:1px solid rgba(217,48,37,.2);}
+
+    /* Responsive */
+    @media(max-width:640px){
+        .profile-grid{grid-template-columns:1fr;padding:0 1rem;}
+        .pf-header{flex-direction:column;text-align:center;gap:.8rem;}
+        .pf-stats{flex-direction:column;}
+    }
+    </style>
+    <link rel="stylesheet" href="css/page-loader.css">
+</head>
+<body>
+    <div id="page-loader" role="status" aria-label="Cargando">
+        <img src="/multimedia/logo-placeholder.png" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
+        <div class="pl-ring" aria-hidden="true"></div>
+    </div>
+
+    <div id="header-placeholder"></div>
+
+    <main class="profile-main">
+        <div class="container">
+            <div class="profile-grid" id="profileContent">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/favorites-manager.js"></script>
+    <script src="js/toast.js"></script>
+    <script>
+    (function() {
+        'use strict';
+
+        var container = document.getElementById('profileContent');
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function showNotAuth() {
+            container.innerHTML =
+                '<div class="pf-not-auth">' +
+                '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+                '<h2>Inicia sesion para ver tu perfil</h2>' +
+                '<p>Accede a tus favoritos, historial y datos personales.</p>' +
+                '<button class="pf-btn pf-btn-gold" id="pfLoginBtn">Ingresar</button>' +
+                '</div>';
+            var btn = document.getElementById('pfLoginBtn');
+            if (btn) btn.addEventListener('click', function() {
+                if (window.AltorraAuth) window.AltorraAuth.open('login');
+            });
+        }
+
+        function renderProfile(user) {
+            window.firebaseReady.then(function() {
+                return window.db.collection('clientes').doc(user.uid).get();
+            }).then(function(doc) {
+                var data = doc.exists ? doc.data() : {};
+                var name = data.nombre || user.displayName || user.email.split('@')[0];
+                var initials = name.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+                var email = data.email || user.email || '';
+                var phone = data.telefono ? ((data.prefijo || '+57') + ' ' + data.telefono) : 'No registrado';
+                var favCount = window.favoritesManager ? window.favoritesManager.count() : 0;
+                var created = data.creadoEn ? new Date(data.creadoEn).toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'}) : '';
+
+                container.innerHTML =
+                    // Header card
+                    '<div class="pf-card pf-header">' +
+                    '<div class="pf-avatar">' + initials + '</div>' +
+                    '<div>' +
+                    '<h1 class="pf-name">' + escapeHtml(name) + '</h1>' +
+                    '<p class="pf-email">' + escapeHtml(email) + '</p>' +
+                    (user.providerData && user.providerData[0] && user.providerData[0].providerId === 'google.com'
+                        ? '<span class="pf-badge">Google</span>'
+                        : '<span class="pf-badge">Email</span>') +
+                    '</div>' +
+                    '</div>' +
+
+                    // Personal info
+                    '<div class="pf-card">' +
+                    '<div class="pf-card-title">Datos personales</div>' +
+                    '<div id="pfInfoView">' +
+                    '<div class="pf-row"><span class="pf-label">Nombre</span><span class="pf-value">' + escapeHtml(name) + '</span></div>' +
+                    '<div class="pf-row"><span class="pf-label">Correo</span><span class="pf-value">' + escapeHtml(email) + '</span></div>' +
+                    '<div class="pf-row"><span class="pf-label">Telefono</span><span class="pf-value">' + escapeHtml(phone) + '</span></div>' +
+                    (created ? '<div class="pf-row"><span class="pf-label">Miembro desde</span><span class="pf-value">' + created + '</span></div>' : '') +
+                    '<div class="pf-btn-group"><button class="pf-btn pf-btn-outline" id="pfEditBtn">Editar datos</button></div>' +
+                    '</div>' +
+                    '<div class="pf-edit-form" id="pfEditForm">' +
+                    '<div class="pf-field"><label>Nombre</label><input class="pf-input" id="pfEditName" value="' + escapeHtml(name) + '"></div>' +
+                    '<div class="pf-field"><label>Telefono</label><input class="pf-input" id="pfEditPhone" value="' + escapeHtml(data.telefono || '') + '" placeholder="3001234567"></div>' +
+                    '<div class="pf-btn-group"><button class="pf-btn pf-btn-gold" id="pfSaveBtn">Guardar</button><button class="pf-btn pf-btn-outline" id="pfCancelBtn">Cancelar</button></div>' +
+                    '</div>' +
+                    '</div>' +
+
+                    // Stats
+                    '<div class="pf-card">' +
+                    '<div class="pf-card-title">Tu actividad</div>' +
+                    '<div class="pf-stats">' +
+                    '<a href="favoritos.html" class="pf-stat" style="text-decoration:none;"><div class="pf-stat-num" id="pfFavCount">' + favCount + '</div><div class="pf-stat-label">Favoritos</div></a>' +
+                    '<div class="pf-stat"><div class="pf-stat-num" id="pfHistCount">' + (window.vehicleHistory ? window.vehicleHistory.getCount() : 0) + '</div><div class="pf-stat-label">Vistos</div></div>' +
+                    '</div>' +
+                    '</div>' +
+
+                    // Password + logout
+                    '<div class="pf-card" style="grid-column:1/-1;">' +
+                    '<div class="pf-card-title">Seguridad</div>' +
+                    (user.providerData && user.providerData[0] && user.providerData[0].providerId === 'password'
+                    ? '<div id="pfPassSection">' +
+                      '<div class="pf-field"><label>Contrasena actual</label><input class="pf-input" type="password" id="pfOldPass"></div>' +
+                      '<div class="pf-field"><label>Nueva contrasena</label><input class="pf-input" type="password" id="pfNewPass" placeholder="Minimo 6 caracteres"></div>' +
+                      '<div class="pf-btn-group"><button class="pf-btn pf-btn-outline" id="pfChangePassBtn">Cambiar contrasena</button></div>' +
+                      '<div class="pf-pass-msg" id="pfPassMsg"></div>' +
+                      '</div>'
+                    : '<p style="color:#999;font-size:.88rem;margin-bottom:1rem;">Tu cuenta usa Google Sign-In. La contrasena se gestiona desde tu cuenta de Google.</p>') +
+                    '<hr style="border:none;border-top:1px solid #222;margin:1.2rem 0;">' +
+                    '<div class="pf-btn-group"><button class="pf-btn pf-btn-danger" id="pfLogoutBtn">Cerrar sesion</button></div>' +
+                    '</div>';
+
+                wireEvents(user, data);
+            }).catch(function(err) {
+                console.warn('[Profile] Error loading profile:', err);
+                // Fallback: show basic info from Auth
+                showBasicProfile(user);
+            });
+        }
+
+        function showBasicProfile(user) {
+            var name = user.displayName || user.email.split('@')[0];
+            var initials = name.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+            container.innerHTML =
+                '<div class="pf-card pf-header">' +
+                '<div class="pf-avatar">' + initials + '</div>' +
+                '<div><h1 class="pf-name">' + escapeHtml(name) + '</h1>' +
+                '<p class="pf-email">' + escapeHtml(user.email) + '</p></div>' +
+                '</div>' +
+                '<div class="pf-card" style="grid-column:1/-1;">' +
+                '<p style="color:#999;">No se pudo cargar tu perfil completo. Verifica tu conexion.</p>' +
+                '<div class="pf-btn-group"><button class="pf-btn pf-btn-danger" id="pfLogoutBtn">Cerrar sesion</button></div>' +
+                '</div>';
+            var lo = document.getElementById('pfLogoutBtn');
+            if (lo) lo.addEventListener('click', function() {
+                if (window.AltorraAuth) window.AltorraAuth.logout();
+                else window.auth.signOut();
+            });
+        }
+
+        function wireEvents(user, data) {
+            // Edit toggle
+            var editBtn = document.getElementById('pfEditBtn');
+            var editForm = document.getElementById('pfEditForm');
+            var infoView = document.getElementById('pfInfoView');
+            if (editBtn) editBtn.addEventListener('click', function() {
+                infoView.style.display = 'none';
+                editForm.classList.add('active');
+            });
+
+            var cancelBtn = document.getElementById('pfCancelBtn');
+            if (cancelBtn) cancelBtn.addEventListener('click', function() {
+                editForm.classList.remove('active');
+                infoView.style.display = '';
+            });
+
+            // Save profile
+            var saveBtn = document.getElementById('pfSaveBtn');
+            if (saveBtn) saveBtn.addEventListener('click', function() {
+                var newName = (document.getElementById('pfEditName').value || '').trim();
+                var newPhone = (document.getElementById('pfEditPhone').value || '').trim();
+                if (!newName) return;
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Guardando...';
+                window.db.collection('clientes').doc(user.uid).update({
+                    nombre: newName,
+                    telefono: newPhone
+                }).then(function() {
+                    user.updateProfile({ displayName: newName }).catch(function(){});
+                    if (typeof showToast === 'function') showToast('Datos actualizados.', 'success');
+                    renderProfile(user);
+                }).catch(function(err) {
+                    if (typeof showToast === 'function') showToast('Error al guardar: ' + err.message, 'error');
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Guardar';
+                });
+            });
+
+            // Change password
+            var passBtn = document.getElementById('pfChangePassBtn');
+            if (passBtn) passBtn.addEventListener('click', function() {
+                var oldPass = (document.getElementById('pfOldPass').value || '');
+                var newPass = (document.getElementById('pfNewPass').value || '');
+                var msgEl = document.getElementById('pfPassMsg');
+                if (!oldPass || !newPass) {
+                    msgEl.textContent = 'Completa ambos campos.';
+                    msgEl.className = 'pf-pass-msg error';
+                    return;
+                }
+                if (newPass.length < 6) {
+                    msgEl.textContent = 'La nueva contrasena debe tener al menos 6 caracteres.';
+                    msgEl.className = 'pf-pass-msg error';
+                    return;
+                }
+                passBtn.disabled = true;
+                passBtn.textContent = 'Cambiando...';
+                var cred = firebase.auth.EmailAuthProvider.credential(user.email, oldPass);
+                user.reauthenticateWithCredential(cred).then(function() {
+                    return user.updatePassword(newPass);
+                }).then(function() {
+                    msgEl.textContent = 'Contrasena actualizada correctamente.';
+                    msgEl.className = 'pf-pass-msg success';
+                    document.getElementById('pfOldPass').value = '';
+                    document.getElementById('pfNewPass').value = '';
+                }).catch(function(err) {
+                    var msg = 'Error al cambiar contrasena.';
+                    if (err.code === 'auth/wrong-password') msg = 'La contrasena actual es incorrecta.';
+                    if (err.code === 'auth/weak-password') msg = 'La nueva contrasena es muy debil.';
+                    msgEl.textContent = msg;
+                    msgEl.className = 'pf-pass-msg error';
+                }).finally(function() {
+                    passBtn.disabled = false;
+                    passBtn.textContent = 'Cambiar contrasena';
+                });
+            });
+
+            // Logout
+            var logoutBtn = document.getElementById('pfLogoutBtn');
+            if (logoutBtn) logoutBtn.addEventListener('click', function() {
+                if (window.AltorraAuth) window.AltorraAuth.logout();
+                else window.auth.signOut();
+            });
+        }
+
+        // Listen for auth state
+        window.firebaseReady.then(function() {
+            window.auth.onAuthStateChanged(function(user) {
+                if (user) {
+                    renderProfile(user);
+                } else {
+                    showNotAuth();
+                }
+            });
+        });
+
+        // Update favorites count when changed
+        window.addEventListener('favoritesChanged', function() {
+            var el = document.getElementById('pfFavCount');
+            if (el && window.favoritesManager) el.textContent = window.favoritesManager.count();
+        });
+    })();
+    </script>
+    <script src="js/page-loader.js"></script>
+    <script src="js/cache-manager.js" defer></script>
+</body>
+</html>

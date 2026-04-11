@@ -12,7 +12,80 @@ class FavoritesManager {
     constructor() {
         this.STORAGE_KEY = 'altorra-favorites';
         this.DEBUG = false; // Activar para ver logs en consola
+        this._uid = null;       // UID del usuario autenticado (null = anónimo)
+        this._syncTimeout = null; // Debounce para sync a Firestore
         this._init();
+    }
+
+    // ── Per-user sync with Firestore ────────────────────────
+    // Called by auth.js on login — loads favorites from Firestore
+    // and merges any anonymous (localStorage) favorites into the account.
+    setUser(uid) {
+        if (this._uid === uid) return;
+        this._uid = uid;
+        if (uid) {
+            this._loadFromFirestore(uid);
+        }
+    }
+
+    // Called by auth.js on logout — clears user-specific data
+    clearUser() {
+        if (this._syncTimeout) clearTimeout(this._syncTimeout);
+        this._uid = null;
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify([]));
+        this._dispatchEvent('cleared', null);
+        this.updateAllCounters();
+    }
+
+    _loadFromFirestore(uid) {
+        if (!window.db) return;
+        var self = this;
+        var anonFavs = self.getAll();
+
+        window.db.collection('clientes').doc(uid).get()
+            .then(function (doc) {
+                var firestoreFavs = [];
+                if (doc.exists && Array.isArray(doc.data().favoritos)) {
+                    firestoreFavs = doc.data().favoritos.map(String);
+                }
+                // Merge: union of anonymous localStorage + Firestore
+                var merged = firestoreFavs.slice();
+                anonFavs.forEach(function (id) {
+                    if (merged.indexOf(id) === -1) merged.push(id);
+                });
+
+                localStorage.setItem(self.STORAGE_KEY, JSON.stringify(merged));
+                self._dispatchEvent('synced', null);
+                self.updateAllCounters();
+
+                // If anonymous had unique favorites, sync merge back
+                if (merged.length > firestoreFavs.length) {
+                    self._syncToFirestore(merged);
+                }
+
+                self._log('Cloud sync complete:', merged.length, 'favorites');
+            }).catch(function (err) {
+                console.warn('[Favorites] Error loading from Firestore:', err);
+            });
+    }
+
+    _syncToFirestore(favorites) {
+        if (!this._uid || !window.db) return;
+        var favs = favorites || this.getAll();
+        window.db.collection('clientes').doc(this._uid).update({
+            favoritos: favs
+        }).catch(function (err) {
+            console.warn('[Favorites] Error syncing to Firestore:', err);
+        });
+    }
+
+    _debouncedSync() {
+        if (!this._uid) return;
+        if (this._syncTimeout) clearTimeout(this._syncTimeout);
+        var self = this;
+        this._syncTimeout = setTimeout(function () {
+            self._syncToFirestore();
+        }, 1500);
     }
 
     /**
@@ -183,6 +256,8 @@ class FavoritesManager {
             // GARANTIZAR que todos sean strings antes de guardar
             const normalized = favorites.map(id => String(id));
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(normalized));
+            // Sync to Firestore when user is authenticated
+            if (this._uid) this._debouncedSync();
         } catch (error) {
             console.error('Error guardando favoritos:', error);
         }

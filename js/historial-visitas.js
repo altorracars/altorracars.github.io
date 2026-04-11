@@ -8,12 +8,62 @@ class VehicleHistory {
         this.storageKey = 'altorra_historial';
         this.maxItems = 12;
         this.history = [];
+        this._uid = null;       // UID del usuario autenticado (null = anónimo)
+        this._syncTimeout = null; // Debounce para sync a Firestore
         this.init();
     }
 
     init() {
         this.loadFromStorage();
         this.trackCurrentVehicle();
+    }
+
+    // ── Per-user sync with Firestore ────────────────────────
+    setUser(uid) {
+        if (this._uid === uid) return;
+        this._uid = uid;
+        if (uid) {
+            this._loadFromFirestore(uid);
+        }
+    }
+
+    clearUser() {
+        if (this._syncTimeout) clearTimeout(this._syncTimeout);
+        this._uid = null;
+        this.history = [];
+        localStorage.setItem(this.storageKey, JSON.stringify([]));
+    }
+
+    _loadFromFirestore(uid) {
+        if (!window.db) return;
+        var self = this;
+        window.db.collection('clientes').doc(uid).get()
+            .then(function (doc) {
+                if (doc.exists && Array.isArray(doc.data().vehiculosVistos)) {
+                    self.history = doc.data().vehiculosVistos.slice(0, self.maxItems);
+                    localStorage.setItem(self.storageKey, JSON.stringify(self.history));
+                }
+            }).catch(function (err) {
+                console.warn('[History] Error loading from Firestore:', err);
+            });
+    }
+
+    _syncToFirestore() {
+        if (!this._uid || !window.db) return;
+        window.db.collection('clientes').doc(this._uid).update({
+            vehiculosVistos: this.history.slice(0, this.maxItems)
+        }).catch(function (err) {
+            console.warn('[History] Error syncing to Firestore:', err);
+        });
+    }
+
+    _debouncedSync() {
+        if (!this._uid) return;
+        if (this._syncTimeout) clearTimeout(this._syncTimeout);
+        var self = this;
+        this._syncTimeout = setTimeout(function () {
+            self._syncToFirestore();
+        }, 2000);
     }
 
     // ===== STORAGE =====
@@ -29,6 +79,7 @@ class VehicleHistory {
     saveToStorage() {
         try {
             localStorage.setItem(this.storageKey, JSON.stringify(this.history));
+            if (this._uid) this._debouncedSync();
         } catch (e) {
             console.error('Error saving history:', e);
         }

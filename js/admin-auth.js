@@ -992,7 +992,14 @@
     var _profileRetryMax = 3;
 
     function loadUserProfile(authUser) {
-        window.db.collection('usuarios').doc(authUser.uid).get()
+        // Wait if Firestore is being reset after a non-admin user was detected
+        if (_firestoreResetting) {
+            setTimeout(function() { loadUserProfile(authUser); }, 500);
+            return;
+        }
+        // Force server read to bypass stale persistence cache
+        // (prevents permission-denied when switching between accounts)
+        window.db.collection('usuarios').doc(authUser.uid).get({ source: 'server' })
             .then(function(doc) {
                 _profileRetryCount = 0; // reset on success
                 if (!doc.exists) {
@@ -1082,13 +1089,43 @@
         // Log UID and reason to console for debugging (never expose UID to UI)
         if (uid) console.log('[Auth] Access denied for UID:', uid);
         if (reason) console.warn('[Auth] Reason:', reason);
-        window.auth.signOut();
+
+        // Sign out first (triggers onAuthStateChanged → showLogin),
+        // then reset Firestore persistence in background to prevent
+        // stale auth cache from blocking the next login with a different account.
+        // This solves: public user registers → goes to admin → error →
+        // tries admin login → permission-denied from cached auth context.
+        _firestoreResetting = true;
+        window.auth.signOut().then(function() {
+            return window.db.terminate();
+        }).then(function() {
+            return firebase.firestore().clearPersistence();
+        }).then(function() {
+            window.db = firebase.firestore();
+            window.db.enablePersistence({ synchronizeTabs: true }).catch(function() {});
+            _firestoreResetting = false;
+            console.info('[Auth] Firestore reset after access denied — clean state for next login');
+        }).catch(function(err) {
+            console.warn('[Auth] Firestore reset error:', err.message || err);
+            // Ensure db is usable even if clearPersistence fails
+            try {
+                window.db = firebase.firestore();
+                window.db.enablePersistence({ synchronizeTabs: true }).catch(function() {});
+            } catch(e) { /* ignore */ }
+            _firestoreResetting = false;
+        });
     }
 
     // Flag to prevent showLogin() from hiding the access denied error message.
     // Without this, signOut() → onAuthStateChanged(null) → showLogin() hides the error
     // before the user can read it.
     var _accessDeniedShown = false;
+
+    // Flag to prevent loadUserProfile during Firestore reset.
+    // When a non-admin user (e.g. public client) triggers showAccessDenied,
+    // Firestore persistence is cleared and re-initialized to prevent stale
+    // auth context from blocking the next login with a different account.
+    var _firestoreResetting = false;
 
     function showLogin() {
         stopInactivityTracking();

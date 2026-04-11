@@ -61,11 +61,11 @@
                             <span class="mob-badge" id="favCountMobile">0</span>
                         </a>
                         <div class="mob-auth-row">
-                            <button class="mob-btn mob-btn-outline" onclick="window._authComingSoon&&window._authComingSoon()" aria-label="Ingresar">
+                            <button class="mob-btn mob-btn-outline" id="mobBtnLogin" aria-label="Ingresar">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                                 Ingresar
                             </button>
-                            <button class="mob-btn mob-btn-gold" onclick="window._authComingSoon&&window._authComingSoon()" aria-label="Registrarse">
+                            <button class="mob-btn mob-btn-gold" id="mobBtnRegister" aria-label="Registrarse">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                 Registrarse
                             </button>
@@ -80,14 +80,16 @@
                         Favoritos
                         <span class="hdr-badge" id="favCount">0</span>
                     </a>
-                    <button class="hdr-btn hdr-btn-outline" id="btnLogin" onclick="window._authComingSoon&&window._authComingSoon()" aria-label="Ingresar">
+                    <button class="hdr-btn hdr-btn-outline" id="btnLogin" aria-label="Ingresar">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                         Ingresar
                     </button>
-                    <button class="hdr-btn hdr-btn-gold" id="btnRegister" onclick="window._authComingSoon&&window._authComingSoon()" aria-label="Registrarse">
+                    <button class="hdr-btn hdr-btn-gold" id="btnRegister" aria-label="Registrarse">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Registrarse
                     </button>
+                    <!-- Estado usuario logueado — rellenado por auth.js -->
+                    <div id="headerUserArea" style="display:none;"></div>
                 </div>
 
                 <button class="hamburger" id="hamburger" aria-label="Abrir menú" aria-expanded="false">

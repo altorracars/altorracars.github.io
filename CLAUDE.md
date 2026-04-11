@@ -888,7 +888,87 @@ cierre de dropdowns/menu al hacer smooth scroll.
 
 ---
 
-## 10. Fase 12 — Pendiente (Futuro)
+## 10. Autenticacion de Usuarios Publicos (Fase A)
+
+### Arquitectura
+
+Los usuarios publicos (clientes) y los administradores usan Firebase Auth, pero se almacenan en **colecciones Firestore separadas**:
+
+| Tipo | Coleccion | Acceso al admin panel | Quien los crea |
+|------|-----------|----------------------|----------------|
+| Admin | `usuarios/{uid}` | Si (segun rol) | Solo super_admin (Cloud Functions) |
+| Cliente | `clientes/{uid}` | **NUNCA** — `loadUserProfile()` rechaza sin doc en `usuarios` | Auto-registro publico |
+
+### Archivos del sistema de auth publico
+
+| Archivo | Proposito |
+|---------|-----------|
+| `snippets/auth-modal.html` | Modal con tabs Ingresar/Registrarse/Reset, Lucide icons, Google sign-in |
+| `css/auth.css` | Estilos del modal: formularios, password strength, Google btn, responsive |
+| `css/auth-header.css` | Estado logueado en header: avatar dropdown desktop + mobile |
+| `js/auth.js` | Logica completa: login, registro, Google, reset, onAuthStateChanged, saveClientProfile |
+
+### Flujo de registro
+
+1. Usuario hace clic en "Registrarse" en el header → abre modal
+2. Completa nombre, email, password (+ telefono opcional, terminos)
+3. `createUserWithEmailAndPassword()` crea el user en Firebase Auth
+4. `updateProfile({ displayName })` guarda el nombre en Auth
+5. `saveClientProfile(uid, data)` crea doc en `clientes/{uid}` en Firestore
+6. Modal se cierra, header muestra avatar con iniciales + dropdown
+
+### Flujo de login con Google
+
+1. `signInWithPopup(GoogleAuthProvider)` abre popup de Google
+2. Si el usuario no tiene doc en `clientes/{uid}`, se crea automaticamente
+3. Si ya existe, solo actualiza `ultimoAcceso`
+
+### Coleccion `clientes/{uid}`
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| uid | string | Firebase Auth UID |
+| nombre | string | Nombre completo |
+| email | string | Correo electronico |
+| prefijo | string | Default "+57" |
+| telefono | string | Opcional |
+| favoritos | array | IDs de vehiculos (sync futuro con localStorage) |
+| vehiculosVistos | array | Historial de vehiculos visitados |
+| creadoEn | string (ISO) | Fecha de creacion |
+| ultimoAcceso | string (ISO) | Ultimo login |
+
+### Firestore Rules para clientes
+
+```
+match /clientes/{uid} {
+  allow read:   if auth.uid == uid;
+  allow create: if auth.uid == uid && data has nombre, email, creadoEn, uid;
+  allow update: if auth.uid == uid;
+  allow delete: if false;
+}
+```
+
+### Carga dinamica (components.js)
+
+`loadAuthSystem()` en `components.js` carga en todas las paginas publicas (NO en admin.html):
+1. Lucide Icons CDN v0.468.0 (mismo que admin)
+2. `css/auth.css` + `css/auth-header.css`
+3. `snippets/auth-modal.html` (inyectado en body)
+4. `js/auth.js` (despues del HTML del modal)
+
+### API publica
+
+```javascript
+window.AltorraAuth.open('login')   // Abrir modal en tab login
+window.AltorraAuth.open('register') // Abrir modal en tab registro
+window.AltorraAuth.close()          // Cerrar modal
+window.AltorraAuth.logout()         // Cerrar sesion
+window.AltorraAuth.current()        // Usuario actual o null
+```
+
+---
+
+## 11. Fase 12 — Pendiente (Futuro)
 
 | ID | Tarea | Complejidad |
 |----|-------|-------------|

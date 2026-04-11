@@ -99,6 +99,19 @@ service cloud.firestore {
       }
     }
 
+    // ========== CLIENTES (public registered users) ==========
+    // Completely separate from `usuarios` (admin panel).
+    // A public user can ONLY read/write their own document.
+    // They have NO access to admin collections.
+    match /clientes/{uid} {
+      allow read:   if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasAll(['nombre', 'email', 'creadoEn'])
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false; // Users cannot self-delete (data retention)
+    }
+
     // ========== RESENAS ==========
     match /resenas/{resenaId} {
       allow read: if true;

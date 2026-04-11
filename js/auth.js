@@ -227,12 +227,25 @@
             return;
         }
 
+        var prefijo  = ($id('regPrefijo').value  || '+57');
+        var telefono = ($id('regTelefono').value || '').trim();
+
         setLoading('registerSubmitBtn', true);
+        var createdUser = null;
         window.firebaseReady.then(function () {
             return window.auth.createUserWithEmailAndPassword(email, pass);
         }).then(function (userCred) {
+            createdUser = userCred.user;
             // Actualizar nombre en Firebase Auth
-            return userCred.user.updateProfile({ displayName: nombre });
+            return createdUser.updateProfile({ displayName: nombre });
+        }).then(function () {
+            // Guardar perfil en clientes/{uid} — colección pública, NO admin
+            return saveClientProfile(createdUser.uid, {
+                nombre: nombre,
+                email: email,
+                prefijo: prefijo,
+                telefono: telefono
+            });
         }).then(function () {
             closeAuthModal();
             if (typeof showToast === 'function') showToast('¡Cuenta creada! Bienvenido a Altorra Cars.', 'success');
@@ -244,12 +257,45 @@
         });
     }
 
+    // ── Guardar perfil en Firestore clientes/{uid} ────────
+    function saveClientProfile(uid, data) {
+        if (!window.db) return Promise.resolve();
+        var docRef = window.db.collection('clientes').doc(uid);
+        return docRef.get().then(function (snap) {
+            if (snap.exists) {
+                // Ya existe — actualizar solo ultimoAcceso
+                return docRef.update({ ultimoAcceso: new Date().toISOString() });
+            }
+            // Crear perfil nuevo
+            return docRef.set({
+                uid: uid,
+                nombre: data.nombre || '',
+                email: data.email || '',
+                prefijo: data.prefijo || '+57',
+                telefono: data.telefono || '',
+                favoritos: [],
+                vehiculosVistos: [],
+                creadoEn: new Date().toISOString(),
+                ultimoAcceso: new Date().toISOString()
+            });
+        }).catch(function (err) {
+            console.warn('[Auth] Error guardando perfil cliente:', err);
+        });
+    }
+
     // ── Google Auth ─────────────────────────────────────────
     function handleGoogle() {
         window.firebaseReady.then(function () {
             var provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
             return window.auth.signInWithPopup(provider);
+        }).then(function (result) {
+            var user = result.user;
+            // Guardar perfil en clientes si es login con Google
+            return saveClientProfile(user.uid, {
+                nombre: user.displayName || '',
+                email: user.email || ''
+            });
         }).then(function () {
             closeAuthModal();
             if (typeof showToast === 'function') showToast('¡Bienvenido!', 'success');

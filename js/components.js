@@ -328,54 +328,20 @@ function initializeHeader() {
     });
 }
 
-// Initialize favorites counter - USA FAVORITES MANAGER
+// Initialize favorites counter - USA FAVORITES MANAGER (Firestore-only)
 function initializeFavorites() {
-    // Usar FavoritesManager si está disponible
     if (typeof window.favoritesManager !== 'undefined') {
         window.favoritesManager.updateAllCounters();
-    } else {
-        // Fallback al sistema legacy
-        updateFavoritesCount();
     }
 }
 
-// Update favorites count - LEGACY (mantener para compatibilidad)
+// Helper conservado para compatibilidad de llamadas externas.
 function updateFavoritesCount() {
-    // Preferir FavoritesManager si está disponible
     if (typeof window.favoritesManager !== 'undefined') {
         window.favoritesManager.updateAllCounters();
-        return;
-    }
-
-    // Fallback legacy
-    try {
-        const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-        const normalizedFavorites = favorites.map(id => String(id));
-        const count = normalizedFavorites.length.toString();
-
-        const updateElement = (elementId) => {
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.textContent = count;
-                return true;
-            }
-            return false;
-        };
-
-        updateElement('favCount');
-        updateElement('favCountMobile');
-
-        setTimeout(() => {
-            updateElement('favCount');
-            updateElement('favCountMobile');
-        }, 100);
-
-    } catch (error) {
-        console.error('Error updating favorites:', error);
     }
 }
 
-// Global function to update favorites
 window.updateFavoritesCount = updateFavoritesCount;
 
 // Load components when DOM is ready

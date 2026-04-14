@@ -4,8 +4,9 @@
       ".read": "auth != null",
       ".indexOn": ["online"],
       "$sessionId": {
-        ".write": "(!data.exists() && newData.child('uid').val() === auth.uid) || data.child('uid').val() === auth.uid",
-        ".validate": "newData.hasChild('uid') && newData.child('uid').val() === auth.uid"
+        "//": "Create: require matching uid. Update: require matching uid. Delete (newData=null): allowed unconditionally so onDisconnect cleanup never fails after signOut.",
+        ".write": "!newData.exists() || (!data.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid)",
+        ".validate": "!newData.exists() || (newData.hasChild('uid') && newData.child('uid').val() === auth.uid)"
       }
     },
     ".read": false,

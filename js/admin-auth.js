@@ -992,9 +992,11 @@
     var _profileRetryMax = 3;
 
     function loadUserProfile(authUser) {
-        // Wait if Firestore is being reset after a non-admin user was detected
-        if (_firestoreResetting) {
-            setTimeout(function() { loadUserProfile(authUser); }, 500);
+        // Anonymous users (public web) should never hit the admin panel.
+        // If an anonymous session is detected (e.g. from shared Auth persistence
+        // with the public site), silently sign out without showing any error.
+        if (authUser.isAnonymous) {
+            silentSignOutNonAdmin();
             return;
         }
         // Force server read to bypass stale persistence cache
@@ -1003,6 +1005,13 @@
             .then(function(doc) {
                 _profileRetryCount = 0; // reset on success
                 if (!doc.exists) {
+                    // No admin profile. If this was not an explicit login attempt
+                    // (i.e. the user came from the public web with an active session),
+                    // sign them out silently so they never see an error message.
+                    if (!_explicitLogin) {
+                        silentSignOutNonAdmin();
+                        return;
+                    }
                     showAccessDenied(authUser.email, authUser.uid, 'No tienes perfil administrativo asignado. Un Super Admin debe crearlo.');
                     return;
                 }
@@ -1072,6 +1081,7 @@
 
     function showAccessDenied(email, uid, reason) {
         _accessDeniedShown = true;
+        _explicitLogin = false;
         stopInactivityTracking();
         stopPresence();
         clearSessionStart();
@@ -1090,30 +1100,39 @@
         if (uid) console.log('[Auth] Access denied for UID:', uid);
         if (reason) console.warn('[Auth] Reason:', reason);
 
-        // Sign out first (triggers onAuthStateChanged → showLogin),
-        // then reset Firestore persistence in background to prevent
-        // stale auth cache from blocking the next login with a different account.
-        // This solves: public user registers → goes to admin → error →
-        // tries admin login → permission-denied from cached auth context.
-        _firestoreResetting = true;
-        window.auth.signOut().then(function() {
-            return window.db.terminate();
-        }).then(function() {
-            return firebase.firestore().clearPersistence();
-        }).then(function() {
-            window.db = firebase.firestore();
-            window.db.enablePersistence({ synchronizeTabs: true }).catch(function() {});
-            _firestoreResetting = false;
-            console.info('[Auth] Firestore reset after access denied — clean state for next login');
-        }).catch(function(err) {
-            console.warn('[Auth] Firestore reset error:', err.message || err);
-            // Ensure db is usable even if clearPersistence fails
-            try {
-                window.db = firebase.firestore();
-                window.db.enablePersistence({ synchronizeTabs: true }).catch(function() {});
-            } catch(e) { /* ignore */ }
-            _firestoreResetting = false;
+        // Sign out cleanly — DO NOT terminate or clear Firestore persistence.
+        // Terminating Firestore kills every active listener across the app
+        // (database.js vehicle/brand/banner listeners, cache-manager, etc.)
+        // and produces "Firestore shutting down" errors + 400 Bad Request on
+        // the WebChannel listen stream. The `{ source: 'server' }` option in
+        // loadUserProfile already bypasses any stale cache for the next login.
+        window.auth.signOut().catch(function(err) {
+            console.warn('[Auth] signOut error:', err && err.message);
         });
+    }
+
+    // Public/anonymous user detected via shared Auth persistence
+    // (e.g. they registered on the public web and then navigated to /admin.html).
+    // We do NOT call signOut() here, because Firebase Auth persistence is
+    // shared across tabs/pages — signing them out would also log them out
+    // of the public site. Instead, we just display the admin login screen
+    // and leave their public session intact. When they later submit the
+    // admin login form, signInWithEmailAndPassword will replace the auth
+    // state with the admin user.
+    function silentSignOutNonAdmin() {
+        _explicitLogin = false;
+        AP.currentUserProfile = null;
+        AP.currentUserRole = null;
+        stopInactivityTracking();
+        stopPresence();
+        clearSessionStart();
+        resetLoginBtn();
+        hideLoadingScreen();
+        $('loginScreen').style.display = 'flex';
+        $('adminPanel').style.display = 'none';
+        // Make sure no stale error from a previous attempt is shown
+        var errEl = $('loginError');
+        if (errEl) errEl.style.display = 'none';
     }
 
     // Flag to prevent showLogin() from hiding the access denied error message.
@@ -1121,11 +1140,11 @@
     // before the user can read it.
     var _accessDeniedShown = false;
 
-    // Flag to prevent loadUserProfile during Firestore reset.
-    // When a non-admin user (e.g. public client) triggers showAccessDenied,
-    // Firestore persistence is cleared and re-initialized to prevent stale
-    // auth context from blocking the next login with a different account.
-    var _firestoreResetting = false;
+    // Flag set to true when the user submits the admin login form explicitly.
+    // Used to distinguish between "user actively tried to log in to admin"
+    // (show error on denied access) vs "auth state restored from persistence"
+    // (silent signout — user never asked to be here).
+    var _explicitLogin = false;
 
     function showLogin() {
         stopInactivityTracking();
@@ -1147,6 +1166,7 @@
     }
 
     function showAdmin(user) {
+        _explicitLogin = false; // Reset after successful entry into the admin panel
         resetLoginBtn();
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'flex';
@@ -1554,6 +1574,11 @@
         var errEl   = $('loginError');
         var btn     = $('loginBtn');
         if (!email || !pass) return;
+
+        // Mark this as an explicit admin login attempt — if it fails with
+        // "not an admin", the user will see the access denied message.
+        // Non-explicit sessions (restored from persistence) are silently signed out.
+        _explicitLogin = true;
 
         btn.disabled = true;
         btn.innerHTML = '<span class="btn-spinner"></span> Verificando...';

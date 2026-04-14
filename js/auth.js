@@ -150,8 +150,10 @@
             if (btn)   { btn.classList.toggle('active', isActive);   btn.setAttribute('aria-selected', isActive); }
             if (panel) { panel.classList.toggle('active', isActive); }
         });
-        $id('panelReset').classList.remove('active');
-        $id('auth-tabs').style.display = '';
+        var resetPanel = $id('panelReset');
+        if (resetPanel) resetPanel.classList.remove('active');
+        var tabs = $id('auth-tabs');
+        if (tabs) tabs.style.display = '';
     }
 
     function showResetPanel() {
@@ -159,8 +161,10 @@
             var el = $id(id);
             if (el) el.classList.remove('active');
         });
-        $id('auth-tabs').style.display = 'none';
-        $id('panelReset').classList.add('active');
+        var tabs = $id('auth-tabs');
+        if (tabs) tabs.style.display = 'none';
+        var resetPanel = $id('panelReset');
+        if (resetPanel) resetPanel.classList.add('active');
         // Pre-fill email if typed
         var loginEmail = $id('loginEmail');
         var resetEmail = $id('resetEmail');
@@ -186,7 +190,33 @@
         }
         setLoading('loginSubmitBtn', true);
         window.firebaseReady.then(function () {
+            // If currently anonymous, try to upgrade by linking with credential.
+            // This preserves the same uid → favoritos/historial stay intact.
+            var current = window.auth.currentUser;
+            if (current && current.isAnonymous) {
+                var cred = firebase.auth.EmailAuthProvider.credential(email, pass);
+                return current.linkWithCredential(cred).catch(function (err) {
+                    // Linking failed (e.g. credential already in use) → fall back to
+                    // normal sign-in. Anonymous data on the old uid is dropped on
+                    // signOut; merging happens via setUser() with the new uid.
+                    if (err && (err.code === 'auth/credential-already-in-use'
+                             || err.code === 'auth/email-already-in-use'
+                             || err.code === 'auth/provider-already-linked')) {
+                        return window.auth.signInWithEmailAndPassword(email, pass);
+                    }
+                    throw err;
+                });
+            }
             return window.auth.signInWithEmailAndPassword(email, pass);
+        }).then(function () {
+            // Ensure clientes/{uid} doc exists/refreshed with email
+            var u = window.auth.currentUser;
+            if (u && !u.isAnonymous) {
+                return saveClientProfile(u.uid, {
+                    nombre: u.displayName || '',
+                    email:  u.email || email
+                });
+            }
         }).then(function () {
             closeAuthModal();
             if (typeof showToast === 'function') showToast('¡Bienvenido de vuelta!', 'success');
@@ -233,9 +263,22 @@
         setLoading('registerSubmitBtn', true);
         var createdUser = null;
         window.firebaseReady.then(function () {
+            // If currently anonymous, upgrade in place to preserve uid + data
+            var current = window.auth.currentUser;
+            if (current && current.isAnonymous) {
+                var cred = firebase.auth.EmailAuthProvider.credential(email, pass);
+                return current.linkWithCredential(cred).catch(function (err) {
+                    if (err && (err.code === 'auth/credential-already-in-use'
+                             || err.code === 'auth/email-already-in-use')) {
+                        // Email exists → cannot upgrade; create as new user instead.
+                        return window.auth.createUserWithEmailAndPassword(email, pass);
+                    }
+                    throw err;
+                });
+            }
             return window.auth.createUserWithEmailAndPassword(email, pass);
         }).then(function (userCred) {
-            createdUser = userCred.user;
+            createdUser = (userCred && userCred.user) || window.auth.currentUser;
             // Actualizar nombre en Firebase Auth
             return createdUser.updateProfile({ displayName: nombre });
         }).then(function () {
@@ -288,9 +331,20 @@
         window.firebaseReady.then(function () {
             var provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
+            // If currently anonymous, link instead of sign-in to keep uid + data
+            var current = window.auth.currentUser;
+            if (current && current.isAnonymous) {
+                return current.linkWithPopup(provider).catch(function (err) {
+                    if (err && (err.code === 'auth/credential-already-in-use'
+                             || err.code === 'auth/email-already-in-use')) {
+                        return window.auth.signInWithPopup(provider);
+                    }
+                    throw err;
+                });
+            }
             return window.auth.signInWithPopup(provider);
         }).then(function (result) {
-            var user = result.user;
+            var user = (result && result.user) || window.auth.currentUser;
             // Guardar perfil en clientes si es login con Google
             return saveClientProfile(user.uid, {
                 nombre: user.displayName || '',
@@ -337,6 +391,9 @@
     }
 
     // ── Cerrar sesión ────────────────────────────────────────
+    // Sign out the registered user. Auth state listener will then auto
+    // re-sign-in anonymously so the header still has a backing uid for
+    // Firestore writes (favoritos / historial).
     function handleLogout() {
         window.firebaseReady.then(function () {
             return window.auth.signOut();
@@ -346,18 +403,32 @@
     }
 
     // ── Auth state change → actualizar header + datos per-user ─
+    // Treats anonymous users as "logged out" for the header UI, but still
+    // syncs FavoritesManager / VehicleHistory so anonymous users get their
+    // own private Firestore-backed data (no localStorage).
     function onAuthStateChanged(user) {
         _currentUser = user;
-        updateHeaderAuthState(user);
 
-        // Sync per-user data with Firestore
-        if (user) {
-            if (window.favoritesManager) window.favoritesManager.setUser(user.uid);
-            if (window.vehicleHistory)   window.vehicleHistory.setUser(user.uid);
-        } else {
+        // No user at all → sign in anonymously so we always have a uid for
+        // per-user data. The recursive onAuthStateChanged call will then
+        // route through the anonymous branch below.
+        if (!user) {
+            updateHeaderAuthState(null);
             if (window.favoritesManager) window.favoritesManager.clearUser();
             if (window.vehicleHistory)   window.vehicleHistory.clearUser();
+            window.auth.signInAnonymously().catch(function (err) {
+                console.warn('[Auth] Anonymous sign-in failed:', err && err.message);
+            });
+            return;
         }
+
+        // Header: only registered (non-anonymous) users get the avatar UI
+        updateHeaderAuthState(user.isAnonymous ? null : user);
+
+        // Per-user data managers sync regardless of anonymous state — every
+        // user (anonymous or registered) gets a private Firestore document.
+        if (window.favoritesManager) window.favoritesManager.setUser(user.uid);
+        if (window.vehicleHistory)   window.vehicleHistory.setUser(user.uid);
     }
 
     // ── Actualizar botones del header ────────────────────────

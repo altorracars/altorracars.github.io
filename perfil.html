@@ -315,9 +315,10 @@
         }
 
         // Listen for auth state
+        // Anonymous users (auto-signed-in for tracking) are treated as logged out.
         window.firebaseReady.then(function() {
             window.auth.onAuthStateChanged(function(user) {
-                if (user) {
+                if (user && !user.isAnonymous) {
                     renderProfile(user);
                 } else {
                     showNotAuth();

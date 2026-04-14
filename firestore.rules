@@ -99,14 +99,18 @@ service cloud.firestore {
       }
     }
 
-    // ========== CLIENTES (public registered users) ==========
+    // ========== CLIENTES (public users — anonymous OR registered) ==========
     // Completely separate from `usuarios` (admin panel).
-    // A public user can ONLY read/write their own document.
-    // They have NO access to admin collections.
+    // A public user (including anonymous Firebase Auth users) can ONLY
+    // read/write their own document. They have NO access to admin collections.
+    //
+    // Anonymous users are auto-signed-in by auth.js so favorites/historial are
+    // always tied to a private uid (no localStorage). When they later register,
+    // linkWithCredential preserves the uid → data carries over seamlessly.
     match /clientes/{uid} {
       allow read:   if request.auth != null && request.auth.uid == uid;
+      // Create only requires uid match — nombre/email may be empty for anon users
       allow create: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.keys().hasAll(['nombre', 'email', 'creadoEn'])
         && request.resource.data.uid == request.auth.uid;
       allow update: if request.auth != null && request.auth.uid == uid;
       allow delete: if false; // Users cannot self-delete (data retention)

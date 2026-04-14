@@ -83,23 +83,12 @@ function getVehicleBadges(vehicle) {
     return badges;
 }
 
-// Check if vehicle is in favorites - USA FAVORITES MANAGER
+// Check if vehicle is in favorites - USA FAVORITES MANAGER (Firestore-only)
 function isFavorite(vehicleId) {
-    // Usar el FavoritesManager unificado
     if (typeof window.favoritesManager !== 'undefined') {
         return window.favoritesManager.has(vehicleId);
     }
-
-    // Fallback si FavoritesManager no está cargado
-    try {
-        const favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-        const normalizedId = String(vehicleId);
-        const normalizedFavorites = favorites.map(id => String(id));
-        return normalizedFavorites.includes(normalizedId);
-    } catch (error) {
-        console.error('Error checking favorite:', error);
-        return false;
-    }
+    return false;
 }
 
 // Check if vehicle is in comparator
@@ -263,90 +252,37 @@ function attachFavoriteListeners() {
 
             const vehicleId = newButton.getAttribute('data-id');
 
-            // Usar FavoritesManager para toggle
-            if (typeof window.favoritesManager !== 'undefined') {
-                const wasAdded = window.favoritesManager.toggle(vehicleId);
+            if (typeof window.favoritesManager === 'undefined') {
+                console.warn('FavoritesManager no disponible');
+                return;
+            }
 
-                // Actualizar botón con el nuevo estado
-                window.favoritesManager.updateButtonState(newButton, vehicleId);
+            const wasAdded = window.favoritesManager.toggle(vehicleId);
+            window.favoritesManager.updateButtonState(newButton, vehicleId);
 
-                // Animación de pulso solo al agregar
+            if (wasAdded) {
+                newButton.style.transform = 'scale(1.3)';
+                setTimeout(() => { newButton.style.transform = 'scale(1)'; }, 200);
+            }
+
+            window.favoritesManager.updateAllCounters();
+
+            if (typeof toast !== 'undefined') {
+                const count = window.favoritesManager.count();
                 if (wasAdded) {
-                    newButton.style.transform = 'scale(1.3)';
-                    setTimeout(() => {
-                        newButton.style.transform = 'scale(1)';
-                    }, 200);
-                }
-
-                // Los contadores se actualizan automáticamente vía evento
-                // pero llamamos explícitamente por si acaso
-                window.favoritesManager.updateAllCounters();
-
-                // Mostrar notificación toast
-                if (typeof toast !== 'undefined') {
-                    const count = window.favoritesManager.count();
-                    if (wasAdded) {
-                        toast.success(
-                            `Has añadido (${count}) ${count === 1 ? 'auto' : 'autos'} a favoritos.`,
-                            'Auto agregado'
-                        );
-                    } else {
-                        toast.info(
-                            `Has eliminado un auto de favoritos. Tienes (${count}) ${count === 1 ? 'auto' : 'autos'}.`,
-                            'Auto eliminado'
-                        );
-                    }
-                }
-            } else {
-                // Fallback al sistema antiguo si FavoritesManager no está disponible
-                console.warn('FavoritesManager no disponible, usando sistema legacy');
-                const wasAdded = toggleFavorite(vehicleId);
-
-                if (wasAdded) {
-                    newButton.textContent = '♥';
-                    newButton.classList.add('active');
+                    toast.success(
+                        `Has añadido (${count}) ${count === 1 ? 'auto' : 'autos'} a favoritos.`,
+                        'Auto agregado'
+                    );
                 } else {
-                    newButton.textContent = '♡';
-                    newButton.classList.remove('active');
-                }
-
-                if (typeof window.updateFavoritesCount === 'function') {
-                    window.updateFavoritesCount();
+                    toast.info(
+                        `Has eliminado un auto de favoritos. Tienes (${count}) ${count === 1 ? 'auto' : 'autos'}.`,
+                        'Auto eliminado'
+                    );
                 }
             }
         });
     });
-}
-
-// Toggle favorite - Retorna true si fue agregado, false si fue eliminado
-function toggleFavorite(vehicleId) {
-    try {
-        let favorites = JSON.parse(localStorage.getItem('altorra-favorites') || '[]');
-
-        // Normalizar TODO a strings para consistencia
-        const normalizedId = String(vehicleId);
-        const normalizedFavorites = favorites.map(id => String(id));
-
-        const index = normalizedFavorites.indexOf(normalizedId);
-        let wasAdded = false;
-
-        if (index > -1) {
-            // Eliminar de la posición encontrada
-            normalizedFavorites.splice(index, 1);
-            wasAdded = false;
-        } else {
-            // Agregar como string
-            normalizedFavorites.push(normalizedId);
-            wasAdded = true;
-        }
-
-        // Guardar array normalizado
-        localStorage.setItem('altorra-favorites', JSON.stringify(normalizedFavorites));
-        return wasAdded;
-    } catch (error) {
-        console.error('Error toggling favorite:', error);
-        return false;
-    }
 }
 
 // Note: updateFavoritesCount() is defined in components.js to avoid duplication

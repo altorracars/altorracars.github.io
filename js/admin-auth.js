@@ -988,8 +988,23 @@
             || msg.indexOf('err_network') !== -1;
     }
 
+    // Transient errors that can happen right after signIn while the Firestore
+    // SDK is still syncing the new auth token. `permission-denied` is treated
+    // as transient here because Firestore evaluates rules with the OLD token
+    // (or no token) for a few hundred milliseconds after signInWithEmailAndPassword
+    // resolves. The fix is to retry with backoff + force a fresh ID token.
+    function isTransientAuthError(err) {
+        if (!err) return false;
+        var code = err.code || '';
+        return code === 'permission-denied'
+            || code === 'unauthenticated'
+            || code === 'failed-precondition';
+    }
+
     var _profileRetryCount = 0;
-    var _profileRetryMax = 3;
+    var _profileRetryMax = 6;
+    // Backoff schedule in ms: 300, 600, 1200, 2000, 3000, 5000
+    var _profileRetryDelays = [300, 600, 1200, 2000, 3000, 5000];
 
     function loadUserProfile(authUser) {
         // Anonymous users (public web) should never hit the admin panel.
@@ -999,9 +1014,24 @@
             silentSignOutNonAdmin();
             return;
         }
-        // Force server read to bypass stale persistence cache
-        // (prevents permission-denied when switching between accounts)
-        window.db.collection('usuarios').doc(authUser.uid).get({ source: 'server' })
+
+        // Force the Firebase Auth SDK to refresh the ID token BEFORE making any
+        // Firestore read. This closes the race condition where signInWithEmailAndPassword
+        // has resolved but Firestore hasn't yet received the new auth token, which
+        // would otherwise cause `request.auth == null` in the rules and a spurious
+        // permission-denied. `getIdToken(true)` forces a server refresh and, more
+        // importantly, ensures the SDK has propagated the token to all listeners
+        // (including Firestore) before we proceed.
+        authUser.getIdToken(true)
+            .then(function() {
+                // Do NOT force { source: 'server' } — when Firestore's token sync is
+                // still catching up, forcing a server read can race with the token
+                // propagation and raise permission-denied. Default read order
+                // (cache then server) is safe: the doc rarely exists in cache for
+                // a fresh login, so Firestore falls through to the server anyway,
+                // but only after its internal auth state is consistent.
+                return window.db.collection('usuarios').doc(authUser.uid).get();
+            })
             .then(function(doc) {
                 _profileRetryCount = 0; // reset on success
                 if (!doc.exists) {
@@ -1057,23 +1087,37 @@
                 });
             })
             .catch(function(err) {
-                if (err.code === 'permission-denied') {
-                    _profileRetryCount = 0;
-                    showAccessDenied(authUser.email, authUser.uid, 'Las reglas de seguridad impiden leer tu perfil. Contacta al Super Admin.');
-                } else if (isNetworkError(err) && _profileRetryCount < _profileRetryMax) {
-                    // Network error — retry instead of signing out
+                var transient = isTransientAuthError(err);
+                var network = isNetworkError(err);
+
+                if ((transient || network) && _profileRetryCount < _profileRetryMax) {
+                    // Both auth-token-propagation races and flaky network are transient.
+                    // Retry with escalating backoff.
+                    var delay = _profileRetryDelays[_profileRetryCount] || 5000;
                     _profileRetryCount++;
-                    var delay = _profileRetryCount * 2000; // 2s, 4s, 6s
-                    console.warn('[Auth] Error de red al cargar perfil (intento ' + _profileRetryCount + '/' + _profileRetryMax + '), reintentando en ' + (delay/1000) + 's...', err.message);
-                    var errEl = $('loginError');
-                    if (errEl) {
-                        errEl.style.display = 'block';
-                        errEl.style.whiteSpace = 'pre-line';
-                        errEl.textContent = 'Problema de conexion. Reintentando... (' + _profileRetryCount + '/' + _profileRetryMax + ')';
+                    var reason = transient ? 'token de auth aun sincronizando' : 'error de red';
+                    console.warn('[Auth] Reintentando carga de perfil (' + reason + ', intento ' + _profileRetryCount + '/' + _profileRetryMax + ') en ' + delay + 'ms — code=' + (err.code || 'n/a'));
+                    // Only show "retrying" UI after the first couple of attempts,
+                    // so typical fast logins don't flash a confusing message.
+                    if (_profileRetryCount >= 3) {
+                        var errEl = $('loginError');
+                        if (errEl) {
+                            errEl.style.display = 'block';
+                            errEl.style.whiteSpace = 'pre-line';
+                            errEl.textContent = 'Verificando credenciales... (' + _profileRetryCount + '/' + _profileRetryMax + ')';
+                        }
                     }
                     setTimeout(function() { loadUserProfile(authUser); }, delay);
+                    return;
+                }
+
+                // Definitive failure — exhausted retries or non-transient error.
+                _profileRetryCount = 0;
+                if (err.code === 'permission-denied') {
+                    // Still denied after refreshing the token and multiple retries.
+                    // This is a REAL rules/profile problem, not a race condition.
+                    showAccessDenied(authUser.email, authUser.uid, 'Las reglas de seguridad impiden leer tu perfil.\nVerifica que exista un documento en usuarios/' + authUser.uid + ' y que las reglas esten desplegadas (firebase deploy --only firestore:rules).');
                 } else {
-                    _profileRetryCount = 0;
                     showAccessDenied(authUser.email, authUser.uid, 'Error al cargar perfil: ' + err.message + '\n\nVerifica tu conexion a internet e intenta de nuevo.');
                 }
             });
@@ -1104,8 +1148,8 @@
         // Terminating Firestore kills every active listener across the app
         // (database.js vehicle/brand/banner listeners, cache-manager, etc.)
         // and produces "Firestore shutting down" errors + 400 Bad Request on
-        // the WebChannel listen stream. The `{ source: 'server' }` option in
-        // loadUserProfile already bypasses any stale cache for the next login.
+        // the WebChannel listen stream. loadUserProfile uses getIdToken(true)
+        // and retry-with-backoff to handle stale cache / token races cleanly.
         window.auth.signOut().catch(function(err) {
             console.warn('[Auth] signOut error:', err && err.message);
         });

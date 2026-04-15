@@ -190,23 +190,26 @@
         }
         setLoading('loginSubmitBtn', true);
         window.firebaseReady.then(function () {
-            // If currently anonymous, try to upgrade by linking with credential.
-            // This preserves the same uid → favoritos/historial stay intact.
-            var current = window.auth.currentUser;
-            if (current && current.isAnonymous) {
-                var cred = firebase.auth.EmailAuthProvider.credential(email, pass);
-                return current.linkWithCredential(cred).catch(function (err) {
-                    // Linking failed (e.g. credential already in use) → fall back to
-                    // normal sign-in. Anonymous data on the old uid is dropped on
-                    // signOut; merging happens via setUser() with the new uid.
-                    if (err && (err.code === 'auth/credential-already-in-use'
-                             || err.code === 'auth/email-already-in-use'
-                             || err.code === 'auth/provider-already-linked')) {
-                        return window.auth.signInWithEmailAndPassword(email, pass);
-                    }
-                    throw err;
-                });
-            }
+            // Login flow: ALWAYS sign in directly with the credentials.
+            //
+            // We used to try `linkWithCredential` first to upgrade any current
+            // anonymous session into the new account (preserving favoritos /
+            // historial). That had two serious problems:
+            //   1. For users who already had an account (the common case),
+            //      the link attempt fails with auth/credential-already-in-use
+            //      and the Firebase SDK logs a red `POST accounts:signUp 400`
+            //      in the console before the fallback runs. Looks like the
+            //      login broke even when it actually succeeded.
+            //   2. For a user who mistyped their email, the link would
+            //      SILENTLY CREATE a new account with the typo'd email —
+            //      because linkWithCredential on a non-existent email just
+            //      registers. That's a foot-gun hiding inside the login form.
+            //
+            // Registration still uses createUserWithEmailAndPassword in
+            // handleRegister(), which is the correct place to create accounts.
+            // Merging anonymous favoritos/historial into an existing account
+            // on login is complex and isn't currently wired up anywhere — so
+            // dropping the anonymous data on login is the honest behavior.
             return window.auth.signInWithEmailAndPassword(email, pass);
         }).then(function () {
             // Ensure clientes/{uid} doc exists/refreshed with email

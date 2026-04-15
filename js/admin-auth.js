@@ -891,6 +891,7 @@
         if (!window.auth || !window.auth.currentUser) return;
         AP.toast('Sesion cerrada por inactividad (30 minutos).', 'info');
         stopPresence();
+        if (AP.stopRealtimeSync) AP.stopRealtimeSync();
         window.auth.signOut();
     }
 
@@ -988,26 +989,92 @@
             || msg.indexOf('err_network') !== -1;
     }
 
-    // Transient errors that can happen right after signIn while the Firestore
-    // SDK is still syncing the new auth token. `permission-denied` is treated
-    // as transient here because Firestore evaluates rules with the OLD token
-    // (or no token) for a few hundred milliseconds after signInWithEmailAndPassword
-    // resolves. The fix is to retry with backoff + force a fresh ID token.
-    function isTransientAuthError(err) {
-        if (!err) return false;
-        var code = err.code || '';
-        return code === 'permission-denied'
-            || code === 'unauthenticated'
-            || code === 'failed-precondition';
+    // ========== FIRESTORE REST DECODER ==========
+    // Convert a Firestore REST-API field map into a plain JS object.
+    // The REST API returns `{ field: { stringValue: 'x' }, ... }` instead of
+    // the flat shape the SDK gives us. We need to handle the field types we
+    // actually use in the `usuarios` collection: string, boolean, integer,
+    // timestamp, array, map, null.
+    function decodeFirestoreFields(fields) {
+        var out = {};
+        if (!fields) return out;
+        Object.keys(fields).forEach(function(key) {
+            out[key] = decodeFirestoreValue(fields[key]);
+        });
+        return out;
+    }
+
+    function decodeFirestoreValue(value) {
+        if (value == null) return null;
+        if ('stringValue' in value)    return value.stringValue;
+        if ('booleanValue' in value)   return value.booleanValue;
+        if ('integerValue' in value)   return parseInt(value.integerValue, 10);
+        if ('doubleValue' in value)    return value.doubleValue;
+        if ('nullValue' in value)      return null;
+        if ('timestampValue' in value) {
+            // Return a duck-typed Firestore Timestamp so existing code that
+            // expects .toDate() / .toMillis() / .seconds keeps working.
+            var d = new Date(value.timestampValue);
+            return {
+                seconds:     Math.floor(d.getTime() / 1000),
+                nanoseconds: (d.getTime() % 1000) * 1000000,
+                toDate:      function() { return new Date(d.getTime()); },
+                toMillis:    function() { return d.getTime(); }
+            };
+        }
+        if ('arrayValue' in value) {
+            return (value.arrayValue.values || []).map(decodeFirestoreValue);
+        }
+        if ('mapValue' in value) {
+            return decodeFirestoreFields(value.mapValue.fields);
+        }
+        // referenceValue, geoPointValue, bytesValue — not used in usuarios
+        return null;
+    }
+
+    // Read the admin profile via the Firestore REST API instead of the SDK.
+    // This is the ONLY reliable way to avoid the WebChannel race condition
+    // documented in firebase-js-sdk#6118: the Compat SDK keeps a long-lived
+    // WebChannel that can be reused with stale auth state right after a fresh
+    // signInWithEmailAndPassword. REST sends the ID token in the Authorization
+    // header on every request — there's no persistent channel and no race.
+    function loadProfileViaREST(authUser) {
+        return authUser.getIdToken()
+            .then(function(idToken) {
+                var url = 'https://firestore.googleapis.com/v1/projects/altorra-cars/databases/(default)/documents/usuarios/' + encodeURIComponent(authUser.uid);
+                return fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + idToken,
+                        'Accept': 'application/json'
+                    },
+                    cache: 'no-store'
+                });
+            })
+            .then(function(resp) {
+                if (resp.status === 404) {
+                    // Doc doesn't exist (no admin profile)
+                    return { exists: false, data: null };
+                }
+                if (resp.status === 401 || resp.status === 403) {
+                    var err = new Error('REST permission denied (HTTP ' + resp.status + ')');
+                    err.code = 'permission-denied';
+                    throw err;
+                }
+                if (!resp.ok) {
+                    var httpErr = new Error('REST error: HTTP ' + resp.status);
+                    httpErr.code = 'unavailable';
+                    throw httpErr;
+                }
+                return resp.json().then(function(json) {
+                    return { exists: true, data: decodeFirestoreFields(json.fields) };
+                });
+            });
     }
 
     var _profileRetryCount = 0;
-    var _profileRetryMax = 3;
-    // Backoff schedule in ms for the rare case the handshake didn't take effect
-    var _profileRetryDelays = [1000, 2000, 4000];
-    // Tracks whether we already forced a Firestore handshake in this login flow.
-    // Reset on: successful profile load, access-denied, or new login attempt.
-    var _profileForceHandshakeDone = false;
+    var _profileRetryMax = 2;
+    var _profileRetryDelays = [1000, 2000];
 
     function loadUserProfile(authUser) {
         // Anonymous users (public web) should never hit the admin panel.
@@ -1018,47 +1085,12 @@
             return;
         }
 
-        // CRITICAL RACE FIX: Force Firestore to do a fresh WebChannel handshake
-        // with the CURRENT auth token.
-        //
-        // The race: onAuthStateChanged fires immediately after signInWithEmailAndPassword
-        // resolves, but Firestore's internal auth subscription has NOT necessarily
-        // updated its long-lived WebChannel yet. If we call .get() from
-        // onAuthStateChanged, the request can still be sent on the OLD channel
-        // (built with the previous token or no token), and the server returns
-        // permission-denied with `request.auth == null`.
-        //
-        // Plain retries with the same client don't help — the WebChannel keeps
-        // using the same internal token. The only reliable client-side fix is
-        // to tear down the channel (disableNetwork) and re-open it (enableNetwork)
-        // so Firestore re-fetches the current token from auth.currentUser.
-        // See: https://github.com/firebase/firebase-js-sdk/issues/6118
-        //
-        // This is safe at this point because admin listeners (admin-sync.js)
-        // haven't started yet — they only start inside showAdmin(), which runs
-        // after this function succeeds.
-        var handshake;
-        if (_profileForceHandshakeDone) {
-            // Already did a handshake for this login attempt — skip to save time
-            handshake = Promise.resolve();
-        } else {
-            _profileForceHandshakeDone = true;
-            handshake = window.db.disableNetwork()
-                .then(function() { return window.db.enableNetwork(); })
-                .catch(function(err) {
-                    // Non-fatal — log and continue. Worst case we hit the race and retry.
-                    console.warn('[Auth] Firestore handshake refresh failed:', err && err.message);
-                });
-        }
-
-        handshake
-            .then(function() {
-                return window.db.collection('usuarios').doc(authUser.uid).get();
-            })
-            .then(function(doc) {
+        // Read the profile via REST to bypass the Compat SDK WebChannel race.
+        // See loadProfileViaREST() above for the full explanation.
+        loadProfileViaREST(authUser)
+            .then(function(result) {
                 _profileRetryCount = 0; // reset on success
-                _profileForceHandshakeDone = false;
-                if (!doc.exists) {
+                if (!result.exists) {
                     // No admin profile. If this was not an explicit login attempt
                     // (i.e. the user came from the public web with an active session),
                     // sign them out silently so they never see an error message.
@@ -1070,8 +1102,8 @@
                     return;
                 }
 
-                AP.currentUserProfile = doc.data();
-                AP.currentUserProfile._docId = doc.id;
+                AP.currentUserProfile = result.data;
+                AP.currentUserProfile._docId = authUser.uid;
                 AP.currentUserRole = AP.currentUserProfile.rol;
 
                 // Check if user is blocked (both usuarios doc AND loginAttempts collection)
@@ -1111,39 +1143,20 @@
                 });
             })
             .catch(function(err) {
-                var transient = isTransientAuthError(err);
+                // REST avoids the WebChannel race, so permission-denied here is
+                // almost certainly real (missing doc, wrong rules, expired token).
+                // We still allow a couple of retries for network blips.
                 var network = isNetworkError(err);
-
-                if ((transient || network) && _profileRetryCount < _profileRetryMax) {
-                    // First handshake didn't take effect (rare) or real network blip.
-                    // Force ANOTHER handshake on retry — plain retries with the same
-                    // internal Firestore state are pointless and just waste the user's time.
-                    _profileForceHandshakeDone = false;
-                    var delay = _profileRetryDelays[_profileRetryCount] || 4000;
+                if (network && _profileRetryCount < _profileRetryMax) {
+                    var delay = _profileRetryDelays[_profileRetryCount] || 2000;
                     _profileRetryCount++;
-                    var reason = transient ? 'token de auth aun sincronizando' : 'error de red';
-                    console.warn('[Auth] Reintentando carga de perfil con handshake fresco (' + reason + ', intento ' + _profileRetryCount + '/' + _profileRetryMax + ') en ' + delay + 'ms — code=' + (err.code || 'n/a'));
-                    // Only show "retrying" UI on the last attempt, so typical fast
-                    // logins don't flash a confusing message.
-                    if (_profileRetryCount >= _profileRetryMax) {
-                        var errEl = $('loginError');
-                        if (errEl) {
-                            errEl.style.display = 'block';
-                            errEl.style.whiteSpace = 'pre-line';
-                            errEl.textContent = 'Verificando credenciales... (ultimo intento)';
-                        }
-                    }
+                    console.warn('[Auth] Reintentando perfil por error de red (' + _profileRetryCount + '/' + _profileRetryMax + ') en ' + delay + 'ms — code=' + (err.code || 'n/a'));
                     setTimeout(function() { loadUserProfile(authUser); }, delay);
                     return;
                 }
 
-                // Definitive failure — exhausted retries or non-transient error.
                 _profileRetryCount = 0;
-                _profileForceHandshakeDone = false;
                 if (err.code === 'permission-denied') {
-                    // Still denied after forcing a fresh Firestore handshake and retries.
-                    // At this point it's almost certainly a real rules/profile problem,
-                    // not a race condition.
                     showAccessDenied(authUser.email, authUser.uid, 'Las reglas de seguridad impiden leer tu perfil.\nVerifica que exista un documento en usuarios/' + authUser.uid + ' y que las reglas esten desplegadas (firebase deploy --only firestore:rules).');
                 } else {
                     showAccessDenied(authUser.email, authUser.uid, 'Error al cargar perfil: ' + err.message + '\n\nVerifica tu conexion a internet e intenta de nuevo.');
@@ -1154,7 +1167,6 @@
     function showAccessDenied(email, uid, reason) {
         _accessDeniedShown = true;
         _explicitLogin = false;
-        _profileForceHandshakeDone = false;
         _profileRetryCount = 0;
         stopInactivityTracking();
         stopPresence();
@@ -1653,9 +1665,6 @@
         // "not an admin", the user will see the access denied message.
         // Non-explicit sessions (restored from persistence) are silently signed out.
         _explicitLogin = true;
-        // Reset handshake flag so this new login attempt forces a fresh
-        // Firestore WebChannel handshake (see loadUserProfile).
-        _profileForceHandshakeDone = false;
         _profileRetryCount = 0;
 
         btn.disabled = true;
@@ -1744,6 +1753,10 @@
     $('logoutBtn').addEventListener('click', function() {
         clearSessionStart();
         stopPresence();
+        // Stop Firestore listeners BEFORE signOut to prevent the WebChannel
+        // from trying to refresh listens with a null auth token, which causes
+        // a 400 Bad Request error on Firestore's Listen channel.
+        if (AP.stopRealtimeSync) AP.stopRealtimeSync();
         _2faVerified = false;
         window.firebaseReady.then(function() { window.auth.signOut(); });
     });
@@ -1797,6 +1810,7 @@
     if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', function() {
         clearSessionStart();
         stopPresence();
+        if (AP.stopRealtimeSync) AP.stopRealtimeSync();
         if (window.auth) window.auth.signOut();
     });
 

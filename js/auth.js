@@ -395,6 +395,15 @@
     // re-sign-in anonymously so the header still has a backing uid for
     // Firestore writes (favoritos / historial).
     function handleLogout() {
+        // Stop Firestore real-time listeners BEFORE signOut to prevent the
+        // WebChannel from trying to refresh its Listen streams with a null
+        // auth token, which causes a 400 Bad Request error on
+        // firestore.googleapis.com/.../Listen/channel. The listeners will
+        // be restarted from onAuthStateChanged() once the anonymous user
+        // is signed in. Same pattern as admin-auth.js logout.
+        if (window.vehicleDB && typeof window.vehicleDB.stopRealtime === 'function') {
+            window.vehicleDB.stopRealtime();
+        }
         window.firebaseReady.then(function () {
             return window.auth.signOut();
         }).then(function () {
@@ -429,6 +438,17 @@
         // user (anonymous or registered) gets a private Firestore document.
         if (window.favoritesManager) window.favoritesManager.setUser(user.uid);
         if (window.vehicleHistory)   window.vehicleHistory.setUser(user.uid);
+
+        // If the DB was already loaded but real-time listeners were stopped
+        // (e.g. during a logout flow — handleLogout stops them before signOut
+        // to avoid the 400 on Listen/channel), restart them now that the new
+        // auth state is settled.
+        if (window.vehicleDB
+            && window.vehicleDB.loaded
+            && !window.vehicleDB._realtimeActive
+            && typeof window.vehicleDB.startRealtime === 'function') {
+            window.vehicleDB.startRealtime();
+        }
     }
 
     // ── Actualizar botones del header ────────────────────────

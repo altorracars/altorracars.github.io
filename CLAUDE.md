@@ -1,7 +1,7 @@
 # CLAUDE.md — Altorra Cars Knowledge Base
 
 > Referencia unica para Claude. Evita reprocesos en parches, errores y mejoras.
-> Ultima actualizacion: 2026-04-10
+> Ultima actualizacion: 2026-04-15
 
 ---
 
@@ -766,21 +766,76 @@ Esto dispara la invalidacion en el sitio publico via cache-manager.js.
 
 ## 8. Errores Conocidos y Soluciones
 
-### "Access denied for UID" al hacer login
+### Login admin "permission-denied" intermitente + lento (race condition WebChannel)
 
-**Causa**: Dos problemas combinados:
-1. Error de red impide cargar perfil de Firestore → el codigo trataba cualquier error como "acceso denegado" y hacia signOut
+**Sintomas**:
+- A veces el login fallaba con `[Auth] Reason: Las reglas de seguridad impiden leer tu perfil`
+- A veces ingresaba despues de varios reintentos, a veces al primer intento
+- Login se sentia lento (teardown + rebuild del canal en cada intento)
+- Aparecia en consola: `permission-denied` aunque las reglas fueran correctas y el usuario tuviera su doc en `usuarios/{uid}`
+
+**Causa raiz**: El SDK Compat de Firestore mantiene un **WebChannel de larga duracion** que es reusado entre requests. Cuando `onAuthStateChanged` dispara `loadUserProfile` justo despues de `signInWithEmailAndPassword`, el SDK puede enviar el `.get('usuarios/{uid}')` por el canal viejo con estado de auth `null` o anonimo. Firestore evalua la regla `request.auth != null && request.auth.uid == userId` con `request.auth == null` y rechaza con `permission-denied`. Ver: https://github.com/firebase/firebase-js-sdk/issues/6118
+
+**Intentos previos que NO funcionaron**:
+1. Retry con `getIdToken(true)` + backoff: mismo WebChannel, mismo estado stale.
+2. `disableNetwork()` + `enableNetwork()` + retry: `enableNetwork()` resuelve **antes** de que el handshake del nuevo canal termine, asi que el primer `get()` post-enable puede seguir corriendo el race. Ademas hacia el login MUY lento.
+
+**Fix definitivo** (2026-04-15) — REST API bypass:
+
+En lugar de usar el WebChannel del SDK para leer el perfil, `loadUserProfile` ahora usa la **REST API de Firestore** directamente. REST acepta el ID token explicitamente en el header `Authorization: Bearer <token>` en cada request — no hay canal persistente, no hay race, no hacen falta reintentos para estado transitorio.
+
+```javascript
+// admin-auth.js — loadProfileViaREST(authUser)
+authUser.getIdToken().then(function(idToken) {
+    return fetch('https://firestore.googleapis.com/v1/projects/altorra-cars/databases/(default)/documents/usuarios/' + encodeURIComponent(authUser.uid), {
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer ' + idToken, 'Accept': 'application/json' },
+        cache: 'no-store'
+    });
+});
+```
+
+**Decoder REST → SDK shape**: La REST API devuelve `{ field: { stringValue: 'x' }, ... }` en vez de objetos planos. Se agregaron `decodeFirestoreFields()` y `decodeFirestoreValue()` en `admin-auth.js` que convierten el formato tipado al formato plano. Los `timestampValue` se devuelven como objetos duck-typed con `.toDate()`, `.toMillis()`, `.seconds`, `.nanoseconds` para preservar compatibilidad con el resto del codigo.
+
+**Archivos modificados**:
+- `admin-auth.js`: agregadas `loadProfileViaREST()`, `decodeFirestoreFields()`, `decodeFirestoreValue()`. `loadUserProfile()` reescrita para usar REST. Eliminadas `isTransientAuthError()`, flag `_profileForceHandshakeDone`, llamadas a `disableNetwork/enableNetwork`. Reintentos reducidos de 3 a 2 y solo aplican a errores de red reales (fetch failures).
+
+**Requisitos**:
+- El proyecto Firebase debe tener `firestore.googleapis.com` accesible (default, no cambiar)
+- CORS de Firestore REST acepta `fetch()` desde cualquier origen con el header `Authorization` correcto — no requiere configuracion adicional
+
+**Si persiste** (muy improbable tras este fix):
+- Verificar reglas desplegadas: `firebase deploy --only firestore:rules`
+- Verificar que el doc existe: `usuarios/{uid}` en la consola de Firebase
+- Verificar en consola: deberia ver `GET /v1/projects/altorra-cars/.../usuarios/{uid} 200` en Network tab
+
+### "Access denied for UID" con mensaje invisible (pre-2026-04-15)
+
+**Causa** (historica): Dos problemas combinados antes del fix REST:
+1. Error de red impedia cargar perfil de Firestore → el codigo trataba cualquier error como "acceso denegado" y hacia signOut
 2. `showAccessDenied()` llamaba a `signOut()`, que disparaba `onAuthStateChanged(null)` → `showLogin()` → **ocultaba el mensaje de error** antes de que el usuario pudiera leerlo
 
 **Fix aplicado** (2026-04-08 / 2026-04-10):
-- `loadUserProfile` reintenta hasta 3 veces con backoff (2s, 4s, 6s) para errores de red
 - `_accessDeniedShown` flag: `showLogin()` no oculta el error si `showAccessDenied` lo puso visible
 - `console.warn('[Auth] Reason:', reason)` para diagnostico en consola
+- (Los reintentos de red siguen activos, ahora con backoff [1s, 2s] aplicado solo a errores de fetch)
 
-**Si persiste**: Verificar que las reglas de Firestore esten desplegadas:
-```bash
-firebase deploy --only firestore:rules
+### Error 400 Bad Request en Firestore `/Listen/channel` al cerrar sesion
+
+**Sintoma**: En consola aparecia en rojo ocasionalmente al hacer logout:
 ```
+webchannel_connection.ts:268 POST https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?VER=8... 400 (Bad Request)
+```
+
+**Causa**: Los listeners de `admin-sync.js` (`unsubVehicles`, `unsubBrands`, etc.) seguian activos cuando `signOut()` se ejecutaba. `signOut()` anula el token de auth, pero el WebChannel de Firestore intenta refrescar los streams de Listen con credenciales nulas, y el servidor rechaza con HTTP 400.
+
+**Fix aplicado** (2026-04-15):
+Llamar `AP.stopRealtimeSync()` **antes** de `window.auth.signOut()` en todos los paths de logout que corren despues de `showAdmin()` (donde arrancan los listeners):
+- `logoutBtn` click handler (desktop)
+- `mobileLogoutBtn` click handler (mobile)
+- `handleInactivityTimeout()` (auto-logout 30 min)
+
+Los paths de `signOut()` en 2FA cancel y unlock cancel **NO se tocaron** porque en ese momento los listeners aun no han arrancado (solo arrancan dentro de `showAdmin()`, que corre despues de la verificacion 2FA exitosa).
 
 ### Errores de presencia "permission_denied" en RTDB
 
@@ -873,7 +928,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | 10 | Productividad: atajos teclado, duplicar vehiculo, batch ops, export CSV | Completada |
 | 11 | Accesibilidad: ARIA roles, labels, focus styles, live regions | Completada |
 
-### Mejoras aplicadas 2026-04-08 — 2026-04-10
+### Mejoras aplicadas 2026-04-08 — 2026-04-15
 
 | Cambio | Archivos | Descripcion |
 |--------|----------|-------------|
@@ -885,6 +940,8 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | Lucide en todo el admin | 13 archivos | Emojis en actividad, brands, users, reviews, banners, dealers, sort indicators, theme toggle, devices, sesiones → todo Lucide |
 | Seguridad 2FA reforzada | admin-auth.js | Rate limiting 5 intentos/codigo, cooldown 30s reenvio, max 5 reenvios/sesion, auto-unblock 15 min, error diagnostico SMS, proteccion super_admin |
 | Fix reCAPTCHA SMS delivery | admin-auth.js, firebase-config.js | `.render()` explicito para fallback Enterprise→v2, limpieza contenedor DOM, `useDeviceLanguage()` para SMS en espanol, `expired-callback` |
+| **Fix login WebChannel race (REST bypass)** | admin-auth.js | `loadProfileViaREST()` lee `usuarios/{uid}` via `fetch()` a Firestore REST API con `Authorization: Bearer <idToken>`. Elimina el race del WebChannel del SDK Compat. Decoder de campos tipados (`decodeFirestoreFields/Value`) con Timestamp duck-typed. Login instantaneo y 100% estable |
+| **Fix logout 400 en Listen channel** | admin-auth.js | `AP.stopRealtimeSync()` llamado ANTES de `signOut()` en `logoutBtn`, `mobileLogoutBtn`, `handleInactivityTimeout`. Previene que el WebChannel intente refrescar Listen streams con token nulo |
 
 ---
 

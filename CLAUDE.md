@@ -902,6 +902,60 @@ firebase deploy --only database
 - `auth.js`: `saveClientProfile()` misma logica de retry con backoff
 - Ambos verifican que el uid no haya cambiado entre reintentos (guard contra user-changed-mid-flight)
 
+### Cross-tab signOut causa permission-denied en admin panel
+
+**Sintomas**: Al cerrar sesion desde la web publica (no desde el admin panel), aparecian en la consola de la tab del admin panel:
+- `[Solicitudes] Error loading: FirebaseError: Missing or insufficient permissions.`
+- `[Dealers] Error loading: FirebaseError: Missing or insufficient permissions.`
+- `[AuditLog] Error loading: FirebaseError: Missing or insufficient permissions.`
+
+NO ocurria al cerrar sesion desde el propio admin panel.
+
+**Causa**: Firebase Auth usa `Persistence.LOCAL` (compartida entre tabs del mismo navegador). Cuando `signOut()` se ejecuta en la tab de la web publica:
+1. El token de auth se anula en **todas las tabs** via IndexedDB/localStorage
+2. En la tab del admin, el SDK de Firestore detecta el cambio de token
+3. Los listeners `onSnapshot()` activos de `solicitudes`, `concesionarios` y `auditLog` reciben `permission-denied` del servidor (sus reglas requieren `auth != null`)
+4. Esto ocurre **antes** de que `onAuthStateChanged(null)` pueda ejecutar `stopRealtimeSync()` para detener los listeners
+5. Las colecciones con lectura publica (`vehiculos`, `marcas`, `banners`, `resenas`) NO se afectan
+
+**Fix aplicado** (2026-04-16):
+- `admin-appointments.js`, `admin-dealers.js`, `admin-activity.js`: guard `!window.auth.currentUser` en los error callbacks de `onSnapshot`
+- Si el auth es null, el error es esperado (cross-tab signOut) y se silencia
+- El flujo normal de cleanup sigue corriendo via `onAuthStateChanged(null)` → `showLogin()` → `stopRealtimeSync()`
+
+**Archivos modificados**: `admin-appointments.js`, `admin-dealers.js`, `admin-activity.js`
+
+### POST `accounts:signUp` 400 Bad Request al hacer login en web publica
+
+**Sintoma**: Al iniciar sesion con email/password desde la web publica, aparecia en consola:
+```
+POST https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=... 400 (Bad Request)
+```
+
+**Causa**: `handleLogin()` usaba `linkWithCredential()` para intentar "upgrader" la sesion anonima actual al usuario con las credenciales proporcionadas. Para usuarios que YA tenian cuenta (el caso comun), esto fallaba con `auth/credential-already-in-use` y Firebase logueaba un 400 rojo en consola antes de que el fallback a `signInWithEmailAndPassword` corriera. Ademas, para emails mal escritos, `linkWithCredential` creaba silenciosamente una cuenta nueva (foot-gun).
+
+**Fix aplicado** (2026-04-16):
+- `auth.js`: `handleLogin()` ahora usa `signInWithEmailAndPassword()` directamente, sin intentar `linkWithCredential` primero
+- El registro de cuentas nuevas solo ocurre en `handleRegister()` (via `createUserWithEmailAndPassword`)
+- Eliminado el 400 rojo y el riesgo de registro accidental
+
+**Archivos modificados**: `auth.js`
+
+### SW `networkOnly` TypeError en primer page load
+
+**Sintoma**: Al abrir la pagina por primera vez (no con Ctrl+Shift+R), aparecia en consola:
+```
+service-worker.js:133 [SW] Network only failed: TypeError: Failed to fetch
+```
+
+**Causa**: `cache-manager.js` → `fetchDeployVersion()` hace fetch a `deploy-info.json` con `cache: 'no-store'` al cargar la pagina. Este fetch pasa por el Service Worker (ruta `.json` → `networkOnly`). En el primer page load, si la red no esta lista o el SW acaba de instalarse, el fetch falla con TypeError. El caller (`fetchDeployVersion`) maneja el 503 gracefully (retorna `null`), pero el SW logueaba `console.error` (rojo) antes de retornar el fallback.
+
+**Fix aplicado** (2026-04-16):
+- `service-worker.js`: `console.error` → `console.warn` en `networkOnly()` + solo loguea `error.message` en vez del error completo
+- El error ya no aparece en rojo — se muestra como warning amarillo (si aparece)
+
+**Archivos modificados**: `service-worker.js`
+
 ### "Failed to obtain primary lease" en Firestore
 
 **Causa**: Multiples tabs abiertas compiten por el lease de IndexedDB.
@@ -975,6 +1029,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fix logout 400 en Listen channel (web publica)** | auth.js | `vehicleDB.stopRealtime()` llamado ANTES de `signOut()` en `handleLogout()`. `onAuthStateChanged` re-llama `startRealtime()` despues del anonymous sign-in si `vehicleDB.loaded && !_realtimeActive`. Elimina los 400 (POST y GET) en `/Listen/channel` al cerrar sesion en index.html |
 | **Fix permission-denied race en web publica** | favorites-manager.js, auth.js | Retry con backoff (500ms, 1000ms) en `_loadFromFirestore` y `saveClientProfile` cuando el SDK envia reads con token anonimo stale tras `signInWithEmailAndPassword`. Misma causa raiz que el fix REST del admin |
 | **Fix SW networkOnly error noise** | service-worker.js | `console.error` → `console.warn` en `networkOnly()`. El fetch falla en primer page load (cache-manager `fetchDeployVersion`), pero el caller maneja el 503 sin problemas. Evita error rojo en consola |
+| **Fix cross-tab signOut errors en admin** | admin-appointments.js, admin-dealers.js, admin-activity.js | Guard `!auth.currentUser` en error callbacks de `onSnapshot` para solicitudes, concesionarios y auditLog. Cuando el usuario cierra sesion desde la web publica, Firebase Auth LOCAL persistence anula el token en todas las tabs — los listeners del admin reciben permission-denied antes de que `stopRealtimeSync()` pueda correr. El guard silencia estos errores esperados |
 
 ---
 

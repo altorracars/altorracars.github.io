@@ -471,10 +471,16 @@
         // Header: only registered (non-anonymous) users get the avatar UI
         updateHeaderAuthState(user.isAnonymous ? null : user);
 
-        // Per-user data managers sync regardless of anonymous state — every
-        // user (anonymous or registered) gets a private Firestore document.
-        if (window.favoritesManager) window.favoritesManager.setUser(user.uid);
-        if (window.vehicleHistory)   window.vehicleHistory.setUser(user.uid);
+        // Favorites: only for registered users (anonymous → no Firestore writes)
+        if (window.favoritesManager) {
+            if (user.isAnonymous) {
+                window.favoritesManager.clearUser();
+            } else {
+                window.favoritesManager.setUser(user.uid);
+            }
+        }
+        // History: localStorage always, Firestore sync only for registered users
+        if (window.vehicleHistory) window.vehicleHistory.setUser(user.uid, user.isAnonymous);
 
         // If the DB was already loaded but real-time listeners were stopped
         // (e.g. during a logout flow — handleLogout stops them before signOut

@@ -44,10 +44,11 @@ class FavoritesManager {
         this.updateAllCounters();
     }
 
-    _loadFromFirestore() {
+    _loadFromFirestore(retryCount) {
         if (!this._uid || !window.db) return;
         var self = this;
         var uid = this._uid;
+        var attempt = retryCount || 0;
         window.db.collection('clientes').doc(uid).get()
             .then(function (doc) {
                 if (uid !== self._uid) return; // user changed mid-flight
@@ -62,7 +63,20 @@ class FavoritesManager {
                 self._log('Loaded from Firestore:', arr.length);
             })
             .catch(function (err) {
-                console.warn('[Favorites] Error loading from Firestore:', err && err.message);
+                var msg = (err && err.message) || '';
+                // WebChannel race: after signIn the SDK may send this read
+                // with the old (anonymous) auth token before the new token
+                // propagates. Retry once after a short delay.
+                if (attempt < 2 && msg.indexOf('permissions') !== -1) {
+                    var delay = (attempt + 1) * 500;
+                    self._log('Permission denied, retrying in', delay, 'ms (attempt', attempt + 1 + ')');
+                    setTimeout(function () {
+                        if (uid !== self._uid) return;
+                        self._loadFromFirestore(attempt + 1);
+                    }, delay);
+                    return;
+                }
+                console.warn('[Favorites] Error loading from Firestore:', msg);
                 self._loaded = true; // permitir escrituras aunque la lectura falle
             });
     }

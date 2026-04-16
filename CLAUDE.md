@@ -1,7 +1,7 @@
 # CLAUDE.md — Altorra Cars Knowledge Base
 
 > Referencia unica para Claude. Evita reprocesos en parches, errores y mejoras.
-> Ultima actualizacion: 2026-04-16
+> Ultima actualizacion: 2026-04-17
 
 ---
 
@@ -37,7 +37,7 @@
 
 | Archivo | Proposito |
 |---------|-----------|
-| `index.html` | Homepage: hero, vehiculos destacados, marcas, categorias |
+| `index.html` | Homepage: hero, vehiculos destacados, vistos recientemente, marcas, categorias |
 | `busqueda.html` | Catalogo completo con filtros avanzados |
 | `detalle-vehiculo.html` | Template para paginas de vehiculo (usado por generate-vehicles.mjs) |
 | `marca.html` | Pagina individual de marca (carga dinamica por query param o prerendered) |
@@ -86,14 +86,14 @@
 | `contact-forms.js` | Modals: "Vende tu Auto" (wizard 3 pasos) + "Financiacion". Guarda en Firestore `solicitudes` |
 | `contact.js` | Formulario de contacto general |
 | `cache-manager.js` | Cache inteligente de 4 capas (Memory → IndexedDB → localStorage → SW) |
-| `favorites-manager.js` | Gestion de favoritos en localStorage |
+| `favorites-manager.js` | Gestion de favoritos: Firestore para registrados, prompt login para anonimos |
 | `filtros-avanzados.js` | Filtros sidebar: marca, precio, year, km, tipo, categoria |
 | `comparador.js` | Logica del comparador de vehiculos |
 | `cookies.js` | Banner de consentimiento de cookies |
 | `citas.js` | Formulario publico de solicitud de citas |
 | `dynamic-lists.js` | Listados dinamicos de vehiculos por categoria/marca |
 | `featured-week-banner.js` | Banner de vehiculo destacado de la semana |
-| `historial-visitas.js` | Tracking de vehiculos visitados recientemente |
+| `historial-visitas.js` | Historial de vehiculos visitados: localStorage para todos, Firestore sync para registrados |
 | `page-loader.js` | Animacion de carga de pagina |
 | `performance.js` | Lazy loading de imagenes, IntersectionObserver |
 | `reviews.js` | Renderizado publico de resenas |
@@ -956,6 +956,46 @@ service-worker.js:133 [SW] Network only failed: TypeError: Failed to fetch
 
 **Archivos modificados**: `service-worker.js`
 
+### Google sign-in sobreescribia cuentas existentes (email/password o admin)
+
+**Sintomas**: Un usuario se registra con email/password usando `correo@gmail.com`. Luego hace clic en "Continuar con Google" con el mismo Gmail. Firebase auto-vinculaba Google como segundo proveedor sin preguntar. Si el email pertenecia a un admin (`usuarios/{uid}`), se creaba un doc `clientes/{uid}` que interferia con el flujo admin.
+
+**Causa**: Firebase Auth con "One account per email" (configuracion default) auto-vincula proveedores cuando ambos emails estan verificados. El SDK no lanza `auth/account-exists-with-different-credential` cuando ambos emails estan verificados — simplemente agrega el nuevo proveedor al account existente.
+
+El codigo anterior usaba `signInWithPopup` + `linkWithPopup` como fallback, lo que:
+1. Abria popup (bloqueada en muchos navegadores)
+2. Si `linkWithPopup` fallaba → abria SEGUNDA popup con `signInWithPopup` (doble seleccion de cuenta)
+3. No verificaba si el email era de un admin antes de crear doc en `clientes/`
+4. No verificaba si ya existia registro con password
+
+**Fix aplicado** (2026-04-17):
+
+1. **`signInWithRedirect`** en vez de popup: una sola redireccion a Google, sin ventanas emergentes
+2. **`handleGoogleRedirectResult()`** en page load: procesa el resultado del redirect
+3. **Check admin**: verifica `usuarios/{uid}` → si existe, `undoGoogleAndWarn()` + toast
+4. **Check email/password existente**: verifica `user.providerData` por `password` + `google.com` → si ambos, `user.unlink('google.com')` deshace la auto-vinculacion + toast warning
+5. **`handleLogin()` protegido**: verifica `usuarios/{uid}` antes de `saveClientProfile()` — admins que loguean desde web publica no generan doc en `clientes/`
+6. **`auth/account-exists-with-different-credential`** manejado en catch de `getRedirectResult()`
+
+**Archivos modificados**: `auth.js` (`handleGoogle`, `handleGoogleRedirectResult`, `undoGoogleAndWarn`, `handleLogin`, `friendlyError`)
+
+### Acumulacion de cuentas anonimas huerfanas en Firebase Auth
+
+**Sintoma**: Cientos de cuentas `(anonimo)` en Firebase Console → Authentication → Usuarios.
+
+**Causa**: `onAuthStateChanged(null)` llamaba `signInAnonymously()` en TODOS los casos — incluyendo despues de logout explicito. Cada logout de un usuario registrado creaba un anonimo nuevo. Firebase `Persistence.LOCAL` preserva la sesion entre page loads, pero NO entre logouts.
+
+**Fix aplicado** (2026-04-17):
+- `_explicitLogout = true` en `handleLogout()` antes de `signOut()`
+- `onAuthStateChanged(null)` verifica `_explicitLogout`: si true, NO crea anonimo
+- Anonimo solo se crea en primer page load sin sesion previa (comportamiento correcto)
+- Favoritos ahora requieren login (abren modal + toast en vez de Firestore anónimo)
+- Historial usa localStorage para todos, Firestore solo para registrados
+
+**Archivos modificados**: `auth.js`, `favorites-manager.js`, `historial-visitas.js`
+
+**Limpieza manual**: Firebase Console → Authentication → 3 puntos → eliminar cuentas anonimas
+
 ### "Failed to obtain primary lease" en Firestore
 
 **Causa**: Multiples tabs abiertas compiten por el lease de IndexedDB.
@@ -1012,7 +1052,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | 10 | Productividad: atajos teclado, duplicar vehiculo, batch ops, export CSV | Completada |
 | 11 | Accesibilidad: ARIA roles, labels, focus styles, live regions | Completada |
 
-### Mejoras aplicadas 2026-04-08 — 2026-04-16
+### Mejoras aplicadas 2026-04-08 — 2026-04-17
 
 | Cambio | Archivos | Descripcion |
 |--------|----------|-------------|
@@ -1030,6 +1070,14 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fix permission-denied race en web publica** | favorites-manager.js, auth.js | Retry con backoff (500ms, 1000ms) en `_loadFromFirestore` y `saveClientProfile` cuando el SDK envia reads con token anonimo stale tras `signInWithEmailAndPassword`. Misma causa raiz que el fix REST del admin |
 | **Fix SW networkOnly error noise** | service-worker.js | `console.error` → `console.warn` en `networkOnly()`. El fetch falla en primer page load (cache-manager `fetchDeployVersion`), pero el caller maneja el 503 sin problemas. Evita error rojo en consola |
 | **Fix cross-tab signOut errors en admin** | admin-appointments.js, admin-dealers.js, admin-activity.js | Guard `!auth.currentUser` en error callbacks de `onSnapshot` para solicitudes, concesionarios y auditLog. Cuando el usuario cierra sesion desde la web publica, Firebase Auth LOCAL persistence anula el token en todas las tabs — los listeners del admin reciben permission-denied antes de que `stopRealtimeSync()` pueda correr. El guard silencia estos errores esperados |
+| **Fix 404 admin para usuarios publicos** | admin-auth.js | `loadProfileViaREST()` retorna `{ exists: false }` para 404 con `console.info` explicativo. `silentSignOutNonAdmin()` para persistence, `showAccessDenied()` con mensaje claro para login explicito |
+| **Google Sign-In: redirect + proteccion** | auth.js | `signInWithPopup` → `signInWithRedirect` (sin ventana emergente). Proteccion: verifica `usuarios/{uid}` (admin) y `providerData` (email/password existente). Deshace auto-vinculacion con `user.unlink('google.com')`. Elimina doble seleccion de cuenta |
+| **Friendly error Google provider disabled** | auth.js | `auth/operation-not-allowed` en `friendlyError()` → mensaje en español. Requiere habilitar Google en Firebase Console → Authentication → Sign-in method |
+| **Eliminar cuentas anonimas huerfanas** | auth.js | `_explicitLogout` flag: no crea anonimo nuevo al cerrar sesion. Solo `signInAnonymously()` en primer page load sin sesion previa |
+| **Favoritos solo para registrados** | favorites-manager.js, auth.js | `add()`/`toggle()` verifican `_uid`, abren modal login si no hay. `onAuthStateChanged` solo llama `setUser()` para no-anonimos |
+| **Historial localStorage-first** | historial-visitas.js, auth.js | Constructor carga localStorage inmediatamente. Firestore sync solo para registrados. Merge inteligente al loguear. `setUser(uid, isAnonymous)` con flag |
+| **Seccion "Vistos Recientemente"** | index.html, css/historial-visitas.css | Carrusel horizontal en homepage. localStorage-based (sin auth). Cards con imagen, precio, badge oferta. Dark theme, responsive 3 breakpoints. Fade-in, boton limpiar |
+| **Login protege admins** | auth.js | `handleLogin()` verifica `usuarios/{uid}` antes de `saveClientProfile()`. Si es admin, no crea doc en `clientes/` |
 
 ---
 
@@ -1064,9 +1112,16 @@ Los usuarios publicos (clientes) y los administradores usan Firebase Auth, pero 
 
 ### Flujo de login con Google
 
-1. `signInWithPopup(GoogleAuthProvider)` abre popup de Google
-2. Si el usuario no tiene doc en `clientes/{uid}`, se crea automaticamente
-3. Si ya existe, solo actualiza `ultimoAcceso`
+1. `signInWithRedirect(GoogleAuthProvider)` redirige a Google (sin popup)
+2. Al volver, `getRedirectResult()` en `handleGoogleRedirectResult()` procesa el resultado
+3. **Check 1**: Si `usuarios/{uid}` existe → es admin → `undoGoogleAndWarn()` + toast de error
+4. **Check 2**: Si `user.providerData` tiene AMBOS `password` y `google.com` → email ya registrado con contrasena → `user.unlink('google.com')` deshace auto-vinculacion + toast de warning
+5. **Check 3**: Si `auth/account-exists-with-different-credential` → toast warning
+6. Solo si es usuario Google nuevo → `saveClientProfile()` crea doc en `clientes/{uid}`
+
+**Por que redirect en vez de popup**: Popup requiere ventanas emergentes habilitadas (problematico para usuarios no-tecnicos). El flow anterior usaba `linkWithPopup` → fallback `signInWithPopup` que abria DOS ventanas de seleccion de cuenta. Redirect es una sola redireccion a Google.
+
+**Proteccion contra sobreescritura de cuentas**: Firebase con "One account per email" auto-vincula Google al existir email/password con el mismo correo verificado. El sistema detecta la auto-vinculacion (`hasPassword && hasGoogle` en `providerData`) y la deshace con `unlink('google.com')`. Patron usado por Airbnb y MercadoLibre.
 
 ### Coleccion `clientes/{uid}`
 
@@ -1077,8 +1132,8 @@ Los usuarios publicos (clientes) y los administradores usan Firebase Auth, pero 
 | email | string | Correo electronico |
 | prefijo | string | Default "+57" |
 | telefono | string | Opcional |
-| favoritos | array | IDs de vehiculos (sync futuro con localStorage) |
-| vehiculosVistos | array | Historial de vehiculos visitados |
+| favoritos | array | IDs de vehiculos (solo usuarios registrados) |
+| vehiculosVistos | array | Historial sincronizado desde localStorage (solo registrados) |
 | creadoEn | string (ISO) | Fecha de creacion |
 | ultimoAcceso | string (ISO) | Ultimo login |
 
@@ -1110,6 +1165,97 @@ window.AltorraAuth.close()          // Cerrar modal
 window.AltorraAuth.logout()         // Cerrar sesion
 window.AltorraAuth.current()        // Usuario actual o null
 ```
+
+### Politica de Autenticacion Anonima (Best Practice Firebase 2025)
+
+**Referencia**: [Firebase Blog — Best Practices for Anonymous Authentication](https://firebase.blog/posts/2023/07/best-practices-for-anonymous-authentication/)
+
+**Antes**: Cada page load creaba un usuario anonimo via `signInAnonymously()`. Cada logout de un usuario registrado creaba un anonimo nuevo (huerfano). Las cuentas anonimas se acumulaban indefinidamente en Firebase Auth.
+
+**Ahora**: Patron profesional (como Amazon, MercadoLibre, Kavak):
+
+| Accion | Comportamiento |
+|--------|---------------|
+| Primer page load (sin sesion previa) | Crea usuario anonimo |
+| Refresh de pagina | Reutiliza sesion existente (persistence LOCAL) |
+| Logout explicito (`_explicitLogout = true`) | NO crea anonimo nuevo. Limpia UI y mantiene localStorage |
+| Siguiente page load despues de logout | Crea anonimo nuevo (sesion limpia) |
+| Favoritos sin auth | Abre modal de login + toast "Inicia sesion para guardar tus favoritos" |
+
+**Archivos modificados**: `auth.js` (`_explicitLogout` flag, `onAuthStateChanged`), `favorites-manager.js` (`_promptLogin()`)
+
+**Limpieza de anonimos existentes**: Firebase Console → Authentication → 3 puntos → Eliminar cuentas anonimas. La auto-limpieza de 30 dias requiere Identity Platform (upgrade opcional).
+
+### Favoritos — Solo para Usuarios Registrados
+
+**Patron**: Firestore para registrados, prompt de login para visitantes.
+
+- `favorites-manager.js`: `add()` y `toggle()` verifican `_uid`. Si no hay uid, llaman `_promptLogin()` que abre `AltorraAuth.open('login')` + toast
+- `auth.js`: `onAuthStateChanged()` solo llama `favoritesManager.setUser(uid)` para usuarios NO anonimos. Usuarios anonimos reciben `clearUser()`
+- No se escriben documentos `clientes/{uid}` para usuarios anonimos
+
+### Historial de Visitas — localStorage-first
+
+**Patron profesional** (como Amazon, MercadoLibre, Kavak): localStorage para todos, Firestore sync solo para registrados.
+
+| Capa | Disponibilidad | Persistencia |
+|------|---------------|-------------|
+| localStorage (`altorra_vehicle_history`) | Todos los visitantes | Entre sesiones (mismo navegador) |
+| Firestore (`clientes/{uid}.vehiculosVistos`) | Solo registrados | Multi-dispositivo |
+
+**Flujo**:
+1. Constructor carga desde localStorage inmediatamente (sin esperar auth)
+2. `setUser(uid, isAnonymous)`: si registrado → `_loadFromFirestore()` + merge con localStorage
+3. Merge: combina ambas fuentes, deduplica por ID, ordena por timestamp mas reciente
+4. Resultado se persiste en ambos stores (localStorage + Firestore si registrado)
+5. `clearUser()` NO borra localStorage — el historial persiste entre sesiones como en Amazon
+
+**Seccion "Vistos Recientemente" en Homepage** (`index.html`):
+- Carrusel horizontal con scroll suave y flechas de navegacion
+- Se muestra solo si hay historial en localStorage (no requiere auth)
+- Muestra hasta 8 vehiculos con imagen, marca, modelo, ano, km, precio, badge "Oferta"
+- Ubicada entre "Vehiculos Disponibles" y el banner promocional
+- Boton "Limpiar" con animacion fade-out + toast
+- Dark theme completo, responsive 3 breakpoints
+- CSS en `css/historial-visitas.css` (seccion `.recently-viewed-section`)
+
+### Proteccion de Cuentas Admin en Web Publica
+
+**Problema resuelto**: Un usuario que se registra con Google desde la web publica usando el mismo email de un admin podia sobreescribir la cuenta admin.
+
+**Protecciones implementadas**:
+
+| Flujo | Proteccion |
+|-------|-----------|
+| Google sign-in con email de admin | `handleGoogleRedirectResult()` verifica `usuarios/{uid}` → `undoGoogleAndWarn()` |
+| Google sign-in con email ya registrado (password) | Detecta `password + google.com` en `providerData` → `user.unlink('google.com')` → warning |
+| Login email/password de admin desde web publica | `handleLogin()` verifica `usuarios/{uid}` → NO crea doc en `clientes/` |
+| `auth/account-exists-with-different-credential` | Toast amigable en español |
+
+**Admin panel**: `loadProfileViaREST()` ya rechaza usuarios sin doc en `usuarios/{uid}`:
+- Si llega por persistence (no login explicito): `silentSignOutNonAdmin()` (sin error visible)
+- Si intenta loguear en formulario admin: `showAccessDenied()` con mensaje claro
+- El 404 REST es esperado y logueado como `console.info`
+
+### Recuperacion de Cuenta super_admin (Procedimiento Manual)
+
+Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Firebase Console):
+
+1. **Firebase Console → Authentication → Agregar usuario**: crear con email y password
+2. **Copiar el UID** generado por Firebase
+3. **Firestore → coleccion `usuarios` → Agregar documento** con el UID copiado como ID
+4. Campos requeridos:
+   - `uid` (string): mismo UID
+   - `email` (string): el correo
+   - `nombre` (string): nombre del admin
+   - `rol` (string): `super_admin`
+   - `estado` (string): `activo`
+   - `bloqueado` (boolean): `false`
+   - `habilitado2FA` (boolean): `false`
+   - `creadoEn` (timestamp): fecha actual
+5. Probar login en `admin.html`
+
+> **IMPORTANTE**: Las Cloud Functions (`createManagedUserV2`, etc.) requieren un super_admin existente para crear otros usuarios. Si se pierde el unico super_admin, solo se puede recuperar manualmente desde Firebase Console.
 
 ---
 

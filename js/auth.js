@@ -15,6 +15,7 @@
     // ── Estado ──────────────────────────────────────────────
     var _modalLoaded = false;
     var _currentUser = null;
+    var _explicitLogout = false; // true when user explicitly logs out
 
     // ── Helpers de UI ───────────────────────────────────────
     function $id(id) { return document.getElementById(id); }
@@ -410,16 +411,18 @@
     }
 
     // ── Cerrar sesión ────────────────────────────────────────
-    // Sign out the registered user. Auth state listener will then auto
-    // re-sign-in anonymously so the header still has a backing uid for
-    // Firestore writes (favoritos / historial).
+    // Sign out the registered user. After explicit logout we do NOT
+    // create a new anonymous account — this prevents orphaned anonymous
+    // accounts from accumulating in Firebase Auth. The user can still
+    // browse the site (public reads don't need auth). If they interact
+    // with a feature that needs auth (favorites, history), they'll be
+    // prompted to log in or register.
     function handleLogout() {
+        _explicitLogout = true;
         // Stop Firestore real-time listeners BEFORE signOut to prevent the
         // WebChannel from trying to refresh its Listen streams with a null
         // auth token, which causes a 400 Bad Request error on
-        // firestore.googleapis.com/.../Listen/channel. The listeners will
-        // be restarted from onAuthStateChanged() once the anonymous user
-        // is signed in. Same pattern as admin-auth.js logout.
+        // firestore.googleapis.com/.../Listen/channel.
         if (window.vehicleDB && typeof window.vehicleDB.stopRealtime === 'function') {
             window.vehicleDB.stopRealtime();
         }
@@ -431,19 +434,34 @@
     }
 
     // ── Auth state change → actualizar header + datos per-user ─
-    // Treats anonymous users as "logged out" for the header UI, but still
-    // syncs FavoritesManager / VehicleHistory so anonymous users get their
-    // own private Firestore-backed data (no localStorage).
+    // Best practice (Firebase blog): only create anonymous accounts on
+    // first visit. After explicit logout, do NOT create a new anonymous
+    // account — this prevents orphaned anonymous accounts from
+    // accumulating. See: firebase.blog/posts/2023/07/best-practices-for-anonymous-authentication
     function onAuthStateChanged(user) {
         _currentUser = user;
 
-        // No user at all → sign in anonymously so we always have a uid for
-        // per-user data. The recursive onAuthStateChanged call will then
-        // route through the anonymous branch below.
         if (!user) {
             updateHeaderAuthState(null);
             if (window.favoritesManager) window.favoritesManager.clearUser();
             if (window.vehicleHistory)   window.vehicleHistory.clearUser();
+
+            // Only sign in anonymously on first visit (no prior session).
+            // After explicit logout, skip — the user can browse without auth
+            // (public reads don't need it) and will get a fresh anonymous
+            // session on next page load if needed.
+            if (_explicitLogout) {
+                _explicitLogout = false;
+                // Restart realtime listeners without auth (public reads)
+                if (window.vehicleDB
+                    && window.vehicleDB.loaded
+                    && !window.vehicleDB._realtimeActive
+                    && typeof window.vehicleDB.startRealtime === 'function') {
+                    window.vehicleDB.startRealtime();
+                }
+                return;
+            }
+
             window.auth.signInAnonymously().catch(function (err) {
                 console.warn('[Auth] Anonymous sign-in failed:', err && err.message);
             });

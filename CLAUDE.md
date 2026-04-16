@@ -1,7 +1,7 @@
 # CLAUDE.md — Altorra Cars Knowledge Base
 
 > Referencia unica para Claude. Evita reprocesos en parches, errores y mejoras.
-> Ultima actualizacion: 2026-04-15
+> Ultima actualizacion: 2026-04-16
 
 ---
 
@@ -889,6 +889,19 @@ firebase deploy --only database
 
 **Requiere deploy manual**: `firebase deploy --only database`
 
+### Permission-denied en favoritos y perfil cliente al hacer login en web publica
+
+**Sintomas**: Al iniciar sesion con un usuario registrado (email/password) desde la web publica, aparecian en consola:
+- `[Favorites] Error loading from Firestore: Missing or insufficient permissions.`
+- `[Auth] Error guardando perfil cliente: Missing or insufficient permissions.`
+
+**Causa**: Misma race condition del WebChannel que afectaba al admin panel. Cuando `signInWithEmailAndPassword` resuelve, `onAuthStateChanged` dispara inmediatamente y llama a `favoritesManager.setUser()` + `saveClientProfile()`. El SDK envia esos reads/writes por el WebChannel que aun tiene el token anonimo — Firestore evalua `request.auth.uid == uid` con el uid anonimo viejo y rechaza.
+
+**Fix aplicado** (2026-04-16):
+- `favorites-manager.js`: `_loadFromFirestore()` reintenta hasta 2 veces con backoff (500ms, 1000ms) cuando detecta error de permisos
+- `auth.js`: `saveClientProfile()` misma logica de retry con backoff
+- Ambos verifican que el uid no haya cambiado entre reintentos (guard contra user-changed-mid-flight)
+
 ### "Failed to obtain primary lease" en Firestore
 
 **Causa**: Multiples tabs abiertas compiten por el lease de IndexedDB.
@@ -945,7 +958,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | 10 | Productividad: atajos teclado, duplicar vehiculo, batch ops, export CSV | Completada |
 | 11 | Accesibilidad: ARIA roles, labels, focus styles, live regions | Completada |
 
-### Mejoras aplicadas 2026-04-08 — 2026-04-15
+### Mejoras aplicadas 2026-04-08 — 2026-04-16
 
 | Cambio | Archivos | Descripcion |
 |--------|----------|-------------|
@@ -960,6 +973,8 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fix login WebChannel race (REST bypass)** | admin-auth.js | `loadProfileViaREST()` lee `usuarios/{uid}` via `fetch()` a Firestore REST API con `Authorization: Bearer <idToken>`. Elimina el race del WebChannel del SDK Compat. Decoder de campos tipados (`decodeFirestoreFields/Value`) con Timestamp duck-typed. Login instantaneo y 100% estable |
 | **Fix logout 400 en Listen channel (admin)** | admin-auth.js | `AP.stopRealtimeSync()` llamado ANTES de `signOut()` en `logoutBtn`, `mobileLogoutBtn`, `handleInactivityTimeout`. Previene que el WebChannel intente refrescar Listen streams con token nulo |
 | **Fix logout 400 en Listen channel (web publica)** | auth.js | `vehicleDB.stopRealtime()` llamado ANTES de `signOut()` en `handleLogout()`. `onAuthStateChanged` re-llama `startRealtime()` despues del anonymous sign-in si `vehicleDB.loaded && !_realtimeActive`. Elimina los 400 (POST y GET) en `/Listen/channel` al cerrar sesion en index.html |
+| **Fix permission-denied race en web publica** | favorites-manager.js, auth.js | Retry con backoff (500ms, 1000ms) en `_loadFromFirestore` y `saveClientProfile` cuando el SDK envia reads con token anonimo stale tras `signInWithEmailAndPassword`. Misma causa raiz que el fix REST del admin |
+| **Fix SW networkOnly error noise** | service-worker.js | `console.error` → `console.warn` en `networkOnly()`. El fetch falla en primer page load (cache-manager `fetchDeployVersion`), pero el caller maneja el 503 sin problemas. Evita error rojo en consola |
 
 ---
 

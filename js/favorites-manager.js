@@ -119,6 +119,7 @@ class FavoritesManager {
     }
 
     add(vehicleId) {
+        if (!this._uid) { this._promptLogin(); return false; }
         var id = String(vehicleId);
         if (this._favorites.indexOf(id) !== -1) return false;
         this._favorites.push(id);
@@ -132,16 +133,27 @@ class FavoritesManager {
         var idx = this._favorites.indexOf(id);
         if (idx === -1) return false;
         this._favorites.splice(idx, 1);
-        this._debouncedSync();
+        if (this._uid) this._debouncedSync();
         this._dispatchEvent('removed', id);
         return true;
     }
 
     toggle(vehicleId) {
+        if (!this._uid) { this._promptLogin(); return false; }
         var id = String(vehicleId);
         if (this.has(id)) { this.remove(id); return false; }
         this.add(id);
         return true;
+    }
+
+    // Prompt user to log in when trying to use favorites without auth
+    _promptLogin() {
+        if (window.AltorraAuth) {
+            window.AltorraAuth.open('login');
+        }
+        if (typeof showToast === 'function') {
+            showToast('Inicia sesión para guardar tus favoritos.', 'info');
+        }
     }
 
     clear() {

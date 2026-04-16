@@ -87,6 +87,8 @@
                 renderAuditTable();
                 updateAuditUserFilter();
             }, function(err) {
+                // Cross-tab signOut: auth goes null before stopRealtimeSync runs — expected, not an error
+                if (!window.auth || !window.auth.currentUser) { renderActivityFeedFallback(); return; }
                 console.warn('[AuditLog] Error loading:', err);
                 renderActivityFeedFallback();
             });

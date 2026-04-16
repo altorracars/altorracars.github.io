@@ -30,6 +30,8 @@
             renderPropiosTab();
             if (AP.renderSalesTracking) AP.renderSalesTracking();
         }, function(err) {
+            // Cross-tab signOut: auth goes null before stopRealtimeSync runs — expected, not an error
+            if (!window.auth || !window.auth.currentUser) return;
             console.warn('[Dealers] Error loading:', err);
         });
     }

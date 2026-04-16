@@ -473,6 +473,33 @@
         </div>
     </section>
 
+    <!-- Vistos Recientemente (localStorage, sin auth) -->
+    <section class="recently-viewed-section" id="recentlyViewedSection" style="display:none;" aria-label="Vehículos vistos recientemente">
+        <div class="container">
+            <div class="rv-header">
+                <div class="rv-header-left">
+                    <svg class="rv-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                    </svg>
+                    <h2 class="rv-title">Vistos <span class="highlight">Recientemente</span></h2>
+                </div>
+                <button class="rv-clear-btn" id="rvClearBtn" type="button" aria-label="Limpiar historial">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3,6 5,6 21,6"/>
+                        <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"/>
+                    </svg>
+                    Limpiar
+                </button>
+            </div>
+            <div class="rv-carousel-wrapper">
+                <button class="rv-arrow rv-arrow--prev" id="rvPrev" type="button" aria-label="Anterior">&#8249;</button>
+                <div class="rv-track" id="rvTrack"></div>
+                <button class="rv-arrow rv-arrow--next" id="rvNext" type="button" aria-label="Siguiente">&#8250;</button>
+            </div>
+        </div>
+    </section>
+
     <!-- Promotional Banner Slot (loaded from admin) -->
     <section class="promo-banner-section" id="promoBannerSection" style="display:none;">
         <div class="promo-banner-wrapper" id="promoBannerWrapper"></div>
@@ -969,20 +996,91 @@
     <script src="js/main.js" defer></script>
     <script src="js/comparador.js" defer></script>
     <script src="js/reviews.js" defer></script>
+    <script src="js/historial-visitas.js" defer></script>
     <script src="js/performance.js" defer></script>
 
-    <!-- Initialize Testimonials -->
+    <!-- Initialize Testimonials + Recently Viewed -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', function() {
             if (typeof reviewsSystem !== 'undefined') {
                 reviewsSystem.renderTestimonialsSection('testimonials-section');
             }
-            // Reveal testimonials after styles loaded
             var testSec = document.getElementById('testimonials-section');
             if (testSec) {
                 requestAnimationFrame(function() { testSec.classList.add('loaded'); });
             }
+            // Recently Viewed section (localStorage-based, no auth needed)
+            initRecentlyViewed();
         });
+
+        function initRecentlyViewed() {
+            var section = document.getElementById('recentlyViewedSection');
+            var track   = document.getElementById('rvTrack');
+            if (!section || !track || typeof vehicleHistory === 'undefined') return;
+            if (!vehicleHistory.hasHistory()) return;
+
+            // Wait for vehicleDB to load
+            var waitForDB = setInterval(function() {
+                if (typeof vehicleDB !== 'undefined' && vehicleDB.loaded) {
+                    clearInterval(waitForDB);
+                    renderRecentlyViewed(section, track);
+                }
+            }, 200);
+            // Timeout after 8s
+            setTimeout(function() { clearInterval(waitForDB); }, 8000);
+        }
+
+        function renderRecentlyViewed(section, track) {
+            var ids = vehicleHistory.getHistoryIds().slice(0, 8);
+            var vehicles = ids.map(function(id) { return vehicleDB.getVehicleById(id); }).filter(Boolean);
+            if (vehicles.length === 0) return;
+
+            track.innerHTML = vehicles.map(function(v) {
+                var price = v.precioOferta || v.precio;
+                var priceStr = new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', minimumFractionDigits:0 }).format(price);
+                var url = typeof getVehicleDetailUrl === 'function' ? getVehicleDetailUrl(v) : '#';
+                var hasOffer = v.precioOferta && v.precioOferta < v.precio;
+                return '' +
+                    '<a href="' + url + '" class="rv-card">' +
+                        '<div class="rv-card-img">' +
+                            '<img src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" ' +
+                                 'alt="' + v.marca + ' ' + v.modelo + '" loading="lazy" ' +
+                                 'onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">' +
+                            (hasOffer ? '<span class="rv-badge-offer">Oferta</span>' : '') +
+                        '</div>' +
+                        '<div class="rv-card-body">' +
+                            '<p class="rv-card-name">' + v.marca + ' ' + v.modelo + '</p>' +
+                            '<span class="rv-card-year">' + v.year + ' &middot; ' + (v.kilometraje ? new Intl.NumberFormat('es-CO').format(v.kilometraje) + ' km' : v.tipo) + '</span>' +
+                            '<span class="rv-card-price">' + priceStr + '</span>' +
+                        '</div>' +
+                    '</a>';
+            }).join('');
+
+            section.style.display = '';
+            section.style.opacity = '0';
+            requestAnimationFrame(function() {
+                section.style.transition = 'opacity 0.4s ease';
+                section.style.opacity = '1';
+            });
+
+            // Carousel arrows
+            var prev = document.getElementById('rvPrev');
+            var next = document.getElementById('rvNext');
+            if (prev) prev.addEventListener('click', function() { track.scrollBy({ left: -280, behavior: 'smooth' }); });
+            if (next) next.addEventListener('click', function() { track.scrollBy({ left: 280, behavior: 'smooth' }); });
+
+            // Clear button
+            var clearBtn = document.getElementById('rvClearBtn');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    vehicleHistory.clearHistory();
+                    section.style.transition = 'opacity 0.3s ease';
+                    section.style.opacity = '0';
+                    setTimeout(function() { section.style.display = 'none'; }, 300);
+                    if (typeof showToast === 'function') showToast('Historial limpiado.', 'info');
+                });
+            }
+        }
     </script>
 
     <!-- Cookie Consent -->

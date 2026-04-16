@@ -72,7 +72,7 @@
             case 'auth/popup-blocked':
                 return 'Tu navegador bloqueó la ventana emergente. Permite ventanas emergentes para este sitio.';
             case 'auth/account-exists-with-different-credential':
-                return 'Ya existe una cuenta con ese correo usando otro método de acceso.';
+                return 'Este correo ya está registrado con otro método. Inicia sesión con tu contraseña.';
             case 'auth/operation-not-allowed':
                 return 'El inicio de sesión con Google no está disponible en este momento. Por favor, usa correo y contraseña.';
             default:
@@ -380,24 +380,35 @@
 
             var user = result.user;
 
-            // SECURITY: check if this email belongs to an admin account.
-            // Admin accounts live in `usuarios/{uid}` — public users in `clientes/{uid}`.
-            // If someone signs in with Google using an admin email, we must NOT
-            // create a clientes doc or let them in as a public user.
+            // ── Check 1: Admin account protection ──────────────
+            // Admin accounts live in `usuarios/{uid}`. If someone signs in
+            // with Google using an admin email, reject immediately.
             return window.db.collection('usuarios').doc(user.uid).get()
                 .then(function (doc) {
                     if (doc.exists) {
-                        // This is an admin account — sign out from public web
-                        if (window.vehicleDB && typeof window.vehicleDB.stopRealtime === 'function') {
-                            window.vehicleDB.stopRealtime();
-                        }
-                        return window.auth.signOut().then(function () {
-                            if (typeof showToast === 'function') {
-                                showToast('Esta cuenta es de administrador. Usa el panel de administración para ingresar.', 'warn');
-                            }
-                        });
+                        return undoGoogleAndWarn(user, 'Esta cuenta es de administrador. Usa el panel de administración para ingresar.');
                     }
-                    // Normal public user — save/update client profile
+
+                    // ── Check 2: Existing email/password account ───────
+                    // When Firebase "One account per email" is enabled and
+                    // both emails are verified, Google sign-in auto-links
+                    // the Google provider to the existing email/password
+                    // account WITHOUT asking. We detect this by checking
+                    // if the user now has BOTH 'password' and 'google.com'
+                    // providers. If so, undo the auto-link and warn.
+                    // This is how Airbnb / MercadoLibre handle it.
+                    var hasPassword = false;
+                    var hasGoogle = false;
+                    (user.providerData || []).forEach(function (p) {
+                        if (p.providerId === 'password') hasPassword = true;
+                        if (p.providerId === 'google.com') hasGoogle = true;
+                    });
+
+                    if (hasPassword && hasGoogle) {
+                        return undoGoogleAndWarn(user, 'Este correo ya está registrado con contraseña. Inicia sesión con tu correo y contraseña, o usa "¿Olvidaste tu contraseña?" para recuperarla.');
+                    }
+
+                    // ── All clear: new Google-only user ────────────────
                     return saveClientProfile(user.uid, {
                         nombre: user.displayName || '',
                         email: user.email || ''
@@ -406,21 +417,32 @@
                     });
                 })
                 .catch(function (err) {
-                    console.warn('[Auth] Error checking admin status after Google sign-in:', err && err.message);
-                    // On error checking admin, still save client profile (fail-open for UX)
-                    return saveClientProfile(user.uid, {
-                        nombre: user.displayName || '',
-                        email: user.email || ''
-                    });
+                    console.warn('[Auth] Error in Google redirect handler:', err && err.message);
                 });
         }).catch(function (err) {
-            if (!err || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
-            var msg = friendlyError(err);
-            if (msg) {
+            if (!err) return;
+            // Handle the case where Firebase blocks the sign-in entirely
+            // (email exists with different provider, unverified email, etc.)
+            if (err.code === 'auth/account-exists-with-different-credential') {
                 if (typeof showToast === 'function') {
-                    showToast(msg, 'error');
+                    showToast('Este correo ya está registrado con otro método. Inicia sesión con tu contraseña.', 'warn');
                 }
+                return;
             }
+            if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
+            var msg = friendlyError(err);
+            if (msg && typeof showToast === 'function') showToast(msg, 'error');
+        });
+    }
+
+    // Undo Firebase auto-linking of Google provider + warn user
+    function undoGoogleAndWarn(user, message) {
+        // Try to unlink Google provider to undo the auto-link
+        var unlinkPromise = user.unlink('google.com').catch(function (e) {
+            console.warn('[Auth] Could not unlink Google provider:', e && e.message);
+        });
+        return unlinkPromise.then(function () {
+            if (typeof showToast === 'function') showToast(message, 'warn');
         });
     }
 

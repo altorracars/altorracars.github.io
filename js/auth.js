@@ -72,6 +72,8 @@
                 return 'Tu navegador bloqueó la ventana emergente. Permite ventanas emergentes para este sitio.';
             case 'auth/account-exists-with-different-credential':
                 return 'Ya existe una cuenta con ese correo usando otro método de acceso.';
+            case 'auth/operation-not-allowed':
+                return 'El inicio de sesión con Google no está disponible en este momento. Por favor, usa correo y contraseña.';
             default:
                 return err && err.message ? err.message : 'Ocurrió un error inesperado.';
         }

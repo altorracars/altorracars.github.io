@@ -1053,7 +1053,10 @@
             })
             .then(function(resp) {
                 if (resp.status === 404) {
-                    // Doc doesn't exist (no admin profile)
+                    // Doc doesn't exist — this user has no admin profile.
+                    // Expected for public users (clientes) who try to access admin.html.
+                    // The 404 in the browser console is normal and handled gracefully.
+                    console.info('[Auth] No admin profile found for this user (usuarios/' + authUser.uid + ' does not exist). This is expected for public users.');
                     return { exists: false, data: null };
                 }
                 if (resp.status === 401 || resp.status === 403) {
@@ -1098,7 +1101,7 @@
                         silentSignOutNonAdmin();
                         return;
                     }
-                    showAccessDenied(authUser.email, authUser.uid, 'No tienes perfil administrativo asignado. Un Super Admin debe crearlo.');
+                    showAccessDenied(authUser.email, authUser.uid, 'Esta cuenta es de usuario publico y no tiene acceso al panel de administracion.\nSi necesitas acceso, contacta al Super Admin para que te asigne un perfil administrativo.');
                     return;
                 }
 

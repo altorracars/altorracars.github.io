@@ -1,55 +1,107 @@
 // ============================================
 // HISTORIAL DE VEHÍCULOS VISITADOS - ALTORRA CARS
-// Firestore-only. Cada usuario (anonimo o registrado) tiene su propia
-// lista privada en `clientes/{uid}.vehiculosVistos`.
+//
+// Patrón profesional (como Amazon, MercadoLibre, Kavak):
+// - localStorage para TODOS los visitantes (funciona sin auth)
+// - Firestore sync solo para usuarios REGISTRADOS (no anónimos)
+// - Al registrarse/loguear: merge localStorage → Firestore
+// - Al cerrar sesión: datos locales persisten en localStorage
 // ============================================
 
 class VehicleHistory {
     constructor() {
         this.maxItems = 12;
+        this.STORAGE_KEY = 'altorra_vehicle_history';
         this._uid = null;
+        this._isRegistered = false; // true only for non-anonymous users
         this._history = [];          // [{id, timestamp}]
         this._loaded = false;
         this._syncTimeout = null;
-        this._pendingTrack = false;  // si trackCurrentVehicle se llamo antes de setUser
+        this._pendingTrack = false;
+
+        // Load from localStorage immediately (available before auth)
+        this._loadFromLocalStorage();
     }
 
     // ── Vinculacion con usuario ──────────────────────────────
-    setUser(uid) {
+    // Called from auth.js on auth state change.
+    // For registered users: merge local history with Firestore.
+    // For anonymous/null: just use localStorage.
+    setUser(uid, isAnonymous) {
         if (!uid) { this.clearUser(); return; }
-        if (this._uid === uid && this._loaded) {
-            this._maybeTrackCurrent();
-            return;
-        }
+
+        var wasRegistered = this._isRegistered;
         this._uid = uid;
-        this._loaded = false;
-        this._history = [];
-        this._loadFromFirestore();
+        this._isRegistered = !isAnonymous;
+
+        if (this._isRegistered) {
+            // Registered user: load from Firestore and merge with localStorage
+            this._loadFromFirestore();
+        } else {
+            // Anonymous: just use localStorage (already loaded in constructor)
+            this._loaded = true;
+            this._maybeTrackCurrent();
+        }
     }
 
     clearUser() {
         if (this._syncTimeout) { clearTimeout(this._syncTimeout); this._syncTimeout = null; }
         this._uid = null;
-        this._history = [];
-        this._loaded = false;
+        this._isRegistered = false;
+        // Keep localStorage data — history persists across sessions
+        // just like Amazon/MercadoLibre do it
     }
 
-    _loadFromFirestore() {
-        if (!this._uid || !window.db) return;
-        var self = this;
-        var uid = this._uid;
-        window.db.collection('clientes').doc(uid).get()
-            .then(function (doc) {
-                if (uid !== self._uid) return;
-                var arr = [];
-                if (doc.exists && Array.isArray(doc.data().vehiculosVistos)) {
-                    arr = doc.data().vehiculosVistos.slice(0, self.maxItems).map(function (item) {
+    // ── localStorage (always available) ─────────────────────
+    _loadFromLocalStorage() {
+        try {
+            var raw = localStorage.getItem(this.STORAGE_KEY);
+            if (raw) {
+                var parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    this._history = parsed.slice(0, this.maxItems).map(function (item) {
                         return typeof item === 'object' && item !== null
                             ? { id: String(item.id), timestamp: item.timestamp || Date.now() }
                             : { id: String(item), timestamp: Date.now() };
                     });
                 }
-                self._history = arr;
+            }
+        } catch (e) {
+            // Corrupted data — start fresh
+            this._history = [];
+        }
+        this._loaded = true;
+    }
+
+    _saveToLocalStorage() {
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this._history.slice(0, this.maxItems)));
+        } catch (e) {
+            // localStorage full or unavailable — silent fail
+        }
+    }
+
+    // ── Firestore (registered users only) ───────────────────
+    _loadFromFirestore() {
+        if (!this._uid || !this._isRegistered || !window.db) {
+            this._maybeTrackCurrent();
+            return;
+        }
+        var self = this;
+        var uid = this._uid;
+        window.db.collection('clientes').doc(uid).get()
+            .then(function (doc) {
+                if (uid !== self._uid) return;
+                var firestoreHistory = [];
+                if (doc.exists && Array.isArray(doc.data().vehiculosVistos)) {
+                    firestoreHistory = doc.data().vehiculosVistos.slice(0, self.maxItems).map(function (item) {
+                        return typeof item === 'object' && item !== null
+                            ? { id: String(item.id), timestamp: item.timestamp || Date.now() }
+                            : { id: String(item), timestamp: Date.now() };
+                    });
+                }
+                // Merge: combine localStorage + Firestore, deduplicate, sort by newest
+                self._mergeHistory(firestoreHistory);
                 self._loaded = true;
                 self._maybeTrackCurrent();
             })
@@ -60,8 +112,27 @@ class VehicleHistory {
             });
     }
 
+    _mergeHistory(firestoreHistory) {
+        var merged = {};
+        // localStorage items first
+        this._history.forEach(function (item) { merged[item.id] = item; });
+        // Firestore items (keep the one with the latest timestamp)
+        firestoreHistory.forEach(function (item) {
+            if (!merged[item.id] || item.timestamp > merged[item.id].timestamp) {
+                merged[item.id] = item;
+            }
+        });
+        // Sort by timestamp descending (newest first)
+        var keys = Object.keys(merged);
+        keys.sort(function (a, b) { return merged[b].timestamp - merged[a].timestamp; });
+        this._history = keys.slice(0, this.maxItems).map(function (k) { return merged[k]; });
+        // Persist merged result to both stores
+        this._saveToLocalStorage();
+        if (this._isRegistered) this._syncToFirestore();
+    }
+
     _syncToFirestore() {
-        if (!this._uid || !window.db) return;
+        if (!this._uid || !this._isRegistered || !window.db) return;
         var uid = this._uid;
         var hist = this._history.slice(0, this.maxItems);
         window.db.collection('clientes').doc(uid).set({
@@ -74,24 +145,22 @@ class VehicleHistory {
     }
 
     _debouncedSync() {
-        if (!this._uid) return;
         if (this._syncTimeout) clearTimeout(this._syncTimeout);
         var self = this;
         this._syncTimeout = setTimeout(function () {
-            self._syncToFirestore();
+            self._saveToLocalStorage();
+            if (self._isRegistered) self._syncToFirestore();
         }, 1500);
     }
 
     // ── Tracking ─────────────────────────────────────────────
-    // En paginas de detalle, registra el vehiculo actual una vez que el
-    // usuario (anonimo o registrado) este disponible.
     trackCurrentVehicle() {
         this._pendingTrack = true;
         this._maybeTrackCurrent();
     }
 
     _maybeTrackCurrent() {
-        if (!this._pendingTrack || !this._loaded || !this._uid) return;
+        if (!this._pendingTrack || !this._loaded) return;
         if (window.location.pathname.indexOf('detalle-vehiculo') === -1) {
             this._pendingTrack = false;
             return;
@@ -105,9 +174,7 @@ class VehicleHistory {
     addToHistory(vehicleId) {
         var id = String(vehicleId);
         var timestamp = Date.now();
-        // Quitar duplicado
         this._history = this._history.filter(function (item) { return String(item.id) !== id; });
-        // Insertar al inicio
         this._history.unshift({ id: id, timestamp: timestamp });
         if (this._history.length > this.maxItems) {
             this._history = this._history.slice(0, this.maxItems);
@@ -122,7 +189,8 @@ class VehicleHistory {
 
     clearHistory() {
         this._history = [];
-        this._debouncedSync();
+        this._saveToLocalStorage();
+        if (this._isRegistered) this._syncToFirestore();
     }
 
     removeFromHistory(vehicleId) {
@@ -240,30 +308,24 @@ class VehicleHistory {
             '</div>';
 
         document.body.appendChild(widget);
-        this.attachWidgetListeners();
-        this.updateWidget();
-    }
 
-    attachWidgetListeners() {
         var self = this;
-        var toggle = document.getElementById('historyWidgetToggle');
-        var clear = document.getElementById('historyWidgetClear');
-        var widget = document.getElementById('history-widget');
-
-        if (toggle) {
-            toggle.addEventListener('click', function () {
+        var toggleBtn = document.getElementById('historyWidgetToggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function () {
                 widget.classList.toggle('open');
                 if (widget.classList.contains('open')) self.updateWidget();
             });
         }
-        if (clear) {
-            clear.addEventListener('click', function () {
+
+        var clearBtn = document.getElementById('historyWidgetClear');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
                 self.clearHistory();
                 widget.classList.remove('open');
-                widget.remove();
-                if (typeof toast !== 'undefined') toast.info('Historial limpiado');
             });
         }
+
         document.addEventListener('click', function (e) {
             if (widget && !widget.contains(e.target)) widget.classList.remove('open');
         });
@@ -271,8 +333,6 @@ class VehicleHistory {
 
     async updateWidget() {
         var list = document.getElementById('historyWidgetList');
-        var countEl = document.querySelector('.history-widget-count');
-        if (countEl) countEl.textContent = this.getCount();
         if (!list) return;
 
         if (!this.hasHistory()) {
@@ -280,11 +340,11 @@ class VehicleHistory {
             return;
         }
 
-        await vehicleDB.load();
-        var historyIds = this.getHistoryIds().slice(0, 5);
+        if (typeof vehicleDB !== 'undefined') await vehicleDB.load();
+
         var self = this;
-        var vehicles = historyIds
-            .map(function (id) { return vehicleDB.getVehicleById(id); })
+        var vehicles = this.getHistoryIds().slice(0, 5)
+            .map(function (id) { return typeof vehicleDB !== 'undefined' ? vehicleDB.getVehicleById(id) : null; })
             .filter(function (v) { return v; });
 
         list.innerHTML = vehicles.map(function (v) {
@@ -322,8 +382,8 @@ if (typeof window !== 'undefined') {
     window.vehicleHistory = vehicleHistory;
 }
 
-// En paginas de detalle, marcar como pendiente. setUser() del auth listener
-// disparara el tracking real una vez que la cache de Firestore este lista.
+// En paginas de detalle, marcar como pendiente. Si no hay auth,
+// localStorage ya esta disponible y trackea inmediatamente.
 if (typeof window !== 'undefined' && window.location.pathname.indexOf('detalle-vehiculo') !== -1) {
     vehicleHistory.trackCurrentVehicle();
 }

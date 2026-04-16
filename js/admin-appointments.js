@@ -66,6 +66,8 @@
             var badge = $('navBadgeAppointments');
             if (badge) badge.textContent = pending > 0 ? pending : '';
         }, function(err) {
+            // Cross-tab signOut: auth goes null before stopRealtimeSync runs — expected, not an error
+            if (!window.auth || !window.auth.currentUser) return;
             console.warn('[Solicitudes] Error loading:', err);
         });
     }

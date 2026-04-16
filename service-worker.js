@@ -130,7 +130,7 @@ async function networkOnly(request) {
     try {
         return await fetch(request, { cache: 'no-store' });
     } catch (error) {
-        console.error('[SW] Network only failed:', error);
+        console.warn('[SW] Network only failed:', error.message || error);
         return new Response('Network error', { status: 503 });
     }
 }

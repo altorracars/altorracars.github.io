@@ -304,8 +304,12 @@
     }
 
     // ── Guardar perfil en Firestore clientes/{uid} ────────
-    function saveClientProfile(uid, data) {
+    // Includes retry logic for the WebChannel race condition: right after
+    // signIn the SDK may send this request with the old (anonymous) auth
+    // token before the new token propagates through the WebChannel.
+    function saveClientProfile(uid, data, retryCount) {
         if (!window.db) return Promise.resolve();
+        var attempt = retryCount || 0;
         var docRef = window.db.collection('clientes').doc(uid);
         return docRef.get().then(function (snap) {
             if (snap.exists) {
@@ -325,6 +329,16 @@
                 ultimoAcceso: new Date().toISOString()
             });
         }).catch(function (err) {
+            var msg = (err && err.message) || '';
+            if (attempt < 2 && msg.indexOf('permissions') !== -1) {
+                var delay = (attempt + 1) * 500;
+                console.log('[Auth] saveClientProfile permission denied, retrying in', delay, 'ms');
+                return new Promise(function (resolve) {
+                    setTimeout(function () {
+                        resolve(saveClientProfile(uid, data, attempt + 1));
+                    }, delay);
+                });
+            }
             console.warn('[Auth] Error guardando perfil cliente:', err);
         });
     }

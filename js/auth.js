@@ -215,14 +215,25 @@
             // dropping the anonymous data on login is the honest behavior.
             return window.auth.signInWithEmailAndPassword(email, pass);
         }).then(function () {
-            // Ensure clientes/{uid} doc exists/refreshed with email
             var u = window.auth.currentUser;
-            if (u && !u.isAnonymous) {
+            if (!u || u.isAnonymous) return;
+            // Check if this is an admin account — don't create clientes/ doc for admins
+            return window.db.collection('usuarios').doc(u.uid).get().then(function (doc) {
+                if (doc.exists) {
+                    // Admin logging in from public web — just let onAuthStateChanged handle header
+                    return;
+                }
                 return saveClientProfile(u.uid, {
                     nombre: u.displayName || '',
                     email:  u.email || email
                 });
-            }
+            }).catch(function () {
+                // On error checking, save profile anyway (fail-open)
+                return saveClientProfile(u.uid, {
+                    nombre: u.displayName || '',
+                    email:  u.email || email
+                });
+            });
         }).then(function () {
             closeAuthModal();
             if (typeof showToast === 'function') showToast('¡Bienvenido de vuelta!', 'success');
@@ -347,45 +358,80 @@
     }
 
     // ── Google Auth ─────────────────────────────────────────
+    // Uses signInWithRedirect (not popup) to avoid:
+    // 1. Popup blockers on mobile/strict browsers
+    // 2. Double account-selection when linkWithPopup fails and falls back to signInWithPopup
+    // The redirect result is handled in startAuthListener → handleGoogleRedirectResult
     function handleGoogle() {
         window.firebaseReady.then(function () {
             var provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
-            // If currently anonymous, link instead of sign-in to keep uid + data
-            var current = window.auth.currentUser;
-            if (current && current.isAnonymous) {
-                return current.linkWithPopup(provider).catch(function (err) {
-                    if (err && (err.code === 'auth/credential-already-in-use'
-                             || err.code === 'auth/email-already-in-use')) {
-                        return window.auth.signInWithPopup(provider);
-                    }
-                    throw err;
-                });
-            }
-            return window.auth.signInWithPopup(provider);
-        }).then(function (result) {
-            var user = (result && result.user) || window.auth.currentUser;
-            // Guardar perfil en clientes si es login con Google
-            return saveClientProfile(user.uid, {
-                nombre: user.displayName || '',
-                email: user.email || ''
-            });
-        }).then(function () {
-            closeAuthModal();
-            if (typeof showToast === 'function') showToast('¡Bienvenido!', 'success');
+            return window.auth.signInWithRedirect(provider);
         }).catch(function (err) {
             var msg = friendlyError(err);
+            if (msg) showGoogleError(msg);
+        });
+    }
+
+    // Called once on page load to process Google redirect result
+    function handleGoogleRedirectResult() {
+        window.auth.getRedirectResult().then(function (result) {
+            if (!result || !result.user) return; // No redirect happened
+
+            var user = result.user;
+
+            // SECURITY: check if this email belongs to an admin account.
+            // Admin accounts live in `usuarios/{uid}` — public users in `clientes/{uid}`.
+            // If someone signs in with Google using an admin email, we must NOT
+            // create a clientes doc or let them in as a public user.
+            return window.db.collection('usuarios').doc(user.uid).get()
+                .then(function (doc) {
+                    if (doc.exists) {
+                        // This is an admin account — sign out from public web
+                        if (window.vehicleDB && typeof window.vehicleDB.stopRealtime === 'function') {
+                            window.vehicleDB.stopRealtime();
+                        }
+                        return window.auth.signOut().then(function () {
+                            if (typeof showToast === 'function') {
+                                showToast('Esta cuenta es de administrador. Usa el panel de administración para ingresar.', 'warn');
+                            }
+                        });
+                    }
+                    // Normal public user — save/update client profile
+                    return saveClientProfile(user.uid, {
+                        nombre: user.displayName || '',
+                        email: user.email || ''
+                    }).then(function () {
+                        if (typeof showToast === 'function') showToast('¡Bienvenido!', 'success');
+                    });
+                })
+                .catch(function (err) {
+                    console.warn('[Auth] Error checking admin status after Google sign-in:', err && err.message);
+                    // On error checking admin, still save client profile (fail-open for UX)
+                    return saveClientProfile(user.uid, {
+                        nombre: user.displayName || '',
+                        email: user.email || ''
+                    });
+                });
+        }).catch(function (err) {
+            if (!err || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
+            var msg = friendlyError(err);
             if (msg) {
-                // Muestra en el panel activo
-                var activePanel = document.querySelector('.auth-panel.active');
-                var msgEl = activePanel ? activePanel.querySelector('.auth-message') : null;
-                if (msgEl) {
-                    msgEl.textContent = msg;
-                    msgEl.className = 'auth-message show is-error';
-                    msgEl.style.display = 'block';
+                if (typeof showToast === 'function') {
+                    showToast(msg, 'error');
                 }
             }
         });
+    }
+
+    function showGoogleError(msg) {
+        var activePanel = document.querySelector('.auth-panel.active');
+        var msgEl = activePanel ? activePanel.querySelector('.auth-message') : null;
+        if (msgEl) {
+            msgEl.textContent = msg;
+            msgEl.className = 'auth-message show is-error';
+            msgEl.style.display = 'block';
+        }
     }
 
     // ── Reset Password ──────────────────────────────────────
@@ -694,9 +740,11 @@
     // ── Suscribirse al estado de auth ────────────────────────
     function startAuthListener() {
         window.firebaseReady.then(function () {
+            // Process Google redirect result (if returning from Google sign-in)
+            handleGoogleRedirectResult();
+
             window.auth.onAuthStateChanged(function (user) {
                 onAuthStateChanged(user);
-                // Primera vez que se carga el header
                 initModal();
             });
         });

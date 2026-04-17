@@ -1134,6 +1134,8 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Login protege admins** | auth.js | `handleLogin()` verifica `usuarios/{uid}` antes de `saveClientProfile()`. Si es admin, no crea doc en `clientes/` |
 | **Fix toast API (`showToast` → `toast`)** | auth.js, favorites-manager.js, components.js | `showToast()` no existia — `toast.js` exporta `toast` (instancia de ToastManager) con `.success()`, `.error()`, `.info()`, `.show()`. Todos los mensajes (login, registro, Google redirect, favoritos, logout) ahora son visibles. Warnings de seguridad usan duracion 6s. Admin Google sign-in cierra sesion tras desvinculacion |
 | **Fix historial nunca registraba visitas** | historial-visitas.js, index.html, perfil.html | Path check buscaba `'detalle-vehiculo'` pero paginas viven en `/vehiculos/`. ID se leia de `?id=` pero paginas usan `PRERENDERED_VEHICLE_ID`. Corregido ambos + `showToast` restantes |
+| **Fase B1: Layout base perfil** | perfil.html, js/perfil.js, css/perfil.css | CSS y JS externalizados. Sidebar 6 secciones, mobile tabs, skeleton loading, hero card, dark theme, 3 breakpoints |
+| **Fase B2: Perfil mejorado** | js/perfil.js, css/perfil.css, CLAUDE.md | Barra completitud (5 criterios), campo ciudad (25 ciudades Colombia), validacion inline, provider badges (Google SVG + Email), password strength meter 4 niveles, toggle visibilidad, input prefix +57, indicador auto-save, ultimo acceso, UID truncado |
 
 ---
 
@@ -1321,37 +1323,43 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 > Inspirado en Amazon, MercadoLibre, Apple, Kavak, CarGurus, Adidas, CinCuadras.
 > Organizado en micro-fases para evitar timeout y crasheos.
 
-### Estado actual del perfil (`perfil.html`)
+### Estado actual del perfil (`perfil.html`) — ACTUALIZADO
 
-- 1,600+ lineas de CSS inline (no externalizado)
-- JS inline (no externalizado)
-- Funciones basicas: ver/editar nombre y telefono, cambiar contraseña, cerrar sesion
-- Avatar solo con iniciales (sin foto)
-- Stats basicos (favoritos, vistos)
-- Layout se corta en bordes, responsive basico
+- CSS externalizado en `css/perfil.css` (Fase B1 completada)
+- JS externalizado en `js/perfil.js` (Fase B1 completada)
+- Sidebar navigation con 6 secciones + iconos Lucide
+- Mobile: tabs horizontales scrollables (< 768px)
+- Skeleton loading animado mientras carga Firestore
+- Profile hero card con gradiente dorado y badges
+- 3 breakpoints responsive (860px, 768px, 480px)
+- Container max-width 1080px (cortes resueltos)
+- Secciones placeholder para B2-B10
 
-### Micro-Fase B1 — Arquitectura y Layout Base
+### Micro-Fase B1 — Arquitectura y Layout Base ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| CSS externo `css/perfil.css` | Eliminar CSS inline → archivo dedicado |
-| JS externo `js/perfil.js` | Extraer logica inline → modulo separado |
-| Sidebar navigation (desktop) | Menu lateral con iconos Lucide: Mi Perfil, Favoritos, Historial, Solicitudes, Citas, Seguridad |
-| Mobile: tabs horizontales | Collapse sidebar → tabs scrollables en movil |
-| Skeleton loading | Placeholders animados mientras carga Firestore |
-| Container max-width fix | Resolver cortes de dimensiones |
-| Dark theme refinado | Glassmorphism cards, gradientes sutiles, spacing Apple-style |
+| Tarea | Estado |
+|-------|--------|
+| CSS externo `css/perfil.css` | ✓ 450+ lineas, variables CSS, dark theme |
+| JS externo `js/perfil.js` | ✓ Modular, IIFE, funciones limpias |
+| Sidebar navigation (desktop) | ✓ 6 secciones con Lucide icons, active state con barra dorada |
+| Mobile: tabs horizontales | ✓ Scroll horizontal, pills con iconos |
+| Skeleton loading | ✓ Pulse animation, hero + cards placeholders |
+| Container max-width fix | ✓ 1080px con padding responsive |
+| Dark theme refinado | ✓ Gradiente en hero, glassmorphism cards |
 
-### Micro-Fase B2 — Perfil de Usuario Mejorado
+### Micro-Fase B2 — Perfil de Usuario Mejorado ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| Profile hero card | Avatar grande + nombre + badge de miembro + ubicacion |
-| Barra de completitud | "Tu perfil esta al 60%" con progress bar dorada |
-| Edicion inline mejorada | Campos con validacion en tiempo real, auto-save con debounce |
-| Campo ubicacion | Ciudad/departamento (dropdown Colombia) |
-| Badge de proveedor auth | Google / Email con icono visual |
-| Fecha formateada | "Miembro desde Enero 2026" con icono calendario |
+| Tarea | Estado |
+|-------|--------|
+| Profile hero card | ✓ Avatar con foto/initials, nombre, email, badges de proveedor |
+| Barra de completitud | ✓ Progress bar dorada con %, tips de campos faltantes (5 criterios) |
+| Edicion inline mejorada | ✓ Validacion en tiempo real, indicador Guardando/Guardado/Error |
+| Campo ubicacion | ✓ Select con 25 ciudades Colombia, guardado en `clientes/{uid}.ciudad` |
+| Badge de proveedor auth | ✓ Google (SVG real) + Email (Lucide) + cards de proveedor en Seguridad |
+| Fecha formateada | ✓ "Miembro desde Enero 2026" en hero meta badges |
+| Password strength meter | ✓ 4 niveles con colores + toggle visibilidad (eye/eye-off) |
+| Input prefix telefono | ✓ "+57" visual prefix, validacion 7-10 digitos |
+| Info de cuenta | ✓ Ultimo acceso, UID truncado, proveedores con status badges |
 
 ### Micro-Fase B3 — Foto de Perfil / Avatar
 

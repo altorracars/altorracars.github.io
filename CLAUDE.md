@@ -979,6 +979,24 @@ El codigo anterior usaba `signInWithPopup` + `linkWithPopup` como fallback, lo q
 
 **Archivos modificados**: `auth.js` (`handleGoogle`, `handleGoogleRedirectResult`, `undoGoogleAndWarn`, `handleLogin`, `friendlyError`)
 
+### Toast notifications silenciosas tras Google redirect (y otros flujos)
+
+**Sintoma**: Al intentar registrarse con Google usando un email de admin o un email ya registrado con contraseña, el usuario era redirigido de vuelta al index SIN ningun mensaje visible. No aparecia toast, warning ni error. El usuario no entendia que habia pasado.
+
+**Causa**: Todo el codigo usaba `typeof showToast === 'function'` + `showToast(msg, type)`, pero la funcion `showToast` NO existe. El archivo `toast.js` exporta un singleton `toast` (instancia de `ToastManager`) con metodos `.success(msg)`, `.error(msg)`, `.info(msg)`, `.show(msg, type, title, duration)`. La condicion `typeof showToast === 'function'` siempre evaluaba `false` — todos los toasts eran silenciados.
+
+Problema adicional: `undoGoogleAndWarn()` desvinculaba Google del admin pero NO cerraba la sesion, dejando al usuario en un estado confuso (autenticado pero sin perfil).
+
+**Fix aplicado** (2026-04-17):
+1. `auth.js`: helper `_toast(message, type, duration)` que usa la API correcta `toast.show()` con mapeo `warn → error`
+2. Reemplazados 7 usos de `showToast()` por `_toast()` en auth.js
+3. `favorites-manager.js` y `components.js`: reemplazados `showToast()` por `toast.info()`
+4. `undoGoogleAndWarn(user, message, shouldSignOut)`: nuevo parametro — para admins cierra sesion (`signOut()` + `_explicitLogout`), para emails duplicados deja la sesion con password
+5. Warnings de seguridad (admin, email duplicado) usan duracion de 6000ms para dar tiempo a leer
+6. Catch del handler de redirect ahora muestra toast de error en vez de fallar silenciosamente
+
+**Archivos modificados**: `auth.js`, `favorites-manager.js`, `components.js`
+
 ### Acumulacion de cuentas anonimas huerfanas en Firebase Auth
 
 **Sintoma**: Cientos de cuentas `(anonimo)` en Firebase Console → Authentication → Usuarios.
@@ -1078,6 +1096,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Historial localStorage-first** | historial-visitas.js, auth.js | Constructor carga localStorage inmediatamente. Firestore sync solo para registrados. Merge inteligente al loguear. `setUser(uid, isAnonymous)` con flag |
 | **Seccion "Vistos Recientemente"** | index.html, css/historial-visitas.css | Carrusel horizontal en homepage. localStorage-based (sin auth). Cards con imagen, precio, badge oferta. Dark theme, responsive 3 breakpoints. Fade-in, boton limpiar |
 | **Login protege admins** | auth.js | `handleLogin()` verifica `usuarios/{uid}` antes de `saveClientProfile()`. Si es admin, no crea doc en `clientes/` |
+| **Fix toast API (`showToast` → `toast`)** | auth.js, favorites-manager.js, components.js | `showToast()` no existia — `toast.js` exporta `toast` (instancia de ToastManager) con `.success()`, `.error()`, `.info()`, `.show()`. Todos los mensajes (login, registro, Google redirect, favoritos, logout) ahora son visibles. Warnings de seguridad usan duracion 6s. Admin Google sign-in cierra sesion tras desvinculacion |
 
 ---
 

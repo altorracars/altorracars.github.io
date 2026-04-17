@@ -151,8 +151,8 @@ class FavoritesManager {
         if (window.AltorraAuth) {
             window.AltorraAuth.open('login');
         }
-        if (typeof showToast === 'function') {
-            showToast('Inicia sesión para guardar tus favoritos.', 'info');
+        if (typeof toast !== 'undefined' && toast && toast.info) {
+            toast.info('Inicia sesión para guardar tus favoritos.');
         }
     }
 

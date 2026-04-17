@@ -1077,7 +1077,7 @@
                     section.style.transition = 'opacity 0.3s ease';
                     section.style.opacity = '0';
                     setTimeout(function() { section.style.display = 'none'; }, 300);
-                    if (typeof showToast === 'function') showToast('Historial limpiado.', 'info');
+                    if (typeof toast !== 'undefined' && toast && toast.info) toast.info('Historial limpiado.');
                 });
             }
         }

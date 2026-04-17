@@ -161,12 +161,13 @@ class VehicleHistory {
 
     _maybeTrackCurrent() {
         if (!this._pendingTrack || !this._loaded) return;
-        if (window.location.pathname.indexOf('detalle-vehiculo') === -1) {
-            this._pendingTrack = false;
-            return;
-        }
-        var params = new URLSearchParams(window.location.search);
-        var vehicleId = params.get('id');
+        var path = window.location.pathname;
+        var isVehiclePage = path.indexOf('/vehiculos/') !== -1
+                         || path.indexOf('detalle-vehiculo') !== -1;
+        if (!isVehiclePage) { this._pendingTrack = false; return; }
+
+        var vehicleId = window.PRERENDERED_VEHICLE_ID
+                     || new URLSearchParams(window.location.search).get('id');
         if (vehicleId) this.addToHistory(vehicleId);
         this._pendingTrack = false;
     }
@@ -384,6 +385,8 @@ if (typeof window !== 'undefined') {
 
 // En paginas de detalle, marcar como pendiente. Si no hay auth,
 // localStorage ya esta disponible y trackea inmediatamente.
-if (typeof window !== 'undefined' && window.location.pathname.indexOf('detalle-vehiculo') !== -1) {
+if (typeof window !== 'undefined'
+    && (window.location.pathname.indexOf('/vehiculos/') !== -1
+     || window.location.pathname.indexOf('detalle-vehiculo') !== -1)) {
     vehicleHistory.trackCurrentVehicle();
 }

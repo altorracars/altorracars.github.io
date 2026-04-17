@@ -181,6 +181,17 @@
 
     function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
 
+    // toast.js exposes a global `toast` (ToastManager instance) with methods:
+    //   toast.success(msg), toast.error(msg), toast.info(msg), toast.show(msg, type, title, duration)
+    // There is NO global `showToast` function.
+    function _toast(message, type, duration) {
+        if (typeof toast !== 'undefined' && toast && toast.show) {
+            var t = (type === 'warn') ? 'error' : (type || 'info');
+            toast.show(message, t, '', duration || 4500);
+            return;
+        }
+    }
+
     // ── Login con email/password ────────────────────────────
     function handleLogin(e) {
         e.preventDefault();
@@ -236,7 +247,7 @@
             });
         }).then(function () {
             closeAuthModal();
-            if (typeof showToast === 'function') showToast('¡Bienvenido de vuelta!', 'success');
+            _toast('¡Bienvenido de vuelta!', 'success');
         }).catch(function (err) {
             var msg = friendlyError(err);
             if (msg) showMsg('loginMessage', msg, 'error');
@@ -308,7 +319,7 @@
             });
         }).then(function () {
             closeAuthModal();
-            if (typeof showToast === 'function') showToast('¡Cuenta creada! Bienvenido a Altorra Cars.', 'success');
+            _toast('¡Cuenta creada! Bienvenido a Altorra Cars.', 'success');
         }).catch(function (err) {
             var msg = friendlyError(err);
             if (msg) showMsg('registerMessage', msg, 'error');
@@ -386,7 +397,7 @@
             return window.db.collection('usuarios').doc(user.uid).get()
                 .then(function (doc) {
                     if (doc.exists) {
-                        return undoGoogleAndWarn(user, 'Esta cuenta es de administrador. Usa el panel de administración para ingresar.');
+                        return undoGoogleAndWarn(user, 'Esta cuenta es de administrador. Usa el panel de administración para ingresar.', true);
                     }
 
                     // ── Check 2: Existing email/password account ───────
@@ -405,7 +416,7 @@
                     });
 
                     if (hasPassword && hasGoogle) {
-                        return undoGoogleAndWarn(user, 'Este correo ya está registrado con contraseña. Inicia sesión con tu correo y contraseña, o usa "¿Olvidaste tu contraseña?" para recuperarla.');
+                        return undoGoogleAndWarn(user, 'Este correo ya está registrado con contraseña. Inicia sesión con tu correo y contraseña, o usa "¿Olvidaste tu contraseña?" para recuperarla.', false);
                     }
 
                     // ── All clear: new Google-only user ────────────────
@@ -413,36 +424,41 @@
                         nombre: user.displayName || '',
                         email: user.email || ''
                     }).then(function () {
-                        if (typeof showToast === 'function') showToast('¡Bienvenido!', 'success');
+                        _toast('¡Bienvenido! Tu cuenta con Google ha sido creada.', 'success');
                     });
                 })
                 .catch(function (err) {
                     console.warn('[Auth] Error in Google redirect handler:', err && err.message);
+                    _toast('Hubo un problema al verificar tu cuenta. Intenta de nuevo.', 'error');
                 });
         }).catch(function (err) {
             if (!err) return;
             // Handle the case where Firebase blocks the sign-in entirely
             // (email exists with different provider, unverified email, etc.)
             if (err.code === 'auth/account-exists-with-different-credential') {
-                if (typeof showToast === 'function') {
-                    showToast('Este correo ya está registrado con otro método. Inicia sesión con tu contraseña.', 'warn');
-                }
+                _toast('Este correo ya está registrado con otro método. Inicia sesión con tu correo y contraseña.', 'error', 6000);
                 return;
             }
             if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
             var msg = friendlyError(err);
-            if (msg && typeof showToast === 'function') showToast(msg, 'error');
+            if (msg) _toast(msg, 'error');
         });
     }
 
-    // Undo Firebase auto-linking of Google provider + warn user
-    function undoGoogleAndWarn(user, message) {
-        // Try to unlink Google provider to undo the auto-link
+    // Undo Firebase auto-linking of Google provider + warn user.
+    // shouldSignOut: true for admin accounts (user should not stay signed in
+    // from the public web); false for duplicate-email cases (user remains
+    // signed in with their original password provider).
+    function undoGoogleAndWarn(user, message, shouldSignOut) {
         var unlinkPromise = user.unlink('google.com').catch(function (e) {
             console.warn('[Auth] Could not unlink Google provider:', e && e.message);
         });
         return unlinkPromise.then(function () {
-            if (typeof showToast === 'function') showToast(message, 'warn');
+            _toast(message, 'error', 6000);
+            if (shouldSignOut) {
+                _explicitLogout = true;
+                return window.auth.signOut();
+            }
         });
     }
 
@@ -497,7 +513,7 @@
         window.firebaseReady.then(function () {
             return window.auth.signOut();
         }).then(function () {
-            if (typeof showToast === 'function') showToast('Sesión cerrada.', 'info');
+            _toast('Sesión cerrada.', 'info');
         }).catch(function () {});
     }
 

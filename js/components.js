@@ -484,8 +484,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Kept as fallback in case auth.js hasn't loaded yet.
 window._authComingSoon = function() {
     if (window.AltorraAuth) { window.AltorraAuth.open('login'); return; }
-    if (typeof showToast === 'function') {
-        showToast('Cargando... intenta de nuevo en un momento.', 'info');
+    if (typeof toast !== 'undefined' && toast && toast.info) {
+        toast.info('Cargando... intenta de nuevo en un momento.');
     }
 };
 

@@ -369,80 +369,88 @@
     }
 
     // ── Google Auth ─────────────────────────────────────────
-    // Uses signInWithRedirect (not popup) to avoid:
-    // 1. Popup blockers on mobile/strict browsers
-    // 2. Double account-selection when linkWithPopup fails and falls back to signInWithPopup
-    // The redirect result is handled in startAuthListener → handleGoogleRedirectResult
+    // Uses signInWithPopup (NOT signInWithRedirect).
+    //
+    // Why popup instead of redirect:
+    //   signInWithRedirect stores the result on the authDomain
+    //   (altorra-cars.firebaseapp.com), but the site is hosted on
+    //   altorracars.github.io. When the page reloads after the redirect,
+    //   getRedirectResult() returns null because it can't read
+    //   cross-origin sessionStorage. This is a known Firebase SDK
+    //   limitation for sites hosted on a different domain than authDomain.
+    //
+    //   signInWithPopup doesn't have this issue because the popup stays
+    //   on the authDomain and communicates back via postMessage. The
+    //   result is returned directly in the promise.
+    //
+    // Previous issues (now fixed):
+    //   - Double popup: old code used linkWithPopup → signInWithPopup.
+    //     Now we only call signInWithPopup once.
+    //   - Popup blocked: handled with a clear message asking to allow popups.
+    //
+    // Call window.auth.signInWithPopup synchronously in the click handler
+    // (not inside a .then()) so browsers don't block the popup.
     function handleGoogle() {
-        window.firebaseReady.then(function () {
-            var provider = new firebase.auth.GoogleAuthProvider();
-            provider.setCustomParameters({ prompt: 'select_account' });
-            return window.auth.signInWithRedirect(provider);
-        }).catch(function (err) {
-            var msg = friendlyError(err);
-            if (msg) showGoogleError(msg);
-        });
-    }
+        if (!window.auth) {
+            _toast('Cargando, intenta de nuevo en un momento.', 'info');
+            return;
+        }
+        var provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
 
-    // Called once on page load to process Google redirect result
-    function handleGoogleRedirectResult() {
-        window.auth.getRedirectResult().then(function (result) {
-            if (!result || !result.user) return; // No redirect happened
-
-            var user = result.user;
-
-            // ── Check 1: Admin account protection ──────────────
-            // Admin accounts live in `usuarios/{uid}`. If someone signs in
-            // with Google using an admin email, reject immediately.
-            return window.db.collection('usuarios').doc(user.uid).get()
-                .then(function (doc) {
-                    if (doc.exists) {
-                        return undoGoogleAndWarn(user, 'Esta cuenta es de administrador. Usa el panel de administración para ingresar.', true);
-                    }
-
-                    // ── Check 2: Existing email/password account ───────
-                    // When Firebase "One account per email" is enabled and
-                    // both emails are verified, Google sign-in auto-links
-                    // the Google provider to the existing email/password
-                    // account WITHOUT asking. We detect this by checking
-                    // if the user now has BOTH 'password' and 'google.com'
-                    // providers. If so, undo the auto-link and warn.
-                    // This is how Airbnb / MercadoLibre handle it.
-                    var hasPassword = false;
-                    var hasGoogle = false;
-                    (user.providerData || []).forEach(function (p) {
-                        if (p.providerId === 'password') hasPassword = true;
-                        if (p.providerId === 'google.com') hasGoogle = true;
-                    });
-
-                    if (hasPassword && hasGoogle) {
-                        return undoGoogleAndWarn(user, 'Este correo ya está registrado con contraseña. Inicia sesión con tu correo y contraseña, o usa "¿Olvidaste tu contraseña?" para recuperarla.', false);
-                    }
-
-                    // ── All clear: new Google-only user ────────────────
-                    return saveClientProfile(user.uid, {
-                        nombre: user.displayName || '',
-                        email: user.email || ''
-                    }).then(function () {
-                        _toast('¡Bienvenido! Tu cuenta con Google ha sido creada.', 'success');
-                    });
-                })
-                .catch(function (err) {
-                    console.warn('[Auth] Error in Google redirect handler:', err && err.message);
-                    _toast('Hubo un problema al verificar tu cuenta. Intenta de nuevo.', 'error');
-                });
+        window.auth.signInWithPopup(provider).then(function (result) {
+            if (!result || !result.user) return;
+            return _processGoogleUser(result.user);
         }).catch(function (err) {
             if (!err) return;
-            // Handle the case where Firebase blocks the sign-in entirely
-            // (email exists with different provider, unverified email, etc.)
+            if (err.code === 'auth/popup-blocked') {
+                _toast('Tu navegador bloqueó la ventana de Google. Permite ventanas emergentes para este sitio y vuelve a intentar.', 'error', 8000);
+                return;
+            }
+            if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
             if (err.code === 'auth/account-exists-with-different-credential') {
                 _toast('Este correo ya está registrado con otro método. Inicia sesión con tu correo y contraseña.', 'error', 6000);
                 return;
             }
-            if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
             var msg = friendlyError(err);
             if (msg) _toast(msg, 'error');
         });
+    }
+
+    // Validate Google user after successful sign-in:
+    // 1. Admin accounts → reject + sign out
+    // 2. Email already registered with password → undo auto-link
+    // 3. New Google user → create client profile
+    function _processGoogleUser(user) {
+        return window.db.collection('usuarios').doc(user.uid).get()
+            .then(function (doc) {
+                if (doc.exists) {
+                    return undoGoogleAndWarn(user, 'Esta cuenta es de administrador. Usa el panel de administración para ingresar.', true);
+                }
+
+                var hasPassword = false;
+                var hasGoogle = false;
+                (user.providerData || []).forEach(function (p) {
+                    if (p.providerId === 'password') hasPassword = true;
+                    if (p.providerId === 'google.com') hasGoogle = true;
+                });
+
+                if (hasPassword && hasGoogle) {
+                    return undoGoogleAndWarn(user, 'Este correo ya está registrado con contraseña. Inicia sesión con tu correo y contraseña, o usa "¿Olvidaste tu contraseña?" para recuperarla.', false);
+                }
+
+                return saveClientProfile(user.uid, {
+                    nombre: user.displayName || '',
+                    email: user.email || ''
+                }).then(function () {
+                    closeAuthModal();
+                    _toast('¡Bienvenido! Tu cuenta con Google ha sido creada.', 'success');
+                });
+            })
+            .catch(function (err) {
+                console.warn('[Auth] Error in Google sign-in handler:', err && err.message);
+                _toast('Hubo un problema al verificar tu cuenta. Intenta de nuevo.', 'error');
+            });
     }
 
     // Undo Firebase auto-linking of Google provider + warn user.
@@ -778,9 +786,6 @@
     // ── Suscribirse al estado de auth ────────────────────────
     function startAuthListener() {
         window.firebaseReady.then(function () {
-            // Process Google redirect result (if returning from Google sign-in)
-            handleGoogleRedirectResult();
-
             window.auth.onAuthStateChanged(function (user) {
                 onAuthStateChanged(user);
                 initModal();

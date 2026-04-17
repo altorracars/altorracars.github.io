@@ -970,14 +970,33 @@ El codigo anterior usaba `signInWithPopup` + `linkWithPopup` como fallback, lo q
 
 **Fix aplicado** (2026-04-17):
 
-1. **`signInWithRedirect`** en vez de popup: una sola redireccion a Google, sin ventanas emergentes
-2. **`handleGoogleRedirectResult()`** en page load: procesa el resultado del redirect
-3. **Check admin**: verifica `usuarios/{uid}` → si existe, `undoGoogleAndWarn()` + toast
+1. **`signInWithPopup`** (una sola llamada): reemplaza `signInWithRedirect` que no funciona en GitHub Pages (ver seccion abajo)
+2. **`_processGoogleUser()`** valida: admin check → undo + signOut; duplicate email → undo; nuevo → saveClientProfile
+3. **Check admin**: verifica `usuarios/{uid}` → si existe, `undoGoogleAndWarn()` + toast + signOut
 4. **Check email/password existente**: verifica `user.providerData` por `password` + `google.com` → si ambos, `user.unlink('google.com')` deshace la auto-vinculacion + toast warning
 5. **`handleLogin()` protegido**: verifica `usuarios/{uid}` antes de `saveClientProfile()` — admins que loguean desde web publica no generan doc en `clientes/`
-6. **`auth/account-exists-with-different-credential`** manejado en catch de `getRedirectResult()`
+6. **`auth/account-exists-with-different-credential`** manejado en catch de `signInWithPopup()`
+7. **Popup bloqueada**: toast de 8s con instrucciones claras
 
-**Archivos modificados**: `auth.js` (`handleGoogle`, `handleGoogleRedirectResult`, `undoGoogleAndWarn`, `handleLogin`, `friendlyError`)
+**Archivos modificados**: `auth.js` (`handleGoogle`, `_processGoogleUser`, `undoGoogleAndWarn`, `handleLogin`, `friendlyError`)
+
+### signInWithRedirect no funciona en GitHub Pages (cross-origin)
+
+**Sintoma**: Al hacer clic en "Registrar con Google", el usuario era redirigido a Google, seleccionaba su cuenta, y volvia al index sin ningun registro completado ni mensaje visible. `getRedirectResult()` retornaba `null`.
+
+**Causa**: `signInWithRedirect` almacena el resultado del redirect en sessionStorage del `authDomain` (`altorra-cars.firebaseapp.com`). Cuando la pagina recarga en el dominio de hosting (`altorracars.github.io`), `getRedirectResult()` no puede leer el sessionStorage cross-origin y retorna `null`. Es una limitacion conocida del Firebase SDK v9+ cuando `authDomain` != dominio de hosting.
+
+**Referencia**: [Firebase Auth - Best practices for using signInWithRedirect](https://firebase.google.com/docs/auth/web/redirect-best-practices)
+
+**Fix aplicado** (2026-04-17):
+- Cambio de `signInWithRedirect` a `signInWithPopup`. Popup usa `postMessage` para comunicar el resultado, sin restriccion cross-origin
+- Una sola llamada a `signInWithPopup` (no doble popup como antes)
+- La llamada se hace sincronicamente en el click handler (no dentro de `.then()`) para evitar bloqueo de popup por el navegador
+- `handleGoogleRedirectResult()` eliminada — ya no se necesita
+- Si el navegador bloquea la popup: toast de 8 segundos con instrucciones claras
+- Todas las protecciones (admin, duplicate email, auto-link undo) se procesan inline en `_processGoogleUser()`
+
+**Archivos modificados**: `auth.js`
 
 ### Toast notifications silenciosas tras Google redirect (y otros flujos)
 
@@ -1089,7 +1108,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fix SW networkOnly error noise** | service-worker.js | `console.error` → `console.warn` en `networkOnly()`. El fetch falla en primer page load (cache-manager `fetchDeployVersion`), pero el caller maneja el 503 sin problemas. Evita error rojo en consola |
 | **Fix cross-tab signOut errors en admin** | admin-appointments.js, admin-dealers.js, admin-activity.js | Guard `!auth.currentUser` en error callbacks de `onSnapshot` para solicitudes, concesionarios y auditLog. Cuando el usuario cierra sesion desde la web publica, Firebase Auth LOCAL persistence anula el token en todas las tabs — los listeners del admin reciben permission-denied antes de que `stopRealtimeSync()` pueda correr. El guard silencia estos errores esperados |
 | **Fix 404 admin para usuarios publicos** | admin-auth.js | `loadProfileViaREST()` retorna `{ exists: false }` para 404 con `console.info` explicativo. `silentSignOutNonAdmin()` para persistence, `showAccessDenied()` con mensaje claro para login explicito |
-| **Google Sign-In: redirect + proteccion** | auth.js | `signInWithPopup` → `signInWithRedirect` (sin ventana emergente). Proteccion: verifica `usuarios/{uid}` (admin) y `providerData` (email/password existente). Deshace auto-vinculacion con `user.unlink('google.com')`. Elimina doble seleccion de cuenta |
+| **Google Sign-In: popup + proteccion** | auth.js | `signInWithPopup` (una sola llamada directa en click handler). `signInWithRedirect` no funciona en GitHub Pages por cross-origin. Proteccion: verifica `usuarios/{uid}` (admin) y `providerData` (email/password existente). Deshace auto-vinculacion con `user.unlink('google.com')`. Popup bloqueada: toast 8s con instrucciones |
 | **Friendly error Google provider disabled** | auth.js | `auth/operation-not-allowed` en `friendlyError()` → mensaje en español. Requiere habilitar Google en Firebase Console → Authentication → Sign-in method |
 | **Eliminar cuentas anonimas huerfanas** | auth.js | `_explicitLogout` flag: no crea anonimo nuevo al cerrar sesion. Solo `signInAnonymously()` en primer page load sin sesion previa |
 | **Favoritos solo para registrados** | favorites-manager.js, auth.js | `add()`/`toggle()` verifican `_uid`, abren modal login si no hay. `onAuthStateChanged` solo llama `setUser()` para no-anonimos |
@@ -1131,14 +1150,15 @@ Los usuarios publicos (clientes) y los administradores usan Firebase Auth, pero 
 
 ### Flujo de login con Google
 
-1. `signInWithRedirect(GoogleAuthProvider)` redirige a Google (sin popup)
-2. Al volver, `getRedirectResult()` en `handleGoogleRedirectResult()` procesa el resultado
-3. **Check 1**: Si `usuarios/{uid}` existe → es admin → `undoGoogleAndWarn()` + toast de error
+1. `signInWithPopup(GoogleAuthProvider)` abre ventana de Google (una sola, directa en click handler)
+2. Resultado procesado en `_processGoogleUser(user)` inmediatamente (sin recargar pagina)
+3. **Check 1**: Si `usuarios/{uid}` existe → es admin → `undoGoogleAndWarn()` + toast de error + signOut
 4. **Check 2**: Si `user.providerData` tiene AMBOS `password` y `google.com` → email ya registrado con contrasena → `user.unlink('google.com')` deshace auto-vinculacion + toast de warning
-5. **Check 3**: Si `auth/account-exists-with-different-credential` → toast warning
-6. Solo si es usuario Google nuevo → `saveClientProfile()` crea doc en `clientes/{uid}`
+5. **Check 3**: Si `auth/account-exists-with-different-credential` → toast error 6s
+6. **Popup bloqueada**: `auth/popup-blocked` → toast de 8s con instrucciones claras
+7. Solo si es usuario Google nuevo → `saveClientProfile()` crea doc en `clientes/{uid}` + toast exito
 
-**Por que redirect en vez de popup**: Popup requiere ventanas emergentes habilitadas (problematico para usuarios no-tecnicos). El flow anterior usaba `linkWithPopup` → fallback `signInWithPopup` que abria DOS ventanas de seleccion de cuenta. Redirect es una sola redireccion a Google.
+**Por que popup en vez de redirect**: `signInWithRedirect` no funciona en GitHub Pages porque el `authDomain` (`altorra-cars.firebaseapp.com`) difiere del dominio de hosting (`altorracars.github.io`). El resultado del redirect se almacena en sessionStorage del authDomain y `getRedirectResult()` no puede leerlo cross-origin. `signInWithPopup` usa `postMessage` que no tiene esta restriccion. La llamada se hace directamente en el click handler (sin `.then()`) para que el navegador no bloquee la popup.
 
 **Proteccion contra sobreescritura de cuentas**: Firebase con "One account per email" auto-vincula Google al existir email/password con el mismo correo verificado. El sistema detecta la auto-vinculacion (`hasPassword && hasGoogle` en `providerData`) y la deshace con `unlink('google.com')`. Patron usado por Airbnb y MercadoLibre.
 

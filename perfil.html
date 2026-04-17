@@ -259,10 +259,10 @@
                     telefono: newPhone
                 }).then(function() {
                     user.updateProfile({ displayName: newName }).catch(function(){});
-                    if (typeof showToast === 'function') showToast('Datos actualizados.', 'success');
+                    if (typeof toast !== 'undefined' && toast) toast.show('Datos actualizados.', 'success');
                     renderProfile(user);
                 }).catch(function(err) {
-                    if (typeof showToast === 'function') showToast('Error al guardar: ' + err.message, 'error');
+                    if (typeof toast !== 'undefined' && toast) toast.show('Error al guardar: ' + err.message, 'error');
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Guardar';
                 });

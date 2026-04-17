@@ -1016,6 +1016,23 @@ Problema adicional: `undoGoogleAndWarn()` desvinculaba Google del admin pero NO 
 
 **Archivos modificados**: `auth.js`, `favorites-manager.js`, `components.js`
 
+### Seccion "Vistos Recientemente" nunca mostraba vehiculos
+
+**Sintoma**: La seccion "Vistos Recientemente" en el homepage siempre estaba oculta, incluso despues de visitar multiples paginas de vehiculos.
+
+**Causa**: Dos bugs combinados en `historial-visitas.js`:
+
+1. **Path mismatch**: El auto-tracking (linea 387) verificaba `window.location.pathname.indexOf('detalle-vehiculo')`, pero las paginas generadas viven en `/vehiculos/{slug}.html`. El string `'detalle-vehiculo'` nunca aparece en `/vehiculos/chevrolet-equinox-ls-2018-1.html`, asi que `trackCurrentVehicle()` jamas se ejecutaba.
+
+2. **ID source incorrecto**: `_maybeTrackCurrent()` buscaba el ID del vehiculo en `?id=` (query param), pero las paginas generadas inyectan `window.PRERENDERED_VEHICLE_ID` y no usan query params.
+
+**Fix aplicado** (2026-04-17):
+- Auto-track: verificar tanto `/vehiculos/` como `detalle-vehiculo` en el pathname
+- ID source: preferir `window.PRERENDERED_VEHICLE_ID`, fallback a `?id=` query param
+- Tambien corregido `showToast` → `toast.show()` en index.html y perfil.html
+
+**Archivos modificados**: `historial-visitas.js`, `index.html`, `perfil.html`
+
 ### Acumulacion de cuentas anonimas huerfanas en Firebase Auth
 
 **Sintoma**: Cientos de cuentas `(anonimo)` en Firebase Console → Authentication → Usuarios.
@@ -1116,6 +1133,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Seccion "Vistos Recientemente"** | index.html, css/historial-visitas.css | Carrusel horizontal en homepage. localStorage-based (sin auth). Cards con imagen, precio, badge oferta. Dark theme, responsive 3 breakpoints. Fade-in, boton limpiar |
 | **Login protege admins** | auth.js | `handleLogin()` verifica `usuarios/{uid}` antes de `saveClientProfile()`. Si es admin, no crea doc en `clientes/` |
 | **Fix toast API (`showToast` → `toast`)** | auth.js, favorites-manager.js, components.js | `showToast()` no existia — `toast.js` exporta `toast` (instancia de ToastManager) con `.success()`, `.error()`, `.info()`, `.show()`. Todos los mensajes (login, registro, Google redirect, favoritos, logout) ahora son visibles. Warnings de seguridad usan duracion 6s. Admin Google sign-in cierra sesion tras desvinculacion |
+| **Fix historial nunca registraba visitas** | historial-visitas.js, index.html, perfil.html | Path check buscaba `'detalle-vehiculo'` pero paginas viven en `/vehiculos/`. ID se leia de `?id=` pero paginas usan `PRERENDERED_VEHICLE_ID`. Corregido ambos + `showToast` restantes |
 
 ---
 
@@ -1298,7 +1316,129 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 
 ---
 
-## 11. Fase 12 — Pendiente (Futuro)
+## 11. Fase B — Panel de Usuario Premium (Plan Aprobado)
+
+> Inspirado en Amazon, MercadoLibre, Apple, Kavak, CarGurus, Adidas, CinCuadras.
+> Organizado en micro-fases para evitar timeout y crasheos.
+
+### Estado actual del perfil (`perfil.html`)
+
+- 1,600+ lineas de CSS inline (no externalizado)
+- JS inline (no externalizado)
+- Funciones basicas: ver/editar nombre y telefono, cambiar contraseña, cerrar sesion
+- Avatar solo con iniciales (sin foto)
+- Stats basicos (favoritos, vistos)
+- Layout se corta en bordes, responsive basico
+
+### Micro-Fase B1 — Arquitectura y Layout Base
+
+| Tarea | Detalle |
+|-------|---------|
+| CSS externo `css/perfil.css` | Eliminar CSS inline → archivo dedicado |
+| JS externo `js/perfil.js` | Extraer logica inline → modulo separado |
+| Sidebar navigation (desktop) | Menu lateral con iconos Lucide: Mi Perfil, Favoritos, Historial, Solicitudes, Citas, Seguridad |
+| Mobile: tabs horizontales | Collapse sidebar → tabs scrollables en movil |
+| Skeleton loading | Placeholders animados mientras carga Firestore |
+| Container max-width fix | Resolver cortes de dimensiones |
+| Dark theme refinado | Glassmorphism cards, gradientes sutiles, spacing Apple-style |
+
+### Micro-Fase B2 — Perfil de Usuario Mejorado
+
+| Tarea | Detalle |
+|-------|---------|
+| Profile hero card | Avatar grande + nombre + badge de miembro + ubicacion |
+| Barra de completitud | "Tu perfil esta al 60%" con progress bar dorada |
+| Edicion inline mejorada | Campos con validacion en tiempo real, auto-save con debounce |
+| Campo ubicacion | Ciudad/departamento (dropdown Colombia) |
+| Badge de proveedor auth | Google / Email con icono visual |
+| Fecha formateada | "Miembro desde Enero 2026" con icono calendario |
+
+### Micro-Fase B3 — Foto de Perfil / Avatar
+
+| Tarea | Detalle |
+|-------|---------|
+| Upload widget | Click en avatar → selector de imagen + preview |
+| Compresion client-side | Resize a 200x200, calidad 0.8, max 500KB |
+| Firebase Storage | `avatars/{uid}.webp` con reglas de seguridad |
+| Crop circular | Canvas crop antes de upload |
+| Fallback iniciales | Si no hay foto → iniciales doradas (actual) |
+| Sync con header | Avatar actualizado en header dropdown + mobile |
+| Campo en Firestore | `clientes/{uid}.avatarURL` |
+
+### Micro-Fase B4 — Mis Favoritos (in-profile)
+
+| Tarea | Detalle |
+|-------|---------|
+| Cards compactas | Foto + marca + modelo + año + precio + estado |
+| Badge de estado | Disponible (verde), Reservado (amarillo), Vendido (rojo) |
+| Heart toggle | Quitar de favoritos directamente |
+| Paginacion | Mostrar 6 por pagina, cargar mas |
+| Empty state | Ilustracion + CTA "Explora nuestro catalogo" |
+| Link a detalle | Click en card → pagina del vehiculo |
+
+### Micro-Fase B5 — Historial de Visitas Mejorado
+
+| Tarea | Detalle |
+|-------|---------|
+| Timeline con fechas | Agrupado por "Hoy", "Esta semana", "Este mes" |
+| Cards con timestamp | "Visto hace 2 horas" |
+| Limpiar individual | Boton X por item |
+| Limpiar todo | Confirmacion antes de borrar |
+| Max 50 items | Limitar para rendimiento |
+
+### Micro-Fase B6 — Mis Solicitudes
+
+| Tarea | Detalle |
+|-------|---------|
+| Lista de solicitudes | Lee de `solicitudes` donde `email == user.email` |
+| Tipos con iconos | Consignacion, Financiacion, Contacto |
+| Status badges | Pendiente, Contactado, Completado, Rechazado |
+| Timeline visual | Stepper horizontal de progreso por solicitud |
+| Detalle expandible | Click → acordeon con datos completos |
+| Empty state | "No tienes solicitudes" + CTAs a formularios |
+
+### Micro-Fase B7 — Mis Citas
+
+| Tarea | Detalle |
+|-------|---------|
+| Proximas citas | Card con fecha, hora, vehiculo, estado |
+| Historial de citas | Citas pasadas colapsadas |
+| Status visual | Confirmada, Pendiente, Cancelada |
+| Accion cancelar | Con confirmacion |
+| Empty state | "No tienes citas" + CTA a agendar |
+
+### Micro-Fase B8 — Seguridad y Cuenta
+
+| Tarea | Detalle |
+|-------|---------|
+| Cambio de contraseña mejorado | UX con strength meter (reutilizar del registro) |
+| Proveedores vinculados | Mostrar Google / Email con badges |
+| Eliminar cuenta | Confirmacion doble + borrar `clientes/{uid}` + Auth delete |
+| Sesiones activas | Info del dispositivo actual |
+| Ultimo acceso | Fecha y hora del ultimo login |
+
+### Micro-Fase B9 — Preferencias
+
+| Tarea | Detalle |
+|-------|---------|
+| Notificaciones WhatsApp | Toggle opt-in/out |
+| Notificaciones email | Frecuencia: diario/semanal/nunca |
+| Tema visual | Toggle dark/light (persistido en localStorage) |
+| Campo en Firestore | `clientes/{uid}.preferencias` |
+
+### Micro-Fase B10 — Busquedas Guardadas y Alertas de Precio
+
+| Tarea | Detalle |
+|-------|---------|
+| Guardar busqueda | Desde filtros avanzados → "Guardar esta busqueda" |
+| Lista en perfil | Nombre + filtros + toggle alertas |
+| Alertas de precio | Toggle por vehiculo favorito |
+| Subcollection Firestore | `clientes/{uid}/busquedasGuardadas/{id}` |
+| Cloud Function (futuro) | Trigger en cambio de precio → email al usuario |
+
+---
+
+## 12. Fase 12 — Pendiente (Futuro)
 
 | ID | Tarea | Complejidad |
 |----|-------|-------------|
@@ -1312,7 +1452,7 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 
 ---
 
-## 11. SEO
+## 13. SEO
 
 Ver `SITEMAP-FIX.md` para estado detallado del sitemap y Google Search Console.
 

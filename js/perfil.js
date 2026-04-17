@@ -1,6 +1,7 @@
 // ============================================================
 //  PERFIL.JS — Panel de Usuario Premium — Altorra Cars
 //  Fase B1: Layout sidebar, navegacion, skeleton, perfil + seguridad
+//  Fase B2: Completitud, edicion mejorada, ubicacion, badges
 // ============================================================
 (function () {
     'use strict';
@@ -8,6 +9,8 @@
     var _user = null;
     var _userData = null;
     var _currentSection = 'perfil';
+    var _saveTimer = null;
+    var _saving = false;
 
     function $id(id) { return document.getElementById(id); }
 
@@ -19,6 +22,56 @@
         if (typeof toast !== 'undefined' && toast && toast.show) {
             toast.show(msg, type || 'info');
         }
+    }
+
+    // ── Colombia cities (main ones) ─────────────────────────
+    var COLOMBIA_CITIES = [
+        'Cartagena', 'Bogota', 'Medellin', 'Cali', 'Barranquilla',
+        'Bucaramanga', 'Santa Marta', 'Manizales', 'Pereira', 'Cucuta',
+        'Ibague', 'Villavicencio', 'Monteria', 'Pasto', 'Neiva',
+        'Valledupar', 'Armenia', 'Popayan', 'Sincelejo', 'Tunja',
+        'Riohacha', 'Florencia', 'Quibdo', 'Yopal', 'Mocoa'
+    ];
+
+    // ── Profile completeness ────────────────────────────────
+    function calcCompleteness(user, data) {
+        if (!data) return { pct: 0, missing: [], completed: [] };
+        var fields = [
+            { key: 'nombre',   label: 'Nombre',   check: function () { return !!(data.nombre || user.displayName); } },
+            { key: 'email',    label: 'Correo',    check: function () { return !!(data.email || user.email); } },
+            { key: 'telefono', label: 'Telefono',  check: function () { return !!data.telefono; } },
+            { key: 'ciudad',   label: 'Ciudad',    check: function () { return !!data.ciudad; } },
+            { key: 'avatarURL', label: 'Foto de perfil', check: function () { return !!(data.avatarURL || (user.photoURL && user.photoURL.indexOf('googleusercontent') !== -1)); } }
+        ];
+        var done = [];
+        var miss = [];
+        fields.forEach(function (f) {
+            if (f.check()) done.push(f);
+            else miss.push(f);
+        });
+        return { pct: Math.round((done.length / fields.length) * 100), missing: miss, completed: done };
+    }
+
+    function renderCompletenessBar(user, data) {
+        var info = calcCompleteness(user, data);
+        if (info.pct === 100) {
+            return '<div class="pf-completeness pf-completeness--done">' +
+                '<div class="pf-completeness-header">' +
+                    '<span class="pf-completeness-label"><i data-lucide="check-circle"></i> Perfil completo</span>' +
+                    '<span class="pf-completeness-pct">100%</span>' +
+                '</div>' +
+                '<div class="pf-progress"><div class="pf-progress-bar" style="width:100%"></div></div>' +
+            '</div>';
+        }
+        var tips = info.missing.map(function (m) { return m.label; }).join(', ');
+        return '<div class="pf-completeness">' +
+            '<div class="pf-completeness-header">' +
+                '<span class="pf-completeness-label"><i data-lucide="user-check"></i> Tu perfil esta al ' + info.pct + '%</span>' +
+                '<span class="pf-completeness-pct">' + info.pct + '%</span>' +
+            '</div>' +
+            '<div class="pf-progress"><div class="pf-progress-bar" style="width:' + info.pct + '%"></div></div>' +
+            '<p class="pf-completeness-tip">Completa: ' + escapeHtml(tips) + '</p>' +
+        '</div>';
     }
 
     // ── Navigation ──────────────────────────────────────────
@@ -104,10 +157,17 @@
         var name = (data && data.nombre) || (user && user.displayName) || '';
         var email = (data && data.email) || (user && user.email) || '';
         var initials = name ? name.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase() : '?';
+        var photoURL = (data && data.avatarURL) || (user && user.photoURL) || '';
 
         nameEl.textContent = name || 'Usuario';
         emailEl.textContent = email;
-        if (avatarEl) avatarEl.textContent = initials;
+        if (avatarEl) {
+            if (photoURL) {
+                avatarEl.innerHTML = '<img src="' + escapeHtml(photoURL) + '" alt="Avatar" onerror="this.parentNode.textContent=\'' + initials + '\'">';
+            } else {
+                avatarEl.textContent = initials;
+            }
+        }
     }
 
     // ── Skeleton Loading ────────────────────────────────────
@@ -173,46 +233,110 @@
         if (tabs) tabs.style.display = 'none';
     }
 
+    // ── Provider helpers ────────────────────────────────────
+    function getProviders(user) {
+        var providers = { google: false, password: false };
+        if (user.providerData) {
+            user.providerData.forEach(function (p) {
+                if (p.providerId === 'google.com') providers.google = true;
+                if (p.providerId === 'password') providers.password = true;
+            });
+        }
+        return providers;
+    }
+
+    function renderProviderBadges(user, created) {
+        var p = getProviders(user);
+        var html = '';
+        if (p.google) {
+            html += '<span class="pf-badge pf-badge-google">' +
+                '<svg width="12" height="12" viewBox="0 0 488 512"><path fill="#4285f4" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/></svg>' +
+                ' Google</span>';
+        }
+        if (p.password) {
+            html += '<span class="pf-badge pf-badge-email"><i data-lucide="mail"></i> Email</span>';
+        }
+        if (created) {
+            var d = new Date(created);
+            var months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            html += '<span class="pf-badge pf-badge-member"><i data-lucide="calendar"></i> Miembro desde ' + months[d.getMonth()] + ' ' + d.getFullYear() + '</span>';
+        }
+        return html;
+    }
+
+    // ── Phone validation ─────────────────────────────────────
+    function isValidPhone(v) {
+        return /^[0-9]{7,10}$/.test(v.replace(/\s/g, ''));
+    }
+
     // ── Profile Section ─────────────────────────────────────
     function renderProfileSection(user, data) {
         var name = data.nombre || user.displayName || (user.email || '').split('@')[0];
         var initials = name.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
         var email = data.email || user.email || '';
-        var phone = data.telefono ? ((data.prefijo || '+57') + ' ' + data.telefono) : 'No registrado';
+        var phone = data.telefono ? ((data.prefijo || '+57') + ' ' + data.telefono) : '';
+        var city = data.ciudad || '';
         var favCount = window.favoritesManager ? window.favoritesManager.count() : 0;
         var histCount = window.vehicleHistory ? window.vehicleHistory.getCount() : 0;
-        var created = data.creadoEn
-            ? new Date(data.creadoEn).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
-            : '';
+        var photoURL = data.avatarURL || user.photoURL || '';
 
-        var isGoogle = user.providerData && user.providerData[0] && user.providerData[0].providerId === 'google.com';
+        var avatarHtml = photoURL
+            ? '<img src="' + escapeHtml(photoURL) + '" alt="Avatar" onerror="this.parentNode.textContent=\'' + initials + '\'">'
+            : initials;
+
+        // City options
+        var cityOptions = '<option value="">Seleccionar ciudad</option>';
+        COLOMBIA_CITIES.forEach(function (c) {
+            cityOptions += '<option value="' + c + '"' + (city === c ? ' selected' : '') + '>' + c + '</option>';
+        });
+        if (city && COLOMBIA_CITIES.indexOf(city) === -1) {
+            cityOptions += '<option value="' + escapeHtml(city) + '" selected>' + escapeHtml(city) + '</option>';
+        }
 
         var html =
+            renderCompletenessBar(user, data) +
+
             '<div class="pf-card pf-hero">' +
-                '<div class="pf-avatar" id="pfAvatar">' + initials + '</div>' +
-                '<div>' +
+                '<div class="pf-avatar" id="pfAvatar">' + avatarHtml + '</div>' +
+                '<div class="pf-hero-info">' +
                     '<h1 class="pf-hero-name">' + escapeHtml(name) + '</h1>' +
                     '<p class="pf-hero-email">' + escapeHtml(email) + '</p>' +
                     '<div class="pf-hero-meta">' +
-                        (isGoogle
-                            ? '<span class="pf-badge pf-badge-google"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg> Google</span>'
-                            : '<span class="pf-badge pf-badge-email"><i data-lucide="mail"></i> Email</span>') +
-                        (created ? '<span class="pf-badge pf-badge-member"><i data-lucide="calendar"></i> ' + created + '</span>' : '') +
+                        renderProviderBadges(user, data.creadoEn) +
                     '</div>' +
                 '</div>' +
             '</div>' +
 
             '<div class="pf-card">' +
-                '<div class="pf-card-title">Datos personales</div>' +
+                '<div class="pf-card-header">' +
+                    '<div class="pf-card-title">Datos personales</div>' +
+                    '<span class="pf-autosave-indicator" id="pfAutoSave"></span>' +
+                '</div>' +
                 '<div id="pfInfoView">' +
-                    '<div class="pf-row"><span class="pf-label">Nombre</span><span class="pf-value">' + escapeHtml(name) + '</span></div>' +
-                    '<div class="pf-row"><span class="pf-label">Correo</span><span class="pf-value">' + escapeHtml(email) + '</span></div>' +
-                    '<div class="pf-row"><span class="pf-label">Telefono</span><span class="pf-value">' + escapeHtml(phone) + '</span></div>' +
+                    '<div class="pf-row"><span class="pf-label"><i data-lucide="user"></i> Nombre</span><span class="pf-value">' + escapeHtml(name) + '</span></div>' +
+                    '<div class="pf-row"><span class="pf-label"><i data-lucide="mail"></i> Correo</span><span class="pf-value">' + escapeHtml(email) + '</span></div>' +
+                    '<div class="pf-row"><span class="pf-label"><i data-lucide="phone"></i> Telefono</span><span class="pf-value">' + (phone ? escapeHtml(phone) : '<span class="pf-value-empty">No registrado</span>') + '</span></div>' +
+                    '<div class="pf-row"><span class="pf-label"><i data-lucide="map-pin"></i> Ciudad</span><span class="pf-value">' + (city ? escapeHtml(city) : '<span class="pf-value-empty">No registrada</span>') + '</span></div>' +
                     '<div class="pf-btn-group"><button class="pf-btn pf-btn-outline" id="pfEditBtn"><i data-lucide="pencil"></i> Editar datos</button></div>' +
                 '</div>' +
                 '<div class="pf-edit-form" id="pfEditForm">' +
-                    '<div class="pf-field"><label>Nombre</label><input class="pf-input" id="pfEditName" value="' + escapeHtml(name) + '"></div>' +
-                    '<div class="pf-field"><label>Telefono</label><input class="pf-input" id="pfEditPhone" value="' + escapeHtml(data.telefono || '') + '" placeholder="3001234567"></div>' +
+                    '<div class="pf-field">' +
+                        '<label>Nombre completo</label>' +
+                        '<input class="pf-input" id="pfEditName" value="' + escapeHtml(name) + '" maxlength="60">' +
+                        '<span class="pf-field-hint" id="pfNameHint"></span>' +
+                    '</div>' +
+                    '<div class="pf-field">' +
+                        '<label>Telefono</label>' +
+                        '<div class="pf-input-group">' +
+                            '<span class="pf-input-prefix">+57</span>' +
+                            '<input class="pf-input pf-input--prefixed" id="pfEditPhone" value="' + escapeHtml(data.telefono || '') + '" placeholder="300 123 4567" maxlength="10" inputmode="tel">' +
+                        '</div>' +
+                        '<span class="pf-field-hint" id="pfPhoneHint"></span>' +
+                    '</div>' +
+                    '<div class="pf-field">' +
+                        '<label>Ciudad</label>' +
+                        '<select class="pf-input pf-select" id="pfEditCity">' + cityOptions + '</select>' +
+                    '</div>' +
                     '<div class="pf-btn-group">' +
                         '<button class="pf-btn pf-btn-gold" id="pfSaveBtn"><i data-lucide="check"></i> Guardar</button>' +
                         '<button class="pf-btn pf-btn-outline" id="pfCancelBtn">Cancelar</button>' +
@@ -243,21 +367,61 @@
 
     // ── Security Section ────────────────────────────────────
     function renderSecuritySection(user) {
-        var isPassword = user.providerData && user.providerData[0] && user.providerData[0].providerId === 'password';
+        var prov = getProviders(user);
+        var lastAccess = _userData && _userData.ultimoAcceso
+            ? new Date(_userData.ultimoAcceso).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : '';
+
+        var providerCards = '';
+        if (prov.password) {
+            providerCards += '<div class="pf-provider-item">' +
+                '<div class="pf-provider-icon pf-provider-icon--email"><i data-lucide="mail"></i></div>' +
+                '<div class="pf-provider-info"><span class="pf-provider-name">Correo y contrasena</span><span class="pf-provider-detail">' + escapeHtml(user.email) + '</span></div>' +
+                '<span class="pf-badge pf-badge-email">Activo</span>' +
+            '</div>';
+        }
+        if (prov.google) {
+            var gEmail = '';
+            user.providerData.forEach(function (p) { if (p.providerId === 'google.com') gEmail = p.email || ''; });
+            providerCards += '<div class="pf-provider-item">' +
+                '<div class="pf-provider-icon pf-provider-icon--google">' +
+                    '<svg width="16" height="16" viewBox="0 0 488 512"><path fill="#4285f4" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/></svg>' +
+                '</div>' +
+                '<div class="pf-provider-info"><span class="pf-provider-name">Google</span><span class="pf-provider-detail">' + escapeHtml(gEmail) + '</span></div>' +
+                '<span class="pf-badge pf-badge-google">Activo</span>' +
+            '</div>';
+        }
 
         var html =
             '<div class="pf-card">' +
-                '<div class="pf-card-title">Acceso a tu cuenta</div>' +
-                '<div class="pf-row"><span class="pf-label">Proveedor</span><span class="pf-value">' +
-                    (isPassword ? 'Correo y contrasena' : 'Google') + '</span></div>' +
-                '<div class="pf-row"><span class="pf-label">Correo</span><span class="pf-value">' + escapeHtml(user.email) + '</span></div>' +
+                '<div class="pf-card-title">Proveedores de acceso</div>' +
+                '<div class="pf-providers">' + providerCards + '</div>' +
             '</div>' +
 
-            (isPassword
+            '<div class="pf-card">' +
+                '<div class="pf-card-title">Informacion de cuenta</div>' +
+                '<div class="pf-row"><span class="pf-label"><i data-lucide="mail"></i> Correo</span><span class="pf-value">' + escapeHtml(user.email) + '</span></div>' +
+                (lastAccess ? '<div class="pf-row"><span class="pf-label"><i data-lucide="clock"></i> Ultimo acceso</span><span class="pf-value">' + lastAccess + '</span></div>' : '') +
+                '<div class="pf-row"><span class="pf-label"><i data-lucide="fingerprint"></i> UID</span><span class="pf-value pf-value-mono">' + escapeHtml(user.uid.substring(0, 12)) + '...</span></div>' +
+            '</div>' +
+
+            (prov.password
                 ? '<div class="pf-card">' +
                     '<div class="pf-card-title">Cambiar contrasena</div>' +
-                    '<div class="pf-field"><label>Contrasena actual</label><input class="pf-input" type="password" id="pfOldPass"></div>' +
-                    '<div class="pf-field"><label>Nueva contrasena</label><input class="pf-input" type="password" id="pfNewPass" placeholder="Minimo 6 caracteres"></div>' +
+                    '<div class="pf-field"><label>Contrasena actual</label>' +
+                        '<div class="pf-pass-wrap">' +
+                            '<input class="pf-input" type="password" id="pfOldPass" autocomplete="current-password">' +
+                            '<button class="pf-pass-toggle" type="button" data-target="pfOldPass" title="Mostrar"><i data-lucide="eye"></i></button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="pf-field"><label>Nueva contrasena</label>' +
+                        '<div class="pf-pass-wrap">' +
+                            '<input class="pf-input" type="password" id="pfNewPass" placeholder="Minimo 6 caracteres" autocomplete="new-password">' +
+                            '<button class="pf-pass-toggle" type="button" data-target="pfNewPass" title="Mostrar"><i data-lucide="eye"></i></button>' +
+                        '</div>' +
+                        '<div class="pf-strength" id="pfStrength"><div class="pf-strength-bar" id="pfStrengthBar"></div></div>' +
+                        '<span class="pf-field-hint" id="pfStrengthLabel"></span>' +
+                    '</div>' +
                     '<div class="pf-btn-group"><button class="pf-btn pf-btn-outline" id="pfChangePassBtn"><i data-lucide="key"></i> Cambiar contrasena</button></div>' +
                     '<div class="pf-pass-msg" id="pfPassMsg"></div>' +
                   '</div>'
@@ -272,6 +436,18 @@
             '</div>';
 
         return html;
+    }
+
+    // ── Password strength ────────────────────────────────────
+    function calcPasswordStrength(pass) {
+        if (!pass) return 0;
+        var score = 0;
+        if (pass.length >= 6) score++;
+        if (pass.length >= 8) score++;
+        if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) score++;
+        if (/\d/.test(pass)) score++;
+        if (/[^a-zA-Z0-9]/.test(pass)) score++;
+        return Math.min(score, 4);
     }
 
     // ── Placeholder sections ────────────────────────────────
@@ -333,42 +509,143 @@
         if (editBtn) editBtn.addEventListener('click', function () {
             infoView.style.display = 'none';
             editForm.classList.add('active');
+            var nameInput = $id('pfEditName');
+            if (nameInput) nameInput.focus();
         });
 
         var cancelBtn = $id('pfCancelBtn');
         if (cancelBtn) cancelBtn.addEventListener('click', function () {
             editForm.classList.remove('active');
             infoView.style.display = '';
+            // Reset values
+            $id('pfEditName').value = escapeHtml(data.nombre || user.displayName || '');
+            $id('pfEditPhone').value = data.telefono || '';
+            var cityEl = $id('pfEditCity');
+            if (cityEl) cityEl.value = data.ciudad || '';
+            clearHints();
+        });
+
+        // Inline validation
+        var nameInput = $id('pfEditName');
+        var phoneInput = $id('pfEditPhone');
+        if (nameInput) nameInput.addEventListener('input', function () {
+            var v = this.value.trim();
+            var hint = $id('pfNameHint');
+            if (!v) { hint.textContent = 'El nombre es obligatorio'; hint.className = 'pf-field-hint pf-hint-error'; }
+            else if (v.length < 2) { hint.textContent = 'Muy corto'; hint.className = 'pf-field-hint pf-hint-error'; }
+            else { hint.textContent = ''; hint.className = 'pf-field-hint'; }
+        });
+        if (phoneInput) phoneInput.addEventListener('input', function () {
+            var v = this.value.replace(/\s/g, '');
+            var hint = $id('pfPhoneHint');
+            if (v && !isValidPhone(v)) { hint.textContent = 'Ingresa 7-10 digitos'; hint.className = 'pf-field-hint pf-hint-error'; }
+            else { hint.textContent = ''; hint.className = 'pf-field-hint'; }
         });
 
         var saveBtn = $id('pfSaveBtn');
         if (saveBtn) saveBtn.addEventListener('click', function () {
             var newName = ($id('pfEditName').value || '').trim();
-            var newPhone = ($id('pfEditPhone').value || '').trim();
-            if (!newName) return;
-            saveBtn.disabled = true;
+            var newPhone = ($id('pfEditPhone').value || '').replace(/\s/g, '').trim();
+            var newCity = ($id('pfEditCity').value || '').trim();
 
-            window.db.collection('clientes').doc(user.uid).update({
-                nombre: newName,
-                telefono: newPhone
-            }).then(function () {
+            // Validate
+            if (!newName || newName.length < 2) {
+                var h = $id('pfNameHint');
+                h.textContent = 'El nombre es obligatorio';
+                h.className = 'pf-field-hint pf-hint-error';
+                $id('pfEditName').focus();
+                return;
+            }
+            if (newPhone && !isValidPhone(newPhone)) {
+                var ph = $id('pfPhoneHint');
+                ph.textContent = 'Ingresa 7-10 digitos';
+                ph.className = 'pf-field-hint pf-hint-error';
+                $id('pfEditPhone').focus();
+                return;
+            }
+
+            saveBtn.disabled = true;
+            showAutoSave('saving');
+
+            var updates = { nombre: newName, telefono: newPhone, ciudad: newCity };
+
+            window.db.collection('clientes').doc(user.uid).update(updates).then(function () {
                 user.updateProfile({ displayName: newName }).catch(function () {});
-                _toast('Datos actualizados.', 'success');
                 _userData.nombre = newName;
                 _userData.telefono = newPhone;
+                _userData.ciudad = newCity;
+                showAutoSave('saved');
+                _toast('Datos actualizados.', 'success');
                 renderAllSections(user, _userData);
                 updateSidebarUser(user, _userData);
                 buildNavigation();
                 switchSection('perfil');
             }).catch(function (err) {
+                showAutoSave('error');
                 _toast('Error al guardar: ' + (err.message || ''), 'error');
                 saveBtn.disabled = false;
             });
         });
     }
 
+    function clearHints() {
+        ['pfNameHint', 'pfPhoneHint'].forEach(function (id) {
+            var el = $id(id);
+            if (el) { el.textContent = ''; el.className = 'pf-field-hint'; }
+        });
+    }
+
+    function showAutoSave(state) {
+        var el = $id('pfAutoSave');
+        if (!el) return;
+        if (state === 'saving') {
+            el.innerHTML = '<i data-lucide="loader-2"></i> Guardando...';
+            el.className = 'pf-autosave-indicator pf-autosave-saving';
+        } else if (state === 'saved') {
+            el.innerHTML = '<i data-lucide="check"></i> Guardado';
+            el.className = 'pf-autosave-indicator pf-autosave-saved';
+            if (window.lucide) window.lucide.createIcons({ attrs: { class: '' } });
+            setTimeout(function () { if (el) el.className = 'pf-autosave-indicator'; }, 2500);
+        } else if (state === 'error') {
+            el.innerHTML = '<i data-lucide="alert-circle"></i> Error';
+            el.className = 'pf-autosave-indicator pf-autosave-error';
+        }
+        if (window.lucide) window.lucide.createIcons();
+    }
+
     // ── Wire security events ────────────────────────────────
     function wireSecurityEvents(user) {
+        // Password visibility toggles
+        document.querySelectorAll('.pf-pass-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var input = $id(this.dataset.target);
+                if (!input) return;
+                var isPass = input.type === 'password';
+                input.type = isPass ? 'text' : 'password';
+                var icon = this.querySelector('[data-lucide]');
+                if (icon) {
+                    icon.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            });
+        });
+
+        // Password strength meter
+        var newPassInput = $id('pfNewPass');
+        if (newPassInput) newPassInput.addEventListener('input', function () {
+            var val = this.value;
+            var score = calcPasswordStrength(val);
+            var bar = $id('pfStrengthBar');
+            var label = $id('pfStrengthLabel');
+            if (!bar || !label) return;
+            var levels = ['', 'Debil', 'Regular', 'Buena', 'Fuerte'];
+            var colors = ['', 'var(--pf-danger)', '#e68a00', 'var(--pf-success)', '#00c853'];
+            bar.style.width = (score * 25) + '%';
+            bar.style.background = colors[score] || '';
+            label.textContent = val ? levels[score] || '' : '';
+            label.style.color = colors[score] || '';
+        });
+
         var passBtn = $id('pfChangePassBtn');
         if (passBtn) passBtn.addEventListener('click', function () {
             var oldPass = ($id('pfOldPass').value || '');
@@ -393,6 +670,10 @@
                 msgEl.className = 'pf-pass-msg success';
                 $id('pfOldPass').value = '';
                 $id('pfNewPass').value = '';
+                var bar = $id('pfStrengthBar');
+                var label = $id('pfStrengthLabel');
+                if (bar) bar.style.width = '0';
+                if (label) label.textContent = '';
             }).catch(function (err) {
                 var msg = 'Error al cambiar contrasena.';
                 if (err.code === 'auth/wrong-password') msg = 'La contrasena actual es incorrecta.';

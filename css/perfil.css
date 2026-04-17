@@ -1,6 +1,7 @@
 /* ============================================================
    PERFIL.CSS — Panel de Usuario Premium — Altorra Cars
-   Fase B1: Layout sidebar + cards + skeleton + responsive
+   B1: Layout sidebar + cards + skeleton + responsive
+   B2: Completitud, providers, input groups, strength, badges
    Inspirado en Apple ID, MercadoLibre, Amazon Mi Cuenta
    ============================================================ */
 
@@ -313,6 +314,128 @@ body { background: var(--pf-bg); }
 .pf-badge [data-lucide],
 .pf-badge svg { width: 12px; height: 12px; }
 
+/* ── Completeness bar ─────────────────────────────────────── */
+.pf-completeness {
+    background: var(--pf-card);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius);
+    padding: 1.2rem 1.6rem;
+    margin-bottom: 1.2rem;
+}
+.pf-completeness--done {
+    border-color: rgba(34, 160, 107, .2);
+    background: linear-gradient(135deg, rgba(34, 160, 107, .04) 0%, var(--pf-card) 60%);
+}
+.pf-completeness-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .6rem;
+}
+.pf-completeness-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--pf-text);
+}
+.pf-completeness-label [data-lucide],
+.pf-completeness-label svg { width: 16px; height: 16px; }
+.pf-completeness--done .pf-completeness-label { color: var(--pf-success); }
+.pf-completeness-pct {
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--pf-gold);
+}
+.pf-completeness--done .pf-completeness-pct { color: var(--pf-success); }
+.pf-progress {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, .06);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.pf-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pf-gold), #d4aa5f);
+    border-radius: 3px;
+    transition: width .6s cubic-bezier(.25, .8, .25, 1);
+}
+.pf-completeness--done .pf-progress-bar { background: linear-gradient(90deg, var(--pf-success), #2dd48a); }
+.pf-completeness-tip {
+    font-size: .75rem;
+    color: var(--pf-text-muted);
+    margin: .5rem 0 0;
+}
+
+/* ── Card header with autosave ────────────────────────────── */
+.pf-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.pf-card-header .pf-card-title { margin: 0; }
+.pf-autosave-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: .72rem;
+    font-weight: 500;
+    color: transparent;
+    transition: color .3s;
+}
+.pf-autosave-indicator [data-lucide],
+.pf-autosave-indicator svg { width: 13px; height: 13px; }
+.pf-autosave-saving { color: var(--pf-text-muted); }
+.pf-autosave-saving [data-lucide] { animation: pfSpin .8s linear infinite; }
+@keyframes pfSpin { to { transform: rotate(360deg); } }
+.pf-autosave-saved { color: var(--pf-success); }
+.pf-autosave-error { color: var(--pf-danger); }
+
+/* ── Provider cards ───────────────────────────────────────── */
+.pf-providers { display: flex; flex-direction: column; gap: .6rem; }
+.pf-provider-item {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    padding: .8rem 1rem;
+    background: #111;
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-sm);
+    transition: border-color var(--pf-transition);
+}
+.pf-provider-item:hover { border-color: var(--pf-border-hover); }
+.pf-provider-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.pf-provider-icon [data-lucide],
+.pf-provider-icon svg { width: 16px; height: 16px; }
+.pf-provider-icon--email { background: var(--pf-gold-15); color: var(--pf-gold); }
+.pf-provider-icon--google { background: rgba(66, 133, 244, .1); }
+.pf-provider-info { flex: 1; min-width: 0; }
+.pf-provider-name {
+    display: block;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--pf-text);
+}
+.pf-provider-detail {
+    display: block;
+    font-size: .72rem;
+    color: var(--pf-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* ── Info rows ─────────────────────────────────────────────── */
 .pf-row {
     display: flex;
@@ -322,7 +445,7 @@ body { background: var(--pf-bg); }
     border-bottom: 1px solid var(--pf-border);
 }
 .pf-row:last-child { border-bottom: none; }
-.pf-label { color: var(--pf-text-secondary); font-size: .85rem; }
+.pf-label { color: var(--pf-text-secondary); font-size: .85rem; display: flex; align-items: center; gap: 6px; }
 .pf-value {
     color: var(--pf-text);
     font-size: .88rem;
@@ -362,6 +485,108 @@ body { background: var(--pf-bg); }
     box-shadow: 0 0 0 3px var(--pf-gold-15);
 }
 .pf-input::placeholder { color: var(--pf-text-muted); }
+
+.pf-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 2.2rem;
+    cursor: pointer;
+}
+.pf-select option { background: #111; color: var(--pf-text); }
+
+.pf-input-group {
+    display: flex;
+    align-items: stretch;
+}
+.pf-input-prefix {
+    display: flex;
+    align-items: center;
+    padding: 0 .7rem;
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    color: var(--pf-text-muted);
+    font-size: .82rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.pf-input--prefixed {
+    border-radius: 0 8px 8px 0;
+}
+
+.pf-field-hint {
+    display: block;
+    font-size: .72rem;
+    min-height: .72rem;
+    margin-top: .25rem;
+    color: var(--pf-text-muted);
+    transition: color .2s;
+}
+.pf-hint-error { color: var(--pf-danger); }
+.pf-hint-success { color: var(--pf-success); }
+
+.pf-value-empty {
+    color: var(--pf-text-muted);
+    font-style: italic;
+    font-weight: 400;
+}
+.pf-value-mono {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: .78rem;
+    color: var(--pf-text-muted);
+}
+
+/* ── Password visibility + strength ───────────────────────── */
+.pf-pass-wrap {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+}
+.pf-pass-wrap .pf-input { flex: 1; padding-right: 2.5rem; }
+.pf-pass-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--pf-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color var(--pf-transition);
+}
+.pf-pass-toggle:hover { color: var(--pf-text); }
+.pf-pass-toggle [data-lucide],
+.pf-pass-toggle svg { width: 16px; height: 16px; }
+
+.pf-strength {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, .06);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: .4rem;
+}
+.pf-strength-bar {
+    height: 100%;
+    width: 0;
+    border-radius: 2px;
+    transition: width .3s, background .3s;
+}
+
+/* ── Label icons ──────────────────────────────────────────── */
+.pf-label [data-lucide],
+.pf-label svg {
+    width: 14px;
+    height: 14px;
+    opacity: .5;
+    flex-shrink: 0;
+}
 
 /* ── Buttons ───────────────────────────────────────────────── */
 .pf-btn {
@@ -563,6 +788,8 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
     .pf-hero-meta { justify-content: center; }
     .pf-stats { grid-template-columns: repeat(3, 1fr); }
     .pf-section-title { font-size: 1.15rem; }
+    .pf-provider-item { padding: .7rem .8rem; }
+    .pf-completeness { padding: 1rem 1.2rem; }
 }
 
 @media (max-width: 480px) {
@@ -575,4 +802,7 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
     .pf-stat-num { font-size: 1.3rem; }
     .pf-btn-group { flex-direction: column; }
     .pf-btn-group .pf-btn { width: 100%; }
+    .pf-provider-item { gap: .6rem; }
+    .pf-provider-icon { width: 32px; height: 32px; }
+    .pf-completeness-header { flex-direction: column; align-items: flex-start; gap: .2rem; }
 }

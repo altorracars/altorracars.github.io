@@ -212,11 +212,20 @@ function generatePage(template, v, slug) {
         `    <script type="application/ld+json">${JSON.stringify(schema)}</script>\n</head>`
     );
 
-    // 8. Inject PRERENDERED_VEHICLE_ID before inline script
-    html = html.replace(
-        '    <script>\n        let currentVehicle = null;',
-        `    <script>window.PRERENDERED_VEHICLE_ID = ${JSON.stringify(String(v.id))};</script>\n    <script>\n        let currentVehicle = null;`
-    );
+    // 8. Inject PRERENDERED_VEHICLE_ID before historial-visitas.js so auto-tracking
+    //    can read it synchronously. Falls back to before inline script if not found.
+    const prerenderedTag = `<script>window.PRERENDERED_VEHICLE_ID = ${JSON.stringify(String(v.id))};</script>`;
+    if (html.includes('<script src="js/historial-visitas.js"></script>')) {
+        html = html.replace(
+            '<script src="js/historial-visitas.js"></script>',
+            prerenderedTag + '\n    <script src="js/historial-visitas.js"></script>'
+        );
+    } else {
+        html = html.replace(
+            '    <script>\n        let currentVehicle = null;',
+            `    ${prerenderedTag}\n    <script>\n        let currentVehicle = null;`
+        );
+    }
 
     // 9. Add <noscript> SEO content after header placeholder
     const noscriptContent = `

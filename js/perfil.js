@@ -564,6 +564,163 @@
         return Math.min(score, 4);
     }
 
+    // ── Favorites Section (B4) ─────────────────────────────
+    var FAV_PER_PAGE = 6;
+    var _favPage = 0;
+
+    function getVehicleSlug(v) {
+        return [v.marca, v.modelo, v.year, v.id]
+            .filter(Boolean).join('-').toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    function formatCOP(price) {
+        if (!price) return '';
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(price);
+    }
+
+    function estadoBadge(estado) {
+        var map = {
+            disponible: { cls: 'pf-estado--available', label: 'Disponible' },
+            reservado:  { cls: 'pf-estado--reserved',  label: 'Reservado' },
+            vendido:    { cls: 'pf-estado--sold',      label: 'Vendido' }
+        };
+        var e = map[estado] || map.disponible;
+        return '<span class="pf-estado ' + e.cls + '">' + e.label + '</span>';
+    }
+
+    function renderFavCard(v) {
+        var url = 'vehiculos/' + getVehicleSlug(v) + '.html';
+        var img = (v.imagenes && v.imagenes[0]) || v.imagen || '';
+        var price = v.precioOferta || v.precio;
+        var oldPrice = v.precioOferta && v.precio ? v.precio : 0;
+
+        return '<div class="pf-fav-card" data-id="' + v.id + '">' +
+            '<a href="' + url + '" class="pf-fav-img-wrap">' +
+                (img ? '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(v.marca + ' ' + v.modelo) + '" loading="lazy">' : '<div class="pf-fav-noimg"><i data-lucide="car"></i></div>') +
+                (v.precioOferta ? '<span class="pf-fav-offer">Oferta</span>' : '') +
+            '</a>' +
+            '<div class="pf-fav-info">' +
+                '<a href="' + url + '" class="pf-fav-title">' + escapeHtml(v.marca) + ' ' + escapeHtml(v.modelo) + ' <span>' + (v.year || '') + '</span></a>' +
+                '<div class="pf-fav-details">' +
+                    (v.kilometraje ? '<span><i data-lucide="gauge"></i> ' + Number(v.kilometraje).toLocaleString('es-CO') + ' km</span>' : '') +
+                    (v.transmision ? '<span><i data-lucide="settings-2"></i> ' + escapeHtml(v.transmision) + '</span>' : '') +
+                '</div>' +
+                '<div class="pf-fav-bottom">' +
+                    '<div class="pf-fav-price">' +
+                        (oldPrice ? '<span class="pf-fav-old-price">' + formatCOP(oldPrice) + '</span> ' : '') +
+                        '<span>' + formatCOP(price) + '</span>' +
+                    '</div>' +
+                    estadoBadge(v.estado) +
+                '</div>' +
+            '</div>' +
+            '<button class="pf-fav-remove" data-action="removeFav" data-id="' + v.id + '" title="Quitar de favoritos"><i data-lucide="heart-off"></i></button>' +
+        '</div>';
+    }
+
+    function renderFavoritesSection() {
+        if (!window.favoritesManager) return renderEmptySection('heart', 'Tus favoritos', 'Guarda vehiculos que te interesen para verlos despues.', 'Explorar catalogo', 'busqueda.html');
+
+        var ids = window.favoritesManager.getAll();
+        if (!ids || ids.length === 0) {
+            return renderEmptySection('heart', 'Tus favoritos', 'Guarda vehiculos que te interesen para verlos despues.', 'Explorar catalogo', 'busqueda.html');
+        }
+
+        var db = window.vehicleDB;
+        var vehicles = [];
+        if (db && db.vehicles) {
+            ids.forEach(function (id) {
+                var v = db.getVehicleById(id);
+                if (v) vehicles.push(v);
+            });
+        }
+
+        if (vehicles.length === 0) {
+            return '<div class="pf-card"><div class="pf-empty">' +
+                '<div class="pf-empty-icon"><i data-lucide="heart"></i></div>' +
+                '<h3>' + ids.length + ' favorito' + (ids.length > 1 ? 's' : '') + '</h3>' +
+                '<p>Los datos de los vehiculos estan cargando. Intenta de nuevo en unos segundos.</p>' +
+                '</div></div>';
+        }
+
+        _favPage = 0;
+        var total = vehicles.length;
+        var show = Math.min(FAV_PER_PAGE, total);
+
+        var html = '<div class="pf-fav-count">' + total + ' vehiculo' + (total > 1 ? 's' : '') + ' guardado' + (total > 1 ? 's' : '') + '</div>';
+        html += '<div class="pf-fav-grid" id="pfFavGrid">';
+        for (var i = 0; i < show; i++) {
+            html += renderFavCard(vehicles[i]);
+        }
+        html += '</div>';
+
+        if (total > FAV_PER_PAGE) {
+            html += '<div class="pf-btn-group" style="justify-content:center;margin-top:1rem;" id="pfFavLoadMore">' +
+                '<button class="pf-btn pf-btn-outline" id="pfFavMoreBtn"><i data-lucide="chevron-down"></i> Ver mas (' + (total - FAV_PER_PAGE) + ' restantes)</button>' +
+                '</div>';
+        }
+
+        return html;
+    }
+
+    function wireFavoritesEvents() {
+        var content = document.getElementById('section-favoritos');
+        if (!content) return;
+
+        content.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-action="removeFav"]');
+            if (!btn) return;
+            var id = btn.dataset.id;
+            if (!id || !window.favoritesManager) return;
+
+            var card = btn.closest('.pf-fav-card');
+            if (card) {
+                card.style.transition = 'opacity .3s, transform .3s';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(.95)';
+            }
+
+            setTimeout(function () {
+                window.favoritesManager.remove(id);
+                renderAllSections(_user, _userData);
+                buildNavigation();
+                switchSection('favoritos');
+            }, 300);
+        });
+
+        var moreBtn = document.getElementById('pfFavMoreBtn');
+        if (moreBtn) moreBtn.addEventListener('click', function () {
+            _favPage++;
+            var ids = window.favoritesManager.getAll();
+            var db = window.vehicleDB;
+            if (!db) return;
+            var vehicles = [];
+            ids.forEach(function (id) {
+                var v = db.getVehicleById(id);
+                if (v) vehicles.push(v);
+            });
+
+            var start = FAV_PER_PAGE + (_favPage - 1) * FAV_PER_PAGE;
+            var end = Math.min(start + FAV_PER_PAGE, vehicles.length);
+            var grid = document.getElementById('pfFavGrid');
+            if (!grid) return;
+
+            for (var i = start; i < end; i++) {
+                grid.insertAdjacentHTML('beforeend', renderFavCard(vehicles[i]));
+            }
+            if (window.lucide) window.lucide.createIcons();
+
+            if (end >= vehicles.length) {
+                var wrap = document.getElementById('pfFavLoadMore');
+                if (wrap) wrap.remove();
+            } else {
+                moreBtn.innerHTML = '<i data-lucide="chevron-down"></i> Ver mas (' + (vehicles.length - end) + ' restantes)';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        });
+    }
+
     // ── Placeholder sections ────────────────────────────────
     function renderEmptySection(icon, title, message, ctaText, ctaHref) {
         var cta = ctaText
@@ -584,7 +741,7 @@
 
         var sections = {
             perfil: renderProfileSection(user, data),
-            favoritos: renderEmptySection('heart', 'Tus favoritos', 'Guarda vehiculos que te interesen para verlos despues.', 'Explorar catalogo', 'busqueda.html'),
+            favoritos: renderFavoritesSection(),
             historial: renderEmptySection('clock-3', 'Tu historial', 'Los vehiculos que visites apareceran aqui.', 'Ver catalogo', 'busqueda.html'),
             solicitudes: renderEmptySection('file-text', 'Tus solicitudes', 'Aqui veras el estado de tus solicitudes de financiacion, consignacion o contacto.', 'Solicitar financiacion', '#'),
             citas: renderEmptySection('calendar', 'Tus citas', 'Agenda una cita para ver un vehiculo en persona.', 'Agendar cita', 'contacto.html'),
@@ -606,6 +763,7 @@
         // Wire events
         wireProfileEvents(user, data);
         wireSecurityEvents(user);
+        wireFavoritesEvents();
 
         // Show sidebar
         var sidebar = $id('pfSidebar');

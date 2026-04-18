@@ -803,6 +803,156 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
     margin-right: auto;
 }
 
+/* ── Favorites (B4) ───────────────────────────────────────── */
+.pf-fav-count {
+    font-size: .78rem;
+    color: var(--pf-text-muted);
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+.pf-fav-grid {
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+}
+.pf-fav-card {
+    display: flex;
+    align-items: stretch;
+    background: var(--pf-card);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius);
+    overflow: hidden;
+    transition: border-color var(--pf-transition), opacity .3s, transform .3s;
+    position: relative;
+}
+.pf-fav-card:hover { border-color: var(--pf-border-hover); }
+
+.pf-fav-img-wrap {
+    width: 140px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    background: #111;
+}
+.pf-fav-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .3s;
+}
+.pf-fav-card:hover .pf-fav-img-wrap img { transform: scale(1.04); }
+.pf-fav-noimg {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--pf-text-muted);
+}
+.pf-fav-noimg [data-lucide],
+.pf-fav-noimg svg { width: 32px; height: 32px; }
+.pf-fav-offer {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: var(--pf-gold);
+    color: #fff;
+    font-size: .62rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.pf-fav-info {
+    flex: 1;
+    min-width: 0;
+    padding: .9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .35rem;
+}
+.pf-fav-title {
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--pf-text);
+    text-decoration: none;
+    line-height: 1.3;
+}
+.pf-fav-title:hover { color: var(--pf-gold); }
+.pf-fav-title span { color: var(--pf-text-secondary); font-weight: 400; }
+
+.pf-fav-details {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    font-size: .75rem;
+    color: var(--pf-text-muted);
+}
+.pf-fav-details span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+.pf-fav-details [data-lucide],
+.pf-fav-details svg { width: 12px; height: 12px; }
+
+.pf-fav-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-top: .15rem;
+}
+.pf-fav-price {
+    font-size: .88rem;
+    font-weight: 700;
+    color: var(--pf-gold);
+}
+.pf-fav-old-price {
+    font-size: .72rem;
+    color: var(--pf-text-muted);
+    text-decoration: line-through;
+    font-weight: 400;
+}
+
+.pf-estado {
+    font-size: .65rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+.pf-estado--available { background: rgba(34,160,107,.1); color: var(--pf-success); }
+.pf-estado--reserved { background: rgba(230,138,0,.1); color: #e68a00; }
+.pf-estado--sold { background: rgba(217,48,37,.1); color: var(--pf-danger); }
+
+.pf-fav-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(0,0,0,.5);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity .2s, background .2s;
+}
+.pf-fav-card:hover .pf-fav-remove { opacity: 1; }
+.pf-fav-remove:hover { background: var(--pf-danger); }
+.pf-fav-remove [data-lucide],
+.pf-fav-remove svg { width: 14px; height: 14px; }
+
 /* ── Skeleton loading ──────────────────────────────────────── */
 .pf-skeleton {
     background: linear-gradient(90deg, #1a1a1a 25%, #232323 50%, #1a1a1a 75%);
@@ -872,4 +1022,14 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
     .pf-provider-item { gap: .6rem; }
     .pf-provider-icon { width: 32px; height: 32px; }
     .pf-completeness-header { flex-direction: column; align-items: flex-start; gap: .2rem; }
+    .pf-fav-img-wrap { width: 100px; }
+    .pf-fav-info { padding: .7rem .75rem; }
+    .pf-fav-title { font-size: .82rem; }
+    .pf-fav-price { font-size: .8rem; }
+    .pf-fav-bottom { flex-direction: column; align-items: flex-start; gap: .25rem; }
+    .pf-fav-remove { opacity: 1; }
+}
+
+@media (hover: none) {
+    .pf-fav-remove { opacity: 1; }
 }

@@ -229,6 +229,9 @@
                 var c = window.favoritesManager.count();
                 if (c > 0) badgeHtml = '<span class="pf-nav-badge">' + c + '</span>';
             }
+            if (s.id === 'solicitudes' && _solicitudes && _solicitudes.length > 0) {
+                badgeHtml = '<span class="pf-nav-badge">' + _solicitudes.length + '</span>';
+            }
             navHtml += '<li class="pf-nav-item' + (s.id === _currentSection ? ' active' : '') + '" data-section="' + s.id + '">' +
                 '<i data-lucide="' + s.icon + '"></i>' +
                 '<span>' + s.label + '</span>' +
@@ -469,8 +472,8 @@
                         '<div class="pf-stat-num" id="pfHistCount">' + histCount + '</div>' +
                         '<div class="pf-stat-label">Vistos</div>' +
                     '</div>' +
-                    '<div class="pf-stat">' +
-                        '<div class="pf-stat-num">0</div>' +
+                    '<div class="pf-stat pf-stat--clickable" data-go-section="solicitudes">' +
+                        '<div class="pf-stat-num" id="pfSolCount">' + (_solicitudes ? _solicitudes.length : 0) + '</div>' +
                         '<div class="pf-stat-label">Solicitudes</div>' +
                     '</div>' +
                 '</div>' +
@@ -886,6 +889,203 @@
         });
     }
 
+    // ── Solicitudes Section (B6) ──────────────────────────────
+    var _solicitudes = null; // cached after first load
+    var _solExpanded = {};   // track expanded accordion items
+
+    var SOL_TIPOS = {
+        consignacion_venta: { icon: 'car',           label: 'Consignacion / Venta' },
+        financiacion:       { icon: 'landmark',      label: 'Financiacion' },
+        contacto_general:   { icon: 'message-circle', label: 'Contacto General' }
+    };
+
+    var SOL_ESTADOS = {
+        pendiente:  { label: 'Pendiente',  cls: 'pf-sol-st--pending',   step: 1 },
+        contactado: { label: 'Contactado', cls: 'pf-sol-st--contacted', step: 2 },
+        completado: { label: 'Completado', cls: 'pf-sol-st--completed', step: 3 },
+        rechazado:  { label: 'Rechazado',  cls: 'pf-sol-st--rejected',  step: 0 }
+    };
+
+    var SOL_STEPS = ['Recibida', 'Contactado', 'Completado'];
+
+    function formatDateShort(val) {
+        if (!val) return '';
+        var d;
+        if (val.toDate) d = val.toDate();
+        else if (val.seconds) d = new Date(val.seconds * 1000);
+        else d = new Date(val);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function solTipo(tipo) {
+        return SOL_TIPOS[tipo] || SOL_TIPOS.contacto_general;
+    }
+
+    function solEstado(estado) {
+        return SOL_ESTADOS[estado] || SOL_ESTADOS.pendiente;
+    }
+
+    function renderSolStepper(estado) {
+        var info = solEstado(estado);
+        if (info.step === 0) {
+            return '<div class="pf-sol-stepper pf-sol-stepper--rejected">' +
+                '<div class="pf-sol-step pf-sol-step--rejected"><i data-lucide="x"></i><span>Rechazado</span></div>' +
+                '</div>';
+        }
+        var html = '<div class="pf-sol-stepper">';
+        for (var i = 0; i < SOL_STEPS.length; i++) {
+            var done = i < info.step;
+            var current = i === info.step - 1;
+            html += '<div class="pf-sol-step' + (done ? ' pf-sol-step--done' : '') + (current ? ' pf-sol-step--current' : '') + '">';
+            html += '<div class="pf-sol-step-dot">' + (done ? '<i data-lucide="check"></i>' : (i + 1)) + '</div>';
+            html += '<span>' + SOL_STEPS[i] + '</span>';
+            html += '</div>';
+            if (i < SOL_STEPS.length - 1) html += '<div class="pf-sol-step-line' + (i < info.step - 1 ? ' pf-sol-step-line--done' : '') + '"></div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function renderSolDetail(sol) {
+        var rows = '';
+        if (sol.vehiculo) rows += '<div class="pf-row"><span class="pf-label"><i data-lucide="car"></i> Vehiculo</span><span class="pf-value">' + escapeHtml(sol.vehiculo) + '</span></div>';
+        if (sol.telefono) rows += '<div class="pf-row"><span class="pf-label"><i data-lucide="phone"></i> Telefono</span><span class="pf-value">' + escapeHtml((sol.prefijoPais || '+57') + ' ' + sol.telefono) + '</span></div>';
+        if (sol.comentarios) rows += '<div class="pf-row" style="flex-direction:column;align-items:flex-start;gap:.3rem;"><span class="pf-label"><i data-lucide="message-square"></i> Comentarios</span><span class="pf-value" style="max-width:100%;text-align:left;">' + escapeHtml(sol.comentarios) + '</span></div>';
+        if (sol.observaciones) rows += '<div class="pf-row" style="flex-direction:column;align-items:flex-start;gap:.3rem;"><span class="pf-label"><i data-lucide="clipboard-list"></i> Respuesta</span><span class="pf-value" style="max-width:100%;text-align:left;">' + escapeHtml(sol.observaciones) + '</span></div>';
+
+        if (sol.tipo === 'consignacion_venta' && sol.datosExtra) {
+            var d = sol.datosExtra;
+            if (d.marca) rows += '<div class="pf-row"><span class="pf-label">Marca</span><span class="pf-value">' + escapeHtml(d.marca) + '</span></div>';
+            if (d.modelo) rows += '<div class="pf-row"><span class="pf-label">Modelo</span><span class="pf-value">' + escapeHtml(d.modelo) + '</span></div>';
+            if (d.year) rows += '<div class="pf-row"><span class="pf-label">Año</span><span class="pf-value">' + escapeHtml(String(d.year)) + '</span></div>';
+            if (d.kilometraje) rows += '<div class="pf-row"><span class="pf-label">Kilometraje</span><span class="pf-value">' + escapeHtml(String(d.kilometraje)) + ' km</span></div>';
+            if (d.precioEsperado) rows += '<div class="pf-row"><span class="pf-label">Precio esperado</span><span class="pf-value">' + formatCOP(d.precioEsperado) + '</span></div>';
+        }
+
+        if (sol.tipo === 'financiacion' && sol.datosExtra) {
+            var f = sol.datosExtra;
+            if (f.cuotaInicial) rows += '<div class="pf-row"><span class="pf-label">Cuota inicial</span><span class="pf-value">' + formatCOP(f.cuotaInicial) + '</span></div>';
+            if (f.plazo) rows += '<div class="pf-row"><span class="pf-label">Plazo</span><span class="pf-value">' + escapeHtml(String(f.plazo)) + ' meses</span></div>';
+            if (f.ingresos) rows += '<div class="pf-row"><span class="pf-label">Ingresos</span><span class="pf-value">' + formatCOP(f.ingresos) + '</span></div>';
+            if (f.situacionLaboral) rows += '<div class="pf-row"><span class="pf-label">Situacion laboral</span><span class="pf-value">' + escapeHtml(f.situacionLaboral) + '</span></div>';
+        }
+
+        return rows ? '<div class="pf-sol-detail">' + rows + '</div>' : '';
+    }
+
+    function renderSolCard(sol) {
+        var tipo = solTipo(sol.tipo);
+        var estado = solEstado(sol.estado);
+        var isExpanded = _solExpanded[sol.id];
+        var date = formatDateShort(sol.createdAt);
+
+        return '<div class="pf-sol-card' + (isExpanded ? ' pf-sol-card--open' : '') + '" data-sol-id="' + escapeHtml(sol.id) + '">' +
+            '<div class="pf-sol-card-header" data-action="toggleSol" data-id="' + escapeHtml(sol.id) + '">' +
+                '<div class="pf-sol-icon"><i data-lucide="' + tipo.icon + '"></i></div>' +
+                '<div class="pf-sol-summary">' +
+                    '<div class="pf-sol-title">' + escapeHtml(tipo.label) + '</div>' +
+                    '<div class="pf-sol-meta">' +
+                        (date ? '<span><i data-lucide="calendar"></i> ' + date + '</span>' : '') +
+                        (sol.vehiculo ? '<span><i data-lucide="car"></i> ' + escapeHtml(sol.vehiculo) + '</span>' : '') +
+                    '</div>' +
+                '</div>' +
+                '<span class="pf-sol-status ' + estado.cls + '">' + estado.label + '</span>' +
+                '<div class="pf-sol-chevron"><i data-lucide="chevron-down"></i></div>' +
+            '</div>' +
+            '<div class="pf-sol-body"' + (isExpanded ? '' : ' style="display:none;"') + '>' +
+                renderSolStepper(sol.estado) +
+                renderSolDetail(sol) +
+            '</div>' +
+        '</div>';
+    }
+
+    function renderSolicitudesSection(user, data) {
+        if (_solicitudes === null) {
+            _loadSolicitudes(user, data);
+            return '<div class="pf-card"><div class="pf-empty">' +
+                '<div class="pf-empty-icon"><div class="pf-skeleton pf-skeleton-circle" style="width:48px;height:48px;margin:0 auto;"></div></div>' +
+                '<h3>Cargando solicitudes...</h3>' +
+                '</div></div>';
+        }
+
+        if (_solicitudes.length === 0) {
+            return renderEmptySection('file-text', 'No tienes solicitudes', 'Aqui aparecera el estado de tus solicitudes de financiacion, consignacion o contacto.', 'Solicitar financiacion', 'contacto.html');
+        }
+
+        var html = '<div class="pf-sol-count">' + _solicitudes.length + ' solicitud' + (_solicitudes.length > 1 ? 'es' : '') + '</div>';
+        html += '<div class="pf-sol-list">';
+        _solicitudes.forEach(function (sol) {
+            html += renderSolCard(sol);
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function _loadSolicitudes(user, data) {
+        var email = (data && data.email) || (user && user.email) || '';
+        if (!email) { _solicitudes = []; return; }
+
+        window.firebaseReady.then(function () {
+            return window.db.collection('solicitudes')
+                .where('email', '==', email)
+                .get();
+        }).then(function (snap) {
+            _solicitudes = [];
+            snap.forEach(function (doc) {
+                var d = doc.data();
+                d.id = doc.id;
+                _solicitudes.push(d);
+            });
+            _solicitudes.sort(function (a, b) {
+                var ta = a.createdAt ? (a.createdAt.seconds || 0) : 0;
+                var tb = b.createdAt ? (b.createdAt.seconds || 0) : 0;
+                return tb - ta;
+            });
+            if (_user && _userData) {
+                var sec = _currentSection;
+                renderAllSections(_user, _userData);
+                switchSection(sec);
+            }
+        }).catch(function (err) {
+            console.warn('[Profile] Error loading solicitudes:', err && err.message);
+            _solicitudes = [];
+            if (_user && _userData) {
+                var sec = _currentSection;
+                renderAllSections(_user, _userData);
+                switchSection(sec);
+            }
+        });
+    }
+
+    function wireSolicitudesEvents() {
+        var content = document.getElementById('section-solicitudes');
+        if (!content) return;
+
+        content.addEventListener('click', function (e) {
+            var header = e.target.closest('[data-action="toggleSol"]');
+            if (!header) return;
+            var id = header.dataset.id;
+            if (!id) return;
+
+            _solExpanded[id] = !_solExpanded[id];
+
+            var card = header.closest('.pf-sol-card');
+            if (!card) return;
+
+            var body = card.querySelector('.pf-sol-body');
+            if (!body) return;
+
+            if (_solExpanded[id]) {
+                card.classList.add('pf-sol-card--open');
+                body.style.display = '';
+            } else {
+                card.classList.remove('pf-sol-card--open');
+                body.style.display = 'none';
+            }
+        });
+    }
+
     // ── Placeholder sections ────────────────────────────────
     function renderEmptySection(icon, title, message, ctaText, ctaHref) {
         var cta = ctaText
@@ -908,7 +1108,7 @@
             perfil: renderProfileSection(user, data),
             favoritos: renderFavoritesSection(),
             historial: renderHistorialSection(),
-            solicitudes: renderEmptySection('file-text', 'Tus solicitudes', 'Aqui veras el estado de tus solicitudes de financiacion, consignacion o contacto.', 'Solicitar financiacion', '#'),
+            solicitudes: renderSolicitudesSection(user, data),
             citas: renderEmptySection('calendar', 'Tus citas', 'Agenda una cita para ver un vehiculo en persona.', 'Agendar cita', 'contacto.html'),
             seguridad: renderSecuritySection(user)
         };
@@ -930,6 +1130,7 @@
         wireSecurityEvents(user);
         wireFavoritesEvents();
         wireHistorialEvents();
+        wireSolicitudesEvents();
 
         // Show sidebar
         var sidebar = $id('pfSidebar');
@@ -940,6 +1141,11 @@
 
     // ── Wire profile events ─────────────────────────────────
     function wireProfileEvents(user, data) {
+        // Clickable stats → switch section
+        document.querySelectorAll('[data-go-section]').forEach(function (el) {
+            el.addEventListener('click', function () { switchSection(this.dataset.goSection); });
+        });
+
         // Avatar upload
         var avatar = $id('pfAvatar');
         if (avatar) avatar.addEventListener('click', handleAvatarClick);

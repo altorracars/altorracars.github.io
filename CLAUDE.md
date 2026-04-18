@@ -1148,6 +1148,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fix perfil layout + favoritos** | perfil.html, css/perfil.css, js/perfil.js | Footer removido para full-space, database.js agregado (vehicleDB faltaba), ensureVehicleDB() con retry, layout calc(100vh - 80px), skeleton loading durante carga |
 | **Fase B5: Historial mejorado** | js/perfil.js, css/perfil.css, CLAUDE.md | Timeline agrupado (Hoy/Esta semana/Este mes/Anteriores), timestamps relativos (timeAgo), quitar individual con fade-out, limpiar todo con toast, skeleton async, reutiliza vehicleDB |
 | **Fix vistos recientemente race condition** | historial-visitas.js, scripts/generate-vehicles.mjs | Auto-tracking fired synchronously on script load, but `PRERENDERED_VEHICLE_ID` was set in a `<script>` tag AFTER `historial-visitas.js`. Fix: `setTimeout(0)` defers tracking until all sync scripts complete + `beforeunload` flushes debounced localStorage save. Generator updated to inject ID before historial script for future builds |
+| **Fase B6: Mis Solicitudes** | js/perfil.js, css/perfil.css, CLAUDE.md | Query Firestore `solicitudes` by email, cards con tipo (car/landmark/message-circle), status badges 4 estados, stepper horizontal 3 pasos, accordion expandible con datos especificos por tipo, skeleton loading, nav badge, stat clickable, responsive 3 breakpoints |
 
 ---
 
@@ -1413,16 +1414,20 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 | Async vehicleDB | ✓ Skeleton loading mientras carga, re-render automatico |
 | Empty state | ✓ Icono + "Los vehiculos que visites apareceran aqui" + CTA |
 
-### Micro-Fase B6 — Mis Solicitudes
+### Micro-Fase B6 — Mis Solicitudes ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| Lista de solicitudes | Lee de `solicitudes` donde `email == user.email` |
-| Tipos con iconos | Consignacion, Financiacion, Contacto |
-| Status badges | Pendiente, Contactado, Completado, Rechazado |
-| Timeline visual | Stepper horizontal de progreso por solicitud |
-| Detalle expandible | Click → acordeon con datos completos |
-| Empty state | "No tienes solicitudes" + CTAs a formularios |
+| Tarea | Estado |
+|-------|--------|
+| Lista de solicitudes | ✓ Firestore query `solicitudes` where `email == user.email`, client-side sort by `createdAt` desc |
+| Tipos con iconos | ✓ Consignacion (car), Financiacion (landmark), Contacto (message-circle) con icono dorado |
+| Status badges | ✓ Pendiente (amarillo), Contactado (azul), Completado (verde), Rechazado (rojo) |
+| Timeline visual | ✓ Stepper horizontal 3 pasos (Recibida → Contactado → Completado), rejected muestra X |
+| Detalle expandible | ✓ Accordion con chevron animado, datos del vehiculo, telefono, comentarios, respuesta admin |
+| Datos especificos por tipo | ✓ Consignacion: marca/modelo/año/km/precio esperado. Financiacion: cuota/plazo/ingresos/situacion |
+| Empty state | ✓ "No tienes solicitudes" + CTA "Solicitar financiacion" |
+| Skeleton loading | ✓ Mientras carga de Firestore |
+| Nav badge count | ✓ Sidebar muestra cantidad de solicitudes |
+| Stat clickable | ✓ Click en stat "Solicitudes" del hero → navega a seccion |
 
 ### Micro-Fase B7 — Mis Citas
 

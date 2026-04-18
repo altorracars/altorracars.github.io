@@ -1149,6 +1149,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fase B5: Historial mejorado** | js/perfil.js, css/perfil.css, CLAUDE.md | Timeline agrupado (Hoy/Esta semana/Este mes/Anteriores), timestamps relativos (timeAgo), quitar individual con fade-out, limpiar todo con toast, skeleton async, reutiliza vehicleDB |
 | **Fix vistos recientemente race condition** | historial-visitas.js, scripts/generate-vehicles.mjs | Auto-tracking fired synchronously on script load, but `PRERENDERED_VEHICLE_ID` was set in a `<script>` tag AFTER `historial-visitas.js`. Fix: `setTimeout(0)` defers tracking until all sync scripts complete + `beforeunload` flushes debounced localStorage save. Generator updated to inject ID before historial script for future builds |
 | **Fase B6: Mis Solicitudes** | js/perfil.js, css/perfil.css, CLAUDE.md | Query Firestore `solicitudes` by email, cards con tipo (car/landmark/message-circle), status badges 4 estados, stepper horizontal 3 pasos, accordion expandible con datos especificos por tipo, skeleton loading, nav badge, stat clickable, responsive 3 breakpoints |
+| **Fase B7: Mis Citas** | js/perfil.js, css/perfil.css, CLAUDE.md | Citas se guardan en `solicitudes` con `requiereCita:true`. Filtradas fuera de B6 y en nueva seccion. Grupos Proximas/Pasadas, date block dorado (dia+mes), status 4 estados (Pendiente/Confirmada/Completada/Cancelada), accordion con detalles, boton "Pedir cancelacion" que abre WhatsApp (users no pueden updatar por rules), nav badge |
 
 ---
 
@@ -1429,15 +1430,22 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 | Nav badge count | ✓ Sidebar muestra cantidad de solicitudes |
 | Stat clickable | ✓ Click en stat "Solicitudes" del hero → navega a seccion |
 
-### Micro-Fase B7 — Mis Citas
+### Micro-Fase B7 — Mis Citas ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| Proximas citas | Card con fecha, hora, vehiculo, estado |
-| Historial de citas | Citas pasadas colapsadas |
-| Status visual | Confirmada, Pendiente, Cancelada |
-| Accion cancelar | Con confirmacion |
-| Empty state | "No tienes citas" + CTA a agendar |
+| Tarea | Estado |
+|-------|--------|
+| Fuente de datos | ✓ Las citas se guardan en `solicitudes` con `requiereCita: true` y `tipo: 'consulta_vehiculo'`. Se filtran del mismo array `_solicitudes` ya cargado en B6 |
+| Separacion Solicitudes/Citas | ✓ Seccion Solicitudes filtra `!isCita`, seccion Citas filtra `isCita` |
+| Proximas citas | ✓ Grupo "Proximas" con citas futuras no rechazadas/completadas, ordenadas asc por fecha |
+| Citas pasadas | ✓ Grupo "Pasadas" con rechazadas, completadas, o con fecha pasada, ordenadas desc |
+| Date block visual | ✓ Cuadro dorado con dia grande + mes abreviado (ej: "18 ABR") tipo calendario |
+| Status visual | ✓ Pendiente (clock-3), Confirmada (check-circle-2), Completada (check), Cancelada (x) con iconos |
+| Accordion expandible | ✓ Muestra vehiculo, fecha completa, hora, telefono, comentarios, respuesta admin |
+| Accion "Pedir cancelacion" | ✓ Solo visible para proximas citas. Abre WhatsApp con mensaje pre-formateado (users no pueden updatar por rules) |
+| Empty state | ✓ "No tienes citas" + CTA "Ver catalogo" |
+| Skeleton loading | ✓ Reutiliza el loader de solicitudes |
+| Nav badge count | ✓ Sidebar muestra cantidad de citas |
+| Responsive | ✓ Date block reducido en mobile (46px), breakpoints 480px/768px/860px |
 
 ### Micro-Fase B8 — Seguridad y Cuenta
 

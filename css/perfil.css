@@ -1228,6 +1228,43 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
 .pf-stat--clickable { cursor: pointer; transition: border-color var(--pf-transition); }
 .pf-stat--clickable:hover { border-color: var(--pf-gold); }
 
+/* ── Citas (B7) ───────────────────────────────────────────── */
+.pf-cita-date {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    background: var(--pf-gold-15);
+    color: var(--pf-gold);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border: 1px solid rgba(184, 150, 88, .25);
+}
+.pf-cita-day {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--pf-gold);
+}
+.pf-cita-month {
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--pf-gold);
+    margin-top: 2px;
+    text-transform: uppercase;
+}
+
+.pf-cita-card .pf-sol-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.pf-cita-card .pf-sol-status [data-lucide],
+.pf-cita-card .pf-sol-status svg { width: 11px; height: 11px; }
+
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 860px) {
     .pf-sidebar { width: 200px; padding-right: 1rem; }
@@ -1281,6 +1318,9 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
     .pf-sol-step-dot { width: 24px; height: 24px; font-size: .65rem; }
     .pf-sol-step span { font-size: .62rem; }
     .pf-sol-step-line { min-width: 16px; }
+    .pf-cita-date { width: 46px; height: 46px; }
+    .pf-cita-day { font-size: 1.15rem; }
+    .pf-cita-month { font-size: .56rem; }
 }
 
 @media (hover: none) {

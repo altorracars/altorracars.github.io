@@ -230,7 +230,12 @@
                 if (c > 0) badgeHtml = '<span class="pf-nav-badge">' + c + '</span>';
             }
             if (s.id === 'solicitudes' && _solicitudes && _solicitudes.length > 0) {
-                badgeHtml = '<span class="pf-nav-badge">' + _solicitudes.length + '</span>';
+                var solCount = _solicitudes.filter(function (x) { return !isCita(x); }).length;
+                if (solCount > 0) badgeHtml = '<span class="pf-nav-badge">' + solCount + '</span>';
+            }
+            if (s.id === 'citas' && _solicitudes && _solicitudes.length > 0) {
+                var citaCount = _solicitudes.filter(isCita).length;
+                if (citaCount > 0) badgeHtml = '<span class="pf-nav-badge">' + citaCount + '</span>';
             }
             navHtml += '<li class="pf-nav-item' + (s.id === _currentSection ? ' active' : '') + '" data-section="' + s.id + '">' +
                 '<i data-lucide="' + s.icon + '"></i>' +
@@ -473,7 +478,7 @@
                         '<div class="pf-stat-label">Vistos</div>' +
                     '</div>' +
                     '<div class="pf-stat pf-stat--clickable" data-go-section="solicitudes">' +
-                        '<div class="pf-stat-num" id="pfSolCount">' + (_solicitudes ? _solicitudes.length : 0) + '</div>' +
+                        '<div class="pf-stat-num" id="pfSolCount">' + (_solicitudes ? _solicitudes.filter(function (x) { return !isCita(x); }).length : 0) + '</div>' +
                         '<div class="pf-stat-label">Solicitudes</div>' +
                     '</div>' +
                 '</div>' +
@@ -1000,6 +1005,10 @@
         '</div>';
     }
 
+    function isCita(sol) {
+        return sol && (sol.requiereCita === true || sol.tipo === 'consulta_vehiculo');
+    }
+
     function renderSolicitudesSection(user, data) {
         if (_solicitudes === null) {
             _loadSolicitudes(user, data);
@@ -1009,13 +1018,15 @@
                 '</div></div>';
         }
 
-        if (_solicitudes.length === 0) {
+        var items = _solicitudes.filter(function (s) { return !isCita(s); });
+
+        if (items.length === 0) {
             return renderEmptySection('file-text', 'No tienes solicitudes', 'Aqui aparecera el estado de tus solicitudes de financiacion, consignacion o contacto.', 'Solicitar financiacion', 'contacto.html');
         }
 
-        var html = '<div class="pf-sol-count">' + _solicitudes.length + ' solicitud' + (_solicitudes.length > 1 ? 'es' : '') + '</div>';
+        var html = '<div class="pf-sol-count">' + items.length + ' solicitud' + (items.length > 1 ? 'es' : '') + '</div>';
         html += '<div class="pf-sol-list">';
-        _solicitudes.forEach(function (sol) {
+        items.forEach(function (sol) {
             html += renderSolCard(sol);
         });
         html += '</div>';
@@ -1059,31 +1070,181 @@
     }
 
     function wireSolicitudesEvents() {
-        var content = document.getElementById('section-solicitudes');
-        if (!content) return;
+        ['section-solicitudes', 'section-citas'].forEach(function (secId) {
+            var content = document.getElementById(secId);
+            if (!content) return;
 
-        content.addEventListener('click', function (e) {
-            var header = e.target.closest('[data-action="toggleSol"]');
-            if (!header) return;
-            var id = header.dataset.id;
-            if (!id) return;
+            content.addEventListener('click', function (e) {
+                var header = e.target.closest('[data-action="toggleSol"]');
+                if (!header) return;
+                var id = header.dataset.id;
+                if (!id) return;
 
-            _solExpanded[id] = !_solExpanded[id];
+                _solExpanded[id] = !_solExpanded[id];
 
-            var card = header.closest('.pf-sol-card');
-            if (!card) return;
+                var card = header.closest('.pf-sol-card');
+                if (!card) return;
 
-            var body = card.querySelector('.pf-sol-body');
-            if (!body) return;
+                var body = card.querySelector('.pf-sol-body');
+                if (!body) return;
 
-            if (_solExpanded[id]) {
-                card.classList.add('pf-sol-card--open');
-                body.style.display = '';
-            } else {
-                card.classList.remove('pf-sol-card--open');
-                body.style.display = 'none';
-            }
+                if (_solExpanded[id]) {
+                    card.classList.add('pf-sol-card--open');
+                    body.style.display = '';
+                } else {
+                    card.classList.remove('pf-sol-card--open');
+                    body.style.display = 'none';
+                }
+            });
         });
+    }
+
+    // ── Citas Section (B7) ────────────────────────────────────
+    var WHATSAPP_PHONE = '573235016747';
+    var CITA_ESTADOS = {
+        pendiente:  { label: 'Pendiente',   cls: 'pf-sol-st--pending',   icon: 'clock-3' },
+        contactado: { label: 'Confirmada',  cls: 'pf-sol-st--contacted', icon: 'check-circle-2' },
+        completado: { label: 'Completada',  cls: 'pf-sol-st--completed', icon: 'check' },
+        rechazado:  { label: 'Cancelada',   cls: 'pf-sol-st--rejected',  icon: 'x' }
+    };
+
+    function parseCitaDate(sol) {
+        if (!sol.fecha) return null;
+        var parts = String(sol.fecha).split('-');
+        if (parts.length !== 3) return null;
+        var y = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10) - 1;
+        var d = parseInt(parts[2], 10);
+        if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+        var hora = sol.hora || '00:00';
+        var hParts = String(hora).split(':');
+        var hh = parseInt(hParts[0], 10) || 0;
+        var mm = parseInt(hParts[1], 10) || 0;
+        return new Date(y, m, d, hh, mm);
+    }
+
+    function formatCitaDate(dateObj) {
+        if (!dateObj) return '';
+        return dateObj.toLocaleDateString('es-CO', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+    }
+
+    function formatCitaTime(dateObj) {
+        if (!dateObj) return '';
+        return dateObj.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function citaEstado(estado) {
+        return CITA_ESTADOS[estado] || CITA_ESTADOS.pendiente;
+    }
+
+    function buildWhatsappCancelUrl(cita) {
+        var date = parseCitaDate(cita);
+        var fechaTxt = date ? formatCitaDate(date) : (cita.fecha || '');
+        var horaTxt = date ? formatCitaTime(date) : (cita.hora || '');
+        var vehiculo = cita.vehiculo ? ' por el ' + cita.vehiculo : '';
+        var msg = 'Hola, quisiera cancelar mi cita' + vehiculo + ' programada para ' + fechaTxt + ' a las ' + horaTxt + '.';
+        return 'https://wa.me/' + WHATSAPP_PHONE + '?text=' + encodeURIComponent(msg);
+    }
+
+    function renderCitaCard(sol) {
+        var estado = citaEstado(sol.estado);
+        var isExpanded = _solExpanded[sol.id];
+        var date = parseCitaDate(sol);
+        var now = new Date();
+        var isUpcoming = date && date.getTime() >= now.getTime() && sol.estado !== 'rechazado' && sol.estado !== 'completado';
+
+        var day = date ? date.getDate() : '?';
+        var monthShort = date ? date.toLocaleDateString('es-CO', { month: 'short' }).replace('.', '').toUpperCase() : '';
+
+        var detailRows = '';
+        if (sol.vehiculo) detailRows += '<div class="pf-row"><span class="pf-label"><i data-lucide="car"></i> Vehiculo</span><span class="pf-value">' + escapeHtml(sol.vehiculo) + '</span></div>';
+        if (date) {
+            detailRows += '<div class="pf-row"><span class="pf-label"><i data-lucide="calendar"></i> Fecha</span><span class="pf-value">' + escapeHtml(formatCitaDate(date)) + '</span></div>';
+            detailRows += '<div class="pf-row"><span class="pf-label"><i data-lucide="clock"></i> Hora</span><span class="pf-value">' + escapeHtml(formatCitaTime(date)) + '</span></div>';
+        }
+        if (sol.telefono) detailRows += '<div class="pf-row"><span class="pf-label"><i data-lucide="phone"></i> Telefono</span><span class="pf-value">' + escapeHtml((sol.prefijoPais || '+57') + ' ' + sol.telefono) + '</span></div>';
+        if (sol.comentarios && sol.comentarios !== 'Ninguno') detailRows += '<div class="pf-row" style="flex-direction:column;align-items:flex-start;gap:.3rem;"><span class="pf-label"><i data-lucide="message-square"></i> Comentarios</span><span class="pf-value" style="max-width:100%;text-align:left;">' + escapeHtml(sol.comentarios) + '</span></div>';
+        if (sol.observaciones) detailRows += '<div class="pf-row" style="flex-direction:column;align-items:flex-start;gap:.3rem;"><span class="pf-label"><i data-lucide="clipboard-list"></i> Respuesta</span><span class="pf-value" style="max-width:100%;text-align:left;">' + escapeHtml(sol.observaciones) + '</span></div>';
+
+        var cancelBtn = isUpcoming
+            ? '<a href="' + buildWhatsappCancelUrl(sol) + '" target="_blank" rel="noopener" class="pf-btn pf-btn-outline pf-btn-sm" style="margin-top:1rem;"><i data-lucide="x-circle"></i> Pedir cancelacion</a>'
+            : '';
+
+        return '<div class="pf-sol-card pf-cita-card' + (isExpanded ? ' pf-sol-card--open' : '') + '" data-sol-id="' + escapeHtml(sol.id) + '">' +
+            '<div class="pf-sol-card-header" data-action="toggleSol" data-id="' + escapeHtml(sol.id) + '">' +
+                '<div class="pf-cita-date"><span class="pf-cita-day">' + day + '</span><span class="pf-cita-month">' + escapeHtml(monthShort) + '</span></div>' +
+                '<div class="pf-sol-summary">' +
+                    '<div class="pf-sol-title">' + (sol.vehiculo ? escapeHtml(sol.vehiculo) : 'Visita presencial') + '</div>' +
+                    '<div class="pf-sol-meta">' +
+                        (date ? '<span><i data-lucide="clock-3"></i> ' + escapeHtml(formatCitaTime(date)) + '</span>' : '') +
+                        (date ? '<span><i data-lucide="calendar"></i> ' + escapeHtml(formatCitaDate(date)) + '</span>' : '') +
+                    '</div>' +
+                '</div>' +
+                '<span class="pf-sol-status ' + estado.cls + '"><i data-lucide="' + estado.icon + '"></i> ' + estado.label + '</span>' +
+                '<div class="pf-sol-chevron"><i data-lucide="chevron-down"></i></div>' +
+            '</div>' +
+            '<div class="pf-sol-body"' + (isExpanded ? '' : ' style="display:none;"') + '>' +
+                (detailRows ? '<div class="pf-sol-detail">' + detailRows + '</div>' : '') +
+                cancelBtn +
+            '</div>' +
+        '</div>';
+    }
+
+    function renderCitasSection(user, data) {
+        if (_solicitudes === null) {
+            _loadSolicitudes(user, data);
+            return '<div class="pf-card"><div class="pf-empty">' +
+                '<div class="pf-empty-icon"><div class="pf-skeleton pf-skeleton-circle" style="width:48px;height:48px;margin:0 auto;"></div></div>' +
+                '<h3>Cargando citas...</h3>' +
+                '</div></div>';
+        }
+
+        var citas = _solicitudes.filter(isCita);
+        if (citas.length === 0) {
+            return renderEmptySection('calendar', 'No tienes citas', 'Agenda una cita para ver un vehiculo en persona en nuestras instalaciones.', 'Ver catalogo', 'busqueda.html');
+        }
+
+        var now = Date.now();
+        var upcoming = [];
+        var past = [];
+        citas.forEach(function (c) {
+            var d = parseCitaDate(c);
+            var isFuture = d && d.getTime() >= now && c.estado !== 'rechazado' && c.estado !== 'completado';
+            if (isFuture) upcoming.push(c); else past.push(c);
+        });
+
+        upcoming.sort(function (a, b) {
+            var da = parseCitaDate(a);
+            var db = parseCitaDate(b);
+            return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+        });
+        past.sort(function (a, b) {
+            var da = parseCitaDate(a);
+            var db = parseCitaDate(b);
+            return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+        });
+
+        var html = '';
+
+        if (upcoming.length > 0) {
+            html += '<div class="pf-hist-group">';
+            html += '<div class="pf-hist-group-label">Proximas (' + upcoming.length + ')</div>';
+            html += '<div class="pf-sol-list">';
+            upcoming.forEach(function (c) { html += renderCitaCard(c); });
+            html += '</div></div>';
+        }
+
+        if (past.length > 0) {
+            html += '<div class="pf-hist-group">';
+            html += '<div class="pf-hist-group-label">Pasadas (' + past.length + ')</div>';
+            html += '<div class="pf-sol-list">';
+            past.forEach(function (c) { html += renderCitaCard(c); });
+            html += '</div></div>';
+        }
+
+        return html;
     }
 
     // ── Placeholder sections ────────────────────────────────
@@ -1109,7 +1270,7 @@
             favoritos: renderFavoritesSection(),
             historial: renderHistorialSection(),
             solicitudes: renderSolicitudesSection(user, data),
-            citas: renderEmptySection('calendar', 'Tus citas', 'Agenda una cita para ver un vehiculo en persona.', 'Agendar cita', 'contacto.html'),
+            citas: renderCitasSection(user, data),
             seguridad: renderSecuritySection(user)
         };
 

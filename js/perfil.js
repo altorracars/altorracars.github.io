@@ -619,6 +619,26 @@
         '</div>';
     }
 
+    function ensureVehicleDB() {
+        var db = window.vehicleDB;
+        if (db && db.loaded) return Promise.resolve(db);
+        return new Promise(function (resolve) {
+            var attempts = 0;
+            var check = function () {
+                attempts++;
+                db = window.vehicleDB;
+                if (db && db.loaded) return resolve(db);
+                if (attempts >= 20) return resolve(db || null);
+                setTimeout(check, 500);
+            };
+            if (db && typeof db.init === 'function') {
+                db.init().then(function () { resolve(db); }).catch(function () { resolve(db); });
+            } else {
+                check();
+            }
+        });
+    }
+
     function renderFavoritesSection() {
         if (!window.favoritesManager) return renderEmptySection('heart', 'Tus favoritos', 'Guarda vehiculos que te interesen para verlos despues.', 'Explorar catalogo', 'busqueda.html');
 
@@ -629,7 +649,7 @@
 
         var db = window.vehicleDB;
         var vehicles = [];
-        if (db && db.vehicles) {
+        if (db && db.vehicles && db.vehicles.length > 0) {
             ids.forEach(function (id) {
                 var v = db.getVehicleById(id);
                 if (v) vehicles.push(v);
@@ -637,10 +657,11 @@
         }
 
         if (vehicles.length === 0) {
+            scheduleVehicleDBRetry();
             return '<div class="pf-card"><div class="pf-empty">' +
-                '<div class="pf-empty-icon"><i data-lucide="heart"></i></div>' +
-                '<h3>' + ids.length + ' favorito' + (ids.length > 1 ? 's' : '') + '</h3>' +
-                '<p>Los datos de los vehiculos estan cargando. Intenta de nuevo en unos segundos.</p>' +
+                '<div class="pf-empty-icon"><div class="pf-skeleton pf-skeleton-circle" style="width:48px;height:48px;margin:0 auto;"></div></div>' +
+                '<h3>Cargando ' + ids.length + ' favorito' + (ids.length > 1 ? 's' : '') + '...</h3>' +
+                '<p>Obteniendo datos de vehiculos.</p>' +
                 '</div></div>';
         }
 
@@ -717,6 +738,19 @@
             } else {
                 moreBtn.innerHTML = '<i data-lucide="chevron-down"></i> Ver mas (' + (vehicles.length - end) + ' restantes)';
                 if (window.lucide) window.lucide.createIcons();
+            }
+        });
+    }
+
+    var _vehicleDBRetryScheduled = false;
+    function scheduleVehicleDBRetry() {
+        if (_vehicleDBRetryScheduled) return;
+        _vehicleDBRetryScheduled = true;
+        ensureVehicleDB().then(function () {
+            _vehicleDBRetryScheduled = false;
+            if (_user && _userData && _currentSection === 'favoritos') {
+                renderAllSections(_user, _userData);
+                switchSection('favoritos');
             }
         });
     }
@@ -974,6 +1008,11 @@
         showSkeleton();
         buildNavigation();
         updateSidebarUser(user, null);
+
+        // Init vehicleDB in background for favorites section
+        if (window.vehicleDB && typeof window.vehicleDB.init === 'function' && !window.vehicleDB.loaded) {
+            window.vehicleDB.init().catch(function () {});
+        }
 
         window.firebaseReady.then(function () {
             return window.db.collection('clientes').doc(user.uid).get();

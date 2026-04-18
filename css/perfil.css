@@ -29,14 +29,21 @@
 
 body { background: var(--pf-bg); }
 
+/* Hide footer on profile page — full-space layout */
+.profile-main ~ #footer-placeholder,
+.profile-main ~ footer,
+.profile-main ~ .footer { display: none !important; }
+
 /* ── Layout ────────────────────────────────────────────────── */
+.profile-main { padding-top: .5rem; }
+
 .pf-layout {
     display: flex;
     gap: 0;
     max-width: 1080px;
     margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-    min-height: 75vh;
+    padding: 1rem 1.5rem 3rem;
+    min-height: calc(100vh - 80px);
 }
 
 /* ── Sidebar ───────────────────────────────────────────────── */
@@ -44,10 +51,12 @@ body { background: var(--pf-bg); }
     width: var(--pf-sidebar-w);
     flex-shrink: 0;
     position: sticky;
-    top: 90px;
+    top: 80px;
     align-self: flex-start;
     padding-right: 1.5rem;
     border-right: 1px solid var(--pf-border);
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
 }
 
 .pf-sidebar-user {
@@ -994,9 +1003,11 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
 }
 
 @media (max-width: 768px) {
+    .profile-main { padding-top: 0; }
     .pf-layout {
         flex-direction: column;
-        padding: 0 0 3rem;
+        padding: 0 0 2rem;
+        min-height: calc(100vh - 60px);
     }
     .pf-sidebar { display: none; }
     .pf-mobile-tabs { display: flex; }

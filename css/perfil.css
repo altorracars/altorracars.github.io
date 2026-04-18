@@ -1265,6 +1265,46 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
 .pf-cita-card .pf-sol-status [data-lucide],
 .pf-cita-card .pf-sol-status svg { width: 11px; height: 11px; }
 
+/* ── Danger zone (B8) ─────────────────────────────────────── */
+.pf-card--danger {
+    border-color: rgba(217, 48, 37, .2);
+    background: linear-gradient(135deg, rgba(217, 48, 37, .03) 0%, var(--pf-card) 60%);
+}
+.pf-card--danger .pf-card-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.pf-card--danger .pf-card-title [data-lucide],
+.pf-card--danger .pf-card-title svg { width: 16px; height: 16px; }
+.pf-danger-desc {
+    font-size: .82rem;
+    color: var(--pf-text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+.pf-btn-danger-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: .55rem 1.2rem;
+    background: transparent;
+    border: 1px solid var(--pf-danger);
+    border-radius: 8px;
+    color: var(--pf-danger);
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .2s, color .2s;
+}
+.pf-btn-danger-outline:hover {
+    background: var(--pf-danger);
+    color: #fff;
+}
+.pf-btn-danger-outline [data-lucide],
+.pf-btn-danger-outline svg { width: 14px; height: 14px; }
+
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 860px) {
     .pf-sidebar { width: 200px; padding-right: 1rem; }

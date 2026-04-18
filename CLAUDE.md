@@ -1150,6 +1150,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fix vistos recientemente race condition** | historial-visitas.js, scripts/generate-vehicles.mjs | Auto-tracking fired synchronously on script load, but `PRERENDERED_VEHICLE_ID` was set in a `<script>` tag AFTER `historial-visitas.js`. Fix: `setTimeout(0)` defers tracking until all sync scripts complete + `beforeunload` flushes debounced localStorage save. Generator updated to inject ID before historial script for future builds |
 | **Fase B6: Mis Solicitudes** | js/perfil.js, css/perfil.css, CLAUDE.md | Query Firestore `solicitudes` by email, cards con tipo (car/landmark/message-circle), status badges 4 estados, stepper horizontal 3 pasos, accordion expandible con datos especificos por tipo, skeleton loading, nav badge, stat clickable, responsive 3 breakpoints |
 | **Fase B7: Mis Citas** | js/perfil.js, css/perfil.css, CLAUDE.md | Citas se guardan en `solicitudes` con `requiereCita:true`. Filtradas fuera de B6 y en nueva seccion. Grupos Proximas/Pasadas, date block dorado (dia+mes), status 4 estados (Pendiente/Confirmada/Completada/Cancelada), accordion con detalles, boton "Pedir cancelacion" que abre WhatsApp (users no pueden updatar por rules), nav badge |
+| **Fase B8: Seguridad mejorada** | js/perfil.js, css/perfil.css, CLAUDE.md | Dispositivo actual (browser+OS via UA), zona peligrosa con eliminacion de cuenta (doble confirmacion: escribir email), borra `clientes/{uid}` + Auth user, maneja `requires-recent-login` |
 
 ---
 
@@ -1447,15 +1448,16 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 | Nav badge count | ✓ Sidebar muestra cantidad de citas |
 | Responsive | ✓ Date block reducido en mobile (46px), breakpoints 480px/768px/860px |
 
-### Micro-Fase B8 — Seguridad y Cuenta
+### Micro-Fase B8 — Seguridad y Cuenta ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| Cambio de contraseña mejorado | UX con strength meter (reutilizar del registro) |
-| Proveedores vinculados | Mostrar Google / Email con badges |
-| Eliminar cuenta | Confirmacion doble + borrar `clientes/{uid}` + Auth delete |
-| Sesiones activas | Info del dispositivo actual |
-| Ultimo acceso | Fecha y hora del ultimo login |
+| Tarea | Estado |
+|-------|--------|
+| Cambio de contraseña | ✓ Ya implementado en B2: strength meter 4 niveles, toggle visibilidad, reauthentication |
+| Proveedores vinculados | ✓ Ya implementado en B2: Google (SVG real) + Email (Lucide), badges Activo |
+| Dispositivo actual | ✓ Deteccion de browser (Chrome/Firefox/Edge/Safari) + OS (Windows/macOS/Android/iOS/Linux) via User-Agent |
+| Ultimo acceso | ✓ Ya implementado en B2: `ultimoAcceso` formateado con fecha y hora |
+| Eliminar cuenta | ✓ Zona peligrosa con confirmacion doble: (1) boton inicial, (2) escribir email para confirmar. Borra `clientes/{uid}` + `user.delete()`. Maneja `auth/requires-recent-login` |
+| UID truncado | ✓ Ya implementado en B2: primeros 12 chars con monospace |
 
 ### Micro-Fase B9 — Preferencias
 

@@ -742,15 +742,146 @@
         });
     }
 
+    // ── History Section (B5) ───────────────────────────────
+    function timeAgo(ts) {
+        var diff = Date.now() - ts;
+        var mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'Justo ahora';
+        if (mins < 60) return 'Hace ' + mins + ' min';
+        var hrs = Math.floor(mins / 60);
+        if (hrs < 24) return 'Hace ' + hrs + ' hora' + (hrs > 1 ? 's' : '');
+        var days = Math.floor(hrs / 24);
+        if (days < 7) return 'Hace ' + days + ' dia' + (days > 1 ? 's' : '');
+        var d = new Date(ts);
+        return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function groupByDate(items) {
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        var weekAgo = today - 6 * 86400000;
+        var monthAgo = today - 29 * 86400000;
+        var groups = { 'Hoy': [], 'Esta semana': [], 'Este mes': [], 'Anteriores': [] };
+        items.forEach(function (item) {
+            var t = item.timestamp || 0;
+            if (t >= today) groups['Hoy'].push(item);
+            else if (t >= weekAgo) groups['Esta semana'].push(item);
+            else if (t >= monthAgo) groups['Este mes'].push(item);
+            else groups['Anteriores'].push(item);
+        });
+        return groups;
+    }
+
+    function renderHistCard(v, ts) {
+        var url = 'vehiculos/' + getVehicleSlug(v) + '.html';
+        var img = (v.imagenes && v.imagenes[0]) || v.imagen || '';
+        var price = v.precioOferta || v.precio;
+
+        return '<div class="pf-hist-card" data-id="' + v.id + '">' +
+            '<a href="' + url + '" class="pf-fav-img-wrap" style="width:100px;">' +
+                (img ? '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(v.marca + ' ' + v.modelo) + '" loading="lazy">' : '<div class="pf-fav-noimg"><i data-lucide="car"></i></div>') +
+            '</a>' +
+            '<div class="pf-fav-info">' +
+                '<a href="' + url + '" class="pf-fav-title">' + escapeHtml(v.marca) + ' ' + escapeHtml(v.modelo) + ' <span>' + (v.year || '') + '</span></a>' +
+                '<div class="pf-hist-time"><i data-lucide="clock-3"></i> ' + timeAgo(ts) + '</div>' +
+                '<div class="pf-fav-price">' + formatCOP(price) + '</div>' +
+            '</div>' +
+            '<button class="pf-fav-remove" data-action="removeHist" data-id="' + v.id + '" title="Quitar del historial"><i data-lucide="x"></i></button>' +
+        '</div>';
+    }
+
+    function renderHistorialSection() {
+        if (!window.vehicleHistory || !window.vehicleHistory.hasHistory()) {
+            return renderEmptySection('clock-3', 'Tu historial', 'Los vehiculos que visites apareceran aqui.', 'Ver catalogo', 'busqueda.html');
+        }
+
+        var history = window.vehicleHistory.getHistory();
+        var db = window.vehicleDB;
+
+        if (!db || !db.vehicles || db.vehicles.length === 0) {
+            scheduleVehicleDBRetry();
+            return '<div class="pf-card"><div class="pf-empty">' +
+                '<div class="pf-empty-icon"><div class="pf-skeleton pf-skeleton-circle" style="width:48px;height:48px;margin:0 auto;"></div></div>' +
+                '<h3>Cargando historial...</h3>' +
+                '</div></div>';
+        }
+
+        var items = [];
+        history.forEach(function (h) {
+            var v = db.getVehicleById(h.id);
+            if (v) items.push({ vehicle: v, timestamp: h.timestamp });
+        });
+
+        if (items.length === 0) {
+            return renderEmptySection('clock-3', 'Tu historial', 'Los vehiculos que visitaste ya no estan disponibles.', 'Ver catalogo', 'busqueda.html');
+        }
+
+        var groups = groupByDate(items);
+        var html = '<div class="pf-hist-header">' +
+            '<span class="pf-fav-count">' + items.length + ' vehiculo' + (items.length > 1 ? 's' : '') + ' visitado' + (items.length > 1 ? 's' : '') + '</span>' +
+            '<button class="pf-btn pf-btn-outline pf-btn-sm" id="pfHistClearAll"><i data-lucide="trash-2"></i> Limpiar todo</button>' +
+        '</div>';
+
+        var groupKeys = ['Hoy', 'Esta semana', 'Este mes', 'Anteriores'];
+        groupKeys.forEach(function (label) {
+            var group = groups[label];
+            if (!group || group.length === 0) return;
+            html += '<div class="pf-hist-group">';
+            html += '<div class="pf-hist-group-label">' + label + '</div>';
+            group.forEach(function (item) {
+                html += renderHistCard(item.vehicle, item.timestamp);
+            });
+            html += '</div>';
+        });
+
+        return html;
+    }
+
+    function wireHistorialEvents() {
+        var content = document.getElementById('section-historial');
+        if (!content) return;
+
+        content.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-action="removeHist"]');
+            if (!btn) return;
+            var id = btn.dataset.id;
+            if (!id || !window.vehicleHistory) return;
+
+            var card = btn.closest('.pf-hist-card');
+            if (card) {
+                card.style.transition = 'opacity .3s, transform .3s';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(.95)';
+            }
+            setTimeout(function () {
+                window.vehicleHistory.removeFromHistory(id);
+                renderAllSections(_user, _userData);
+                buildNavigation();
+                switchSection('historial');
+            }, 300);
+        });
+
+        var clearBtn = document.getElementById('pfHistClearAll');
+        if (clearBtn) clearBtn.addEventListener('click', function () {
+            if (!window.vehicleHistory) return;
+            window.vehicleHistory.clearHistory();
+            _toast('Historial limpiado.', 'info');
+            renderAllSections(_user, _userData);
+            buildNavigation();
+            switchSection('historial');
+        });
+    }
+
     var _vehicleDBRetryScheduled = false;
     function scheduleVehicleDBRetry() {
         if (_vehicleDBRetryScheduled) return;
         _vehicleDBRetryScheduled = true;
         ensureVehicleDB().then(function () {
             _vehicleDBRetryScheduled = false;
-            if (_user && _userData && _currentSection === 'favoritos') {
+            if (_user && _userData) {
+                var sec = _currentSection;
                 renderAllSections(_user, _userData);
-                switchSection('favoritos');
+                switchSection(sec);
             }
         });
     }
@@ -776,7 +907,7 @@
         var sections = {
             perfil: renderProfileSection(user, data),
             favoritos: renderFavoritesSection(),
-            historial: renderEmptySection('clock-3', 'Tu historial', 'Los vehiculos que visites apareceran aqui.', 'Ver catalogo', 'busqueda.html'),
+            historial: renderHistorialSection(),
             solicitudes: renderEmptySection('file-text', 'Tus solicitudes', 'Aqui veras el estado de tus solicitudes de financiacion, consignacion o contacto.', 'Solicitar financiacion', '#'),
             citas: renderEmptySection('calendar', 'Tus citas', 'Agenda una cita para ver un vehiculo en persona.', 'Agendar cita', 'contacto.html'),
             seguridad: renderSecuritySection(user)
@@ -798,6 +929,7 @@
         wireProfileEvents(user, data);
         wireSecurityEvents(user);
         wireFavoritesEvents();
+        wireHistorialEvents();
 
         // Show sidebar
         var sidebar = $id('pfSidebar');

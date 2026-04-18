@@ -962,6 +962,51 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
 .pf-fav-remove [data-lucide],
 .pf-fav-remove svg { width: 14px; height: 14px; }
 
+/* ── History (B5) ─────────────────────────────────────────── */
+.pf-hist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.pf-btn-sm {
+    padding: .35rem .7rem;
+    font-size: .75rem;
+}
+.pf-hist-group { margin-bottom: 1.2rem; }
+.pf-hist-group-label {
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--pf-text-muted);
+    margin-bottom: .5rem;
+    padding-bottom: .35rem;
+    border-bottom: 1px solid var(--pf-border);
+}
+.pf-hist-card {
+    display: flex;
+    align-items: stretch;
+    background: var(--pf-card);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-sm);
+    overflow: hidden;
+    margin-bottom: .5rem;
+    transition: border-color var(--pf-transition), opacity .3s, transform .3s;
+    position: relative;
+}
+.pf-hist-card:hover { border-color: var(--pf-border-hover); }
+.pf-hist-card:hover .pf-fav-remove { opacity: 1; }
+.pf-hist-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: .72rem;
+    color: var(--pf-text-muted);
+}
+.pf-hist-time [data-lucide],
+.pf-hist-time svg { width: 11px; height: 11px; }
+
 /* ── Skeleton loading ──────────────────────────────────────── */
 .pf-skeleton {
     background: linear-gradient(90deg, #1a1a1a 25%, #232323 50%, #1a1a1a 75%);

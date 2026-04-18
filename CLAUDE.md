@@ -1031,7 +1031,14 @@ Problema adicional: `undoGoogleAndWarn()` desvinculaba Google del admin pero NO 
 - ID source: preferir `window.PRERENDERED_VEHICLE_ID`, fallback a `?id=` query param
 - Tambien corregido `showToast` → `toast.show()` en index.html y perfil.html
 
-**Archivos modificados**: `historial-visitas.js`, `index.html`, `perfil.html`
+**Fix adicional** (2026-04-18) — Race condition con PRERENDERED_VEHICLE_ID:
+- Aunque el path check y ID source fueron corregidos, el tracking SEGUIA sin funcionar
+- **Causa raiz**: En las paginas generadas, `historial-visitas.js` se carga ANTES del `<script>` que define `window.PRERENDERED_VEHICLE_ID`. El auto-tracking al final del archivo corria sincronicamente → `PRERENDERED_VEHICLE_ID` era `undefined` → `addToHistory()` nunca se llamaba
+- **Fix 1**: `setTimeout(function () { vehicleHistory.trackCurrentVehicle(); }, 0)` — difiere al siguiente tick, despues de que todos los scripts sincronos completen
+- **Fix 2**: `beforeunload` handler flushea el debounced `_saveToLocalStorage()` si hay un sync pendiente (previene perdida si el usuario navega rapido)
+- **Fix 3**: `generate-vehicles.mjs` ahora inyecta `PRERENDERED_VEHICLE_ID` ANTES de `historial-visitas.js` (para futuras generaciones)
+
+**Archivos modificados**: `historial-visitas.js`, `scripts/generate-vehicles.mjs`
 
 ### Acumulacion de cuentas anonimas huerfanas en Firebase Auth
 
@@ -1140,6 +1147,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fase B4: Favoritos in-profile** | js/perfil.js, css/perfil.css, CLAUDE.md | Cards horizontales con imagen, marca/modelo/año, km, transmision, precio (oferta con tachado), badges de estado (disponible/reservado/vendido), boton quitar con fade-out, paginacion 6 por pagina, empty state con CTA, touch support |
 | **Fix perfil layout + favoritos** | perfil.html, css/perfil.css, js/perfil.js | Footer removido para full-space, database.js agregado (vehicleDB faltaba), ensureVehicleDB() con retry, layout calc(100vh - 80px), skeleton loading durante carga |
 | **Fase B5: Historial mejorado** | js/perfil.js, css/perfil.css, CLAUDE.md | Timeline agrupado (Hoy/Esta semana/Este mes/Anteriores), timestamps relativos (timeAgo), quitar individual con fade-out, limpiar todo con toast, skeleton async, reutiliza vehicleDB |
+| **Fix vistos recientemente race condition** | historial-visitas.js, scripts/generate-vehicles.mjs | Auto-tracking fired synchronously on script load, but `PRERENDERED_VEHICLE_ID` was set in a `<script>` tag AFTER `historial-visitas.js`. Fix: `setTimeout(0)` defers tracking until all sync scripts complete + `beforeunload` flushes debounced localStorage save. Generator updated to inject ID before historial script for future builds |
 
 ---
 

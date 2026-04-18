@@ -2,6 +2,7 @@
    PERFIL.CSS — Panel de Usuario Premium — Altorra Cars
    B1: Layout sidebar + cards + skeleton + responsive
    B2: Completitud, providers, input groups, strength, badges
+   B3: Avatar upload, crop, preview modal, header sync
    Inspirado en Apple ID, MercadoLibre, Amazon Mi Cuenta
    ============================================================ */
 
@@ -283,12 +284,78 @@ body { background: var(--pf-bg); }
     color: var(--pf-text-secondary);
     margin: .15rem 0 .4rem;
 }
+.pf-hero-info { min-width: 0; }
 .pf-hero-meta {
     display: flex;
     align-items: center;
     gap: .6rem;
     flex-wrap: wrap;
 }
+
+/* ── Avatar upload ────────────────────────────────────────── */
+.pf-avatar--editable { cursor: pointer; position: relative; }
+.pf-avatar-cam {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--pf-gold);
+    border: 2px solid var(--pf-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(.8);
+    transition: opacity .2s, transform .2s;
+}
+.pf-avatar-cam [data-lucide],
+.pf-avatar-cam svg { width: 13px; height: 13px; color: #fff; stroke: #fff; }
+.pf-avatar--editable:hover .pf-avatar-cam { opacity: 1; transform: scale(1); }
+.pf-avatar--editable:hover { box-shadow: 0 0 0 3px var(--pf-gold-15); }
+
+/* Avatar preview modal */
+.pf-avatar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pfFadeIn .2s ease;
+}
+.pf-avatar-modal {
+    background: var(--pf-card);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius);
+    padding: 1.8rem;
+    max-width: 320px;
+    width: 90%;
+    text-align: center;
+}
+.pf-avatar-modal-title {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--pf-text);
+    margin-bottom: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.pf-avatar-preview-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: .5rem;
+}
+.pf-avatar-preview-wrap canvas {
+    border-radius: 50%;
+    border: 3px solid var(--pf-gold);
+}
+
+/* ── Header avatar image support ──────────────────────────── */
+.hdr-user-avatar { overflow: hidden; }
+.mob-user-avatar { overflow: hidden; }
 
 .pf-badge {
     display: inline-flex;

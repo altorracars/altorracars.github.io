@@ -616,10 +616,14 @@
     function renderUserArea(user, container) {
         var name    = user.displayName || user.email.split('@')[0];
         var initials = name.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+        var photoURL = user.photoURL || '';
+        var avatarContent = photoURL
+            ? '<img src="' + escapeHtml(photoURL) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentNode.textContent=\'' + initials + '\'">'
+            : initials;
         container.innerHTML =
             '<div class="hdr-user-wrapper">' +
             '<button class="hdr-user-btn" id="hdrUserBtn" aria-label="Mi cuenta" aria-expanded="false">' +
-            '<span class="hdr-user-avatar">' + initials + '</span>' +
+            '<span class="hdr-user-avatar">' + avatarContent + '</span>' +
             '<span class="hdr-user-name">' + escapeHtml(name.split(' ')[0]) + '</span>' +
             '<i data-lucide="chevron-down" class="hdr-user-chevron"></i>' +
             '</button>' +
@@ -655,9 +659,13 @@
         if (user) {
             var name = user.displayName || user.email.split('@')[0];
             var initials = name.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+            var mPhotoURL = user.photoURL || '';
+            var mAvatarContent = mPhotoURL
+                ? '<img src="' + escapeHtml(mPhotoURL) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentNode.textContent=\'' + initials + '\'">'
+                : initials;
             row.innerHTML =
                 '<a href="perfil.html" class="mob-user-profile-link">' +
-                '<span class="mob-user-avatar">' + initials + '</span>' +
+                '<span class="mob-user-avatar">' + mAvatarContent + '</span>' +
                 '<span class="mob-user-name">' + escapeHtml(name) + '</span>' +
                 '<i data-lucide="chevron-right"></i>' +
                 '</a>' +

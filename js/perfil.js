@@ -514,6 +514,11 @@
             '</div>';
         }
 
+        // Device info
+        var ua = navigator.userAgent || '';
+        var browser = /Edg/.test(ua) ? 'Edge' : /Chrome/.test(ua) ? 'Chrome' : /Firefox/.test(ua) ? 'Firefox' : /Safari/.test(ua) ? 'Safari' : 'Otro';
+        var os = /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Linux/.test(ua) ? 'Linux' : 'Otro';
+
         var html =
             '<div class="pf-card">' +
                 '<div class="pf-card-title">Proveedores de acceso</div>' +
@@ -524,6 +529,7 @@
                 '<div class="pf-card-title">Informacion de cuenta</div>' +
                 '<div class="pf-row"><span class="pf-label"><i data-lucide="mail"></i> Correo</span><span class="pf-value">' + escapeHtml(user.email) + '</span></div>' +
                 (lastAccess ? '<div class="pf-row"><span class="pf-label"><i data-lucide="clock"></i> Ultimo acceso</span><span class="pf-value">' + lastAccess + '</span></div>' : '') +
+                '<div class="pf-row"><span class="pf-label"><i data-lucide="monitor"></i> Dispositivo actual</span><span class="pf-value">' + escapeHtml(browser + ' / ' + os) + '</span></div>' +
                 '<div class="pf-row"><span class="pf-label"><i data-lucide="fingerprint"></i> UID</span><span class="pf-value pf-value-mono">' + escapeHtml(user.uid.substring(0, 12)) + '...</span></div>' +
             '</div>' +
 
@@ -555,6 +561,21 @@
             '<div class="pf-card">' +
                 '<div class="pf-card-title">Sesion</div>' +
                 '<div class="pf-btn-group"><button class="pf-btn pf-btn-danger" id="pfLogoutBtn"><i data-lucide="log-out"></i> Cerrar sesion</button></div>' +
+            '</div>' +
+
+            '<div class="pf-card pf-card--danger">' +
+                '<div class="pf-card-title" style="color:var(--pf-danger);"><i data-lucide="alert-triangle"></i> Zona peligrosa</div>' +
+                '<p class="pf-danger-desc">Eliminar tu cuenta borrara permanentemente tu perfil, favoritos, historial y solicitudes. Esta accion no se puede deshacer.</p>' +
+                '<div class="pf-btn-group"><button class="pf-btn pf-btn-danger-outline" id="pfDeleteAccountBtn"><i data-lucide="trash-2"></i> Eliminar mi cuenta</button></div>' +
+                '<div id="pfDeleteConfirm" style="display:none;margin-top:1rem;">' +
+                    '<p style="color:var(--pf-danger);font-size:.85rem;font-weight:600;margin-bottom:.6rem;">¿Estas absolutamente seguro? Escribe tu correo para confirmar:</p>' +
+                    '<input class="pf-input" type="email" id="pfDeleteEmailInput" placeholder="' + escapeHtml(user.email) + '" autocomplete="off">' +
+                    '<div class="pf-btn-group" style="margin-top:.8rem;">' +
+                        '<button class="pf-btn pf-btn-danger" id="pfDeleteConfirmBtn" disabled><i data-lucide="trash-2"></i> Confirmar eliminacion</button>' +
+                        '<button class="pf-btn pf-btn-outline" id="pfDeleteCancelBtn">Cancelar</button>' +
+                    '</div>' +
+                    '<div class="pf-pass-msg" id="pfDeleteMsg"></div>' +
+                '</div>' +
             '</div>';
 
         return html;
@@ -1499,6 +1520,59 @@
             if (window.AltorraAuth) window.AltorraAuth.logout();
             else window.auth.signOut();
         });
+
+        // Delete account — double confirmation
+        var deleteBtn = $id('pfDeleteAccountBtn');
+        var deleteConfirm = $id('pfDeleteConfirm');
+        if (deleteBtn && deleteConfirm) {
+            deleteBtn.addEventListener('click', function () {
+                deleteBtn.style.display = 'none';
+                deleteConfirm.style.display = '';
+            });
+
+            var cancelDelete = $id('pfDeleteCancelBtn');
+            if (cancelDelete) cancelDelete.addEventListener('click', function () {
+                deleteConfirm.style.display = 'none';
+                deleteBtn.style.display = '';
+            });
+
+            var emailInput = $id('pfDeleteEmailInput');
+            var confirmBtn = $id('pfDeleteConfirmBtn');
+            if (emailInput && confirmBtn) {
+                emailInput.addEventListener('input', function () {
+                    confirmBtn.disabled = this.value.trim().toLowerCase() !== (user.email || '').toLowerCase();
+                });
+
+                confirmBtn.addEventListener('click', function () {
+                    var msgEl = $id('pfDeleteMsg');
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<i data-lucide="loader-2"></i> Eliminando...';
+                    if (window.lucide) window.lucide.createIcons();
+
+                    window.db.collection('clientes').doc(user.uid).delete()
+                        .then(function () {
+                            return user.delete();
+                        })
+                        .then(function () {
+                            _toast('Cuenta eliminada correctamente.', 'info');
+                            window.location.href = '/';
+                        })
+                        .catch(function (err) {
+                            var msg = 'Error al eliminar la cuenta.';
+                            if (err.code === 'auth/requires-recent-login') {
+                                msg = 'Por seguridad, debes volver a iniciar sesion antes de eliminar tu cuenta.';
+                            }
+                            if (msgEl) {
+                                msgEl.textContent = msg;
+                                msgEl.className = 'pf-pass-msg error';
+                            }
+                            confirmBtn.disabled = false;
+                            confirmBtn.innerHTML = '<i data-lucide="trash-2"></i> Confirmar eliminacion';
+                            if (window.lucide) window.lucide.createIcons();
+                        });
+                });
+            }
+        }
     }
 
     // ── Load profile data ───────────────────────────────────

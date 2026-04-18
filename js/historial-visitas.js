@@ -383,10 +383,18 @@ if (typeof window !== 'undefined') {
     window.vehicleHistory = vehicleHistory;
 }
 
-// En paginas de detalle, marcar como pendiente. Si no hay auth,
-// localStorage ya esta disponible y trackea inmediatamente.
+// En paginas de detalle, trackear despues de que PRERENDERED_VEHICLE_ID
+// haya sido asignado (se define en un <script> posterior a este archivo).
 if (typeof window !== 'undefined'
     && (window.location.pathname.indexOf('/vehiculos/') !== -1
      || window.location.pathname.indexOf('detalle-vehiculo') !== -1)) {
-    vehicleHistory.trackCurrentVehicle();
+    setTimeout(function () { vehicleHistory.trackCurrentVehicle(); }, 0);
+
+    // Flush pendiente de localStorage al salir de la pagina
+    window.addEventListener('beforeunload', function () {
+        if (vehicleHistory._syncTimeout) {
+            clearTimeout(vehicleHistory._syncTimeout);
+            vehicleHistory._saveToLocalStorage();
+        }
+    });
 }

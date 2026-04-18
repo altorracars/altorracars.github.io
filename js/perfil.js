@@ -74,6 +74,117 @@
         '</div>';
     }
 
+    // ── Avatar upload ───────────────────────────────────────
+    var AVATAR_MAX_SIZE = 200;
+    var AVATAR_QUALITY = 0.82;
+
+    function handleAvatarClick() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/jpeg,image/png,image/webp';
+        input.addEventListener('change', function () {
+            if (!input.files || !input.files[0]) return;
+            var file = input.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                _toast('La imagen es muy grande (max 5MB).', 'error');
+                return;
+            }
+            showAvatarPreview(file);
+        });
+        input.click();
+    }
+
+    function showAvatarPreview(file) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var overlay = document.createElement('div');
+            overlay.className = 'pf-avatar-overlay';
+            overlay.innerHTML =
+                '<div class="pf-avatar-modal">' +
+                    '<div class="pf-avatar-modal-title">Vista previa</div>' +
+                    '<div class="pf-avatar-preview-wrap">' +
+                        '<canvas id="pfAvatarCanvas" width="200" height="200"></canvas>' +
+                    '</div>' +
+                    '<div class="pf-btn-group" style="justify-content:center;margin-top:1rem;">' +
+                        '<button class="pf-btn pf-btn-gold" id="pfAvatarConfirm"><i data-lucide="check"></i> Guardar foto</button>' +
+                        '<button class="pf-btn pf-btn-outline" id="pfAvatarCancel">Cancelar</button>' +
+                    '</div>' +
+                '</div>';
+            document.body.appendChild(overlay);
+            if (window.lucide) window.lucide.createIcons();
+
+            var canvas = document.getElementById('pfAvatarCanvas');
+            var ctx = canvas.getContext('2d');
+            var img = new Image();
+            img.onload = function () {
+                drawCroppedCircle(ctx, img, AVATAR_MAX_SIZE);
+            };
+            img.src = e.target.result;
+
+            document.getElementById('pfAvatarCancel').addEventListener('click', function () {
+                overlay.remove();
+            });
+            overlay.addEventListener('click', function (ev) {
+                if (ev.target === overlay) overlay.remove();
+            });
+            document.getElementById('pfAvatarConfirm').addEventListener('click', function () {
+                var btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2"></i> Subiendo...';
+                if (window.lucide) window.lucide.createIcons();
+                canvas.toBlob(function (blob) {
+                    uploadAvatar(blob).then(function () {
+                        overlay.remove();
+                    }).catch(function (err) {
+                        _toast('Error al subir la foto: ' + (err.message || ''), 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i data-lucide="check"></i> Guardar foto';
+                        if (window.lucide) window.lucide.createIcons();
+                    });
+                }, 'image/webp', AVATAR_QUALITY);
+            });
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function drawCroppedCircle(ctx, img, size) {
+        var s = Math.min(img.width, img.height);
+        var sx = (img.width - s) / 2;
+        var sy = (img.height - s) / 2;
+        ctx.clearRect(0, 0, size, size);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+        ctx.restore();
+    }
+
+    function uploadAvatar(blob) {
+        if (!window.storage || !_user) return Promise.reject(new Error('Storage not ready'));
+        var ref = window.storage.ref('avatars/' + _user.uid + '.webp');
+        return ref.put(blob, { contentType: 'image/webp' }).then(function () {
+            return ref.getDownloadURL();
+        }).then(function (url) {
+            return window.db.collection('clientes').doc(_user.uid).update({ avatarURL: url }).then(function () {
+                _userData.avatarURL = url;
+                _user.updateProfile({ photoURL: url }).catch(function () {});
+                _toast('Foto de perfil actualizada.', 'success');
+                renderAllSections(_user, _userData);
+                updateSidebarUser(_user, _userData);
+                syncHeaderAvatar(url);
+            });
+        });
+    }
+
+    function syncHeaderAvatar(url) {
+        var headerAvatars = document.querySelectorAll('.hdr-user-avatar, .mob-user-avatar');
+        headerAvatars.forEach(function (el) {
+            el.innerHTML = '<img src="' + escapeHtml(url) + '" alt="Avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.remove()">';
+        });
+    }
+
     // ── Navigation ──────────────────────────────────────────
     var SECTIONS = [
         { id: 'perfil',       icon: 'user',         label: 'Mi Perfil' },
@@ -297,7 +408,10 @@
             renderCompletenessBar(user, data) +
 
             '<div class="pf-card pf-hero">' +
-                '<div class="pf-avatar" id="pfAvatar">' + avatarHtml + '</div>' +
+                '<div class="pf-avatar pf-avatar--editable" id="pfAvatar" title="Cambiar foto">' +
+                    avatarHtml +
+                    '<div class="pf-avatar-cam"><i data-lucide="camera"></i></div>' +
+                '</div>' +
                 '<div class="pf-hero-info">' +
                     '<h1 class="pf-hero-name">' + escapeHtml(name) + '</h1>' +
                     '<p class="pf-hero-email">' + escapeHtml(email) + '</p>' +
@@ -502,6 +616,10 @@
 
     // ── Wire profile events ─────────────────────────────────
     function wireProfileEvents(user, data) {
+        // Avatar upload
+        var avatar = $id('pfAvatar');
+        if (avatar) avatar.addEventListener('click', handleAvatarClick);
+
         var editBtn = $id('pfEditBtn');
         var editForm = $id('pfEditForm');
         var infoView = $id('pfInfoView');

@@ -1136,6 +1136,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fix historial nunca registraba visitas** | historial-visitas.js, index.html, perfil.html | Path check buscaba `'detalle-vehiculo'` pero paginas viven en `/vehiculos/`. ID se leia de `?id=` pero paginas usan `PRERENDERED_VEHICLE_ID`. Corregido ambos + `showToast` restantes |
 | **Fase B1: Layout base perfil** | perfil.html, js/perfil.js, css/perfil.css | CSS y JS externalizados. Sidebar 6 secciones, mobile tabs, skeleton loading, hero card, dark theme, 3 breakpoints |
 | **Fase B2: Perfil mejorado** | js/perfil.js, css/perfil.css, CLAUDE.md | Barra completitud (5 criterios), campo ciudad (25 ciudades Colombia), validacion inline, provider badges (Google SVG + Email), password strength meter 4 niveles, toggle visibilidad, input prefix +57, indicador auto-save, ultimo acceso, UID truncado |
+| **Fase B3: Avatar upload** | js/perfil.js, css/perfil.css, js/auth.js, storage.rules, CLAUDE.md | Upload foto perfil con preview modal, canvas crop circular 200x200, compresion webp 0.82, Firebase Storage `avatars/{uid}.webp` (max 512KB, own uid), sync header desktop+mobile+sidebar, camera icon hover, onerror fallback a iniciales |
 
 ---
 
@@ -1361,17 +1362,20 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 | Input prefix telefono | ✓ "+57" visual prefix, validacion 7-10 digitos |
 | Info de cuenta | ✓ Ultimo acceso, UID truncado, proveedores con status badges |
 
-### Micro-Fase B3 — Foto de Perfil / Avatar
+### Micro-Fase B3 — Foto de Perfil / Avatar ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| Upload widget | Click en avatar → selector de imagen + preview |
-| Compresion client-side | Resize a 200x200, calidad 0.8, max 500KB |
-| Firebase Storage | `avatars/{uid}.webp` con reglas de seguridad |
-| Crop circular | Canvas crop antes de upload |
-| Fallback iniciales | Si no hay foto → iniciales doradas (actual) |
-| Sync con header | Avatar actualizado en header dropdown + mobile |
-| Campo en Firestore | `clientes/{uid}.avatarURL` |
+| Tarea | Estado |
+|-------|--------|
+| Upload widget | ✓ Click en avatar → file input (jpeg/png/webp, max 5MB) |
+| Compresion client-side | ✓ Canvas resize a 200x200, calidad 0.82, output webp |
+| Firebase Storage | ✓ `avatars/{uid}.webp` con reglas (max 512KB, own uid only) |
+| Crop circular | ✓ Canvas center-crop cuadrado + clip circular antes de upload |
+| Preview modal | ✓ Overlay con canvas circular, borde dorado, confirmar/cancelar |
+| Fallback iniciales | ✓ Si no hay foto → iniciales doradas (onerror fallback) |
+| Sync con header | ✓ Desktop `.hdr-user-avatar` + mobile `.mob-user-avatar` actualizados |
+| Sync con sidebar | ✓ Sidebar avatar muestra foto si disponible |
+| Campo en Firestore | ✓ `clientes/{uid}.avatarURL` + `user.updateProfile({ photoURL })` |
+| Camera icon overlay | ✓ Icono camara dorado aparece en hover sobre avatar |
 
 ### Micro-Fase B4 — Mis Favoritos (in-profile)
 

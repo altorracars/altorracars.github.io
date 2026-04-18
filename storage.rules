@@ -34,6 +34,15 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    // avatars/ — user profile photos (max 500KB, own uid only)
+    match /avatars/{uid}.{ext} {
+      allow read: if true;
+      allow write: if isAuthenticated()
+        && request.auth.uid == uid
+        && request.resource.size < 512 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     // Default: deny all other paths
     match /{allPaths=**} {
       allow read, write: if false;

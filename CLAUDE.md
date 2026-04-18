@@ -1137,6 +1137,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fase B1: Layout base perfil** | perfil.html, js/perfil.js, css/perfil.css | CSS y JS externalizados. Sidebar 6 secciones, mobile tabs, skeleton loading, hero card, dark theme, 3 breakpoints |
 | **Fase B2: Perfil mejorado** | js/perfil.js, css/perfil.css, CLAUDE.md | Barra completitud (5 criterios), campo ciudad (25 ciudades Colombia), validacion inline, provider badges (Google SVG + Email), password strength meter 4 niveles, toggle visibilidad, input prefix +57, indicador auto-save, ultimo acceso, UID truncado |
 | **Fase B3: Avatar upload** | js/perfil.js, css/perfil.css, js/auth.js, storage.rules, CLAUDE.md | Upload foto perfil con preview modal, canvas crop circular 200x200, compresion webp 0.82, Firebase Storage `avatars/{uid}.webp` (max 512KB, own uid), sync header desktop+mobile+sidebar, camera icon hover, onerror fallback a iniciales |
+| **Fase B4: Favoritos in-profile** | js/perfil.js, css/perfil.css, CLAUDE.md | Cards horizontales con imagen, marca/modelo/año, km, transmision, precio (oferta con tachado), badges de estado (disponible/reservado/vendido), boton quitar con fade-out, paginacion 6 por pagina, empty state con CTA, touch support |
 
 ---
 
@@ -1377,16 +1378,19 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 | Campo en Firestore | ✓ `clientes/{uid}.avatarURL` + `user.updateProfile({ photoURL })` |
 | Camera icon overlay | ✓ Icono camara dorado aparece en hover sobre avatar |
 
-### Micro-Fase B4 — Mis Favoritos (in-profile)
+### Micro-Fase B4 — Mis Favoritos (in-profile) ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| Cards compactas | Foto + marca + modelo + año + precio + estado |
-| Badge de estado | Disponible (verde), Reservado (amarillo), Vendido (rojo) |
-| Heart toggle | Quitar de favoritos directamente |
-| Paginacion | Mostrar 6 por pagina, cargar mas |
-| Empty state | Ilustracion + CTA "Explora nuestro catalogo" |
-| Link a detalle | Click en card → pagina del vehiculo |
+| Tarea | Estado |
+|-------|--------|
+| Cards compactas | ✓ Imagen + marca + modelo + año + km + transmision + precio |
+| Badge de estado | ✓ Disponible (verde), Reservado (amarillo), Vendido (rojo) |
+| Heart toggle | ✓ Boton quitar con fade-out animado + re-render |
+| Paginacion | ✓ 6 por pagina, boton "Ver mas (N restantes)" |
+| Empty state | ✓ Icono + "Guarda vehiculos..." + CTA "Explorar catalogo" |
+| Link a detalle | ✓ Click en imagen/titulo → `/vehiculos/{slug}.html` |
+| Badge oferta | ✓ "Oferta" dorado en esquina si `precioOferta` existe |
+| Precio tachado | ✓ Precio original tachado + precio oferta resaltado |
+| Touch support | ✓ Boton quitar siempre visible en touch (`hover: none`) |
 
 ### Micro-Fase B5 — Historial de Visitas Mejorado
 

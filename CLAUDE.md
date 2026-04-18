@@ -1138,6 +1138,8 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fase B2: Perfil mejorado** | js/perfil.js, css/perfil.css, CLAUDE.md | Barra completitud (5 criterios), campo ciudad (25 ciudades Colombia), validacion inline, provider badges (Google SVG + Email), password strength meter 4 niveles, toggle visibilidad, input prefix +57, indicador auto-save, ultimo acceso, UID truncado |
 | **Fase B3: Avatar upload** | js/perfil.js, css/perfil.css, js/auth.js, storage.rules, CLAUDE.md | Upload foto perfil con preview modal, canvas crop circular 200x200, compresion webp 0.82, Firebase Storage `avatars/{uid}.webp` (max 512KB, own uid), sync header desktop+mobile+sidebar, camera icon hover, onerror fallback a iniciales |
 | **Fase B4: Favoritos in-profile** | js/perfil.js, css/perfil.css, CLAUDE.md | Cards horizontales con imagen, marca/modelo/año, km, transmision, precio (oferta con tachado), badges de estado (disponible/reservado/vendido), boton quitar con fade-out, paginacion 6 por pagina, empty state con CTA, touch support |
+| **Fix perfil layout + favoritos** | perfil.html, css/perfil.css, js/perfil.js | Footer removido para full-space, database.js agregado (vehicleDB faltaba), ensureVehicleDB() con retry, layout calc(100vh - 80px), skeleton loading durante carga |
+| **Fase B5: Historial mejorado** | js/perfil.js, css/perfil.css, CLAUDE.md | Timeline agrupado (Hoy/Esta semana/Este mes/Anteriores), timestamps relativos (timeAgo), quitar individual con fade-out, limpiar todo con toast, skeleton async, reutiliza vehicleDB |
 
 ---
 
@@ -1392,15 +1394,16 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 | Precio tachado | ✓ Precio original tachado + precio oferta resaltado |
 | Touch support | ✓ Boton quitar siempre visible en touch (`hover: none`) |
 
-### Micro-Fase B5 — Historial de Visitas Mejorado
+### Micro-Fase B5 — Historial de Visitas Mejorado ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| Timeline con fechas | Agrupado por "Hoy", "Esta semana", "Este mes" |
-| Cards con timestamp | "Visto hace 2 horas" |
-| Limpiar individual | Boton X por item |
-| Limpiar todo | Confirmacion antes de borrar |
-| Max 50 items | Limitar para rendimiento |
+| Tarea | Estado |
+|-------|--------|
+| Timeline con fechas | ✓ Agrupado por "Hoy", "Esta semana", "Este mes", "Anteriores" |
+| Cards con timestamp | ✓ "Hace 2 horas", "Hace 3 dias", fecha formateada si > 7 dias |
+| Limpiar individual | ✓ Boton X por item con fade-out animado |
+| Limpiar todo | ✓ Boton "Limpiar todo" con toast confirmacion |
+| Async vehicleDB | ✓ Skeleton loading mientras carga, re-render automatico |
+| Empty state | ✓ Icono + "Los vehiculos que visites apareceran aqui" + CTA |
 
 ### Micro-Fase B6 — Mis Solicitudes
 

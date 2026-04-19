@@ -1406,6 +1406,76 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
     cursor: default;
 }
 
+/* ── Saved Searches (B10) ─────────────────────────────────── */
+.pf-search-list { display: flex; flex-direction: column; gap: .6rem; }
+.pf-search-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    transition: opacity .3s, transform .3s;
+}
+.pf-search-card:hover { background: rgba(255,255,255,.07); }
+.pf-search-main { flex: 1; min-width: 0; }
+.pf-search-name {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    font-weight: 600;
+    font-size: .9rem;
+    color: #fff;
+    text-decoration: none;
+    margin-bottom: .25rem;
+}
+.pf-search-name:hover { color: var(--pf-gold); }
+.pf-search-name [data-lucide] { width: 14px; height: 14px; color: var(--pf-gold); flex-shrink: 0; }
+.pf-search-filters {
+    font-size: .78rem;
+    color: #aaa;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pf-search-date {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    font-size: .72rem;
+    color: #777;
+    margin-top: .3rem;
+}
+.pf-search-date [data-lucide] { width: 12px; height: 12px; }
+.pf-search-actions {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-shrink: 0;
+}
+.pf-search-delete {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color .2s, background .2s;
+}
+.pf-search-delete:hover { color: #e74c3c; background: rgba(231,76,60,.1); }
+.pf-search-delete [data-lucide] { width: 15px; height: 15px; }
+
+.pf-toggle-sm { width: 36px; height: 20px; }
+.pf-toggle-sm .pf-toggle-slider { border-radius: 10px; }
+.pf-toggle-sm .pf-toggle-slider::before {
+    width: 14px; height: 14px;
+    bottom: 3px; left: 3px;
+}
+.pf-toggle-sm input:checked + .pf-toggle-slider::before { transform: translateX(16px); }
+
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 860px) {
     .pf-sidebar { width: 200px; padding-right: 1rem; }
@@ -1462,6 +1532,9 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
     .pf-cita-date { width: 46px; height: 46px; }
     .pf-cita-day { font-size: 1.15rem; }
     .pf-cita-month { font-size: .56rem; }
+    .pf-search-card { flex-direction: column; align-items: flex-start; gap: .5rem; }
+    .pf-search-actions { width: 100%; justify-content: flex-end; }
+    .pf-search-filters { white-space: normal; }
 }
 
 @media (hover: none) {

@@ -190,6 +190,7 @@
         { id: 'perfil',        icon: 'user',         label: 'Mi Perfil' },
         { id: 'favoritos',     icon: 'heart',        label: 'Favoritos' },
         { id: 'historial',     icon: 'clock-3',      label: 'Historial' },
+        { id: 'busquedas',     icon: 'bookmark',     label: 'Busquedas' },
         { id: 'solicitudes',   icon: 'file-text',    label: 'Solicitudes' },
         { id: 'citas',         icon: 'calendar',     label: 'Citas' },
         { id: 'preferencias',  icon: 'settings',     label: 'Preferencias' },
@@ -229,6 +230,9 @@
             if (s.id === 'favoritos' && window.favoritesManager) {
                 var c = window.favoritesManager.count();
                 if (c > 0) badgeHtml = '<span class="pf-nav-badge">' + c + '</span>';
+            }
+            if (s.id === 'busquedas' && _savedSearches && _savedSearches.length > 0) {
+                badgeHtml = '<span class="pf-nav-badge">' + _savedSearches.length + '</span>';
             }
             if (s.id === 'solicitudes' && _solicitudes && _solicitudes.length > 0) {
                 var solCount = _solicitudes.filter(function (x) { return !isCita(x); }).length;
@@ -916,6 +920,161 @@
         });
     }
 
+    // ── Saved Searches Section (B10) ────────────────────────────
+    var _savedSearches = null;
+
+    function formatFilterSummary(filters) {
+        var parts = [];
+        if (filters.marca) parts.push(escapeHtml(filters.marca));
+        if (filters.tipo) parts.push(escapeHtml(filters.tipo));
+        if (filters.categoria) parts.push(escapeHtml(filters.categoria));
+        if (filters.precioMin || filters.precioMax) {
+            var pMin = filters.precioMin ? formatCOP(filters.precioMin) : '';
+            var pMax = filters.precioMax ? formatCOP(filters.precioMax) : '';
+            if (pMin && pMax) parts.push(pMin + ' - ' + pMax);
+            else if (pMin) parts.push('Desde ' + pMin);
+            else if (pMax) parts.push('Hasta ' + pMax);
+        }
+        if (filters.yearMin || filters.yearMax) {
+            var yMin = filters.yearMin || '';
+            var yMax = filters.yearMax || '';
+            if (yMin && yMax && yMin !== yMax) parts.push(yMin + '-' + yMax);
+            else if (yMin) parts.push('Desde ' + yMin);
+        }
+        if (filters.search) parts.push('"' + escapeHtml(filters.search) + '"');
+        return parts.length > 0 ? parts.join(' &middot; ') : 'Todos los vehiculos';
+    }
+
+    function buildSearchUrl(filters) {
+        var params = [];
+        Object.keys(filters).forEach(function (k) {
+            if (filters[k] && k !== 'alertas') params.push(encodeURIComponent(k) + '=' + encodeURIComponent(filters[k]));
+        });
+        return 'busqueda.html' + (params.length ? '?' + params.join('&') : '');
+    }
+
+    function renderSearchCard(search) {
+        var date = '';
+        if (search.creadoEn) {
+            var d = search.creadoEn.toDate ? search.creadoEn.toDate() : new Date(search.creadoEn);
+            if (!isNaN(d.getTime())) date = d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+        }
+
+        return '<div class="pf-search-card" data-search-id="' + escapeHtml(search.id) + '">' +
+            '<div class="pf-search-main">' +
+                '<a href="' + buildSearchUrl(search.filtros || {}) + '" class="pf-search-name"><i data-lucide="search"></i> ' + escapeHtml(search.nombre || 'Busqueda guardada') + '</a>' +
+                '<div class="pf-search-filters">' + formatFilterSummary(search.filtros || {}) + '</div>' +
+                (date ? '<div class="pf-search-date"><i data-lucide="calendar"></i> ' + date + '</div>' : '') +
+            '</div>' +
+            '<div class="pf-search-actions">' +
+                '<label class="pf-toggle pf-toggle-sm" title="Alertas de precio">' +
+                    '<input type="checkbox" data-action="toggleAlert" data-id="' + escapeHtml(search.id) + '"' + (search.alertas ? ' checked' : '') + '>' +
+                    '<span class="pf-toggle-slider"></span>' +
+                '</label>' +
+                '<button class="pf-search-delete" data-action="deleteSearch" data-id="' + escapeHtml(search.id) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>' +
+            '</div>' +
+        '</div>';
+    }
+
+    function renderBusquedasSection(user, data) {
+        if (_savedSearches === null) {
+            _loadSavedSearches(user);
+            return '<div class="pf-card"><div class="pf-empty">' +
+                '<div class="pf-empty-icon"><div class="pf-skeleton pf-skeleton-circle" style="width:48px;height:48px;margin:0 auto;"></div></div>' +
+                '<h3>Cargando busquedas...</h3>' +
+                '</div></div>';
+        }
+
+        if (_savedSearches.length === 0) {
+            return renderEmptySection('bookmark', 'Sin busquedas guardadas', 'Guarda busquedas con filtros desde el catalogo para encontrar vehiculos mas rapido.', 'Ir al catalogo', 'busqueda.html');
+        }
+
+        var html = '<div class="pf-sol-count">' + _savedSearches.length + ' busqueda' + (_savedSearches.length > 1 ? 's' : '') + ' guardada' + (_savedSearches.length > 1 ? 's' : '') + '</div>';
+        html += '<p class="pf-pref-desc" style="margin-top:0;">Activa las alertas <i data-lucide="bell" style="width:13px;height:13px;vertical-align:-2px;color:var(--pf-gold);"></i> para recibir notificaciones cuando haya vehiculos nuevos que coincidan.</p>';
+        html += '<div class="pf-search-list">';
+        _savedSearches.forEach(function (s) { html += renderSearchCard(s); });
+        html += '</div>';
+        return html;
+    }
+
+    function _loadSavedSearches(user) {
+        if (!user || !user.uid) { _savedSearches = []; return; }
+        window.firebaseReady.then(function () {
+            return window.db.collection('clientes').doc(user.uid)
+                .collection('busquedasGuardadas')
+                .orderBy('creadoEn', 'desc')
+                .get();
+        }).then(function (snap) {
+            _savedSearches = [];
+            snap.forEach(function (doc) {
+                var d = doc.data();
+                d.id = doc.id;
+                _savedSearches.push(d);
+            });
+            if (_user && _userData) {
+                var sec = _currentSection;
+                renderAllSections(_user, _userData);
+                switchSection(sec);
+            }
+        }).catch(function (err) {
+            console.warn('[Profile] Error loading saved searches:', err && err.message);
+            _savedSearches = [];
+            if (_user && _userData) {
+                var sec = _currentSection;
+                renderAllSections(_user, _userData);
+                switchSection(sec);
+            }
+        });
+    }
+
+    function wireBusquedasEvents(user) {
+        var content = document.getElementById('section-busquedas');
+        if (!content) return;
+
+        content.addEventListener('click', function (e) {
+            var delBtn = e.target.closest('[data-action="deleteSearch"]');
+            if (delBtn) {
+                var id = delBtn.dataset.id;
+                if (!id || !user) return;
+                var card = delBtn.closest('.pf-search-card');
+                if (card) {
+                    card.style.transition = 'opacity .3s, transform .3s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(.95)';
+                }
+                setTimeout(function () {
+                    window.db.collection('clientes').doc(user.uid)
+                        .collection('busquedasGuardadas').doc(id).delete()
+                        .then(function () {
+                            _savedSearches = _savedSearches.filter(function (s) { return s.id !== id; });
+                            renderAllSections(_user, _userData);
+                            buildNavigation();
+                            switchSection('busquedas');
+                        }).catch(function () { _toast('Error al eliminar.', 'error'); });
+                }, 300);
+                return;
+            }
+        });
+
+        content.addEventListener('change', function (e) {
+            var toggle = e.target.closest('[data-action="toggleAlert"]');
+            if (!toggle) return;
+            var id = toggle.dataset.id;
+            if (!id || !user) return;
+
+            window.db.collection('clientes').doc(user.uid)
+                .collection('busquedasGuardadas').doc(id)
+                .update({ alertas: toggle.checked })
+                .then(function () {
+                    var search = _savedSearches.find(function (s) { return s.id === id; });
+                    if (search) search.alertas = toggle.checked;
+                }).catch(function () {
+                    toggle.checked = !toggle.checked;
+                    _toast('Error al actualizar alerta.', 'error');
+                });
+        });
+    }
+
     // ── Solicitudes Section (B6) ──────────────────────────────
     var _solicitudes = null; // cached after first load
     var _solExpanded = {};   // track expanded accordion items
@@ -1382,6 +1541,7 @@
             perfil: renderProfileSection(user, data),
             favoritos: renderFavoritesSection(),
             historial: renderHistorialSection(),
+            busquedas: renderBusquedasSection(user, data),
             solicitudes: renderSolicitudesSection(user, data),
             citas: renderCitasSection(user, data),
             preferencias: renderPreferenciasSection(user, data),
@@ -1405,6 +1565,7 @@
         wireSecurityEvents(user);
         wireFavoritesEvents();
         wireHistorialEvents();
+        wireBusquedasEvents(user);
         wireSolicitudesEvents();
         wirePreferenciasEvents(user);
 

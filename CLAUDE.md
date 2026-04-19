@@ -1152,6 +1152,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fase B7: Mis Citas** | js/perfil.js, css/perfil.css, CLAUDE.md | Citas se guardan en `solicitudes` con `requiereCita:true`. Filtradas fuera de B6 y en nueva seccion. Grupos Proximas/Pasadas, date block dorado (dia+mes), status 4 estados (Pendiente/Confirmada/Completada/Cancelada), accordion con detalles, boton "Pedir cancelacion" que abre WhatsApp (users no pueden updatar por rules), nav badge |
 | **Fase B8: Seguridad mejorada** | js/perfil.js, css/perfil.css, CLAUDE.md | Dispositivo actual (browser+OS via UA), zona peligrosa con eliminacion de cuenta (doble confirmacion: escribir email), borra `clientes/{uid}` + Auth user, maneja `requires-recent-login` |
 | **Fase B9: Preferencias** | js/perfil.js, css/perfil.css, CLAUDE.md | Toggle WhatsApp notifications, email frequency (nunca/semanal/diario), dark theme toggle (disabled, site is dark-only), auto-save to `clientes/{uid}.preferencias`, toggle switch CSS, nueva seccion en sidebar |
+| **Fase B10: Busquedas Guardadas** | js/perfil.js, css/perfil.css, css/dark-theme.css, busqueda.html, firestore.rules, CLAUDE.md | Boton "Guardar busqueda" en catalogo, subcollection `clientes/{uid}/busquedasGuardadas`, cards con filtros resumidos + link reconstruido, toggle alertas, eliminar con fade-out, nav badge, auth gate, Firestore rules para subcollection, responsive |
 
 ---
 
@@ -1471,15 +1472,22 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 | Auto-save | ✓ Indicador Guardando/Guardado/Error con Lucide icons, se oculta despues de 2s |
 | Seccion en sidebar | ✓ Nueva seccion "Preferencias" con icono settings entre Citas y Seguridad |
 
-### Micro-Fase B10 — Busquedas Guardadas y Alertas de Precio
+### Micro-Fase B10 — Busquedas Guardadas y Alertas de Precio ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| Guardar busqueda | Desde filtros avanzados → "Guardar esta busqueda" |
-| Lista en perfil | Nombre + filtros + toggle alertas |
-| Alertas de precio | Toggle por vehiculo favorito |
-| Subcollection Firestore | `clientes/{uid}/busquedasGuardadas/{id}` |
-| Cloud Function (futuro) | Trigger en cambio de precio → email al usuario |
+| Tarea | Estado |
+|-------|--------|
+| Guardar busqueda | ✓ Boton "Guardar busqueda" en `busqueda.html`, guarda filtros activos en `clientes/{uid}/busquedasGuardadas` |
+| Auth gate | ✓ Si no hay sesion o es anonimo, abre modal login + toast informativo |
+| Lista en perfil | ✓ Cards con nombre, resumen de filtros, fecha, toggle alertas, boton eliminar |
+| Link a busqueda | ✓ Click en nombre reconstruye URL con query params de filtros guardados |
+| Toggle alertas | ✓ Switch on/off por busqueda, guarda en Firestore campo `alertas` |
+| Eliminar busqueda | ✓ Fade-out animado + delete en Firestore subcollection |
+| Nav badge | ✓ Sidebar muestra cantidad de busquedas guardadas |
+| Empty state | ✓ Icono + "Sin busquedas guardadas" + CTA "Ir al catalogo" |
+| Skeleton loading | ✓ Mientras carga subcollection de Firestore |
+| Subcollection Firestore | ✓ `clientes/{uid}/busquedasGuardadas/{id}` con reglas read/write own uid |
+| Responsive | ✓ Card stack en 480px, toggle y delete alineados |
+| Cloud Function (futuro) | Pendiente: trigger en cambio de precio → email al usuario |
 
 ---
 

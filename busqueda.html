@@ -224,6 +224,7 @@
                 <div class="search-actions">
                     <button type="submit" class="btn-search-submit">Buscar Vehículos</button>
                     <button type="button" id="clearSearch" class="btn-search-clear">Limpiar Búsqueda</button>
+                    <button type="button" id="saveSearchBtn" class="btn-search-save" title="Guardar esta búsqueda">&#9733; Guardar búsqueda</button>
                 </div>
             </form>
         </div>
@@ -370,6 +371,44 @@
             });
 
             performSearch();
+
+            // Save search button
+            var saveBtn = document.getElementById('saveSearchBtn');
+            if (saveBtn) saveBtn.addEventListener('click', function() {
+                if (!window.auth || !window.auth.currentUser || window.auth.currentUser.isAnonymous) {
+                    if (window.AltorraAuth) window.AltorraAuth.open('login');
+                    if (typeof toast !== 'undefined' && toast.info) toast.info('Inicia sesion para guardar busquedas.');
+                    return;
+                }
+                var uid = window.auth.currentUser.uid;
+                var filtros = Object.assign({}, currentFilters);
+                var parts = [];
+                if (filtros.marca) parts.push(filtros.marca);
+                if (filtros.tipo) parts.push(filtros.tipo);
+                if (filtros.categoria) parts.push(filtros.categoria);
+                var nombre = parts.length > 0 ? parts.join(' - ') : 'Busqueda general';
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Guardando...';
+                window.db.collection('clientes').doc(uid)
+                    .collection('busquedasGuardadas').add({
+                        nombre: nombre,
+                        filtros: filtros,
+                        alertas: false,
+                        creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(function() {
+                        if (typeof toast !== 'undefined' && toast.success) toast.success('Busqueda guardada.');
+                        saveBtn.textContent = '\u2713 Guardada';
+                        setTimeout(function() {
+                            saveBtn.disabled = false;
+                            saveBtn.textContent = '\u2605 Guardar busqueda';
+                        }, 2000);
+                    }).catch(function(err) {
+                        console.warn('[Search] Error saving:', err);
+                        if (typeof toast !== 'undefined' && toast.error) toast.error('Error al guardar.');
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = '\u2605 Guardar busqueda';
+                    });
+            });
         });
     </script>
 

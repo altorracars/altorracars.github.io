@@ -1730,6 +1730,26 @@ body .btn-search-clear:hover {
     color: #e8e8e8;
 }
 
+body .btn-search-save {
+    background: transparent;
+    color: #b89658;
+    border: 1px solid #b89658;
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+}
+body .btn-search-save:hover {
+    background: rgba(184, 150, 88, .12);
+    transform: translateY(-2px);
+}
+body .btn-search-save:disabled {
+    opacity: .6;
+    cursor: default;
+    transform: none;
+}
+
 /* Reducir espacio entre filtros y resultados en página de búsqueda */
 body .search-advanced-section + .search-results-section {
     padding-top: 0.5rem;

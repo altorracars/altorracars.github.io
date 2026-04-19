@@ -59,6 +59,7 @@
 | `privacidad.html` | Politica de privacidad |
 | `cookies.html` | Politica de cookies con banner de consentimiento |
 | `404.html` | Pagina de error 404 personalizada |
+| `perfil.html` | Panel de usuario: perfil, favoritos, historial, busquedas, solicitudes, citas, preferencias, seguridad |
 
 ### Paginas admin / internas
 
@@ -99,6 +100,8 @@
 | `reviews.js` | Renderizado publico de resenas |
 | `simulador/` | Directorio con logica del simulador de credito |
 | `toast.js` | Sistema de notificaciones toast |
+| `auth.js` | Login, registro, Google sign-in, reset password, onAuthStateChanged, saveClientProfile, header state |
+| `perfil.js` | Panel de usuario: 8 secciones, avatar upload, Firestore sync, busquedas guardadas, preferencias |
 | `main.js` | Punto de entrada general (legacy) |
 
 ### JavaScript — Panel admin (`js/admin-*.js`)
@@ -151,6 +154,9 @@
 | `animaciones.css` | Animaciones y transiciones |
 | `historial-visitas.css` | Widget de historial de visitas |
 | `page-loader.css` | Animacion de carga |
+| `auth.css` | Modal de login/registro/reset: formularios, password strength, Google btn |
+| `auth-header.css` | Estado logueado en header: avatar dropdown desktop + mobile |
+| `perfil.css` | Panel de usuario: sidebar, cards, favoritos, solicitudes, citas, toggle, responsive |
 
 ### Snippets (`snippets/`)
 
@@ -162,6 +168,7 @@ Fragmentos HTML inyectados dinamicamente por `components.js`:
 | `footer.html` | Footer con links, redes sociales, info de contacto |
 | `modals.html` | Modals de "Vende tu Auto" y "Financiacion" |
 | `seo-meta.html` | Meta tags SEO reutilizables |
+| `auth-modal.html` | Modal con tabs Ingresar/Registrarse/Reset, Google sign-in |
 
 ### Data (`data/`)
 
@@ -303,6 +310,7 @@ auditLog/{id}        — read: authenticated | create: editor+ | delete: super_a
 config/{docId}       — read: public | write: varies (bookedSlots: public, counters: editor+)
 system/{docId}       — read: public | write: editor+ (cache invalidation)
 drafts_activos/{uid} — read/write: editor+ (own uid only)
+clientes/{uid}/busquedasGuardadas/{searchId} — read/write: own uid only
 ```
 
 ### Optimistic Locking (`_version`)
@@ -1210,8 +1218,13 @@ Los usuarios publicos (clientes) y los administradores usan Firebase Auth, pero 
 | telefono | string | Opcional |
 | favoritos | array | IDs de vehiculos (solo usuarios registrados) |
 | vehiculosVistos | array | Historial sincronizado desde localStorage (solo registrados) |
+| ciudad | string | Ubicacion del usuario (25 ciudades Colombia, select) |
+| avatarURL | string | URL de foto de perfil en Firebase Storage (`avatars/{uid}.webp`) |
+| preferencias | object | `{ whatsapp: bool, emailFreq: string }` — notificaciones y preferencias |
 | creadoEn | string (ISO) | Fecha de creacion |
 | ultimoAcceso | string (ISO) | Ultimo login |
+
+**Subcollection**: `clientes/{uid}/busquedasGuardadas/{searchId}` — nombre, filtros (object), alertas (bool), creadoEn (timestamp)
 
 ### Firestore Rules para clientes
 

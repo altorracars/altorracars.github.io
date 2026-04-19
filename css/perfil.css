@@ -35,7 +35,7 @@ body { background: var(--pf-bg); }
 .profile-main ~ .footer { display: none !important; }
 
 /* ── Layout ────────────────────────────────────────────────── */
-.profile-main { padding-top: 85px; }
+.profile-main { padding-top: 110px; }
 
 .pf-layout {
     display: flex;
@@ -43,7 +43,7 @@ body { background: var(--pf-bg); }
     max-width: 1080px;
     margin: 0 auto;
     padding: 1rem 1.5rem 3rem;
-    min-height: calc(100vh - 120px);
+    min-height: calc(100vh - 140px);
 }
 
 /* ── Sidebar ───────────────────────────────────────────────── */
@@ -51,11 +51,11 @@ body { background: var(--pf-bg); }
     width: var(--pf-sidebar-w);
     flex-shrink: 0;
     position: sticky;
-    top: 95px;
+    top: 115px;
     align-self: flex-start;
     padding-right: 1.5rem;
     border-right: 1px solid var(--pf-border);
-    max-height: calc(100vh - 105px);
+    max-height: calc(100vh - 125px);
     overflow-y: auto;
 }
 
@@ -1484,11 +1484,11 @@ a.pf-stat:hover { border-color: var(--pf-gold); }
 }
 
 @media (max-width: 768px) {
-    .profile-main { padding-top: 75px; }
+    .profile-main { padding-top: 100px; }
     .pf-layout {
         flex-direction: column;
         padding: 0 0 2rem;
-        min-height: calc(100vh - 110px);
+        min-height: calc(100vh - 130px);
     }
     .pf-sidebar { display: none; }
     .pf-mobile-tabs { display: flex; }

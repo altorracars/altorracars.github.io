@@ -1151,6 +1151,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fase B6: Mis Solicitudes** | js/perfil.js, css/perfil.css, CLAUDE.md | Query Firestore `solicitudes` by email, cards con tipo (car/landmark/message-circle), status badges 4 estados, stepper horizontal 3 pasos, accordion expandible con datos especificos por tipo, skeleton loading, nav badge, stat clickable, responsive 3 breakpoints |
 | **Fase B7: Mis Citas** | js/perfil.js, css/perfil.css, CLAUDE.md | Citas se guardan en `solicitudes` con `requiereCita:true`. Filtradas fuera de B6 y en nueva seccion. Grupos Proximas/Pasadas, date block dorado (dia+mes), status 4 estados (Pendiente/Confirmada/Completada/Cancelada), accordion con detalles, boton "Pedir cancelacion" que abre WhatsApp (users no pueden updatar por rules), nav badge |
 | **Fase B8: Seguridad mejorada** | js/perfil.js, css/perfil.css, CLAUDE.md | Dispositivo actual (browser+OS via UA), zona peligrosa con eliminacion de cuenta (doble confirmacion: escribir email), borra `clientes/{uid}` + Auth user, maneja `requires-recent-login` |
+| **Fase B9: Preferencias** | js/perfil.js, css/perfil.css, CLAUDE.md | Toggle WhatsApp notifications, email frequency (nunca/semanal/diario), dark theme toggle (disabled, site is dark-only), auto-save to `clientes/{uid}.preferencias`, toggle switch CSS, nueva seccion en sidebar |
 
 ---
 
@@ -1459,14 +1460,16 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 | Eliminar cuenta | ✓ Zona peligrosa con confirmacion doble: (1) boton inicial, (2) escribir email para confirmar. Borra `clientes/{uid}` + `user.delete()`. Maneja `auth/requires-recent-login` |
 | UID truncado | ✓ Ya implementado en B2: primeros 12 chars con monospace |
 
-### Micro-Fase B9 — Preferencias
+### Micro-Fase B9 — Preferencias ✓ COMPLETADA
 
-| Tarea | Detalle |
-|-------|---------|
-| Notificaciones WhatsApp | Toggle opt-in/out |
-| Notificaciones email | Frecuencia: diario/semanal/nunca |
-| Tema visual | Toggle dark/light (persistido en localStorage) |
-| Campo en Firestore | `clientes/{uid}.preferencias` |
+| Tarea | Estado |
+|-------|--------|
+| Notificaciones WhatsApp | ✓ Toggle on/off con guardado automatico en Firestore |
+| Notificaciones email | ✓ Select: Nunca/Semanal/Diario con guardado automatico |
+| Tema visual | ✓ Toggle dark mode (siempre on, disabled — el sitio es dark-only por ahora) |
+| Campo en Firestore | ✓ `clientes/{uid}.preferencias` con `{ whatsapp: bool, emailFreq: string }` |
+| Auto-save | ✓ Indicador Guardando/Guardado/Error con Lucide icons, se oculta despues de 2s |
+| Seccion en sidebar | ✓ Nueva seccion "Preferencias" con icono settings entre Citas y Seguridad |
 
 ### Micro-Fase B10 — Busquedas Guardadas y Alertas de Precio
 

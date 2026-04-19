@@ -187,12 +187,13 @@
 
     // ── Navigation ──────────────────────────────────────────
     var SECTIONS = [
-        { id: 'perfil',       icon: 'user',         label: 'Mi Perfil' },
-        { id: 'favoritos',    icon: 'heart',        label: 'Favoritos' },
-        { id: 'historial',    icon: 'clock-3',      label: 'Historial' },
-        { id: 'solicitudes',  icon: 'file-text',    label: 'Solicitudes' },
-        { id: 'citas',        icon: 'calendar',     label: 'Citas' },
-        { id: 'seguridad',    icon: 'shield',       label: 'Seguridad' }
+        { id: 'perfil',        icon: 'user',         label: 'Mi Perfil' },
+        { id: 'favoritos',     icon: 'heart',        label: 'Favoritos' },
+        { id: 'historial',     icon: 'clock-3',      label: 'Historial' },
+        { id: 'solicitudes',   icon: 'file-text',    label: 'Solicitudes' },
+        { id: 'citas',         icon: 'calendar',     label: 'Citas' },
+        { id: 'preferencias',  icon: 'settings',     label: 'Preferencias' },
+        { id: 'seguridad',     icon: 'shield',       label: 'Seguridad' }
     ];
 
     function switchSection(sectionId) {
@@ -1268,6 +1269,97 @@
         return html;
     }
 
+    // ── Preferencias Section (B9) ──────────────────────────────
+    function getPrefs() {
+        return (_userData && _userData.preferencias) || {};
+    }
+
+    function renderPreferenciasSection(user, data) {
+        var prefs = getPrefs();
+        var waChecked = prefs.whatsapp !== false;
+        var emailFreq = prefs.emailFreq || 'nunca';
+
+        var html =
+            '<div class="pf-card">' +
+                '<div class="pf-card-title">Notificaciones</div>' +
+                '<p class="pf-pref-desc">Elige como quieres recibir novedades sobre vehiculos y ofertas.</p>' +
+                '<div class="pf-pref-row">' +
+                    '<div class="pf-pref-info">' +
+                        '<span class="pf-pref-label"><i data-lucide="message-circle"></i> WhatsApp</span>' +
+                        '<span class="pf-pref-hint">Recibe alertas de nuevos vehiculos y ofertas al +57</span>' +
+                    '</div>' +
+                    '<label class="pf-toggle"><input type="checkbox" id="pfPrefWA"' + (waChecked ? ' checked' : '') + '><span class="pf-toggle-slider"></span></label>' +
+                '</div>' +
+                '<div class="pf-pref-row">' +
+                    '<div class="pf-pref-info">' +
+                        '<span class="pf-pref-label"><i data-lucide="mail"></i> Correo electronico</span>' +
+                        '<span class="pf-pref-hint">Resumen de vehiculos nuevos y cambios de precio</span>' +
+                    '</div>' +
+                    '<select class="pf-input pf-select pf-pref-select" id="pfPrefEmail">' +
+                        '<option value="nunca"' + (emailFreq === 'nunca' ? ' selected' : '') + '>Nunca</option>' +
+                        '<option value="semanal"' + (emailFreq === 'semanal' ? ' selected' : '') + '>Semanal</option>' +
+                        '<option value="diario"' + (emailFreq === 'diario' ? ' selected' : '') + '>Diario</option>' +
+                    '</select>' +
+                '</div>' +
+            '</div>' +
+
+            '<div class="pf-card">' +
+                '<div class="pf-card-title">Apariencia</div>' +
+                '<div class="pf-pref-row">' +
+                    '<div class="pf-pref-info">' +
+                        '<span class="pf-pref-label"><i data-lucide="moon"></i> Tema oscuro</span>' +
+                        '<span class="pf-pref-hint">El tema oscuro esta activado por defecto</span>' +
+                    '</div>' +
+                    '<label class="pf-toggle"><input type="checkbox" id="pfPrefTheme" checked disabled><span class="pf-toggle-slider"></span></label>' +
+                '</div>' +
+            '</div>' +
+
+            '<div class="pf-pref-autosave" id="pfPrefStatus"></div>';
+
+        return html;
+    }
+
+    function wirePreferenciasEvents(user) {
+        var waToggle = $id('pfPrefWA');
+        var emailSelect = $id('pfPrefEmail');
+
+        function savePref() {
+            var statusEl = $id('pfPrefStatus');
+            if (statusEl) {
+                statusEl.innerHTML = '<i data-lucide="loader-2"></i> Guardando...';
+                statusEl.className = 'pf-pref-autosave pf-autosave-saving';
+                if (window.lucide) window.lucide.createIcons();
+            }
+
+            var prefs = {
+                whatsapp: waToggle ? waToggle.checked : true,
+                emailFreq: emailSelect ? emailSelect.value : 'nunca'
+            };
+
+            window.db.collection('clientes').doc(user.uid).set(
+                { preferencias: prefs },
+                { merge: true }
+            ).then(function () {
+                if (_userData) _userData.preferencias = prefs;
+                if (statusEl) {
+                    statusEl.innerHTML = '<i data-lucide="check"></i> Guardado';
+                    statusEl.className = 'pf-pref-autosave pf-autosave-saved';
+                    if (window.lucide) window.lucide.createIcons();
+                    setTimeout(function () { statusEl.className = 'pf-pref-autosave'; statusEl.innerHTML = ''; }, 2000);
+                }
+            }).catch(function () {
+                if (statusEl) {
+                    statusEl.innerHTML = '<i data-lucide="alert-circle"></i> Error al guardar';
+                    statusEl.className = 'pf-pref-autosave pf-autosave-error';
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            });
+        }
+
+        if (waToggle) waToggle.addEventListener('change', savePref);
+        if (emailSelect) emailSelect.addEventListener('change', savePref);
+    }
+
     // ── Placeholder sections ────────────────────────────────
     function renderEmptySection(icon, title, message, ctaText, ctaHref) {
         var cta = ctaText
@@ -1292,6 +1384,7 @@
             historial: renderHistorialSection(),
             solicitudes: renderSolicitudesSection(user, data),
             citas: renderCitasSection(user, data),
+            preferencias: renderPreferenciasSection(user, data),
             seguridad: renderSecuritySection(user)
         };
 
@@ -1313,6 +1406,7 @@
         wireFavoritesEvents();
         wireHistorialEvents();
         wireSolicitudesEvents();
+        wirePreferenciasEvents(user);
 
         // Show sidebar
         var sidebar = $id('pfSidebar');

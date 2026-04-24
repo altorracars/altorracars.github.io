@@ -57,7 +57,7 @@
         var p = AP._pagination[tableKey];
         var totalPages = AP.getTotalPages(totalItems, tableKey);
 
-        if (totalPages <= 1) { el.innerHTML = ''; return; }
+        if (totalItems === 0) { el.innerHTML = ''; return; }
 
         // Clamp current page
         if (p.page > totalPages) p.page = totalPages;
@@ -65,39 +65,85 @@
         var start = (p.page - 1) * p.pageSize + 1;
         var end = Math.min(p.page * p.pageSize, totalItems);
 
-        var html = '<div class="pagination-bar">' +
-            '<span class="pagination-info">Mostrando ' + start + '-' + end + ' de ' + totalItems + '</span>' +
-            '<div class="pagination-controls">';
+        var html = '<div class="pagination-bar">';
 
-        html += '<button class="btn btn-ghost btn-sm pagination-btn" ' +
-            (p.page <= 1 ? 'disabled' : '') +
-            ' data-table="' + tableKey + '" data-page="1" title="Primera">&laquo;</button>';
+        // Page size selector
+        var sizes = [15, 30, 50, 100];
+        html += '<div class="pagination-size"><select class="form-select pagination-size-select" data-table="' + tableKey + '" title="Filas por pagina">';
+        sizes.forEach(function(s) {
+            html += '<option value="' + s + '"' + (p.pageSize === s ? ' selected' : '') + '>' + s + '</option>';
+        });
+        html += '</select><span style="font-size:0.75rem;color:var(--admin-text-muted);margin-left:0.25rem;">por pag.</span></div>';
 
-        html += '<button class="btn btn-ghost btn-sm pagination-btn" ' +
-            (p.page <= 1 ? 'disabled' : '') +
-            ' data-table="' + tableKey + '" data-page="' + (p.page - 1) + '" title="Anterior">&lsaquo;</button>';
+        html += '<span class="pagination-info">Mostrando ' + start + '-' + end + ' de ' + totalItems + '</span>';
 
-        // Page numbers (show max 5)
-        var startPage = Math.max(1, p.page - 2);
-        var endPage = Math.min(totalPages, startPage + 4);
-        if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+        if (totalPages > 1) {
+            html += '<div class="pagination-controls">';
 
-        for (var i = startPage; i <= endPage; i++) {
-            html += '<button class="btn btn-sm pagination-btn' + (i === p.page ? ' pagination-active' : ' btn-ghost') + '" ' +
-                'data-table="' + tableKey + '" data-page="' + i + '">' + i + '</button>';
+            html += '<button class="btn btn-ghost btn-sm pagination-btn" ' +
+                (p.page <= 1 ? 'disabled' : '') +
+                ' data-table="' + tableKey + '" data-page="1" title="Primera">&laquo;</button>';
+
+            html += '<button class="btn btn-ghost btn-sm pagination-btn" ' +
+                (p.page <= 1 ? 'disabled' : '') +
+                ' data-table="' + tableKey + '" data-page="' + (p.page - 1) + '" title="Anterior">&lsaquo;</button>';
+
+            // Page numbers (show max 5)
+            var startPage = Math.max(1, p.page - 2);
+            var endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+            for (var i = startPage; i <= endPage; i++) {
+                html += '<button class="btn btn-sm pagination-btn' + (i === p.page ? ' pagination-active' : ' btn-ghost') + '" ' +
+                    'data-table="' + tableKey + '" data-page="' + i + '">' + i + '</button>';
+            }
+
+            html += '<button class="btn btn-ghost btn-sm pagination-btn" ' +
+                (p.page >= totalPages ? 'disabled' : '') +
+                ' data-table="' + tableKey + '" data-page="' + (p.page + 1) + '" title="Siguiente">&rsaquo;</button>';
+
+            html += '<button class="btn btn-ghost btn-sm pagination-btn" ' +
+                (p.page >= totalPages ? 'disabled' : '') +
+                ' data-table="' + tableKey + '" data-page="' + totalPages + '" title="Ultima">&raquo;</button>';
+
+            // Jump to page (show only when 5+ pages)
+            if (totalPages >= 5) {
+                html += '<span class="pagination-jump">' +
+                    '<input type="number" class="form-input pagination-jump-input" data-table="' + tableKey + '" ' +
+                    'min="1" max="' + totalPages + '" value="' + p.page + '" title="Ir a pagina" style="width:50px;padding:0.2rem 0.3rem;font-size:0.8rem;text-align:center;">' +
+                    '<span style="font-size:0.7rem;color:var(--admin-text-muted);margin-left:0.2rem;">/ ' + totalPages + '</span></span>';
+            }
+
+            html += '</div>';
         }
 
-        html += '<button class="btn btn-ghost btn-sm pagination-btn" ' +
-            (p.page >= totalPages ? 'disabled' : '') +
-            ' data-table="' + tableKey + '" data-page="' + (p.page + 1) + '" title="Siguiente">&rsaquo;</button>';
-
-        html += '<button class="btn btn-ghost btn-sm pagination-btn" ' +
-            (p.page >= totalPages ? 'disabled' : '') +
-            ' data-table="' + tableKey + '" data-page="' + totalPages + '" title="Ultima">&raquo;</button>';
-
-        html += '</div></div>';
+        html += '</div>';
         el.innerHTML = html;
     };
+
+    // Page size change handler
+    document.addEventListener('change', function(e) {
+        var sel = e.target.closest ? e.target.closest('.pagination-size-select') : null;
+        if (!sel) return;
+        var tableKey = sel.getAttribute('data-table');
+        var p = AP._pagination[tableKey];
+        if (!p) return;
+        var newSize = parseInt(sel.value, 10);
+        var firstItemIdx = (p.page - 1) * p.pageSize;
+        p.pageSize = newSize;
+        p.page = Math.max(1, Math.floor(firstItemIdx / newSize) + 1);
+        AP.setPage(tableKey, p.page);
+    });
+
+    // Jump to page handler
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        var input = e.target.closest ? e.target.closest('.pagination-jump-input') : null;
+        if (!input) return;
+        var tableKey = input.getAttribute('data-table');
+        var page = parseInt(input.value, 10);
+        if (tableKey && page >= 1) AP.setPage(tableKey, page);
+    });
 
     // Delegated click handler for pagination buttons
     document.addEventListener('click', function(e) {

@@ -1821,6 +1821,21 @@ tbody tr:hover {
     font-weight: 700;
     border-color: var(--admin-gold) !important;
 }
+.pagination-size {
+    display: flex;
+    align-items: center;
+}
+.pagination-size-select {
+    width: auto;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+    min-width: unset;
+}
+.pagination-jump {
+    display: flex;
+    align-items: center;
+    margin-left: 0.5rem;
+}
 
 /* ========== F3.3: SORTABLE COLUMNS ========== */
 th[data-sort] {
@@ -1979,6 +1994,8 @@ th[data-sort]:hover {
     /* F3: Pagination responsive */
     .pagination-bar { flex-direction: column; align-items: center; gap: 0.5rem; }
     .pagination-btn { min-width: 28px; height: 28px; font-size: 0.75rem; }
+    .pagination-jump { display: none; }
+    .pagination-size-select { font-size: 0.75rem; }
 
     /* F3: Hide desktop global search, show mobile */
     #globalSearch { display: none; }

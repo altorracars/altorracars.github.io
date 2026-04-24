@@ -1732,6 +1732,8 @@ tbody tr:hover {
 .audit-dot.deleted { border-color: var(--admin-danger, #f85149); background: rgba(248,81,73,0.2); }
 .audit-dot.featured { border-color: var(--admin-gold); background: rgba(212,175,55,0.2); }
 .audit-dot.sold { border-color: var(--admin-purple); background: rgba(163,113,247,0.2); }
+.audit-dot.reverted { border-color: var(--admin-warning); background: rgba(210,153,34,0.2); }
+.audit-revert-btn:hover { color: var(--admin-gold) !important; }
 .audit-entry-header {
     display: flex;
     justify-content: space-between;

@@ -1744,7 +1744,7 @@
     // ========== F2.5: AUDIT TIMELINE ==========
     var AUDIT_ACTION_LABELS = {
         created: 'Creado', edited: 'Editado', deleted: 'Eliminado',
-        featured: 'Destacado', sold: 'Vendido'
+        featured: 'Destacado', sold: 'Vendido', reverted: 'Revertido'
     };
 
     function showAuditTimeline(vehicleId) {
@@ -1789,6 +1789,14 @@
                             html += '</div>';
                         });
                         html += '</div>';
+
+                        // Revert button (only for edits with from values, super_admin only)
+                        if (AP.isSuperAdmin() && e.action === 'edited') {
+                            var hasRevertable = e.changes.some(function(c) { return c.from !== null && c.from !== undefined; });
+                            if (hasRevertable) {
+                                html += '<button class="btn btn-ghost btn-sm audit-revert-btn" data-action="revertAuditEntry" data-vehicle-id="' + vehicleId + '" data-audit-id="' + doc.id + '" style="margin-top:0.35rem;font-size:0.75rem;color:var(--admin-warning);" title="Revertir estos cambios"><i data-lucide="undo-2" style="width:12px;height:12px;"></i> Revertir</button>';
+                            }
+                        }
                     }
 
                     if (e.saleDetails) {
@@ -1804,17 +1812,71 @@
                 });
                 html += '</div>';
                 $('auditTimelineContent').innerHTML = html;
+                AP.refreshIcons();
             })
             .catch(function(err) {
                 $('auditTimelineContent').innerHTML = '<div class="audit-empty">Error al cargar historial: ' + AP.escapeHtml(err.message) + '</div>';
             });
     }
 
+    function revertAuditEntry(vehicleId, auditId) {
+        if (!AP.isSuperAdmin()) { AP.toast('Solo Super Admin puede revertir cambios', 'error'); return; }
+        if (!confirm('¿Revertir estos cambios? El vehiculo volvera a los valores anteriores de los campos modificados.')) return;
+
+        var vehicleRef = window.db.collection('vehiculos').doc(String(vehicleId));
+        var auditRef = vehicleRef.collection('auditLog').doc(auditId);
+
+        auditRef.get().then(function(auditDoc) {
+            if (!auditDoc.exists) { AP.toast('Registro de auditoria no encontrado', 'error'); return; }
+            var entry = auditDoc.data();
+            if (!entry.changes || entry.changes.length === 0) { AP.toast('No hay cambios que revertir', 'error'); return; }
+
+            return vehicleRef.get().then(function(vehicleDoc) {
+                if (!vehicleDoc.exists) { AP.toast('Vehiculo no encontrado', 'error'); return; }
+                var currentData = vehicleDoc.data();
+                var revertData = {};
+                var revertChanges = [];
+
+                entry.changes.forEach(function(c) {
+                    if (c.from !== null && c.from !== undefined && c.field) {
+                        revertData[c.field] = c.from;
+                        revertChanges.push({ field: c.field, from: currentData[c.field], to: c.from });
+                    }
+                });
+
+                if (Object.keys(revertData).length === 0) { AP.toast('No hay valores anteriores para revertir', 'error'); return; }
+
+                var auditUser = getAuditUser();
+                revertData._version = (currentData._version || 0) + 1;
+                revertData.lastModifiedBy = auditUser.email;
+                revertData.lastModifiedByName = auditUser.name;
+                revertData.lastModifiedAt = new Date().toISOString();
+                revertData.updatedAt = new Date().toISOString();
+                revertData.updatedBy = auditUser.email;
+
+                return vehicleRef.update(revertData).then(function() {
+                    return logVehicleAction(vehicleId, 'reverted', revertChanges);
+                }).then(function() {
+                    AP.toast('Cambios revertidos exitosamente');
+                    showAuditTimeline(vehicleId);
+                });
+            });
+        }).catch(function(err) {
+            AP.toast('Error al revertir: ' + err.message, 'error');
+        });
+    }
+
     AP.$('closeAuditTimeline').addEventListener('click', function() {
         AP.$('auditTimelineModal').classList.remove('active');
     });
     AP.$('auditTimelineModal').addEventListener('click', function(e) {
-        if (e.target === this) this.classList.remove('active');
+        if (e.target === this) { this.classList.remove('active'); return; }
+        var btn = e.target.closest ? e.target.closest('[data-action="revertAuditEntry"]') : null;
+        if (btn) {
+            var vid = parseInt(btn.getAttribute('data-vehicle-id'), 10);
+            var aid = btn.getAttribute('data-audit-id');
+            if (vid && aid) revertAuditEntry(vid, aid);
+        }
     });
 
     // ========== EXPOSE ==========

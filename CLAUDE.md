@@ -1183,6 +1183,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fase C1: Email notificaciones (documentacion)** | CLAUDE.md | `onNewSolicitud` y `onSolicitudStatusChanged` ya existian en functions/index.js pero no estaban documentados. Tambien documentados `onVehicleChange` y `triggerSeoRegeneration` |
 | **Fase C2: Alertas de precio** | functions/index.js, CLAUDE.md | `onVehiclePriceAlert`: trigger `onUpdate` en vehiculos, detecta baja de precio, busca `busquedasGuardadas` con `alertas:true`, filtra por marca/tipo/categoria/precio/year/km, envia email con precio viejo tachado + nuevo + ahorro %. Rate limit 1 email/cliente/vehiculo/dia |
 | **Fase D1: Filtros avanzados en admin** | admin.html, admin-appointments.js, admin-dealers.js | Buscador de aliados por nombre/ciudad/responsable con debounce + contador de resultados. Buscador de solicitudes por nombre/email/vehiculo/telefono con debounce. Filtro de rango de fechas (Desde/Hasta) para solicitudes con boton limpiar. Todos los filtros se combinan con los existentes (estado, tipo, origen) y resetean paginacion |
+| **Fase D2: Preview de vehiculo antes de publicar** | admin.html, admin-vehicles.js | Boton "Vista Previa" en modal de edicion/creacion de vehiculos. Muestra preview estilo sitio publico con: galeria de imagenes (principal + thumbnails), badges (tipo/oferta/estado), titulo, precio (con tachado si oferta), quick specs (4 columnas), ficha tecnica agrupada, caracteristicas como tags, descripcion. Funciona con datos del formulario sin necesidad de guardar primero. Se abre sobre el modal de edicion (z-index 1001) |
 
 ---
 
@@ -1531,7 +1532,7 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 | ID | Tarea | Complejidad |
 |----|-------|-------------|
 | F12.1 | Notificacion por email al recibir cita (Cloud Function trigger) | Completado |
-| F12.2 | Preview en tiempo real del vehiculo como se vera en el sitio | Media |
+| F12.2 | Preview en tiempo real del vehiculo como se vera en el sitio | Completado (Fase D2) |
 | F12.3 | 2FA opcional via Firebase Auth (implementado, seguridad reforzada) | Completado |
 | F12.4 | Historial de cambios con rollback visual (timeline + revert) | Alta |
 | F12.5 | Buscador/filtro en lista de aliados + filtro por rango de fechas | Completado (Fase D1) |

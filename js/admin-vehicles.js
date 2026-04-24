@@ -1486,6 +1486,150 @@
         overlay.addEventListener('click', function(e) { if (e.target === overlay) document.body.removeChild(overlay); });
     }
 
+    // ========== PREVIEW FROM FORM ==========
+    function previewFromForm() {
+        var marca = AP.toTitleCase($('vMarca').value || '');
+        var modelo = ($('vModelo').value || '').trim();
+        var year = $('vYear').value || '';
+        var tipo = $('vTipo').value || 'usado';
+        var categoria = $('vCategoria').value || '';
+        var precio = parseInt($('vPrecio').value, 10) || 0;
+        var precioOferta = $('vPrecioOferta').value ? parseInt($('vPrecioOferta').value, 10) : null;
+        var km = parseInt($('vKm').value, 10) || 0;
+        var transmision = $('vTransmision').value || '';
+        var combustible = $('vCombustible').value || '';
+        var motor = $('vMotor').value || '';
+        var potencia = $('vPotencia').value || '';
+        var cilindraje = $('vCilindraje').value || '';
+        var traccion = $('vTraccion').value || '';
+        var direccion = $('vDireccion').value || '';
+        var color = AP.toTitleCase($('vColor').value || '');
+        var puertas = $('vPuertas').value || '5';
+        var pasajeros = $('vPasajeros').value || '5';
+        var ubicacion = $('vUbicacion').value || 'Cartagena';
+        var placa = $('vPlaca').value || 'Disponible al contactar';
+        var estado = $('vEstado').value || 'disponible';
+        var descripcion = $('vDescripcion').value || '';
+        var features = collectAllFeatures();
+        var imgs = AP.uploadedImageUrls.length ? AP.uploadedImageUrls.slice() : [];
+
+        if (!marca && !modelo) { AP.toast('Ingresa al menos marca y modelo para previsualizar', 'error'); return; }
+
+        var catLabels = { suv: 'SUV', sedan: 'Sedan', pickup: 'Pickup', hatchback: 'Hatchback', camioneta: 'Camioneta' };
+        var estadoLabels = { disponible: 'Disponible', reservado: 'Reservado', vendido: 'Vendido', borrador: 'Borrador' };
+        var estadoColors = { disponible: '#3fb950', reservado: '#d29922', vendido: '#f85149', borrador: '#8b949e' };
+
+        var title = marca + ' ' + modelo + ' ' + year;
+        var subtitle = (catLabels[categoria] || categoria || '') + (tipo ? ' • ' + AP.toTitleCase(tipo) : '');
+
+        // Badges
+        var badgesHtml = '';
+        if (precioOferta) badgesHtml += '<span style="display:inline-block;padding:0.25rem 0.75rem;border-radius:4px;font-size:0.75rem;font-weight:700;background:#f85149;color:#fff;">Oferta</span> ';
+        badgesHtml += '<span style="display:inline-block;padding:0.25rem 0.75rem;border-radius:4px;font-size:0.75rem;font-weight:700;background:' + (tipo === 'nuevo' ? '#3fb950' : '#b89658') + ';color:#fff;">' + AP.toTitleCase(tipo || 'Usado') + '</span>';
+
+        // Price
+        var priceHtml = '';
+        if (precioOferta) {
+            priceHtml = '<div style="font-size:0.9rem;color:#8b949e;text-decoration:line-through;">' + AP.formatPrice(precio) + '</div>' +
+                '<div style="font-size:1.5rem;font-weight:800;color:#f85149;">' + AP.formatPrice(precioOferta) + '</div>';
+        } else {
+            priceHtml = '<div style="font-size:1.5rem;font-weight:800;color:#b89658;">' + AP.formatPrice(precio) + '</div>';
+        }
+
+        // Gallery
+        var galleryHtml = '';
+        if (imgs.length > 0) {
+            galleryHtml = '<div style="position:relative;border-radius:10px;overflow:hidden;margin-bottom:1rem;background:#0d1117;">' +
+                '<img src="' + imgs[0] + '" style="width:100%;max-height:280px;object-fit:cover;" onerror="this.style.display=\'none\'" alt="' + AP.escapeHtml(title) + '">' +
+                '<span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;padding:0.2rem 0.6rem;border-radius:4px;font-size:0.75rem;">1/' + imgs.length + '</span>' +
+            '</div>';
+            if (imgs.length > 1) {
+                galleryHtml += '<div style="display:flex;gap:0.4rem;overflow-x:auto;margin-bottom:1rem;">' +
+                    imgs.slice(0, 6).map(function(url) {
+                        return '<img src="' + url + '" style="width:60px;height:45px;object-fit:cover;border-radius:6px;border:1px solid #30363d;flex-shrink:0;" onerror="this.style.display=\'none\'">';
+                    }).join('') +
+                    (imgs.length > 6 ? '<span style="display:flex;align-items:center;font-size:0.75rem;color:#8b949e;padding:0 0.5rem;">+' + (imgs.length - 6) + '</span>' : '') +
+                '</div>';
+            }
+        } else {
+            galleryHtml = '<div style="background:#161b22;border-radius:10px;padding:3rem;text-align:center;margin-bottom:1rem;color:#8b949e;border:1px dashed #30363d;">Sin imagenes — agrega fotos en el paso 5</div>';
+        }
+
+        // Quick specs
+        var quickSpecs = [
+            { icon: 'calendar', label: 'Año', val: year },
+            { icon: 'gauge', label: 'Kilometraje', val: km === 0 ? 'Nuevo' : km.toLocaleString('es-CO') + ' km' },
+            { icon: 'settings', label: 'Transmision', val: transmision },
+            { icon: 'fuel', label: 'Combustible', val: combustible }
+        ];
+        var quickHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;padding:0.75rem 0;border-top:1px solid #30363d;border-bottom:1px solid #30363d;margin:0.75rem 0;">' +
+            quickSpecs.map(function(s) {
+                return '<div style="text-align:center;"><div style="font-size:0.65rem;color:#8b949e;text-transform:uppercase;">' + s.label + '</div><div style="font-size:0.85rem;font-weight:600;color:#f0f6fc;">' + AP.escapeHtml(s.val || '-') + '</div></div>';
+            }).join('') + '</div>';
+
+        // Technical sheet
+        var fichaGroups = [
+            { title: 'Informacion General', rows: [
+                ['Marca', marca], ['Modelo', modelo], ['Año', year], ['Tipo', AP.toTitleCase(tipo)],
+                ['Categoria', catLabels[categoria] || categoria], ['Color', color], ['Ubicacion', ubicacion], ['Placa', placa]
+            ]},
+            { title: 'Motor y Rendimiento', rows: [
+                ['Transmision', transmision], ['Combustible', combustible], ['Motor', motor],
+                ['Potencia', potencia ? potencia + ' HP' : '-'], ['Cilindraje', cilindraje ? cilindraje + ' cc' : '-'],
+                ['Traccion', traccion], ['Direccion', direccion]
+            ]},
+            { title: 'Dimensiones', rows: [
+                ['Puertas', puertas], ['Pasajeros', pasajeros], ['Kilometraje', km === 0 ? 'Nuevo' : km.toLocaleString('es-CO') + ' km']
+            ]}
+        ];
+        var fichaHtml = fichaGroups.map(function(g) {
+            return '<div style="margin-bottom:0.75rem;"><div style="font-size:0.8rem;font-weight:700;color:#b89658;margin-bottom:0.35rem;padding-bottom:0.25rem;border-bottom:1px solid rgba(184,150,88,0.2);">' + g.title + '</div>' +
+                g.rows.filter(function(r) { return r[1]; }).map(function(r) {
+                    return '<div style="display:flex;justify-content:space-between;padding:0.2rem 0;font-size:0.8rem;">' +
+                        '<span style="color:#8b949e;">' + r[0] + '</span><span style="color:#f0f6fc;font-weight:500;">' + AP.escapeHtml(String(r[1])) + '</span></div>';
+                }).join('') + '</div>';
+        }).join('');
+
+        // Features
+        var featHtml = '';
+        if (features.length > 0) {
+            featHtml = '<div style="margin-top:0.5rem;"><div style="font-size:0.8rem;font-weight:700;color:#b89658;margin-bottom:0.35rem;">Caracteristicas</div>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">' +
+                features.map(function(f) {
+                    return '<span style="background:#161b22;border:1px solid #30363d;border-radius:4px;padding:0.2rem 0.5rem;font-size:0.7rem;color:#f0f6fc;">' + AP.escapeHtml(f) + '</span>';
+                }).join('') + '</div></div>';
+        }
+
+        // Description
+        var descHtml = descripcion ? '<div style="margin-top:0.75rem;padding-top:0.5rem;border-top:1px solid #30363d;"><div style="font-size:0.8rem;font-weight:700;color:#b89658;margin-bottom:0.35rem;">Descripcion</div><p style="font-size:0.8rem;color:#c9d1d9;line-height:1.5;margin:0;">' + AP.escapeHtml(descripcion) + '</p></div>' : '';
+
+        // Estado badge
+        var estadoBadge = '<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600;color:#fff;background:' + (estadoColors[estado] || '#8b949e') + ';">' + (estadoLabels[estado] || estado) + '</span>';
+
+        var content = '<div style="max-height:75vh;overflow-y:auto;padding-right:0.5rem;">' +
+            galleryHtml +
+            '<div style="margin-bottom:0.5rem;">' + badgesHtml + ' ' + estadoBadge + '</div>' +
+            '<h3 style="margin:0 0 0.25rem;color:#f0f6fc;font-size:1.25rem;">' + AP.escapeHtml(title) + '</h3>' +
+            '<p style="margin:0 0 0.5rem;color:#8b949e;font-size:0.85rem;">' + AP.escapeHtml(subtitle) + '</p>' +
+            priceHtml + quickHtml + fichaHtml + featHtml + descHtml +
+        '</div>';
+
+        var overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.style.zIndex = '1001';
+        overlay.innerHTML = '<div class="modal" style="max-width:580px;"><div class="modal-header"><h2 style="display:flex;align-items:center;gap:0.5rem;"><i data-lucide="eye" width="20" height="20"></i> Vista Previa del Sitio</h2><button class="modal-close" id="closeFormPreview">&times;</button></div><div class="modal-body">' + content + '</div><div class="modal-footer"><button class="btn btn-ghost" id="closeFormPreviewBtn">Volver a editar</button></div></div>';
+        document.body.appendChild(overlay);
+        AP.refreshIcons();
+        overlay.querySelector('#closeFormPreview').addEventListener('click', function() { document.body.removeChild(overlay); });
+        overlay.querySelector('#closeFormPreviewBtn').addEventListener('click', function() { document.body.removeChild(overlay); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) document.body.removeChild(overlay); });
+    }
+
+    var previewFromFormBtn = $('previewFromFormBtn');
+    if (previewFromFormBtn) {
+        previewFromFormBtn.addEventListener('click', function() { previewFromForm(); });
+    }
+
     // Fase 18: Open modal with a restored draft (called from admin-panel.js)
     function restoreAndOpenDraft(snap) {
         if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos para editar vehiculos', 'error'); return; }
@@ -1681,6 +1825,7 @@
     AP.deleteVehicle = deleteVehicleFn;
     AP.removeImage = removeImage;
     AP.previewVehicle = previewVehicle;
+    AP.previewFromForm = previewFromForm;
     AP.restoreAndOpenDraft = restoreAndOpenDraft;
     AP.startDraftsListener = startDraftsListener;
     AP.loadDraftFromUser = loadDraftFromUser;

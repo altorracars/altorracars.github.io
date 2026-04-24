@@ -608,7 +608,7 @@
                     <p class="page-subtitle">Todas las solicitudes de clientes — citas, consultas, financiaciones, consignaciones</p>
                 </div>
             </div>
-            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem;">
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.5rem;">
                 <select id="appointmentFilter" class="form-select" style="min-width:150px;">
                     <option value="all">Todas</option>
                     <option value="pendiente" selected>Pendientes</option>
@@ -649,6 +649,23 @@
                     <option value="financiacion">Financiacion</option>
                     <option value="admin">Panel Admin</option>
                 </select>
+            </div>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+                <div style="position:relative;min-width:200px;max-width:300px;">
+                    <i data-lucide="search" width="14" height="14" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--admin-text-muted);pointer-events:none;"></i>
+                    <input type="text" id="appointmentSearchInput" class="form-input" placeholder="Buscar cliente, email, vehiculo..." style="padding:0.35rem 0.5rem 0.35rem 2rem;font-size:0.85rem;width:100%;">
+                </div>
+                <label style="font-size:0.8rem;color:var(--admin-text-muted);display:flex;align-items:center;gap:0.35rem;">
+                    <i data-lucide="calendar" width="14" height="14"></i> Desde
+                    <input type="date" id="dateFromFilter" class="form-input" style="padding:0.35rem 0.5rem;font-size:0.85rem;width:auto;">
+                </label>
+                <label style="font-size:0.8rem;color:var(--admin-text-muted);display:flex;align-items:center;gap:0.35rem;">
+                    Hasta
+                    <input type="date" id="dateToFilter" class="form-input" style="padding:0.35rem 0.5rem;font-size:0.85rem;width:auto;">
+                </label>
+                <button id="clearDateFilters" class="btn btn-ghost btn-sm" style="font-size:0.8rem;display:none;">
+                    <i data-lucide="x" width="14" height="14"></i> Limpiar fechas
+                </button>
             </div>
 
             <div class="stat-card overflow-x-auto">
@@ -706,6 +723,13 @@
                     <p class="admin-info-box">
                         Los aliados que agregues aqui aparecen en el formulario de vehiculos al seleccionar origen. Incluye concesionarios aliados (ej: Usados de la Costa) y personas que dejan vehiculos en consigna.
                     </p>
+                </div>
+                <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+                    <div style="position:relative;flex:1;min-width:200px;max-width:350px;">
+                        <i data-lucide="search" width="16" height="16" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--admin-text-muted);pointer-events:none;"></i>
+                        <input type="text" id="dealerSearchInput" class="form-input" placeholder="Buscar aliado por nombre o ciudad..." style="padding:0.5rem 0.5rem 0.5rem 2rem;font-size:0.85rem;width:100%;">
+                    </div>
+                    <span id="dealerSearchCount" style="font-size:0.8rem;color:var(--admin-text-muted);display:none;"></span>
                 </div>
                 <div id="dealersList" class="stat-card mb-lg">
                     <p style="text-align:center;color:var(--admin-text-muted);padding:1rem;">Cargando aliados...</p>

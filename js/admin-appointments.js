@@ -95,6 +95,38 @@
         });
     }
 
+    var appointmentSearchEl = $('appointmentSearchInput');
+    if (appointmentSearchEl) {
+        var _appSearchTimeout;
+        appointmentSearchEl.addEventListener('input', function() {
+            clearTimeout(_appSearchTimeout);
+            _appSearchTimeout = setTimeout(function() {
+                if (AP._pagination) AP._pagination.appointments.page = 1;
+                renderAppointmentsTable();
+            }, 250);
+        });
+    }
+
+    var dateFromEl = $('dateFromFilter');
+    var dateToEl = $('dateToFilter');
+    var clearDatesBtn = $('clearDateFilters');
+    function onDateFilterChange() {
+        if (AP._pagination) AP._pagination.appointments.page = 1;
+        if (clearDatesBtn) clearDatesBtn.style.display = (dateFromEl.value || dateToEl.value) ? '' : 'none';
+        renderAppointmentsTable();
+    }
+    if (dateFromEl) dateFromEl.addEventListener('change', onDateFilterChange);
+    if (dateToEl) dateToEl.addEventListener('change', onDateFilterChange);
+    if (clearDatesBtn) {
+        clearDatesBtn.addEventListener('click', function() {
+            if (dateFromEl) dateFromEl.value = '';
+            if (dateToEl) dateToEl.value = '';
+            clearDatesBtn.style.display = 'none';
+            if (AP._pagination) AP._pagination.appointments.page = 1;
+            renderAppointmentsTable();
+        });
+    }
+
     // ========== SOLICITUDES TABLE ==========
     function renderAppointmentsTable() {
         var body = $('appointmentsBody');
@@ -104,11 +136,35 @@
         var filter = filterEl ? filterEl.value : 'all';
         var tipoF = tipoFilterEl ? tipoFilterEl.value : 'all';
         var origenF = origenFilterEl ? origenFilterEl.value : 'all';
+        var dateFrom = dateFromEl ? dateFromEl.value : '';
+        var dateTo = dateToEl ? dateToEl.value : '';
+        var searchQ = appointmentSearchEl ? appointmentSearchEl.value.trim().toLowerCase() : '';
 
         var filtered = AP.appointments.slice();
         if (filter !== 'all') filtered = filtered.filter(function(a) { return a.estado === filter; });
         if (tipoF !== 'all') filtered = filtered.filter(function(a) { return (a.tipo || a.tipoCita || '') === tipoF; });
         if (origenF !== 'all') filtered = filtered.filter(function(a) { return (a.origen || '') === origenF; });
+
+        if (searchQ) {
+            filtered = filtered.filter(function(a) {
+                return (a.nombre || '').toLowerCase().indexOf(searchQ) !== -1 ||
+                    (a.email || '').toLowerCase().indexOf(searchQ) !== -1 ||
+                    (a.vehiculo || '').toLowerCase().indexOf(searchQ) !== -1 ||
+                    (a.telefono || a.whatsapp || '').indexOf(searchQ) !== -1;
+            });
+        }
+        if (dateFrom) {
+            filtered = filtered.filter(function(a) {
+                var d = a.fecha || (a.createdAt && typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate().toISOString().slice(0, 10) : '');
+                return d >= dateFrom;
+            });
+        }
+        if (dateTo) {
+            filtered = filtered.filter(function(a) {
+                var d = a.fecha || (a.createdAt && typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate().toISOString().slice(0, 10) : '');
+                return d <= dateTo;
+            });
+        }
 
         if (AP._sorting && AP._sorting.appointments && AP._sorting.appointments.col) {
             filtered = AP.sortData(filtered, 'appointments');

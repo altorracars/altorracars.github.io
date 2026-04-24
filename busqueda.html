@@ -393,10 +393,10 @@
                     .collection('busquedasGuardadas').add({
                         nombre: nombre,
                         filtros: filtros,
-                        alertas: false,
+                        alertas: true,
                         creadoEn: firebase.firestore.FieldValue.serverTimestamp()
                     }).then(function() {
-                        if (typeof toast !== 'undefined' && toast.success) toast.success('Busqueda guardada.');
+                        if (typeof toast !== 'undefined' && toast.success) toast.success('Busqueda guardada con alertas de precio activadas.');
                         saveBtn.textContent = '\u2713 Guardada';
                         setTimeout(function() {
                             saveBtn.disabled = false;

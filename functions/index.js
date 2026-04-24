@@ -331,18 +331,31 @@ exports.onVehiclePriceAlert = onDocumentUpdated({
 
     const user = emailUser.value();
     const pass = emailPass.value();
-    if (!user || !pass) return;
+    if (!user || !pass) {
+        console.error('[PriceAlert] EMAIL_USER or EMAIL_PASS not configured. Run: firebase functions:secrets:set EMAIL_USER / EMAIL_PASS');
+        return;
+    }
 
     const priceDrop = oldPrice - newPrice;
     const dropPct = Math.round((priceDrop / oldPrice) * 100);
+    const vehicleName = (after.marca || '') + ' ' + (after.modelo || '') + ' ' + (after.year || '');
 
-    console.log('[PriceAlert] Price drop detected: ' + after.marca + ' ' + after.modelo + ' ' + after.year
+    console.log('[PriceAlert] Price drop detected: ' + vehicleName
         + ' — $' + oldPrice.toLocaleString() + ' → $' + newPrice.toLocaleString() + ' (-' + dropPct + '%)');
+
+    // Build vehicle URL using slug pattern: marca-modelo-year-id
+    const slug = (after.marca + '-' + after.modelo + '-' + (after.year || '') + '-' + vehicleId)
+        .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const vehicleUrl = 'https://altorracars.github.io/vehiculos/' + slug + '.html';
 
     const clientsSnap = await db.collection('clientes').get();
     let emailsSent = 0;
+    let clientsChecked = 0;
+    let clientsWithAlerts = 0;
 
     for (const clientDoc of clientsSnap.docs) {
+        clientsChecked++;
         const clientData = clientDoc.data();
         const clientEmail = clientData.email;
         if (!clientEmail || !clientEmail.includes('@')) continue;
@@ -353,6 +366,7 @@ exports.onVehiclePriceAlert = onDocumentUpdated({
             .get();
 
         if (searchesSnap.empty) continue;
+        clientsWithAlerts++;
 
         let matched = false;
         for (const searchDoc of searchesSnap.docs) {
@@ -374,14 +388,15 @@ exports.onVehiclePriceAlert = onDocumentUpdated({
         if (!matched) continue;
 
         const todayKey = 'alertSent_' + vehicleId + '_' + new Date().toISOString().slice(0, 10);
-        if (clientData[todayKey]) continue;
+        if (clientData[todayKey]) {
+            console.log('[PriceAlert] Rate limited for ' + clientEmail + ' (already sent today)');
+            continue;
+        }
 
         const nombre = clientData.nombre || 'Cliente';
-        const vehicleName = (after.marca || '') + ' ' + (after.modelo || '') + ' ' + (after.year || '');
         const formattedOld = '$' + oldPrice.toLocaleString('es-CO');
         const formattedNew = '$' + newPrice.toLocaleString('es-CO');
         const formattedDrop = '$' + priceDrop.toLocaleString('es-CO');
-        const vehicleUrl = 'https://altorracars.github.io/busqueda.html';
 
         const html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
             + '<div style="background:#1a1a2e;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center">'
@@ -420,14 +435,15 @@ exports.onVehiclePriceAlert = onDocumentUpdated({
 
             await db.collection('clientes').doc(clientDoc.id).update({ [todayKey]: true });
             emailsSent++;
+            console.log('[PriceAlert] Sent to ' + clientEmail);
         } catch (err) {
             console.error('[PriceAlert] Failed for ' + clientEmail + ':', err.message);
         }
     }
 
-    if (emailsSent > 0) {
-        console.log('[PriceAlert] Sent ' + emailsSent + ' alert(s) for ' + after.marca + ' ' + after.modelo);
-    }
+    console.log('[PriceAlert] Summary: ' + clientsChecked + ' clients checked, '
+        + clientsWithAlerts + ' with active alerts, '
+        + emailsSent + ' email(s) sent for ' + vehicleName);
 });
 
 // ========== SEO PAGE GENERATION TRIGGER ==========

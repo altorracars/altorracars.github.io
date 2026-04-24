@@ -301,6 +301,135 @@ exports.onSolicitudStatusChanged = onDocumentUpdated({
     }
 });
 
+// ========== C2: PRICE ALERT — EMAIL CLIENTS ON PRICE DROP ==========
+/**
+ * Firestore trigger: when a vehicle's price drops, find saved searches
+ * with alertas=true that match the vehicle, and email those clients.
+ *
+ * Matching logic: a saved search matches if ALL of its non-empty filters
+ * are satisfied by the vehicle (AND logic). Price range filters match
+ * the NEW (lower) price.
+ *
+ * Rate limit: max 1 alert email per client per vehicle per 24h
+ * (via alertEmailSent_{vehicleId}_{timestamp-day} on the search doc).
+ */
+exports.onVehiclePriceAlert = onDocumentUpdated({
+    document: 'vehiculos/{vehicleId}',
+    region: 'us-central1',
+    secrets: [emailUser, emailPass]
+}, async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+    const vehicleId = event.params.vehicleId;
+
+    if (after.estado !== 'disponible') return;
+
+    const oldPrice = before.precioOferta || before.precio;
+    const newPrice = after.precioOferta || after.precio;
+
+    if (!oldPrice || !newPrice || newPrice >= oldPrice) return;
+
+    const user = emailUser.value();
+    const pass = emailPass.value();
+    if (!user || !pass) return;
+
+    const priceDrop = oldPrice - newPrice;
+    const dropPct = Math.round((priceDrop / oldPrice) * 100);
+
+    console.log('[PriceAlert] Price drop detected: ' + after.marca + ' ' + after.modelo + ' ' + after.year
+        + ' — $' + oldPrice.toLocaleString() + ' → $' + newPrice.toLocaleString() + ' (-' + dropPct + '%)');
+
+    const clientsSnap = await db.collection('clientes').get();
+    let emailsSent = 0;
+
+    for (const clientDoc of clientsSnap.docs) {
+        const clientData = clientDoc.data();
+        const clientEmail = clientData.email;
+        if (!clientEmail || !clientEmail.includes('@')) continue;
+
+        const searchesSnap = await db.collection('clientes').doc(clientDoc.id)
+            .collection('busquedasGuardadas')
+            .where('alertas', '==', true)
+            .get();
+
+        if (searchesSnap.empty) continue;
+
+        let matched = false;
+        for (const searchDoc of searchesSnap.docs) {
+            const f = searchDoc.data().filtros || {};
+            if (f.marca && f.marca.toLowerCase() !== (after.marca || '').toLowerCase()) continue;
+            if (f.tipo && f.tipo.toLowerCase() !== (after.tipo || '').toLowerCase()) continue;
+            if (f.categoria && f.categoria.toLowerCase() !== (after.categoria || '').toLowerCase()) continue;
+            if (f.transmision && f.transmision.toLowerCase() !== (after.transmision || '').toLowerCase()) continue;
+            if (f.combustible && f.combustible.toLowerCase() !== (after.combustible || '').toLowerCase()) continue;
+            if (f.precioMin && newPrice < Number(f.precioMin)) continue;
+            if (f.precioMax && newPrice > Number(f.precioMax)) continue;
+            if (f.yearMin && (after.year || 0) < Number(f.yearMin)) continue;
+            if (f.yearMax && (after.year || 9999) > Number(f.yearMax)) continue;
+            if (f.kilometrajeMax && (after.kilometraje || 0) > Number(f.kilometrajeMax)) continue;
+            matched = true;
+            break;
+        }
+
+        if (!matched) continue;
+
+        const todayKey = 'alertSent_' + vehicleId + '_' + new Date().toISOString().slice(0, 10);
+        if (clientData[todayKey]) continue;
+
+        const nombre = clientData.nombre || 'Cliente';
+        const vehicleName = (after.marca || '') + ' ' + (after.modelo || '') + ' ' + (after.year || '');
+        const formattedOld = '$' + oldPrice.toLocaleString('es-CO');
+        const formattedNew = '$' + newPrice.toLocaleString('es-CO');
+        const formattedDrop = '$' + priceDrop.toLocaleString('es-CO');
+        const vehicleUrl = 'https://altorracars.github.io/busqueda.html';
+
+        const html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">'
+            + '<div style="background:#1a1a2e;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center">'
+            + '<h2 style="margin:0;color:#f0c040">ALTORRA CARS</h2>'
+            + '<p style="margin:5px 0 0;opacity:0.8">Alerta de precio</p>'
+            + '</div>'
+            + '<div style="border:1px solid #ddd;border-top:none;padding:20px;border-radius:0 0 8px 8px">'
+            + '<p style="font-size:1.1rem">Hola <strong>' + nombre + '</strong>,</p>'
+            + '<p>Un vehiculo que coincide con tus busquedas guardadas ha bajado de precio:</p>'
+            + '<div style="background:#f8f9fa;border-radius:8px;padding:16px;margin:16px 0;border-left:4px solid #f0c040">'
+            + '<h3 style="margin:0 0 8px;color:#1a1a2e">' + vehicleName + '</h3>'
+            + '<p style="margin:0;font-size:1.2rem">'
+            + '<span style="text-decoration:line-through;color:#999">' + formattedOld + '</span> '
+            + '<strong style="color:#16a34a;font-size:1.3rem">' + formattedNew + '</strong>'
+            + '</p>'
+            + '<p style="margin:4px 0 0;color:#16a34a;font-weight:bold">Ahorro: ' + formattedDrop + ' (-' + dropPct + '%)</p>'
+            + '</div>'
+            + '<div style="text-align:center;margin:20px 0">'
+            + '<a href="' + vehicleUrl + '" style="display:inline-block;background:#f0c040;color:#1a1a2e;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold">Ver vehiculo</a>'
+            + '</div>'
+            + '<div style="margin-top:20px;text-align:center;font-size:0.8rem;color:#999">'
+            + '<p>Recibes este email porque activaste alertas en tus busquedas guardadas.</p>'
+            + '<p>ALTORRA CARS — Tu proximo vehiculo te espera</p>'
+            + '</div>'
+            + '</div>'
+            + '</body></html>';
+
+        try {
+            const transporter = createTransporter(user, pass);
+            await transporter.sendMail({
+                from: '"ALTORRA CARS" <' + user + '>',
+                to: clientEmail,
+                subject: 'Bajo de precio: ' + vehicleName + ' — ' + formattedNew,
+                html: html
+            });
+
+            await db.collection('clientes').doc(clientDoc.id).update({ [todayKey]: true });
+            emailsSent++;
+        } catch (err) {
+            console.error('[PriceAlert] Failed for ' + clientEmail + ':', err.message);
+        }
+    }
+
+    if (emailsSent > 0) {
+        console.log('[PriceAlert] Sent ' + emailsSent + ' alert(s) for ' + after.marca + ' ' + after.modelo);
+    }
+});
+
 // ========== SEO PAGE GENERATION TRIGGER ==========
 
 // Debounce: only trigger once per 5 minutes max

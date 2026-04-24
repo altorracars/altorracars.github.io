@@ -257,6 +257,20 @@ firebase deploy --only functions
 > Un cambio en las reglas del repo NO se aplica automaticamente a Firebase.
 > Siempre desplegar manualmente despues de modificar reglas.
 
+### Secrets configurados (Firebase Functions)
+
+Ya configurados en el proyecto `altorra-cars`. NO volver a preguntar ni reconfigurar.
+
+| Secret | Valor | Proposito |
+|--------|-------|-----------|
+| `EMAIL_USER` | `altorracarssale@gmail.com` | Correo Gmail para enviar emails (nodemailer) |
+| `EMAIL_PASS` | *(configurado)* | App Password de Google para Gmail SMTP |
+| `GITHUB_PAT` | *(configurado)* | Token GitHub para dispatch de Actions (regeneracion SEO) |
+
+**Verificar**: `firebase functions:secrets:access EMAIL_USER`
+**Cambiar**: `firebase functions:secrets:set EMAIL_PASS`
+**App Password**: [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) (requiere 2FA activo)
+
 ### SDK en el frontend
 
 `firebase-config.js` carga el SDK compat v11.3.0 desde CDN en 2 fases:

@@ -36,13 +36,45 @@
         });
     }
 
+    // ========== DEALER SEARCH ==========
+    var dealerSearchEl = $('dealerSearchInput');
+    if (dealerSearchEl) {
+        var _dealerSearchTimeout;
+        dealerSearchEl.addEventListener('input', function() {
+            clearTimeout(_dealerSearchTimeout);
+            _dealerSearchTimeout = setTimeout(function() { renderDealersList(); }, 200);
+        });
+    }
+
     // ========== DEALERS LIST ==========
     function renderDealersList() {
         var container = $('dealersList');
         if (!container) return;
 
-        if (AP.dealers.length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:var(--admin-text-muted);padding:1rem;">No hay aliados registrados. Agrega el primero.</p>';
+        var searchTerm = dealerSearchEl ? dealerSearchEl.value.trim().toLowerCase() : '';
+        var dealers = AP.dealers;
+        if (searchTerm) {
+            dealers = dealers.filter(function(d) {
+                var name = (d.nombre || '').toLowerCase();
+                var city = (d.ciudad || '').toLowerCase();
+                var resp = (d.responsable || '').toLowerCase();
+                return name.indexOf(searchTerm) !== -1 || city.indexOf(searchTerm) !== -1 || resp.indexOf(searchTerm) !== -1;
+            });
+        }
+
+        var countEl = $('dealerSearchCount');
+        if (countEl) {
+            if (searchTerm) {
+                countEl.textContent = dealers.length + ' de ' + AP.dealers.length + ' aliados';
+                countEl.style.display = '';
+            } else {
+                countEl.style.display = 'none';
+            }
+        }
+
+        if (dealers.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:var(--admin-text-muted);padding:1rem;">' +
+                (searchTerm ? 'No se encontraron aliados con "' + AP.escapeHtml(searchTerm) + '"' : 'No hay aliados registrados. Agrega el primero.') + '</p>';
             return;
         }
 
@@ -65,7 +97,7 @@
         });
 
         container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">' +
-            AP.dealers.map(function(d) {
+            dealers.map(function(d) {
                 var m = metricsByDealer[d._docId] || { vendidos: 0, ventasAltorra: 0, comisiones: 0 };
                 var active = activeByDealer[d._docId] || 0;
                 return '<div style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:12px;padding:1.25rem;">' +

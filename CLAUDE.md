@@ -1187,6 +1187,11 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fase D3: Paginacion mejorada para tablas grandes** | admin-table-utils.js, css/admin.css | Selector de filas por pagina (15/30/50/100) en todas las tablas paginadas. Saltar a pagina especifica (input numerico, visible con 5+ paginas). Ambos mantienen contexto (al cambiar tamaño, ajusta pagina para mostrar los mismos items). CSS responsive: oculta saltar-a-pagina en mobile. Reemplaza virtual scrolling que era innecesario con paginacion existente |
 | **Fase D4: Rollback en historial de cambios** | admin-vehicles.js, css/admin.css | Boton "Revertir" en cada entrada de edicion del historial de vehiculos (solo super_admin). Al revertir, restaura los valores anteriores (`from`) de cada campo modificado, incrementa `_version`, registra la accion como `reverted` en auditLog. Confirmacion antes de ejecutar. Dot naranja en timeline para entradas revertidas |
 | **Fix: alertas de precio no llegaban** | functions/index.js, busqueda.html | (1) Email URL ahora apunta al vehiculo especifico via slug `marca-modelo-year-id.html` en vez de `busqueda.html` generica. (2) Logging detallado en Firebase Functions: clientes revisados, con alertas activas, emails enviados, rate limits aplicados. Si secrets EMAIL_USER/EMAIL_PASS no estan configurados, log explicito en consola. (3) Al guardar busqueda en `busqueda.html`, `alertas:true` por defecto (antes era `false` y el usuario tenia que activarlas manualmente). (4) Toast actualizado: "Busqueda guardada con alertas de precio activadas". REQUIERE redeploy: `firebase deploy --only functions` |
+| **Fase N1: Sistema de notificaciones unificado** | js/toast.js, css/toast-notifications.css | Reemplazo completo del sistema de toast. Glassmorphism con backdrop-filter blur, borde gradiente dorado animado, iconos Lucide inline. Cola apilada (max 4 visibles) con spring animation. Barra de progreso pausable en hover. Boton de accion opcional. Prioridades: critical (no auto-close), high (8s), normal (4s), low (2s). Shims compatibles: `window.toast.*` y `AP.toast()` delegando al nuevo modulo (0 migracion de los 232+ callsites). Mobile full-width con safe-area-inset. Soporte `prefers-reduced-motion` |
+| **Fase N2: Sonidos Web Audio API** | js/toast.js | Sonidos generados en runtime (0 KB archivos externos). Success: acorde mayor 1046→1318Hz. Error: descenso 440→220Hz. Info: tono 1318Hz. Warning: doble pulso 587Hz. Volumen 18%, throttling 500ms. Toggle persistente en localStorage `altorra_notif_sound`. Desactivacion automatica con `prefers-reduced-motion` |
+| **Fase N4: Preferencias de notificaciones en perfil** | js/perfil.js | Nueva subseccion "Notificaciones en pantalla" en Preferencias: toggle sonidos + toggle notificaciones del navegador (con flujo Notification.requestPermission). Card separada "Notificaciones por correo y WhatsApp" con toggle alertas email + WhatsApp + frecuencia. Auto-save a `clientes/{uid}.preferencias.notificaciones` |
+| **Fase N3: Centro de notificaciones** | js/toast.js, css/toast-notifications.css, snippets/header.html, js/components.js, admin.html, js/admin-auth.js | Icono campana en header (publico + admin) con badge de no leidas pulsante. Panel deslizable con historial de las ultimas 50 notificaciones (success/error/warning). Items con icono, titulo, mensaje, tiempo relativo, badge no leida. Acciones: marcar todas como leidas, limpiar historial. Persistencia en localStorage. Auto-wrap de notify.success/error/warning para captura automatica. Click fuera cierra panel |
+| **Fase N7: Demo page de notificaciones** | notifications-demo.html | Pagina interna de QA (`noindex, nofollow`) para probar todos los tipos, prioridades, acciones, cola/stacking, sonido toggle, y centro de notificaciones. No incluida en sitemap |
 
 ---
 
@@ -1568,7 +1573,7 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 
 ### Plan por microfases
 
-#### N1 — API Unificada y Diseno de Vanguardia (BASE)
+#### N1 — API Unificada y Diseno de Vanguardia (BASE) ✓ COMPLETADA
 
 **Archivos nuevos:** `js/notifications.js` + `css/notifications.css`
 
@@ -1598,7 +1603,7 @@ notify.clear()      // cerrar todas
 - `normal` — 4s (default)
 - `low` — 2s
 
-#### N2 — Sonidos sutiles via Web Audio API
+#### N2 — Sonidos sutiles via Web Audio API ✓ COMPLETADA
 
 **Sin archivos externos** (peso 0 KB, generados en runtime):
 - success: acorde mayor 880Hz → 1108Hz (300ms)
@@ -1612,7 +1617,7 @@ Volumen 30% por defecto. Throttling: si llegan 3+ notificaciones en 500ms, solo 
 
 **Respeto:** `prefers-reduced-motion` desactiva sonidos automaticamente.
 
-#### N3 — Centro de Notificaciones
+#### N3 — Centro de Notificaciones ✓ COMPLETADA
 
 **Icono campana en header** (publico y admin) con badge de no leidas.
 
@@ -1633,7 +1638,7 @@ Volumen 30% por defecto. Throttling: si llegan 3+ notificaciones en 500ms, solo 
 - Ventas registradas
 - Sesiones activas de otros usuarios
 
-#### N4 — Preferencias de usuario en perfil.html
+#### N4 — Preferencias de usuario en perfil.html ✓ COMPLETADA
 
 Nueva subseccion "Notificaciones" dentro de "Preferencias" (Fase B9):
 
@@ -1662,7 +1667,7 @@ Nueva subseccion "Notificaciones" dentro de "Preferencias" (Fase B9):
 - Clasificar prioridades por tipo de operacion
 - Agrupacion inteligente: 5 imagenes subidas → 1 notificacion "5 fotos subidas"
 
-#### N7 — Telemetria y testing
+#### N7 — Telemetria y testing ✓ COMPLETADA
 
 - Modo debug: `window.notify.debug = true` activa logs detallados
 - Demo page interna `notifications-demo.html` (no en sitemap, solo para QA)
@@ -1670,15 +1675,15 @@ Nueva subseccion "Notificaciones" dentro de "Preferencias" (Fase B9):
 
 ### Orden de ejecucion recomendado
 
-| # | Fase | Riesgo | Visible al usuario |
-|---|------|--------|-------------------|
-| 1 | N1 | Bajo (shims hacia atras) | ⭐⭐⭐⭐⭐ Cambio visual masivo |
-| 2 | N2 | Muy bajo | ⭐⭐⭐ Sonidos al notificar |
-| 3 | N4 | Bajo | ⭐⭐⭐⭐ UI de preferencias |
-| 4 | N3 | Medio | ⭐⭐⭐⭐⭐ Centro de notificaciones |
-| 5 | N6 | Bajo (no funcional) | ⭐⭐ Mejor calidad de mensajes |
-| 6 | N5 | Medio (permisos) | ⭐⭐⭐⭐ Push nativo |
-| 7 | N7 | Cero | ⭐ Solo dev |
+| # | Fase | Riesgo | Visible al usuario | Estado |
+|---|------|--------|-------------------|--------|
+| 1 | N1 | Bajo (shims hacia atras) | ⭐⭐⭐⭐⭐ Cambio visual masivo | ✓ Completada |
+| 2 | N2 | Muy bajo | ⭐⭐⭐ Sonidos al notificar | ✓ Completada |
+| 3 | N4 | Bajo | ⭐⭐⭐⭐ UI de preferencias | ✓ Completada |
+| 4 | N3 | Medio | ⭐⭐⭐⭐⭐ Centro de notificaciones | ✓ Completada |
+| 5 | N6 | Bajo (no funcional) | ⭐⭐ Mejor calidad de mensajes | Pendiente |
+| 6 | N5 | Medio (permisos) | ⭐⭐⭐⭐ Push nativo | Pendiente |
+| 7 | N7 | Cero | ⭐ Solo dev | ✓ Completada |
 
 ---
 

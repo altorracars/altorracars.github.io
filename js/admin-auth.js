@@ -1259,6 +1259,11 @@
         resetLoginBtn();
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'flex';
+
+        // Mount notification center bell (Phase N3)
+        if (window.notifyCenter && document.getElementById('headerNotifBell')) {
+            window.notifyCenter.mount('#headerNotifBell');
+        }
         var rolLabel = AP.currentUserRole === 'super_admin' ? 'Super Admin' : AP.currentUserRole === 'editor' ? 'Editor' : 'Viewer';
         var userName = (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0];
         $('adminEmail').textContent = user.email + ' (' + rolLabel + ')';

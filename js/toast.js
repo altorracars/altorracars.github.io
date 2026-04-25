@@ -405,3 +405,319 @@
         try { fn(); } catch (e) {}
     };
 })();
+/**
+ * ALTORRA NOTIFICATION CENTER (Phase N3)
+ *
+ * Persistent notification log accessible via a bell icon in the header.
+ * Stores last 20 notifications in localStorage. Renders a slide-out panel
+ * on click with mark-as-read, clear-all, and per-item dismiss.
+ *
+ * Auto-captures every notify.* call so callers don't need to do anything.
+ *
+ * Usage:
+ *   notifyCenter.add({ type, title, message, link, action })   // add manually
+ *   notifyCenter.markAllRead()
+ *   notifyCenter.clear()
+ *   notifyCenter.mount('#bell-container')                       // attach bell+panel
+ *   notifyCenter.injectIntoHeader()                             // auto-find header
+ */
+(function() {
+    'use strict';
+
+    if (window.notifyCenter) return; // already loaded
+
+    var STORAGE_KEY = 'altorra_notif_history';
+    var MAX_ENTRIES = 20;
+    var _entries = [];
+    var _listeners = [];
+
+    // ─── Persistence ────────────────────────────────────────────
+    function load() {
+        try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            _entries = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(_entries)) _entries = [];
+        } catch (e) { _entries = []; }
+    }
+    function save() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(_entries)); } catch (e) {}
+    }
+
+    // ─── Time formatting ────────────────────────────────────────
+    function timeAgo(ts) {
+        var diff = Math.floor((Date.now() - ts) / 1000);
+        if (diff < 60) return 'Ahora mismo';
+        if (diff < 3600) return 'Hace ' + Math.floor(diff / 60) + ' min';
+        if (diff < 86400) return 'Hace ' + Math.floor(diff / 3600) + ' h';
+        if (diff < 604800) return 'Hace ' + Math.floor(diff / 86400) + ' d';
+        return new Date(ts).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+    }
+
+    // ─── Core API ───────────────────────────────────────────────
+    function add(entry) {
+        if (!entry) return null;
+        var now = Date.now();
+        var item = {
+            id: 'n_' + now + '_' + Math.random().toString(36).slice(2, 8),
+            type: entry.type || 'info',
+            title: entry.title || '',
+            message: entry.message || '',
+            link: entry.link || null,
+            timestamp: now,
+            read: false
+        };
+        _entries.unshift(item);
+        if (_entries.length > MAX_ENTRIES) _entries = _entries.slice(0, MAX_ENTRIES);
+        save();
+        notifyListeners();
+        return item.id;
+    }
+
+    function markAllRead() {
+        _entries.forEach(function(e) { e.read = true; });
+        save();
+        notifyListeners();
+    }
+
+    function markRead(id) {
+        var entry = _entries.find(function(e) { return e.id === id; });
+        if (entry) { entry.read = true; save(); notifyListeners(); }
+    }
+
+    function remove(id) {
+        _entries = _entries.filter(function(e) { return e.id !== id; });
+        save();
+        notifyListeners();
+    }
+
+    function clear() {
+        _entries = [];
+        save();
+        notifyListeners();
+    }
+
+    function getEntries() { return _entries.slice(); }
+    function getUnreadCount() { return _entries.filter(function(e) { return !e.read; }).length; }
+
+    function subscribe(fn) { _listeners.push(fn); return function() { _listeners = _listeners.filter(function(l) { return l !== fn; }); }; }
+    function notifyListeners() { _listeners.forEach(function(fn) { try { fn(_entries); } catch (e) {} }); }
+
+    // ─── Auto-capture from notify.* calls ───────────────────────
+    // Wrap each notify method to also log to history (skip transient/info that aren't important)
+    function wrapNotify() {
+        if (!window.notify || window._notifyCenterWrapped) return;
+        window._notifyCenterWrapped = true;
+
+        ['success', 'error', 'warning'].forEach(function(type) {
+            var orig = window.notify[type];
+            if (typeof orig !== 'function') return;
+            window.notify[type] = function(arg1, arg2, arg3) {
+                var result = orig.call(window.notify, arg1, arg2, arg3);
+                // Log to history (skip if explicitly opted out via { logHistory: false })
+                var cfg = (typeof arg1 === 'object' && arg1) ? arg1 : { message: arg1 };
+                if (cfg && cfg.logHistory === false) return result;
+                add({
+                    type: type,
+                    title: cfg.title || '',
+                    message: cfg.message || (typeof arg1 === 'string' ? arg1 : ''),
+                    link: cfg.link || null
+                });
+                return result;
+            };
+        });
+    }
+
+    // ─── UI: Bell + Panel ───────────────────────────────────────
+    var ICONS = {
+        success: 'check-circle-2',
+        error: 'x-circle',
+        info: 'info',
+        warning: 'alert-triangle'
+    };
+
+    function createBell(target) {
+        if (!target) return null;
+        if (target.querySelector('.altorra-bell')) return target.querySelector('.altorra-bell');
+
+        var bell = document.createElement('button');
+        bell.type = 'button';
+        bell.className = 'altorra-bell';
+        bell.setAttribute('aria-label', 'Centro de notificaciones');
+        bell.innerHTML = '<i data-lucide="bell"></i><span class="altorra-bell__badge" hidden>0</span>';
+        target.appendChild(bell);
+
+        var panel = createPanel();
+        document.body.appendChild(panel);
+
+        bell.addEventListener('click', function(e) {
+            e.stopPropagation();
+            togglePanel(panel, bell);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!panel.contains(e.target) && !bell.contains(e.target)) closePanel(panel);
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closePanel(panel);
+        });
+
+        if (window.lucide) try { window.lucide.createIcons({ context: bell }); } catch (e) {}
+
+        // Subscribe to updates
+        subscribe(function() { updateBellBadge(bell); renderEntries(panel); });
+        updateBellBadge(bell);
+        return bell;
+    }
+
+    function updateBellBadge(bell) {
+        if (!bell) return;
+        var badge = bell.querySelector('.altorra-bell__badge');
+        if (!badge) return;
+        var count = getUnreadCount();
+        if (count > 0) {
+            badge.textContent = count > 9 ? '9+' : String(count);
+            badge.hidden = false;
+        } else {
+            badge.hidden = true;
+        }
+    }
+
+    function createPanel() {
+        var panel = document.createElement('div');
+        panel.className = 'altorra-notify-center';
+        panel.setAttribute('role', 'region');
+        panel.setAttribute('aria-label', 'Notificaciones');
+        panel.innerHTML =
+            '<div class="altorra-notify-center__head">' +
+                '<h3>Notificaciones</h3>' +
+                '<div class="altorra-notify-center__head-actions">' +
+                    '<button type="button" class="altorra-notify-center__action" data-action="mark-all-read" title="Marcar todas como leidas"><i data-lucide="check-check"></i></button>' +
+                    '<button type="button" class="altorra-notify-center__action" data-action="clear" title="Limpiar todo"><i data-lucide="trash-2"></i></button>' +
+                    '<button type="button" class="altorra-notify-center__close" data-action="close" aria-label="Cerrar"><i data-lucide="x"></i></button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="altorra-notify-center__list" id="altorra-notify-center-list"></div>';
+
+        panel.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-action]');
+            if (!btn) {
+                var item = e.target.closest('[data-id]');
+                if (item) {
+                    var id = item.dataset.id;
+                    var entry = _entries.find(function(x) { return x.id === id; });
+                    if (entry) {
+                        markRead(id);
+                        if (entry.link) window.location.href = entry.link;
+                    }
+                }
+                return;
+            }
+            var action = btn.dataset.action;
+            if (action === 'mark-all-read') markAllRead();
+            else if (action === 'clear') {
+                if (_entries.length === 0) return;
+                if (confirm('¿Limpiar todas las notificaciones?')) clear();
+            }
+            else if (action === 'close') closePanel(panel);
+            else if (action === 'remove') {
+                var id = btn.dataset.id;
+                if (id) { remove(id); }
+            }
+        });
+
+        return panel;
+    }
+
+    function renderEntries(panel) {
+        var list = panel.querySelector('#altorra-notify-center-list');
+        if (!list) return;
+        if (_entries.length === 0) {
+            list.innerHTML = '<div class="altorra-notify-center__empty"><i data-lucide="bell-off"></i><p>No tienes notificaciones</p></div>';
+            if (window.lucide) try { window.lucide.createIcons({ context: list }); } catch (e) {}
+            return;
+        }
+        var html = _entries.map(function(e) {
+            var icon = ICONS[e.type] || 'info';
+            return '<div class="altorra-notify-center__item' + (e.read ? '' : ' altorra-notify-center__item--unread') + '" data-id="' + e.id + '" data-type="' + e.type + '">' +
+                '<div class="altorra-notify-center__item-icon"><i data-lucide="' + icon + '"></i></div>' +
+                '<div class="altorra-notify-center__item-body">' +
+                    (e.title ? '<div class="altorra-notify-center__item-title">' + escapeHtml(e.title) + '</div>' : '') +
+                    (e.message ? '<div class="altorra-notify-center__item-message">' + escapeHtml(e.message) + '</div>' : '') +
+                    '<div class="altorra-notify-center__item-time">' + timeAgo(e.timestamp) + '</div>' +
+                '</div>' +
+                '<button type="button" class="altorra-notify-center__item-remove" data-action="remove" data-id="' + e.id + '" title="Quitar"><i data-lucide="x"></i></button>' +
+            '</div>';
+        }).join('');
+        list.innerHTML = html;
+        if (window.lucide) try { window.lucide.createIcons({ context: list }); } catch (e) {}
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        var div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+
+    function togglePanel(panel, bell) {
+        if (panel.classList.contains('altorra-notify-center--open')) closePanel(panel);
+        else openPanel(panel, bell);
+    }
+
+    function openPanel(panel, bell) {
+        renderEntries(panel);
+        panel.classList.add('altorra-notify-center--open');
+    }
+
+    function closePanel(panel) {
+        panel.classList.remove('altorra-notify-center--open');
+    }
+
+    // ─── Auto-injection into known headers ─────────────────────
+    function injectIntoHeader() {
+        // Try common header targets
+        var targets = [
+            '.header-actions',     // public site (may exist)
+            '.admin-header-actions', // admin
+            '.header-icons',
+            'header .actions'
+        ];
+        for (var i = 0; i < targets.length; i++) {
+            var el = document.querySelector(targets[i]);
+            if (el) {
+                createBell(el);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ─── Public API ─────────────────────────────────────────────
+    window.notifyCenter = {
+        add: add,
+        markAllRead: markAllRead,
+        markRead: markRead,
+        remove: remove,
+        clear: clear,
+        getEntries: getEntries,
+        getUnreadCount: getUnreadCount,
+        subscribe: subscribe,
+        mount: function(target) {
+            var el = typeof target === 'string' ? document.querySelector(target) : target;
+            return createBell(el);
+        },
+        injectIntoHeader: injectIntoHeader
+    };
+
+    // ─── Init ──────────────────────────────────────────────────
+    load();
+
+    // Wait for notify to be ready, then wrap it
+    var wrapAttempts = 0;
+    var wrapInterval = setInterval(function() {
+        wrapAttempts++;
+        if (window.notify) { wrapNotify(); clearInterval(wrapInterval); }
+        else if (wrapAttempts > 50) clearInterval(wrapInterval);
+    }, 50);
+})();

@@ -1,312 +1,252 @@
 /**
- * ALTORRA NOTIFICATIONS — Vanguard design (Phase N1)
+ * ALTORRA NOTIFICATIONS — Compact snackbar design
  *
- * Modern toast styling with:
- *  - Glassmorphism (backdrop-filter blur + translucent background)
- *  - Animated gradient border accent
- *  - Spring entrance/exit animations
- *  - Lucide icon containers
- *  - Pausable progress bar
- *  - Dark/light theme via CSS variables
+ * Modern Sonner-inspired toast styling:
+ *  - Bottom-center positioning
+ *  - Compact flex layout (no flag/banner look)
+ *  - Glassmorphism with subtle shadow
+ *  - Smooth slide-up entrance/exit
+ *  - No progress bar
+ *  - Hover-only close button
  *  - Mobile-aware with safe-area-inset
  */
 
 :root {
-    --notify-bg: rgba(20, 22, 28, 0.85);
+    --notify-bg: rgba(20, 22, 28, 0.92);
     --notify-bg-solid: #161821;
     --notify-text: #f0f2f6;
-    --notify-text-muted: #a8aebf;
-    --notify-border: rgba(255, 255, 255, 0.08);
-    --notify-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.25);
+    --notify-text-muted: #9ca3b4;
+    --notify-border: rgba(255, 255, 255, 0.06);
+    --notify-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
 
-    --notify-success: #16a34a;
-    --notify-success-glow: rgba(22, 163, 74, 0.35);
+    --notify-success: #22c55e;
+    --notify-success-glow: rgba(34, 197, 94, 0.15);
     --notify-error: #ef4444;
-    --notify-error-glow: rgba(239, 68, 68, 0.35);
+    --notify-error-glow: rgba(239, 68, 68, 0.15);
     --notify-info: #b89658;
-    --notify-info-glow: rgba(184, 150, 88, 0.35);
-    --notify-warning: #eab308;
-    --notify-warning-glow: rgba(234, 179, 8, 0.35);
+    --notify-info-glow: rgba(184, 150, 88, 0.15);
+    --notify-warning: #f59e0b;
+    --notify-warning-glow: rgba(245, 158, 11, 0.15);
 }
 
-/* Light theme override (in case future light mode is added publicly) */
 :root.light-mode {
-    --notify-bg: rgba(255, 255, 255, 0.92);
+    --notify-bg: rgba(255, 255, 255, 0.94);
     --notify-bg-solid: #ffffff;
     --notify-text: #1a1d24;
     --notify-text-muted: #5a6072;
-    --notify-border: rgba(0, 0, 0, 0.08);
-    --notify-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+    --notify-border: rgba(0, 0, 0, 0.06);
+    --notify-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
-/* ─── Container ─────────────────────────────────────────────── */
+/* ─── Container: bottom-center ─────────────────────────────── */
 .altorra-notify-container {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 80px);
-    right: calc(env(safe-area-inset-right, 0px) + 16px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 32px);
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 100000;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 8px;
     pointer-events: none;
-    width: 380px;
-    max-width: calc(100vw - 32px);
+    width: auto;
+    max-width: calc(100vw - 24px);
 }
 
-/* ─── Toast base ────────────────────────────────────────────── */
+/* ─── Toast: compact snackbar ──────────────────────────────── */
 .altorra-notify {
     position: relative;
-    display: grid;
-    grid-template-columns: 40px 1fr auto;
-    gap: 12px;
-    align-items: flex-start;
-    padding: 14px 14px 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px 10px 14px;
     background: var(--notify-bg);
     color: var(--notify-text);
-    border: 1px solid var(--notify-border);
-    border-radius: 14px;
+    border-radius: 12px;
     box-shadow: var(--notify-shadow);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
     pointer-events: auto;
     overflow: hidden;
     will-change: transform, opacity;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                opacity 0.25s ease;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.2s ease;
     font-family: inherit;
+    min-width: 240px;
+    max-width: 380px;
+    width: -moz-fit-content;
+    width: fit-content;
 }
 
-/* Animated gradient accent bar on the left */
-.altorra-notify::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: linear-gradient(180deg, var(--notify-info), var(--notify-info-glow));
-    background-size: 100% 200%;
-    animation: notify-shimmer 2.5s ease-in-out infinite;
-}
-
-@keyframes notify-shimmer {
-    0%, 100% { background-position: 0% 0%; }
-    50% { background-position: 0% 100%; }
-}
-
-/* ─── Type variants ─────────────────────────────────────────── */
-.altorra-notify--success::before {
-    background: linear-gradient(180deg, var(--notify-success), var(--notify-success-glow));
-}
-.altorra-notify--error::before {
-    background: linear-gradient(180deg, var(--notify-error), var(--notify-error-glow));
-}
-.altorra-notify--info::before {
-    background: linear-gradient(180deg, var(--notify-info), var(--notify-info-glow));
-}
-.altorra-notify--warning::before {
-    background: linear-gradient(180deg, var(--notify-warning), var(--notify-warning-glow));
-}
-
-/* ─── Icon ──────────────────────────────────────────────────── */
+/* ─── Icon: inline colored, no background box ──────────────── */
 .altorra-notify__icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
     flex-shrink: 0;
+    width: 20px;
+    height: 20px;
 }
 .altorra-notify__icon i,
 .altorra-notify__icon svg {
-    width: 22px;
-    height: 22px;
-    stroke-width: 2.2;
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
 }
-.altorra-notify--success .altorra-notify__icon {
-    background: var(--notify-success-glow);
-    color: var(--notify-success);
-}
-.altorra-notify--error .altorra-notify__icon {
-    background: var(--notify-error-glow);
-    color: var(--notify-error);
-}
-.altorra-notify--info .altorra-notify__icon {
-    background: var(--notify-info-glow);
-    color: var(--notify-info);
-}
-.altorra-notify--warning .altorra-notify__icon {
-    background: var(--notify-warning-glow);
-    color: var(--notify-warning);
-}
+.altorra-notify--success .altorra-notify__icon { color: var(--notify-success); }
+.altorra-notify--error .altorra-notify__icon   { color: var(--notify-error); }
+.altorra-notify--info .altorra-notify__icon    { color: var(--notify-info); }
+.altorra-notify--warning .altorra-notify__icon { color: var(--notify-warning); }
 
-/* ─── Body ──────────────────────────────────────────────────── */
+/* ─── Body ─────────────────────────────────────────────────── */
 .altorra-notify__body {
+    flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding-top: 2px;
+    gap: 1px;
 }
 .altorra-notify__title {
-    font-size: 0.92rem;
+    font-size: 0.82rem;
     font-weight: 700;
-    line-height: 1.25;
+    line-height: 1.3;
     color: var(--notify-text);
     letter-spacing: -0.01em;
 }
 .altorra-notify__message {
-    font-size: 0.85rem;
-    line-height: 1.4;
+    font-size: 0.78rem;
+    line-height: 1.35;
     color: var(--notify-text-muted);
     word-wrap: break-word;
 }
+
+/* ─── Action button ────────────────────────────────────────── */
 .altorra-notify__action {
-    margin-top: 8px;
+    margin-top: 6px;
     align-self: flex-start;
-    background: transparent;
-    border: 1px solid var(--notify-border);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--notify-text);
-    padding: 5px 12px;
-    border-radius: 8px;
-    font-size: 0.78rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.18s ease;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.altorra-notify--success .altorra-notify__action:hover {
-    border-color: var(--notify-success);
-    color: var(--notify-success);
-    background: var(--notify-success-glow);
-}
-.altorra-notify--error .altorra-notify__action:hover {
-    border-color: var(--notify-error);
-    color: var(--notify-error);
-    background: var(--notify-error-glow);
-}
-.altorra-notify--info .altorra-notify__action:hover,
-.altorra-notify--warning .altorra-notify__action:hover {
+.altorra-notify__action:hover {
+    background: var(--notify-info-glow);
     border-color: var(--notify-info);
     color: var(--notify-info);
-    background: var(--notify-info-glow);
 }
 
-/* ─── Close button ──────────────────────────────────────────── */
+/* ─── Close button: hover-reveal on desktop ────────────────── */
 .altorra-notify__close {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     background: transparent;
     border: none;
     color: var(--notify-text-muted);
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 6px;
     flex-shrink: 0;
-    margin: -2px -2px 0 0;
-    transition: background 0.18s ease, color 0.18s ease;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.altorra-notify:hover .altorra-notify__close {
+    opacity: 1;
 }
 .altorra-notify__close:hover {
-    background: var(--notify-border);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--notify-text);
 }
 .altorra-notify__close i,
 .altorra-notify__close svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
 }
 
-/* ─── Progress bar ──────────────────────────────────────────── */
-.altorra-notify__progress {
-    position: absolute;
-    bottom: 0;
-    left: 4px;
-    right: 0;
-    height: 2px;
-    background: transparent;
-    overflow: hidden;
-}
-.altorra-notify__progress-bar {
-    height: 100%;
-    width: 100%;
-    transform-origin: left center;
-    animation: notify-progress linear forwards;
-}
-.altorra-notify--success .altorra-notify__progress-bar { background: var(--notify-success); }
-.altorra-notify--error .altorra-notify__progress-bar   { background: var(--notify-error); }
-.altorra-notify--info .altorra-notify__progress-bar    { background: var(--notify-info); }
-.altorra-notify--warning .altorra-notify__progress-bar { background: var(--notify-warning); }
+/* Critical: always show close (no auto-dismiss) */
+.altorra-notify[data-priority="critical"] .altorra-notify__close { opacity: 0.7; }
 
-@keyframes notify-progress {
-    from { transform: scaleX(1); }
-    to   { transform: scaleX(0); }
-}
+/* Progress bar — hidden in compact design */
+.altorra-notify__progress { display: none; }
+.altorra-notify__progress-bar { display: none; }
 
-.altorra-notify--paused .altorra-notify__progress-bar {
-    animation-play-state: paused;
-}
-
-/* ─── Animations ────────────────────────────────────────────── */
+/* ─── Animations: slide up from bottom ─────────────────────── */
 .altorra-notify--enter {
     opacity: 0;
-    transform: translateX(20px) scale(0.9);
-    filter: blur(4px);
+    transform: translateY(16px) scale(0.96);
 }
 .altorra-notify--visible {
     opacity: 1;
-    transform: translateX(0) scale(1);
-    filter: blur(0);
+    transform: translateY(0) scale(1);
 }
 .altorra-notify--leave {
     opacity: 0;
-    transform: translateX(40px) scale(0.95);
-    transition: transform 0.25s ease, opacity 0.25s ease;
+    transform: translateY(16px) scale(0.96);
+    transition: transform 0.22s ease, opacity 0.2s ease;
 }
+
+/* Paused state (hover blocks auto-close, no visual change) */
+.altorra-notify--paused {}
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
     .altorra-notify {
-        transition: opacity 0.2s ease;
+        transition: opacity 0.15s ease;
     }
-    .altorra-notify::before { animation: none; }
-    .altorra-notify--enter { transform: none; filter: none; }
+    .altorra-notify--enter { transform: none; }
     .altorra-notify--leave { transform: none; }
-    .altorra-notify__progress-bar { animation: none; transform: scaleX(0); }
 }
 
-/* ─── Mobile ────────────────────────────────────────────────── */
+/* ─── Mobile ───────────────────────────────────────────────── */
 @media (max-width: 640px) {
     .altorra-notify-container {
-        top: calc(env(safe-area-inset-top, 0px) + 70px);
-        left: calc(env(safe-area-inset-left, 0px) + 8px);
-        right: calc(env(safe-area-inset-right, 0px) + 8px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+        left: 12px;
+        right: 12px;
+        transform: none;
         width: auto;
-        gap: 8px;
+        max-width: none;
     }
     .altorra-notify {
-        grid-template-columns: 36px 1fr auto;
-        padding: 12px 12px 12px 14px;
-        border-radius: 12px;
+        min-width: 0;
+        max-width: none;
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
     }
-    .altorra-notify__icon {
-        width: 36px;
-        height: 36px;
-    }
-    .altorra-notify__icon i,
-    .altorra-notify__icon svg {
-        width: 20px;
-        height: 20px;
-    }
-    .altorra-notify__title { font-size: 0.88rem; }
-    .altorra-notify__message { font-size: 0.82rem; }
+    .altorra-notify__close { opacity: 0.6; }
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* Touch: always show close */
+@media (hover: none) {
+    .altorra-notify__close { opacity: 0.6; }
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Header login pulse animation (favorites without auth)
+   ═════════════════════════════════════════════════════════════════ */
+.hdr-btn--pulse {
+    animation: hdr-login-pulse 0.8s ease-in-out 3 !important;
+}
+.mob-btn--pulse {
+    animation: hdr-login-pulse 0.8s ease-in-out 3 !important;
+}
+@keyframes hdr-login-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(184, 150, 88, 0); }
+    50% { box-shadow: 0 0 0 8px rgba(184, 150, 88, 0.35); }
+}
+
+/* ═════════════════════════════════════════════════════════════════
    ALTORRA NOTIFICATION CENTER (Phase N3)
    Bell icon + slide-out panel
-   ═══════════════════════════════════════════════════════════════ */
+   ═════════════════════════════════════════════════════════════════ */
 
 .altorra-bell {
     position: relative;

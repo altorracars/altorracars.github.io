@@ -1438,10 +1438,43 @@
         var waChecked = prefs.whatsapp !== false;
         var emailFreq = prefs.emailFreq || 'nunca';
 
+        // Notification preferences (N4) — defaults from prefs.notificaciones.* or fallbacks
+        var nf = prefs.notificaciones || {};
+        var soundEnabled = (window.notify && window.notify.getSoundEnabled) ? window.notify.getSoundEnabled() : true;
+        var soundChecked = nf.sonidos !== undefined ? nf.sonidos : soundEnabled;
+        var browserNotifChecked = nf.navegador === true;
+        var emailAlertsChecked = nf.emailAlertas !== false;
+
         var html =
             '<div class="pf-card">' +
-                '<div class="pf-card-title">Notificaciones</div>' +
+                '<div class="pf-card-title">Notificaciones en pantalla</div>' +
+                '<p class="pf-pref-desc">Personaliza como aparecen las notificaciones mientras navegas.</p>' +
+                '<div class="pf-pref-row">' +
+                    '<div class="pf-pref-info">' +
+                        '<span class="pf-pref-label"><i data-lucide="volume-2"></i> Sonidos</span>' +
+                        '<span class="pf-pref-hint">Tono sutil al recibir una notificacion (acciones exitosas, errores, etc.)</span>' +
+                    '</div>' +
+                    '<label class="pf-toggle"><input type="checkbox" id="pfPrefSound"' + (soundChecked ? ' checked' : '') + '><span class="pf-toggle-slider"></span></label>' +
+                '</div>' +
+                '<div class="pf-pref-row">' +
+                    '<div class="pf-pref-info">' +
+                        '<span class="pf-pref-label"><i data-lucide="bell-ring"></i> Notificaciones del navegador</span>' +
+                        '<span class="pf-pref-hint">Recibe alertas aun cuando la pestana este en segundo plano (requiere permiso)</span>' +
+                    '</div>' +
+                    '<label class="pf-toggle"><input type="checkbox" id="pfPrefBrowserNotif"' + (browserNotifChecked ? ' checked' : '') + '><span class="pf-toggle-slider"></span></label>' +
+                '</div>' +
+            '</div>' +
+
+            '<div class="pf-card">' +
+                '<div class="pf-card-title">Notificaciones por correo y WhatsApp</div>' +
                 '<p class="pf-pref-desc">Elige como quieres recibir novedades sobre vehiculos y ofertas.</p>' +
+                '<div class="pf-pref-row">' +
+                    '<div class="pf-pref-info">' +
+                        '<span class="pf-pref-label"><i data-lucide="bell"></i> Alertas de precio por email</span>' +
+                        '<span class="pf-pref-hint">Te avisamos cuando un vehiculo de tus busquedas guardadas baja de precio</span>' +
+                    '</div>' +
+                    '<label class="pf-toggle"><input type="checkbox" id="pfPrefEmailAlerts"' + (emailAlertsChecked ? ' checked' : '') + '><span class="pf-toggle-slider"></span></label>' +
+                '</div>' +
                 '<div class="pf-pref-row">' +
                     '<div class="pf-pref-info">' +
                         '<span class="pf-pref-label"><i data-lucide="message-circle"></i> WhatsApp</span>' +
@@ -1451,7 +1484,7 @@
                 '</div>' +
                 '<div class="pf-pref-row">' +
                     '<div class="pf-pref-info">' +
-                        '<span class="pf-pref-label"><i data-lucide="mail"></i> Correo electronico</span>' +
+                        '<span class="pf-pref-label"><i data-lucide="mail"></i> Resumen por correo</span>' +
                         '<span class="pf-pref-hint">Resumen de vehiculos nuevos y cambios de precio</span>' +
                     '</div>' +
                     '<select class="pf-input pf-select pf-pref-select" id="pfPrefEmail">' +
@@ -1481,6 +1514,9 @@
     function wirePreferenciasEvents(user) {
         var waToggle = $id('pfPrefWA');
         var emailSelect = $id('pfPrefEmail');
+        var soundToggle = $id('pfPrefSound');
+        var browserNotifToggle = $id('pfPrefBrowserNotif');
+        var emailAlertsToggle = $id('pfPrefEmailAlerts');
 
         function savePref() {
             var statusEl = $id('pfPrefStatus');
@@ -1490,10 +1526,21 @@
                 if (window.lucide) window.lucide.createIcons();
             }
 
-            var prefs = {
+            var existing = (_userData && _userData.preferencias) || {};
+            var prefs = Object.assign({}, existing, {
                 whatsapp: waToggle ? waToggle.checked : true,
-                emailFreq: emailSelect ? emailSelect.value : 'nunca'
-            };
+                emailFreq: emailSelect ? emailSelect.value : 'nunca',
+                notificaciones: {
+                    sonidos: soundToggle ? soundToggle.checked : true,
+                    navegador: browserNotifToggle ? browserNotifToggle.checked : false,
+                    emailAlertas: emailAlertsToggle ? emailAlertsToggle.checked : true
+                }
+            });
+
+            // Apply sound preference immediately (localStorage)
+            if (soundToggle && window.notify && window.notify.setSoundEnabled) {
+                window.notify.setSoundEnabled(soundToggle.checked);
+            }
 
             window.db.collection('clientes').doc(user.uid).set(
                 { preferencias: prefs },
@@ -1515,8 +1562,46 @@
             });
         }
 
+        // Browser notification permission flow
+        function handleBrowserNotifToggle() {
+            if (!browserNotifToggle) return;
+            if (!('Notification' in window)) {
+                browserNotifToggle.checked = false;
+                if (window.notify) window.notify.error({ title: 'No compatible', message: 'Tu navegador no soporta notificaciones nativas.' });
+                return;
+            }
+            if (browserNotifToggle.checked) {
+                // User is trying to enable — request permission
+                if (Notification.permission === 'granted') {
+                    savePref();
+                } else if (Notification.permission === 'denied') {
+                    browserNotifToggle.checked = false;
+                    if (window.notify) window.notify.error({
+                        title: 'Permiso bloqueado',
+                        message: 'Activa los permisos de notificacion en la configuracion del navegador.',
+                        priority: 'high'
+                    });
+                } else {
+                    Notification.requestPermission().then(function(perm) {
+                        if (perm === 'granted') {
+                            savePref();
+                            if (window.notify) window.notify.success({ title: 'Permiso concedido', message: 'Recibiras alertas en segundo plano.' });
+                        } else {
+                            browserNotifToggle.checked = false;
+                            if (window.notify) window.notify.info({ message: 'Permiso de notificacion no concedido.' });
+                        }
+                    });
+                }
+            } else {
+                savePref();
+            }
+        }
+
         if (waToggle) waToggle.addEventListener('change', savePref);
         if (emailSelect) emailSelect.addEventListener('change', savePref);
+        if (soundToggle) soundToggle.addEventListener('change', savePref);
+        if (emailAlertsToggle) emailAlertsToggle.addEventListener('change', savePref);
+        if (browserNotifToggle) browserNotifToggle.addEventListener('change', handleBrowserNotifToggle);
     }
 
     // ── Placeholder sections ────────────────────────────────

@@ -52,6 +52,10 @@ async function loadAllComponents() {
         initializeHeader();
         initializeFavorites();
         populateBrandsMenu();
+        // Mount notification center bell (Phase N3)
+        if (window.notifyCenter && document.getElementById('headerNotifBell')) {
+            window.notifyCenter.mount('#headerNotifBell');
+        }
     }, 100);
 
     // Cargar sistema de cookies dinamicamente

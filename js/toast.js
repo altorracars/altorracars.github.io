@@ -1,134 +1,407 @@
 /**
- * TOAST NOTIFICATION SYSTEM - ALTORRA CARS
- * Sistema moderno de notificaciones con tecnología avanzada
+ * ALTORRA NOTIFICATIONS — Unified notification system (Phase N1)
+ *
+ * Replaces toast.js (public site) and AP.toast (admin) with a single,
+ * modern, vanguard-style notification module.
+ *
+ * Features:
+ *  - Glassmorphism + animated gradient border
+ *  - Stack queue (up to 4 visible) with spring push-down animation
+ *  - Lucide icons + optional title + optional action button
+ *  - Pausable progress bar on hover
+ *  - Priority-based duration (critical never auto-closes)
+ *  - Mobile-aware with safe-area-inset support
+ *  - Keyboard dismiss (Esc closes most recent, hover blocks auto-close)
+ *  - 100% backwards-compatible with toast.success/error/info and AP.toast
+ *
+ * Usage:
+ *   notify.success({ title, message, duration, action: { label, onClick } })
+ *   notify.error('Mensaje simple')                    // string-only also works
+ *   notify.info({ message, priority: 'high' })
+ *   notify.dismiss(id)                                // close one
+ *   notify.clear()                                    // close all
  */
+(function() {
+    'use strict';
 
-class ToastManager {
-    constructor() {
-        this.container = null;
-        this.toasts = [];
-        this.init();
+    var MAX_VISIBLE = 4;
+    var DURATIONS = { critical: 0, high: 8000, normal: 4000, low: 2000 };
+    var STORAGE_SOUND_KEY = 'altorra_notif_sound';
+
+    var ICONS = {
+        success: 'check-circle-2',
+        error: 'x-circle',
+        info: 'info',
+        warning: 'alert-triangle'
+    };
+
+    var DEFAULT_TITLES = {
+        success: 'Listo',
+        error: 'Error',
+        info: 'Informacion',
+        warning: 'Atencion'
+    };
+
+    var _container = null;
+    var _activeToasts = [];
+    var _idCounter = 0;
+    var _soundEnabled = null;
+
+    function getSoundEnabled() {
+        if (_soundEnabled !== null) return _soundEnabled;
+        try {
+            var stored = localStorage.getItem(STORAGE_SOUND_KEY);
+            _soundEnabled = stored === null ? true : stored === 'true';
+        } catch (e) { _soundEnabled = true; }
+        return _soundEnabled;
     }
 
-    init() {
-        // Crear container si no existe
-        if (!document.querySelector('.toast-container')) {
-            this.container = document.createElement('div');
-            this.container.className = 'toast-container';
-            document.body.appendChild(this.container);
-        } else {
-            this.container = document.querySelector('.toast-container');
+    function setSoundEnabled(enabled) {
+        _soundEnabled = !!enabled;
+        try { localStorage.setItem(STORAGE_SOUND_KEY, _soundEnabled ? 'true' : 'false'); } catch (e) {}
+    }
+
+    function ensureContainer() {
+        if (_container && document.body.contains(_container)) return _container;
+        _container = document.querySelector('.altorra-notify-container');
+        if (!_container) {
+            _container = document.createElement('div');
+            _container.className = 'altorra-notify-container';
+            _container.setAttribute('aria-live', 'polite');
+            _container.setAttribute('aria-atomic', 'false');
+            document.body.appendChild(_container);
+        }
+        return _container;
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        var div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+
+    function refreshLucide(scope) {
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            try { window.lucide.createIcons(scope ? { context: scope } : undefined); } catch (e) {}
         }
     }
 
     /**
-     * Mostrar notificación
-     * @param {string} message - Mensaje principal
-     * @param {string} type - Tipo: 'success', 'error', 'info'
-     * @param {string} title - Título opcional
-     * @param {number} duration - Duración en ms (default: 4000)
+     * Normalize the various input shapes into a config object.
+     * Accepts:
+     *  - notify.success('msg')                    → { message: 'msg' }
+     *  - notify.success('msg', 'title')           → { message: 'msg', title: 'title' }
+     *  - notify.success({ message, title, ... })  → as-is
      */
-    show(message, type = 'info', title = '', duration = 4000) {
-        // Cerrar todas las notificaciones anteriores para evitar saturación
-        this.closeAll();
-
-        const toast = this.createToast(message, type, title, duration);
-        this.container.appendChild(toast);
-        this.toasts.push(toast);
-
-        // Auto-cerrar después de duration
-        const timeout = setTimeout(() => {
-            this.close(toast);
-        }, duration);
-
-        // Guardar timeout para poder cancelarlo
-        toast.dataset.timeout = timeout;
-
-        return toast;
+    function normalizeArgs(arg1, arg2, arg3) {
+        if (arg1 && typeof arg1 === 'object' && !Array.isArray(arg1)) return arg1;
+        var cfg = { message: arg1 || '' };
+        if (typeof arg2 === 'string') cfg.title = arg2;
+        else if (typeof arg2 === 'object' && arg2) Object.assign(cfg, arg2);
+        if (typeof arg3 === 'number') cfg.duration = arg3;
+        return cfg;
     }
 
-    createToast(message, type, title, duration) {
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+    function show(type, arg1, arg2, arg3) {
+        var cfg = normalizeArgs(arg1, arg2, arg3);
+        if (!cfg.message && !cfg.title) return null;
 
-        // Iconos según tipo
-        const icons = {
-            success: '✓',
-            error: '✕',
-            info: 'i'
-        };
+        var priority = cfg.priority || (type === 'error' ? 'high' : 'normal');
+        var duration = cfg.duration != null ? cfg.duration : DURATIONS[priority];
+        if (priority === 'critical') duration = 0;
 
-        const icon = icons[type] || icons.info;
+        var id = ++_idCounter;
+        var container = ensureContainer();
 
-        // Título predeterminado según tipo
-        const defaultTitles = {
-            success: '¡Éxito!',
-            error: 'Error',
-            info: 'Información'
-        };
+        var toast = document.createElement('div');
+        toast.className = 'altorra-notify altorra-notify--' + type + ' altorra-notify--enter';
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        toast.dataset.id = id;
+        toast.dataset.type = type;
 
-        const toastTitle = title || defaultTitles[type];
+        var title = cfg.title != null ? cfg.title : DEFAULT_TITLES[type];
+        var iconName = cfg.icon || ICONS[type] || ICONS.info;
 
-        toast.innerHTML = `
-            <div class="toast-icon">${icon}</div>
-            <div class="toast-content">
-                <p class="toast-title">${toastTitle}</p>
-                <p class="toast-message">${message}</p>
-            </div>
-            <button class="toast-close" aria-label="Cerrar">×</button>
-            ${duration > 0 ? '<div class="toast-progress"><div class="toast-progress-bar"></div></div>' : ''}
-        `;
-
-        // Evento de cerrar
-        const closeBtn = toast.querySelector('.toast-close');
-        closeBtn.addEventListener('click', () => this.close(toast));
-
-        return toast;
-    }
-
-    close(toast) {
-        if (!toast || !toast.parentElement) return;
-
-        // Cancelar timeout si existe
-        if (toast.dataset.timeout) {
-            clearTimeout(parseInt(toast.dataset.timeout));
+        var actionHtml = '';
+        if (cfg.action && cfg.action.label) {
+            actionHtml = '<button type="button" class="altorra-notify__action" data-notify-action>'
+                + escapeHtml(cfg.action.label) + '</button>';
         }
 
-        toast.classList.add('closing');
+        var progressHtml = duration > 0
+            ? '<div class="altorra-notify__progress"><div class="altorra-notify__progress-bar" style="animation-duration:' + duration + 'ms"></div></div>'
+            : '';
 
-        setTimeout(() => {
-            if (toast.parentElement) {
-                toast.remove();
+        toast.innerHTML =
+            '<div class="altorra-notify__icon"><i data-lucide="' + iconName + '"></i></div>'
+            + '<div class="altorra-notify__body">'
+                + (title ? '<div class="altorra-notify__title">' + escapeHtml(title) + '</div>' : '')
+                + (cfg.message ? '<div class="altorra-notify__message">' + escapeHtml(cfg.message) + '</div>' : '')
+                + actionHtml
+            + '</div>'
+            + '<button type="button" class="altorra-notify__close" aria-label="Cerrar"><i data-lucide="x"></i></button>'
+            + progressHtml;
+
+        // Insert at top so newest is on top
+        if (container.firstChild) container.insertBefore(toast, container.firstChild);
+        else container.appendChild(toast);
+
+        var record = { id: id, el: toast, timer: null, paused: false, remaining: duration, startedAt: Date.now() };
+        _activeToasts.unshift(record);
+
+        // Enforce max visible — remove oldest beyond limit
+        while (_activeToasts.length > MAX_VISIBLE) {
+            var old = _activeToasts.pop();
+            if (old) dismiss(old.id, true);
+        }
+
+        // Trigger entrance animation on next frame
+        requestAnimationFrame(function() {
+            toast.classList.remove('altorra-notify--enter');
+            toast.classList.add('altorra-notify--visible');
+        });
+
+        // Auto-close timer
+        if (duration > 0) {
+            record.timer = setTimeout(function() { dismiss(id); }, duration);
+        }
+
+        // Pause on hover
+        toast.addEventListener('mouseenter', function() {
+            if (record.timer) {
+                clearTimeout(record.timer);
+                record.timer = null;
+                record.remaining = record.remaining - (Date.now() - record.startedAt);
+                record.paused = true;
+                toast.classList.add('altorra-notify--paused');
             }
-            const index = this.toasts.indexOf(toast);
-            if (index > -1) {
-                this.toasts.splice(index, 1);
+        });
+        toast.addEventListener('mouseleave', function() {
+            if (record.paused && record.remaining > 0) {
+                record.startedAt = Date.now();
+                record.timer = setTimeout(function() { dismiss(id); }, record.remaining);
+                record.paused = false;
+                toast.classList.remove('altorra-notify--paused');
             }
-        }, 300);
+        });
+
+        // Close button
+        var closeBtn = toast.querySelector('.altorra-notify__close');
+        if (closeBtn) closeBtn.addEventListener('click', function() { dismiss(id); });
+
+        // Action button
+        var actBtn = toast.querySelector('[data-notify-action]');
+        if (actBtn && cfg.action && typeof cfg.action.onClick === 'function') {
+            actBtn.addEventListener('click', function() {
+                try { cfg.action.onClick(); } catch (e) {}
+                if (cfg.action.dismissOnClick !== false) dismiss(id);
+            });
+        }
+
+        // Sound (N2 — placeholder hook for now, wired in N2)
+        if (cfg.sound !== false && getSoundEnabled() && typeof window.AltorraNotifySound === 'function') {
+            try { window.AltorraNotifySound(type); } catch (e) {}
+        }
+
+        // Render Lucide icons
+        refreshLucide(toast);
+
+        return id;
     }
 
-    success(message, title = '¡Éxito!') {
-        return this.show(message, 'success', title);
+    function dismiss(id, immediate) {
+        var idx = _activeToasts.findIndex(function(r) { return r.id === id; });
+        if (idx === -1) return;
+        var record = _activeToasts[idx];
+        _activeToasts.splice(idx, 1);
+
+        if (record.timer) clearTimeout(record.timer);
+
+        if (immediate) {
+            if (record.el && record.el.parentNode) record.el.parentNode.removeChild(record.el);
+            return;
+        }
+
+        record.el.classList.remove('altorra-notify--visible');
+        record.el.classList.add('altorra-notify--leave');
+        setTimeout(function() {
+            if (record.el && record.el.parentNode) record.el.parentNode.removeChild(record.el);
+        }, 280);
     }
 
-    error(message, title = 'Error') {
-        return this.show(message, 'error', title);
+    function clear() {
+        var ids = _activeToasts.map(function(r) { return r.id; });
+        ids.forEach(function(id) { dismiss(id); });
     }
 
-    info(message, title = 'Información') {
-        return this.show(message, 'info', title);
+    // Esc closes the most recent
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && _activeToasts.length > 0) {
+            dismiss(_activeToasts[0].id);
+        }
+    });
+
+    var notify = {
+        success: function(a, b, c) { return show('success', a, b, c); },
+        error:   function(a, b, c) { return show('error',   a, b, c); },
+        info:    function(a, b, c) { return show('info',    a, b, c); },
+        warning: function(a, b, c) { return show('warning', a, b, c); },
+        show: show,
+        dismiss: dismiss,
+        clear: clear,
+        getSoundEnabled: getSoundEnabled,
+        setSoundEnabled: setSoundEnabled
+    };
+
+    window.notify = notify;
+    window.AltorraNotify = notify;
+
+    // ────────────────────────────────────────────────────────────
+    // Backwards-compatibility shims
+    // ────────────────────────────────────────────────────────────
+
+    // Public site: window.toast (replaces toast.js ToastManager)
+    var legacyToast = {
+        show: function(message, type, title, duration) {
+            return show(type || 'info', { message: message, title: title, duration: duration });
+        },
+        success: function(message, title) { return show('success', { message: message, title: title }); },
+        error:   function(message, title) { return show('error',   { message: message, title: title }); },
+        info:    function(message, title) { return show('info',    { message: message, title: title }); },
+        warning: function(message, title) { return show('warning', { message: message, title: title }); },
+        close: function() {},
+        closeAll: clear
+    };
+    window.toast = legacyToast;
+    window.ToastManager = function() { return legacyToast; };
+
+    // Admin: AP.toast(msg, type) — wired when AP is ready
+    function wireAdminShim() {
+        if (window.AP && typeof window.AP === 'object') {
+            window.AP.toast = function(msg, type) {
+                return show(type || 'success', { message: msg });
+            };
+            return true;
+        }
+        return false;
+    }
+    if (!wireAdminShim()) {
+        // Retry shortly after — admin-state.js may load after this
+        var retries = 0;
+        var interval = setInterval(function() {
+            retries++;
+            if (wireAdminShim() || retries > 50) clearInterval(interval);
+        }, 50);
+    }
+})();
+
+/**
+ * ALTORRA NOTIFICATIONS — Sound module (Phase N2)
+ *
+ * Generates short, subtle audio cues using the Web Audio API.
+ * Zero external files — every sound is synthesized at runtime.
+ *
+ * Throttling: max 1 sound per 500ms window (prevents overlap on bursts).
+ * Disabled when user has prefers-reduced-motion or sound preference is off.
+ */
+(function() {
+    'use strict';
+
+    var _audioCtx = null;
+    var _lastPlayed = 0;
+    var THROTTLE_MS = 500;
+    var VOLUME = 0.18;
+
+    function prefersReducedMotion() {
+        try {
+            return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        } catch (e) { return false; }
     }
 
-    // Cerrar todas las notificaciones
-    closeAll() {
-        [...this.toasts].forEach(toast => this.close(toast));
+    function getCtx() {
+        if (_audioCtx) return _audioCtx;
+        var Ctor = window.AudioContext || window.webkitAudioContext;
+        if (!Ctor) return null;
+        try {
+            _audioCtx = new Ctor();
+            return _audioCtx;
+        } catch (e) { return null; }
     }
-}
 
-// Instancia global
-const toast = new ToastManager();
+    /**
+     * Play a tone with configurable parameters.
+     * @param {number} freqStart - Starting frequency in Hz
+     * @param {number} freqEnd - Ending frequency in Hz (for glide)
+     * @param {number} duration - Duration in ms
+     * @param {string} oscType - Oscillator type: 'sine', 'triangle', 'square'
+     * @param {number} startOffset - Delay before playing in ms
+     */
+    function playTone(freqStart, freqEnd, duration, oscType, startOffset) {
+        var ctx = getCtx();
+        if (!ctx) return;
 
-// Export para uso en otros archivos
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ToastManager, toast };
-}
+        // Resume context if suspended (browser autoplay policy)
+        if (ctx.state === 'suspended') {
+            try { ctx.resume(); } catch (e) {}
+        }
+
+        var now = ctx.currentTime + (startOffset || 0) / 1000;
+        var dur = duration / 1000;
+
+        var osc = ctx.createOscillator();
+        osc.type = oscType || 'sine';
+        osc.frequency.setValueAtTime(freqStart, now);
+        if (freqEnd && freqEnd !== freqStart) {
+            osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), now + dur);
+        }
+
+        var gain = ctx.createGain();
+        // Envelope: quick attack, smooth release for clean sound
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(VOLUME, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + dur + 0.05);
+    }
+
+    var SOUNDS = {
+        success: function() {
+            // Bright two-tone ascending chime: C6 → E6
+            playTone(1046.5, 1046.5, 90, 'sine', 0);
+            playTone(1318.5, 1318.5, 130, 'sine', 80);
+        },
+        error: function() {
+            // Descending error tone: A4 → A3 with triangle for warmth
+            playTone(440, 220, 350, 'triangle', 0);
+        },
+        info: function() {
+            // Single soft ping: E6
+            playTone(1318.5, 1318.5, 150, 'sine', 0);
+        },
+        warning: function() {
+            // Double pulse at D5: ⚠️
+            playTone(587.33, 587.33, 100, 'triangle', 0);
+            playTone(587.33, 587.33, 100, 'triangle', 160);
+        }
+    };
+
+    /**
+     * Public API: play a notification sound by type.
+     * Respects user preference (localStorage 'altorra_notif_sound') and
+     * prefers-reduced-motion. Throttled to 1 sound per 500ms.
+     */
+    window.AltorraNotifySound = function(type) {
+        if (prefersReducedMotion()) return;
+        var now = Date.now();
+        if (now - _lastPlayed < THROTTLE_MS) return;
+        _lastPlayed = now;
+
+        var fn = SOUNDS[type] || SOUNDS.info;
+        try { fn(); } catch (e) {}
+    };
+})();

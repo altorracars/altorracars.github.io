@@ -1,188 +1,304 @@
-/* ============================================
-   TOAST NOTIFICATIONS - ALTORRA CARS
-   Sistema moderno de notificaciones
-   ============================================ */
+/**
+ * ALTORRA NOTIFICATIONS — Vanguard design (Phase N1)
+ *
+ * Modern toast styling with:
+ *  - Glassmorphism (backdrop-filter blur + translucent background)
+ *  - Animated gradient border accent
+ *  - Spring entrance/exit animations
+ *  - Lucide icon containers
+ *  - Pausable progress bar
+ *  - Dark/light theme via CSS variables
+ *  - Mobile-aware with safe-area-inset
+ */
 
-/* Container de notificaciones */
-.toast-container {
+:root {
+    --notify-bg: rgba(20, 22, 28, 0.85);
+    --notify-bg-solid: #161821;
+    --notify-text: #f0f2f6;
+    --notify-text-muted: #a8aebf;
+    --notify-border: rgba(255, 255, 255, 0.08);
+    --notify-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.25);
+
+    --notify-success: #16a34a;
+    --notify-success-glow: rgba(22, 163, 74, 0.35);
+    --notify-error: #ef4444;
+    --notify-error-glow: rgba(239, 68, 68, 0.35);
+    --notify-info: #b89658;
+    --notify-info-glow: rgba(184, 150, 88, 0.35);
+    --notify-warning: #eab308;
+    --notify-warning-glow: rgba(234, 179, 8, 0.35);
+}
+
+/* Light theme override (in case future light mode is added publicly) */
+:root.light-mode {
+    --notify-bg: rgba(255, 255, 255, 0.92);
+    --notify-bg-solid: #ffffff;
+    --notify-text: #1a1d24;
+    --notify-text-muted: #5a6072;
+    --notify-border: rgba(0, 0, 0, 0.08);
+    --notify-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── Container ─────────────────────────────────────────────── */
+.altorra-notify-container {
     position: fixed;
-    top: 100px;
-    right: 20px;
-    z-index: 10000;
+    top: calc(env(safe-area-inset-top, 0px) + 80px);
+    right: calc(env(safe-area-inset-right, 0px) + 16px);
+    z-index: 100000;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     pointer-events: none;
+    width: 380px;
+    max-width: calc(100vw - 32px);
 }
 
-/* Toast notification */
-.toast {
-    background: white;
-    padding: 16px 20px;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    min-width: 300px;
-    max-width: 400px;
+/* ─── Toast base ────────────────────────────────────────────── */
+.altorra-notify {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 14px 14px 16px;
+    background: var(--notify-bg);
+    color: var(--notify-text);
+    border: 1px solid var(--notify-border);
+    border-radius: 14px;
+    box-shadow: var(--notify-shadow);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    pointer-events: auto;
+    overflow: hidden;
+    will-change: transform, opacity;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.25s ease;
+    font-family: inherit;
+}
+
+/* Animated gradient accent bar on the left */
+.altorra-notify::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--notify-info), var(--notify-info-glow));
+    background-size: 100% 200%;
+    animation: notify-shimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes notify-shimmer {
+    0%, 100% { background-position: 0% 0%; }
+    50% { background-position: 0% 100%; }
+}
+
+/* ─── Type variants ─────────────────────────────────────────── */
+.altorra-notify--success::before {
+    background: linear-gradient(180deg, var(--notify-success), var(--notify-success-glow));
+}
+.altorra-notify--error::before {
+    background: linear-gradient(180deg, var(--notify-error), var(--notify-error-glow));
+}
+.altorra-notify--info::before {
+    background: linear-gradient(180deg, var(--notify-info), var(--notify-info-glow));
+}
+.altorra-notify--warning::before {
+    background: linear-gradient(180deg, var(--notify-warning), var(--notify-warning-glow));
+}
+
+/* ─── Icon ──────────────────────────────────────────────────── */
+.altorra-notify__icon {
     display: flex;
     align-items: center;
-    gap: 12px;
-    opacity: 0;
-    transform: translateX(400px);
-    animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    pointer-events: auto;
-    border-left: 4px solid #b89658;
-}
-
-/* Toast success */
-.toast.success {
-    border-left-color: #38a28e;
-}
-
-.toast.success .toast-icon {
-    background: rgba(56, 162, 142, 0.1);
-    color: #38a28e;
-}
-
-/* Toast error */
-.toast.error {
-    border-left-color: #916652;
-}
-
-.toast.error .toast-icon {
-    background: rgba(145, 102, 82, 0.1);
-    color: #916652;
-}
-
-/* Toast info */
-.toast.info {
-    border-left-color: #b89658;
-}
-
-.toast.info .toast-icon {
-    background: rgba(184, 150, 88, 0.1);
-    color: #b89658;
-}
-
-/* Toast icon */
-.toast-icon {
-    flex-shrink: 0;
+    justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-}
-
-/* Toast content */
-.toast-content {
-    flex: 1;
-}
-
-.toast-title {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: #1d1b19;
-    margin: 0 0 4px 0;
-}
-
-.toast-message {
-    font-size: 0.85rem;
-    color: #666;
-    margin: 0;
-}
-
-/* Toast close button */
-.toast-close {
+    border-radius: 10px;
     flex-shrink: 0;
-    background: none;
-    border: none;
-    color: #999;
-    font-size: 1.25rem;
+}
+.altorra-notify__icon i,
+.altorra-notify__icon svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2.2;
+}
+.altorra-notify--success .altorra-notify__icon {
+    background: var(--notify-success-glow);
+    color: var(--notify-success);
+}
+.altorra-notify--error .altorra-notify__icon {
+    background: var(--notify-error-glow);
+    color: var(--notify-error);
+}
+.altorra-notify--info .altorra-notify__icon {
+    background: var(--notify-info-glow);
+    color: var(--notify-info);
+}
+.altorra-notify--warning .altorra-notify__icon {
+    background: var(--notify-warning-glow);
+    color: var(--notify-warning);
+}
+
+/* ─── Body ──────────────────────────────────────────────────── */
+.altorra-notify__body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 2px;
+}
+.altorra-notify__title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--notify-text);
+    letter-spacing: -0.01em;
+}
+.altorra-notify__message {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--notify-text-muted);
+    word-wrap: break-word;
+}
+.altorra-notify__action {
+    margin-top: 8px;
+    align-self: flex-start;
+    background: transparent;
+    border: 1px solid var(--notify-border);
+    color: var(--notify-text);
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
     cursor: pointer;
-    width: 24px;
-    height: 24px;
+    transition: all 0.18s ease;
+}
+.altorra-notify--success .altorra-notify__action:hover {
+    border-color: var(--notify-success);
+    color: var(--notify-success);
+    background: var(--notify-success-glow);
+}
+.altorra-notify--error .altorra-notify__action:hover {
+    border-color: var(--notify-error);
+    color: var(--notify-error);
+    background: var(--notify-error-glow);
+}
+.altorra-notify--info .altorra-notify__action:hover,
+.altorra-notify--warning .altorra-notify__action:hover {
+    border-color: var(--notify-info);
+    color: var(--notify-info);
+    background: var(--notify-info-glow);
+}
+
+/* ─── Close button ──────────────────────────────────────────── */
+.altorra-notify__close {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s ease;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    color: var(--notify-text-muted);
+    cursor: pointer;
+    border-radius: 8px;
+    flex-shrink: 0;
+    margin: -2px -2px 0 0;
+    transition: background 0.18s ease, color 0.18s ease;
+}
+.altorra-notify__close:hover {
+    background: var(--notify-border);
+    color: var(--notify-text);
+}
+.altorra-notify__close i,
+.altorra-notify__close svg {
+    width: 16px;
+    height: 16px;
 }
 
-.toast-close:hover {
-    background: rgba(0, 0, 0, 0.05);
-    color: #666;
-}
-
-/* Animación de entrada */
-@keyframes slideIn {
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-/* Animación de salida */
-@keyframes slideOut {
-    to {
-        opacity: 0;
-        transform: translateX(400px);
-    }
-}
-
-.toast.closing {
-    animation: slideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-/* Responsive móvil */
-@media (max-width: 640px) {
-    .toast-container {
-        top: 80px;
-        right: 12px;
-        left: 12px;
-    }
-
-    .toast {
-        min-width: unset;
-        max-width: unset;
-        width: 100%;
-    }
-}
-
-/* Animación de progreso */
-.toast-progress {
+/* ─── Progress bar ──────────────────────────────────────────── */
+.altorra-notify__progress {
     position: absolute;
     bottom: 0;
-    left: 0;
+    left: 4px;
     right: 0;
-    height: 3px;
-    background: rgba(184, 150, 88, 0.2);
-    border-radius: 0 0 12px 12px;
+    height: 2px;
+    background: transparent;
     overflow: hidden;
 }
-
-.toast-progress-bar {
+.altorra-notify__progress-bar {
     height: 100%;
-    background: #b89658;
     width: 100%;
-    transform-origin: left;
-    animation: progress 4s linear forwards;
+    transform-origin: left center;
+    animation: notify-progress linear forwards;
+}
+.altorra-notify--success .altorra-notify__progress-bar { background: var(--notify-success); }
+.altorra-notify--error .altorra-notify__progress-bar   { background: var(--notify-error); }
+.altorra-notify--info .altorra-notify__progress-bar    { background: var(--notify-info); }
+.altorra-notify--warning .altorra-notify__progress-bar { background: var(--notify-warning); }
+
+@keyframes notify-progress {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
 }
 
-.toast.success .toast-progress-bar {
-    background: #38a28e;
+.altorra-notify--paused .altorra-notify__progress-bar {
+    animation-play-state: paused;
 }
 
-.toast.error .toast-progress-bar {
-    background: #916652;
+/* ─── Animations ────────────────────────────────────────────── */
+.altorra-notify--enter {
+    opacity: 0;
+    transform: translateX(20px) scale(0.9);
+    filter: blur(4px);
+}
+.altorra-notify--visible {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+}
+.altorra-notify--leave {
+    opacity: 0;
+    transform: translateX(40px) scale(0.95);
+    transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
-@keyframes progress {
-    from {
-        transform: scaleX(1);
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .altorra-notify {
+        transition: opacity 0.2s ease;
     }
-    to {
-        transform: scaleX(0);
+    .altorra-notify::before { animation: none; }
+    .altorra-notify--enter { transform: none; filter: none; }
+    .altorra-notify--leave { transform: none; }
+    .altorra-notify__progress-bar { animation: none; transform: scaleX(0); }
+}
+
+/* ─── Mobile ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .altorra-notify-container {
+        top: calc(env(safe-area-inset-top, 0px) + 70px);
+        left: calc(env(safe-area-inset-left, 0px) + 8px);
+        right: calc(env(safe-area-inset-right, 0px) + 8px);
+        width: auto;
+        gap: 8px;
     }
+    .altorra-notify {
+        grid-template-columns: 36px 1fr auto;
+        padding: 12px 12px 12px 14px;
+        border-radius: 12px;
+    }
+    .altorra-notify__icon {
+        width: 36px;
+        height: 36px;
+    }
+    .altorra-notify__icon i,
+    .altorra-notify__icon svg {
+        width: 20px;
+        height: 20px;
+    }
+    .altorra-notify__title { font-size: 0.88rem; }
+    .altorra-notify__message { font-size: 0.82rem; }
 }

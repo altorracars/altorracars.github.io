@@ -1186,6 +1186,7 @@ cierre de dropdowns/menu al hacer smooth scroll.
 | **Fase D2: Preview de vehiculo antes de publicar** | admin.html, admin-vehicles.js | Boton "Vista Previa" en modal de edicion/creacion de vehiculos. Muestra preview estilo sitio publico con: galeria de imagenes (principal + thumbnails), badges (tipo/oferta/estado), titulo, precio (con tachado si oferta), quick specs (4 columnas), ficha tecnica agrupada, caracteristicas como tags, descripcion. Funciona con datos del formulario sin necesidad de guardar primero. Se abre sobre el modal de edicion (z-index 1001) |
 | **Fase D3: Paginacion mejorada para tablas grandes** | admin-table-utils.js, css/admin.css | Selector de filas por pagina (15/30/50/100) en todas las tablas paginadas. Saltar a pagina especifica (input numerico, visible con 5+ paginas). Ambos mantienen contexto (al cambiar tamaño, ajusta pagina para mostrar los mismos items). CSS responsive: oculta saltar-a-pagina en mobile. Reemplaza virtual scrolling que era innecesario con paginacion existente |
 | **Fase D4: Rollback en historial de cambios** | admin-vehicles.js, css/admin.css | Boton "Revertir" en cada entrada de edicion del historial de vehiculos (solo super_admin). Al revertir, restaura los valores anteriores (`from`) de cada campo modificado, incrementa `_version`, registra la accion como `reverted` en auditLog. Confirmacion antes de ejecutar. Dot naranja en timeline para entradas revertidas |
+| **Fix: alertas de precio no llegaban** | functions/index.js, busqueda.html | (1) Email URL ahora apunta al vehiculo especifico via slug `marca-modelo-year-id.html` en vez de `busqueda.html` generica. (2) Logging detallado en Firebase Functions: clientes revisados, con alertas activas, emails enviados, rate limits aplicados. Si secrets EMAIL_USER/EMAIL_PASS no estan configurados, log explicito en consola. (3) Al guardar busqueda en `busqueda.html`, `alertas:true` por defecto (antes era `false` y el usuario tenia que activarlas manualmente). (4) Toast actualizado: "Busqueda guardada con alertas de precio activadas". REQUIERE redeploy: `firebase deploy --only functions` |
 
 ---
 
@@ -1543,7 +1544,145 @@ Si se pierde la unica cuenta super_admin (ej: eliminada por accidente desde Fire
 
 ---
 
-## 13. SEO
+## 13. Sistema de Notificaciones (Plan N1-N7)
+
+> Plan microquirurjico para reemplazar los 2 sistemas de toast actuales (publico + admin) con un sistema unificado de vanguardia.
+
+### Estado actual (antes de N1)
+
+**2 sistemas separados sin compartir codigo:**
+
+| Sistema | Archivo | API | Llamadas |
+|---------|---------|-----|----------|
+| Publico | `js/toast.js` (135 lineas, clase singleton) | `toast.success()`, `toast.error()`, `toast.info()`, `toast.show(msg, type, title, duration)` | ~30 callsites |
+| Admin | `js/admin-state.js:89-94` (5 lineas, funcion) | `AP.toast(msg, type)` — sin titulo ni iconos | 202+ callsites |
+
+**Problemas conocidos:**
+- Cada toast nuevo destruye el anterior (no hay cola — se pierden mensajes criticos)
+- Admin: solo texto plano, sin iconos, sin titulos, posicion fija bottom-right que choca con UI
+- Publico: posicion top-right `100px / 20px`, animacion slide-in 300ms
+- Sin sonidos, sin notificaciones nativas del navegador, sin centro de notificaciones
+- `clientes/{uid}.preferencias.notificaciones` no existe (Fase B9 las definio en perfil pero no se aplican aun)
+
+**Tipos en uso:** success, error, info, warning (warning solo en admin)
+
+### Plan por microfases
+
+#### N1 — API Unificada y Diseno de Vanguardia (BASE)
+
+**Archivos nuevos:** `js/notifications.js` + `css/notifications.css`
+
+**Diseno visual:**
+- Glassmorphism con backdrop-filter blur + borde gradiente dorado animado
+- Iconos Lucide (consistente con admin)
+- Cola apilada hasta 4 visibles, push down con spring animation
+- Barra de progreso pausable en hover
+- Boton de accion opcional ("Ver", "Deshacer", "Reintentar")
+- Animacion estilo iOS (escala + slide + blur-in)
+- Dark/light theme via CSS variables
+- Mobile: full-width con `safe-area-inset` (notch)
+
+**API:**
+```js
+notify.success({ title, message, duration, action: { label, callback }, sound: true, priority: 'normal' })
+notify.error(...) / notify.info(...) / notify.warning(...)
+notify.dismiss(id)  // cerrar especifica
+notify.clear()      // cerrar todas
+```
+
+**Compatibilidad:** `toast.js` y `AP.toast()` quedan como shims de 5 lineas que delegan al nuevo modulo. **Cero migracion manual** de los 232+ callsites.
+
+**Prioridades:**
+- `critical` — no auto-cierra, requiere click
+- `high` — 8s
+- `normal` — 4s (default)
+- `low` — 2s
+
+#### N2 — Sonidos sutiles via Web Audio API
+
+**Sin archivos externos** (peso 0 KB, generados en runtime):
+- success: acorde mayor 880Hz → 1108Hz (300ms)
+- error: descenso 440Hz → 220Hz (400ms)
+- info: tono unico 660Hz (200ms)
+- warning: doble pulso 587Hz (500ms)
+
+Volumen 30% por defecto. Throttling: si llegan 3+ notificaciones en 500ms, solo suena 1.
+
+**Toggle:** localStorage `altorra_notif_sound` (default `true`).
+
+**Respeto:** `prefers-reduced-motion` desactiva sonidos automaticamente.
+
+#### N3 — Centro de Notificaciones
+
+**Icono campana en header** (publico y admin) con badge de no leidas.
+
+**Click → panel deslizable:**
+- Lista de las ultimas 20 notificaciones
+- Cada item: icono + titulo + mensaje + tiempo relativo + boton de accion
+- "Marcar todas como leidas", "Limpiar todas"
+- Storage: `localStorage` (todas) + sync con Firestore (registrados)
+
+**Para clientes:**
+- Alertas de precio
+- Cambios de estado en solicitudes/citas
+- Confirmaciones de busquedas guardadas
+
+**Para admins:**
+- Nuevas solicitudes pendientes
+- Errores de sincronizacion
+- Ventas registradas
+- Sesiones activas de otros usuarios
+
+#### N4 — Preferencias de usuario en perfil.html
+
+Nueva subseccion "Notificaciones" dentro de "Preferencias" (Fase B9):
+
+| Toggle | Default | Storage |
+|--------|---------|---------|
+| Sonidos | ON | `localStorage` + `clientes/{uid}.preferencias.notificaciones.sonidos` |
+| Notificaciones del navegador | OFF (requiere permiso) | Firestore + `Notification.permission` |
+| Centro de notificaciones | ON | localStorage |
+| Alertas de precio por email | ON | Firestore |
+| Confirmaciones por WhatsApp | ON | Firestore |
+
+#### N5 — Notificaciones nativas del navegador (Push opcional)
+
+**Usar `Notification.requestPermission()`** + Service Worker existente.
+
+- Boton "Activar notificaciones del navegador" en preferencias con explicacion clara
+- Solo para criticas: bajadas de precio, citas confirmadas/canceladas
+- Anti-spam: maximo 1 por hora del mismo tipo
+- Funciona aunque la pestana este en background
+
+#### N6 — Auditoria y mejora de los 232+ mensajes
+
+- Anadir titulos descriptivos (admin sobretodo: "Vehiculo eliminado" → titulo "Eliminacion exitosa")
+- Reemplazar genericos: "Error" → "No se pudo guardar el vehiculo"
+- Agregar acciones: "Ver historial", "Deshacer", "Reintentar"
+- Clasificar prioridades por tipo de operacion
+- Agrupacion inteligente: 5 imagenes subidas → 1 notificacion "5 fotos subidas"
+
+#### N7 — Telemetria y testing
+
+- Modo debug: `window.notify.debug = true` activa logs detallados
+- Demo page interna `notifications-demo.html` (no en sitemap, solo para QA)
+- Lista documentada de 30 escenarios para validar antes de cada deploy
+
+### Orden de ejecucion recomendado
+
+| # | Fase | Riesgo | Visible al usuario |
+|---|------|--------|-------------------|
+| 1 | N1 | Bajo (shims hacia atras) | ⭐⭐⭐⭐⭐ Cambio visual masivo |
+| 2 | N2 | Muy bajo | ⭐⭐⭐ Sonidos al notificar |
+| 3 | N4 | Bajo | ⭐⭐⭐⭐ UI de preferencias |
+| 4 | N3 | Medio | ⭐⭐⭐⭐⭐ Centro de notificaciones |
+| 5 | N6 | Bajo (no funcional) | ⭐⭐ Mejor calidad de mensajes |
+| 6 | N5 | Medio (permisos) | ⭐⭐⭐⭐ Push nativo |
+| 7 | N7 | Cero | ⭐ Solo dev |
+
+---
+
+## 14. SEO
 
 Ver `SITEMAP-FIX.md` para estado detallado del sitemap y Google Search Console.
 

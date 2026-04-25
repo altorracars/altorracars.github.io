@@ -295,3 +295,113 @@
         }, 50);
     }
 })();
+
+/**
+ * ALTORRA NOTIFICATIONS — Sound module (Phase N2)
+ *
+ * Generates short, subtle audio cues using the Web Audio API.
+ * Zero external files — every sound is synthesized at runtime.
+ *
+ * Throttling: max 1 sound per 500ms window (prevents overlap on bursts).
+ * Disabled when user has prefers-reduced-motion or sound preference is off.
+ */
+(function() {
+    'use strict';
+
+    var _audioCtx = null;
+    var _lastPlayed = 0;
+    var THROTTLE_MS = 500;
+    var VOLUME = 0.18;
+
+    function prefersReducedMotion() {
+        try {
+            return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        } catch (e) { return false; }
+    }
+
+    function getCtx() {
+        if (_audioCtx) return _audioCtx;
+        var Ctor = window.AudioContext || window.webkitAudioContext;
+        if (!Ctor) return null;
+        try {
+            _audioCtx = new Ctor();
+            return _audioCtx;
+        } catch (e) { return null; }
+    }
+
+    /**
+     * Play a tone with configurable parameters.
+     * @param {number} freqStart - Starting frequency in Hz
+     * @param {number} freqEnd - Ending frequency in Hz (for glide)
+     * @param {number} duration - Duration in ms
+     * @param {string} oscType - Oscillator type: 'sine', 'triangle', 'square'
+     * @param {number} startOffset - Delay before playing in ms
+     */
+    function playTone(freqStart, freqEnd, duration, oscType, startOffset) {
+        var ctx = getCtx();
+        if (!ctx) return;
+
+        // Resume context if suspended (browser autoplay policy)
+        if (ctx.state === 'suspended') {
+            try { ctx.resume(); } catch (e) {}
+        }
+
+        var now = ctx.currentTime + (startOffset || 0) / 1000;
+        var dur = duration / 1000;
+
+        var osc = ctx.createOscillator();
+        osc.type = oscType || 'sine';
+        osc.frequency.setValueAtTime(freqStart, now);
+        if (freqEnd && freqEnd !== freqStart) {
+            osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), now + dur);
+        }
+
+        var gain = ctx.createGain();
+        // Envelope: quick attack, smooth release for clean sound
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(VOLUME, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + dur + 0.05);
+    }
+
+    var SOUNDS = {
+        success: function() {
+            // Bright two-tone ascending chime: C6 → E6
+            playTone(1046.5, 1046.5, 90, 'sine', 0);
+            playTone(1318.5, 1318.5, 130, 'sine', 80);
+        },
+        error: function() {
+            // Descending error tone: A4 → A3 with triangle for warmth
+            playTone(440, 220, 350, 'triangle', 0);
+        },
+        info: function() {
+            // Single soft ping: E6
+            playTone(1318.5, 1318.5, 150, 'sine', 0);
+        },
+        warning: function() {
+            // Double pulse at D5: ⚠️
+            playTone(587.33, 587.33, 100, 'triangle', 0);
+            playTone(587.33, 587.33, 100, 'triangle', 160);
+        }
+    };
+
+    /**
+     * Public API: play a notification sound by type.
+     * Respects user preference (localStorage 'altorra_notif_sound') and
+     * prefers-reduced-motion. Throttled to 1 sound per 500ms.
+     */
+    window.AltorraNotifySound = function(type) {
+        if (prefersReducedMotion()) return;
+        var now = Date.now();
+        if (now - _lastPlayed < THROTTLE_MS) return;
+        _lastPlayed = now;
+
+        var fn = SOUNDS[type] || SOUNDS.info;
+        try { fn(); } catch (e) {}
+    };
+})();

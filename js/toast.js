@@ -115,7 +115,8 @@
         var container = ensureContainer();
 
         var toast = document.createElement('div');
-        toast.className = 'altorra-notify altorra-notify--' + type + ' altorra-notify--enter';
+        var variantCls = cfg.variant ? ' altorra-notify--' + String(cfg.variant).replace(/[^a-z0-9_-]/gi, '') : '';
+        toast.className = 'altorra-notify altorra-notify--' + type + variantCls + ' altorra-notify--enter';
         toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
         toast.dataset.id = id;
         toast.dataset.type = type;

@@ -119,6 +119,7 @@
         toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
         toast.dataset.id = id;
         toast.dataset.type = type;
+        if (priority === 'critical') toast.dataset.priority = 'critical';
 
         var title = cfg.title != null ? cfg.title : DEFAULT_TITLES[type];
         var iconName = cfg.icon || ICONS[type] || ICONS.info;
@@ -129,10 +130,6 @@
                 + escapeHtml(cfg.action.label) + '</button>';
         }
 
-        var progressHtml = duration > 0
-            ? '<div class="altorra-notify__progress"><div class="altorra-notify__progress-bar" style="animation-duration:' + duration + 'ms"></div></div>'
-            : '';
-
         toast.innerHTML =
             '<div class="altorra-notify__icon"><i data-lucide="' + iconName + '"></i></div>'
             + '<div class="altorra-notify__body">'
@@ -140,8 +137,7 @@
                 + (cfg.message ? '<div class="altorra-notify__message">' + escapeHtml(cfg.message) + '</div>' : '')
                 + actionHtml
             + '</div>'
-            + '<button type="button" class="altorra-notify__close" aria-label="Cerrar"><i data-lucide="x"></i></button>'
-            + progressHtml;
+            + '<button type="button" class="altorra-notify__close" aria-label="Cerrar"><i data-lucide="x"></i></button>';
 
         // Insert at top so newest is on top
         if (container.firstChild) container.insertBefore(toast, container.firstChild);
@@ -167,14 +163,13 @@
             record.timer = setTimeout(function() { dismiss(id); }, duration);
         }
 
-        // Pause on hover
+        // Pause on hover (no visual indicator — compact design)
         toast.addEventListener('mouseenter', function() {
             if (record.timer) {
                 clearTimeout(record.timer);
                 record.timer = null;
                 record.remaining = record.remaining - (Date.now() - record.startedAt);
                 record.paused = true;
-                toast.classList.add('altorra-notify--paused');
             }
         });
         toast.addEventListener('mouseleave', function() {
@@ -182,7 +177,6 @@
                 record.startedAt = Date.now();
                 record.timer = setTimeout(function() { dismiss(id); }, record.remaining);
                 record.paused = false;
-                toast.classList.remove('altorra-notify--paused');
             }
         });
 
@@ -199,9 +193,9 @@
             });
         }
 
-        // Sound (N2 — placeholder hook for now, wired in N2)
+        // Sound
         if (cfg.sound !== false && getSoundEnabled() && typeof window.AltorraNotifySound === 'function') {
-            try { window.AltorraNotifySound(type); } catch (e) {}
+            try { window.AltorraNotifySound(cfg.soundType || type); } catch (e) {}
         }
 
         // Render Lucide icons
@@ -384,9 +378,14 @@
             playTone(1318.5, 1318.5, 150, 'sine', 0);
         },
         warning: function() {
-            // Double pulse at D5: ⚠️
+            // Double pulse at D5
             playTone(587.33, 587.33, 100, 'triangle', 0);
             playTone(587.33, 587.33, 100, 'triangle', 160);
+        },
+        attention: function() {
+            // Gentle ascending tap: B4 → E5 (softer login prompt)
+            playTone(493.88, 493.88, 60, 'sine', 0);
+            playTone(659.26, 659.26, 80, 'sine', 100);
         }
     };
 

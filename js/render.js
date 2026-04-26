@@ -258,6 +258,9 @@ function attachFavoriteListeners() {
             }
 
             const wasAdded = window.favoritesManager.toggle(vehicleId);
+
+            if (wasAdded === null) return;
+
             window.favoritesManager.updateButtonState(newButton, vehicleId);
 
             if (wasAdded) {

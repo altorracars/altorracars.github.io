@@ -119,7 +119,7 @@ class FavoritesManager {
     }
 
     add(vehicleId) {
-        if (!this._uid) { this._promptLogin(); return false; }
+        if (!this._uid) { this._promptLogin(); return null; }
         var id = String(vehicleId);
         if (this._favorites.indexOf(id) !== -1) return false;
         this._favorites.push(id);
@@ -139,21 +139,42 @@ class FavoritesManager {
     }
 
     toggle(vehicleId) {
-        if (!this._uid) { this._promptLogin(); return false; }
+        if (!this._uid) { this._promptLogin(); return null; }
         var id = String(vehicleId);
         if (this.has(id)) { this.remove(id); return false; }
         this.add(id);
         return true;
     }
 
-    // Prompt user to log in when trying to use favorites without auth
     _promptLogin() {
-        if (window.AltorraAuth) {
-            window.AltorraAuth.open('login');
+        if (window.notify) {
+            window.notify.info({
+                title: 'Inicia sesión',
+                message: 'Para guardar tus favoritos necesitas una cuenta.',
+                soundType: 'attention',
+                duration: 5000,
+                action: {
+                    label: 'Iniciar sesión',
+                    onClick: function() {
+                        if (window.AltorraAuth) window.AltorraAuth.open('login');
+                    }
+                }
+            });
         }
-        if (typeof toast !== 'undefined' && toast && toast.info) {
-            toast.info('Inicia sesión para guardar tus favoritos.');
-        }
+        this._pulseLoginButton();
+    }
+
+    _pulseLoginButton() {
+        var btn = document.getElementById('btnLogin') || document.getElementById('btnRegister');
+        var mobBtn = document.getElementById('mobBtnLogin') || document.getElementById('mobBtnRegister');
+        [btn, mobBtn].forEach(function(el) {
+            if (!el) return;
+            var cls = el.id.indexOf('mob') === 0 ? 'mob-btn--pulse' : 'hdr-btn--pulse';
+            el.classList.remove(cls);
+            void el.offsetWidth;
+            el.classList.add(cls);
+            setTimeout(function() { el.classList.remove(cls); }, 2500);
+        });
     }
 
     clear() {

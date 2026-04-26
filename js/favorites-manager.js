@@ -147,12 +147,17 @@ class FavoritesManager {
     }
 
     _promptLogin() {
+        // 1. Force header to be visible (it may be hidden by scroll)
+        this._forceShowHeader();
+
+        // 2. Show vibrant attention notification
         if (window.notify) {
             window.notify.info({
-                title: 'Inicia sesión',
+                variant: 'attention',
+                title: '¡Inicia sesión!',
                 message: 'Para guardar tus favoritos necesitas una cuenta.',
                 soundType: 'attention',
-                duration: 5000,
+                duration: 6000,
                 action: {
                     label: 'Iniciar sesión',
                     onClick: function() {
@@ -161,22 +166,31 @@ class FavoritesManager {
                 }
             });
         }
-        this._pulseLoginButton();
+
+        // 3. Wait for header to settle, then show spotlight
+        var self = this;
+        setTimeout(function() { self._showSpotlight(); }, 280);
     }
 
-    _pulseLoginButton() {
+    _forceShowHeader() {
+        var header = document.getElementById('header');
+        if (header) header.classList.remove('header--hidden');
+        // Also scroll up slightly if user is deep in page (helps mobile)
+        if (window.innerWidth <= 768 && window.scrollY > 100) {
+            window.scrollTo({ top: Math.max(0, window.scrollY - 80), behavior: 'smooth' });
+        }
+    }
+
+    _showSpotlight() {
         var btn = document.getElementById('btnLogin');
         if (!btn || !btn.offsetParent) return;
 
-        // Overlay dims the page
         var overlay = document.createElement('div');
         overlay.className = 'altorra-spotlight';
         document.body.appendChild(overlay);
 
-        // Highlight the login button
         btn.classList.add('hdr-btn--spotlight');
 
-        // Tooltip arrow below button
         var tooltip = document.createElement('div');
         tooltip.className = 'altorra-login-tooltip';
         tooltip.textContent = 'Inicia sesión aquí';
@@ -197,7 +211,7 @@ class FavoritesManager {
         }
 
         overlay.addEventListener('click', cleanup);
-        setTimeout(cleanup, 3500);
+        setTimeout(cleanup, 4000);
     }
 
     clear() {

@@ -165,16 +165,39 @@ class FavoritesManager {
     }
 
     _pulseLoginButton() {
-        var btn = document.getElementById('btnLogin') || document.getElementById('btnRegister');
-        var mobBtn = document.getElementById('mobBtnLogin') || document.getElementById('mobBtnRegister');
-        [btn, mobBtn].forEach(function(el) {
-            if (!el) return;
-            var cls = el.id.indexOf('mob') === 0 ? 'mob-btn--pulse' : 'hdr-btn--pulse';
-            el.classList.remove(cls);
-            void el.offsetWidth;
-            el.classList.add(cls);
-            setTimeout(function() { el.classList.remove(cls); }, 2500);
-        });
+        var btn = document.getElementById('btnLogin');
+        if (!btn || !btn.offsetParent) return;
+
+        // Overlay dims the page
+        var overlay = document.createElement('div');
+        overlay.className = 'altorra-spotlight';
+        document.body.appendChild(overlay);
+
+        // Highlight the login button
+        btn.classList.add('hdr-btn--spotlight');
+
+        // Tooltip arrow below button
+        var tooltip = document.createElement('div');
+        tooltip.className = 'altorra-login-tooltip';
+        tooltip.textContent = 'Inicia sesión aquí';
+        document.body.appendChild(tooltip);
+        var rect = btn.getBoundingClientRect();
+        tooltip.style.top = (rect.bottom + 10) + 'px';
+        tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+
+        function cleanup() {
+            overlay.classList.add('altorra-spotlight--fade');
+            btn.classList.remove('hdr-btn--spotlight');
+            tooltip.style.opacity = '0';
+            tooltip.style.transition = 'opacity 0.3s';
+            setTimeout(function() {
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                if (tooltip.parentNode) tooltip.parentNode.removeChild(tooltip);
+            }, 400);
+        }
+
+        overlay.addEventListener('click', cleanup);
+        setTimeout(cleanup, 3500);
     }
 
     clear() {

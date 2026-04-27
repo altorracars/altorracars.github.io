@@ -1040,18 +1040,21 @@
                 var priceStr = new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', minimumFractionDigits:0 }).format(price);
                 var url = typeof getVehicleDetailUrl === 'function' ? getVehicleDetailUrl(v) : '#';
                 var hasOffer = v.precioOferta && v.precioOferta < v.precio;
+                var specStr = v.year + ' · ' + (v.kilometraje ? new Intl.NumberFormat('es-CO').format(v.kilometraje) + ' km' : v.tipo);
                 return '' +
                     '<a href="' + url + '" class="rv-card">' +
                         '<div class="rv-card-img">' +
                             '<img src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" ' +
                                  'alt="' + v.marca + ' ' + v.modelo + '" loading="lazy" ' +
                                  'onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">' +
-                            (hasOffer ? '<span class="rv-badge-offer">Oferta</span>' : '') +
                         '</div>' +
+                        (hasOffer ? '<span class="rv-badge-offer">Oferta</span>' : '') +
                         '<div class="rv-card-body">' +
                             '<p class="rv-card-name">' + v.marca + ' ' + v.modelo + '</p>' +
-                            '<span class="rv-card-year">' + v.year + ' &middot; ' + (v.kilometraje ? new Intl.NumberFormat('es-CO').format(v.kilometraje) + ' km' : v.tipo) + '</span>' +
-                            '<span class="rv-card-price">' + priceStr + '</span>' +
+                            '<div class="rv-card-meta">' +
+                                '<span class="rv-card-year">' + specStr + '</span>' +
+                                '<span class="rv-card-price">' + priceStr + '</span>' +
+                            '</div>' +
                         '</div>' +
                     '</a>';
             }).join('');

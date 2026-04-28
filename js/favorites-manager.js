@@ -154,7 +154,6 @@ class FavoritesManager {
         var existing = document.querySelector('.altorra-notify--attention');
         if (existing) {
             existing.classList.remove('altorra-notify--buzz');
-            // Force reflow so re-adding the class restarts the animation
             void existing.offsetWidth;
             existing.classList.add('altorra-notify--buzz');
             if (window.notify && window.notify.resetTimer) window.notify.resetTimer(existing, 6000);
@@ -163,6 +162,8 @@ class FavoritesManager {
             setTimeout(function() { self2._showSpotlight(); }, 100);
             return;
         }
+
+        var self = this;
 
         // 3. Show vibrant attention notification
         if (window.notify) {
@@ -175,6 +176,7 @@ class FavoritesManager {
                 action: {
                     label: 'Iniciar sesión',
                     onClick: function() {
+                        self._cleanupPromptLogin();
                         if (window.AltorraAuth) window.AltorraAuth.open('login');
                     }
                 }
@@ -182,8 +184,24 @@ class FavoritesManager {
         }
 
         // 4. Wait for header to settle, then show spotlight
-        var self = this;
         setTimeout(function() { self._showSpotlight(); }, 280);
+    }
+
+    _cleanupPromptLogin() {
+        // Dismiss all attention toasts
+        var toasts = document.querySelectorAll('.altorra-notify--attention');
+        for (var i = 0; i < toasts.length; i++) {
+            var id = Number(toasts[i].dataset.id);
+            if (id && window.notify) window.notify.dismiss(id);
+        }
+        // Remove spotlight overlay + tooltip
+        var overlay = document.querySelector('.altorra-spotlight');
+        if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        var tooltip = document.querySelector('.altorra-login-tooltip');
+        if (tooltip && tooltip.parentNode) tooltip.parentNode.removeChild(tooltip);
+        // Remove glow from login button
+        var btn = document.getElementById('btnLogin');
+        if (btn) btn.classList.remove('hdr-btn--spotlight');
     }
 
     _forceShowHeader() {
@@ -199,9 +217,9 @@ class FavoritesManager {
         var btn = document.getElementById('btnLogin');
         if (!btn || !btn.offsetParent) return;
 
-        // Skip if a spotlight is already showing (avoid stacking on rapid clicks)
         if (document.querySelector('.altorra-spotlight')) return;
 
+        var self = this;
         var overlay = document.createElement('div');
         overlay.className = 'altorra-spotlight';
         document.body.appendChild(overlay);
@@ -216,19 +234,22 @@ class FavoritesManager {
         tooltip.style.top = (rect.bottom + 10) + 'px';
         tooltip.style.left = (rect.left + rect.width / 2) + 'px';
 
-        function cleanup() {
-            overlay.classList.add('altorra-spotlight--fade');
-            btn.classList.remove('hdr-btn--spotlight');
-            tooltip.style.opacity = '0';
-            tooltip.style.transition = 'opacity 0.3s';
-            setTimeout(function() {
-                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-                if (tooltip.parentNode) tooltip.parentNode.removeChild(tooltip);
-            }, 400);
-        }
+        var cleanupTimer = setTimeout(function() { self._cleanupPromptLogin(); }, 4000);
 
-        overlay.addEventListener('click', cleanup);
-        setTimeout(cleanup, 4000);
+        // Click on dark overlay → clean everything + open login
+        overlay.addEventListener('click', function() {
+            clearTimeout(cleanupTimer);
+            self._cleanupPromptLogin();
+            if (window.AltorraAuth) window.AltorraAuth.open('login');
+        });
+
+        // Click on the actual INGRESAR button → clean everything (button's own handler opens login)
+        function onBtnClick() {
+            clearTimeout(cleanupTimer);
+            self._cleanupPromptLogin();
+            btn.removeEventListener('click', onBtnClick);
+        }
+        btn.addEventListener('click', onBtnClick);
     }
 
     clear() {

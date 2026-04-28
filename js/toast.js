@@ -517,28 +517,70 @@
     function notifyListeners() { _listeners.forEach(function(fn) { try { fn(_entries); } catch (e) {} }); }
 
     // ─── Auto-capture from notify.* calls ───────────────────────
-    // Wrap each notify method to also log to history (skip transient/info that aren't important)
+    // Wrap EVERY notify method (and notify.show) so the bell captures all
+    // notifications generated anywhere on the site. Callers can opt out
+    // per-call with { logHistory: false } (e.g. transient toasts that
+    // shouldn't pollute the history like "Cargando..." spinners).
     function wrapNotify() {
         if (!window.notify || window._notifyCenterWrapped) return;
         window._notifyCenterWrapped = true;
 
-        ['success', 'error', 'warning'].forEach(function(type) {
+        function logEntry(type, arg1) {
+            var cfg = (typeof arg1 === 'object' && arg1) ? arg1 : { message: arg1 };
+            if (cfg && cfg.logHistory === false) return;
+            // Skip empty notifications
+            var title = cfg.title || '';
+            var message = cfg.message || (typeof arg1 === 'string' ? arg1 : '');
+            if (!title && !message) return;
+            add({
+                type: type,
+                title: title,
+                message: message,
+                link: cfg.link || (cfg.action && cfg.action.href) || null
+            });
+        }
+
+        ['success', 'error', 'warning', 'info'].forEach(function(type) {
             var orig = window.notify[type];
             if (typeof orig !== 'function') return;
             window.notify[type] = function(arg1, arg2, arg3) {
                 var result = orig.call(window.notify, arg1, arg2, arg3);
-                // Log to history (skip if explicitly opted out via { logHistory: false })
-                var cfg = (typeof arg1 === 'object' && arg1) ? arg1 : { message: arg1 };
-                if (cfg && cfg.logHistory === false) return result;
-                add({
-                    type: type,
-                    title: cfg.title || '',
-                    message: cfg.message || (typeof arg1 === 'string' ? arg1 : ''),
-                    link: cfg.link || null
-                });
+                logEntry(type, arg1);
                 return result;
             };
         });
+
+        // Also wrap notify.show(type, ...) so programmatic calls are captured
+        var origShow = window.notify.show;
+        if (typeof origShow === 'function') {
+            window.notify.show = function(type, arg1, arg2, arg3) {
+                var result = origShow.call(window.notify, type, arg1, arg2, arg3);
+                logEntry(type || 'info', arg1);
+                return result;
+            };
+        }
+
+        // Wrap legacy window.toast.* shims too (used by older code)
+        if (window.toast && !window.toast._wrapped) {
+            window.toast._wrapped = true;
+            ['success', 'error', 'warning', 'info'].forEach(function(type) {
+                var orig = window.toast[type];
+                if (typeof orig !== 'function') return;
+                window.toast[type] = function(message, title) {
+                    var result = orig.call(window.toast, message, title);
+                    logEntry(type, { message: message, title: title });
+                    return result;
+                };
+            });
+            var origToastShow = window.toast.show;
+            if (typeof origToastShow === 'function') {
+                window.toast.show = function(message, type, title, duration) {
+                    var result = origToastShow.call(window.toast, message, type, title, duration);
+                    logEntry(type || 'info', { message: message, title: title });
+                    return result;
+                };
+            }
+        }
     }
 
     // ─── UI: Bell + Panel ───────────────────────────────────────
@@ -727,11 +769,17 @@
     // ─── Init ──────────────────────────────────────────────────
     load();
 
-    // Wait for notify to be ready, then wrap it
-    var wrapAttempts = 0;
-    var wrapInterval = setInterval(function() {
-        wrapAttempts++;
-        if (window.notify) { wrapNotify(); clearInterval(wrapInterval); }
-        else if (wrapAttempts > 50) clearInterval(wrapInterval);
-    }, 50);
+    // window.notify is defined synchronously in the previous IIFE in this file,
+    // so we can wrap it immediately. Fallback to polling only if not ready
+    // (defensive — shouldn't happen in normal load order).
+    if (window.notify) {
+        wrapNotify();
+    } else {
+        var wrapAttempts = 0;
+        var wrapInterval = setInterval(function() {
+            wrapAttempts++;
+            if (window.notify) { wrapNotify(); clearInterval(wrapInterval); }
+            else if (wrapAttempts > 50) clearInterval(wrapInterval);
+        }, 50);
+    }
 })();

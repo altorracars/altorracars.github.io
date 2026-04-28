@@ -1,7 +1,7 @@
 # CLAUDE.md — Altorra Cars Knowledge Base
 
 > Referencia unica para Claude. Evita reprocesos en parches, errores y mejoras.
-> Ultima actualizacion: 2026-04-17
+> Ultima actualizacion: 2026-04-29
 
 ---
 
@@ -1122,6 +1122,60 @@ dinamicamente en todas las paginas desde `snippets/modals.html`.
 
 **Fix aplicado**: `pointer-events: none` en `.modal-overlay` inactivo +
 cierre de dropdowns/menu al hacer smooth scroll.
+
+### Pagina de favoritos con flicker al cargar + contador desincronizado + toasts apilados (2026-04-29)
+
+**Sintomas**:
+1. Pagina de favoritos cargaba vacia y luego aparecian los autos con delay (1-3s)
+2. Header mostraba "1" favorito pero la pagina mostraba "0"
+3. Click rapido en corazones (logueado) apilaba multiples toasts
+4. La campana de notificaciones no capturaba toasts de tipo `info` (favoritos quitados, etc.)
+
+**Causa raiz**:
+1. Favoritos vivian SOLO en Firestore — la cadena auth → Firestore read → vehicleDB → render tomaba 1-3s
+2. Escritura a Firestore esta debounced 800ms; navegar antes del flush dejaba datos viejos en Firestore al hacer fresh read
+3. `render.js` creaba nuevo toast por cada click sin descartar el anterior
+4. `toast.js` `wrapNotify()` solo wrappeaba `['success', 'error', 'warning']` — excluia `info`
+
+**Fix aplicado** (2026-04-29):
+
+1. **localStorage-first cache + eager hydration** (`js/favorites-manager.js`):
+   - `_cachePrefix = 'altorra_fav_cache_'` + `_lastUidKey = 'altorra_fav_last_uid'`
+   - Constructor lee `last_uid` y `cache_<uid>` de localStorage SINCRONICAMENTE en module load
+   - Si encuentra cache, despacha evento `cached` en DOMContentLoaded — la UI renderiza ANTES de que Firebase Auth resuelva (~50-300ms ahorrados)
+   - `setUser(uid)`: PASO 1 = hidratacion desde localStorage (instantaneo) + dispatch `cached` event. PASO 2 = fetch de Firestore + dispatch `synced` event con flag `changed: bool`
+   - `_debouncedSync()` escribe a localStorage INMEDIATAMENTE (sin debounce) y a Firestore con debounce 800ms
+   - `clearUser({ purgeCache: bool })`: siempre limpia `last_uid`; solo borra `cache_<uid>` en logout explicito (preserva data para re-login instantaneo)
+
+2. **Diff-based rendering** (`favoritos.html`):
+   - `FavPage.tryRender()` solo se ejecuta cuando `_loaded` es true
+   - Primera renderizacion: full render con fade-in
+   - Renderizacion subsiguiente (cuando llega `synced` con `changed: true`): solo agrega/quita cards modificados — no flash, no jarring re-render
+   - Skeleton mejorado: 3 cards shimmer en grid (no spinner solitario)
+   - Safety timeout 5s para evitar skeleton infinito
+
+3. **Cross-tab sync** (`favorites-manager.js`):
+   - `window.addEventListener('storage', ...)` detecta cambios en otras tabs
+   - Si la tab paralela cambia favoritos, esta tab se actualiza automaticamente
+
+4. **Flush en beforeunload**:
+   - Si hay sync pendiente al navegar, se flushea inmediatamente (previene contador desincronizado)
+
+5. **Anti-stacking en toasts de favoritos** (`render.js`, `favoritos.html`):
+   - `window._lastFavToastId` rastrea el ultimo toast de favoritos
+   - Antes de mostrar uno nuevo, se descarta el anterior con `notify.dismiss(id, true)`
+
+6. **Notification Center captura TODO** (`toast.js`):
+   - `wrapNotify()` ahora wrappea `['success', 'error', 'warning', 'info']`
+   - Tambien wrappea `notify.show()` (llamadas programaticas)
+   - Tambien wrappea `window.toast.*` legacy shims
+   - Wrap es SINCRONICO (no setInterval polling): se ejecuta inmediatamente despues del IIFE que define window.notify, en el mismo archivo
+   - Filtra entries vacias (sin titulo ni mensaje)
+   - Soporta opt-out per-call con `{ logHistory: false }`
+
+**Archivos modificados**: `js/favorites-manager.js`, `js/toast.js`, `js/render.js`, `js/auth.js`, `favoritos.html`
+
+**Resultado**: La pagina de favoritos renderiza en <50ms (eager hydration desde localStorage). Firestore sync corre en background y solo re-renderiza si los datos cambiaron. El contador siempre coincide con la pagina porque localStorage es la fuente de verdad inmediata. Toda notificacion del sitio (incluyendo `info`) llega al centro de notificaciones (campana).
 
 ### Triple notificación al dar al corazón sin sesión + click repetido apilaba notificaciones
 

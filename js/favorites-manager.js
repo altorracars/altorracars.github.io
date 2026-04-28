@@ -16,30 +16,116 @@ class FavoritesManager {
         this.DEBUG = false;
         this._uid = null;             // uid actual (anonimo o registrado)
         this._favorites = [];         // cache en memoria (siempre strings)
-        this._loaded = false;         // true tras primera carga desde Firestore
+        this._loaded = false;         // true tras primera carga (cache O Firestore)
+        this._syncedFromFirestore = false; // true tras carga real de Firestore
         this._syncTimeout = null;     // debounce de escritura
         this._observing = false;      // MutationObserver para contadores tardios
+        this._cachePrefix = 'altorra_fav_cache_';
+        this._lastUidKey = 'altorra_fav_last_uid';
+
+        // EAGER HYDRATION: pre-load favorites from localStorage BEFORE Firebase
+        // Auth resolves. This makes the favorites page render instantly on page
+        // load — no 200-500ms skeleton wait while Firebase initializes.
+        // The data may turn out to be stale (different user logged in elsewhere),
+        // but onAuthStateChanged will reconcile within milliseconds.
+        try {
+            var lastUid = localStorage.getItem(this._lastUidKey);
+            if (lastUid) {
+                var cached = this._readLocalCache(lastUid);
+                if (cached) {
+                    this._uid = lastUid;
+                    this._favorites = cached;
+                    this._loaded = true;
+                    // Defer event dispatch until DOM is ready
+                    var self = this;
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', function() {
+                            self._dispatchEvent('cached', null, { eager: true });
+                            self.updateAllCounters();
+                        });
+                    } else {
+                        setTimeout(function() {
+                            self._dispatchEvent('cached', null, { eager: true });
+                            self.updateAllCounters();
+                        }, 0);
+                    }
+                }
+            }
+        } catch (e) { /* localStorage disabled — fall back to normal flow */ }
+    }
+
+    _cacheKey(uid) {
+        return this._cachePrefix + (uid || this._uid || '');
+    }
+
+    _readLocalCache(uid) {
+        try {
+            var raw = localStorage.getItem(this._cacheKey(uid));
+            if (!raw) return null;
+            var parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed.map(String) : null;
+        } catch (e) { return null; }
+    }
+
+    _writeLocalCache(uid) {
+        try {
+            localStorage.setItem(this._cacheKey(uid), JSON.stringify(this._favorites));
+        } catch (e) { /* quota exceeded — ignore */ }
     }
 
     // ── Vinculacion con el usuario actual ─────────────────────
     // Llamada desde auth.js cada vez que cambia el uid (anonimo o registrado).
-    // Carga los favoritos del usuario desde Firestore y reemplaza la cache.
+    // PASO 1: Carga instantanea desde localStorage (UI inmediata)
+    // PASO 2: Refresh en background desde Firestore (datos frescos)
     setUser(uid) {
         if (!uid) { this.clearUser(); return; }
-        if (this._uid === uid && this._loaded) return;
+        if (this._uid === uid && this._syncedFromFirestore) return;
 
+        // If eager hydration loaded cache for a different uid, replace it
+        var sameUid = this._uid === uid;
         this._uid = uid;
-        this._loaded = false;
-        this._favorites = [];
-        this.updateAllCounters();
+        this._syncedFromFirestore = false;
+
+        // Persist last uid for eager hydration on next page load
+        try { localStorage.setItem(this._lastUidKey, uid); } catch (e) {}
+
+        // PASO 1: Hidratar desde localStorage si no esta ya cargado para este uid
+        if (!sameUid || !this._loaded) {
+            var cached = this._readLocalCache(uid);
+            if (cached) {
+                this._favorites = cached;
+                this._loaded = true;
+                this._dispatchEvent('cached', null);
+                this.updateAllCounters();
+                this._log('Loaded from localStorage cache:', cached.length);
+            } else {
+                this._favorites = [];
+                this._loaded = false;
+                this.updateAllCounters();
+            }
+        }
+
+        // PASO 2: Refresh desde Firestore (puede llegar despues)
         this._loadFromFirestore();
     }
 
-    clearUser() {
+    clearUser(opts) {
         if (this._syncTimeout) { clearTimeout(this._syncTimeout); this._syncTimeout = null; }
+        var purge = opts && opts.purgeCache;
+        try {
+            // Always clear last_uid: prevents eager hydration of previous user's
+            // data on next page load if no one is currently authenticated.
+            localStorage.removeItem(this._lastUidKey);
+            // Only delete the actual favorites cache on explicit logout.
+            // Otherwise keep it so re-login is instant.
+            if (purge && this._uid) {
+                localStorage.removeItem(this._cacheKey(this._uid));
+            }
+        } catch (e) {}
         this._uid = null;
         this._favorites = [];
         this._loaded = false;
+        this._syncedFromFirestore = false;
         this._dispatchEvent('cleared', null);
         this.updateAllCounters();
     }
@@ -56,11 +142,18 @@ class FavoritesManager {
                 if (doc.exists && Array.isArray(doc.data().favoritos)) {
                     arr = doc.data().favoritos.map(String);
                 }
+                // Detectar si Firestore difiere del cache local
+                var cacheStr = JSON.stringify(self._favorites.slice().sort());
+                var freshStr = JSON.stringify(arr.slice().sort());
+                var changed = cacheStr !== freshStr;
+
                 self._favorites = arr;
                 self._loaded = true;
-                self._dispatchEvent('synced', null);
+                self._syncedFromFirestore = true;
+                self._writeLocalCache(uid);
+                self._dispatchEvent('synced', null, { changed: changed });
                 self.updateAllCounters();
-                self._log('Loaded from Firestore:', arr.length);
+                self._log('Loaded from Firestore:', arr.length, changed ? '(cache updated)' : '(cache match)');
             })
             .catch(function (err) {
                 var msg = (err && err.message) || '';
@@ -78,6 +171,8 @@ class FavoritesManager {
                 }
                 console.warn('[Favorites] Error loading from Firestore:', msg);
                 self._loaded = true; // permitir escrituras aunque la lectura falle
+                self._syncedFromFirestore = true;
+                self._dispatchEvent('synced', null, { changed: false, error: true });
             });
     }
 
@@ -97,6 +192,9 @@ class FavoritesManager {
 
     _debouncedSync() {
         if (!this._uid) return;
+        // Escritura instantanea a localStorage para que la proxima navegacion
+        // tenga datos frescos sin esperar el debounce de Firestore
+        this._writeLocalCache(this._uid);
         if (this._syncTimeout) clearTimeout(this._syncTimeout);
         var self = this;
         this._syncTimeout = setTimeout(function () {
@@ -254,20 +352,25 @@ class FavoritesManager {
 
     clear() {
         this._favorites = [];
-        this._debouncedSync();
+        if (this._uid) {
+            this._writeLocalCache(this._uid);
+            this._debouncedSync();
+        }
         this._dispatchEvent('cleared', null);
     }
 
     // ── Eventos ───────────────────────────────────────────────
-    _dispatchEvent(action, vehicleId) {
-        var event = new CustomEvent('favoritesChanged', {
-            detail: {
-                action: action,
-                vehicleId: vehicleId,
-                count: this.count(),
-                favorites: this.getAll()
-            }
-        });
+    _dispatchEvent(action, vehicleId, extra) {
+        var detail = {
+            action: action,
+            vehicleId: vehicleId,
+            count: this.count(),
+            favorites: this.getAll()
+        };
+        if (extra && typeof extra === 'object') {
+            for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) detail[k] = extra[k];
+        }
+        var event = new CustomEvent('favoritesChanged', { detail: detail });
         window.dispatchEvent(event);
     }
 
@@ -339,6 +442,20 @@ window.addEventListener('beforeunload', function () {
         favoritesManager._syncTimeout = null;
         favoritesManager._syncToFirestore();
     }
+});
+
+// Cross-tab sync: if user changes favorites in another tab, update this tab too.
+// localStorage `storage` event fires on OTHER tabs (not the one that wrote it).
+window.addEventListener('storage', function (e) {
+    if (!e.key || !favoritesManager._uid) return;
+    if (e.key !== favoritesManager._cacheKey(favoritesManager._uid)) return;
+    try {
+        var arr = e.newValue ? JSON.parse(e.newValue) : [];
+        if (!Array.isArray(arr)) return;
+        favoritesManager._favorites = arr.map(String);
+        favoritesManager._dispatchEvent('synced', null, { changed: true, crossTab: true });
+        favoritesManager.updateAllCounters();
+    } catch (err) { /* ignore */ }
 });
 
 window.favoritesManager = favoritesManager;

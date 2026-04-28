@@ -332,6 +332,15 @@ window.addEventListener('favoritesChanged', function () {
     favoritesManager.updateAllCounters();
 });
 
+// Flush pending Firestore sync before navigating away (prevents stale data on next page load)
+window.addEventListener('beforeunload', function () {
+    if (favoritesManager._syncTimeout) {
+        clearTimeout(favoritesManager._syncTimeout);
+        favoritesManager._syncTimeout = null;
+        favoritesManager._syncToFirestore();
+    }
+});
+
 window.favoritesManager = favoritesManager;
 
 if (typeof module !== 'undefined' && module.exports) {

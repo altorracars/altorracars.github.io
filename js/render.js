@@ -277,8 +277,14 @@ function attachFavoriteListeners() {
             const totalText = `${count} ${count === 1 ? 'guardado' : 'guardados'}`;
 
             if (window.notify) {
+                // Dismiss previous favorites toast to prevent stacking on rapid clicks
+                if (window._lastFavToastId) {
+                    window.notify.dismiss(window._lastFavToastId, true);
+                    window._lastFavToastId = null;
+                }
+
                 if (wasAdded) {
-                    window.notify.success({
+                    window._lastFavToastId = window.notify.success({
                         title: 'Añadido a favoritos',
                         message: `${vehName} · ${totalText}`,
                         action: {
@@ -287,7 +293,7 @@ function attachFavoriteListeners() {
                         }
                     });
                 } else {
-                    window.notify.info({
+                    window._lastFavToastId = window.notify.info({
                         title: 'Quitado de favoritos',
                         message: `${vehName} · ${totalText}`
                     });

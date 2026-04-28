@@ -270,18 +270,27 @@ function attachFavoriteListeners() {
 
             window.favoritesManager.updateAllCounters();
 
-            if (typeof toast !== 'undefined') {
-                const count = window.favoritesManager.count();
+            const count = window.favoritesManager.count();
+            const v = (typeof vehicleDB !== 'undefined' && vehicleDB.getVehicleById)
+                ? vehicleDB.getVehicleById(vehicleId) : null;
+            const vehName = v ? `${v.marca} ${v.modelo} ${v.year}` : 'Vehículo';
+            const totalText = `${count} ${count === 1 ? 'guardado' : 'guardados'}`;
+
+            if (window.notify) {
                 if (wasAdded) {
-                    toast.success(
-                        `Has añadido (${count}) ${count === 1 ? 'auto' : 'autos'} a favoritos.`,
-                        'Auto agregado'
-                    );
+                    window.notify.success({
+                        title: 'Añadido a favoritos',
+                        message: `${vehName} · ${totalText}`,
+                        action: {
+                            label: 'Ver favoritos',
+                            onClick: function() { window.location.href = 'favoritos.html'; }
+                        }
+                    });
                 } else {
-                    toast.info(
-                        `Has eliminado un auto de favoritos. Tienes (${count}) ${count === 1 ? 'auto' : 'autos'}.`,
-                        'Auto eliminado'
-                    );
+                    window.notify.info({
+                        title: 'Quitado de favoritos',
+                        message: `${vehName} · ${totalText}`
+                    });
                 }
             }
         });

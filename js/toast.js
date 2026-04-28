@@ -237,6 +237,19 @@
         }
     });
 
+    // Reset auto-close timer for a still-visible toast (used when re-triggering)
+    function resetTimer(idOrEl, newDuration) {
+        var id = (typeof idOrEl === 'object' && idOrEl) ? Number(idOrEl.dataset.id) : idOrEl;
+        var record = _activeToasts.find(function(r) { return r.id === id; });
+        if (!record) return false;
+        if (record.timer) clearTimeout(record.timer);
+        var d = newDuration != null ? newDuration : record.remaining;
+        record.remaining = d;
+        record.startedAt = Date.now();
+        if (d > 0) record.timer = setTimeout(function() { dismiss(id); }, d);
+        return true;
+    }
+
     var notify = {
         success: function(a, b, c) { return show('success', a, b, c); },
         error:   function(a, b, c) { return show('error',   a, b, c); },
@@ -245,6 +258,7 @@
         show: show,
         dismiss: dismiss,
         clear: clear,
+        resetTimer: resetTimer,
         getSoundEnabled: getSoundEnabled,
         setSoundEnabled: setSoundEnabled
     };

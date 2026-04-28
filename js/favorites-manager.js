@@ -150,7 +150,21 @@ class FavoritesManager {
         // 1. Force header to be visible (it may be hidden by scroll)
         this._forceShowHeader();
 
-        // 2. Show vibrant attention notification
+        // 2. If an attention toast is already on screen, just buzz it (no stacking)
+        var existing = document.querySelector('.altorra-notify--attention');
+        if (existing) {
+            existing.classList.remove('altorra-notify--buzz');
+            // Force reflow so re-adding the class restarts the animation
+            void existing.offsetWidth;
+            existing.classList.add('altorra-notify--buzz');
+            if (window.notify && window.notify.resetTimer) window.notify.resetTimer(existing, 6000);
+            if (window.AltorraNotifySound) window.AltorraNotifySound('attention');
+            var self2 = this;
+            setTimeout(function() { self2._showSpotlight(); }, 100);
+            return;
+        }
+
+        // 3. Show vibrant attention notification
         if (window.notify) {
             window.notify.info({
                 variant: 'attention',
@@ -167,7 +181,7 @@ class FavoritesManager {
             });
         }
 
-        // 3. Wait for header to settle, then show spotlight
+        // 4. Wait for header to settle, then show spotlight
         var self = this;
         setTimeout(function() { self._showSpotlight(); }, 280);
     }
@@ -184,6 +198,9 @@ class FavoritesManager {
     _showSpotlight() {
         var btn = document.getElementById('btnLogin');
         if (!btn || !btn.offsetParent) return;
+
+        // Skip if a spotlight is already showing (avoid stacking on rapid clicks)
+        if (document.querySelector('.altorra-spotlight')) return;
 
         var overlay = document.createElement('div');
         overlay.className = 'altorra-spotlight';

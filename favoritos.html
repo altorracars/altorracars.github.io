@@ -75,21 +75,51 @@
     <script src="js/comparador.js" defer></script>
     <script>
         let currentFavorites = [];
+        let _favPageRendered = false;
+
+        function showFavSkeleton() {
+            const container = document.getElementById('favoritesGrid');
+            const header = document.getElementById('favoritesHeader');
+            header.style.display = 'none';
+            container.innerHTML =
+                '<div class="fav-loading" style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px;">'
+                + '<div style="width:48px;height:48px;border:3px solid rgba(184,150,88,.18);border-top-color:#b89658;border-radius:50%;animation:plSpin .8s linear infinite;"></div>'
+                + '<p style="color:#999;font-size:0.95rem;">Cargando tus favoritos...</p>'
+                + '</div>';
+        }
 
         async function loadFavorites() {
-            // Firestore-only via FavoritesManager
-            const favorites = window.favoritesManager ? window.favoritesManager.getAll() : [];
+            const fm = window.favoritesManager;
+            if (!fm) return;
 
+            // If no registered user, show empty state (favorites require login)
+            if (!fm._uid) {
+                // If auth hasn't initialized yet, keep skeleton; otherwise show empty
+                if (window.auth && window.auth.currentUser !== undefined) {
+                    // auth resolved: user is anonymous or null → no favorites
+                    _favPageRendered = true;
+                } else if (!_favPageRendered) {
+                    showFavSkeleton();
+                    return;
+                }
+            }
+
+            // If Firestore hasn't loaded yet, show skeleton and wait for 'synced' event
+            if (fm._uid && !fm._loaded) {
+                if (!_favPageRendered) showFavSkeleton();
+                return;
+            }
+
+            const favorites = fm.getAll();
             currentFavorites = favorites;
+
             const container = document.getElementById('favoritesGrid');
             const countSpan = document.getElementById('favoritesCount');
             const clearBtn = document.getElementById('clearAllBtn');
             const header = document.getElementById('favoritesHeader');
 
-            // Actualizar contador
             countSpan.textContent = favorites.length;
 
-            // Mostrar/ocultar header y botón según contenido
             if (favorites.length > 0) {
                 header.style.display = 'block';
                 clearBtn.style.display = 'block';
@@ -99,11 +129,12 @@
             }
 
             if (favorites.length === 0) {
+                _favPageRendered = true;
                 container.innerHTML = `
                     <div class="no-favorites">
                         <div class="no-favorites-icon">♡</div>
                         <h2>No tienes favoritos aún</h2>
-                        <p>Explora propiedades y agrega tus favoritos</p>
+                        <p>Explora nuestro catálogo y guarda los autos que te interesen</p>
                         <div class="no-favorites-actions">
                             <a href="busqueda.html" class="btn-catalog btn-catalog-primary">Ver Todos los Autos</a>
                         </div>
@@ -113,12 +144,12 @@
             }
 
             await vehicleDB.load();
-            // Normalizar IDs antes de buscar
             const favoriteVehicles = favorites
                 .map(id => vehicleDB.getVehicleById(String(id)))
                 .filter(v => v !== undefined && v !== null);
 
             if (favoriteVehicles.length === 0) {
+                _favPageRendered = true;
                 container.innerHTML = `
                     <div class="no-favorites">
                         <div class="no-favorites-icon">♡</div>
@@ -132,14 +163,11 @@
                 return;
             }
 
-            // Renderizar sin listeners automáticos
+            _favPageRendered = true;
             renderVehicles(favoriteVehicles, 'favoritesGrid', { attachListeners: false });
-
-            // Attach listeners personalizados para actualización en tiempo real
             attachFavoriteListenersWithReload();
         }
 
-        // Attach listeners que recargan la página al eliminar - USA FAVORITES MANAGER
         function attachFavoriteListenersWithReload() {
             const favButtons = document.querySelectorAll('.favorite-btn');
             favButtons.forEach(button => {
@@ -148,42 +176,38 @@
                     e.stopPropagation();
 
                     const vehicleId = button.getAttribute('data-id');
-
-                    // Animar card antes de eliminar
                     const card = button.closest('.vehicle-card');
                     card.style.transition = 'all 0.3s ease';
                     card.style.opacity = '0';
                     card.style.transform = 'scale(0.9)';
 
-                    // Esperar animación
                     setTimeout(async () => {
                         if (window.favoritesManager) {
                             window.favoritesManager.remove(vehicleId);
                             window.favoritesManager.updateAllCounters();
                         }
-
                         await loadFavorites();
 
                         const count = window.favoritesManager ? window.favoritesManager.count() : 0;
-                        toast.info(
-                            `Auto eliminado de favoritos. Tienes (${count}) ${count === 1 ? 'auto' : 'autos'}.`,
-                            'Auto eliminado'
-                        );
+                        if (window.notify) {
+                            // Dismiss previous fav toast
+                            if (window._lastFavToastId) {
+                                window.notify.dismiss(window._lastFavToastId, true);
+                            }
+                            window._lastFavToastId = window.notify.info({
+                                title: 'Quitado de favoritos',
+                                message: count + ' ' + (count === 1 ? 'auto guardado' : 'autos guardados')
+                            });
+                        }
                     }, 300);
                 });
             });
         }
 
-        // Función para eliminar todos los favoritos - USA FAVORITES MANAGER
         function clearAllFavorites() {
             if (currentFavorites.length === 0) return;
+            if (!confirm('¿Estás seguro de eliminar todos los ' + currentFavorites.length + ' favoritos?')) return;
 
-            // Confirmación
-            if (!confirm(`¿Estás seguro de eliminar todos los ${currentFavorites.length} favoritos?`)) {
-                return;
-            }
-
-            // Animar todos los cards
             const cards = document.querySelectorAll('.vehicle-card');
             cards.forEach((card, index) => {
                 setTimeout(() => {
@@ -193,40 +217,37 @@
                 }, index * 50);
             });
 
-            // Eliminar después de animación
             setTimeout(() => {
                 if (window.favoritesManager) {
                     window.favoritesManager.clear();
                     window.favoritesManager.updateAllCounters();
                 }
-
-                // Recargar
                 loadFavorites();
-
-                // Notificación
-                toast.success(
-                    'Todos los favoritos han sido eliminados.',
-                    '¡Listo!'
-                );
+                if (window.notify) {
+                    window.notify.success({ title: '¡Listo!', message: 'Todos los favoritos han sido eliminados.' });
+                }
             }, cards.length * 50 + 300);
         }
 
-        // Re-render cuando FavoritesManager termina de cargar desde Firestore
-        // (asincrono: el usuario anonimo o registrado se autentica despues del DOM)
+        // Re-render when FavoritesManager finishes loading or changes
         window.addEventListener('favoritesChanged', function (e) {
-            if (e.detail && e.detail.action === 'synced') {
+            if (!e.detail) return;
+            var action = e.detail.action;
+            if (action === 'synced' || action === 'added' || action === 'removed' || action === 'cleared') {
                 loadFavorites();
             }
         });
 
-        // Event listener para botón eliminar todos
         document.addEventListener('DOMContentLoaded', () => {
-            loadFavorites();
-
+            showFavSkeleton();
+            // Try immediately in case auth already resolved
+            setTimeout(loadFavorites, 50);
+            // Safety: if still showing skeleton after 4s, force render (prevents infinite loading)
+            setTimeout(function() {
+                if (!_favPageRendered) { _favPageRendered = true; loadFavorites(); }
+            }, 4000);
             const clearBtn = document.getElementById('clearAllBtn');
-            if (clearBtn) {
-                clearBtn.addEventListener('click', clearAllFavorites);
-            }
+            if (clearBtn) clearBtn.addEventListener('click', clearAllFavorites);
         });
     </script>
 

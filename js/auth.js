@@ -546,7 +546,9 @@
 
         if (!user) {
             updateHeaderAuthState(null);
-            if (window.favoritesManager) window.favoritesManager.clearUser();
+            // On explicit logout, purge the local favorites cache so the next
+            // user (or guest) doesn't see the old user's data eagerly hydrated.
+            if (window.favoritesManager) window.favoritesManager.clearUser({ purgeCache: _explicitLogout });
             if (window.vehicleHistory)   window.vehicleHistory.clearUser();
 
             // Only sign in anonymously on first visit (no prior session).

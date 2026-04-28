@@ -226,6 +226,11 @@
             // dropping the anonymous data on login is the honest behavior.
             return window.auth.signInWithEmailAndPassword(email, pass);
         }).then(function () {
+            // Close modal immediately — don't wait for the Firestore profile write.
+            // The profile save runs in background; user sees the close happen instantly.
+            closeAuthModal();
+            _toast('¡Bienvenido de vuelta!', 'success');
+
             var u = window.auth.currentUser;
             if (!u || u.isAnonymous) return;
             // Check if this is an admin account — don't create clientes/ doc for admins
@@ -245,9 +250,6 @@
                     email:  u.email || email
                 });
             });
-        }).then(function () {
-            closeAuthModal();
-            _toast('¡Bienvenido de vuelta!', 'success');
         }).catch(function (err) {
             var msg = friendlyError(err);
             if (msg) showMsg('loginMessage', msg, 'error');
@@ -310,16 +312,17 @@
             // Actualizar nombre en Firebase Auth
             return createdUser.updateProfile({ displayName: nombre });
         }).then(function () {
-            // Guardar perfil en clientes/{uid} — colección pública, NO admin
+            // Close modal + show toast immediately (don't wait for Firestore write)
+            closeAuthModal();
+            _toast('¡Cuenta creada! Bienvenido a Altorra Cars, ' + (nombre.split(' ')[0] || '') + '.', 'success');
+
+            // Guardar perfil en clientes/{uid} — colección pública, NO admin (background)
             return saveClientProfile(createdUser.uid, {
                 nombre: nombre,
                 email: email,
                 prefijo: prefijo,
                 telefono: telefono
             });
-        }).then(function () {
-            closeAuthModal();
-            _toast('¡Cuenta creada! Bienvenido a Altorra Cars.', 'success');
         }).catch(function (err) {
             var msg = friendlyError(err);
             if (msg) showMsg('registerMessage', msg, 'error');
@@ -400,7 +403,9 @@
 
         window.auth.signInWithPopup(provider).then(function (result) {
             if (!result || !result.user) return;
-            return _processGoogleUser(result.user);
+            // additionalUserInfo.isNewUser → true on first sign-in, false on returning login
+            var isNew = !!(result.additionalUserInfo && result.additionalUserInfo.isNewUser);
+            return _processGoogleUser(result.user, isNew);
         }).catch(function (err) {
             if (!err) return;
             if (err.code === 'auth/popup-blocked') {
@@ -421,7 +426,7 @@
     // 1. Admin accounts → reject + sign out
     // 2. Email already registered with password → undo auto-link
     // 3. New Google user → create client profile
-    function _processGoogleUser(user) {
+    function _processGoogleUser(user, isNewUser) {
         return window.db.collection('usuarios').doc(user.uid).get()
             .then(function (doc) {
                 if (doc.exists) {
@@ -439,12 +444,18 @@
                     return undoGoogleAndWarn(user, 'Este correo ya está registrado con contraseña. Inicia sesión con tu correo y contraseña, o usa "¿Olvidaste tu contraseña?" para recuperarla.', false);
                 }
 
+                // Close modal + show toast immediately (don't wait for Firestore write)
+                closeAuthModal();
+                if (isNewUser) {
+                    _toast('¡Bienvenido a Altorra Cars! Tu cuenta con Google está lista.', 'success');
+                } else {
+                    var nombre = (user.displayName || '').split(' ')[0];
+                    _toast(nombre ? '¡Hola de nuevo, ' + nombre + '!' : '¡Bienvenido de vuelta!', 'success');
+                }
+
                 return saveClientProfile(user.uid, {
                     nombre: user.displayName || '',
                     email: user.email || ''
-                }).then(function () {
-                    closeAuthModal();
-                    _toast('¡Bienvenido! Tu cuenta con Google ha sido creada.', 'success');
                 });
             })
             .catch(function (err) {

@@ -120,14 +120,47 @@
             renderedIds: [],
             firstRenderDone: false,
             firestoreSynced: false,
+            // 'pending' = auth still resolving | 'unauthenticated' | 'authenticated'
+            _authState: 'pending',
 
             init() {
                 this.bindEvents();
+                this.watchAuth();
                 this.tryRender();
-                // Safety: if still skeleton after 5s with no auth resolved
+                // Safety: si auth no resuelve en 5s, asumimos unauthenticated
                 setTimeout(() => {
-                    if (!this.firstRenderDone) { this.tryRender(true); }
+                    if (this._authState === 'pending') {
+                        this._authState = 'unauthenticated';
+                        this.tryRender();
+                    }
                 }, 5000);
+            },
+
+            watchAuth() {
+                const self = this;
+                function setup() {
+                    if (!window.auth || typeof window.auth.onAuthStateChanged !== 'function') {
+                        setTimeout(setup, 50);
+                        return;
+                    }
+                    // No unsubscribimos: queremos reaccionar a login/logout in-page
+                    window.auth.onAuthStateChanged(function (user) {
+                        const isAuth = !!(user && !user.isAnonymous);
+                        const next = isAuth ? 'authenticated' : 'unauthenticated';
+                        if (self._authState === next) return;
+                        const prev = self._authState;
+                        self._authState = next;
+                        // Si la transicion es entre estados ya resueltos (ej: logout
+                        // en otra tab mientras se ven favoritos cacheados), forzamos
+                        // un render limpio para reflejar el nuevo estado
+                        if (prev !== 'pending') {
+                            self.renderedIds = [];
+                            self.firstRenderDone = false;
+                        }
+                        self.tryRender();
+                    });
+                }
+                setup();
             },
 
             bindEvents() {
@@ -149,16 +182,25 @@
 
                 const clearBtn = document.getElementById('clearAllBtn');
                 if (clearBtn) clearBtn.addEventListener('click', () => this.clearAll());
+
+                // CTAs del estado "auth-required" (delegado para sobrevivir re-renders)
+                document.addEventListener('click', (e) => {
+                    const target = e.target.closest && e.target.closest('[data-fav-action]');
+                    if (!target) return;
+                    e.preventDefault();
+                    const action = target.getAttribute('data-fav-action');
+                    if (!window.AltorraAuth) return;
+                    if (action === 'open-login') window.AltorraAuth.open('login');
+                    else if (action === 'open-register') window.AltorraAuth.open('register');
+                });
             },
 
             getEffectiveFavorites() {
                 const fm = window.favoritesManager;
                 if (!fm) return null;
                 if (fm._uid && fm._loaded) return fm.getAll();
-                // No user yet — auth might be initializing; defer
-                if (!fm._uid && (!window.auth || window.auth.currentUser === undefined)) return null;
-                // No user, auth resolved → empty
-                if (!fm._uid) return [];
+                // Authenticated pero favoritesManager aun no tiene datos
+                if (this._authState === 'authenticated') return null;
                 return null;
             },
 
@@ -203,6 +245,37 @@
                     '</div>';
             },
 
+            showAuthRequired() {
+                const container = document.getElementById('favoritesGrid');
+                const header = document.getElementById('favoritesHeader');
+                const clearBtn = document.getElementById('clearAllBtn');
+                if (header) header.style.display = 'none';
+                if (clearBtn) clearBtn.style.display = 'none';
+                if (!container) return;
+                container.innerHTML =
+                    '<div class="no-favorites no-favorites--auth">' +
+                        '<div class="auth-gate-icon">' +
+                            '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>' +
+                                '<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>' +
+                                '<circle cx="12" cy="16" r="1.4"></circle>' +
+                            '</svg>' +
+                        '</div>' +
+                        '<h2>Inicia sesión para ver tus favoritos</h2>' +
+                        '<p>Tus favoritos se guardan en tu cuenta y los puedes ver desde cualquier dispositivo.</p>' +
+                        '<div class="no-favorites-actions">' +
+                            '<button type="button" class="btn-catalog btn-catalog-primary" data-fav-action="open-login">' +
+                                'Iniciar sesión' +
+                            '</button>' +
+                            '<button type="button" class="btn-catalog btn-catalog-secondary" data-fav-action="open-register">' +
+                                'Crear cuenta' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
+                this.renderedIds = [];
+                this.firstRenderDone = true;
+            },
+
             showEmpty(message, subtitle) {
                 const container = document.getElementById('favoritesGrid');
                 const header = document.getElementById('favoritesHeader');
@@ -221,6 +294,13 @@
             },
 
             async tryRender(forceEmpty = false) {
+                // 1) Si auth resuelta como NO autenticado → gate de login
+                if (this._authState === 'unauthenticated') {
+                    this.showAuthRequired();
+                    return;
+                }
+
+                // 2) Si auth todavia esta resolviendo y no hay datos cacheados → skeleton
                 const favorites = forceEmpty ? [] : this.getEffectiveFavorites();
                 if (favorites === null) {
                     if (!this.firstRenderDone) this.showSkeleton();

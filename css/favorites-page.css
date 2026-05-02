@@ -320,3 +320,150 @@
         gap: 16px;
     }
 }
+
+/* ============================================
+   AUTH-REQUIRED GATE
+   Estado especifico cuando el usuario NO esta logueado.
+   La pagina de favoritos requiere autenticacion: en lugar
+   de mostrar el empty state generico, mostramos un gate
+   premium que invita a iniciar sesion o crear cuenta.
+   ============================================ */
+
+.no-favorites.no-favorites--auth {
+    color: rgba(255, 255, 255, 0.92);
+    animation: favAuthFadeIn 0.5s ease-out;
+}
+
+@keyframes favAuthFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.no-favorites--auth .auth-gate-icon {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 28px;
+    background: radial-gradient(
+        circle at center,
+        rgba(184, 150, 88, 0.18) 0%,
+        rgba(184, 150, 88, 0.06) 50%,
+        transparent 80%
+    );
+    position: relative;
+    isolation: isolate;
+}
+
+.no-favorites--auth .auth-gate-icon::before {
+    content: '';
+    position: absolute;
+    inset: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(184, 150, 88, 0.30);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    z-index: -1;
+}
+
+.no-favorites--auth .auth-gate-icon svg {
+    width: 56px;
+    height: 56px;
+    color: #b89658;
+    filter: drop-shadow(0 2px 8px rgba(184, 150, 88, 0.45));
+    animation: favAuthLockBreathe 3s ease-in-out infinite;
+}
+
+@keyframes favAuthLockBreathe {
+    0%, 100% { transform: scale(1); opacity: 0.95; }
+    50%      { transform: scale(1.06); opacity: 1; }
+}
+
+/* Override del color por defecto del empty state que es oscuro (#1d1b19) */
+body .no-favorites--auth h2 {
+    color: #ffffff;
+    background: linear-gradient(135deg, #ffffff 0%, #e8d8a8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.3px;
+    margin-bottom: 14px;
+}
+
+body .no-favorites--auth p {
+    color: rgba(255, 255, 255, 0.66);
+    max-width: 480px;
+    line-height: 1.65;
+}
+
+/* Botones del gate: matchear el color del header REGISTRARSE */
+body .no-favorites--auth .btn-catalog-primary {
+    background: linear-gradient(135deg, #b89658 0%, #d4af37 50%, #b89658 100%);
+    background-size: 200% 100%;
+    color: #1a1a1a;
+    font-weight: 700;
+    box-shadow:
+        0 6px 22px rgba(184, 150, 88, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: all 0.35s ease;
+}
+
+body .no-favorites--auth .btn-catalog-primary:hover {
+    background-position: 100% 0;
+    transform: translateY(-3px);
+    box-shadow:
+        0 10px 30px rgba(184, 150, 88, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+body .no-favorites--auth .btn-catalog-secondary {
+    background: rgba(255, 255, 255, 0.04);
+    color: #e8d8a8;
+    border: 1.5px solid rgba(184, 150, 88, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-weight: 600;
+    transition: all 0.35s ease;
+}
+
+body .no-favorites--auth .btn-catalog-secondary:hover {
+    background: rgba(184, 150, 88, 0.12);
+    border-color: rgba(184, 150, 88, 0.85);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(184, 150, 88, 0.25);
+}
+
+@media (max-width: 768px) {
+    .no-favorites--auth .auth-gate-icon {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 22px;
+    }
+    .no-favorites--auth .auth-gate-icon svg {
+        width: 46px;
+        height: 46px;
+    }
+}
+
+@media (max-width: 480px) {
+    .no-favorites--auth .auth-gate-icon {
+        width: 88px;
+        height: 88px;
+    }
+    .no-favorites--auth .auth-gate-icon svg {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .no-favorites--auth { animation: none; }
+    .no-favorites--auth .auth-gate-icon svg { animation: none; }
+}

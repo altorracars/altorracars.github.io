@@ -157,19 +157,41 @@ body .badge {
    No override needed; their existing CSS stays as-is.
    ─────────────────────────────────────────────────────── */
 
-/* ── 13. VEHICLE CARD shine effect: use transform not left
-   Animating `left` forces layout recalc every frame.
-   Use translateX (compositable, GPU-only).
+/* ── 13. SHINE EFFECTS: animate transform, not left ───────
+   Animating `left` triggers layout on every frame of a hover
+   transition. With ~10-30 cards in a grid, even one hover
+   pulse forces N layout passes. Use translateX (compositable,
+   GPU-only) — same visual, ~100x cheaper.
    ──────────────────────────────────────────────────────── */
 body .vehicle-card::after {
     left: 0 !important;
     transform: translateX(-100%);
     transition: transform 0.7s !important;
+    will-change: transform;
 }
 
 body .vehicle-card:hover::after {
     left: 0 !important;
     transform: translateX(100%);
+}
+
+/* Commercial card top accent line (.commercial-card::before).
+   Original: animates `left` AND `right` (two layout-triggering
+   props per frame, narrow line → wider on hover). Replace
+   with transform: scaleX — preserves the "60% → 80% width"
+   visual but pure GPU. Fixed left/right at 0/0 + scaleX
+   recreates the original's centered horizontal extent. */
+.commercial-card::before {
+    left: 0 !important;
+    right: 0 !important;
+    transform: scaleX(0.6);
+    transform-origin: center;
+    transition: transform 0.35s ease, opacity 0.35s ease !important;
+    will-change: transform, opacity;
+}
+
+.commercial-card:hover::before {
+    transform: scaleX(0.8);
 }
 
 /* ── 14. TRANSITION OPTIMIZATION ─────────────────────────

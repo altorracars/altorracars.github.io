@@ -1,6 +1,57 @@
 // Component Loader for ALTORRA CARS
 // Versión Final Optimizada - iPhone Compatible
 
+/**
+ * whenReady — runs a callback once a predicate becomes true, with timeout.
+ *
+ * Used to gate code that depends on a lazy-loaded global (e.g.
+ * `reviewsSystem`, `comparador`) without forcing the script to be
+ * eager-loaded. The predicate is polled at a low interval and the
+ * callback fires the first time it returns truthy. If it never does
+ * within `timeout`, a console.warn is emitted and we give up gracefully
+ * (no crash, no infinite poll).
+ *
+ * Usage:
+ *   whenReady(
+ *     function () { return typeof reviewsSystem !== 'undefined'; },
+ *     function () { reviewsSystem.renderTestimonialsSection('...'); }
+ *   );
+ *
+ * Options:
+ *   timeout: max ms to wait (default 5000)
+ *   poll:    poll interval in ms (default 100)
+ *   label:   string for diagnostics on timeout (default 'whenReady')
+ */
+window.whenReady = function (predicate, callback, opts) {
+    opts = opts || {};
+    var maxWait = typeof opts.timeout === 'number' ? opts.timeout : 5000;
+    var pollInterval = typeof opts.poll === 'number' ? opts.poll : 100;
+    var label = opts.label || 'whenReady';
+    var elapsed = 0;
+    // Fast-path: predicate already true
+    try {
+        if (predicate()) { callback(); return; }
+    } catch (e) {
+        console.warn('[' + label + '] Predicate threw:', e);
+    }
+    var iv = setInterval(function () {
+        elapsed += pollInterval;
+        var ready = false;
+        try { ready = !!predicate(); } catch (e) { /* ignore */ }
+        if (ready) {
+            clearInterval(iv);
+            try { callback(); } catch (e) {
+                console.error('[' + label + '] Callback threw:', e);
+            }
+            return;
+        }
+        if (elapsed >= maxWait) {
+            clearInterval(iv);
+            console.warn('[' + label + '] Timeout after', maxWait, 'ms');
+        }
+    }, pollInterval);
+};
+
 async function loadComponent(elementId, componentPath) {
     try {
         const response = await fetch(componentPath);

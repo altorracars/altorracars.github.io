@@ -1086,8 +1086,27 @@
         }
     </script>
 
-    <!-- Cookie Consent -->
-    <script src="js/cookies.js" defer></script>
+    <!-- Cookie Consent — deferred to idle. The banner only appears
+         after a UX delay anyway, so no point blocking initial parse. -->
+    <script>
+    (function () {
+        function loadCookies() {
+            var s = document.createElement('script');
+            s.src = 'js/cookies.js';
+            s.async = false;
+            document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadCookies, { timeout: 3000 });
+        } else if (document.readyState === 'complete') {
+            setTimeout(loadCookies, 1500);
+        } else {
+            window.addEventListener('load', function () {
+                setTimeout(loadCookies, 1500);
+            });
+        }
+    })();
+    </script>
 
         <script src="js/page-loader.js"></script>
     <!-- Cache Manager - Handles SW updates and cache invalidation -->

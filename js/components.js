@@ -275,49 +275,49 @@ function initializeHeader() {
         }, 250);
     });
     
-    // ===== STICKY + SMART HIDE/SHOW HEADER =====
-    // Se oculta al bajar, reaparece al subir (patrón "smart navbar").
-    // Usa requestAnimationFrame para no bloquear el hilo principal.
-    // CSS usa transform: translateY para aprovechar aceleración GPU.
+    // ===== STICKY + SMART HIDE/SHOW HEADER (UNIFIED) =====
+    // Single scroll listener for the entire site. Uses rAF to coalesce
+    // multiple scroll events into one DOM update per frame. State is
+    // cached to avoid redundant classList mutations (each unnecessary
+    // .add()/.remove() still triggers a style invalidation even if the
+    // class is already present).
     let lastScroll = 0;
     let ticking = false;
-    const HIDE_THRESHOLD = 80; // px mínimos antes de activar el ocultamiento
+    let isSticky = false;       // tracks current `.sticky` state
+    let isHidden = false;       // tracks current `.header--hidden` state
+    const HIDE_THRESHOLD = 80;
+    const STICKY_THRESHOLD = 10;
     const _cachedHeader = document.getElementById('header');
 
-    window.addEventListener('scroll', function() {
-        if (!ticking) {
-            window.requestAnimationFrame(function() {
-                var header = _cachedHeader;
-                if (header) {
-                    const currentScroll = window.pageYOffset || window.scrollY;
+    window.addEventListener('scroll', function () {
+        if (ticking || !_cachedHeader) return;
+        ticking = true;
+        window.requestAnimationFrame(function () {
+            // Read scroll position ONCE per frame (prevents layout thrashing)
+            const currentScroll = window.pageYOffset || window.scrollY;
 
-                    // Sticky (fondo con blur) cuando abandona el tope
-                    if (currentScroll > 10) {
-                        header.classList.add('sticky');
-                    } else {
-                        header.classList.remove('sticky');
-                    }
+            // Sticky toggle (only mutate DOM if state actually changed)
+            const shouldBeSticky = currentScroll > STICKY_THRESHOLD;
+            if (shouldBeSticky !== isSticky) {
+                _cachedHeader.classList.toggle('sticky', shouldBeSticky);
+                isSticky = shouldBeSticky;
+            }
 
-                    // Smart hide/show — solo activo pasado el umbral
-                    if (currentScroll > HIDE_THRESHOLD) {
-                        if (currentScroll > lastScroll) {
-                            // Bajando → ocultar
-                            header.classList.add('header--hidden');
-                        } else {
-                            // Subiendo → mostrar
-                            header.classList.remove('header--hidden');
-                        }
-                    } else {
-                        // Cerca del tope → siempre visible
-                        header.classList.remove('header--hidden');
-                    }
+            // Smart hide/show — only past the threshold
+            let shouldBeHidden;
+            if (currentScroll > HIDE_THRESHOLD) {
+                shouldBeHidden = currentScroll > lastScroll; // scrolling down
+            } else {
+                shouldBeHidden = false; // near top → always visible
+            }
+            if (shouldBeHidden !== isHidden) {
+                _cachedHeader.classList.toggle('header--hidden', shouldBeHidden);
+                isHidden = shouldBeHidden;
+            }
 
-                    lastScroll = currentScroll <= 0 ? 0 : currentScroll;
-                }
-                ticking = false;
-            });
-            ticking = true;
-        }
+            lastScroll = currentScroll <= 0 ? 0 : currentScroll;
+            ticking = false;
+        });
     }, { passive: true });
     
     // ===== PREVENIR SCROLL MIENTRAS SE ARRASTRA EN MÓVIL =====

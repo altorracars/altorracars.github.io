@@ -390,8 +390,13 @@ class FavoritesManager {
 
         counterIds.forEach(function (id) {
             var el = document.getElementById(id);
-            if (el) el.textContent = countStr;
-            else allFound = false;
+            if (el) {
+                // CRITICO: evitar mutations redundantes que disparen el
+                // MutationObserver en un loop infinito (microtask starvation)
+                if (el.textContent !== countStr) el.textContent = countStr;
+            } else {
+                allFound = false;
+            }
         });
 
         if (!allFound && !this._observing) {
@@ -399,9 +404,16 @@ class FavoritesManager {
             this._observing = true;
             var observer = new MutationObserver(function () {
                 var found = 0;
+                var newValue = self.count().toString();
                 counterIds.forEach(function (id) {
                     var el = document.getElementById(id);
-                    if (el) { el.textContent = self.count().toString(); found++; }
+                    if (el) {
+                        // MISMA proteccion: no setear si ya es el valor correcto.
+                        // Sin esto, cada set genera otra mutation que dispara este
+                        // mismo callback infinitamente, congelando el main thread.
+                        if (el.textContent !== newValue) el.textContent = newValue;
+                        found++;
+                    }
                 });
                 if (found >= 2) {
                     observer.disconnect();

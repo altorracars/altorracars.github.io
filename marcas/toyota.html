@@ -168,7 +168,30 @@
     <script src="js/dynamic-lists.js" defer></script>
     <script src="js/render.js" defer></script>
     <script src="js/main.js" defer></script>
-    <script src="js/comparador.js" defer></script>
+    <!-- Comparador — deferred to idle. Cards render fine without it
+         (render.js uses defensive typeof check); user-triggered actions
+         only fire after the script loads. -->
+    <script>
+    (function () {
+        function loadComparador() {
+            if (window._comparadorLoaded) return;
+            window._comparadorLoaded = true;
+            var s = document.createElement('script');
+            s.src = 'js/comparador.js';
+            s.async = false;
+            document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadComparador, { timeout: 3000 });
+        } else if (document.readyState === 'complete') {
+            setTimeout(loadComparador, 1500);
+        } else {
+            window.addEventListener('load', function () {
+                setTimeout(loadComparador, 1500);
+            });
+        }
+    })();
+    </script>
     <script>window.PRERENDERED_BRAND_ID = "toyota";</script>
     <script>
         const params = new URLSearchParams(window.location.search);

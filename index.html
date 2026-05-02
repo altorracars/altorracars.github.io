@@ -271,7 +271,7 @@
         .featured-section .vehicle-card{flex:0 0 320px!important;min-width:320px!important;max-width:320px!important}
         .brands-carousel{overflow:hidden;position:relative}
         .brands-track{display:flex;gap:0;width:max-content;will-change:transform}
-        /* Fondo oscuro inline para evitar flash blanco antes de que cargue brands-fixes.css */
+        /* Fondo oscuro inline para evitar flash blanco antes de que cargue style.css (rules ahora viven ahí, antes en brands-fixes.css) */
         .brands-section--hero-flow{background:#111111!important;padding:0!important;margin:0!important}
         .brands-section--hero-flow .brand-card{flex:0 0 150px;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:transparent;border:none;border-right:1px solid rgba(255,255,255,0.07);border-radius:0;padding:1.4rem 1rem}
         /* Hide sections that flash before their CSS loads */
@@ -291,12 +291,9 @@
     <!-- Below-fold + delayed CSS (deferred — not needed for first paint) -->
     <link rel="stylesheet" href="css/cookies.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/vehicles-cards-fix.css" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="css/brands-fixes.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/sidebar-filters-fix.css" media="print" onload="this.media='all'">
 
     <!-- Non-critical CSS (deferred — loads after first paint) -->
-    <link rel="stylesheet" href="css/featured-fixes.css" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="css/favorites-fix.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/footer-fixes.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/toast-notifications.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/contact-forms.css" media="print" onload="this.media='all'">
@@ -994,20 +991,81 @@
     <script src="js/render.js" defer></script>
     <script src="js/featured-week-banner.js" defer></script>
     <script src="js/main.js" defer></script>
-    <script src="js/comparador.js" defer></script>
-    <script src="js/reviews.js" defer></script>
+    <!-- Comparador — deferred to idle. Cards render fine without it
+         (render.js uses defensive typeof check); user-triggered actions
+         only fire after the script loads. -->
+    <script>
+    (function () {
+        function loadComparador() {
+            if (window._comparadorLoaded) return;
+            window._comparadorLoaded = true;
+            var s = document.createElement('script');
+            s.src = 'js/comparador.js';
+            s.async = false;
+            document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadComparador, { timeout: 3000 });
+        } else if (document.readyState === 'complete') {
+            setTimeout(loadComparador, 1500);
+        } else {
+            window.addEventListener('load', function () {
+                setTimeout(loadComparador, 1500);
+            });
+        }
+    })();
+    </script>
+    <!-- Reviews — deferred to idle. Below-fold testimonials section,
+         render gated by whenReady() guard below. -->
+    <script>
+    (function () {
+        function loadReviews() {
+            if (window._reviewsLoaded) return;
+            window._reviewsLoaded = true;
+            var s = document.createElement('script');
+            s.src = 'js/reviews.js';
+            s.async = false;
+            document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadReviews, { timeout: 3000 });
+        } else if (document.readyState === 'complete') {
+            setTimeout(loadReviews, 1500);
+        } else {
+            window.addEventListener('load', function () {
+                setTimeout(loadReviews, 1500);
+            });
+        }
+    })();
+    </script>
     <script src="js/historial-visitas.js" defer></script>
     <script src="js/performance.js" defer></script>
 
     <!-- Initialize Testimonials + Recently Viewed -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof reviewsSystem !== 'undefined') {
+            // reviewsSystem is lazy-loaded — wait for it to be available
+            if (typeof window.whenReady === 'function') {
+                window.whenReady(
+                    function () { return typeof reviewsSystem !== 'undefined'; },
+                    function () {
+                        reviewsSystem.renderTestimonialsSection('testimonials-section');
+                        var testSec = document.getElementById('testimonials-section');
+                        if (testSec) {
+                            requestAnimationFrame(function () {
+                                testSec.classList.add('loaded');
+                            });
+                        }
+                    },
+                    { timeout: 6000, label: 'reviewsSystem' }
+                );
+            } else if (typeof reviewsSystem !== 'undefined') {
+                // Fallback: components.js not loaded yet (very unlikely)
                 reviewsSystem.renderTestimonialsSection('testimonials-section');
-            }
-            var testSec = document.getElementById('testimonials-section');
-            if (testSec) {
-                requestAnimationFrame(function() { testSec.classList.add('loaded'); });
+                var testSec = document.getElementById('testimonials-section');
+                if (testSec) {
+                    requestAnimationFrame(function () { testSec.classList.add('loaded'); });
+                }
             }
             // Recently Viewed section (localStorage-based, no auth needed)
             initRecentlyViewed();

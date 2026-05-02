@@ -528,26 +528,6 @@ body .no-favorites--auth .btn-catalog-secondary:hover {
     max-width: 720px;
 }
 
-.fav-hero-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: #d4af37;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    width: fit-content;
-    padding: 7px 16px;
-    background: rgba(184, 150, 88, 0.12);
-    border: 1px solid rgba(184, 150, 88, 0.28);
-    border-radius: 999px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-.fav-hero-eyebrow svg { width: 13px; height: 13px; }
-
 .fav-hero-title {
     font-size: clamp(2.2rem, 5vw, 3.2rem);
     font-weight: 800;

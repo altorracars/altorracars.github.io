@@ -1018,19 +1018,57 @@
         }
     })();
     </script>
-    <script src="js/reviews.js" defer></script>
+    <!-- Reviews — deferred to idle. Below-fold testimonials section,
+         render gated by whenReady() guard below. -->
+    <script>
+    (function () {
+        function loadReviews() {
+            if (window._reviewsLoaded) return;
+            window._reviewsLoaded = true;
+            var s = document.createElement('script');
+            s.src = 'js/reviews.js';
+            s.async = false;
+            document.body.appendChild(s);
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadReviews, { timeout: 3000 });
+        } else if (document.readyState === 'complete') {
+            setTimeout(loadReviews, 1500);
+        } else {
+            window.addEventListener('load', function () {
+                setTimeout(loadReviews, 1500);
+            });
+        }
+    })();
+    </script>
     <script src="js/historial-visitas.js" defer></script>
     <script src="js/performance.js" defer></script>
 
     <!-- Initialize Testimonials + Recently Viewed -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof reviewsSystem !== 'undefined') {
+            // reviewsSystem is lazy-loaded — wait for it to be available
+            if (typeof window.whenReady === 'function') {
+                window.whenReady(
+                    function () { return typeof reviewsSystem !== 'undefined'; },
+                    function () {
+                        reviewsSystem.renderTestimonialsSection('testimonials-section');
+                        var testSec = document.getElementById('testimonials-section');
+                        if (testSec) {
+                            requestAnimationFrame(function () {
+                                testSec.classList.add('loaded');
+                            });
+                        }
+                    },
+                    { timeout: 6000, label: 'reviewsSystem' }
+                );
+            } else if (typeof reviewsSystem !== 'undefined') {
+                // Fallback: components.js not loaded yet (very unlikely)
                 reviewsSystem.renderTestimonialsSection('testimonials-section');
-            }
-            var testSec = document.getElementById('testimonials-section');
-            if (testSec) {
-                requestAnimationFrame(function() { testSec.classList.add('loaded'); });
+                var testSec = document.getElementById('testimonials-section');
+                if (testSec) {
+                    requestAnimationFrame(function () { testSec.classList.add('loaded'); });
+                }
             }
             // Recently Viewed section (localStorage-based, no auth needed)
             initRecentlyViewed();

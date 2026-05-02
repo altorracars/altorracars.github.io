@@ -4,21 +4,25 @@
    Sin uso excesivo de !important
    ============================================ */
 
-/* Sección principal - Full viewport */
+/* Padding base para estado normal (cards o skeleton) */
 body .favorites-section.favorites-section {
+    padding: 40px 0 80px;
+}
+
+/* Sección principal - Full viewport SOLO en estado vacío */
+body .favorites-section.favorites-section:has(.no-favorites) {
     min-height: calc(100vh - 160px);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 60px 0;
-    background: #fafafa;
     width: 100%;
     margin: 0;
 }
 
-/* CRÍTICO: Sobrescribir .container global de style.css
-   que tiene max-width: 1200px y padding lateral */
-body .favorites-section > .container.container {
+/* CRÍTICO: Sobrescribir .container global SOLO cuando esta el empty state.
+   Si no, los skeleton/cards quedan sin padding lateral y se pegan al borde. */
+body .favorites-section > .container.container:has(.no-favorites) {
     width: 100%;
     max-width: none;
     margin: 0;
@@ -27,7 +31,7 @@ body .favorites-section > .container.container {
 }
 
 /* Vehicles grid cuando está vacío */
-body .favorites-section .vehicles-grid.vehicles-grid {
+body .favorites-section .vehicles-grid.vehicles-grid:has(.no-favorites) {
     width: 100%;
     margin: 0;
     padding: 0;

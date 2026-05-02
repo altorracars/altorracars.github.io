@@ -41,6 +41,39 @@
         <img src="/multimedia/logo-placeholder.png" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
         <div class="pl-ring" aria-hidden="true"></div>
     </div>
+    <script>
+    // Hard safety net redundante: si por cualquier razon page-loader.js o
+    // components.js no logran dismissarlo, multiples triggers garantizan que
+    // el loader desaparezca. Inline aqui para registrarse ANTES de cualquier
+    // script async/defer que pueda fallar o demorar.
+    (function() {
+        function killLoader() {
+            var pl = document.getElementById('page-loader');
+            if (!pl) return;
+            if (pl.classList.contains('pl-done')) return;
+            pl.classList.add('pl-done');
+            setTimeout(function() {
+                if (pl && pl.parentNode) pl.parentNode.removeChild(pl);
+            }, 600);
+        }
+        // 1) Hard timeout 2.5s — sin importar nada mas, el loader se va
+        setTimeout(killLoader, 2500);
+        // 2) Cuando window.load dispara (todos los recursos cargados)
+        if (document.readyState === 'complete') {
+            setTimeout(killLoader, 200);
+        } else {
+            window.addEventListener('load', function() { setTimeout(killLoader, 200); });
+        }
+        // 3) Cuando DOMContentLoaded dispara (DOM parseado)
+        if (document.readyState !== 'loading') {
+            setTimeout(killLoader, 1500);
+        } else {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(killLoader, 1500);
+            });
+        }
+    })();
+    </script>
 
     <div id="header-placeholder"></div>
     <!-- Header solo visible cuando hay favoritos -->

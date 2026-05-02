@@ -237,12 +237,14 @@ function attachCardClickListeners() {
     });
 }
 
-// Attach event listeners to favorite buttons - USA FAVORITES MANAGER
+// Attach event listeners to favorite buttons.
+// All click logic is centralized in favoritesManager.handleHeartClick:
+// auth gate, validation, multi-card sync, animation, haptic, toast, undo.
 function attachFavoriteListeners() {
     const favButtons = document.querySelectorAll('.favorite-btn');
 
     favButtons.forEach(button => {
-        // Remover listeners previos para evitar duplicación
+        // Remove previous listeners by cloning
         const newButton = button.cloneNode(true);
         button.parentNode.replaceChild(newButton, button);
 
@@ -251,54 +253,11 @@ function attachFavoriteListeners() {
             e.stopPropagation();
 
             const vehicleId = newButton.getAttribute('data-id');
-
-            if (typeof window.favoritesManager === 'undefined') {
+            if (!window.favoritesManager) {
                 console.warn('FavoritesManager no disponible');
                 return;
             }
-
-            const wasAdded = window.favoritesManager.toggle(vehicleId);
-
-            if (wasAdded === null) return;
-
-            window.favoritesManager.updateButtonState(newButton, vehicleId);
-
-            if (wasAdded) {
-                newButton.style.transform = 'scale(1.3)';
-                setTimeout(() => { newButton.style.transform = 'scale(1)'; }, 200);
-            }
-
-            window.favoritesManager.updateAllCounters();
-
-            const count = window.favoritesManager.count();
-            const v = (typeof vehicleDB !== 'undefined' && vehicleDB.getVehicleById)
-                ? vehicleDB.getVehicleById(vehicleId) : null;
-            const vehName = v ? `${v.marca} ${v.modelo} ${v.year}` : 'Vehículo';
-            const totalText = `${count} ${count === 1 ? 'guardado' : 'guardados'}`;
-
-            if (window.notify) {
-                // Dismiss previous favorites toast to prevent stacking on rapid clicks
-                if (window._lastFavToastId) {
-                    window.notify.dismiss(window._lastFavToastId, true);
-                    window._lastFavToastId = null;
-                }
-
-                if (wasAdded) {
-                    window._lastFavToastId = window.notify.success({
-                        title: 'Añadido a favoritos',
-                        message: `${vehName} · ${totalText}`,
-                        action: {
-                            label: 'Ver favoritos',
-                            onClick: function() { window.location.href = 'favoritos.html'; }
-                        }
-                    });
-                } else {
-                    window._lastFavToastId = window.notify.info({
-                        title: 'Quitado de favoritos',
-                        message: `${vehName} · ${totalText}`
-                    });
-                }
-            }
+            window.favoritesManager.handleHeartClick(newButton, vehicleId);
         });
     });
 }

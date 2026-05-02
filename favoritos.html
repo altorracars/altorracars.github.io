@@ -690,31 +690,45 @@
                 });
             },
 
-            async handleRemove(e, button) {
+            handleRemove(e, button) {
                 e.preventDefault();
                 e.stopPropagation();
                 const vehicleId = button.getAttribute('data-id');
                 if (!window.favoritesManager) return;
-
-                const v = vehicleDB.getVehicleById(String(vehicleId));
-                const vehName = v ? `${v.marca} ${v.modelo} ${v.year}` : 'Vehículo';
-
-                window.favoritesManager.remove(vehicleId);
-                // tryRender() will run via favoritesChanged event with diff animation
-
-                const count = window.favoritesManager.count();
-                if (window.notify) {
-                    if (window._lastFavToastId) window.notify.dismiss(window._lastFavToastId, true);
-                    window._lastFavToastId = window.notify.info({
-                        title: 'Quitado de favoritos',
-                        message: `${vehName} · ${count} ${count === 1 ? 'guardado' : 'guardados'}`
-                    });
-                }
+                // Centralized handler: toast with undo, multi-card sync, animation
+                window.favoritesManager.handleHeartClick(button, vehicleId);
+                // tryRender() runs via favoritesChanged event with diff animation
             },
 
             clearAll() {
                 if (this.renderedIds.length === 0) return;
-                if (!confirm(`¿Estás seguro de eliminar todos los ${this.renderedIds.length} favoritos?`)) return;
+                const total = this.renderedIds.length;
+                const self = this;
+
+                if (!window.notify) {
+                    if (!confirm(`¿Eliminar todos los ${total} favoritos?`)) return;
+                    self._doClearAll();
+                    return;
+                }
+
+                if (window._lastClearAllToastId) {
+                    window.notify.dismiss(window._lastClearAllToastId, true);
+                }
+                window._lastClearAllToastId = window.notify.warning({
+                    title: '¿Eliminar todos los favoritos?',
+                    message: `${total} ${total === 1 ? 'vehículo' : 'vehículos'} serán removidos. Esta acción no se puede deshacer.`,
+                    duration: 8000,
+                    action: {
+                        label: 'Sí, eliminar todos',
+                        onClick: function () {
+                            window._lastClearAllToastId = null;
+                            self._doClearAll();
+                        }
+                    }
+                });
+            },
+
+            _doClearAll() {
                 const cards = document.querySelectorAll('.vehicle-card');
                 cards.forEach((card, i) => {
                     setTimeout(() => {
@@ -726,7 +740,11 @@
                 setTimeout(() => {
                     if (window.favoritesManager) window.favoritesManager.clear();
                     if (window.notify) {
-                        window.notify.success({ title: '¡Listo!', message: 'Todos los favoritos han sido eliminados.' });
+                        window.notify.success({
+                            title: '¡Listo!',
+                            message: 'Todos los favoritos han sido eliminados.',
+                            duration: 3000
+                        });
                     }
                 }, cards.length * 40 + 300);
             }

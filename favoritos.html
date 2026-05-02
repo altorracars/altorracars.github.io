@@ -76,20 +76,84 @@
     </script>
 
     <div id="header-placeholder"></div>
-    <!-- Header solo visible cuando hay favoritos -->
-    <section class="page-header" id="favoritesHeader" style="display: none;">
+
+    <!-- Hero con stats — visible solo cuando hay favoritos -->
+    <section class="fav-hero" id="favHero" style="display: none;" aria-label="Resumen de favoritos">
         <div class="container">
-            <div class="favorites-header-content">
-                <div>
-                    <h1 class="page-title">Mis Favoritos</h1>
-                    <p class="page-subtitle">Vehículos que has guardado (<span id="favoritesCount">0</span>)</p>
+            <div class="fav-hero-grid">
+                <div class="fav-hero-text">
+                    <div class="fav-hero-eyebrow">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        Tus favoritos
+                    </div>
+                    <h1 class="fav-hero-title">Mis Favoritos</h1>
+                    <p class="fav-hero-subtitle">Vehículos que tienes en la mira. Guarda, compara y mantente al tanto.</p>
                 </div>
-                <button id="clearAllBtn" class="btn-clear-all" style="display: none;">
-                    🗑️ Eliminar todos
-                </button>
+                <div class="fav-hero-stats" id="favHeroStats">
+                    <div class="fav-stat">
+                        <div class="fav-stat-icon"><i data-lucide="car"></i></div>
+                        <div class="fav-stat-body">
+                            <div class="fav-stat-num" id="favStatCount">0</div>
+                            <div class="fav-stat-label">Guardados</div>
+                        </div>
+                    </div>
+                    <div class="fav-stat">
+                        <div class="fav-stat-icon"><i data-lucide="award"></i></div>
+                        <div class="fav-stat-body">
+                            <div class="fav-stat-num" id="favStatBrands">0</div>
+                            <div class="fav-stat-label">Marcas</div>
+                        </div>
+                    </div>
+                    <div class="fav-stat fav-stat--wide">
+                        <div class="fav-stat-icon"><i data-lucide="trending-up"></i></div>
+                        <div class="fav-stat-body">
+                            <div class="fav-stat-num" id="favStatPrice">—</div>
+                            <div class="fav-stat-label">Rango de precio</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
+
+    <!-- Controles (search + sort + clear) — visibles solo cuando hay favoritos -->
+    <section class="fav-controls-section" id="favControlsSection" style="display: none;">
+        <div class="container">
+            <div class="fav-controls">
+                <div class="fav-search">
+                    <i data-lucide="search" aria-hidden="true"></i>
+                    <input type="search" id="favSearchInput" placeholder="Buscar marca, modelo, año..." autocomplete="off" aria-label="Buscar en favoritos">
+                    <button class="fav-search-clear" id="favSearchClear" type="button" aria-label="Limpiar busqueda" style="display:none">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="fav-sort">
+                    <label for="favSortSelect" class="fav-sort-label">
+                        <i data-lucide="arrow-up-down"></i>
+                        Ordenar
+                    </label>
+                    <div class="fav-select-wrap">
+                        <select id="favSortSelect" class="fav-select">
+                            <option value="recent">Más recientes</option>
+                            <option value="oldest">Más antiguos</option>
+                            <option value="price-asc">Precio: menor a mayor</option>
+                            <option value="price-desc">Precio: mayor a menor</option>
+                            <option value="year-desc">Año: nuevos primero</option>
+                            <option value="year-asc">Año: antiguos primero</option>
+                            <option value="brand">Marca (A-Z)</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="fav-select-chevron"></i>
+                    </div>
+                </div>
+                <button id="clearAllBtn" class="fav-btn-danger" style="display: none;" type="button">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                    <span>Eliminar todos</span>
+                </button>
+            </div>
+            <div class="fav-results-info" id="favResultsInfo" style="display:none"></div>
+        </div>
+    </section>
+
     <section class="favorites-section">
         <div class="container">
             <div class="vehicles-grid" id="favoritesGrid">
@@ -122,8 +186,19 @@
             firestoreSynced: false,
             // 'pending' = auth still resolving | 'unauthenticated' | 'authenticated'
             _authState: 'pending',
+            // Estado de UI: filtro de busqueda + orden seleccionado
+            _filter: '',
+            _sort: 'recent',
+            // Cache del set completo de vehiculos para sort/filter sin tocar Firestore
+            _allVehicles: [],
 
             init() {
+                // Restaurar preferencia de orden si el usuario la guardo en visitas previas
+                try {
+                    var savedSort = localStorage.getItem('altorra_fav_sort');
+                    if (savedSort) this._sort = savedSort;
+                } catch (e) {}
+
                 this.bindEvents();
                 this.watchAuth();
                 this.tryRender();
@@ -183,6 +258,43 @@
                 const clearBtn = document.getElementById('clearAllBtn');
                 if (clearBtn) clearBtn.addEventListener('click', () => this.clearAll());
 
+                // ── Search ──────────────────────────────────────
+                const searchInput = document.getElementById('favSearchInput');
+                const searchClear = document.getElementById('favSearchClear');
+                let searchTimer = null;
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        const v = e.target.value || '';
+                        if (searchClear) searchClear.style.display = v ? '' : 'none';
+                        clearTimeout(searchTimer);
+                        searchTimer = setTimeout(() => {
+                            this._filter = v.trim().toLowerCase();
+                            this.applyFilterAndRender();
+                        }, 150);
+                    });
+                }
+                if (searchClear) {
+                    searchClear.addEventListener('click', () => {
+                        if (searchInput) searchInput.value = '';
+                        searchClear.style.display = 'none';
+                        this._filter = '';
+                        this.applyFilterAndRender();
+                        if (searchInput) searchInput.focus();
+                    });
+                }
+
+                // ── Sort ───────────────────────────────────────
+                const sortSelect = document.getElementById('favSortSelect');
+                if (sortSelect) {
+                    // Aplicar valor restaurado de localStorage
+                    sortSelect.value = this._sort;
+                    sortSelect.addEventListener('change', (e) => {
+                        this._sort = e.target.value;
+                        try { localStorage.setItem('altorra_fav_sort', this._sort); } catch (err) {}
+                        this.applyFilterAndRender();
+                    });
+                }
+
                 // CTAs del estado "auth-required" (delegado para sobrevivir re-renders)
                 document.addEventListener('click', (e) => {
                     const target = e.target.closest && e.target.closest('[data-fav-action]');
@@ -193,6 +305,171 @@
                     if (action === 'open-login') window.AltorraAuth.open('login');
                     else if (action === 'open-register') window.AltorraAuth.open('register');
                 });
+            },
+
+            // ── Sort + Filter helpers ─────────────────────────
+            applyFilter(vehicles) {
+                if (!this._filter) return vehicles.slice();
+                const q = this._filter;
+                return vehicles.filter(v => {
+                    const haystack = (
+                        (v.marca || '') + ' ' +
+                        (v.modelo || '') + ' ' +
+                        (v.year || '') + ' ' +
+                        (v.categoria || '') + ' ' +
+                        (v.transmision || '')
+                    ).toLowerCase();
+                    return haystack.indexOf(q) !== -1;
+                });
+            },
+
+            applySort(vehicles) {
+                const arr = vehicles.slice();
+                const priceOf = v => v.precioOferta || v.precio || 0;
+                switch (this._sort) {
+                    case 'oldest':
+                        return arr; // orden de insercion original
+                    case 'recent':
+                        return arr.reverse(); // mas recientes primero (insertion reverse)
+                    case 'price-asc':
+                        return arr.sort((a, b) => priceOf(a) - priceOf(b));
+                    case 'price-desc':
+                        return arr.sort((a, b) => priceOf(b) - priceOf(a));
+                    case 'year-desc':
+                        return arr.sort((a, b) => (b.year || 0) - (a.year || 0));
+                    case 'year-asc':
+                        return arr.sort((a, b) => (a.year || 0) - (b.year || 0));
+                    case 'brand':
+                        return arr.sort((a, b) => (a.marca || '').localeCompare(b.marca || ''));
+                    default:
+                        return arr.reverse();
+                }
+            },
+
+            applyFilterAndRender() {
+                if (!this._allVehicles || this._allVehicles.length === 0) return;
+                const filtered = this.applyFilter(this._allVehicles);
+                const sorted = this.applySort(filtered);
+                this.updateResultsInfo(filtered.length, this._allVehicles.length);
+                if (sorted.length === 0) {
+                    this.showFilteredEmpty();
+                    return;
+                }
+                this.renderDiff(sorted);
+            },
+
+            updateResultsInfo(shown, total) {
+                const el = document.getElementById('favResultsInfo');
+                if (!el) return;
+                if (this._filter && shown !== total) {
+                    el.style.display = '';
+                    el.textContent = 'Mostrando ' + shown + ' de ' + total + ' vehículos';
+                } else {
+                    el.style.display = 'none';
+                }
+            },
+
+            showFilteredEmpty() {
+                const container = document.getElementById('favoritesGrid');
+                if (!container) return;
+                container.innerHTML =
+                    '<div class="fav-no-match">' +
+                        '<div class="fav-no-match-icon"><i data-lucide="search-x"></i></div>' +
+                        '<h3>Sin resultados</h3>' +
+                        '<p>Ningún vehículo coincide con "<strong>' + this._escapeHtml(this._filter) + '</strong>".</p>' +
+                        '<button type="button" class="fav-btn-outline" id="favClearFilterBtn">Limpiar busqueda</button>' +
+                    '</div>';
+                if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+                const btn = document.getElementById('favClearFilterBtn');
+                if (btn) btn.addEventListener('click', () => {
+                    const input = document.getElementById('favSearchInput');
+                    const clear = document.getElementById('favSearchClear');
+                    if (input) input.value = '';
+                    if (clear) clear.style.display = 'none';
+                    this._filter = '';
+                    this.applyFilterAndRender();
+                });
+                this.renderedIds = [];
+            },
+
+            _escapeHtml(s) {
+                return String(s).replace(/[&<>"']/g, function (c) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+                });
+            },
+
+            updateStats(vehicles) {
+                const elCount = document.getElementById('favStatCount');
+                const elBrands = document.getElementById('favStatBrands');
+                const elPrice = document.getElementById('favStatPrice');
+                const count = vehicles.length;
+                const brands = new Set(vehicles.map(v => (v.marca || '').toLowerCase()).filter(Boolean));
+                const prices = vehicles.map(v => v.precioOferta || v.precio || 0).filter(p => p > 0);
+
+                if (elCount) this._animateNumber(elCount, count);
+                if (elBrands) this._animateNumber(elBrands, brands.size);
+
+                if (elPrice) {
+                    if (prices.length === 0) {
+                        elPrice.textContent = '—';
+                    } else if (prices.length === 1) {
+                        elPrice.textContent = this._formatShortCOP(prices[0]);
+                    } else {
+                        const min = Math.min.apply(null, prices);
+                        const max = Math.max.apply(null, prices);
+                        if (min === max) {
+                            elPrice.textContent = this._formatShortCOP(min);
+                        } else {
+                            elPrice.textContent = this._formatShortCOP(min) + ' – ' + this._formatShortCOP(max);
+                        }
+                    }
+                }
+            },
+
+            _animateNumber(el, target) {
+                const current = parseInt(el.textContent, 10) || 0;
+                if (current === target) return;
+                const diff = target - current;
+                const steps = Math.min(20, Math.abs(diff));
+                if (steps === 0) { el.textContent = String(target); return; }
+                const stepDur = Math.max(15, Math.floor(400 / steps));
+                let i = 0;
+                clearInterval(el._animTimer);
+                el._animTimer = setInterval(() => {
+                    i++;
+                    if (i >= steps) {
+                        el.textContent = String(target);
+                        clearInterval(el._animTimer);
+                    } else {
+                        el.textContent = String(Math.round(current + (diff * i / steps)));
+                    }
+                }, stepDur);
+            },
+
+            _formatShortCOP(n) {
+                if (n >= 1e9) return '$' + (n / 1e9).toFixed(1).replace(/\.0$/, '') + ' MM';
+                if (n >= 1e6) return '$' + Math.round(n / 1e6) + ' M';
+                if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';
+                return '$' + n;
+            },
+
+            showHeroAndControls() {
+                const hero = document.getElementById('favHero');
+                const controls = document.getElementById('favControlsSection');
+                const clearBtn = document.getElementById('clearAllBtn');
+                if (hero) hero.style.display = '';
+                if (controls) controls.style.display = '';
+                if (clearBtn) clearBtn.style.display = '';
+                if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+            },
+
+            hideHeroAndControls() {
+                const hero = document.getElementById('favHero');
+                const controls = document.getElementById('favControlsSection');
+                const clearBtn = document.getElementById('clearAllBtn');
+                if (hero) hero.style.display = 'none';
+                if (controls) controls.style.display = 'none';
+                if (clearBtn) clearBtn.style.display = 'none';
             },
 
             getEffectiveFavorites() {
@@ -206,8 +483,7 @@
 
             showSkeleton() {
                 const container = document.getElementById('favoritesGrid');
-                const header = document.getElementById('favoritesHeader');
-                if (header) header.style.display = 'none';
+                this.hideHeroAndControls();
                 if (!container) return;
 
                 const cardHTML =
@@ -247,10 +523,7 @@
 
             showAuthRequired() {
                 const container = document.getElementById('favoritesGrid');
-                const header = document.getElementById('favoritesHeader');
-                const clearBtn = document.getElementById('clearAllBtn');
-                if (header) header.style.display = 'none';
-                if (clearBtn) clearBtn.style.display = 'none';
+                this.hideHeroAndControls();
                 if (!container) return;
                 container.innerHTML =
                     '<div class="no-favorites no-favorites--auth">' +
@@ -278,8 +551,7 @@
 
             showEmpty(message, subtitle) {
                 const container = document.getElementById('favoritesGrid');
-                const header = document.getElementById('favoritesHeader');
-                if (header) header.style.display = 'none';
+                this.hideHeroAndControls();
                 if (!container) return;
                 container.innerHTML = `
                     <div class="no-favorites">
@@ -307,23 +579,13 @@
                     return;
                 }
 
-                const container = document.getElementById('favoritesGrid');
-                const countSpan = document.getElementById('favoritesCount');
-                const clearBtn = document.getElementById('clearAllBtn');
-                const header = document.getElementById('favoritesHeader');
-
-                if (countSpan) countSpan.textContent = favorites.length;
-
                 if (favorites.length === 0) {
-                    if (header) header.style.display = 'none';
-                    if (clearBtn) clearBtn.style.display = 'none';
+                    this.hideHeroAndControls();
                     this.showEmpty('No tienes favoritos aún', 'Explora nuestro catálogo y guarda los autos que te interesen');
+                    this._allVehicles = [];
                     this.firstRenderDone = true;
                     return;
                 }
-
-                if (header) header.style.display = 'block';
-                if (clearBtn) clearBtn.style.display = 'block';
 
                 // Ensure vehicleDB is loaded (it has its own localStorage cache → instant on second visit)
                 if (typeof vehicleDB !== 'undefined' && !vehicleDB.loaded) {
@@ -335,12 +597,32 @@
                     .filter(v => v !== undefined && v !== null);
 
                 if (favoriteVehicles.length === 0) {
+                    this.hideHeroAndControls();
                     this.showEmpty('No se encontraron vehículos', 'Los vehículos guardados ya no están disponibles');
+                    this._allVehicles = [];
                     this.firstRenderDone = true;
                     return;
                 }
 
-                this.renderDiff(favoriteVehicles);
+                // Cachear el conjunto completo para que sort/filter no toquen Firestore
+                this._allVehicles = favoriteVehicles;
+
+                // Hero stats siempre se actualizan con el TOTAL (sin filtrar)
+                this.showHeroAndControls();
+                this.updateStats(favoriteVehicles);
+
+                // Aplicar filter + sort y renderizar
+                const filtered = this.applyFilter(favoriteVehicles);
+                const sorted = this.applySort(filtered);
+                this.updateResultsInfo(filtered.length, favoriteVehicles.length);
+
+                if (sorted.length === 0) {
+                    this.showFilteredEmpty();
+                    this.firstRenderDone = true;
+                    return;
+                }
+
+                this.renderDiff(sorted);
                 this.firstRenderDone = true;
             },
 
@@ -353,8 +635,8 @@
                 const newIds = vehicles.map(v => String(v.id));
                 const oldIds = this.renderedIds.slice();
 
-                // First render or full mismatch (e.g. came from skeleton/empty state)
-                const isFirst = !this.firstRenderDone || container.querySelector('.fav-skeleton-grid, .no-favorites');
+                // First render or full mismatch (e.g. came from skeleton/empty/filtered-empty state)
+                const isFirst = !this.firstRenderDone || container.querySelector('.fav-skeleton-grid, .no-favorites, .fav-no-match');
                 if (isFirst) {
                     container.innerHTML = '';
                     renderVehicles(vehicles, 'favoritesGrid', { attachListeners: false });

@@ -27,7 +27,9 @@ class PerformanceOptimizer {
             }, 200);
         }
 
-        this.optimizeScrollPerformance();
+        // P2: scroll handling unified in components.js (smart navbar).
+        // The previous handleScroll() in this file toggled a `.scrolled`
+        // class that no CSS rule consumes — pure dead work on every frame.
         this.pauseOffScreenAnimations();
     }
 
@@ -177,53 +179,6 @@ class PerformanceOptimizer {
                 link.media = 'all';
             }
         });
-    }
-
-    // ===== OPTIMIZAR RENDIMIENTO DE SCROLL =====
-    optimizeScrollPerformance() {
-        let ticking = false;
-        let lastScrollY = 0;
-        // Cache DOM refs once to avoid querying on every frame
-        this._headerEl = null;
-        this._headerCached = false;
-
-        const onScroll = () => {
-            lastScrollY = window.scrollY;
-
-            if (!ticking) {
-                requestAnimationFrame(() => {
-                    this.handleScroll(lastScrollY);
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        };
-
-        window.addEventListener('scroll', onScroll, { passive: true });
-    }
-
-    handleScroll(scrollY) {
-        // Cache header element once
-        if (!this._headerCached) {
-            this._headerEl = document.querySelector('.header, #header');
-            this._headerCached = true;
-        }
-
-        // Header shrink en scroll — lightweight class toggle only
-        if (this._headerEl) {
-            if (scrollY > 100) {
-                if (!this._headerEl.classList.contains('scrolled')) {
-                    this._headerEl.classList.add('scrolled');
-                }
-            } else {
-                if (this._headerEl.classList.contains('scrolled')) {
-                    this._headerEl.classList.remove('scrolled');
-                }
-            }
-        }
-
-        // Parallax REMOVED — was causing layout thrashing on every scroll frame.
-        // The hero uses CSS background-attachment: fixed for a lightweight parallax effect.
     }
 
     // ===== PAUSE OFF-SCREEN ANIMATIONS =====

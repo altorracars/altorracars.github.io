@@ -134,13 +134,40 @@
                 const header = document.getElementById('favoritesHeader');
                 if (header) header.style.display = 'none';
                 if (!container) return;
+
+                const cardHTML =
+                    '<div class="fav-skeleton-card">' +
+                        '<div class="fav-skel-image">' +
+                            '<div class="fav-skel-badge"></div>' +
+                            '<div class="fav-skel-heart"></div>' +
+                        '</div>' +
+                        '<div class="fav-skel-body">' +
+                            '<div class="fav-skel-title"></div>' +
+                            '<div class="fav-skel-subtitle"></div>' +
+                            '<div class="fav-skel-meta-row">' +
+                                '<div class="fav-skel-chip"></div>' +
+                                '<div class="fav-skel-chip"></div>' +
+                                '<div class="fav-skel-chip"></div>' +
+                            '</div>' +
+                            '<div class="fav-skel-divider"></div>' +
+                            '<div class="fav-skel-price"></div>' +
+                        '</div>' +
+                    '</div>';
+
+                // Numero de cards proporcional al viewport
+                const w = window.innerWidth || 1024;
+                const count = w < 480 ? 2 : w < 768 ? 3 : w < 1100 ? 4 : 6;
+
                 container.innerHTML =
-                    '<div class="fav-skeleton-grid" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;width:100%;">' +
-                    Array(3).fill(0).map(() =>
-                        '<div class="fav-skeleton-card" style="height:380px;background:linear-gradient(110deg,#1a1a1a 30%,#222 50%,#1a1a1a 70%);background-size:200% 100%;animation:favShimmer 1.5s linear infinite;border-radius:12px;"></div>'
-                    ).join('') +
-                    '</div>' +
-                    '<style>@keyframes favShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}</style>';
+                    '<div class="fav-skeleton-wrapper" style="grid-column:1/-1;width:100%;">' +
+                        '<div class="fav-skeleton-header">' +
+                            '<div class="fav-skel-line fav-skel-line--title"></div>' +
+                            '<div class="fav-skel-line fav-skel-line--subtitle"></div>' +
+                        '</div>' +
+                        '<div class="fav-skeleton-grid">' +
+                            Array(count).fill(cardHTML).join('') +
+                        '</div>' +
+                    '</div>';
             },
 
             showEmpty(message, subtitle) {

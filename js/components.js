@@ -51,6 +51,7 @@ async function loadAllComponents() {
     setTimeout(() => {
         initializeHeader();
         initializeFavorites();
+        setupFavoritesPreload();
         populateBrandsMenu();
         // Mount notification center bell (Phase N3)
         if (window.notifyCenter && document.getElementById('headerNotifBell')) {
@@ -347,6 +348,30 @@ function updateFavoritesCount() {
 }
 
 window.updateFavoritesCount = updateFavoritesCount;
+
+// Preload vehicleDB when user hovers favoritos link, so the page renders
+// instantly after click. Cancels itself after first preload.
+function setupFavoritesPreload() {
+    var links = document.querySelectorAll(
+        'a[href="favoritos.html"], a[href$="/favoritos.html"], a[href*="favoritos.html"]'
+    );
+    if (links.length === 0) return;
+    var preloaded = false;
+    function doPreload() {
+        if (preloaded) return;
+        preloaded = true;
+        if (window.vehicleDB && !window.vehicleDB.loaded
+            && typeof window.vehicleDB.load === 'function') {
+            try { window.vehicleDB.load(); } catch (e) {}
+        }
+    }
+    var opts = { passive: true };
+    for (var i = 0; i < links.length; i++) {
+        links[i].addEventListener('mouseenter', doPreload, opts);
+        links[i].addEventListener('focus', doPreload, opts);
+        links[i].addEventListener('touchstart', doPreload, opts);
+    }
+}
 
 // Load components when DOM is ready
 if (document.readyState === 'loading') {

@@ -3142,7 +3142,7 @@ section {
     font-size: 0.95rem;
 }
 
-/* FASE 2 brands styles moved to css/brands-fixes.css */
+/* FASE 2 brands styles — see "MERGED FROM brands-fixes.css" section below */
 
 /* ============================================
    EXPERTS SECTION - FASE 1
@@ -5315,7 +5315,7 @@ footer {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    /* Anula margin-bottom: 1.5rem que añade mobile-fixes.css */
+    /* Anula margin-bottom: 1.5rem añadido en la sección de mobile @media abajo */
     margin-bottom: 0 !important;
 }
 

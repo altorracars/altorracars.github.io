@@ -139,24 +139,19 @@
 | `cookies.css` | Banner de cookies |
 | `citas.css` | Formulario de citas |
 | `reviews.css` | Seccion de resenas |
-| `filtros-avanzados.css` | Filtros sidebar |
+| `filtros-avanzados.css` | Filtros sidebar (busqueda) |
 | `favorites-page.css` | Pagina de favoritos |
-| `favorites-fix.css` | Fixes de favoritos |
 | `favorites-empty-fullpage.css` | Estado vacio de favoritos |
 | `featured-week-banner.css` | Banner vehiculo destacado |
-| `featured-fixes.css` | Fixes de destacados |
-| `vehicles-cards-fix.css` | Fixes de cards de vehiculos |
-| `brands-fixes.css` | Fixes de paginas de marcas |
-| `sidebar-filters-fix.css` | Fixes de sidebar |
-| `footer-fixes.css` | Fixes de footer |
-| `mobile-fixes.css` | Ajustes responsive mobile |
-| `performance-fixes.css` | Optimizaciones CSS |
+| `performance-fixes.css` | Optimizaciones CSS (overrides perf intencionales) |
 | `animaciones.css` | Animaciones y transiciones |
 | `historial-visitas.css` | Widget de historial de visitas |
 | `page-loader.css` | Animacion de carga |
 | `auth.css` | Modal de login/registro/reset: formularios, password strength, Google btn |
 | `auth-header.css` | Estado logueado en header: avatar dropdown desktop + mobile |
 | `perfil.css` | Panel de usuario: sidebar, cards, favoritos, solicitudes, citas, toggle, responsive |
+
+> **Nota P6 (2026-05-02)**: 7 archivos `*-fixes.css` (mobile-fixes, vehicles-cards-fix, sidebar-filters-fix, footer-fixes, featured-fixes, brands-fixes, favorites-fix) fueron consolidados en `style.css` al final, cada uno bajo un comentario `MERGED FROM css/<name>.css (P6 — MFx.x)`. Reduce HTTP requests bloqueantes y simplifica el cascade. `performance-fixes.css` se mantiene aparte como single source de overrides perf curados.
 
 ### Snippets (`snippets/`)
 

@@ -6,7 +6,7 @@
 
 /* Padding base para estado normal (cards o skeleton) */
 body .favorites-section.favorites-section {
-    padding: 40px 0 80px;
+    padding: 16px 0 80px;
 }
 
 /* Sección principal - Full viewport SOLO en estado vacío */

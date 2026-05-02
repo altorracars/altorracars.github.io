@@ -238,17 +238,74 @@ body .vehicle-card {
    Tells the browser to skip rendering sections until they're
    near the viewport. The #1 modern technique for buttery
    scroll performance.
-   contain-intrinsic-size: estimate size so scrollbar doesn't
-   jump when content materializes.
+   contain-intrinsic-size: estimate size so the scrollbar
+   doesn't jump when content materializes.
+
+   Index sections (P3 expansion):
+   - hero/fw-banner stay above-fold (NOT included)
+   - all others get content-visibility
    ──────────────────────────────────────────────────────── */
 .categories-section,
 .brands-section,
 .featured-section,
 .commercial-section,
+.recently-viewed-section,
+.promo-banner-section,
 #testimonials-section,
 .footer {
     content-visibility: auto;
     contain-intrinsic-size: auto 600px;
+}
+/* Note: .search-results-section, .catalog-section, .favorites-section
+   intentionally NOT included — they're the primary viewport on those
+   pages. The cards INSIDE them (rule 19b) handle per-card visibility. */
+
+/* ── 19b. CONTENT-VISIBILITY on individual vehicle cards ──
+   Apple/Stripe's trick for long lists: each card opts into
+   content-visibility independently. The browser only paints
+   cards near the viewport. With 20+ cards in a grid, this
+   reduces initial paint from O(N) to O(visible). Below-fold
+   cards skip layout entirely until scrolled into range.
+
+   contain-intrinsic-size: an estimate of card height (380px
+   is the typical .vehicle-card visual height including
+   image + info block + actions).
+   ──────────────────────────────────────────────────────── */
+.vehicles-grid > .vehicle-card,
+.vehicles-grid > .fw-skeleton-card,
+.vehicles-grid > .fav-skeleton-card {
+    content-visibility: auto;
+    contain-intrinsic-size: 320px 460px;
+}
+
+/* ── 19c. LAYOUT/STYLE CONTAINMENT on cards ──────────────
+   `contain: layout style` isolates the card's layout/style
+   work from the rest of the page. A hover or class change
+   on one card doesn't trigger layout recalc elsewhere.
+
+   We avoid `paint` containment on .vehicle-card because
+   .favorite-btn--burst extends an 18px ring shadow that
+   would get clipped by paint containment.
+   ──────────────────────────────────────────────────────── */
+.vehicle-card,
+.brand-card,
+.category-card,
+.fav-stat,
+.rv-card,
+.fw-slide {
+    contain: layout style;
+}
+
+/* ── 19d. ISOLATE EXPENSIVE COMPLEX SECTIONS ─────────────
+   Hero (8 particles + ambient orbs + animations) and the
+   Featured Week banner (600px tall, 5 layered gradients,
+   HUD scanline, glows) are the heaviest sections on the
+   homepage. Containment isolates their paint work so it
+   doesn't bleed into siblings.
+   ──────────────────────────────────────────────────────── */
+.hero,
+.fw-section {
+    contain: layout style;
 }
 
 /* ── 20. DESTINATION HUD: GPU promotion ─────────────────── */

@@ -1969,11 +1969,61 @@ En `index.html` solamente. La sección `#testimonials-section` usa
 | `js/cache-manager.js` | Invalida cache al detectar nueva `APP_VERSION` |
 | `service-worker.js` | Cache strategy + `CACHE_VERSION` bumping |
 
-### Fases skipped intencionalmente
+### P11 — Lazy Featured Week Banner JS via IntersectionObserver
 
-- **P11 (lazy Featured Week banner JS)**: pendiente, próxima fase
-- **P12 (font-display: swap)**: pendiente
-- **P13 (mobile menu transform)**: pendiente
+**Archivo**: `index.html`
+
+`featured-week-banner.js` (31KB, 708 líneas) ahora se carga con doble
+estrategia:
+- `IntersectionObserver(rootMargin: '400px')` sobre `#fw-banner` — carga
+  el script cuando el banner se acerca al viewport
+- `requestIdleCallback(timeout: 5000)` fallback — carga cuando el browser
+  está idle (cubre users que nunca scrollean)
+
+`window._fwLoaded` sentinel previene doble carga. `main.js`'s Promise.all
+ya tiene guard `typeof loadDestacadosBanner === 'function'` que skip si
+no está definido — sin race conditions.
+
+### P12 — Optimize Google Fonts loading
+
+**Archivos**: 63 HTMLs (raíz + generadas)
+
+Cambios en URL de Poppins:
+- **Eliminado weight 300** (light) — 0 usos en CSS, descarga desperdiciada
+- **Agregado weight 800** (extra-bold) — 37 usos en CSS pero NO se cargaba;
+  el browser sintetizaba fake-bold de baja calidad
+- URL final: `family=Poppins:wght@400;500;600;700;800&display=swap`
+
+Agregado `<noscript>` fallback para usuarios sin JS (el truco
+`media="print" onload="..."` falla sin JS).
+
+### P13 — Mobile menu: transform en lugar de left
+
+**Archivo**: `css/style.css`
+
+El menú mobile slide-in animaba `left` (-100% → 0), disparando layout
+recalc cada frame. Cambiado a:
+- Idle: `left: 0; transform: translateX(-100%)`
+- Active: `transform: translateX(0)`
+- `transition: transform` + `will-change: transform`
+
+Pure GPU compositing, 60fps consistente en mobile low-end. JS no cambió
+(usa solo `classList.toggle`).
+
+### Bonus A — `loading="lazy"` + `decoding="async"` en imgs dinámicas
+
+**Archivos**: `js/comparador.js`, `js/historial-visitas.js`, `js/main.js`
+
+Agregado `decoding="async"` a las `<img>` que ya tenían `loading="lazy"`
+(brand logos, promo banners, history cards). Agregado ambos atributos a
+`comparador.js` (no tenía ninguno).
+
+`decoding="async"` permite al browser decodificar la imagen off main
+thread, eliminando jank de scroll mientras decodifica.
+
+NO se tocaron `<img>` estáticos en HTML (logo de page-loader,
+`mainImage` de detalle-vehiculo) — son above-fold y eager-by-default es
+correcto.
 
 ### Validación recomendada tras cada cambio
 
@@ -1983,11 +2033,14 @@ En `index.html` solamente. La sección `#testimonials-section` usa
 4. Mobile breakpoints (320, 480, 768, 1280) con device toolbar
 5. `getComputedStyle()` de elementos clave para verificar cascade
 
-### Métricas finales (post P1-P10)
+### Métricas finales (post P1-P13)
 
 - HTTP requests CSS bloqueantes: **7 → 3** (style.css, dark-theme.css, performance-fixes.css)
 - Bytes CSS bloqueante: ~270KB → ~210KB
 - 7 archivos `*-fixes.css` eliminados (~70KB del network)
-- 3 JS deferidos a idle (~50KB)
+- 4 JS deferidos a idle/IO: cookies, comparador, reviews, featured-week-banner (~80KB)
 - Scroll listeners: 2 → 1
 - Backdrop-filter en scroll-paths: 14 → 0
+- Mobile menu slide: layout-thrashing `left` → GPU `transform`
+- Web fonts: weight 300 (unused) eliminado, 800 (37 usos) agregado, `<noscript>` fallback
+- Dynamic `<img>` con `decoding="async"`: 0 → 5 callsites

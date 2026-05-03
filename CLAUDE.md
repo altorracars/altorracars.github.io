@@ -2021,9 +2021,43 @@ Agregado `decoding="async"` a las `<img>` que ya tenían `loading="lazy"`
 `decoding="async"` permite al browser decodificar la imagen off main
 thread, eliminando jank de scroll mientras decodifica.
 
-NO se tocaron `<img>` estáticos en HTML (logo de page-loader,
-`mainImage` de detalle-vehiculo) — son above-fold y eager-by-default es
-correcto.
+### P14 — Defer `vehicleDB.startRealtime()` to browser idle
+
+**Archivo**: `js/main.js`
+
+Los listeners onSnapshot de Firestore (vehiculos, marcas, banners) tomaban
+100-300ms en establecerse + primer-snapshot, bloqueando el main thread
+justo después del primer paint. El user ya tiene los datos cacheados
+renderizados; el live sync (cambios admin via onSnapshot) puede esperar.
+
+Wrapper en `requestIdleCallback` con `timeout: 4000ms` (fallback
+`setTimeout(1500ms)` para browsers sin rIC). Trade-off: cambios admin
+se propagan ~1-2s más tarde (acceptable — son eventos raros).
+
+`vehicleDB._realtimeActive` guard previene doble-init si auth.js
+también intenta arrancar listeners.
+
+### P15 — `fetchpriority="high"` en main vehicle image
+
+**Archivos**: `detalle-vehiculo.html` (template) + 25 `/vehiculos/*.html`
+
+El `<img id="mainImage">` es el LCP element en páginas de detalle de
+vehículo — primera imagen visible above-fold. Agregado:
+
+- `loading="eager"` — explícito (no caer accidentalmente en lazy)
+- `fetchpriority="high"` — descarga antes que otras imágenes
+- `decoding="async"` — decode off main thread
+
+Otras hero images del sitio ya tenían estos atributos (búsqueda,
+contacto, marca, marcas, etc.). Esto trae las páginas de vehículo a
+paridad.
+
+### Bonus C — Mobile dropdown `max-height` (intencionalmente skipped)
+
+La técnica moderna `grid-template-rows: 0fr → 1fr` requiere wrapper
+interior dentro de `<ul.dropdown-menu>`, lo que produce HTML inválido
+(`<ul>` no acepta `<div>` como children). El `interpolate-size` nativo
+(Chrome 129+) es la solución futura — esperamos a wider support.
 
 ### Validación recomendada tras cada cambio
 
@@ -2033,7 +2067,7 @@ correcto.
 4. Mobile breakpoints (320, 480, 768, 1280) con device toolbar
 5. `getComputedStyle()` de elementos clave para verificar cascade
 
-### Métricas finales (post P1-P13)
+### Métricas finales (post P1-P15)
 
 - HTTP requests CSS bloqueantes: **7 → 3** (style.css, dark-theme.css, performance-fixes.css)
 - Bytes CSS bloqueante: ~270KB → ~210KB
@@ -2044,3 +2078,5 @@ correcto.
 - Mobile menu slide: layout-thrashing `left` → GPU `transform`
 - Web fonts: weight 300 (unused) eliminado, 800 (37 usos) agregado, `<noscript>` fallback
 - Dynamic `<img>` con `decoding="async"`: 0 → 5 callsites
+- TTI homepage: realtime listeners diferidos a idle (~100-300ms ahorrados)
+- LCP: `fetchpriority="high"` en main vehicle image (26 páginas)

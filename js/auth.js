@@ -536,6 +536,21 @@
         }).catch(function () {});
     }
 
+    // ── Grace-period guards against transient null on first load ─────
+    // Firebase's onAuthStateChanged sometimes fires with null on the
+    // FIRST tick before IndexedDB persistence finishes restoring the
+    // user. If we trust that null immediately, we'd flip the auth-hint
+    // to 'guest' and SHOW the Login/Register buttons — only to flip
+    // back when the real user resolves ~200-1500ms later. That's the
+    // "Registrarse appears sometimes" flash the user reports.
+    //
+    // Strategy: on the FIRST null, if our cached hint says authenticated,
+    // wait up to GRACE_MS for the next fire. If it's still null after,
+    // accept the logout. If a user shows up, cancel the timer.
+    var _initialResolutionDone = false;
+    var _initialNullTimer = null;
+    var GRACE_MS = 1800;
+
     // ── Auth state change → actualizar header + datos per-user ─
     // Best practice (Firebase blog): only create anonymous accounts on
     // first visit. After explicit logout, do NOT create a new anonymous
@@ -544,32 +559,35 @@
     function onAuthStateChanged(user) {
         _currentUser = user;
 
-        if (!user) {
-            updateHeaderAuthState(null);
-            // On explicit logout, purge the local favorites cache so the next
-            // user (or guest) doesn't see the old user's data eagerly hydrated.
-            if (window.favoritesManager) window.favoritesManager.clearUser({ purgeCache: _explicitLogout });
-            if (window.vehicleHistory)   window.vehicleHistory.clearUser();
-
-            // Only sign in anonymously on first visit (no prior session).
-            // After explicit logout, skip — the user can browse without auth
-            // (public reads don't need it) and will get a fresh anonymous
-            // session on next page load if needed.
-            if (_explicitLogout) {
-                _explicitLogout = false;
-                // Restart realtime listeners without auth (public reads)
-                if (window.vehicleDB
-                    && window.vehicleDB.loaded
-                    && !window.vehicleDB._realtimeActive
-                    && typeof window.vehicleDB.startRealtime === 'function') {
-                    window.vehicleDB.startRealtime();
+        // Initial-resolution guard: protect against transient null
+        if (!_initialResolutionDone) {
+            if (!user) {
+                var hint = null;
+                try { hint = localStorage.getItem('altorra_auth_hint'); } catch (e) {}
+                if (hint === 'authenticated') {
+                    // Stale hint says we should be logged in. Wait for
+                    // persistence to restore before flipping to guest.
+                    if (_initialNullTimer) clearTimeout(_initialNullTimer);
+                    _initialNullTimer = setTimeout(function () {
+                        _initialResolutionDone = true;
+                        if (!_currentUser) {
+                            // Truly logged out after grace period — process now
+                            _processNullState();
+                        }
+                    }, GRACE_MS);
+                    return;
                 }
-                return;
             }
+            // Either user present, or hint was 'guest' — proceed normally
+            _initialResolutionDone = true;
+            if (_initialNullTimer) {
+                clearTimeout(_initialNullTimer);
+                _initialNullTimer = null;
+            }
+        }
 
-            window.auth.signInAnonymously().catch(function (err) {
-                console.warn('[Auth] Anonymous sign-in failed:', err && err.message);
-            });
+        if (!user) {
+            _processNullState();
             return;
         }
 
@@ -597,6 +615,36 @@
             && typeof window.vehicleDB.startRealtime === 'function') {
             window.vehicleDB.startRealtime();
         }
+    }
+
+    // Extracted from the original onAuthStateChanged — runs the null/logout
+    // path. Kept as a function so the grace-period guard can defer its call.
+    function _processNullState() {
+        updateHeaderAuthState(null);
+        // On explicit logout, purge the local favorites cache so the next
+        // user (or guest) doesn't see the old user's data eagerly hydrated.
+        if (window.favoritesManager) window.favoritesManager.clearUser({ purgeCache: _explicitLogout });
+        if (window.vehicleHistory)   window.vehicleHistory.clearUser();
+
+        // Only sign in anonymously on first visit (no prior session).
+        // After explicit logout, skip — the user can browse without auth
+        // (public reads don't need it) and will get a fresh anonymous
+        // session on next page load if needed.
+        if (_explicitLogout) {
+            _explicitLogout = false;
+            // Restart realtime listeners without auth (public reads)
+            if (window.vehicleDB
+                && window.vehicleDB.loaded
+                && !window.vehicleDB._realtimeActive
+                && typeof window.vehicleDB.startRealtime === 'function') {
+                window.vehicleDB.startRealtime();
+            }
+            return;
+        }
+
+        window.auth.signInAnonymously().catch(function (err) {
+            console.warn('[Auth] Anonymous sign-in failed:', err && err.message);
+        });
     }
 
     // ── Actualizar botones del header ────────────────────────
@@ -658,28 +706,57 @@
         var name    = user.displayName || user.email.split('@')[0];
         var initials = name.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
         var photoURL = user.photoURL || '';
-        var avatarContent = photoURL
-            ? '<img src="' + escapeHtml(photoURL) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentNode.textContent=\'' + initials + '\'">'
-            : initials;
-        container.innerHTML =
-            '<div class="hdr-user-wrapper">' +
-            '<button class="hdr-user-btn" id="hdrUserBtn" aria-label="Mi cuenta" aria-expanded="false">' +
-            '<span class="hdr-user-avatar">' + avatarContent + '</span>' +
-            '<span class="hdr-user-name">' + escapeHtml(name.split(' ')[0]) + '</span>' +
-            '<i data-lucide="chevron-down" class="hdr-user-chevron"></i>' +
-            '</button>' +
-            '<div class="hdr-user-dropdown" id="hdrUserDropdown" role="menu">' +
-            '<a href="perfil.html" class="hdr-dd-item" role="menuitem"><i data-lucide="user-round"></i> Mi perfil</a>' +
-            '<a href="favoritos.html" class="hdr-dd-item" role="menuitem"><i data-lucide="heart"></i> Mis favoritos</a>' +
-            '<hr class="hdr-dd-sep">' +
-            '<button class="hdr-dd-item hdr-dd-logout" id="hdrLogoutBtn" role="menuitem"><i data-lucide="log-out"></i> Cerrar sesión</button>' +
-            '</div>' +
-            '</div>';
+        var firstName = name.split(' ')[0] || '';
+
+        // Detect components.js pre-render: if the avatar is already in the
+        // DOM from the cached snapshot AND the name matches, we just need
+        // to append the dropdown + wire up listeners. This avoids the
+        // micro-flicker of replacing innerHTML when the avatar is identical.
+        var preWrapper = container.querySelector('.hdr-user-wrapper[data-prerendered="1"]');
+        var preName = preWrapper && preWrapper.querySelector('.hdr-user-name');
+        var matchesPrerender = preWrapper && preName && preName.textContent === firstName;
+        var hasDropdown = container.querySelector('.hdr-user-dropdown');
+
+        if (matchesPrerender && !hasDropdown) {
+            // Optimal path: append dropdown without touching the avatar
+            preWrapper.removeAttribute('data-prerendered'); // no longer transient
+            var dropdownHtml =
+                '<div class="hdr-user-dropdown" id="hdrUserDropdown" role="menu">' +
+                '<a href="perfil.html" class="hdr-dd-item" role="menuitem"><i data-lucide="user-round"></i> Mi perfil</a>' +
+                '<a href="favoritos.html" class="hdr-dd-item" role="menuitem"><i data-lucide="heart"></i> Mis favoritos</a>' +
+                '<hr class="hdr-dd-sep">' +
+                '<button class="hdr-dd-item hdr-dd-logout" id="hdrLogoutBtn" role="menuitem"><i data-lucide="log-out"></i> Cerrar sesión</button>' +
+                '</div>';
+            preWrapper.insertAdjacentHTML('beforeend', dropdownHtml);
+        } else if (!matchesPrerender) {
+            // Full re-render: pre-render absent or stale (different user)
+            var avatarContent = photoURL
+                ? '<img src="' + escapeHtml(photoURL) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentNode.textContent=\'' + initials + '\'">'
+                : initials;
+            container.innerHTML =
+                '<div class="hdr-user-wrapper">' +
+                '<button class="hdr-user-btn" id="hdrUserBtn" aria-label="Mi cuenta" aria-expanded="false">' +
+                '<span class="hdr-user-avatar">' + avatarContent + '</span>' +
+                '<span class="hdr-user-name">' + escapeHtml(firstName) + '</span>' +
+                '<i data-lucide="chevron-down" class="hdr-user-chevron"></i>' +
+                '</button>' +
+                '<div class="hdr-user-dropdown" id="hdrUserDropdown" role="menu">' +
+                '<a href="perfil.html" class="hdr-dd-item" role="menuitem"><i data-lucide="user-round"></i> Mi perfil</a>' +
+                '<a href="favoritos.html" class="hdr-dd-item" role="menuitem"><i data-lucide="heart"></i> Mis favoritos</a>' +
+                '<hr class="hdr-dd-sep">' +
+                '<button class="hdr-dd-item hdr-dd-logout" id="hdrLogoutBtn" role="menuitem"><i data-lucide="log-out"></i> Cerrar sesión</button>' +
+                '</div>' +
+                '</div>';
+        }
+        // else: matchesPrerender AND hasDropdown — already fully rendered, idempotent
+
         if (window.lucide) window.lucide.createIcons({ nodes: [container] });
-        // Dropdown toggle
+        // Dropdown toggle — guard against double-binding (renderUserArea
+        // can fire multiple times: pre-render, then onAuthStateChanged)
         var btn      = $id('hdrUserBtn');
         var dropdown = $id('hdrUserDropdown');
-        if (btn && dropdown) {
+        if (btn && dropdown && !btn.dataset.bound) {
+            btn.dataset.bound = '1';
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 var open = dropdown.classList.toggle('open');
@@ -691,7 +768,10 @@
             });
         }
         var logoutBtn = $id('hdrLogoutBtn');
-        if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+        if (logoutBtn && !logoutBtn.dataset.bound) {
+            logoutBtn.dataset.bound = '1';
+            logoutBtn.addEventListener('click', handleLogout);
+        }
     }
 
     function updateMobileAuthRow(user) {

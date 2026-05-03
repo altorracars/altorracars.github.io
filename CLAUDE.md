@@ -1372,6 +1372,198 @@ Durante esos 200-2000ms, los botones de login/register son visibles.
 - 62 HTMLs — inline script reader en cada `<head>` (script Python
   para inject consistent: `inject-auth-hint.py`)
 
+### Header Loading Sprint — apariencia secuencial + flash residual del Registrarse
+
+**Sintomas residuales** (post-fix anterior):
+1. **El boton "Registrarse" segue apareciendo a veces** durante 200-1500ms
+   en redes lentas, incluso con el auth-hint en `<head>`
+2. **El lado derecho del header carga secuencialmente**: favoritos →
+   ingresar → registrarse → bell aparecen uno-por-uno (300-600ms total)
+   en vez de juntos. El boton de favoritos sale ULTIMO
+
+**Causas raiz** (3 combinadas):
+
+**Causa A — Race del primer `onAuthStateChanged(null)` transiente**:
+Firebase a veces dispara `onAuthStateChanged(null)` ANTES de que IndexedDB
+restaure la persistencia. Si el codigo trata ese null como "logout",
+inmediatamente:
+- `localStorage.altorra_auth_hint = 'guest'`
+- `<html>` pierde `auth-authenticated`, gana `auth-guest`
+- Los botones Login/Register se VUELVEN visibles
+Luego (200-1500ms despues) Firebase resuelve con el usuario real → flip
+de vuelta a authenticated → flash visible
+
+**Causa B — Async fetch del header HTML**:
+`components.js` hace `fetch('snippets/header.html')` y inyecta con
+`innerHTML`. Esto toma 50-300ms. Durante ese tiempo el `header-placeholder`
+esta vacio. Cuando el HTML llega, los elementos del lado derecho aparecen
+secuencialmente porque cada uno tiene SVG inline que decodifica en
+momentos ligeramente distintos + el `headerNotifBell` se monta despues
+por `notifyCenter.mount()` + el `headerUserArea` se popula despues por
+`auth.js`. Todo esto causa multiples repaints visibles.
+
+**Causa C — `auth-header.css` cargado async**:
+El CSS del avatar dropdown (`hdr-user-btn`, `hdr-user-avatar`, etc.) se
+cargaba via `loadAuthSystem()` despues de la inyeccion del header.
+Resultado: el avatar pop-in con estilo bruto antes de que el CSS llegara.
+
+**Fix aplicado** (2026-05-03 — Header Loading Sprint):
+
+**1. Grace-period contra el null transiente** (`js/auth.js`):
+```js
+var _initialResolutionDone = false;
+var _initialNullTimer = null;
+var GRACE_MS = 1800;
+
+function onAuthStateChanged(user) {
+    if (!_initialResolutionDone && !user) {
+        var hint = localStorage.getItem('altorra_auth_hint');
+        if (hint === 'authenticated') {
+            // Probable transient null. Wait for persistence.
+            _initialNullTimer = setTimeout(function () {
+                _initialResolutionDone = true;
+                if (!_currentUser) _processNullState();
+            }, GRACE_MS);
+            return;
+        }
+    }
+    // ... normal flow
+}
+```
+Si el primer fire es null PERO el hint dice authenticated, espera 1800ms
+antes de hacer flip a guest. Si Firebase resuelve el usuario en ese
+tiempo, el timer se cancela y nunca hay flash. Si pasan 1800ms y sigue
+null, recién ahí procesamos el logout.
+
+**2. Atomic reveal del lado derecho** (`css/style.css` + critical inline):
+```css
+.nav-actions {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-actions.hdr-ready { opacity: 1; visibility: visible; }
+```
+La clase `.hdr-ready` se agrega via `requestAnimationFrame` en
+`components.js` DESPUES de inyectar el header Y de aplicar el auth state
+sincronicamente. Resultado: todos los elementos del lado derecho aparecen
+JUNTOS con un fade-in suave de 280ms — nunca uno-por-uno.
+
+**3. Pre-render sincronico del avatar desde snapshot cacheado**
+(`js/components.js` `applyAuthHintToHeader`):
+```js
+function applyAuthHintToHeader() {
+    var hint = localStorage.getItem('altorra_auth_hint');
+    if (hint !== 'authenticated') return;
+    var snap = JSON.parse(localStorage.getItem('altorra_auth_user_snap'));
+    if (!snap) return;
+    // Build avatar HTML from cached snapshot
+    var userArea = document.getElementById('headerUserArea');
+    userArea.innerHTML = '<div class="hdr-user-wrapper" data-prerendered="1">' + ...;
+}
+```
+Para usuarios que vuelven al sitio logueados, el avatar aparece
+INSTANTANEAMENTE desde el snapshot cacheado en localStorage — sin
+esperar a que Firebase resuelva. Patron Apple/Amazon: optimistic UI
+desde estado cacheado.
+
+**4. `auth.js renderUserArea` detecta pre-render para evitar doble-paint**:
+```js
+var preWrapper = container.querySelector('.hdr-user-wrapper[data-prerendered="1"]');
+if (matchesPrerender && !hasDropdown) {
+    // Optimal: just append dropdown + wire listeners
+    preWrapper.insertAdjacentHTML('beforeend', dropdownHtml);
+} else if (!matchesPrerender) {
+    // Full render
+    container.innerHTML = ...;
+}
+```
+Si el avatar ya esta pre-renderizado y el nombre coincide, solo se
+agrega el dropdown sin tocar el avatar. Cero flicker.
+
+**5. `auth-header.css` mergeado en `style.css`**:
+Los 168 lineas del CSS del avatar dropdown ahora viven al final de
+`style.css` (marcador `MERGED FROM css/auth-header.css`). Asi el CSS
+esta listo en el primer paint del style.css blocking — no async.
+
+**6. Critical inline CSS en `<head>` de cada HTML**:
+```html
+<style>
+#header-placeholder{min-height:80px;display:block}
+header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
+header .nav-actions.hdr-ready{opacity:1;visibility:visible}
+html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,...{display:none!important}
+html.auth-guest #headerUserArea{display:none!important}
+html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
+</style>
+```
+Reserva 80px de altura del header (cero CLS), aplica las reglas auth-hint
+sincronicamente (defense-in-depth si style.css aun no parsea), y oculta
+el `.nav-actions` hasta que JS confirme que esta listo.
+
+**7. Notification bell slot reservado** (`hdr-notif-bell-slot` en
+auth-header.css mergeado): `min-width: 34px; min-height: 34px` evita
+que el bell pop-in cuando `notifyCenter.mount()` corre.
+
+**Flujo completo end-to-end** (return visit logged-in):
+```
+T=0           HTML parse, inline <head>:
+              - Reads auth_hint='authenticated' → adds .auth-authenticated to <html>
+              - Critical CSS reserves 80px header, hides .nav-actions
+T=+blocking   style.css applies (auth rules already match thanks to inline)
+T=+0ms        First paint: header shell visible, right side INVISIBLE
+T=+50-300ms   components.js fetch resolves, header HTML injected
+T=+0ms        applyAuthHintToHeader runs synchronously:
+              - Reads cached user snapshot from localStorage
+              - Pre-renders avatar HTML into #headerUserArea
+T=+next rAF   .hdr-ready class added → .nav-actions fade-in 280ms:
+              - All elements (favoritos, bell, avatar) appear TOGETHER
+T=+200-1500ms Firebase Auth resolves user from IndexedDB persistence
+              → updateHeaderAuthState detects pre-render, just appends dropdown
+              → ZERO visible change
+```
+
+**Flujo (return visit logged-out)**:
+```
+T=0           inline reads hint='guest' → .auth-guest applied
+T=+blocking   style.css: auth-guest hides #headerUserArea
+T=+50-300ms   header injected. login/register buttons present, hidden
+              by .nav-actions opacity:0
+T=+next rAF   .hdr-ready → all visible together, fade-in 280ms
+T=+~500ms     Firebase fires onAuthStateChanged(null) → already correct
+```
+
+**Flujo (sesion expirada — hint stale)**:
+```
+T=0           inline reads hint='authenticated' (stale)
+T=+rAF        avatar pre-rendered + .hdr-ready
+T=+~500ms     Firebase fires onAuthStateChanged(null)
+              → grace timer starts (1800ms)
+T=+~700ms     Firebase confirms still null in second fire
+              → grace timer continues
+T=+1800ms     Timer expires, _processNullState runs:
+              → updateHeaderAuthState(null) flips to guest
+              → avatar replaced by login/register buttons (one paint)
+```
+En sesion expirada hay UN flip al final, pero solo si la sesion era
+realmente invalida. Para sesion valida con persistencia lenta, cero flash.
+
+**Archivos modificados** (2026-05-03):
+- `js/auth.js` — grace-period, `_processNullState` extraido, `renderUserArea`
+  detecta pre-render con `data-prerendered`, guards `data-bound` para
+  prevenir double-binding de event listeners
+- `js/components.js` — `applyAuthHintToHeader()` nueva, `.hdr-ready` via
+  rAF, `auth-header.css` async-load eliminado
+- `css/style.css` — `.nav-actions` opacity gate + `.hdr-ready` reveal,
+  `auth-header.css` mergeado al final, `.hdr-notif-bell-slot` reserva
+- `css/auth-header.css` — DEPRECATED (mantenido en disco por compat de
+  cache; ya no referenciado por nuevos page loads)
+- 65 HTMLs — critical inline CSS injected (62 con auth-hint previo + 4
+  faltantes regenerados con bloque completo)
+- `service-worker.js` + `js/cache-manager.js` — version bump
+- `detalle-vehiculo.html` + `marca.html` (templates de generador) ya
+  parchados, las paginas regeneradas heredaran el fix
+
 ---
 
 ## 9. Fases Completadas (Historico)

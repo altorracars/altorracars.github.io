@@ -233,6 +233,24 @@
         }
     })();
     </script>
+    <!-- Critical header CSS — inlined for first-paint stability.
+         (1) Reserves 80px for the header so layout doesn't shift when
+             components.js injects the fetched header HTML.
+         (2) Hides .nav-actions until JS adds .hdr-ready (atomic reveal —
+             prevents the sequential paint of favoritos→login→register→bell).
+         (3) Auth hint rules duplicated here so they apply even before
+             style.css finishes parsing (defense-in-depth).
+         Apple/Amazon pattern: critical chrome CSS is always inline. -->
+    <style>
+    #header-placeholder{min-height:80px;display:block}
+    header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
+    header .nav-actions.hdr-ready{opacity:1;visibility:visible}
+    html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,html.auth-authenticated #mobBtnLogin,html.auth-authenticated #mobBtnRegister{display:none!important}
+    html.auth-guest #headerUserArea{display:none!important}
+    html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
+    @media (prefers-reduced-motion:reduce){header .nav-actions{transition:none}}
+    </style>
+
     <!-- Page Loader — Critical Inline CSS (cross-browser) -->
     <style>
     #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;gap:24px;-webkit-transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);}

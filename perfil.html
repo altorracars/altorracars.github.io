@@ -27,6 +27,40 @@
     <noscript>
             <link rel="stylesheet" href="css/toast-notifications.css">
     </noscript>
+    <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
+         unauthenticated header buttons when the user is already logged in.
+         Sets html.auth-authenticated or html.auth-guest based on the
+         localStorage flag persisted by auth.js (updateHeaderAuthState).
+         CSS in style.css uses these classes to hide/show login buttons. -->
+    <script>
+    (function () {
+        try {
+            var hint = localStorage.getItem('altorra_auth_hint');
+            document.documentElement.classList.add(
+                hint === 'authenticated' ? 'auth-authenticated' : 'auth-guest'
+            );
+        } catch (e) {
+            document.documentElement.classList.add('auth-guest');
+        }
+    })();
+    </script>
+    <!-- Critical header CSS — inlined for first-paint stability.
+         (1) Reserves 80px for the header so layout doesn't shift when
+             components.js injects the fetched header HTML.
+         (2) Hides .nav-actions until JS adds .hdr-ready (atomic reveal —
+             prevents the sequential paint of favoritos→login→register→bell).
+         (3) Auth hint rules duplicated here so they apply even before
+             style.css finishes parsing (defense-in-depth).
+         Apple/Amazon pattern: critical chrome CSS is always inline. -->
+    <style>
+    #header-placeholder{min-height:80px;display:block}
+    header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
+    header .nav-actions.hdr-ready{opacity:1;visibility:visible}
+    html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,html.auth-authenticated #mobBtnLogin,html.auth-authenticated #mobBtnRegister{display:none!important}
+    html.auth-guest #headerUserArea{display:none!important}
+    html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
+    @media (prefers-reduced-motion:reduce){header .nav-actions{transition:none}}
+    </style>
 </head>
 <body>
     <div id="page-loader" role="status" aria-label="Cargando">

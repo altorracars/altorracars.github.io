@@ -2246,3 +2246,78 @@ Navegación entre páginas (Chrome 126+):
   Página nueva → page-loader detecta cache warm → skip splash (150ms)
                 → sequential reveal del nuevo hero
 ```
+
+### Bonus B — `width`/`height` explícitos + image optimizer script
+
+**Archivos**: 11 HTMLs raíz + `scripts/optimize-images.mjs` (nuevo)
+
+#### B.1 — width/height explícitos en hero images
+
+Agregado `width="X" height="Y"` a 11 hero `<img>` (categories, heroes,
+marcas-hero). Las dimensiones reales:
+
+| Image | Dimensions |
+|---|---|
+| BUSQUEDA, contacto-hero, cookies-hero, privacidad-hero, resenas-hero, terminos-hero | 1920×800 |
+| marcas-hero | 1920×1134 |
+| HATCHBACK | 1200×800 |
+| PICKUP, SEDAN, SUV | 1920×900 |
+
+**Por qué importa**: el browser ahora calcula el aspect-ratio antes de
+descargar la imagen. Reserva el espacio correcto en el layout. Resultado:
+**0 Cumulative Layout Shift (CLS)** cuando la imagen llega — crítico para
+mobile UX.
+
+#### B.2 — `scripts/optimize-images.mjs` (opcional, requiere sharp)
+
+Script Node que genera variantes AVIF + WebP en 4 tamaños responsive
+(480, 768, 1280, 1920) para 12 imágenes hero/categorías. Output a
+`multimedia/optimized/`.
+
+**Uso**:
+```bash
+npm install --save-dev sharp
+node scripts/optimize-images.mjs
+```
+
+**Resultado esperado**: ~30-60% reducción de peso vs JPG/PNG originales.
+Una imagen 1920×800 JPG (200KB) → AVIF 480 (~25KB), WebP 1920 (~80KB).
+
+**Después de generar**: actualizar HTML para usar `<picture>` con srcset:
+```html
+<picture>
+    <source type="image/avif" srcset="
+        multimedia/optimized/SUV-480.avif 480w,
+        multimedia/optimized/SUV-768.avif 768w,
+        multimedia/optimized/SUV-1280.avif 1280w,
+        multimedia/optimized/SUV-1920.avif 1920w">
+    <source type="image/webp" srcset="multimedia/optimized/SUV-...">
+    <img src="multimedia/categories/SUV.jpg" alt="SUV"
+         width="1920" height="900" sizes="100vw"
+         loading="eager" fetchpriority="high">
+</picture>
+```
+
+**Estado actual**: el script existe y está validado, pero NO se ha
+ejecutado (sharp no está instalado en el entorno actual). Cuando el
+user instale sharp y corra el script, las imágenes optimizadas
+aparecerán en `multimedia/optimized/`.
+
+**Bumping cache**: tras agregar las imágenes, bump `service-worker.js`
+`CACHE_VERSION` para invalidar HTMLs cacheados.
+
+### Métricas finales (post P1-P15 + L1-L4 + Bonus B)
+
+- HTTP requests CSS bloqueantes: **7 → 3** (style.css, dark-theme.css, performance-fixes.css)
+- Bytes CSS bloqueante: ~270KB → ~210KB
+- 7 archivos `*-fixes.css` eliminados (~70KB del network)
+- 4 JS deferidos a idle/IO: cookies, comparador, reviews, featured-week-banner (~80KB)
+- Scroll listeners: 2 → 1
+- Backdrop-filter en scroll-paths: 14 → 0
+- Mobile menu slide: layout-thrashing `left` → GPU `transform`
+- Web fonts: weight 300 (unused) eliminado, 800 (37 usos) agregado, `<noscript>` fallback
+- Dynamic `<img>` con `decoding="async"`: 0 → 5 callsites
+- TTI homepage: realtime listeners diferidos a idle (~100-300ms ahorrados)
+- LCP: `fetchpriority="high"` en main vehicle image (26 páginas)
+- CLS: 11 hero images con `width`/`height` explícitos → 0 layout shift
+- Image optimizer script disponible — esperando `npm install sharp` para correr

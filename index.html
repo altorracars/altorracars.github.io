@@ -1008,13 +1008,15 @@
     <script src="js/components.js" defer></script>
     <script src="js/database.js" defer></script>
     <script src="js/render.js" defer></script>
-    <!-- Featured Week Banner — lazy via IntersectionObserver + idle fallback.
-         The 31KB module is the heaviest non-critical JS on the homepage.
-         Strategy: load when #fw-banner enters viewport (rootMargin 400px so
-         it loads JUST BEFORE the user sees it) OR when the browser is idle
-         (covers users who never scroll). main.js's Promise.all skips
-         loadDestacadosBanner() if it's not yet defined and the script's
-         own onload handler fires the init when ready. -->
+    <!-- Featured Week Banner — lazy load with multiple triggers for safety.
+         The 31KB module is heavy. We DO NOT use IntersectionObserver here
+         because #fw-banner has display:none initially (the JS shows it only
+         after confirming featured vehicles exist) — and IO does NOT observe
+         display:none elements. Instead we use:
+           1) requestIdleCallback / setTimeout — guaranteed eventual load
+           2) First user interaction (scroll/touch/mouse) — instant response
+              if the user starts using the page
+         Whichever fires first wins; window._fwLoaded sentinel dedupes. -->
     <script>
     (function () {
         function loadFW() {
@@ -1030,25 +1032,23 @@
                     });
                 }
             };
+            s.onerror = function () {
+                // Network failed — allow re-trigger so retry can attempt
+                window._fwLoaded = false;
+            };
             document.body.appendChild(s);
         }
-        // 1) IntersectionObserver — load when banner is approaching viewport
-        var bannerEl = document.getElementById('fw-banner');
-        if (bannerEl && 'IntersectionObserver' in window) {
-            var io = new IntersectionObserver(function (entries) {
-                if (entries[0].isIntersecting) {
-                    io.disconnect();
-                    loadFW();
-                }
-            }, { rootMargin: '400px 0px' });
-            io.observe(bannerEl);
-        }
-        // 2) Idle fallback — covers users who never scroll to the banner
+        // Trigger 1: idle callback (or 1.5s fallback in browsers without rIC)
         if ('requestIdleCallback' in window) {
-            requestIdleCallback(loadFW, { timeout: 5000 });
+            requestIdleCallback(loadFW, { timeout: 2500 });
         } else {
-            setTimeout(loadFW, 3000);
+            setTimeout(loadFW, 1500);
         }
+        // Trigger 2: first user interaction — load instantly if user engages
+        var interactionEvents = ['scroll', 'touchstart', 'mousemove', 'keydown'];
+        interactionEvents.forEach(function (ev) {
+            window.addEventListener(ev, loadFW, { once: true, passive: true, capture: true });
+        });
     })();
     </script>
     <script src="js/main.js" defer></script>

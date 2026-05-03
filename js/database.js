@@ -29,12 +29,12 @@ class VehicleDatabase {
         }
     }
 
-    _loadFromCache() {
+    _loadFromCache(allowStale) {
         try {
             var raw = localStorage.getItem(this._cacheKey);
             if (!raw) return false;
             var data = JSON.parse(raw);
-            if (Date.now() - data.ts > this._cacheMaxAge) return false;
+            if (!allowStale && Date.now() - data.ts > this._cacheMaxAge) return false;
             this.vehicles = data.vehicles || [];
             this.brands = data.brands || [];
             return true;
@@ -48,7 +48,10 @@ class VehicleDatabase {
     async load(forceRefresh = false) {
         if (this.loaded && !forceRefresh) return;
 
-        // STEP 1: Show cached data instantly (if available)
+        // Reset error flag on each load attempt
+        this._loadError = false;
+
+        // STEP 1: Show cached data instantly (if fresh)
         var hadCache = false;
         if (!forceRefresh) {
             hadCache = this._loadFromCache();
@@ -81,13 +84,27 @@ class VehicleDatabase {
                         console.warn('[DB] Firestore attempt ' + (attempt + 1) + '/2 failed:', e.message);
                     }
                 }
+                // All Firestore attempts failed — mark as error
+                this._loadError = true;
             } else {
-                console.warn('[DB] Firebase SDK not ready after 8s timeout');
+                console.warn('[DB] Firebase SDK not ready after 5s timeout');
+                this._loadError = true;
             }
+        } else {
+            this._loadError = true;
         }
 
-        // STEP 3: If no cache was loaded, Firestore is unavailable — empty state
+        // STEP 3: If we already had fresh cache, we're fine even if Firestore failed.
+        // If no fresh cache, try STALE cache as a last resort (better than nothing).
         if (!hadCache) {
+            var staleLoaded = this._loadFromCache(true /* allowStale */);
+            if (staleLoaded) {
+                this.normalizeVehicles();
+                this.loaded = true;
+                console.warn('[DB] Firestore failed — using STALE cache (' + this.vehicles.length + ' vehicles)');
+                return;
+            }
+            // Truly nothing to show
             console.warn('[DB] Firestore unavailable and no cache. Empty inventory.');
             this.vehicles = [];
             this.brands = [];

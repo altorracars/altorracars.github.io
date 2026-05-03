@@ -6665,3 +6665,133 @@ iframe,
         }
     }
 }
+
+/* ============================================
+   L3.3 — VEHICLE CARD SKELETONS
+   ============================================
+   Replaces generic spinner with content-shaped placeholders that
+   match the real .vehicle-card layout. Used by render.js's
+   showLoading() while vehicleDB resolves.
+
+   Pattern: skeleton cards have the same dimensions and visual
+   structure as real cards. Subtle gold shimmer wave gives "loading"
+   feel without being annoying.
+*/
+.vh-skeleton-card {
+    flex: 0 0 320px;
+    min-width: 280px;
+    max-width: 100%;
+    min-height: 380px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    isolation: isolate;
+    opacity: 0;
+    animation: vhSkelFadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    contain: layout style;
+}
+
+/* Stagger entry so they don't all appear at once */
+.vh-skeleton-card:nth-child(1) { animation-delay: 0ms; }
+.vh-skeleton-card:nth-child(2) { animation-delay: 70ms; }
+.vh-skeleton-card:nth-child(3) { animation-delay: 140ms; }
+.vh-skeleton-card:nth-child(4) { animation-delay: 210ms; }
+.vh-skeleton-card:nth-child(5) { animation-delay: 280ms; }
+.vh-skeleton-card:nth-child(6) { animation-delay: 350ms; }
+
+/* Shimmer wave that travels horizontally over the entire card */
+.vh-skeleton-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent 30%,
+        rgba(184, 150, 88, 0.10) 50%,
+        transparent 70%
+    );
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: vhSkelShimmer 1.8s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.vh-skel-image {
+    width: 100%;
+    height: 200px;
+    background:
+        linear-gradient(135deg, rgba(184, 150, 88, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.vh-skel-body {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: calc(100% - 200px);
+    box-sizing: border-box;
+}
+
+.vh-skel-line {
+    height: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 5px;
+}
+
+.vh-skel-title { height: 20px; width: 75%; }
+.vh-skel-meta  { height: 12px; width: 55%; }
+.vh-skel-price { height: 24px; width: 45%; margin-top: 6px;
+    background: rgba(184, 150, 88, 0.10);
+}
+
+.vh-skel-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 12px;
+}
+
+.vh-skel-pill {
+    flex: 1;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 9px;
+}
+
+@keyframes vhSkelFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes vhSkelShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vh-skeleton-card {
+        opacity: 1;
+        transform: none;
+        animation: none !important;
+    }
+    .vh-skeleton-card::after {
+        animation: none !important;
+        opacity: 0.3;
+    }
+}
+
+/* Mobile breakpoint — slimmer cards */
+@media (max-width: 640px) {
+    .vh-skeleton-card {
+        flex: 0 0 280px;
+        min-width: 260px;
+        min-height: 360px;
+    }
+    .vh-skel-image { height: 180px; }
+    .vh-skel-body { height: calc(100% - 180px); }
+}

@@ -322,14 +322,26 @@ function attachPaginationListeners() {
 }
 
 // Render loading state
+// L3.3: skeleton screens that match the SHAPE of the final vehicle cards.
+// Replaces the generic spinner with 6 placeholder cards in the same grid
+// layout — same trick Stripe/Vercel use for instant "feel" of content
+// while data loads. Each card shows: image area + title line + meta line
+// + price + action pills. A subtle gold shimmer wave passes left-to-right.
 function showLoading(containerId) {
     const container = document.getElementById(containerId);
-    if (container) {
-        container.innerHTML = `
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Cargando vehículos...</p>
-            </div>
-        `;
-    }
+    if (!container) return;
+    var cardHTML =
+        '<div class="vh-skeleton-card">' +
+            '<div class="vh-skel-image"></div>' +
+            '<div class="vh-skel-body">' +
+                '<div class="vh-skel-line vh-skel-title"></div>' +
+                '<div class="vh-skel-line vh-skel-meta"></div>' +
+                '<div class="vh-skel-line vh-skel-price"></div>' +
+                '<div class="vh-skel-actions">' +
+                    '<div class="vh-skel-pill"></div>' +
+                    '<div class="vh-skel-pill"></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    container.innerHTML = cardHTML.repeat(6);
 }

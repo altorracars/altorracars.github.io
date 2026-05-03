@@ -660,6 +660,28 @@
         return !!(window.google && window.google.accounts && window.google.accounts.id);
     }
 
+    var _gisInitialized = false;
+    var _gisInitCallback = null;
+
+    function _ensureGisInit(callback) {
+        _gisInitCallback = callback;
+        if (_gisInitialized) return;
+        _gisInitialized = true;
+        window.google.accounts.id.initialize({
+            client_id: window.GOOGLE_OAUTH_CLIENT_ID,
+            callback: function (response) {
+                if (typeof _gisInitCallback === 'function') {
+                    _gisInitCallback(response);
+                }
+            },
+            auto_select: false,
+            cancel_on_tap_outside: true,
+            use_fedcm_for_prompt: true,
+            context: 'signin',
+            itp_support: true
+        });
+    }
+
     function handleGoogle() {
         if (!window.auth) {
             _toast('Cargando, intenta de nuevo en un momento.', 'info');
@@ -715,57 +737,61 @@
     // which is a JWT ID token. We pass it to firebase.auth().signInWithCredential().
     function _gisSignIn() {
         if (!_shouldUseGis()) {
-            // Defensive — shouldn't happen if caller checked
             _legacyPopupSignIn();
             return;
         }
         _lockAuthControls(true);
 
-        try {
-            // Initialize GIS (idempotent — internal cache prevents re-init)
-            window.google.accounts.id.initialize({
-                client_id: window.GOOGLE_OAUTH_CLIENT_ID,
-                callback: _onGisCredential,
-                auto_select: false, // Don't auto-pick account on click
-                cancel_on_tap_outside: true,
-                use_fedcm_for_prompt: true, // Chrome 117+ requires FedCM
-                context: 'signin',
-                ux_mode: 'popup' // Internal popup (NOT window.open)
-            });
+        var promptResolved = false;
+        var watchdogTimer = setTimeout(function () {
+            if (!promptResolved) {
+                promptResolved = true;
+                console.info('[GIS] Prompt timed out (FedCM likely blocked), falling back to legacy popup');
+                _lockAuthControls(false);
+                _legacyPopupSignIn();
+            }
+        }, 3000);
 
-            // Show the prompt (account chooser UI)
+        try {
+            _ensureGisInit(_onGisCredential);
+
             window.google.accounts.id.prompt(function (notification) {
-                // Notifications fire if the prompt is suppressed/dismissed
+                if (promptResolved) return;
+
                 if (notification.isNotDisplayed && notification.isNotDisplayed()) {
+                    promptResolved = true;
+                    clearTimeout(watchdogTimer);
                     var reason = notification.getNotDisplayedReason && notification.getNotDisplayedReason();
                     console.info('[GIS] Prompt not displayed:', reason);
                     _lockAuthControls(false);
-                    // Common reasons: user has no Google session, opted out,
-                    // browser unsupported. Fall back to legacy popup.
-                    if (reason === 'opt_out_or_no_session' ||
-                        reason === 'unregistered_origin' ||
-                        reason === 'browser_not_supported' ||
-                        reason === 'secure_http_required') {
-                        _legacyPopupSignIn();
-                    }
+                    _legacyPopupSignIn();
                 } else if (notification.isSkippedMoment && notification.isSkippedMoment()) {
+                    promptResolved = true;
+                    clearTimeout(watchdogTimer);
                     var skipReason = notification.getSkippedReason && notification.getSkippedReason();
                     console.info('[GIS] Prompt skipped:', skipReason);
                     _lockAuthControls(false);
                     if (skipReason === 'user_cancel' || skipReason === 'tap_outside') {
-                        // User dismissed — silent (no toast)
                         return;
                     }
                     _legacyPopupSignIn();
                 } else if (notification.isDismissedMoment && notification.isDismissedMoment()) {
                     var dismissReason = notification.getDismissedReason && notification.getDismissedReason();
-                    if (dismissReason !== 'credential_returned') {
+                    if (dismissReason === 'credential_returned') {
+                        promptResolved = true;
+                        clearTimeout(watchdogTimer);
+                    } else {
+                        promptResolved = true;
+                        clearTimeout(watchdogTimer);
                         _lockAuthControls(false);
                     }
                 }
             });
         } catch (e) {
+            promptResolved = true;
+            clearTimeout(watchdogTimer);
             console.warn('[GIS] Init failed, falling back to legacy popup:', e && e.message);
+            _gisInitialized = false;
             _lockAuthControls(false);
             _legacyPopupSignIn();
         }
@@ -1482,15 +1508,7 @@
             if (!_shouldUseGis()) return;
 
             try {
-                window.google.accounts.id.initialize({
-                    client_id: window.GOOGLE_OAUTH_CLIENT_ID,
-                    callback: _onGisCredential,
-                    auto_select: false,
-                    cancel_on_tap_outside: false, // user must X-out explicitly
-                    use_fedcm_for_prompt: true,
-                    context: 'signin',
-                    itp_support: true // safer with Safari ITP
-                });
+                _ensureGisInit(_onGisCredential);
                 window.google.accounts.id.prompt(function (notification) {
                     if (notification.isDismissedMoment && notification.isDismissedMoment()) {
                         var reason = notification.getDismissedReason && notification.getDismissedReason();

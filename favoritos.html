@@ -25,6 +25,23 @@
     </noscript>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+    <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
+         unauthenticated header buttons when the user is already logged in.
+         Sets html.auth-authenticated or html.auth-guest based on the
+         localStorage flag persisted by auth.js (updateHeaderAuthState).
+         CSS in style.css uses these classes to hide/show login buttons. -->
+    <script>
+    (function () {
+        try {
+            var hint = localStorage.getItem('altorra_auth_hint');
+            document.documentElement.classList.add(
+                hint === 'authenticated' ? 'auth-authenticated' : 'auth-guest'
+            );
+        } catch (e) {
+            document.documentElement.classList.add('auth-guest');
+        }
+    })();
+    </script>
     <!-- Page Loader — Critical Inline CSS (cross-browser) -->
     <style>
     #page-loader{position:fixed;top:0;left:0;right:0;bottom:0;background:#0d0d0d;z-index:99999;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;gap:24px;-webkit-transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);transition:opacity .5s cubic-bezier(.4,0,.2,1),visibility .5s cubic-bezier(.4,0,.2,1);}

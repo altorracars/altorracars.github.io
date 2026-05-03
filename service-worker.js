@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260503163636'; // Bumped: Auth UX Overhaul — instant modal close + pre-apply hint + offline detection
+const CACHE_VERSION = 'v20260503164411'; // Bumped: Console hygiene — fix @import position + COOP docs
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

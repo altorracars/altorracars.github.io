@@ -595,6 +595,29 @@
     }
 
     // ── Google Auth ─────────────────────────────────────────
+    // KNOWN HARMLESS WARNING: when you click "Continuar con Google",
+    // Chrome's console may show multiple errors like:
+    //   "Cross-Origin-Opener-Policy policy would block the
+    //    window.closed call" (popup.ts:302)
+    //   "Cross-Origin-Opener-Policy policy would block the
+    //    window.close call" (popup.ts:50)
+    //
+    // These come from Firebase Auth's internal popup polling — it tries
+    // to read `window.closed` on the Google popup to detect if the user
+    // dismissed it, but Chrome's COOP isolation blocks cross-origin
+    // window state reads (a security feature that's been default since
+    // Chrome 92). Firebase has a fallback (postMessage from the popup)
+    // and the LOGIN STILL WORKS — these are just noisy warnings.
+    //
+    // Cannot be silenced without:
+    //   - Setting `Cross-Origin-Opener-Policy: same-origin-allow-popups`
+    //     server header (impossible on GitHub Pages — no custom headers)
+    //   - Or migrating to signInWithRedirect (already tested: doesn't
+    //     work on GitHub Pages because authDomain ≠ hosting domain)
+    //
+    // Status: ACCEPTED — warnings only, no functional impact.
+    // Tracking: https://github.com/firebase/firebase-js-sdk/issues/6868
+    //
     // Uses signInWithPopup (NOT signInWithRedirect).
     //
     // Why popup instead of redirect:

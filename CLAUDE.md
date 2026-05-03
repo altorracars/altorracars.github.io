@@ -1194,6 +1194,113 @@ cierre de dropdowns/menu al hacer smooth scroll.
 
 **Archivos modificados**: `favorites-manager.js`, `render.js`, `toast.js`, `css/toast-notifications.css`
 
+### Race condition favoritos: agregar 4 rápido contaba 3
+
+**Sintoma**: Al hacer click rápido en 4 corazones distintos (en homepage
+o búsqueda), el contador del header solo registraba 3. A veces quedaba
+desincronizado entre cards visibles y contador. En casos peores se
+perdía el favorito completo.
+
+**Causa raíz**: `_loadFromFirestore()` en `favorites-manager.js` corría
+en paralelo con `add()`/`remove()`. Si el read de Firestore retornaba
+con datos viejos JUSTO cuando el user había añadido un favorito, el
+callback hacía `self._favorites = arr` y SOBREESCRIBÍA el favorito
+recién añadido.
+
+**Fix aplicado** (2026-04-29):
+
+Cola de operaciones pendientes durante reads en flight:
+```js
+// Track ops applied while a read is in flight
+this._pendingOps = [];   // {op:'add'|'remove', id:String}
+this._readInFlight = false;
+
+add(id) {
+    this._favorites.push(id);
+    if (this._readInFlight) this._pendingOps.push({op:'add', id});
+    this._debouncedSync();
+}
+
+_loadFromFirestore() {
+    this._readInFlight = true;
+    this._pendingOps = []; // reset
+    db.collection('clientes').doc(uid).get().then(doc => {
+        var arr = doc.data().favoritos;
+        // CRITICAL: re-apply any ops that happened during the read
+        if (this._pendingOps.length > 0) {
+            arr = this._applyOps(arr, this._pendingOps);
+        }
+        this._pendingOps = [];
+        this._readInFlight = false;
+        this._favorites = arr;
+        if (pendingOps.length > 0) this._debouncedSync(); // push merged result
+    });
+}
+```
+
+Esto preserva las mutaciones rapid-fire mientras Firestore responde.
+Resuelto: agregar N favoritos rápido siempre cuenta N.
+
+**Archivos**: `js/favorites-manager.js` (refactor completo con cola de
+ops, multi-card sync, undo Gmail-style, animaciones burst).
+
+### Carruseles del index NO cargan en mobile (a veces tampoco PC)
+
+**Sintoma**: Al cargar `index.html` en mobile, faltaban completamente:
+- Featured Week Banner (#fw-banner)
+- Vehículos Disponibles (#allVehiclesCarousel)
+
+Solo se veían las secciones desde "Categorías" hacia abajo. En consola
+NO había errores. Inconsistente — a veces sí cargaba, a veces no.
+
+**Dos bugs combinados**:
+
+**Bug A**: cuando `vehicleDB.load()` fallaba (network slow/intermittent
+en mobile), retornaba `vehicles=[]`. Cada loader (loadAllVehicles,
+loadPopularBrands, FW banner) trataba el array vacío como "admin sin
+inventario" → llamaba `hideParentSection()` → `display:none` PERMANENTE.
+Sin retry, sin recovery.
+
+PC: vehicleDB cargaba OK → carruseles ✓.
+Mobile con red intermitente: vehicleDB fallaba → carruseles ocultos
+para siempre.
+
+**Bug B**: `<section id="fw-banner" style="display:none">` rompe
+IntersectionObserver. La spec dice que **IO no observa elementos
+display:none** (su `boundingClientRect` es 0,0,0,0). El P11 lazy
+loader del FW banner usaba IO con `rootMargin: 400px`, pero el
+callback NUNCA disparaba — el banner solo dependía del idle fallback
+de 5s.
+
+**Fix aplicado** (2026-05-03):
+
+Bug A:
+- `js/database.js`: nuevo flag `vehicleDB._loadError = true` cuando
+  Firestore falla. Como último recurso usa **stale cache** (mejor 5min
+  de antigüedad que nada).
+- `js/main.js`: nuevo helper `scheduleSectionRetry(key, fn, baseDelay)`.
+  Loaders verifican `vehicleDB._loadError`; si true, schedule retry
+  con backoff exponencial (5s, 10s, 15s, max 3 attempts). Reset
+  contador en success.
+- Mismo patrón en `featured-week-banner.js`.
+
+Bug B:
+- `index.html`: dropped IntersectionObserver para FW banner. Nueva
+  estrategia: `requestIdleCallback` (timeout 2.5s, fallback setTimeout
+  1.5s) + listeners de primera interacción (`scroll`, `touchstart`,
+  `mousemove`, `keydown`, capture phase). Lo que dispare primero gana.
+  `window._fwLoaded` sentinel previene doble-load.
+- `s.onerror` resetea `_fwLoaded` para que retries puedan reintentar.
+
+**Resultado**:
+- Mobile + red intermitente: stale cache si existe + retries 3 veces
+- Mobile sin cache + Firestore lento: skeletons + retry 5/10/15s
+- FW banner: load garantizado en 1.5-2.5s o instantáneo al primer
+  touch/scroll
+
+**Archivos**: `js/database.js`, `js/main.js`, `js/featured-week-banner.js`,
+`index.html`.
+
 ### FOUC del header (botones Ingresar/Registrarse aparecen 1-2s estando logueado)
 
 **Sintoma**: Al hacer F5 o navegar a cualquier página estando logueado,

@@ -97,6 +97,10 @@ async function loadAllComponents() {
             }, 800);
         }
     }
+    // L1.3: also signal "loaded" here as a safety net, in case page-loader.js
+    // didn't load (e.g. blocked by extension). Idempotent — adding the same
+    // class twice is a no-op.
+    document.body.classList.add('loaded');
 
     // Initialize after loading - pequeño delay para asegurar DOM
     setTimeout(() => {

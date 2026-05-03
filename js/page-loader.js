@@ -51,6 +51,12 @@
 
         loader.classList.add('pl-done');
 
+        // L1.3: signal "page is ready" so above-fold sequential reveal
+        // animations can start. Synchronized with the loader fade-out so
+        // the user sees both happening at once (loader fades, hero
+        // emerges with stagger behind it).
+        document.body.classList.add('loaded');
+
         // Eliminar del DOM tras la transición CSS
         var cleanup = function () {
             if (loader && loader.parentNode) {
@@ -77,6 +83,32 @@
         clearTimeout(fallbackTimer);
         setTimeout(dismissLoader, 300);
     });
+
+    // L1.4: SMART FAST-PATH for return visitors.
+    // Detect if vehicle data is already cached locally (= second+ visit
+    // on the same device). If so, the user doesn't need to see the
+    // splash for a full second — they came here already familiar with
+    // the brand. Dismiss as soon as DOMContentLoaded fires + 150ms
+    // (just enough for the hero stagger reveal to start).
+    function hasWarmCache() {
+        try {
+            return !!localStorage.getItem('altorra-db-cache');
+        } catch (e) {
+            return false;
+        }
+    }
+
+    if (hasWarmCache()) {
+        var fastDismiss = function () {
+            clearTimeout(fallbackTimer);
+            setTimeout(dismissLoader, 150);
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fastDismiss);
+        } else {
+            fastDismiss();
+        }
+    }
 
 
     // ===== 2. ELEMENTOS DE TRANSICIÓN =====

@@ -4,7 +4,14 @@
    v4.1.0 · 2026-03-06
    ============================================ */
 
-/* ── Contenedor principal ── */
+/* ── Contenedor principal ──
+   LQIP pattern: el .hero muestra un gradient + ambient glow como
+   placeholder INSTANTÁNEO (renderiza en el primer paint). La imagen
+   real se carga en .hero::after con cross-fade cuando esté lista,
+   gracias al JS que toggle .hero-img-loaded. Esto elimina el "pop-in"
+   visual que ocurría cuando la imagen llegaba mientras el user veía
+   un fondo negro.
+*/
 .hero {
     position: relative;
     z-index: 10; /* Ensure hero stacking context floats above trust bar */
@@ -12,13 +19,49 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: url('../multimedia/heroindex.webp');
+    /* LQIP: warm gradient + radial glow approximate dawn lighting of the
+       real hero image. Visible from T=0 with no network round-trip. */
+    background-color: #0a0a0a;
+    background-image:
+        radial-gradient(ellipse at 20% 35%, rgba(212, 175, 55, 0.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 65%, rgba(184, 150, 88, 0.06) 0%, transparent 60%),
+        linear-gradient(135deg, #1a1410 0%, #0a0a0a 50%, #14110a 100%);
     background-size: cover;
     background-position: center 30%;
     background-attachment: scroll;
     overflow: visible;
     isolation: isolate;
     margin-top: 70px;
+}
+
+/* ── Real hero image, cross-faded in ──
+   Hidden until JS adds .hero-img-loaded. Sits below the overlay and
+   above any ambient layers (z-index 0). When the cached preload is
+   already in browser cache, the load is instant — fade is imperceptible.
+   First-visit users see a smooth gradient → photo crossfade. */
+.hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image: url('../multimedia/heroindex.webp');
+    background-size: cover;
+    background-position: center 30%;
+    opacity: 0;
+    transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.hero.hero-img-loaded::after {
+    opacity: 1;
+}
+
+/* Reduce-motion users: skip the crossfade, show immediately */
+@media (prefers-reduced-motion: reduce) {
+    .hero::after {
+        transition: none;
+        opacity: 1;
+    }
 }
 
 /* ── Overlay principal ── */
@@ -131,14 +174,54 @@
     max-width: 880px;
     margin: 0 auto;
     width: 100%;
-    animation: hero-content-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    /* No animation here — children stagger individually below.
+       L1.3: each child fades up sequentially after the page-loader
+       has dismissed (body.loaded class). */
 }
 
 .hero-content::before { display: none; }
 
-@keyframes hero-content-in {
-    from { opacity: 0; transform: translateY(28px); }
+/* ── L1.3: SEQUENTIAL REVEAL ──────────────────────────
+   Every direct child of .hero-content starts invisible.
+   When body gets `.loaded` (page-loader dismissed), each
+   element animates in with a staggered delay, creating a
+   cinematic "emerge from the dark" effect.
+
+   Order:
+     T+0ms     hero-badge     (eyebrow pill)
+     T+100ms   hero-title
+     T+220ms   hero-cta
+     T+340ms   hero-search-wrap
+*/
+.hero-content > .hero-badge,
+.hero-content > .hero-title,
+.hero-content > .hero-cta,
+.hero-content > .hero-search-wrap {
+    opacity: 0;
+    transform: translateY(20px);
+    will-change: opacity, transform;
+}
+
+body.loaded .hero-content > .hero-badge       { animation: hero-stagger-in .7s cubic-bezier(0.22, 1, 0.36, 1) 0ms forwards; }
+body.loaded .hero-content > .hero-title       { animation: hero-stagger-in .7s cubic-bezier(0.22, 1, 0.36, 1) 100ms forwards; }
+body.loaded .hero-content > .hero-cta         { animation: hero-stagger-in .7s cubic-bezier(0.22, 1, 0.36, 1) 220ms forwards; }
+body.loaded .hero-content > .hero-search-wrap { animation: hero-stagger-in .7s cubic-bezier(0.22, 1, 0.36, 1) 340ms forwards; }
+
+@keyframes hero-stagger-in {
+    from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Reduce-motion: show everything immediately, no slide */
+@media (prefers-reduced-motion: reduce) {
+    .hero-content > .hero-badge,
+    .hero-content > .hero-title,
+    .hero-content > .hero-cta,
+    .hero-content > .hero-search-wrap {
+        opacity: 1;
+        transform: none;
+        animation: none !important;
+    }
 }
 
 /* ── Badge ── */

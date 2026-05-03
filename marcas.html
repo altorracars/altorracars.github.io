@@ -179,7 +179,11 @@
             <div class="hero-particle"></div>
             <div class="hero-particle"></div>
         </div>
-        <img src="multimedia/marcas-hero.jpg" alt="Showroom de veh&iacute;culos multimarca" class="marcas-hero-bg" fetchpriority="high" loading="eager" decoding="async" width="1920" height="1134">
+        <picture>
+        <source type="image/avif" srcset="multimedia/optimized/marcas-hero-480.avif 480w, multimedia/optimized/marcas-hero-768.avif 768w, multimedia/optimized/marcas-hero-1280.avif 1280w, multimedia/optimized/marcas-hero-1920.avif 1920w" sizes="100vw">
+        <source type="image/webp" srcset="multimedia/optimized/marcas-hero-480.webp 480w, multimedia/optimized/marcas-hero-768.webp 768w, multimedia/optimized/marcas-hero-1280.webp 1280w, multimedia/optimized/marcas-hero-1920.webp 1920w" sizes="100vw">
+        <img src="multimedia/marcas-hero.jpg" alt="Showroom de vehículos multimarca" class="marcas-hero-bg" width="1920" height="1134" fetchpriority="high" loading="eager" decoding="async">
+    </picture>
         <div class="marcas-hero-content">
             <div class="marcas-hero-badge">
                 <span class="marcas-hero-badge-dot" aria-hidden="true"></span>

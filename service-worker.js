@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260503002840'; // Bumped: P6 deleted 7 *-fixes.css files, content merged into style.css
+const CACHE_VERSION = 'v20260503022358'; // Bumped: Bonus B — added optimized AVIF/WebP variants for hero images
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

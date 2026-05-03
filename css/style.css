@@ -6826,3 +6826,62 @@ iframe,
         animation: none !important;
     }
 }
+
+/* ============================================
+   AUTH HINT — Pre-paint header state
+   ============================================
+   Eliminates the FOUC of unauthenticated content where the
+   "Ingresar"/"Registrarse" buttons would flash for 1-2s on every
+   page load before Firebase Auth confirmed the session. The inline
+   <head> script reads localStorage.altorra_auth_hint synchronously
+   and adds either `auth-authenticated` or `auth-guest` to <html>.
+   These rules then apply BEFORE the first paint. auth.js keeps the
+   hint in sync as the user logs in/out.
+
+   Pattern used by GitHub, Twitter/X, Stripe and most major sites
+   that have client-side auth on a static/SSR page.
+*/
+
+/* Hide login/register buttons when we know the user is authenticated.
+   Both desktop (#btnLogin, #btnRegister) and mobile drawer
+   (#mobBtnLogin, #mobBtnRegister) covered. */
+html.auth-authenticated #btnLogin,
+html.auth-authenticated #btnRegister,
+html.auth-authenticated #mobBtnLogin,
+html.auth-authenticated #mobBtnRegister {
+    display: none !important;
+}
+
+/* Hide the user area when we know the user is a guest */
+html.auth-guest #headerUserArea {
+    display: none !important;
+}
+
+/* When we know the user is authenticated but we haven't yet rendered
+   the avatar (Firebase Auth still resolving), reserve the slot. This
+   prevents layout shift when the avatar pops in. */
+html.auth-authenticated #headerUserArea {
+    min-height: 36px;
+}
+html.auth-authenticated #headerUserArea:empty::before {
+    /* Skeleton placeholder — soft pulsing dot the size of avatar */
+    content: '';
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(184, 150, 88, 0.15);
+    animation: authSkeletonPulse 1.4s ease-in-out infinite;
+    vertical-align: middle;
+}
+
+@keyframes authSkeletonPulse {
+    0%, 100% { opacity: 0.5; }
+    50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.auth-authenticated #headerUserArea:empty::before {
+        animation: none;
+    }
+}

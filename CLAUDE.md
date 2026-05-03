@@ -1194,6 +1194,77 @@ cierre de dropdowns/menu al hacer smooth scroll.
 
 **Archivos modificados**: `favorites-manager.js`, `render.js`, `toast.js`, `css/toast-notifications.css`
 
+### FOUC del header (botones Ingresar/Registrarse aparecen 1-2s estando logueado)
+
+**Sintoma**: Al hacer F5 o navegar a cualquier página estando logueado,
+el header mostraba brevemente "INGRESAR" + "REGISTRARSE" antes de
+cambiar al avatar del usuario. Causa frustración visual y proyecta
+que la web "no sabe" que el user está logueado.
+
+**Causa raíz**: clásico FOUC of unauthenticated content. El flow:
+1. HTML carga con header default (sin auth state)
+2. `firebase-config.js` (defer) inicializa Firebase Auth
+3. Firebase resuelve `onAuthStateChanged(user)` (200-500ms en mobile, hasta 1-2s en redes lentas)
+4. `auth.js updateHeaderAuthState(user)` oculta botones, muestra avatar
+
+Durante esos 200-2000ms, los botones de login/register son visibles.
+
+**Fix aplicado** (2026-05-03) — patrón usado por GitHub, Twitter/X, Stripe:
+
+1. **Hint persistente en localStorage**: cada vez que `auth.js`
+   detecta el estado del usuario, persiste:
+   - `localStorage['altorra_auth_hint']` = `'authenticated'` | `'guest'`
+   - `localStorage['altorra_auth_user_snap']` = `{name, photoURL}` (opcional, para skeleton avatar)
+
+2. **Inline script SÍNCRONO en `<head>` de cada HTML**: lee el hint
+   ANTES del primer paint y aplica clase al `<html>`:
+   ```html
+   <script>(function(){
+     try {
+       var h = localStorage.getItem('altorra_auth_hint');
+       document.documentElement.classList.add(
+         h === 'authenticated' ? 'auth-authenticated' : 'auth-guest'
+       );
+     } catch(e) { document.documentElement.classList.add('auth-guest'); }
+   })();</script>
+   ```
+
+3. **CSS reglas** en `style.css`:
+   ```css
+   html.auth-authenticated #btnLogin,
+   html.auth-authenticated #btnRegister,
+   html.auth-authenticated #mobBtnLogin,
+   html.auth-authenticated #mobBtnRegister { display: none !important; }
+
+   html.auth-guest #headerUserArea { display: none !important; }
+
+   /* Skeleton placeholder dorado mientras Firebase confirma */
+   html.auth-authenticated #headerUserArea:empty::before {
+     content: '';
+     width: 32px; height: 32px; border-radius: 50%;
+     background: rgba(184,150,88,0.15);
+     animation: authSkeletonPulse 1.4s ease-in-out infinite;
+   }
+   ```
+
+4. **`auth.js updateHeaderAuthState(user)`**: además de su lógica DOM
+   actual, ahora persiste el flag y sincroniza la clase del `<html>`.
+   Si Firebase confirma que el hint era incorrecto (sesión expirada),
+   se quita `auth-authenticated` y se añade `auth-guest`.
+
+**Resultado**:
+- Return visit logged-in → header SIN flash de botones, avatar
+  skeleton (pulsing dorado) mientras Firebase confirma
+- Return visit logged-out → botones visibles desde T=0
+- Sesión expirada (hint dice authenticated pero Firebase dice null)
+  → ~200ms para corregir; mejor que el 1-2s del flash original
+
+**Archivos modificados**:
+- `js/auth.js` — `updateHeaderAuthState` persiste flag + clase
+- `css/style.css` — reglas `.auth-authenticated` / `.auth-guest`
+- 62 HTMLs — inline script reader en cada `<head>` (script Python
+  para inject consistent: `inject-auth-hint.py`)
+
 ---
 
 ## 9. Fases Completadas (Historico)

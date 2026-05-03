@@ -605,6 +605,34 @@
         var btnRegister = $id('btnRegister');
         var userArea    = $id('headerUserArea');
 
+        // Persist hint to localStorage so the NEXT page load can pre-paint
+        // the correct header state (no FOUC of unauthenticated content).
+        // Read by the inline <head> script in every HTML.
+        try {
+            if (user) {
+                localStorage.setItem('altorra_auth_hint', 'authenticated');
+                // Also persist a minimal user snapshot so we could render
+                // an avatar placeholder without waiting for Firebase
+                localStorage.setItem('altorra_auth_user_snap', JSON.stringify({
+                    name: user.displayName || (user.email ? user.email.split('@')[0] : ''),
+                    photoURL: user.photoURL || ''
+                }));
+            } else {
+                localStorage.setItem('altorra_auth_hint', 'guest');
+                localStorage.removeItem('altorra_auth_user_snap');
+            }
+        } catch (e) { /* localStorage disabled — fall back to JS-only */ }
+
+        // Sync the <html> class so CSS rules apply immediately
+        var rootEl = document.documentElement;
+        if (user) {
+            rootEl.classList.remove('auth-guest');
+            rootEl.classList.add('auth-authenticated');
+        } else {
+            rootEl.classList.remove('auth-authenticated');
+            rootEl.classList.add('auth-guest');
+        }
+
         if (user) {
             // Logueado: ocultar botones, mostrar avatar
             if (btnLogin)    btnLogin.style.display    = 'none';

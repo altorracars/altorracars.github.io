@@ -463,3 +463,46 @@ body {
         animation: none !important;
     }
 }
+
+/* ============================================
+   L2.2 — AUTO-REVEAL on scroll (IntersectionObserver)
+   ============================================
+   Landmark elements (section headers, commercial cards, etc.) fade
+   up when they enter the viewport. JS applies .auto-reveal to hide
+   them initially, then .is-revealed when IntersectionObserver fires.
+   For elements ALREADY in viewport on initial load, IO fires
+   immediately and they fade in once (~600ms).
+
+   Pattern works in conjunction with L2.1 (card stagger) and content-
+   visibility: auto — no double animations, no FOUC for users with JS
+   disabled (the .auto-reveal class is added BY JS, so without JS the
+   elements stay visible normally).
+
+   Properties chosen for GPU-only animation: opacity + transform.
+*/
+.auto-reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+        opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+}
+
+.auto-reveal.is-revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger inside commercial-section: each card a bit delayed */
+.commercial-section .commercial-card.auto-reveal:nth-child(2) { transition-delay: 80ms; }
+.commercial-section .commercial-card.auto-reveal:nth-child(3) { transition-delay: 160ms; }
+.commercial-section .commercial-card.auto-reveal:nth-child(4) { transition-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+    .auto-reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}

@@ -106,13 +106,14 @@ class PerformanceOptimizer {
     setupIntersectionAnimations() {
         if (!('IntersectionObserver' in window)) return;
 
+        // Observer 1: explicit .reveal classes already in HTML markup
         const animationObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    // Usar requestAnimationFrame para mejor rendimiento
                     requestAnimationFrame(() => {
                         entry.target.classList.add('active');
                     });
+                    animationObserver.unobserve(entry.target);
                 }
             });
         }, {
@@ -120,11 +121,42 @@ class PerformanceOptimizer {
             rootMargin: '0px 0px -50px 0px'
         });
 
-        // Observar elementos con clases de animación
-        const animatedElements = document.querySelectorAll(
+        document.querySelectorAll(
             '.reveal, .reveal-left, .reveal-right, .reveal-scale, .fade-in, .slide-up'
+        ).forEach(el => animationObserver.observe(el));
+
+        // L2.2: auto-instrument landmark elements for graceful scroll reveal.
+        // Fade-up effect when sections enter the viewport — same pattern that
+        // makes Apple/Stripe pages feel composed instead of "popped in".
+        // Selectors target section headers and stand-alone hero-style cards;
+        // vehicle-card grids already get their own L2.1 stagger.
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    requestAnimationFrame(() => {
+                        entry.target.classList.add('is-revealed');
+                    });
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.12,
+            rootMargin: '0px 0px -40px 0px'
+        });
+
+        const autoTargets = document.querySelectorAll(
+            '.featured-section .section-header,' +
+            '.recently-viewed-section .section-header,' +
+            '.brands-section .section-header,' +
+            '#testimonials-section .section-header,' +
+            '.commercial-section .commercial-card,' +
+            '.promo-banner-section .promo-banner-item'
         );
-        animatedElements.forEach(el => animationObserver.observe(el));
+        autoTargets.forEach(el => {
+            if (el.classList.contains('auto-reveal')) return;
+            el.classList.add('auto-reveal');
+            revealObserver.observe(el);
+        });
     }
 
     // ===== PRELOAD DE ASSETS CRÍTICOS =====

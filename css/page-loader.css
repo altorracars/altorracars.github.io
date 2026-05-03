@@ -5,6 +5,61 @@
    Chrome 60+, Firefox 60+, Samsung Internet 7+
    ============================================ */
 
+/* ===== L1.1: CINEMATIC CROSS-FADE on dismiss =====
+   The inline <style> block in each HTML defines the base
+   #page-loader (opacity transition only). This file extends
+   that to ALSO animate transform + filter when .pl-done is
+   added, producing a richer dissolve:
+     - Loader expands slightly (scale 1.04) as it fades
+     - Slight blur applied — gives "out of focus" effect
+     - Logo settles (scale 0.92) syncing with the fade
+   Combined with the hero's stagger reveal beneath, this
+   creates the "splash dissolves into the page" feel.
+*/
+#page-loader {
+    -webkit-transition:
+        opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+        visibility 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+        -webkit-transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+        -webkit-filter 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+        opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+        visibility 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+        filter 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    -webkit-transform: scale(1);
+    transform: scale(1);
+    -webkit-filter: blur(0);
+    filter: blur(0);
+}
+
+#page-loader.pl-done {
+    -webkit-transform: scale(1.04);
+    transform: scale(1.04);
+    -webkit-filter: blur(6px);
+    filter: blur(6px);
+}
+
+/* Logo "settle" — gently zooms out as the loader dissolves */
+#page-loader .pl-logo {
+    -webkit-transition: -webkit-transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#page-loader.pl-done .pl-logo {
+    /* Stop the pulse animation so transform: scale isn't overridden */
+    -webkit-animation: none;
+    animation: none;
+    -webkit-transform: scale(0.92);
+    transform: scale(0.92);
+}
+
+#page-loader.pl-done .pl-ring {
+    -webkit-animation: none;
+    animation: none;
+    opacity: 0.4;
+}
+
 /* ===== TOP PROGRESS BAR ===== */
 #page-progress-bar {
     position: fixed;

@@ -18,6 +18,41 @@
         measurementId: "G-ZGZ6CVTB73"
     };
 
+    // ── Google Identity Services (GIS) — Modern OAuth flow ──────────
+    // Where to find the OAuth Client ID:
+    //   1. Firebase Console → Project Settings → General →
+    //      "Your apps" → Web app → SDK setup and configuration
+    //   2. OR: Google Cloud Console → APIs & Services → Credentials →
+    //      "Web client (auto created by Google Service)" → Client ID
+    //   3. Format: XXXXXXXXX-XXXXXXXXXXXX.apps.googleusercontent.com
+    //
+    // Required setup in Google Cloud Console → Credentials → OAuth 2.0
+    //   "Web client (auto created by Google Service)":
+    //   - Authorized JavaScript origins MUST include:
+    //     https://altorracars.github.io
+    //     http://localhost (only for local testing — remove for prod)
+    //
+    // If GOOGLE_OAUTH_CLIENT_ID is left empty (placeholder), the code
+    // automatically falls back to the legacy `signInWithPopup` flow —
+    // login still works, just with COOP warnings in console.
+    //
+    // When configured, GIS provides:
+    //   - Zero COOP warnings (uses iframe + postMessage internally)
+    //   - One Tap login on homepage (faster returning user UX)
+    //   - Personalized button "Continue as Carlos" (when Google
+    //     session is detected in browser)
+    //
+    // Fill in the actual ID below to enable the modern flow:
+    window.GOOGLE_OAUTH_CLIENT_ID =
+        '235148219730-XXXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com';
+
+    // Helper: detect if the OAuth Client ID is still the placeholder
+    // (i.e. user hasn't configured it yet — code will fall back).
+    window.GIS_CONFIGURED = (function () {
+        var id = window.GOOGLE_OAUTH_CLIENT_ID || '';
+        return id.length > 0 && id.indexOf('XXXXXXXX') === -1;
+    })();
+
     function loadScript(src) {
         return new Promise(function(resolve, reject) {
             var script = document.createElement('script');

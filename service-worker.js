@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260503164411'; // Bumped: Console hygiene — fix @import position + COOP docs
+const CACHE_VERSION = 'v20260503170344'; // Bumped: Google Identity Services (GIS) integration with One Tap + fallback
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

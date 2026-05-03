@@ -195,11 +195,61 @@ function applyAuthHintToHeader() {
     }
 }
 
+// ── Google Identity Services (GIS) — modern OAuth library ─────────
+// Loads accounts.google.com/gsi/client which provides:
+//   - One Tap login (top-right card for returning Google users)
+//   - Personalized button ("Continue as Carlos")
+//   - signInWithCredential flow without popup → ZERO COOP warnings
+//
+// SAFETY FALLBACK: If this script fails to load (adblocker, network,
+// CSP, etc), `window.google` won't exist → auth.js detects this and
+// falls back to the legacy `signInWithPopup`. Login still works.
+//
+// Why we still load it even when GIS_CONFIGURED is false:
+//   - The script is small (~50KB) and cached aggressively by Google
+//   - Loading it but not using it has zero side effects
+//   - When user later configures the Client ID, no code changes needed
+//
+// Triggered ONLY when auth modal is needed (lazy via loadAuthSystem)
+function loadGisLibrary() {
+    if (window._gisLoading || window._gisLoaded) return;
+    if (document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
+        window._gisLoaded = true;
+        return;
+    }
+    window._gisLoading = true;
+    var script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = function () {
+        window._gisLoaded = true;
+        window._gisLoading = false;
+        // Notify auth.js if it's waiting
+        if (typeof window._onGisReady === 'function') {
+            try { window._onGisReady(); } catch (e) {
+                console.warn('[GIS] _onGisReady callback threw:', e);
+            }
+        }
+    };
+    script.onerror = function () {
+        window._gisLoading = false;
+        window._gisLoadFailed = true;
+        // Common causes: adblocker, CSP, network. NOT an error — auth.js
+        // falls back to legacy signInWithPopup automatically.
+        console.info('[GIS] Library blocked or failed to load — falling back to legacy popup flow');
+    };
+    document.head.appendChild(script);
+}
+
 // ── Sistema de Autenticación Pública ────────────────────────
 // Carga Lucide (si no está ya), el modal HTML, CSS y auth.js
 function loadAuthSystem() {
     // No cargar en admin.html — tiene su propia auth
     if (window.location.pathname.indexOf('admin') !== -1) return;
+
+    // Load GIS library in parallel (failure is gracefully handled)
+    loadGisLibrary();
 
     // 1. Lucide Icons CDN (misma versión que admin)
     if (!window.lucide && !document.querySelector('script[src*="lucide"]')) {

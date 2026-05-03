@@ -169,6 +169,10 @@
             var lbl  = $id('passStrengthLabel');
             if (fill) { fill.style.width = '0'; fill.style.background = ''; }
             if (lbl)  { lbl.textContent = ''; lbl.style.color = ''; }
+            // Reset auth controls lock — ensures next modal open has
+            // enabled buttons even if a prior operation didn't unlock
+            // (e.g. modal closed mid-Google-flow on success path)
+            _lockAuthControls(false);
         }, 180); // matches CSS transition
     }
 
@@ -594,31 +598,35 @@
         });
     }
 
-    // ── Google Auth ─────────────────────────────────────────
-    // KNOWN HARMLESS WARNING: when you click "Continuar con Google",
-    // Chrome's console may show multiple errors like:
+    // ── Google Auth — Modern (GIS) + Legacy (Popup) ─────────
+    //
+    // PRIMARY FLOW: Google Identity Services (GIS) — see _gisSignIn()
+    //   - Uses iframe + postMessage internally
+    //   - ZERO Cross-Origin-Opener-Policy warnings
+    //   - Faster (no popup window overhead)
+    //   - Supports One Tap for returning Google users
+    //   - Requires window.GOOGLE_OAUTH_CLIENT_ID configured
+    //
+    // FALLBACK FLOW: Firebase signInWithPopup() — _legacyPopupSignIn()
+    //   - Used when:
+    //     * GIS_CONFIGURED is false (Client ID is placeholder)
+    //     * GIS script failed to load (adblocker, CSP, network)
+    //     * GIS init throws (rare)
+    //     * GIS callback errors out
+    //   - Still functional but produces COOP warnings (cosmetic)
+    //
+    // KNOWN HARMLESS WARNING (only in legacy popup flow):
     //   "Cross-Origin-Opener-Policy policy would block the
-    //    window.closed call" (popup.ts:302)
-    //   "Cross-Origin-Opener-Policy policy would block the
-    //    window.close call" (popup.ts:50)
+    //    window.closed/close call" (popup.ts:302/50)
+    //   These come from Firebase Auth's popup polling. Login works.
+    //   Cannot be silenced (GitHub Pages has no custom HTTP headers).
+    //   Tracking: https://github.com/firebase/firebase-js-sdk/issues/6868
     //
-    // These come from Firebase Auth's internal popup polling — it tries
-    // to read `window.closed` on the Google popup to detect if the user
-    // dismissed it, but Chrome's COOP isolation blocks cross-origin
-    // window state reads (a security feature that's been default since
-    // Chrome 92). Firebase has a fallback (postMessage from the popup)
-    // and the LOGIN STILL WORKS — these are just noisy warnings.
-    //
-    // Cannot be silenced without:
-    //   - Setting `Cross-Origin-Opener-Policy: same-origin-allow-popups`
-    //     server header (impossible on GitHub Pages — no custom headers)
-    //   - Or migrating to signInWithRedirect (already tested: doesn't
-    //     work on GitHub Pages because authDomain ≠ hosting domain)
-    //
-    // Status: ACCEPTED — warnings only, no functional impact.
-    // Tracking: https://github.com/firebase/firebase-js-sdk/issues/6868
-    //
-    // Uses signInWithPopup (NOT signInWithRedirect).
+    // Why we kept the legacy as fallback (not removed):
+    //   - Resilience: if GIS breaks (Google deprecates, network, etc),
+    //     login still works
+    //   - Testing: easy A/B comparison
+    //   - Adblocker users: GIS gets blocked frequently, fallback saves them
     //
     // Why popup instead of redirect:
     //   signInWithRedirect stores the result on the authDomain
@@ -641,13 +649,182 @@
     //     and run validation in background. If validation fails, we sign
     //     out + show toast (modal already closed).
     //
-    // Call window.auth.signInWithPopup synchronously in the click handler
-    // (not inside a .then()) so browsers don't block the popup.
+    // ── Decide which Google sign-in flow to use ─────────────
+    // GIS (modern) is preferred when ALL of these are true:
+    //   1. GOOGLE_OAUTH_CLIENT_ID is configured (not placeholder)
+    //   2. GIS script loaded successfully (not blocked)
+    //   3. window.google.accounts.id is available (browser supports it)
+    function _shouldUseGis() {
+        if (!window.GIS_CONFIGURED) return false;
+        if (window._gisLoadFailed) return false;
+        return !!(window.google && window.google.accounts && window.google.accounts.id);
+    }
+
     function handleGoogle() {
         if (!window.auth) {
             _toast('Cargando, intenta de nuevo en un momento.', 'info');
             return;
         }
+
+        // Try modern GIS first if available
+        if (_shouldUseGis()) {
+            _gisSignIn();
+            return;
+        }
+
+        // GIS not yet loaded but configured? Wait briefly (max 1s) for it.
+        if (window.GIS_CONFIGURED && !window._gisLoadFailed && window._gisLoading) {
+            _lockAuthControls(true);
+            var modalWasOpen = function () {
+                var m = $id('auth-modal');
+                return m && m.classList.contains('active');
+            };
+            var waitTimer = setTimeout(function () {
+                // Clear the ready callback so it won't fire if GIS
+                // happens to load AFTER timeout — would cause duplicate
+                // sign-in attempt
+                window._onGisReady = null;
+                _lockAuthControls(false);
+                // Edge case: if user closed modal during wait, don't
+                // open an unexpected popup
+                if (!modalWasOpen()) return;
+                _legacyPopupSignIn(); // Timed out, use legacy
+            }, 1000);
+            window._onGisReady = function () {
+                clearTimeout(waitTimer);
+                window._onGisReady = null;
+                _lockAuthControls(false);
+                // Same edge case check on the ready path
+                if (!modalWasOpen()) return;
+                if (_shouldUseGis()) _gisSignIn();
+                else _legacyPopupSignIn();
+            };
+            return;
+        }
+
+        // Fallback: legacy signInWithPopup (with COOP warnings)
+        _legacyPopupSignIn();
+    }
+
+    // ── Modern flow: Google Identity Services (GIS) ─────────
+    // Triggers GIS account chooser via google.accounts.id.prompt().
+    // The chooser is a small UI that appears top-right on desktop or
+    // bottom on mobile. NO popup window → NO COOP warnings.
+    //
+    // After user selects account: callback fires with `response.credential`
+    // which is a JWT ID token. We pass it to firebase.auth().signInWithCredential().
+    function _gisSignIn() {
+        if (!_shouldUseGis()) {
+            // Defensive — shouldn't happen if caller checked
+            _legacyPopupSignIn();
+            return;
+        }
+        _lockAuthControls(true);
+
+        try {
+            // Initialize GIS (idempotent — internal cache prevents re-init)
+            window.google.accounts.id.initialize({
+                client_id: window.GOOGLE_OAUTH_CLIENT_ID,
+                callback: _onGisCredential,
+                auto_select: false, // Don't auto-pick account on click
+                cancel_on_tap_outside: true,
+                use_fedcm_for_prompt: true, // Chrome 117+ requires FedCM
+                context: 'signin',
+                ux_mode: 'popup' // Internal popup (NOT window.open)
+            });
+
+            // Show the prompt (account chooser UI)
+            window.google.accounts.id.prompt(function (notification) {
+                // Notifications fire if the prompt is suppressed/dismissed
+                if (notification.isNotDisplayed && notification.isNotDisplayed()) {
+                    var reason = notification.getNotDisplayedReason && notification.getNotDisplayedReason();
+                    console.info('[GIS] Prompt not displayed:', reason);
+                    _lockAuthControls(false);
+                    // Common reasons: user has no Google session, opted out,
+                    // browser unsupported. Fall back to legacy popup.
+                    if (reason === 'opt_out_or_no_session' ||
+                        reason === 'unregistered_origin' ||
+                        reason === 'browser_not_supported' ||
+                        reason === 'secure_http_required') {
+                        _legacyPopupSignIn();
+                    }
+                } else if (notification.isSkippedMoment && notification.isSkippedMoment()) {
+                    var skipReason = notification.getSkippedReason && notification.getSkippedReason();
+                    console.info('[GIS] Prompt skipped:', skipReason);
+                    _lockAuthControls(false);
+                    if (skipReason === 'user_cancel' || skipReason === 'tap_outside') {
+                        // User dismissed — silent (no toast)
+                        return;
+                    }
+                    _legacyPopupSignIn();
+                } else if (notification.isDismissedMoment && notification.isDismissedMoment()) {
+                    var dismissReason = notification.getDismissedReason && notification.getDismissedReason();
+                    if (dismissReason !== 'credential_returned') {
+                        _lockAuthControls(false);
+                    }
+                }
+            });
+        } catch (e) {
+            console.warn('[GIS] Init failed, falling back to legacy popup:', e && e.message);
+            _lockAuthControls(false);
+            _legacyPopupSignIn();
+        }
+    }
+
+    // ── GIS callback: receives JWT credential from Google ───
+    // The credential is a signed JWT containing user info. We don't
+    // need to parse it — Firebase validates it server-side.
+    function _onGisCredential(response) {
+        if (!response || !response.credential) {
+            _lockAuthControls(false);
+            console.warn('[GIS] Empty credential in callback');
+            return;
+        }
+        try {
+            var credential = firebase.auth.GoogleAuthProvider.credential(response.credential);
+            window.auth.signInWithCredential(credential).then(function (result) {
+                if (!result || !result.user) {
+                    _lockAuthControls(false);
+                    return;
+                }
+                // SUCCESS: instant modal close + pre-apply auth (same as legacy flow)
+                _preApplyAuthHint(result.user);
+                closeAuthModal();
+
+                var isNew = !!(result.additionalUserInfo && result.additionalUserInfo.isNewUser);
+                return _processGoogleUser(result.user, isNew);
+            }).catch(function (err) {
+                _lockAuthControls(false);
+                console.warn('[GIS] signInWithCredential failed:', err && err.code, err && err.message);
+                if (err && err.code === 'auth/account-exists-with-different-credential') {
+                    _toast('Este correo ya está registrado con otro método. Inicia sesión con tu correo y contraseña.', 'error', 6000);
+                    return;
+                }
+                if (err && err.code === 'auth/network-request-failed') {
+                    _toast('Sin conexión a internet. Verifica tu red e intenta de nuevo.', 'error', 6000);
+                    _shakeModal();
+                    return;
+                }
+                // Other errors: try legacy popup as last resort
+                console.info('[GIS] Falling back to legacy popup after credential error');
+                _legacyPopupSignIn();
+            });
+        } catch (e) {
+            _lockAuthControls(false);
+            console.warn('[GIS] credential() factory failed:', e && e.message);
+            _legacyPopupSignIn();
+        }
+    }
+
+    // ── Legacy flow: signInWithPopup (produces COOP warnings) ───
+    // Kept as fallback for:
+    //   - Browsers/users where GIS is blocked (adblocker, FedCM disabled)
+    //   - When GIS_CONFIGURED is false (placeholder Client ID)
+    //   - When GIS init/callback fails
+    //
+    // Call window.auth.signInWithPopup synchronously in the click handler
+    // (not inside a .then()) so browsers don't block the popup.
+    function _legacyPopupSignIn() {
         // Disable Google + form buttons + show spinner state
         _lockAuthControls(true);
 
@@ -753,16 +930,6 @@
                 return window.auth.signOut();
             }
         });
-    }
-
-    function showGoogleError(msg) {
-        var activePanel = document.querySelector('.auth-panel.active');
-        var msgEl = activePanel ? activePanel.querySelector('.auth-message') : null;
-        if (msgEl) {
-            msgEl.textContent = msg;
-            msgEl.className = 'auth-message show is-error';
-            msgEl.style.display = 'block';
-        }
     }
 
     // ── Reset Password ──────────────────────────────────────
@@ -1267,6 +1434,95 @@
                 _toast('Sesión iniciada en otra pestaña.', 'info', 3500);
             }
         });
+
+        // ── One Tap on homepage (modern returning-user UX) ──────
+        _maybeShowOneTap();
+    }
+
+    // ── One Tap (Google's modern auth UI for returning users) ─────
+    // Shows a small card top-right of the page asking the user to
+    // continue with their Google account. Modern, fast, no popup.
+    //
+    // Strict opt-in conditions to avoid annoying users:
+    //   1. Only on homepage (/, /index.html) — not on every page
+    //   2. Only if NOT signed in (auth-hint != 'authenticated')
+    //   3. Only if GIS is configured AND loaded successfully
+    //   4. Only if user hasn't dismissed One Tap recently (GIS handles cooldown)
+    //   5. Skip if auth modal is currently open (don't compete)
+    //   6. Skip if user clicked "Iniciar sesión" recently (intent: explicit form)
+    //   7. Delay 1.5s after page load so it doesn't interrupt initial UX
+    function _maybeShowOneTap() {
+        // Condition 1: homepage only
+        var path = window.location.pathname;
+        var isHomepage = path === '/' || path === '/index.html' || path.endsWith('/altorracars.github.io/');
+        if (!isHomepage) return;
+
+        // Condition 2: only for guests
+        var hint = null;
+        try { hint = localStorage.getItem('altorra_auth_hint'); } catch (e) {}
+        if (hint === 'authenticated') return;
+
+        // Condition 3: GIS must be configured
+        if (!window.GIS_CONFIGURED) return;
+
+        // Condition 6: respect explicit dismiss (we set this when user
+        // clicks X on One Tap or dismisses the auth modal recently)
+        try {
+            var lastDismiss = parseInt(localStorage.getItem('altorra_onetap_dismiss') || '0', 10);
+            // Suppress One Tap for 7 days after explicit dismissal
+            if (lastDismiss && Date.now() - lastDismiss < 7 * 24 * 3600 * 1000) return;
+        } catch (e) {}
+
+        // Wait for GIS to be ready, then trigger after delay
+        var triggerOneTap = function () {
+            // Condition 5: skip if auth modal is open
+            var modal = $id('auth-modal');
+            if (modal && modal.classList.contains('active')) return;
+            // Condition 4 (re-check): GIS available
+            if (!_shouldUseGis()) return;
+
+            try {
+                window.google.accounts.id.initialize({
+                    client_id: window.GOOGLE_OAUTH_CLIENT_ID,
+                    callback: _onGisCredential,
+                    auto_select: false,
+                    cancel_on_tap_outside: false, // user must X-out explicitly
+                    use_fedcm_for_prompt: true,
+                    context: 'signin',
+                    itp_support: true // safer with Safari ITP
+                });
+                window.google.accounts.id.prompt(function (notification) {
+                    if (notification.isDismissedMoment && notification.isDismissedMoment()) {
+                        var reason = notification.getDismissedReason && notification.getDismissedReason();
+                        if (reason === 'credential_returned') {
+                            // Sign-in succeeded via _onGisCredential
+                        } else if (reason === 'cancel_called' || reason === 'flow_restarted') {
+                            // Internal — ignore
+                        } else {
+                            // User dismissed — remember to suppress for 7 days
+                            try { localStorage.setItem('altorra_onetap_dismiss', String(Date.now())); } catch (e) {}
+                        }
+                    }
+                });
+            } catch (e) {
+                console.info('[GIS] One Tap init failed:', e && e.message);
+            }
+        };
+
+        if (_shouldUseGis()) {
+            // GIS already loaded — show after 1.5s delay
+            setTimeout(triggerOneTap, 1500);
+        } else if (window.GIS_CONFIGURED && !window._gisLoadFailed) {
+            // GIS still loading — wait for ready signal
+            var prevReady = window._onGisReady;
+            window._onGisReady = function () {
+                if (typeof prevReady === 'function') {
+                    try { prevReady(); } catch (e) {}
+                }
+                window._onGisReady = null;
+                setTimeout(triggerOneTap, 800); // shorter delay if late-loaded
+            };
+        }
     }
 
     // ── API pública ─────────────────────────────────────────

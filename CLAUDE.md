@@ -226,6 +226,7 @@ Fragmentos HTML inyectados dinamicamente por `components.js`:
 |----------|---------|--------|
 | `generate-vehicles.yml` | Push main, cron 4h, dispatch | Genera vehiculos + sitemap + bump cache |
 | `deploy-firebase-rules.yml` | Push main (si cambian rules) | Deploy Firestore + Storage rules |
+| `optimize-images.yml` | Push main si cambian heroes/categories | Genera AVIF/WebP variants automáticamente |
 
 ---
 
@@ -2329,13 +2330,45 @@ privacidad, resenas, terminos, vehiculos-hatchback/pickup/sedan/suv.
 
 Para invalidar HTMLs cacheados que apuntaban al `<img>` viejo.
 
-#### Pendiente / mejoras futuras
+#### Automatización con GitHub Actions
 
-- Las imágenes nuevas (admin sube vehículos) se siguen sirviendo desde
-  Firebase Storage en su formato original. La optimización de admin
-  uploads requiere automation server-side (Cloud Function con sharp)
-- Alternativa lighter: agregar `node scripts/optimize-images.mjs` como
-  pre-deploy step en GitHub Actions cuando se detecten imágenes nuevas
+El script `optimize-images.mjs` ahora es **idempotente** (compara
+mtime del source vs output, skip si output más nuevo) y se ejecuta
+automáticamente vía workflow `.github/workflows/optimize-images.yml`.
+
+**Triggers**:
+- Push a `main` con cambios en `multimedia/heroes/`, `multimedia/categories/`,
+  `multimedia/heroindex.*`, `multimedia/marcas-hero.*`, `multimedia/nosotros-hero.*`,
+  o el script mismo
+- `workflow_dispatch` — manual desde GitHub UI
+
+**Pipeline**:
+1. Checkout del repo
+2. `npm install --no-save sharp` (sin polluir package.json en el bot run)
+3. `node scripts/optimize-images.mjs` — solo procesa lo nuevo
+4. Si hay cambios en `multimedia/optimized/`: bot commitea con
+   `[skip ci]` y push automático
+
+**Anti-loop**:
+- `paths` filter excluye `multimedia/optimized/**` → bot commits NO
+  retriggean el workflow
+- Commit message lleva `[skip ci]` como failsafe extra
+- GitHub policy: commits del `GITHUB_TOKEN` no triggean otros workflows
+
+**Cómo funciona en práctica**:
+1. Subes una imagen nueva a `multimedia/heroes/nuevo-hero.jpg`
+2. Push a main
+3. GitHub Actions detecta el cambio, corre el optimizer
+4. Genera 8 variantes (AVIF + WebP × 4 tamaños) en `multimedia/optimized/`
+5. Bot commitea las variantes
+6. Tu HTML aún apunta al `.jpg` original — necesitas actualizar a
+   `<picture>` MANUAL para que el browser use las variantes
+
+**Pendiente futuro** (mejoras opcionales):
+- Auto-update de HTMLs cuando aparece una nueva imagen optimizada
+  (matchear src en HTMLs y wrappear en `<picture>` con script)
+- Optimización de uploads del admin (Firebase Storage) — requeriría
+  Cloud Function que corre sharp on-upload
 
 ### Métricas finales (post P1-P15 + L1-L4 + Bonus B)
 
@@ -2353,3 +2386,300 @@ Para invalidar HTMLs cacheados que apuntaban al `<img>` viejo.
 - CLS: 11 hero images con `width`/`height` explícitos → 0 layout shift
 - Hero images: AVIF/WebP en 4 tamaños responsive (90 variantes generadas)
 - Mobile hero load: ~78% menos KB en formato AVIF-480 vs JPG original
+
+---
+
+## 17. Reglas Operativas de Performance — DEBE leerse al crear código nuevo
+
+> Manifesto técnico para mantener la fluidez y velocidad conseguidas en
+> P1-P15 + L1-L4 + Bonus B. Si vas a agregar una feature nueva (página,
+> sección, modal, lista, etc.), seguí estas reglas. Romperlas reintroduce
+> los problemas que ya solucionamos y degrada la UX especialmente en
+> mobile y dispositivos low-end.
+
+### 17.1 — Reglas de oro
+
+**Para CADA cambio nuevo, antes de commit, verificá:**
+
+1. **No agregaste `backdrop-filter` en elementos `position: fixed/sticky`**
+   ni en cards de grids de N elementos. Si lo necesitás visualmente, usá
+   un fondo sólido `rgba(...)` con alpha 0.92-0.97. Modales y toasts
+   on-demand son la única excepción aceptable.
+
+2. **No animaste `width`, `height`, `top`, `left`, `right`, `bottom`,
+   `padding`, `margin`, `max-height`** en `transition` o `@keyframes`.
+   Estas propiedades disparan **layout recalc cada frame**. Usá
+   `transform` (translate/scale/rotate) y `opacity`, que son
+   GPU-compositable.
+
+3. **No agregaste un nuevo `addEventListener('scroll', ...)`** sin
+   `requestAnimationFrame` y sin tracking de estado para evitar
+   mutations DOM redundantes. Idealmente, integrá tu lógica al scroll
+   listener único en `js/components.js` (línea ~292).
+
+4. **No agregaste un nuevo `<link rel="stylesheet">` bloqueante** si la
+   regla no es above-the-fold critical. Usá el patrón lazy:
+   ```html
+   <link rel="stylesheet" href="css/x.css" media="print" onload="this.media='all'">
+   <noscript><link rel="stylesheet" href="css/x.css"></noscript>
+   ```
+
+5. **No agregaste un `<script src="...">` eager si la lógica no es
+   crítica para first interaction.** Carga via `requestIdleCallback`
+   con fallback `setTimeout`. Si el código tiene callsites síncronos,
+   protegelos con `whenReady(predicate, callback, opts)` (helper en
+   `components.js`). Patrón ejemplo: cookies.js, comparador.js,
+   reviews.js, featured-week-banner.js (P10/P11).
+
+6. **No agregaste una `<img>` sin `width` + `height` + `loading` +
+   `decoding`**:
+   - Above-fold: `loading="eager" fetchpriority="high" decoding="async"`
+   - Below-fold: `loading="lazy" decoding="async"`
+   - Siempre: `width="X" height="Y"` (previene CLS)
+
+7. **No agregaste imágenes hero/categoría sin pasarlas por el
+   optimizer**: subir source a `multimedia/heroes/` o
+   `multimedia/categories/` → GitHub Actions `optimize-images.yml`
+   las procesa automático → usá `<picture>` con AVIF + WebP + JPG
+   fallback (ver Sección 16, Bonus B).
+
+### 17.2 — CSS — qué SÍ y qué NO
+
+✅ **Permitido sin pensar**:
+- `transition: transform`, `transition: opacity`
+- Animaciones `@keyframes` que solo cambian `transform` y `opacity`
+- `will-change: transform` en elementos que animan (no abuses — solo
+  durante la animación)
+- Gradients, shadows, border-radius (estáticos)
+- `contain: layout style` en cards y grids aislados (P3)
+- `content-visibility: auto` con `contain-intrinsic-size` en secciones
+  below-fold (P3)
+- `prefers-reduced-motion: reduce` para desactivar animaciones —
+  **siempre incluir** en cualquier animación nueva
+
+❌ **Prohibido sin justificación documentada**:
+- `backdrop-filter` en cualquier elemento que scrollea o es sticky/fixed
+- `transition: all`
+- Animar layout properties (width, height, top, left, padding, margin)
+- `position: fixed` con `backdrop-filter`
+- `filter: blur()` en elementos animados (excepto el lazy-image initial state)
+- Múltiples `@keyframes` con `animation-iteration-count: infinite` en
+  elementos siempre visibles (= GPU layers permanentes)
+
+⚠️ **Permitido con cuidado**:
+- `box-shadow` en `transition` SOLO si el elemento es de bajo-conteo
+  (no aplicar a 30 cards en grid, sí aplicar a 1 hero CTA)
+- `filter: drop-shadow` (más caro que `box-shadow`, evitá en grids)
+
+### 17.3 — JavaScript — qué SÍ y qué NO
+
+✅ **Permitido**:
+- `defer` en todos los `<script>` que no necesiten ejecutarse durante
+  HTML parse
+- `requestIdleCallback` para inicializaciones no críticas
+- `IntersectionObserver` para detección de viewport (NO para elementos
+  con `display:none` — IO no los observa, ver Bug 2 del fix mobile load)
+- `requestAnimationFrame` para sincronizar con frame del browser
+- `passive: true` en listeners de `scroll`, `touchstart`, `touchmove`,
+  `wheel` (cuando no se llama `preventDefault`)
+- Async/await + try/catch
+- Event delegation (un listener en parent, NO uno por hijo)
+
+❌ **Prohibido**:
+- `setInterval` en alta frecuencia (>10 fps). Usá `requestAnimationFrame`
+- Listeners de scroll que muten el DOM cada frame sin
+  state-tracking (causa repaints inútiles — ver P2)
+- Crear `<img>` dinámicos sin `loading="lazy" decoding="async"`
+- Cargar Firestore data en bloque sin cache local (siempre tirar del
+  cache primero, refrescar en background — ver pattern de
+  `vehicleDB.load()`)
+- Asumir que `vehicleDB.load()` retornó success cuando `vehicles=[]`.
+  **Siempre** verificar `vehicleDB._loadError` antes de hacer
+  `hideParentSection()`. Si error: `scheduleSectionRetry(key, fn)`
+  (helper en main.js)
+
+⚠️ **Cuidado con**:
+- Llamar Firestore en initial load — usar `Promise.all([...].catch())`
+  para que un fallo no cascade a otras secciones
+- Logs ruidosos en producción — usar `if (this.DEBUG) console.log(...)`
+  para gates manuales
+
+### 17.4 — HTML — qué SÍ y qué NO
+
+✅ **Imágenes**:
+- Hero/banner: `<picture>` con `<source type="image/avif">` y
+  `<source type="image/webp">` (variantes en `multimedia/optimized/`),
+  `<img>` con `width`/`height`/`fetchpriority`/`loading`/`decoding`
+- Cards: solo `<img>` con `loading="lazy" decoding="async"` y
+  `width`/`height`
+- Tamaños: ahora 480w, 768w, 1280w, 1920w son los breakpoints estándar
+  del optimizer
+
+✅ **Resource hints**:
+- `<link rel="preload" as="image" href="..." fetchpriority="high">`
+  para LCP image
+- `<link rel="preconnect" href="https://...">` para CDN externos críticos
+- `<link rel="prefetch" href="...">` SOLO para top 1-3 páginas más
+  visitadas (homepage tiene SUV, marcas, contacto pre-fetched)
+
+❌ **Anti-patterns**:
+- `<style>` blocks gigantes inline (>10KB) — extrae a un archivo
+- `onclick="..."` inline (vulnerabilidad XSS + sin event delegation)
+- `<img>` sin atributos modernos (lazy, async, dimensions)
+- Hardcoded URLs absolutas a Firebase Storage en vez de usar el SDK
+
+### 17.5 — Imágenes / Multimedia
+
+**Para CADA imagen nueva del sitio:**
+
+1. **¿Es above-fold (hero, banner principal)?**
+   → Subir a `multimedia/heroes/` o `multimedia/categories/`.
+   Workflow `optimize-images.yml` la procesa automático.
+   Update HTML con `<picture>`:
+   ```html
+   <picture>
+       <source type="image/avif" srcset="
+           multimedia/optimized/foo-480.avif 480w,
+           multimedia/optimized/foo-768.avif 768w,
+           multimedia/optimized/foo-1280.avif 1280w,
+           multimedia/optimized/foo-1920.avif 1920w" sizes="100vw">
+       <source type="image/webp" srcset="..." sizes="100vw">
+       <img src="multimedia/heroes/foo.jpg" alt="..."
+            width="1920" height="800"
+            fetchpriority="high" loading="eager" decoding="async">
+   </picture>
+   ```
+
+2. **¿Es de un vehículo (admin upload)?**
+   → Sirve desde Firebase Storage tal cual. **Pendiente**: Cloud
+   Function que optimice on-upload.
+
+3. **¿Es un logo, badge, icono pequeño?**
+   → Mantener WebP o SVG según el caso. No requiere optimization
+   adicional (ya pequeñas).
+
+4. **¿Es una imagen decorativa (background, pattern)?**
+   → Considerar gradient CSS si es posible (cero KB). Si no,
+   WebP optimizada manual.
+
+### 17.6 — Loading orchestration (Sprint L1-L4)
+
+Para CADA página nueva, asegurar:
+
+1. **Critical CSS inline** (~5KB) en `<head>` con header + hero base
+2. **Page-loader** mostrado al inicio, dismissed por
+   `dismissPageLoader()` o el fallback de `components.js`
+3. **`body.loaded`** se aplica al dismissar el loader → trigger para
+   sequential reveal animations
+4. **Stagger reveal** de above-fold elements (badge → title → CTA →
+   etc.) con `animation-delay` escalonado
+5. **Skeleton screens** mientras se cargan datos (no spinners
+   genéricos) — ver `showLoading()` en render.js
+6. **Section reveal** below-fold via `.auto-reveal` (auto-instrumentado
+   por performance.js — solo asegurate que tu nueva sección use clases
+   que el observer detecta: `.section-header`, `.commercial-card`,
+   etc.)
+
+### 17.7 — Service Worker + Cache
+
+Si modificás archivos que afectan el cache:
+
+1. **Bumpear `service-worker.js` `CACHE_VERSION`** con timestamp
+2. **Bumpear `js/cache-manager.js` `APP_VERSION`** matched al SW
+3. Las HTMLs cacheadas en clientes se invalidan automáticamente
+   (cache-manager detecta el version bump)
+
+Cuándo NO bumpear: cambios solo a `js/admin-*.js` (no afectan público),
+o solo a `data/*.json` que ya está en `Network Only`.
+
+### 17.8 — Listas y grids
+
+Si vas a renderizar una lista de N elementos (>5):
+
+1. **Usá `<ul>`/`<ol>` con event delegation** (un listener en `<ul>`,
+   no uno por `<li>`)
+2. **`content-visibility: auto`** + `contain-intrinsic-size` en cada
+   item — el browser skip-renderiza items below-fold (P3)
+3. **`contain: layout style`** en cada item — aísla layout
+4. **Stagger fade-in** en los primeros 6 items con `animation-delay`
+   (L2.1) — items 7+ no se animan (skipped por content-visibility)
+5. **Skeleton placeholders** mientras carga (forma del item final, no
+   spinner)
+
+### 17.9 — Network requests
+
+1. **Cache local primero, network second**:
+   ```js
+   var cached = localStorage.getItem(KEY);
+   if (cached) renderImmediate(JSON.parse(cached));
+   fetchFromFirestore().then(fresh => {
+       renderUpdated(fresh);
+       localStorage.setItem(KEY, JSON.stringify(fresh));
+   });
+   ```
+2. **Stale cache fallback** si network falla (ver `vehicleDB.load()`
+   STEP 3 que usa stale cache si todo lo demás falla)
+3. **Retry con backoff exponencial** (5s, 10s, 15s, max 3 attempts)
+   en errores transitorios — usá `scheduleSectionRetry(key, fn)`
+4. **Distinguir empty vs error**: `vehicleDB._loadError` flag indica
+   que vehicles=[] es por error de red, no porque no haya inventory.
+   No ocultes secciones por error.
+
+### 17.10 — Mobile-first y compatibilidad
+
+Para CADA componente nuevo:
+
+1. Probar en mobile breakpoints (320px, 480px, 768px) con DevTools
+   device toolbar
+2. **`prefers-reduced-motion: reduce`** desactiva tus animaciones
+3. **Touch events** con `passive: true` (no preventDefault)
+4. **Pointer-events** correctos — modales con `pointer-events: none`
+   en idle state, `auto` en active
+5. **Tap target** mínimo 44×44px (Apple HIG) para touch UX
+
+### 17.11 — Cuando hagas algo nuevo
+
+**Checklist antes de commit**:
+
+- [ ] El código respeta los patrones de las secciones 17.1 a 17.10
+- [ ] Probé en mobile breakpoints (al menos 480px)
+- [ ] Cero errores en consola del browser
+- [ ] DevTools → Performance: scroll suave (60fps)
+- [ ] DevTools → Network: si la feature carga assets, son lazy/optimizados
+- [ ] DevTools → Lighthouse: CLS < 0.1, LCP < 2.5s
+- [ ] `prefers-reduced-motion` desactiva animaciones
+- [ ] Si tocaste estructura de cache: bumped SW + APP_VERSION
+- [ ] Si agregaste nueva imagen hero: pasó por el optimizer
+
+### 17.12 — Anti-patterns identificados (NO repetir)
+
+Lista corta de cosas que YA fixeamos y deberían quedar fixeadas:
+
+| Anti-pattern | Por qué falla | Sección que lo arregló |
+|---|---|---|
+| `backdrop-filter: blur()` en `#header` fixed | Repinta GPU cada frame de scroll | P1 |
+| 2 listeners `scroll` en paralelo | Repaints duplicados | P2 |
+| `transition: left` en menús/shines | Layout recalc cada frame | P4, P13 |
+| 22 `<link>` blocking en `<head>` | TTFP +800ms | P5 |
+| `transition: all` en elementos animados | Anima props caros sin querer | 17.2 |
+| `vehicleDB.load()` retorna `[]` → `hideParentSection()` | Sección oculta para siempre por error transitorio | Bug fix mobile |
+| IntersectionObserver en elemento `display:none` | IO no observa display:none | Bug fix mobile |
+| `<img>` sin `width/height` | CLS layout shift cuando carga | Bonus B.1 |
+| Hero JPG 412KB sin variantes | LCP lento en mobile | Bonus B.2 |
+| Logo del page-loader 412KB PNG | Critical asset gigante | (pendiente — sigue siendo PNG) |
+
+### 17.13 — Cuando dudes, preguntá
+
+Si no estás seguro de si algo afectará la performance:
+
+1. Buscá en CLAUDE.md secciones 15, 16, 17 patrones similares
+2. Mirá `css/performance-fixes.css` — todas las decisiones de perf
+   están comentadas con razón
+3. Mirá los commits con prefix `P1`, `P2`, ..., `L1.x`, `Bonus B` —
+   cada uno explica el problema + fix
+4. En la duda, **agrega un comentario** en el código explicando
+   por qué tomaste la decisión que tomaste
+
+**Recordatorio final**: el sitio se siente fluido HOY porque hicimos
+~25 cambios coordinados. Un solo cambio descuidado puede regresar
+60fps a 20fps. Cada PR debería preservar lo conseguido.

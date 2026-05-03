@@ -226,6 +226,7 @@ Fragmentos HTML inyectados dinamicamente por `components.js`:
 |----------|---------|--------|
 | `generate-vehicles.yml` | Push main, cron 4h, dispatch | Genera vehiculos + sitemap + bump cache |
 | `deploy-firebase-rules.yml` | Push main (si cambian rules) | Deploy Firestore + Storage rules |
+| `optimize-images.yml` | Push main si cambian heroes/categories | Genera AVIF/WebP variants automáticamente |
 
 ---
 
@@ -2329,13 +2330,45 @@ privacidad, resenas, terminos, vehiculos-hatchback/pickup/sedan/suv.
 
 Para invalidar HTMLs cacheados que apuntaban al `<img>` viejo.
 
-#### Pendiente / mejoras futuras
+#### Automatización con GitHub Actions
 
-- Las imágenes nuevas (admin sube vehículos) se siguen sirviendo desde
-  Firebase Storage en su formato original. La optimización de admin
-  uploads requiere automation server-side (Cloud Function con sharp)
-- Alternativa lighter: agregar `node scripts/optimize-images.mjs` como
-  pre-deploy step en GitHub Actions cuando se detecten imágenes nuevas
+El script `optimize-images.mjs` ahora es **idempotente** (compara
+mtime del source vs output, skip si output más nuevo) y se ejecuta
+automáticamente vía workflow `.github/workflows/optimize-images.yml`.
+
+**Triggers**:
+- Push a `main` con cambios en `multimedia/heroes/`, `multimedia/categories/`,
+  `multimedia/heroindex.*`, `multimedia/marcas-hero.*`, `multimedia/nosotros-hero.*`,
+  o el script mismo
+- `workflow_dispatch` — manual desde GitHub UI
+
+**Pipeline**:
+1. Checkout del repo
+2. `npm install --no-save sharp` (sin polluir package.json en el bot run)
+3. `node scripts/optimize-images.mjs` — solo procesa lo nuevo
+4. Si hay cambios en `multimedia/optimized/`: bot commitea con
+   `[skip ci]` y push automático
+
+**Anti-loop**:
+- `paths` filter excluye `multimedia/optimized/**` → bot commits NO
+  retriggean el workflow
+- Commit message lleva `[skip ci]` como failsafe extra
+- GitHub policy: commits del `GITHUB_TOKEN` no triggean otros workflows
+
+**Cómo funciona en práctica**:
+1. Subes una imagen nueva a `multimedia/heroes/nuevo-hero.jpg`
+2. Push a main
+3. GitHub Actions detecta el cambio, corre el optimizer
+4. Genera 8 variantes (AVIF + WebP × 4 tamaños) en `multimedia/optimized/`
+5. Bot commitea las variantes
+6. Tu HTML aún apunta al `.jpg` original — necesitas actualizar a
+   `<picture>` MANUAL para que el browser use las variantes
+
+**Pendiente futuro** (mejoras opcionales):
+- Auto-update de HTMLs cuando aparece una nueva imagen optimizada
+  (matchear src en HTMLs y wrappear en `<picture>` con script)
+- Optimización de uploads del admin (Firebase Storage) — requeriría
+  Cloud Function que corre sharp on-upload
 
 ### Métricas finales (post P1-P15 + L1-L4 + Bonus B)
 

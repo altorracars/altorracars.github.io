@@ -7,11 +7,16 @@
  * y de categorías. Reduce peso 30-60% vs JPG/PNG originales.
  *
  * Uso:
- *   1. Instalar sharp: `npm install --save-dev sharp`
+ *   1. Instalar sharp (solo la primera vez): `npm install --save-dev sharp`
  *   2. Correr: `node scripts/optimize-images.mjs`
- *   3. Revisar `multimedia/optimized/` con las variantes generadas
- *   4. Update HTML para usar <picture> con los nuevos paths (manual o
- *      con `node scripts/optimize-images.mjs --update-html`)
+ *   3. El script es IDEMPOTENTE — saltar imágenes ya procesadas (mtime check),
+ *      solo regenera las que cambiaron o son nuevas.
+ *   4. Update HTML para usar <picture> con los nuevos paths (manual)
+ *
+ * Automatización: el workflow `.github/workflows/optimize-images.yml`
+ * corre este script automáticamente cuando se hace push a main con
+ * cambios en multimedia/heroes/, multimedia/categories/, etc., y
+ * commitea las variantes generadas.
  *
  * Configuración:
  *   - Variants: original, 1280, 768, 480 (responsive)
@@ -83,6 +88,8 @@ async function main() {
 
     console.log('🖼  Optimizing images → multimedia/optimized/\n');
 
+    let processed = 0;
+
     for (const target of TARGETS) {
         const fullPath = join(ROOT, target);
         try {
@@ -93,16 +100,41 @@ async function main() {
         }
 
         const stem = basename(target, extname(target));
+        const origStat = await fs.stat(fullPath);
+        const origMtime = origStat.mtimeMs;
         const meta = await sharp(fullPath).metadata();
         const origW = meta.width;
         const origH = meta.height;
+
+        // Idempotency: check if ALL expected outputs already exist AND are
+        // newer than the source. If so, skip — nothing to do.
+        const expectedOutputs = [];
+        for (const size of SIZES) {
+            if (size > origW) continue;
+            for (const fmt of FORMATS) {
+                expectedOutputs.push(join(OUTPUT_DIR, `${stem}-${size}.${fmt.ext}`));
+            }
+        }
+        let allFresh = true;
+        for (const out of expectedOutputs) {
+            try {
+                const outStat = await fs.stat(out);
+                if (outStat.mtimeMs < origMtime) { allFresh = false; break; }
+            } catch {
+                allFresh = false; break;
+            }
+        }
+        if (allFresh) {
+            console.log(`\n⏭  ${target}  — already optimized (skipping)`);
+            continue;
+        }
+
+        processed++;
         console.log(`\n📐 ${target}  (${origW}×${origH}, ${formatBytes(meta.size || 0)})`);
 
         for (const size of SIZES) {
             // Skip sizes larger than original
             if (size > origW) continue;
-
-            const targetH = Math.round(origH * (size / origW));
 
             for (const fmt of FORMATS) {
                 const outPath = join(OUTPUT_DIR, `${stem}-${size}.${fmt.ext}`);
@@ -120,7 +152,11 @@ async function main() {
         }
     }
 
-    console.log('\n✅ Done.\n');
+    if (processed === 0) {
+        console.log('\n✨ Nothing to do — all targets already optimized.\n');
+    } else {
+        console.log(`\n✅ Done — ${processed} image(s) processed.\n`);
+    }
     console.log('Next steps:');
     console.log('  1. Review images in multimedia/optimized/');
     console.log('  2. Update HTML <img> tags to use <picture> with srcset:');

@@ -1738,6 +1738,77 @@ T=+50-300ms  onAuthStateChanged(null) → _processNullState
 <200ms post-popup vs 1000ms antes). Header switch INSTANT (<50ms).
 Logout con feedback inmediato. Cero "did I click the button?" moments.
 
+### Console hygiene — analisis de mensajes en consola
+
+**Inventario completo de logs de consola en produccion**:
+
+| Mensaje | Tipo | Origen | Accion |
+|---------|------|--------|--------|
+| `Define @import rules at the top of the stylesheet` | Warning (1) | `style.css:5241` | **CORREGIDO** — `@import url(...Cardo...)` movido al inicio del archivo. Antes vivia en el bloque mergeado de `footer-fixes.css` (P6) y el browser lo IGNORABA → footer caia silenciosamente a Georgia. Ahora si carga Cardo |
+| `Cross-Origin-Opener-Policy policy would block the window.closed call` (popup.ts:302) | Error rojo (multiples) | Firebase Auth SDK | **NO ACCIONABLE — documentado** |
+| `Cross-Origin-Opener-Policy policy would block the window.close call` (popup.ts:50) | Error rojo (multiples) | Firebase Auth SDK | **NO ACCIONABLE — documentado** |
+| `[DB] Real-time listeners started/stopped` | Info (verde) | `database.js` | Comportamiento normal — uno por auth state change. Diagnostico util, mantenidos |
+| `[DB] Firestore loaded: N vehicles, N brands` | Info | `database.js` | Diagnostico util, mantenido |
+| `[DB] Real-time update: N items` | Info | `database.js` | Confirma snapshot recibido — diagnostico util |
+| `Firebase deferred SDKs loaded` | Info | `firebase-config.js:90` | Confirma SDK no-critico cargado |
+
+**Sobre los COOP warnings** (Cross-Origin-Opener-Policy):
+
+Cuando el usuario hace click en "Continuar con Google", la consola muestra
+multiples errores rojos del estilo:
+```
+Cross-Origin-Opener-Policy policy would block the window.closed call
+  popup.ts:302
+```
+
+**Origen**: Firebase Auth's `signInWithPopup` interno hace polling cada
+50ms a `window.closed` para detectar si el usuario cerro la popup
+manualmente. Chrome's COOP isolation (default desde Chrome 92) bloquea
+las lecturas cross-origin de window.closed. Firebase tiene un fallback
+(postMessage desde la popup) y el LOGIN FUNCIONA NORMALMENTE.
+
+**Por que no se puede silenciar**:
+1. **Server header**: Habria que setear `Cross-Origin-Opener-Policy: same-origin-allow-popups`
+   en respuestas HTTP. **GitHub Pages no permite headers personalizados** —
+   solo se podria con un dominio propio + Cloudflare/Netlify. Costo:
+   compra de dominio + reconfiguracion DNS.
+2. **Switch a `signInWithRedirect`**: Ya probado y NO funciona en GitHub
+   Pages porque `authDomain` (altorra-cars.firebaseapp.com) != hosting
+   domain (altorracars.github.io). El sessionStorage cross-origin
+   impide que `getRedirectResult()` lea el resultado.
+3. **Suprimir en consola**: Los errors browser-level no se pueden
+   silenciar via JS (`console.warn` de Firebase los emite).
+4. **Firebase SDK update**: 11.3.0 ya es relativamente reciente. Issue
+   abierto: https://github.com/firebase/firebase-js-sdk/issues/6868
+
+**Conclusion**: COOP warnings son ruido cosmetico. Login funciona
+perfectamente. Cantidad de warnings ∝ tiempo que la popup esta abierta
+(50ms × N polls). No hay impacto funcional.
+
+**Documentado en**: `js/auth.js handleGoogle()` con bloque comentario
+explicativo para que futuros devs no pierdan tiempo investigando.
+
+**Sobre los `[DB] Real-time listeners` cycles**:
+
+El log muestra varios `stopped`/`started` consecutivos durante el flujo
+de auth. **Es normal**:
+- Login Google: anonymous user → registered user (Firebase dispara
+  signOut del anonymous + signIn del registrado = 2 transitions)
+- Cada transition dispara `vehicleDB.stopRealtime()` ANTES del signOut
+  (para evitar el 400 en `/Listen/channel`) y `startRealtime()` despues
+  del nuevo auth (para reanudar listeners con el nuevo token).
+
+Optimizacion potencial (no aplicada): si el siguiente auth state es
+otro user no-anonymous, se podria saltar el cycle. Pero el savings
+seria marginal (1 cycle = ~50-200ms re-handshake) y no hay impacto
+visual al usuario.
+
+**Que SI deberia preocupar (todavia no observado)**:
+- `[Auth]` errors no esperados (no permission-denied de cross-tab logout)
+- `Failed to load resource` (4xx/5xx de Firestore o Storage)
+- `Uncaught (in promise)` rejections sin handler
+- Memory leaks evidenciados por el indicador de Memory en DevTools
+
 ---
 
 ## 9. Fases Completadas (Historico)

@@ -1,5 +1,13 @@
 /* ALTORRA CARS - Main Stylesheet */
 /* Colors inspired by Altorra Inmobiliaria */
+
+/* @import MUST be at the top of the stylesheet (CSS spec). Cardo is
+   used by the premium footer (.footer-brand-name). Previously this
+   import was at line ~5241 (inside the merged footer-fixes block) and
+   was silently ignored by the browser → footer fell back to Georgia.
+   Moved here 2026-05-03. */
+@import url('https://fonts.googleapis.com/css2?family=Cardo:wght@700&display=swap');
+
 :root {
     /* Primary Colors - Altorra Brand */
     --primary-gold: #b89658;
@@ -5237,8 +5245,8 @@ section {
 
 /* ================================================================
    FOOTER — ALTORRA CARS  ·  Premium v5  ·  3-col layout
+   Cardo @import moved to top of file (CSS spec requires it).
    ================================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Cardo:wght@700&display=swap');
 
 /* ── 0. Neutralizar reglas antiguas de style.css / dark-theme.css ── */
 footer {

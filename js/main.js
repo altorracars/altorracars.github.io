@@ -17,9 +17,16 @@ async function loadPopularBrands() {
     if (!container) return;
 
     if (brands.length === 0) {
+        if (vehicleDB._loadError) {
+            scheduleSectionRetry('popularBrands', loadPopularBrands, 5000);
+            return;
+        }
         hideParentSection('popularBrands');
         return;
     }
+
+    // Reset retry counter on success
+    if (window._sectionRetries) window._sectionRetries['popularBrands'] = 0;
 
     // Count vehicles per brand for display
     const allVehicles = vehicleDB.getAllVehicles();
@@ -155,6 +162,33 @@ function hideParentSection(containerId) {
 }
 
 /**
+ * Mobile-fix: distinguish "empty inventory" (legitimate, hide section)
+ * from "load error" (transient, keep skeletons + retry).
+ * On error: schedule the load function to run again with exponential
+ * backoff (5s, 10s, 15s — max 3 attempts). Forces vehicleDB to retry
+ * Firestore by resetting its `loaded` flag.
+ */
+window._sectionRetries = window._sectionRetries || {};
+function scheduleSectionRetry(key, loaderFn, baseDelay) {
+    var attempts = (window._sectionRetries[key] || 0) + 1;
+    window._sectionRetries[key] = attempts;
+    if (attempts > 3) {
+        console.warn('[Retry] ' + key + ' failed after 3 attempts; giving up');
+        return;
+    }
+    var delay = (baseDelay || 5000) * attempts; // 5s, 10s, 15s
+    console.log('[Retry] Scheduling ' + key + ' retry in ' + delay + 'ms (attempt ' + attempts + '/3)');
+    setTimeout(function () {
+        // Force vehicleDB to re-fetch from Firestore
+        if (window.vehicleDB) {
+            window.vehicleDB.loaded = false;
+            window.vehicleDB._loadError = false;
+        }
+        loaderFn();
+    }, delay);
+}
+
+/**
  * Load ALL available vehicles (unified carousel — Nuevos + Usados)
  * Prioritizes: prioridad > destacado > oferta > newer year
  */
@@ -164,9 +198,18 @@ async function loadAllVehicles() {
     const all = (vehicleDB.getAllVehicles() || []).filter(v => v.estado === 'disponible' || !v.estado);
 
     if (all.length === 0) {
+        // Distinguish transient network error from legitimately empty inventory.
+        // On error: keep skeletons visible, retry. On true empty: hide section.
+        if (vehicleDB._loadError) {
+            scheduleSectionRetry('allVehicles', loadAllVehicles, 5000);
+            return;
+        }
         hideParentSection('allVehiclesCarousel');
         return;
     }
+
+    // Reset retry counter on success
+    if (window._sectionRetries) window._sectionRetries['allVehicles'] = 0;
 
     const sorted = all.sort((a, b) => {
         const pa = a.prioridad || 0, pb = b.prioridad || 0;

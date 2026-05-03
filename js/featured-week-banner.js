@@ -36,12 +36,34 @@
 
             var vehicles = FW._getVehicles();
 
-            /* No featured vehicles → hide banner and stop everything */
+            /* No featured vehicles → distinguish error vs legitimately empty.
+               Mobile-fix: on transient Firestore error, retry with backoff
+               instead of permanently hiding the banner. */
             if (!vehicles.length) {
+                if (vehicleDB._loadError) {
+                    FW._retryAttempts = (FW._retryAttempts || 0) + 1;
+                    if (FW._retryAttempts <= 3) {
+                        var delay = 5000 * FW._retryAttempts; // 5s, 10s, 15s
+                        console.log('[FW] Load error — retry in ' + delay + 'ms (attempt ' + FW._retryAttempts + '/3)');
+                        setTimeout(function () {
+                            // Force vehicleDB to re-fetch
+                            if (window.vehicleDB) {
+                                window.vehicleDB.loaded = false;
+                                window.vehicleDB._loadError = false;
+                            }
+                            FW.init();
+                        }, delay);
+                        return;
+                    }
+                    console.warn('[FW] Gave up after 3 retries');
+                }
                 section.style.display = 'none';
                 FW._stopAutoRotate();
                 return;
             }
+
+            // Reset retry counter on success
+            FW._retryAttempts = 0;
 
             vehicles    = vehicles.slice(0, 6);
             FW.vehicles = vehicles;

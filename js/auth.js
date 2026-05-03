@@ -735,8 +735,31 @@
     //
     // After user selects account: callback fires with `response.credential`
     // which is a JWT ID token. We pass it to firebase.auth().signInWithCredential().
+    var GIS_BLOCKED_KEY = 'altorra_gis_blocked';
+    var GIS_BLOCKED_TTL = 7 * 24 * 3600 * 1000; // 7 days
+
+    function _isGisBlocked() {
+        try {
+            var ts = parseInt(localStorage.getItem(GIS_BLOCKED_KEY) || '0', 10);
+            return ts > 0 && (Date.now() - ts) < GIS_BLOCKED_TTL;
+        } catch (e) { return false; }
+    }
+
+    function _markGisBlocked() {
+        try { localStorage.setItem(GIS_BLOCKED_KEY, String(Date.now())); } catch (e) {}
+    }
+
+    function _clearGisBlocked() {
+        try { localStorage.removeItem(GIS_BLOCKED_KEY); } catch (e) {}
+    }
+
     function _gisSignIn() {
         if (!_shouldUseGis()) {
+            _legacyPopupSignIn();
+            return;
+        }
+        if (_isGisBlocked()) {
+            console.info('[GIS] Skipping — previously timed out (cached). Going straight to legacy popup.');
             _legacyPopupSignIn();
             return;
         }
@@ -746,11 +769,12 @@
         var watchdogTimer = setTimeout(function () {
             if (!promptResolved) {
                 promptResolved = true;
+                _markGisBlocked();
                 console.info('[GIS] Prompt timed out (FedCM likely blocked), falling back to legacy popup');
                 _lockAuthControls(false);
                 _legacyPopupSignIn();
             }
-        }, 3000);
+        }, 2000);
 
         try {
             _ensureGisInit(_onGisCredential);
@@ -763,6 +787,9 @@
                     clearTimeout(watchdogTimer);
                     var reason = notification.getNotDisplayedReason && notification.getNotDisplayedReason();
                     console.info('[GIS] Prompt not displayed:', reason);
+                    if (reason === 'opt_out_or_no_session' || reason === 'suppressed_by_user' || reason === 'browser_not_supported') {
+                        _markGisBlocked();
+                    }
                     _lockAuthControls(false);
                     _legacyPopupSignIn();
                 } else if (notification.isSkippedMoment && notification.isSkippedMoment()) {
@@ -813,6 +840,7 @@
                     _lockAuthControls(false);
                     return;
                 }
+                _clearGisBlocked();
                 // SUCCESS: instant modal close + pre-apply auth (same as legacy flow)
                 _preApplyAuthHint(result.user);
                 closeAuthModal();

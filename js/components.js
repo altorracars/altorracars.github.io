@@ -75,6 +75,21 @@ async function loadAllComponents() {
         loadComponent('footer-placeholder', 'snippets/footer.html')
     ]);
 
+    // STEP 1 — Apply auth state to header SYNCHRONOUSLY before revealing.
+    // Reads localStorage hint + user snapshot to pre-render the avatar (if
+    // authenticated) so the user sees the FINAL state at first paint.
+    // Apple/Amazon pattern: optimistic UI from cached snapshot, then
+    // Firebase confirms or replaces it.
+    applyAuthHintToHeader();
+
+    // STEP 2 — Reveal the right side of the header atomically (single
+    // repaint). Uses rAF to ensure the auth state mutations above have
+    // been applied before the opacity transition kicks in.
+    requestAnimationFrame(function () {
+        var actions = document.querySelector('#header .nav-actions');
+        if (actions) actions.classList.add('hdr-ready');
+    });
+
     // Ensure modals are available on ALL pages (Financiación, Vende tu Auto)
     loadModalsIfNeeded();
 
@@ -119,6 +134,67 @@ async function loadAllComponents() {
     loadCookieSystem();
 }
 
+// ── Pre-render auth state into header from cached snapshot ────────────
+// Reads `altorra_auth_hint` from localStorage (set by auth.js on every
+// login/logout). If hint says authenticated, pulls the cached user
+// snapshot (`altorra_auth_user_snap`: name + photoURL) and renders an
+// avatar placeholder synchronously into #headerUserArea — BEFORE the
+// browser paints the header for the first time. This eliminates:
+//   1. The flash of "Ingresar"/"Registrarse" buttons for logged-in users
+//      (the html.auth-authenticated CSS already hides them, but having
+//       the avatar pre-rendered means there's no skeleton dot either)
+//   2. The avatar pop-in delay (was waiting ~200-500ms for Firebase Auth
+//      to resolve from IndexedDB persistence)
+// Pattern: Apple, Amazon, Linear all do optimistic UI from cached state.
+// Firebase later confirms or updates via auth.js → updateHeaderAuthState.
+function applyAuthHintToHeader() {
+    var hint = null;
+    var snap = null;
+    try {
+        hint = localStorage.getItem('altorra_auth_hint');
+        var raw = localStorage.getItem('altorra_auth_user_snap');
+        if (raw) snap = JSON.parse(raw);
+    } catch (e) { /* localStorage disabled */ }
+
+    var userArea = document.getElementById('headerUserArea');
+    if (!userArea) return;
+
+    if (hint === 'authenticated' && snap) {
+        // Pre-render avatar from cached snapshot
+        var name = (snap.name || '').toString();
+        var initials = name.split(' ')
+            .map(function (w) { return (w[0] || ''); })
+            .slice(0, 2).join('').toUpperCase() || 'U';
+        var photoURL = (snap.photoURL || '').toString();
+        // Escape minimal: only photoURL is user-controlled
+        var safePhoto = photoURL.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        var safeFirstName = (name.split(' ')[0] || '')
+            .replace(/[<>&"']/g, function (c) {
+                return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        var avatarContent = photoURL
+            ? '<img src="' + safePhoto + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentNode.textContent=\'' + initials + '\'">'
+            : initials;
+        userArea.style.display = '';
+        userArea.innerHTML =
+            '<div class="hdr-user-wrapper" data-prerendered="1">' +
+            '<button class="hdr-user-btn" id="hdrUserBtn" aria-label="Mi cuenta" aria-expanded="false">' +
+            '<span class="hdr-user-avatar">' + avatarContent + '</span>' +
+            '<span class="hdr-user-name">' + safeFirstName + '</span>' +
+            '<svg class="hdr-user-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>' +
+            '</button>' +
+            '</div>';
+    } else if (hint === 'authenticated') {
+        // Authenticated but no snapshot — keep the empty area; CSS shows
+        // the skeleton placeholder via :empty::before. auth.js will fill.
+        userArea.style.display = '';
+    } else {
+        // Guest — auth-hint CSS already hides #headerUserArea, ensure
+        // login/register buttons are visible (they are by default)
+        userArea.style.display = 'none';
+    }
+}
+
 // ── Sistema de Autenticación Pública ────────────────────────
 // Carga Lucide (si no está ya), el modal HTML, CSS y auth.js
 function loadAuthSystem() {
@@ -149,13 +225,10 @@ function loadAuthSystem() {
         document.head.appendChild(cssLink);
     }
 
-    // 3. CSS del header user area (dropdown)
-    if (!document.querySelector('link[href*="auth-header.css"]')) {
-        var cssLink2 = document.createElement('link');
-        cssLink2.rel = 'stylesheet';
-        cssLink2.href = 'css/auth-header.css';
-        document.head.appendChild(cssLink2);
-    }
+    // 3. CSS del header user area (dropdown) — DEPRECATED:
+    // Now merged into style.css for first-paint readiness. The async
+    // load is kept as a no-op for any user that has the old file
+    // referenced in their cache. (Header Loading Sprint, 2026-05-03)
 
     // 4. HTML del modal — inyectar en body
     if (!document.getElementById('auth-modal')) {

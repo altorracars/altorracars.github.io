@@ -44,7 +44,7 @@
     //
     // Fill in the actual ID below to enable the modern flow:
     window.GOOGLE_OAUTH_CLIENT_ID =
-        '235148219730-XXXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com';
+        '235148219730-5fcciqj9nvt0gmip3mi45vcpvpg3o8cs.apps.googleusercontent.com';
 
     // Helper: detect if the OAuth Client ID is still the placeholder
     // (i.e. user hasn't configured it yet — code will fall back).

@@ -1792,3 +1792,202 @@ Ver `SITEMAP-FIX.md` para estado detallado del sitemap y Google Search Console.
 ### Pendiente
 - Dominio personalizado (mejoraria crawl priority de Google)
 - Re-enviar sitemap en Search Console (ver SITEMAP-FIX.md)
+
+---
+
+## 15. Performance Optimizations (P1-P10) — 2026-05-02
+
+> Plan ejecutado para resolver bloqueos de scroll y mejorar TTI. Cada fase
+> tiene su commit propio para facilitar rollback. La auditoría inicial
+> identificó 6 cuellos de botella; las fases P1-P10 atacan los más rentables.
+
+### Causa raíz original
+
+El sitio se sentía lento incluso en hardware potente (PC gamer). El problema
+NO era el peso de los assets sino el costo de **paint/layout en cada frame
+de scroll**:
+
+1. **83 usos de `backdrop-filter`** — cada uno fuerza recomposición GPU por frame
+2. **2 scroll handlers en paralelo** (`components.js` + `performance.js`)
+3. **22 `<link rel="stylesheet">` bloqueantes** en `<head>` de cada página
+4. **Transiciones sobre `box-shadow`/`width`/`height`/`top`/`left`** (paint+layout)
+5. **8 partículas animadas** en hero (capas GPU permanentes)
+6. **Featured Week banner** con 5 capas de gradientes + box-shadow 90px
+
+### P1 — Eliminate `backdrop-filter` on scroll-affected elements
+
+**Archivo**: `css/performance-fixes.css`
+
+Reemplazó `backdrop-filter: blur(Xpx)` por backgrounds sólidos de alta opacidad
+en elementos que scrollean:
+- `#header` (fixed top), `.cookie-banner` (fixed bottom)
+- `.fav-controls-section` (sticky), `.fav-stat`
+- `.vehicle-card` (×N en grids), `.dropdown-menu`
+- `.hero-search-inner`, `.hero-badge`, `.fw-data-rail`, `.fw-nav`
+- `.results-header`, `.dest-hud-meter`, `.dest-nav`
+
+Modales (`.modal-overlay`, `.cookie-modal`, etc.) y toasts conservan el blur
+porque solo se renderizan on-demand (no afectan scroll).
+
+**Impacto esperado**: 60-80% reducción de paint cost en scroll.
+
+### P2 — Unify scroll handlers
+
+**Archivos**: `js/performance.js`, `js/components.js`
+
+Eliminó el listener duplicado en `performance.js` (toggleaba clase `.scrolled`
+no consumida por ningún CSS — trabajo muerto). Único handler en
+`components.js` con tracking de booleans (`isSticky`, `isHidden`) para evitar
+mutations DOM redundantes (cada `classList.add/remove` invalida estilos
+aunque la clase ya esté).
+
+### P3 — `content-visibility: auto` + containment
+
+**Archivo**: `css/performance-fixes.css`
+
+Aplicó `content-visibility: auto` a:
+- Secciones below-fold del homepage (`.recently-viewed-section`,
+  `.promo-banner-section`, `#testimonials-section`, etc.)
+- **Cards individuales** (`.vehicles-grid > .vehicle-card`) con
+  `contain-intrinsic-size: 320px 460px`. Apple/Stripe pattern: cada card
+  decide independientemente pintarse según su intersección con el viewport.
+
+`contain: layout style` en cards (`.vehicle-card`, `.brand-card`,
+`.category-card`, `.fav-stat`, `.rv-card`, `.fw-slide`) y secciones
+complejas (`.hero`, `.fw-section`).
+
+**No usar `paint` containment en `.vehicle-card`** — clipearía el burst ring
+de 18px del corazón (animación `.favorite-btn--burst`).
+
+### P4 — Replace layout-triggering transitions
+
+**Archivo**: `css/performance-fixes.css`
+
+Cambió `transition: left → transform: translateX` en shines de cards
+(`.vehicle-card::after`, `.commercial-card::before`). Animar `left` dispara
+layout cada frame; `transform` es solo compositor.
+
+Skipped (riesgo > beneficio):
+- Mobile menu `transition: left` (one-shot, no scroll path)
+- `.fw-cta-visual::after` (hover discreto del CTA)
+- 22 transitions sobre `box-shadow` (solo hover, no scroll)
+
+### P5 — Lazy-load non-critical CSS
+
+**Archivos**: 54 HTMLs (raíz + generadas)
+
+Patrón aplicado: `<link rel="stylesheet" href="X" media="print"
+onload="this.media='all'">` + `<noscript>` fallback.
+
+CSS lazy-loaded:
+- `footer-fixes.css` (footer below-fold)
+- `toast-notifications.css` (toasts on-demand)
+- `comparador.css` (excepto `/comparar.html`)
+- `historial-visitas.css`, `citas.css`, `animaciones.css`
+- `reviews.css` (excepto `/resenas.html`)
+
+### P6 — Consolidate `*-fixes.css` files (microquirúrgico, 9 microfases)
+
+**Eliminados** (todo el contenido mergeado al final de `style.css` con
+marcadores `MERGED FROM css/<name>.css (P6 — MFx.x)`):
+
+| Archivo eliminado | Bytes | Reglas | !important | Páginas |
+|---|---|---|---|---|
+| `favorites-fix.css` | 1.4KB | 7 | 0 | 1 |
+| `featured-fixes.css` | 3.7KB | 23 | 2 | 1 |
+| `brands-fixes.css` | 6.9KB | 29 | 52 | 1 |
+| `vehicles-cards-fix.css` | 10.5KB | 51 | 61 | 58 |
+| `sidebar-filters-fix.css` | 15KB | 80 | 5 | 57 |
+| `footer-fixes.css` | 14.5KB | 52 | 4 | 63 |
+| `mobile-fixes.css` | 18.7KB | 159 | 82 | 63 |
+
+**Reglas de migración aplicadas**:
+- Insert al **final** de `style.css` para preservar cascade order original
+- Todos los `!important` preservados verbatim (206 total)
+- `<noscript>` fallbacks limpiados también
+- SW `CACHE_VERSION` bumpeado para invalidar archivos viejos en clientes
+- `cache-manager.js APP_VERSION` matched
+
+**`performance-fixes.css` se mantiene** como único override curado de perf
+(no es candidato a consolidar).
+
+### P9 — Hero particle density tuning
+
+**Archivo**: `css/performance-fixes.css`
+
+Antes: 8 partículas siempre activas (cada una un GPU layer con animación
+infinita). Ahora por viewport:
+- Desktop ≤1280px: 6 partículas
+- Tablet ≤968px: 4
+- Mobile ≤480px: 3
+- Tiny ≤360px: 0 (visual noise en pantallas pequeñas)
+
+### P10 — Lazy-load JS via `whenReady()` (3 microfases)
+
+**Archivos**: `js/components.js`, `index.html`, varios HTMLs
+
+#### MF10.1: Helper `whenReady()` global
+
+```js
+window.whenReady(predicate, callback, opts)
+```
+
+Polls `predicate` hasta que retorna truthy, luego ejecuta callback. Útil
+para gate código que depende de globals lazy-loaded sin forzar eager.
+Default: timeout 5000ms, poll 100ms.
+
+#### MF10.2: Lazy `comparador.js`
+
+`comparador.js` se carga vía `requestIdleCallback` en páginas que NO usan
+`vehicleComparator` síncrono:
+- index.html, busqueda.html, favoritos.html, marca.html
+- vehiculos-suv/sedan/pickup/hatchback.html
+- 18 páginas `/marcas/*.html` generadas
+
+**EAGER required** (uso síncrono): `comparar.html`, `detalle-vehiculo.html`
+(template), `/vehiculos/*.html` generadas.
+
+`render.js:96` tiene guard defensivo `typeof window.vehicleComparator !==
+'undefined'` que retorna estado inicial inactivo si lazy aún no cargó —
+imperceptible para el usuario.
+
+#### MF10.3: Lazy `reviews.js` con whenReady guard
+
+En `index.html` solamente. La sección `#testimonials-section` usa
+`whenReady(() => typeof reviewsSystem !== 'undefined', renderTestimonials,
+{ timeout: 6000 })`. Si timeout: sección queda vacía (graceful degradation).
+
+`resenas.html` mantiene eager (página principal del feature).
+
+### Archivos clave
+
+| Archivo | Rol |
+|---|---|
+| `css/performance-fixes.css` | Single-source-of-truth para todos los overrides perf |
+| `js/components.js` | Define `whenReady()` + único scroll listener |
+| `js/performance.js` | Lazy loading de imágenes + `pauseOffScreenAnimations` |
+| `js/cache-manager.js` | Invalida cache al detectar nueva `APP_VERSION` |
+| `service-worker.js` | Cache strategy + `CACHE_VERSION` bumping |
+
+### Fases skipped intencionalmente
+
+- **P11 (lazy Featured Week banner JS)**: pendiente, próxima fase
+- **P12 (font-display: swap)**: pendiente
+- **P13 (mobile menu transform)**: pendiente
+
+### Validación recomendada tras cada cambio
+
+1. Cargar 3+ páginas afectadas + verificar visual
+2. DevTools Network: ningún 404 por CSS/JS
+3. DevTools Console: cero errores rojos
+4. Mobile breakpoints (320, 480, 768, 1280) con device toolbar
+5. `getComputedStyle()` de elementos clave para verificar cascade
+
+### Métricas finales (post P1-P10)
+
+- HTTP requests CSS bloqueantes: **7 → 3** (style.css, dark-theme.css, performance-fixes.css)
+- Bytes CSS bloqueante: ~270KB → ~210KB
+- 7 archivos `*-fixes.css` eliminados (~70KB del network)
+- 3 JS deferidos a idle (~50KB)
+- Scroll listeners: 2 → 1
+- Backdrop-filter en scroll-paths: 14 → 0

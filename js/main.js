@@ -916,16 +916,28 @@ function initializePage() {
         // Enable drag after vehicles are rendered and overflow-x is active
         enableDragScroll();
 
-        // Fase 23: Start real-time listeners after initial load
-        if (window.vehicleDB && typeof vehicleDB.startRealtime === 'function') {
-            vehicleDB.onChange(function(changeType) {
+        // P14: Defer real-time listeners until browser is idle.
+        // The user already has the cached data fully rendered; live sync
+        // (admin changes via onSnapshot) is a nice-to-have, not critical
+        // for first interaction. Deferring frees ~100-300ms of main-thread
+        // work for TTI. Falls back to setTimeout where rIC is unavailable.
+        function startRT() {
+            if (!window.vehicleDB
+                || typeof vehicleDB.startRealtime !== 'function'
+                || vehicleDB._realtimeActive) return;
+            vehicleDB.onChange(function (changeType) {
                 console.log('[RT] Data changed:', changeType);
                 showRealtimeUpdateIndicator();
-                if (changeType === 'vehicles') { rerenderVehicleSections(); loadHeroStats(); }
-                else if (changeType === 'brands') { rerenderBrands(); loadHeroStats(); }
-                else if (changeType === 'banners') rerenderBanners();
+                if (changeType === 'vehicles')      { rerenderVehicleSections(); loadHeroStats(); }
+                else if (changeType === 'brands')   { rerenderBrands(); loadHeroStats(); }
+                else if (changeType === 'banners')  { rerenderBanners(); }
             });
             vehicleDB.startRealtime();
+        }
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(startRT, { timeout: 4000 });
+        } else {
+            setTimeout(startRT, 1500);
         }
     });
 }

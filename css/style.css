@@ -3142,7 +3142,7 @@ section {
     font-size: 0.95rem;
 }
 
-/* FASE 2 brands styles moved to css/brands-fixes.css */
+/* FASE 2 brands styles — see "MERGED FROM brands-fixes.css" section below */
 
 /* ============================================
    EXPERTS SECTION - FASE 1
@@ -4132,5 +4132,2526 @@ section {
     }
     .brands-section.brands-section--hero-flow .brand-name {
         font-size: 0.7rem !important;
+    }
+}
+
+/* ============================================
+   MERGED FROM css/vehicles-cards-fix.css (P6 — MF6.5)
+   Vehicle cards layout (grids, badges, hover, responsive).
+   Loaded by 58 pages. 61 !important preserved as-is.
+   ============================================ */
+
+/* ============================================
+   ALTORRA CARS - CORRECCIÓN DEFINITIVA
+   Tarjetas de Vehículos + Badges + Layout
+   ============================================ */
+
+/* ===========================================
+   SECCIÓN 1: GRID DE VEHÍCULOS CORREGIDO
+   =========================================== */
+
+/* Grid principal - páginas de catálogo */
+.catalog-main .vehicles-grid,
+.catalog-section .vehicles-grid,
+.favorites-section .vehicles-grid,
+.search-results-section .vehicles-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+    grid-auto-flow: row !important;
+    gap: 1.5rem !important;
+    padding: 0 !important;
+    overflow: visible !important;
+}
+
+/* ── Section header always inline — "Ver todos" stays right of title on all screen sizes ── */
+.featured-section .section-header {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+}
+
+.featured-section .section-header .section-title {
+    font-size: clamp(1.1rem, 4vw, 1.5rem) !important;
+    margin-bottom: 0 !important;
+}
+
+.featured-section .section-header .btn-view-more {
+    flex-shrink: 0;
+    font-size: 0.78rem !important;
+    padding: 0.4rem 0.9rem !important;
+    margin-top: 0 !important;
+    white-space: nowrap;
+}
+
+/* Grid en sección destacados (home) - modo carrusel CON SCROLL TÁCTIL */
+.featured-section .vehicles-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1.5rem !important;
+    overflow-x: auto !important; /* Permitir scroll horizontal en móvil */
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: 1rem 0 1.5rem 0 !important;
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+    /* Ocultar scrollbar completamente en todos los navegadores */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    /* Prevent text/image selection during mouse drag */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Ocultar scrollbar en Chrome/Safari/Edge */
+.featured-section .vehicles-grid::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+/* ===========================================
+   FIX: .no-results full width in all contexts
+   =========================================== */
+
+/* In carousel flex containers: take full width, center content */
+.featured-section .vehicles-grid > .no-results,
+.carousel-wrapper .vehicles-grid > .no-results {
+    flex: 1 0 100% !important;
+    min-width: 100% !important;
+    width: 100% !important;
+}
+
+/* In catalog grid containers: span all columns */
+.catalog-main .vehicles-grid > .no-results,
+.catalog-section .vehicles-grid > .no-results,
+.favorites-section .vehicles-grid > .no-results,
+.search-results-section .vehicles-grid > .no-results,
+.vehicles-grid > .no-results {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    justify-self: center !important;
+}
+
+/* ===========================================
+   SECCIÓN 2: TARJETA DE VEHÍCULO MEJORADA
+   =========================================== */
+
+.vehicle-card {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.08),
+        0 4px 16px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    /* Evitar colapso */
+    min-width: 0;
+    width: 100%;
+}
+
+/* En modo carrusel (destacados) */
+.featured-section .vehicle-card {
+    flex: 0 0 320px !important;
+    min-width: 320px !important;
+    max-width: 320px !important;
+    width: 320px !important;
+    scroll-snap-align: start;
+}
+
+.vehicle-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        0 16px 48px rgba(0, 0, 0, 0.08);
+}
+
+/* ===========================================
+   SECCIÓN 3: IMAGEN DEL VEHÍCULO
+   =========================================== */
+
+.vehicle-image {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+}
+
+.vehicle-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vehicle-card:hover .vehicle-image img {
+    transform: scale(1.08);
+}
+
+/* ===========================================
+   SECCIÓN 4: SISTEMA DE BADGES CORREGIDO
+   =========================================== */
+
+/* Contenedor de badges - HORIZONTAL para evitar superposición */
+.vehicle-badges {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 60px; /* Espacio para botón favorito */
+    z-index: 10;
+    display: flex !important;
+    flex-direction: row !important; /* HORIZONTAL, no vertical */
+    flex-wrap: wrap;
+    gap: 6px;
+    max-width: calc(100% - 72px);
+}
+
+/* Badge individual */
+.badge {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(4px);
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+}
+
+/* Limitar a máximo 2 badges visibles para evitar superposición */
+.vehicle-badges .badge:nth-child(n+3) {
+    display: none !important;
+}
+
+/* Colores de badges */
+.badge-nuevo,
+.badge-new {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.badge-seminuevo {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.badge-usado,
+.badge-used {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.badge-destacado {
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    color: white;
+}
+
+.badge-garantia {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+}
+
+.badge-oferta {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+/* ===========================================
+   SECCIÓN 5: BOTONES DE ACCIÓN (FAVORITO + COMPARAR)
+   =========================================== */
+
+/* Contenedor de acciones */
+.vehicle-actions {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 15 !important;
+}
+
+.favorite-btn {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: #b89658;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    touch-action: manipulation !important;
+    user-select: none !important;
+}
+
+/* Hover solo en dispositivos con mouse real (no touch) - FIX para móvil */
+@media (hover: hover) and (pointer: fine) {
+    .favorite-btn:hover {
+        background: #b89658;
+        color: white;
+        transform: scale(1.1);
+    }
+}
+
+.favorite-btn.active {
+    background: #b89658;
+    color: white;
+}
+
+/* Botón de comparar - ESTILOS MOVIDOS A comparador.css */
+/* Los estilos de .btn-compare ahora están centralizados en css/comparador.css */
+
+/* ===========================================
+   SECCIÓN 6: INFORMACIÓN DEL VEHÍCULO
+   =========================================== */
+
+.vehicle-info {
+    padding: 1.25rem;
+}
+
+.vehicle-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1d1b19;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    /* Evitar desbordamiento de texto */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vehicle-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    color: #9c9997;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.vehicle-specs span {
+    display: inline-flex;
+    align-items: center;
+}
+
+.vehicle-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f0f0f0;
+}
+
+.vehicle-price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #b89658;
+}
+
+.btn-view {
+    padding: 0.5rem 1.25rem;
+    background: #1d1b19;
+    color: white;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.btn-view:hover {
+    background: #b89658;
+}
+
+/* ===========================================
+   SECCIÓN 7: RESPONSIVE
+   =========================================== */
+
+/* Tablets */
+@media (max-width: 968px) {
+    .catalog-main .vehicles-grid,
+    .catalog-section .vehicles-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+        gap: 1.25rem !important;
+    }
+
+    .featured-section .vehicle-card {
+        flex: 0 0 300px !important;
+        min-width: 300px !important;
+        max-width: 300px !important;
+    }
+
+    .vehicle-image {
+        height: 200px;
+    }
+}
+
+/* Móvil */
+@media (max-width: 640px) {
+    .catalog-main .vehicles-grid,
+    .catalog-section .vehicles-grid,
+    .favorites-section .vehicles-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    .featured-section .vehicles-grid {
+        gap: 1rem !important;
+        padding: 0.5rem 0 1rem 0 !important;
+    }
+
+    .featured-section .vehicle-card {
+        flex: 0 0 280px !important;
+        min-width: 280px !important;
+        max-width: 280px !important;
+    }
+
+    .vehicle-image {
+        height: 180px;
+    }
+
+    .vehicle-info {
+        padding: 1rem;
+    }
+
+    .vehicle-title {
+        font-size: 1rem;
+    }
+
+    .vehicle-price {
+        font-size: 1.1rem;
+    }
+
+    .badge {
+        font-size: 0.65rem;
+        padding: 3px 8px;
+    }
+
+    .favorite-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 1.1rem;
+    }
+
+    /* .btn-compare responsive - estilos en comparador.css */
+
+    .vehicle-actions {
+        gap: 6px;
+    }
+}
+
+/* ============================================
+   MERGED FROM css/sidebar-filters-fix.css (P6 — MF6.6)
+   Sidebar de filtros (catalog pages: busqueda, marca, vehiculos-*).
+   Selectores: .filters-sidebar, .catalog-filters, .filter-group, etc.
+   5 !important originales, 5 media queries — todo preservado.
+   ============================================ */
+
+/* ============================================
+   ALTORRA CARS - SIDEBAR DE FILTROS MODERNO
+   Navegación + Filtros + Flechas Carrusel
+   ============================================ */
+
+/* ===========================================
+   SECCIÓN 1: CONTENEDOR SIDEBAR
+   =========================================== */
+
+.filters-sidebar,
+.sidebar-filters,
+.catalog-filters {
+    background: linear-gradient(180deg, #1d1b19 0%, #2d2a28 100%);
+    border-radius: 20px;
+    padding: 1.5rem;
+    position: sticky;
+    top: 100px;
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.15),
+        0 8px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Scrollbar elegante para sidebar */
+.filters-sidebar::-webkit-scrollbar,
+.sidebar-filters::-webkit-scrollbar,
+.catalog-filters::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filters-sidebar::-webkit-scrollbar-track,
+.sidebar-filters::-webkit-scrollbar-track,
+.catalog-filters::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.filters-sidebar::-webkit-scrollbar-thumb,
+.sidebar-filters::-webkit-scrollbar-thumb,
+.catalog-filters::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #b89658 0%, #916652 100%);
+    border-radius: 10px;
+}
+
+/* ===========================================
+   SECCIÓN 2: HEADER DEL SIDEBAR
+   =========================================== */
+
+.filters-header,
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filters-title,
+.sidebar-title {
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filters-title::before,
+.sidebar-title::before {
+    content: "⚙️";
+    font-size: 1.1rem;
+}
+
+.btn-clear-filters,
+.clear-filters {
+    background: transparent;
+    border: 1px solid rgba(184, 150, 88, 0.5);
+    color: #b89658;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-clear-filters:hover,
+.clear-filters:hover {
+    background: rgba(184, 150, 88, 0.2);
+    border-color: #b89658;
+}
+
+/* ===========================================
+   SECCIÓN 3: GRUPOS DE FILTROS
+   =========================================== */
+
+.filter-group {
+    margin-bottom: 1.25rem;
+}
+
+.filter-group-title,
+.filter-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Iconos para categorías */
+.filter-group[data-filter="marca"] .filter-group-title::before,
+.filter-group[data-filter="brand"] .filter-group-title::before { content: "🚗"; }
+.filter-group[data-filter="modelo"] .filter-group-title::before,
+.filter-group[data-filter="model"] .filter-group-title::before { content: "📋"; }
+.filter-group[data-filter="año"] .filter-group-title::before,
+.filter-group[data-filter="year"] .filter-group-title::before { content: "📅"; }
+.filter-group[data-filter="precio"] .filter-group-title::before,
+.filter-group[data-filter="price"] .filter-group-title::before { content: "💰"; }
+.filter-group[data-filter="combustible"] .filter-group-title::before,
+.filter-group[data-filter="fuel"] .filter-group-title::before { content: "⛽"; }
+.filter-group[data-filter="transmision"] .filter-group-title::before,
+.filter-group[data-filter="transmission"] .filter-group-title::before { content: "⚙️"; }
+.filter-group[data-filter="kilometraje"] .filter-group-title::before,
+.filter-group[data-filter="mileage"] .filter-group-title::before { content: "🛣️"; }
+.filter-group[data-filter="color"] .filter-group-title::before { content: "🎨"; }
+.filter-group[data-filter="tipo"] .filter-group-title::before,
+.filter-group[data-filter="type"] .filter-group-title::before { content: "🏷️"; }
+
+/* ===========================================
+   SECCIÓN 4: INPUTS Y SELECTS
+   =========================================== */
+
+.filter-select,
+.filter-input,
+.filters-sidebar select,
+.filters-sidebar input,
+.sidebar-filters select,
+.sidebar-filters input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    color: white;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    appearance: none;
+}
+
+.filter-select:hover,
+.filter-input:hover,
+.filters-sidebar select:hover,
+.filters-sidebar input:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(184, 150, 88, 0.5);
+}
+
+.filter-select:focus,
+.filter-input:focus,
+.filters-sidebar select:focus,
+.filters-sidebar input:focus {
+    outline: none;
+    border-color: #b89658;
+    box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.2);
+}
+
+/* Flecha personalizada para selects */
+.filter-select,
+.filters-sidebar select,
+.sidebar-filters select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b89658' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
+/* Opciones del select */
+.filter-select option,
+.filters-sidebar select option,
+.sidebar-filters select option {
+    background: #2d2a28;
+    color: white;
+    padding: 0.5rem;
+}
+
+/* Placeholder */
+.filter-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* ===========================================
+   SECCIÓN 5: RANGO DE PRECIOS
+   =========================================== */
+
+.price-range-container,
+.filter-range {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.price-range-container input,
+.filter-range input {
+    flex: 1;
+    text-align: center;
+}
+
+.price-separator {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+
+/* Slider de rango */
+.range-slider {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    -webkit-appearance: none;
+    margin-top: 0.5rem;
+}
+
+.range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+/* ===========================================
+   SECCIÓN 6: CHECKBOXES PERSONALIZADOS
+   =========================================== */
+
+.filter-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+}
+
+.filter-checkbox:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.filter-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.filter-checkbox .checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.filter-checkbox input:checked + .checkmark {
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border-color: #b89658;
+}
+
+.filter-checkbox input:checked + .checkmark::after {
+    content: "✓";
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.filter-checkbox .checkbox-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+}
+
+/* ===========================================
+   SECCIÓN 7: BOTÓN APLICAR FILTROS
+   =========================================== */
+
+.btn-apply-filters,
+.apply-filters {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
+}
+
+.btn-apply-filters::before,
+.apply-filters::before {
+    content: "🔍";
+}
+
+.btn-apply-filters:hover,
+.apply-filters:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(184, 150, 88, 0.4);
+}
+
+.btn-apply-filters:active,
+.apply-filters:active {
+    transform: translateY(0);
+}
+
+/* ===========================================
+   SECCIÓN 8: FLECHAS DE NAVEGACIÓN CARRUSEL
+   =========================================== */
+
+.carousel-nav,
+.featured-section .carousel-arrows {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+/* Estilos para carruseles - Unificados */
+.featured-section {
+    padding: var(--spacing-xl) 0;
+    background: white;
+}
+
+.featured-section:nth-of-type(even) {
+    background: #fafafa;
+}
+
+.featured-section .section-header {
+    margin-bottom: var(--spacing-md);
+}
+
+.carousel-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    overflow: visible;
+}
+
+.carousel-wrapper .vehicles-grid {
+    flex: 1;
+    scroll-behavior: smooth;
+}
+
+/* ===========================================
+   SECCIÓN 9: CONTADOR DE RESULTADOS
+   =========================================== */
+
+.results-count,
+.filter-results {
+    background: rgba(184, 150, 88, 0.15);
+    border: 1px solid rgba(184, 150, 88, 0.3);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.results-count span,
+.filter-results span {
+    color: #b89658;
+    font-weight: 600;
+}
+
+.results-count p,
+.filter-results p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* ===========================================
+   SECCIÓN 10: RESPONSIVE
+   =========================================== */
+
+@media (max-width: 1024px) {
+    .filters-sidebar,
+    .sidebar-filters,
+    .catalog-filters {
+        position: static;
+        max-height: none;
+        margin-bottom: 1.5rem;
+        border-radius: 16px;
+    }
+
+    .featured-section .carousel-arrow {
+        position: static;
+        transform: none;
+    }
+
+    .featured-section .carousel-arrows {
+        justify-content: center;
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .filters-sidebar,
+    .sidebar-filters,
+    .catalog-filters {
+        padding: 1.25rem;
+    }
+
+    .filter-group {
+        margin-bottom: 1rem;
+    }
+
+    .filter-select,
+    .filter-input {
+        padding: 0.65rem 0.9rem;
+        font-size: 0.85rem;
+    }
+
+    .btn-apply-filters,
+    .apply-filters {
+        padding: 0.85rem;
+        font-size: 0.95rem;
+    }
+
+    .carousel-arrow,
+    .nav-arrow {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+    }
+}
+
+/* ===========================================
+   SECCIÓN 11: FILTROS COLAPSABLES (MOBILE)
+   =========================================== */
+
+.filters-toggle {
+    display: none;
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #1d1b19 0%, #2d2a28 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filters-toggle::after {
+    content: "▼";
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.filters-toggle.active::after {
+    transform: rotate(180deg);
+}
+
+/* Botón toggle para móvil */
+.mobile-filters-toggle {
+    display: none;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #b89658 0%, #916652 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 15px rgba(184, 150, 88, 0.3);
+    transition: all 0.3s ease;
+}
+
+.mobile-filters-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(184, 150, 88, 0.4);
+}
+
+.mobile-filters-toggle .toggle-icon {
+    font-size: 1.2rem;
+}
+
+.mobile-filters-toggle .toggle-arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 1024px) {
+    .mobile-filters-toggle {
+        display: flex;
+    }
+
+    .filters-sidebar.collapsed,
+    .sidebar-filters.collapsed,
+    .catalog-filters.collapsed {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        padding: 0;
+        margin: 0;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+    }
+
+    .filters-sidebar,
+    .sidebar-filters,
+    .catalog-filters {
+        position: static;
+        max-height: none;
+        transition: all 0.3s ease;
+    }
+}
+
+@media (max-width: 768px) {
+    .filters-toggle {
+        display: flex;
+    }
+
+    .filters-sidebar.collapsed,
+    .sidebar-filters.collapsed,
+    .catalog-filters.collapsed {
+        max-height: 0 !important;
+        overflow: hidden !important;
+        opacity: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .filters-sidebar.expanded,
+    .sidebar-filters.expanded,
+    .catalog-filters.expanded {
+        display: block;
+    }
+}
+/* ===========================================
+   FLECHAS CARRUSEL - VERSIÓN CONSOLIDADA
+   =========================================== */
+
+/* Flechas de navegación del carrusel */
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 70px;
+    height: 70px;
+    font-size: 0; /* Ocultar texto interno del elemento */
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 50%;
+    color: #916652;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+/* Iconos de las flechas */
+.carousel-arrow.prev::before {
+    content: "<";
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.carousel-arrow.next::before {
+    content: ">";
+    font-size: 2rem;
+    line-height: 1;
+}
+
+/* Posicionamiento de flechas */
+.carousel-arrow.prev {
+    left: -80px;
+}
+
+.carousel-arrow.next {
+    right: -80px;
+}
+
+/* Ocultar iconos internos (si existen) */
+.carousel-arrow i {
+    display: none;
+}
+
+/* Hover - escalado suave sin movimiento */
+.carousel-arrow:hover {
+    transform: translateY(-50%) scale(1.06);
+    opacity: 0.95;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* Active - feedback al hacer click */
+.carousel-arrow:active {
+    transform: translateY(-50%) scale(0.98);
+}
+
+/* Ocultar flechas en móvil */
+@media (max-width: 640px) {
+    .carousel-wrapper {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .carousel-arrow {
+        display: none;
+    }
+}
+
+
+/* ============================================
+   MERGED FROM css/footer-fixes.css (P6 — MF6.7)
+   Footer styles. 14.5KB, 52 rules, 4 !important,
+   4 media queries. Loaded by 63 pages (root + generated).
+   ============================================ */
+
+/* ================================================================
+   FOOTER — ALTORRA CARS  ·  Premium v5  ·  3-col layout
+   ================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Cardo:wght@700&display=swap');
+
+/* ── 0. Neutralizar reglas antiguas de style.css / dark-theme.css ── */
+footer {
+    border-top: none !important;
+    /* style.css añade padding: 4rem 0 2rem — se anula para que
+       footer-body controle el espaciado interior */
+    padding: 0 !important;
+}
+
+/* style.css añade margin-top: 2rem a .footer-contact,
+   causando el gap grande entre "HABLEMOS" y los datos de contacto */
+.footer-contact {
+    margin-top: 0 !important;
+}
+
+/* ── 1. Línea dorada superior ── */
+.footer-topline {
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(212,175,55,0.4) 15%,
+        #d4af37 50%,
+        rgba(212,175,55,0.4) 85%,
+        transparent 100%
+    );
+}
+
+/* ── 2. Cuerpo ── */
+.footer-body {
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle, rgba(212,175,55,0.04) 1px, transparent 1px) 0 0 / 28px 28px,
+        #050505;
+    /* padding simétrico: respira entre el topline y el footer-bottom */
+    padding: 32px 0 32px;
+}
+
+/* Ambient glow corners */
+.footer-body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 40% 80% at 0% 50%,  rgba(212,175,55,0.035) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 80% at 100% 50%, rgba(212,175,55,0.035) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── 3. Marca de agua ── */
+.footer-wm {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Cardo', Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(48px, 14vw, 200px);
+    letter-spacing: 0.12em;
+    color: rgba(212,175,55,0.025);
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    line-height: 1;
+    /* Ensure it fits within viewport on all devices */
+    max-width: 90vw;
+    overflow: hidden;
+    text-align: center;
+}
+
+/* ── 4. Contenedor ── */
+.footer-wrap {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 52px;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── 5. Grid 3 columnas: brand | sep | contact | sep | social ── */
+.footer-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1px 1fr 1px minmax(230px, 270px);
+    align-items: start;
+    gap: 0;
+}
+
+/* ── 6. Columnas ── */
+.footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    /* Anula margin-bottom: 1.5rem añadido en la sección de mobile @media abajo */
+    margin-bottom: 0 !important;
+}
+
+.footer-col--brand   { padding-right: 52px; text-align: center; }
+.footer-col--contact { padding: 0 48px; }
+.footer-col--social  { padding-left: 48px; }
+
+/* ── 7. Separadores verticales ── */
+.footer-col-sep {
+    align-self: stretch;
+    margin: 4px 0;
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(212,175,55,0.22) 15%,
+        rgba(212,175,55,0.22) 85%,
+        transparent 100%
+    );
+}
+
+/* ── 8. Brand mark ── */
+.footer-mark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    gap: 0;
+}
+
+.footer-mark__name {
+    display: block;
+    font-family: 'Cardo', Georgia, 'Times New Roman', serif;
+    font-size: clamp(2.6rem, 4.2vw, 4rem);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    background: linear-gradient(
+        115deg,
+        #7a5c00 0%,
+        #c9a227 22%,
+        #f5df80 42%,
+        #d4af37 54%,
+        #eacb55 68%,
+        #c9a227 82%,
+        #7a5c00 100%
+    );
+    background-size: 230% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: altorra-shimmer 6s ease-in-out infinite;
+}
+
+@keyframes altorra-shimmer {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.footer-mark__rule {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.6) 20%, rgba(212,175,55,0.6) 80%, transparent);
+    margin: 7px 0 5px;
+}
+
+.footer-mark__sub {
+    display: block;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: clamp(0.5rem, 0.8vw, 0.66rem);
+    font-weight: 400;
+    letter-spacing: 0.65em;
+    text-indent: 0.65em;
+    text-transform: uppercase;
+    color: rgba(212,175,55,0.45);
+    white-space: nowrap;
+}
+
+/* ── 9. Tagline ── */
+.footer-tagline {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.42);
+    line-height: 1.7;
+    margin: 0;
+    text-align: center;
+    text-wrap: balance;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.footer-tagline strong {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.62);
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+/* ── 10. Encabezados de columna ── */
+.footer-col-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
+    text-transform: uppercase;
+    color: rgba(212,175,55,0.9);
+    margin: 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(212,175,55,0.18);
+}
+
+.footer-col-heading__icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: rgba(212,175,55,0.7);
+}
+
+/* ── 11. Contacto ── */
+/* margin-top override se declara arriba en sección "Neutralizar" */
+.footer-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.footer-ci {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.84rem;
+    color: rgba(255,255,255,0.38);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+
+a.footer-ci:hover {
+    color: rgba(212,175,55,0.85);
+}
+
+.footer-ci__icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: rgba(212,175,55,0.55);
+}
+
+/* ── 12. Horario ── */
+.footer-schedule {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: rgba(212,175,55,0.04);
+    border: 1px solid rgba(212,175,55,0.12);
+    border-left: 2px solid rgba(212,175,55,0.45);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 13px;
+}
+
+.footer-schedule__label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(212,175,55,0.7);
+}
+
+.footer-schedule__value {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.42);
+    white-space: nowrap;
+}
+
+/* ── 13. Redes sociales — vertical stack full-width ── */
+.footer-social {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+}
+
+.footer-soc {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-radius: 50px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    color: rgba(255,255,255,0.48);
+    text-decoration: none;
+    transition: background 0.25s, border-color 0.25s, color 0.25s,
+                box-shadow 0.25s, transform 0.18s;
+    white-space: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.footer-soc__icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: block;
+}
+
+.footer-soc__label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+/* Hover por red */
+.footer-soc--wa:hover {
+    background:    rgba(37,211,102,0.09);
+    border-color:  rgba(37,211,102,0.4);
+    color:         #25d366;
+    box-shadow:    0 4px 18px rgba(37,211,102,0.12);
+    transform:     translateY(-2px);
+}
+.footer-soc--ig:hover {
+    background:    rgba(228,64,95,0.09);
+    border-color:  rgba(228,64,95,0.4);
+    color:         #e4405f;
+    box-shadow:    0 4px 18px rgba(228,64,95,0.12);
+    transform:     translateY(-2px);
+}
+.footer-soc--fb:hover {
+    background:    rgba(24,119,242,0.09);
+    border-color:  rgba(24,119,242,0.4);
+    color:         #1877f2;
+    box-shadow:    0 4px 18px rgba(24,119,242,0.12);
+    transform:     translateY(-2px);
+}
+
+/* ── 14. Barra inferior ── */
+.footer-bottom {
+    background: #030303;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding: 11px 0;
+}
+
+.footer-bottom__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    min-height: 28px;
+}
+
+.footer-copy {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.22);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.footer-copy strong {
+    color: rgba(212,175,55,0.5);
+    font-weight: 600;
+}
+
+.footer-legal {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.footer-legal a {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.22);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.footer-legal a:hover {
+    color: rgba(212,175,55,0.75);
+}
+
+.footer-legal span {
+    color: rgba(255,255,255,0.1);
+    font-size: 0.55rem;
+}
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+
+/* 1200px — reducir padding lateral */
+@media (max-width: 1200px) {
+    .footer-wrap         { padding: 0 36px; }
+    .footer-col--brand   { padding-right: 40px; }
+    .footer-col--contact { padding: 0 36px; }
+    .footer-col--social  { padding-left: 36px; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   960px — colapsar a 1 columna vertical
+────────────────────────────────────────────────────────────── */
+@media (max-width: 960px) {
+
+    .footer-body { padding: 24px 0 24px; }
+    .footer-wrap { padding: 0 24px; }
+
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    /* Separadores → líneas horizontales */
+    .footer-col-sep {
+        width: 100%;
+        height: 1px;
+        margin: 14px 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.18) 30%,
+                    rgba(212,175,55,0.18) 70%, transparent 100%);
+    }
+
+    .footer-col          { gap: 7px; }
+    .footer-col--brand   { padding-right: 0; align-items: center; text-align: center; }
+    .footer-col--contact { padding: 0; }
+    .footer-col--social  { padding-left: 0; }
+
+    /* Tagline centrado en tablet */
+    .footer-tagline {
+        text-align: center;
+        text-wrap: balance;
+    }
+
+    .footer-contact      { align-items: flex-start; }
+
+    /* Redes: fila horizontal */
+    .footer-social       { flex-direction: row; gap: 8px; }
+    .footer-soc          { flex: 1; min-width: 0; justify-content: center; padding: 9px 10px; }
+
+    .footer-bottom__row  { padding: 0 24px; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   600px — mobile puro
+────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+
+    .footer-body         { padding: 20px 0 20px; }
+    .footer-wrap         { padding: 0 16px; }
+
+    /* Logo compacto */
+    .footer-mark__name   { font-size: clamp(1.9rem, 10vw, 2.6rem); }
+    .footer-mark__rule   { width: 70%; margin: 4px 0 3px; }
+
+    /* Tagline en mobile: centrado y simétrico */
+    .footer-tagline {
+        font-size: 0.79rem;
+        line-height: 1.6;
+        text-align: center;
+        text-wrap: balance;
+        max-width: 320px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .footer-tagline strong {
+        font-size: 0.82rem;
+        display: block;
+        text-align: center;
+        margin-bottom: 4px;
+    }
+
+    /* Separadores más apretados */
+    .footer-col-sep      { margin: 10px 0; }
+    .footer-col          { gap: 6px; }
+
+    /* Heading centrado y compacto */
+    .footer-col-heading  { justify-content: center; font-size: 0.57rem; padding-bottom: 6px; }
+
+    /* Contacto centrado */
+    .footer-contact      { align-items: center; gap: 4px; }
+    .footer-ci           { font-size: 0.79rem; }
+    .footer-ci__icon     { width: 13px; height: 13px; }
+
+    /* Horario compacto */
+    .footer-schedule {
+        border-radius: 6px;
+        border-left: none;
+        border-top: 2px solid rgba(212,175,55,0.4);
+        padding: 6px 12px;
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .footer-schedule__label { font-size: 0.56rem; }
+    .footer-schedule__value { font-size: 0.76rem; white-space: normal; }
+
+    /* Redes: 3 en fila */
+    .footer-soc          { padding: 8px 6px; gap: 6px; }
+    .footer-soc__icon    { width: 15px; height: 15px; }
+    .footer-soc__label   { font-size: 0.74rem; }
+
+    /* Marca de agua — scale to fit mobile without clipping */
+    .footer-wm           { font-size: clamp(36px, 14vw, 100px); letter-spacing: 0.08em; }
+
+    /* Barra inferior: stack centrado */
+    .footer-bottom__row {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 5px;
+        padding: 0 16px;
+    }
+    .footer-copy         { font-size: 0.67rem; }
+    .footer-legal        { gap: 8px; }
+    .footer-legal a      { font-size: 0.65rem; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   380px — solo iconos en redes sociales
+────────────────────────────────────────────────────────────── */
+@media (max-width: 380px) {
+    .footer-soc__label   { display: none; }
+    .footer-soc          { justify-content: center; padding: 9px; }
+    .footer-soc__icon    { width: 17px; height: 17px; }
+}
+
+/* ============================================
+   MERGED FROM css/mobile-fixes.css (P6 — MF6.8)
+   Mobile breakpoints + global overflow protections.
+   18.7KB, 159 rules, 82 !important, 10 media queries.
+   Loaded by 63 pages. Despite the name, includes some
+   global rules (html/body overflow-x:hidden) AND mobile
+   media queries — all preserved as-is.
+   ============================================ */
+
+/* ============================================
+   CORRECCIONES MÓVILES FINAL - ALTORRA CARS
+   Optimizado para iPhone y todos los móviles
+   ============================================ */
+
+/* .mob-actions se oculta por defecto en style.css
+   y se activa dentro del @media max-width: 968px de abajo */
+
+/* ===== PREVENCIÓN DE DESBORDAMIENTO ===== */
+html {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    position: relative;
+}
+
+/* ===== MÓVILES (hasta 640px) ===== */
+@media (max-width: 640px) {
+    
+    /* Container con padding seguro */
+    .container {
+        padding: 0 1rem;
+        max-width: 100%;
+    }
+    
+    /* ===== HEADER MEJORADO ===== */
+    #header {
+        padding: 0.5rem 0;
+    }
+    
+    .navbar {
+        padding: 0.5rem 0;
+    }
+    
+    .nav-wrapper {
+        padding: 0 0.75rem;
+        gap: 0.5rem;
+    }
+    
+    /* Logo compacto pero visible */
+    #logo-img {
+        height: 45px;
+        width: auto;
+    }
+    
+    .logo {
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    
+    .logo-text {
+        font-size: 0.75rem;
+        line-height: 1;
+        letter-spacing: -0.3px;
+    }
+    
+    /* ===== BOTÓN FAVORITOS OPTIMIZADO ===== */
+    /* nav-actions y nav-item-mobile-only se controlan desde max-width: 968px */
+    
+    /* ===== HAMBURGER — centrado vertical con el logo ===== */
+    .hamburger {
+        width: 36px;
+        height: 36px;
+        padding: 6px;
+        gap: 5px;
+        margin-right: 0;
+        flex-shrink: 0;
+        align-self: center;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .hamburger span {
+        width: 100%;
+        height: 2.5px;
+        background: var(--primary-dark);
+        border-radius: 2px;
+    }
+    
+    /* Hero → ver css/hero.css para responsive */
+
+    /* ===== GRIDS OPTIMIZADOS ===== */
+    .vehicles-grid,
+    .categories-grid,
+    .services-grid,
+    .features-grid,
+    .testimonials-grid,
+    .reasons-grid,
+    .contact-grid,
+    .footer-grid,
+    .catalog-layout,
+    .detail-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem;
+    }
+
+    /* Similar vehicles carousel - keep horizontal on mobile */
+    .similar-section .vehicles-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        grid-template-columns: unset !important;
+        overflow-x: auto !important;
+    }
+    
+    /* Brands carousel — override grid on mobile */
+    .brands-grid.brands-carousel {
+        display: block !important;
+        grid-template-columns: none !important;
+    }
+
+    .brand-card {
+        padding: 1rem;
+    }
+
+    /* Brand carousel - no arrows on mobile, swipe only */
+    .brands-carousel-wrapper {
+        padding: 0;
+    }
+
+    .brands-arrow {
+        display: none !important;
+    }
+
+    /* Price block stacking on mobile */
+    .vehicle-price-block {
+        line-height: 1.1;
+    }
+    .vehicle-price-original {
+        font-size: 0.75rem !important;
+    }
+    .vehicle-price-offer {
+        font-size: 1.1rem !important;
+    }
+    
+    /* ===== SECTION HEADERS ===== */
+    .section-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.4rem !important;
+        line-height: 1.2;
+    }
+    
+    .view-all {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.9rem;
+    }
+    
+    /* ===== VEHICLE CARDS ===== */
+    .vehicle-card {
+        margin-bottom: 0.5rem;
+    }
+    
+    .vehicle-image {
+        height: 200px;
+    }
+    
+    .vehicle-info {
+        padding: 1rem;
+    }
+    
+    .vehicle-title {
+        font-size: 1rem;
+        line-height: 1.3;
+    }
+    
+    .vehicle-specs {
+        font-size: 0.85rem;
+    }
+    
+    .vehicle-price {
+        font-size: 1.2rem;
+    }
+    
+    .btn-view {
+        padding: 0.5rem 1.2rem;
+        font-size: 0.9rem;
+    }
+    
+    /* ===== FILTROS SIDEBAR ===== */
+    .filters-sidebar {
+        position: static !important;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+    }
+    
+    .filter-group {
+        margin-bottom: 1rem;
+    }
+    
+    .filter-label {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .filter-select,
+    .filter-input {
+        padding: 0.65rem;
+        font-size: 0.95rem;
+    }
+    
+    /* ===== RESULTS HEADER ===== */
+    .results-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+    
+    .results-info p {
+        font-size: 0.95rem;
+    }
+    
+    .sort-select {
+        width: 100%;
+        padding: 0.65rem;
+    }
+    
+    /* ===== SEARCH FORM ===== */
+    .search-form-grid,
+    .search-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem;
+    }
+    
+    .search-input {
+        padding: 0.65rem 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .btn-search {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .search-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .btn-search-submit,
+    .btn-search-clear {
+        width: 100%;
+        padding: 0.75rem;
+    }
+    
+    /* ===== DETAIL PAGE ===== */
+    .detail-specs-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .features-list {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .detail-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .btn-contact-whatsapp,
+    .btn-contact-form {
+        width: 100%;
+        padding: 0.85rem;
+    }
+    
+    /* ===== CTA SECTION ===== */
+    .cta-section {
+        padding: 2.5rem 0;
+    }
+    
+    .cta-content h2 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.75rem;
+    }
+    
+    .cta-content p {
+        font-size: 1rem !important;
+        margin-bottom: 1.5rem;
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.75rem;
+    }
+    
+    .btn-cta-primary,
+    .btn-cta-whatsapp {
+        width: 100%;
+        padding: 0.9rem 1.5rem;
+        font-size: 0.95rem;
+    }
+    
+    /* ===== PAGINATION ===== */
+    .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 1.5rem 0;
+    }
+    
+    .pagination-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        min-width: 38px;
+    }
+
+    /* ===== PAGE HEADER ===== */
+    .page-header {
+        padding: 5.5rem 0 2rem;
+    }
+    
+    .page-title {
+        font-size: 1.75rem !important;
+        line-height: 1.2;
+    }
+    
+    .page-subtitle {
+        font-size: 1rem !important;
+    }
+    
+    /* ===== FOOTER ===== */
+    .footer {
+        padding: 2rem 0 1rem;
+    }
+    
+    .footer-col {
+        margin-bottom: 1.5rem;
+    }
+    
+    .footer-title {
+        font-size: 1.2rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .footer-subtitle {
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .footer-text,
+    .footer-contact p {
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    
+    .footer-links a {
+        font-size: 0.9rem;
+        padding: 0.4rem 0;
+    }
+    
+    .footer-bottom {
+        font-size: 0.85rem;
+        padding-top: 1rem;
+    }
+    
+    /* ===== CONTACT PAGE ===== */
+    .contact-form-container h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .form-group label {
+        font-size: 0.9rem;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 0.7rem 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .btn-submit {
+        padding: 0.85rem 1.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .info-card {
+        padding: 1.25rem;
+    }
+    
+    .info-icon {
+        font-size: 2rem;
+    }
+    
+    .info-card h3 {
+        font-size: 1.1rem;
+    }
+    
+    .btn-whatsapp {
+        padding: 0.65rem 1.2rem;
+        font-size: 0.9rem;
+    }
+    
+    /* ===== ABOUT PAGE ===== */
+    .about-content h2 {
+        font-size: 1.5rem;
+        margin: 1.5rem 0 1rem;
+    }
+    
+    .about-content p {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .values-list li {
+        font-size: 0.95rem;
+        padding: 0.6rem 0 0.6rem 1rem;
+    }
+    
+    .reason-card {
+        padding: 1.25rem;
+    }
+    
+    .reason-card h3 {
+        font-size: 1.1rem;
+    }
+    
+    .contact-cta h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+}
+
+/* ===== TABLETS (641px - 968px) ===== */
+@media (min-width: 641px) and (max-width: 968px) {
+    
+    /* Logo tablet */
+    #logo-img {
+        height: 55px;
+    }
+    
+    .logo-text {
+        font-size: 0.9rem;
+    }
+    
+    /* Favoritos tablet: se muestra en el menú desplegable, no en el header */
+    
+    /* Hero tablet */
+    .hero {
+        min-height: 550px;
+    }
+    
+    .hero-title {
+        font-size: 2rem !important;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.1rem !important;
+    }
+    
+    /* Grids de 2 columnas */
+    .vehicles-grid,
+    .categories-grid,
+    .services-grid,
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    /* Brands carousel — override grid on tablet */
+    .brands-grid.brands-carousel {
+        display: block !important;
+        grid-template-columns: none !important;
+    }
+    
+    /* Otros grids en 1 columna */
+    .contact-grid,
+    .catalog-layout,
+    .detail-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Similar vehicles carousel - keep horizontal on tablet */
+    .similar-section .vehicles-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        grid-template-columns: unset !important;
+        overflow-x: auto !important;
+    }
+    
+    .filters-sidebar {
+        position: static !important;
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* ===== MENÚ MÓVIL (hasta 968px) ===== */
+@media (max-width: 968px) {
+    
+    /* Hamburger visible */
+    .hamburger {
+        display: flex !important;
+        z-index: 1002;
+    }
+    
+    /* Menú oculto por defecto - AJUSTADO */
+    .nav-menu {
+        position: fixed;
+        top: 60px; /* Altura del header reducida */
+        left: -100%;
+        width: 100%;
+        height: calc(100vh - 60px);
+        background: white;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 998;
+        box-shadow: 2px 0 15px rgba(0,0,0,0.15);
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Menú activo */
+    .nav-menu.active {
+        left: 0;
+    }
+    
+    /* Lista de navegación — pequeño respiro al abrir */
+    .nav-list {
+        flex-direction: column;
+        width: 100%;
+        gap: 0;
+        padding: 10px 0 0;
+        margin: 0;
+    }
+    
+    /* Items de navegación */
+    .nav-item {
+        width: 100%;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    
+    /* Links principales */
+    .nav-link {
+        display: block;
+        width: 100%;
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--primary-dark);
+    }
+    
+    /* Dropdown en móvil */
+    .dropdown-menu {
+        position: static !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        box-shadow: none !important;
+        background: rgba(184, 150, 88, 0.04);
+        padding: 0;
+        margin: 0;
+        border-radius: 0;
+        display: none;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-in-out;
+    }
+    
+    .dropdown.active .dropdown-menu {
+        display: block;
+        max-height: 500px;
+    }
+    
+    .dropdown-menu li {
+        border-bottom: 1px solid rgba(0,0,0,0.03);
+    }
+    
+    .dropdown-menu a {
+        padding: 0.85rem 2.5rem;
+        font-size: 0.95rem;
+        color: var(--text-gray);
+        display: block;
+    }
+    
+    .dropdown-menu a:hover {
+        background: rgba(184, 150, 88, 0.08);
+        color: var(--primary-gold);
+    }
+    
+    /* Indicador de dropdown */
+    .dropdown > .nav-link::after {
+        content: '▼';
+        float: right;
+        font-size: 0.7rem;
+        transition: transform 0.3s ease;
+        color: var(--primary-gold);
+    }
+    
+    .dropdown.active > .nav-link::after {
+        transform: rotate(180deg);
+    }
+    
+    /* Ocultar botones del header cuando el hamburger está activo */
+    .nav-actions {
+        display: none !important;
+    }
+
+    /* Mostrar sección de auth/favoritos dentro del menú deslizable */
+    .mob-actions {
+        display: block !important;
+    }
+    
+    /* Overlay oscuro cuando el menú está abierto */
+    body.menu-open::before {
+        content: '';
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 997;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    
+    body.menu-open.nav-menu-active::before {
+        opacity: 1;
+        pointer-events: all;
+    }
+}
+
+/* ===== LANDSCAPE EN MÓVILES ===== */
+@media (max-width: 968px) and (orientation: landscape) {
+    
+    .nav-menu {
+        height: calc(100vh - 55px);
+        top: 55px;
+    }
+    
+    .hero {
+        min-height: 400px;
+    }
+    
+    .hero-title {
+        font-size: 1.4rem !important;
+    }
+    
+    .hero-subtitle {
+        font-size: 0.85rem !important;
+    }
+}
+
+/* ===== PREVENCIÓN DE SCROLL HORIZONTAL ===== */
+* {
+    max-width: 100%;
+}
+
+img,
+video,
+iframe,
+.vehicle-image,
+.category-image,
+.hero {
+    max-width: 100%;
+    width: 100%;
+}
+
+/* ===== ACCESIBILIDAD Y TOUCH ===== */
+@media (max-width: 968px) {
+    
+    /* Áreas táctiles mínimas de 44x44px */
+    .nav-link,
+    .btn,
+    .mob-btn,
+    .hamburger {
+        min-height: 44px;
+    }
+    
+    /* Scroll suave en iOS */
+    .nav-menu {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevenir zoom en inputs en iOS */
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* ===== ANDROID COMPATIBILITY ===== */
+@media (max-width: 968px) {
+    /* Safe area padding for notched Android & iOS devices */
+    body {
+        padding-left: env(safe-area-inset-left, 0);
+        padding-right: env(safe-area-inset-right, 0);
+    }
+
+    /* Dynamic viewport for Android Chrome address bar */
+    .hero {
+        min-height: 100dvh;
+        min-height: 100vh; /* fallback */
+    }
+
+    .nav-menu {
+        height: calc(100dvh - 60px);
+        height: calc(100vh - 60px); /* fallback */
+    }
+
+    /* Suppress tap highlight on Android */
+    a, button, .btn, .vehicle-card, .brand-card, .category-card {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Fix touch scrolling for carousels on Android */
+    .vehicles-grid {
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+
+    .vehicle-card {
+        scroll-snap-align: start;
+    }
+
+    /* Brands carousel touch-friendly padding */
+    .brands-carousel {
+        padding: 0.5rem 0;
+    }
+}
+
+/* ===== MEJORAS ADAPTATIVAS GLOBALES ===== */
+
+/* Tablets y pantallas medianas */
+@media (max-width: 968px) {
+    .carousel-container {
+        padding: 0 1.5rem var(--spacing-lg, 2rem) 1.5rem !important;
+    }
+
+    .carousel-container-inner {
+        margin: 0 -1.5rem !important;
+        padding: 0 1.5rem !important;
+    }
+
+    .commercial-section {
+        padding: 3rem 0 !important;
+    }
+
+    .commercial-card {
+        padding: 2rem 1.5rem !important;
+    }
+
+    .guarantee-card {
+        padding: 2rem 1.5rem !important;
+    }
+
+    .process-grid {
+        gap: 1.5rem !important;
+    }
+}
+
+/* Móviles */
+@media (max-width: 640px) {
+    /* Carousel */
+    .carousel-container {
+        padding: 0 1rem var(--spacing-md, 1.5rem) 1rem !important;
+    }
+
+    .carousel-container-inner {
+        margin: 0 -1rem !important;
+        padding: 0 1rem !important;
+    }
+
+    /* Commercial section */
+    .commercial-section {
+        padding: 2rem 0 !important;
+    }
+
+    .commercial-card {
+        padding: 1.5rem 1rem !important;
+    }
+
+    .commercial-card-title {
+        font-size: 1.2rem !important;
+    }
+
+    .commercial-card-text {
+        font-size: 0.85rem !important;
+    }
+
+    .btn-commercial {
+        padding: 0.75rem 1.2rem !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Guarantee */
+    .guarantee-card {
+        padding: 1.5rem 1rem !important;
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    /* Process steps */
+    .process-grid {
+        gap: 1rem !important;
+    }
+
+    .process-step {
+        padding: 1.5rem 1rem !important;
+    }
+
+    .step-number {
+        width: 55px !important;
+        height: 55px !important;
+        font-size: 1.4rem !important;
+    }
+
+    /* Brands carousel - no arrows on mobile */
+    .brands-carousel-wrapper {
+        padding: 0 !important;
+    }
+
+    /* Search container */
+    .search-container {
+        padding: 0.75rem !important;
+        margin: 0.75rem 0 !important;
+    }
+
+    /* Toggle filters button */
+    .toggle-filters-btn {
+        max-width: 100% !important;
+        width: calc(100% - 2rem) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    /* All section titles */
+    .section-header h2,
+    .section-header .section-title {
+        font-size: 1.3rem !important;
+    }
+
+    /* Prevent any horizontal overflow */
+    .container,
+    .section,
+    main,
+    .catalog-main,
+    .catalog-section {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+}
+
+/* Pantallas extra pequeñas (< 380px) */
+@media (max-width: 380px) {
+    .container {
+        padding: 0 0.65rem !important;
+    }
+
+    .commercial-card {
+        padding: 1.25rem 0.75rem !important;
+    }
+
+    .process-step {
+        padding: 1.25rem 0.75rem !important;
+    }
+
+    .guarantee-card {
+        padding: 1.25rem 0.75rem !important;
+    }
+}
+
+/* ===== OPTIMIZACIONES DE RENDIMIENTO ===== */
+@media (max-width: 968px) {
+
+    /* Hardware acceleration */
+    .nav-menu,
+    .hamburger,
+    .dropdown-menu {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        will-change: transform;
+    }
+
+    /* Reducir motion para usuarios que lo prefieran */
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
     }
 }

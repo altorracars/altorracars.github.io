@@ -2080,3 +2080,169 @@ interior dentro de `<ul.dropdown-menu>`, lo que produce HTML inválido
 - Dynamic `<img>` con `decoding="async"`: 0 → 5 callsites
 - TTI homepage: realtime listeners diferidos a idle (~100-300ms ahorrados)
 - LCP: `fetchpriority="high"` en main vehicle image (26 páginas)
+
+---
+
+## 16. Loading Orchestration (L1-L4) — 2026-05-03
+
+> Plan ejecutado para que la carga visual del sitio se sienta como Apple,
+> Linear, Stripe: lo importante aparece instant, lo demás se enriquece
+> progresivamente, navegación entre páginas casi instantánea.
+
+### Causa raíz
+
+Aunque P1-P15 redujeron el tiempo de carga real, **la carga PERCIBIDA**
+seguía sintiéndose pop-in: el page-loader desaparecía y el sitio aparecía
+de golpe, las imágenes hacían "pop" cuando llegaban, las cards aparecían
+todas a la vez, y la navegación entre páginas tenía white-flash.
+
+### Sprint 1 (L1.2 + L1.3 + L1.4 + L2.1)
+
+#### L1.2 — Hero LQIP cross-fade
+**Archivos**: `css/hero.css`, `index.html`
+
+`.hero` muestra un gradient warm + radial-glow placeholder INSTANT (cero
+KB, cero round-trip). La imagen real (`heroindex.webp`, 142KB) se carga
+con `new Image()` inline en el head; al `onload`, agrega `.hero-img-loaded`
+al `.hero` lo cual fade-in con cross-fade `0.7s` a través de `.hero::after`.
+
+Resultado: cero "negro mientras carga la imagen". Visual desde T=0.
+
+#### L1.3 — Sequential reveal del above-fold
+**Archivos**: `css/hero.css`, `js/page-loader.js`, `js/components.js`
+
+Cada child del `.hero-content` empieza `opacity:0; translateY(20px)`.
+Cuando `body.loaded` se aplica (page-loader.js dismissLoader), cada uno
+fade-up con stagger:
+- T+0ms: `.hero-badge`
+- T+100ms: `.hero-title`
+- T+220ms: `.hero-cta`
+- T+340ms: `.hero-search-wrap`
+
+Sincronizado con el fade-out del page-loader, da efecto cinematográfico:
+"el splash dissolve INTO el hero stagger".
+
+#### L1.4 — Page-loader smart (cache-aware)
+**Archivos**: `js/page-loader.js`
+
+Detecta `altorra-db-cache` en localStorage. Si presente (= return visit),
+dismiss en `150ms` post-DOMContentLoaded en lugar de esperar a window.load
+(que toma 1-3s en first visit). First-time visitors mantienen el splash
+completo para impacto de marca.
+
+#### L2.1 — Stagger fade-in en card grids
+**Archivos**: `css/performance-fixes.css`
+
+Las primeras 6 `.vehicle-card` en `.vehicles-grid` aparecen con stagger
+de 70ms entre cada una (350ms total). Cards 7+ NO se animan — están
+below-fold (skipped por content-visibility) y para cuando el user
+scrollea, la animación ya habría terminado fuera de pantalla.
+
+### Sprint 2 (L1.1 + L2.2 + L3.3)
+
+#### L1.1 — Cinematic page-loader cross-fade
+**Archivos**: `css/page-loader.css`
+
+Page-loader fade-out extendido: incluye `transform: scale(1.04)` y
+`filter: blur(6px)` además de opacity. El logo simultáneamente hace
+`scale(0.92)` (settle effect). El splash se "desenfoca y aleja" como
+trailer cinema.
+
+#### L2.2 — Auto-reveal landmarks
+**Archivos**: `js/performance.js`, `css/performance-fixes.css`
+
+JS auto-instrumenta `.section-header` de cada sección below-fold +
+`.commercial-card` con `.auto-reveal` class. IntersectionObserver añade
+`.is-revealed` cuando entran al viewport, fade-up `22px → 0` con
+transition `0.65s ease-out`. Stagger en commercial cards (80ms entre
+cada una).
+
+Para elementos already in viewport on load, IO fires inmediatamente
+(fade-in once).
+
+#### L3.3 — Realistic vehicle card skeletons
+**Archivos**: `js/render.js`, `css/style.css`
+
+`showLoading()` ya no muestra spinner genérico. Renderiza 6 skeleton
+cards con la forma EXACTA de las cards reales:
+- Image area (200px)
+- Title line (75% width)
+- Meta line (55%)
+- Price line dorado (45%)
+- 2 action pills
+
+Stagger fade-in entre las 6 (igual patrón L2.1) + shimmer wave dorado
+infinito (110deg gradient travelling). Mobile breakpoint con dimensiones
+ajustadas.
+
+### Sprint 3 (L4.1 + L4.2)
+
+#### L4.1 — Predictive prefetch on hover
+**Archivos**: `js/components.js`
+
+Al hover ≥75ms sobre un link interno (= intent), prefetch del HTML
+target via `<link rel="prefetch" as="document">`. Click subsiguiente
+carga del cache → near-instant navigation.
+
+- 75ms threshold ignora hovers casuales
+- `mouseout` cancela timer
+- `touchstart` prefetch inmediato (mobile)
+- Skip si `Save-Data: on` o conexión `2g`/`slow-2g`
+- Set tracking previene duplicados
+
+#### L4.2 — Native View Transitions API
+**Archivos**: `css/style.css`, `js/page-loader.js`
+
+CSS opt-in: `@view-transition { navigation: auto }`. En Chrome 126+
+hace cross-fade nativo entre páginas (300ms ease-out, no white-flash).
+
+`page-loader.js` detecta soporte vía `CSS.supports('selector(::view-transition)')`
+y SKIP su overlay manual cuando el browser puede hacerlo nativo. Browsers
+sin soporte (Safari, Firefox, Chrome <126) mantienen el fallback.
+
+Combinado con L4.1 + L1.4 = navegación casi instantánea en Chrome 126+.
+
+### Fases skipped intencionalmente
+
+- **L2.3** (scroll-driven parallax): Chrome 115+ only, sin buen fallback
+- **L2.4** (brand carousel settle delay): bajo impacto perceptible
+- **L3.1** (hero skeleton si no cacheada): el LQIP ya cubre este caso
+- **L3.2** (FW Banner skeleton): el banner ya está `display:none` hasta confirmar vehículos
+- **L4.3** (scroll position restoration manual): el browser ya lo maneja OK
+- **L4.4** (`view-transition-name` per card morph): muy avanzado, requiere coord HTML+CSS
+
+### Compatibilidad
+
+| Feature | Soporte | Fallback |
+|---|---|---|
+| L1.1-L2.1, L3.3 | Universal | N/A — pure CSS animations |
+| L2.2 (IntersectionObserver) | Chrome 51+, Safari 12.1+, Firefox 55+ | Sin reveal, contenido visible |
+| L4.1 (prefetch) | Chrome 8+, Firefox 2+ | No prefetch, navigation normal |
+| L4.2 (View Transitions cross-doc) | Chrome 126+ | page-loader.js manual overlay |
+| `prefers-reduced-motion: reduce` | Universal | Todas las animaciones desactivadas |
+
+### Flujo de carga end-to-end
+
+```
+Visita inicial:
+  T=0          page-loader logo sobre fondo negro
+  T=~150ms    (return visitor) loader dissolve cinematic
+  T=~500ms    (first visitor) loader dissolve cinematic
+  T=+0ms       hero gradient LQIP visible al instante
+  T=+0ms      → hero badge fade up
+  T=+100ms     hero title fade up
+  T=+220ms     hero CTA fade up
+  T=+340ms     hero search fade up
+  T=+700ms     hero image cross-fade in
+  T=+1000ms    vehicleDB resolves → 6 skeleton cards desaparecen,
+               cards reales fade up con stagger 70ms
+  T=scroll     section headers fade up al entrar viewport
+  T=scroll     commercial cards fade up con stagger 80ms
+
+Navegación entre páginas (Chrome 126+):
+  T=hover 75ms → prefetch HTML
+  T=click       browser carga del cache (instant)
+                → view-transition cross-fade 300ms
+  Página nueva → page-loader detecta cache warm → skip splash (150ms)
+                → sequential reveal del nuevo hero
+```

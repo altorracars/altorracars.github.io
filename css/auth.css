@@ -424,3 +424,92 @@ select.auth-input { padding-right: 28px; cursor: pointer; }
     .auth-form-row { flex-wrap: wrap; }
     .auth-form-row > div[style*="flex:0 0 110px"] { flex: 0 0 100% !important; }
 }
+
+/* ============================================
+   AUTH UX OVERHAUL — 2026-05-03
+   Google btn loading state + shake error animation +
+   offline banner + smooth close animation +
+   locked state for in-flight operations
+   ============================================ */
+
+/* ── Google button: loading state ── */
+.auth-google-btn.is-locked {
+    opacity: .65;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.auth-google-btn.is-locked svg {
+    opacity: .5;
+}
+.auth-google-btn.is-locked::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid #b89658;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: authSpin .7s linear infinite;
+    margin-left: 6px;
+}
+
+/* Submit/reset btn locked state — visual cue when control is disabled */
+.auth-submit-btn.is-locked,
+.auth-google-btn.is-locked {
+    pointer-events: none;
+}
+
+/* ── Shake animation on error ── */
+@keyframes authShake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+    20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+.auth-modal-container.shake {
+    animation: authShake .5s cubic-bezier(.36,.07,.19,.97) both;
+}
+@media (prefers-reduced-motion: reduce) {
+    .auth-modal-container.shake { animation: none; }
+}
+
+/* ── Smooth close animation ── */
+@keyframes authSlideDown {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(20px) scale(.96); }
+}
+@keyframes authFadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+#auth-modal.modal-overlay.closing {
+    animation: authFadeOut .18s ease-out forwards;
+    pointer-events: none;
+}
+#auth-modal.modal-overlay.closing .auth-modal-container {
+    animation: authSlideDown .18s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+    #auth-modal.modal-overlay.closing,
+    #auth-modal.modal-overlay.closing .auth-modal-container {
+        animation: none;
+    }
+}
+
+/* ── Offline banner ── */
+.auth-offline-banner {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-bottom: 1px solid #d97706;
+    color: #78350f;
+    padding: 10px 16px;
+    font-size: .8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--auth-radius) var(--auth-radius) 0 0;
+}
+.auth-offline-banner [data-lucide] {
+    width: 16px;
+    height: 16px;
+    color: #d97706;
+    flex-shrink: 0;
+}

@@ -1564,6 +1564,180 @@ realmente invalida. Para sesion valida con persistencia lenta, cero flash.
 - `detalle-vehiculo.html` + `marca.html` (templates de generador) ya
   parchados, las paginas regeneradas heredaran el fix
 
+### Auth UX Overhaul — modal Google lento + login/logout sin feedback
+
+**Sintomas reportados** (2026-05-03):
+1. Tras login exitoso con Google, el modal quedaba abierto 1+ segundo
+   antes de cerrarse — feedback se sentia "lento" y "como roto"
+2. Click en boton Google podia hacerse multiples veces (sin loading
+   state visible)
+3. Logout no mostraba feedback hasta que Firebase respondia
+4. Errores mostraban mensaje pero sin feedback visceral
+5. Sin proteccion contra red offline (errores cripticos)
+6. Returning users tenian que volver a tipear su email cada vez
+
+**Causa raiz del modal lento**:
+`_processGoogleUser()` en auth.js hacia un `db.collection('usuarios').doc(uid).get()`
+ANTES de cerrar el modal — esa lectura de Firestore tomaba 200-1000ms
+(WebChannel handshake + RTT). El modal quedaba abierto durante todo ese
+tiempo. Mismo patron que ya teniamos en handleLogin (corregido antes pero
+no en el path de Google).
+
+**Patron Apple/Stripe/GitHub aplicado**: Optimistic UI — cierra el modal
+y actualiza UI INSTANTANEAMENTE al saber que la operacion sera exitosa,
+sin esperar todas las verificaciones de backend. Las verificaciones
+corren en background. Si fallan, signOut + toast (modal ya cerrado).
+
+**Fixes aplicados** (10 mejoras coordinadas):
+
+1. **Cierre instantaneo del modal Google** (`auth.js handleGoogle/_processGoogleUser`):
+   ```js
+   window.auth.signInWithPopup(provider).then(function (result) {
+       _preApplyAuthHint(result.user);  // sync header switch
+       closeAuthModal();                 // instant
+       _processGoogleUser(result.user, isNew); // background
+   });
+   ```
+   Modal cierra en <50ms post-popup. Validation (admin check, duplicate
+   email) corre en background. Si admin → signOut + toast. Si email
+   duplicado → unlink Google + toast.
+
+2. **Pre-apply auth-hint sincrono** (`auth.js _preApplyAuthHint(user)`):
+   - Setea `localStorage.altorra_auth_hint = 'authenticated'`
+   - Setea `altorra_auth_user_snap` con name/photoURL
+   - Agrega `auth-authenticated` class al `<html>`
+   - Resultado: el header switchea de Login/Register a avatar ANTES
+     de que `onAuthStateChanged` fire. Cero delay perceptible.
+
+3. **Lock de controles durante operaciones** (`auth.js _lockAuthControls`):
+   - Disable + `.is-locked` class en TODOS los botones del modal
+     (login submit, register submit, reset submit, ambos Google
+     buttons, tabs, forgot link, back btn)
+   - Previene: double-click submit, click Google mientras email
+     login en progreso, navegar entre tabs mid-flight
+   - Visual: spinner dorado en boton Google, opacity 0.65, pointer-events none
+
+4. **Logout con feedback inmediato** (`auth.js handleLogout`):
+   - `_logoutInFlight` flag previene double-click
+   - `_preApplyGuestHint()` sincronicamente cambia el header a guest
+     ANTES del signOut (instant visual revert)
+   - Cierra dropdown del avatar antes de signOut (no quede flotando)
+   - Toast `'Sesión cerrada correctamente.'` (success) en lugar de
+     plain info — mas reassuring
+   - Network failure handling: toast `'Sincronizando...'` si signOut
+     falla (Firebase resolvera en proximo page load)
+
+5. **Detection offline en tiempo real** (`auth.js _updateOfflineBanner`):
+   - Banner amber dentro del modal: "Sin conexión a internet..."
+   - Pre-checks `!navigator.onLine` en handleLogin, handleRegister,
+     handleReset → muestra error inline + shake (sin intentar Firebase
+     que daria mensaje criptico)
+   - Listener `online`/`offline` de window: actualiza banner +
+     toast "Conexión restablecida" / "Sin conexión"
+
+6. **Credential Management API** (`auth.js _saveCredential`):
+   - Tras login/register exitoso con email+password, llama
+     `navigator.credentials.store(new PasswordCredential(...))` para
+     sugerirle al browser guardar la password
+   - Falla silenciosamente en navegadores sin soporte (Firefox <114)
+   - Browsers con soporte muestran prompt nativo "Save password?"
+
+7. **Pre-fill del ultimo email** (`auth.js _persistLastEmail` / openAuthModal):
+   - Tras login/register exitoso: `localStorage.altorra_last_email = email`
+   - openAuthModal: si campo loginEmail vacio Y hay last_email → pre-llena
+   - Auto-focus va al primer campo VACIO (skip pre-filled email →
+     focus pasa directo al password)
+   - Patron GitHub/Stripe/Booking — returning users solo tipean password
+
+8. **Cross-tab session sync feedback** (`auth.js storage event listener`):
+   - Si tab A cierra sesion → localStorage `altorra_auth_hint = 'guest'`
+     → tab B recibe storage event → toast: "Sesión cerrada en otra pestaña"
+   - Mismo patron para login: "Sesión iniciada en otra pestaña"
+   - Solo se muestra si modal NO esta activo en esta tab (probablemente
+     el usuario NO esta haciendo login aqui)
+
+9. **Shake animation + auto-focus en errores** (`auth.js _shakeModal`):
+   - Animation: `transform: translateX(-6px → +6px)` × 5 = 0.5s
+   - Aplicado en: campos vacios, password incorrecta, email ya en uso,
+     password debil, network errors
+   - Reset por `removeClass('shake')` + force reflow + re-add
+     (re-trigger consecutivo)
+   - Auto-focus al campo errado: handleLogin → focus password si
+     credential error; handleRegister → focus email si already-in-use,
+     password si weak
+   - `navigator.vibrate(80)` en mobile (haptic feedback sutil)
+   - Respeto a `prefers-reduced-motion`
+
+10. **Smooth close animation** (CSS + auth.js closeAuthModal):
+    - Antes: `removeClass('active')` instant → modal desaparecia bruscamente
+    - Ahora: `addClass('closing')` → CSS animation 180ms (fade out +
+      slide down + scale 0.96) → `removeClass('active', 'closing')`
+    - Match con la animacion de apertura (slide up scale 0.97 → 1)
+    - **Importante**: closeAuthModal SOLO limpia password fields,
+      no email — un cierre accidental no fuerza re-typing
+
+**Edge cases manejados**:
+
+| Caso | Comportamiento |
+|------|---------------|
+| Click Google + popup blocked | `auth/popup-blocked` → toast 8s con instrucciones, lock liberado |
+| Click Google + cierras popup | `auth/popup-closed-by-user` → silent, lock liberado |
+| Login con red offline | Pre-check `!navigator.onLine` → error inline + shake, NO Firebase call |
+| Login con cuenta admin | Background validation detecta `usuarios/{uid}` → signOut + toast (modal ya cerrado) |
+| Registro con email duplicado | Firebase devuelve `auth/email-already-in-use` → focus email + shake |
+| Double-click logout | `_logoutInFlight = true` → segundo click ignored |
+| Logout con red offline | signOut local funciona, sync remoto fallara — toast: "Sincronizando..." |
+| Cross-tab logout mid-form | tab A logged out, tab B con modal abierto → NO toast (estaria distrayendo) |
+| Modal cerrado durante login | Lock previene cierre via tabs/forgot, pero close button (X) sigue funcionando |
+| Network falla durante validation Google | console.warn pero NO signOut — assume OK (most users no son admin) |
+| Browser sin Credential Mgmt API | `_saveCredential` retorna silenciosamente, browser puede prompter nativamente |
+
+**Flujo completo del login Google (post-fix)**:
+```
+T=0          User clicks "Continuar con Google"
+T=+0ms       _lockAuthControls(true) — todos los botones disabled, spinner en Google
+T=+0ms       window.auth.signInWithPopup(provider) — popup se abre
+T=variable   User selects cuenta en popup, popup cierra
+T=+resolve   Promise resuelve con result.user
+T=+0ms       _preApplyAuthHint(user) — localStorage + html.auth-authenticated
+T=+0ms       closeAuthModal() — animation cierra modal en 180ms
+T=+0ms       _processGoogleUser(user) corre en background
+T=+200-1000  Firestore lookup completa
+T=+200-1000  Si admin → undoGoogleAndWarn → signOut + toast error
+             Si OK → _toast("¡Bienvenido!") + saveClientProfile (background)
+T=+0-200ms   onAuthStateChanged fire — pero header YA estaba en estado authenticated,
+             solo se renderiza el dropdown sobre el avatar pre-rendered (zero flicker)
+```
+
+**Flujo del logout (post-fix)**:
+```
+T=0          User clicks "Cerrar sesión" en dropdown
+T=+0ms       _logoutInFlight = true — guard contra double-click
+T=+0ms       _preApplyGuestHint() — instant header revert (botones Login/Register visibles)
+T=+0ms       Avatar dropdown se cierra
+T=+0ms       vehicleDB.stopRealtime() — previene 400 en Listen channel
+T=+0ms       window.auth.signOut() — async
+T=+50-300ms  Firebase confirma signOut
+T=+50-300ms  toast: "Sesión cerrada correctamente."
+T=+50-300ms  onAuthStateChanged(null) → _processNullState
+             → favoritesManager.clearUser, vehicleHistory.clearUser
+             → signInAnonymously (next page load) o skip si _explicitLogout
+```
+
+**Archivos modificados**:
+- `js/auth.js` — handleGoogle/handleLogin/handleRegister/handleLogout
+  refactorizados, nuevos helpers `_lockAuthControls`, `_preApplyAuthHint`,
+  `_preApplyGuestHint`, `_persistLastEmail`, `_shakeModal`, `_saveCredential`,
+  `_updateOfflineBanner`. Listeners online/offline + storage (cross-tab).
+- `css/auth.css` — `.is-locked` state, `@keyframes authShake`,
+  `@keyframes authSlideDown`/`authFadeOut`, `.closing` modal animation,
+  `.auth-offline-banner` styles
+- `service-worker.js` + `js/cache-manager.js` — version bump
+
+**Resultado**: Login Google se siente instantaneo (modal cierra en
+<200ms post-popup vs 1000ms antes). Header switch INSTANT (<50ms).
+Logout con feedback inmediato. Cero "did I click the button?" moments.
+
 ---
 
 ## 9. Fases Completadas (Historico)

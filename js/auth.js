@@ -116,33 +116,82 @@
     function openAuthModal(tab) {
         var modal = $id('auth-modal');
         if (!modal) return;
+        modal.classList.remove('closing'); // reset close animation if mid-flight
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         if (tab) switchTab(tab);
-        // Focus primer campo visible
+
+        // Pre-fill last successful email — returning users only need to
+        // type their password. GitHub/Stripe pattern.
+        try {
+            var lastEmail = localStorage.getItem('altorra_last_email');
+            if (lastEmail) {
+                var loginEmail = $id('loginEmail');
+                if (loginEmail && !loginEmail.value) loginEmail.value = lastEmail;
+            }
+        } catch (e) {}
+
+        // Show offline banner if applicable
+        _updateOfflineBanner();
+
+        // Focus first empty visible field (skip pre-filled email)
         setTimeout(function () {
-            var firstInput = modal.querySelector('.auth-panel.active input:not([type="checkbox"])');
-            if (firstInput) firstInput.focus();
+            var inputs = modal.querySelectorAll('.auth-panel.active input:not([type="checkbox"])');
+            for (var i = 0; i < inputs.length; i++) {
+                if (!inputs[i].value) { inputs[i].focus(); return; }
+            }
+            // All filled? Focus the first
+            if (inputs[0]) inputs[0].focus();
         }, 180);
     }
 
     function closeAuthModal() {
         var modal = $id('auth-modal');
+        if (!modal || !modal.classList.contains('active')) return;
+
+        // Smooth close animation: fade out container + overlay before
+        // removing .active. CSS handles the actual transition.
+        modal.classList.add('closing');
+        setTimeout(function () {
+            modal.classList.remove('active');
+            modal.classList.remove('closing');
+            document.body.style.overflow = '';
+            // Limpiar mensajes
+            ['loginMessage', 'registerMessage', 'resetMessage'].forEach(hideMsg);
+            // Limpiar SOLO los campos sensibles (passwords) — preservar email
+            // para que un cierre accidental no force re-typing
+            ['loginPassword', 'regPassword', 'regConfirm'].forEach(function (id) {
+                var el = $id(id);
+                if (el) { el.value = ''; el.classList.remove('is-error'); }
+            });
+            // Reset strength bar
+            var fill = $id('passStrengthFill');
+            var lbl  = $id('passStrengthLabel');
+            if (fill) { fill.style.width = '0'; fill.style.background = ''; }
+            if (lbl)  { lbl.textContent = ''; lbl.style.color = ''; }
+        }, 180); // matches CSS transition
+    }
+
+    // ── Offline banner inside modal ─────────────────────────────
+    // Shows a subtle warning at the top of the modal when navigator.onLine
+    // is false. Auth operations will fail without network — better to warn
+    // upfront than show a cryptic "auth/network-request-failed" later.
+    function _updateOfflineBanner() {
+        var modal = $id('auth-modal');
         if (!modal) return;
-        modal.classList.remove('active');
-        document.body.style.overflow = '';
-        // Limpiar mensajes
-        ['loginMessage', 'registerMessage', 'resetMessage'].forEach(hideMsg);
-        ['loginEmail', 'loginPassword', 'regNombre', 'regEmail',
-         'regTelefono', 'regPassword', 'regConfirm', 'resetEmail'].forEach(function (id) {
-            var el = $id(id);
-            if (el) { el.value = ''; el.classList.remove('is-error'); }
-        });
-        // Reset strength bar
-        var fill = $id('passStrengthFill');
-        var lbl  = $id('passStrengthLabel');
-        if (fill) { fill.style.width = '0'; fill.style.background = ''; }
-        if (lbl)  { lbl.textContent = ''; lbl.style.color = ''; }
+        var existing = modal.querySelector('.auth-offline-banner');
+        if (!navigator.onLine) {
+            if (!existing) {
+                var banner = document.createElement('div');
+                banner.className = 'auth-offline-banner';
+                banner.innerHTML = '<i data-lucide="wifi-off"></i> Sin conexión a internet. Algunas funciones no estarán disponibles.';
+                var container = modal.querySelector('.auth-modal-container');
+                if (container) container.insertBefore(banner, container.firstChild);
+                if (window.lucide) window.lucide.createIcons({ nodes: [banner] });
+            }
+        } else if (existing) {
+            existing.remove();
+        }
     }
 
     function switchTab(tab) {
@@ -192,6 +241,118 @@
         }
     }
 
+    // ── Auth controls lock/unlock during in-flight operations ──────
+    // Disables ALL form submit buttons + Google buttons while an auth
+    // operation is in flight. Prevents:
+    //   - Double-click submitting login twice
+    //   - Clicking Google while email login is in progress (or vice versa)
+    //   - Clicking buttons during the post-popup processing window
+    // The visual state mirrors the disabled state via CSS pointer-events.
+    function _lockAuthControls(locked) {
+        var ids = [
+            'loginSubmitBtn', 'registerSubmitBtn', 'resetSubmitBtn',
+            'loginGoogleBtn', 'registerGoogleBtn'
+        ];
+        ids.forEach(function (id) {
+            var btn = $id(id);
+            if (!btn) return;
+            btn.disabled = locked;
+            btn.classList.toggle('is-locked', locked);
+        });
+        // Also lock tab buttons + close button to prevent navigating away
+        // mid-operation (which would orphan the auth flow)
+        var tabs = ['tabLogin', 'tabRegister', 'authForgotLink', 'authBackFromReset'];
+        tabs.forEach(function (id) {
+            var el = $id(id);
+            if (el) el.style.pointerEvents = locked ? 'none' : '';
+        });
+    }
+
+    // ── Pre-apply auth hint synchronously for instant header update ──
+    // Called the INSTANT we know auth succeeded (from popup result or
+    // signInWithEmailAndPassword resolution) — BEFORE waiting for
+    // onAuthStateChanged to fire. Updates localStorage + <html> class +
+    // the cached snapshot so:
+    //   - The auth-hint CSS rules immediately hide login/register buttons
+    //   - components.js's pre-render path (on next nav) shows the avatar
+    //     instantly
+    //   - The page header avatar pop-in delay is eliminated
+    // Apple/Stripe pattern: optimistic UI before the SDK acknowledges.
+    function _preApplyAuthHint(user) {
+        if (!user) return;
+        try {
+            localStorage.setItem('altorra_auth_hint', 'authenticated');
+            localStorage.setItem('altorra_auth_user_snap', JSON.stringify({
+                name: user.displayName || (user.email ? user.email.split('@')[0] : ''),
+                photoURL: user.photoURL || ''
+            }));
+        } catch (e) { /* private mode */ }
+        var rootEl = document.documentElement;
+        rootEl.classList.remove('auth-guest');
+        rootEl.classList.add('auth-authenticated');
+    }
+
+    // ── Pre-apply guest hint for instant header revert on logout ──
+    function _preApplyGuestHint() {
+        try {
+            localStorage.setItem('altorra_auth_hint', 'guest');
+            localStorage.removeItem('altorra_auth_user_snap');
+        } catch (e) {}
+        var rootEl = document.documentElement;
+        rootEl.classList.remove('auth-authenticated');
+        rootEl.classList.add('auth-guest');
+    }
+
+    // ── Persist last successful email for pre-fill on next visit ────
+    // Returning users see their email pre-filled in the login form —
+    // they only need to type the password. Pattern used by GitHub,
+    // Stripe, Booking.com, Vercel.
+    function _persistLastEmail(email) {
+        if (!email) return;
+        try { localStorage.setItem('altorra_last_email', email); } catch (e) {}
+    }
+
+    // ── Shake animation on auth error ───────────────────────────────
+    // Subtle visual feedback when login/register fails. CSS class
+    // applied + removed after animation duration. Pattern: Stripe,
+    // Apple iCloud, Microsoft Account.
+    function _shakeModal() {
+        var container = document.querySelector('.auth-modal-container');
+        if (!container) return;
+        container.classList.remove('shake'); // reset for re-trigger
+        // Force reflow so the animation re-plays even on consecutive errors
+        // eslint-disable-next-line no-unused-expressions
+        container.offsetWidth;
+        container.classList.add('shake');
+        setTimeout(function () { container.classList.remove('shake'); }, 500);
+        // Optional haptic feedback on mobile
+        if (navigator.vibrate) navigator.vibrate(80);
+    }
+
+    // ── Save credentials to browser password manager (modern API) ───
+    // After successful login/register with email+password, suggest the
+    // browser save the credentials. Most modern browsers will prompt
+    // the user "Save password?" without us having to do anything via
+    // form submit detection. This API gives us programmatic control —
+    // useful when forms aren't traditional HTML submits.
+    // Falls back silently if API not supported (e.g. Firefox <114).
+    function _saveCredential(email, password) {
+        if (!email || !password) return;
+        if (!('credentials' in navigator) || typeof window.PasswordCredential !== 'function') {
+            return; // unsupported — browser may still prompt natively
+        }
+        try {
+            var cred = new window.PasswordCredential({
+                id: email,
+                password: password,
+                name: email
+            });
+            navigator.credentials.store(cred).catch(function () {
+                // User declined or quota — silent
+            });
+        } catch (e) { /* type error in old browsers */ }
+    }
+
     // ── Login con email/password ────────────────────────────
     function handleLogin(e) {
         e.preventDefault();
@@ -200,8 +361,18 @@
         var pass  = ($id('loginPassword').value || '');
         if (!email || !pass) {
             showMsg('loginMessage', 'Completa todos los campos.', 'error');
+            // Auto-focus first empty field
+            var emptyField = !email ? $id('loginEmail') : $id('loginPassword');
+            if (emptyField) emptyField.focus();
+            _shakeModal();
             return;
         }
+        if (!navigator.onLine) {
+            showMsg('loginMessage', 'Sin conexión a internet. Verifica tu red.', 'error');
+            _shakeModal();
+            return;
+        }
+        _lockAuthControls(true);
         setLoading('loginSubmitBtn', true);
         window.firebaseReady.then(function () {
             // Login flow: ALWAYS sign in directly with the credentials.
@@ -226,12 +397,19 @@
             // dropping the anonymous data on login is the honest behavior.
             return window.auth.signInWithEmailAndPassword(email, pass);
         }).then(function () {
+            // Pre-apply auth state INSTANTLY for snappy header switch
+            var u = window.auth.currentUser;
+            if (u) _preApplyAuthHint(u);
+
             // Close modal immediately — don't wait for the Firestore profile write.
             // The profile save runs in background; user sees the close happen instantly.
             closeAuthModal();
             _toast('¡Bienvenido de vuelta!', 'success');
 
-            var u = window.auth.currentUser;
+            // Persist email for next-visit pre-fill + offer browser to save credentials
+            _persistLastEmail(email);
+            _saveCredential(email, pass);
+
             if (!u || u.isAnonymous) return;
             // Check if this is an admin account — don't create clientes/ doc for admins
             return window.db.collection('usuarios').doc(u.uid).get().then(function (doc) {
@@ -253,7 +431,14 @@
         }).catch(function (err) {
             var msg = friendlyError(err);
             if (msg) showMsg('loginMessage', msg, 'error');
+            _shakeModal();
+            // Auto-focus password field on credential errors (most common case)
+            if (err && (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential')) {
+                var pw = $id('loginPassword');
+                if (pw) { pw.focus(); pw.select(); }
+            }
         }).finally(function () {
+            _lockAuthControls(false);
             setLoading('loginSubmitBtn', false);
         });
     }
@@ -287,9 +472,16 @@
             return;
         }
 
+        if (!navigator.onLine) {
+            showMsg('registerMessage', 'Sin conexión a internet. Verifica tu red.', 'error');
+            _shakeModal();
+            return;
+        }
+
         var prefijo  = ($id('regPrefijo').value  || '+57');
         var telefono = ($id('regTelefono').value || '').trim();
 
+        _lockAuthControls(true);
         setLoading('registerSubmitBtn', true);
         var createdUser = null;
         window.firebaseReady.then(function () {
@@ -312,9 +504,30 @@
             // Actualizar nombre en Firebase Auth
             return createdUser.updateProfile({ displayName: nombre });
         }).then(function () {
+            // Pre-apply auth state INSTANTLY for snappy header switch
+            if (createdUser) {
+                // Manually patch displayName before pre-apply (updateProfile may not have propagated yet)
+                _preApplyAuthHint({
+                    displayName: nombre,
+                    email: email,
+                    photoURL: ''
+                });
+            }
+
             // Close modal + show toast immediately (don't wait for Firestore write)
             closeAuthModal();
             _toast('¡Cuenta creada! Bienvenido a Altorra Cars, ' + (nombre.split(' ')[0] || '') + '.', 'success');
+
+            // Save credentials to browser password manager + persist last email
+            _persistLastEmail(email);
+            _saveCredential(email, pass);
+
+            // Optional: send email verification (best-effort, no block)
+            try {
+                if (createdUser && typeof createdUser.sendEmailVerification === 'function') {
+                    createdUser.sendEmailVerification().catch(function () {});
+                }
+            } catch (e) {}
 
             // Guardar perfil en clientes/{uid} — colección pública, NO admin (background)
             return saveClientProfile(createdUser.uid, {
@@ -326,7 +539,17 @@
         }).catch(function (err) {
             var msg = friendlyError(err);
             if (msg) showMsg('registerMessage', msg, 'error');
+            _shakeModal();
+            // Auto-focus errored field
+            if (err && err.code === 'auth/email-already-in-use') {
+                var emailEl = $id('regEmail');
+                if (emailEl) { emailEl.focus(); emailEl.select(); }
+            } else if (err && err.code === 'auth/weak-password') {
+                var passEl = $id('regPassword');
+                if (passEl) { passEl.focus(); passEl.select(); }
+            }
         }).finally(function () {
+            _lockAuthControls(false);
             setLoading('registerSubmitBtn', false);
         });
     }
@@ -390,6 +613,10 @@
     //   - Double popup: old code used linkWithPopup → signInWithPopup.
     //     Now we only call signInWithPopup once.
     //   - Popup blocked: handled with a clear message asking to allow popups.
+    //   - Modal stayed open ~1s after popup success because we waited for
+    //     the Firestore admin-check before closing. Now we close INSTANTLY
+    //     and run validation in background. If validation fails, we sign
+    //     out + show toast (modal already closed).
     //
     // Call window.auth.signInWithPopup synchronously in the click handler
     // (not inside a .then()) so browsers don't block the popup.
@@ -398,15 +625,28 @@
             _toast('Cargando, intenta de nuevo en un momento.', 'info');
             return;
         }
+        // Disable Google + form buttons + show spinner state
+        _lockAuthControls(true);
+
         var provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
 
         window.auth.signInWithPopup(provider).then(function (result) {
-            if (!result || !result.user) return;
-            // additionalUserInfo.isNewUser → true on first sign-in, false on returning login
+            if (!result || !result.user) {
+                _lockAuthControls(false);
+                return;
+            }
+            // SUCCESS: close modal INSTANTLY (no Firestore wait).
+            // Pre-apply auth state so the header switches BEFORE
+            // onAuthStateChanged fires — zero perceived lag.
+            _preApplyAuthHint(result.user);
+            closeAuthModal();
+
             var isNew = !!(result.additionalUserInfo && result.additionalUserInfo.isNewUser);
+            // Validation runs in background — modal is already closed
             return _processGoogleUser(result.user, isNew);
         }).catch(function (err) {
+            _lockAuthControls(false);
             if (!err) return;
             if (err.code === 'auth/popup-blocked') {
                 _toast('Tu navegador bloqueó la ventana de Google. Permite ventanas emergentes para este sitio y vuelve a intentar.', 'error', 8000);
@@ -417,19 +657,30 @@
                 _toast('Este correo ya está registrado con otro método. Inicia sesión con tu correo y contraseña.', 'error', 6000);
                 return;
             }
+            if (err.code === 'auth/network-request-failed') {
+                _toast('Sin conexión a internet. Verifica tu red e intenta de nuevo.', 'error', 6000);
+                _shakeModal();
+                return;
+            }
             var msg = friendlyError(err);
-            if (msg) _toast(msg, 'error');
+            if (msg) {
+                _toast(msg, 'error');
+                _shakeModal();
+            }
         });
     }
 
-    // Validate Google user after successful sign-in:
-    // 1. Admin accounts → reject + sign out
-    // 2. Email already registered with password → undo auto-link
-    // 3. New Google user → create client profile
+    // Validate Google user after successful sign-in (runs in background).
+    // The modal is ALREADY closed when this runs — so on validation failure
+    // we only need to show a toast + sign out (no modal interaction).
+    //   1. Admin accounts → sign out + warn (admin can't use public web)
+    //   2. Email already registered with password → unlink Google
+    //   3. New Google user → create client profile + welcome toast
     function _processGoogleUser(user, isNewUser) {
         return window.db.collection('usuarios').doc(user.uid).get()
             .then(function (doc) {
                 if (doc.exists) {
+                    // Admin trying to log in via public web — auto sign-out
                     return undoGoogleAndWarn(user, 'Esta cuenta es de administrador. Usa el panel de administración para ingresar.', true);
                 }
 
@@ -444,23 +695,23 @@
                     return undoGoogleAndWarn(user, 'Este correo ya está registrado con contraseña. Inicia sesión con tu correo y contraseña, o usa "¿Olvidaste tu contraseña?" para recuperarla.', false);
                 }
 
-                // Close modal + show toast immediately (don't wait for Firestore write)
-                closeAuthModal();
+                // Welcome toast — only after validation passes
+                var nombre = (user.displayName || '').split(' ')[0];
                 if (isNewUser) {
                     _toast('¡Bienvenido a Altorra Cars! Tu cuenta con Google está lista.', 'success');
                 } else {
-                    var nombre = (user.displayName || '').split(' ')[0];
                     _toast(nombre ? '¡Hola de nuevo, ' + nombre + '!' : '¡Bienvenido de vuelta!', 'success');
                 }
 
+                _persistLastEmail(user.email);
                 return saveClientProfile(user.uid, {
                     nombre: user.displayName || '',
                     email: user.email || ''
                 });
             })
             .catch(function (err) {
-                console.warn('[Auth] Error in Google sign-in handler:', err && err.message);
-                _toast('Hubo un problema al verificar tu cuenta. Intenta de nuevo.', 'error');
+                // Network errors during validation: don't sign out (assume OK)
+                console.warn('[Auth] Background validation failed:', err && err.message);
             });
     }
 
@@ -498,8 +749,17 @@
         var email = ($id('resetEmail').value || '').trim();
         if (!email) {
             showMsg('resetMessage', 'Ingresa tu correo electrónico.', 'error');
+            var em = $id('resetEmail');
+            if (em) em.focus();
+            _shakeModal();
             return;
         }
+        if (!navigator.onLine) {
+            showMsg('resetMessage', 'Sin conexión a internet. Verifica tu red.', 'error');
+            _shakeModal();
+            return;
+        }
+        _lockAuthControls(true);
         setLoading('resetSubmitBtn', true);
         window.firebaseReady.then(function () {
             return window.auth.sendPasswordResetEmail(email);
@@ -508,7 +768,9 @@
             $id('resetEmail').value = '';
         }).catch(function (err) {
             showMsg('resetMessage', friendlyError(err), 'error');
+            _shakeModal();
         }).finally(function () {
+            _lockAuthControls(false);
             setLoading('resetSubmitBtn', false);
         });
     }
@@ -520,8 +782,23 @@
     // browse the site (public reads don't need auth). If they interact
     // with a feature that needs auth (favorites, history), they'll be
     // prompted to log in or register.
+    var _logoutInFlight = false;
     function handleLogout() {
+        // Guard: prevent double-click rapid logout (would fire 2x signOut,
+        // causing 2 toasts + race conditions in onAuthStateChanged)
+        if (_logoutInFlight) return;
+        _logoutInFlight = true;
         _explicitLogout = true;
+
+        // Pre-apply guest state SYNCHRONOUSLY for instant header revert.
+        // The user sees Login/Register buttons immediately — even before
+        // Firebase signOut resolves. Apple/Stripe optimistic-UI pattern.
+        _preApplyGuestHint();
+
+        // Pre-fade the avatar dropdown if open
+        var dropdown = $id('hdrUserDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+
         // Stop Firestore real-time listeners BEFORE signOut to prevent the
         // WebChannel from trying to refresh its Listen streams with a null
         // auth token, which causes a 400 Bad Request error on
@@ -529,11 +806,18 @@
         if (window.vehicleDB && typeof window.vehicleDB.stopRealtime === 'function') {
             window.vehicleDB.stopRealtime();
         }
+
         window.firebaseReady.then(function () {
             return window.auth.signOut();
         }).then(function () {
-            _toast('Sesión cerrada.', 'info');
-        }).catch(function () {});
+            _toast('Sesión cerrada correctamente.', 'success', 3000);
+        }).catch(function (err) {
+            // Network failure during signOut — Firebase will retry on next page load
+            console.warn('[Auth] Sign out error (ignored):', err && err.message);
+            _toast('Sesión cerrada localmente. Sincronizando...', 'info', 3000);
+        }).finally(function () {
+            _logoutInFlight = false;
+        });
     }
 
     // ── Grace-period guards against transient null on first load ─────
@@ -919,6 +1203,46 @@
                 onAuthStateChanged(user);
                 initModal();
             });
+        });
+
+        // ── Online/offline detection ─────────────────────
+        // Update modal banner + show toast on transition. Auth requests
+        // need network — better to warn upfront than show cryptic errors.
+        window.addEventListener('online', function () {
+            _updateOfflineBanner();
+            // Quiet toast — only if user is interacting with the modal
+            var modal = $id('auth-modal');
+            if (modal && modal.classList.contains('active')) {
+                _toast('Conexión restablecida.', 'success', 2500);
+            }
+        });
+        window.addEventListener('offline', function () {
+            _updateOfflineBanner();
+            var modal = $id('auth-modal');
+            if (modal && modal.classList.contains('active')) {
+                _toast('Sin conexión a internet.', 'error', 4500);
+            }
+        });
+
+        // ── Cross-tab session sync feedback ─────────────────────
+        // When the user logs in/out in tab A, Firebase Auth
+        // (Persistence.LOCAL) syncs to tab B via IndexedDB. Tab B's
+        // onAuthStateChanged fires automatically. We listen to the
+        // localStorage 'altorra_auth_hint' key to show a subtle toast
+        // in the OTHER tab so the user knows what happened.
+        // Avoids the confusion of "I didn't click anything but the
+        // header changed".
+        window.addEventListener('storage', function (e) {
+            if (e.key !== 'altorra_auth_hint') return;
+            // Don't show toast if the auth modal is active in this tab
+            // (likely the user is mid-login here too)
+            var modal = $id('auth-modal');
+            if (modal && modal.classList.contains('active')) return;
+            if (e.newValue === 'guest' && e.oldValue === 'authenticated') {
+                _toast('Sesión cerrada en otra pestaña.', 'info', 3500);
+            } else if (e.newValue === 'authenticated' && e.oldValue !== 'authenticated') {
+                _toast('Sesión iniciada en otra pestaña.', 'info', 3500);
+            }
         });
     }
 

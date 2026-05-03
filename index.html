@@ -250,7 +250,7 @@
         .nav-links{display:flex;gap:2rem;list-style:none}
         .nav-links a{color:#e8e8e8;text-decoration:none;font-weight:500;transition:color 0.3s}
         /* Hero — FOUC prevention (mínimo crítico; estilos completos en css/hero.css) */
-        .hero{min-height:clamp(480px,70vh,720px);display:flex;align-items:center;justify-content:center;position:relative;background-image:url('multimedia/heroindex.webp');background-size:cover;background-position:center 30%;overflow:visible;isolation:isolate;margin-top:70px}
+        .hero{min-height:clamp(480px,70vh,720px);display:flex;align-items:center;justify-content:center;position:relative;background-color:#0a0a0a;background-image:radial-gradient(ellipse at 20% 35%,rgba(212,175,55,.10) 0%,transparent 55%),radial-gradient(ellipse at 80% 65%,rgba(184,150,88,.06) 0%,transparent 60%),linear-gradient(135deg,#1a1410 0%,#0a0a0a 50%,#14110a 100%);background-size:cover;background-position:center 30%;overflow:visible;isolation:isolate;margin-top:70px}
         .hero-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(to bottom,rgba(0,0,0,.78) 0%,rgba(0,0,0,.28) 38%,rgba(0,0,0,.30) 62%,rgba(0,0,0,.88) 100%)}
         .hero-ambient{position:absolute;inset:0;z-index:2;pointer-events:none}
         .hero-content{position:relative;z-index:4;text-align:center;padding:3rem 2rem 3rem;max-width:880px;margin:0 auto;width:100%}
@@ -324,6 +324,29 @@
         <img src="/multimedia/logo-placeholder.png" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
         <div class="pl-ring" aria-hidden="true"></div>
     </div>
+
+    <!-- L1.2: hero LQIP cross-fade.
+         The .hero shows a gradient placeholder instantly (in CSS).
+         Once the real heroindex.webp is loaded (preloaded in <head> with
+         fetchpriority=high so this resolves fast), we add .hero-img-loaded
+         to trigger the cross-fade defined in css/hero.css. Inline here so
+         it runs IMMEDIATELY during HTML parse — no defer waiting. -->
+    <script>
+    (function () {
+        var img = new Image();
+        function reveal() {
+            var hero = document.querySelector('.hero');
+            if (hero) hero.classList.add('hero-img-loaded');
+        }
+        // If already cached, this fires synchronously
+        img.onload = function () {
+            if (document.querySelector('.hero')) reveal();
+            else document.addEventListener('DOMContentLoaded', reveal);
+        };
+        img.onerror = reveal; // fail open: show whatever we have
+        img.src = 'multimedia/heroindex.webp';
+    })();
+    </script>
 
     <!-- Header Component -->
     <div id="header-placeholder"></div>

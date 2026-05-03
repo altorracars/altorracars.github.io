@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260503170344'; // Bumped: Google Identity Services (GIS) integration with One Tap + fallback
+const CACHE_VERSION = 'v20260503171500'; // Bumped: Configure real GIS OAuth Client ID
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

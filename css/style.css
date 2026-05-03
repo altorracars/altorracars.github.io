@@ -6641,12 +6641,18 @@ iframe,
 /* ===== OPTIMIZACIONES DE RENDIMIENTO ===== */
 @media (max-width: 968px) {
 
-    /* Hardware acceleration */
-    .nav-menu,
-    .hamburger,
-    .dropdown-menu {
+    /* Hardware acceleration hints — apply only where their transform
+       isn't being driven by another rule. .nav-menu and .dropdown-menu
+       are EXCLUDED because they animate transform: translateX (slide)
+       and a global transform: translateZ(0) here would override that.
+       will-change alone is enough to promote to GPU layer. */
+    .hamburger {
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
+        will-change: transform;
+    }
+    .nav-menu,
+    .dropdown-menu {
         will-change: transform;
     }
 

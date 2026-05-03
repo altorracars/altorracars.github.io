@@ -1875,7 +1875,8 @@ User click "Continuar con Google"
 | `loadGisLibrary()` | `components.js` | Carga `accounts.google.com/gsi/client` async + setea flags `_gisLoaded` / `_gisLoadFailed` |
 | `_shouldUseGis()` | `auth.js` | Devuelve true si GIS_CONFIGURED + script loaded + `window.google.accounts.id` disponible |
 | `handleGoogle()` | `auth.js` | Entry point. Decide GIS vs legacy. Maneja "GIS loading" wait branch |
-| `_gisSignIn()` | `auth.js` | Inicializa GIS + muestra prompt + maneja notification states |
+| `_ensureGisInit(callback)` | `auth.js` | Singleton: llama `initialize()` una sola vez por sesion. Callback indirecto permite swap entre One Tap y sign-in |
+| `_gisSignIn()` | `auth.js` | Muestra prompt + 3s watchdog timeout + maneja notification states |
 | `_onGisCredential()` | `auth.js` | Recibe JWT credential → llama `signInWithCredential` → `_processGoogleUser` |
 | `_legacyPopupSignIn()` | `auth.js` | Fallback usando `signInWithPopup` (codigo viejo intacto) |
 | `_maybeShowOneTap()` | `auth.js` | One Tap en homepage para guests con dismissal cooldown 7 dias |
@@ -1926,6 +1927,8 @@ Browsers anteriores (sin FedCM) lo ignoran y usan el flujo clasico.
 | Q | Timeout firing despues de close | `_onGisReady = null` antes del fallback |
 | R | prefers-reduced-motion | Respetado en CSS |
 | S | Safari ITP | `itp_support: true` + fallback como red de seguridad |
+| T | FedCM disabled in Chrome | 3s watchdog timeout → fallback to legacy popup |
+| U | GIS prompt returns no notification | Same watchdog → fallback (covers silent failures) |
 
 **Por que NO eliminamos el codigo legacy de signInWithPopup**:
 - **Resiliencia**: Si Google deprecia GIS o cambia API, login sigue funcionando
@@ -2039,6 +2042,7 @@ GitHub Actions workflow `generate-vehicles.yml` invalida cache automaticamente.
 | **Anti-stacking + buzz en notificación de login** | js/favorites-manager.js, js/toast.js, css/toast-notifications.css | Click repetido en corazón sin sesión ya no apila notificaciones. `_promptLogin()` detecta `.altorra-notify--attention` existente → vibra (clase `--buzz` con keyframes que sacuden ±1.5° + translate lateral 0.55s) + replay sonido + reset auto-close timer (nueva API `notify.resetTimer(idOrEl, ms)`). Spotlight tampoco se duplica (early-return si ya hay `.altorra-spotlight`) |
 | **Bell de notificaciones al final del header** | snippets/header.html | `#headerNotifBell` movido del inicio (antes de Favoritos) al final (después de Registrarse), respetando el orden lógico de prioridad visual: Favoritos → Auth → Bell |
 | **Rediseño "Vistos Recientemente" cinematográfico** | css/historial-visitas.css, index.html | Cards verticales (imagen+texto en cajas blancas) → filmstrip dark con imagen full-bleed (260×170px) y texto sobre gradiente oscuro `rgba(0,0,0,0.88) → transparent`. Fondo `#0a0a0a` integra con tema dark del sitio. Línea dorada sutil arriba (`linear-gradient transparent → #b89658 0.25 → transparent`). Hover: scale 1.04 + border dorado glow + zoom imagen 1.1. Badge "Oferta" reposicionado top-right. Año/km y precio en flexbox `rv-card-meta`. Arrows oscuras con backdrop-filter blur, color dorado. Responsive: 220px tablet, 200px mobile |
+| **Fix GIS double-init + FedCM blocked fallback** | js/auth.js | (1) `_ensureGisInit(callback)` singleton — `initialize()` se llama UNA vez por sesion, callback indirecto permite swap entre One Tap y sign-in explicito. Elimina warning `google.accounts.id.initialize() is called multiple times`. (2) Watchdog timer 3s en `_gisSignIn()` — si GIS prompt no resuelve (FedCM blocked, silent failure), libera lock + fallback a legacy popup automaticamente. Previene boton spinner stuck forever. (3) Todos los paths de `prompt()` notification (isNotDisplayed, isSkippedMoment, isDismissedMoment) ahora liberan lock y hacen fallback consistente |
 
 ---
 

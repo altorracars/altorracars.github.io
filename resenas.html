@@ -62,7 +62,11 @@
 
     <!-- Hero -->
     <section class="gradient-hero">
-        <img src="multimedia/heroes/resenas-hero.jpg" alt="Reseñas de Clientes" class="gradient-hero-bg" fetchpriority="high" loading="eager" width="1920" height="800">
+        <picture>
+        <source type="image/avif" srcset="multimedia/optimized/resenas-hero-480.avif 480w, multimedia/optimized/resenas-hero-768.avif 768w, multimedia/optimized/resenas-hero-1280.avif 1280w, multimedia/optimized/resenas-hero-1920.avif 1920w" sizes="100vw">
+        <source type="image/webp" srcset="multimedia/optimized/resenas-hero-480.webp 480w, multimedia/optimized/resenas-hero-768.webp 768w, multimedia/optimized/resenas-hero-1280.webp 1280w, multimedia/optimized/resenas-hero-1920.webp 1920w" sizes="100vw">
+        <img src="multimedia/heroes/resenas-hero.jpg" alt="Reseñas de Clientes" class="gradient-hero-bg" width="1920" height="800" fetchpriority="high" loading="eager" decoding="async">
+    </picture>
         <div class="gradient-hero-overlay"></div>
         <div class="hero-ambient" aria-hidden="true"></div>
         <div class="hero-particles" aria-hidden="true">

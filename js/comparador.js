@@ -200,6 +200,7 @@ class VehicleComparator {
                 html += `
                     <div class="comparador-item" data-id="${v.id}">
                         <img src="${v.imagen}" alt="${v.marca} ${v.modelo}"
+                             loading="lazy" decoding="async"
                              onerror="this.src='multimedia/vehicles/placeholder-car.jpg'">
                         <div class="comparador-item-info">
                             <span class="comparador-item-name">${this.capitalizar(v.marca)} ${v.modelo}</span>

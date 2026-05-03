@@ -273,7 +273,7 @@ class VehicleHistory {
             '<a href="' + getVehicleDetailUrl(vehicle) + '" class="history-card">' +
                 '<div class="history-card-image">' +
                     '<img src="' + vehicle.imagen + '" alt="' + vehicle.marca + ' ' + vehicle.modelo + '" ' +
-                         'loading="lazy" ' +
+                         'loading="lazy" decoding="async" ' +
                          'onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">' +
                 '</div>' +
                 '<div class="history-card-info">' +
@@ -352,6 +352,7 @@ class VehicleHistory {
             return '' +
                 '<a href="' + getVehicleDetailUrl(v) + '" class="history-widget-item">' +
                     '<img src="' + v.imagen + '" alt="' + v.marca + '" ' +
+                         'loading="lazy" decoding="async" ' +
                          'onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">' +
                     '<div class="history-widget-item-info">' +
                         '<span class="history-widget-item-name">' + self.capitalize(v.marca) + ' ' + v.modelo + '</span>' +

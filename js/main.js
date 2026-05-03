@@ -43,7 +43,7 @@ async function loadPopularBrands() {
         var count = brandCounts[brand.id] || 0;
         var countText = count > 0 ? '<span class="brand-count">' + count + '</span>' : '';
         return '<a href="marca.html?marca=' + brand.id + '" class="brand-card">' +
-            '<img src="' + logo + '" alt="' + (brand.nombre || '') + '" class="brand-logo" loading="lazy"' +
+            '<img src="' + logo + '" alt="' + (brand.nombre || '') + '" class="brand-logo" loading="lazy" decoding="async"' +
             ' onerror="this.src=\'' + (brand.logo || '') + '\';this.onerror=null;">' +
             '<div class="brand-name">' + (brand.nombre || '') + '</div>' +
             countText +
@@ -385,7 +385,7 @@ async function loadPromoBanners() {
 
             html += linkOpen +
                 '<div class="promo-banner-item">' +
-                    (b.image ? '<img src="' + b.image + '" alt="' + (b.title || '') + '" loading="lazy">' : '') +
+                    (b.image ? '<img src="' + b.image + '" alt="' + (b.title || '') + '" loading="lazy" decoding="async">' : '') +
                     '<div class="promo-banner-overlay">' +
                         '<div class="promo-banner-content">' +
                             (b.title ? '<h3 class="promo-banner-title">' + b.title + '</h3>' : '') +
@@ -882,7 +882,7 @@ function rerenderBanners() {
         var linkClose = b.link ? '</a>' : '</div>';
         html += linkOpen +
             '<div class="promo-banner-item">' +
-                (b.image ? '<img src="' + b.image + '" alt="' + (b.title || '') + '" loading="lazy">' : '') +
+                (b.image ? '<img src="' + b.image + '" alt="' + (b.title || '') + '" loading="lazy" decoding="async">' : '') +
                 '<div class="promo-banner-overlay">' +
                     '<div class="promo-banner-content">' +
                         (b.title ? '<h3 class="promo-banner-title">' + b.title + '</h3>' : '') +

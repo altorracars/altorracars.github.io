@@ -107,6 +107,7 @@ async function loadAllComponents() {
         initializeHeader();
         initializeFavorites();
         setupFavoritesPreload();
+        setupPredictivePrefetch();
         populateBrandsMenu();
         // Mount notification center bell (Phase N3)
         if (window.notifyCenter && document.getElementById('headerNotifBell')) {
@@ -403,6 +404,99 @@ function updateFavoritesCount() {
 }
 
 window.updateFavoritesCount = updateFavoritesCount;
+
+// L4.1: PREDICTIVE PREFETCH on hover/focus/touch.
+// When the user hovers a nav link for ≥75ms (= intent to navigate),
+// prefetch the target HTML in idle priority via <link rel="prefetch">.
+// Subsequent click loads from cache → near-instant navigation.
+//
+// Pattern from Quicklink/Astro. Skips if connection is slow (2g) or
+// the user has Save-Data enabled, to respect data-conscious users.
+//
+// NOTE: this is HTML prefetch only. Preloading site-wide data is still
+// done by setupFavoritesPreload below (which warms vehicleDB JSON).
+function setupPredictivePrefetch() {
+    // Bail out on slow networks / data-saver mode
+    var conn = navigator.connection;
+    if (conn) {
+        if (conn.saveData) return;
+        if (conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g') return;
+    }
+
+    var prefetched = new Set();
+
+    function prefetch(url) {
+        if (prefetched.has(url)) return;
+        prefetched.add(url);
+        var link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = url;
+        link.as = 'document';
+        document.head.appendChild(link);
+    }
+
+    function isInternalNav(href) {
+        if (!href) return false;
+        var c = href.charAt(0);
+        if (c === '#') return false;
+        if (/^(mailto:|tel:|sms:|javascript:|data:)/i.test(href)) return false;
+        try {
+            var u = new URL(href, location.href);
+            if (u.hostname !== location.hostname) return false;
+            // same-page hash links
+            if (u.pathname === location.pathname && !u.search) return false;
+            // Skip downloads / non-doc files
+            if (/\.(pdf|zip|docx?|xlsx?|jpg|jpeg|png|webp|svg|gif|mp4|mp3)$/i.test(u.pathname)) return false;
+            return true;
+        } catch (e) { return false; }
+    }
+
+    var hoverTimer = null;
+    var lastLink = null;
+
+    function startIntent(link) {
+        if (!link || link === lastLink) return;
+        var href = link.getAttribute('href');
+        if (!isInternalNav(href)) return;
+        lastLink = link;
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(function () {
+            prefetch(link.href);
+        }, 75);
+    }
+    function cancelIntent() {
+        clearTimeout(hoverTimer);
+        lastLink = null;
+    }
+
+    function findLink(e) {
+        return e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    }
+
+    document.addEventListener('mouseover', function (e) {
+        var l = findLink(e);
+        if (l) startIntent(l);
+    }, { passive: true });
+
+    document.addEventListener('mouseout', function (e) {
+        var l = findLink(e);
+        if (l && l === lastLink) cancelIntent();
+    }, { passive: true });
+
+    document.addEventListener('focus', function (e) {
+        var l = findLink(e);
+        if (l) startIntent(l);
+    }, true); // capture so we catch focus on <a> children too
+
+    // Touch devices: no hover, but touchstart is a strong intent signal
+    document.addEventListener('touchstart', function (e) {
+        var l = findLink(e);
+        if (l) {
+            var href = l.getAttribute('href');
+            if (isInternalNav(href)) prefetch(l.href);
+        }
+    }, { passive: true });
+}
 
 // Preload vehicleDB when user hovers favoritos link, so the page renders
 // instantly after click. Cancels itself after first preload.

@@ -227,6 +227,18 @@
 
     var transitioning = false;
 
+    // L4.2: detect support for cross-document View Transitions (Chrome 126+).
+    // If supported, we skip our manual overlay and let the browser handle
+    // the smooth cross-fade between pages natively. The CSS rule
+    // `@view-transition { navigation: auto }` (in style.css) opts our site in.
+    var supportsCrossDocViewTransitions = (function () {
+        try {
+            return typeof CSS !== 'undefined' &&
+                   CSS.supports &&
+                   CSS.supports('selector(::view-transition)');
+        } catch (e) { return false; }
+    })();
+
     function setupLinkInterception() {
         document.addEventListener('click', function (e) {
             // Buscar el link más cercano al elemento clickeado
@@ -254,6 +266,14 @@
 
             // Skip if event was already handled (e.g. by smooth scroll in components.js)
             if (e.defaultPrevented) return;
+
+            // L4.2: in browsers that support cross-document View Transitions,
+            // do nothing — let the browser handle the navigation natively
+            // with a smooth cross-fade. Our progress bar still completes via
+            // window beforeunload.
+            if (supportsCrossDocViewTransitions) {
+                return;
+            }
 
             // Evitar doble transición
             if (transitioning) return;

@@ -6795,3 +6795,34 @@ iframe,
     .vh-skel-image { height: 180px; }
     .vh-skel-body { height: calc(100% - 180px); }
 }
+
+/* ============================================
+   L4.2 — VIEW TRANSITIONS API (cross-document)
+   ============================================
+   Opt-in to native cross-document view transitions. Chrome 126+
+   detects this rule and applies a smooth cross-fade when the user
+   navigates between pages on the same origin.
+
+   Browsers without support (Safari, Firefox, older Chrome) ignore
+   this entirely and use page-loader.js's manual overlay fallback.
+
+   ::view-transition-old(root) and -new(root) target the outgoing and
+   incoming page snapshots. We tighten the duration so it's snappy
+   (300ms is the visual sweet spot for navigation).
+*/
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.3s;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none !important;
+    }
+}

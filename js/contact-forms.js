@@ -27,6 +27,14 @@ class ContactFormManager {
         return payload;
     }
 
+    /** MF1.3 — Augment payload with priority/tags/slaDeadline */
+    _withMeta(doc) {
+        if (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta) {
+            return Object.assign({}, doc, window.AltorraCommSchema.computeMeta(doc));
+        }
+        return doc;
+    }
+
     /** MF1.1 — Build source/device tracking metadata */
     _sourcePayload(ctaName) {
         var path = (window.location.pathname || '').replace(/^\/+/, '') || 'index.html';
@@ -490,7 +498,7 @@ class ContactFormManager {
         if (window.db) {
             var identity = this._identityPayload();
             var src = this._sourcePayload('vende_auto_form');
-            window.db.collection('solicitudes').add(Object.assign({
+            window.db.collection('solicitudes').add(this._withMeta(Object.assign({
                 nombre: nombre,
                 telefono: telefono,
                 prefijoPais: prefijoPais,
@@ -509,7 +517,7 @@ class ContactFormManager {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            }, identity, src)).then(function (ref) {
+            }, identity, src))).then(function (ref) {
                 self._renderSuccess('vende-auto', {
                     title: '¡Tu solicitud fue enviada!',
                     nombre: nombre,
@@ -549,7 +557,7 @@ class ContactFormManager {
         if (window.db) {
             var identity = this._identityPayload();
             var src = this._sourcePayload('financiacion_form');
-            window.db.collection('solicitudes').add(Object.assign({
+            window.db.collection('solicitudes').add(this._withMeta(Object.assign({
                 nombre: nombre,
                 telefono: telefono,
                 prefijoPais: prefijoPais,
@@ -568,7 +576,7 @@ class ContactFormManager {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            }, identity, src)).then(function (ref) {
+            }, identity, src))).then(function (ref) {
                 self._renderSuccess('financiacion', {
                     title: '¡Solicitud de financiación recibida!',
                     nombre: nombre,

@@ -104,7 +104,13 @@ if (contactForm) {
         if (window.db) {
             var identity = _contactIdentityPayload();
             var src = _contactSourcePayload('contact_form_general');
-            window.db.collection('solicitudes').add(Object.assign({
+            // MF1.3 — apply computeMeta wrapper
+            var _wm = function (doc) {
+                return (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta)
+                    ? Object.assign({}, doc, window.AltorraCommSchema.computeMeta(doc))
+                    : doc;
+            };
+            window.db.collection('solicitudes').add(_wm(Object.assign({
                 nombre: data.nombre || '',
                 telefono: data.telefono || '',
                 prefijoPais: (document.getElementById('contacto-pais') || {}).value || '+57',
@@ -124,7 +130,7 @@ if (contactForm) {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            }, identity, src)).then(function (ref) {
+            }, identity, src))).then(function (ref) {
                 var formCard = contactForm.closest('.form-card');
                 _renderContactSuccess(formCard, {
                     nombre: data.nombre || '',

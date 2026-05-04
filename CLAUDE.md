@@ -3465,6 +3465,87 @@ Estos pueden agregarse incrementalmente. El patron esta probado.
 
 **Archivos modificados**: `js/admin-auth.js`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase A4 — Sync de bell cross-device via Firestore ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: el bell ya no es per-device. Si un usuario recibe una alerta de precio en su laptop, al abrir su mobile la ve tambien. Marcar como leido en un dispositivo se refleja en otros.
+
+**Arquitectura**: localStorage es el cache local hot-path; Firestore subcollection `clientes/{uid}/notifications/{nid}` es el store canonical sincronizado. Para anonymous users, todo queda local (no hay uid → no rules match).
+
+**Schema Firestore**: cada doc replica el shape de localStorage:
+```
+clientes/{uid}/notifications/{nid} = {
+    id, type, title, message, link, category, priority, entityRef,
+    actionLabel, timestamp, read
+}
+```
+
+**Reglas Firestore** (`firestore.rules`):
+```
+match /notifications/{nid} {
+    allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+}
+```
+
+> **DEPLOY MANUAL REQUERIDO**: `firebase deploy --only firestore:rules`. Sin esto, los writes fallan permission-denied y el bell solo sirve como localStorage cache.
+
+**Flujo de escritura**:
+
+| Operacion local | Sync a Firestore |
+|---|---|
+| `add(entry)` | `set(item)` en subcollection (skip si `fromRemote: true`) |
+| `markRead(id)` | `update({read: true})` |
+| `markAllRead()` | `update({read: true})` por cada cambiada |
+| `remove(id)` | `delete()` |
+| `clear()` | `delete()` por cada doc (Firestore no tiene bulk-delete client-side) |
+
+Todos `.catch(function() {})` — best-effort. localStorage es source of truth local.
+
+**Flujo de lectura (`startFirestoreSync(user)`)**:
+
+```js
+.collection('clientes').doc(uid).collection('notifications')
+.orderBy('timestamp', 'desc')
+.limit(MAX_ENTRIES)
+.onSnapshot(...)
+```
+
+`docChanges()` se procesa:
+- `'added'` con id no presente local → `add(d, {fromRemote: true})`
+- `'modified'` con `read` diferente → actualiza local sin loop
+- `'removed'` → splice local
+
+**Backfill primer snapshot**: en la primera snapshot, los entries SOLO locales (creados antes del sync) se suben a Firestore para que otros dispositivos los vean.
+
+**Anti-patrones evitados**:
+
+| Riesgo | Mitigacion |
+|---|---|
+| Loop infinito (write → snapshot → write...) | `fromRemote: true` flag + dedup por id antes de unshift |
+| Cross-tab duplicates en mismo device | `_entries.find(by id)` antes de unshift (catch tab-stale state) |
+| Permission-denied al cerrar sesion | `stopFirestoreSync()` antes de `signOut()` (en `_processNullState`) |
+| Anonymous users escriben | `_currentUid()` retorna null si `isAnonymous` |
+| Costo Firestore | `.limit(MAX_ENTRIES = 50)` + dedup A1 + opt-out A2 reducen escrituras |
+| Conflict en mark-read | Last-write-wins (Firestore default) — aceptable para flag boolean |
+| Listener corre tras logout | `stopFirestoreSync()` cancela `unsub()` antes del signOut |
+
+**Wire en `auth.js`**:
+- `onAuthStateChanged(user)`: `notifyCenter.startFirestoreSync(user)` para registrados, `stop` para anonymous
+- `_processNullState()`: `stopFirestoreSync()` antes de cualquier signOut path
+
+**Limitaciones aceptadas**:
+- TTL no se sincroniza: cada device hace su propio cleanup local de entries >30 dias. Eventualmente convergen.
+- Migracion G1 no se sincroniza: cada device corre la migracion una sola vez localmente. Despues de ambos devices migrar, el sync es coherente.
+- `clear()` con muchas entries hace N delete requests. Solo es un costo en momentos de "limpiar todo" — aceptable.
+
+**Verificacion E2E**:
+1. Login en laptop como cliente, abre favoritos
+2. Admin baja precio → laptop recibe toast + bell entry
+3. Login mismo cliente en mobile (Chrome incognito o navegador distinto)
+4. Mobile abre el bell → ve la entry de price_alert recien creada en laptop
+5. Mark read en mobile → laptop refresca el badge a 0 sin tocar nada
+
+**Archivos modificados**: `js/toast.js`, `js/auth.js`, `firestore.rules`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

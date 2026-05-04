@@ -1145,6 +1145,12 @@
             else window.AltorraSolWatcher.start(user);
         }
 
+        // Phase A4 — sync bell entries cross-device (registered only)
+        if (window.notifyCenter && typeof window.notifyCenter.startFirestoreSync === 'function') {
+            if (user.isAnonymous) window.notifyCenter.stopFirestoreSync();
+            else window.notifyCenter.startFirestoreSync(user);
+        }
+
         // If the DB was already loaded but real-time listeners were stopped
         // (e.g. during a logout flow — handleLogout stops them before signOut
         // to avoid the 400 on Listen/channel), restart them now that the new
@@ -1167,6 +1173,10 @@
         if (window.vehicleHistory)   window.vehicleHistory.clearUser();
         // Pillar D — stop solicitudes listener before signOut path runs
         if (window.AltorraSolWatcher) window.AltorraSolWatcher.stop();
+        // A4 — stop bell sync before signOut to avoid /Listen/channel 400
+        if (window.notifyCenter && typeof window.notifyCenter.stopFirestoreSync === 'function') {
+            window.notifyCenter.stopFirestoreSync();
+        }
 
         // Only sign in anonymously on first visit (no prior session).
         // After explicit logout, skip — the user can browse without auth

@@ -292,26 +292,97 @@
 }
 
 /* ───────────────────────────────────────────────────────────────
-   HIGH-CONTRAST MODE — activated with [data-theme="high-contrast"]
-   Implementation in T.8 (WCAG AAA, 7:1 minimum).
+   HIGH-CONTRAST MODE — WCAG AAA (T.8)
+   Activated with [data-theme="high-contrast"] OR via media query
+   prefers-contrast: more. All ratios verified ≥ 7:1 (AAA).
    ─────────────────────────────────────────────────────────────── */
-[data-theme="high-contrast"] {
-    --bg-base:        #000000;
-    --bg-elevated:    #000000;
-    --bg-card:        #0a0a0a;
-    --text-primary:   #ffffff;
-    --text-secondary: #ffffff;
-    --text-tertiary:  #e5e5e5;
+[data-theme="high-contrast"],
+[data-theme="high-contrast"] [data-theme="dark"],
+[data-theme="high-contrast"] [data-theme="light"] {
+    /* Pure black/white — maximum contrast */
+    --bg-base:         #000000;
+    --bg-elevated:     #000000;
+    --bg-card:         #0a0a0a;
+    --bg-overlay:      rgba(0, 0, 0, 0.95);
+    --bg-input:        #000000;
+    --bg-input-focus:  #1a1a1a;
+    --bg-hover:        #1f1f1f;
+    --bg-active:       #2a2a2a;
+
+    /* Text — all 7:1 minimum vs --bg-base */
+    --text-primary:   #ffffff;            /* 21:1 — AAA */
+    --text-secondary: #ffffff;            /* 21:1 — AAA (no faded grays) */
+    --text-tertiary:  #e5e5e5;            /* 17:1 — AAA */
+    --text-disabled:  #a0a0a0;            /* 7.5:1 — AAA */
+    --text-inverse:   #000000;
+    --text-on-brand:  #000000;            /* black on gold = 14:1 */
+
+    /* Borders — fully visible */
+    --border-subtle:  #ffffff;
     --border-default: #ffffff;
     --border-strong:  #ffffff;
-    --brand-primary:  #ffd84d;     /* gold with higher luminance */
-    --brand-on-primary: #000000;
-    --status-success: #4ade80;
-    --status-warning: #facc15;
-    --status-danger:  #ff6b6b;
-    --status-info:    #60a5fa;
-    --shadow-md:      0 0 0 2px #ffffff;
-    --shadow-focus-ring: 0 0 0 4px #ffd84d;
+    --border-brand:   #ffd84d;
+    --border-focus:   #ffd84d;
+
+    /* Brand — higher-luminance gold for AAA on black */
+    --brand-primary:        #ffd84d;      /* on black = 14.5:1 — AAA */
+    --brand-primary-hover:  #ffe580;
+    --brand-primary-active: #d4af37;
+    --brand-subtle:         rgba(255, 216, 77, 0.20);
+    --brand-on-primary:     #000000;
+
+    /* Status — saturated colors that hit AAA on black */
+    --status-success: #4ade80;            /* 11:1 */
+    --status-warning: #facc15;            /* 14:1 */
+    --status-danger:  #ff6b6b;            /* 8:1 */
+    --status-info:    #60a5fa;            /* 7.5:1 */
+
+    --status-success-bg: rgba(74, 222, 128, 0.20);
+    --status-warning-bg: rgba(250, 204, 21, 0.20);
+    --status-danger-bg:  rgba(255, 107, 107, 0.20);
+    --status-info-bg:    rgba(96, 165, 250, 0.20);
+
+    /* AI accent — magenta hits AAA on black */
+    --accent-ai:     #c084fc;             /* 7.6:1 */
+    --accent-ai-bg:  rgba(192, 132, 252, 0.20);
+    --accent-collab: #67e8f9;             /* 12:1 */
+
+    /* Shadows replaced by visible borders (shadows fail in AAA) */
+    --shadow-xs:  0 0 0 1px var(--border-strong);
+    --shadow-sm:  0 0 0 1px var(--border-strong);
+    --shadow-md:  0 0 0 2px var(--border-strong);
+    --shadow-lg:  0 0 0 2px var(--border-strong);
+    --shadow-xl:  0 0 0 3px var(--border-strong);
+    --shadow-glow-brand: 0 0 0 3px var(--brand-primary);
+    --shadow-focus-ring: 0 0 0 4px var(--brand-primary), 0 0 0 6px #000000;
+}
+
+/* Auto-activate high-contrast if user prefers it via OS, only when no
+   explicit theme is set. */
+@media (prefers-contrast: more) {
+    :root:not([data-theme]) {
+        --bg-base:        #000000;
+        --text-primary:   #ffffff;
+        --border-default: #ffffff;
+        --brand-primary:  #ffd84d;
+    }
+}
+
+/* In high-contrast: thicken focus rings + outlines + force underlines on
+   text links so they're discoverable without color */
+[data-theme="high-contrast"] a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+[data-theme="high-contrast"] *:focus-visible {
+    outline: 3px solid var(--brand-primary) !important;
+    outline-offset: 2px !important;
+}
+/* Remove decorative gradients — solid colors only */
+[data-theme="high-contrast"] .alt-btn--primary,
+[data-theme="high-contrast"] .alt-avatar {
+    background: var(--brand-primary) !important;
+    color: var(--brand-on-primary) !important;
 }
 
 /* ───────────────────────────────────────────────────────────────

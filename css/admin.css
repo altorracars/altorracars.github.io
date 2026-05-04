@@ -3363,3 +3363,16 @@ table th:focus-visible,
     }
     .inbox-list { max-height: 240px; }
 }
+
+/* MF4.3 — Bulk actions bar */
+.crm-bulk-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(184,150,88,0.12);
+    border: 1px solid rgba(184,150,88,0.32);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: 0.86rem;
+}

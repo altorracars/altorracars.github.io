@@ -257,6 +257,7 @@
                 : '<span class="crm-avatar crm-avatar-letter">' + escHtml((c.nombre || '?').charAt(0).toUpperCase()) + '</span>';
             var phone = c.telefono ? '<a href="https://wa.me/57' + c.telefono.replace(/[^0-9]/g, '') + '" target="_blank" style="color:#25d366;">' + escHtml(c.telefono) + '</a>' : '';
             return '<tr data-key="' + escHtml(c.key) + '">' +
+                '<td><input type="checkbox" class="crm-row-check" data-key="' + escHtml(c.key) + '"></td>' +
                 '<td>' +
                     '<div class="crm-contact-cell">' +
                         avatar +
@@ -475,11 +476,104 @@
     });
     document.addEventListener('change', function (e) {
         if (e.target && e.target.id === 'crmFilter') renderCRM();
+        // MF4.3 — selection handling
+        if (e.target && e.target.id === 'crmSelectAll') {
+            var on = e.target.checked;
+            document.querySelectorAll('.crm-row-check').forEach(function (cb) { cb.checked = on; });
+            updateBulkBar();
+        }
+        if (e.target && e.target.classList && e.target.classList.contains('crm-row-check')) {
+            updateBulkBar();
+        }
     });
     document.addEventListener('click', function (e) {
         var b = e.target.closest('[data-action="crm-detail"]');
         if (b) { openDetail(b.getAttribute('data-key')); return; }
+        var bulk = e.target.closest('[data-bulk]');
+        if (bulk) { handleBulk(bulk.getAttribute('data-bulk')); return; }
     });
+
+    // ─── MF4.3 — Bulk actions ────────────────────────────────────
+    function getSelectedKeys() {
+        return Array.from(document.querySelectorAll('.crm-row-check:checked')).map(function (cb) {
+            return cb.getAttribute('data-key');
+        });
+    }
+    function updateBulkBar() {
+        var bar = document.getElementById('crmBulkBar');
+        var count = document.getElementById('crmBulkCount');
+        if (!bar) return;
+        var selected = getSelectedKeys();
+        if (selected.length === 0) {
+            bar.hidden = true;
+        } else {
+            bar.hidden = false;
+            if (count) count.textContent = selected.length + ' seleccionado(s)';
+        }
+    }
+    function csvEscape(v) {
+        if (v == null) return '';
+        var s = String(v);
+        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+    }
+    function handleBulk(action) {
+        var selected = getSelectedKeys();
+        if (action === 'clear') {
+            document.querySelectorAll('.crm-row-check').forEach(function (cb) { cb.checked = false; });
+            var sa = document.getElementById('crmSelectAll'); if (sa) sa.checked = false;
+            updateBulkBar();
+            return;
+        }
+        if (!selected.length) {
+            if (AP.toast) AP.toast('Seleccioná al menos un contacto', 'error');
+            return;
+        }
+        var contacts = buildContacts().filter(function (c) { return selected.indexOf(c.key) !== -1; });
+
+        if (action === 'export-csv') {
+            var headers = ['Nombre', 'Email', 'Telefono', 'Ciudad', 'Tipo', 'Comunicaciones', 'Score', 'Tier', 'UltimoContacto', 'Asesor'];
+            var rows = contacts.map(function (c) {
+                var s = computeScore(c);
+                return [
+                    csvEscape(c.nombre),
+                    csvEscape(c.email),
+                    csvEscape(c.telefono),
+                    csvEscape(c.ciudad),
+                    csvEscape(c.type),
+                    (c.comms || []).length,
+                    s,
+                    csvEscape(tierOf(s).name),
+                    csvEscape(c.lastCommAt || ''),
+                    csvEscape(c.assignedToName || '')
+                ].join(',');
+            });
+            var csv = headers.join(',') + '\n' + rows.join('\n');
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'altorra-crm-' + new Date().toISOString().slice(0, 10) + '.csv';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            if (AP.toast) AP.toast('CSV exportado: ' + selected.length + ' contactos');
+        } else if (action === 'tag') {
+            var tag = prompt('Nombre de la etiqueta a agregar:');
+            if (!tag) return;
+            tag = tag.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+            if (!tag) return;
+            var ok = 0;
+            var pending = contacts.filter(function (c) { return c.uid; });
+            pending.forEach(function (c) {
+                window.db.collection('clientes').doc(c.uid).update({
+                    crmTags: firebase.firestore.FieldValue.arrayUnion(tag)
+                }).then(function () { ok++; }).catch(function () {});
+            });
+            if (AP.toast) AP.toast('Etiqueta "' + tag + '" agregada a ' + pending.length + ' contactos registrados');
+        }
+    }
 
     // Listen for admin appointments updates (CRM should re-render)
     document.addEventListener('click', function (e) {

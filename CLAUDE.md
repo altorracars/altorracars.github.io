@@ -4105,6 +4105,41 @@ SEMANA 12: P + buffer + QA + estabilización
 2. Mismo con `<span class="alt-badge alt-badge--success alt-badge--dot">Activo</span>` → badge verde con dot
 3. T.3 (siguiente) creará la página de Storybook lite para verlos todos juntos.
 
+---
+
+### Microfase T.3 — Storybook lite (`admin/_components.html`) ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: necesitamos una página interna que muestre TODOS los componentes (T.2) en todos sus estados/variantes para QA visual rápido. Antes de migrar el admin (T.6) o agregar features nuevas, validamos visualmente que el sistema se ve consistente.
+
+**Lo que se creó**: página standalone `admin/_components.html` con:
+
+1. **Header sticky** con título + 3 toggles de tema (Dark / Light / A11y AAA) — permite verificar in-place que cada componente funciona en los 3 modos.
+2. **12 secciones** (una por componente) con:
+   - Descripción + ejemplo de código inline (`<code>`)
+   - Tiles que muestran cada variante/estado
+   - Casos de uso reales (ej: card de cliente con badge "Activo", avatar group, tab strip con badge contador)
+3. **Modal funcional** con apertura/cierre via JS minimal (Esc + click backdrop + close button — todos funcionan).
+4. **robots.txt actualizado** con `Disallow: /admin/` para evitar indexación de la carpeta interna.
+
+**Cómo usarla**:
+- Local: abrir `admin/_components.html` en el browser
+- Production: `https://altorracars.github.io/admin/_components.html` (no indexada por robots)
+- Workflow: cuando agregues una feature, abrir Storybook → ver el componente correspondiente → copiar el snippet
+
+**Diseño (D)**: la página misma usa los componentes que muestra (dogfooding) — botones, badges, cards, tabs son todos `.alt-*`. Header sticky con `backdrop-filter`. Grid responsive `auto-fill minmax(280px, 1fr)`.
+
+**Migración (M)**: ninguna — página nueva sin afectar nada existente. `robots.txt` actualizado para que `/admin/` no se indexe.
+
+**Archivos**: `admin/_components.html` (new), `robots.txt`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Abrir `admin/_components.html`
+2. Toggle "Dark" / "Light" / "A11y AAA" en header → verificar que TODO se adapta sin código extra (los tokens hacen el trabajo)
+3. Click "Abrir modal" → verificar animación spring + Esc cierra + click backdrop cierra
+4. Hover botones → tooltips aparecen
+5. Verificar focus rings con Tab key → todos los elementos focusables muestran el ring dorado
+6. DevTools → Rendering → activar "prefers-reduced-motion" → verificar que las animaciones se vuelven instantáneas
+
 
 
 ---

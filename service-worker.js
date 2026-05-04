@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505020000'; // T.2 (mega-plan v4) — Component Library (12 core)
+const CACHE_VERSION = 'v20260505030000'; // T.3 (mega-plan v4) — Storybook lite at admin/_components.html
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

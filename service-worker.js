@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504030000'; // Bumped: FedCM-compliant prompt() + AudioContext gesture gate
+const CACHE_VERSION = 'v20260504030500'; // Bumped: Don't auto-popup on watchdog (avoid double-UI)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

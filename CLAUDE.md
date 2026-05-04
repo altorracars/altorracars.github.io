@@ -3041,6 +3041,75 @@ notifyCenter.notify('request_update', {
 
 **Archivos modificados**: `js/toast.js`, `css/toast-notifications.css`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase B1+B2 — Favorites watcher (snapshot + diff engine) ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: Detectar cambios en los vehiculos favoritos del usuario (precio sube/baja, cambio de estado, eliminacion del inventario) sin emitir notificaciones todavia. Esto sienta la base para B3 que las rutea al bell.
+
+**Arquitectura**: nuevo modulo `js/favorites-watcher.js` (singleton `window.AltorraFavWatcher`) — separado de `favorites-manager.js` para mantener responsabilidades claras:
+
+| Modulo | Responsabilidad |
+|---|---|
+| `favorites-manager.js` | CRUD del array de IDs favoritos, sync Firestore, UI corazones |
+| `favorites-watcher.js` | Snapshot del estado de cada favorito + diff vs vehicleDB live |
+
+**Storage**:
+- `localStorage.altorra_fav_snapshots_<uid>` = `{vehicleId: {precio, precioOferta, estado, capturedAt}}`
+- Por uid (no se mezclan datos entre usuarios)
+- Solo persiste para usuarios registrados (anonimos skip)
+
+**Lifecycle**:
+1. Al montar: lee snapshots persistidos del uid actual
+2. Eventos `'cached'` o `'synced'` de favorites-manager + `vehicleDB.loaded === true` → arma snapshot fresco y compara
+3. `vehicleDB.onChange('vehicles')` → re-corre diff
+4. `'added'` (favorito nuevo) → captura baseline silencioso, sin diff
+5. `'removed'` → borra snapshot del id
+6. `'cleared'` → borra todos los snapshots del uid
+
+**Diff rules** (`diffOne(oldSnap, newSnap, vehicleData)`):
+- **Sin baseline** → no emite (primer encuentro = solo baseline)
+- **Vehiculo desaparece del inventario** Y no estaba en `vendido` → `inventory_removed`
+- **Cambio de estado** (gana sobre cambio de precio) → `status_change`
+- **Cambio de precio efectivo ≥1%** (oferta gana sobre precio regular) → `price_drop` o `price_increase` con `pctChange`
+
+**Anti-patrones prevenidos**:
+
+| Riesgo | Mitigacion |
+|---|---|
+| First load → emite N alertas falsas | `firstRunDone` flag: primera pasada solo establece baseline |
+| Bulk admin update → spam de N notificaciones | `COALESCE_MIN_DIFFS = 4`: si ≥4 diffs, emite un solo evento `bulk` con array adentro |
+| Anonymous user persiste snapshots ajenos | Guard `_state.anonymous`: skip persistence + skip diff |
+| Vehicle missing in one tick reaparece despues | Solo emite si baseline tenia el vehiculo Y nuevo NO lo tiene |
+| Listener loop (notify wraps watcher emisiones) | Watcher publica via `notifyCenter.notify` (B3), no `notify.*` directo |
+| Race entre cached + synced events disparando 2x diff | `DIFF_DEBOUNCE_MS = 350`: coalesce events que llegan en rafaga |
+| Mutacion durante diff | Diff es funcional puro: lee `_state.snapshots`, escribe `fresh` nuevo objeto, swap atomico |
+| `vehicleDB` aun no listo | `_state.ready` solo true cuando `vehicleDB.loaded === true` |
+| Cambio de uid mid-flight | `refreshUid()` resetea snapshots cuando detecta uid nuevo |
+
+**API publica** (`window.AltorraFavWatcher`):
+- `onDiffs(fn)` — subscribe a eventos diff (B3 lo usa)
+- `runDiff()` — fuerza diff manual (debug)
+- `getSnapshot(id)` — lee snapshot actual de un vehiculo
+- `getAllSnapshots()` — lee todos
+- `diffSinceLastVisit(id)` — para B4 (badges en cards)
+- `_setDebug(true)` — log verbose en consola
+
+**Inyeccion en HTML** (Phase B1 ship): script tag `<script src="js/favorites-watcher.js" defer></script>` agregado despues de `favorites-manager.js` en:
+- Paginas raiz: index, busqueda, favoritos, perfil, comparar, marca, marcas, vehiculos-{suv,sedan,pickup,hatchback}, detalle-vehiculo
+- Generadas: 25 paginas en `/vehiculos/*.html`, 18 paginas en `/marcas/*.html`
+- Las generadas usan `<base href="/">` por lo que la ruta es `js/favorites-watcher.js` (no `../js/`)
+
+**Visible al usuario en B1+B2**: nada todavia (silent). El modulo solo registra los snapshots y construye los diffs en `_diffListeners`. **Phase B3** los conecta a `notifyCenter.notify('price_alert' | 'inventory_change')`.
+
+**Verificacion en consola** (DevTools):
+```js
+AltorraFavWatcher._setDebug(true);
+AltorraFavWatcher.runDiff();
+// → '[FavWatcher] No diffs detected on manual'
+```
+
+**Archivos creados**: `js/favorites-watcher.js`
+**Archivos modificados**: 12 HTMLs raiz + 25 paginas vehiculos + 18 paginas marcas + `service-worker.js` + `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

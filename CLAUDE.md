@@ -3548,12 +3548,398 @@ Todos `.catch(function() {})` — best-effort. localStorage es source of truth l
 
 ---
 
+## 13.quater MEGA-PLAN v4 — Plataforma admin de clase mundial + Concierge Unificado (2026-05-04)
+
+> Refactor total y elevación tecnológica de toda la plataforma de
+> administración. Reemplaza tres planes parciales (notificaciones,
+> comunicaciones+CRM v2, propuesta v3) con una arquitectura unificada
+> en 4 capas y 20 bloques de microfases.
+>
+> Inspirado en Bitrix24, HubSpot, Salesforce, Intercom, Drift,
+> Pipedrive, Meta Business Suite. Cero APIs pagas — todo browser-native
+> + Firebase free tier.
+>
+> Última actualización: 2026-05-04
+
+### Por qué v4 (vs v1/v2/v3)
+
+| Versión | Característica | Falla |
+|---|---|---|
+| v1 (notificaciones) | Bell sin spam, opt-in, categorías | Solo notificaciones, no toca el resto |
+| v2 (comunicaciones+CRM 28 MF shipped) | kind discriminator, kanban, CRM básico, Inbox, automatización | Features aisladas, "básicas", admin se siente disperso |
+| v3 (propuesta) | 8 secciones reagrupadas, smart fields, calendario dedicado | Sigue siendo silos visuales — sin capa de inteligencia transversal |
+| **v4 (este plan)** | **4 capas: Infra + Inteligencia + Features + Experiencia. Concierge unificado. Event Bus. AI local. Knowledge Graph. Adaptive UI. Predictive analytics. Realtime collab. Voice+Vision.** | **N/A — el plan a ejecutar** |
+
+### Arquitectura de 4 capas
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  CAPA EXPERIENCIA                                          │
+│  L. Voz+Multi-modal  M. Realtime Collab  N. Adaptive UI   │
+└────────────────────────────────────────────────────────────┘
+        ▲                ▲                ▲
+┌────────────────────────────────────────────────────────────┐
+│  CAPA FEATURES                                             │
+│  C. Inventario  D. Calendario  E. Comms  F. CRM  O. Reports│
+└────────────────────────────────────────────────────────────┘
+        ▲                ▲                ▲
+┌────────────────────────────────────────────────────────────┐
+│  CAPA INTELIGENCIA (cross-cutting)                         │
+│  I. Event Bus  J. AI Engine  K. Workflows                  │
+│  Q. Knowledge Graph  R. Predictive  U. Concierge ⭐⭐⭐    │
+└────────────────────────────────────────────────────────────┘
+        ▲                ▲                ▲
+┌────────────────────────────────────────────────────────────┐
+│  CAPA INFRAESTRUCTURA                                      │
+│  A. Fixes+Docs  T. Design System  B. Sidebar+Workspaces   │
+│  G. Push+PWA  H. Security  P. Perf+A11y                   │
+└────────────────────────────────────────────────────────────┘
+```
+
+### Política transversal: "los 3 entregables por MF"
+
+Cada microfase shippea **simultáneamente**:
+
+**🎨 Design (D)**: usa tokens del Design System (T), respeta grilla, anima con curva oficial, tiene todos los estados (hover/focus/disabled/loading/empty), modo claro/oscuro, mobile responsive, A11y AAA. Si no respeta el sistema, no se mergea.
+
+**🔄 Migration (M)**: cuando cambia un schema/collection/patrón, incluye script idempotente que detecta docs viejos, los transforma, preserva `legacyXxxx` para auditoría, loguea conteos, es seguro re-correrlo.
+
+**📚 Documentation (Doc)**: pre-brief, during-comments, post-section con archivos modificados + pasos de prueba E2E + notas para futuros devs.
+
+### Stack técnico (todo libre/gratuito)
+
+| Necesidad | Tecnología | Coste |
+|---|---|---|
+| NLP (sentiment/NER/intent) | Transformers.js + Hugging Face models | $0 |
+| Computer vision | TensorFlow.js + MobileNet pre-entrenado | $0 |
+| OCR | Tesseract.js | $0 |
+| Voz | Web Speech API (browser-native) | $0 |
+| Embeddings | Xenova/all-MiniLM-L6-v2 (Transformers.js) | $0 |
+| Charts | Chart.js (lazy) | $0 |
+| Drag-drop | Sortable.js / nativo HTML5 | $0 |
+| Push native | Firebase Cloud Messaging Web | $0 |
+| Realtime sync | Firestore onSnapshot | $0 |
+| Offline queue | Service Worker + IndexedDB | $0 |
+| Encryption | Web Crypto API | $0 |
+| Background compute | Web Workers | $0 |
+| Knowledge graph viz | Cytoscape.js (lazy) | $0 |
+
+**Costo recurrente: $0**. Solo tiempo de desarrollo.
+
+### Tabla maestra de bloques (20 bloques, 131 microfases, ~12 semanas)
+
+| # | Bloque | MF | Días | Capa | Notas |
+|---|---|---|---|---|---|
+| A | Fixes urgentes + docs atrasada | 3 | 2 | Infra | Empieza aquí |
+| **T** | **Design System global** | **8** | **5** | **Infra** | **Crítico antes de todo lo demás** |
+| B | Sidebar + Workspaces | 5 | 3 | Infra | |
+| I | Event Bus + Activity Feed | 5 | 4 | Inteligencia | |
+| J | AI Engine local (NLP/CV/OCR) | 8 | 6 | Inteligencia | |
+| K | Workflows + Smart Fields engine | 6 | 4 | Inteligencia | |
+| Q | Knowledge Graph | 4 | 3 | Inteligencia | |
+| R | Predictive Analytics | 4 | 3 | Inteligencia | |
+| **U** | **Concierge Unificado** | **19** | **12** | **Inteligencia+Features** | **Estrella del plan** |
+| C | Inventario inteligente | 8 | 5 | Features | |
+| D | Calendario y Disponibilidad | 8 | 5 | Features | |
+| E | Comunicaciones unificadas | 12 | 7 | Features | |
+| F | CRM 360 evolución | 8 | 5 | Features | |
+| O | Reportes + AI insights | 6 | 4 | Features | |
+| L | Voz + Multi-modal | 4 | 3 | Experiencia | |
+| M | Realtime Collaboration | 5 | 4 | Experiencia | |
+| N | Adaptive UI | 4 | 3 | Experiencia | |
+| G | Push + Offline-first PWA | 5 | 3 | Infra | |
+| H | Security + Audit pro | 5 | 3 | Infra | |
+| P | Performance + A11y AAA | 4 | 3 | Infra | |
+| **TOTAL** | | **131** | **~85** | | |
+
+### Bloques críticos detallados
+
+#### T — Design System global (8 MF, 5 días)
+
+| MF | Qué hace |
+|---|---|
+| T.1 | `css/tokens.css` con todas las variables (colores, espacios, tipografía, sombras, radios, transiciones, z-index, breakpoints). Reemplaza ~300 hardcoded values |
+| T.2 | Component Library mínima: 12 componentes core (Button, Input, Select, Card, Modal, Tabs, Badge, Avatar, Tooltip, Toast, Toggle, Skeleton) con todos los estados |
+| T.3 | Storybook lite en `/admin/_components.html` (super_admin only) |
+| T.4 | Modo claro real con CSS vars + toggle + persistencia per usuario + cross-fade |
+| T.5 | Animation system: 5 curvas oficiales + duraciones + `prefers-reduced-motion` respetado |
+| T.6 | Migración masiva del admin existente a tokens + components |
+| T.7 | Iconografía estándar: 100% Lucide (auditoría + cleanup de SVG inline + emojis) |
+| T.8 | Modo high-contrast (WCAG AAA) — toggle adicional, ratio mínimo 7:1 |
+
+#### I — Event Bus + Activity Feed (5 MF, 4 días)
+
+| MF | Qué hace |
+|---|---|
+| I.1 | `window.AltorraEventBus` con emit/on/off/once. Tipos: `vehicle.*`, `comm.*`, `crm.*`, `appointment.*`, `user.*`. Persistencia opcional en `events/` collection |
+| I.2 | Activity Feed sidebar global tipo Slack — todo en tiempo real, filtros, periodos |
+| I.3 | Reacciones cross-module automáticas: solicitud creada → score recalculado → Inbox notifica → Calendario sugiere → Reportes incrementan KPI |
+| I.4 | Macros del Activity Feed: "Repetir esta acción" / "Programar similar" / "Crear regla a partir de esta acción" |
+| I.5 | Replay y debugging: super_admin re-juega timeline de un día completo |
+
+#### J — AI Engine local (8 MF, 6 días)
+
+| MF | Qué hace | Tech |
+|---|---|---|
+| J.1 | Sentiment analysis multilingüe en cada mensaje | Transformers.js distilbert-multilingual |
+| J.2 | NER (extrae marca/modelo/año/monto/ciudad/fecha) | Transformers.js NER |
+| J.3 | Lead scoring v2 con regresión logística entrenada con datos propios (re-entrena cada semana en background) | TensorFlow.js |
+| J.4 | Predicción de no-show para citas (decisión tree sobre histórico) | TF.js DecisionTree |
+| J.5 | Anomaly detection sobre KPIs (media móvil + desviación estándar) | Math + Web Worker |
+| J.6 | Auto-categorizador de imágenes (sedan/SUV/pickup desde foto) | TF.js MobileNet |
+| J.7 | OCR de placas + cédulas client-side | Tesseract.js (5MB lazy) |
+| J.8 | Próxima Mejor Acción (NBA) por contacto: score + recencia + intención | Reglas + ML lite |
+
+#### Q — Knowledge Graph (4 MF, 3 días)
+
+| MF | Qué hace |
+|---|---|
+| Q.1 | Indexador en Web Worker que arma grafo de relaciones implícitas en IndexedDB |
+| Q.2 | Vista grafo dentro CRM 360°: ver red del contacto |
+| Q.3 | Recomendaciones automáticas: "3 contactos vieron Mazda — acaba de llegar el CX-5 — ¿notificar?" |
+| Q.4 | Search semántico: "interesados en SUV menor a $100M" devuelve contactos por historial real |
+
+#### R — Predictive Analytics (4 MF, 3 días)
+
+| MF | Qué hace |
+|---|---|
+| R.1 | Forecast de ventas con regresión sobre histórico mensual + intervals de confianza |
+| R.2 | Hot leads del día: cada mañana top-5 con mayor probabilidad de cierre |
+| R.3 | Vehículos al borde: stale detector + sugerencia de acción |
+| R.4 | Churn risk: contactos hot que bajaron a frío — sugerir reconexión |
+
+#### U — Concierge Unificado (19 MF, 12 días) ⭐ ESTRELLA
+
+**Visión**: un solo botón flotante que reemplaza el WhatsApp widget + AI assistant separados de hoy. Tres modos seamless: 🤖 Bot AI 24/7, 👨 Asesor en vivo, 📲 WhatsApp gateway. Todo conectado al CRM como motor de captura de leads (progressive profiling).
+
+**Arquitectura del bot**: 6 motores en paralelo (todos browser-side):
+1. Intent Classifier (12 categorías)
+2. Entity Extractor (NER)
+3. Knowledge Retriever (RAG con embeddings)
+4. Response Generator (templates + personalidad)
+5. Sentiment Tracker
+6. Context Memory (últimos 6 turnos + datos del cliente)
+
+**Microfases**:
+
+| MF | Qué hace |
+|---|---|
+| U.1 | Design System del Concierge (widget + bandeja admin + animaciones + colores semánticos por modo) |
+| U.2 | Schema unificado `conversaciones/{id}` con messages[], participants, assignedAsesor, mode, context, sentiment_history, intent_history, _legacy_threadId |
+| U.3 | Migración `mensajes/` (MF2.5) → `conversaciones/` script idempotente |
+| U.4 | Frontend widget unificado `concierge.js` reemplaza `whatsapp-widget.js` + `ai-assistant.js` (mantener compat 2 semanas) |
+| U.5 | Knowledge Base CRUD admin: vehículos (auto-sync), FAQs, políticas, datos del negocio |
+| U.6 | Embeddings client-side con Xenova/all-MiniLM-L6-v2 (~25MB cacheable) — RAG por similitud coseno |
+| U.7 | Intent Classifier + NER paralelo en cada turno del cliente |
+| U.8 | Response Generator del bot con personalidad de Altorra (cálido, breve, colombiano), few-shot, multi-turno coherente |
+| U.9 | Sentiment + Auto-escalation: sentiment < -0.5 o cliente lo pide → handoff a asesor con notificación push |
+| U.10 | Bandeja admin Concierge (lista de conversaciones live + filtros + búsqueda) |
+| U.11 | Chat detail admin estilo WhatsApp: typing indicator, quick replies, plantillas, adjuntos (foto, vehiculo card, cotización) |
+| U.12 | Smart Suggestions para asesor: 3 respuestas sugeridas mientras escribe — patrón Gmail Smart Reply pero personalizado |
+| U.13 | Conversation summarization tras X mensajes — útil cuando otro asesor toma la conversación |
+| U.14 | WhatsApp handover: link `wa.me?text=` con resumen + ticket. Marca `mode: wa_handed_over` |
+| U.15 | Cleanup + remoción de chats viejos tras 2 semanas en producción |
+| **U.16** | **Soft contact en CRM al primer mensaje** (incluso anónimo) — entra como `contactos/{id}` con tipo `visitor` o `lead` |
+| **U.17** | **Progressive Profiling**: bot pide datos en orden óptimo (no abruma) — configurable por admin: cuándo pedir email/teléfono según intent |
+| **U.18** | **Identity Merge**: cuando un visitor se registra con email que ya estaba en `conversaciones/`, fusión automática + notificación al admin |
+| **U.19** | **Marketing Opt-in granular + Right to be forgotten**: micro-consent al primer mensaje, opt-in separado por canal (email/WhatsApp/SMS futuro), purge GDPR-compliant |
+
+**Niveles de captura del lead**:
+- L0 Anónimo: sessionId, página origen, vehículo viendo, browser/OS, sentiment+intent+entities → score 0
+- L1 Identificado: + nombre (bot pregunta tras 2-3 turnos)
+- L2 Contactable: + email o teléfono (cuando es relevante)
+- L3 Calificado: + presupuesto, ubicación, timeline, preferencias (NER auto-extrae)
+- L4 Asignado: + asesor responsable, etiquetas, score recalculado
+- L5 Convertido: + cita agendada o cotización enviada o venta cerrada
+
+#### C — Inventario inteligente (8 MF, 5 días)
+
+| MF | Smart field | Regla |
+|---|---|---|
+| C.1 | `tipo` (nuevo/semi-nuevo/usado) | km==0 → nuevo · 1-10K → semi-nuevo · 10K+ → usado |
+| C.2 | `categoria` sugerida | Vía MobileNet desde foto |
+| C.3 | `colorPrimario` | Canvas API extrae color dominante de primera imagen |
+| C.4 | `prioridadDestacado` | Antiguedad + favoritos + vistas |
+| C.5 | `descripcionSugerida` | Template generador |
+| C.6 | Detector calidad fotos | Blur/dark/framing — alerta antes publicar |
+| C.7 | Stale detector | >60d sin movimiento → sugerir acción |
+| C.8 | Validaciones inteligentes | Año<2000+km<50K → "¿clásico restaurado?". Cuota>precio → error |
+
+#### D — Calendario dedicado (8 MF, 5 días)
+
+| MF | Qué hace |
+|---|---|
+| D.1 | Vista mes con drag-drop |
+| D.2 | Vista semanal y diaria con slots 30min |
+| D.3 | Config avanzada: turnos múltiples, festivos COL, capacidad por slot, excepciones |
+| D.4 | Buffer entre citas, anti-overbooking |
+| D.5 | Recordatorios automáticos (email + push native) |
+| D.6 | No-show prediction (J.4) integrada — "65% prob, ¿confirmar 2x?" |
+| D.7 | AI Auto-Scheduling: cliente pide "martes tarde" → sistema sugiere mejor slot |
+| D.8 | Optimizador de ruta diaria por proximidad geográfica (Haversine sin API) |
+
+#### E — Comunicaciones unificadas (12 MF, 7 días)
+
+| MF | Qué hace |
+|---|---|
+| E.1-E.10 | Inbox unificado, filtros, labels CRUD, asignaciones con @menciones, auto-replies, agrupación por contacto, quick replies, tracking SLA, lectura cliente, modo "atender siguiente" |
+| E.11 | Sentiment overlay en Inbox: dot color por mensaje, negativos al top |
+| E.12 | NER inline: entidades resaltadas + acciones one-click ("crear cita con esta fecha") |
+
+#### F — CRM 360 evolución (8 MF, 5 días)
+
+| MF | Qué hace |
+|---|---|
+| F.1-F.6 | Pipeline visual, vista 360 enriquecida, segmentación dinámica, mensajes masivos, cotizaciones ricas, programa referidos |
+| F.7 | Pestaña "Red" en vista 360: knowledge graph interactivo |
+| F.8 | Pestaña "Predicciones": probabilidad venta, días al cierre, NBA |
+
+#### O — Reportes con AI insights (6 MF, 4 días)
+
+| MF | Qué hace |
+|---|---|
+| O.1-O.5 | Dashboard ejecutivo, funnel, performance asesor, inventario insights, export programado |
+| O.6 | Insights automáticos panel "Lo que el sistema notó esta semana" — anomalías + forecast + sugerencias accionables |
+
+#### L — Voz + Multi-modal (4 MF, 3 días)
+
+| MF | Qué hace |
+|---|---|
+| L.1 | Comandos por voz globales (Espacio+V): "asignar la cita 5 a Daniel" |
+| L.2 | Notas dictadas en cualquier campo de texto |
+| L.3 | OCR de placas vía cámara |
+| L.4 | OCR de cédula del cliente |
+
+#### M — Realtime Collaboration (5 MF, 4 días)
+
+| MF | Qué hace |
+|---|---|
+| M.1 | Presence avanzada: `currentSection` + `currentEntityId` |
+| M.2 | Co-edit locks blandos: "Daniel está editando" + ver en vivo |
+| M.3 | Live cursors en Kanban (patrón Figma) |
+| M.4 | Comentarios threaded en cualquier registro con @menciones, reacciones, markdown |
+| M.5 | Salas de trabajo: "Trabajar con Daniel" — cursor compartido + chat dedicado |
+
+#### N — Adaptive UI (4 MF, 3 días)
+
+| MF | Qué hace |
+|---|---|
+| N.1 | Tracking de uso interno (heatmap anonimizado por uid) |
+| N.2 | Sidebar adaptativo (no usado en 30d → más opciones; top-3 anclados) |
+| N.3 | Quick actions personalizadas en dashboard (top 5 botones más usados) |
+| N.4 | Onboarding contextual primera vez por sección |
+
+#### G — Push + Offline-first PWA (5 MF, 3 días)
+
+| MF | Qué hace |
+|---|---|
+| G.1 | Service Worker registra suscripción push (FCM web free) |
+| G.2 | Notificaciones nativas SO para eventos críticos |
+| G.3 | Offline-first: cola de acciones cuando no hay red, sync al volver |
+| G.4 | PWA installable con icono, splash, full standalone |
+| G.5 | Background Sync API (SW envía pendientes con tab cerrada) |
+
+#### H — Security + Audit pro (5 MF, 3 días)
+
+| MF | Qué hace |
+|---|---|
+| H.1 | Field-level encryption con Web Crypto API para campos sensibles (cédula, ingresos) |
+| H.2 | Audit log inmutable con hash chain (blockchain-lite) |
+| H.3 | 2FA obligatorio para todos los admins post-rebuild |
+| H.4 | Re-auth para acciones críticas (delete, export masivo, change role) |
+| H.5 | Anomalous behavior detection (50 deletes en 5min → bloqueo + alerta) |
+
+#### P — Performance + A11y AAA (4 MF, 3 días)
+
+| MF | Qué hace |
+|---|---|
+| P.1 | Lazy load de TODO módulo pesado (TF.js, Tesseract, Transformers, Chart.js) via idle scheduler |
+| P.2 | Web Workers para cómputos pesados (lead scoring batch, knowledge graph indexing, anomaly detection) |
+| P.3 | WCAG AAA completo: contrast, ARIA, keyboard nav, screen reader, high-contrast toggle |
+| P.4 | Command palette global (Cmd+K) con shortcuts: `g i` Inbox, `g c` CRM, `n l` New Lead, `?` cheatsheet |
+
+### Orden óptimo de ejecución
+
+```
+SEMANA 1: A.1 + A.2 + A.3 + T.1-T.4
+SEMANA 2: T.5-T.8 + B.1-B.3
+SEMANA 3: B.4-B.5 + I (todo) + Q (todo)
+SEMANA 4: J (todo, NLP/CV/OCR cargados)
+SEMANA 5: U.1-U.7 (Concierge: design + schema + migración + bot AI)
+SEMANA 6: U.8-U.15 (Concierge: live chat + smart suggestions + handover)
+SEMANA 7: U.16-U.19 + K + R
+SEMANA 8: C + D
+SEMANA 9: E + F
+SEMANA 10: O + L + M
+SEMANA 11: N + G + H
+SEMANA 12: P + buffer + QA + estabilización
+```
+
+### Anti-patrones globales que el plan previene
+
+| Riesgo | Mitigación |
+|---|---|
+| Refactor masivo rompe features | Cada MF independiente con tests E2E manuales documentados |
+| Modelos AI cargados eager rompen perf | Lazy + cachados + Web Worker + skeleton |
+| Realtime collab causa race conditions | Locks blandos + last-write-wins + warnings + `_version` |
+| Adaptive UI confunde admin nuevo | Reset manual + onboarding tour |
+| AI sugerencias intrusivas | Toda sugerencia es "Aceptar/Editar" — nunca silenciosa |
+| Workflow infinite loops | Detector de ciclos en runtime + cap 10 ejecuciones por evento |
+| Push spam | Throttle + dedup + prefs granulares (ya tenemos infraestructura de notify v2) |
+| OCR baja precisión | Confidence visible — bajo 70% requiere confirmación manual |
+| Sentiment incorrecto en español dialéctico | Override manual + se aprende |
+| Storage explotado por modelos AI | Quota check antes de cargar, fallback a sin-AI |
+| Knowledge graph enorme | Cap nodos + edges relevantes (últimos 50 vehículos visto, no histórico full) |
+| Datos sensibles encriptados → admin pierde key | Backup encriptado per-admin con password derivation + recovery via super_admin |
+| Identity merge incorrecto (mismo email distintas personas) | Confirmación manual antes de merge si hay datos contradictorios |
+| Documentación atrasada otra vez | Política transversal "3 entregables por MF" con D+M+Doc obligatorios |
+
+### Estado world-class al final
+
+**Para el cliente**: un solo botón Concierge (bot 24/7 + asesor live + WhatsApp gateway) que reemplaza los 2 widgets actuales. Bot inteligente con NLP/sentiment/NER/RAG. Captura todo lead progresivamente. PWA instalable, offline, push native.
+
+**Para el admin**: plataforma con Design System pro, sidebar limpia (8 secciones), workspaces cohesionados. Inbox unificado con TODO confluyendo. AI corre debajo (sentiment, intent, NER, scoring, predictions, suggestions). Realtime collab. Voz + OCR. Workflows configurables. Knowledge Graph para navegación. Reportes con anomalías y forecasts. Adaptive UI que aprende.
+
+**Para el negocio**: $0 recurrente. Datos limpios, migrados, auditables. Compliance-ready (audit log inmutable, encryption, 2FA, GDPR right-to-forget). Escala a más asesores sin rediseño.
+
+---
+
+### Microfase A.1 — Fix botones WhatsApp visibles en modals ✓ COMPLETADA (2026-05-05)
+
+**Problema raíz**: Después de MF2.1 (que eliminó `window.open(wa.me)` en los handlers JS), los íconos verdes de WhatsApp + textos "Recibir mi oferta" / "Enviar por WhatsApp" siguieron en el HTML porque eran SVG inline + texto hardcoded en `snippets/modals.html` líneas 147 y 269. El usuario reportó esto como "los formularios aún tienen botones verdes de WhatsApp".
+
+**Fix**:
+1. `snippets/modals.html`: ambos botones reemplazados por SVG paper-plane (Lucide `send` icon equivalente) + texto "Enviar solicitud". Comentario `<!-- A.1 (mega-plan v4) -->` para trazabilidad.
+2. `index.html`: mismo fix aplicado a las copias del HTML embebidas (líneas 902 y 1026). Las copias existen porque el index renderiza el modal directamente sin esperar al fetch del snippet.
+3. `css/contact-forms.css`: clase `.whatsapp-icon` reemplazada por `.form-submit-icon` (18x18, margin-right 4px). La clase legacy se preserva con `display: none` por si quedó referencia en algún lado (defensive).
+
+**Migración (M)**: ninguna — era cambio puramente visual + cleanup de íconos.
+
+**Diseño (D)**: el ícono `paper-plane` (envío) es semánticamente correcto para "Enviar solicitud" y no asocia el form con ningún canal específico (era el problema: el botón verde + ícono WhatsApp + texto "Enviar por WhatsApp" daba la idea que se mandaría por WA, mientras que el handler JS ya lo guardaba a Firestore). Ahora el button + ícono + label están alineados con la realidad: se envía la solicitud a Altorra, el cliente recibe la pantalla de éxito (MF2.1) y un asesor lo contacta por correo y WhatsApp después.
+
+**Archivos modificados**: `snippets/modals.html`, `index.html`, `css/contact-forms.css`, `service-worker.js`, `js/cache-manager.js`
+
+**Pasos para probar**:
+1. Abrir `index.html` → click "Vende tu Auto" → completar wizard → ver botón final
+2. Verificar que el botón dice "Enviar solicitud" con ícono de paper-plane (sin verde, sin WhatsApp)
+3. Click → confirmación in-place de MF2.1 (NO se abre WhatsApp)
+4. Mismo test con "Solicitud de Financiación"
+5. Verificar en DevTools que `.whatsapp-icon` no aparece en ningún botón visible
+
+
+
+---
+
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)
 
 > Refactor profundo del sistema de formularios, comunicaciones y leads.
 > Inspirado en Bitrix24, Mercately, PlanOK, Carcutter y CarroYa.
 > Reemplaza el patron "redirect a WhatsApp" por una experiencia
 > moderna estilo SaaS con CRM, kanban, lead scoring, automatizacion.
+
+> **NOTA**: este plan v2 fue parcialmente shipped (28 microfases, ver
+> §13.quater "Por qué v4"). v4 lo reemplaza con arquitectura unificada.
+> El contenido aquí queda como histórico.
 
 ### Microfase MF1.1 — userId + auto-fill + source tracking ✓ COMPLETADA (2026-05-04)
 

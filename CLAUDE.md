@@ -1745,8 +1745,12 @@ Logout con feedback inmediato. Cero "did I click the button?" moments.
 | Mensaje | Tipo | Origen | Accion |
 |---------|------|--------|--------|
 | `Define @import rules at the top of the stylesheet` | Warning (1) | `style.css:5241` | **CORREGIDO** — `@import url(...Cardo...)` movido al inicio del archivo. Antes vivia en el bloque mergeado de `footer-fixes.css` (P6) y el browser lo IGNORABA → footer caia silenciosamente a Georgia. Ahora si carga Cardo |
-| `Cross-Origin-Opener-Policy policy would block the window.closed call` (popup.ts:302) | Error rojo (multiples) | Firebase Auth SDK | **NO ACCIONABLE — documentado** |
-| `Cross-Origin-Opener-Policy policy would block the window.close call` (popup.ts:50) | Error rojo (multiples) | Firebase Auth SDK | **NO ACCIONABLE — documentado** |
+| `Cross-Origin-Opener-Policy policy would block the window.closed call` (popup.ts:302) | Error rojo (multiples) | Firebase Auth SDK | **PENDIENTE** — solo via custom domain + Cloudflare. Plan documentado en Seccion 18 |
+| `Cross-Origin-Opener-Policy policy would block the window.close call` (popup.ts:50) | Error rojo (multiples) | Firebase Auth SDK | **PENDIENTE** — solo via custom domain + Cloudflare. Plan documentado en Seccion 18 |
+| `enableMultiTabIndexedDbPersistence is deprecated` | Warning amarillo | Firebase Compat SDK | **NO ACCIONABLE** — API nueva (`persistentLocalCache`) solo existe en SDK modular. Migrar implicaria refactor de ~50 archivos. Warning cosmetico |
+| `ReferenceError: vehicleDB is not defined` | Error rojo | featured-week-banner.js (lazy-loaded) | **CORREGIDO 2026-05-04** — guard + retry pattern en `featured-week-banner.js`. Ver Seccion 8 → "Mejoras post-launch GIS" Fix 3 |
+| `[GSI_LOGGER]: NotificationGetMomentReason methods deprecated` | Warning | GIS deprecation | **CORREGIDO 2026-05-04** — removido callback parameter de `prompt()`. Ver Fix 7 |
+| `The AudioContext was not allowed to start` | Warning amarillo | Toast notifications system | **CORREGIDO 2026-05-04** — gated AudioContext detras de primer user gesture. Ver Fix 8 |
 | `[DB] Real-time listeners started/stopped` | Info (verde) | `database.js` | Comportamiento normal — uno por auth state change. Diagnostico util, mantenidos |
 | `[DB] Firestore loaded: N vehicles, N brands` | Info | `database.js` | Diagnostico util, mantenido |
 | `[DB] Real-time update: N items` | Info | `database.js` | Confirma snapshot recibido — diagnostico util |
@@ -1784,6 +1788,12 @@ las lecturas cross-origin de window.closed. Firebase tiene un fallback
 **Conclusion**: COOP warnings son ruido cosmetico. Login funciona
 perfectamente. Cantidad de warnings ∝ tiempo que la popup esta abierta
 (50ms × N polls). No hay impacto funcional.
+
+**Plan de fix futuro**: Documentado en **Seccion 18** — cuando se compre
+dominio custom en Hostinger, se configura Cloudflare como CDN/proxy
+para agregar el header `Cross-Origin-Opener-Policy: same-origin-allow-popups`
+y los COOP warnings desaparecen. Pasos detallados, troubleshooting y
+rollback plan estan en la Seccion 18.
 
 **Documentado en**: `js/auth.js handleGoogle()` con bloque comentario
 explicativo para que futuros devs no pierdan tiempo investigando.
@@ -1876,7 +1886,7 @@ User click "Continuar con Google"
 | `_shouldUseGis()` | `auth.js` | Devuelve true si GIS_CONFIGURED + script loaded + `window.google.accounts.id` disponible |
 | `handleGoogle()` | `auth.js` | Entry point. Decide GIS vs legacy. Maneja "GIS loading" wait branch |
 | `_ensureGisInit(callback)` | `auth.js` | Singleton: llama `initialize()` una sola vez por sesion. Callback indirecto permite swap entre One Tap y sign-in |
-| `_gisSignIn()` | `auth.js` | Muestra prompt + 2s watchdog timeout + localStorage memory de FedCM blocked (7d TTL) + maneja notification states |
+| `_gisSignIn()` | `auth.js` | Muestra prompt + 2.5s watchdog timeout + localStorage memory de FedCM blocked (6h TTL) + auto-fallback a popup + race guard `_legacyPopupInFlight` |
 | `_onGisCredential()` | `auth.js` | Recibe JWT credential → llama `signInWithCredential` → `_processGoogleUser` |
 | `_legacyPopupSignIn()` | `auth.js` | Fallback usando `signInWithPopup` (codigo viejo intacto) |
 | `_maybeShowOneTap()` | `auth.js` | One Tap en homepage para guests con dismissal cooldown 7 dias |
@@ -1927,8 +1937,10 @@ Browsers anteriores (sin FedCM) lo ignoran y usan el flujo clasico.
 | Q | Timeout firing despues de close | `_onGisReady = null` antes del fallback |
 | R | prefers-reduced-motion | Respetado en CSS |
 | S | Safari ITP | `itp_support: true` + fallback como red de seguridad |
-| T | FedCM disabled in Chrome | 2s watchdog → `_markGisBlocked()` → fallback to legacy popup. Next visit: instant fallback (0ms) via localStorage memory (`altorra_gis_blocked`, 7d TTL). Successful GIS sign-in clears the flag |
-| U | GIS prompt returns no notification | Same watchdog → same localStorage memory → fallback |
+| T | FedCM disabled in Chrome | 2.5s watchdog → `_markGisBlocked()` + **auto-open legacy popup** + race guard `_legacyPopupInFlight=true`. Next visit: instant fallback (0ms) via localStorage memory (`altorra_gis_blocked`, 6h TTL — corto para recovery rapido). Successful GIS sign-in clears the flag |
+| U | GIS prompt returns no notification | Same watchdog → same localStorage memory → auto-fallback |
+| V | Late GIS credential after popup opened | `_legacyPopupInFlight=true` → ignore late credential callback (silencioso) |
+| W | One Tap fails silently (FedCM blocked) | Mini-watchdog 2.5s post-prompt → marca `altorra_gis_blocked` si no credential → siguientes loads van directo a legacy popup, sin volver a fallar |
 
 **Por que NO eliminamos el codigo legacy de signInWithPopup**:
 - **Resiliencia**: Si Google deprecia GIS o cambia API, login sigue funcionando
@@ -1964,6 +1976,250 @@ Editar 1 linea en `js/firebase-config.js`. Bumpear cache version. Push.
 GitHub Actions workflow `generate-vehicles.yml` invalida cache automaticamente.
 
 **Tracking**: https://developers.google.com/identity/gsi/web/guides/overview
+
+### Mejoras post-launch GIS (2026-05-04 — Sesion fix-firestore-user-error-IB1mT)
+
+Tras el rollout inicial de GIS, una sesion de polish fixeo varios bugs
+encontrados en uso real. Documentados aqui en orden cronologico de commits.
+
+#### Fix 1 — Watchdog auto-fallback al popup (commit `94ed53d`)
+
+**Sintoma**: Al hacer click en "Continuar con Google" con FedCM blocked,
+el watchdog de 8s expiraba pero solo liberaba el lock — el usuario quedaba
+trabado sin saber que pasaba. Ningun popup, ningun mensaje, ningun
+fallback. La primera version del watchdog era pasiva.
+
+**Fix**:
+- Watchdog reducido de 8s → **2.5s** (latencia perceptible mas baja)
+- Cuando el watchdog dispara: marca `altorra_gis_blocked`, libera lock,
+  **abre automaticamente el legacy popup**
+- Agregado `_legacyPopupInFlight` flag para race guard:
+  ```js
+  var _legacyPopupInFlight = false;
+
+  // En _gisSignIn watchdog:
+  watchdogTimer = setTimeout(function () {
+      _markGisBlocked();
+      _legacyPopupInFlight = true;  // KEY: previene double sign-in
+      _legacyPopupSignIn();
+  }, 2500);
+
+  // En credential callback:
+  if (_legacyPopupInFlight) return; // ignore late GIS callback
+  ```
+
+**Resultado**: User click "Google" → 2.5s max → si FedCM blocked, popup
+se abre automaticamente. Usuario nunca queda trabado.
+
+#### Fix 2 — Eliminar ruido FedCM en One Tap (commit `8f62cbf`)
+
+**Sintoma**: Cada page load con FedCM blocked generaba 4+ errores rojos
+en consola del prompt() de One Tap fallando silenciosamente. El boton
+de Google tambien re-intentaba GIS aunque ya supieramos que estaba blocked.
+
+**Fix**:
+- `_maybeShowOneTap()` ahora chequea `_isGisBlocked()` antes de llamar
+  `prompt()`. Si esta blocked, skip total — no se ejecuta GIS en el page load.
+- Mini-watchdog **dentro de One Tap**: 2.5s despues de `prompt()`,
+  si no llego credential callback Y el user sigue siendo guest →
+  marca `altorra_gis_blocked`. Asi UN solo fallo bastara para que el
+  proximo load skip GIS completamente.
+- Boton "Continuar con Google" tambien chequea `_isGisBlocked()` →
+  va directo a legacy popup sin perder tiempo (0ms delay).
+
+**Resultado**: Despues del primer fallo de FedCM, los proximos loads
+son silenciosos en consola y el login es instantaneo via popup.
+
+#### Fix 3 — `vehicleDB is not defined` ReferenceError (commit `8f62cbf`)
+
+**Sintoma**: En consola aparecia rojo:
+```
+ReferenceError: vehicleDB is not defined
+  at featured-week-banner.js:XX
+```
+
+**Causa**: P11 de la fase de performance hizo lazy-load de
+`featured-week-banner.js` via `requestIdleCallback`. Eso significa que
+el script puede ejecutarse ANTES de que `database.js` haya inicializado
+`window.vehicleDB`. El codigo viejo usaba `vehicleDB` (bare reference)
+en lugar de `window.vehicleDB`, asi que en strict mode tiraba error.
+
+**Fix**:
+- Agregado guard al inicio de `featured-week-banner.js`:
+  ```js
+  if (!window.vehicleDB) {
+      var attempts = 0;
+      var maxAttempts = 20; // 5 segundos max
+      var retryInterval = setInterval(function () {
+          attempts++;
+          if (window.vehicleDB) {
+              clearInterval(retryInterval);
+              initBanner();
+          } else if (attempts >= maxAttempts) {
+              clearInterval(retryInterval);
+              console.warn('[FW] vehicleDB nunca se cargo');
+          }
+      }, 250);
+      return;
+  }
+  ```
+- Todos los `vehicleDB.X` cambiados a `window.vehicleDB.X` (bare → namespaced)
+
+**Resultado**: Cero ReferenceError. Banner carga cuando vehicleDB
+este listo, con timeout de 5s para no quedar colgado.
+
+#### Fix 4 — Recovery rapido del FedCM blocked flag (commit `ef533b4`)
+
+**Sintoma**: Tras resetear permisos de Chrome (settings → site permissions
+→ reset), One Tap no volvia a aparecer ni el GIS sign-in. El flag
+`altorra_gis_blocked` tenia TTL de 7 dias, asi que esperaba demasiado
+para reintentar.
+
+**Fix**:
+- TTL de `GIS_BLOCKED_TTL` reducido de **7 dias → 1 dia → 6 horas**
+  (iteraciones progresivas hasta encontrar el sweet spot)
+- 6h es suficiente para evitar spam de FedCM noise pero corto enough
+  para recovery cuando el user resetea permisos
+- Eliminada la escritura incondicional de `altorra_onetap_dismiss`
+  despues de `prompt()` — antes se marcaba dismissed aunque el prompt
+  fallara silenciosamente
+
+**Resultado**: User resetea permisos → en max 6h One Tap vuelve.
+O puede forzar via `AltorraAuth.resetGisState()` (helper diagnostico).
+
+#### Fix 5 — Silenciar logs de comportamiento esperado (commit `95d62df`)
+
+**Sintoma**: Console llena de `console.info` describiendo cada paso del
+flow GIS → fallback → popup. Aunque era diagnostico util, agregaba
+ruido innecesario en uso normal.
+
+**Fix**: Eliminados 4 logs `console.info` que describian transiciones
+esperadas (GIS skipped, FedCM blocked → falling back, etc.). Mantenidos
+los `console.warn` para errores reales (`Init failed, falling back`).
+
+**Resultado**: Consola limpia en flujos normales. Solo aparecen logs
+cuando hay un error genuino que requiere atencion.
+
+#### Fix 6 — `AltorraAuth.resetGisState()` helper diagnostico (commit `95d62df`)
+
+**Caso de uso**: User reporta que One Tap no aparece o GIS no funciona.
+Necesitas un helper rapido para limpiar todos los flags de localStorage
+relacionados con GIS sin tener que ir manualmente al DevTools.
+
+**Implementacion**:
+```js
+window.AltorraAuth.resetGisState = function () {
+    try {
+        localStorage.removeItem('altorra_gis_blocked');
+        localStorage.removeItem('altorra_onetap_dismiss');
+        console.info('[Auth] GIS state cleared. Reloading...');
+    } catch (e) {}
+    window.location.reload();
+};
+```
+
+**Uso**: User abre DevTools → Console → ejecuta `AltorraAuth.resetGisState()`
+→ pagina recarga → estado limpio.
+
+#### Fix 7 — GSI_LOGGER deprecation warning (commit `319081c`)
+
+**Sintoma**: Chrome console mostraba warning:
+```
+[GSI_LOGGER]: NotificationGetMomentReason methods are deprecated
+```
+
+**Causa**: Google deprecio los metodos `notification.isNotDisplayed()`,
+`isSkippedMoment()`, `isDismissedMoment()` bajo la migracion a FedCM.
+Nuestro codigo viejo pasaba un callback a `prompt()` que usaba estos
+metodos para detectar dismissals.
+
+**Fix**: Removido el callback parameter de `prompt()` por completo.
+Ahora confiamos solo en:
+1. **Credential callback** para sign-in success (cancela watchdog)
+2. **Watchdog 2.5s** para silent failure (FedCM blocked, no session)
+
+```js
+// ANTES (deprecated):
+window.google.accounts.id.prompt(function (notification) {
+    if (notification.isNotDisplayed()) { ... }
+    if (notification.isSkippedMoment()) { ... }
+});
+
+// DESPUES (FedCM-compliant):
+window.google.accounts.id.prompt();  // sin callback
+// La deteccion de fallo es via watchdog
+```
+
+**Trade-off**: Ya no podemos distinguir entre "user dismissed" vs
+"FedCM blocked" vs "no Google session". Pero el resultado practico es
+el mismo: si pasaron 2.5s sin credential, hacemos fallback.
+
+**One Tap dismissal**: Como ya no podemos detectar dismiss explicito,
+suprimimos One Tap por 7 dias despues de mostrarlo (asumimos que el
+user lo vio). Si hizo sign-in exitoso, `auth-hint=authenticated` skip
+de todas formas.
+
+#### Fix 8 — AudioContext autoplay warning (commit `319081c`)
+
+**Sintoma**: Chrome console mostraba warning amarillo:
+```
+The AudioContext was not allowed to start. It must be resumed (or created)
+after a user gesture on the page.
+```
+
+**Causa**: Chrome (y otros navegadores) bloquean `AudioContext` hasta
+que haya un primer gesto del usuario (click, keydown, touchstart).
+Nuestro sistema de notificaciones (toasts.js) intentaba reproducir
+sonidos al cargar la pagina si habia notificaciones programaticas:
+- Toast de "Bienvenido" tras login automatico
+- Toast de "Nueva version disponible" tras SW_UPDATED
+- Otros toasts disparados antes de la primera interaccion
+
+**Fix**: Gated AudioContext creation behind first user gesture:
+
+```js
+// En toast.js (notification system):
+var _userGestureSeen = false;
+var _gestureEvents = ['pointerdown', 'keydown', 'touchstart'];
+var _gestureHandler = function () {
+    _userGestureSeen = true;
+    _gestureEvents.forEach(function (ev) {
+        document.removeEventListener(ev, _gestureHandler, true);
+    });
+};
+_gestureEvents.forEach(function (ev) {
+    document.addEventListener(ev, _gestureHandler, true);
+});
+
+function playSound(type) {
+    if (!_userGestureSeen) return;  // silently drop
+    // ... AudioContext logic ...
+}
+```
+
+**Resultado**: Sonidos pre-interaccion se silencian (drop silencioso, sin
+warning). Despues del primer gesto, todos los sonidos siguientes funcionan
+normal.
+
+**Trade-off aceptado**: User no escucha el sonido del toast de bienvenida
+al cargar la pagina si nunca interactuo. Pero esto es comportamiento
+esperado del browser y elimina warnings de consola.
+
+### Resumen estado final consola post-fixes (2026-05-04)
+
+Despues de todos estos fixes, la consola en uso normal solo muestra:
+
+| Mensaje | Tipo | Accion |
+|---------|------|--------|
+| `[DB] Real-time listeners started/stopped` | INFO verde | Diagnostico util, mantener |
+| `[DB] Firestore loaded: N vehicles, N brands` | INFO verde | Diagnostico util, mantener |
+| `Firebase deferred SDKs loaded` | INFO verde | Diagnostico util, mantener |
+| `Cross-Origin-Opener-Policy policy would block...` | ERROR rojo | **Solo via custom domain + Cloudflare** (ver Seccion 18) |
+| `enableMultiTabIndexedDbPersistence is deprecated` | WARNING amarillo | **Solo via SDK modular migration** (refactor masivo, no prioritario) |
+
+Cero `vehicleDB is not defined`. Cero `GSI_LOGGER deprecated`. Cero
+`AudioContext was not allowed`. Cero `permission-denied` espurios.
+Cero notificaciones silenciadas. Cero toasts apilados en favoritos.
 
 ---
 

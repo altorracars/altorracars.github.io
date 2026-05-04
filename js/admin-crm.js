@@ -79,25 +79,103 @@
         return Object.values(contacts);
     }
 
-    // ─── Lead score (MF4.5 placeholder, finalized in next phase) ───
-    function computeScore(c) {
-        var score = 0;
-        // Registered = +20 base
-        if (c.type === 'registered') score += 20;
-        // Comms count contribution (up to 30)
-        score += Math.min(30, (c.comms || []).length * 5);
-        // High-priority comms boost (up to 25)
-        var altaCount = (c.comms || []).filter(function (s) { return s.priority === 'alta'; }).length;
-        score += Math.min(25, altaCount * 8);
-        // Recent activity (up to 15)
+    // ─── Lead score (MF4.5) — multi-factor weighted algorithm ───
+    // Inspired by PlanOK Propeler, normalized to 0-100.
+    // Each factor returns 0-1, then multiplied by its weight, summed.
+    function computeScoreBreakdown(c) {
+        var factors = {};
+        var comms = c.comms || [];
+
+        // 1. Engagement (20%): favoritos + búsquedas + vistos
+        var engagementRaw = (c.favoritos || 0) * 1.5
+            + (c.busquedasGuardadas || 0) * 2
+            + (c.vehiculosVistos || 0) * 0.5;
+        factors.engagement = Math.min(1, engagementRaw / 20);
+
+        // 2. # interacciones (15%): cada comm = 0.15 con cap a 1
+        factors.interactions = Math.min(1, comms.length / 6);
+
+        // 3. Capacidad económica (25%): from financiación payloads
+        var maxCuotaInicial = 0;
+        var maxIngresos = 0;
+        comms.forEach(function (s) {
+            if (s.tipo === 'financiacion' && s.datosExtra) {
+                var c1 = parseInt(String(s.datosExtra.cuotaInicial || '').replace(/[^0-9]/g, ''), 10) || 0;
+                var i1 = parseInt(String(s.datosExtra.ingresos || '').replace(/[^0-9]/g, ''), 10) || 0;
+                if (c1 > maxCuotaInicial) maxCuotaInicial = c1;
+                if (i1 > maxIngresos) maxIngresos = i1;
+            }
+        });
+        // $50M cuota inicial OR $10M ingresos mensuales = max
+        factors.economic = Math.min(1, Math.max(maxCuotaInicial / 50000000, maxIngresos / 10000000));
+
+        // 4. Frecuencia (10%): días con actividad en últimos 30
+        var distinctDays = {};
+        comms.forEach(function (s) {
+            var ts = s.createdAt || s.updatedAt;
+            if (!ts) return;
+            var d = new Date(ts);
+            if ((Date.now() - d.getTime()) > 30 * 86400000) return;
+            distinctDays[d.toISOString().slice(0, 10)] = true;
+        });
+        factors.frequency = Math.min(1, Object.keys(distinctDays).length / 8);
+
+        // 5. Profundidad de interés (15%): docs of kind solicitud or cita = high intent
+        var intentCount = comms.filter(function (s) {
+            return s.kind === 'cita' || s.kind === 'solicitud';
+        }).length;
+        factors.depth = Math.min(1, intentCount / 3);
+
+        // 6. Antiguedad (5%): registered users with > 30 days = max
+        var ageScore = 0;
+        if (c.creadoEn) {
+            var days = (Date.now() - new Date(c.creadoEn).getTime()) / 86400000;
+            ageScore = Math.min(1, days / 60);
+        } else if (comms.length) {
+            var firstComm = comms.reduce(function (acc, s) {
+                var ts = s.createdAt || s.updatedAt;
+                if (!ts) return acc;
+                return !acc || ts < acc ? ts : acc;
+            }, '');
+            if (firstComm) {
+                var days2 = (Date.now() - new Date(firstComm).getTime()) / 86400000;
+                ageScore = Math.min(1, days2 / 60);
+            }
+        }
+        factors.age = ageScore;
+
+        // 7. Recencia (10%): inverse of days since last activity
+        var recency = 0;
         if (c.lastCommAt) {
             var daysAgo = (Date.now() - new Date(c.lastCommAt).getTime()) / 86400000;
-            if (daysAgo < 7) score += 15;
-            else if (daysAgo < 30) score += 8;
+            recency = Math.max(0, 1 - daysAgo / 30);
         }
-        // Favoritos for registered (up to 10)
-        score += Math.min(10, (c.favoritos || 0));
-        return Math.min(100, Math.round(score));
+        factors.recency = recency;
+
+        var weights = {
+            engagement: 0.20,
+            economic: 0.25,
+            interactions: 0.15,
+            depth: 0.15,
+            recency: 0.10,
+            frequency: 0.10,
+            age: 0.05
+        };
+
+        var total = 0;
+        Object.keys(weights).forEach(function (k) {
+            total += factors[k] * weights[k];
+        });
+
+        return {
+            score: Math.round(total * 100),
+            factors: factors,
+            weights: weights
+        };
+    }
+
+    function computeScore(c) {
+        return computeScoreBreakdown(c).score;
     }
 
     function tierOf(score) {
@@ -270,6 +348,7 @@
         renderCRM: renderCRM,
         buildContacts: buildContacts,
         computeScore: computeScore,
+        computeScoreBreakdown: computeScoreBreakdown,
         tierOf: tierOf
     };
 })();

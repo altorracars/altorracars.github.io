@@ -7230,3 +7230,26 @@ html.auth-authenticated #headerUserArea:empty::before {
 @media (prefers-reduced-motion: reduce) {
     .form-spinner { animation-duration: 2s; }
 }
+
+/* MF2.4 — SLA line + WhatsApp CTA in success screen */
+.contact-success-sla {
+    font-size: 0.88rem;
+    color: var(--text-secondary, #6b7280);
+    margin: 4px 0 18px;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.18);
+    padding: 8px 14px;
+    border-radius: 8px;
+    max-width: 460px;
+}
+.contact-success-sla strong { color: #22c55e; }
+.contact-success-btn--whatsapp {
+    background: #25d366;
+    color: #ffffff !important;
+    border-color: #25d366;
+    gap: 6px;
+}
+.contact-success-btn--whatsapp:hover {
+    background: #128c7e;
+    border-color: #128c7e;
+}

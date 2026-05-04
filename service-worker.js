@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504310000'; // MF2.3 — UX loading + offline + anti-dup + spinner
+const CACHE_VERSION = 'v20260504320000'; // MF2.4 — SLA visible + WhatsApp CTA in success screen
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -228,6 +228,41 @@
         };
     }
 
+    /**
+     * MF2.4 — Format SLA for client-facing success screen.
+     * Returns { friendly, isBusinessHours } where friendly is e.g.
+     *   "menos de 30 minutos" / "menos de 2 horas" / "el día de mañana"
+     * Business hours: 8:00 AM - 6:00 PM, Mon-Sat (Colombia).
+     */
+    function formatSLA(slaMs) {
+        var now = new Date();
+        var day = now.getDay(); // 0=Sun, 6=Sat
+        var hour = now.getHours();
+        var isBusinessHours = day !== 0 && hour >= 8 && hour < 18;
+        var minutes = Math.round((slaMs || 0) / 60000);
+
+        var friendly;
+        if (!isBusinessHours) {
+            // Compute next business hour
+            var next = new Date(now);
+            if (day === 0 || hour >= 18) { // Sunday or after-hours
+                // Skip to next Mon-Sat 8AM
+                var addDays = day === 0 ? 1 : 1; // Sun → Mon, otherwise next day
+                if (day === 6 && hour >= 18) addDays = 2; // Sat night → Mon
+                next.setDate(now.getDate() + addDays);
+                next.setHours(8, 0, 0, 0);
+            } else if (hour < 8) {
+                next.setHours(8, 0, 0, 0);
+            }
+            friendly = 'mañana a las ' + next.getHours() + ':00';
+            return { friendly: friendly, isBusinessHours: false, nextHour: next };
+        }
+        if (minutes <= 60) friendly = 'menos de ' + minutes + ' minutos';
+        else if (minutes <= 240) friendly = 'menos de ' + Math.round(minutes / 60) + ' horas';
+        else friendly = 'el día de hoy';
+        return { friendly: friendly, isBusinessHours: true };
+    }
+
     window.AltorraCommSchema = {
         KIND_CITA: KIND_CITA,
         KIND_SOLICITUD: KIND_SOLICITUD,
@@ -241,6 +276,7 @@
         remapEstado: remapEstado,
         isValidStateForKind: isValidStateForKind,
         getDefaultState: getDefaultState,
-        computeMeta: computeMeta
+        computeMeta: computeMeta,
+        formatSLA: formatSLA
     };
 })();

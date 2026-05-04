@@ -457,6 +457,17 @@ class ContactFormManager {
         var ticketShort = ticketId ? ticketId.slice(0, 6).toUpperCase() : '';
         var nextStep = (opts && opts.nextStep) || 'Te contactaremos pronto por correo electrónico y WhatsApp.';
         var isLogged = !!this._currentUser();
+        // MF2.4 — SLA visible from computeMeta result on the doc, default 2h
+        var slaMs = (opts && opts.slaMs) || 2 * 60 * 60 * 1000;
+        var slaInfo = (window.AltorraCommSchema && window.AltorraCommSchema.formatSLA)
+            ? window.AltorraCommSchema.formatSLA(slaMs)
+            : { friendly: 'menos de 2 horas', isBusinessHours: true };
+        var slaText = slaInfo.isBusinessHours
+            ? 'Te respondemos en <strong>' + slaInfo.friendly + '</strong>.'
+            : 'Estamos cerrados ahora. Te respondemos <strong>' + slaInfo.friendly + '</strong>.';
+        // WhatsApp CTA pre-fills with ticket number (no raw data dump)
+        var waText = encodeURIComponent('Hola, mi número de seguimiento es ' + (ticketShort || 'pendiente') + '. Quiero seguir con la solicitud.');
+        var waUrl = 'https://wa.me/573235016747?text=' + waText;
 
         // Cache original container HTML so we can restore on next open
         if (!container._originalContent) container._originalContent = container.innerHTML;
@@ -473,9 +484,14 @@ class ContactFormManager {
                 '<h2 class="contact-success-title">' + this._escapeHtml(title) + '</h2>' +
                 (nombre ? '<p class="contact-success-subtitle">Gracias, ' + this._escapeHtml(nombre.split(' ')[0]) + '.</p>' : '') +
                 '<p class="contact-success-message">' + this._escapeHtml(nextStep) + '</p>' +
+                '<p class="contact-success-sla">' + slaText + '</p>' +
                 (ticketShort ? '<div class="contact-success-ticket">Tu nº de seguimiento: <strong>' + this._escapeHtml(ticketShort) + '</strong></div>' : '') +
                 '<div class="contact-success-actions">' +
                     '<button type="button" class="contact-success-btn contact-success-btn--primary" data-action="close-success">Entendido</button>' +
+                    '<a href="' + waUrl + '" target="_blank" rel="noopener" class="contact-success-btn contact-success-btn--whatsapp">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>' +
+                        ' WhatsApp ahora' +
+                    '</a>' +
                     (isLogged ? '<a href="perfil.html#mis-solicitudes" class="contact-success-btn contact-success-btn--ghost">Ver mis solicitudes</a>' : '') +
                 '</div>' +
             '</div>';
@@ -549,10 +565,14 @@ class ContactFormManager {
                 observaciones: '',
                 createdAt: new Date().toISOString()
             }, identity, src))).then(function (ref) {
+                var meta = (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta)
+                    ? window.AltorraCommSchema.computeMeta({ kind: 'solicitud', tipo: 'consignacion_venta' })
+                    : { slaMs: 2 * 60 * 60 * 1000 };
                 self._renderSuccess('vende-auto', {
                     title: '¡Tu solicitud fue enviada!',
                     nombre: nombre,
                     ticketId: ref.id,
+                    slaMs: meta.slaMs,
                     nextStep: 'Recibimos los datos de tu vehículo. Un asesor te contactará pronto por correo y WhatsApp para coordinar la valuación.'
                 });
             }).catch(function (err) {
@@ -609,10 +629,17 @@ class ContactFormManager {
                 observaciones: '',
                 createdAt: new Date().toISOString()
             }, identity, src))).then(function (ref) {
+                var meta = (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta)
+                    ? window.AltorraCommSchema.computeMeta({
+                        kind: 'solicitud', tipo: 'financiacion',
+                        datosExtra: { precioVehiculo: precioVehiculo, cuotaInicial: cuotaInicial }
+                    })
+                    : { slaMs: 2 * 60 * 60 * 1000 };
                 self._renderSuccess('financiacion', {
                     title: '¡Solicitud de financiación recibida!',
                     nombre: nombre,
                     ticketId: ref.id,
+                    slaMs: meta.slaMs,
                     nextStep: 'Un asesor revisará tu información y te contactará pronto por correo y WhatsApp con la propuesta de financiación.'
                 });
             }).catch(function (err) {

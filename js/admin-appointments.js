@@ -55,6 +55,28 @@
         return 'https://wa.me/' + prefix + phone + '?text=' + encodeURIComponent(message);
     }
 
+    // ========== MF3.1 — KIND TABS ==========
+    // Event delegation on the tab strip (each tab has data-kind-filter)
+    var commKindTabsEl = document.querySelector('.comm-kind-tabs');
+    if (commKindTabsEl) {
+        commKindTabsEl.addEventListener('click', function (e) {
+            var btn = e.target.closest('.comm-kind-tab');
+            if (!btn) return;
+            var kind = btn.getAttribute('data-kind-filter');
+            if (!kind) return;
+            // Update active state
+            commKindTabsEl.querySelectorAll('.comm-kind-tab').forEach(function (b) {
+                var on = b === btn;
+                b.classList.toggle('active', on);
+                b.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            AP._kindFilter = kind;
+            // Reset pagination since filter changed
+            if (AP._pagination && AP._pagination.appointments) AP._pagination.appointments.page = 1;
+            renderAppointmentsTable();
+        });
+    }
+
     // ========== LOAD SOLICITUDES ==========
     // Admin notification baseline (Pillar F): set of doc IDs seen in
     // the first snapshot so we don't spam the bell on every page load.
@@ -186,6 +208,38 @@
     }
 
     // ========== SOLICITUDES TABLE ==========
+    // MF3.1 — kind filter applied first, then existing per-state filters
+    AP._kindFilter = AP._kindFilter || 'all';
+    function getKindOf(a) {
+        if (a && a.kind) return a.kind;
+        // Fallback inference for legacy docs not yet migrated
+        if (window.AltorraCommSchema && window.AltorraCommSchema.inferKind) {
+            return window.AltorraCommSchema.inferKind(a);
+        }
+        return a && a.requiereCita ? 'cita' : 'solicitud';
+    }
+
+    function updateKindBadges() {
+        var counts = { all: 0, cita: 0, solicitud: 0, lead: 0 };
+        // Count "pendientes/nuevos" (the unhandled state per kind) only
+        AP.appointments.forEach(function (a) {
+            var k = getKindOf(a);
+            var unhandled = (k === 'lead' && a.estado === 'nuevo')
+                || (k !== 'lead' && a.estado === 'pendiente');
+            if (unhandled) {
+                counts[k]++;
+                counts.all++;
+            }
+        });
+        ['All', 'Cita', 'Solicitud', 'Lead'].forEach(function (key) {
+            var el = $('commKindBadge' + key);
+            if (!el) return;
+            var n = counts[key.toLowerCase()];
+            el.textContent = n > 0 ? String(n) : '';
+            el.classList.toggle('is-zero', n === 0);
+        });
+    }
+
     function renderAppointmentsTable() {
         var body = $('appointmentsBody');
         if (!body) return;
@@ -198,7 +252,14 @@
         var dateTo = dateToEl ? dateToEl.value : '';
         var searchQ = appointmentSearchEl ? appointmentSearchEl.value.trim().toLowerCase() : '';
 
+        // Update tab counters from the unfiltered base set
+        updateKindBadges();
+
         var filtered = AP.appointments.slice();
+        // MF3.1 — kind filter applied first
+        if (AP._kindFilter && AP._kindFilter !== 'all') {
+            filtered = filtered.filter(function (a) { return getKindOf(a) === AP._kindFilter; });
+        }
         if (filter !== 'all') filtered = filtered.filter(function(a) { return a.estado === filter; });
         if (tipoF !== 'all') filtered = filtered.filter(function(a) { return (a.tipo || a.tipoCita || '') === tipoF; });
         if (origenF !== 'all') filtered = filtered.filter(function(a) { return (a.origen || '') === origenF; });

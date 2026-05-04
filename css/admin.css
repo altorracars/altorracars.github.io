@@ -2541,3 +2541,82 @@ table th:focus-visible,
     outline: 2px solid var(--admin-gold);
     outline-offset: -2px;
 }
+
+/* ================================================================
+   MF3.1 — Comunicaciones kind tabs (All / Citas / Solicitudes / Leads)
+   ================================================================ */
+.comm-kind-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--admin-card);
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.comm-kind-tab {
+    flex: 1;
+    min-width: 130px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 14px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    color: var(--admin-text-muted);
+    font-weight: 600;
+    font-size: 0.86rem;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    white-space: nowrap;
+}
+.comm-kind-tab:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--admin-text);
+}
+.comm-kind-tab.active {
+    background: rgba(184, 150, 88, 0.12);
+    color: var(--admin-gold);
+    border-color: rgba(184, 150, 88, 0.32);
+}
+.comm-kind-tab i,
+.comm-kind-tab svg {
+    flex-shrink: 0;
+}
+.comm-kind-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 7px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--admin-text-muted);
+    line-height: 1;
+}
+.comm-kind-tab.active .comm-kind-badge {
+    background: rgba(184, 150, 88, 0.22);
+    color: var(--admin-gold);
+}
+.comm-kind-badge:empty,
+.comm-kind-badge.is-zero {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .comm-kind-tab {
+        min-width: 0;
+        flex-basis: calc(50% - 4px);
+        font-size: 0.78rem;
+        padding: 8px 10px;
+    }
+    .comm-kind-tab span:not(.comm-kind-badge) {
+        font-size: 0.78rem;
+    }
+}

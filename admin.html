@@ -179,7 +179,7 @@
         <div class="nav-category">Comercial</div>
         <button class="nav-item" data-section="appointments">
             <i data-lucide="inbox"></i>
-            <span>Solicitudes</span>
+            <span>Comunicaciones</span>
             <span class="nav-badge" id="navBadgeAppointments"></span>
         </button>
         <button class="nav-item" data-section="dealers">
@@ -522,16 +522,16 @@
         </div>
 
         <!-- SETTINGS -->
-        <!-- APPOINTMENTS / CITAS -->
+        <!-- APPOINTMENTS / CITAS — renamed to Comunicaciones in MF3.1 -->
         <div id="sec-appointments" class="section">
             <div class="page-header">
                 <div>
-                    <h1>Centro de Solicitudes</h1>
-                    <p class="page-subtitle">Gestiona citas, consultas, financiaciones, consignaciones y todas las solicitudes</p>
+                    <h1>Centro de Comunicaciones</h1>
+                    <p class="page-subtitle">Citas, solicitudes y leads — todas las interacciones con clientes en un solo lugar</p>
                 </div>
                 <button class="btn btn-primary" id="btnCreateInternalAppt">
                     <i data-lucide="plus" width="16" height="16"></i>
-                    Nueva Solicitud Interna
+                    Nueva Comunicación
                 </button>
             </div>
 
@@ -609,9 +609,33 @@
             <!-- Appointment Requests Management -->
             <div class="page-header" style="margin-top:1.5rem;">
                 <div>
-                    <h2 style="font-size:1.25rem;">Solicitudes</h2>
-                    <p class="page-subtitle">Todas las solicitudes de clientes — citas, consultas, financiaciones, consignaciones</p>
+                    <h2 style="font-size:1.25rem;">Bandeja de comunicaciones</h2>
+                    <p class="page-subtitle">Todas las interacciones con clientes — usa los tabs para filtrar por tipo</p>
                 </div>
+            </div>
+
+            <!-- MF3.1 — Kind tabs (All / Citas / Solicitudes / Leads) -->
+            <div class="comm-kind-tabs" role="tablist" aria-label="Filtrar comunicaciones por tipo">
+                <button class="comm-kind-tab active" data-kind-filter="all" role="tab" aria-selected="true">
+                    <i data-lucide="layers" width="15" height="15"></i>
+                    <span>Todas</span>
+                    <span class="comm-kind-badge" id="commKindBadgeAll">0</span>
+                </button>
+                <button class="comm-kind-tab" data-kind-filter="cita" role="tab" aria-selected="false">
+                    <i data-lucide="calendar-check-2" width="15" height="15"></i>
+                    <span>Citas</span>
+                    <span class="comm-kind-badge" id="commKindBadgeCita">0</span>
+                </button>
+                <button class="comm-kind-tab" data-kind-filter="solicitud" role="tab" aria-selected="false">
+                    <i data-lucide="file-text" width="15" height="15"></i>
+                    <span>Solicitudes</span>
+                    <span class="comm-kind-badge" id="commKindBadgeSolicitud">0</span>
+                </button>
+                <button class="comm-kind-tab" data-kind-filter="lead" role="tab" aria-selected="false">
+                    <i data-lucide="message-circle" width="15" height="15"></i>
+                    <span>Leads</span>
+                    <span class="comm-kind-badge" id="commKindBadgeLead">0</span>
+                </button>
             </div>
             <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.5rem;">
                 <select id="appointmentFilter" class="form-select" style="min-width:150px;">

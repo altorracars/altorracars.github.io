@@ -3758,6 +3758,46 @@ Todos `.catch(function() {})` — best-effort. localStorage es source of truth l
 
 **Archivos modificados**: `js/comm-schema.js` (nuevo), `js/admin-sync.js`, `js/admin-appointments.js`, `js/contact-forms.js`, `js/contact.js`, `js/citas.js`, `simulador-credito.html`, `admin.html`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase MF3.1 — Solicitudes → Comunicaciones + 3 sub-tabs ✓ COMPLETADA (2026-05-04)
+
+**Cambios visibles**:
+
+1. **Sidebar**: el item "Solicitudes" se renombra a **"Comunicaciones"** (icono `inbox` se mantiene). El badge `navBadgeAppointments` ahora cuenta solo los items "unhandled" (pendientes/nuevos) sumados de los 3 kinds.
+
+2. **Header de la seccion**:
+   - H1: "Centro de Solicitudes" → "Centro de Comunicaciones"
+   - Subtitle: "Citas, solicitudes y leads — todas las interacciones con clientes en un solo lugar"
+   - CTA: "Nueva Solicitud Interna" → "Nueva Comunicación"
+
+3. **Nueva tab strip** (`.comm-kind-tabs`) con 4 tabs:
+   - **Todas** (icono `layers`) — sin filtro de kind
+   - **Citas** (icono `calendar-check-2`) — filtra `kind == 'cita'`
+   - **Solicitudes** (icono `file-text`) — filtra `kind == 'solicitud'`
+   - **Leads** (icono `message-circle`) — filtra `kind == 'lead'`
+   - Cada tab tiene un badge dorado con el contador de "unhandled" para ese kind (pendientes / nuevos)
+   - Active state visual: background dorado + border dorado
+
+4. **Implementacion**:
+   - `AP._kindFilter` (default `'all'`) controla el filtro activo
+   - `getKindOf(a)` lee `a.kind` o lo infiere via `AltorraCommSchema.inferKind(a)` para legacy docs aun no migrados (ya cubiertos por MF1.2)
+   - `updateKindBadges()` recalcula los contadores en cada `renderAppointmentsTable`
+   - Click en tab → actualiza active state + reset paginacion + re-render
+
+5. **Compatibilidad**: el filtro de kind se aplica ANTES de los filtros existentes (estado, tipo, origen). Los filtros viejos siguen funcionando dentro del kind activo.
+
+**Pasos para probar**:
+1. Login admin → sidebar dice **"Comunicaciones"** (no "Solicitudes")
+2. Click en Comunicaciones → ver header "Centro de Comunicaciones" + 4 tabs
+3. Tab "Todas" muestra todos los docs (default)
+4. Click "Citas" → solo aparecen docs con `kind: 'cita'` (test drives, llamadas agendadas)
+5. Click "Solicitudes" → solo aparecen docs con `kind: 'solicitud'` (financiacion, consignacion, peritaje)
+6. Click "Leads" → solo aparecen docs con `kind: 'lead'` (consulta general)
+7. Badges muestran cantidad de pendientes/nuevos por kind
+8. Filtros existentes (estado, tipo, origen) siguen funcionando dentro del kind activo
+9. Mobile: tabs se ven en grid 2x2 (responsive)
+
+**Archivos modificados**: `admin.html`, `js/admin-appointments.js`, `css/admin.css`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

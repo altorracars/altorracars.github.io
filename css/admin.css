@@ -3556,3 +3556,120 @@ table th:focus-visible,
     font-size: 0.86rem;
 }
 .quote-preview-row strong { color: var(--admin-text); }
+
+/* ================================================================
+   B.1 (mega-plan v4) — Sidebar reorganized into collapsible groups
+   ================================================================ */
+
+/* Group container */
+.nav-group {
+    margin-top: var(--space-2);
+}
+.nav-group:first-of-type {
+    margin-top: var(--space-3);
+}
+
+/* Group header (clickable, toggles expanded state) */
+.nav-group-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: background var(--duration-fast) var(--ease-snap),
+                color var(--duration-fast) var(--ease-snap);
+}
+.nav-group-header:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+}
+.nav-group-header:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
+}
+.nav-group-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    opacity: 0.65;
+}
+.nav-group-label {
+    flex: 1;
+    text-align: left;
+}
+.nav-group-chevron {
+    width: 14px;
+    height: 14px;
+    transition: transform var(--duration-normal) var(--ease-snap);
+    flex-shrink: 0;
+}
+.nav-group-header[aria-expanded="false"] .nav-group-chevron {
+    transform: rotate(-90deg);
+}
+
+/* Group items container — collapsible */
+.nav-group-items {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 800px;
+    transition: max-height var(--duration-normal) var(--ease-snap),
+                opacity var(--duration-fast) var(--ease-snap);
+    padding-left: var(--space-2);
+}
+.nav-group-header[aria-expanded="false"] + .nav-group-items {
+    max-height: 0;
+    opacity: 0;
+}
+
+/* Workspace color accents — left border on hover/active per group */
+.nav-group[data-workspace-color="gold"]   { --ws-accent: var(--color-brand-500); }
+.nav-group[data-workspace-color="green"]  { --ws-accent: var(--color-success-500); }
+.nav-group[data-workspace-color="blue"]   { --ws-accent: var(--color-info-500); }
+.nav-group[data-workspace-color="violet"] { --ws-accent: var(--color-purple-500); }
+.nav-group[data-workspace-color="orange"] { --ws-accent: #fb923c; }
+.nav-group[data-workspace-color="cyan"]   { --ws-accent: var(--color-cyan-500); }
+.nav-group[data-workspace-color="neutral"]{ --ws-accent: var(--text-tertiary); }
+
+.nav-group-header:hover .nav-group-icon {
+    color: var(--ws-accent);
+    opacity: 1;
+}
+.nav-group .nav-item.active {
+    border-left: 2px solid var(--ws-accent);
+}
+
+/* Compact spacing override for items inside groups */
+.nav-group-items .nav-item {
+    padding: 8px 12px 8px 14px;
+    font-size: var(--font-size-sm);
+    margin: 1px 0;
+}
+.nav-group-items .nav-item i {
+    width: 16px;
+    height: 16px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .nav-group-items {
+        padding-left: var(--space-1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-group-chevron,
+    .nav-group-items {
+        transition: none;
+    }
+}

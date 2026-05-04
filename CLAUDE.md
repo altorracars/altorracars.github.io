@@ -4364,6 +4364,85 @@ Estado del Design System al cerrar el bloque T:
 
 **Próximo bloque: B — Sidebar reorganizado + Workspaces**
 
+---
+
+### Microfase B.1 — Sidebar reorganizado en 7 grupos collapsables ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: el sidebar tenía 16 ítems planos sin agrupación. El admin se sentía disperso. B.1 agrupa por dominio en 7 grupos (8º Calendario en bloque D), con expand/collapse persistente, keyboard navigation, y color accents por workspace.
+
+**Estructura nueva**:
+
+```
+🏠 Inicio                      [standalone]
+🚗 Inventario [gold]
+   ├ Vehículos
+   ├ Marcas
+   ├ Aliados
+   ├ Banners
+   └ Reseñas
+💬 Comunicaciones [green]
+   ├ Bandeja  (era 'appointments')
+   ├ Mensajes vehículo  (era 'inbox')
+   └ Leads (legacy)  (era 'lists')
+👥 CRM [blue]
+   └ Contactos 360°
+📅 Calendario [violet]          [Pronto — bloque D]
+   └ Vista calendario           [disabled placeholder]
+⚡ Automatización [orange]
+   ├ Reglas
+   └ Plantillas
+📊 Reportes [cyan]              [Pronto — bloque O]
+   └ Dashboard ejecutivo        [disabled placeholder]
+⚙️ Configuración [neutral]
+   ├ Usuarios
+   ├ Auditoría
+   └ Ajustes
+```
+
+**Cambios en `admin.html`**: ~80 líneas de sidebar viejas reemplazadas por estructura de grupos.
+
+**Cada grupo**:
+- `<div class="nav-group" data-group="xxx" data-workspace-color="yyy">`
+- Header `<button class="nav-group-header">` con icono + label + chevron + `aria-expanded`/`aria-controls`
+- Items `<div class="nav-group-items">` con los `<button class="nav-item">` dentro
+
+**Comportamiento**:
+- Click en header → expand/collapse con animación max-height + chevron rotation
+- Estado persistido en `localStorage.altorra-sidebar-<group>` per-group ('0'|'1')
+- Auto-expande el grupo del item activo al cargar (ej: si la sección actual es "vehicles", el grupo Inventario se abre)
+- MutationObserver: cuando otro código pone `.active` en un nav-item, el grupo padre se auto-expande
+
+**Keyboard nav**:
+- Arrow Up/Down: navega entre items focusables (incluye headers)
+- Home/End: salta al primer/último
+- Enter/Space en header: toggle (default button behavior)
+
+**Workspace color accents**:
+- 7 colores semánticos: gold (Inventario), green (Comms), blue (CRM), violet (Calendar), orange (Automation), cyan (Reports), neutral (Config)
+- Hover sobre group icon → adopta el color del workspace
+- Item activo dentro del grupo → border-left de 2px del color
+- Esto va a tomar más prominencia en B.5 cuando agreguemos branding completo
+
+**Mobile**: padding reducido en items para preservar espacio. Grupos siguen siendo collapsables.
+
+**Diseño (D)**:
+- Headers en uppercase con letter-spacing wide (look "label" no "menu item")
+- Chevron 90° → 0° con `--ease-snap`
+- Items dentro indented 14px (vs 12px antes) para crear jerarquía visual clara
+- Disabled placeholders con opacity 0.5 + tooltip "Pronto"
+
+**Migración (M)**: cero cambios destructivos en data-section. Las secciones existentes (`vehicles`, `appointments`, `crm`, etc.) siguen funcionando idéntico — solo cambia su agrupación visual. B.3 agregará aliases legacy para secciones renombradas.
+
+**Archivos**: `admin.html`, `css/admin.css`, `js/admin-sidebar.js` (new), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Login admin → sidebar muestra 7 grupos colapsables (4 abiertos, 3 cerrados por default)
+2. Click en header de "Comunicaciones" → colapsa con animación
+3. Recargar la página → estado persiste
+4. Tab por la sidebar → keyboard nav funciona, focus rings visibles
+5. Click en "Vehículos" → grupo Inventario se queda abierto, item se marca activo, border-left dorado
+6. DevTools → en consola: `AltorraSidebar.toggle('crm')` → grupo CRM se cierra
+
 
 
 ---

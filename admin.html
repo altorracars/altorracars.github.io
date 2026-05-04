@@ -160,84 +160,148 @@
             <small>Panel Admin</small>
         </div>
 
-        <!-- Dashboard (standalone) -->
+        <!-- B.1 (mega-plan v4) — Sidebar reorganizado en 7 grupos collapsables (8º Calendario en bloque D) -->
+
+        <!-- 🏠 INICIO (standalone, no group) -->
         <button class="nav-item active" data-section="dashboard">
             <i data-lucide="layout-dashboard"></i>
-            Dashboard
+            <span>Inicio</span>
         </button>
 
-        <!-- INVENTARIO -->
-        <div class="nav-category">Inventario</div>
-        <button class="nav-item" data-section="vehicles">
-            <i data-lucide="car"></i>
-            <span>Vehiculos</span>
-            <span class="nav-badge" id="navBadgeVehicles"></span>
-        </button>
-        <button class="nav-item" data-section="brands">
-            <i data-lucide="tag"></i>
-            <span>Marcas</span>
-            <span class="nav-badge" id="navBadgeBrands"></span>
-        </button>
-        <button class="nav-item" data-section="banners">
-            <i data-lucide="image"></i>
-            <span>Banners</span>
-            <span class="nav-badge" id="navBadgeBanners"></span>
-        </button>
+        <!-- 🚗 INVENTARIO -->
+        <div class="nav-group" data-group="inventario" data-workspace-color="gold">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-inventario">
+                <i data-lucide="car" class="nav-group-icon"></i>
+                <span class="nav-group-label">Inventario</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-inventario">
+                <button class="nav-item" data-section="vehicles">
+                    <i data-lucide="car"></i><span>Vehículos</span>
+                    <span class="nav-badge" id="navBadgeVehicles"></span>
+                </button>
+                <button class="nav-item" data-section="brands">
+                    <i data-lucide="tag"></i><span>Marcas</span>
+                    <span class="nav-badge" id="navBadgeBrands"></span>
+                </button>
+                <button class="nav-item" data-section="dealers">
+                    <i data-lucide="handshake"></i><span>Aliados</span>
+                </button>
+                <button class="nav-item" data-section="banners">
+                    <i data-lucide="image"></i><span>Banners</span>
+                    <span class="nav-badge" id="navBadgeBanners"></span>
+                </button>
+                <button class="nav-item" data-section="reviews">
+                    <i data-lucide="star"></i><span>Reseñas</span>
+                    <span class="nav-badge" id="navBadgeReviews"></span>
+                </button>
+            </div>
+        </div>
 
-        <!-- COMERCIAL -->
-        <div class="nav-category">Comercial</div>
-        <button class="nav-item" data-section="appointments">
-            <i data-lucide="inbox"></i>
-            <span>Comunicaciones</span>
-            <span class="nav-badge" id="navBadgeAppointments"></span>
-        </button>
-        <button class="nav-item" data-section="crm">
-            <i data-lucide="users-round"></i>
-            <span>CRM</span>
-            <span class="nav-badge" id="navBadgeCrm"></span>
-        </button>
-        <button class="nav-item" data-section="inbox">
-            <i data-lucide="message-square-text"></i>
-            <span>Inbox</span>
-            <span class="nav-badge" id="navBadgeInbox"></span>
-        </button>
-        <button class="nav-item" data-section="dealers">
-            <i data-lucide="handshake"></i>
-            <span>Aliados</span>
-        </button>
-        <button class="nav-item" data-section="reviews">
-            <i data-lucide="star"></i>
-            <span>Reseñas</span>
-            <span class="nav-badge" id="navBadgeReviews"></span>
-        </button>
-        <button class="nav-item" data-section="lists">
-            <i data-lucide="clipboard-list"></i>
-            <span>Listas</span>
-        </button>
+        <!-- 💬 COMUNICACIONES -->
+        <div class="nav-group" data-group="comunicaciones" data-workspace-color="green">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-comunicaciones">
+                <i data-lucide="messages-square" class="nav-group-icon"></i>
+                <span class="nav-group-label">Comunicaciones</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-comunicaciones">
+                <button class="nav-item" data-section="appointments">
+                    <i data-lucide="inbox"></i><span>Bandeja</span>
+                    <span class="nav-badge" id="navBadgeAppointments"></span>
+                </button>
+                <button class="nav-item" data-section="inbox">
+                    <i data-lucide="message-square-text"></i><span>Mensajes vehículo</span>
+                    <span class="nav-badge" id="navBadgeInbox"></span>
+                </button>
+                <button class="nav-item" data-section="lists">
+                    <i data-lucide="sparkles"></i><span>Leads (legacy)</span>
+                </button>
+            </div>
+        </div>
 
-        <!-- SISTEMA -->
-        <div class="nav-category">Sistema</div>
-        <button class="nav-item" data-section="automation">
-            <i data-lucide="zap"></i>
-            <span>Automatización</span>
-        </button>
-        <button class="nav-item" data-section="templates">
-            <i data-lucide="file-edit"></i>
-            <span>Plantillas</span>
-        </button>
-        <button class="nav-item" data-section="audit">
-            <i data-lucide="scroll-text"></i>
-            <span>Auditoria</span>
-            <span class="nav-badge" id="navBadgeAudit"></span>
-        </button>
-        <button class="nav-item" data-section="users">
-            <i data-lucide="users"></i>
-            Usuarios
-        </button>
-        <button class="nav-item" data-section="settings">
-            <i data-lucide="settings"></i>
-            Configuracion
-        </button>
+        <!-- 👥 CRM -->
+        <div class="nav-group" data-group="crm" data-workspace-color="blue">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-crm">
+                <i data-lucide="users-round" class="nav-group-icon"></i>
+                <span class="nav-group-label">CRM</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-crm">
+                <button class="nav-item" data-section="crm">
+                    <i data-lucide="users-round"></i><span>Contactos 360°</span>
+                    <span class="nav-badge" id="navBadgeCrm"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 📅 CALENDARIO (placeholder — se llena en bloque D) -->
+        <div class="nav-group" data-group="calendario" data-workspace-color="violet">
+            <button class="nav-group-header" aria-expanded="false" aria-controls="nav-group-calendario">
+                <i data-lucide="calendar" class="nav-group-icon"></i>
+                <span class="nav-group-label">Calendario</span>
+                <span class="alt-badge alt-badge--ai" style="margin-left:auto;font-size:0.6rem;">Pronto</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-calendario">
+                <button class="nav-item" data-section="calendar-disabled" disabled style="opacity:0.5;cursor:not-allowed;">
+                    <i data-lucide="calendar-clock"></i><span>Vista calendario</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ⚡ AUTOMATIZACIÓN -->
+        <div class="nav-group" data-group="automatizacion" data-workspace-color="orange">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-automatizacion">
+                <i data-lucide="zap" class="nav-group-icon"></i>
+                <span class="nav-group-label">Automatización</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-automatizacion">
+                <button class="nav-item" data-section="automation">
+                    <i data-lucide="zap"></i><span>Reglas</span>
+                </button>
+                <button class="nav-item" data-section="templates">
+                    <i data-lucide="file-edit"></i><span>Plantillas</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 📊 REPORTES (placeholder — se llena en bloque O) -->
+        <div class="nav-group" data-group="reportes" data-workspace-color="cyan">
+            <button class="nav-group-header" aria-expanded="false" aria-controls="nav-group-reportes">
+                <i data-lucide="bar-chart-3" class="nav-group-icon"></i>
+                <span class="nav-group-label">Reportes</span>
+                <span class="alt-badge alt-badge--ai" style="margin-left:auto;font-size:0.6rem;">Pronto</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-reportes">
+                <button class="nav-item" data-section="reports-disabled" disabled style="opacity:0.5;cursor:not-allowed;">
+                    <i data-lucide="line-chart"></i><span>Dashboard ejecutivo</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ⚙️ CONFIGURACIÓN -->
+        <div class="nav-group" data-group="configuracion" data-workspace-color="neutral">
+            <button class="nav-group-header" aria-expanded="false" aria-controls="nav-group-configuracion">
+                <i data-lucide="settings" class="nav-group-icon"></i>
+                <span class="nav-group-label">Configuración</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-configuracion">
+                <button class="nav-item" data-section="users">
+                    <i data-lucide="users"></i><span>Usuarios</span>
+                </button>
+                <button class="nav-item" data-section="audit">
+                    <i data-lucide="scroll-text"></i><span>Auditoría</span>
+                    <span class="nav-badge" id="navBadgeAudit"></span>
+                </button>
+                <button class="nav-item" data-section="settings">
+                    <i data-lucide="settings"></i><span>Ajustes</span>
+                </button>
+            </div>
+        </div>
         <!-- F7.3: Ver sitio -->
         <a class="nav-item" href="/" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
             <i data-lucide="external-link"></i>
@@ -2143,6 +2207,7 @@
 <script src="js/comm-schema.js" defer></script>
 <script src="js/theme-switcher.js" defer></script>
 <script src="js/icons.js" defer></script>
+<script src="js/admin-sidebar.js" defer></script>
 <script src="js/admin-state.js" defer></script>
 <script src="js/admin-table-utils.js" defer></script>
 <script src="js/admin-auth.js" defer></script>

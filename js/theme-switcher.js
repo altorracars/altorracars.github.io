@@ -98,6 +98,39 @@
         applyTheme(current === 'dark' ? 'light' : 'dark');
     }
 
+    /**
+     * T.8 — High-contrast mode toggle (separate from light/dark)
+     * Toggles between current normal theme and high-contrast.
+     * Remembers the previous theme so toggling off restores it.
+     */
+    var _preHighContrastTheme = null;
+    function toggleHighContrast() {
+        var current = getCurrent();
+        if (current === 'high-contrast') {
+            applyTheme(_preHighContrastTheme || 'dark');
+            _preHighContrastTheme = null;
+        } else {
+            _preHighContrastTheme = current;
+            applyTheme('high-contrast');
+        }
+    }
+    function isHighContrast() {
+        return getCurrent() === 'high-contrast';
+    }
+    function bindHighContrastToggle(el) {
+        if (!el) return;
+        el.addEventListener('click', toggleHighContrast);
+        var update = function () {
+            var on = isHighContrast();
+            el.setAttribute('aria-pressed', on ? 'true' : 'false');
+            el.setAttribute('data-tooltip', on
+                ? 'Desactivar alto contraste'
+                : 'Activar alto contraste (WCAG AAA)');
+        };
+        update();
+        listeners.push(update);
+    }
+
     function bindToggle(el) {
         if (!el) return;
         el.addEventListener('click', cycleTheme);
@@ -141,12 +174,17 @@
         bindToggle: bindToggle,
         onChange: onChange,
         syncFromUser: syncFromUser,
+        // T.8 high-contrast separate toggle
+        toggleHighContrast: toggleHighContrast,
+        isHighContrast: isHighContrast,
+        bindHighContrastToggle: bindHighContrastToggle,
         VALID: VALID_THEMES
     };
 
     // Auto-bind any element with data-altorra-theme-toggle
     function autoBind() {
         document.querySelectorAll('[data-altorra-theme-toggle]').forEach(bindToggle);
+        document.querySelectorAll('[data-altorra-contrast-toggle]').forEach(bindHighContrastToggle);
     }
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', autoBind);

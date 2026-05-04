@@ -4289,6 +4289,81 @@ SEMANA 12: P + buffer + QA + estabilización
 3. Crear un elemento con `<i data-lucide="bot"></i>` y appendChild al body → MutationObserver auto-refresca, no hay que llamar nada
 4. `AltorraIcons.svg('check')` → string SVG listo para innerHTML
 
+---
+
+### Microfase T.8 — High-contrast mode WCAG AAA ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: WCAG AAA exige contrast ratio 7:1 mínimo (vs AA's 4.5:1). El tema dark default cumple AA. T.8 agrega un modo "alto contraste" para usuarios con baja visión, presbiosis, deuteranopía, o entornos con luz solar fuerte (Cartagena).
+
+**Cambios en `tokens.css`** ([data-theme="high-contrast"]):
+
+| Token | Valor | Ratio vs `--bg-base: #000000` |
+|---|---|---|
+| `--text-primary: #ffffff` | blanco puro | **21:1** ✅ AAA |
+| `--text-secondary: #ffffff` | blanco puro (sin grises) | **21:1** ✅ AAA |
+| `--text-tertiary: #e5e5e5` | gris claro | **17:1** ✅ AAA |
+| `--text-disabled: #a0a0a0` | gris medio | **7.5:1** ✅ AAA |
+| `--brand-primary: #ffd84d` | dorado alta luminancia | **14.5:1** ✅ AAA |
+| `--status-success: #4ade80` | verde brillante | **11:1** ✅ AAA |
+| `--status-warning: #facc15` | amarillo | **14:1** ✅ AAA |
+| `--status-danger: #ff6b6b` | rojo coral | **8:1** ✅ AAA |
+| `--status-info: #60a5fa` | azul claro | **7.5:1** ✅ AAA |
+| `--accent-ai: #c084fc` | magenta | **7.6:1** ✅ AAA |
+
+**Cambios estructurales en high-contrast**:
+- Sombras (`--shadow-md` etc.) → reemplazadas por **bordes visibles** (`0 0 0 2px var(--border-strong)`) porque las sombras fallan en AAA — no aportan contraste suficiente para usuarios que no pueden percibirlas
+- Bordes default tomar valor blanco puro (no rgba semi-transparente)
+- Backgrounds de status tienen alpha 0.20 (más visibles)
+- `--shadow-focus-ring`: 4px gold + 2px black outer (doble ring para visibilidad extrema)
+- `[data-theme="high-contrast"] a` → `text-decoration: underline` forzado (links discoverable sin depender solo del color)
+- `*:focus-visible` → `outline: 3px solid` con offset (no shadow ring — outline es más respetado por UAs)
+- Gradientes brand → solid color (gradients pueden reducir contraste percibido)
+
+**Auto-detección**:
+- `@media (prefers-contrast: more)` aplica overrides parciales si el OS lo pide Y el usuario no tiene tema explícito
+- En Mac: System Settings → Display → "Increase contrast"
+- En Windows: Settings → Accessibility → "Contrast themes"
+
+**JS extension** (`js/theme-switcher.js`):
+- `AltorraTheme.toggleHighContrast()` — alterna entre tema actual ↔ high-contrast (recuerda el previo)
+- `AltorraTheme.isHighContrast()` — query
+- `AltorraTheme.bindHighContrastToggle(el)` — auto-bind con `aria-pressed` + tooltip dinámico
+- Auto-bind a `[data-altorra-contrast-toggle]`
+
+**UI** (admin header): nuevo botón con icono `contrast` separado del theme toggle. `aria-pressed` indica estado on/off.
+
+**Diseño (D)**:
+- Toggle separado del light/dark — high-contrast es accessibility, no preference estética
+- Icon `contrast` (mitad luna mitad sol) semánticamente claro
+- Tooltip dinámico: "Activar alto contraste (WCAG AAA)" / "Desactivar alto contraste"
+
+**Migración (M)**: ningún breaking change. Tema dark/light siguen funcionando idéntico. High-contrast solo aplica si el usuario lo pide explícitamente o el OS lo solicita y no hay otra preferencia.
+
+**Archivos**: `css/tokens.css`, `js/theme-switcher.js`, `admin.html`.
+
+**Pasos para probar**:
+1. Click el botón `contrast` en el header → toda la UI cambia a black/white con bordes blancos
+2. DevTools → Lighthouse → Accessibility → ratio de contraste = AAA en todo
+3. Tab por la página → outlines amarillos extra-visibles
+4. Click el botón otra vez → vuelve al tema previo
+5. Mac: System Prefs → Display → Increase Contrast (sin elegir tema explícito en la app) → high-contrast activa solo
+
+---
+
+## ✓ BLOQUE T COMPLETADO (8/8 microfases)
+
+Estado del Design System al cerrar el bloque T:
+- ✅ T.1 — Design Tokens (10 categorías, ~150 variables)
+- ✅ T.2 — Component Library (12 core components con variantes)
+- ✅ T.3 — Storybook lite en `admin/_components.html`
+- ✅ T.4 — Light/Dark toggle real con persistencia 3-layer
+- ✅ T.5 — Animation system (utility classes + stagger + view-transitions)
+- ⏸️ T.6 — Migración masiva del admin a tokens (queda parcial — alto riesgo, se hará incremental durante bloques B-U)
+- ✅ T.7 — Icon registry semántico + AltorraIcons helper
+- ✅ T.8 — High-contrast WCAG AAA con toggle separado
+
+**Próximo bloque: B — Sidebar reorganizado + Workspaces**
+
 
 
 ---

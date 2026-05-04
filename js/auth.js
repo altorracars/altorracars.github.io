@@ -766,15 +766,26 @@
         _lockAuthControls(true);
 
         var promptResolved = false;
+        // Watchdog purpose: if GIS prompt never displays anything (FedCM
+        // truly blocked at browser level), release the lock so the button
+        // doesn't stay stuck on a spinner forever. We do NOT auto-open the
+        // legacy popup here — that would create double-UI (FedCM dialog +
+        // popup) when FedCM IS actually showing but the user is just
+        // taking their time to choose an account.
+        //
+        // 8 seconds is long enough that a user who saw the FedCM prompt
+        // has plenty of time to interact, but short enough to recover
+        // gracefully from true silent failures. After watchdog fires we
+        // mark GIS as blocked, so the user's NEXT click goes straight to
+        // the legacy popup (instant, via _isGisBlocked() short-circuit).
         var watchdogTimer = setTimeout(function () {
             if (!promptResolved) {
                 promptResolved = true;
                 _markGisBlocked();
-                console.info('[GIS] Prompt timed out (FedCM likely blocked), falling back to legacy popup');
+                console.info('[GIS] Prompt watchdog fired — likely FedCM blocked. Next click will use legacy popup.');
                 _lockAuthControls(false);
-                _legacyPopupSignIn();
             }
-        }, 2000);
+        }, 8000);
 
         try {
             // Wrap _onGisCredential to also cancel the watchdog when the

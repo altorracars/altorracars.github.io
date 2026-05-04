@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504300000'; // MF1.3 — priority + tags + slaDeadline auto-computed
+const CACHE_VERSION = 'v20260504310000'; // MF2.3 — UX loading + offline + anti-dup + spinner
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

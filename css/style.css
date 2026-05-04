@@ -7213,3 +7213,20 @@ html.auth-authenticated #headerUserArea:empty::before {
     .contact-success-actions { width: 100%; flex-direction: column; }
     .contact-success-btn { width: 100%; }
 }
+
+/* MF2.3 — Form submit spinner */
+.form-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: formSpin 0.7s linear infinite;
+    vertical-align: -2px;
+    margin-right: 4px;
+}
+@keyframes formSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .form-spinner { animation-duration: 2s; }
+}

@@ -27,6 +27,36 @@ class ContactFormManager {
         return payload;
     }
 
+    /** MF2.3 — Anti-double-submit + offline guard. Returns false if submission should abort. */
+    _beginSubmit(form) {
+        if (form._inFlight) return false;
+        if (!navigator.onLine) {
+            if (window.notify) window.notify.error({
+                title: 'Sin conexión',
+                message: 'No detectamos internet. Tus datos quedaron guardados aquí — reintenta cuando vuelvas a estar en línea.',
+                duration: 6000
+            });
+            return false;
+        }
+        form._inFlight = true;
+        var btn = form.querySelector('button[type="submit"], .form-submit');
+        if (btn) {
+            btn._origText = btn._origText || btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="form-spinner" aria-hidden="true"></span> Enviando...';
+        }
+        return true;
+    }
+    _endSubmit(form, opts) {
+        form._inFlight = false;
+        var btn = form.querySelector('button[type="submit"], .form-submit');
+        if (btn && btn._origText) {
+            btn.disabled = false;
+            // Restore only if we're not transitioning to success screen
+            if (!opts || !opts.keepDisabled) btn.innerHTML = btn._origText;
+        }
+    }
+
     /** MF1.3 — Augment payload with priority/tags/slaDeadline */
     _withMeta(doc) {
         if (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta) {
@@ -479,6 +509,7 @@ class ContactFormManager {
     }
 
     handleVendeAutoSubmit(form) {
+        if (!this._beginSubmit(form)) return; // MF2.3
         const formData = new FormData(form);
 
         const nombre = formData.get('nombre');
@@ -529,13 +560,14 @@ class ContactFormManager {
                 if (window.notify && window.notify.error) {
                     window.notify.error({ title: 'Error', message: 'No pudimos guardar tu solicitud. Verifica tu conexión e inténtalo de nuevo.', duration: 6000 });
                 }
+                self._endSubmit(form);
             });
         }
     }
 
     handleFinanciacionSubmit(form) {
         if (!this.validateFinanciacionForm(form)) return;
-
+        if (!this._beginSubmit(form)) return; // MF2.3
         const formData = new FormData(form);
 
         const nombre = formData.get('nombre');

@@ -90,6 +90,16 @@ if (contactForm) {
 
     contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        // MF2.3 — anti-double-submit + offline guard
+        if (contactForm._inFlight) return;
+        if (!navigator.onLine) {
+            if (window.notify) window.notify.error({ title: 'Sin conexión', message: 'Reintenta cuando vuelvas a estar en línea.', duration: 5000 });
+            return;
+        }
+        contactForm._inFlight = true;
+        var _btn = contactForm.querySelector('button[type="submit"], .form-submit');
+        var _origBtn = _btn ? _btn.innerHTML : null;
+        if (_btn) { _btn.disabled = true; _btn.innerHTML = '<span class="form-spinner"></span> Enviando...'; }
 
         const formData = new FormData(contactForm);
         const data = Object.fromEntries(formData);
@@ -146,6 +156,8 @@ if (contactForm) {
                 if (window.notify && window.notify.error) {
                     window.notify.error({ title: 'Error', message: 'No pudimos enviar tu mensaje. Verifica tu conexión e inténtalo de nuevo.', duration: 6000 });
                 }
+                contactForm._inFlight = false;
+                if (_btn) { _btn.disabled = false; _btn.innerHTML = _origBtn; }
             });
         }
     });

@@ -7465,3 +7465,66 @@ html.auth-authenticated #headerUserArea:empty::before {
     .wa-widget-fab { bottom: 16px; right: 16px; width: 50px; height: 50px; }
     .wa-widget-pop { bottom: 76px; right: 16px; left: 16px; width: auto; }
 }
+
+/* ================================================================
+   MF5.2 — Vehicle hotspots (clickable dots over the main image)
+   ================================================================ */
+.vh-hotspot {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 5;
+}
+.vh-hotspot-dot {
+    position: absolute;
+    inset: 6px;
+    background: #b89658;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 2;
+}
+.vh-hotspot-pulse {
+    position: absolute;
+    inset: 0;
+    background: rgba(184, 150, 88, 0.45);
+    border-radius: 50%;
+    animation: vhHotspotPulse 1.8s cubic-bezier(0,0,0.2,1) infinite;
+    z-index: 1;
+}
+@keyframes vhHotspotPulse {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.7); opacity: 0; }
+}
+.vh-hotspot-tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.92);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    width: 180px;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+.vh-hotspot-tooltip strong { display: block; margin-bottom: 3px; color: #b89658; }
+.vh-hotspot-tooltip p { margin: 0; font-weight: normal; }
+.vh-hotspot:hover .vh-hotspot-tooltip,
+.vh-hotspot:focus .vh-hotspot-tooltip {
+    opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+    .vh-hotspot-pulse { animation: none; opacity: 0.4; }
+}

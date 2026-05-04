@@ -657,12 +657,155 @@
         });
     }
 
+    // ========== MF3.3 — TIMELINE + CONTEXTUAL ACTIONS ==========
+    function injectTimelineBlock(doc) {
+        var modal = $('appointmentModal');
+        if (!modal) return;
+        var prev = document.getElementById('amTimelineBlock');
+        if (prev) prev.remove();
+
+        // Timeline source: prefer subcollection 'historial', fallback to scratch
+        // events derived from the doc itself (createdAt, updatedAt)
+        var block = document.createElement('div');
+        block.id = 'amTimelineBlock';
+        block.className = 'am-timeline-block';
+        block.innerHTML = '<div class="am-timeline-title"><i data-lucide="clock-3" width="14" height="14"></i> Historial</div>' +
+            '<div class="am-timeline-list" id="amTimelineList">' +
+                '<div class="am-timeline-loading">Cargando historial...</div>' +
+            '</div>';
+
+        // Insert before the kind badge / observaciones area (after datos)
+        var insertBefore = $('amDatosExtra') || $('amObservaciones');
+        if (insertBefore && insertBefore.parentNode) {
+            insertBefore.parentNode.insertBefore(block, insertBefore.nextSibling || insertBefore);
+        }
+
+        // Build timeline from doc + auditLog query (best-effort)
+        var events = [];
+        if (doc.createdAt) {
+            events.push({ at: doc.createdAt, label: 'Creada', user: doc.createdBy || (doc.userEmail || 'cliente') });
+        }
+        if (doc.updatedAt && doc.updatedAt !== doc.createdAt) {
+            events.push({ at: doc.updatedAt, label: 'Actualizada → ' + (doc.estado || ''), user: doc.updatedBy || 'admin' });
+        }
+        if (doc._migration_v1) {
+            events.push({ at: doc._migrationAt || doc.createdAt, label: 'Migrada al schema v1 (kind: ' + doc.kind + ')', user: 'sistema' });
+        }
+        events.sort(function (a, b) { return new Date(a.at) - new Date(b.at); });
+
+        var list = block.querySelector('#amTimelineList');
+        if (!events.length) {
+            list.innerHTML = '<div class="am-timeline-empty">Sin eventos previos.</div>';
+        } else {
+            list.innerHTML = events.map(function (e) {
+                var when = '';
+                try { when = new Date(e.at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }); }
+                catch (_) { when = e.at; }
+                return '<div class="am-timeline-row">' +
+                    '<span class="am-timeline-dot"></span>' +
+                    '<div class="am-timeline-content">' +
+                        '<div class="am-timeline-when">' + AP.escapeHtml(when) + '</div>' +
+                        '<div class="am-timeline-label">' + AP.escapeHtml(e.label) + '</div>' +
+                        '<div class="am-timeline-user">por ' + AP.escapeHtml(e.user) + '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+        if (window.lucide) try { window.lucide.createIcons(); } catch (e) {}
+    }
+
+    function injectContextualActions(doc) {
+        var prev = document.getElementById('amContextActions');
+        if (prev) prev.remove();
+
+        var modal = $('appointmentModal');
+        if (!modal) return;
+
+        var kind = getKindOf(doc);
+        // Per-kind quick action buttons
+        var actions = [];
+        if (kind === 'cita') {
+            actions = [
+                { label: 'Confirmar', state: 'confirmada', cls: 'btn-success' },
+                { label: 'Marcar no asistió', state: 'no_show', cls: 'btn-warning' }
+            ];
+        } else if (kind === 'solicitud') {
+            actions = [
+                { label: 'Marcar contactado', state: 'contactado', cls: 'btn-info' },
+                { label: 'Aprobar', state: 'aprobada', cls: 'btn-success' }
+            ];
+        } else if (kind === 'lead') {
+            actions = [
+                { label: 'Marcar contactado', state: 'contactado', cls: 'btn-info' },
+                { label: 'Convertir a solicitud', action: 'convert', cls: 'btn-primary' }
+            ];
+        }
+        if (!actions.length) return;
+
+        var block = document.createElement('div');
+        block.id = 'amContextActions';
+        block.className = 'am-context-actions';
+        block.innerHTML = '<label>Acciones rápidas</label>' +
+            '<div class="am-context-actions-row">' +
+                actions.map(function (a) {
+                    return '<button type="button" class="btn btn-sm ' + a.cls + '" ' +
+                        (a.state ? 'data-quick-state="' + a.state + '"' : 'data-quick-action="' + a.action + '"') +
+                        '>' + a.label + '</button>';
+                }).join('') +
+            '</div>';
+
+        var insertBefore = document.getElementById('amTemplateBlock')
+            || $('amObservaciones').closest('.form-group')
+            || $('amObservaciones');
+        if (insertBefore && insertBefore.parentNode) {
+            insertBefore.parentNode.insertBefore(block, insertBefore);
+        }
+
+        // Wire actions
+        block.addEventListener('click', function (e) {
+            var btn = e.target.closest('button[data-quick-state], button[data-quick-action]');
+            if (!btn) return;
+            var quickState = btn.getAttribute('data-quick-state');
+            var quickAction = btn.getAttribute('data-quick-action');
+            if (quickState) {
+                var sel = $('amEstado');
+                if (sel) {
+                    sel.value = quickState;
+                    sel.dispatchEvent(new Event('change'));
+                }
+            } else if (quickAction === 'convert') {
+                // Lead → Solicitud conversion
+                if (!confirm('¿Convertir este lead en una solicitud? Se creará un nuevo doc.')) return;
+                window.db.collection('solicitudes').add(Object.assign({}, doc, {
+                    kind: 'solicitud',
+                    estado: 'pendiente',
+                    convertedFromLead: doc._docId,
+                    createdAt: new Date().toISOString()
+                })).then(function () {
+                    // Mark original lead as converted
+                    return window.db.collection('solicitudes').doc(doc._docId).update({
+                        estado: 'convertido',
+                        updatedAt: new Date().toISOString()
+                    });
+                }).then(function () {
+                    if (AP.toast) AP.toast('Lead convertido a solicitud');
+                    $('appointmentModal').classList.remove('active');
+                }).catch(function (err) {
+                    if (AP.toast) AP.toast('Error: ' + err.message, 'error');
+                });
+            }
+        });
+    }
+
     function manageAppointment(docId) {
         var a = AP.appointments.find(function(x) { return x._docId === docId; });
         if (!a) return;
         _currentManageSol = a;
         // MF3.6 — inject response templates block
         try { injectTemplateBlock(a); } catch (e) {}
+        // MF3.3 — inject timeline + contextual quick actions
+        try { injectTimelineBlock(a); } catch (e) {}
+        try { injectContextualActions(a); } catch (e) {}
 
         // MF3.2 — rebuild estado dropdown based on doc's kind
         var schema = window.AltorraCommSchema;

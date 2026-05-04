@@ -2866,3 +2866,62 @@ table th:focus-visible,
     opacity: 0.4;
     cursor: not-allowed;
 }
+
+/* MF3.3 — Timeline + contextual actions in manage modal */
+.am-timeline-block {
+    margin-top: 0.75rem;
+    padding: 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+}
+.am-timeline-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--admin-text);
+    margin-bottom: 8px;
+}
+.am-timeline-list { display: flex; flex-direction: column; gap: 6px; }
+.am-timeline-empty,
+.am-timeline-loading {
+    font-size: 0.78rem;
+    color: var(--admin-text-muted);
+    text-align: center;
+    padding: 8px;
+}
+.am-timeline-row { display: flex; gap: 10px; }
+.am-timeline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--admin-gold);
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+.am-timeline-content { flex: 1; }
+.am-timeline-when { font-size: 0.7rem; color: var(--admin-text-muted); }
+.am-timeline-label { font-size: 0.82rem; color: var(--admin-text); font-weight: 600; }
+.am-timeline-user { font-size: 0.7rem; color: var(--admin-text-muted); font-style: italic; }
+
+.am-context-actions {
+    margin-top: 0.75rem;
+    padding: 10px;
+    background: rgba(184, 150, 88, 0.04);
+    border: 1px dashed rgba(184, 150, 88, 0.18);
+    border-radius: 8px;
+}
+.am-context-actions label {
+    font-size: 0.78rem;
+    color: var(--admin-text-muted);
+    display: block;
+    margin-bottom: 6px;
+}
+.am-context-actions-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.am-context-actions-row .btn { font-size: 0.78rem; }

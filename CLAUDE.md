@@ -4191,6 +4191,104 @@ SEMANA 12: P + buffer + QA + estabilización
 4. DevTools → cambiar OS theme con `prefers-color-scheme` simulation → si nunca tocaste el toggle, sigue al SO
 5. `<html data-theme="high-contrast">` en consola → A11y mode activa (T.8 lo refinará)
 
+---
+
+### Microfase T.5 — Animation system (`css/animations.css`) ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: animaciones ad-hoc esparcidas por todo el codebase (cada componente con sus propios `@keyframes`). T.5 centraliza en UN archivo con keyframes + utility classes + stagger system.
+
+**Lo que se creó**: `css/animations.css` con:
+
+**1. Entrance keyframes** (todas usan `--ease-spring` o `--ease-snap` de tokens):
+- `alt-fade-in`, `alt-slide-up`, `alt-slide-down`, `alt-slide-in-left/right`, `alt-scale-in`, `alt-pop-in`
+
+**2. Exit keyframes**:
+- `alt-fade-out`, `alt-slide-out-down`, `alt-scale-out`
+
+**3. Attention seekers**:
+- `alt-pulse` (loop), `alt-shake` (one-shot), `alt-wiggle`, `alt-bounce`, `alt-flash`
+
+**4. Continuous**:
+- `alt-spin`, `alt-ping`, `alt-breathe`, `alt-shimmer`
+
+**5. Utility classes** (apply declaratively):
+- `.alt-animate-fade-in`, `.alt-animate-slide-up`, etc. — todas con `both` fill mode
+- `.alt-animate-pulse`, `.alt-animate-shake`, etc.
+
+**6. Stagger system**:
+- `.alt-stagger > *` con `--alt-stagger-delay` (default 60ms) × `--alt-stagger-index` (1-10)
+- Variants `.alt-stagger--fast` (30ms) y `.alt-stagger--slow` (100ms)
+- Funciona automáticamente con cualquier utility de entrance: `<ul class="alt-stagger"><li class="alt-animate-slide-up">...</li>...</ul>` → cada `<li>` aparece 60ms después del anterior
+
+**7. View Transitions API**:
+- `@supports (view-transition-name: none)` activa cross-fade nativo entre páginas en Chrome 126+
+- Duración + curva desde tokens
+
+**8. Live indicator**:
+- `.alt-live-indicator` — dot pulsante + ping ring para indicar estado "en vivo" (Concierge, Inbox)
+- Reutilizable cross-features
+
+**Reduced motion**: TODA animación queda neutralizada por la regla global de `tokens.css` (heredado).
+
+**Diseño (D)**:
+- Curvas oficiales: spring para entrance/exit (overshoot natural), snap para fade simples, soft para loops
+- Durations: normal para la mayoría, slow para pop-in (más dramático), slower para wiggle
+- Naming consistente: keyframes `alt-{name}`, classes `.alt-animate-{name}`
+
+**Migración (M)**: ningún cambio destructivo. CSS legacy con sus keyframes propios sigue funcionando. T.6 hará la sustitución masiva por las utilities de aquí.
+
+**Archivos**: `css/animations.css` (new), `admin.html` (link agregado), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar** (en consola del admin):
+1. `document.body.classList.add('alt-animate-pulse')` → cuerpo entero pulsa
+2. `document.querySelectorAll('.alt-card').forEach(c => c.classList.add('alt-animate-slide-up'))` + envolver en `.alt-stagger` → cards entran en cascada
+3. `<i data-lucide="loader-2" class="alt-animate-spin"></i>` en cualquier lugar → spinner
+4. DevTools → activar prefers-reduced-motion → todas las animaciones se vuelven instantáneas
+
+---
+
+### Microfase T.7 — Icon registry + AltorraIcons helper ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: el codebase usa Lucide en algunos lugares, SVG inline en otros, emojis en algunos más. T.7 crea un registry semántico + helper para asegurar consistencia + auto-refresh cuando se inyecta HTML dinámicamente.
+
+**Lo que se creó** (`js/icons.js`):
+
+1. **Glossary semántico** `AltorraIcons.canonical`: mapea conceptos (intent) a nombres de Lucide. Ejemplos:
+   - `home`, `dashboard`, `inventory`, `crm`, `inbox`, `calendar`, `automation`, `templates`, `reports`, `settings`
+   - Comm kinds: `cita: 'calendar-check-2'`, `solicitud: 'file-text'`, `lead: 'message-circle'`
+   - Acciones: `add`, `edit`, `delete`, `save`, `download`, `send`, `search`, `filter`, etc.
+   - Estados: `success`, `error`, `warning`, `info`, `loading`, `pending`, `priority`, `viewed`
+   - Canales: `whatsapp` (`message-circle-more` — brand-neutral), `email`, `phone`, `chat`, `bot`
+   - Money: `price`, `finance`, `quote`, `priceDrop`, `priceUp`, `wallet`
+   - CRM: `score`, `target`, `funnel`, `graph`, `kanban`, `timeline`
+   - AI: `ai: 'sparkles'`, `magic`, `suggest`, `voice`, `live`
+   - Theme: `themeDark: 'moon'`, `themeLight: 'sun'`, `contrast`
+
+   **Política**: cuando agregás un icon nuevo, primero lo añadís al glossary. Después usás `<i data-lucide="' + AltorraIcons.canonical.X + '">` en componentes — nunca hardcodear nombres Lucide directos.
+
+2. **`refresh(scope)`**: re-renderiza Lucide en todo o en un scope dado. Ya existe `AP.refreshIcons()` legacy — ahora hay versión sin dependencia de AP.
+
+3. **`ensure()`**: Promise que carga Lucide CDN si no está. Útil para páginas públicas que aún no lo cargan.
+
+4. **`svg(name, attrs)`**: helper que retorna SVG string para `check`, `x`, `send` hardcoded. Útil cuando hay que inyectar SVG en string de HTML antes de que Lucide cargue.
+
+5. **MutationObserver auto-refresh**: nuevos elementos con `[data-lucide]` agregados al DOM disparan `refresh()` debounced 50ms. Cero código manual de `lucide.createIcons()` en componentes que inyectan HTML dinámicamente.
+
+**Diseño (D)**:
+- Glossary categorizado por dominio (Navigation / Actions / States / Channels / Money / CRM / AI / Theme)
+- Naming consistente camelCase para keys
+- Brand-neutral: WhatsApp icon es `message-circle-more` (no el logo verde) — alineado con nuestra política de no atar formularios a un canal específico
+
+**Migración (M)**: ningún cambio destructivo. `data-lucide="X"` directo sigue funcionando. Los componentes existentes pueden migrar a usar `AltorraIcons.canonical` gradualmente.
+
+**Archivos**: `js/icons.js` (new), `admin.html` (script tag), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Consola admin: `AltorraIcons.canonical` → ver el glossary completo
+2. Inyectar `<i data-lucide="' + AltorraIcons.canonical.crm + '"></i>` → renderiza users-round
+3. Crear un elemento con `<i data-lucide="bot"></i>` y appendChild al body → MutationObserver auto-refresca, no hay que llamar nada
+4. `AltorraIcons.svg('check')` → string SVG listo para innerHTML
+
 
 
 ---

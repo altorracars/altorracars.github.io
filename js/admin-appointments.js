@@ -504,6 +504,22 @@
             var estadoLbl = (schema && schema.STATE_LABELS[estado]) || (estado.charAt(0).toUpperCase() + estado.slice(1));
             var estadoClass = (schema && schema.STATE_COLORS[estado]) || 'admin-warning';
 
+            // MF3.6 — SLA semaforo (only for unhandled docs)
+            var slaDot = '';
+            var unhandled = (kind === 'lead' && estado === 'nuevo')
+                || (kind !== 'lead' && estado === 'pendiente');
+            if (unhandled && a.slaDeadline) {
+                var deadlineMs = new Date(a.slaDeadline).getTime();
+                var now = Date.now();
+                var totalSlaMs = a.slaMs || (2 * 60 * 60 * 1000);
+                var remaining = deadlineMs - now;
+                var pct = remaining / totalSlaMs;
+                var color = '#22c55e', label = 'A tiempo';
+                if (remaining <= 0) { color = '#ef4444'; label = 'Vencido'; }
+                else if (pct < 0.5) { color = '#eab308'; label = 'Pronto'; }
+                slaDot = '<span class="sla-dot" title="SLA: ' + label + '" style="background:' + color + ';"></span>';
+            }
+
             var prefix = (a.prefijoPais || '').replace('+', '');
             var phone = a.telefono || a.whatsapp || '';
             var phoneClean = phone.replace(/[^0-9]/g, '');
@@ -527,7 +543,7 @@
                 '<td><span style="color:var(--' + origenColor + ');font-size:0.75rem;">' + AP.escapeHtml(oLabel) + '</span></td>' +
                 '<td>' + AP.escapeHtml(a.vehiculo || '-') + '</td>' +
                 '<td>' + (a.fecha ? '<div>' + AP.escapeHtml(a.fecha) + '</div><div style="font-weight:600;">' + AP.escapeHtml(a.hora || '-') + '</div>' : '<span style="color:var(--admin-text-muted);font-size:0.8rem;">N/A</span>') + '</td>' +
-                '<td><span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLbl + '</span></td>' +
+                '<td>' + slaDot + '<span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLbl + '</span></td>' +
                 '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + AP.escapeHtml(a.observaciones || a.comentarios || a.mensaje || '-') + '</td>' +
                 '<td style="white-space:nowrap;">' +
                     (AP.RBAC.canManageAppointment() ? '<button class="btn btn-sm btn-ghost" data-action="manageAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Gestionar">Gestionar</button>' : '') +
@@ -560,10 +576,93 @@
     // ========== MANAGE SOLICITUD MODAL ==========
     var _currentManageSol = null;
 
+    // MF3.6 — Built-in response templates with variable interpolation
+    var RESPONSE_TEMPLATES = {
+        cita: {
+            confirmada: { label: 'Confirmar cita', text: 'Hola {{nombre}}, tu cita para ver el {{vehiculo}} queda confirmada para el {{fecha}} a las {{hora}}. Te esperamos en nuestra sede en Cartagena. Cualquier cambio, escríbenos.' },
+            reprogramada: { label: 'Reprogramar', text: 'Hola {{nombre}}, tuvimos que reprogramar tu cita para el {{fecha}} a las {{hora}}. Confirma respondiendo este mensaje. ¡Gracias por tu paciencia!' },
+            cancelada: { label: 'Cancelar', text: 'Hola {{nombre}}, lamentamos informarte que tu cita para el {{vehiculo}} ha sido cancelada. Si quieres reagendar, estamos atentos.' }
+        },
+        solicitud: {
+            contactado: { label: 'Te llamaremos', text: 'Hola {{nombre}}, recibimos tu solicitud sobre {{vehiculo}}. Un asesor te contactará en las próximas horas para revisar los detalles.' },
+            aprobada: { label: 'Aprobada', text: 'Hola {{nombre}}, ¡buenas noticias! Tu solicitud sobre {{vehiculo}} fue aprobada. Te contactaremos para coordinar los siguientes pasos.' },
+            rechazada: { label: 'Rechazada amable', text: 'Hola {{nombre}}, gracias por tu interés en {{vehiculo}}. En esta ocasión no podemos avanzar con tu solicitud, pero te invitamos a revisar otras opciones en nuestro catálogo.' },
+            en_revision: { label: 'En revisión', text: 'Hola {{nombre}}, estamos revisando tu solicitud sobre {{vehiculo}}. Pronto te contactaremos con la respuesta.' }
+        },
+        lead: {
+            contactado: { label: 'Te contactamos', text: 'Hola {{nombre}}, gracias por escribirnos. Un asesor te responderá pronto. Mientras tanto puedes ver nuestro catálogo en altorracars.github.io.' },
+            interesado: { label: 'Sigue interesado', text: 'Hola {{nombre}}, queremos saber si sigues interesado en {{vehiculo}}. Cuéntanos cómo podemos ayudarte.' }
+        }
+    };
+
+    function applyTemplateVariables(text, doc) {
+        if (!text) return '';
+        return text
+            .replace(/\{\{nombre\}\}/g, (doc.nombre || 'cliente'))
+            .replace(/\{\{vehiculo\}\}/g, (doc.vehiculo || 'el vehículo'))
+            .replace(/\{\{fecha\}\}/g, (doc.fecha || 'fecha por confirmar'))
+            .replace(/\{\{hora\}\}/g, (doc.hora || 'hora por confirmar'))
+            .replace(/\{\{tipo\}\}/g, (doc.tipo || 'consulta'));
+    }
+
+    function injectTemplateBlock(doc) {
+        var modal = $('appointmentModal');
+        if (!modal) return;
+        // Remove old template block if any
+        var prev = document.getElementById('amTemplateBlock');
+        if (prev) prev.remove();
+
+        var kind = getKindOf(doc);
+        var tpls = RESPONSE_TEMPLATES[kind] || {};
+        var keys = Object.keys(tpls);
+        if (!keys.length) return;
+
+        var observacionesGroup = $('amObservaciones');
+        if (!observacionesGroup) return;
+        var insertBefore = observacionesGroup.closest('.form-group') || observacionesGroup;
+
+        var block = document.createElement('div');
+        block.id = 'amTemplateBlock';
+        block.className = 'am-template-block';
+        block.innerHTML =
+            '<label>Plantilla de respuesta rápida</label>' +
+            '<div class="am-template-row">' +
+                '<select class="am-template-select" id="amTemplateSelect">' +
+                    '<option value="">Seleccionar plantilla...</option>' +
+                    keys.map(function (k) {
+                        return '<option value="' + k + '">' + tpls[k].label + '</option>';
+                    }).join('') +
+                '</select>' +
+                '<button type="button" class="am-template-apply" id="amTemplateApply" disabled>Aplicar</button>' +
+            '</div>';
+        insertBefore.parentNode.insertBefore(block, insertBefore);
+
+        var sel = block.querySelector('#amTemplateSelect');
+        var btn = block.querySelector('#amTemplateApply');
+        sel.addEventListener('change', function () {
+            btn.disabled = !sel.value;
+        });
+        btn.addEventListener('click', function () {
+            var tpl = tpls[sel.value];
+            if (!tpl) return;
+            var rendered = applyTemplateVariables(tpl.text, doc);
+            // Append to observaciones (don't overwrite if there's already content)
+            var current = observacionesGroup.value || '';
+            observacionesGroup.value = current
+                ? (current + '\n\n' + rendered)
+                : rendered;
+            observacionesGroup.focus();
+            sel.value = '';
+            btn.disabled = true;
+        });
+    }
+
     function manageAppointment(docId) {
         var a = AP.appointments.find(function(x) { return x._docId === docId; });
         if (!a) return;
         _currentManageSol = a;
+        // MF3.6 — inject response templates block
+        try { injectTemplateBlock(a); } catch (e) {}
 
         // MF3.2 — rebuild estado dropdown based on doc's kind
         var schema = window.AltorraCommSchema;

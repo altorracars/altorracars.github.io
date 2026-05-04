@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504480000'; // MF4.6 — Quote generator with PDF print with 5 tabs (mensajes/)
+const CACHE_VERSION = 'v20260504490000'; // MF4.8 — Postventa + NPS scheduler with 5 tabs (mensajes/)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

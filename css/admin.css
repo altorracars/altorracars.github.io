@@ -3673,3 +3673,106 @@ table th:focus-visible,
         transition: none;
     }
 }
+
+/* ================================================================
+   B.4 (mega-plan v4) — Sidebar global collapse + keyboard
+   ================================================================ */
+
+/* Collapse toggle button in sidebar logo area */
+.sidebar-logo {
+    position: relative;
+}
+.sidebar-collapse-btn {
+    position: absolute;
+    top: 50%;
+    right: var(--space-3);
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--duration-fast) var(--ease-snap),
+                color var(--duration-fast) var(--ease-snap);
+}
+.sidebar-collapse-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+.sidebar-collapse-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
+}
+.sidebar-collapse-btn i {
+    width: 16px;
+    height: 16px;
+}
+
+/* Collapsed state on body — controls sidebar width + content padding */
+body.sidebar-collapsed .sidebar {
+    width: var(--layout-sidebar-w-collapsed);
+    transition: width var(--duration-normal) var(--ease-snap);
+}
+body:not(.sidebar-collapsed) .sidebar {
+    transition: width var(--duration-normal) var(--ease-snap);
+}
+
+/* In collapsed mode, hide labels + chevrons + group headers */
+body.sidebar-collapsed .sidebar h2,
+body.sidebar-collapsed .sidebar small,
+body.sidebar-collapsed .nav-group-label,
+body.sidebar-collapsed .nav-group-chevron,
+body.sidebar-collapsed .nav-item span,
+body.sidebar-collapsed .nav-badge,
+body.sidebar-collapsed .sidebar-profile-info,
+body.sidebar-collapsed .nav-divider {
+    display: none;
+}
+
+/* Center icons when collapsed */
+body.sidebar-collapsed .nav-item,
+body.sidebar-collapsed .nav-group-header {
+    justify-content: center;
+    padding: var(--space-2);
+}
+body.sidebar-collapsed .nav-group-items {
+    padding-left: 0;
+}
+
+/* Tooltip-on-hover for collapsed nav items (data-tooltip from each label
+   would be ideal but for now show via title attribute on button) */
+body.sidebar-collapsed .nav-item:hover::after,
+body.sidebar-collapsed .nav-group-header:hover::after {
+    content: attr(aria-label);
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--color-neutral-900);
+    color: var(--color-neutral-50);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    white-space: nowrap;
+    z-index: var(--z-tooltip);
+    pointer-events: none;
+    box-shadow: var(--shadow-md);
+}
+
+/* Toggle button icon rotates when collapsed */
+body.sidebar-collapsed .sidebar-collapse-btn i {
+    transform: rotate(180deg);
+}
+.sidebar-collapse-btn i {
+    transition: transform var(--duration-normal) var(--ease-snap);
+}
+
+/* Hide collapse button on mobile (mobile uses drawer pattern) */
+@media (max-width: 768px) {
+    .sidebar-collapse-btn { display: none; }
+}

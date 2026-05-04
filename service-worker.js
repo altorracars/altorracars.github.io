@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505100000'; // B.3 (mega-plan v4) — Section router + aliases + hash deep-linking
+const CACHE_VERSION = 'v20260505110000'; // B.4 (mega-plan v4) — Sidebar global collapse + Cmd+B shortcut + aria tooltips
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

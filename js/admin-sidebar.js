@@ -131,9 +131,77 @@
         obs.observe(sidebar, { attributes: true, subtree: true, attributeFilter: ['class'] });
     }
 
+    /* ═══════════════════════════════════════════════════════════
+       B.4 — Global sidebar collapse (icon-only mode)
+       ═══════════════════════════════════════════════════════════ */
+    var COLLAPSE_KEY = 'altorra-sidebar-collapsed';
+
+    function isCollapsed() {
+        return document.body.classList.contains('sidebar-collapsed');
+    }
+
+    function setCollapsed(collapsed) {
+        if (collapsed) {
+            document.body.classList.add('sidebar-collapsed');
+        } else {
+            document.body.classList.remove('sidebar-collapsed');
+        }
+        try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+        // Update aria-label of toggle button
+        var btn = document.getElementById('sidebarCollapseBtn');
+        if (btn) {
+            btn.setAttribute('aria-label', collapsed ? 'Expandir sidebar' : 'Colapsar sidebar');
+        }
+    }
+
+    function toggleCollapsed() {
+        setCollapsed(!isCollapsed());
+    }
+
+    function restoreCollapseState() {
+        try {
+            var v = localStorage.getItem(COLLAPSE_KEY);
+            if (v === '1') setCollapsed(true);
+        } catch (e) {}
+    }
+
+    function attachCollapseListeners() {
+        var btn = document.getElementById('sidebarCollapseBtn');
+        if (btn) btn.addEventListener('click', toggleCollapsed);
+
+        // Keyboard shortcut: Cmd/Ctrl + B
+        document.addEventListener('keydown', function (e) {
+            if ((e.metaKey || e.ctrlKey) && e.key && e.key.toLowerCase() === 'b' && !e.shiftKey && !e.altKey) {
+                // Don't trigger if focus is in input/textarea/contenteditable
+                var t = e.target;
+                if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+                e.preventDefault();
+                toggleCollapsed();
+            }
+        });
+    }
+
+    /** Set aria-label on nav-items based on their <span> text — used by
+        collapsed-mode tooltip CSS that reads from aria-label */
+    function syncAriaLabels() {
+        document.querySelectorAll('#adminSidebar .nav-item').forEach(function (btn) {
+            if (btn.getAttribute('aria-label')) return;
+            var span = btn.querySelector('span:not(.nav-badge)');
+            if (span) btn.setAttribute('aria-label', span.textContent.trim());
+        });
+        document.querySelectorAll('#adminSidebar .nav-group-header').forEach(function (btn) {
+            if (btn.getAttribute('aria-label')) return;
+            var label = btn.querySelector('.nav-group-label');
+            if (label) btn.setAttribute('aria-label', label.textContent.trim());
+        });
+    }
+
     function init() {
         restoreState();
+        restoreCollapseState();
+        syncAriaLabels();
         attachListeners();
+        attachCollapseListeners();
         expandActiveGroup();
         observeSectionChanges();
     }
@@ -147,6 +215,10 @@
     window.AltorraSidebar = {
         toggle: toggle,
         setExpanded: setExpanded,
-        restoreState: restoreState
+        restoreState: restoreState,
+        // B.4 collapse API
+        toggleCollapsed: toggleCollapsed,
+        setCollapsed: setCollapsed,
+        isCollapsed: isCollapsed
     };
 })();

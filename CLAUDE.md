@@ -4556,6 +4556,52 @@ Estado del Design System al cerrar el bloque T:
 5. Consola: `AltorraSections.registry` → metadata de las 15 secciones
 6. Consola: `AltorraSections.onChange((s, prev) => console.log('changed:', prev, '→', s))` + click otra sección
 
+---
+
+### Microfase B.4 — Sidebar global collapse + atajos teclado ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: power users quieren más espacio para el contenido. Sidebar full toma 240px que en monitores pequeños molesta. B.4 agrega modo "icon-only" (56px) con tooltips on hover.
+
+**Cambios**:
+
+1. **Botón collapse en logo del sidebar**: ícono `panel-left-close` (rota 180° al colapsar). Posición absoluta en el área del logo. Tooltip "⌘+B".
+
+2. **Modo colapsado** (CSS `body.sidebar-collapsed`):
+   - Sidebar pasa de 240px a 56px con transición smooth
+   - Hidden: labels, chevrons, badges, profile info, group group-label, divider, logo h2/small
+   - Visible: solo iconos, centrados
+   - Hover sobre nav-item → tooltip lateral muestra el aria-label (CSS pure via `::after`)
+
+3. **Persistencia**: `localStorage.altorra-sidebar-collapsed` = `'0'` | `'1'`. Restaurado al cargar.
+
+4. **Keyboard shortcut**: `⌘+B` (Mac) o `Ctrl+B` (Win/Linux) toggle collapse. No dispara si el foco está en input/textarea/contenteditable (no interrumpe escritura).
+
+5. **`syncAriaLabels()`**: lee el `<span>` de texto de cada nav-item y lo setea como `aria-label` del button. Esto:
+   - Hace los tooltips de collapsed-mode funcionar (CSS lee `attr(aria-label)`)
+   - Mejora accesibilidad para screen readers
+
+6. **Mobile** (`<768px`): collapse button hidden — mobile usa drawer pattern (otro UX, fuera de scope de B.4).
+
+7. **Public API extension**: `AltorraSidebar.toggleCollapsed()`, `setCollapsed(bool)`, `isCollapsed()`.
+
+**Diseño (D)**:
+- Animación `--ease-snap` en width transition (smooth, no jank)
+- Icon rotation 180° marca el estado on/off claramente
+- Tooltips en collapsed mode aparecen a la derecha (no se pisan con el sidebar)
+- aria-label dinámico ("Colapsar sidebar" / "Expandir sidebar")
+
+**Migración (M)**: ningún breaking change. Sidebar funciona exactamente igual en estado expandido. Estado collapsed es opt-in por click o atajo.
+
+**Archivos**: `admin.html`, `css/admin.css`, `js/admin-sidebar.js`.
+
+**Pasos para probar**:
+1. Login admin → click el botón de la esquina del logo del sidebar → sidebar se colapsa a iconos
+2. Hover sobre un ícono → tooltip lateral con el nombre de la sección
+3. Recargar la página → estado persiste
+4. ⌘+B (Mac) o Ctrl+B (Win) → toggle desde teclado
+5. Resize a mobile → botón se oculta (no aplica en mobile)
+6. Tab por la sidebar → focus rings funcionan tanto en colapsado como expandido
+
 
 
 ---

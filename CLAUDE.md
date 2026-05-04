@@ -4728,7 +4728,248 @@ Estado del Sidebar + Workspaces al cerrar el bloque B:
 5. `window.addEventListener('altorra:test.hello', e => console.log('DOM:', e.detail))` + emit → recibe vía CustomEvent
 6. `AltorraEventBus.emit('test.persist', {}, {persist: true})` → ver doc en Firestore `events/`
 
+---
 
+### Microfase I.2 — Activity Feed sliding panel ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: I.1 emite eventos pero nadie los ve. I.2 da un panel deslizable estilo Slack que muestra TODA la actividad en tiempo real — qué hicieron otros admins, qué eventos están pasando en el sistema, con filtros para enfocarse.
+
+**Lo que se creó** (`js/admin-activity-feed.js`):
+
+1. **Botón trigger en admin header**: ícono `activity` (electrocardiograma). Click → abre el panel.
+2. **Panel deslizable** desde la derecha (380px desktop / full mobile):
+   - Header con título + count de eventos visibles + botón cerrar
+   - Toolbar con dropdown de filtros + botón "Limpiar" feed local
+   - Lista scrolleable de entries
+3. **Cada entry** muestra:
+   - Icon coloreado por dominio (gold=vehicle, green=comm, blue=crm, violet=appointment, orange=workflow, cyan=test, neutral=user/ui/system)
+   - Domain pill (ej: VEHICLE) + acción humana (ej: "Created", "Estado-changed")
+   - Detail line con title/name/vehiculo/id del payload
+   - Timestamp relativo ("hace 2m") + bySource (admin/public/system)
+   - Animación slide-in-right al aparecer
+4. **Filtros**: Todo / Solo admin / Solo cliente / por dominio (vehicle/comm/crm/appointment/user/ui/workflow/concierge).
+5. **Time-tick**: cada 30s actualiza los timestamps relativos sin re-fetch.
+
+**Sources del feed**:
+- **AltorraEventBus.on('*')** — eventos emitidos en la sesión actual
+- **Firestore `events/`** — eventos persistidos por OTROS admins/devices (lazy: solo se suscribe cuando el panel está abierto Y el user es super_admin para ahorrar reads)
+- Pre-populate desde `AltorraEventBus.history()` al cargar — entries ya están si el bus tenía cosas
+
+**Performance**:
+- MAX_VISIBLE 100 (older shifted out)
+- Firestore listener cancelado al cerrar el panel
+- Render con `slice().reverse()` (newest first) sin mutar el array
+- MutationObserver de Lucide (de T.7) auto-refresca íconos
+
+**Firestore rules** agregadas para `events/{eventId}`: read si autenticado, create si autenticado (admin o cliente), immutable, delete solo super_admin.
+
+**Diseño (D)**:
+- Top accent border dorado en header (consistente con workspace pattern B.2)
+- Cada entry con border subtle + hover lift
+- Color por domain matching los workspaces del sidebar
+- Empty state con icon `inbox-x` opacity 0.4 + microcopy "Los eventos aparecen aquí en tiempo real"
+- Esc cierra el panel
+
+**Migración (M)**: cero breaking. La rule `events/` es nueva — requiere `firebase deploy --only firestore:rules` para activar persistencia. Sin eso, los eventos se ven solo en in-memory feed (todavía utilizable).
+
+**Archivos**: `js/admin-activity-feed.js` (new), `admin.html` (trigger + script), `css/admin.css` (~150 líneas), `firestore.rules`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Login admin → click el ícono `activity` en el header → panel se desliza
+2. Consola: `AltorraEventBus.emit('vehicle.created', { name: 'Mazda CX-5' })` → entry aparece con animación
+3. `AltorraEventBus.emit('crm.score-changed', { id: 'abc', from: 50, to: 78 })` → entry azul
+4. Cambiar filtro a "Vehículos" → solo eventos `vehicle.*`
+5. Click "Limpiar" → feed local se vacía
+6. Esc → panel cierra
+
+> **DEPLOY MANUAL**: `firebase deploy --only firestore:rules` para activar persistencia cross-device.
+
+### Microfase I.3 — Cross-module EventBus emitters ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: el bus existe (I.1) y el feed lo escucha (I.2), pero hasta
+ahora ningún módulo emitía eventos. I.3 instrumenta los puntos críticos
+del admin para que el feed muestre actividad real, y deja el terreno
+listo para que Bloque K (workflows) los use como triggers.
+
+**Eventos emitidos** (canónica `dominio.acción`, 8 tipos):
+
+| Evento | Origen | Cuándo |
+|---|---|---|
+| `ui.section-changed` | `js/admin-section-router.js` `notifyChange()` | Usuario navega entre secciones del admin |
+| `vehicle.created` | `js/admin-vehicles.js` (post `writeAuditLog`) | Nuevo vehículo guardado |
+| `vehicle.updated` | `js/admin-vehicles.js` (post `writeAuditLog`) | Vehículo editado |
+| `vehicle.deleted` | `js/admin-vehicles.js` (post delete) | Vehículo borrado |
+| `comm.created` | `js/admin-appointments.js` `detectAdminNewSolicitudes` | Nueva solicitud/cita pendiente entra al sistema |
+| `comm.estado-changed` | `js/admin-appointments.js` (saveAppStatusBtn) | Admin cambia el estado de una comunicación |
+| `comm.deleted` | `js/admin-appointments.js` (deleteAppointment) | Solicitud/cita eliminada |
+| `user.logged-in` | `js/admin-auth.js` `showAdmin()` | Admin entra al panel |
+| `user.logged-out` | `js/admin-auth.js` logoutBtn | Admin cierra sesión (emit ANTES de signOut) |
+
+**Payloads canónicos**: cada emit incluye los campos mínimos para que el
+feed renderice una tarjeta legible (`title`, `id`/`uid`, contexto del
+dominio). Bloque K (workflows) consumirá los mismos payloads vía
+`AltorraEventBus.on('vehicle.*', ...)` sin necesitar reformatear nada.
+
+**Por qué `user.logged-out` se emite ANTES de signOut**: una vez que
+`signOut()` resuelve, el listener de Firestore en el feed (I.2) ya está
+desautenticado y no puede persistir el evento al servidor. Emitir
+sincrónicamente antes garantiza que (a) los listeners locales lo ven con
+auth todavía activo y (b) la persistencia condicional vía
+`{persist: true}` (cuando se active) llegue al servidor con un token
+válido.
+
+**Por qué `crm.score-changed` NO se emite todavía**: el score actual
+en `js/admin-crm.js` se computa on-the-fly en cada render
+(`computeScore(c)` línea 178), no en respuesta a un cambio. Emitirlo en
+render generaría ruido constante. El evento se reserva para Bloque Q
+(Knowledge Graph) donde tendremos un pipeline real de recompute.
+
+**Por qué `vehicle.featured-toggled` NO se emite**: el toggle de
+destacado pasa por el mismo `vehicle.updated` con campos `destacado` y
+`featuredOrder` en el payload — un solo evento por write es la
+convención. Suscriptores que solo miran destacados pueden filtrar por
+`payload.destacado !== payload._previous.destacado` cuando agreguemos
+diff metadata en I.4.
+
+**Compatibilidad con I.2**: el feed ya tenía soporte para todos los
+dominios (`vehicle`, `comm`, `user`, `ui`, `crm`) en su mapa de
+colores y filtros. No requirió cambios. Cada emit aparece
+inmediatamente en el panel del super_admin como una tarjeta nueva al
+tope.
+
+**Pasos de prueba (manual, en `admin.html`)**:
+1. Abrir el Activity Feed (icono campana grande en header)
+2. Navegar a otra sección → aparece tarjeta `ui.section-changed` con
+   label "Inicio → Vehículos"
+3. Crear un vehículo nuevo → tarjeta `vehicle.created` con
+   `marca modelo year` y `codigoUnico`
+4. Editar ese vehículo → `vehicle.updated`
+5. Cambiar estado de una solicitud pendiente → `comm.estado-changed`
+   con `pendiente → contactado`
+6. Cerrar sesión → `user.logged-out` (visible si tienes el feed abierto
+   antes del click)
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Logout emite con auth ya muerta → persist falla | Emit ANTES de `auth.signOut()` |
+| Multiple emits por una sola acción admin (e.g. dirty check) | Emit en el callsite POST-write éxito (post-auditLog), no en intent |
+| Emit dentro de loops (`forEach`) sin throttle | Solo emits puntuales por acción del usuario, no en bucles |
+| Score recompute on-render emitiría 100/seg | `crm.score-changed` deferido a Bloque Q |
+| Payload sin contexto humano legible | Cada payload incluye `title` precomputado |
+| Bus indefinido en page load temprano | Guard `if (window.AltorraEventBus)` antes de cada emit |
+
+**Deuda técnica para I.4**:
+- Diff metadata (`_previous`) en `vehicle.updated` y `comm.estado-changed`
+  para que workflows puedan detectar transiciones específicas
+- Source meta (`bySource: 'admin'|'public'|'system'`) automático en
+  todos los emits para que el feed lo filtre sin lógica per-evento
+
+**Archivos modificados**:
+- `js/admin-section-router.js` — emit en `notifyChange()`
+- `js/admin-vehicles.js` — 3 emits (created, updated, deleted)
+- `js/admin-appointments.js` — 3 emits (created, estado-changed, deleted)
+- `js/admin-auth.js` — 2 emits (logged-in, logged-out)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505150000
+
+### Microfase I.4 — Diff metadata en payloads + transition rendering ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: convertir los emits de I.3 de "algo cambió" a "X → Y", de
+modo que (a) el Activity Feed muestre transiciones legibles ("estado:
+pendiente → contactado", "precio: $76M → $72M (↓5%)") y (b) los
+workflows del Bloque K puedan disparar reglas tipo "cuando estado
+cambie a contactado, asigna asesor". El bus ya auto-llenaba `bySource`
+desde I.1 (línea 65 de event-bus.js detecta `window.AP` o
+`/admin/` en URL); I.4 cierra el lado de la convención del payload.
+
+**Convención canónica `_previous`**:
+
+Cualquier emit que represente un update DEBE incluir `payload._previous`
+con el subset de campos relevantes ANTES del cambio. El feed lo lee
+para renderizar la línea de diff. Workflows futuros lo usarán para
+matching:
+
+```js
+AltorraEventBus.on('vehicle.updated', function (event) {
+    var prev = event.payload._previous;
+    if (prev && prev.estado === 'disponible' && event.payload.estado === 'reservado') {
+        // → trigger workflow "vehiculo recién reservado"
+    }
+});
+```
+
+**Cambios aplicados**:
+
+1. **`js/admin-vehicles.js` `vehicle.updated`** — captura snapshot del
+   doc viejo (precio, precioOferta, estado, destacado) ANTES de que
+   AP.vehicles se actualice por el listener Firestore. El emit envía
+   `_previous: { precio, precioOferta, estado, destacado }`.
+
+2. **`js/admin-appointments.js` `comm.estado-changed`** — agrega
+   `_previous: { estado: prevEstado }` además de mantener los aliases
+   legacy `estadoNuevo`/`estadoPrevio` para subscribers que ya los leían.
+
+3. **`js/admin-section-router.js` `ui.section-changed`** — agrega
+   `_previous: { section: prev }` y un `title` precomputado de la
+   forma "Inicio → Vehículos" para que la card del feed se lea sola
+   sin llegar al renderer de diffs (los cambios de UI no necesitan la
+   caja monospace).
+
+4. **`js/admin-activity-feed.js`** — nuevo helper `diffSummary(type, payload)`
+   que detecta:
+   - **Estado transition**: `estado: pendiente → contactado`
+   - **Precio change**: `precio: $76M → $72M (↓5%)` con cálculo de %
+   - **Destacado toggle**: `marcado destacado` o `sin destacar`
+   `humanizeAction()` ahora retorna también `.diff` y `renderEntry()`
+   inyecta `<div class="aaf-entry-diff">` cuando hay contenido.
+
+5. **`css/admin.css`** — nueva regla `.aaf-entry-diff` con fondo dorado
+   tenue (8% alpha), border-left de acento, monospace para los
+   números, padding cómodo. Visualmente distinta de `.aaf-entry-detail`
+   (que sigue siendo el subtítulo gris).
+
+**Helper `fmtPriceShort(n)`**: formato compacto $76M / $1.2M / $850K
+para que la línea de diff quepa en el panel de 380px sin wrappear.
+Usa `Math.round(n / 1e5) / 10` para 1 decimal en millones (78.5M).
+
+**Por qué `bySource` no necesita cambio**: ya estaba auto en I.1.
+`_bySource()` retorna `'admin'` si existe `window.AP`, `'public'` si
+no. Bloque K cuando agregue triggers automáticos pasará explícitamente
+`{bySource: 'system'}` en el `opts`.
+
+**Pasos de prueba**:
+1. Abrir admin → Activity Feed
+2. Editar un vehículo: cambiar precio de 76M a 72M, marcar destacado
+3. Guardar → tarjeta `vehicle.updated` muestra:
+   - Detalle: "Toyota Hilux 2020"
+   - Diff (caja dorada monospace): `precio: $76M → $72M (↓5%) · marcado destacado`
+4. Cambiar estado de una solicitud `pendiente → contactado`
+5. Tarjeta `comm.estado-changed` muestra:
+   - Detalle: "Daniel — Toyota Hilux"
+   - Diff: `estado: pendiente → contactado`
+6. Navegar Inicio → Vehículos → tarjeta `ui.section-changed` muestra:
+   - Detalle: "Inicio → Vehículos" (en línea de detalle gris, no en diff
+     box — convención: navegación = detalle, datos = diff)
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| `_previous` enviado en creación (no aplica) | Sólo se setea en branch `if (isEdit)` |
+| Diff falso por strict equality en numbers/strings con tipos mezclados | Comparación con `!==` después de chequear `null` explícitamente |
+| Snapshot tomado DESPUÉS del save (Firestore listener ya actualizó AP) | Captura ANTES con `find(parseInt(existingId))` mientras el evento aún no llegó por onSnapshot |
+| Rendering de números enormes desbordando el panel | `fmtPriceShort()` compacta a M/K |
+| Backward compat con subscribers viejos | Aliases `estadoNuevo`/`estadoPrevio` preservados en payload |
+| Diff box que aparece vacía | Render condicional `(human.diff ? '<div...>...</div>' : '')` |
+
+**Archivos modificados**:
+- `js/admin-vehicles.js` — agrega `_previous` snapshot en vehicle.updated
+- `js/admin-appointments.js` — agrega `_previous: {estado}` en comm.estado-changed
+- `js/admin-section-router.js` — agrega title precomputado y `_previous: {section}`
+- `js/admin-activity-feed.js` — `diffSummary()` + `fmtPriceShort()` + render `.aaf-entry-diff`
+- `css/admin.css` — `.aaf-entry-diff` styles (gold-tinted monospace block)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505160000
 
 ---
 

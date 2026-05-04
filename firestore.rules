@@ -215,6 +215,17 @@ service cloud.firestore {
       // F4.3: Audit log entries are IMMUTABLE — no updates allowed
     }
 
+    // ========== EVENT BUS (I.1 / I.2 — admin Activity Feed) ==========
+    match /events/{eventId} {
+      // Authenticated users can read (Activity Feed shows them)
+      allow read: if isAuthenticated();
+      // Anyone authenticated can create — events are produced by both
+      // admin and registered clients. The bySource field tracks origin.
+      allow create: if request.auth != null;
+      // Immutable like auditLog — no updates allowed
+      allow delete: if isSuperAdmin();
+    }
+
     // ========== CONFIG ==========
     match /config/{docId} {
       allow read: if true;

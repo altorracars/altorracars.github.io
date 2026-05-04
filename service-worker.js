@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505130000'; // I.1 (mega-plan v4) — AltorraEventBus core (pub/sub + persistence + DOM dispatch)
+const CACHE_VERSION = 'v20260505160000'; // I.4 (mega-plan v4) — Diff metadata in EventBus payloads + transition rendering in Activity Feed
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

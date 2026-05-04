@@ -4191,6 +4191,60 @@ SEMANA 12: P + buffer + QA + estabilización
 4. DevTools → cambiar OS theme con `prefers-color-scheme` simulation → si nunca tocaste el toggle, sigue al SO
 5. `<html data-theme="high-contrast">` en consola → A11y mode activa (T.8 lo refinará)
 
+---
+
+### Microfase T.5 — Animation system (`css/animations.css`) ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: animaciones ad-hoc esparcidas por todo el codebase (cada componente con sus propios `@keyframes`). T.5 centraliza en UN archivo con keyframes + utility classes + stagger system.
+
+**Lo que se creó**: `css/animations.css` con:
+
+**1. Entrance keyframes** (todas usan `--ease-spring` o `--ease-snap` de tokens):
+- `alt-fade-in`, `alt-slide-up`, `alt-slide-down`, `alt-slide-in-left/right`, `alt-scale-in`, `alt-pop-in`
+
+**2. Exit keyframes**:
+- `alt-fade-out`, `alt-slide-out-down`, `alt-scale-out`
+
+**3. Attention seekers**:
+- `alt-pulse` (loop), `alt-shake` (one-shot), `alt-wiggle`, `alt-bounce`, `alt-flash`
+
+**4. Continuous**:
+- `alt-spin`, `alt-ping`, `alt-breathe`, `alt-shimmer`
+
+**5. Utility classes** (apply declaratively):
+- `.alt-animate-fade-in`, `.alt-animate-slide-up`, etc. — todas con `both` fill mode
+- `.alt-animate-pulse`, `.alt-animate-shake`, etc.
+
+**6. Stagger system**:
+- `.alt-stagger > *` con `--alt-stagger-delay` (default 60ms) × `--alt-stagger-index` (1-10)
+- Variants `.alt-stagger--fast` (30ms) y `.alt-stagger--slow` (100ms)
+- Funciona automáticamente con cualquier utility de entrance: `<ul class="alt-stagger"><li class="alt-animate-slide-up">...</li>...</ul>` → cada `<li>` aparece 60ms después del anterior
+
+**7. View Transitions API**:
+- `@supports (view-transition-name: none)` activa cross-fade nativo entre páginas en Chrome 126+
+- Duración + curva desde tokens
+
+**8. Live indicator**:
+- `.alt-live-indicator` — dot pulsante + ping ring para indicar estado "en vivo" (Concierge, Inbox)
+- Reutilizable cross-features
+
+**Reduced motion**: TODA animación queda neutralizada por la regla global de `tokens.css` (heredado).
+
+**Diseño (D)**:
+- Curvas oficiales: spring para entrance/exit (overshoot natural), snap para fade simples, soft para loops
+- Durations: normal para la mayoría, slow para pop-in (más dramático), slower para wiggle
+- Naming consistente: keyframes `alt-{name}`, classes `.alt-animate-{name}`
+
+**Migración (M)**: ningún cambio destructivo. CSS legacy con sus keyframes propios sigue funcionando. T.6 hará la sustitución masiva por las utilities de aquí.
+
+**Archivos**: `css/animations.css` (new), `admin.html` (link agregado), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar** (en consola del admin):
+1. `document.body.classList.add('alt-animate-pulse')` → cuerpo entero pulsa
+2. `document.querySelectorAll('.alt-card').forEach(c => c.classList.add('alt-animate-slide-up'))` + envolver en `.alt-stagger` → cards entran en cascada
+3. `<i data-lucide="loader-2" class="alt-animate-spin"></i>` en cualquier lugar → spinner
+4. DevTools → activar prefers-reduced-motion → todas las animaciones se vuelven instantáneas
+
 
 
 ---

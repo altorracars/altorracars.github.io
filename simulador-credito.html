@@ -2166,7 +2166,10 @@
             }
         });
 
-        // Form submit
+        // ============================================
+        // MF2.2 — Form submit: save to Firestore + show in-page confirmation
+        // (no WhatsApp redirect)
+        // ============================================
         document.getElementById('contact-form').addEventListener('submit', (e) => {
             e.preventDefault();
 
@@ -2180,43 +2183,93 @@
             const income = document.getElementById('contact-income').value;
             const pep = document.getElementById('contact-pep').value;
 
-            // Build vehicle info section if available
-            let vehicleSection = '';
-            if (state.vehicleName) {
-                const vehicleFullName = state.vehicleYear
-                    ? `${state.vehicleName} ${state.vehicleYear}`
-                    : state.vehicleName;
-                vehicleSection = `VEHICULO DE INTERES:
-- ${vehicleFullName}`;
-                if (state.vehicleLink) {
-                    vehicleSection += `
-- Ver vehiculo: ${state.vehicleLink}`;
-                }
-                vehicleSection += `
+            // MF1.1 — identity + source payload
+            var u = (window.auth && window.auth.currentUser) || null;
+            var registered = u && !u.isAnonymous;
+            var ua = navigator.userAgent || '';
+            var browser = /Edg\//.test(ua) ? 'Edge' : (/Chrome\//.test(ua) ? 'Chrome' : (/Firefox\//.test(ua) ? 'Firefox' : (/Safari\//.test(ua) ? 'Safari' : 'Unknown')));
+            var os = /Windows/.test(ua) ? 'Windows' : (/Mac OS X/.test(ua) ? 'macOS' : (/Android/.test(ua) ? 'Android' : (/iPhone|iPad/.test(ua) ? 'iOS' : 'Linux')));
 
-`;
+            var vehiculoInteres = state.vehicleName
+                ? (state.vehicleYear ? state.vehicleName + ' ' + state.vehicleYear : state.vehicleName)
+                : 'No especificado';
+
+            var doc = {
+                nombre: name,
+                telefono: phone,
+                prefijoPais: '+57',
+                email: email || 'No proporcionado',
+                tipo: 'financiacion',
+                origen: 'simulador_credito',
+                requiereCita: false,
+                vehiculo: vehiculoInteres,
+                vehiculoLink: state.vehicleLink || '',
+                datosExtra: {
+                    documentoTipo: docType,
+                    documentoNumero: docNumber,
+                    ciudad: city,
+                    actividad: occupation,
+                    ingresos: income,
+                    pep: pep,
+                    precioVehiculo: state.price || 0,
+                    cuotaInicial: state.initialPayment || 0,
+                    plazoMeses: state.term || 0,
+                    cuotaMensual: state.monthlyPayment || 0,
+                    tasa: state.rate || 0
+                },
+                comentarios: '',
+                estado: 'pendiente',
+                observaciones: '',
+                createdAt: new Date().toISOString(),
+                userId: registered ? u.uid : null,
+                userEmail: registered ? (u.email || null) : null,
+                clientCategory: registered ? 'registered' : 'guest',
+                source: { page: 'simulador-credito.html', cta: 'simulador_credito_form', referrer: (document.referrer || '').slice(0, 200) },
+                device: { type: /Mobi|Android|iPhone|iPad/.test(ua) ? 'mobile' : 'desktop', browser: browser, os: os }
+            };
+
+            function showSuccess(ticketId) {
+                var modal = document.getElementById('contact-modal');
+                var content = modal && modal.querySelector('.sim-modal-content');
+                if (!content) return;
+                var ticketShort = ticketId ? ticketId.slice(0, 6).toUpperCase() : '';
+                var first = (name || '').split(' ')[0];
+                content.innerHTML =
+                    '<div class="contact-success" role="status" aria-live="polite">' +
+                        '<div class="contact-success-icon">' +
+                            '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
+                                '<circle cx="12" cy="12" r="10"/>' +
+                                '<polyline points="9 12 11 14 15 10"/>' +
+                            '</svg>' +
+                        '</div>' +
+                        '<h2 class="contact-success-title">¡Solicitud de crédito recibida!</h2>' +
+                        (first ? '<p class="contact-success-subtitle">Gracias, ' + first + '.</p>' : '') +
+                        '<p class="contact-success-message">Un asesor revisará tu información y te contactará pronto por correo y WhatsApp con la propuesta de financiación.</p>' +
+                        (ticketShort ? '<div class="contact-success-ticket">Tu nº de seguimiento: <strong>' + ticketShort + '</strong></div>' : '') +
+                        '<div class="contact-success-actions">' +
+                            '<button type="button" class="contact-success-btn contact-success-btn--primary" id="sim-success-close">Entendido</button>' +
+                        '</div>' +
+                    '</div>';
+                var btn = document.getElementById('sim-success-close');
+                if (btn) btn.addEventListener('click', function () {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
             }
 
-            const msg = `Hola ALTORRA CARS!
-
-Solicito estudio de credito vehicular.
-
-${vehicleSection}DATOS PERSONALES:
-- Nombre: ${name}
-- Documento: ${docType} ${docNumber}
-- Celular: ${phone}
-- Email: ${email}
-- Ciudad: ${city}
-- Actividad: ${occupation}
-- Ingresos mensuales: ${income}
-- Persona expuesta politicamente (PEP): ${pep}
-
-AUTORIZACIONES:
-He aceptado el tratamiento de mis datos personales y la consulta en centrales de riesgo.
-
-Quedo atento a su respuesta.`;
-
-            window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+            if (window.db) {
+                window.db.collection('solicitudes').add(doc).then(function (ref) {
+                    showSuccess(ref.id);
+                }).catch(function (err) {
+                    console.warn('[Simulador] Error saving:', err);
+                    if (window.notify && window.notify.error) {
+                        window.notify.error({ title: 'Error', message: 'No pudimos enviar tu solicitud. Verifica tu conexión e inténtalo de nuevo.', duration: 6000 });
+                    }
+                });
+            } else {
+                // Defensive fallback if Firestore SDK didn't load — still show confirmation
+                showSuccess('');
+            }
         });
 
         // ============================================

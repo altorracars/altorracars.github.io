@@ -49,6 +49,38 @@ function _contactAutoFill(form) {
     }
 }
 
+/** MF2.2 — In-page confirmation that replaces the form-card content */
+function _renderContactSuccess(formCard, opts) {
+    if (!formCard) return;
+    var nombre = (opts && opts.nombre) || '';
+    var ticketId = (opts && opts.ticketId) || '';
+    var ticketShort = ticketId ? ticketId.slice(0, 6).toUpperCase() : '';
+    var nextStep = (opts && opts.nextStep) || 'Te contactaremos pronto por correo electrónico y WhatsApp.';
+    var u = (window.auth && window.auth.currentUser) || null;
+    var isLogged = u && !u.isAnonymous;
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+    formCard.innerHTML =
+        '<div class="contact-success" role="status" aria-live="polite">' +
+            '<div class="contact-success-icon">' +
+                '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<circle cx="12" cy="12" r="10"/>' +
+                    '<polyline points="9 12 11 14 15 10"/>' +
+                '</svg>' +
+            '</div>' +
+            '<h2 class="contact-success-title">¡Mensaje recibido!</h2>' +
+            (nombre ? '<p class="contact-success-subtitle">Gracias, ' + esc(nombre.split(' ')[0]) + '.</p>' : '') +
+            '<p class="contact-success-message">' + esc(nextStep) + '</p>' +
+            (ticketShort ? '<div class="contact-success-ticket">Tu nº de seguimiento: <strong>' + esc(ticketShort) + '</strong></div>' : '') +
+            '<div class="contact-success-actions">' +
+                '<a href="busqueda.html" class="contact-success-btn contact-success-btn--primary">Ver vehículos</a>' +
+                (isLogged ? '<a href="perfil.html#mis-solicitudes" class="contact-success-btn contact-success-btn--ghost">Ver mis solicitudes</a>'
+                          : '<a href="index.html" class="contact-success-btn contact-success-btn--ghost">Volver al inicio</a>') +
+            '</div>' +
+        '</div>';
+}
+
 if (contactForm) {
     // Auto-fill on render + on auth state change
     _contactAutoFill(contactForm);
@@ -86,18 +118,23 @@ if (contactForm) {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            }, identity, src)).catch(function(err) { console.warn('[Solicitudes] Error saving contacto:', err); });
+            }, identity, src)).then(function (ref) {
+                var formCard = contactForm.closest('.form-card');
+                _renderContactSuccess(formCard, {
+                    nombre: data.nombre || '',
+                    ticketId: ref.id,
+                    nextStep: 'Recibimos tu consulta. Un asesor revisará tu mensaje y te contactará pronto por correo y WhatsApp.'
+                });
+                // Smooth scroll to confirmation if the page has scrolled
+                if (formCard && typeof formCard.scrollIntoView === 'function') {
+                    formCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }).catch(function (err) {
+                console.warn('[Solicitudes] Error saving contacto:', err);
+                if (window.notify && window.notify.error) {
+                    window.notify.error({ title: 'Error', message: 'No pudimos enviar tu mensaje. Verifica tu conexión e inténtalo de nuevo.', duration: 6000 });
+                }
+            });
         }
-
-        // Also redirect to WhatsApp
-        const message = `*NUEVO CONTACTO - ALTORRA CARS*\n\n*Nombre:* ${data.nombre}\n*Email:* ${data.email}\n*Telefono:* ${data.telefono}\n*Vehiculo:* ${data.vehiculo || 'No especificado'}\n*Asunto:* ${data.asunto}\n\n*Mensaje:*\n${data.mensaje}`;
-        const whatsappURL = `https://wa.me/573235016747?text=${encodeURIComponent(message)}`;
-        window.open(whatsappURL, '_blank');
-
-        if (typeof toast !== 'undefined') {
-            toast.success('Solicitud enviada. Te redirigimos a WhatsApp.', 'Gracias!');
-        }
-
-        contactForm.reset();
     });
 }

@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504250000'; // MF2.1 — Vende Auto + Financiación: in-place success, no WhatsApp redirect
+const CACHE_VERSION = 'v20260504260000'; // MF2.2 — Contacto + Simulador: in-place success, no WhatsApp redirect, simulador now saves to Firestore
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -3652,6 +3652,53 @@ Todos `.catch(function() {})` — best-effort. localStorage es source of truth l
 
 **Archivos modificados**: `js/contact-forms.js`, `css/contact-forms.css`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase MF2.2 — Contacto general + Simulador de crédito ✓ COMPLETADA (2026-05-04)
+
+**Problemas raiz**:
+1. `js/contact.js` (form de `contacto.html`): tras enviar, abria WhatsApp en nueva pestana. Anti-patron documentado.
+2. `simulador-credito.html` form `#contact-form`: era PEOR — **nunca guardaba a Firestore**, solo abria WhatsApp. Si el usuario cancelaba el envio, el lead se perdia completamente.
+
+**Cambios aplicados**:
+
+1. **`js/contact.js`**:
+   - `window.open(whatsappURL)` eliminado
+   - Nuevo helper `_renderContactSuccess(formCard, opts)` que reemplaza el contenido de `.form-card` (el contenedor en `contacto.html`) con la pantalla de exito
+   - Smooth scroll al confirmar para que el usuario vea el cambio
+   - CTAs contextuales: "Ver vehiculos" + "Ver mis solicitudes" (registrado) o "Volver al inicio" (guest)
+   - Manejo de error con `notify.error` si Firestore falla
+
+2. **`simulador-credito.html`** (handler inline):
+   - Reescrito completo: ahora **guarda a `solicitudes`** con identidad MF1.1 + tracking de origen (`source.cta == 'simulador_credito_form'`)
+   - Incluye `datosExtra` rico con datos del simulador (precioVehiculo, cuotaInicial, plazoMeses, cuotaMensual, tasa, ingresos, ciudad, actividad, documento, PEP)
+   - Modal `.sim-modal-content` se reemplaza por la pantalla de exito al guardarse
+   - Boton "Entendido" cierra el modal
+   - Fallback defensivo: si Firestore SDK no esta cargado, igualmente muestra confirmacion (mejor UX que no respuesta)
+
+3. **CSS centralizado**:
+   - `.contact-success*` clases movidas de `css/contact-forms.css` a `css/style.css` para que esten disponibles en TODAS las paginas (contacto, simulador, modales, etc.)
+   - Usa CSS vars (`--text-primary`, `--text-secondary`) para light/dark theme automatico
+   - Mismo design system que MF2.1 — consistencia visual entre los 4 forms
+
+**Pasos para probar**:
+
+`contacto.html`:
+1. Abrir `contacto.html` → llenar form → enviar
+2. Verificar que **NO se abre WhatsApp**
+3. La `.form-card` se reemplaza por la pantalla de confirmacion con scroll suave
+4. Verificar Firestore Console: doc creado con `origen: 'contacto'`, `source.cta: 'contact_form_general'`
+5. Logueado: aparece boton "Ver mis solicitudes"
+6. Sin login: aparece "Volver al inicio"
+7. Forzar offline → enviar → toast error, form sigue intacto
+
+`simulador-credito.html`:
+1. Llenar simulador con valores → click WhatsApp → llenar modal de contacto → enviar
+2. Verificar que **NO se abre WhatsApp**
+3. Modal se transforma en pantalla de exito con ticket #
+4. Verificar Firestore: doc creado con `origen: 'simulador_credito'`, `tipo: 'financiacion'`, `datosExtra` lleno con todos los datos del simulador
+5. Click "Entendido" → modal se cierra
+
+**Archivos modificados**: `js/contact.js`, `simulador-credito.html`, `css/style.css`, `css/contact-forms.css`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

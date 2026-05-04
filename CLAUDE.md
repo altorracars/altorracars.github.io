@@ -4443,6 +4443,69 @@ Estado del Design System al cerrar el bloque T:
 5. Click en "Vehículos" → grupo Inventario se queda abierto, item se marca activo, border-left dorado
 6. DevTools → en consola: `AltorraSidebar.toggle('crm')` → grupo CRM se cierra
 
+---
+
+### Microfase B.2 — Workspace pattern reutilizable ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: cada sección del admin tiene su propia mini-página con título, breadcrumb, acciones, tabs, cuerpo. Hoy cada una usa estilos ad-hoc. B.2 crea un patrón reusable `.alt-workspace` que toda sección puede adoptar para sentirse parte del mismo sistema.
+
+**Lo que se creó** (`css/components.css`):
+
+```html
+<div class="alt-workspace" data-workspace-color="green">
+  <header class="alt-workspace-header">
+    <div class="alt-workspace-title-row">
+      <div>
+        <nav class="alt-workspace-breadcrumb">
+          <span>Comunicaciones</span><span>/</span><span>Bandeja</span>
+        </nav>
+        <h1 class="alt-workspace-title">Bandeja unificada</h1>
+        <p class="alt-workspace-subtitle">...</p>
+      </div>
+      <div class="alt-workspace-actions">
+        <button class="alt-btn alt-btn--primary">Nueva</button>
+      </div>
+    </div>
+    <nav class="alt-workspace-tabs alt-tabs alt-tabs--pills" role="tablist">
+      <button class="alt-tab" aria-selected="true">Todos</button>
+      ...
+    </nav>
+  </header>
+  <main class="alt-workspace-body">
+    ...
+  </main>
+</div>
+```
+
+**Características**:
+
+1. **Header con accent color**: borde superior 3px que toma `--ws-accent` según `data-workspace-color`. Sutil gradiente top-down para profundidad.
+2. **Breadcrumb** (uppercase + letter-spacing wide): orienta al admin sobre dónde está.
+3. **Title + Subtitle**: jerárquico, con `font-size-2xl` para el title y `--font-size-sm` color tertiary para el subtitle.
+4. **Actions row**: alineadas a la derecha en desktop, full-width stack en mobile.
+5. **Tabs slot**: usa `.alt-tabs` (T.2) — tanto default como `--pills` variant.
+6. **Body**: contenedor `flex: 1` para el contenido específico de cada workspace.
+7. **Workspace colors** (alineados con sidebar B.1): gold/green/blue/violet/orange/cyan/neutral.
+8. **Mobile**: title-row se apila vertical, actions full-width.
+
+**Storybook** (`admin/_components.html`): nueva sección "Workspace pattern" con ejemplo completo de Comunicaciones-Bandeja para QA visual.
+
+**Diseño (D)**:
+- Header se "extiende" al ancho del padre (margin negativo) para dar look de "cabezera oficial" y no de simple título embebido
+- Breadcrumb subtle, no compite con title
+- Tabs separados del content por padding vertical
+- 7 colores workspace permiten distinción visual instantánea sin sobrecargar
+
+**Migración (M)**: ningún breaking change. Las secciones existentes seguirán funcionando con sus estilos legacy hasta que las migremos en bloques específicos (Comunicaciones en su propio bloque, CRM en F, etc.).
+
+**Archivos**: `css/components.css`, `admin/_components.html`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Abrir `admin/_components.html` → bajar hasta sección "Workspace pattern"
+2. Ver header verde con breadcrumb + title + subtitle + actions + 4 tabs (Todos/Citas/Solicitudes/Leads)
+3. Cambiar `data-workspace-color="green"` → `"gold"` en consola → header acent cambia a dorado
+4. Toggle theme → workspace adapta colores sin código extra
+
 
 
 ---

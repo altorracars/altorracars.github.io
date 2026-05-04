@@ -718,6 +718,140 @@ textarea.alt-input {
 .alt-cluster--between { justify-content: space-between; }
 
 /* ═══════════════════════════════════════════════════════════
+   WORKSPACE PATTERN (B.2) — reusable layout for each admin section
+   Use cases:
+     <div class="alt-workspace" data-workspace-color="green">
+       <header class="alt-workspace-header">
+         <div class="alt-workspace-title-row">
+           <div>
+             <nav class="alt-workspace-breadcrumb">
+               <span>Comunicaciones</span><span>/</span><span>Bandeja</span>
+             </nav>
+             <h1 class="alt-workspace-title">Bandeja unificada</h1>
+             <p class="alt-workspace-subtitle">Gestiona citas, solicitudes y leads</p>
+           </div>
+           <div class="alt-workspace-actions">
+             <button class="alt-btn alt-btn--primary">Nueva</button>
+           </div>
+         </div>
+         <nav class="alt-workspace-tabs alt-tabs alt-tabs--pills">
+           <button class="alt-tab" aria-selected="true">Todos</button>
+           ...
+         </nav>
+       </header>
+       <main class="alt-workspace-body">
+         ...
+       </main>
+     </div>
+   ═══════════════════════════════════════════════════════════ */
+.alt-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+.alt-workspace-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-subtle);
+    /* Workspace color accent — top border (subtle) */
+    border-top: 3px solid var(--ws-accent, transparent);
+    margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0;
+    padding: var(--space-5) var(--space-5) var(--space-3);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.02) 0%,
+        transparent 80%
+    );
+}
+.alt-workspace-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+.alt-workspace-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    letter-spacing: var(--letter-spacing-wide);
+    margin-bottom: var(--space-1);
+    text-transform: uppercase;
+    font-weight: var(--font-weight-semibold);
+}
+.alt-workspace-breadcrumb a {
+    color: inherit;
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease-snap);
+}
+.alt-workspace-breadcrumb a:hover {
+    color: var(--ws-accent, var(--brand-primary));
+}
+.alt-workspace-title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    margin: 0;
+    color: var(--text-primary);
+    letter-spacing: var(--letter-spacing-tight);
+    line-height: var(--line-height-tight);
+}
+.alt-workspace-subtitle {
+    margin: var(--space-1) 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+    line-height: var(--line-height-snug);
+    max-width: 70ch;
+}
+.alt-workspace-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+.alt-workspace-tabs {
+    margin-top: var(--space-2);
+    /* Inherits .alt-tabs styles + .alt-tabs--pills variant */
+}
+.alt-workspace-body {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Workspace color tokens — applied via data-workspace-color */
+.alt-workspace[data-workspace-color="gold"]    { --ws-accent: var(--color-brand-500); }
+.alt-workspace[data-workspace-color="green"]   { --ws-accent: var(--color-success-500); }
+.alt-workspace[data-workspace-color="blue"]    { --ws-accent: var(--color-info-500); }
+.alt-workspace[data-workspace-color="violet"]  { --ws-accent: var(--color-purple-500); }
+.alt-workspace[data-workspace-color="orange"]  { --ws-accent: #fb923c; }
+.alt-workspace[data-workspace-color="cyan"]    { --ws-accent: var(--color-cyan-500); }
+.alt-workspace[data-workspace-color="neutral"] { --ws-accent: var(--text-secondary); }
+
+/* Mobile: stack title row vertically */
+@media (max-width: 640px) {
+    .alt-workspace-header {
+        padding: var(--space-4);
+        margin: calc(var(--space-3) * -1) calc(var(--space-3) * -1) 0;
+    }
+    .alt-workspace-title-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .alt-workspace-actions {
+        flex-direction: column;
+    }
+    .alt-workspace-actions .alt-btn {
+        width: 100%;
+    }
+    .alt-workspace-title {
+        font-size: var(--font-size-xl);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
    THEME TOGGLE icon swap (T.4)
    Show moon when in light mode, sun when in dark/contrast mode
    ═══════════════════════════════════════════════════════════ */

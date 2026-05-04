@@ -353,6 +353,126 @@
         _setDebug: function (b) { DEBUG = !!b; }
     };
 
+    // ─── Default emitter (Phase B3) ─────────────────────────────
+    // Routes diff events to the notification center via the explicit
+    // category API. Uses entityRef for dedup (max 1 alert per vehicle
+    // per 6h for price_alert, per 1h for inventory_change).
+
+    function vehicleTitle(v) {
+        if (!v) return 'tu vehiculo favorito';
+        var parts = [v.marca, v.modelo].filter(Boolean);
+        if (v.year) parts.push(v.year);
+        return parts.join(' ').trim() || 'tu vehiculo favorito';
+    }
+
+    function vehicleUrl(v) {
+        if (!v) return null;
+        if (typeof window.getVehicleDetailUrl === 'function') {
+            try { return window.getVehicleDetailUrl(v); } catch (e) {}
+        }
+        if (typeof window.getVehicleSlug === 'function') {
+            try { return 'vehiculos/' + window.getVehicleSlug(v) + '.html'; } catch (e) {}
+        }
+        return null;
+    }
+
+    function fmtPrice(n) {
+        if (typeof n !== 'number' || !isFinite(n)) return '';
+        try {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency', currency: 'COP',
+                minimumFractionDigits: 0, maximumFractionDigits: 0
+            }).format(n);
+        } catch (e) { return '$' + n.toLocaleString('es-CO'); }
+    }
+
+    var STATUS_LABEL = {
+        disponible: 'Disponible',
+        reservado: 'Reservado',
+        vendido: 'Vendido',
+        borrador: 'Borrador'
+    };
+
+    function diffToPayload(d) {
+        var v = d.vehicleData;
+        var name = vehicleTitle(v);
+        var link = vehicleUrl(v);
+        var ref = 'vehicle:' + d.vehicleId;
+
+        if (d.type === 'price_drop') {
+            var saved = d.oldPrice - d.newPrice;
+            return {
+                category: 'price_alert',
+                title: 'Bajo el precio: ' + name,
+                message: fmtPrice(d.oldPrice) + ' → ' + fmtPrice(d.newPrice)
+                    + '  (' + d.pctChange + '%, ahorras ' + fmtPrice(saved) + ')',
+                link: link,
+                entityRef: ref
+            };
+        }
+        if (d.type === 'price_increase') {
+            return {
+                category: 'price_alert',
+                title: 'Subio el precio: ' + name,
+                message: fmtPrice(d.oldPrice) + ' → ' + fmtPrice(d.newPrice)
+                    + '  (+' + d.pctChange + '%)',
+                link: link,
+                entityRef: ref
+            };
+        }
+        if (d.type === 'status_change') {
+            var newLabel = STATUS_LABEL[d.newEstado] || d.newEstado;
+            var msg;
+            if (d.newEstado === 'reservado') msg = 'Alguien lo reservo. Si te interesa, contactanos pronto.';
+            else if (d.newEstado === 'vendido') msg = 'Este vehiculo ya fue vendido.';
+            else if (d.newEstado === 'disponible') msg = 'Volvio a estar disponible.';
+            else msg = 'Cambio a: ' + newLabel;
+            return {
+                category: 'inventory_change',
+                title: name + ' ahora esta ' + newLabel.toLowerCase(),
+                message: msg,
+                link: link,
+                entityRef: ref
+            };
+        }
+        if (d.type === 'inventory_removed') {
+            return {
+                category: 'inventory_change',
+                title: name + ' ya no esta en inventario',
+                message: 'Este vehiculo dejo de estar disponible. Te recomendamos otros similares.',
+                link: 'favoritos.html',
+                entityRef: ref
+            };
+        }
+        if (d.type === 'bulk') {
+            return {
+                category: 'inventory_change',
+                title: d.count + ' cambios en tus favoritos',
+                message: 'Hay novedades en tu lista. Abrila para ver todos los cambios.',
+                link: 'favoritos.html',
+                entityRef: 'fav-bulk:' + Date.now()
+            };
+        }
+        return null;
+    }
+
+    function defaultEmitter(diffs) {
+        if (!window.notifyCenter || typeof window.notifyCenter.notify !== 'function') return;
+        // Skip emission if user has disabled bell (future toggle, see G2)
+        // try { if (localStorage.getItem('altorra_notif_bell_disabled') === '1') return; } catch (e) {}
+        diffs.forEach(function (d) {
+            try {
+                var payload = diffToPayload(d);
+                if (!payload) return;
+                window.notifyCenter.notify(payload.category, payload);
+            } catch (e) {
+                log('emit error', e);
+            }
+        });
+    }
+
+    onDiffs(defaultEmitter);
+
     // Auto-init when DOM is ready (favoritesManager + vehicleDB load via main.js)
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);

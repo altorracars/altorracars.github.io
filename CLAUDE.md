@@ -3110,6 +3110,48 @@ AltorraFavWatcher.runDiff();
 **Archivos creados**: `js/favorites-watcher.js`
 **Archivos modificados**: 12 HTMLs raiz + 25 paginas vehiculos + 18 paginas marcas + `service-worker.js` + `js/cache-manager.js`
 
+### Microfase B3 — Emision al bell ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: conectar el diff engine de B2 al `notifyCenter.notify()`. El usuario por fin **ve** las alertas que B2 detecta.
+
+**Funcion `defaultEmitter(diffs)`** registrada via `onDiffs(defaultEmitter)` al final de `favorites-watcher.js`. Mapea cada tipo de diff a un payload listo para `notifyCenter.notify(category, payload)`.
+
+**Mapping diff → notificacion**:
+
+| Diff | Categoria | Tipo visual | Mensaje ejemplo |
+|---|---|---|---|
+| `price_drop` | `price_alert` | success | "Bajo el precio: Chevrolet Equinox 2018" — "$80M → $76M (-5%, ahorras $4M)" |
+| `price_increase` | `price_alert` | success (icon trending-down) | "Subio el precio: ..." — "$76M → $80M (+5%)" |
+| `status_change` → reservado | `inventory_change` | warning | "Chevrolet Equinox ahora esta reservado" — "Alguien lo reservo. Si te interesa, contactanos pronto." |
+| `status_change` → vendido | `inventory_change` | warning | "Chevrolet Equinox ahora esta vendido" — "Este vehiculo ya fue vendido." |
+| `inventory_removed` | `inventory_change` | warning | "Chevrolet Equinox ya no esta en inventario" — link a `favoritos.html` |
+| `bulk` (≥4 diffs) | `inventory_change` | warning | "5 cambios en tus favoritos" — link a `favoritos.html` |
+
+**Helpers internos**:
+- `vehicleTitle(v)` — arma "Marca Modelo Año" defensivamente
+- `vehicleUrl(v)` — usa `window.getVehicleDetailUrl(v)` o `getVehicleSlug(v)` con fallbacks
+- `fmtPrice(n)` — Intl.NumberFormat es-CO COP, $ ej. "$80.000.000"
+- `STATUS_LABEL` — "disponible" → "Disponible", etc.
+
+**Comportamiento dedup** (heredado de A2):
+- `entityRef: 'vehicle:' + d.vehicleId` → max 1 alerta de precio por vehiculo cada 6h
+- inventory_change: max 1 por vehiculo cada 1h
+- bulk usa `'fav-bulk:' + Date.now()` para que no se dedupe (cada bulk es unico)
+
+**Comportamiento background** (heredado de A2):
+- Si `document.hidden`, suprime el toast pero igual escribe al bell
+- Usuario regresa al tab → ve el badge dorado del bell
+
+**Toggle futuro G2** placeholder: linea comentada `if (localStorage.altorra_notif_bell_disabled === '1') return;` lista para activarse cuando el usuario tenga un switch de preferencia.
+
+**Verificacion E2E**:
+1. Loguea como cliente registrado, agrega un vehiculo a favoritos.
+2. Admin baja el precio de ese vehiculo.
+3. Cliente: en su pagina, llega un toast verde "Bajo el precio: ..." + entrada en el bell con badge dorado "Precio".
+4. Click en la entrada → cierra el panel + navega a la ficha del vehiculo.
+
+**Archivos modificados**: `js/favorites-watcher.js`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504150000'; // Phase B1+B2 — favorites watcher (snapshot + diff engine, silent)
+const CACHE_VERSION = 'v20260504160000'; // Phase B3 — favorites watcher emits price_alert + inventory_change to bell
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

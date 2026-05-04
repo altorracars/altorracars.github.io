@@ -534,7 +534,8 @@
         var panel = document.getElementById('crmDetailPanel');
         var title = document.getElementById('crmDetailTitle');
         if (title) title.innerHTML = '<h2 style="margin:0;font-size:1.1rem;">' + escTxt(c.nombre) + '</h2>' +
-            '<div style="font-size:0.78rem;color:var(--admin-text-muted);">' + escTxt(c.email || '') + '</div>';
+            '<div style="font-size:0.78rem;color:var(--admin-text-muted);">' + escTxt(c.email || '') + '</div>' +
+            '<button class="btn btn-sm btn-primary" data-action="generate-quote-open" style="margin-top:8px;">Generar cotización</button>';
         // Reset to Resumen tab
         panel.querySelectorAll('.crm-detail-tab').forEach(function (t, i) {
             t.classList.toggle('active', i === 0);

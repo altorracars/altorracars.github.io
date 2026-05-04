@@ -3540,3 +3540,19 @@ table th:focus-visible,
     line-height: 1.5;
     white-space: pre-wrap;
 }
+
+/* MF4.6 — Quote preview */
+.quote-preview {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: rgba(184,150,88,0.08);
+    border: 1px solid rgba(184,150,88,0.24);
+    border-radius: 8px;
+}
+.quote-preview-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 0.86rem;
+}
+.quote-preview-row strong { color: var(--admin-text); }

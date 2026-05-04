@@ -208,6 +208,10 @@
 
         <!-- SISTEMA -->
         <div class="nav-category">Sistema</div>
+        <button class="nav-item" data-section="automation">
+            <i data-lucide="zap"></i>
+            <span>Automatización</span>
+        </button>
         <button class="nav-item" data-section="audit">
             <i data-lucide="scroll-text"></i>
             <span>Auditoria</span>
@@ -751,6 +755,19 @@
         </div>
 
         <!-- ALIADOS Y OPERACIONES -->
+        <!-- MF6.1 — Automation rules section -->
+        <div id="sec-automation" class="section">
+            <div class="page-header">
+                <div>
+                    <h1>Automatización — Reglas Inteligentes</h1>
+                    <p class="page-subtitle">Reglas que actúan automáticamente sobre nuevas comunicaciones (asignación, alertas, follow-ups).</p>
+                </div>
+            </div>
+            <div class="automation-rules" id="automationRulesList">
+                <div class="table-empty">Cargando reglas...</div>
+            </div>
+        </div>
+
         <!-- MF4.7 — Inbox section -->
         <div id="sec-inbox" class="section">
             <div class="page-header">
@@ -2086,6 +2103,7 @@
 <script src="js/admin-appointments.js" defer></script>
 <script src="js/admin-crm.js" defer></script>
 <script src="js/admin-inbox.js" defer></script>
+<script src="js/admin-automation.js" defer></script>
 <script src="js/admin-dealers.js" defer></script>
 <script src="js/admin-lists.js" defer></script>
 <script src="js/admin-banners.js" defer></script>

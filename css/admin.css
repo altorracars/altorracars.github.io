@@ -3424,3 +3424,80 @@ table th:focus-visible,
 .crm-funnel-count {
     margin-left: auto;
 }
+
+/* MF6.1 — Automation rules */
+.automation-rules {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.automation-rule {
+    background: var(--admin-card);
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+}
+.automation-rule-info { flex: 1; }
+.automation-rule-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--admin-text);
+    margin-bottom: 4px;
+}
+.automation-rule-desc {
+    font-size: 0.82rem;
+    color: var(--admin-text-muted);
+    line-height: 1.5;
+    margin-bottom: 4px;
+}
+.automation-rule-trigger {
+    font-size: 0.72rem;
+    color: var(--admin-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.automation-rule-trigger strong {
+    color: var(--admin-gold);
+    font-family: monospace;
+}
+.automation-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+.automation-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.automation-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: rgba(255,255,255,0.1);
+    border-radius: 999px;
+    transition: 0.2s;
+}
+.automation-slider::before {
+    content: '';
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.2s;
+}
+.automation-toggle input:checked + .automation-slider {
+    background: var(--admin-gold);
+}
+.automation-toggle input:checked + .automation-slider::before {
+    transform: translateX(20px);
+}

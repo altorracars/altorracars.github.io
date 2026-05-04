@@ -697,7 +697,20 @@
                 </button>
             </div>
 
-            <div class="stat-card overflow-x-auto">
+            <!-- MF3.5 — View toggle: Tabla / Kanban -->
+            <div class="comm-view-toggle" role="tablist">
+                <button class="comm-view-btn active" data-view="table" role="tab" aria-selected="true">
+                    <i data-lucide="list" width="14" height="14"></i> Tabla
+                </button>
+                <button class="comm-view-btn" data-view="kanban" role="tab" aria-selected="false">
+                    <i data-lucide="kanban" width="14" height="14"></i> Kanban
+                </button>
+            </div>
+
+            <!-- Kanban container (hidden by default) -->
+            <div id="commKanbanView" class="comm-kanban" hidden></div>
+
+            <div id="commTableView" class="stat-card overflow-x-auto">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
                     <button class="btn btn-ghost btn-sm btn-export" id="btnExportAppointmentsCSV" title="Exportar CSV">
                         <i data-lucide="download" width="14" height="14"></i>

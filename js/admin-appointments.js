@@ -144,6 +144,8 @@
             try { if (typeof AP.migrateCommunicationsSchema === 'function') AP.migrateCommunicationsSchema(AP.appointments); } catch (e) {}
 
             renderAppointmentsTable();
+            // MF3.5 — also refresh kanban if it's the active view
+            if (AP._commView === 'kanban') renderKanban();
             renderAdminCalendar(); // refresh calendar counts
             var pending = AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length;
             var badge = $('navBadgeAppointments');
@@ -259,6 +261,148 @@
             renderAppointmentsTable();
         });
     }
+
+    // ========== MF3.5 — KANBAN VIEW ==========
+    AP._commView = AP._commView || 'table';
+    function renderKanban() {
+        var schema = window.AltorraCommSchema;
+        var container = document.getElementById('commKanbanView');
+        if (!container || !schema) return;
+
+        // Determine which kind we're rendering. If "all", default to solicitud
+        // states (most useful for general overview).
+        var activeKind = (AP._kindFilter && AP._kindFilter !== 'all') ? AP._kindFilter : 'solicitud';
+        var states = schema.STATES[activeKind] || [];
+        if (!states.length) return;
+
+        // Filter docs by current kind
+        var docs = AP.appointments.slice();
+        if (AP._kindFilter && AP._kindFilter !== 'all') {
+            docs = docs.filter(function (a) { return getKindOf(a) === AP._kindFilter; });
+        }
+
+        // Group by estado
+        var groups = {};
+        states.forEach(function (s) { groups[s] = []; });
+        docs.forEach(function (a) {
+            var k = getKindOf(a);
+            if (k !== activeKind) return;
+            var e = a.estado || schema.getDefaultState(k);
+            if (groups[e]) groups[e].push(a);
+        });
+
+        var html = states.map(function (state) {
+            var label = schema.STATE_LABELS[state] || state;
+            var items = groups[state];
+            var cards = items.map(function (a) {
+                var kind = getKindOf(a);
+                var priority = a.priority || 'media';
+                var name = AP.escapeHtml(a.nombre || '-');
+                var vehic = AP.escapeHtml(a.vehiculo || '-');
+                return '<div class="comm-kanban-card" draggable="true" ' +
+                    'data-id="' + AP.escapeHtml(a._docId) + '" ' +
+                    'data-state="' + AP.escapeHtml(state) + '" ' +
+                    'data-kind="' + AP.escapeHtml(kind) + '">' +
+                    '<div class="comm-kanban-card-name">' + name + '</div>' +
+                    '<div class="comm-kanban-card-vehiculo">' + vehic + '</div>' +
+                    '<div class="comm-kanban-card-meta">' +
+                        '<span class="comm-kanban-card-priority" data-priority="' + priority + '">' + priority + '</span>' +
+                        (a.assignedToName ? '<span>· ' + AP.escapeHtml(a.assignedToName) + '</span>' : '') +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            if (!cards) cards = '<div class="comm-kanban-empty">Sin ' + label.toLowerCase() + '</div>';
+            return '<div class="comm-kanban-col" data-state="' + state + '">' +
+                '<div class="comm-kanban-col-head">' +
+                    '<span>' + label + '</span>' +
+                    '<span class="comm-kanban-col-count">' + items.length + '</span>' +
+                '</div>' +
+                '<div class="comm-kanban-col-body" data-drop-target="' + state + '">' + cards + '</div>' +
+            '</div>';
+        }).join('');
+
+        container.innerHTML = html;
+        wireKanbanDragDrop(container);
+    }
+
+    function wireKanbanDragDrop(container) {
+        var dragged = null;
+        container.querySelectorAll('.comm-kanban-card').forEach(function (card) {
+            card.addEventListener('dragstart', function (e) {
+                dragged = card;
+                card.classList.add('is-dragging');
+                if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+            });
+            card.addEventListener('dragend', function () {
+                card.classList.remove('is-dragging');
+                dragged = null;
+            });
+            // Click on card → open manage modal
+            card.addEventListener('click', function () {
+                var id = card.getAttribute('data-id');
+                if (id && typeof manageAppointment === 'function') manageAppointment(id);
+            });
+        });
+
+        container.querySelectorAll('.comm-kanban-col-body').forEach(function (col) {
+            col.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                col.parentElement.classList.add('is-dragover');
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+            });
+            col.addEventListener('dragleave', function () {
+                col.parentElement.classList.remove('is-dragover');
+            });
+            col.addEventListener('drop', function (e) {
+                e.preventDefault();
+                col.parentElement.classList.remove('is-dragover');
+                if (!dragged) return;
+                var newState = col.getAttribute('data-drop-target');
+                var docId = dragged.getAttribute('data-id');
+                var oldState = dragged.getAttribute('data-state');
+                if (!docId || !newState || newState === oldState) return;
+                // Persist via Firestore
+                window.db.collection('solicitudes').doc(docId).update({
+                    estado: newState,
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: (window.auth.currentUser && window.auth.currentUser.email) || 'admin'
+                }).then(function () {
+                    if (AP.toast) AP.toast('Estado actualizado a: ' + (window.AltorraCommSchema.STATE_LABELS[newState] || newState));
+                    if (AP.writeAuditLog) AP.writeAuditLog('appointment_kanban_drag', 'solicitud ' + docId, oldState + ' → ' + newState);
+                    // Optimistic update — full re-render comes via onSnapshot
+                    col.appendChild(dragged);
+                    dragged.dataset.state = newState;
+                }).catch(function (err) {
+                    if (AP.toast) AP.toast('Error: ' + err.message, 'error');
+                });
+            });
+        });
+    }
+
+    // View toggle wiring
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.comm-view-btn');
+        if (!btn) return;
+        var view = btn.getAttribute('data-view');
+        if (!view) return;
+        document.querySelectorAll('.comm-view-btn').forEach(function (b) {
+            var on = b === btn;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        AP._commView = view;
+        var tableEl = document.getElementById('commTableView');
+        var kanbanEl = document.getElementById('commKanbanView');
+        if (view === 'kanban') {
+            if (tableEl) tableEl.hidden = true;
+            if (kanbanEl) kanbanEl.hidden = false;
+            renderKanban();
+            if (window.lucide) try { window.lucide.createIcons(); } catch (e2) {}
+        } else {
+            if (tableEl) tableEl.hidden = false;
+            if (kanbanEl) kanbanEl.hidden = true;
+        }
+    });
 
     // ========== SOLICITUDES TABLE ==========
     // MF3.1 — kind filter applied first, then existing per-state filters

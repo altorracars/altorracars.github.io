@@ -52,6 +52,24 @@
     }
 
     function snapKey(uid) { return SNAPSHOT_PREFIX + (uid || ''); }
+    var PENDING_PREFIX = 'altorra_fav_pending_';
+    function pendingKey(uid) { return PENDING_PREFIX + (uid || ''); }
+
+    function readPending(uid) {
+        try {
+            var raw = localStorage.getItem(pendingKey(uid));
+            if (!raw) return {};
+            var p = JSON.parse(raw);
+            return (p && typeof p === 'object') ? p : {};
+        } catch (e) { return {}; }
+    }
+    function writePending(uid, map) {
+        try { localStorage.setItem(pendingKey(uid), JSON.stringify(map)); }
+        catch (e) {}
+    }
+    function clearPendingStore(uid) {
+        try { localStorage.removeItem(pendingKey(uid)); } catch (e) {}
+    }
 
     function readSnapshots(uid) {
         try {
@@ -149,11 +167,45 @@
         uid: null,
         anonymous: true,
         snapshots: {},
+        pendingChanges: {},  // {vehicleId: lightweight diff} — survives page loads
         diffTimer: null,
         ready: false,        // both vehicleDB loaded AND favorites loaded
         firstRunDone: false
     };
     var _diffListeners = [];
+    var _pendingListeners = [];
+
+    function onPendingChanges(fn) { if (typeof fn === 'function') _pendingListeners.push(fn); }
+    function notifyPendingChanges() {
+        _pendingListeners.forEach(function (fn) {
+            try { fn(_state.pendingChanges); } catch (e) {}
+        });
+    }
+
+    /** Persist a diff into the per-vehicle pending map */
+    function recordPending(d) {
+        if (!d || !d.vehicleId || d.type === 'bulk') return;
+        // Keep only the fields needed for visual badge — strip vehicleData
+        // (heavy and stale by next page load)
+        _state.pendingChanges[d.vehicleId] = {
+            type: d.type,
+            oldPrice: d.oldPrice || null,
+            newPrice: d.newPrice || null,
+            pctChange: d.pctChange || 0,
+            oldEstado: d.oldEstado || null,
+            newEstado: d.newEstado || null,
+            recordedAt: Date.now()
+        };
+        if (_state.uid) writePending(_state.uid, _state.pendingChanges);
+        notifyPendingChanges();
+    }
+
+    function clearPendingFor(vehicleId) {
+        if (!_state.pendingChanges[vehicleId]) return;
+        delete _state.pendingChanges[vehicleId];
+        if (_state.uid) writePending(_state.uid, _state.pendingChanges);
+        notifyPendingChanges();
+    }
 
     function onDiffs(fn) { if (typeof fn === 'function') _diffListeners.push(fn); }
     function emitDiffs(diffs) {
@@ -213,6 +265,9 @@
             return;
         }
 
+        // Persist visual changes per vehicle (B4 — survives page loads)
+        diffs.forEach(recordPending);
+
         // Coalesce: if too many diffs, group them
         if (diffs.length >= COALESCE_MIN_DIFFS) {
             log('Coalescing', diffs.length, 'diffs');
@@ -250,10 +305,13 @@
                 _state.anonymous = anon;
                 if (newUid && !anon) {
                     _state.snapshots = readSnapshots(newUid);
+                    _state.pendingChanges = readPending(newUid);
                     _state.firstRunDone = Object.keys(_state.snapshots).length > 0;
-                    log('Bound to uid', newUid, 'snapshots:', Object.keys(_state.snapshots).length);
+                    log('Bound to uid', newUid, 'snapshots:', Object.keys(_state.snapshots).length, 'pending:', Object.keys(_state.pendingChanges).length);
+                    notifyPendingChanges();
                 } else {
                     _state.snapshots = {};
+                    _state.pendingChanges = {};
                     _state.firstRunDone = false;
                 }
             }
@@ -285,9 +343,14 @@
                 _state.ready = _state.ready || !!(window.vehicleDB && window.vehicleDB.loaded);
                 if (_state.ready) scheduleDiff('fav-' + action);
             } else if (action === 'cleared') {
-                if (_state.uid) clearSnapshots(_state.uid);
+                if (_state.uid) {
+                    clearSnapshots(_state.uid);
+                    clearPendingStore(_state.uid);
+                }
                 _state.snapshots = {};
+                _state.pendingChanges = {};
                 _state.firstRunDone = false;
+                notifyPendingChanges();
             } else if (action === 'added') {
                 // New favorite → capture baseline silently (no diff for added id)
                 refreshUid();
@@ -303,6 +366,7 @@
                     delete _state.snapshots[d.vehicleId];
                     if (_state.uid) writeSnapshots(_state.uid, _state.snapshots);
                 }
+                clearPendingFor(d.vehicleId);
             }
         });
 
@@ -335,19 +399,17 @@
     // Public API
     window.AltorraFavWatcher = {
         onDiffs: onDiffs,
+        onPendingChanges: onPendingChanges,
         runDiff: function () { runDiff('manual'); },
         getSnapshot: function (id) { return _state.snapshots[id] || null; },
         getAllSnapshots: function () { return Object.assign({}, _state.snapshots); },
-        // Expose for B4 (visual badges on favoritos.html)
-        diffSinceLastVisit: function (vehicleId) {
-            // Not really "since last visit" yet — for now just return current
-            // diff if any vs. stored snapshot; B4/B5 will extend this with
-            // a separate 'lastViewedAt' tracker.
-            var snap = _state.snapshots[vehicleId];
-            if (!snap) return null;
-            var v = getVehicleById(vehicleId);
-            if (!v) return null;
-            return diffOne(vehicleId, snap, pickFields(v), v);
+        getPendingChange: function (id) { return _state.pendingChanges[id] || null; },
+        getAllPendingChanges: function () { return Object.assign({}, _state.pendingChanges); },
+        clearPending: clearPendingFor,
+        clearAllPending: function () {
+            _state.pendingChanges = {};
+            if (_state.uid) clearPendingStore(_state.uid);
+            notifyPendingChanges();
         },
         _state: _state, // for debug
         _setDebug: function (b) { DEBUG = !!b; }

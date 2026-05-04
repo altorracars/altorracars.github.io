@@ -3152,6 +3152,59 @@ AltorraFavWatcher.runDiff();
 
 **Archivos modificados**: `js/favorites-watcher.js`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase B4 — Badges visuales en `favoritos.html` ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: Cuando el usuario abre `favoritos.html` despues de que un favorito cambio (precio bajo, fue reservado, etc.), debe verlo INMEDIATAMENTE en la card sin tener que abrir el bell.
+
+**Problema tecnico**: el watcher emite el diff cuando ocurre, pero al volver el usuario al sitio horas despues, los snapshots ya estan actualizados al estado nuevo y `diffSinceLastVisit()` no devolveria nada. Se necesita persistencia separada del diff.
+
+**Solucion**: nuevo store paralelo `_pendingChanges` en el watcher:
+- Storage: `localStorage.altorra_fav_pending_<uid>` = `{vehicleId: lightweight diff}`
+- Cada vez que `runDiff()` detecta un cambio, ademas de emitir al bell, llama `recordPending(d)` que persiste el diff
+- Persiste el `type`, `pctChange`, `oldPrice`, `newPrice`, `oldEstado`, `newEstado`, `recordedAt` (sin `vehicleData` para no inflarse)
+- Limpieza: `clearPending(id)` cuando el usuario remueve el favorito o clickea el badge
+
+**API publica nueva** (`window.AltorraFavWatcher`):
+- `getPendingChange(id)` — diff persistente para un vehiculo
+- `getAllPendingChanges()` — map completo
+- `clearPending(id)` — descartar un cambio
+- `clearAllPending()` — descartar todos
+- `onPendingChanges(fn)` — subscribe a cambios del map
+
+**Decoracion en `favoritos.html`**:
+
+`FavPage.decorateBadges()` corre tras `attachListeners()` (es decir, despues de cualquier render: full, add, remove). Para cada `.vehicle-card[data-id]`:
+1. Lee `pending[id]`
+2. Quita badge previo si existe (re-decoration safe)
+3. Si hay diff, crea `<div class="fav-diff-badge fav-diff-badge--<variant>">` con icono Lucide + label
+4. Click en badge → fade-out (clase `--leaving`) + `clearPending(id)` (re-render via listener)
+
+**Variantes visuales**:
+
+| Diff | Badge | Color | Texto |
+|---|---|---|---|
+| `price_drop` | `--drop` | Verde | "Bajo 5.0%" |
+| `price_increase` | `--up` | Ambar | "Subio 3.0%" |
+| `status_change` → reservado | `--warn` | Ambar | "Reservado" |
+| `status_change` → vendido | `--gone` | Rojo | "Vendido" |
+| `status_change` → disponible | `--drop` | Verde | "Disponible" |
+| `inventory_removed` | `--gone` | Rojo | "No disponible" |
+
+**Posicion**: top-left de la card (`position: absolute`), `backdrop-filter: blur(10px)`, glow con `box-shadow`. Animacion de entrada `favBadgeIn 0.45s` (translateY+scale). Hover lift sutil.
+
+**Sync con cambios live** (mientras el usuario esta en la pagina):
+- `decorateBadges()` se suscribe a `onPendingChanges` del watcher
+- Si admin baja el precio mientras el usuario tiene `favoritos.html` abierto → toast llega + badge aparece sobre la card en tiempo real
+
+**Por que click en el badge descarta**: confirma al usuario que vio el cambio. Patron Slack/GitHub: "marcar como visto" via interaccion natural.
+
+**Accesibilidad**:
+- `prefers-reduced-motion: reduce` desactiva animacion
+- Tooltip `title="Click para descartar este aviso"`
+- Contraste AAA en todas las variantes
+
+**Archivos modificados**: `js/favorites-watcher.js`, `favoritos.html`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

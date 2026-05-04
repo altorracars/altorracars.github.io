@@ -750,6 +750,57 @@
                     button._favBound = true;
                     button.addEventListener('click', (e) => this.handleRemove(e, button));
                 });
+                // B4 — decorate cards with diff badges
+                this.decorateBadges();
+            },
+
+            decorateBadges() {
+                if (!window.AltorraFavWatcher) return;
+                const pending = window.AltorraFavWatcher.getAllPendingChanges();
+                if (!pending) return;
+                const cards = document.querySelectorAll('.vehicle-card[data-id]');
+                cards.forEach(card => {
+                    const id = card.getAttribute('data-id');
+                    const change = pending[id];
+                    // Remove any old badge
+                    const old = card.querySelector('.fav-diff-badge');
+                    if (old) old.parentNode.removeChild(old);
+                    if (!change) return;
+
+                    let label = '', icon = '', cls = '';
+                    if (change.type === 'price_drop') {
+                        label = `Bajó ${Math.abs(change.pctChange).toFixed(1)}%`;
+                        icon = '<i data-lucide="trending-down"></i>';
+                        cls = 'fav-diff-badge--drop';
+                    } else if (change.type === 'price_increase') {
+                        label = `Subió ${Math.abs(change.pctChange).toFixed(1)}%`;
+                        icon = '<i data-lucide="trending-up"></i>';
+                        cls = 'fav-diff-badge--up';
+                    } else if (change.type === 'status_change') {
+                        if (change.newEstado === 'reservado') { label = 'Reservado'; icon = '<i data-lucide="clock-3"></i>'; cls = 'fav-diff-badge--warn'; }
+                        else if (change.newEstado === 'vendido') { label = 'Vendido'; icon = '<i data-lucide="x-circle"></i>'; cls = 'fav-diff-badge--gone'; }
+                        else if (change.newEstado === 'disponible') { label = 'Disponible'; icon = '<i data-lucide="check-circle-2"></i>'; cls = 'fav-diff-badge--drop'; }
+                    } else if (change.type === 'inventory_removed') {
+                        label = 'No disponible';
+                        icon = '<i data-lucide="package-x"></i>';
+                        cls = 'fav-diff-badge--gone';
+                    }
+                    if (!label) return;
+                    const badge = document.createElement('div');
+                    badge.className = 'fav-diff-badge ' + cls;
+                    badge.innerHTML = icon + '<span>' + label + '</span>';
+                    badge.title = 'Click para descartar este aviso';
+                    badge.addEventListener('click', (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        badge.classList.add('fav-diff-badge--leaving');
+                        setTimeout(() => {
+                            if (window.AltorraFavWatcher) window.AltorraFavWatcher.clearPending(id);
+                        }, 220);
+                    });
+                    card.appendChild(badge);
+                });
+                if (window.lucide) try { window.lucide.createIcons(); } catch (e) {}
             },
 
             handleRemove(e, button) {
@@ -812,13 +863,89 @@
             }
         };
 
-        document.addEventListener('DOMContentLoaded', () => FavPage.init());
+        document.addEventListener('DOMContentLoaded', () => {
+            FavPage.init();
+            // B4 — refresh badges when watcher pending state changes
+            const wireWatcher = () => {
+                if (window.AltorraFavWatcher && typeof window.AltorraFavWatcher.onPendingChanges === 'function') {
+                    window.AltorraFavWatcher.onPendingChanges(() => FavPage.decorateBadges());
+                    return true;
+                }
+                return false;
+            };
+            if (!wireWatcher()) {
+                let tries = 0;
+                const t = setInterval(() => { if (wireWatcher() || ++tries > 40) clearInterval(t); }, 250);
+            }
+        });
     </script>
     <style>
         .fav-fade-in { animation: favFadeIn 0.4s ease-out; }
         @keyframes favFadeIn {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Phase B4 — diff badge on favorite cards */
+        .vehicle-card { position: relative; }
+        .fav-diff-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 11px 6px 9px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border-radius: 999px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+            cursor: pointer;
+            z-index: 4;
+            animation: favBadgeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: transform 0.18s ease, opacity 0.22s ease;
+            user-select: none;
+        }
+        .fav-diff-badge i,
+        .fav-diff-badge svg {
+            width: 14px;
+            height: 14px;
+            stroke-width: 2.4;
+        }
+        .fav-diff-badge:hover { transform: translateY(-1px) scale(1.03); }
+        .fav-diff-badge--leaving { opacity: 0; transform: scale(0.85); }
+
+        .fav-diff-badge--drop {
+            background: rgba(22, 163, 74, 0.92);
+            color: #ffffff;
+            border: 1px solid rgba(22, 163, 74, 0.45);
+        }
+        .fav-diff-badge--up {
+            background: rgba(234, 179, 8, 0.92);
+            color: #1a1100;
+            border: 1px solid rgba(234, 179, 8, 0.5);
+        }
+        .fav-diff-badge--warn {
+            background: rgba(234, 179, 8, 0.92);
+            color: #1a1100;
+            border: 1px solid rgba(234, 179, 8, 0.5);
+        }
+        .fav-diff-badge--gone {
+            background: rgba(239, 68, 68, 0.92);
+            color: #ffffff;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+
+        @keyframes favBadgeIn {
+            from { opacity: 0; transform: translateY(-6px) scale(0.85); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .fav-diff-badge { animation: none; transition: none; }
         }
     </style>
 

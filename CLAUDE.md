@@ -3013,6 +3013,34 @@ notifyCenter.notify('request_update', {
 
 **Archivos modificados**: `js/toast.js`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase A3 — UI category-aware en el bell ✓ COMPLETADA (2026-05-04)
+
+**Problema**: Tras A2, el bell renderiza la `category` correctamente en data atributos, pero la UI no la diferenciaba visualmente. Todos los items se veian iguales.
+
+**Fix aplicado**:
+
+1. **Icono por categoria** (`iconForEntry(e)` en `js/toast.js`):
+   - Si la entrada tiene `category`, usa el `icon` de `CATEGORY_DEFAULTS`
+   - Si no, fallback al icono por type (success/error/info/warning)
+   - Resultado: una alerta de precio se ve distinta de un cambio de cita en el mismo bell
+
+2. **Label pill bajo el titulo** (`CATEGORY_LABELS` map):
+   - Precio | Solicitud | Cita | Busqueda | Inventario | Sistema | Seguridad
+   - Pill dorado por defecto, accent verde para `price_alert`, ambar para `inventory_change`, rojo para `security`
+   - Pegado a la fecha en una nueva fila `.altorra-notify-center__item-meta` con `gap: 8px`
+
+3. **`.altorra-notify-center__item--linkable`**:
+   - Items con `link` reciben hover dorado mas marcado (cursor + titulo en color)
+   - Indica visualmente que el click navega
+   - Click en item linkable cierra panel **antes** de navegar (transicion limpia)
+   - Click en boton remove tiene `stopPropagation` para no disparar la navegacion
+
+4. **Empty state mejorado**: en lugar de "No tienes notificaciones" generico, ahora dice "Aqui veras alertas de precio en tus favoritos, cambios en tus solicitudes y citas, y matches en tus busquedas guardadas." — orienta al usuario sobre que esperar.
+
+5. **`requestAnimationFrame`** antes del `window.location.href`: el panel cierra primero, luego un frame despues navega. Sin esto, la navegacion era instantanea y el panel quedaba "saltando" en la transicion.
+
+**Archivos modificados**: `js/toast.js`, `css/toast-notifications.css`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

@@ -848,6 +848,26 @@
         warning: 'alert-triangle'
     };
 
+    // Category-aware icons + labels for the bell (Phase A3)
+    // When a bell entry has a `category`, prefer that category's icon over
+    // the type-default. Labels are shown as a subtle pill below the title.
+    var CATEGORY_LABELS = {
+        price_alert: 'Precio',
+        request_update: 'Solicitud',
+        appointment_update: 'Cita',
+        search_match: 'Busqueda',
+        inventory_change: 'Inventario',
+        system: 'Sistema',
+        security: 'Seguridad'
+    };
+    function iconForEntry(e) {
+        if (!e) return 'info';
+        if (e.category && CATEGORY_DEFAULTS[e.category] && CATEGORY_DEFAULTS[e.category].icon) {
+            return CATEGORY_DEFAULTS[e.category].icon;
+        }
+        return ICONS[e.type] || 'info';
+    }
+
     function createBell(target) {
         if (!target) return null;
         if (target.querySelector('.altorra-bell')) return target.querySelector('.altorra-bell');
@@ -921,7 +941,14 @@
                     var entry = _entries.find(function(x) { return x.id === id; });
                     if (entry) {
                         markRead(id);
-                        if (entry.link) window.location.href = entry.link;
+                        if (entry.link) {
+                            // Close panel before navigation so the user
+                            // sees a clean transition (no panel left over)
+                            closePanel(panel);
+                            // Defer href change one frame so the close
+                            // animation can start
+                            requestAnimationFrame(function() { window.location.href = entry.link; });
+                        }
                     }
                 }
                 return;
@@ -934,8 +961,9 @@
             }
             else if (action === 'close') closePanel(panel);
             else if (action === 'remove') {
-                var id = btn.dataset.id;
-                if (id) { remove(id); }
+                e.stopPropagation();
+                var rid = btn.dataset.id;
+                if (rid) { remove(rid); }
             }
         });
 
@@ -946,18 +974,30 @@
         var list = panel.querySelector('#altorra-notify-center-list');
         if (!list) return;
         if (_entries.length === 0) {
-            list.innerHTML = '<div class="altorra-notify-center__empty"><i data-lucide="bell-off"></i><p>No tienes notificaciones</p></div>';
+            list.innerHTML = '<div class="altorra-notify-center__empty">' +
+                '<i data-lucide="bell-off"></i>' +
+                '<p>Aqui veras alertas de precio en tus favoritos, ' +
+                'cambios en tus solicitudes y citas, y matches en tus busquedas guardadas.</p>' +
+                '</div>';
             if (window.lucide) try { window.lucide.createIcons({ context: list }); } catch (e) {}
             return;
         }
         var html = _entries.map(function(e) {
-            var icon = ICONS[e.type] || 'info';
-            return '<div class="altorra-notify-center__item' + (e.read ? '' : ' altorra-notify-center__item--unread') + '" data-id="' + e.id + '" data-type="' + e.type + '">' +
+            var icon = iconForEntry(e);
+            var catAttr = e.category ? ' data-category="' + escapeHtml(e.category) + '"' : '';
+            var catLabel = e.category && CATEGORY_LABELS[e.category]
+                ? '<span class="altorra-notify-center__item-cat">' + escapeHtml(CATEGORY_LABELS[e.category]) + '</span>'
+                : '';
+            var hasLink = e.link ? ' altorra-notify-center__item--linkable' : '';
+            return '<div class="altorra-notify-center__item' + (e.read ? '' : ' altorra-notify-center__item--unread') + hasLink + '" data-id="' + e.id + '" data-type="' + e.type + '"' + catAttr + '>' +
                 '<div class="altorra-notify-center__item-icon"><i data-lucide="' + icon + '"></i></div>' +
                 '<div class="altorra-notify-center__item-body">' +
                     (e.title ? '<div class="altorra-notify-center__item-title">' + escapeHtml(e.title) + '</div>' : '') +
                     (e.message ? '<div class="altorra-notify-center__item-message">' + escapeHtml(e.message) + '</div>' : '') +
-                    '<div class="altorra-notify-center__item-time">' + timeAgo(e.timestamp) + '</div>' +
+                    '<div class="altorra-notify-center__item-meta">' +
+                        '<span class="altorra-notify-center__item-time">' + timeAgo(e.timestamp) + '</span>' +
+                        catLabel +
+                    '</div>' +
                 '</div>' +
                 '<button type="button" class="altorra-notify-center__item-remove" data-action="remove" data-id="' + e.id + '" title="Quitar"><i data-lucide="x"></i></button>' +
             '</div>';

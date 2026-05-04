@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504130000'; // Phases A1+A2+G1 — opt-in bell, category API, legacy spam migration
+const CACHE_VERSION = 'v20260504140000'; // Phase A3 — category-aware bell UI (icons + label badges + linkable hover)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

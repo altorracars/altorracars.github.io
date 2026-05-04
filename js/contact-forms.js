@@ -331,6 +331,9 @@ class ContactFormManager {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
+            // MF2.1 — restore form HTML if user reopens modal after success
+            this._restoreOriginalContent(modalId);
+
             if (modalId === 'vende-auto') this.resetVendeWizard();
             if (modalId === 'financiacion') this.resetFinanciacionForm();
 
@@ -398,6 +401,75 @@ class ContactFormManager {
         modal.removeTabListener = removeListener;
     }
 
+    /**
+     * MF2.1 — Render in-modal success screen (no WhatsApp redirect).
+     * Called after a successful Firestore add. We replace the entire
+     * modal-container content so progress bars, headers etc disappear
+     * and the user only sees the confirmation.
+     */
+    _renderSuccess(modalId, opts) {
+        var modal = document.getElementById(modalId + '-modal');
+        if (!modal) return;
+        var container = modal.querySelector('.modal-container') || modal;
+        if (!container) return;
+
+        var title = (opts && opts.title) || '¡Solicitud enviada!';
+        var nombre = (opts && opts.nombre) || '';
+        var ticketId = (opts && opts.ticketId) || '';
+        var ticketShort = ticketId ? ticketId.slice(0, 6).toUpperCase() : '';
+        var nextStep = (opts && opts.nextStep) || 'Te contactaremos pronto por correo electrónico y WhatsApp.';
+        var isLogged = !!this._currentUser();
+
+        // Cache original container HTML so we can restore on next open
+        if (!container._originalContent) container._originalContent = container.innerHTML;
+
+        var html =
+            '<button type="button" class="modal-close" aria-label="Cerrar">&times;</button>' +
+            '<div class="contact-success" role="status" aria-live="polite">' +
+                '<div class="contact-success-icon">' +
+                    '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<circle cx="12" cy="12" r="10"/>' +
+                        '<polyline points="9 12 11 14 15 10"/>' +
+                    '</svg>' +
+                '</div>' +
+                '<h2 class="contact-success-title">' + this._escapeHtml(title) + '</h2>' +
+                (nombre ? '<p class="contact-success-subtitle">Gracias, ' + this._escapeHtml(nombre.split(' ')[0]) + '.</p>' : '') +
+                '<p class="contact-success-message">' + this._escapeHtml(nextStep) + '</p>' +
+                (ticketShort ? '<div class="contact-success-ticket">Tu nº de seguimiento: <strong>' + this._escapeHtml(ticketShort) + '</strong></div>' : '') +
+                '<div class="contact-success-actions">' +
+                    '<button type="button" class="contact-success-btn contact-success-btn--primary" data-action="close-success">Entendido</button>' +
+                    (isLogged ? '<a href="perfil.html#mis-solicitudes" class="contact-success-btn contact-success-btn--ghost">Ver mis solicitudes</a>' : '') +
+                '</div>' +
+            '</div>';
+
+        container.innerHTML = html;
+
+        // Wire close behaviors
+        var self = this;
+        var primary = container.querySelector('[data-action="close-success"]');
+        if (primary) primary.addEventListener('click', function () { self.closeAllModals(); });
+        var closeX = container.querySelector('.modal-close');
+        if (closeX) closeX.addEventListener('click', function () { self.closeAllModals(); });
+    }
+
+    /** MF2.1 — Restore the original form HTML if the user reopens the modal */
+    _restoreOriginalContent(modalId) {
+        var modal = document.getElementById(modalId + '-modal');
+        if (!modal) return;
+        var container = modal.querySelector('.modal-container');
+        if (container && container._originalContent) {
+            container.innerHTML = container._originalContent;
+            container._originalContent = null;
+        }
+    }
+
+    _escapeHtml(s) {
+        if (s == null) return '';
+        var d = document.createElement('div');
+        d.textContent = String(s);
+        return d.innerHTML;
+    }
+
     handleVendeAutoSubmit(form) {
         const formData = new FormData(form);
 
@@ -414,6 +486,7 @@ class ContactFormManager {
         var prefijoPais = (document.getElementById('vende-pais') || {}).value || '+57';
 
         // Save to Firestore solicitudes collection
+        var self = this;
         if (window.db) {
             var identity = this._identityPayload();
             var src = this._sourcePayload('vende_auto_form');
@@ -435,19 +508,19 @@ class ContactFormManager {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            }, identity, src)).catch(function(err) { console.warn('[Solicitudes] Error saving vende tu auto:', err); });
-        }
-
-        // Also redirect to WhatsApp
-        const mensaje = `*VENTA DE VEHICULO*\n\nCliente: ${nombre}\nTelefono: ${telefono}\nEmail: ${email}\n\nVehiculo: ${marca} ${modelo} ${year}\nKilometraje: ${kilometraje} km\nPrecio esperado: ${precio}\n\nComentarios: ${comentarios || 'Ninguno'}`;
-        const whatsappUrl = `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(mensaje)}`;
-        window.open(whatsappUrl, '_blank');
-
-        this.closeAllModals();
-        form.reset();
-
-        if (typeof toast !== 'undefined') {
-            toast.success('Solicitud enviada. Te redirigimos a WhatsApp.', 'Enviado');
+            }, identity, src)).then(function (ref) {
+                self._renderSuccess('vende-auto', {
+                    title: '¡Tu solicitud fue enviada!',
+                    nombre: nombre,
+                    ticketId: ref.id,
+                    nextStep: 'Recibimos los datos de tu vehículo. Un asesor te contactará pronto por correo y WhatsApp para coordinar la valuación.'
+                });
+            }).catch(function (err) {
+                console.warn('[Solicitudes] Error saving vende tu auto:', err);
+                if (window.notify && window.notify.error) {
+                    window.notify.error({ title: 'Error', message: 'No pudimos guardar tu solicitud. Verifica tu conexión e inténtalo de nuevo.', duration: 6000 });
+                }
+            });
         }
     }
 
@@ -471,6 +544,7 @@ class ContactFormManager {
         var prefijoPais = (document.getElementById('fin-pais') || {}).value || '+57';
 
         // Save to Firestore solicitudes collection
+        var self = this;
         if (window.db) {
             var identity = this._identityPayload();
             var src = this._sourcePayload('financiacion_form');
@@ -492,19 +566,19 @@ class ContactFormManager {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            }, identity, src)).catch(function(err) { console.warn('[Solicitudes] Error saving financiacion:', err); });
-        }
-
-        // Also redirect to WhatsApp
-        const mensaje = `*SOLICITUD DE FINANCIACION*\n\nCliente: ${nombre}\nTelefono: ${telefono}\nEmail: ${email}\nCiudad: ${ciudad || 'No indicada'}\n\nVehiculo: ${vehiculoInteres}\nPrecio: ${precioVehiculo}\nCuota inicial: ${cuotaInicial}\nPlazo: ${plazo}\nIngresos: ${ingresos}\nSituacion: ${situacion}\n\nComentarios: ${comentarios || 'Ninguno'}`;
-        const whatsappUrl = `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(mensaje)}`;
-        window.open(whatsappUrl, '_blank');
-
-        this.closeAllModals();
-        form.reset();
-
-        if (typeof toast !== 'undefined') {
-            toast.success('Solicitud enviada. Te redirigimos a WhatsApp.', 'Enviado');
+            }, identity, src)).then(function (ref) {
+                self._renderSuccess('financiacion', {
+                    title: '¡Solicitud de financiación recibida!',
+                    nombre: nombre,
+                    ticketId: ref.id,
+                    nextStep: 'Un asesor revisará tu información y te contactará pronto por correo y WhatsApp con la propuesta de financiación.'
+                });
+            }).catch(function (err) {
+                console.warn('[Solicitudes] Error saving financiacion:', err);
+                if (window.notify && window.notify.error) {
+                    window.notify.error({ title: 'Error', message: 'No pudimos guardar tu solicitud. Verifica tu conexión e inténtalo de nuevo.', duration: 6000 });
+                }
+            });
         }
     }
 }

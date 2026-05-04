@@ -3610,6 +3610,48 @@ Todos `.catch(function() {})` — best-effort. localStorage es source of truth l
 
 > **DEPLOY MANUAL REQUERIDO**: `firebase deploy --only firestore:rules` para activar la regla anti-impersonation.
 
+### Microfase MF2.1 — Vende Auto + Financiación: confirmación in-place ✓ COMPLETADA (2026-05-04)
+
+**Problema raiz**: ambos formularios cerraban el modal y abrian `wa.me/...` en una nueva pestana con un mensaje pre-rellenado. Anti-patron documentado en CLAUDE.md §13.ter:
+- Si el usuario cancela el envio en WhatsApp, el lead queda registrado pero sin contexto
+- Experiencia disonante: el usuario no sabia si su solicitud se guardo
+- Fricciona la conversion (cambio de app)
+
+**Cambios aplicados** (`js/contact-forms.js` + `css/contact-forms.css`):
+
+1. **`window.open(whatsappUrl)` eliminado** de los dos handlers (`handleVendeAutoSubmit` + `handleFinanciacionSubmit`)
+2. **Nuevo helper `_renderSuccess(modalId, opts)`**: reemplaza el contenido de `.modal-container` (no solo `.modal-body` — desaparece tambien header + progress) con una pantalla de confirmacion limpia
+3. **Ticket de seguimiento**: el `ref.id` retornado por `Firestore.add()` se trunca a 6 chars uppercase y se muestra como `Tu nº de seguimiento: ABC123`
+4. **CTA secundario para registrados**: si `_currentUser()` no es null, ademas del boton "Entendido" aparece "Ver mis solicitudes" → `perfil.html#mis-solicitudes`
+5. **Restore al reabrir**: `_restoreOriginalContent(modalId)` se llama en `openModal()` antes de inicializar wizard. Cachea el HTML original en `container._originalContent` la primera vez que se muestra el success
+6. **Manejo de error**: si Firestore falla (red, rules), se muestra `notify.error(...)` con mensaje claro y el modal queda en su estado anterior (form intacto, no se cierra)
+
+**UI** (CSS nuevo `.contact-success*`):
+- Icono check verde con animacion pop (cubic-bezier spring)
+- Titulo grande, subtitulo personalizado con primer nombre
+- Mensaje contextual al tipo de form
+- Pill dorado con ticket
+- Botones primary (dorado) + ghost (Ver mis solicitudes)
+- Respeta `prefers-reduced-motion`
+- Mobile: botones full-width stack vertical
+
+**Mensajes contextuales**:
+- Vende Auto: "Recibimos los datos de tu vehículo. Un asesor te contactará pronto por correo y WhatsApp para coordinar la valuación."
+- Financiación: "Un asesor revisará tu información y te contactará pronto por correo y WhatsApp con la propuesta de financiación."
+
+**Pasos para probar**:
+1. Abrir Vende tu Auto → llenar wizard 3 pasos → Enviar
+2. Verificar que **NO se abre WhatsApp**
+3. Modal cambia a pantalla de confirmacion con check verde, ticket de 6 chars
+4. Verificar Firestore Console que el doc se creo
+5. Cerrar modal → reabrir → ver formulario limpio (no la pantalla de confirmacion)
+6. Mismo para Financiacion
+7. Logueado: aparece boton "Ver mis solicitudes" que linkea al perfil
+8. Sin login: solo aparece "Entendido"
+9. Forzar error de red (DevTools → Offline) → enviar → ver toast de error, modal sigue abierto con form intacto
+
+**Archivos modificados**: `js/contact-forms.js`, `css/contact-forms.css`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

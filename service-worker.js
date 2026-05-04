@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504460000'; // MF6.2 — Follow-ups programados with 5 tabs (mensajes/)
+const CACHE_VERSION = 'v20260504470000'; // MF6.3 — Message templates CRUD with 5 tabs (mensajes/)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

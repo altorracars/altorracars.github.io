@@ -212,6 +212,10 @@
             <i data-lucide="zap"></i>
             <span>Automatización</span>
         </button>
+        <button class="nav-item" data-section="templates">
+            <i data-lucide="file-edit"></i>
+            <span>Plantillas</span>
+        </button>
         <button class="nav-item" data-section="audit">
             <i data-lucide="scroll-text"></i>
             <span>Auditoria</span>
@@ -755,6 +759,36 @@
         </div>
 
         <!-- ALIADOS Y OPERACIONES -->
+        <!-- MF6.3 — Message templates section -->
+        <div id="sec-templates" class="section">
+            <div class="page-header">
+                <div>
+                    <h1>Plantillas de Mensajes</h1>
+                    <p class="page-subtitle">Crea respuestas reutilizables con variables: <code>{{nombre}}</code>, <code>{{vehiculo}}</code>, <code>{{fecha}}</code>, <code>{{hora}}</code>, <code>{{tipo}}</code>.</p>
+                </div>
+            </div>
+            <div class="msg-templates-add">
+                <h3 style="margin:0 0 10px 0;font-size:1rem;">Nueva plantilla</h3>
+                <div style="display:grid;grid-template-columns:1fr 200px;gap:10px;margin-bottom:10px;">
+                    <input type="text" id="tplNewLabel" class="form-input" placeholder="Etiqueta (ej: Confirmar cita)">
+                    <select id="tplNewKind" class="form-select">
+                        <option value="general">General</option>
+                        <option value="cita">Cita</option>
+                        <option value="solicitud">Solicitud</option>
+                        <option value="lead">Lead</option>
+                    </select>
+                </div>
+                <textarea id="tplNewText" class="form-textarea" rows="3" placeholder="Hola {{nombre}}, tu cita para ver el {{vehiculo}} queda confirmada para el {{fecha}} a las {{hora}}."></textarea>
+                <div style="margin-top:10px;text-align:right;">
+                    <button class="btn btn-primary btn-sm" id="tplAddBtn">Agregar plantilla</button>
+                </div>
+            </div>
+            <h3 style="margin-top:24px;font-size:1rem;">Plantillas guardadas</h3>
+            <div class="msg-templates-list" id="messageTemplatesList">
+                <div class="table-empty">Cargando...</div>
+            </div>
+        </div>
+
         <!-- MF6.1 — Automation rules section -->
         <div id="sec-automation" class="section">
             <div class="page-header">
@@ -2105,6 +2139,7 @@
 <script src="js/admin-inbox.js" defer></script>
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>
+<script src="js/admin-templates.js" defer></script>
 <script src="js/admin-dealers.js" defer></script>
 <script src="js/admin-lists.js" defer></script>
 <script src="js/admin-banners.js" defer></script>

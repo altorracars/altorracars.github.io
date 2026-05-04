@@ -4023,6 +4023,40 @@ SEMANA 12: P + buffer + QA + estabilización
 
 **Total backfill**: 16 microfases con commits ya en git previamente, ahora documentadas formalmente.
 
+---
+
+### Microfase T.1 — Design Tokens (`css/tokens.css`) ✓ COMPLETADA (2026-05-05)
+
+**Por qué es crítico**: el admin se sentía "básico" porque cada CSS tenía valores hardcoded (colores, espacios, sombras). Cualquier tweak global era impossible. T.1 establece UN solo lugar de verdad para todos los design values.
+
+**Lo que se creó**: `css/tokens.css` con 10 categorías de tokens:
+
+1. **Color palette raw**: 9 escalas (brand-50 → 900, neutral 0 → 950, success/warning/danger/info/purple/cyan)
+2. **Semantic tokens**: `--bg-base`, `--bg-elevated`, `--bg-card`, `--text-primary`, `--text-secondary`, `--border-default`, `--brand-primary`, `--status-success`, etc. — los componentes usan estos, NUNCA los raw.
+3. **Spacing scale 4-point**: `--space-0` a `--space-24` (0px a 96px)
+4. **Typography**: families (Poppins, Cardo, mono), weights (regular → extra), sizes (xs → 3xl), line-heights, letter-spacings
+5. **Shadows + elevation**: xs / sm / md / lg / xl + glow-brand + focus-ring
+6. **Border radius**: none / xs / sm / md / lg / xl / 2xl / pill / circle
+7. **Animation**: 6 curvas oficiales (linear, snap, soft, spring, decelerate, accelerate) + 5 durations (instant → slower)
+8. **Z-index scale**: 11 niveles semánticos (base → max) — fin de los 9999 mágicos
+9. **Layout**: max-content, sidebar widths (collapsed/expanded), header height, content padding
+10. **Theme variants**: dark default + `[data-theme="light"]` override + `[data-theme="high-contrast"]` (T.4 + T.8 implementan los toggles)
+
+**Política transversal de motion**: bloque global `@media (prefers-reduced-motion: reduce)` que pone a 0 todas las durations y desactiva animaciones — TODA la plataforma respeta esto sin código extra.
+
+**Diseño (D)**: tokens diseñados con jerarquía clara — raw colors solo para mapping interno, semantic tokens para componentes. Mismo nombre de token funciona en dark/light/high-contrast.
+
+**Migración (M)**: ningún cambio destructivo — `tokens.css` se carga ANTES de `admin.css` y todos los CSS existentes siguen funcionando con sus hardcoded values. T.6 hará la migración masiva de hardcoded → tokens.
+
+**Archivos modificados**: `css/tokens.css` (new), `admin.html` (link agregado antes de admin.css).
+
+**Pasos para probar**:
+1. Abrir admin → DevTools → Computed → en `:root` ver las CSS variables `--color-brand-500`, `--space-4`, etc.
+2. En consola: `getComputedStyle(document.documentElement).getPropertyValue('--brand-primary')` → `#b89658`
+3. Activar prefers-reduced-motion en DevTools → Rendering → ver que las animaciones son instantáneas
+4. Cambiar `<html data-theme="light">` en consola → verificar que `--bg-base` cambia a `#fafafa`
+5. Cambiar `<html data-theme="high-contrast">` → verificar contraste extremo
+
 
 
 ---

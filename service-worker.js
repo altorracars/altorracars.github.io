@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505000000'; // A.1 (mega-plan v4) — Fix WhatsApp visible buttons in Vende+Financ modals
+const CACHE_VERSION = 'v20260505010000'; // T.1 (mega-plan v4) — Design Tokens introduced
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

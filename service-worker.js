@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504500000'; // MF5.2 — Vehicle hotspots overlay with 5 tabs (mensajes/)
+const CACHE_VERSION = 'v20260504510000'; // MF5.3 — AI Assistant FAQ widget with 5 tabs (mensajes/)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

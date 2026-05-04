@@ -308,6 +308,13 @@ function loadAuthSystem() {
                     waScript.defer = true;
                     document.body.appendChild(waScript);
                 }
+                // 5d. MF5.3 — AI assistant FAQ
+                if (!document.querySelector('script[src*="ai-assistant.js"]')) {
+                    var aiScript = document.createElement('script');
+                    aiScript.src = 'js/ai-assistant.js';
+                    aiScript.defer = true;
+                    document.body.appendChild(aiScript);
+                }
             })
             .catch(function(e) { console.warn('[Auth] No se pudo cargar auth-modal.html', e); });
     }

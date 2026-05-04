@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504040000'; // Fix One Tap: remove aggressive 7d cooldown + reduce GIS blocked TTL to 1d
+const CACHE_VERSION = 'v20260504050000'; // Watchdog 2.5s + auto-fallback to legacy popup when FedCM blocked
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

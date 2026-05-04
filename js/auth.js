@@ -753,44 +753,56 @@
         try { localStorage.removeItem(GIS_BLOCKED_KEY); } catch (e) {}
     }
 
+    // Race guard: when watchdog fires and we open the legacy popup, a late
+    // GIS credential could still arrive (e.g. FedCM finally rendered after
+    // 2.5s and user clicked it). We must ignore that callback to prevent
+    // double sign-in attempts.
+    var _legacyPopupInFlight = false;
+
     function _gisSignIn() {
         if (!_shouldUseGis()) {
             _legacyPopupSignIn();
             return;
         }
         if (_isGisBlocked()) {
-            console.info('[GIS] Skipping — previously timed out (cached). Going straight to legacy popup.');
+            console.info('[GIS] Skipping — previously blocked (cached). Going straight to legacy popup.');
             _legacyPopupSignIn();
             return;
         }
+        // Fresh attempt: clear any stale in-flight flag from a previous
+        // session/click that completed
+        _legacyPopupInFlight = false;
         _lockAuthControls(true);
 
         var promptResolved = false;
-        // Watchdog purpose: if GIS prompt never displays anything (FedCM
-        // truly blocked at browser level), release the lock so the button
-        // doesn't stay stuck on a spinner forever. We do NOT auto-open the
-        // legacy popup here — that would create double-UI (FedCM dialog +
-        // popup) when FedCM IS actually showing but the user is just
-        // taking their time to choose an account.
+        // Watchdog: if FedCM is blocked in this browser, GIS prompt() fails
+        // silently — there's no API to detect this. We use a 2.5s timeout:
+        //   - If FedCM works, it shows in ~200-500ms → user clicks → callback fires
+        //   - If FedCM is blocked, GIS logs "FedCM rejects" within ~500ms but
+        //     gives us no callback. After 2.5s we assume blocked.
         //
-        // 8 seconds is long enough that a user who saw the FedCM prompt
-        // has plenty of time to interact, but short enough to recover
-        // gracefully from true silent failures. After watchdog fires we
-        // mark GIS as blocked, so the user's NEXT click goes straight to
-        // the legacy popup (instant, via _isGisBlocked() short-circuit).
+        // On timeout: mark GIS as blocked (so next click skips it) AND
+        // auto-open the legacy popup so the user doesn't have to click twice.
+        // We accept a tiny risk of double-UI (FedCM rendering at 3s, popup
+        // also open) — in practice FedCM is fast or it doesn't show at all.
         var watchdogTimer = setTimeout(function () {
-            if (!promptResolved) {
-                promptResolved = true;
-                _markGisBlocked();
-                console.info('[GIS] Prompt watchdog fired — likely FedCM blocked. Next click will use legacy popup.');
-                _lockAuthControls(false);
-            }
-        }, 8000);
+            if (promptResolved) return;
+            promptResolved = true;
+            _markGisBlocked();
+            _legacyPopupInFlight = true;
+            console.info('[GIS] Prompt watchdog fired — FedCM appears blocked. Opening legacy popup.');
+            // _legacyPopupSignIn re-locks the controls; release first to keep state consistent
+            _lockAuthControls(false);
+            _legacyPopupSignIn();
+        }, 2500);
 
         try {
-            // Wrap _onGisCredential to also cancel the watchdog when the
-            // credential arrives (= sign-in succeeded via GIS).
             _ensureGisInit(function (response) {
+                // Drop late GIS callback if we already opened the legacy popup
+                if (_legacyPopupInFlight) {
+                    console.info('[GIS] Ignoring late credential — legacy popup already in flight');
+                    return;
+                }
                 if (!promptResolved) {
                     promptResolved = true;
                     clearTimeout(watchdogTimer);
@@ -800,10 +812,9 @@
 
             // FedCM-compliant: call prompt() WITHOUT the deprecated
             // status-method callback (isNotDisplayed/isSkippedMoment/
-            // isDismissedMoment). Google has deprecated these as part of
-            // the FedCM migration. We rely on:
+            // isDismissedMoment). We rely on:
             //   1. The credential callback for success
-            //   2. The 8s watchdog for "prompt didn't show" / silent fail
+            //   2. The 2.5s watchdog + auto-fallback for silent failure
             // See: https://developers.google.com/identity/gsi/web/guides/fedcm-migration
             window.google.accounts.id.prompt();
         } catch (e) {
@@ -877,11 +888,15 @@
         var provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
 
+        var clearInFlight = function () { _legacyPopupInFlight = false; };
+
         window.auth.signInWithPopup(provider).then(function (result) {
             if (!result || !result.user) {
                 _lockAuthControls(false);
+                clearInFlight();
                 return;
             }
+            clearInFlight();
             // SUCCESS: close modal INSTANTLY (no Firestore wait).
             // Pre-apply auth state so the header switches BEFORE
             // onAuthStateChanged fires — zero perceived lag.
@@ -893,6 +908,7 @@
             return _processGoogleUser(result.user, isNew);
         }).catch(function (err) {
             _lockAuthControls(false);
+            clearInFlight();
             if (!err) return;
             if (err.code === 'auth/popup-blocked') {
                 _toast('Tu navegador bloqueó la ventana de Google. Permite ventanas emergentes para este sitio y vuelve a intentar.', 'error', 8000);

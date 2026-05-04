@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504380000'; // MF5.1 — WhatsApp widget with template chooser (mensajes/)
+const CACHE_VERSION = 'v20260504390000'; // MF4.1 — CRM section + unified contacts table (mensajes/)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

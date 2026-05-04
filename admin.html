@@ -182,6 +182,11 @@
             <span>Comunicaciones</span>
             <span class="nav-badge" id="navBadgeAppointments"></span>
         </button>
+        <button class="nav-item" data-section="crm">
+            <i data-lucide="users-round"></i>
+            <span>CRM</span>
+            <span class="nav-badge" id="navBadgeCrm"></span>
+        </button>
         <button class="nav-item" data-section="dealers">
             <i data-lucide="handshake"></i>
             <span>Aliados</span>
@@ -741,6 +746,50 @@
         </div>
 
         <!-- ALIADOS Y OPERACIONES -->
+        <!-- MF4.1 — CRM section -->
+        <div id="sec-crm" class="section">
+            <div class="page-header">
+                <div>
+                    <h1>CRM — Vista 360° de Clientes</h1>
+                    <p class="page-subtitle">Todos los contactos del negocio: registrados + leads de formularios + WhatsApp</p>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="text" id="crmSearchInput" class="form-input" placeholder="Buscar por nombre, email, teléfono..." style="min-width:260px;">
+                    <select id="crmFilter" class="form-select" style="min-width:140px;">
+                        <option value="all">Todos</option>
+                        <option value="registered">Registrados</option>
+                        <option value="guest">Guests</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="crm-kpis">
+                <div class="crm-kpi"><div class="crm-kpi-label">Total contactos</div><div class="crm-kpi-value" id="crmKpiTotal">0</div></div>
+                <div class="crm-kpi"><div class="crm-kpi-label">Registrados</div><div class="crm-kpi-value" id="crmKpiRegistered">0</div></div>
+                <div class="crm-kpi"><div class="crm-kpi-label">Guests con leads</div><div class="crm-kpi-value" id="crmKpiGuests">0</div></div>
+                <div class="crm-kpi"><div class="crm-kpi-label">Promedio comunicaciones</div><div class="crm-kpi-value" id="crmKpiAvgComms">0</div></div>
+            </div>
+
+            <div class="stat-card overflow-x-auto" style="margin-top:1rem;">
+                <table class="admin-table" id="crmTable">
+                    <thead>
+                        <tr>
+                            <th>Contacto</th>
+                            <th>Tipo</th>
+                            <th>Comunicaciones</th>
+                            <th>Último contacto</th>
+                            <th>Score</th>
+                            <th>Asesor</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crmTableBody"><tr><td colspan="7" class="table-empty">Cargando contactos...</td></tr></tbody>
+                </table>
+                <div id="crmPagination"></div>
+            </div>
+        </div>
+
         <div id="sec-dealers" class="section">
             <div class="page-header">
                 <div>
@@ -1984,6 +2033,7 @@
 <script src="js/admin-brands.js" defer></script>
 <script src="js/admin-users.js" defer></script>
 <script src="js/admin-appointments.js" defer></script>
+<script src="js/admin-crm.js" defer></script>
 <script src="js/admin-dealers.js" defer></script>
 <script src="js/admin-lists.js" defer></script>
 <script src="js/admin-banners.js" defer></script>

@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504200000'; // Pillar F — admin realtime bell for new pending solicitudes/citas
+const CACHE_VERSION = 'v20260504230000'; // Phase A4 — multi-device bell sync via Firestore subcollection
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

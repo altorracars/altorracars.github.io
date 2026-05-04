@@ -1294,6 +1294,22 @@
         var browserNotifChecked = nf.navegador === true;
         var emailAlertsChecked = nf.emailAlertas !== false;
 
+        // G2 — per-category bell toggles. categories[<cat>] = false means muted
+        var nfCats = (nf && nf.categories) || {};
+        function catChecked(cat) {
+            // Default ON unless explicitly false. Hot-path also caches to
+            // localStorage for notifyCenter.isCategoryEnabled() to read.
+            return nfCats[cat] !== false;
+        }
+        var catList = [
+            { id: 'price_alert',       icon: 'trending-down',     label: 'Alertas de precio', hint: 'Cambios en el precio de tus favoritos y vehiculos vistos' },
+            { id: 'request_update',    icon: 'message-square-text', label: 'Solicitudes',     hint: 'Cuando un asesor responde o cambia el estado de una solicitud' },
+            { id: 'appointment_update',icon: 'calendar-check-2',  label: 'Citas',             hint: 'Confirmacion, reprogramacion o cancelacion de tus citas' },
+            { id: 'search_match',      icon: 'search-check',      label: 'Busquedas guardadas', hint: 'Vehiculos nuevos que coinciden con tus busquedas' },
+            { id: 'inventory_change',  icon: 'package',           label: 'Cambios de inventario', hint: 'Tus favoritos cuando son reservados o vendidos' },
+            { id: 'system',            icon: 'bell-ring',         label: 'Avisos del sistema', hint: 'Nuevas versiones, mantenimiento, cambios importantes' }
+        ];
+
         var html =
             '<div class="pf-card">' +
                 '<div class="pf-card-title">Notificaciones en pantalla</div>' +
@@ -1312,6 +1328,20 @@
                     '</div>' +
                     '<label class="pf-toggle"><input type="checkbox" id="pfPrefBrowserNotif"' + (browserNotifChecked ? ' checked' : '') + '><span class="pf-toggle-slider"></span></label>' +
                 '</div>' +
+            '</div>' +
+
+            '<div class="pf-card">' +
+                '<div class="pf-card-title">Que tipo de notificaciones quieres recibir</div>' +
+                '<p class="pf-pref-desc">Elige por categoria. Si desactivas una, no aparecera ni como toast ni en el centro de notificaciones (la campanita).</p>' +
+                catList.map(function (c) {
+                    return '<div class="pf-pref-row">' +
+                        '<div class="pf-pref-info">' +
+                            '<span class="pf-pref-label"><i data-lucide="' + c.icon + '"></i> ' + c.label + '</span>' +
+                            '<span class="pf-pref-hint">' + c.hint + '</span>' +
+                        '</div>' +
+                        '<label class="pf-toggle"><input type="checkbox" data-pf-cat="' + c.id + '"' + (catChecked(c.id) ? ' checked' : '') + '><span class="pf-toggle-slider"></span></label>' +
+                    '</div>';
+                }).join('') +
             '</div>' +
 
             '<div class="pf-card">' +
@@ -1366,6 +1396,23 @@
         var soundToggle = $id('pfPrefSound');
         var browserNotifToggle = $id('pfPrefBrowserNotif');
         var emailAlertsToggle = $id('pfPrefEmailAlerts');
+        // G2 — per-category toggles
+        var catToggles = document.querySelectorAll('input[data-pf-cat]');
+
+        function readCategories() {
+            var out = {};
+            catToggles.forEach(function (el) {
+                out[el.getAttribute('data-pf-cat')] = !!el.checked;
+            });
+            return out;
+        }
+        function syncCategoriesToLocalStorage(map) {
+            try {
+                Object.keys(map).forEach(function (cat) {
+                    localStorage.setItem('altorra_notif_cat_' + cat, map[cat] ? '1' : '0');
+                });
+            } catch (e) {}
+        }
 
         function savePref() {
             var statusEl = $id('pfPrefStatus');
@@ -1376,14 +1423,21 @@
             }
 
             var existing = (_userData && _userData.preferencias) || {};
+            var existingNf = existing.notificaciones || {};
+            var categories = readCategories();
+            // Apply category opt-outs to localStorage immediately so notifyCenter
+            // sees the change before Firestore round-trip completes
+            syncCategoriesToLocalStorage(categories);
+
             var prefs = Object.assign({}, existing, {
                 whatsapp: waToggle ? waToggle.checked : true,
                 emailFreq: emailSelect ? emailSelect.value : 'nunca',
-                notificaciones: {
+                notificaciones: Object.assign({}, existingNf, {
                     sonidos: soundToggle ? soundToggle.checked : true,
                     navegador: browserNotifToggle ? browserNotifToggle.checked : false,
-                    emailAlertas: emailAlertsToggle ? emailAlertsToggle.checked : true
-                }
+                    emailAlertas: emailAlertsToggle ? emailAlertsToggle.checked : true,
+                    categories: categories
+                })
             });
 
             // Apply sound preference immediately (localStorage)
@@ -1451,6 +1505,8 @@
         if (soundToggle) soundToggle.addEventListener('change', savePref);
         if (emailAlertsToggle) emailAlertsToggle.addEventListener('change', savePref);
         if (browserNotifToggle) browserNotifToggle.addEventListener('change', handleBrowserNotifToggle);
+        // G2 — wire per-category toggles
+        catToggles.forEach(function (el) { el.addEventListener('change', savePref); });
     }
 
     // ── Placeholder sections ────────────────────────────────
@@ -1778,6 +1834,18 @@
             return window.db.collection('clientes').doc(user.uid).get();
         }).then(function (doc) {
             _userData = doc.exists ? doc.data() : {};
+            // G2 — sync category opt-outs to localStorage so notifyCenter
+            // honors them on every page (not just /perfil)
+            try {
+                var cats = (_userData.preferencias
+                    && _userData.preferencias.notificaciones
+                    && _userData.preferencias.notificaciones.categories) || null;
+                if (cats && typeof cats === 'object') {
+                    Object.keys(cats).forEach(function (cat) {
+                        localStorage.setItem('altorra_notif_cat_' + cat, cats[cat] === false ? '0' : '1');
+                    });
+                }
+            } catch (e) {}
             updateSidebarUser(user, _userData);
             renderAllSections(user, _userData);
         }).catch(function (err) {

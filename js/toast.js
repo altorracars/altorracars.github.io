@@ -690,7 +690,7 @@
         return false;
     }
 
-    function add(entry) {
+    function add(entry, opts) {
         if (!entry) return null;
         var type = entry.type || 'info';
         var title = entry.title || '';
@@ -699,9 +699,10 @@
         if (!title && !message) return null;
         if (isDuplicate(type, title, message)) return null;
 
-        var now = Date.now();
+        var fromRemote = opts && opts.fromRemote === true;
+        var now = entry.timestamp || Date.now();
         var item = {
-            id: 'n_' + now + '_' + Math.random().toString(36).slice(2, 8),
+            id: entry.id || ('n_' + now + '_' + Math.random().toString(36).slice(2, 8)),
             type: type,
             title: title,
             message: message,
@@ -711,40 +712,181 @@
             entityRef: entry.entityRef || null,
             actionLabel: entry.actionLabel || null,
             timestamp: now,
-            read: false
+            read: entry.read === true
         };
+        // Dedup by id: skip if we already have an entry with this id
+        // (covers cross-tab duplicates: one tab's Firestore listener
+        // receives an entry that was written by another tab on the same
+        // device, where _entries in this tab might be stale vs localStorage)
+        if (_entries.find(function(e) { return e.id === item.id; })) return null;
+
         _entries.unshift(item);
         if (_entries.length > MAX_ENTRIES) _entries = _entries.slice(0, MAX_ENTRIES);
         save();
         notifyListeners();
+
+        // A4 — sync to Firestore for cross-device bell. Skip if the entry
+        // came from a remote snapshot (would loop) or user is anonymous.
+        if (!fromRemote) syncEntryToFirestore(item);
         return item.id;
     }
 
     function markAllRead() {
-        _entries.forEach(function(e) { e.read = true; });
+        var changed = [];
+        _entries.forEach(function(e) {
+            if (!e.read) { e.read = true; changed.push(e.id); }
+        });
         save();
         notifyListeners();
+        // A4 — sync read state per-entry to Firestore (best-effort)
+        changed.forEach(function(id) { syncFieldToFirestore(id, { read: true }); });
     }
 
     function markRead(id) {
         var entry = _entries.find(function(e) { return e.id === id; });
-        if (entry) { entry.read = true; save(); notifyListeners(); }
+        if (entry) {
+            entry.read = true;
+            save();
+            notifyListeners();
+            syncFieldToFirestore(id, { read: true });
+        }
     }
 
     function remove(id) {
         _entries = _entries.filter(function(e) { return e.id !== id; });
         save();
         notifyListeners();
+        // A4 — sync deletion to Firestore (best-effort)
+        deleteFromFirestore(id);
     }
 
     function clear() {
+        var idsToDelete = _entries.map(function(e) { return e.id; });
         _entries = [];
         save();
         notifyListeners();
+        // A4 — clear server-side too (delete each doc; Firestore has no bulk delete)
+        idsToDelete.forEach(function(id) { deleteFromFirestore(id); });
     }
 
     function getEntries() { return _entries.slice(); }
     function getUnreadCount() { return _entries.filter(function(e) { return !e.read; }).length; }
+
+    // ─── A4: Firestore cross-device sync ────────────────────────
+    // localStorage is the per-device cache. Firestore subcollection
+    // `clientes/{uid}/notifications/{nid}` is the canonical synced store.
+    // Anonymous users skip entirely (no uid → no rules match).
+    var _syncUid = null;
+    var _syncUnsub = null;
+    var _syncFirstSnapshotDone = false;
+
+    function _currentUid() {
+        if (!window.auth || !window.auth.currentUser) return null;
+        if (window.auth.currentUser.isAnonymous) return null;
+        return window.auth.currentUser.uid;
+    }
+    function _docRef(uid, id) {
+        return window.db.collection('clientes').doc(uid).collection('notifications').doc(id);
+    }
+
+    function syncEntryToFirestore(item) {
+        if (!window.db || !item || !item.id) return;
+        var uid = _currentUid();
+        if (!uid) return;
+        try {
+            _docRef(uid, item.id).set({
+                id: item.id,
+                type: item.type,
+                title: item.title,
+                message: item.message,
+                link: item.link,
+                category: item.category,
+                priority: item.priority,
+                entityRef: item.entityRef,
+                actionLabel: item.actionLabel,
+                timestamp: item.timestamp,
+                read: !!item.read
+            }).catch(function() {}); // best-effort; localStorage is source of truth locally
+        } catch (e) {}
+    }
+    function syncFieldToFirestore(id, fields) {
+        if (!window.db || !id) return;
+        var uid = _currentUid();
+        if (!uid) return;
+        try { _docRef(uid, id).update(fields).catch(function() {}); } catch (e) {}
+    }
+    function deleteFromFirestore(id) {
+        if (!window.db || !id) return;
+        var uid = _currentUid();
+        if (!uid) return;
+        try { _docRef(uid, id).delete().catch(function() {}); } catch (e) {}
+    }
+
+    function startFirestoreSync(user) {
+        if (!user || user.isAnonymous) return false;
+        if (!window.db) return false;
+        if (_syncUid === user.uid && _syncUnsub) return true; // already running
+        stopFirestoreSync();
+        _syncUid = user.uid;
+        _syncFirstSnapshotDone = false;
+
+        try {
+            _syncUnsub = window.db.collection('clientes').doc(user.uid)
+                .collection('notifications')
+                .orderBy('timestamp', 'desc')
+                .limit(MAX_ENTRIES)
+                .onSnapshot(function(snap) {
+                    snap.docChanges().forEach(function(change) {
+                        var d = change.doc.data();
+                        if (!d || !d.id) return;
+                        if (change.type === 'added' || change.type === 'modified') {
+                            // Skip if we already have it locally (avoid loop)
+                            var existing = _entries.find(function(e) { return e.id === d.id; });
+                            if (!existing) {
+                                add(d, { fromRemote: true });
+                            } else if (existing.read !== !!d.read) {
+                                existing.read = !!d.read;
+                                save();
+                                notifyListeners();
+                            }
+                        } else if (change.type === 'removed') {
+                            // Another device removed this entry → reflect locally
+                            var idx = _entries.findIndex(function(e) { return e.id === d.id; });
+                            if (idx !== -1) {
+                                _entries.splice(idx, 1);
+                                save();
+                                notifyListeners();
+                            }
+                        }
+                    });
+                    // First snapshot: backfill any LOCAL entries not yet in Firestore
+                    if (!_syncFirstSnapshotDone) {
+                        _syncFirstSnapshotDone = true;
+                        // Push any local-only entries up so the new device sees them
+                        var remoteIds = {};
+                        snap.docs.forEach(function(d) { remoteIds[d.id] = true; });
+                        _entries.forEach(function(item) {
+                            if (!remoteIds[item.id]) syncEntryToFirestore(item);
+                        });
+                    }
+                }, function(err) {
+                    // Cross-tab signOut: auth goes null first; suppress expected error
+                    if (window.auth && !window.auth.currentUser) return;
+                    try { console.warn('[NotifyCenter] sync error:', err.message || err); } catch (e) {}
+                });
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    function stopFirestoreSync() {
+        if (_syncUnsub) {
+            try { _syncUnsub(); } catch (e) {}
+            _syncUnsub = null;
+        }
+        _syncUid = null;
+        _syncFirstSnapshotDone = false;
+    }
 
     function subscribe(fn) { _listeners.push(fn); return function() { _listeners = _listeners.filter(function(l) { return l !== fn; }); }; }
     function notifyListeners() { _listeners.forEach(function(fn) { try { fn(_entries); } catch (e) {} }); }
@@ -1059,7 +1201,21 @@
     //       suppressToast: false                      // optional
     //   });
     //
-    // Returns: id of bell entry, or null if deduped/invalid.
+    // Returns: id of bell entry, or null if deduped/invalid/disabled.
+
+    // G2 — User-level opt-out per category. Each category can be muted
+    // by the user in perfil → Preferencias → Notificaciones. Read from
+    // localStorage for hot-path performance (no JSON parse on every emit).
+    // Key format: altorra_notif_cat_<category> = '0' (disabled) | '1' (default)
+    // Security category is NEVER mutable — those alerts are too important.
+    function isCategoryEnabled(category) {
+        if (category === 'security') return true;
+        try {
+            var v = localStorage.getItem('altorra_notif_cat_' + category);
+            return v !== '0';
+        } catch (e) { return true; }
+    }
+
     function emitCategorical(category, payload) {
         var defaults = CATEGORY_DEFAULTS[category];
         if (!defaults) {
@@ -1069,6 +1225,8 @@
             }
             return null;
         }
+        // G2 — respect user opt-out
+        if (!isCategoryEnabled(category)) return null;
         payload = payload || {};
         var title = payload.title || defaults.defaultTitle;
         var message = payload.message || '';
@@ -1134,6 +1292,9 @@
         subscribe: subscribe,
         getCategoryMeta: getCategoryMeta,
         categories: Object.keys(CATEGORY_DEFAULTS),
+        // A4 — multi-device sync (called from auth.js on auth state change)
+        startFirestoreSync: startFirestoreSync,
+        stopFirestoreSync: stopFirestoreSync,
         mount: function(target) {
             var el = typeof target === 'string' ? document.querySelector(target) : target;
             return createBell(el);

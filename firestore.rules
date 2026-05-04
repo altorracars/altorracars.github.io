@@ -118,6 +118,14 @@ service cloud.firestore {
       match /busquedasGuardadas/{searchId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
+
+      // Phase A4 — Smart Notifications cross-device sync
+      // The bell's localStorage is per-device. This subcollection is the
+      // canonical synced store. Each notification is read by the same uid
+      // that produced it (or by other devices logged in as the same uid).
+      match /notifications/{nid} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+      }
     }
 
     // ========== RESENAS ==========

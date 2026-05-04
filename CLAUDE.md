@@ -3361,6 +3361,191 @@ Solo para usuarios registrados con email. Anonimos skip silencioso.
 
 **Archivos modificados**: `js/admin-appointments.js`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase G2 — Preferencias granulares por categoria ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: el usuario puede silenciar categorias del bell que no le interesan. Patron Slack/Twitter/GitHub: control granular por tipo.
+
+**UI** (`js/perfil.js` → seccion Preferencias, nueva card "Que tipo de notificaciones quieres recibir"):
+
+6 toggles, uno por categoria persistible:
+
+| Categoria | Icono | Etiqueta | Hint |
+|---|---|---|---|
+| `price_alert` | `trending-down` | Alertas de precio | "Cambios en el precio de tus favoritos y vehiculos vistos" |
+| `request_update` | `message-square-text` | Solicitudes | "Cuando un asesor responde o cambia el estado de una solicitud" |
+| `appointment_update` | `calendar-check-2` | Citas | "Confirmacion, reprogramacion o cancelacion de tus citas" |
+| `search_match` | `search-check` | Busquedas guardadas | "Vehiculos nuevos que coinciden con tus busquedas" |
+| `inventory_change` | `package` | Cambios de inventario | "Tus favoritos cuando son reservados o vendidos" |
+| `system` | `bell-ring` | Avisos del sistema | "Nuevas versiones, mantenimiento, cambios importantes" |
+
+**Categoria `security` NO es muteable**: aunque el schema la incluye, el toggle no se renderiza. Las alertas de seguridad son siempre visibles.
+
+**Storage dual**:
+1. **Firestore canonical**: `clientes/{uid}.preferencias.notificaciones.categories = {price_alert: bool, ...}`
+2. **localStorage hot-path**: `altorra_notif_cat_<category>` = `'0'` | `'1'` — un key por categoria, leido sin JSON parse en el hot-path de `notifyCenter.notify()`
+
+**Sync logico**:
+- Al cargar perfil.html, las preferencias se leen de Firestore y se sincronizan a localStorage (asi notifyCenter las honra en cualquier pagina)
+- Al togglear, localStorage se actualiza inmediatamente (UI optimistica) + Firestore via `savePref()` debounced
+- Al cambiar de dispositivo: el primer load de perfil sincroniza desde Firestore
+
+**Read path en `notifyCenter.notify(category, payload)`**:
+
+```js
+function isCategoryEnabled(category) {
+    if (category === 'security') return true;       // never mutable
+    try {
+        var v = localStorage.getItem('altorra_notif_cat_' + category);
+        return v !== '0';                            // default: enabled
+    } catch (e) { return true; }
+}
+
+function emitCategorical(category, payload) {
+    if (!CATEGORY_DEFAULTS[category]) return null;   // unknown
+    if (!isCategoryEnabled(category)) return null;   // user opted out
+    ...
+}
+```
+
+Cero costo cuando esta enabled (default). Si el user opta out, `notifyCenter.notify()` retorna `null` sin tocar el bell ni mostrar toast.
+
+**Anti-patrones evitados**:
+
+| Riesgo | Mitigacion |
+|---|---|
+| Hot-path lee Firestore en cada notify | localStorage cache, sync en perfil load |
+| Otra tab abierta no respeta el cambio | `storage` event nativo del browser propaga (libre) |
+| Default OFF accidental tras refactor | `v !== '0'` permite que claves no-seteadas sigan ON |
+| Security mute por error | Hardcoded en `isCategoryEnabled` |
+| Nuevo dispositivo sin prefs | Default ON hasta que el user visita perfil |
+
+**Visibilidad para el usuario**:
+- Toggle en perfil → cambio inmediato (localStorage)
+- En el background, Firestore se actualiza
+- Notificacion de la categoria muteada deja de aparecer en bell + toast
+- No requiere recargar pagina
+
+**Archivos modificados**: `js/perfil.js`, `js/toast.js`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase F3 — Admin: dispositivo de confianza nuevo ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: cuando un admin agrega un nuevo dispositivo de confianza (post-2FA, "Confiar en este dispositivo"), recibe una notificacion de seguridad **critical** con detalles. Si fue una accion legitima, es feedback util. Si no fue el admin (alguien comprometio la cuenta), es alarma temprana.
+
+**Implementacion** (`js/admin-auth.js` `saveDeviceTrust`):
+
+Despues de `update({ trustedDevices: active })`, emite:
+```js
+notifyCenter.notify('security', {
+    title: 'Nuevo dispositivo de confianza',
+    message: 'Chrome • Windows — Cartagena, Colombia. Si no fuiste tu, revoca este dispositivo.',
+    link: 'admin.html#seguridad',
+    entityRef: 'trust:' + token,
+    priority: 'critical'
+});
+```
+
+**Por que `priority: 'critical'`**:
+- Categoria `security` mapea a critical en CATEGORY_DEFAULTS
+- Toast NO autodismiss — requiere click del admin para descartarlo
+- Bell entry persiste hasta que la borra manualmente
+- No es muteable (G2 hardcoded `category === 'security' → return true`)
+
+**Datos incluidos**:
+- Browser y OS detectados de UA
+- Ciudad y pais resueltos via `fetchLocationInfo()` (geo por IP, anonimizada)
+- Click → `admin.html#seguridad` para revisar y revocar si fue accion no autorizada
+
+**Eventos NO incluidos en F3** (deferidos por complejidad):
+- Auto-unblock (admin no esta logueado al momento del unblock)
+- Cambio de rol (requiere onSnapshot en `usuarios/{uid}` desde el cliente)
+- Cambio de password (Firebase Auth no expone evento client-side)
+- Acceso desde IP nueva sin trust (requiere tracking de IPs vistas)
+
+Estos pueden agregarse incrementalmente. El patron esta probado.
+
+**Archivos modificados**: `js/admin-auth.js`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase A4 — Sync de bell cross-device via Firestore ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: el bell ya no es per-device. Si un usuario recibe una alerta de precio en su laptop, al abrir su mobile la ve tambien. Marcar como leido en un dispositivo se refleja en otros.
+
+**Arquitectura**: localStorage es el cache local hot-path; Firestore subcollection `clientes/{uid}/notifications/{nid}` es el store canonical sincronizado. Para anonymous users, todo queda local (no hay uid → no rules match).
+
+**Schema Firestore**: cada doc replica el shape de localStorage:
+```
+clientes/{uid}/notifications/{nid} = {
+    id, type, title, message, link, category, priority, entityRef,
+    actionLabel, timestamp, read
+}
+```
+
+**Reglas Firestore** (`firestore.rules`):
+```
+match /notifications/{nid} {
+    allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+}
+```
+
+> **DEPLOY MANUAL REQUERIDO**: `firebase deploy --only firestore:rules`. Sin esto, los writes fallan permission-denied y el bell solo sirve como localStorage cache.
+
+**Flujo de escritura**:
+
+| Operacion local | Sync a Firestore |
+|---|---|
+| `add(entry)` | `set(item)` en subcollection (skip si `fromRemote: true`) |
+| `markRead(id)` | `update({read: true})` |
+| `markAllRead()` | `update({read: true})` por cada cambiada |
+| `remove(id)` | `delete()` |
+| `clear()` | `delete()` por cada doc (Firestore no tiene bulk-delete client-side) |
+
+Todos `.catch(function() {})` — best-effort. localStorage es source of truth local.
+
+**Flujo de lectura (`startFirestoreSync(user)`)**:
+
+```js
+.collection('clientes').doc(uid).collection('notifications')
+.orderBy('timestamp', 'desc')
+.limit(MAX_ENTRIES)
+.onSnapshot(...)
+```
+
+`docChanges()` se procesa:
+- `'added'` con id no presente local → `add(d, {fromRemote: true})`
+- `'modified'` con `read` diferente → actualiza local sin loop
+- `'removed'` → splice local
+
+**Backfill primer snapshot**: en la primera snapshot, los entries SOLO locales (creados antes del sync) se suben a Firestore para que otros dispositivos los vean.
+
+**Anti-patrones evitados**:
+
+| Riesgo | Mitigacion |
+|---|---|
+| Loop infinito (write → snapshot → write...) | `fromRemote: true` flag + dedup por id antes de unshift |
+| Cross-tab duplicates en mismo device | `_entries.find(by id)` antes de unshift (catch tab-stale state) |
+| Permission-denied al cerrar sesion | `stopFirestoreSync()` antes de `signOut()` (en `_processNullState`) |
+| Anonymous users escriben | `_currentUid()` retorna null si `isAnonymous` |
+| Costo Firestore | `.limit(MAX_ENTRIES = 50)` + dedup A1 + opt-out A2 reducen escrituras |
+| Conflict en mark-read | Last-write-wins (Firestore default) — aceptable para flag boolean |
+| Listener corre tras logout | `stopFirestoreSync()` cancela `unsub()` antes del signOut |
+
+**Wire en `auth.js`**:
+- `onAuthStateChanged(user)`: `notifyCenter.startFirestoreSync(user)` para registrados, `stop` para anonymous
+- `_processNullState()`: `stopFirestoreSync()` antes de cualquier signOut path
+
+**Limitaciones aceptadas**:
+- TTL no se sincroniza: cada device hace su propio cleanup local de entries >30 dias. Eventualmente convergen.
+- Migracion G1 no se sincroniza: cada device corre la migracion una sola vez localmente. Despues de ambos devices migrar, el sync es coherente.
+- `clear()` con muchas entries hace N delete requests. Solo es un costo en momentos de "limpiar todo" — aceptable.
+
+**Verificacion E2E**:
+1. Login en laptop como cliente, abre favoritos
+2. Admin baja precio → laptop recibe toast + bell entry
+3. Login mismo cliente en mobile (Chrome incognito o navegador distinto)
+4. Mobile abre el bell → ve la entry de price_alert recien creada en laptop
+5. Mark read en mobile → laptop refresca el badge a 0 sin tocar nada
+
+**Archivos modificados**: `js/toast.js`, `js/auth.js`, `firestore.rules`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

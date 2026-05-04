@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505140000'; // I.2 (mega-plan v4) — Activity Feed sliding panel + Firestore listener for super_admin
+const CACHE_VERSION = 'v20260505150000'; // I.3 (mega-plan v4) — Cross-module EventBus emitters wired into core admin modules
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -1089,6 +1089,19 @@
             var label = (vehicleData.marca || '') + ' ' + (vehicleData.modelo || '') + ' ' + (vehicleData.year || '');
             var codeLabel = vehicleData.codigoUnico ? ' [' + vehicleData.codigoUnico + ']' : '';
             AP.writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id + codeLabel, label.trim());
+            // I.3 — EventBus emission for Activity Feed + workflows
+            if (window.AltorraEventBus) {
+                window.AltorraEventBus.emit(isEdit ? 'vehicle.updated' : 'vehicle.created', {
+                    id: vehicleData.id,
+                    codigoUnico: vehicleData.codigoUnico || null,
+                    marca: vehicleData.marca,
+                    modelo: vehicleData.modelo,
+                    year: vehicleData.year,
+                    precio: vehicleData.precio,
+                    estado: vehicleData.estado,
+                    title: label.trim()
+                });
+            }
             // Per-vehicle audit log entry
             if (isEdit) {
                 var oldData = AP.vehicles.find(function(v) { return v.id === parseInt(existingId, 10); });
@@ -1144,6 +1157,10 @@
         logVehicleAction(deletingId, 'deleted', [], { vehicleLabel: deleteLabel });
         window.db.collection('vehiculos').doc(String(AP.deleteTargetId)).delete().then(function() {
             AP.writeAuditLog('vehicle_delete', 'vehiculo #' + deletingId, deleteLabel);
+            // I.3 — EventBus emission
+            if (window.AltorraEventBus) {
+                window.AltorraEventBus.emit('vehicle.deleted', { id: deletingId, title: deleteLabel });
+            }
             AP.toast('Vehiculo eliminado');
             $('deleteModal').classList.remove('active');
             AP.deleteTargetId = null;

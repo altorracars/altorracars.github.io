@@ -1307,6 +1307,16 @@
 
         recordSessionStart();
         AP.writeAuditLog('login', 'sesion', user.email);
+        // I.3 — broadcast on EventBus so Activity Feed + workflows see it
+        if (window.AltorraEventBus) {
+            window.AltorraEventBus.emit('user.logged-in', {
+                uid: user.uid,
+                email: user.email,
+                rol: AP.currentUserRole,
+                nombre: userName,
+                title: userName + ' (' + rolLabel + ')'
+            });
+        }
         startInactivityTracking();
         startPresence(user);
         applyRolePermissions();
@@ -1780,6 +1790,16 @@
     $('logoutBtn').addEventListener('click', function() {
         clearSessionStart();
         stopPresence();
+        // I.3 — broadcast logout BEFORE signOut so listeners with auth still active see it
+        if (window.AltorraEventBus && window.auth && window.auth.currentUser) {
+            var u = window.auth.currentUser;
+            window.AltorraEventBus.emit('user.logged-out', {
+                uid: u.uid,
+                email: u.email,
+                rol: AP.currentUserRole || null,
+                title: (AP.currentUserProfile && AP.currentUserProfile.nombre) || u.email
+            });
+        }
         // Stop Firestore listeners BEFORE signOut to prevent the WebChannel
         // from trying to refresh listens with a null auth token, which causes
         // a 400 Bad Request error on Firestore's Listen channel.

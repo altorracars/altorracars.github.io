@@ -218,6 +218,19 @@
                     entityRef: (isCita ? 'admin-cita:' : 'admin-solicitud:') + id,
                     priority: 'high'
                 });
+                // I.3 — broadcast on EventBus so Activity Feed + future workflows see it
+                if (window.AltorraEventBus) {
+                    window.AltorraEventBus.emit('comm.created', {
+                        id: id,
+                        kind: isCita ? 'cita' : 'solicitud',
+                        estado: data.estado || 'pendiente',
+                        nombre: name,
+                        vehiculo: vehiculo || null,
+                        tipo: data.tipo || null,
+                        origen: data.origen || null,
+                        title: name + (vehiculo ? ' — ' + vehiculo : '')
+                    });
+                }
             } else if (change.type === 'modified' && _adminSeenIds[id]) {
                 // Track but don't notify on every modification (admin
                 // doesn't need an alert when they themselves update a doc)
@@ -589,6 +602,10 @@
         window.db.collection('solicitudes').doc(docId).delete().then(function() {
             AP.toast('Solicitud eliminada');
             AP.writeAuditLog('appointment_delete', 'solicitud ' + docId, '');
+            // I.3 — EventBus emission
+            if (window.AltorraEventBus) {
+                window.AltorraEventBus.emit('comm.deleted', { id: docId });
+            }
         }).catch(function(err) {
             AP.toast('Error: ' + err.message, 'error');
         });
@@ -1070,6 +1087,17 @@
             window.db.collection('solicitudes').doc(docId).update(updateData).then(function() {
                 AP.toast('Solicitud actualizada a: ' + updateData.estado);
                 AP.writeAuditLog('appointment_' + updateData.estado, 'solicitud ' + docId, updateData.observaciones || '');
+                // I.3 — EventBus emission
+                if (window.AltorraEventBus) {
+                    var doc = AP.appointments.find(function (a) { return a._docId === docId; }) || {};
+                    window.AltorraEventBus.emit('comm.estado-changed', {
+                        id: docId,
+                        kind: getKindOf(doc),
+                        estadoNuevo: updateData.estado,
+                        estadoPrevio: doc.estado || null,
+                        title: (doc.nombre || '') + ' — ' + (doc.vehiculo || '')
+                    });
+                }
                 var filterEl = $('appointmentFilter');
                 if (filterEl) filterEl.value = updateData.estado;
                 // Update WhatsApp preview so admin can send the message

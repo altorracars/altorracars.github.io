@@ -4784,6 +4784,95 @@ Estado del Sidebar + Workspaces al cerrar el bloque B:
 
 > **DEPLOY MANUAL**: `firebase deploy --only firestore:rules` para activar persistencia cross-device.
 
+### Microfase I.3 — Cross-module EventBus emitters ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: el bus existe (I.1) y el feed lo escucha (I.2), pero hasta
+ahora ningún módulo emitía eventos. I.3 instrumenta los puntos críticos
+del admin para que el feed muestre actividad real, y deja el terreno
+listo para que Bloque K (workflows) los use como triggers.
+
+**Eventos emitidos** (canónica `dominio.acción`, 8 tipos):
+
+| Evento | Origen | Cuándo |
+|---|---|---|
+| `ui.section-changed` | `js/admin-section-router.js` `notifyChange()` | Usuario navega entre secciones del admin |
+| `vehicle.created` | `js/admin-vehicles.js` (post `writeAuditLog`) | Nuevo vehículo guardado |
+| `vehicle.updated` | `js/admin-vehicles.js` (post `writeAuditLog`) | Vehículo editado |
+| `vehicle.deleted` | `js/admin-vehicles.js` (post delete) | Vehículo borrado |
+| `comm.created` | `js/admin-appointments.js` `detectAdminNewSolicitudes` | Nueva solicitud/cita pendiente entra al sistema |
+| `comm.estado-changed` | `js/admin-appointments.js` (saveAppStatusBtn) | Admin cambia el estado de una comunicación |
+| `comm.deleted` | `js/admin-appointments.js` (deleteAppointment) | Solicitud/cita eliminada |
+| `user.logged-in` | `js/admin-auth.js` `showAdmin()` | Admin entra al panel |
+| `user.logged-out` | `js/admin-auth.js` logoutBtn | Admin cierra sesión (emit ANTES de signOut) |
+
+**Payloads canónicos**: cada emit incluye los campos mínimos para que el
+feed renderice una tarjeta legible (`title`, `id`/`uid`, contexto del
+dominio). Bloque K (workflows) consumirá los mismos payloads vía
+`AltorraEventBus.on('vehicle.*', ...)` sin necesitar reformatear nada.
+
+**Por qué `user.logged-out` se emite ANTES de signOut**: una vez que
+`signOut()` resuelve, el listener de Firestore en el feed (I.2) ya está
+desautenticado y no puede persistir el evento al servidor. Emitir
+sincrónicamente antes garantiza que (a) los listeners locales lo ven con
+auth todavía activo y (b) la persistencia condicional vía
+`{persist: true}` (cuando se active) llegue al servidor con un token
+válido.
+
+**Por qué `crm.score-changed` NO se emite todavía**: el score actual
+en `js/admin-crm.js` se computa on-the-fly en cada render
+(`computeScore(c)` línea 178), no en respuesta a un cambio. Emitirlo en
+render generaría ruido constante. El evento se reserva para Bloque Q
+(Knowledge Graph) donde tendremos un pipeline real de recompute.
+
+**Por qué `vehicle.featured-toggled` NO se emite**: el toggle de
+destacado pasa por el mismo `vehicle.updated` con campos `destacado` y
+`featuredOrder` en el payload — un solo evento por write es la
+convención. Suscriptores que solo miran destacados pueden filtrar por
+`payload.destacado !== payload._previous.destacado` cuando agreguemos
+diff metadata en I.4.
+
+**Compatibilidad con I.2**: el feed ya tenía soporte para todos los
+dominios (`vehicle`, `comm`, `user`, `ui`, `crm`) en su mapa de
+colores y filtros. No requirió cambios. Cada emit aparece
+inmediatamente en el panel del super_admin como una tarjeta nueva al
+tope.
+
+**Pasos de prueba (manual, en `admin.html`)**:
+1. Abrir el Activity Feed (icono campana grande en header)
+2. Navegar a otra sección → aparece tarjeta `ui.section-changed` con
+   label "Inicio → Vehículos"
+3. Crear un vehículo nuevo → tarjeta `vehicle.created` con
+   `marca modelo year` y `codigoUnico`
+4. Editar ese vehículo → `vehicle.updated`
+5. Cambiar estado de una solicitud pendiente → `comm.estado-changed`
+   con `pendiente → contactado`
+6. Cerrar sesión → `user.logged-out` (visible si tienes el feed abierto
+   antes del click)
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Logout emite con auth ya muerta → persist falla | Emit ANTES de `auth.signOut()` |
+| Multiple emits por una sola acción admin (e.g. dirty check) | Emit en el callsite POST-write éxito (post-auditLog), no en intent |
+| Emit dentro de loops (`forEach`) sin throttle | Solo emits puntuales por acción del usuario, no en bucles |
+| Score recompute on-render emitiría 100/seg | `crm.score-changed` deferido a Bloque Q |
+| Payload sin contexto humano legible | Cada payload incluye `title` precomputado |
+| Bus indefinido en page load temprano | Guard `if (window.AltorraEventBus)` antes de cada emit |
+
+**Deuda técnica para I.4**:
+- Diff metadata (`_previous`) en `vehicle.updated` y `comm.estado-changed`
+  para que workflows puedan detectar transiciones específicas
+- Source meta (`bySource: 'admin'|'public'|'system'`) automático en
+  todos los emits para que el feed lo filtre sin lógica per-evento
+
+**Archivos modificados**:
+- `js/admin-section-router.js` — emit en `notifyChange()`
+- `js/admin-vehicles.js` — 3 emits (created, updated, deleted)
+- `js/admin-appointments.js` — 3 emits (created, estado-changed, deleted)
+- `js/admin-auth.js` — 2 emits (logged-in, logged-out)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505150000
+
 
 
 ---

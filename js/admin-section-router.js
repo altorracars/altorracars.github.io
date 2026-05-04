@@ -103,6 +103,14 @@
         listeners.forEach(function (fn) {
             try { fn(section, prev); } catch (e) {}
         });
+        // I.3 — emit to EventBus so Activity Feed + future workflows see it
+        if (window.AltorraEventBus) {
+            window.AltorraEventBus.emit('ui.section-changed', {
+                section: section,
+                previous: prev,
+                meta: REGISTRY[section] || null
+            });
+        }
     }
 
     /* ═══════════════════════════════════════════════════════════

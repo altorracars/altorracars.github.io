@@ -9,6 +9,91 @@ class ContactFormManager {
         this.init();
     }
 
+    /** MF1.1 — Returns the currently authenticated non-anonymous user, or null */
+    _currentUser() {
+        if (!window.auth || !window.auth.currentUser) return null;
+        if (window.auth.currentUser.isAnonymous) return null;
+        return window.auth.currentUser;
+    }
+
+    /** MF1.1 — Build identity payload to attach to every Firestore submission */
+    _identityPayload() {
+        var u = this._currentUser();
+        var payload = {
+            userId: u ? u.uid : null,
+            userEmail: u ? (u.email || null) : null,
+            clientCategory: u ? 'registered' : 'guest'
+        };
+        return payload;
+    }
+
+    /** MF1.1 — Build source/device tracking metadata */
+    _sourcePayload(ctaName) {
+        var path = (window.location.pathname || '').replace(/^\/+/, '') || 'index.html';
+        var ref = '';
+        try { ref = document.referrer || ''; } catch (e) {}
+        // Light UA parsing (consistent with admin-auth getDeviceInfo if available)
+        var ua = navigator.userAgent || '';
+        var browser = 'Unknown';
+        if (/Edg\//.test(ua)) browser = 'Edge';
+        else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) browser = 'Chrome';
+        else if (/Firefox\//.test(ua)) browser = 'Firefox';
+        else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = 'Safari';
+        var os = 'Unknown';
+        if (/Windows/.test(ua)) os = 'Windows';
+        else if (/Mac OS X/.test(ua)) os = 'macOS';
+        else if (/Android/.test(ua)) os = 'Android';
+        else if (/iPhone|iPad|iPod/.test(ua)) os = 'iOS';
+        else if (/Linux/.test(ua)) os = 'Linux';
+        var deviceType = /Mobi|Android|iPhone|iPad/.test(ua) ? 'mobile' : 'desktop';
+        return {
+            source: { page: path, cta: ctaName || '', referrer: ref.slice(0, 200) },
+            device: { type: deviceType, browser: browser, os: os }
+        };
+    }
+
+    /** MF1.1 — Auto-fill form fields from logged-in user data (defensive) */
+    _autoFillFromUser(modal) {
+        var u = this._currentUser();
+        if (!u || !modal) return;
+
+        // Try clientes/{uid} for richer profile (telefono, prefijoPais)
+        var profile = null;
+        try {
+            // Synchronous fast path: read from auth + cached display name
+            profile = {
+                nombre: u.displayName || '',
+                email: u.email || '',
+                telefono: '',
+                prefijoPais: '+57'
+            };
+        } catch (e) {}
+
+        // Fill standard inputs only if empty (don't override user's manual edits)
+        var fields = ['nombre', 'email', 'telefono'];
+        fields.forEach(function (name) {
+            var input = modal.querySelector('input[name="' + name + '"]');
+            if (input && !input.value && profile[name]) input.value = profile[name];
+        });
+
+        // Async enrich from Firestore clientes profile
+        if (window.db && window.db.collection) {
+            try {
+                window.db.collection('clientes').doc(u.uid).get().then(function (doc) {
+                    if (!doc.exists) return;
+                    var data = doc.data() || {};
+                    fields.forEach(function (name) {
+                        var input = modal.querySelector('input[name="' + name + '"]');
+                        if (input && !input.value && data[name]) input.value = data[name];
+                    });
+                    // Country prefix select (vende-pais / fin-pais)
+                    var paisSel = modal.querySelector('select[id$="-pais"]');
+                    if (paisSel && data.prefijo && !paisSel.dataset.userTouched) paisSel.value = data.prefijo;
+                }).catch(function () {});
+            } catch (e) {}
+        }
+    }
+
     init() {
         this.attachEventListeners();
         this.initVendeWizard();
@@ -249,9 +334,18 @@ class ContactFormManager {
             if (modalId === 'vende-auto') this.resetVendeWizard();
             if (modalId === 'financiacion') this.resetFinanciacionForm();
 
+            // MF1.1 — auto-fill from logged-in user (non-overriding)
+            this._autoFillFromUser(modal);
+
             setTimeout(() => {
-                const firstInput = modal.querySelector('input:not([type="hidden"]), textarea, select');
-                if (firstInput) firstInput.focus();
+                // Focus the first EMPTY input (skip pre-filled fields for better UX)
+                var inputs = modal.querySelectorAll('input:not([type="hidden"]), textarea, select');
+                var target = null;
+                for (var i = 0; i < inputs.length; i++) {
+                    if (!inputs[i].value) { target = inputs[i]; break; }
+                }
+                if (!target) target = inputs[0];
+                if (target) target.focus();
             }, 100);
 
             this.trapFocus(modal);
@@ -321,7 +415,9 @@ class ContactFormManager {
 
         // Save to Firestore solicitudes collection
         if (window.db) {
-            window.db.collection('solicitudes').add({
+            var identity = this._identityPayload();
+            var src = this._sourcePayload('vende_auto_form');
+            window.db.collection('solicitudes').add(Object.assign({
                 nombre: nombre,
                 telefono: telefono,
                 prefijoPais: prefijoPais,
@@ -339,7 +435,7 @@ class ContactFormManager {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            }).catch(function(err) { console.warn('[Solicitudes] Error saving vende tu auto:', err); });
+            }, identity, src)).catch(function(err) { console.warn('[Solicitudes] Error saving vende tu auto:', err); });
         }
 
         // Also redirect to WhatsApp
@@ -376,7 +472,9 @@ class ContactFormManager {
 
         // Save to Firestore solicitudes collection
         if (window.db) {
-            window.db.collection('solicitudes').add({
+            var identity = this._identityPayload();
+            var src = this._sourcePayload('financiacion_form');
+            window.db.collection('solicitudes').add(Object.assign({
                 nombre: nombre,
                 telefono: telefono,
                 prefijoPais: prefijoPais,
@@ -394,7 +492,7 @@ class ContactFormManager {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            }).catch(function(err) { console.warn('[Solicitudes] Error saving financiacion:', err); });
+            }, identity, src)).catch(function(err) { console.warn('[Solicitudes] Error saving financiacion:', err); });
         }
 
         // Also redirect to WhatsApp

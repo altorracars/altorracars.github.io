@@ -166,7 +166,14 @@ service cloud.firestore {
     // ========== SOLICITUDES (unified communications system) ==========
     match /solicitudes/{solicitudId} {
       allow read: if isAuthenticated();
-      allow create: if true; // Public forms can create solicitudes
+      // MF1.1 — Anti-impersonation: if userId is set, it must match the
+      // requester's auth uid (allowing anonymous). Otherwise the doc is a
+      // guest submission and userId stays null. clientCategory must match.
+      allow create: if (
+        !('userId' in request.resource.data)
+        || request.resource.data.userId == null
+        || (request.auth != null && request.resource.data.userId == request.auth.uid)
+      );
       allow update: if isEditorOrAbove();
       allow delete: if isSuperAdmin();
     }

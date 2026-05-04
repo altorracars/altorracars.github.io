@@ -55,6 +55,81 @@
         return 'https://wa.me/' + prefix + phone + '?text=' + encodeURIComponent(message);
     }
 
+    // ========== MF3.1 + MF3.2 — KIND TABS + estado filter rebuild ==========
+    function rebuildEstadoFilterForKind(kind) {
+        var filterEl = $('appointmentFilter');
+        if (!filterEl) return;
+        var schema = window.AltorraCommSchema;
+        if (!schema) return;
+
+        var states;
+        if (!kind || kind === 'all') {
+            // Union of all states across the 3 kinds, dedup-ed
+            var seen = {};
+            states = [];
+            Object.keys(schema.STATES).forEach(function (k) {
+                schema.STATES[k].forEach(function (s) {
+                    if (!seen[s]) { seen[s] = true; states.push(s); }
+                });
+            });
+        } else {
+            states = schema.STATES[kind] || [];
+        }
+
+        var current = filterEl.value;
+        var html = '<option value="all">Todas</option>';
+        states.forEach(function (s) {
+            var lbl = schema.STATE_LABELS[s] || (s.charAt(0).toUpperCase() + s.slice(1));
+            html += '<option value="' + s + '">' + lbl + '</option>';
+        });
+        filterEl.innerHTML = html;
+        // Preserve current selection if still valid; else fall back to 'all'
+        if (current && (current === 'all' || states.indexOf(current) !== -1)) {
+            filterEl.value = current;
+        } else {
+            filterEl.value = 'all';
+        }
+    }
+
+    var commKindTabsEl = document.querySelector('.comm-kind-tabs');
+    if (commKindTabsEl) {
+        commKindTabsEl.addEventListener('click', function (e) {
+            var btn = e.target.closest('.comm-kind-tab');
+            if (!btn) return;
+            var kind = btn.getAttribute('data-kind-filter');
+            if (!kind) return;
+            // Update active state
+            commKindTabsEl.querySelectorAll('.comm-kind-tab').forEach(function (b) {
+                var on = b === btn;
+                b.classList.toggle('active', on);
+                b.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            AP._kindFilter = kind;
+            // MF3.2 — rebuild estado filter to show only valid states for this kind
+            rebuildEstadoFilterForKind(kind);
+            // Reset pagination since filter changed
+            if (AP._pagination && AP._pagination.appointments) AP._pagination.appointments.page = 1;
+            renderAppointmentsTable();
+        });
+
+        // Initial rebuild for the default 'all' kind
+        // Run once schema is available (it loads as a separate script)
+        if (window.AltorraCommSchema) {
+            rebuildEstadoFilterForKind('all');
+        } else {
+            var attempts = 0;
+            var int = setInterval(function () {
+                attempts++;
+                if (window.AltorraCommSchema) {
+                    rebuildEstadoFilterForKind('all');
+                    clearInterval(int);
+                } else if (attempts > 40) {
+                    clearInterval(int);
+                }
+            }, 100);
+        }
+    }
+
     // ========== LOAD SOLICITUDES ==========
     // Admin notification baseline (Pillar F): set of doc IDs seen in
     // the first snapshot so we don't spam the bell on every page load.
@@ -64,6 +139,10 @@
         if (AP.unsubAppointments) AP.unsubAppointments();
         AP.unsubAppointments = window.db.collection('solicitudes').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
             AP.appointments = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
+
+            // MF1.2 — one-shot migration: infer kind + remap estado for legacy docs
+            try { if (typeof AP.migrateCommunicationsSchema === 'function') AP.migrateCommunicationsSchema(AP.appointments); } catch (e) {}
+
             renderAppointmentsTable();
             renderAdminCalendar(); // refresh calendar counts
             var pending = AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length;
@@ -182,6 +261,38 @@
     }
 
     // ========== SOLICITUDES TABLE ==========
+    // MF3.1 — kind filter applied first, then existing per-state filters
+    AP._kindFilter = AP._kindFilter || 'all';
+    function getKindOf(a) {
+        if (a && a.kind) return a.kind;
+        // Fallback inference for legacy docs not yet migrated
+        if (window.AltorraCommSchema && window.AltorraCommSchema.inferKind) {
+            return window.AltorraCommSchema.inferKind(a);
+        }
+        return a && a.requiereCita ? 'cita' : 'solicitud';
+    }
+
+    function updateKindBadges() {
+        var counts = { all: 0, cita: 0, solicitud: 0, lead: 0 };
+        // Count "pendientes/nuevos" (the unhandled state per kind) only
+        AP.appointments.forEach(function (a) {
+            var k = getKindOf(a);
+            var unhandled = (k === 'lead' && a.estado === 'nuevo')
+                || (k !== 'lead' && a.estado === 'pendiente');
+            if (unhandled) {
+                counts[k]++;
+                counts.all++;
+            }
+        });
+        ['All', 'Cita', 'Solicitud', 'Lead'].forEach(function (key) {
+            var el = $('commKindBadge' + key);
+            if (!el) return;
+            var n = counts[key.toLowerCase()];
+            el.textContent = n > 0 ? String(n) : '';
+            el.classList.toggle('is-zero', n === 0);
+        });
+    }
+
     function renderAppointmentsTable() {
         var body = $('appointmentsBody');
         if (!body) return;
@@ -194,7 +305,14 @@
         var dateTo = dateToEl ? dateToEl.value : '';
         var searchQ = appointmentSearchEl ? appointmentSearchEl.value.trim().toLowerCase() : '';
 
+        // Update tab counters from the unfiltered base set
+        updateKindBadges();
+
         var filtered = AP.appointments.slice();
+        // MF3.1 — kind filter applied first
+        if (AP._kindFilter && AP._kindFilter !== 'all') {
+            filtered = filtered.filter(function (a) { return getKindOf(a) === AP._kindFilter; });
+        }
         if (filter !== 'all') filtered = filtered.filter(function(a) { return a.estado === filter; });
         if (tipoF !== 'all') filtered = filtered.filter(function(a) { return (a.tipo || a.tipoCita || '') === tipoF; });
         if (origenF !== 'all') filtered = filtered.filter(function(a) { return (a.origen || '') === origenF; });
@@ -235,12 +353,12 @@
         if (AP.paginate) filtered = AP.paginate(filtered, 'appointments');
 
         body.innerHTML = filtered.map(function(a) {
-            var estadoColors = {
-                pendiente: 'admin-warning', confirmada: 'admin-success',
-                reprogramada: 'admin-info', completada: 'admin-gold', cancelada: 'admin-danger'
-            };
-            var estadoClass = estadoColors[a.estado] || 'admin-warning';
-            var estadoLbl = a.estado ? (a.estado.charAt(0).toUpperCase() + a.estado.slice(1)) : 'Pendiente';
+            // MF3.2 — labels + colors come from the kind-aware schema
+            var schema = window.AltorraCommSchema;
+            var kind = getKindOf(a);
+            var estado = a.estado || (schema ? schema.getDefaultState(kind) : 'pendiente');
+            var estadoLbl = (schema && schema.STATE_LABELS[estado]) || (estado.charAt(0).toUpperCase() + estado.slice(1));
+            var estadoClass = (schema && schema.STATE_COLORS[estado]) || 'admin-warning';
 
             var prefix = (a.prefijoPais || '').replace('+', '');
             var phone = a.telefono || a.whatsapp || '';
@@ -303,8 +421,46 @@
         if (!a) return;
         _currentManageSol = a;
 
+        // MF3.2 — rebuild estado dropdown based on doc's kind
+        var schema = window.AltorraCommSchema;
+        var kind = getKindOf(a);
+        var validStates = (schema && schema.STATES[kind]) || ['pendiente'];
+        var amEstadoSel = $('amEstado');
+        if (amEstadoSel) {
+            amEstadoSel.innerHTML = validStates.map(function (s) {
+                var lbl = (schema && schema.STATE_LABELS[s]) || (s.charAt(0).toUpperCase() + s.slice(1));
+                return '<option value="' + s + '">' + lbl + '</option>';
+            }).join('');
+            // If current estado is valid for this kind, select it. Otherwise
+            // fall back to the kind's default (this happens for legacy docs
+            // not yet migrated whose old estado isn't in the new state set).
+            var current = a.estado;
+            if (current && validStates.indexOf(current) !== -1) {
+                amEstadoSel.value = current;
+            } else if (schema) {
+                amEstadoSel.value = schema.getDefaultState(kind);
+            }
+        }
+
+        // Show kind label inline for clarity
+        var kindLabels = { cita: 'Cita', solicitud: 'Solicitud', lead: 'Lead' };
+        var kindBadgeEl = document.getElementById('amKindBadge');
+        if (!kindBadgeEl) {
+            // Inject a small badge next to the modal title
+            var modalHeader = document.querySelector('#appointmentModal .modal-header h2');
+            if (modalHeader) {
+                kindBadgeEl = document.createElement('span');
+                kindBadgeEl.id = 'amKindBadge';
+                kindBadgeEl.className = 'comm-kind-tab-badge';
+                modalHeader.appendChild(kindBadgeEl);
+            }
+        }
+        if (kindBadgeEl) {
+            kindBadgeEl.textContent = kindLabels[kind] || kind;
+            kindBadgeEl.dataset.kind = kind;
+        }
+
         $('amDocId').value = docId;
-        $('amEstado').value = a.estado || 'pendiente';
         $('amObservaciones').value = a.observaciones || '';
 
         var prefix = (a.prefijoPais || '').replace('+', '');
@@ -370,8 +526,13 @@
 
     function toggleReprogramarGroup() {
         var group = $('amReprogramarGroup');
+        if (!group) return;
+        // MF3.2 — Reprogramar only applies to citas (state 'reprogramada' is
+        // exclusive to kind 'cita' in the new state machine)
         var estado = $('amEstado').value;
-        if (group) group.style.display = estado === 'reprogramada' ? '' : 'none';
+        var kind = _currentManageSol ? getKindOf(_currentManageSol) : null;
+        var show = (kind === 'cita') && (estado === 'reprogramada');
+        group.style.display = show ? '' : 'none';
     }
 
     var amEstadoEl = $('amEstado');

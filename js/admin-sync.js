@@ -310,6 +310,87 @@
     }
     AP.checkFirestoreRulesDeployed = checkFirestoreRulesDeployed;
 
+    // ========== MF1.2: SOLICITUDES SCHEMA MIGRATION ==========
+    // Inspect existing solicitudes; for any doc lacking `kind`, infer from
+    // legacy fields (requiereCita, tipo) and remap `estado` to the kind's
+    // canonical state set. Idempotent: re-running on already-migrated docs
+    // is a no-op. Preserves `legacyEstado` for audit/rollback.
+    var _commMigrationRan = false;
+    function migrateCommunicationsSchema(solicitudes) {
+        if (_commMigrationRan) return;
+        if (!window.AltorraCommSchema) {
+            console.warn('[CommMigration] AltorraCommSchema not loaded yet — skipping');
+            return;
+        }
+        if (!Array.isArray(solicitudes) || solicitudes.length === 0) return;
+        // Only super_admin or editor should attempt the migration (writes
+        // require editor+ permission per Firestore rules)
+        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+        _commMigrationRan = true;
+
+        var schema = window.AltorraCommSchema;
+        var toMigrate = solicitudes.filter(function (s) { return !s.kind; });
+        if (toMigrate.length === 0) return;
+
+        // Build batches of max 500
+        var batches = [window.db.batch()];
+        var batchCount = 0;
+        var totalMigrated = 0;
+        var statsByKind = { cita: 0, solicitud: 0, lead: 0 };
+
+        toMigrate.forEach(function (s) {
+            var kind = schema.inferKind(s);
+            var legacyEstado = s.estado || '';
+            var newEstado = schema.remapEstado(legacyEstado, kind);
+
+            var patch = {
+                kind: kind,
+                _migration_v1: true,
+                _migrationAt: new Date().toISOString()
+            };
+            // Only remap estado if it actually changed (preserve audit)
+            if (newEstado !== legacyEstado) {
+                patch.estado = newEstado;
+                patch.legacyEstado = legacyEstado;
+            }
+
+            batches[batches.length - 1].update(
+                window.db.collection('solicitudes').doc(s._docId),
+                patch
+            );
+            batchCount++;
+            statsByKind[kind]++;
+            totalMigrated++;
+
+            if (batchCount >= 500) {
+                batches.push(window.db.batch());
+                batchCount = 0;
+            }
+        });
+
+        // Commit batches sequentially
+        var commit = function (i) {
+            if (i >= batches.length) {
+                console.info('[CommMigration] Migrated ' + totalMigrated + ' solicitudes:',
+                    'citas=' + statsByKind.cita,
+                    'solicitudes=' + statsByKind.solicitud,
+                    'leads=' + statsByKind.lead);
+                if (AP && AP.toast) {
+                    AP.toast('Esquema de comunicaciones actualizado: ' + totalMigrated + ' docs (' + statsByKind.cita + ' citas, ' + statsByKind.solicitud + ' solicitudes, ' + statsByKind.lead + ' leads)');
+                }
+                return;
+            }
+            batches[i].commit().then(function () { commit(i + 1); }).catch(function (err) {
+                console.warn('[CommMigration] Batch ' + i + ' failed:', err.message || err);
+                // Continue anyway — partial migration is fine, retry happens
+                // automatically if any of these docs are touched again
+                commit(i + 1);
+            });
+        };
+        commit(0);
+    }
+    AP.migrateCommunicationsSchema = migrateCommunicationsSchema;
+
     function loadUsers() {
         if (!AP.canManageUsers()) return;
         window.db.collection('usuarios').get().then(function(snap) {

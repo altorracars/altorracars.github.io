@@ -3610,6 +3610,236 @@ Todos `.catch(function() {})` — best-effort. localStorage es source of truth l
 
 > **DEPLOY MANUAL REQUERIDO**: `firebase deploy --only firestore:rules` para activar la regla anti-impersonation.
 
+### Microfase MF2.1 — Vende Auto + Financiación: confirmación in-place ✓ COMPLETADA (2026-05-04)
+
+**Problema raiz**: ambos formularios cerraban el modal y abrian `wa.me/...` en una nueva pestana con un mensaje pre-rellenado. Anti-patron documentado en CLAUDE.md §13.ter:
+- Si el usuario cancela el envio en WhatsApp, el lead queda registrado pero sin contexto
+- Experiencia disonante: el usuario no sabia si su solicitud se guardo
+- Fricciona la conversion (cambio de app)
+
+**Cambios aplicados** (`js/contact-forms.js` + `css/contact-forms.css`):
+
+1. **`window.open(whatsappUrl)` eliminado** de los dos handlers (`handleVendeAutoSubmit` + `handleFinanciacionSubmit`)
+2. **Nuevo helper `_renderSuccess(modalId, opts)`**: reemplaza el contenido de `.modal-container` (no solo `.modal-body` — desaparece tambien header + progress) con una pantalla de confirmacion limpia
+3. **Ticket de seguimiento**: el `ref.id` retornado por `Firestore.add()` se trunca a 6 chars uppercase y se muestra como `Tu nº de seguimiento: ABC123`
+4. **CTA secundario para registrados**: si `_currentUser()` no es null, ademas del boton "Entendido" aparece "Ver mis solicitudes" → `perfil.html#mis-solicitudes`
+5. **Restore al reabrir**: `_restoreOriginalContent(modalId)` se llama en `openModal()` antes de inicializar wizard. Cachea el HTML original en `container._originalContent` la primera vez que se muestra el success
+6. **Manejo de error**: si Firestore falla (red, rules), se muestra `notify.error(...)` con mensaje claro y el modal queda en su estado anterior (form intacto, no se cierra)
+
+**UI** (CSS nuevo `.contact-success*`):
+- Icono check verde con animacion pop (cubic-bezier spring)
+- Titulo grande, subtitulo personalizado con primer nombre
+- Mensaje contextual al tipo de form
+- Pill dorado con ticket
+- Botones primary (dorado) + ghost (Ver mis solicitudes)
+- Respeta `prefers-reduced-motion`
+- Mobile: botones full-width stack vertical
+
+**Mensajes contextuales**:
+- Vende Auto: "Recibimos los datos de tu vehículo. Un asesor te contactará pronto por correo y WhatsApp para coordinar la valuación."
+- Financiación: "Un asesor revisará tu información y te contactará pronto por correo y WhatsApp con la propuesta de financiación."
+
+**Pasos para probar**:
+1. Abrir Vende tu Auto → llenar wizard 3 pasos → Enviar
+2. Verificar que **NO se abre WhatsApp**
+3. Modal cambia a pantalla de confirmacion con check verde, ticket de 6 chars
+4. Verificar Firestore Console que el doc se creo
+5. Cerrar modal → reabrir → ver formulario limpio (no la pantalla de confirmacion)
+6. Mismo para Financiacion
+7. Logueado: aparece boton "Ver mis solicitudes" que linkea al perfil
+8. Sin login: solo aparece "Entendido"
+9. Forzar error de red (DevTools → Offline) → enviar → ver toast de error, modal sigue abierto con form intacto
+
+**Archivos modificados**: `js/contact-forms.js`, `css/contact-forms.css`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase MF2.2 — Contacto general + Simulador de crédito ✓ COMPLETADA (2026-05-04)
+
+**Problemas raiz**:
+1. `js/contact.js` (form de `contacto.html`): tras enviar, abria WhatsApp en nueva pestana. Anti-patron documentado.
+2. `simulador-credito.html` form `#contact-form`: era PEOR — **nunca guardaba a Firestore**, solo abria WhatsApp. Si el usuario cancelaba el envio, el lead se perdia completamente.
+
+**Cambios aplicados**:
+
+1. **`js/contact.js`**:
+   - `window.open(whatsappURL)` eliminado
+   - Nuevo helper `_renderContactSuccess(formCard, opts)` que reemplaza el contenido de `.form-card` (el contenedor en `contacto.html`) con la pantalla de exito
+   - Smooth scroll al confirmar para que el usuario vea el cambio
+   - CTAs contextuales: "Ver vehiculos" + "Ver mis solicitudes" (registrado) o "Volver al inicio" (guest)
+   - Manejo de error con `notify.error` si Firestore falla
+
+2. **`simulador-credito.html`** (handler inline):
+   - Reescrito completo: ahora **guarda a `solicitudes`** con identidad MF1.1 + tracking de origen (`source.cta == 'simulador_credito_form'`)
+   - Incluye `datosExtra` rico con datos del simulador (precioVehiculo, cuotaInicial, plazoMeses, cuotaMensual, tasa, ingresos, ciudad, actividad, documento, PEP)
+   - Modal `.sim-modal-content` se reemplaza por la pantalla de exito al guardarse
+   - Boton "Entendido" cierra el modal
+   - Fallback defensivo: si Firestore SDK no esta cargado, igualmente muestra confirmacion (mejor UX que no respuesta)
+
+3. **CSS centralizado**:
+   - `.contact-success*` clases movidas de `css/contact-forms.css` a `css/style.css` para que esten disponibles en TODAS las paginas (contacto, simulador, modales, etc.)
+   - Usa CSS vars (`--text-primary`, `--text-secondary`) para light/dark theme automatico
+   - Mismo design system que MF2.1 — consistencia visual entre los 4 forms
+
+**Pasos para probar**:
+
+`contacto.html`:
+1. Abrir `contacto.html` → llenar form → enviar
+2. Verificar que **NO se abre WhatsApp**
+3. La `.form-card` se reemplaza por la pantalla de confirmacion con scroll suave
+4. Verificar Firestore Console: doc creado con `origen: 'contacto'`, `source.cta: 'contact_form_general'`
+5. Logueado: aparece boton "Ver mis solicitudes"
+6. Sin login: aparece "Volver al inicio"
+7. Forzar offline → enviar → toast error, form sigue intacto
+
+`simulador-credito.html`:
+1. Llenar simulador con valores → click WhatsApp → llenar modal de contacto → enviar
+2. Verificar que **NO se abre WhatsApp**
+3. Modal se transforma en pantalla de exito con ticket #
+4. Verificar Firestore: doc creado con `origen: 'simulador_credito'`, `tipo: 'financiacion'`, `datosExtra` lleno con todos los datos del simulador
+5. Click "Entendido" → modal se cierra
+
+**Archivos modificados**: `js/contact.js`, `simulador-credito.html`, `css/style.css`, `css/contact-forms.css`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase MF1.2 — kind discriminator + per-kind state machines + migración ✓ COMPLETADA (2026-05-04)
+
+**Problema raiz**: la coleccion `solicitudes` mezclaba citas, solicitudes y leads bajo un mismo conjunto de estados (`pendiente / confirmada / reprogramada / completada / cancelada`). Una financiacion pasaba a "reprogramada" sin sentido semantico. No habia forma limpia de filtrar por tipo de comunicacion.
+
+**Solucion**: discriminator explicito `kind` con 3 valores y maquinas de estados independientes.
+
+**Nuevo archivo `js/comm-schema.js`** (single source of truth, cargado en admin + paginas publicas futuras):
+- `KIND_CITA = 'cita'` — requiereCita == true (test drive, llamada agendada, consulta presencial)
+- `KIND_SOLICITUD = 'solicitud'` — actionable: financiacion, consignacion_venta, peritaje, compra
+- `KIND_LEAD = 'lead'` — soft contact: consulta general, otro
+
+**Estados validos por kind** (`STATES`):
+
+| Kind | Estados validos |
+|---|---|
+| cita | pendiente, confirmada, reprogramada, completada, cancelada, no_show |
+| solicitud | pendiente, en_revision, contactado, aprobada, rechazada, completada, sin_respuesta |
+| lead | nuevo, contactado, interesado, frio, convertido, descartado |
+
+**Mapeo legacy → nuevo** (`STATE_REMAP`):
+- Para cita: estados se mantienen 1:1
+- Para solicitud: `confirmada → aprobada`, `reprogramada → en_revision`, `cancelada → rechazada`
+- Para lead: `pendiente → nuevo`, `confirmada → interesado`, `cancelada → descartado`, etc.
+
+**Helpers expuestos** (`window.AltorraCommSchema.*`):
+- `inferKind(doc)` — infiere kind desde `requiereCita` + `tipo`
+- `remapEstado(legacyEstado, newKind)` — remap segun `STATE_REMAP`
+- `isValidStateForKind(kind, estado)` — validacion
+- `getDefaultState(kind)` — primer estado del array
+- `STATE_LABELS`, `STATE_COLORS` para UI
+
+**Submission writes actualizados** — los 4 forms ahora setean `kind` directamente (sin necesitar migracion):
+- `contact-forms.js` Vende Auto → `kind: 'solicitud'`
+- `contact-forms.js` Financiacion → `kind: 'solicitud'`
+- `contact.js` Contacto general → `kind: 'solicitud'` si tipo en {venta, financiacion, peritaje}, sino `kind: 'lead'`
+- `citas.js` Cita por vehiculo → `kind: 'cita'`
+- `simulador-credito.html` → `kind: 'solicitud'`
+
+**Migracion automatica** (`AP.migrateCommunicationsSchema()` en `admin-sync.js`):
+- Corre una sola vez por sesion admin (`_commMigrationRan` guard)
+- Solo si el rol es editor+ (writes requieren ese permiso)
+- Filtra docs sin `kind`, infiere uno, remapea `estado` si es necesario
+- Preserva `legacyEstado` para auditoria
+- Marca `_migration_v1: true` y `_migrationAt: ISO`
+- Batch de hasta 500 (limite Firestore), commits secuenciales
+- Toast informativo al admin: "Esquema actualizado: 47 docs (12 citas, 23 solicitudes, 12 leads)"
+- Idempotente: re-correr no toca docs ya migrados
+
+**Pasos para probar**:
+1. Login como super_admin → ver consola con `[CommMigration] Migrated N solicitudes: citas=X solicitudes=Y leads=Z`
+2. Toast aparece confirmando la migracion
+3. Verificar en Firestore Console que docs viejos ahora tienen `kind`, `_migration_v1: true`, `legacyEstado` preservado
+4. Recargar admin → migracion no corre de nuevo (no hay docs sin kind)
+5. Enviar nueva solicitud desde public site → llega con `kind` directo, sin necesidad de migracion
+6. Login como editor → migracion tambien corre (si quedan docs sin kind)
+7. Login como viewer → migracion NO corre (no tiene permisos para escribir)
+
+**Archivos modificados**: `js/comm-schema.js` (nuevo), `js/admin-sync.js`, `js/admin-appointments.js`, `js/contact-forms.js`, `js/contact.js`, `js/citas.js`, `simulador-credito.html`, `admin.html`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase MF3.1 — Solicitudes → Comunicaciones + 3 sub-tabs ✓ COMPLETADA (2026-05-04)
+
+**Cambios visibles**:
+
+1. **Sidebar**: el item "Solicitudes" se renombra a **"Comunicaciones"** (icono `inbox` se mantiene). El badge `navBadgeAppointments` ahora cuenta solo los items "unhandled" (pendientes/nuevos) sumados de los 3 kinds.
+
+2. **Header de la seccion**:
+   - H1: "Centro de Solicitudes" → "Centro de Comunicaciones"
+   - Subtitle: "Citas, solicitudes y leads — todas las interacciones con clientes en un solo lugar"
+   - CTA: "Nueva Solicitud Interna" → "Nueva Comunicación"
+
+3. **Nueva tab strip** (`.comm-kind-tabs`) con 4 tabs:
+   - **Todas** (icono `layers`) — sin filtro de kind
+   - **Citas** (icono `calendar-check-2`) — filtra `kind == 'cita'`
+   - **Solicitudes** (icono `file-text`) — filtra `kind == 'solicitud'`
+   - **Leads** (icono `message-circle`) — filtra `kind == 'lead'`
+   - Cada tab tiene un badge dorado con el contador de "unhandled" para ese kind (pendientes / nuevos)
+   - Active state visual: background dorado + border dorado
+
+4. **Implementacion**:
+   - `AP._kindFilter` (default `'all'`) controla el filtro activo
+   - `getKindOf(a)` lee `a.kind` o lo infiere via `AltorraCommSchema.inferKind(a)` para legacy docs aun no migrados (ya cubiertos por MF1.2)
+   - `updateKindBadges()` recalcula los contadores en cada `renderAppointmentsTable`
+   - Click en tab → actualiza active state + reset paginacion + re-render
+
+5. **Compatibilidad**: el filtro de kind se aplica ANTES de los filtros existentes (estado, tipo, origen). Los filtros viejos siguen funcionando dentro del kind activo.
+
+**Pasos para probar**:
+1. Login admin → sidebar dice **"Comunicaciones"** (no "Solicitudes")
+2. Click en Comunicaciones → ver header "Centro de Comunicaciones" + 4 tabs
+3. Tab "Todas" muestra todos los docs (default)
+4. Click "Citas" → solo aparecen docs con `kind: 'cita'` (test drives, llamadas agendadas)
+5. Click "Solicitudes" → solo aparecen docs con `kind: 'solicitud'` (financiacion, consignacion, peritaje)
+6. Click "Leads" → solo aparecen docs con `kind: 'lead'` (consulta general)
+7. Badges muestran cantidad de pendientes/nuevos por kind
+8. Filtros existentes (estado, tipo, origen) siguen funcionando dentro del kind activo
+9. Mobile: tabs se ven en grid 2x2 (responsive)
+
+**Archivos modificados**: `admin.html`, `js/admin-appointments.js`, `css/admin.css`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase MF3.2 — Estados contextuales por kind ✓ COMPLETADA (2026-05-04)
+
+**Problema raiz**: la dropdown de estados era hardcoded con `pendiente/confirmada/reprogramada/completada/cancelada` para TODOS los docs. Una solicitud de financiacion podia pasar a "reprogramada" sin sentido. Una cita podia ir a "aprobada" tampoco.
+
+**Cambios aplicados**:
+
+1. **Tabla de comunicaciones** (`renderAppointmentsTable`):
+   - Badge de estado usa `AltorraCommSchema.STATE_LABELS` y `STATE_COLORS` segun el kind
+   - "Reprogramada" sigue verde-info para citas; en solicitudes los estados son "Aprobada" (verde), "Rechazada" (rojo), etc.
+
+2. **Modal de gestion** (`manageAppointment`):
+   - La dropdown `#amEstado` se reconstruye dinamicamente segun el kind del doc abierto
+   - Estados validos por kind:
+     - **Cita**: Pendiente, Confirmada, Reprogramada, Completada, Cancelada, No asistio
+     - **Solicitud**: Pendiente, En revisión, Contactado, Aprobada, Rechazada, Completada, Sin respuesta
+     - **Lead**: Nuevo, Contactado, Interesado, Frío, Convertido, Descartado
+   - Si el estado actual del doc no es valido para su kind (legacy no migrado): cae al default del kind
+   - **Nuevo badge** (`#amKindBadge`) inyectado en el header del modal: "CITA" verde, "SOLICITUD" dorado, "LEAD" azul-purpura — visualmente claro
+
+3. **Filtro de estados arriba de la tabla** (`#appointmentFilter`):
+   - Tambien se reconstruye al cambiar de tab kind
+   - "Todas" → muestra union de todos los estados (sin duplicados)
+   - "Citas" → solo cita-states
+   - "Solicitudes" → solo solicitud-states
+   - "Leads" → solo lead-states
+   - Selección actual se preserva si sigue siendo valida; sino, vuelve a "all"
+
+4. **`toggleReprogramarGroup`** ahora chequea ambos: que `kind === 'cita'` Y `estado === 'reprogramada'`. Antes mostraba el bloque de reprogramar para CUALQUIER doc en estado "reprogramada", lo cual no se daba pero por consistencia.
+
+**Pasos para probar**:
+1. Click "Solicitudes" tab → filtro arriba ahora muestra solo: Todas, Pendiente, En revisión, Contactado, Aprobada, Rechazada, Completada, Sin respuesta
+2. Abrir una solicitud de financiacion → modal muestra badge dorado "SOLICITUD" en el header + dropdown con esos mismos estados
+3. Cambiar a estado "Aprobada" → guardar → cliente recibe notificacion correcta
+4. Click "Citas" tab → filtro cambia a estados de cita (Pendiente, Confirmada, Reprogramada, Completada, Cancelada, No asistio)
+5. Abrir una cita → badge verde "CITA" + dropdown con cita-states
+6. Cambiar a "Reprogramada" → aparece el grupo de nueva fecha/hora
+7. Click "Leads" → filtro muestra: Todas, Nuevo, Contactado, Interesado, Frío, Convertido, Descartado
+8. Verificar que docs legacy sin kind ya migrados (MF1.2) muestran sus estados nuevos correctamente
+9. Badges de la tabla coinciden con los labels nuevos
+
+**Archivos modificados**: `js/admin-appointments.js`, `css/admin.css`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

@@ -2913,6 +2913,76 @@ Eso es **anti-patron**. El bell debe ser para **eventos asincronos que el usuari
 
 **Archivos modificados**: `js/toast.js`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase A2 — API explicita `notifyCenter.notify(category, payload)` ✓ COMPLETADA (2026-05-04)
+
+**Problema**: Despues de A1, los callsites que **si** quieren persistir un evento legitimo tienen que armar manualmente el `cfg` con icono, prioridad, sonido, dedup. Boilerplate repetido y error-prone.
+
+**Fix aplicado** (`js/toast.js`):
+
+1. **`CATEGORY_DEFAULTS` map**: defaults por categoria (icon, type, priority, soundType, defaultTitle, dedupMs):
+
+   | Categoria | Icon | Type | Priority | Dedup window |
+   |---|---|---|---|---|
+   | `price_alert` | `trending-down` | success | normal | 6h por (category, entityRef) |
+   | `request_update` | `message-square-text` | info | high | 30s burst |
+   | `appointment_update` | `calendar-check-2` | info | high | 30s |
+   | `search_match` | `search-check` | success | normal | 24h max diario |
+   | `inventory_change` | `package` | warning | normal | 1h por vehiculo |
+   | `system` | `bell-ring` | info | low | 5m |
+   | `security` | `shield-alert` | warning | critical | 0 (nunca dedup) |
+
+2. **API publica `notifyCenter.notify(category, payload)`**:
+   ```js
+   notifyCenter.notify('price_alert', {
+       title: 'Bajo el precio del Chevrolet Equinox',
+       message: 'De $80M a $76M (-5%)',
+       link: 'vehiculos/chevrolet-equinox-2018-1.html',
+       entityRef: 'vehicle:abc123',
+       suppressToast: false           // optional
+   });
+   ```
+   - Aplica defaults de la categoria automaticamente
+   - Dedup entity-keyed con `isDuplicateForEntity(category, entityRef, windowMs)`
+   - Si `document.hidden === true` Y `suppressIfHidden !== false`: solo escribe al bell (no toast distrae al volver al tab)
+   - Si categoria desconocida: degrade gracefully a `notify.info()` sin persistir
+
+3. **Helpers expuestos**:
+   - `notifyCenter.getCategoryMeta(category)` — lee defaults
+   - `notifyCenter.categories` — lista de categorias persistibles
+
+4. **Behavior con tabs background**: si el tab no es visible al momento de emitir, suprime el toast pero igual escribe al bell. Usuario regresa al tab, ve el badge.
+
+**Patron de uso futuro** (ejemplos para fases B, C, D):
+
+```js
+// Fase B3 — favorito bajo de precio
+notifyCenter.notify('price_alert', {
+    title: 'Bajo el precio del ' + marca + ' ' + modelo,
+    message: '$' + oldPrice + ' → $' + newPrice + ' (-' + pct + '%)',
+    link: '/vehiculos/' + slug + '.html',
+    entityRef: 'vehicle:' + id
+});
+
+// Fase D2 — solicitud cambio estado
+notifyCenter.notify('request_update', {
+    title: 'Tu solicitud fue ' + (newEstado === 'contactado' ? 'recibida por un asesor' : newEstado),
+    message: vehiculoTexto,
+    link: '/perfil.html#mis-solicitudes',
+    entityRef: 'solicitud:' + id
+});
+
+// Fase F1 — admin: nueva solicitud entrante
+notifyCenter.notify('request_update', {
+    title: 'Nueva solicitud',
+    message: 'De ' + nombre + ' por ' + vehiculo,
+    link: 'admin.html#solicitudes',
+    entityRef: 'solicitud:' + id,
+    priority: 'high'
+});
+```
+
+**Archivos modificados**: `js/toast.js`
+
 ---
 
 ## 14. SEO

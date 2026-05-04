@@ -543,6 +543,84 @@
         return false;
     }
 
+    // ─── Category metadata (Phase A2) ───────────────────────────
+    // Defaults applied when callers use notifyCenter.notify(category, payload)
+    // instead of building the cfg manually. Centralizes icon/sound/priority
+    // per category so the UI is consistent and callers stay focused on data.
+    var CATEGORY_DEFAULTS = {
+        price_alert: {
+            type: 'success',
+            icon: 'trending-down',
+            priority: 'normal',
+            soundType: 'success',
+            defaultTitle: 'Cambio de precio',
+            dedupMs: 6 * 60 * 60 * 1000      // 6h per (category, entityRef)
+        },
+        request_update: {
+            type: 'info',
+            icon: 'message-square-text',
+            priority: 'high',
+            soundType: 'info',
+            defaultTitle: 'Solicitud actualizada',
+            dedupMs: 30 * 1000               // 30s burst dedup
+        },
+        appointment_update: {
+            type: 'info',
+            icon: 'calendar-check-2',
+            priority: 'high',
+            soundType: 'info',
+            defaultTitle: 'Cita actualizada',
+            dedupMs: 30 * 1000
+        },
+        search_match: {
+            type: 'success',
+            icon: 'search-check',
+            priority: 'normal',
+            soundType: 'success',
+            defaultTitle: 'Nuevos vehiculos para ti',
+            dedupMs: 24 * 60 * 60 * 1000     // 24h max per saved search
+        },
+        inventory_change: {
+            type: 'warning',
+            icon: 'package',
+            priority: 'normal',
+            soundType: 'warning',
+            defaultTitle: 'Cambio de inventario',
+            dedupMs: 60 * 60 * 1000          // 1h per vehicle
+        },
+        system: {
+            type: 'info',
+            icon: 'bell-ring',
+            priority: 'low',
+            soundType: 'info',
+            defaultTitle: 'Aviso del sistema',
+            dedupMs: 5 * 60 * 1000           // 5m
+        },
+        security: {
+            type: 'warning',
+            icon: 'shield-alert',
+            priority: 'critical',
+            soundType: 'warning',
+            defaultTitle: 'Aviso de seguridad',
+            dedupMs: 0                       // never dedup
+        }
+    };
+
+    // Entity-keyed dedup. Avoids re-emitting the same event for the same
+    // entity within the category-specific window (e.g. don't show two
+    // price_alert toasts for the same vehicle within 6h).
+    function isDuplicateForEntity(category, entityRef, windowMs) {
+        if (!entityRef || !windowMs) return false;
+        var cutoff = Date.now() - windowMs;
+        for (var i = 0; i < _entries.length; i++) {
+            var e = _entries[i];
+            if (!e || !e.timestamp) continue;
+            if (e.timestamp < cutoff) break; // ordered desc
+            if (e.category === category && e.entityRef === entityRef) return true;
+        }
+        return false;
+    }
+
     function add(entry) {
         if (!entry) return null;
         var type = entry.type || 'info';
@@ -859,9 +937,85 @@
         return false;
     }
 
+    // ─── Explicit category API (Phase A2) ───────────────────────
+    // Preferred way to emit a persistent event. Centralizes defaults
+    // (icon, priority, sound, dedup window) per category. Call sites
+    // stay focused on the data, not on UI plumbing.
+    //
+    //   notifyCenter.notify('price_alert', {
+    //       title: 'Bajo el precio del Chevrolet Equinox',
+    //       message: 'De $80M a $76M (-5%)',
+    //       link: 'vehiculos/chevrolet-equinox-2018-1.html',
+    //       entityRef: 'vehicle:abc123',
+    //       suppressToast: false                      // optional
+    //   });
+    //
+    // Returns: id of bell entry, or null if deduped/invalid.
+    function emitCategorical(category, payload) {
+        var defaults = CATEGORY_DEFAULTS[category];
+        if (!defaults) {
+            // Unknown category — degrade to plain info toast (NO bell entry)
+            if (window.notify && payload) {
+                try { window.notify.info(payload); } catch (e) {}
+            }
+            return null;
+        }
+        payload = payload || {};
+        var title = payload.title || defaults.defaultTitle;
+        var message = payload.message || '';
+        if (!title && !message) return null;
+
+        // Entity-keyed dedup: skip if same (category, entityRef) in window
+        if (payload.entityRef && defaults.dedupMs > 0
+            && isDuplicateForEntity(category, payload.entityRef, defaults.dedupMs)) {
+            return null;
+        }
+
+        // Build the cfg used by both notify (toast) and add (bell entry)
+        var cfg = {
+            title: title,
+            message: message,
+            link: payload.link || null,
+            category: category,
+            priority: payload.priority || defaults.priority,
+            entityRef: payload.entityRef || null,
+            icon: payload.icon || defaults.icon,
+            soundType: payload.soundType || defaults.soundType,
+            action: payload.action || null
+        };
+
+        var suppressToast = payload.suppressToast === true
+            || (typeof document !== 'undefined' && document.hidden && payload.suppressIfHidden !== false);
+
+        if (!suppressToast && window.notify && typeof window.notify[defaults.type] === 'function') {
+            // Toast + bell (auto-persisted by wrapNotify because category is whitelisted)
+            try { window.notify[defaults.type](cfg); } catch (e) {}
+            // Find the most recent matching bell entry to return its id
+            var last = _entries[0];
+            return last ? last.id : null;
+        }
+
+        // No toast (suppressed or notify unavailable) — write directly to bell
+        return add({
+            type: defaults.type,
+            title: cfg.title,
+            message: cfg.message,
+            link: cfg.link,
+            category: category,
+            priority: cfg.priority,
+            entityRef: cfg.entityRef,
+            actionLabel: cfg.action && cfg.action.label || null
+        });
+    }
+
+    function getCategoryMeta(category) {
+        return CATEGORY_DEFAULTS[category] || null;
+    }
+
     // ─── Public API ─────────────────────────────────────────────
     window.notifyCenter = {
         add: add,
+        notify: emitCategorical,
         markAllRead: markAllRead,
         markRead: markRead,
         remove: remove,
@@ -869,6 +1023,8 @@
         getEntries: getEntries,
         getUnreadCount: getUnreadCount,
         subscribe: subscribe,
+        getCategoryMeta: getCategoryMeta,
+        categories: Object.keys(CATEGORY_DEFAULTS),
         mount: function(target) {
             var el = typeof target === 'string' ? document.querySelector(target) : target;
             return createBell(el);

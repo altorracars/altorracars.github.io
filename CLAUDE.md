@@ -4602,6 +4602,60 @@ Estado del Design System al cerrar el bloque T:
 5. Resize a mobile → botón se oculta (no aplica en mobile)
 6. Tab por la sidebar → focus rings funcionan tanto en colapsado como expandido
 
+---
+
+### Microfase B.5 — Workspace branding completo en secciones existentes ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: B.1 estableció los colores en el sidebar. B.2 los hizo disponibles en `.alt-workspace`. B.5 cierra el bloque B aplicando los colores a las **secciones existentes** del admin sin reescribirlas — solo agregando un `data-workspace-color` y reglas CSS que reaccionan.
+
+**Cambios**:
+
+1. **14 secciones marcadas con `data-workspace-color`** (script Python idempotente en el commit):
+   - **gold** (Inventario): `sec-vehicles`, `sec-brands`, `sec-dealers`, `sec-banners`, `sec-reviews`
+   - **green** (Comunicaciones): `sec-appointments`, `sec-inbox`, `sec-lists`
+   - **blue** (CRM): `sec-crm`
+   - **orange** (Automatización): `sec-automation`, `sec-templates`
+   - **neutral** (Configuración): `sec-users`, `sec-audit`, `sec-settings`
+   - `sec-dashboard` queda sin color (es Inicio, neutro)
+
+2. **CSS en `admin.css`** (~30 líneas):
+   - Variables `--ws-accent` y `--ws-accent-soft` por color
+   - **3px top accent border** en `.page-header` de cada sección con color
+   - **Subtle gradient** (80px de altura) bajo el header para crear "halo" del workspace
+   - z-index management para que el H1 quede sobre el gradient
+
+3. **Resultado visual**: cada sección tiene una identidad clara sin necesidad de reescribir el contenido. El admin reconoce instantáneamente "estoy en Inventario" por el accent dorado, "estoy en CRM" por el azul, etc.
+
+**Diseño (D)**:
+- Línea de 3px arriba (sutil, no chillón) marca "esta sección pertenece al workspace X"
+- Gradiente decae rápido (80px) — no compite con el contenido
+- Aliñado con los colores del sidebar (consistencia inmediata)
+- Mantenemos el esquema existente intacto — los estilos legacy de `.page-header` siguen funcionando
+
+**Migración (M)**: cero cambios destructivos. Solo se agregaron atributos HTML y reglas CSS adicivas. Las secciones se ven idénticas a antes excepto por la barra superior + halo sutil.
+
+**Archivos**: `admin.html`, `css/admin.css`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Click "Vehículos" en sidebar → ver barra dorada top de la sección + halo dorado sutil
+2. Click "CRM" → barra azul + halo azul
+3. Click "Automatización" → barra naranja
+4. Click "Inicio" → sin barra (es neutral)
+5. Toggle theme dark → light → high-contrast → colores se mantienen consistentes
+
+---
+
+## ✓ BLOQUE B COMPLETADO (5/5 microfases)
+
+Estado del Sidebar + Workspaces al cerrar el bloque B:
+- ✅ B.1 — Sidebar reorganizado en 7 grupos collapsables (8º Calendario placeholder)
+- ✅ B.2 — Workspace pattern reutilizable (.alt-workspace component)
+- ✅ B.3 — Section router + aliases + hash deep-linking
+- ✅ B.4 — Sidebar global collapse + Cmd+B + aria tooltips
+- ✅ B.5 — Workspace branding aplicado a 14 secciones existentes
+
+**Próximo bloque: I — Event Bus + Activity Feed (5 microfases, ~4 días)**
+
 
 
 ---

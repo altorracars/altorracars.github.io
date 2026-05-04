@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505110000'; // B.4 (mega-plan v4) — Sidebar global collapse + Cmd+B shortcut + aria tooltips
+const CACHE_VERSION = 'v20260505120000'; // B.5 (mega-plan v4) — Workspace branding (data-workspace-color en 14 secciones)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

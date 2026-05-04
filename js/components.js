@@ -301,6 +301,13 @@ function loadAuthSystem() {
                     swScript.defer = true;
                     document.body.appendChild(swScript);
                 }
+                // 5c. MF5.1 — WhatsApp widget with template chooser
+                if (!document.querySelector('script[src*="whatsapp-widget.js"]')) {
+                    var waScript = document.createElement('script');
+                    waScript.src = 'js/whatsapp-widget.js';
+                    waScript.defer = true;
+                    document.body.appendChild(waScript);
+                }
             })
             .catch(function(e) { console.warn('[Auth] No se pudo cargar auth-modal.html', e); });
     }

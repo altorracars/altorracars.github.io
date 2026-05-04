@@ -56,6 +56,10 @@
     }
 
     // ========== LOAD SOLICITUDES ==========
+    // Admin notification baseline (Pillar F): set of doc IDs seen in
+    // the first snapshot so we don't spam the bell on every page load.
+    var _adminSeenIds = null;
+
     function loadAppointments() {
         if (AP.unsubAppointments) AP.unsubAppointments();
         AP.unsubAppointments = window.db.collection('solicitudes').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
@@ -65,10 +69,60 @@
             var pending = AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length;
             var badge = $('navBadgeAppointments');
             if (badge) badge.textContent = pending > 0 ? pending : '';
+
+            // Pillar F1+F2 — detect newly created pending docs and notify admin
+            try { detectAdminNewSolicitudes(snap); } catch (e) {}
         }, function(err) {
             // Cross-tab signOut: auth goes null before stopRealtimeSync runs — expected, not an error
             if (!window.auth || !window.auth.currentUser) return;
             console.warn('[Solicitudes] Error loading:', err);
+        });
+    }
+
+    /**
+     * Detects new pending solicitudes since the admin's last seen snapshot
+     * and emits to the notification center. Skips the FIRST snapshot (just
+     * builds the baseline). Skips if admin's role is viewer (no actionable
+     * power). Uses entityRef for cross-tab dedup.
+     */
+    function detectAdminNewSolicitudes(snap) {
+        if (!window.notifyCenter || typeof window.notifyCenter.notify !== 'function') return;
+        // Skip if not yet authenticated as admin (defensive)
+        if (!AP || !AP.currentUserRole) return;
+        // Viewer doesn't need actionable alerts
+        if (AP.currentUserRole === 'viewer') return;
+
+        // First snapshot → baseline only
+        if (_adminSeenIds === null) {
+            _adminSeenIds = {};
+            snap.docs.forEach(function(d) { _adminSeenIds[d.id] = true; });
+            return;
+        }
+
+        snap.docChanges().forEach(function(change) {
+            var id = change.doc.id;
+            if (change.type === 'added' && !_adminSeenIds[id]) {
+                _adminSeenIds[id] = true;
+                var data = change.doc.data();
+                // Only alert on pending — already-handled docs aren't actionable
+                if (data.estado !== 'pendiente') return;
+                var isCita = !!data.requiereCita;
+                var name = data.nombre || 'Cliente';
+                var vehiculo = data.vehiculo || (data.datosExtra && data.datosExtra.vehiculo) || '';
+                var category = isCita ? 'appointment_update' : 'request_update';
+                window.notifyCenter.notify(category, {
+                    title: isCita ? 'Nueva cita por agendar' : 'Nueva solicitud',
+                    message: name + (vehiculo ? ' — ' + vehiculo : ''),
+                    link: 'admin.html#solicitudes',
+                    entityRef: (isCita ? 'admin-cita:' : 'admin-solicitud:') + id,
+                    priority: 'high'
+                });
+            } else if (change.type === 'modified' && _adminSeenIds[id]) {
+                // Track but don't notify on every modification (admin
+                // doesn't need an alert when they themselves update a doc)
+            } else if (change.type === 'removed') {
+                delete _adminSeenIds[id];
+            }
         });
     }
 

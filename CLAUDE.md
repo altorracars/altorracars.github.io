@@ -3320,6 +3320,47 @@ Solo para usuarios registrados con email. Anonimos skip silencioso.
 **Archivos creados**: `js/solicitudes-watcher.js`
 **Archivos modificados**: `js/auth.js`, `js/components.js`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase F1+F2 — Admin realtime bell para nuevas solicitudes/citas ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: el admin trabajando en el panel recibe un toast + entry en el bell **inmediatamente** cuando un cliente envia una nueva solicitud o cita, sin tener que recargar la pagina.
+
+**Implementacion** (`js/admin-appointments.js`):
+
+`detectAdminNewSolicitudes(snap)` corre dentro del callback existente de `onSnapshot('solicitudes')`. Usa `snap.docChanges()` (API nativa de Firestore para listar adds/modifies/removes desde la ultima snapshot) para diff eficiente.
+
+**Logica**:
+- Primera snapshot → solo establece `_adminSeenIds` baseline (sin emitir)
+- Cada `change.type === 'added'` cuyo `id` no este en baseline → si `estado === 'pendiente'`, emite
+- Cita (`requiereCita: true`) → `category: 'appointment_update'`, "Nueva cita por agendar"
+- Solicitud → `category: 'request_update'`, "Nueva solicitud"
+- `priority: 'high'` (admin necesita actuar rapido)
+- `link: 'admin.html#solicitudes'`
+
+**Filtros**:
+- `AP.currentUserRole === 'viewer'` → skip (no tiene poder de accion)
+- Sin AP listo → skip defensivo
+- Modificaciones de docs existentes → no notifica (admin ya las hizo o son irrelevantes)
+
+**Dedup**:
+- `entityRef: 'admin-solicitud:' + id` o `'admin-cita:' + id`
+- Si admin tiene 3 tabs admin abiertas, todas comparten el bell de localStorage → A2 dedup actua → 1 sola entry total
+
+**Comparacion con Pillar D**:
+
+| | Pillar D (cliente) | Pillar F (admin) |
+|---|---|---|
+| Escucha | `solicitudes where email == user.email` | `solicitudes` (todas, sin filtro) |
+| Trigger | Cambio de `estado` u `observaciones` | Doc creado con `estado: pendiente` |
+| Priority | normal/high segun tipo | high (admin debe actuar) |
+| Link | `perfil.html#mis-solicitudes` | `admin.html#solicitudes` |
+| Skip viewer | N/A | si |
+
+**F2 — Sonido y feedback para admin**: ya cubierto automaticamente por A2. La categoria `request_update` mapea a `soundType: 'info'` y `appointment_update` a `'info'`. El sonido se reproduce automaticamente al emitir el toast (gate por user gesture en N2 ya respetado).
+
+**F3 (security events)**: pendiente — requiere instrumentar admin-auth.js para emitir cuando se detecta nuevo dispositivo de confianza, password change, role change. Complejidad media — diferido.
+
+**Archivos modificados**: `js/admin-appointments.js`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

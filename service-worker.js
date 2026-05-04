@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504070000'; // Silence expected logs + 6h TTL + AltorraAuth.resetGisState helper
+const CACHE_VERSION = 'v20260504120000'; // Phase A1 — bell opt-in default, dedup, TTL 30d, MAX 50
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

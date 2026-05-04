@@ -459,7 +459,36 @@
     if (window.notifyCenter) return; // already loaded
 
     var STORAGE_KEY = 'altorra_notif_history';
-    var MAX_ENTRIES = 20;
+    var MAX_ENTRIES = 50;
+    var ENTRY_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+    // ─── Persistence policy (Phase A1 — opt-in) ─────────────────
+    // The bell is for *asynchronous* events the user should review later
+    // (price drops, status changes, security events). It is NOT for
+    // ephemeral feedback (login/logout, "saved", validation errors).
+    //
+    // Default: do NOT persist. Callers must opt in explicitly via:
+    //   - { persist: true }                     (legacy/free-form)
+    //   - { category: '<persist-category>' }    (preferred — see PERSIST_CATEGORIES)
+    //
+    // Categories declared as persistable map to product features:
+    //   price_alert        — Cambios en precio de favoritos / busquedas
+    //   request_update     — Cambios de estado en una solicitud
+    //   appointment_update — Cambios de estado en una cita
+    //   search_match       — Vehiculos nuevos que matchean una busqueda guardada
+    //   inventory_change   — Vehiculo favorito reservado/vendido
+    //   system             — Avisos de sistema (nueva version, mantenimiento)
+    //   security           — Logins desde nuevo dispositivo, cuenta bloqueada
+    var PERSIST_CATEGORIES = {
+        price_alert: true,
+        request_update: true,
+        appointment_update: true,
+        search_match: true,
+        inventory_change: true,
+        system: true,
+        security: true
+    };
+
     var _entries = [];
     var _listeners = [];
 
@@ -469,10 +498,25 @@
             var raw = localStorage.getItem(STORAGE_KEY);
             _entries = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(_entries)) _entries = [];
+            // TTL cleanup: drop entries older than ENTRY_TTL_MS
+            var cutoff = Date.now() - ENTRY_TTL_MS;
+            var fresh = _entries.filter(function(e) { return e && e.timestamp && e.timestamp >= cutoff; });
+            if (fresh.length !== _entries.length) {
+                _entries = fresh;
+                save();
+            }
         } catch (e) { _entries = []; }
     }
     function save() {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(_entries)); } catch (e) {}
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(_entries));
+        } catch (e) {
+            // Quota exceeded — evict half and retry once
+            try {
+                _entries = _entries.slice(0, Math.floor(_entries.length / 2));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(_entries));
+            } catch (e2) {}
+        }
     }
 
     // ─── Time formatting ────────────────────────────────────────
@@ -486,15 +530,39 @@
     }
 
     // ─── Core API ───────────────────────────────────────────────
+    // Dedup window: skip identical entry (same type+title+message) within 10s
+    var DEDUP_WINDOW_MS = 10 * 1000;
+    function isDuplicate(type, title, message) {
+        if (!_entries.length) return false;
+        var cutoff = Date.now() - DEDUP_WINDOW_MS;
+        for (var i = 0; i < _entries.length; i++) {
+            var e = _entries[i];
+            if (!e || !e.timestamp || e.timestamp < cutoff) break; // entries are ordered desc
+            if (e.type === type && e.title === title && e.message === message) return true;
+        }
+        return false;
+    }
+
     function add(entry) {
         if (!entry) return null;
+        var type = entry.type || 'info';
+        var title = entry.title || '';
+        var message = entry.message || '';
+        // Defensive: skip empty entries
+        if (!title && !message) return null;
+        if (isDuplicate(type, title, message)) return null;
+
         var now = Date.now();
         var item = {
             id: 'n_' + now + '_' + Math.random().toString(36).slice(2, 8),
-            type: entry.type || 'info',
-            title: entry.title || '',
-            message: entry.message || '',
+            type: type,
+            title: title,
+            message: message,
             link: entry.link || null,
+            category: entry.category || null,
+            priority: entry.priority || null,
+            entityRef: entry.entityRef || null,
+            actionLabel: entry.actionLabel || null,
             timestamp: now,
             read: false
         };
@@ -534,27 +602,51 @@
     function subscribe(fn) { _listeners.push(fn); return function() { _listeners = _listeners.filter(function(l) { return l !== fn; }); }; }
     function notifyListeners() { _listeners.forEach(function(fn) { try { fn(_entries); } catch (e) {} }); }
 
-    // ─── Auto-capture from notify.* calls ───────────────────────
-    // Wrap EVERY notify method (and notify.show) so the bell captures all
-    // notifications generated anywhere on the site. Callers can opt out
-    // per-call with { logHistory: false } (e.g. transient toasts that
-    // shouldn't pollute the history like "Cargando..." spinners).
+    // ─── Auto-capture from notify.* calls (opt-in, Phase A1) ────
+    // Pre-A1: every notify.* call was logged to the bell, polluting it
+    // with login/logout/save/validation feedback. Now the wrapper only
+    // captures calls that explicitly opt in:
+    //
+    //   notify.success({ category: 'price_alert', ... })   ← persists
+    //   notify.success({ persist: true, ... })             ← persists (legacy)
+    //   notify.success('Guardado correctamente')           ← does NOT persist
+    //
+    // For curated event types, prefer notifyCenter.notify(category, payload)
+    // which is the explicit API for persistent events (Phase A2).
+    function shouldPersist(cfg) {
+        if (!cfg || typeof cfg !== 'object') return false;
+        // Explicit opt-out wins
+        if (cfg.persist === false) return false;
+        if (cfg.logHistory === false) return false;
+        // Explicit opt-in
+        if (cfg.persist === true) return true;
+        if (cfg.logHistory === true) return true;
+        // Category-driven opt-in
+        if (cfg.category && PERSIST_CATEGORIES[cfg.category]) return true;
+        // Default: do NOT persist (transactional feedback)
+        return false;
+    }
+
     function wrapNotify() {
         if (!window.notify || window._notifyCenterWrapped) return;
         window._notifyCenterWrapped = true;
 
         function logEntry(type, arg1) {
-            var cfg = (typeof arg1 === 'object' && arg1) ? arg1 : { message: arg1 };
-            if (cfg && cfg.logHistory === false) return;
+            var cfg = (typeof arg1 === 'object' && arg1) ? arg1 : null;
+            if (!shouldPersist(cfg)) return;
             // Skip empty notifications
             var title = cfg.title || '';
-            var message = cfg.message || (typeof arg1 === 'string' ? arg1 : '');
+            var message = cfg.message || '';
             if (!title && !message) return;
             add({
                 type: type,
                 title: title,
                 message: message,
-                link: cfg.link || (cfg.action && cfg.action.href) || null
+                link: cfg.link || (cfg.action && cfg.action.href) || null,
+                category: cfg.category || null,
+                priority: cfg.priority || null,
+                entityRef: cfg.entityRef || null,
+                actionLabel: cfg.action && cfg.action.label || null
             });
         }
 

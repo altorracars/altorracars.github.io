@@ -2802,6 +2802,119 @@ Nueva subseccion "Notificaciones" dentro de "Preferencias" (Fase B9):
 
 ---
 
+## 13.bis Sistema de Notificaciones v2 — Smart Notifications (Plan A-G, 2026-05-04)
+
+> Refactor del centro de notificaciones para que tenga **valor real** en
+> lugar de ser un log de feedback. Inspirado en Apple Notification
+> Center, GitHub inbox, Slack, Linear, Stripe Dashboard.
+>
+> Ultima actualizacion: 2026-05-04
+
+### Problema diagnosticado
+
+El sistema N1-N7 captura **toda** llamada `notify.*` en el bell. Resultado: el centro se llena de:
+- "¡Hola de nuevo, Daniel!" (login)
+- "Sesion cerrada correctamente" (logout)
+- "Cargando..." (loading hints)
+- "Conexion restablecida" / "Sin conexion"
+- "Sesion iniciada en otra pestaña"
+- Confirmaciones de save/toggle/dismiss
+- Errores de validacion triviales
+
+Eso es **anti-patron**. El bell debe ser para **eventos asincronos que el usuario quiere revisar despues**, no para feedback de su accion inmediata.
+
+### Distincion correcta (industry standard)
+
+| Toast efimero (NO persiste en bell) | Notification Center (SI persiste) |
+|---|---|
+| Login/logout feedback | Cambio de estado en una solicitud |
+| "Guardado correctamente" | Alerta de baja de precio |
+| "Item agregado a favoritos" | Cita confirmada/cancelada por admin |
+| Errores de validacion | Respuesta del admin a una consulta |
+| "Cargando..." | Vehiculo favorito reservado/vendido |
+| Cross-tab sync info | Nueva version del sitio |
+
+### Plan en 7 pilares, 18+ microfases (commit por fase)
+
+| Pilar | Que resuelve | Microfases |
+|---|---|---|
+| **A — Cimientos** | Sistema base, opt-in, taxonomia, sync multi-device | A1, A2, A3, A4 |
+| **B — Favoritos watchlist** | Diff de precios/estado en favoritos | B1, B2, B3, B4, B5 |
+| **C — Busquedas guardadas** | Price alerts + match alerts en bell | C1, C2, C3 |
+| **D — Solicitudes & citas** | Realtime status updates en bell | D1, D2, D3 |
+| **E — Vistos recientemente** | Diff de cambios desde ultima visita | E1, E2, E3 |
+| **F — Admin notifications** | Realtime de nuevas solicitudes/leads/security | F1, F2, F3 |
+| **G — Push web + polish** | Migration, push API, granular prefs | G1, G2, G3, G4 |
+
+### Anti-patrones que el plan previene
+
+| Riesgo | Mitigacion |
+|---|---|
+| Recursion infinita: notify wrapeado vuelve a llamarse | Flag `_skipPersist` en finally |
+| `vehicleDB` no listo en first load → diff erroneo | Esperar `vehicleDB.loaded === true` antes de baseline |
+| Diff dispara N notificaciones en bulk update | Coalesce: >3 cambios → "5 favoritos cambiaron" agrupado |
+| Listener Firestore corre 24/7 → costo | onSnapshot solo con `document.visibilitychange` activo |
+| Cross-tab dup (3 tabs = 3 notifs) | BroadcastChannel para coordinar lectura |
+| Bell crece infinitamente | MAX 50 + TTL 30 dias + cleanup al cargar |
+| Snapshot diff falso positivo en first-load tras logout | Versioning + reset al cambiar uid |
+| Toasts apilados al mostrar 5 cambios juntos | Reuse anti-stacking pattern de favoritos |
+| Push spam en background | Server throttle 1/hora/user con priority gating |
+| Migration borra entradas legitimas | Whitelist conservadora de titulos transitorios |
+| Rules: usuario lee notifs ajenas | `match /clientes/{uid}/notifications/{nid} { allow: auth.uid == uid }` |
+
+### Microfase A1 — Inversion del default a opt-in ✓ COMPLETADA (2026-05-04)
+
+**Problema**: `wrapNotify()` en `js/toast.js` (linea 542 pre-fix) auto-persistia **toda** llamada a `notify.*` en el bell. La opt-out (`logHistory: false`) existia pero no se usaba en ningun callsite. Resultado: spam.
+
+**Fix aplicado** (`js/toast.js`):
+
+1. **Default invertido**: el wrapper ya NO persiste por defecto. Solo persiste si el caller opta in explicitamente:
+   ```js
+   notify.success({ category: 'price_alert', ... })   // → persiste
+   notify.success({ persist: true, ... })             // → persiste (legacy)
+   notify.success('Guardado correctamente')           // → NO persiste
+   ```
+
+2. **Helper `shouldPersist(cfg)`** decide por:
+   - Opt-out explicito (`persist:false` o `logHistory:false`) gana
+   - Opt-in explicito (`persist:true` o `logHistory:true`)
+   - Categoria persistible (whitelist en `PERSIST_CATEGORIES`)
+   - Default: NO persiste
+
+3. **Categorias persistibles definidas** (`PERSIST_CATEGORIES`):
+   - `price_alert` — Cambios en precio de favoritos / busquedas
+   - `request_update` — Cambios de estado en una solicitud
+   - `appointment_update` — Cambios de estado en una cita
+   - `search_match` — Vehiculos nuevos que matchean busqueda guardada
+   - `inventory_change` — Vehiculo favorito reservado/vendido
+   - `system` — Avisos de sistema (nueva version)
+   - `security` — Logins desde nuevo dispositivo, cuenta bloqueada
+
+4. **Schema extendido en `add()`**: nuevos campos `category`, `priority`, `entityRef`, `actionLabel`. Entradas viejas siguen renderizando (campos opcionales).
+
+5. **Dedup window**: skip si entrada identica (mismo type+title+message) dentro de los ultimos 10s. Evita acumulacion en bursts.
+
+6. **TTL 30 dias** en `load()`: cleanup automatico de entradas viejas al cargar el modulo.
+
+7. **MAX_ENTRIES 20 → 50**: el bell ahora puede contener mas eventos legitimos (bell era pequeño porque se llenaba de basura — al limpiar el ruido podemos guardar mas señal).
+
+8. **Quota safety en `save()`**: si localStorage esta lleno, evict half + retry una vez. Antes fallaba silenciosamente y se perdia todo.
+
+**Compatibilidad hacia atras**:
+- Los 212 callsites de `notify.*` y `window.toast.*` siguen funcionando como toast efimero
+- Ningun callsite necesita modificacion para que dejen de spammear el bell
+- `logHistory: false` (opt-out viejo) sigue siendo respetado
+- `logHistory: true` (opt-in legacy) tambien sigue funcionando
+
+**Resultado inmediato**:
+- Bell deja de capturar login/logout/save/validation/loading
+- Entradas viejas siguen alli hasta que el usuario las borre o expiren por TTL
+- Prepara terreno para A2-A4 que agregan eventos legitimos
+
+**Archivos modificados**: `js/toast.js`, `service-worker.js`, `js/cache-manager.js`
+
+---
+
 ## 14. SEO
 
 Ver `SITEMAP-FIX.md` para estado detallado del sitemap y Google Search Console.

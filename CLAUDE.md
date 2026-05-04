@@ -3798,6 +3798,48 @@ Todos `.catch(function() {})` — best-effort. localStorage es source of truth l
 
 **Archivos modificados**: `admin.html`, `js/admin-appointments.js`, `css/admin.css`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase MF3.2 — Estados contextuales por kind ✓ COMPLETADA (2026-05-04)
+
+**Problema raiz**: la dropdown de estados era hardcoded con `pendiente/confirmada/reprogramada/completada/cancelada` para TODOS los docs. Una solicitud de financiacion podia pasar a "reprogramada" sin sentido. Una cita podia ir a "aprobada" tampoco.
+
+**Cambios aplicados**:
+
+1. **Tabla de comunicaciones** (`renderAppointmentsTable`):
+   - Badge de estado usa `AltorraCommSchema.STATE_LABELS` y `STATE_COLORS` segun el kind
+   - "Reprogramada" sigue verde-info para citas; en solicitudes los estados son "Aprobada" (verde), "Rechazada" (rojo), etc.
+
+2. **Modal de gestion** (`manageAppointment`):
+   - La dropdown `#amEstado` se reconstruye dinamicamente segun el kind del doc abierto
+   - Estados validos por kind:
+     - **Cita**: Pendiente, Confirmada, Reprogramada, Completada, Cancelada, No asistio
+     - **Solicitud**: Pendiente, En revisión, Contactado, Aprobada, Rechazada, Completada, Sin respuesta
+     - **Lead**: Nuevo, Contactado, Interesado, Frío, Convertido, Descartado
+   - Si el estado actual del doc no es valido para su kind (legacy no migrado): cae al default del kind
+   - **Nuevo badge** (`#amKindBadge`) inyectado en el header del modal: "CITA" verde, "SOLICITUD" dorado, "LEAD" azul-purpura — visualmente claro
+
+3. **Filtro de estados arriba de la tabla** (`#appointmentFilter`):
+   - Tambien se reconstruye al cambiar de tab kind
+   - "Todas" → muestra union de todos los estados (sin duplicados)
+   - "Citas" → solo cita-states
+   - "Solicitudes" → solo solicitud-states
+   - "Leads" → solo lead-states
+   - Selección actual se preserva si sigue siendo valida; sino, vuelve a "all"
+
+4. **`toggleReprogramarGroup`** ahora chequea ambos: que `kind === 'cita'` Y `estado === 'reprogramada'`. Antes mostraba el bloque de reprogramar para CUALQUIER doc en estado "reprogramada", lo cual no se daba pero por consistencia.
+
+**Pasos para probar**:
+1. Click "Solicitudes" tab → filtro arriba ahora muestra solo: Todas, Pendiente, En revisión, Contactado, Aprobada, Rechazada, Completada, Sin respuesta
+2. Abrir una solicitud de financiacion → modal muestra badge dorado "SOLICITUD" en el header + dropdown con esos mismos estados
+3. Cambiar a estado "Aprobada" → guardar → cliente recibe notificacion correcta
+4. Click "Citas" tab → filtro cambia a estados de cita (Pendiente, Confirmada, Reprogramada, Completada, Cancelada, No asistio)
+5. Abrir una cita → badge verde "CITA" + dropdown con cita-states
+6. Cambiar a "Reprogramada" → aparece el grupo de nueva fecha/hora
+7. Click "Leads" → filtro muestra: Todas, Nuevo, Contactado, Interesado, Frío, Convertido, Descartado
+8. Verificar que docs legacy sin kind ya migrados (MF1.2) muestran sus estados nuevos correctamente
+9. Badges de la tabla coinciden con los labels nuevos
+
+**Archivos modificados**: `js/admin-appointments.js`, `css/admin.css`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

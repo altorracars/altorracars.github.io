@@ -3926,6 +3926,103 @@ SEMANA 12: P + buffer + QA + estabilización
 4. Mismo test con "Solicitud de Financiación"
 5. Verificar en DevTools que `.whatsapp-icon` no aparece en ningún botón visible
 
+---
+
+### Microfase A.2 — Backfill de documentación para 16 microfases v2 (2026-05-05)
+
+> Esta entrada recupera la documentación atrasada de las microfases del plan v2 que se shippearon (commits válidos en git) pero quedaron sin entrada formal en CLAUDE.md. Cada bloque tiene problema raíz, cambios, archivos, pasos de prueba.
+
+#### MF1.3 — priority + tags + slaDeadline auto-computed ✓
+**Cambio**: `AltorraCommSchema.computeMeta(doc)` añade automáticamente `priority` (alta/media/baja), `tags[]`, `slaDeadline` ISO string y `slaMs`. Aplicado en todos los 4 forms públicos al guardar.
+**Reglas**: kind=cita → priority alta + sla 30min. financiación con cuotaInicial≥$50M → alta + sla 1h + tag 'alto-valor'. consignación premium (≥$100M) → alta + tag 'premium'. compra con vehiculoId → alta. lead → baja + sla 24h. Tags por origen: 'desde-vehiculo', 'desde-simulador', 'cliente-registrado'.
+**Archivos**: `js/comm-schema.js`, `js/contact-forms.js`, `js/contact.js`, `js/citas.js`, `simulador-credito.html`, todos los HTMLs root + 43 generados.
+
+#### MF2.3 — UX consistente loading/offline/anti-double-submit ✓
+**Cambio**: Helpers `_beginSubmit(form)` + `_endSubmit(form)` en `js/contact-forms.js`. Pre-checks `!navigator.onLine` antes de Firestore call (toast "Sin conexión"). `form._inFlight` flag previene double-click. Submit btn muestra `<spinner> Enviando...` con `.form-spinner` CSS.
+**Archivos**: `js/contact-forms.js`, `js/contact.js`, `js/citas.js`, `css/style.css`.
+
+#### MF2.4 — SLA visible + WhatsApp/perfil CTAs en confirmación ✓
+**Cambio**: `AltorraCommSchema.formatSLA(slaMs)` retorna `{friendly, isBusinessHours}`. Pantalla de éxito MF2.1 ahora muestra: "Te respondemos en menos de 30 minutos" (o "mañana a las 8:00" fuera de horario). 3 CTAs: Entendido + WhatsApp ahora (con ticket # pre-fill, no datos crudos) + Ver mis solicitudes (logged-in only). Business hours: Mon-Sat 8AM-6PM Colombia.
+**Archivos**: `js/comm-schema.js`, `js/contact-forms.js`, `css/style.css`.
+
+#### MF2.5 — Mensajería por vehículo (foundation) ✓
+**Cambio**: Nuevo `js/vehicle-thread.js` + botón "Hacer Pregunta" en detalle de vehículo. Click abre mini-chat persistente. Schema `mensajes/{thread_uid_vehicleId}` con messages[], userId/Email/Name, vehicleId/Title, lastMessage, lastMessageAt, unreadByAdmin/User, status. Para guests: gate "Inicia sesión para preguntar". Realtime onSnapshot.
+**Archivos**: `js/vehicle-thread.js` (new), `firestore.rules`, `detalle-vehiculo.html` + 25 generadas, `css/style.css`.
+
+#### MF3.3 — Timeline + acciones contextuales por kind ✓
+**Cambio**: En el modal de gestión, dos bloques inyectados dinámicamente: (1) Timeline con eventos del doc (Created/Updated/Migrated). (2) Quick actions per-kind: Cita → Confirmar/No-show; Solicitud → Marcar contactado/Aprobar; Lead → Marcar contactado/**Convertir a solicitud** (crea nuevo doc kind=solicitud, marca el lead como 'convertido').
+**Archivos**: `js/admin-appointments.js`, `css/admin.css`.
+
+#### MF3.4 — Asesor dropdown + auto-routing ✓
+**Cambio**: Modal de gestión con dropdown de asesores activos (super_admins + editors). Save persiste `assignedTo` + `assignedToName`. Notificación bell al admin asignado (entityRef='assigned:<docId>'). Auto-routing: super_admin observa nuevos docs sin asignar via docChanges() y aplica reglas: financiación+'alto-valor' → super_admin; otros → round-robin (editor con menos asignaciones pendiente/nuevo/en_revision). Solo super_admin corre el routing (avoid race entre tabs admin).
+**Archivos**: `js/admin-appointments.js`, `css/admin.css`, `admin.html` (col Asesor en tabla).
+
+#### MF3.5 — Vista Kanban con drag-drop ✓
+**Cambio**: Toggle Tabla/Kanban en Comunicaciones. Kanban: columnas=estados del kind activo, cards=docs draggable. Drop persiste estado en Firestore + audit log + notificación al cliente (categoría apropiada). HTML5 native drag-drop, sin lib. Mobile: scroll horizontal con snap-x. Min column width 280px. Cards muestran prioridad badge color-coded.
+**Archivos**: `admin.html`, `js/admin-appointments.js`, `css/admin.css`.
+
+#### MF3.6 — SLA semáforo + plantillas de respuesta rápida ✓
+**Cambio**: Tabla de comunicaciones agrega dot color en columna estado (verde >50% SLA / ámbar 0-50% / rojo vencido). Pulsa sutilmente. Solo para docs unhandled. Modal de gestión: nuevo bloque "Plantillas" arriba de observaciones con dropdown kind-aware (Cita: Confirmar/Reprogramar/Cancelar; Solicitud: Te llamaremos/Aprobada/Rechazada amable/En revisión; Lead: Te contactamos/Sigue interesado). Variables interpoladas: `{{nombre}}`, `{{vehiculo}}`, `{{fecha}}`, `{{hora}}`, `{{tipo}}`. Apply append a observaciones (no clobber).
+**Archivos**: `js/admin-appointments.js`, `css/admin.css`.
+
+#### MF4.1 — Sección CRM + tabla unificada de contactos ✓
+**Cambio**: Nueva entrada sidebar "CRM" (icon users-round). Workspace con KPIs (Total/Registrados/Guests/Promedio comms) + tabla unificada que merge `clientes/{uid}` (registrados) con `solicitudes/` agrupados por userId|email (guests). Columnas: Contacto (avatar+nombre+email/phone), Tipo, # Comunicaciones, Último contacto (Hoy/Ayer/Hace Nd), Score+tier (🔥 Caliente/🟧 Tibio/🟦 Frío), Asesor, Botón "Ver 360°". Filtros tipo + search debounced. Sort por lastCommAt desc. Limit 100 rows.
+**Archivos**: `admin.html`, `js/admin-crm.js` (new), `css/admin.css`.
+
+#### MF4.2 — Vista 360° del contacto con 5 tabs ✓
+**Cambio**: Click "Ver 360°" abre modal centrado con tabs: (1) Resumen (datos contacto), (2) Comunicaciones (timeline cronológico), (3) Actividad (favoritos, búsquedas, vistos — solo registrados), (4) Score (badge tier-colored + breakdown 7 factores con progress bars), (5) Notas (subcollection `clientes/{uid}/crmNotes/{nid}`). `_crmDetailContact` track active contact across tabs.
+**Archivos**: `js/admin-crm.js`, `css/admin.css`.
+
+#### MF4.3 — Acciones masivas + export CSV ✓
+**Cambio**: Checkbox column en CRM table + master `crmSelectAll`. Selecting rows reveal bulk-bar con: N seleccionado(s), Exportar CSV (UTF-8, RFC 4180 escape), Etiquetar (prompt → `clientes/{uid}.crmTags` via FieldValue.arrayUnion, solo registrados), Cancelar. CSV columns: Nombre, Email, Telefono, Ciudad, Tipo, Comunicaciones, Score, Tier, UltimoContacto, Asesor. Filename: `altorra-crm-YYYY-MM-DD.csv`.
+**Archivos**: `admin.html`, `js/admin-crm.js`, `css/admin.css`.
+
+#### MF4.4 — Dashboard CRM + funnel chart ✓
+**Cambio**: KPI cards expandidos 4→6: Total contactos, Nuevos hoy, Esta semana (last 7d), Tasa conversión (% contacts con cita/solicitud), Avg respuesta (avg updatedAt-createdAt over comms <7d), Caliente/Tibio/Frío count breakdown. Funnel chart custom CSS (sin lib): horizontal bars Leads → Solicitudes → Citas → Convertidos con animación width. Color por tier (indigo/yellow/green/orange).
+**Archivos**: `admin.html`, `js/admin-crm.js`, `css/admin.css`.
+
+#### MF4.5 — Lead score multi-factor weighted ✓
+**Cambio**: PlanOK Propeler-inspired. `computeScoreBreakdown(c)` retorna `{score, factors, weights}`. 7 factores normalizados 0-1, sumados a 100: engagement (20%), economic (25%), interactions (15%), depth (15%), recency (10%), frequency (10%), age (5%). Tiers: ≥70 caliente, 40-70 tibio, <40 frío. Breakdown expuesto via `AltorraCRM.computeScoreBreakdown` para vista 360 (MF4.2).
+**Archivos**: `js/admin-crm.js`.
+
+#### MF4.6 — Cotizador con PDF (browser print) ✓
+**Cambio**: Botón "Generar cotización" en CRM 360° abre modal con: Cliente+Vehículo (auto-fill desde último financiación), Precio base/descuento/cuota inicial, Plazo/tasa/vigencia. Live preview: monto financiar, cuota mensual (French amortization), total pagado, intereses. "Generar PDF" abre print window styled con branding Altorra. User usa Print → Save as PDF (sin lib, $0). Quote saved en `clientes/{uid}/cotizaciones/{cotId}`.
+**Archivos**: `js/admin-quote.js` (new), `admin.html`, `css/admin.css`.
+
+#### MF4.7 — Admin Inbox unificado para vehicle threads ✓
+**Cambio**: Nueva entrada sidebar "Inbox" (message-square-text icon). Layout: thread list left (320px) + detail panel right (flex). Threads listener `mensajes/`.orderBy(lastMessageAt).limit(100). Cards: cliente nombre+email, vehicle title (gold), snippet, date, badge unread, border-left gold for unread. Detail: head con cliente+vehicle+Cerrar/Reabrir, message bubbles, reply form. Send appends {from:'admin'} al messages array, updates last + unreadByUser++, unreadByAdmin=0.
+**Archivos**: `admin.html`, `js/admin-inbox.js` (new), `css/admin.css`.
+
+#### MF4.8 — Postventa scheduler + NPS aggregation ✓
+**Cambio**: `AltorraPostventa.schedule(saleData)` programa 3 follow-ups via AltorraFollowups (MF6.2): +3 días encuesta satisfacción 1-5★, +30 días NPS 0-10, +90 días recordatorio mantenimiento + invitar a referir. Sale record en `clientes/{uid}/postventa/{saleId}`. `computeNPS()` usa collectionGroup('postventa'): (promotores 9-10 - detractores 0-6) / total * 100.
+**Archivos**: `js/admin-postventa.js` (new), `admin.html`.
+
+#### MF5.1 — WhatsApp widget con template chooser ✓
+**Cambio**: Reemplaza `wa.me` ad-hoc redirects con widget popup contextual. 4 templates: Quiero financiación (kind=solicitud), Quiero ver el auto (lead/consulta_vehiculo), Tengo una pregunta (lead/consulta_general), Otro asunto (lead/otro). On select: lead se ESCRIBE primero a `solicitudes/` con identidad+source+computeMeta, después se abre wa.me con ticket# en el mensaje. Cancelaciones no pierden el lead.
+**Archivos**: `js/whatsapp-widget.js` (new), `js/components.js` (loadAuthSystem injection), `css/style.css`.
+
+#### MF5.2 — Hotspots clickeables sobre imagen del vehículo ✓
+**Cambio**: Lee `vehiculos/{id}.hotspots[] = [{x, y, title, description}]` (x/y 0-1 percentages). Renderiza dots dorados pulsantes posicionados absolute % sobre `.vehicle-image-main`. Hover/focus muestra tooltip con title+description, fade-in. Pulse animation respect prefers-reduced-motion. CSS variants gold default.
+**Archivos**: `js/vehicle-hotspots.js` (new), `css/style.css`, 26 vehicle pages (template + 25 generated).
+
+#### MF5.3 — AI Assistant FAQ widget (sin LLM, curado) ✓
+**Cambio**: Bot button morado floating (al lado del verde WhatsApp widget). 6 FAQ entries con keyword arrays. `findFAQ(query)` scores keyword hits, retorna mejor match. CTAs por FAQ: open-modal-financ/vende, goto-busqueda, open-wa, escalate. No match → "¿Conectarte con un asesor?" → on accept, crea lead con origen='ai_assistant'.
+**Archivos**: `js/ai-assistant.js` (new), `js/components.js`, `css/style.css`.
+
+#### MF6.1 — Workflow automation rules engine ✓
+**Cambio**: Nueva sección sidebar "Automatización" (zap icon). 4 reglas built-in toggleables: route_high_value_financiacion (financ+'alto-valor' sin assignedTo → super_admin), sla_breach_notify_super (pendiente+SLA vencido → notif), auto_tag_repeat_visitor (placeholder), cita_24h_reminder (off, futuro). Engine: evaluateRules(triggerType, doc) returns matches[], applyAction(match) executes. Triggers: 'comm_created' via docChanges + 'sla_check' polling 60s. Solo super_admin corre.
+**Archivos**: `js/admin-automation.js` (new), `admin.html`, `css/admin.css`.
+
+#### MF6.2 — Follow-ups programados ✓
+**Cambio**: `AltorraFollowups.schedule(label, dueAt, notes, assignedTo, relatedDocId)`. Storage `config/followups.items[]`. Scheduler client-side: check cada 60s, if dueAt <= now AND assignedTo matches user → fires 'system' notification al bell. Marks notified=true (solo super_admin escribe). UI: botón "Recordame" en context actions del manage modal pide horas + label.
+**Archivos**: `js/admin-followups.js` (new), `js/admin-appointments.js`, `admin.html`.
+
+#### MF6.3 — Message templates CRUD ✓
+**Cambio**: Nueva sección sidebar "Plantillas" (file-edit icon). Storage `config/messageTemplates.items[]` con CRUD. UI: form add (label, kind, text) + list con delete. Variables documentadas: `{{nombre}}`, `{{vehiculo}}`, `{{fecha}}`, `{{hora}}`, `{{tipo}}`. `AltorraTemplates.list()` expuesto para que admin-appointments.js (MF3.6) sume custom templates a las built-in.
+**Archivos**: `js/admin-templates.js` (new), `admin.html`, `css/admin.css`.
+
+**Total backfill**: 16 microfases con commits ya en git previamente, ahora documentadas formalmente.
+
 
 
 ---

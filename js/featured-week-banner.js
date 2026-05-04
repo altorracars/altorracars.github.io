@@ -28,11 +28,26 @@
             var section = document.getElementById('fw-banner');
             if (!section) return;
 
+            /* Guard: vehicleDB may not be available yet if this script
+               loads before database.js has initialized window.vehicleDB.
+               Retry with short timeout until it becomes available. */
+            if (!window.vehicleDB) {
+                FW._dbWaitAttempts = (FW._dbWaitAttempts || 0) + 1;
+                if (FW._dbWaitAttempts <= 20) { // 20 × 250ms = 5s max wait
+                    setTimeout(function () { FW.init(); }, 250);
+                } else {
+                    console.warn('[FW] vehicleDB never became available after 5s');
+                    section.style.display = 'none';
+                }
+                return;
+            }
+            FW._dbWaitAttempts = 0;
+
             FW.reducedMotion =
                 !!(window.matchMedia &&
                    window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-            await vehicleDB.load();
+            await window.vehicleDB.load();
 
             var vehicles = FW._getVehicles();
 
@@ -40,7 +55,7 @@
                Mobile-fix: on transient Firestore error, retry with backoff
                instead of permanently hiding the banner. */
             if (!vehicles.length) {
-                if (vehicleDB._loadError) {
+                if (window.vehicleDB._loadError) {
                     FW._retryAttempts = (FW._retryAttempts || 0) + 1;
                     if (FW._retryAttempts <= 3) {
                         var delay = 5000 * FW._retryAttempts; // 5s, 10s, 15s
@@ -96,7 +111,7 @@
         _isFeatured: function (v) { return v.destacado === true; },
 
         _getVehicles: function () {
-            var all = (vehicleDB.vehicles || []).filter(function (v) {
+            var all = ((window.vehicleDB && window.vehicleDB.vehicles) || []).filter(function (v) {
                 return v.estado === 'disponible' || !v.estado;
             });
 

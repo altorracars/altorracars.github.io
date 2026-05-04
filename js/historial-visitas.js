@@ -168,19 +168,84 @@ class VehicleHistory {
 
         var vehicleId = window.PRERENDERED_VEHICLE_ID
                      || new URLSearchParams(window.location.search).get('id');
-        if (vehicleId) this.addToHistory(vehicleId);
+        if (!vehicleId) { this._pendingTrack = false; return; }
+        // Best-effort snapshot: lookup current vehicle data if vehicleDB ready
+        var snap = this._snapshotFor(vehicleId);
+        this.addToHistory(vehicleId, snap);
+        // If snap was unavailable now, retry once vehicleDB loads
+        if (!snap && window.vehicleDB && typeof window.vehicleDB.onChange === 'function') {
+            var self = this;
+            var done = false;
+            window.vehicleDB.onChange(function () {
+                if (done) return;
+                var s = self._snapshotFor(vehicleId);
+                if (s) {
+                    done = true;
+                    self.addToHistory(vehicleId, s); // refresh — keeps timestamp on the existing item
+                }
+            });
+        }
         this._pendingTrack = false;
     }
 
-    addToHistory(vehicleId) {
+    _snapshotFor(vehicleId) {
+        if (!window.vehicleDB || !window.vehicleDB.vehicles) return null;
+        var id = String(vehicleId);
+        for (var i = 0; i < window.vehicleDB.vehicles.length; i++) {
+            var v = window.vehicleDB.vehicles[i];
+            if (String(v.id) === id) {
+                return {
+                    precio: typeof v.precio === 'number' ? v.precio : null,
+                    precioOferta: typeof v.precioOferta === 'number' ? v.precioOferta : null,
+                    estado: v.estado || 'disponible'
+                };
+            }
+        }
+        return null;
+    }
+
+    addToHistory(vehicleId, snap) {
         var id = String(vehicleId);
         var timestamp = Date.now();
+        // Preserve original timestamp if this is a snap-refresh (same id already at top)
+        var existingTs = null;
+        if (this._history.length > 0 && String(this._history[0].id) === id && snap) {
+            existingTs = this._history[0].timestamp;
+        }
         this._history = this._history.filter(function (item) { return String(item.id) !== id; });
-        this._history.unshift({ id: id, timestamp: timestamp });
+        var entry = { id: id, timestamp: existingTs || timestamp };
+        if (snap) entry.snap = snap;
+        this._history.unshift(entry);
         if (this._history.length > this.maxItems) {
             this._history = this._history.slice(0, this.maxItems);
         }
         this._debouncedSync();
+    }
+
+    /** Diff between saved snapshot and current vehicle data — for E2 badge */
+    diffForVehicle(vehicleId, currentVehicle) {
+        if (!currentVehicle) return null;
+        var id = String(vehicleId);
+        var entry = this._history.find(function (item) { return String(item.id) === id; });
+        if (!entry || !entry.snap) return null;
+        var oldSnap = entry.snap;
+        var oldP = (typeof oldSnap.precioOferta === 'number' && oldSnap.precioOferta > 0)
+            ? oldSnap.precioOferta : oldSnap.precio;
+        var newP = (typeof currentVehicle.precioOferta === 'number' && currentVehicle.precioOferta > 0)
+            ? currentVehicle.precioOferta : currentVehicle.precio;
+        // Status takes priority
+        if (oldSnap.estado !== currentVehicle.estado) {
+            return { type: 'status', oldEstado: oldSnap.estado, newEstado: currentVehicle.estado };
+        }
+        if (oldP && newP && oldP !== newP) {
+            var pct = ((newP - oldP) / oldP) * 100;
+            if (Math.abs(pct) >= 1) {
+                return { type: pct < 0 ? 'price_drop' : 'price_increase',
+                    oldPrice: oldP, newPrice: newP,
+                    pctChange: Math.round(pct * 10) / 10 };
+            }
+        }
+        return null;
     }
 
     getHistory() { return this._history.slice(); }
@@ -265,16 +330,69 @@ class VehicleHistory {
                 if (typeof toast !== 'undefined') toast.info('Historial limpiado');
             });
         }
+
+        // E3 — emit ONLY significant changes to the bell. Threshold:
+        // - Price drop ≥5% (genuine deal, not noise)
+        // - Status → vendido (lost the chance) or reservado (urgency)
+        // Dedup via entityRef → A2 default 6h (price_alert) / 1h (inventory_change).
+        if (window.notifyCenter && typeof window.notifyCenter.notify === 'function') {
+            vehicles.forEach(function (v) {
+                var d = self.diffForVehicle(v.id, v);
+                if (!d) return;
+                if (d.type === 'price_drop' && Math.abs(d.pctChange) >= 5) {
+                    var name = self.capitalize(v.marca) + ' ' + v.modelo + (v.year ? ' ' + v.year : '');
+                    window.notifyCenter.notify('price_alert', {
+                        title: 'Bajo el precio: ' + name,
+                        message: 'Lo viste antes a ' + self.formatCurrency(d.oldPrice)
+                            + ', ahora esta a ' + self.formatCurrency(d.newPrice)
+                            + '  (' + d.pctChange + '%)',
+                        link: getVehicleDetailUrl(v),
+                        entityRef: 'rv-vehicle:' + v.id,
+                        suppressIfHidden: false  // worth interrupting if visible
+                    });
+                } else if (d.type === 'status' && (d.newEstado === 'vendido' || d.newEstado === 'reservado')) {
+                    var name2 = self.capitalize(v.marca) + ' ' + v.modelo;
+                    window.notifyCenter.notify('inventory_change', {
+                        title: name2 + (d.newEstado === 'vendido' ? ' fue vendido' : ' fue reservado'),
+                        message: d.newEstado === 'vendido'
+                            ? 'Un vehiculo que viste ya no esta disponible.'
+                            : 'Un vehiculo que viste fue reservado por alguien mas.',
+                        link: 'busqueda.html',
+                        entityRef: 'rv-vehicle:' + v.id
+                    });
+                }
+            });
+        }
     }
 
     renderHistoryCard(vehicle) {
         var price = vehicle.precioOferta || vehicle.precio;
+        var diff = this.diffForVehicle(vehicle.id, vehicle);
+        var badge = '';
+        if (diff) {
+            var label = '', cls = '';
+            if (diff.type === 'price_drop') {
+                label = '↓ ' + Math.abs(diff.pctChange).toFixed(1) + '% desde tu visita';
+                cls = 'rv-diff-badge--drop';
+            } else if (diff.type === 'price_increase') {
+                label = '↑ ' + Math.abs(diff.pctChange).toFixed(1) + '%';
+                cls = 'rv-diff-badge--up';
+            } else if (diff.type === 'status') {
+                if (diff.newEstado === 'reservado') { label = 'Reservado ahora'; cls = 'rv-diff-badge--warn'; }
+                else if (diff.newEstado === 'vendido') { label = 'Vendido'; cls = 'rv-diff-badge--gone'; }
+                else if (diff.newEstado === 'disponible') { label = 'Volvio disponible'; cls = 'rv-diff-badge--drop'; }
+            }
+            if (label) {
+                badge = '<span class="rv-diff-badge ' + cls + '">' + label + '</span>';
+            }
+        }
         return '' +
             '<a href="' + getVehicleDetailUrl(vehicle) + '" class="history-card">' +
                 '<div class="history-card-image">' +
                     '<img src="' + vehicle.imagen + '" alt="' + vehicle.marca + ' ' + vehicle.modelo + '" ' +
                          'loading="lazy" decoding="async" ' +
                          'onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">' +
+                    badge +
                 '</div>' +
                 '<div class="history-card-info">' +
                     '<h4>' + this.capitalize(vehicle.marca) + ' ' + vehicle.modelo + '</h4>' +

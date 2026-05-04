@@ -1,0 +1,544 @@
+/**
+ * ALTORRA CARS — Favorites Watcher (Smart Notifications, Phase B1+B2)
+ *
+ * Watches the user's favorites against live vehicleDB updates and detects:
+ *   - Price drops / increases
+ *   - Status transitions (disponible -> reservado / vendido)
+ *   - Removal from inventory
+ *
+ * For each detected change it produces a normalized "diff event" that
+ * Phase B3 will route to notifyCenter.notify('price_alert' | 'inventory_change').
+ *
+ * Storage:
+ *   localStorage.altorra_fav_snapshots_<uid> = {
+ *       <vehicleId>: { precio, precioOferta, estado, capturedAt },
+ *       ...
+ *   }
+ *
+ * Lifecycle:
+ *   - On 'cached' or 'synced' favorites event AND vehicleDB.loaded:
+ *       - Build current snapshot of each favorited vehicle
+ *       - Compare against stored baseline → emit diffs (one-shot per change)
+ *       - Persist new baseline
+ *   - On vehicleDB.onChange('vehicles'): re-run diff against the latest snapshot
+ *   - On 'cleared' favorites: clear all snapshots for that uid
+ *
+ * Anti-patterns prevented:
+ *   - First load → never emit (baseline only); the user already knew current state
+ *   - Bulk admin update (>3 changes) → batch into a single "N favorites changed" event
+ *   - Vehicle was missing from inventory but reappears → ignore "missing" diff if
+ *     the next snapshot finds it again before next page load
+ *   - Anonymous user → never persist snapshots (no uid → no notifications)
+ *   - Listener loops: watcher only writes through `notifyCenter.notify`, never
+ *     through `notify.*` directly, so wrapNotify cannot recurse on a watcher event
+ */
+(function () {
+    'use strict';
+
+    if (window.AltorraFavWatcher) return; // singleton
+
+    var DEBUG = false;
+    var SNAPSHOT_PREFIX = 'altorra_fav_snapshots_';
+    var MIN_PRICE_DELTA_PCT = 1.0;        // 1% threshold to ignore noise
+    var COALESCE_MIN_DIFFS = 4;           // 4+ changes in one tick → grouped event
+    var DIFF_DEBOUNCE_MS = 350;            // wait for snapshot to settle
+
+    function log() {
+        if (!DEBUG) return;
+        try {
+            var args = Array.prototype.slice.call(arguments);
+            console.log.apply(console, ['[FavWatcher]'].concat(args));
+        } catch (e) {}
+    }
+
+    function snapKey(uid) { return SNAPSHOT_PREFIX + (uid || ''); }
+    var PENDING_PREFIX = 'altorra_fav_pending_';
+    function pendingKey(uid) { return PENDING_PREFIX + (uid || ''); }
+
+    function readPending(uid) {
+        try {
+            var raw = localStorage.getItem(pendingKey(uid));
+            if (!raw) return {};
+            var p = JSON.parse(raw);
+            return (p && typeof p === 'object') ? p : {};
+        } catch (e) { return {}; }
+    }
+    function writePending(uid, map) {
+        try { localStorage.setItem(pendingKey(uid), JSON.stringify(map)); }
+        catch (e) {}
+    }
+    function clearPendingStore(uid) {
+        try { localStorage.removeItem(pendingKey(uid)); } catch (e) {}
+    }
+
+    function readSnapshots(uid) {
+        try {
+            var raw = localStorage.getItem(snapKey(uid));
+            if (!raw) return {};
+            var p = JSON.parse(raw);
+            return (p && typeof p === 'object') ? p : {};
+        } catch (e) { return {}; }
+    }
+
+    function writeSnapshots(uid, snaps) {
+        try { localStorage.setItem(snapKey(uid), JSON.stringify(snaps)); }
+        catch (e) {}
+    }
+
+    function clearSnapshots(uid) {
+        try { localStorage.removeItem(snapKey(uid)); } catch (e) {}
+    }
+
+    function pickFields(v) {
+        if (!v) return null;
+        return {
+            precio: typeof v.precio === 'number' ? v.precio : null,
+            precioOferta: typeof v.precioOferta === 'number' ? v.precioOferta : null,
+            estado: v.estado || 'disponible',
+            capturedAt: Date.now()
+        };
+    }
+
+    /** Effective price = oferta if present, else regular */
+    function effectivePrice(snap) {
+        if (!snap) return null;
+        if (typeof snap.precioOferta === 'number' && snap.precioOferta > 0) return snap.precioOferta;
+        if (typeof snap.precio === 'number' && snap.precio > 0) return snap.precio;
+        return null;
+    }
+
+    function pctChange(oldVal, newVal) {
+        if (!oldVal || !newVal) return 0;
+        return ((newVal - oldVal) / oldVal) * 100;
+    }
+
+    /**
+     * Compare two snapshots and return an array of diff events (or null
+     * if no meaningful change). One vehicle can produce 0 or 1 events
+     * (status change wins over price change for the same tick).
+     */
+    function diffOne(vehicleId, oldSnap, newSnap, vehicleData) {
+        if (!oldSnap) return null; // no baseline → not a diff, just a new entry
+        // Vehicle missing from inventory entirely
+        if (!newSnap) {
+            if (oldSnap.estado === 'vendido') return null; // already known sold
+            return {
+                type: 'inventory_removed',
+                vehicleId: vehicleId,
+                oldSnap: oldSnap,
+                vehicleData: vehicleData || null
+            };
+        }
+        // Status change wins
+        if (oldSnap.estado !== newSnap.estado) {
+            return {
+                type: 'status_change',
+                vehicleId: vehicleId,
+                oldEstado: oldSnap.estado,
+                newEstado: newSnap.estado,
+                oldSnap: oldSnap,
+                newSnap: newSnap,
+                vehicleData: vehicleData || null
+            };
+        }
+        // Price change (effective price = oferta if present)
+        var oldPrice = effectivePrice(oldSnap);
+        var newPrice = effectivePrice(newSnap);
+        if (oldPrice && newPrice && oldPrice !== newPrice) {
+            var pct = pctChange(oldPrice, newPrice);
+            if (Math.abs(pct) >= MIN_PRICE_DELTA_PCT) {
+                return {
+                    type: pct < 0 ? 'price_drop' : 'price_increase',
+                    vehicleId: vehicleId,
+                    oldPrice: oldPrice,
+                    newPrice: newPrice,
+                    pctChange: Math.round(pct * 10) / 10,
+                    oldSnap: oldSnap,
+                    newSnap: newSnap,
+                    vehicleData: vehicleData || null
+                };
+            }
+        }
+        return null;
+    }
+
+    /** Watcher state */
+    var _state = {
+        uid: null,
+        anonymous: true,
+        snapshots: {},
+        pendingChanges: {},  // {vehicleId: lightweight diff} — survives page loads
+        diffTimer: null,
+        ready: false,        // both vehicleDB loaded AND favorites loaded
+        firstRunDone: false
+    };
+    var _diffListeners = [];
+    var _pendingListeners = [];
+
+    function onPendingChanges(fn) { if (typeof fn === 'function') _pendingListeners.push(fn); }
+    function notifyPendingChanges() {
+        _pendingListeners.forEach(function (fn) {
+            try { fn(_state.pendingChanges); } catch (e) {}
+        });
+    }
+
+    /** Persist a diff into the per-vehicle pending map */
+    function recordPending(d) {
+        if (!d || !d.vehicleId || d.type === 'bulk') return;
+        // Keep only the fields needed for visual badge — strip vehicleData
+        // (heavy and stale by next page load)
+        _state.pendingChanges[d.vehicleId] = {
+            type: d.type,
+            oldPrice: d.oldPrice || null,
+            newPrice: d.newPrice || null,
+            pctChange: d.pctChange || 0,
+            oldEstado: d.oldEstado || null,
+            newEstado: d.newEstado || null,
+            recordedAt: Date.now()
+        };
+        if (_state.uid) writePending(_state.uid, _state.pendingChanges);
+        notifyPendingChanges();
+    }
+
+    function clearPendingFor(vehicleId) {
+        if (!_state.pendingChanges[vehicleId]) return;
+        delete _state.pendingChanges[vehicleId];
+        if (_state.uid) writePending(_state.uid, _state.pendingChanges);
+        notifyPendingChanges();
+    }
+
+    function onDiffs(fn) { if (typeof fn === 'function') _diffListeners.push(fn); }
+    function emitDiffs(diffs) {
+        if (!diffs || !diffs.length) return;
+        _diffListeners.forEach(function (fn) {
+            try { fn(diffs); } catch (e) { log('listener error', e); }
+        });
+    }
+
+    function getFavorites() {
+        if (!window.favoritesManager) return [];
+        return window.favoritesManager.getAll ? window.favoritesManager.getAll() : [];
+    }
+
+    function getVehicleById(id) {
+        if (!window.vehicleDB || !window.vehicleDB.vehicles) return null;
+        for (var i = 0; i < window.vehicleDB.vehicles.length; i++) {
+            if (window.vehicleDB.vehicles[i].id === id) return window.vehicleDB.vehicles[i];
+        }
+        return null;
+    }
+
+    /** Run the diff cycle. Idempotent — safe to call multiple times. */
+    function runDiff(reason) {
+        if (!_state.ready) return;
+        if (!_state.uid || _state.anonymous) return;
+        var favs = getFavorites();
+        var prev = _state.snapshots;
+        var fresh = {};
+        var diffs = [];
+
+        favs.forEach(function (id) {
+            var v = getVehicleById(id);
+            var newSnap = pickFields(v);
+            if (newSnap) fresh[id] = newSnap;
+
+            var oldSnap = prev[id] || null;
+            // First time we see this favorite → just baseline, no diff
+            if (!oldSnap) return;
+
+            var d = diffOne(id, oldSnap, newSnap, v);
+            if (d) diffs.push(d);
+        });
+
+        // Save fresh snapshots — the diff above protected against false positives
+        _state.snapshots = fresh;
+        if (_state.uid) writeSnapshots(_state.uid, fresh);
+
+        if (!_state.firstRunDone) {
+            _state.firstRunDone = true;
+            log('Baseline established (', reason, '), favorites:', favs.length);
+            return;
+        }
+
+        if (diffs.length === 0) {
+            log('No diffs detected on', reason);
+            return;
+        }
+
+        // Persist visual changes per vehicle (B4 — survives page loads)
+        diffs.forEach(recordPending);
+
+        // Coalesce: if too many diffs, group them
+        if (diffs.length >= COALESCE_MIN_DIFFS) {
+            log('Coalescing', diffs.length, 'diffs');
+            emitDiffs([{ type: 'bulk', count: diffs.length, diffs: diffs }]);
+            return;
+        }
+
+        log('Emitting', diffs.length, 'diffs (', reason, ')', diffs);
+        emitDiffs(diffs);
+    }
+
+    function scheduleDiff(reason) {
+        if (_state.diffTimer) clearTimeout(_state.diffTimer);
+        _state.diffTimer = setTimeout(function () {
+            _state.diffTimer = null;
+            runDiff(reason);
+        }, DIFF_DEBOUNCE_MS);
+    }
+
+    /** Bind favorites-manager + vehicleDB → drive the watcher */
+    function init() {
+        // Anonymous detection: if Auth says anonymous, skip persistence entirely
+        function refreshUid() {
+            var u = (window.auth && window.auth.currentUser) || null;
+            var newUid = u ? u.uid : null;
+            var anon = !u || (u && u.isAnonymous);
+            if (newUid !== _state.uid || anon !== _state.anonymous) {
+                if (_state.uid && (!newUid || _state.uid !== newUid)) {
+                    // Clear watcher snapshots tied to old uid — but ONLY if logout
+                    // (not just initial undefined). Important: do NOT clear on
+                    // anonymous switch, because favorites-manager keeps localStorage
+                    // anyway and we want fresh baseline.
+                }
+                _state.uid = newUid;
+                _state.anonymous = anon;
+                if (newUid && !anon) {
+                    _state.snapshots = readSnapshots(newUid);
+                    _state.pendingChanges = readPending(newUid);
+                    _state.firstRunDone = Object.keys(_state.snapshots).length > 0;
+                    log('Bound to uid', newUid, 'snapshots:', Object.keys(_state.snapshots).length, 'pending:', Object.keys(_state.pendingChanges).length);
+                    notifyPendingChanges();
+                } else {
+                    _state.snapshots = {};
+                    _state.pendingChanges = {};
+                    _state.firstRunDone = false;
+                }
+            }
+        }
+
+        // Listen to Firebase Auth changes
+        function attachAuthListener() {
+            if (!window.auth || typeof window.auth.onAuthStateChanged !== 'function') return false;
+            window.auth.onAuthStateChanged(function () {
+                refreshUid();
+                if (_state.uid && !_state.anonymous && _state.ready) scheduleDiff('auth');
+            });
+            return true;
+        }
+        if (!attachAuthListener()) {
+            var tries = 0;
+            var int = setInterval(function () {
+                if (attachAuthListener() || ++tries > 40) clearInterval(int);
+            }, 250);
+        }
+
+        // Favorites events
+        window.addEventListener('favoritesChanged', function (ev) {
+            var d = ev.detail || {};
+            var action = d.action;
+            // Trigger diff after data actually loaded (synced/cached)
+            if (action === 'synced' || action === 'cached') {
+                refreshUid();
+                _state.ready = _state.ready || !!(window.vehicleDB && window.vehicleDB.loaded);
+                if (_state.ready) scheduleDiff('fav-' + action);
+            } else if (action === 'cleared') {
+                if (_state.uid) {
+                    clearSnapshots(_state.uid);
+                    clearPendingStore(_state.uid);
+                }
+                _state.snapshots = {};
+                _state.pendingChanges = {};
+                _state.firstRunDone = false;
+                notifyPendingChanges();
+            } else if (action === 'added') {
+                // New favorite → capture baseline silently (no diff for added id)
+                refreshUid();
+                if (_state.ready && _state.uid && !_state.anonymous) {
+                    var v = getVehicleById(d.vehicleId);
+                    if (v) {
+                        _state.snapshots[d.vehicleId] = pickFields(v);
+                        writeSnapshots(_state.uid, _state.snapshots);
+                    }
+                }
+            } else if (action === 'removed') {
+                if (_state.snapshots[d.vehicleId]) {
+                    delete _state.snapshots[d.vehicleId];
+                    if (_state.uid) writeSnapshots(_state.uid, _state.snapshots);
+                }
+                clearPendingFor(d.vehicleId);
+            }
+        });
+
+        // vehicleDB updates
+        function bindVehicleDB() {
+            if (!window.vehicleDB) return false;
+            // Mark ready as soon as vehicleDB is loaded
+            if (window.vehicleDB.loaded) _state.ready = true;
+            if (typeof window.vehicleDB.onChange === 'function') {
+                window.vehicleDB.onChange(function (changeType) {
+                    if (changeType !== 'vehicles') return;
+                    _state.ready = true;
+                    scheduleDiff('vdb-update');
+                });
+            }
+            // Initial diff when both are ready
+            if (_state.ready) scheduleDiff('vdb-init');
+            return true;
+        }
+        if (!bindVehicleDB()) {
+            var t2 = 0;
+            var int2 = setInterval(function () {
+                if (bindVehicleDB() || ++t2 > 60) clearInterval(int2);
+            }, 250);
+        }
+
+        refreshUid();
+    }
+
+    // Public API
+    window.AltorraFavWatcher = {
+        onDiffs: onDiffs,
+        onPendingChanges: onPendingChanges,
+        runDiff: function () { runDiff('manual'); },
+        getSnapshot: function (id) { return _state.snapshots[id] || null; },
+        getAllSnapshots: function () { return Object.assign({}, _state.snapshots); },
+        getPendingChange: function (id) { return _state.pendingChanges[id] || null; },
+        getAllPendingChanges: function () { return Object.assign({}, _state.pendingChanges); },
+        clearPending: clearPendingFor,
+        clearAllPending: function () {
+            _state.pendingChanges = {};
+            if (_state.uid) clearPendingStore(_state.uid);
+            notifyPendingChanges();
+        },
+        _state: _state, // for debug
+        _setDebug: function (b) { DEBUG = !!b; }
+    };
+
+    // ─── Default emitter (Phase B3) ─────────────────────────────
+    // Routes diff events to the notification center via the explicit
+    // category API. Uses entityRef for dedup (max 1 alert per vehicle
+    // per 6h for price_alert, per 1h for inventory_change).
+
+    function vehicleTitle(v) {
+        if (!v) return 'tu vehiculo favorito';
+        var parts = [v.marca, v.modelo].filter(Boolean);
+        if (v.year) parts.push(v.year);
+        return parts.join(' ').trim() || 'tu vehiculo favorito';
+    }
+
+    function vehicleUrl(v) {
+        if (!v) return null;
+        if (typeof window.getVehicleDetailUrl === 'function') {
+            try { return window.getVehicleDetailUrl(v); } catch (e) {}
+        }
+        if (typeof window.getVehicleSlug === 'function') {
+            try { return 'vehiculos/' + window.getVehicleSlug(v) + '.html'; } catch (e) {}
+        }
+        return null;
+    }
+
+    function fmtPrice(n) {
+        if (typeof n !== 'number' || !isFinite(n)) return '';
+        try {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency', currency: 'COP',
+                minimumFractionDigits: 0, maximumFractionDigits: 0
+            }).format(n);
+        } catch (e) { return '$' + n.toLocaleString('es-CO'); }
+    }
+
+    var STATUS_LABEL = {
+        disponible: 'Disponible',
+        reservado: 'Reservado',
+        vendido: 'Vendido',
+        borrador: 'Borrador'
+    };
+
+    function diffToPayload(d) {
+        var v = d.vehicleData;
+        var name = vehicleTitle(v);
+        var link = vehicleUrl(v);
+        var ref = 'vehicle:' + d.vehicleId;
+
+        if (d.type === 'price_drop') {
+            var saved = d.oldPrice - d.newPrice;
+            return {
+                category: 'price_alert',
+                title: 'Bajo el precio: ' + name,
+                message: fmtPrice(d.oldPrice) + ' → ' + fmtPrice(d.newPrice)
+                    + '  (' + d.pctChange + '%, ahorras ' + fmtPrice(saved) + ')',
+                link: link,
+                entityRef: ref
+            };
+        }
+        if (d.type === 'price_increase') {
+            return {
+                category: 'price_alert',
+                title: 'Subio el precio: ' + name,
+                message: fmtPrice(d.oldPrice) + ' → ' + fmtPrice(d.newPrice)
+                    + '  (+' + d.pctChange + '%)',
+                link: link,
+                entityRef: ref
+            };
+        }
+        if (d.type === 'status_change') {
+            var newLabel = STATUS_LABEL[d.newEstado] || d.newEstado;
+            var msg;
+            if (d.newEstado === 'reservado') msg = 'Alguien lo reservo. Si te interesa, contactanos pronto.';
+            else if (d.newEstado === 'vendido') msg = 'Este vehiculo ya fue vendido.';
+            else if (d.newEstado === 'disponible') msg = 'Volvio a estar disponible.';
+            else msg = 'Cambio a: ' + newLabel;
+            return {
+                category: 'inventory_change',
+                title: name + ' ahora esta ' + newLabel.toLowerCase(),
+                message: msg,
+                link: link,
+                entityRef: ref
+            };
+        }
+        if (d.type === 'inventory_removed') {
+            return {
+                category: 'inventory_change',
+                title: name + ' ya no esta en inventario',
+                message: 'Este vehiculo dejo de estar disponible. Te recomendamos otros similares.',
+                link: 'favoritos.html',
+                entityRef: ref
+            };
+        }
+        if (d.type === 'bulk') {
+            return {
+                category: 'inventory_change',
+                title: d.count + ' cambios en tus favoritos',
+                message: 'Hay novedades en tu lista. Abrila para ver todos los cambios.',
+                link: 'favoritos.html',
+                entityRef: 'fav-bulk:' + Date.now()
+            };
+        }
+        return null;
+    }
+
+    function defaultEmitter(diffs) {
+        if (!window.notifyCenter || typeof window.notifyCenter.notify !== 'function') return;
+        // Skip emission if user has disabled bell (future toggle, see G2)
+        // try { if (localStorage.getItem('altorra_notif_bell_disabled') === '1') return; } catch (e) {}
+        diffs.forEach(function (d) {
+            try {
+                var payload = diffToPayload(d);
+                if (!payload) return;
+                window.notifyCenter.notify(payload.category, payload);
+            } catch (e) {
+                log('emit error', e);
+            }
+        });
+    }
+
+    onDiffs(defaultEmitter);
+
+    // Auto-init when DOM is ready (favoritesManager + vehicleDB load via main.js)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();

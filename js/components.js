@@ -294,6 +294,13 @@ function loadAuthSystem() {
                     script.src = 'js/auth.js';
                     document.body.appendChild(script);
                 }
+                // 5b. Pillar D — realtime listener for solicitudes/citas
+                if (!document.querySelector('script[src*="solicitudes-watcher.js"]')) {
+                    var swScript = document.createElement('script');
+                    swScript.src = 'js/solicitudes-watcher.js';
+                    swScript.defer = true;
+                    document.body.appendChild(swScript);
+                }
             })
             .catch(function(e) { console.warn('[Auth] No se pudo cargar auth-modal.html', e); });
     }

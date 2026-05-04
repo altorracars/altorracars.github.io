@@ -2802,6 +2802,567 @@ Nueva subseccion "Notificaciones" dentro de "Preferencias" (Fase B9):
 
 ---
 
+## 13.bis Sistema de Notificaciones v2 — Smart Notifications (Plan A-G, 2026-05-04)
+
+> Refactor del centro de notificaciones para que tenga **valor real** en
+> lugar de ser un log de feedback. Inspirado en Apple Notification
+> Center, GitHub inbox, Slack, Linear, Stripe Dashboard.
+>
+> Ultima actualizacion: 2026-05-04
+
+### Problema diagnosticado
+
+El sistema N1-N7 captura **toda** llamada `notify.*` en el bell. Resultado: el centro se llena de:
+- "¡Hola de nuevo, Daniel!" (login)
+- "Sesion cerrada correctamente" (logout)
+- "Cargando..." (loading hints)
+- "Conexion restablecida" / "Sin conexion"
+- "Sesion iniciada en otra pestaña"
+- Confirmaciones de save/toggle/dismiss
+- Errores de validacion triviales
+
+Eso es **anti-patron**. El bell debe ser para **eventos asincronos que el usuario quiere revisar despues**, no para feedback de su accion inmediata.
+
+### Distincion correcta (industry standard)
+
+| Toast efimero (NO persiste en bell) | Notification Center (SI persiste) |
+|---|---|
+| Login/logout feedback | Cambio de estado en una solicitud |
+| "Guardado correctamente" | Alerta de baja de precio |
+| "Item agregado a favoritos" | Cita confirmada/cancelada por admin |
+| Errores de validacion | Respuesta del admin a una consulta |
+| "Cargando..." | Vehiculo favorito reservado/vendido |
+| Cross-tab sync info | Nueva version del sitio |
+
+### Plan en 7 pilares, 18+ microfases (commit por fase)
+
+| Pilar | Que resuelve | Microfases |
+|---|---|---|
+| **A — Cimientos** | Sistema base, opt-in, taxonomia, sync multi-device | A1, A2, A3, A4 |
+| **B — Favoritos watchlist** | Diff de precios/estado en favoritos | B1, B2, B3, B4, B5 |
+| **C — Busquedas guardadas** | Price alerts + match alerts en bell | C1, C2, C3 |
+| **D — Solicitudes & citas** | Realtime status updates en bell | D1, D2, D3 |
+| **E — Vistos recientemente** | Diff de cambios desde ultima visita | E1, E2, E3 |
+| **F — Admin notifications** | Realtime de nuevas solicitudes/leads/security | F1, F2, F3 |
+| **G — Push web + polish** | Migration, push API, granular prefs | G1, G2, G3, G4 |
+
+### Anti-patrones que el plan previene
+
+| Riesgo | Mitigacion |
+|---|---|
+| Recursion infinita: notify wrapeado vuelve a llamarse | Flag `_skipPersist` en finally |
+| `vehicleDB` no listo en first load → diff erroneo | Esperar `vehicleDB.loaded === true` antes de baseline |
+| Diff dispara N notificaciones en bulk update | Coalesce: >3 cambios → "5 favoritos cambiaron" agrupado |
+| Listener Firestore corre 24/7 → costo | onSnapshot solo con `document.visibilitychange` activo |
+| Cross-tab dup (3 tabs = 3 notifs) | BroadcastChannel para coordinar lectura |
+| Bell crece infinitamente | MAX 50 + TTL 30 dias + cleanup al cargar |
+| Snapshot diff falso positivo en first-load tras logout | Versioning + reset al cambiar uid |
+| Toasts apilados al mostrar 5 cambios juntos | Reuse anti-stacking pattern de favoritos |
+| Push spam en background | Server throttle 1/hora/user con priority gating |
+| Migration borra entradas legitimas | Whitelist conservadora de titulos transitorios |
+| Rules: usuario lee notifs ajenas | `match /clientes/{uid}/notifications/{nid} { allow: auth.uid == uid }` |
+
+### Microfase A1 — Inversion del default a opt-in ✓ COMPLETADA (2026-05-04)
+
+**Problema**: `wrapNotify()` en `js/toast.js` (linea 542 pre-fix) auto-persistia **toda** llamada a `notify.*` en el bell. La opt-out (`logHistory: false`) existia pero no se usaba en ningun callsite. Resultado: spam.
+
+**Fix aplicado** (`js/toast.js`):
+
+1. **Default invertido**: el wrapper ya NO persiste por defecto. Solo persiste si el caller opta in explicitamente:
+   ```js
+   notify.success({ category: 'price_alert', ... })   // → persiste
+   notify.success({ persist: true, ... })             // → persiste (legacy)
+   notify.success('Guardado correctamente')           // → NO persiste
+   ```
+
+2. **Helper `shouldPersist(cfg)`** decide por:
+   - Opt-out explicito (`persist:false` o `logHistory:false`) gana
+   - Opt-in explicito (`persist:true` o `logHistory:true`)
+   - Categoria persistible (whitelist en `PERSIST_CATEGORIES`)
+   - Default: NO persiste
+
+3. **Categorias persistibles definidas** (`PERSIST_CATEGORIES`):
+   - `price_alert` — Cambios en precio de favoritos / busquedas
+   - `request_update` — Cambios de estado en una solicitud
+   - `appointment_update` — Cambios de estado en una cita
+   - `search_match` — Vehiculos nuevos que matchean busqueda guardada
+   - `inventory_change` — Vehiculo favorito reservado/vendido
+   - `system` — Avisos de sistema (nueva version)
+   - `security` — Logins desde nuevo dispositivo, cuenta bloqueada
+
+4. **Schema extendido en `add()`**: nuevos campos `category`, `priority`, `entityRef`, `actionLabel`. Entradas viejas siguen renderizando (campos opcionales).
+
+5. **Dedup window**: skip si entrada identica (mismo type+title+message) dentro de los ultimos 10s. Evita acumulacion en bursts.
+
+6. **TTL 30 dias** en `load()`: cleanup automatico de entradas viejas al cargar el modulo.
+
+7. **MAX_ENTRIES 20 → 50**: el bell ahora puede contener mas eventos legitimos (bell era pequeño porque se llenaba de basura — al limpiar el ruido podemos guardar mas señal).
+
+8. **Quota safety en `save()`**: si localStorage esta lleno, evict half + retry una vez. Antes fallaba silenciosamente y se perdia todo.
+
+**Compatibilidad hacia atras**:
+- Los 212 callsites de `notify.*` y `window.toast.*` siguen funcionando como toast efimero
+- Ningun callsite necesita modificacion para que dejen de spammear el bell
+- `logHistory: false` (opt-out viejo) sigue siendo respetado
+- `logHistory: true` (opt-in legacy) tambien sigue funcionando
+
+**Resultado inmediato**:
+- Bell deja de capturar login/logout/save/validation/loading
+- Entradas viejas siguen alli hasta que el usuario las borre o expiren por TTL
+- Prepara terreno para A2-A4 que agregan eventos legitimos
+
+**Archivos modificados**: `js/toast.js`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase A2 — API explicita `notifyCenter.notify(category, payload)` ✓ COMPLETADA (2026-05-04)
+
+**Problema**: Despues de A1, los callsites que **si** quieren persistir un evento legitimo tienen que armar manualmente el `cfg` con icono, prioridad, sonido, dedup. Boilerplate repetido y error-prone.
+
+**Fix aplicado** (`js/toast.js`):
+
+1. **`CATEGORY_DEFAULTS` map**: defaults por categoria (icon, type, priority, soundType, defaultTitle, dedupMs):
+
+   | Categoria | Icon | Type | Priority | Dedup window |
+   |---|---|---|---|---|
+   | `price_alert` | `trending-down` | success | normal | 6h por (category, entityRef) |
+   | `request_update` | `message-square-text` | info | high | 30s burst |
+   | `appointment_update` | `calendar-check-2` | info | high | 30s |
+   | `search_match` | `search-check` | success | normal | 24h max diario |
+   | `inventory_change` | `package` | warning | normal | 1h por vehiculo |
+   | `system` | `bell-ring` | info | low | 5m |
+   | `security` | `shield-alert` | warning | critical | 0 (nunca dedup) |
+
+2. **API publica `notifyCenter.notify(category, payload)`**:
+   ```js
+   notifyCenter.notify('price_alert', {
+       title: 'Bajo el precio del Chevrolet Equinox',
+       message: 'De $80M a $76M (-5%)',
+       link: 'vehiculos/chevrolet-equinox-2018-1.html',
+       entityRef: 'vehicle:abc123',
+       suppressToast: false           // optional
+   });
+   ```
+   - Aplica defaults de la categoria automaticamente
+   - Dedup entity-keyed con `isDuplicateForEntity(category, entityRef, windowMs)`
+   - Si `document.hidden === true` Y `suppressIfHidden !== false`: solo escribe al bell (no toast distrae al volver al tab)
+   - Si categoria desconocida: degrade gracefully a `notify.info()` sin persistir
+
+3. **Helpers expuestos**:
+   - `notifyCenter.getCategoryMeta(category)` — lee defaults
+   - `notifyCenter.categories` — lista de categorias persistibles
+
+4. **Behavior con tabs background**: si el tab no es visible al momento de emitir, suprime el toast pero igual escribe al bell. Usuario regresa al tab, ve el badge.
+
+**Patron de uso futuro** (ejemplos para fases B, C, D):
+
+```js
+// Fase B3 — favorito bajo de precio
+notifyCenter.notify('price_alert', {
+    title: 'Bajo el precio del ' + marca + ' ' + modelo,
+    message: '$' + oldPrice + ' → $' + newPrice + ' (-' + pct + '%)',
+    link: '/vehiculos/' + slug + '.html',
+    entityRef: 'vehicle:' + id
+});
+
+// Fase D2 — solicitud cambio estado
+notifyCenter.notify('request_update', {
+    title: 'Tu solicitud fue ' + (newEstado === 'contactado' ? 'recibida por un asesor' : newEstado),
+    message: vehiculoTexto,
+    link: '/perfil.html#mis-solicitudes',
+    entityRef: 'solicitud:' + id
+});
+
+// Fase F1 — admin: nueva solicitud entrante
+notifyCenter.notify('request_update', {
+    title: 'Nueva solicitud',
+    message: 'De ' + nombre + ' por ' + vehiculo,
+    link: 'admin.html#solicitudes',
+    entityRef: 'solicitud:' + id,
+    priority: 'high'
+});
+```
+
+**Archivos modificados**: `js/toast.js`
+
+### Microfase G1 — Migracion de spam legacy del bell ✓ COMPLETADA (2026-05-04)
+
+**Problema**: A1 detiene el spam **futuro**, pero los usuarios actuales tienen ya el bell lleno de notificaciones viejas tipo "¡Hola de nuevo, Daniel!", "Sesion cerrada correctamente", etc. Sin migration, A1 no se siente.
+
+**Estrategia conservadora** (NO destructiva):
+
+1. **Identificar entradas legacy** (sin campo `category` — anteriores a A2)
+2. **Drop por whitelist de patrones transitorios**: titulos/mensajes que matchean regex de feedback efimero conocido (login/logout/welcome/reconnect/loading/etc.)
+3. **Marcar el resto como leidas** (clear el badge sin destruir contenido)
+4. **One-shot**: gateado por `localStorage.altorra_notif_migration_v1`. Solo corre una vez por dispositivo.
+
+**Patrones drop** (`TRANSIENT_TITLE_PATTERNS` + `TRANSIENT_MESSAGE_PATTERNS`):
+- "Hola de nuevo *" / "Bienvenid*"
+- "Sesion cerrada *" / "Sesion iniciada *"
+- "Conexion restablecida" / "Sin conexion *"
+- "Cargando *" / "Guardad*"
+- "Listo" / "Error" / "Informacion" / "Atencion" (titulos default cuando faltaba title custom)
+- "Cuenta creada *" / "Tu cuenta con Google esta lista"
+
+**Conservadurismo**: las regex matchean **inicio de string** con `^`, evitando falsos positivos en mensajes que casualmente contengan estas palabras a mitad.
+
+**Console feedback**: si scrubbed o marked >0, log `[NotifyCenter] Migration v1: scrubbed N transient, marked M as read` (info, no warn) para diagnostico.
+
+**Resultado para el usuario**:
+- Al primer page load post-deploy, el bell se limpia: spam viejo desaparece, lo demas pasa a leido (badge a 0)
+- Pre-A2 entries que no son spam (raro) se preservan pero ya no contribuyen al unread count
+- A partir de ahi, solo entran al bell los eventos opt-in (price_alert, request_update, etc.)
+
+**Archivos modificados**: `js/toast.js`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase A3 — UI category-aware en el bell ✓ COMPLETADA (2026-05-04)
+
+**Problema**: Tras A2, el bell renderiza la `category` correctamente en data atributos, pero la UI no la diferenciaba visualmente. Todos los items se veian iguales.
+
+**Fix aplicado**:
+
+1. **Icono por categoria** (`iconForEntry(e)` en `js/toast.js`):
+   - Si la entrada tiene `category`, usa el `icon` de `CATEGORY_DEFAULTS`
+   - Si no, fallback al icono por type (success/error/info/warning)
+   - Resultado: una alerta de precio se ve distinta de un cambio de cita en el mismo bell
+
+2. **Label pill bajo el titulo** (`CATEGORY_LABELS` map):
+   - Precio | Solicitud | Cita | Busqueda | Inventario | Sistema | Seguridad
+   - Pill dorado por defecto, accent verde para `price_alert`, ambar para `inventory_change`, rojo para `security`
+   - Pegado a la fecha en una nueva fila `.altorra-notify-center__item-meta` con `gap: 8px`
+
+3. **`.altorra-notify-center__item--linkable`**:
+   - Items con `link` reciben hover dorado mas marcado (cursor + titulo en color)
+   - Indica visualmente que el click navega
+   - Click en item linkable cierra panel **antes** de navegar (transicion limpia)
+   - Click en boton remove tiene `stopPropagation` para no disparar la navegacion
+
+4. **Empty state mejorado**: en lugar de "No tienes notificaciones" generico, ahora dice "Aqui veras alertas de precio en tus favoritos, cambios en tus solicitudes y citas, y matches en tus busquedas guardadas." — orienta al usuario sobre que esperar.
+
+5. **`requestAnimationFrame`** antes del `window.location.href`: el panel cierra primero, luego un frame despues navega. Sin esto, la navegacion era instantanea y el panel quedaba "saltando" en la transicion.
+
+**Archivos modificados**: `js/toast.js`, `css/toast-notifications.css`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase B1+B2 — Favorites watcher (snapshot + diff engine) ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: Detectar cambios en los vehiculos favoritos del usuario (precio sube/baja, cambio de estado, eliminacion del inventario) sin emitir notificaciones todavia. Esto sienta la base para B3 que las rutea al bell.
+
+**Arquitectura**: nuevo modulo `js/favorites-watcher.js` (singleton `window.AltorraFavWatcher`) — separado de `favorites-manager.js` para mantener responsabilidades claras:
+
+| Modulo | Responsabilidad |
+|---|---|
+| `favorites-manager.js` | CRUD del array de IDs favoritos, sync Firestore, UI corazones |
+| `favorites-watcher.js` | Snapshot del estado de cada favorito + diff vs vehicleDB live |
+
+**Storage**:
+- `localStorage.altorra_fav_snapshots_<uid>` = `{vehicleId: {precio, precioOferta, estado, capturedAt}}`
+- Por uid (no se mezclan datos entre usuarios)
+- Solo persiste para usuarios registrados (anonimos skip)
+
+**Lifecycle**:
+1. Al montar: lee snapshots persistidos del uid actual
+2. Eventos `'cached'` o `'synced'` de favorites-manager + `vehicleDB.loaded === true` → arma snapshot fresco y compara
+3. `vehicleDB.onChange('vehicles')` → re-corre diff
+4. `'added'` (favorito nuevo) → captura baseline silencioso, sin diff
+5. `'removed'` → borra snapshot del id
+6. `'cleared'` → borra todos los snapshots del uid
+
+**Diff rules** (`diffOne(oldSnap, newSnap, vehicleData)`):
+- **Sin baseline** → no emite (primer encuentro = solo baseline)
+- **Vehiculo desaparece del inventario** Y no estaba en `vendido` → `inventory_removed`
+- **Cambio de estado** (gana sobre cambio de precio) → `status_change`
+- **Cambio de precio efectivo ≥1%** (oferta gana sobre precio regular) → `price_drop` o `price_increase` con `pctChange`
+
+**Anti-patrones prevenidos**:
+
+| Riesgo | Mitigacion |
+|---|---|
+| First load → emite N alertas falsas | `firstRunDone` flag: primera pasada solo establece baseline |
+| Bulk admin update → spam de N notificaciones | `COALESCE_MIN_DIFFS = 4`: si ≥4 diffs, emite un solo evento `bulk` con array adentro |
+| Anonymous user persiste snapshots ajenos | Guard `_state.anonymous`: skip persistence + skip diff |
+| Vehicle missing in one tick reaparece despues | Solo emite si baseline tenia el vehiculo Y nuevo NO lo tiene |
+| Listener loop (notify wraps watcher emisiones) | Watcher publica via `notifyCenter.notify` (B3), no `notify.*` directo |
+| Race entre cached + synced events disparando 2x diff | `DIFF_DEBOUNCE_MS = 350`: coalesce events que llegan en rafaga |
+| Mutacion durante diff | Diff es funcional puro: lee `_state.snapshots`, escribe `fresh` nuevo objeto, swap atomico |
+| `vehicleDB` aun no listo | `_state.ready` solo true cuando `vehicleDB.loaded === true` |
+| Cambio de uid mid-flight | `refreshUid()` resetea snapshots cuando detecta uid nuevo |
+
+**API publica** (`window.AltorraFavWatcher`):
+- `onDiffs(fn)` — subscribe a eventos diff (B3 lo usa)
+- `runDiff()` — fuerza diff manual (debug)
+- `getSnapshot(id)` — lee snapshot actual de un vehiculo
+- `getAllSnapshots()` — lee todos
+- `diffSinceLastVisit(id)` — para B4 (badges en cards)
+- `_setDebug(true)` — log verbose en consola
+
+**Inyeccion en HTML** (Phase B1 ship): script tag `<script src="js/favorites-watcher.js" defer></script>` agregado despues de `favorites-manager.js` en:
+- Paginas raiz: index, busqueda, favoritos, perfil, comparar, marca, marcas, vehiculos-{suv,sedan,pickup,hatchback}, detalle-vehiculo
+- Generadas: 25 paginas en `/vehiculos/*.html`, 18 paginas en `/marcas/*.html`
+- Las generadas usan `<base href="/">` por lo que la ruta es `js/favorites-watcher.js` (no `../js/`)
+
+**Visible al usuario en B1+B2**: nada todavia (silent). El modulo solo registra los snapshots y construye los diffs en `_diffListeners`. **Phase B3** los conecta a `notifyCenter.notify('price_alert' | 'inventory_change')`.
+
+**Verificacion en consola** (DevTools):
+```js
+AltorraFavWatcher._setDebug(true);
+AltorraFavWatcher.runDiff();
+// → '[FavWatcher] No diffs detected on manual'
+```
+
+**Archivos creados**: `js/favorites-watcher.js`
+**Archivos modificados**: 12 HTMLs raiz + 25 paginas vehiculos + 18 paginas marcas + `service-worker.js` + `js/cache-manager.js`
+
+### Microfase B3 — Emision al bell ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: conectar el diff engine de B2 al `notifyCenter.notify()`. El usuario por fin **ve** las alertas que B2 detecta.
+
+**Funcion `defaultEmitter(diffs)`** registrada via `onDiffs(defaultEmitter)` al final de `favorites-watcher.js`. Mapea cada tipo de diff a un payload listo para `notifyCenter.notify(category, payload)`.
+
+**Mapping diff → notificacion**:
+
+| Diff | Categoria | Tipo visual | Mensaje ejemplo |
+|---|---|---|---|
+| `price_drop` | `price_alert` | success | "Bajo el precio: Chevrolet Equinox 2018" — "$80M → $76M (-5%, ahorras $4M)" |
+| `price_increase` | `price_alert` | success (icon trending-down) | "Subio el precio: ..." — "$76M → $80M (+5%)" |
+| `status_change` → reservado | `inventory_change` | warning | "Chevrolet Equinox ahora esta reservado" — "Alguien lo reservo. Si te interesa, contactanos pronto." |
+| `status_change` → vendido | `inventory_change` | warning | "Chevrolet Equinox ahora esta vendido" — "Este vehiculo ya fue vendido." |
+| `inventory_removed` | `inventory_change` | warning | "Chevrolet Equinox ya no esta en inventario" — link a `favoritos.html` |
+| `bulk` (≥4 diffs) | `inventory_change` | warning | "5 cambios en tus favoritos" — link a `favoritos.html` |
+
+**Helpers internos**:
+- `vehicleTitle(v)` — arma "Marca Modelo Año" defensivamente
+- `vehicleUrl(v)` — usa `window.getVehicleDetailUrl(v)` o `getVehicleSlug(v)` con fallbacks
+- `fmtPrice(n)` — Intl.NumberFormat es-CO COP, $ ej. "$80.000.000"
+- `STATUS_LABEL` — "disponible" → "Disponible", etc.
+
+**Comportamiento dedup** (heredado de A2):
+- `entityRef: 'vehicle:' + d.vehicleId` → max 1 alerta de precio por vehiculo cada 6h
+- inventory_change: max 1 por vehiculo cada 1h
+- bulk usa `'fav-bulk:' + Date.now()` para que no se dedupe (cada bulk es unico)
+
+**Comportamiento background** (heredado de A2):
+- Si `document.hidden`, suprime el toast pero igual escribe al bell
+- Usuario regresa al tab → ve el badge dorado del bell
+
+**Toggle futuro G2** placeholder: linea comentada `if (localStorage.altorra_notif_bell_disabled === '1') return;` lista para activarse cuando el usuario tenga un switch de preferencia.
+
+**Verificacion E2E**:
+1. Loguea como cliente registrado, agrega un vehiculo a favoritos.
+2. Admin baja el precio de ese vehiculo.
+3. Cliente: en su pagina, llega un toast verde "Bajo el precio: ..." + entrada en el bell con badge dorado "Precio".
+4. Click en la entrada → cierra el panel + navega a la ficha del vehiculo.
+
+**Archivos modificados**: `js/favorites-watcher.js`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase B4 — Badges visuales en `favoritos.html` ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: Cuando el usuario abre `favoritos.html` despues de que un favorito cambio (precio bajo, fue reservado, etc.), debe verlo INMEDIATAMENTE en la card sin tener que abrir el bell.
+
+**Problema tecnico**: el watcher emite el diff cuando ocurre, pero al volver el usuario al sitio horas despues, los snapshots ya estan actualizados al estado nuevo y `diffSinceLastVisit()` no devolveria nada. Se necesita persistencia separada del diff.
+
+**Solucion**: nuevo store paralelo `_pendingChanges` en el watcher:
+- Storage: `localStorage.altorra_fav_pending_<uid>` = `{vehicleId: lightweight diff}`
+- Cada vez que `runDiff()` detecta un cambio, ademas de emitir al bell, llama `recordPending(d)` que persiste el diff
+- Persiste el `type`, `pctChange`, `oldPrice`, `newPrice`, `oldEstado`, `newEstado`, `recordedAt` (sin `vehicleData` para no inflarse)
+- Limpieza: `clearPending(id)` cuando el usuario remueve el favorito o clickea el badge
+
+**API publica nueva** (`window.AltorraFavWatcher`):
+- `getPendingChange(id)` — diff persistente para un vehiculo
+- `getAllPendingChanges()` — map completo
+- `clearPending(id)` — descartar un cambio
+- `clearAllPending()` — descartar todos
+- `onPendingChanges(fn)` — subscribe a cambios del map
+
+**Decoracion en `favoritos.html`**:
+
+`FavPage.decorateBadges()` corre tras `attachListeners()` (es decir, despues de cualquier render: full, add, remove). Para cada `.vehicle-card[data-id]`:
+1. Lee `pending[id]`
+2. Quita badge previo si existe (re-decoration safe)
+3. Si hay diff, crea `<div class="fav-diff-badge fav-diff-badge--<variant>">` con icono Lucide + label
+4. Click en badge → fade-out (clase `--leaving`) + `clearPending(id)` (re-render via listener)
+
+**Variantes visuales**:
+
+| Diff | Badge | Color | Texto |
+|---|---|---|---|
+| `price_drop` | `--drop` | Verde | "Bajo 5.0%" |
+| `price_increase` | `--up` | Ambar | "Subio 3.0%" |
+| `status_change` → reservado | `--warn` | Ambar | "Reservado" |
+| `status_change` → vendido | `--gone` | Rojo | "Vendido" |
+| `status_change` → disponible | `--drop` | Verde | "Disponible" |
+| `inventory_removed` | `--gone` | Rojo | "No disponible" |
+
+**Posicion**: top-left de la card (`position: absolute`), `backdrop-filter: blur(10px)`, glow con `box-shadow`. Animacion de entrada `favBadgeIn 0.45s` (translateY+scale). Hover lift sutil.
+
+**Sync con cambios live** (mientras el usuario esta en la pagina):
+- `decorateBadges()` se suscribe a `onPendingChanges` del watcher
+- Si admin baja el precio mientras el usuario tiene `favoritos.html` abierto → toast llega + badge aparece sobre la card en tiempo real
+
+**Por que click en el badge descarta**: confirma al usuario que vio el cambio. Patron Slack/GitHub: "marcar como visto" via interaccion natural.
+
+**Accesibilidad**:
+- `prefers-reduced-motion: reduce` desactiva animacion
+- Tooltip `title="Click para descartar este aviso"`
+- Contraste AAA en todas las variantes
+
+**Archivos modificados**: `js/favorites-watcher.js`, `favoritos.html`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase E1+E2+E3 — Vistos recientemente con diff visual y bell selectivo ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: cuando el usuario revisita un vehiculo que vio antes, mostrar visualmente en la card del homepage si cambio el precio o el estado **desde su ultima visita**. Para cambios significativos, registrar tambien una entrada en el bell.
+
+**E1 — Snapshot at view-time** (`js/historial-visitas.js`):
+
+Schema extendido del item de historial:
+```js
+{ id: '123', timestamp: 1234, snap: { precio, precioOferta, estado } }
+```
+
+`_snapshotFor(vehicleId)` lee `vehicleDB.vehicles` y captura el estado actual al momento de tracking. Si vehicleDB no esta listo aun (lazy load) → `addToHistory(id, null)` y se agenda un retry via `vehicleDB.onChange()`. Cuando llega data, se hace `addToHistory(id, snap)` — preservando timestamp original (no se reordena el item en el historial).
+
+**E2 — Diff badge en `renderHistoryCard(vehicle)`**:
+
+Nuevo helper `diffForVehicle(vehicleId, currentVehicle)` que compara `entry.snap` vs current:
+- **Status diff** (gana sobre precio): "Reservado ahora" / "Vendido" / "Volvio disponible"
+- **Price diff ≥1%**: "↓ N.N% desde tu visita" / "↑ N.N%"
+
+Badge renderizado dentro de `.history-card-image` con CSS `.rv-diff-badge--{drop|up|warn|gone}`:
+- `--drop`: verde, "Bajo X% desde tu visita"
+- `--up`: ambar, "↑ X%"
+- `--warn`: ambar, "Reservado ahora"
+- `--gone`: rojo, "Vendido"
+
+**E3 — Bell entry SOLO para cambios significativos**:
+
+Threshold curado para no inundar:
+- **Price drop ≥5%** → `notifyCenter.notify('price_alert', ...)` con mensaje "Lo viste antes a $X, ahora esta a $Y"
+- **Status → vendido/reservado** → `notifyCenter.notify('inventory_change', ...)` con mensaje "Un vehiculo que viste fue vendido/reservado"
+
+Resto (price drop <5%, price increase, otros status changes) → solo el badge visual, sin bell entry. Evita la fatiga de notificaciones para cambios menores.
+
+**Dedup heredado de A2**:
+- `entityRef: 'rv-vehicle:' + id` → A2 default de 6h por price_alert, 1h por inventory_change
+- Aunque el usuario revisite la home 5 veces en una hora, max 1 entry en el bell
+
+**Comparacion con Pillar B**:
+
+| | Pillar B (Favoritos) | Pillar E (Vistos) |
+|---|---|---|
+| Trigger | Real-time (`vehicleDB.onChange`) | Render-time (cuando renderiza la seccion) |
+| Threshold precio | ≥1% | ≥5% (mas estricto, vehiculo solo "visto") |
+| Threshold status | Cualquier cambio | Solo vendido/reservado |
+| Persistencia diff | `_pendingChanges` map | Implicit en el snap del entry |
+| Badge | Top-left card en `favoritos.html` | Top-left card en seccion home |
+| Bell | Siempre (con dedup) | Solo significativos |
+
+**Anti-patrones evitados**:
+- Snapshot null en first track (vehicleDB no listo) → retry on `onChange`
+- Re-track de la misma URL no resetea timestamp si snap viene tarde
+- Notificaciones spam de "viste un vehiculo y bajo $1000" → threshold 5%
+- Repeat visit emite duplicate entries → dedup via entityRef
+
+**Archivos modificados**: `js/historial-visitas.js`, `css/historial-visitas.css`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase D — Listener realtime de solicitudes/citas ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: cuando un admin cambia el estado de una solicitud o cita del usuario (pendiente → contactado, confirmada, rechazada, etc.), el cliente recibe la notificacion **en tiempo real** mientras esta en el sitio + entrada persistente en el bell.
+
+**Arquitectura**: nuevo modulo `js/solicitudes-watcher.js` (singleton `window.AltorraSolWatcher`) cargado lazy desde `components.js` despues de auth.js.
+
+**Listener**:
+```js
+db.collection('solicitudes')
+  .where('email', '==', user.email)
+  .onSnapshot(processSnapshot, errCallback)
+```
+
+Solo para usuarios registrados con email. Anonimos skip silencioso.
+
+**Estado y baseline**:
+- Storage: `localStorage.altorra_sol_baseline_<uid>` = `{solicitudId: {estado, observacionesHash, requiereCita}}`
+- `observacionesHash` es un hash corto del campo `observaciones` para detectar cambios sin guardar el texto completo
+- Primera carga: si NO hay baseline en localStorage → primera snapshot solo establece baseline (no emite). Si SI hay baseline (returning user) → primera snapshot diff contra el saved → emite cambios que ocurrieron mientras el usuario estaba offline
+
+**Detecciones**:
+- `prev.estado !== snap.estado` → emite `request_update` o `appointment_update` (segun `requiereCita`)
+- `prev.observacionesHash !== snap.observacionesHash` con misma `estado` → "Tienes una respuesta del admin" (snippet del primer 140 chars)
+
+**Diferenciacion solicitud vs cita** (`requiereCita: true`):
+- Solicitud: `category: 'request_update'`, link `perfil.html#mis-solicitudes`, mensajes "Un asesor recibio tu solicitud", "Solicitud completada"
+- Cita: `category: 'appointment_update'`, link `perfil.html#mis-citas`, mensajes "Te esperamos en la fecha acordada", "Se cambio la fecha"
+
+**Anti-patrones evitados**:
+
+| Riesgo | Mitigacion |
+|---|---|
+| Initial snapshot inunda bell con N entradas | `firstSnapshot` flag: solo baseline en primera pasada (sin baseline previa) |
+| Listener corre 24/7 → costo Firestore | `visibilitychange`: pause cuando `document.hidden`, resume on visible |
+| Permission-denied al hacer logout cross-tab | Error callback chequea `auth.currentUser`, suprime errores esperados |
+| Race con cambios de auth state | uid guard rechaza callbacks tardios + `stop()` antes de re-`start()` |
+| Anonymous usuarios persisten baseline ajeno | `start()` retorna false si `user.isAnonymous` o sin email |
+| Doc creado mientras user offline emite "creado" | Lo skip — el email del admin (Cloud Function `onNewSolicitud`) ya cubre eso |
+| Multiples tabs abiertas duplican notificaciones | Dedup heredado de A2 (entityRef = `solicitud:<id>`) actua entre tabs (mismo localStorage del bell) |
+
+**Wire en `auth.js`**:
+- En `onAuthStateChanged(user)`: `AltorraSolWatcher.start(user)` para registrados, `stop()` para anonimos
+- En `_processNullState()`: `stop()` antes de signOut path
+
+**Wire en `components.js`**:
+- `loadAuthSystem()` agrega `<script src="js/solicitudes-watcher.js" defer>` despues de `auth.js`
+- Carga lazy: solo paginas que cargan auth lo cargan
+
+**Verificacion E2E**:
+1. Cliente envia solicitud (estado=pendiente)
+2. Admin desde panel cambia estado a "contactado"
+3. Cliente: toast info "Tu solicitud esta recibida por un asesor — Chevrolet Equinox 2018 — Un asesor recibio tu solicitud y te contactara pronto." + entry en bell con badge "Solicitud"
+4. Admin agrega `observaciones: "Te llamare manana 10am"`
+5. Cliente: nuevo toast "Tienes una respuesta en tu solicitud — Te llamare manana 10am" + nueva entry en bell
+6. Click → cierra panel + navega a `perfil.html#mis-solicitudes`
+
+**Archivos creados**: `js/solicitudes-watcher.js`
+**Archivos modificados**: `js/auth.js`, `js/components.js`, `service-worker.js`, `js/cache-manager.js`
+
+### Microfase F1+F2 — Admin realtime bell para nuevas solicitudes/citas ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: el admin trabajando en el panel recibe un toast + entry en el bell **inmediatamente** cuando un cliente envia una nueva solicitud o cita, sin tener que recargar la pagina.
+
+**Implementacion** (`js/admin-appointments.js`):
+
+`detectAdminNewSolicitudes(snap)` corre dentro del callback existente de `onSnapshot('solicitudes')`. Usa `snap.docChanges()` (API nativa de Firestore para listar adds/modifies/removes desde la ultima snapshot) para diff eficiente.
+
+**Logica**:
+- Primera snapshot → solo establece `_adminSeenIds` baseline (sin emitir)
+- Cada `change.type === 'added'` cuyo `id` no este en baseline → si `estado === 'pendiente'`, emite
+- Cita (`requiereCita: true`) → `category: 'appointment_update'`, "Nueva cita por agendar"
+- Solicitud → `category: 'request_update'`, "Nueva solicitud"
+- `priority: 'high'` (admin necesita actuar rapido)
+- `link: 'admin.html#solicitudes'`
+
+**Filtros**:
+- `AP.currentUserRole === 'viewer'` → skip (no tiene poder de accion)
+- Sin AP listo → skip defensivo
+- Modificaciones de docs existentes → no notifica (admin ya las hizo o son irrelevantes)
+
+**Dedup**:
+- `entityRef: 'admin-solicitud:' + id` o `'admin-cita:' + id`
+- Si admin tiene 3 tabs admin abiertas, todas comparten el bell de localStorage → A2 dedup actua → 1 sola entry total
+
+**Comparacion con Pillar D**:
+
+| | Pillar D (cliente) | Pillar F (admin) |
+|---|---|---|
+| Escucha | `solicitudes where email == user.email` | `solicitudes` (todas, sin filtro) |
+| Trigger | Cambio de `estado` u `observaciones` | Doc creado con `estado: pendiente` |
+| Priority | normal/high segun tipo | high (admin debe actuar) |
+| Link | `perfil.html#mis-solicitudes` | `admin.html#solicitudes` |
+| Skip viewer | N/A | si |
+
+**F2 — Sonido y feedback para admin**: ya cubierto automaticamente por A2. La categoria `request_update` mapea a `soundType: 'info'` y `appointment_update` a `'info'`. El sonido se reproduce automaticamente al emitir el toast (gate por user gesture en N2 ya respetado).
+
+**F3 (security events)**: pendiente — requiere instrumentar admin-auth.js para emitir cuando se detecta nuevo dispositivo de confianza, password change, role change. Complejidad media — diferido.
+
+**Archivos modificados**: `js/admin-appointments.js`, `service-worker.js`, `js/cache-manager.js`
+
+---
+
 ## 14. SEO
 
 Ver `SITEMAP-FIX.md` para estado detallado del sitemap y Google Search Console.

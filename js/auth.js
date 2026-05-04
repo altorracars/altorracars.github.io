@@ -1139,6 +1139,12 @@
         // History: localStorage always, Firestore sync only for registered users
         if (window.vehicleHistory) window.vehicleHistory.setUser(user.uid, user.isAnonymous);
 
+        // Pillar D — start solicitudes/citas realtime listener (registered only)
+        if (window.AltorraSolWatcher) {
+            if (user.isAnonymous) window.AltorraSolWatcher.stop();
+            else window.AltorraSolWatcher.start(user);
+        }
+
         // If the DB was already loaded but real-time listeners were stopped
         // (e.g. during a logout flow — handleLogout stops them before signOut
         // to avoid the 400 on Listen/channel), restart them now that the new
@@ -1159,6 +1165,8 @@
         // user (or guest) doesn't see the old user's data eagerly hydrated.
         if (window.favoritesManager) window.favoritesManager.clearUser({ purgeCache: _explicitLogout });
         if (window.vehicleHistory)   window.vehicleHistory.clearUser();
+        // Pillar D — stop solicitudes listener before signOut path runs
+        if (window.AltorraSolWatcher) window.AltorraSolWatcher.stop();
 
         // Only sign in anonymously on first visit (no prior session).
         // After explicit logout, skip — the user can browse without auth

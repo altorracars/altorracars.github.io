@@ -777,43 +777,24 @@
         }, 2000);
 
         try {
-            _ensureGisInit(_onGisCredential);
-
-            window.google.accounts.id.prompt(function (notification) {
-                if (promptResolved) return;
-
-                if (notification.isNotDisplayed && notification.isNotDisplayed()) {
+            // Wrap _onGisCredential to also cancel the watchdog when the
+            // credential arrives (= sign-in succeeded via GIS).
+            _ensureGisInit(function (response) {
+                if (!promptResolved) {
                     promptResolved = true;
                     clearTimeout(watchdogTimer);
-                    var reason = notification.getNotDisplayedReason && notification.getNotDisplayedReason();
-                    console.info('[GIS] Prompt not displayed:', reason);
-                    if (reason === 'opt_out_or_no_session' || reason === 'suppressed_by_user' || reason === 'browser_not_supported') {
-                        _markGisBlocked();
-                    }
-                    _lockAuthControls(false);
-                    _legacyPopupSignIn();
-                } else if (notification.isSkippedMoment && notification.isSkippedMoment()) {
-                    promptResolved = true;
-                    clearTimeout(watchdogTimer);
-                    var skipReason = notification.getSkippedReason && notification.getSkippedReason();
-                    console.info('[GIS] Prompt skipped:', skipReason);
-                    _lockAuthControls(false);
-                    if (skipReason === 'user_cancel' || skipReason === 'tap_outside') {
-                        return;
-                    }
-                    _legacyPopupSignIn();
-                } else if (notification.isDismissedMoment && notification.isDismissedMoment()) {
-                    var dismissReason = notification.getDismissedReason && notification.getDismissedReason();
-                    if (dismissReason === 'credential_returned') {
-                        promptResolved = true;
-                        clearTimeout(watchdogTimer);
-                    } else {
-                        promptResolved = true;
-                        clearTimeout(watchdogTimer);
-                        _lockAuthControls(false);
-                    }
                 }
+                _onGisCredential(response);
             });
+
+            // FedCM-compliant: call prompt() WITHOUT the deprecated
+            // status-method callback (isNotDisplayed/isSkippedMoment/
+            // isDismissedMoment). Google has deprecated these as part of
+            // the FedCM migration. We rely on:
+            //   1. The credential callback for success
+            //   2. The 2s watchdog for "prompt didn't show" / silent fail
+            // See: https://developers.google.com/identity/gsi/web/guides/fedcm-migration
+            window.google.accounts.id.prompt();
         } catch (e) {
             promptResolved = true;
             clearTimeout(watchdogTimer);
@@ -1537,19 +1518,15 @@
 
             try {
                 _ensureGisInit(_onGisCredential);
-                window.google.accounts.id.prompt(function (notification) {
-                    if (notification.isDismissedMoment && notification.isDismissedMoment()) {
-                        var reason = notification.getDismissedReason && notification.getDismissedReason();
-                        if (reason === 'credential_returned') {
-                            // Sign-in succeeded via _onGisCredential
-                        } else if (reason === 'cancel_called' || reason === 'flow_restarted') {
-                            // Internal — ignore
-                        } else {
-                            // User dismissed — remember to suppress for 7 days
-                            try { localStorage.setItem('altorra_onetap_dismiss', String(Date.now())); } catch (e) {}
-                        }
-                    }
-                });
+                // FedCM-compliant: call prompt() without the deprecated
+                // status-method callback. Successful sign-in fires the
+                // credential callback; dismissal/timeout is silent.
+                window.google.accounts.id.prompt();
+                // Throttle: suppress One Tap for 7 days after showing it.
+                // If the user signed in, the auth-hint check at the top of
+                // _maybeShowOneTap skips it anyway. If they dismissed, we
+                // don't pester them again for a week.
+                try { localStorage.setItem('altorra_onetap_dismiss', String(Date.now())); } catch (e) {}
             } catch (e) {
                 console.info('[GIS] One Tap init failed:', e && e.message);
             }

@@ -276,6 +276,195 @@
         }).join('');
     }
 
+    // ─── MF4.2 — 360° contact detail panel ────────────────────────
+    function ensureDetailPanel() {
+        if (document.getElementById('crmDetailPanel')) return;
+        var panel = document.createElement('div');
+        panel.id = 'crmDetailPanel';
+        panel.className = 'crm-detail-panel';
+        panel.innerHTML =
+            '<div class="crm-detail-overlay" data-action="close-crm-detail"></div>' +
+            '<div class="crm-detail-modal">' +
+                '<div class="crm-detail-head">' +
+                    '<div id="crmDetailTitle"></div>' +
+                    '<button class="crm-detail-close" data-action="close-crm-detail" aria-label="Cerrar">&times;</button>' +
+                '</div>' +
+                '<div class="crm-detail-tabs" role="tablist">' +
+                    '<button class="crm-detail-tab active" data-tab="resumen">Resumen</button>' +
+                    '<button class="crm-detail-tab" data-tab="comms">Comunicaciones</button>' +
+                    '<button class="crm-detail-tab" data-tab="actividad">Actividad</button>' +
+                    '<button class="crm-detail-tab" data-tab="score">Score</button>' +
+                    '<button class="crm-detail-tab" data-tab="notas">Notas</button>' +
+                '</div>' +
+                '<div class="crm-detail-body" id="crmDetailBody"></div>' +
+            '</div>';
+        document.body.appendChild(panel);
+        panel.addEventListener('click', function (e) {
+            if (e.target.matches('[data-action="close-crm-detail"]')) {
+                panel.classList.remove('crm-detail-panel--open');
+            }
+            var tab = e.target.closest('.crm-detail-tab');
+            if (tab) {
+                panel.querySelectorAll('.crm-detail-tab').forEach(function (t) { t.classList.remove('active'); });
+                tab.classList.add('active');
+                if (window._crmDetailContact) renderDetailTab(tab.dataset.tab, window._crmDetailContact);
+            }
+        });
+    }
+
+    function escTxt(s) {
+        var d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    function renderDetailTab(tab, c) {
+        var body = $('crmDetailBody');
+        if (!body) return;
+        var schema = window.AltorraCommSchema;
+
+        if (tab === 'resumen') {
+            body.innerHTML =
+                '<div class="crm-detail-summary">' +
+                    '<div class="crm-detail-row"><strong>Email</strong><span>' + escTxt(c.email || '—') + '</span></div>' +
+                    '<div class="crm-detail-row"><strong>Teléfono</strong><span>' + escTxt(c.telefono || '—') + '</span></div>' +
+                    '<div class="crm-detail-row"><strong>Ciudad</strong><span>' + escTxt(c.ciudad || '—') + '</span></div>' +
+                    '<div class="crm-detail-row"><strong>Tipo</strong><span>' + (c.type === 'registered' ? 'Registrado' : 'Guest (solo leads)') + '</span></div>' +
+                    '<div class="crm-detail-row"><strong>UID</strong><span style="font-family:monospace;font-size:0.78rem;">' + escTxt(c.uid || 'N/A') + '</span></div>' +
+                    (c.creadoEn ? '<div class="crm-detail-row"><strong>Registro</strong><span>' + escTxt(formatDate(c.creadoEn)) + '</span></div>' : '') +
+                    '<div class="crm-detail-row"><strong>Asesor asignado</strong><span>' + escTxt(c.assignedToName || '—') + '</span></div>' +
+                '</div>';
+        } else if (tab === 'comms') {
+            var sorted = (c.comms || []).slice().sort(function (a, b) {
+                return (b.createdAt || '').localeCompare(a.createdAt || '');
+            });
+            body.innerHTML = '<div class="crm-detail-comms">' +
+                (sorted.length === 0 ? '<div class="crm-detail-empty">Sin comunicaciones</div>' :
+                 sorted.map(function (s) {
+                    var kind = s.kind || (schema && schema.inferKind(s));
+                    var estado = (schema && schema.STATE_LABELS[s.estado]) || s.estado || '—';
+                    return '<div class="crm-detail-comm">' +
+                        '<div class="crm-detail-comm-head">' +
+                            '<span class="comm-kind-tab-badge" data-kind="' + kind + '">' + kind + '</span>' +
+                            '<span style="font-weight:600;font-size:0.85rem;">' + escTxt(s.tipo || 'consulta') + '</span>' +
+                            '<span style="font-size:0.74rem;color:var(--admin-text-muted);">' + escTxt(formatDate(s.createdAt)) + '</span>' +
+                        '</div>' +
+                        '<div style="font-size:0.82rem;margin-top:4px;">' + escTxt(s.vehiculo || '') + '</div>' +
+                        '<div style="font-size:0.74rem;color:var(--admin-text-muted);margin-top:3px;">Estado: <strong>' + escTxt(estado) + '</strong>' + (s.assignedToName ? ' · ' + escTxt(s.assignedToName) : '') + '</div>' +
+                        (s.observaciones ? '<div style="font-size:0.78rem;margin-top:6px;padding:6px 8px;background:rgba(184,150,88,0.06);border-radius:6px;">' + escTxt(s.observaciones) + '</div>' : '') +
+                    '</div>';
+                 }).join('')) +
+            '</div>';
+        } else if (tab === 'actividad') {
+            var clienteData = AP.clientes[c.uid] || {};
+            body.innerHTML =
+                '<div class="crm-detail-activity">' +
+                    '<div class="crm-detail-act-row"><i data-lucide="heart"></i>' +
+                        '<strong>' + ((clienteData.favoritos || []).length) + '</strong> Favoritos' +
+                    '</div>' +
+                    '<div class="crm-detail-act-row"><i data-lucide="search"></i>' +
+                        '<strong>' + (c.busquedasGuardadas || 0) + '</strong> Búsquedas guardadas' +
+                    '</div>' +
+                    '<div class="crm-detail-act-row"><i data-lucide="eye"></i>' +
+                        '<strong>' + ((clienteData.vehiculosVistos || []).length) + '</strong> Vehículos vistos' +
+                    '</div>' +
+                    (c.type !== 'registered' ? '<div class="crm-detail-empty" style="margin-top:12px;">Solo se registra actividad para usuarios registrados.</div>' : '') +
+                '</div>';
+            if (window.lucide) try { window.lucide.createIcons(); } catch (e) {}
+        } else if (tab === 'score') {
+            var bd = computeScoreBreakdown(c);
+            var weights = bd.weights;
+            var rows = Object.keys(weights).map(function (k) {
+                var fac = bd.factors[k] || 0;
+                var contribution = Math.round(fac * weights[k] * 100);
+                var fillW = Math.round(fac * 100);
+                return '<div class="crm-detail-score-row">' +
+                    '<div class="crm-detail-score-label">' + k + ' <span style="opacity:0.5;">(' + Math.round(weights[k] * 100) + '%)</span></div>' +
+                    '<div class="crm-detail-score-bar">' +
+                        '<div class="crm-detail-score-fill" style="width:' + fillW + '%"></div>' +
+                    '</div>' +
+                    '<div class="crm-detail-score-val">+' + contribution + '</div>' +
+                '</div>';
+            }).join('');
+            var tier = tierOf(bd.score);
+            body.innerHTML =
+                '<div class="crm-detail-score-summary">' +
+                    '<div class="crm-detail-score-big ' + tier.cls + '">' + tier.emoji + ' ' + bd.score + '</div>' +
+                    '<div style="font-size:0.78rem;color:var(--admin-text-muted);">Tier: <strong>' + tier.name + '</strong></div>' +
+                '</div>' +
+                '<div class="crm-detail-score-rows">' + rows + '</div>';
+        } else if (tab === 'notas') {
+            body.innerHTML =
+                '<div class="crm-detail-notes">' +
+                    '<textarea id="crmDetailNoteText" class="form-textarea" rows="3" placeholder="Agregar nota interna sobre este contacto..."></textarea>' +
+                    '<button class="btn btn-sm btn-primary" id="crmAddNoteBtn">Agregar nota</button>' +
+                    '<div id="crmNotesList" class="crm-notes-list"><div class="crm-detail-empty">Cargando notas...</div></div>' +
+                '</div>';
+            loadNotes(c);
+            var btn = document.getElementById('crmAddNoteBtn');
+            if (btn) btn.addEventListener('click', function () { addNote(c); });
+        }
+    }
+
+    function loadNotes(c) {
+        var list = document.getElementById('crmNotesList');
+        if (!list || !window.db || !c.uid) {
+            if (list) list.innerHTML = '<div class="crm-detail-empty">Notas solo disponibles para contactos registrados.</div>';
+            return;
+        }
+        window.db.collection('clientes').doc(c.uid).collection('crmNotes').orderBy('at', 'desc').get().then(function (snap) {
+            if (snap.empty) {
+                list.innerHTML = '<div class="crm-detail-empty">Sin notas todavía.</div>';
+                return;
+            }
+            list.innerHTML = snap.docs.map(function (d) {
+                var n = d.data();
+                return '<div class="crm-note">' +
+                    '<div class="crm-note-meta">' + escTxt(n.author || 'admin') + ' · ' + escTxt(formatDate(n.at)) + '</div>' +
+                    '<div class="crm-note-text">' + escTxt(n.text) + '</div>' +
+                '</div>';
+            }).join('');
+        }).catch(function () {
+            list.innerHTML = '<div class="crm-detail-empty">No se pudieron cargar las notas.</div>';
+        });
+    }
+
+    function addNote(c) {
+        var ta = document.getElementById('crmDetailNoteText');
+        if (!ta || !ta.value.trim() || !c.uid) return;
+        var note = {
+            text: ta.value.trim(),
+            at: new Date().toISOString(),
+            author: (window.auth.currentUser && window.auth.currentUser.email) || 'admin'
+        };
+        window.db.collection('clientes').doc(c.uid).collection('crmNotes').add(note).then(function () {
+            ta.value = '';
+            loadNotes(c);
+            if (AP.toast) AP.toast('Nota agregada');
+        }).catch(function (err) {
+            if (AP.toast) AP.toast('Error: ' + err.message, 'error');
+        });
+    }
+
+    function openDetail(key) {
+        ensureDetailPanel();
+        var contacts = buildContacts();
+        var c = contacts.find(function (x) { return x.key === key; });
+        if (!c) return;
+        window._crmDetailContact = c;
+        var panel = document.getElementById('crmDetailPanel');
+        var title = document.getElementById('crmDetailTitle');
+        if (title) title.innerHTML = '<h2 style="margin:0;font-size:1.1rem;">' + escTxt(c.nombre) + '</h2>' +
+            '<div style="font-size:0.78rem;color:var(--admin-text-muted);">' + escTxt(c.email || '') + '</div>';
+        // Reset to Resumen tab
+        panel.querySelectorAll('.crm-detail-tab').forEach(function (t, i) {
+            t.classList.toggle('active', i === 0);
+        });
+        renderDetailTab('resumen', c);
+        panel.classList.add('crm-detail-panel--open');
+    }
+    AP.openCrmDetail = openDetail;
+
     // ─── Wire events ─────────────────────────────────────────────
     var inputDebounce = null;
     document.addEventListener('input', function (e) {
@@ -286,6 +475,10 @@
     });
     document.addEventListener('change', function (e) {
         if (e.target && e.target.id === 'crmFilter') renderCRM();
+    });
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-action="crm-detail"]');
+        if (b) { openDetail(b.getAttribute('data-key')); return; }
     });
 
     // Listen for admin appointments updates (CRM should re-render)

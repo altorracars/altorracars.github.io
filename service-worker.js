@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504400000'; // MF4.5 — Lead scoring multi-factor weighted (mensajes/)
+const CACHE_VERSION = 'v20260504410000'; // MF4.2 — CRM 360 detail panel with 5 tabs (mensajes/)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -163,6 +163,27 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ========== MENSAJES (MF2.5 — thread per vehicle/contact) ==========
+    match /mensajes/{threadId} {
+      // Admin can read all threads. Owner can read their own.
+      allow read: if isAuthenticated() && (
+        isEditorOrAbove() ||
+        (request.auth.uid == resource.data.userId)
+      );
+      // Anyone authenticated can create a thread (guests via anonymous auth)
+      allow create: if request.auth != null && (
+        !('userId' in request.resource.data)
+        || request.resource.data.userId == null
+        || request.resource.data.userId == request.auth.uid
+      );
+      // Updates: admin always; user only on their own thread
+      allow update: if isAuthenticated() && (
+        isEditorOrAbove() ||
+        (resource.data.userId == request.auth.uid && request.auth.uid != null)
+      );
+      allow delete: if isSuperAdmin();
+    }
+
     // ========== SOLICITUDES (unified communications system) ==========
     match /solicitudes/{solicitudId} {
       allow read: if isAuthenticated();

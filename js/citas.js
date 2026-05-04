@@ -440,6 +440,13 @@ class AppointmentSystem {
 
     // ===== ENVIAR CITA =====
     submitAppointment(form, vehicleInfo, modal) {
+        // MF2.3 — anti-double-submit + offline guard
+        if (form._inFlight) return;
+        if (!navigator.onLine) {
+            if (window.notify) window.notify.error({ title: 'Sin conexión', message: 'Reintenta cuando vuelvas a estar en línea.', duration: 5000 });
+            return;
+        }
+        form._inFlight = true;
         var formData = new FormData(form);
 
         var nombre = formData.get('nombre');
@@ -462,7 +469,12 @@ class AppointmentSystem {
         this.bookSlotAtomically(fecha, hora).then(function() {
             var identity = self._identityPayload();
             var src = self._sourcePayload('cita_vehiculo');
-            return self.saveAppointmentToFirestore(Object.assign({
+            var _wm = function (d) {
+                return (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta)
+                    ? Object.assign({}, d, window.AltorraCommSchema.computeMeta(d))
+                    : d;
+            };
+            return self.saveAppointmentToFirestore(_wm(Object.assign({
                 nombre: nombre,
                 whatsapp: telefono,
                 telefono: telefono,
@@ -481,7 +493,7 @@ class AppointmentSystem {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            }, identity, src));
+            }, identity, src)));
         }).then(function() {
             self.showConfirmation(modal, nombre, fecha, hora);
         }).catch(function(err) {
@@ -495,6 +507,7 @@ class AppointmentSystem {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Enviar Solicitud de Cita';
             }
+            form._inFlight = false; // MF2.3 release lock on error
         });
     }
 

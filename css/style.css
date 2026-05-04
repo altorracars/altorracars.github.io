@@ -7213,3 +7213,464 @@ html.auth-authenticated #headerUserArea:empty::before {
     .contact-success-actions { width: 100%; flex-direction: column; }
     .contact-success-btn { width: 100%; }
 }
+
+/* MF2.3 — Form submit spinner */
+.form-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: formSpin 0.7s linear infinite;
+    vertical-align: -2px;
+    margin-right: 4px;
+}
+@keyframes formSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .form-spinner { animation-duration: 2s; }
+}
+
+/* MF2.4 — SLA line + WhatsApp CTA in success screen */
+.contact-success-sla {
+    font-size: 0.88rem;
+    color: var(--text-secondary, #6b7280);
+    margin: 4px 0 18px;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.18);
+    padding: 8px 14px;
+    border-radius: 8px;
+    max-width: 460px;
+}
+.contact-success-sla strong { color: #22c55e; }
+.contact-success-btn--whatsapp {
+    background: #25d366;
+    color: #ffffff !important;
+    border-color: #25d366;
+    gap: 6px;
+}
+.contact-success-btn--whatsapp:hover {
+    background: #128c7e;
+    border-color: #128c7e;
+}
+
+/* ================================================================
+   MF2.5 — Vehicle thread modal (per-vehicle messages)
+   ================================================================ */
+.vt-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.62);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9100;
+    padding: 16px;
+}
+.vt-modal-overlay.vt-open { display: flex; animation: vtFadeIn 0.22s ease; }
+@keyframes vtFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.vt-modal {
+    background: var(--card-bg, #1a1a1a);
+    border: 1px solid var(--border, rgba(255,255,255,0.1));
+    border-radius: 12px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.vt-modal-head {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border, rgba(255,255,255,0.1));
+}
+.vt-modal-head h3 { margin: 0; font-size: 1rem; }
+.vt-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #999);
+    font-size: 1.5rem;
+    cursor: pointer;
+    width: 28px;
+    line-height: 1;
+}
+.vt-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 240px;
+}
+.vt-loading,
+.vt-empty {
+    text-align: center;
+    color: var(--text-secondary, #999);
+    padding: 20px;
+    font-size: 0.85rem;
+}
+.vt-msg {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+.vt-msg-client {
+    align-self: flex-end;
+    background: rgba(184, 150, 88, 0.22);
+    color: var(--text-primary, #fff);
+    border-bottom-right-radius: 4px;
+}
+.vt-msg-admin {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-primary, #fff);
+    border-bottom-left-radius: 4px;
+}
+.vt-msg-when {
+    font-size: 0.68rem;
+    opacity: 0.55;
+    margin-top: 3px;
+}
+.vt-form {
+    padding: 12px;
+    border-top: 1px solid var(--border, rgba(255,255,255,0.1));
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+.vt-form textarea {
+    flex: 1;
+    padding: 9px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--border, rgba(255,255,255,0.16));
+    background: rgba(255,255,255,0.03);
+    color: var(--text-primary, #fff);
+    font-family: inherit;
+    font-size: 0.88rem;
+    resize: none;
+}
+.vt-send {
+    padding: 9px 18px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #c9a663, #b89658);
+    color: #1a1100;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.88rem;
+}
+.vt-send:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ================================================================
+   MF5.1 — WhatsApp widget with template chooser
+   ================================================================ */
+.wa-widget-fab {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #25d366;
+    color: #fff;
+    border: none;
+    box-shadow: 0 8px 32px rgba(37, 211, 102, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9000;
+    transition: transform 0.18s ease;
+}
+.wa-widget-fab:hover { transform: scale(1.08); }
+.wa-widget-pop {
+    position: fixed;
+    bottom: 90px;
+    right: 22px;
+    width: 300px;
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.5);
+    z-index: 9001;
+    transform-origin: bottom right;
+    transform: scale(0.92);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+}
+.wa-widget-pop--open {
+    transform: scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+.wa-widget-head {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.92rem;
+    color: #fff;
+}
+.wa-widget-close {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    font-size: 1.4rem;
+    line-height: 1;
+}
+.wa-widget-templates {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.wa-widget-tpl {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.88rem;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.wa-widget-tpl:hover {
+    background: rgba(37, 211, 102, 0.12);
+    border-color: rgba(37, 211, 102, 0.4);
+}
+.wa-widget-tpl-icon { font-size: 1.2rem; }
+.wa-widget-foot {
+    padding: 0 14px 12px;
+    margin: 0;
+    font-size: 0.74rem;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+}
+@media (max-width: 480px) {
+    .wa-widget-fab { bottom: 16px; right: 16px; width: 50px; height: 50px; }
+    .wa-widget-pop { bottom: 76px; right: 16px; left: 16px; width: auto; }
+}
+
+/* ================================================================
+   MF5.2 — Vehicle hotspots (clickable dots over the main image)
+   ================================================================ */
+.vh-hotspot {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 5;
+}
+.vh-hotspot-dot {
+    position: absolute;
+    inset: 6px;
+    background: #b89658;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 2;
+}
+.vh-hotspot-pulse {
+    position: absolute;
+    inset: 0;
+    background: rgba(184, 150, 88, 0.45);
+    border-radius: 50%;
+    animation: vhHotspotPulse 1.8s cubic-bezier(0,0,0.2,1) infinite;
+    z-index: 1;
+}
+@keyframes vhHotspotPulse {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.7); opacity: 0; }
+}
+.vh-hotspot-tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.92);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    width: 180px;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+.vh-hotspot-tooltip strong { display: block; margin-bottom: 3px; color: #b89658; }
+.vh-hotspot-tooltip p { margin: 0; font-weight: normal; }
+.vh-hotspot:hover .vh-hotspot-tooltip,
+.vh-hotspot:focus .vh-hotspot-tooltip {
+    opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+    .vh-hotspot-pulse { animation: none; opacity: 0.4; }
+}
+
+/* ================================================================
+   MF5.3 — AI Assistant FAQ widget
+   ================================================================ */
+.ai-fab {
+    position: fixed;
+    bottom: 22px;
+    right: 92px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9000;
+    transition: transform 0.18s ease;
+}
+.ai-fab:hover { transform: scale(1.08); }
+.ai-pop {
+    position: fixed;
+    bottom: 84px;
+    right: 22px;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    height: 460px;
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.5);
+    z-index: 9001;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.94);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.22s, opacity 0.22s;
+}
+.ai-pop--open {
+    transform: scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+.ai-pop-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+}
+.ai-pop-close {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    font-size: 1.4rem;
+    line-height: 1;
+}
+.ai-pop-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.ai-msg {
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.86rem;
+    line-height: 1.4;
+    max-width: 85%;
+    color: #fff;
+}
+.ai-msg--bot {
+    background: rgba(99, 102, 241, 0.18);
+    align-self: flex-start;
+}
+.ai-msg--user {
+    background: rgba(184, 150, 88, 0.22);
+    align-self: flex-end;
+}
+.ai-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 4px 0;
+}
+.ai-suggestions button {
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.82rem;
+    text-align: left;
+    cursor: pointer;
+}
+.ai-suggestions button:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+.ai-cta {
+    margin-top: 6px;
+    padding: 7px 12px;
+    background: linear-gradient(135deg, #c9a663, #b89658);
+    color: #1a1100;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.ai-pop-form {
+    padding: 10px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    gap: 6px;
+}
+.ai-pop-form input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.03);
+    color: #fff;
+    border-radius: 6px;
+    font-size: 0.86rem;
+}
+.ai-pop-form button {
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+@media (max-width: 480px) {
+    .ai-fab { right: 76px; bottom: 18px; }
+    .ai-pop { right: 16px; left: 16px; bottom: 80px; width: auto; }
+}

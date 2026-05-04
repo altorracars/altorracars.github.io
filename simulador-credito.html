@@ -1776,6 +1776,7 @@
 
     <!-- Scripts -->
     <script src="js/firebase-config.js" defer></script>
+    <script src="js/comm-schema.js" defer></script>
     <script src="js/components.js" defer></script>
     <script>
     (function() {
@@ -2258,6 +2259,10 @@
                 });
             }
 
+            // MF1.3 — apply computeMeta wrapper (priority, tags, slaDeadline)
+            if (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta) {
+                doc = Object.assign({}, doc, window.AltorraCommSchema.computeMeta(doc));
+            }
             if (window.db) {
                 window.db.collection('solicitudes').add(doc).then(function (ref) {
                     showSuccess(ref.id);

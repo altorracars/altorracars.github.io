@@ -156,6 +156,113 @@
         return STATES[kind] ? STATES[kind][0] : null;
     }
 
+    /**
+     * MF1.3 — Compute meta fields (priority, tags, slaDeadline) from doc data.
+     * Called at submission time. Pure function, no side effects.
+     */
+    function computeMeta(doc) {
+        if (!doc) return {};
+        var kind = doc.kind || inferKind(doc);
+        var tipo = doc.tipo || '';
+        var dx = doc.datosExtra || {};
+        var tags = [];
+        var priority = 'media';
+
+        // Per-kind base SLA in milliseconds (business hours not enforced yet)
+        var slaByKind = {
+            cita: 30 * 60 * 1000,        // 30 min
+            solicitud: 2 * 60 * 60 * 1000, // 2 h
+            lead: 24 * 60 * 60 * 1000      // 24 h
+        };
+        var slaMs = slaByKind[kind] || slaByKind.lead;
+
+        // High-value financiación bumps priority
+        if (tipo === 'financiacion') {
+            tags.push('financiacion');
+            var price = parseInt(String(dx.precioVehiculo || '').replace(/[^0-9]/g, ''), 10) || 0;
+            var cuota = parseInt(String(dx.cuotaInicial || '').replace(/[^0-9]/g, ''), 10) || 0;
+            if (price >= 100000000 || cuota >= 50000000) {
+                priority = 'alta';
+                tags.push('alto-valor');
+                slaMs = Math.min(slaMs, 60 * 60 * 1000); // tighten to 1h
+            }
+        }
+        // Citas have higher base priority (synchronous booking)
+        if (kind === 'cita') {
+            priority = 'alta';
+            tags.push('cita-' + (tipo || 'general'));
+        }
+        // Consignación
+        if (tipo === 'consignacion_venta' || tipo === 'consignacion') {
+            tags.push('consignacion');
+            // Premium consignment (high asking price)
+            var precioEsperado = parseInt(String(dx.precioEsperado || '').replace(/[^0-9]/g, ''), 10) || 0;
+            if (precioEsperado >= 100000000) { priority = 'alta'; tags.push('premium'); }
+        }
+        // Peritaje
+        if (tipo === 'peritaje') tags.push('peritaje');
+        // Compra (intent to buy) — actionable, bump if vehicle linked
+        if (tipo === 'compra') {
+            tags.push('compra');
+            if (doc.vehiculoId) priority = 'alta';
+        }
+        // Lead qualifiers
+        if (kind === 'lead') {
+            priority = 'baja';
+            tags.push('lead-' + (tipo || 'consulta'));
+        }
+        // Source-based tags
+        if (doc.source && doc.source.page) {
+            if (doc.source.page.indexOf('detalle-vehiculo') !== -1
+                || doc.source.page.indexOf('vehiculos/') !== -1) tags.push('desde-vehiculo');
+            if (doc.source.page === 'simulador-credito.html') tags.push('desde-simulador');
+        }
+        // Registered users get a tag
+        if (doc.clientCategory === 'registered') tags.push('cliente-registrado');
+
+        return {
+            priority: priority,
+            tags: tags,
+            slaDeadline: new Date(Date.now() + slaMs).toISOString(),
+            slaMs: slaMs
+        };
+    }
+
+    /**
+     * MF2.4 — Format SLA for client-facing success screen.
+     * Returns { friendly, isBusinessHours } where friendly is e.g.
+     *   "menos de 30 minutos" / "menos de 2 horas" / "el día de mañana"
+     * Business hours: 8:00 AM - 6:00 PM, Mon-Sat (Colombia).
+     */
+    function formatSLA(slaMs) {
+        var now = new Date();
+        var day = now.getDay(); // 0=Sun, 6=Sat
+        var hour = now.getHours();
+        var isBusinessHours = day !== 0 && hour >= 8 && hour < 18;
+        var minutes = Math.round((slaMs || 0) / 60000);
+
+        var friendly;
+        if (!isBusinessHours) {
+            // Compute next business hour
+            var next = new Date(now);
+            if (day === 0 || hour >= 18) { // Sunday or after-hours
+                // Skip to next Mon-Sat 8AM
+                var addDays = day === 0 ? 1 : 1; // Sun → Mon, otherwise next day
+                if (day === 6 && hour >= 18) addDays = 2; // Sat night → Mon
+                next.setDate(now.getDate() + addDays);
+                next.setHours(8, 0, 0, 0);
+            } else if (hour < 8) {
+                next.setHours(8, 0, 0, 0);
+            }
+            friendly = 'mañana a las ' + next.getHours() + ':00';
+            return { friendly: friendly, isBusinessHours: false, nextHour: next };
+        }
+        if (minutes <= 60) friendly = 'menos de ' + minutes + ' minutos';
+        else if (minutes <= 240) friendly = 'menos de ' + Math.round(minutes / 60) + ' horas';
+        else friendly = 'el día de hoy';
+        return { friendly: friendly, isBusinessHours: true };
+    }
+
     window.AltorraCommSchema = {
         KIND_CITA: KIND_CITA,
         KIND_SOLICITUD: KIND_SOLICITUD,
@@ -168,6 +275,8 @@
         inferKind: inferKind,
         remapEstado: remapEstado,
         isValidStateForKind: isValidStateForKind,
-        getDefaultState: getDefaultState
+        getDefaultState: getDefaultState,
+        computeMeta: computeMeta,
+        formatSLA: formatSLA
     };
 })();

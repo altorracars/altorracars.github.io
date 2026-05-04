@@ -182,6 +182,16 @@
             <span>Comunicaciones</span>
             <span class="nav-badge" id="navBadgeAppointments"></span>
         </button>
+        <button class="nav-item" data-section="crm">
+            <i data-lucide="users-round"></i>
+            <span>CRM</span>
+            <span class="nav-badge" id="navBadgeCrm"></span>
+        </button>
+        <button class="nav-item" data-section="inbox">
+            <i data-lucide="message-square-text"></i>
+            <span>Inbox</span>
+            <span class="nav-badge" id="navBadgeInbox"></span>
+        </button>
         <button class="nav-item" data-section="dealers">
             <i data-lucide="handshake"></i>
             <span>Aliados</span>
@@ -198,6 +208,14 @@
 
         <!-- SISTEMA -->
         <div class="nav-category">Sistema</div>
+        <button class="nav-item" data-section="automation">
+            <i data-lucide="zap"></i>
+            <span>Automatización</span>
+        </button>
+        <button class="nav-item" data-section="templates">
+            <i data-lucide="file-edit"></i>
+            <span>Plantillas</span>
+        </button>
         <button class="nav-item" data-section="audit">
             <i data-lucide="scroll-text"></i>
             <span>Auditoria</span>
@@ -697,7 +715,20 @@
                 </button>
             </div>
 
-            <div class="stat-card overflow-x-auto">
+            <!-- MF3.5 — View toggle: Tabla / Kanban -->
+            <div class="comm-view-toggle" role="tablist">
+                <button class="comm-view-btn active" data-view="table" role="tab" aria-selected="true">
+                    <i data-lucide="list" width="14" height="14"></i> Tabla
+                </button>
+                <button class="comm-view-btn" data-view="kanban" role="tab" aria-selected="false">
+                    <i data-lucide="kanban" width="14" height="14"></i> Kanban
+                </button>
+            </div>
+
+            <!-- Kanban container (hidden by default) -->
+            <div id="commKanbanView" class="comm-kanban" hidden></div>
+
+            <div id="commTableView" class="stat-card overflow-x-auto">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
                     <button class="btn btn-ghost btn-sm btn-export" id="btnExportAppointmentsCSV" title="Exportar CSV">
                         <i data-lucide="download" width="14" height="14"></i>
@@ -714,6 +745,7 @@
                             <th data-sort="vehiculo" data-table="appointments">Vehiculo</th>
                             <th data-sort="fecha" data-table="appointments">Fecha / Hora</th>
                             <th data-sort="estado" data-table="appointments">Estado</th>
+                            <th>Asesor</th>
                             <th>Observaciones</th>
                             <th>Acciones</th>
                         </tr>
@@ -727,6 +759,139 @@
         </div>
 
         <!-- ALIADOS Y OPERACIONES -->
+        <!-- MF6.3 — Message templates section -->
+        <div id="sec-templates" class="section">
+            <div class="page-header">
+                <div>
+                    <h1>Plantillas de Mensajes</h1>
+                    <p class="page-subtitle">Crea respuestas reutilizables con variables: <code>{{nombre}}</code>, <code>{{vehiculo}}</code>, <code>{{fecha}}</code>, <code>{{hora}}</code>, <code>{{tipo}}</code>.</p>
+                </div>
+            </div>
+            <div class="msg-templates-add">
+                <h3 style="margin:0 0 10px 0;font-size:1rem;">Nueva plantilla</h3>
+                <div style="display:grid;grid-template-columns:1fr 200px;gap:10px;margin-bottom:10px;">
+                    <input type="text" id="tplNewLabel" class="form-input" placeholder="Etiqueta (ej: Confirmar cita)">
+                    <select id="tplNewKind" class="form-select">
+                        <option value="general">General</option>
+                        <option value="cita">Cita</option>
+                        <option value="solicitud">Solicitud</option>
+                        <option value="lead">Lead</option>
+                    </select>
+                </div>
+                <textarea id="tplNewText" class="form-textarea" rows="3" placeholder="Hola {{nombre}}, tu cita para ver el {{vehiculo}} queda confirmada para el {{fecha}} a las {{hora}}."></textarea>
+                <div style="margin-top:10px;text-align:right;">
+                    <button class="btn btn-primary btn-sm" id="tplAddBtn">Agregar plantilla</button>
+                </div>
+            </div>
+            <h3 style="margin-top:24px;font-size:1rem;">Plantillas guardadas</h3>
+            <div class="msg-templates-list" id="messageTemplatesList">
+                <div class="table-empty">Cargando...</div>
+            </div>
+        </div>
+
+        <!-- MF6.1 — Automation rules section -->
+        <div id="sec-automation" class="section">
+            <div class="page-header">
+                <div>
+                    <h1>Automatización — Reglas Inteligentes</h1>
+                    <p class="page-subtitle">Reglas que actúan automáticamente sobre nuevas comunicaciones (asignación, alertas, follow-ups).</p>
+                </div>
+            </div>
+            <div class="automation-rules" id="automationRulesList">
+                <div class="table-empty">Cargando reglas...</div>
+            </div>
+        </div>
+
+        <!-- MF4.7 — Inbox section -->
+        <div id="sec-inbox" class="section">
+            <div class="page-header">
+                <div>
+                    <h1>Inbox — Mensajes por Vehículo</h1>
+                    <p class="page-subtitle">Conversaciones de clientes preguntando sobre vehículos. Responde aquí mismo.</p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="inboxSearch" class="form-input" placeholder="Buscar..." style="min-width:200px;">
+                    <select id="inboxFilter" class="form-select">
+                        <option value="all">Todos</option>
+                        <option value="unread">No leídos</option>
+                        <option value="open">Abiertos</option>
+                        <option value="closed">Cerrados</option>
+                    </select>
+                </div>
+            </div>
+            <div class="inbox-layout">
+                <div class="inbox-list" id="inboxThreadList"><div class="inbox-empty">Cargando...</div></div>
+                <div class="inbox-detail" id="inboxThreadBody"><div class="inbox-empty">Selecciona un mensaje</div></div>
+            </div>
+        </div>
+
+        <!-- MF4.1 — CRM section -->
+        <div id="sec-crm" class="section">
+            <div class="page-header">
+                <div>
+                    <h1>CRM — Vista 360° de Clientes</h1>
+                    <p class="page-subtitle">Todos los contactos del negocio: registrados + leads de formularios + WhatsApp</p>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="text" id="crmSearchInput" class="form-input" placeholder="Buscar por nombre, email, teléfono..." style="min-width:260px;">
+                    <select id="crmFilter" class="form-select" style="min-width:140px;">
+                        <option value="all">Todos</option>
+                        <option value="registered">Registrados</option>
+                        <option value="guest">Guests</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="crm-kpis">
+                <div class="crm-kpi"><div class="crm-kpi-label">Total contactos</div><div class="crm-kpi-value" id="crmKpiTotal">0</div></div>
+                <div class="crm-kpi"><div class="crm-kpi-label">Nuevos hoy</div><div class="crm-kpi-value" id="crmKpiNewToday">0</div></div>
+                <div class="crm-kpi"><div class="crm-kpi-label">Esta semana</div><div class="crm-kpi-value" id="crmKpiNewWeek">0</div></div>
+                <div class="crm-kpi"><div class="crm-kpi-label">Tasa conversión</div><div class="crm-kpi-value" id="crmKpiConv">0%</div></div>
+                <div class="crm-kpi"><div class="crm-kpi-label">Avg respuesta</div><div class="crm-kpi-value" id="crmKpiAvgResp">—</div></div>
+                <div class="crm-kpi"><div class="crm-kpi-label">Caliente / Tibio / Frío</div><div class="crm-kpi-value" id="crmKpiTiers">—</div></div>
+            </div>
+
+            <!-- Mini funnel chart -->
+            <div class="crm-funnel-card">
+                <div class="crm-funnel-title">Funnel: Leads → Solicitudes → Citas → Convertidos</div>
+                <div class="crm-funnel" id="crmFunnel"></div>
+            </div>
+
+            <!-- MF4.3 — bulk actions toolbar -->
+            <div class="crm-bulk-bar" id="crmBulkBar" hidden>
+                <span id="crmBulkCount">0 seleccionados</span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-ghost" data-bulk="export-csv">
+                        <i data-lucide="download" width="14" height="14"></i> Exportar CSV
+                    </button>
+                    <button class="btn btn-sm btn-ghost" data-bulk="tag">
+                        <i data-lucide="tag" width="14" height="14"></i> Etiquetar
+                    </button>
+                    <button class="btn btn-sm btn-ghost" data-bulk="clear">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="stat-card overflow-x-auto" style="margin-top:1rem;">
+                <table class="admin-table" id="crmTable">
+                    <thead>
+                        <tr>
+                            <th style="width:32px;"><input type="checkbox" id="crmSelectAll"></th>
+                            <th>Contacto</th>
+                            <th>Tipo</th>
+                            <th>Comunicaciones</th>
+                            <th>Último contacto</th>
+                            <th>Score</th>
+                            <th>Asesor</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crmTableBody"><tr><td colspan="8" class="table-empty">Cargando contactos...</td></tr></tbody>
+                </table>
+                <div id="crmPagination"></div>
+            </div>
+        </div>
+
         <div id="sec-dealers" class="section">
             <div class="page-header">
                 <div>
@@ -1970,6 +2135,13 @@
 <script src="js/admin-brands.js" defer></script>
 <script src="js/admin-users.js" defer></script>
 <script src="js/admin-appointments.js" defer></script>
+<script src="js/admin-crm.js" defer></script>
+<script src="js/admin-inbox.js" defer></script>
+<script src="js/admin-automation.js" defer></script>
+<script src="js/admin-followups.js" defer></script>
+<script src="js/admin-templates.js" defer></script>
+<script src="js/admin-quote.js" defer></script>
+<script src="js/admin-postventa.js" defer></script>
 <script src="js/admin-dealers.js" defer></script>
 <script src="js/admin-lists.js" defer></script>
 <script src="js/admin-banners.js" defer></script>

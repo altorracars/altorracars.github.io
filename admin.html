@@ -187,6 +187,11 @@
             <span>CRM</span>
             <span class="nav-badge" id="navBadgeCrm"></span>
         </button>
+        <button class="nav-item" data-section="inbox">
+            <i data-lucide="message-square-text"></i>
+            <span>Inbox</span>
+            <span class="nav-badge" id="navBadgeInbox"></span>
+        </button>
         <button class="nav-item" data-section="dealers">
             <i data-lucide="handshake"></i>
             <span>Aliados</span>
@@ -746,6 +751,29 @@
         </div>
 
         <!-- ALIADOS Y OPERACIONES -->
+        <!-- MF4.7 — Inbox section -->
+        <div id="sec-inbox" class="section">
+            <div class="page-header">
+                <div>
+                    <h1>Inbox — Mensajes por Vehículo</h1>
+                    <p class="page-subtitle">Conversaciones de clientes preguntando sobre vehículos. Responde aquí mismo.</p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="inboxSearch" class="form-input" placeholder="Buscar..." style="min-width:200px;">
+                    <select id="inboxFilter" class="form-select">
+                        <option value="all">Todos</option>
+                        <option value="unread">No leídos</option>
+                        <option value="open">Abiertos</option>
+                        <option value="closed">Cerrados</option>
+                    </select>
+                </div>
+            </div>
+            <div class="inbox-layout">
+                <div class="inbox-list" id="inboxThreadList"><div class="inbox-empty">Cargando...</div></div>
+                <div class="inbox-detail" id="inboxThreadBody"><div class="inbox-empty">Selecciona un mensaje</div></div>
+            </div>
+        </div>
+
         <!-- MF4.1 — CRM section -->
         <div id="sec-crm" class="section">
             <div class="page-header">
@@ -2034,6 +2062,7 @@
 <script src="js/admin-users.js" defer></script>
 <script src="js/admin-appointments.js" defer></script>
 <script src="js/admin-crm.js" defer></script>
+<script src="js/admin-inbox.js" defer></script>
 <script src="js/admin-dealers.js" defer></script>
 <script src="js/admin-lists.js" defer></script>
 <script src="js/admin-banners.js" defer></script>

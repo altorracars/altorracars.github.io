@@ -177,11 +177,15 @@
     transform: none;
 }
 
-/* WhatsApp Icon */
-.whatsapp-icon {
-    width: 24px;
-    height: 24px;
+/* A.1 (mega-plan v4) — submit icon (replaced WhatsApp-icon) */
+.form-submit-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 4px;
+    flex-shrink: 0;
 }
+/* Legacy alias preserved temporarily for any HTML still referencing .whatsapp-icon */
+.whatsapp-icon { display: none; }
 
 /* Animations */
 @keyframes fadeIn {

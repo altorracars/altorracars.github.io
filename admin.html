@@ -2207,6 +2207,8 @@
 
 <!-- SCRIPTS (defer preserves execution order, unblocks HTML parser) -->
 <script src="js/firebase-config.js" defer></script>
+<!-- I.1 (mega-plan v4) — Event Bus: load EARLY so all modules can emit/listen -->
+<script src="js/event-bus.js" defer></script>
 <script src="js/dynamic-lists.js" defer></script>
 <script src="js/comm-schema.js" defer></script>
 <script src="js/theme-switcher.js" defer></script>

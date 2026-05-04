@@ -4656,6 +4656,78 @@ Estado del Sidebar + Workspaces al cerrar el bloque B:
 
 **Próximo bloque: I — Event Bus + Activity Feed (5 microfases, ~4 días)**
 
+---
+
+### Microfase I.1 — AltorraEventBus core ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: hoy los módulos se llaman entre sí directamente (admin-vehicles llama a admin-sync, que llama a admin-state, etc.). Resultado: acoplamiento alto, difícil agregar features cross-cutting. I.1 introduce un Event Bus central — todos los módulos emiten eventos cuando pasan cosas, y los demás los escuchan declarativamente.
+
+**Lo que se creó** (`js/event-bus.js`):
+
+**API pública** (`window.AltorraEventBus`):
+- `emit(type, payload, opts)` — dispara evento. `opts.persist: true` lo guarda en Firestore `events/`
+- `on(pattern, handler)` — subscribe. Retorna unsubscribe fn
+  - `on('vehicle.created', fn)` — match exacto
+  - `on('vehicle.', fn)` — prefix (cualquier `vehicle.*`)
+  - `on('*', fn)` — wildcard (todos)
+- `once(pattern, handler)` — auto-unsubscribe tras primer fire
+- `off(pattern, handler)` — quitar listener
+- `history(filter)` — buffer in-memory de últimos 200 eventos (para I.5 replay)
+- `clear()` — wipe history
+
+**Convenios de naming**: `domain.action`
+- `vehicle.created`, `vehicle.updated`, `vehicle.priced`, `vehicle.sold`
+- `comm.created`, `comm.assigned`, `comm.estado-changed`, `comm.replied`
+- `crm.contact-created`, `crm.score-changed`, `crm.tag-added`
+- `appointment.confirmed`, `appointment.cancelled`, `appointment.no-show`
+- `user.logged-in`, `user.logged-out`, `user.role-changed`
+- `ui.section-changed`, `ui.modal-opened`
+
+**Estructura del evento**:
+```js
+{
+    id: 'evt_<timestamp>_<rand>',
+    type: 'vehicle.created',
+    payload: { ...whatever },
+    timestamp: 1234567890,
+    by: 'uid-del-usuario',
+    bySource: 'admin' | 'public' | 'system'
+}
+```
+
+**Mecanismos de delivery** (orden):
+1. **History ring buffer** (cap 200, in-memory) → para I.5 replay
+2. **Direct listeners** (exact match)
+3. **Prefix listeners** (`vehicle.` capta todo `vehicle.*`)
+4. **Wildcard listeners** (`*` capta TODO)
+5. **DOM CustomEvent** `altorra:<type>` → `window.dispatchEvent` para listeners no-imported
+6. **Firestore persist** si `opts.persist === true` → `events/{id}` para Activity Feed (I.2) y replay (I.5)
+
+**Performance**:
+- listeners: `Map<string, Set<fn>>` para O(1) lookup
+- history: array con shift al cap → O(1) amortizado
+- Persistence opt-in: solo eventos importantes pegan a Firestore
+
+**Tolerancia a errores**: cada handler envuelto en try/catch — un listener fallando no rompe el bus ni a los demás.
+
+**Convenience globals**: `window.altorraEmit(type, payload)` y `window.altorraOn(pattern, fn)` como atajos para uso rápido.
+
+**Cargado early** en admin.html — antes de cualquier admin-* module — para que TODO el código posterior pueda emit/listen.
+
+**Diseño (D)**: API liviana, similar a EventEmitter de Node + DOM EventTarget. Familiar para devs JS.
+
+**Migración (M)**: ningún breaking change. CustomEvents existentes (`favoritesChanged`) siguen funcionando. Migración a EventBus se hará incrementalmente (módulos opt-in cuando se refactoricen en sus bloques específicos).
+
+**Archivos**: `js/event-bus.js` (new), `admin.html` (script tag), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Login admin → consola → `AltorraEventBus._setDebug(true)`
+2. `AltorraEventBus.on('test.', e => console.log('got:', e))` → suscribe a prefix
+3. `AltorraEventBus.emit('test.hello', { msg: 'hi' })` → ver el evento en consola
+4. `AltorraEventBus.history()` → ver buffer de eventos recientes
+5. `window.addEventListener('altorra:test.hello', e => console.log('DOM:', e.detail))` + emit → recibe vía CustomEvent
+6. `AltorraEventBus.emit('test.persist', {}, {persist: true})` → ver doc en Firestore `events/`
+
 
 
 ---

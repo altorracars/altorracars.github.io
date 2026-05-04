@@ -4506,6 +4506,56 @@ Estado del Design System al cerrar el bloque T:
 3. Cambiar `data-workspace-color="green"` → `"gold"` en consola → header acent cambia a dorado
 4. Toggle theme → workspace adapta colores sin código extra
 
+---
+
+### Microfase B.3 — Section router + aliases + hash deep-linking ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: cuando bloques futuros (E, D, etc.) renombren secciones, los deep-links viejos van a romperse. B.3 establece un router central con aliases que mantiene compat hacia atrás. Además agrega hash deep-linking (`/admin#/crm`) y un registro de metadata de cada sección para uso futuro (command palette P.4, búsqueda global).
+
+**Lo que se creó** (`js/admin-section-router.js`):
+
+1. **Aliases map** (`ALIASES`): vacío por ahora, pero documentado con ejemplos de futuros renames:
+   ```js
+   // Cuando bloque E ship:
+   //   'appointments': 'comunicaciones'
+   //   'inbox': 'mensajes'
+   //   'lists': 'leads'
+   ```
+   Cuando una sección se rename, agregás la entrada aquí — los deep-links viejos siguen funcionando.
+
+2. **REGISTRY** con metadata canónica de las 15 secciones existentes: `{label, group, icon}`. Usado por:
+   - Command palette futuro (P.4) para autocomplete
+   - Search global para sugerir resultados
+   - Analytics para reportes de uso
+
+3. **`go(section)`**: navegación programática. Resuelve aliases, valida disabled, dispara click en el nav-item correcto.
+
+4. **Hash deep-linking**:
+   - URL `/admin#/crm` al cargar → navega a CRM section automáticamente
+   - Click en nav-item actualiza el hash (sin scroll jump)
+   - `hashchange` event listener para back/forward del browser
+   - Usa `history.replaceState` para no llenar el history stack
+
+5. **`onChange(fn)`**: subscribe events. Otros módulos pueden reaccionar (ej: cargar datos lazy cuando se abre una sección).
+
+6. **Click interceptor (capture phase)**: si algún elemento dispara click con `data-section="legacy-name"`, el router lo resuelve a la canonical antes del handler default.
+
+7. **MutationObserver sobre `.section`**: detecta cuándo otra parte del código cambia la sección activa y dispara el evento change.
+
+**Diseño (D)**: invisible al usuario — todo el efecto es hacer el sistema más robusto. Único cambio observable: ahora la URL refleja la sección actual y se puede compartir.
+
+**Migración (M)**: arquitectura para futuro. Cuando bloques posteriores renombren secciones, este es el lugar central donde se agregan aliases.
+
+**Archivos**: `js/admin-section-router.js` (new), `admin.html`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Login admin → click "Vehículos" en sidebar → URL cambia a `#/vehicles`
+2. Recargar la página → vuelve a Vehículos automáticamente
+3. Compartir URL → otra pestaña abre directo en Vehículos
+4. Consola: `AltorraSections.go('crm')` → navega a CRM
+5. Consola: `AltorraSections.registry` → metadata de las 15 secciones
+6. Consola: `AltorraSections.onChange((s, prev) => console.log('changed:', prev, '→', s))` + click otra sección
+
 
 
 ---

@@ -319,8 +319,27 @@
 
     var _audioCtx = null;
     var _lastPlayed = 0;
+    var _userGestured = false;
     var THROTTLE_MS = 500;
     var VOLUME = 0.18;
+
+    // Track first user gesture — Chrome's autoplay policy blocks AudioContext
+    // until the user has interacted with the page. Without this gate, sounds
+    // requested at page load (e.g. welcome toast, SW_UPDATED) trigger
+    // "AudioContext was not allowed to start" warnings in console.
+    function _markGestured() {
+        if (_userGestured) return;
+        _userGestured = true;
+        // If a context was already created (suspended), resume it now that
+        // we have a valid gesture context.
+        if (_audioCtx && _audioCtx.state === 'suspended') {
+            try { _audioCtx.resume(); } catch (e) {}
+        }
+    }
+    var _gestureEvents = ['pointerdown', 'keydown', 'touchstart'];
+    _gestureEvents.forEach(function (evt) {
+        document.addEventListener(evt, _markGestured, { once: true, capture: true, passive: true });
+    });
 
     function prefersReducedMotion() {
         try {
@@ -330,6 +349,9 @@
 
     function getCtx() {
         if (_audioCtx) return _audioCtx;
+        // Don't create the AudioContext until user has interacted —
+        // prevents Chrome autoplay policy warnings on page load.
+        if (!_userGestured) return null;
         var Ctor = window.AudioContext || window.webkitAudioContext;
         if (!Ctor) return null;
         try {
@@ -349,11 +371,7 @@
     function playTone(freqStart, freqEnd, duration, oscType, startOffset) {
         var ctx = getCtx();
         if (!ctx) return;
-
-        // Resume context if suspended (browser autoplay policy)
-        if (ctx.state === 'suspended') {
-            try { ctx.resume(); } catch (e) {}
-        }
+        if (ctx.state !== 'running') return;
 
         var now = ctx.currentTime + (startOffset || 0) / 1000;
         var dur = duration / 1000;

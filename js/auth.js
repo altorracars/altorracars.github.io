@@ -1503,58 +1503,62 @@
 
     // ── One Tap (Google's modern auth UI for returning users) ─────
     // Shows a small card top-right of the page asking the user to
-    // continue with their Google account. Modern, fast, no popup.
+    // continue with their Google account. Powered by FedCM in Chrome 117+.
     //
-    // Strict opt-in conditions to avoid annoying users:
-    //   1. Only on homepage (/, /index.html) — not on every page
-    //   2. Only if NOT signed in (auth-hint != 'authenticated')
-    //   3. Only if GIS is configured AND loaded successfully
-    //   4. Only if user hasn't dismissed One Tap recently (GIS handles cooldown)
-    //   5. Skip if auth modal is currently open (don't compete)
-    //   6. Skip if user clicked "Iniciar sesión" recently (intent: explicit form)
-    //   7. Delay 1.5s after page load so it doesn't interrupt initial UX
+    // IMPORTANT: One Tap = FedCM. If the user has blocked FedCM for this
+    // site (Chrome settings or repeated dismissals), One Tap CANNOT work.
+    // Calling prompt() in that state generates console errors from Chrome
+    // and GIS. We avoid this by checking _isGisBlocked() first.
     function _maybeShowOneTap() {
-        // Condition 1: homepage only
         var path = window.location.pathname;
         var isHomepage = path === '/' || path === '/index.html' || path.endsWith('/altorracars.github.io/');
         if (!isHomepage) return;
 
-        // Condition 2: only for guests
-        var hint = null;
-        try { hint = localStorage.getItem('altorra_auth_hint'); } catch (e) {}
-        if (hint === 'authenticated') return;
+        try {
+            if (localStorage.getItem('altorra_auth_hint') === 'authenticated') return;
+        } catch (e) {}
 
-        // Condition 3: GIS must be configured
         if (!window.GIS_CONFIGURED) return;
 
-        // Wait for GIS to be ready, then trigger after delay
+        // If GIS/FedCM previously failed (watchdog fired), don't retry —
+        // it would just generate more console errors with no benefit.
+        if (_isGisBlocked()) return;
+
         var triggerOneTap = function () {
-            // Skip if auth modal is open (don't compete with explicit form)
             var modal = $id('auth-modal');
             if (modal && modal.classList.contains('active')) return;
-            // Re-check: GIS available
             if (!_shouldUseGis()) return;
 
             try {
                 _ensureGisInit(_onGisCredential);
                 window.google.accounts.id.prompt();
+
+                // Mini-watchdog: if FedCM silently fails (blocked by Chrome),
+                // the credential callback never fires. After 2.5s mark GIS as
+                // blocked so the explicit "Continuar con Google" button skips
+                // GIS entirely and opens the legacy popup instantly.
+                setTimeout(function () {
+                    try {
+                        if (localStorage.getItem('altorra_auth_hint') !== 'authenticated') {
+                            _markGisBlocked();
+                        }
+                    } catch (e) {}
+                }, 2500);
             } catch (e) {
-                console.info('[GIS] One Tap init failed:', e && e.message);
+                _markGisBlocked();
             }
         };
 
         if (_shouldUseGis()) {
-            // GIS already loaded — show after 1.5s delay
             setTimeout(triggerOneTap, 1500);
         } else if (window.GIS_CONFIGURED && !window._gisLoadFailed) {
-            // GIS still loading — wait for ready signal
             var prevReady = window._onGisReady;
             window._onGisReady = function () {
                 if (typeof prevReady === 'function') {
                     try { prevReady(); } catch (e) {}
                 }
                 window._onGisReady = null;
-                setTimeout(triggerOneTap, 800); // shorter delay if late-loaded
+                setTimeout(triggerOneTap, 800);
             };
         }
     }

@@ -294,7 +294,22 @@
                 // Remove expired devices while we're at it
                 var active = existing.filter(function(d) { return d.expiresAt > now; });
                 active.push(deviceEntry);
-                return window.db.collection('usuarios').doc(uid).update({ trustedDevices: active });
+                return window.db.collection('usuarios').doc(uid).update({ trustedDevices: active }).then(function() {
+                    // F3 — security event: new trusted device added
+                    if (window.notifyCenter && typeof window.notifyCenter.notify === 'function') {
+                        var loc_str = [device.browser, device.os].filter(Boolean).join(' • ');
+                        var place = [loc.city, loc.country].filter(Boolean).join(', ');
+                        try {
+                            window.notifyCenter.notify('security', {
+                                title: 'Nuevo dispositivo de confianza',
+                                message: loc_str + (place ? ' — ' + place : '') + '. Si no fuiste tu, revoca este dispositivo.',
+                                link: 'admin.html#seguridad',
+                                entityRef: 'trust:' + token,
+                                priority: 'critical'
+                            });
+                        } catch (e) {}
+                    }
+                });
             });
         });
     }

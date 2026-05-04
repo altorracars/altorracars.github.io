@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504210000'; // Phase G2 — per-category bell opt-out toggles in perfil
+const CACHE_VERSION = 'v20260504220000'; // Phase F3 — admin security event: trusted device added emits to bell
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

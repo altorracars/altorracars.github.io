@@ -3427,6 +3427,44 @@ Cero costo cuando esta enabled (default). Si el user opta out, `notifyCenter.not
 
 **Archivos modificados**: `js/perfil.js`, `js/toast.js`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase F3 — Admin: dispositivo de confianza nuevo ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: cuando un admin agrega un nuevo dispositivo de confianza (post-2FA, "Confiar en este dispositivo"), recibe una notificacion de seguridad **critical** con detalles. Si fue una accion legitima, es feedback util. Si no fue el admin (alguien comprometio la cuenta), es alarma temprana.
+
+**Implementacion** (`js/admin-auth.js` `saveDeviceTrust`):
+
+Despues de `update({ trustedDevices: active })`, emite:
+```js
+notifyCenter.notify('security', {
+    title: 'Nuevo dispositivo de confianza',
+    message: 'Chrome • Windows — Cartagena, Colombia. Si no fuiste tu, revoca este dispositivo.',
+    link: 'admin.html#seguridad',
+    entityRef: 'trust:' + token,
+    priority: 'critical'
+});
+```
+
+**Por que `priority: 'critical'`**:
+- Categoria `security` mapea a critical en CATEGORY_DEFAULTS
+- Toast NO autodismiss — requiere click del admin para descartarlo
+- Bell entry persiste hasta que la borra manualmente
+- No es muteable (G2 hardcoded `category === 'security' → return true`)
+
+**Datos incluidos**:
+- Browser y OS detectados de UA
+- Ciudad y pais resueltos via `fetchLocationInfo()` (geo por IP, anonimizada)
+- Click → `admin.html#seguridad` para revisar y revocar si fue accion no autorizada
+
+**Eventos NO incluidos en F3** (deferidos por complejidad):
+- Auto-unblock (admin no esta logueado al momento del unblock)
+- Cambio de rol (requiere onSnapshot en `usuarios/{uid}` desde el cliente)
+- Cambio de password (Firebase Auth no expone evento client-side)
+- Acceso desde IP nueva sin trust (requiere tracking de IPs vistas)
+
+Estos pueden agregarse incrementalmente. El patron esta probado.
+
+**Archivos modificados**: `js/admin-auth.js`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

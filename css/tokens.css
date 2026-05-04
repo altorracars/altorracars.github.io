@@ -315,6 +315,24 @@
 }
 
 /* ───────────────────────────────────────────────────────────────
+   THEME TRANSITION (T.4) — smooth cross-fade between themes
+   The .alt-theme-transitioning class is added briefly when switching;
+   during it, applicable CSS properties animate smoothly instead of
+   snapping. Disabled in reduced-motion.
+   ─────────────────────────────────────────────────────────────── */
+html.alt-theme-transitioning,
+html.alt-theme-transitioning *,
+html.alt-theme-transitioning *::before,
+html.alt-theme-transitioning *::after {
+    transition: background-color var(--duration-normal) var(--ease-snap),
+                color var(--duration-normal) var(--ease-snap),
+                border-color var(--duration-normal) var(--ease-snap),
+                box-shadow var(--duration-normal) var(--ease-snap),
+                fill var(--duration-normal) var(--ease-snap),
+                stroke var(--duration-normal) var(--ease-snap) !important;
+}
+
+/* ───────────────────────────────────────────────────────────────
    REDUCED-MOTION OVERRIDE
    Anyone setting prefers-reduced-motion: reduce gets near-instant
    transitions across the platform. Component CSS should use these

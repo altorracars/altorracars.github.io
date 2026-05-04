@@ -718,6 +718,29 @@ textarea.alt-input {
 .alt-cluster--between { justify-content: space-between; }
 
 /* ═══════════════════════════════════════════════════════════
+   THEME TOGGLE icon swap (T.4)
+   Show moon when in light mode, sun when in dark/contrast mode
+   ═══════════════════════════════════════════════════════════ */
+[data-altorra-theme-toggle] .theme-icon-dark,
+[data-altorra-theme-toggle] .theme-icon-light {
+    transition: opacity var(--duration-normal) var(--ease-snap),
+                transform var(--duration-normal) var(--ease-spring);
+    position: absolute;
+}
+[data-current-theme="light"] .theme-icon-dark,
+[data-current-theme="dark"] .theme-icon-light,
+[data-current-theme="high-contrast"] .theme-icon-light {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0);
+}
+[data-current-theme="dark"] .theme-icon-dark,
+[data-current-theme="light"] .theme-icon-light,
+[data-current-theme="high-contrast"] .theme-icon-dark {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+}
+
+/* ═══════════════════════════════════════════════════════════
    UTILITY: visually hidden but accessible to screen readers
    ═══════════════════════════════════════════════════════════ */
 .alt-visually-hidden {

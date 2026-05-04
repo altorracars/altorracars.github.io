@@ -1123,6 +1123,10 @@
                 AP.currentUserProfile = result.data;
                 AP.currentUserProfile._docId = authUser.uid;
                 AP.currentUserRole = AP.currentUserProfile.rol;
+                // T.4 (mega-plan v4) — sync theme preference from Firestore
+                if (window.AltorraTheme && window.AltorraTheme.syncFromUser) {
+                    window.AltorraTheme.syncFromUser(AP.currentUserProfile);
+                }
 
                 // Check if user is blocked (both usuarios doc AND loginAttempts collection)
                 var userEmail = AP.currentUserProfile.email || authUser.email;

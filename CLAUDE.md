@@ -4140,6 +4140,57 @@ SEMANA 12: P + buffer + QA + estabilización
 5. Verificar focus rings con Tab key → todos los elementos focusables muestran el ring dorado
 6. DevTools → Rendering → activar "prefers-reduced-motion" → verificar que las animaciones se vuelven instantáneas
 
+---
+
+### Microfase T.4 — Light/Dark/High-Contrast theme toggle real ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: el admin estaba 100% dark fijo. Sin opción de tema claro para entornos con sol fuerte (Cartagena), sin alta-contraste para WCAG. T.4 agrega switch real con 3 capas de persistencia.
+
+**Cómo funciona**:
+
+1. **Inline script en `<head>`** (3 líneas en admin.html): lee `localStorage.altorra-theme` ANTES del primer paint y aplica `data-theme` al `<html>`. Cero flash de tema incorrecto. Si no hay preferencia, fallback a `prefers-color-scheme` del SO.
+
+2. **`js/theme-switcher.js`**: módulo `AltorraTheme` con API:
+   - `get()` — tema actual
+   - `set(theme)` — aplica + persiste localStorage + Firestore (debounced 800ms)
+   - `cycle()` — alterna dark ↔ light (skippea high-contrast, ése es toggle aparte en T.8)
+   - `bindToggle(el)` — agrega click handler + actualiza aria-label/tooltip
+   - `onChange(fn)` — subscribe
+   - `syncFromUser(profile)` — aplica desde Firestore profile
+
+3. **CSS theme transition**: nueva clase `.alt-theme-transitioning` agregada por 280ms al cambiar tema. Anima `background-color`, `color`, `border-color`, `box-shadow`, `fill`, `stroke` simultáneamente con `--ease-snap`. Cross-fade suave en TODA la página.
+
+4. **3 capas de persistencia**:
+   - **localStorage** (instant) — aplicado antes del paint
+   - **Firestore** (`usuarios/{uid}.theme` para admins, `clientes/{uid}.preferencias.theme` para clientes) — sync cross-device
+   - **System preference** (`prefers-color-scheme`) — fallback solo si no hay otra preferencia
+
+5. **Toggle UI** en admin header: reemplaza el toggle viejo (emoji 🌙) con `<button class="alt-btn alt-btn--ghost alt-btn--icon" data-altorra-theme-toggle>` con dos íconos Lucide (moon + sun) que rotan/escalan al cambiar via CSS spring transition.
+
+6. **Auto-bind**: cualquier elemento con atributo `data-altorra-theme-toggle` se bindea automáticamente al cargar.
+
+7. **System change listener**: si el OS cambia entre dark/light Y el usuario no tiene preferencia explícita guardada, sigue al sistema.
+
+**Diseño (D)**:
+- Cross-fade suave entre temas (no salto brusco)
+- Iconos sun/moon con rotación 90° + scale 0→1 al cambiar (spring)
+- aria-label dinámico ("Cambiar a claro" / "Cambiar a oscuro")
+- Tooltip via `data-tooltip` (T.2)
+
+**Migración (M)**:
+- Toggle viejo en admin header (emoji + clase `theme-toggle`) reemplazado por componente `.alt-btn`
+- Lógica de tema vieja se reemplaza por `AltorraTheme`
+- Storage key `altorra-theme` (nueva). Si había preferencia vieja con otra key, se ignora (queda en dark default + el usuario puede re-seleccionar).
+
+**Archivos**: `js/theme-switcher.js` (new), `admin.html` (inline script + script tag + toggle markup), `css/tokens.css` (transition rule), `css/components.css` (icon swap), `js/admin-auth.js` (sync hook).
+
+**Pasos para probar**:
+1. Login admin → click el toggle del header → ver cross-fade smooth a light mode
+2. Recargar la página → tema light persiste sin flash de dark
+3. Logout, login en otra ventana/dispositivo (con misma cuenta) → tema light cargado de Firestore
+4. DevTools → cambiar OS theme con `prefers-color-scheme` simulation → si nunca tocaste el toggle, sigue al SO
+5. `<html data-theme="high-contrast">` en consola → A11y mode activa (T.8 lo refinará)
+
 
 
 ---

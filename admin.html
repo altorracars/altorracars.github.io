@@ -15,6 +15,9 @@
     <link rel="dns-prefetch" href="https://firestore.googleapis.com">
     <link rel="icon" type="image/png" href="/multimedia/logo-placeholder.png">
     <link rel="apple-touch-icon" href="/multimedia/logo-placeholder.png">
+    <!-- T.4 (mega-plan v4) — Apply theme BEFORE first paint to prevent flash -->
+    <script>(function(){try{var t=localStorage.getItem('altorra-theme');if(t&&['dark','light','high-contrast'].indexOf(t)!==-1){document.documentElement.setAttribute('data-theme',t);return;}if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches){document.documentElement.setAttribute('data-theme','light');return;}document.documentElement.setAttribute('data-theme','dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+
     <!-- T.1 (mega-plan v4) — Design tokens MUST load before any other CSS -->
     <link rel="stylesheet" href="css/tokens.css">
     <!-- T.2 (mega-plan v4) — Component library built on tokens -->
@@ -270,8 +273,10 @@
                     </div>
                     <!-- Notification Center bell (Phase N3) — mounted by toast.js -->
                     <div id="headerNotifBell" class="hdr-notif-bell-slot"></div>
-                    <button class="theme-toggle" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema">
-                        <span id="themeIcon">🌙</span>
+                    <!-- T.4 (mega-plan v4) — theme toggle via AltorraTheme -->
+                    <button class="alt-btn alt-btn--ghost alt-btn--icon" id="themeToggle" data-altorra-theme-toggle data-tooltip="Cambiar tema">
+                        <i data-lucide="moon" class="theme-icon-dark"></i>
+                        <i data-lucide="sun" class="theme-icon-light"></i>
                     </button>
                 </div>
             </div>
@@ -2130,6 +2135,7 @@
 <script src="js/firebase-config.js" defer></script>
 <script src="js/dynamic-lists.js" defer></script>
 <script src="js/comm-schema.js" defer></script>
+<script src="js/theme-switcher.js" defer></script>
 <script src="js/admin-state.js" defer></script>
 <script src="js/admin-table-utils.js" defer></script>
 <script src="js/admin-auth.js" defer></script>

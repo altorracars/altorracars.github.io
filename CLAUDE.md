@@ -3261,6 +3261,65 @@ Resto (price drop <5%, price increase, otros status changes) → solo el badge v
 
 **Archivos modificados**: `js/historial-visitas.js`, `css/historial-visitas.css`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase D — Listener realtime de solicitudes/citas ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: cuando un admin cambia el estado de una solicitud o cita del usuario (pendiente → contactado, confirmada, rechazada, etc.), el cliente recibe la notificacion **en tiempo real** mientras esta en el sitio + entrada persistente en el bell.
+
+**Arquitectura**: nuevo modulo `js/solicitudes-watcher.js` (singleton `window.AltorraSolWatcher`) cargado lazy desde `components.js` despues de auth.js.
+
+**Listener**:
+```js
+db.collection('solicitudes')
+  .where('email', '==', user.email)
+  .onSnapshot(processSnapshot, errCallback)
+```
+
+Solo para usuarios registrados con email. Anonimos skip silencioso.
+
+**Estado y baseline**:
+- Storage: `localStorage.altorra_sol_baseline_<uid>` = `{solicitudId: {estado, observacionesHash, requiereCita}}`
+- `observacionesHash` es un hash corto del campo `observaciones` para detectar cambios sin guardar el texto completo
+- Primera carga: si NO hay baseline en localStorage → primera snapshot solo establece baseline (no emite). Si SI hay baseline (returning user) → primera snapshot diff contra el saved → emite cambios que ocurrieron mientras el usuario estaba offline
+
+**Detecciones**:
+- `prev.estado !== snap.estado` → emite `request_update` o `appointment_update` (segun `requiereCita`)
+- `prev.observacionesHash !== snap.observacionesHash` con misma `estado` → "Tienes una respuesta del admin" (snippet del primer 140 chars)
+
+**Diferenciacion solicitud vs cita** (`requiereCita: true`):
+- Solicitud: `category: 'request_update'`, link `perfil.html#mis-solicitudes`, mensajes "Un asesor recibio tu solicitud", "Solicitud completada"
+- Cita: `category: 'appointment_update'`, link `perfil.html#mis-citas`, mensajes "Te esperamos en la fecha acordada", "Se cambio la fecha"
+
+**Anti-patrones evitados**:
+
+| Riesgo | Mitigacion |
+|---|---|
+| Initial snapshot inunda bell con N entradas | `firstSnapshot` flag: solo baseline en primera pasada (sin baseline previa) |
+| Listener corre 24/7 → costo Firestore | `visibilitychange`: pause cuando `document.hidden`, resume on visible |
+| Permission-denied al hacer logout cross-tab | Error callback chequea `auth.currentUser`, suprime errores esperados |
+| Race con cambios de auth state | uid guard rechaza callbacks tardios + `stop()` antes de re-`start()` |
+| Anonymous usuarios persisten baseline ajeno | `start()` retorna false si `user.isAnonymous` o sin email |
+| Doc creado mientras user offline emite "creado" | Lo skip — el email del admin (Cloud Function `onNewSolicitud`) ya cubre eso |
+| Multiples tabs abiertas duplican notificaciones | Dedup heredado de A2 (entityRef = `solicitud:<id>`) actua entre tabs (mismo localStorage del bell) |
+
+**Wire en `auth.js`**:
+- En `onAuthStateChanged(user)`: `AltorraSolWatcher.start(user)` para registrados, `stop()` para anonimos
+- En `_processNullState()`: `stop()` antes de signOut path
+
+**Wire en `components.js`**:
+- `loadAuthSystem()` agrega `<script src="js/solicitudes-watcher.js" defer>` despues de `auth.js`
+- Carga lazy: solo paginas que cargan auth lo cargan
+
+**Verificacion E2E**:
+1. Cliente envia solicitud (estado=pendiente)
+2. Admin desde panel cambia estado a "contactado"
+3. Cliente: toast info "Tu solicitud esta recibida por un asesor — Chevrolet Equinox 2018 — Un asesor recibio tu solicitud y te contactara pronto." + entry en bell con badge "Solicitud"
+4. Admin agrega `observaciones: "Te llamare manana 10am"`
+5. Cliente: nuevo toast "Tienes una respuesta en tu solicitud — Te llamare manana 10am" + nueva entry en bell
+6. Click → cierra panel + navega a `perfil.html#mis-solicitudes`
+
+**Archivos creados**: `js/solicitudes-watcher.js`
+**Archivos modificados**: `js/auth.js`, `js/components.js`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

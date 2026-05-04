@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504180000'; // Phase E1+E2+E3 — recently viewed snapshot + badges + significant-change bell entries
+const CACHE_VERSION = 'v20260504190000'; // Pillar D — realtime solicitudes/citas listener emits request_update + appointment_update
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

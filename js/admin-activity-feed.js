@@ -29,6 +29,7 @@
     var _firestoreUnsub = null;
     var _busUnsub = null;
     var _isOpen = false;
+    var _expandedId = null; // I.5 — id of currently expanded inspector
 
     /* ═══════════════════════════════════════════════════════════
        Entry rendering
@@ -121,25 +122,70 @@
         return { domain: domain, action: humanized, detail: detail, diff: diff };
     }
 
+    // I.5 — pretty-print event payload as JSON for the inspector
+    function safeJSON(value) {
+        try {
+            return JSON.stringify(value, function (k, v) {
+                if (v && typeof v === 'object' && v.toMillis) return new Date(v.toMillis()).toISOString();
+                return v;
+            }, 2);
+        } catch (e) { return String(value); }
+    }
+
     function renderEntry(event) {
         var meta = metaFor(event.type);
         var human = humanizeAction(event.type, event.payload);
         var when = timeAgo(event.timestamp);
+        var isReplay = event.payload && event.payload.__replay === true;
+        var isExpanded = _expandedId === event.id;
+        var canDebug = AP && AP.isSuperAdmin && AP.isSuperAdmin();
 
-        return '<div class="aaf-entry" data-event-id="' + escTxt(event.id) + '" data-type="' + escTxt(event.type) + '" data-color="' + escTxt(meta.color) + '">' +
-            '<div class="aaf-entry-icon"><i data-lucide="' + escTxt(meta.icon) + '"></i></div>' +
-            '<div class="aaf-entry-body">' +
-                '<div class="aaf-entry-title">' +
-                    '<span class="aaf-entry-domain">' + escTxt(human.domain) + '</span>' +
-                    '<span class="aaf-entry-action">' + escTxt(human.action) + '</span>' +
-                '</div>' +
-                (human.detail ? '<div class="aaf-entry-detail">' + escTxt(human.detail) + '</div>' : '') +
-                (human.diff ? '<div class="aaf-entry-diff">' + escTxt(human.diff) + '</div>' : '') +
-                '<div class="aaf-entry-meta">' +
-                    '<span>' + escTxt(when) + '</span>' +
-                    (event.bySource ? '<span> · ' + escTxt(event.bySource) + '</span>' : '') +
+        var inspector = '';
+        if (isExpanded) {
+            inspector =
+                '<div class="aaf-inspector">' +
+                    '<div class="aaf-inspector-meta">' +
+                        '<span><b>id:</b> ' + escTxt(event.id) + '</span>' +
+                        '<span><b>type:</b> ' + escTxt(event.type) + '</span>' +
+                        '<span><b>by:</b> ' + escTxt(event.by || '—') + '</span>' +
+                        '<span><b>source:</b> ' + escTxt(event.bySource || '—') + '</span>' +
+                    '</div>' +
+                    '<pre class="aaf-inspector-json">' + escTxt(safeJSON(event.payload)) + '</pre>' +
+                    (canDebug ? (
+                        '<div class="aaf-inspector-actions">' +
+                            '<button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="replay" data-event-id="' + escTxt(event.id) + '">' +
+                                '<i data-lucide="rotate-cw"></i> Replay local' +
+                            '</button>' +
+                            '<button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="copy" data-event-id="' + escTxt(event.id) + '">' +
+                                '<i data-lucide="copy"></i> Copiar JSON' +
+                            '</button>' +
+                            '<button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="filter-type" data-type="' + escTxt(event.type) + '">' +
+                                '<i data-lucide="funnel"></i> Filtrar tipo' +
+                            '</button>' +
+                        '</div>'
+                    ) : '') +
+                '</div>';
+        }
+
+        return '<div class="aaf-entry' + (isReplay ? ' aaf-entry--replay' : '') + (isExpanded ? ' aaf-entry--expanded' : '') +
+                '" data-event-id="' + escTxt(event.id) + '" data-type="' + escTxt(event.type) + '" data-color="' + escTxt(meta.color) + '">' +
+            '<div class="aaf-entry-row" data-action="toggle-inspect" data-event-id="' + escTxt(event.id) + '">' +
+                '<div class="aaf-entry-icon"><i data-lucide="' + escTxt(meta.icon) + '"></i></div>' +
+                '<div class="aaf-entry-body">' +
+                    '<div class="aaf-entry-title">' +
+                        '<span class="aaf-entry-domain">' + escTxt(human.domain) + '</span>' +
+                        '<span class="aaf-entry-action">' + escTxt(human.action) + '</span>' +
+                        (isReplay ? '<span class="aaf-replay-badge">REPLAY</span>' : '') +
+                    '</div>' +
+                    (human.detail ? '<div class="aaf-entry-detail">' + escTxt(human.detail) + '</div>' : '') +
+                    (human.diff ? '<div class="aaf-entry-diff">' + escTxt(human.diff) + '</div>' : '') +
+                    '<div class="aaf-entry-meta">' +
+                        '<span>' + escTxt(when) + '</span>' +
+                        (event.bySource ? '<span> · ' + escTxt(event.bySource) + '</span>' : '') +
+                    '</div>' +
                 '</div>' +
             '</div>' +
+            inspector +
         '</div>';
     }
 
@@ -279,6 +325,9 @@
                         '<option value="workflow">Workflows</option>' +
                         '<option value="concierge">Concierge</option>' +
                     '</select>' +
+                    '<button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="export" data-tooltip="Exportar JSON">' +
+                        '<i data-lucide="download"></i>' +
+                    '</button>' +
                     '<button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="clear" data-tooltip="Limpiar feed local">' +
                         '<i data-lucide="trash-2"></i>' +
                     '</button>' +
@@ -295,10 +344,55 @@
 
         // Wire panel events
         panel.addEventListener('click', function (e) {
-            if (e.target.closest('[data-action="close"]')) close();
-            else if (e.target.closest('[data-action="clear"]')) {
-                _entries = [];
+            var closeEl = e.target.closest('[data-action="close"]');
+            if (closeEl) { close(); return; }
+
+            var clearEl = e.target.closest('[data-action="clear"]');
+            if (clearEl) { _entries = []; _expandedId = null; renderList(); return; }
+
+            var exportEl = e.target.closest('[data-action="export"]');
+            if (exportEl) { exportEvents(); return; }
+
+            // I.5 — toggle inspector (click row)
+            var toggleEl = e.target.closest('[data-action="toggle-inspect"]');
+            if (toggleEl) {
+                var id = toggleEl.getAttribute('data-event-id');
+                _expandedId = (_expandedId === id) ? null : id;
                 renderList();
+                return;
+            }
+
+            // I.5 — replay locally (re-emit with __replay=true)
+            var replayEl = e.target.closest('[data-action="replay"]');
+            if (replayEl) {
+                e.stopPropagation();
+                replayLocal(replayEl.getAttribute('data-event-id'));
+                return;
+            }
+
+            // I.5 — copy JSON to clipboard
+            var copyEl = e.target.closest('[data-action="copy"]');
+            if (copyEl) {
+                e.stopPropagation();
+                copyEventJSON(copyEl.getAttribute('data-event-id'));
+                return;
+            }
+
+            // I.5 — quick filter by type
+            var filterTypeEl = e.target.closest('[data-action="filter-type"]');
+            if (filterTypeEl) {
+                e.stopPropagation();
+                var t = filterTypeEl.getAttribute('data-type');
+                var domain = (t || '').split('.')[0];
+                var sel = document.getElementById('aaf-filter');
+                if (sel) {
+                    var hasOpt = false;
+                    for (var i = 0; i < sel.options.length; i++) {
+                        if (sel.options[i].value === domain) { hasOpt = true; break; }
+                    }
+                    if (hasOpt) { sel.value = domain; renderList(); }
+                }
+                return;
             }
         });
         panel.addEventListener('change', function (e) {
@@ -353,6 +447,74 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       I.5 — Replay + debugging
+       ═══════════════════════════════════════════════════════════ */
+    function replayLocal(eventId) {
+        if (!eventId) return false;
+        var src = _entries.find(function (e) { return e.id === eventId; });
+        if (!src) return false;
+        if (!window.AltorraEventBus) return false;
+        // Clone payload and tag as replay so subscribers can ignore if they want
+        var clonedPayload = JSON.parse(JSON.stringify(src.payload || {}));
+        clonedPayload.__replay = true;
+        clonedPayload.__replayOf = src.id;
+        window.AltorraEventBus.emit(src.type, clonedPayload, {
+            bySource: 'system',
+            persist: false  // never persist replays
+        });
+        // Brief flash on the source row
+        try {
+            var srcEl = document.querySelector('.aaf-entry[data-event-id="' + CSS.escape(eventId) + '"]');
+            if (srcEl) {
+                srcEl.classList.add('aaf-entry--flash');
+                setTimeout(function () { srcEl.classList.remove('aaf-entry--flash'); }, 600);
+            }
+        } catch (e) {}
+        if (window.notify) window.notify.success('Evento re-emitido localmente');
+        return true;
+    }
+
+    function copyEventJSON(eventId) {
+        var src = _entries.find(function (e) { return e.id === eventId; });
+        if (!src) return false;
+        var json = safeJSON(src);
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(json).then(function () {
+                    if (window.notify) window.notify.success('JSON copiado al portapapeles');
+                }, function () {
+                    if (window.notify) window.notify.error('No se pudo copiar al portapapeles');
+                });
+            } else {
+                // Fallback for older browsers
+                var ta = document.createElement('textarea');
+                ta.value = json;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (window.notify) window.notify.success('JSON copiado');
+            }
+        } catch (e) {}
+        return true;
+    }
+
+    function exportEvents() {
+        var blob = new Blob([safeJSON(_entries)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'altorra-events-' + Date.now() + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        return true;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        Subscribe to bus on init
        ═══════════════════════════════════════════════════════════ */
     function init() {
@@ -393,6 +555,11 @@
     window.AltorraActivityFeed = {
         open: open,
         close: close,
-        toggle: toggle
+        toggle: toggle,
+        // I.5 — debugging tools
+        replay: replayLocal,
+        copy: copyEventJSON,
+        export: exportEvents,
+        entries: function () { return _entries.slice(); }
     };
 })();

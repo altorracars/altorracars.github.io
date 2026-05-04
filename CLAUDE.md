@@ -4971,6 +4971,144 @@ no. Bloque K cuando agregue triggers automáticos pasará explícitamente
 - `css/admin.css` — `.aaf-entry-diff` styles (gold-tinted monospace block)
 - `service-worker.js` + `js/cache-manager.js` — version bump v20260505160000
 
+### Microfase I.5 — Replay + debugging para super_admin ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: cierre de Bloque I. El feed muestra eventos en tiempo
+real (I.2), los emite con diff (I.3 + I.4), y ahora I.5 le da al
+super_admin las herramientas para inspeccionar, replayar y exportar
+sin tocar la consola del browser.
+
+**Click-to-inspect**:
+
+Cada entry en el feed es ahora clickable. Click en la fila →
+inspector se expande in-place mostrando:
+- **Metadata bar**: `id`, `type`, `by` (uid emitter), `bySource`
+- **JSON pretty-printed** del payload completo (max-height 280px,
+  scroll vertical, monospace)
+- **Acciones** (solo super_admin):
+  - **Replay local** (`rotate-cw`) — re-emite el evento con
+    `payload.__replay = true` y `payload.__replayOf = <originalId>`,
+    `bySource: 'system'`, `persist: false`. Útil para probar
+    listeners (workflows futuros del Bloque K, Activity Feed mismo)
+    sin crear data real
+  - **Copiar JSON** (`copy`) — copia el evento entero al clipboard
+    via `navigator.clipboard.writeText` con fallback a `textarea`
+    + `execCommand('copy')` para browsers viejos
+  - **Filtrar tipo** (`funnel`) — selecciona el dominio del evento
+    en el filtro del toolbar (e.g. click en un `vehicle.updated` →
+    filtro pasa a "Vehículos")
+
+Click en la misma fila colapsa el inspector. Solo un inspector abierto
+a la vez (`_expandedId` simple, no array) para mantener la UI limpia.
+
+**Replay UX**:
+
+Cuando el super_admin hace replay:
+1. Nuevo evento entra al feed con badge dorado `REPLAY` al lado del
+   action name
+2. La entry original recibe un flash dorado de 600ms (animation
+   `aafFlash`) para visualizar la conexión entre original y replay
+3. Toast de confirmación: "Evento re-emitido localmente"
+4. El replay tiene `bySource: 'system'` para distinguirse de eventos
+   reales (admin) en el filtro
+
+**Convención `__replay` / `__replayOf`**: prefijo `__` indica metadata
+de debugging que no debe persistirse ni mostrarse al cliente. Los
+listeners pueden ignorar replays con:
+```js
+AltorraEventBus.on('vehicle.updated', function (e) {
+    if (e.payload.__replay) return; // skip debug replays
+    // … actual logic …
+});
+```
+
+**Export JSON**:
+
+Botón `download` en el toolbar exporta los `_entries` actuales como
+`altorra-events-<timestamp>.json` (Blob URL + `<a download>` trick).
+Útil para:
+- Reportar bugs incluyendo el feed completo del momento
+- Análisis offline de patrones de uso
+- Snapshot del estado para replay en sesiones futuras (cuando
+  Bloque K agregue importer)
+
+**Public API extendida**:
+
+```js
+window.AltorraActivityFeed = {
+    open(), close(), toggle(),       // de I.2
+    replay(eventId),                  // I.5 — replay programático
+    copy(eventId),                    // I.5 — copy JSON programático
+    export(),                         // I.5 — descargar todo
+    entries()                         // I.5 — snapshot inmutable
+};
+```
+
+Permite que la consola del navegador se use como herramienta de
+debugging avanzada:
+```js
+// En consola, encontrar último evento de un tipo
+AltorraActivityFeed.entries().reverse().find(e => e.type === 'comm.estado-changed')
+
+// Replayarlo
+AltorraActivityFeed.replay('evt_abc123')
+
+// Exportar para compartir
+AltorraActivityFeed.export()
+```
+
+**CSS nuevo** (`css/admin.css`):
+- `.aaf-entry-row` — el header clickable con hover state dorado tenue
+- `.aaf-entry--expanded > .aaf-entry-row` — fondo más marcado cuando expandido
+- `.aaf-entry--replay` — borde lateral dorado para distinguir replays
+- `.aaf-replay-badge` — pill dorada uppercase 0.62rem
+- `.aaf-inspector` — contenedor oscuro con metadata bar + JSON box + actions
+- `.aaf-inspector-json` — `<pre>` monospace 0.7rem max-height 280px scroll
+- `@keyframes aafFlash` — pulse dorado 600ms ease-out (respeta
+  `prefers-reduced-motion`)
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Click en botón de acción dentro del inspector colapsa el inspector | `e.stopPropagation()` en cada handler de acción |
+| Replay persiste en Firestore (loop infinito si el listener llega y vuelve a emitir) | Hardcoded `persist: false` en replayLocal |
+| Replay del replay del replay (encadenado) | `__replayOf` apunta SIEMPRE al original (no al replay anterior); UI no muestra "replay button" en cards que ya son replay (no es necesario, el replay es local solamente) |
+| Listeners de workflows real-data se confunden con replays | Documentado el patrón `if (payload.__replay) return;` para opt-out |
+| `CSS.escape` no soportado en navegadores muy viejos | `try/catch` envolvente; el flash es cosmético, falla silente está OK |
+| Inspector enorme cuando payload es grande | `max-height: 280px; overflow: auto` |
+| Botones visibles a editor/viewer (no necesitan replay) | Render condicional `if (canDebug)` chequea `AP.isSuperAdmin()` |
+| Click en inspector text scrollable colapsa el panel | `aaf-inspector-json` no tiene `data-action`, solo el header row sí |
+
+**Pasos de prueba**:
+1. Login como super_admin → abrir Activity Feed (icono campana grande)
+2. Hacer cualquier acción que emita evento (cambiar sección, editar
+   vehículo)
+3. Click en la entry → se expande mostrando JSON
+4. Click "Replay local" → aparece nueva entry idéntica con badge
+   "REPLAY", la original parpadea dorado, llega toast
+5. Click "Copiar JSON" → toast "JSON copiado", pegar en cualquier
+   editor confirma
+6. Click "Filtrar tipo" → filtro del toolbar cambia al dominio
+7. Click "Exportar JSON" en toolbar → descarga
+   `altorra-events-<ts>.json`
+8. Login como editor → click en entry expande JSON pero NO muestra
+   botones de acción (replay/copy/filter)
+
+**Archivos modificados**:
+- `js/admin-activity-feed.js` — `_expandedId` state, render inspector,
+  `replayLocal()`, `copyEventJSON()`, `exportEvents()`, public API
+  extendida con `replay`/`copy`/`export`/`entries`
+- `css/admin.css` — bloque completo I.5 (inspector + replay badge +
+  flash animation, ~95 líneas)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505170000
+
+**Cierre Bloque I**: con I.1-I.5 completos, el sistema tiene un bus
+de eventos completamente funcional, persistencia opt-in, feed
+realtime con filtros, diff de transiciones renderizado, e
+inspección/replay para debugging. Listo para que Bloque K (Workflows)
+lo consuma como motor de triggers.
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

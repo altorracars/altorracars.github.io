@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505050000'; // T.5 (mega-plan v4) — Animation system (keyframes + utility classes + stagger + view-transitions)
+const CACHE_VERSION = 'v20260505060000'; // T.7 (mega-plan v4) — Icon registry + AltorraIcons helper + auto-refresh observer
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

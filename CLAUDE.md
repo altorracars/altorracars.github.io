@@ -4245,6 +4245,50 @@ SEMANA 12: P + buffer + QA + estabilización
 3. `<i data-lucide="loader-2" class="alt-animate-spin"></i>` en cualquier lugar → spinner
 4. DevTools → activar prefers-reduced-motion → todas las animaciones se vuelven instantáneas
 
+---
+
+### Microfase T.7 — Icon registry + AltorraIcons helper ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: el codebase usa Lucide en algunos lugares, SVG inline en otros, emojis en algunos más. T.7 crea un registry semántico + helper para asegurar consistencia + auto-refresh cuando se inyecta HTML dinámicamente.
+
+**Lo que se creó** (`js/icons.js`):
+
+1. **Glossary semántico** `AltorraIcons.canonical`: mapea conceptos (intent) a nombres de Lucide. Ejemplos:
+   - `home`, `dashboard`, `inventory`, `crm`, `inbox`, `calendar`, `automation`, `templates`, `reports`, `settings`
+   - Comm kinds: `cita: 'calendar-check-2'`, `solicitud: 'file-text'`, `lead: 'message-circle'`
+   - Acciones: `add`, `edit`, `delete`, `save`, `download`, `send`, `search`, `filter`, etc.
+   - Estados: `success`, `error`, `warning`, `info`, `loading`, `pending`, `priority`, `viewed`
+   - Canales: `whatsapp` (`message-circle-more` — brand-neutral), `email`, `phone`, `chat`, `bot`
+   - Money: `price`, `finance`, `quote`, `priceDrop`, `priceUp`, `wallet`
+   - CRM: `score`, `target`, `funnel`, `graph`, `kanban`, `timeline`
+   - AI: `ai: 'sparkles'`, `magic`, `suggest`, `voice`, `live`
+   - Theme: `themeDark: 'moon'`, `themeLight: 'sun'`, `contrast`
+
+   **Política**: cuando agregás un icon nuevo, primero lo añadís al glossary. Después usás `<i data-lucide="' + AltorraIcons.canonical.X + '">` en componentes — nunca hardcodear nombres Lucide directos.
+
+2. **`refresh(scope)`**: re-renderiza Lucide en todo o en un scope dado. Ya existe `AP.refreshIcons()` legacy — ahora hay versión sin dependencia de AP.
+
+3. **`ensure()`**: Promise que carga Lucide CDN si no está. Útil para páginas públicas que aún no lo cargan.
+
+4. **`svg(name, attrs)`**: helper que retorna SVG string para `check`, `x`, `send` hardcoded. Útil cuando hay que inyectar SVG en string de HTML antes de que Lucide cargue.
+
+5. **MutationObserver auto-refresh**: nuevos elementos con `[data-lucide]` agregados al DOM disparan `refresh()` debounced 50ms. Cero código manual de `lucide.createIcons()` en componentes que inyectan HTML dinámicamente.
+
+**Diseño (D)**:
+- Glossary categorizado por dominio (Navigation / Actions / States / Channels / Money / CRM / AI / Theme)
+- Naming consistente camelCase para keys
+- Brand-neutral: WhatsApp icon es `message-circle-more` (no el logo verde) — alineado con nuestra política de no atar formularios a un canal específico
+
+**Migración (M)**: ningún cambio destructivo. `data-lucide="X"` directo sigue funcionando. Los componentes existentes pueden migrar a usar `AltorraIcons.canonical` gradualmente.
+
+**Archivos**: `js/icons.js` (new), `admin.html` (script tag), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Consola admin: `AltorraIcons.canonical` → ver el glossary completo
+2. Inyectar `<i data-lucide="' + AltorraIcons.canonical.crm + '"></i>` → renderiza users-round
+3. Crear un elemento con `<i data-lucide="bot"></i>` y appendChild al body → MutationObserver auto-refresca, no hay que llamar nada
+4. `AltorraIcons.svg('check')` → string SVG listo para innerHTML
+
 
 
 ---

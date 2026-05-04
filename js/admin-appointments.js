@@ -153,6 +153,26 @@
 
             // Pillar F1+F2 — detect newly created pending docs and notify admin
             try { detectAdminNewSolicitudes(snap); } catch (e) {}
+
+            // MF3.4 — auto-routing: assign new unassigned docs based on rules
+            try {
+                if (AP.isSuperAdmin && AP.isSuperAdmin()) {
+                    snap.docChanges().forEach(function (chg) {
+                        if (chg.type !== 'added') return;
+                        var d = chg.doc.data();
+                        if (d.assignedTo) return;
+                        if (d.estado !== 'pendiente' && d.estado !== 'nuevo') return;
+                        var routed = applyAutoRouting(Object.assign({ _docId: chg.doc.id }, d));
+                        if (routed) {
+                            window.db.collection('solicitudes').doc(chg.doc.id).update({
+                                assignedTo: routed.uid,
+                                assignedToName: routed.nombre || routed.email,
+                                assignedAt: new Date().toISOString()
+                            }).catch(function () {});
+                        }
+                    });
+                }
+            } catch (e) {}
         }, function(err) {
             // Cross-tab signOut: auth goes null before stopRealtimeSync runs — expected, not an error
             if (!window.auth || !window.auth.currentUser) return;
@@ -544,6 +564,7 @@
                 '<td>' + AP.escapeHtml(a.vehiculo || '-') + '</td>' +
                 '<td>' + (a.fecha ? '<div>' + AP.escapeHtml(a.fecha) + '</div><div style="font-weight:600;">' + AP.escapeHtml(a.hora || '-') + '</div>' : '<span style="color:var(--admin-text-muted);font-size:0.8rem;">N/A</span>') + '</td>' +
                 '<td>' + slaDot + '<span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLbl + '</span></td>' +
+                '<td style="font-size:0.78rem;color:var(--admin-text-muted);">' + AP.escapeHtml(a.assignedToName || '—') + '</td>' +
                 '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + AP.escapeHtml(a.observaciones || a.comentarios || a.mensaje || '-') + '</td>' +
                 '<td style="white-space:nowrap;">' +
                     (AP.RBAC.canManageAppointment() ? '<button class="btn btn-sm btn-ghost" data-action="manageAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Gestionar">Gestionar</button>' : '') +
@@ -797,6 +818,71 @@
         });
     }
 
+    // ========== MF3.4 — ASSIGNMENT + AUTO-ROUTING ==========
+    function injectAssignBlock(doc) {
+        var prev = document.getElementById('amAssignBlock');
+        if (prev) prev.remove();
+
+        var modal = $('appointmentModal');
+        if (!modal) return;
+        // Build options from AP.users (admins/editors). Filter by role activo.
+        var users = (AP.users || []).filter(function (u) {
+            return u.estado === 'activo' && (u.rol === 'super_admin' || u.rol === 'editor');
+        });
+
+        var block = document.createElement('div');
+        block.id = 'amAssignBlock';
+        block.className = 'am-assign-block';
+        var current = doc.assignedTo || '';
+        block.innerHTML =
+            '<label>Asesor asignado</label>' +
+            '<select class="am-assign-select" id="amAssignSelect">' +
+                '<option value="">Sin asignar</option>' +
+                users.map(function (u) {
+                    var sel = u.uid === current ? ' selected' : '';
+                    return '<option value="' + u.uid + '" data-name="' + AP.escapeHtml(u.nombre || u.email) + '"' + sel + '>' +
+                        AP.escapeHtml(u.nombre || u.email) + ' (' + (u.rol === 'super_admin' ? 'Super' : 'Editor') + ')' +
+                        '</option>';
+                }).join('') +
+            '</select>';
+
+        var insertBefore = $('amObservaciones').closest('.form-group') || $('amObservaciones');
+        if (insertBefore && insertBefore.parentNode) {
+            insertBefore.parentNode.insertBefore(block, insertBefore);
+        }
+    }
+
+    /** Auto-routing rules — applied on doc creation if no assignedTo yet */
+    function applyAutoRouting(doc) {
+        if (!AP.users || !AP.users.length) return null;
+        var users = AP.users.filter(function (u) {
+            return u.estado === 'activo' && (u.rol === 'super_admin' || u.rol === 'editor');
+        });
+        if (!users.length) return null;
+        // Rules priority order (first match wins):
+        // 1. tipo financiacion + alto-valor → super_admin
+        // 2. tipo consignacion → editor with lowest current load
+        // 3. kind cita → round-robin
+        // 4. default → round-robin
+        var hasAltoValor = doc.tags && doc.tags.indexOf('alto-valor') !== -1;
+        if (doc.tipo === 'financiacion' && hasAltoValor) {
+            var sa = users.find(function (u) { return u.rol === 'super_admin'; });
+            if (sa) return sa;
+        }
+        // Round-robin: pick user with fewest active assignments (pending/nuevo)
+        var counts = {};
+        users.forEach(function (u) { counts[u.uid] = 0; });
+        AP.appointments.forEach(function (a) {
+            if (counts[a.assignedTo] !== undefined) {
+                var unhandled = (a.estado === 'pendiente' || a.estado === 'nuevo' || a.estado === 'en_revision');
+                if (unhandled) counts[a.assignedTo]++;
+            }
+        });
+        var sorted = Object.keys(counts).sort(function (a, b) { return counts[a] - counts[b]; });
+        return users.find(function (u) { return u.uid === sorted[0]; }) || users[0];
+    }
+    AP.applyAutoRouting = applyAutoRouting;
+
     function manageAppointment(docId) {
         var a = AP.appointments.find(function(x) { return x._docId === docId; });
         if (!a) return;
@@ -806,6 +892,8 @@
         // MF3.3 — inject timeline + contextual quick actions
         try { injectTimelineBlock(a); } catch (e) {}
         try { injectContextualActions(a); } catch (e) {}
+        // MF3.4 — inject assignment dropdown
+        try { injectAssignBlock(a); } catch (e) {}
 
         // MF3.2 — rebuild estado dropdown based on doc's kind
         var schema = window.AltorraCommSchema;
@@ -945,6 +1033,31 @@
                 updatedAt: new Date().toISOString(),
                 updatedBy: window.auth.currentUser.email
             };
+
+            // MF3.4 — persist assignment from dropdown
+            var assignSel = $('amAssignSelect');
+            if (assignSel) {
+                var newAssignedTo = assignSel.value || null;
+                var assignedToName = null;
+                if (newAssignedTo) {
+                    var optEl = assignSel.options[assignSel.selectedIndex];
+                    assignedToName = optEl ? optEl.getAttribute('data-name') : null;
+                }
+                updateData.assignedTo = newAssignedTo;
+                updateData.assignedToName = assignedToName;
+                // Notify the newly assigned admin if it changed
+                if (_currentManageSol && _currentManageSol.assignedTo !== newAssignedTo
+                    && newAssignedTo && newAssignedTo !== window.auth.currentUser.uid
+                    && window.notifyCenter && window.notifyCenter.notify) {
+                    window.notifyCenter.notify('request_update', {
+                        title: 'Te asignaron una ' + (getKindOf(_currentManageSol) === 'cita' ? 'cita' : 'comunicación'),
+                        message: (_currentManageSol.nombre || 'Cliente') + ' — ' + (_currentManageSol.vehiculo || ''),
+                        link: 'admin.html#solicitudes',
+                        entityRef: 'assigned:' + docId,
+                        priority: 'high'
+                    });
+                }
+            }
 
             if ($('amEstado').value === 'reprogramada') {
                 var nuevaFecha = $('amNuevaFecha').value;

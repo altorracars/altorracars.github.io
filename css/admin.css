@@ -2925,3 +2925,24 @@ table th:focus-visible,
     flex-wrap: wrap;
 }
 .am-context-actions-row .btn { font-size: 0.78rem; }
+
+/* MF3.4 — Assignment block in manage modal */
+.am-assign-block {
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.am-assign-block label {
+    font-size: 0.78rem;
+    color: var(--admin-text-muted);
+    display: block;
+    margin-bottom: 4px;
+}
+.am-assign-select {
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: var(--admin-card);
+    border: 1px solid var(--admin-border);
+    color: var(--admin-text);
+    font-size: 0.86rem;
+}

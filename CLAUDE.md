@@ -3455,3 +3455,285 @@ Si no estás seguro de si algo afectará la performance:
 **Recordatorio final**: el sitio se siente fluido HOY porque hicimos
 ~25 cambios coordinados. Un solo cambio descuidado puede regresar
 60fps a 20fps. Cada PR debería preservar lo conseguido.
+
+---
+
+## 18. Tareas Pendientes — Cuando Compres Dominio Custom
+
+> Esta seccion documenta tareas que requieren un pre-requisito externo
+> (compra de dominio) y por lo tanto no se pueden ejecutar HOY desde
+> el repo. Cuando llegue el momento, seguir los pasos al pie de la letra.
+
+### 18.1 — Eliminacion de COOP warnings via dominio + Cloudflare
+
+**Estado**: PENDIENTE — esperando compra de dominio en Hostinger.
+
+**Problema que resuelve**: Los unicos warnings que quedan en consola
+son del Cross-Origin-Opener-Policy de Chrome cuando Firebase abre la
+popup de Google sign-in:
+
+```
+Cross-Origin-Opener-Policy policy would block the window.closed call (popup.ts:302)
+Cross-Origin-Opener-Policy policy would block the window.close call  (popup.ts:50)
+```
+
+**Por que aparecen**: Firebase's `signInWithPopup` hace polling cada
+50ms a `window.closed` para detectar si el usuario cerro la popup.
+Chrome's COOP isolation bloquea esas lecturas cross-origin. El login
+FUNCIONA NORMALMENTE — son warnings cosmeticos, no errores funcionales.
+
+**Por que no se puede arreglar HOY**: GitHub Pages no permite configurar
+headers HTTP custom. Se necesita el header:
+```
+Cross-Origin-Opener-Policy: same-origin-allow-popups
+```
+
+**Solucion elegida (Opcion B — re-validada 2026-05-04 con Opus 4.7)**:
+
+GitHub Pages + dominio custom de Hostinger + Cloudflare Free como CDN/proxy.
+Cloudflare agrega los headers HTTP que GitHub Pages no permite.
+
+**Por que Opcion B vence a las alternativas**:
+
+| Opcion | Veredicto | Razon |
+|--------|-----------|-------|
+| A — Hostinger hosting + .htaccess | RECHAZADA | TTFB shared hosting 200-500ms, romperia el workflow de `generate-vehicles.yml`, perderia deploy-on-push de GitHub |
+| **B — GitHub Pages + Cloudflare** | **ELEGIDA** | Cero disrupcion al CI/CD, Cloudflare Free tier ahora incluye Transform Rules, edge CDN global gratis, reversible en 30 seg |
+| C — Migrar a Vercel/Netlify | RECHAZADA | Requiere reconfiguracion completa del workflow, free tier limitado a 100GB/mes (Cloudflare es ilimitado en este uso) |
+
+**Beneficios secundarios gratuitos al usar Cloudflare**:
+- TTFB global 30-80ms (vs 200-500ms de Hostinger shared)
+- 200+ POPs edge en todo el mundo
+- DDoS protection automatica
+- HTTP/3 support
+- Brotli compression edge-side
+- SSL/TLS gratis
+- Cache control mas potente que GitHub Pages
+- Bot protection
+- Analytics gratis (privacy-friendly, sin cookies)
+
+### 18.2 — Pasos detallados para configurar Cloudflare (NO ejecutar todavia)
+
+**Pre-requisito**: tener el dominio comprado en Hostinger (ej: `altorracars.com`).
+
+#### Paso 1 — Crear cuenta Cloudflare (gratis)
+
+1. Ir a https://dash.cloudflare.com/sign-up
+2. Registrarse con email (no requiere tarjeta para Free tier)
+3. Click en "Add a Site"
+4. Ingresar el dominio (ej: `altorracars.com`)
+5. Seleccionar **Free plan** ($0/mes)
+
+#### Paso 2 — Cambiar nameservers en Hostinger
+
+Cloudflare dara 2 nameservers durante el setup (ej: `lara.ns.cloudflare.com`,
+`xavier.ns.cloudflare.com` — los nombres varian).
+
+1. Ir al panel de Hostinger → Dominios → DNS / Nameservers
+2. Cambiar de "Hostinger Default" a "Custom" / "External"
+3. Pegar los 2 nameservers de Cloudflare
+4. Guardar
+5. Esperar propagacion DNS (15 min - 48h, tipicamente <1h)
+6. Cloudflare enviara email cuando detecte los NS correctos
+
+#### Paso 3 — Configurar DNS en Cloudflare
+
+Cloudflare auto-detecta records existentes. Agregar (o verificar):
+
+| Type | Name | Content | Proxy status |
+|------|------|---------|--------------|
+| CNAME | `@` | `altorracars.github.io` | Proxied (orange cloud) |
+| CNAME | `www` | `altorracars.github.io` | Proxied (orange cloud) |
+
+**IMPORTANTE**: el orange cloud (proxied) es lo que activa Cloudflare
+como CDN/proxy. Sin esto, los headers no se aplican.
+
+#### Paso 4 — Configurar GitHub Pages
+
+1. En el repo: `altorracars/altorracars.github.io` → Settings → Pages
+2. Custom domain: ingresar `altorracars.com` (sin https://, sin /)
+3. Click Save
+4. Crear archivo `CNAME` en la raiz del repo con una sola linea:
+   ```
+   altorracars.com
+   ```
+5. Commit y push
+6. GitHub verificara el dominio (puede tomar minutos)
+7. **NO marcar** "Enforce HTTPS" todavia — Cloudflare lo manejara
+
+#### Paso 5 — Configurar SSL/TLS en Cloudflare
+
+**CRITICO**: el modo SSL incorrecto rompe el sitio.
+
+1. Cloudflare → SSL/TLS → Overview
+2. Cambiar a **"Full"** (NO "Flexible" — Flexible rompe GitHub Pages HTTPS)
+3. Edge Certificates → habilitar:
+   - Always Use HTTPS: ON
+   - Automatic HTTPS Rewrites: ON
+   - Minimum TLS Version: 1.2
+   - TLS 1.3: ON
+
+#### Paso 6 — Agregar el header COOP via Transform Rules
+
+Esto es lo que elimina los COOP warnings.
+
+1. Cloudflare → Rules → Transform Rules → Modify Response Header
+2. Click "Create rule"
+3. Rule name: `Add COOP header for Firebase popup`
+4. Custom filter expression: `(http.host eq "altorracars.com" or http.host eq "www.altorracars.com")`
+5. Then... → Modify response header → Set static
+   - Header name: `Cross-Origin-Opener-Policy`
+   - Value: `same-origin-allow-popups`
+6. Click Save and Deploy
+
+#### Paso 7 — (Opcional) Headers adicionales de seguridad
+
+Mientras estas en Transform Rules, considerar agregar (en la misma rule
+o en otra nueva):
+
+| Header | Value | Beneficio |
+|--------|-------|-----------|
+| `Cross-Origin-Opener-Policy` | `same-origin-allow-popups` | **Requerido** — elimina COOP warnings |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | HSTS — fuerza HTTPS por 1 año |
+| `X-Content-Type-Options` | `nosniff` | Previene MIME sniffing attacks |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Privacidad en links salientes |
+| `Permissions-Policy` | `geolocation=(), camera=(), microphone=()` | Desactiva APIs no usadas |
+
+**NO agregar `Content-Security-Policy`** sin testear en staging — es
+restrictivo y puede romper inline scripts existentes.
+
+#### Paso 8 — Actualizar Firebase Auth domain
+
+1. Firebase Console → Authentication → Settings → Authorized domains
+2. Click "Add domain"
+3. Agregar: `altorracars.com` y `www.altorracars.com`
+4. (Opcional) Mantener `altorracars.github.io` para fallback durante migracion
+
+#### Paso 9 — Actualizar Google OAuth (GIS)
+
+1. Google Cloud Console → APIs & Services → Credentials
+2. Click en el "Web client (auto created by Google Service)"
+3. Authorized JavaScript origins: agregar `https://altorracars.com` y `https://www.altorracars.com`
+4. Authorized redirect URIs: agregar mismas URLs
+5. Save
+
+#### Paso 10 — Validar todo end-to-end
+
+Despues de propagacion DNS completa:
+
+- [ ] `https://altorracars.com` carga el sitio
+- [ ] `https://www.altorracars.com` redirige a `altorracars.com` (configurar en Cloudflare → Page Rules si no lo hace auto)
+- [ ] Console del navegador: cero COOP warnings al hacer Google sign-in
+- [ ] Console: One Tap aparece en homepage para users con sesion Google
+- [ ] Login con email/password funciona
+- [ ] Registro funciona
+- [ ] Reset password funciona
+- [ ] Firestore reads/writes funcionan
+- [ ] Firebase Storage uploads (avatar) funcionan
+- [ ] Service Worker registra correctamente
+- [ ] Sitemap accesible: `https://altorracars.com/sitemap.xml`
+- [ ] robots.txt accesible
+- [ ] DevTools → Network: response headers incluyen `Cross-Origin-Opener-Policy: same-origin-allow-popups`
+
+#### Paso 11 — Forzar HTTPS en GitHub
+
+Una vez que TODO funcione con Cloudflare:
+
+1. GitHub Pages → Enforce HTTPS → marcar
+2. Esto añade redirect 301 de http → https a nivel GitHub
+
+### 18.3 — Errores comunes y troubleshooting
+
+| Sintoma | Causa | Fix |
+|---------|-------|-----|
+| Loop infinito de redirects | SSL en Flexible | Cambiar a Full en Cloudflare |
+| Mixed content warnings | Algun asset hardcoded a http:// | Buscar y reemplazar a https:// o protocolo-relativo |
+| 522 Connection Timed Out | DNS aun propagandose | Esperar mas, usar `dig altorracars.com` para verificar |
+| Headers no aparecen en Response | DNS record no esta proxied | Activar orange cloud en Cloudflare DNS |
+| Firebase Auth: "auth/unauthorized-domain" | Olvidar agregar dominio en Firebase | Paso 8 |
+| Google sign-in: "redirect_uri_mismatch" | Olvidar agregar en Google Cloud Console | Paso 9 |
+| Sitemap retorna 404 | Cloudflare cachea version vieja | Cloudflare → Caching → Purge Everything |
+
+### 18.4 — Como reactivar diagnostico GIS
+
+Si despues de mover a custom domain hay problemas con Google sign-in:
+
+```js
+// En consola del navegador
+AltorraAuth.resetGisState();
+// Limpia localStorage flags y recarga la pagina
+```
+
+Esto resetea el flag `altorra_gis_blocked` (6h TTL) que recuerda
+fallos de FedCM, y borra el cooldown de One Tap (`altorra_onetap_dismiss`).
+
+### 18.5 — Que NO arregla la migracion a dominio custom
+
+Para gestionar expectativas, esto **NO** se elimina con dominio + Cloudflare:
+
+1. **`enableMultiTabIndexedDbPersistence is deprecated`** — limitacion
+   del Firebase Compat SDK. Solucion seria migrar a SDK modular
+   (refactor masivo de ~50 archivos). No prioritario; warning es
+   cosmetico.
+
+2. **Logs `[DB] Real-time listeners started/stopped`** — comportamiento
+   normal del ciclo auth. Son INFO (verde), no errores. Util para
+   diagnostico. Si molestan, se pueden silenciar con `if (this.DEBUG)`
+   gates en `database.js`.
+
+3. **Logs `Firebase deferred SDKs loaded`** — confirmacion legitima
+   del lazy-load. Util para diagnostico.
+
+### 18.6 — Costo total y tiempos
+
+| Item | Costo | Tiempo |
+|------|-------|--------|
+| Dominio en Hostinger | ~$10-15/año (.com) | 5 min compra |
+| Cloudflare Free | $0 | 10 min setup |
+| DNS propagation | $0 | 15 min - 48h (tipico <1h) |
+| GitHub Pages custom domain | $0 | 5 min setup |
+| Validacion end-to-end | $0 | 30 min testing |
+| **TOTAL** | **~$10-15/año** | **~1-2 horas** ejecucion + propagacion |
+
+### 18.7 — Rollback plan (si algo se rompe)
+
+Si algo sale mal en cualquier punto, el rollback es trivial:
+
+1. **Rollback rapido (Cloudflare proxy off)**:
+   - Cloudflare → DNS → click el orange cloud → cambia a gray (DNS only)
+   - El trafico va directo a GitHub Pages, sin Cloudflare
+   - Cloudflare deja de aplicar los headers, pero el sitio funciona
+
+2. **Rollback completo (volver al dominio github.io)**:
+   - GitHub Pages → Settings → Custom domain → vaciar campo
+   - Borrar archivo `CNAME` del repo
+   - El sitio vuelve a `altorracars.github.io`
+   - Cloudflare puede quedarse sin uso o cancelarse
+
+3. **DNS rollback (volver a nameservers de Hostinger)**:
+   - Hostinger → Dominios → DNS → cambiar de Custom a Default
+   - El dominio ya no resolvera al sitio, pero esto NO afecta a
+     `altorracars.github.io` que sigue funcionando
+
+**Tip**: hacer la migracion en horario de bajo trafico (madrugada
+hora Colombia) para minimizar impacto si algo falla.
+
+### 18.8 — Validacion post-migracion (checklist final)
+
+Una semana despues de la migracion, verificar:
+
+- [ ] Console del navegador 100% limpia (cero COOP warnings)
+- [ ] Lighthouse score: igual o mejor que antes
+- [ ] Web Vitals (LCP, CLS, FID): igual o mejor
+- [ ] Cloudflare Analytics: no hay spike de errores 5xx
+- [ ] Firebase Analytics: no hay caida en sesiones
+- [ ] Google Search Console: sitemap accesible, no errores de crawl
+- [ ] Tests manuales en mobile + desktop + Safari + Firefox
+
+---
+
+> **Para Claude**: Cuando el usuario diga que ya compro el dominio en
+> Hostinger, leer esta seccion completa antes de empezar y seguir los
+> pasos en orden. NO saltarse el paso de SSL Full (Paso 5) — es la
+> causa #1 de problemas. Confirmar con el usuario en cada paso critico
+> antes de proceder.

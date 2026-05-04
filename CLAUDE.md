@@ -2983,6 +2983,36 @@ notifyCenter.notify('request_update', {
 
 **Archivos modificados**: `js/toast.js`
 
+### Microfase G1 — Migracion de spam legacy del bell ✓ COMPLETADA (2026-05-04)
+
+**Problema**: A1 detiene el spam **futuro**, pero los usuarios actuales tienen ya el bell lleno de notificaciones viejas tipo "¡Hola de nuevo, Daniel!", "Sesion cerrada correctamente", etc. Sin migration, A1 no se siente.
+
+**Estrategia conservadora** (NO destructiva):
+
+1. **Identificar entradas legacy** (sin campo `category` — anteriores a A2)
+2. **Drop por whitelist de patrones transitorios**: titulos/mensajes que matchean regex de feedback efimero conocido (login/logout/welcome/reconnect/loading/etc.)
+3. **Marcar el resto como leidas** (clear el badge sin destruir contenido)
+4. **One-shot**: gateado por `localStorage.altorra_notif_migration_v1`. Solo corre una vez por dispositivo.
+
+**Patrones drop** (`TRANSIENT_TITLE_PATTERNS` + `TRANSIENT_MESSAGE_PATTERNS`):
+- "Hola de nuevo *" / "Bienvenid*"
+- "Sesion cerrada *" / "Sesion iniciada *"
+- "Conexion restablecida" / "Sin conexion *"
+- "Cargando *" / "Guardad*"
+- "Listo" / "Error" / "Informacion" / "Atencion" (titulos default cuando faltaba title custom)
+- "Cuenta creada *" / "Tu cuenta con Google esta lista"
+
+**Conservadurismo**: las regex matchean **inicio de string** con `^`, evitando falsos positivos en mensajes que casualmente contengan estas palabras a mitad.
+
+**Console feedback**: si scrubbed o marked >0, log `[NotifyCenter] Migration v1: scrubbed N transient, marked M as read` (info, no warn) para diagnostico.
+
+**Resultado para el usuario**:
+- Al primer page load post-deploy, el bell se limpia: spam viejo desaparece, lo demas pasa a leido (badge a 0)
+- Pre-A2 entries que no son spam (raro) se preservan pero ya no contribuyen al unread count
+- A partir de ahi, solo entran al bell los eventos opt-in (price_alert, request_update, etc.)
+
+**Archivos modificados**: `js/toast.js`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

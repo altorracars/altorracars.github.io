@@ -507,6 +507,75 @@
             }
         } catch (e) { _entries = []; }
     }
+
+    // ─── Migration: scrub legacy spam (Phase G1) ────────────────
+    // Pre-A1, every notify.* call was logged to the bell. Existing users
+    // have hundreds of "Hola de nuevo", "Sesion cerrada", "Cargando..."
+    // entries polluting their notification center. Run ONCE per user:
+    //   - Drop entries whose title/message matches known transient patterns
+    //   - Mark remaining pre-schema entries (no `category` field) as read
+    //     so the badge clears even if some legit-looking message snuck in
+    var MIGRATION_KEY = 'altorra_notif_migration_v1';
+    var TRANSIENT_TITLE_PATTERNS = [
+        /^.?Hola de nuevo/i,
+        /^.?Bienvenid/i,
+        /^Sesi[oó]n cerrada/i,
+        /^Sesi[oó]n iniciada/i,
+        /^Conexi[oó]n restablecida/i,
+        /^Sin conexi[oó]n/i,
+        /^Cargando/i,
+        /^Guardad/i,
+        /^Listo$/i,
+        /^Error$/i,
+        /^Informaci[oó]n$/i,
+        /^Atenci[oó]n$/i,
+        /^Cuenta creada/i,
+        /^Cerr[áa]ndo sesi[oó]n/i,
+        /^Ya iniciaste sesi[oó]n/i
+    ];
+    var TRANSIENT_MESSAGE_PATTERNS = [
+        /^.?Hola de nuevo/i,
+        /^.?Bienvenid/i,
+        /^Sesi[oó]n cerrada correctamente/i,
+        /^Sesi[oó]n iniciada en otra pesta/i,
+        /^Sesi[oó]n cerrada en otra pesta/i,
+        /^Conexi[oó]n restablecida/i,
+        /^Sin conexi[oó]n a internet/i,
+        /^Cargando/i,
+        /^Tu cuenta con Google est/i,
+        /^Sesi[oó]n cerrada localmente/i
+    ];
+
+    function isTransientLegacy(entry) {
+        if (!entry) return false;
+        if (entry.category) return false; // already new-schema, leave it
+        var t = entry.title || '';
+        var m = entry.message || '';
+        return TRANSIENT_TITLE_PATTERNS.some(function(p) { return p.test(t); })
+            || TRANSIENT_MESSAGE_PATTERNS.some(function(p) { return p.test(m); });
+    }
+
+    function migrateLegacy() {
+        var done = false;
+        try { done = !!localStorage.getItem(MIGRATION_KEY); } catch (e) { return; }
+        if (done) return;
+
+        var before = _entries.length;
+        _entries = _entries.filter(function(e) { return !isTransientLegacy(e); });
+        var scrubbed = before - _entries.length;
+
+        // Mark surviving legacy (no-category) entries as read so the badge clears
+        var marked = 0;
+        _entries.forEach(function(e) {
+            if (!e.category && !e.read) { e.read = true; marked++; }
+        });
+
+        if (scrubbed > 0 || marked > 0) save();
+        try { localStorage.setItem(MIGRATION_KEY, '1'); } catch (e) {}
+        if (scrubbed > 0 || marked > 0) {
+            try { console.info('[NotifyCenter] Migration v1: scrubbed ' + scrubbed + ' transient, marked ' + marked + ' as read'); } catch (e) {}
+        }
+    }
     function save() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(_entries));
@@ -1034,6 +1103,7 @@
 
     // ─── Init ──────────────────────────────────────────────────
     load();
+    migrateLegacy();
 
     // window.notify is defined synchronously in the previous IIFE in this file,
     // so we can wrap it immediately. Fallback to polling only if not ready

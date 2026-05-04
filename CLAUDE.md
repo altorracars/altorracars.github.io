@@ -4728,6 +4728,62 @@ Estado del Sidebar + Workspaces al cerrar el bloque B:
 5. `window.addEventListener('altorra:test.hello', e => console.log('DOM:', e.detail))` + emit → recibe vía CustomEvent
 6. `AltorraEventBus.emit('test.persist', {}, {persist: true})` → ver doc en Firestore `events/`
 
+---
+
+### Microfase I.2 — Activity Feed sliding panel ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: I.1 emite eventos pero nadie los ve. I.2 da un panel deslizable estilo Slack que muestra TODA la actividad en tiempo real — qué hicieron otros admins, qué eventos están pasando en el sistema, con filtros para enfocarse.
+
+**Lo que se creó** (`js/admin-activity-feed.js`):
+
+1. **Botón trigger en admin header**: ícono `activity` (electrocardiograma). Click → abre el panel.
+2. **Panel deslizable** desde la derecha (380px desktop / full mobile):
+   - Header con título + count de eventos visibles + botón cerrar
+   - Toolbar con dropdown de filtros + botón "Limpiar" feed local
+   - Lista scrolleable de entries
+3. **Cada entry** muestra:
+   - Icon coloreado por dominio (gold=vehicle, green=comm, blue=crm, violet=appointment, orange=workflow, cyan=test, neutral=user/ui/system)
+   - Domain pill (ej: VEHICLE) + acción humana (ej: "Created", "Estado-changed")
+   - Detail line con title/name/vehiculo/id del payload
+   - Timestamp relativo ("hace 2m") + bySource (admin/public/system)
+   - Animación slide-in-right al aparecer
+4. **Filtros**: Todo / Solo admin / Solo cliente / por dominio (vehicle/comm/crm/appointment/user/ui/workflow/concierge).
+5. **Time-tick**: cada 30s actualiza los timestamps relativos sin re-fetch.
+
+**Sources del feed**:
+- **AltorraEventBus.on('*')** — eventos emitidos en la sesión actual
+- **Firestore `events/`** — eventos persistidos por OTROS admins/devices (lazy: solo se suscribe cuando el panel está abierto Y el user es super_admin para ahorrar reads)
+- Pre-populate desde `AltorraEventBus.history()` al cargar — entries ya están si el bus tenía cosas
+
+**Performance**:
+- MAX_VISIBLE 100 (older shifted out)
+- Firestore listener cancelado al cerrar el panel
+- Render con `slice().reverse()` (newest first) sin mutar el array
+- MutationObserver de Lucide (de T.7) auto-refresca íconos
+
+**Firestore rules** agregadas para `events/{eventId}`: read si autenticado, create si autenticado (admin o cliente), immutable, delete solo super_admin.
+
+**Diseño (D)**:
+- Top accent border dorado en header (consistente con workspace pattern B.2)
+- Cada entry con border subtle + hover lift
+- Color por domain matching los workspaces del sidebar
+- Empty state con icon `inbox-x` opacity 0.4 + microcopy "Los eventos aparecen aquí en tiempo real"
+- Esc cierra el panel
+
+**Migración (M)**: cero breaking. La rule `events/` es nueva — requiere `firebase deploy --only firestore:rules` para activar persistencia. Sin eso, los eventos se ven solo en in-memory feed (todavía utilizable).
+
+**Archivos**: `js/admin-activity-feed.js` (new), `admin.html` (trigger + script), `css/admin.css` (~150 líneas), `firestore.rules`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Login admin → click el ícono `activity` en el header → panel se desliza
+2. Consola: `AltorraEventBus.emit('vehicle.created', { name: 'Mazda CX-5' })` → entry aparece con animación
+3. `AltorraEventBus.emit('crm.score-changed', { id: 'abc', from: 50, to: 78 })` → entry azul
+4. Cambiar filtro a "Vehículos" → solo eventos `vehicle.*`
+5. Click "Limpiar" → feed local se vacía
+6. Esc → panel cierra
+
+> **DEPLOY MANUAL**: `firebase deploy --only firestore:rules` para activar persistencia cross-device.
+
 
 
 ---

@@ -736,7 +736,7 @@
     // After user selects account: callback fires with `response.credential`
     // which is a JWT ID token. We pass it to firebase.auth().signInWithCredential().
     var GIS_BLOCKED_KEY = 'altorra_gis_blocked';
-    var GIS_BLOCKED_TTL = 7 * 24 * 3600 * 1000; // 7 days
+    var GIS_BLOCKED_TTL = 24 * 3600 * 1000; // 1 day
 
     function _isGisBlocked() {
         try {
@@ -803,7 +803,7 @@
             // isDismissedMoment). Google has deprecated these as part of
             // the FedCM migration. We rely on:
             //   1. The credential callback for success
-            //   2. The 2s watchdog for "prompt didn't show" / silent fail
+            //   2. The 8s watchdog for "prompt didn't show" / silent fail
             // See: https://developers.google.com/identity/gsi/web/guides/fedcm-migration
             window.google.accounts.id.prompt();
         } catch (e) {
@@ -1511,33 +1511,17 @@
         // Condition 3: GIS must be configured
         if (!window.GIS_CONFIGURED) return;
 
-        // Condition 6: respect explicit dismiss (we set this when user
-        // clicks X on One Tap or dismisses the auth modal recently)
-        try {
-            var lastDismiss = parseInt(localStorage.getItem('altorra_onetap_dismiss') || '0', 10);
-            // Suppress One Tap for 7 days after explicit dismissal
-            if (lastDismiss && Date.now() - lastDismiss < 7 * 24 * 3600 * 1000) return;
-        } catch (e) {}
-
         // Wait for GIS to be ready, then trigger after delay
         var triggerOneTap = function () {
-            // Condition 5: skip if auth modal is open
+            // Skip if auth modal is open (don't compete with explicit form)
             var modal = $id('auth-modal');
             if (modal && modal.classList.contains('active')) return;
-            // Condition 4 (re-check): GIS available
+            // Re-check: GIS available
             if (!_shouldUseGis()) return;
 
             try {
                 _ensureGisInit(_onGisCredential);
-                // FedCM-compliant: call prompt() without the deprecated
-                // status-method callback. Successful sign-in fires the
-                // credential callback; dismissal/timeout is silent.
                 window.google.accounts.id.prompt();
-                // Throttle: suppress One Tap for 7 days after showing it.
-                // If the user signed in, the auth-hint check at the top of
-                // _maybeShowOneTap skips it anyway. If they dismissed, we
-                // don't pester them again for a week.
-                try { localStorage.setItem('altorra_onetap_dismiss', String(Date.now())); } catch (e) {}
             } catch (e) {
                 console.info('[GIS] One Tap init failed:', e && e.message);
             }

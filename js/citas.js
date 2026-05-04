@@ -265,6 +265,9 @@ class AppointmentSystem {
         document.body.appendChild(modal);
         this.attachModalEvents(modal, vehicleInfo);
 
+        // MF1.1 — auto-fill from logged-in user
+        this._autoFillModal(modal);
+
         requestAnimationFrame(function() {
             modal.classList.add('active');
         });
@@ -390,6 +393,51 @@ class AppointmentSystem {
         setTimeout(function() { modal.remove(); }, 300);
     }
 
+    // ===== MF1.1 — Identity + source helpers =====
+    _identityPayload() {
+        var u = (window.auth && window.auth.currentUser) || null;
+        var registered = u && !u.isAnonymous;
+        return {
+            userId: registered ? u.uid : null,
+            userEmail: registered ? (u.email || null) : null,
+            clientCategory: registered ? 'registered' : 'guest'
+        };
+    }
+    _sourcePayload(ctaName) {
+        var path = (window.location.pathname || '').replace(/^\/+/, '') || 'index.html';
+        var ref = '';
+        try { ref = document.referrer || ''; } catch (e) {}
+        var ua = navigator.userAgent || '';
+        var browser = /Edg\//.test(ua) ? 'Edge'
+            : (/Chrome\//.test(ua) ? 'Chrome' : (/Firefox\//.test(ua) ? 'Firefox' : (/Safari\//.test(ua) ? 'Safari' : 'Unknown')));
+        var os = /Windows/.test(ua) ? 'Windows' : (/Mac OS X/.test(ua) ? 'macOS' : (/Android/.test(ua) ? 'Android' : (/iPhone|iPad/.test(ua) ? 'iOS' : (/Linux/.test(ua) ? 'Linux' : 'Unknown'))));
+        var deviceType = /Mobi|Android|iPhone|iPad/.test(ua) ? 'mobile' : 'desktop';
+        return {
+            source: { page: path, cta: ctaName || '', referrer: ref.slice(0, 200) },
+            device: { type: deviceType, browser: browser, os: os }
+        };
+    }
+    _autoFillModal(modal) {
+        var u = (window.auth && window.auth.currentUser) || null;
+        if (!u || u.isAnonymous || !modal) return;
+        var nombreEl = modal.querySelector('[name="nombre"]');
+        var emailEl = modal.querySelector('[name="email"]');
+        var telEl = modal.querySelector('[name="telefono"]');
+        if (nombreEl && !nombreEl.value && u.displayName) nombreEl.value = u.displayName;
+        if (emailEl && !emailEl.value && u.email) emailEl.value = u.email;
+        if (window.db && telEl && !telEl.value) {
+            try {
+                window.db.collection('clientes').doc(u.uid).get().then(function (doc) {
+                    if (!doc.exists) return;
+                    var d = doc.data();
+                    if (telEl && !telEl.value && d.telefono) telEl.value = d.telefono;
+                    var paisSel = modal.querySelector('[name="pais"]');
+                    if (paisSel && d.prefijo && !paisSel.dataset.userTouched) paisSel.value = d.prefijo;
+                }).catch(function () {});
+            } catch (e) {}
+        }
+    }
+
     // ===== ENVIAR CITA =====
     submitAppointment(form, vehicleInfo, modal) {
         var formData = new FormData(form);
@@ -412,7 +460,9 @@ class AppointmentSystem {
 
         // Atomic booking: reserve the slot first, then save the solicitud
         this.bookSlotAtomically(fecha, hora).then(function() {
-            return self.saveAppointmentToFirestore({
+            var identity = self._identityPayload();
+            var src = self._sourcePayload('cita_vehiculo');
+            return self.saveAppointmentToFirestore(Object.assign({
                 nombre: nombre,
                 whatsapp: telefono,
                 telefono: telefono,
@@ -430,7 +480,7 @@ class AppointmentSystem {
                 estado: 'pendiente',
                 observaciones: '',
                 createdAt: new Date().toISOString()
-            });
+            }, identity, src));
         }).then(function() {
             self.showConfirmation(modal, nombre, fecha, hora);
         }).catch(function(err) {

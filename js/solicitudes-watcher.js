@@ -132,24 +132,35 @@
 
     function processSnapshot(snapshot) {
         if (!_state.user) return;
-        var fresh = {};
         var emissions = [];
+        var idsInThisSnapshot = {};
 
-        snapshot.forEach(function (docSnap) {
-            var d = docSnap.data();
-            d.id = docSnap.id;
+        // Use docChanges() so we only react to actual changes from Firestore,
+        // not to every full snapshot replay. Two parallel listeners
+        // (by userId + by email) may each fire — dedup by doc id.
+        snapshot.docChanges().forEach(function (change) {
+            var d = change.doc.data();
+            d.id = change.doc.id;
+            idsInThisSnapshot[d.id] = true;
+
             // Only support known states (skip drafts or unexpected values)
             if (SUPPORTED_ESTADOS.indexOf(d.estado) === -1) return;
 
+            // Cross-listener dedup: track docId → last fingerprint we processed
             var snap = applyDoc(d);
-            fresh[d.id] = snap;
-
             var prev = _state.baseline[d.id];
+
+            // Skip if we just processed this exact state for this doc
+            if (prev && prev.estado === snap.estado
+                && prev.observacionesHash === snap.observacionesHash) {
+                return;
+            }
+
+            // Update baseline (additive — never clobber other listener's data)
+            _state.baseline[d.id] = snap;
+
             if (!prev) {
-                // First time we see this doc
-                if (_state.firstSnapshot) return; // baseline only on first run
-                // Otherwise: doc is genuinely new (created while user offline)
-                // We don't emit on creation — admin's email already covers that
+                // First time we see this doc — baseline only, never emit on create
                 return;
             }
             // Estado change is the signal we care about
@@ -173,13 +184,11 @@
             }
         });
 
-        // Persist new baseline regardless
-        _state.baseline = fresh;
-        if (_state.user && _state.user.uid) writeBaseline(_state.user.uid, fresh);
+        if (_state.user && _state.user.uid) writeBaseline(_state.user.uid, _state.baseline);
 
         if (_state.firstSnapshot) {
             _state.firstSnapshot = false;
-            log('Baseline established (' + Object.keys(fresh).length + ' docs)');
+            log('Baseline established (' + Object.keys(_state.baseline).length + ' docs)');
             return;
         }
 
@@ -209,8 +218,10 @@
 
     function start(user) {
         if (!user || user.isAnonymous) return false;
-        if (!user.email) {
-            log('No email on user, skipping');
+        // Need at least one identifier — prefer userId (set by MF1.1 in forms),
+        // fall back to email for legacy docs that don't have userId yet
+        if (!user.uid && !user.email) {
+            log('No uid or email on user, skipping');
             return false;
         }
         if (!window.db || typeof window.db.collection !== 'function') {
@@ -230,41 +241,72 @@
         // diff against it and emit any changes that happened while offline
 
         try {
-            _state.unsub = window.db.collection('solicitudes')
-                .where('email', '==', user.email)
-                .onSnapshot(processSnapshot, function (err) {
-                    // Suppress permission-denied during cross-tab signOut
+            // MF1.1 — Two parallel listeners: one filtered by userId (post-MF1.1
+            // submissions, reliable) and one by email (legacy docs without userId).
+            // processSnapshot dedups by docSnap.id internally so the same doc
+            // matched by both filters won't double-emit. The listeners produce a
+            // unified `_state.baseline` map keyed by doc id.
+            _state.unsubs = [];
+            _state.snapshotsReceived = 0;
+            _state.expectedSnapshots = 0;
+
+            var attach = function (q, label) {
+                _state.expectedSnapshots++;
+                var unsub = q.onSnapshot(function (snap) {
+                    processSnapshot(snap);
+                }, function (err) {
                     if (window.auth && !window.auth.currentUser) return;
-                    log('listener error:', err.message || err);
+                    log('listener error (' + label + '):', err.message || err);
                 });
+                _state.unsubs.push(unsub);
+            };
+
+            attach(window.db.collection('solicitudes').where('userId', '==', user.uid), 'by-uid');
+            if (user.email) {
+                attach(window.db.collection('solicitudes').where('email', '==', user.email), 'by-email');
+            }
+            // Single-unsub compat field
+            _state.unsub = function () {
+                (_state.unsubs || []).forEach(function (u) { try { u(); } catch (e) {} });
+                _state.unsubs = [];
+            };
             log('Started for uid', user.uid, 'email', user.email);
         } catch (e) {
             log('start exception:', e);
             return false;
         }
 
-        // Pause listener when tab hidden — Firestore charges for active
+        // Pause listeners when tab hidden — Firestore charges for active
         // listeners even when not visible. Resume on visibilitychange.
         if (!_state.visibilityHandlerBound) {
             _state.visibilityHandlerBound = true;
             document.addEventListener('visibilitychange', function () {
                 if (!_state.user) return;
                 if (document.hidden) {
-                    if (_state.unsub) {
-                        _state.unsub();
-                        _state.unsub = null;
+                    if (_state.unsubs && _state.unsubs.length) {
+                        _state.unsubs.forEach(function (u) { try { u(); } catch (e) {} });
+                        _state.unsubs = [];
                         log('Paused (tab hidden)');
                     }
                 } else {
-                    if (!_state.unsub && _state.user) {
-                        // Resume — re-attach listener (Firestore will replay
-                        // changes since last snapshot via WebChannel)
-                        _state.unsub = window.db.collection('solicitudes')
-                            .where('email', '==', _state.user.email)
-                            .onSnapshot(processSnapshot, function (err) {
+                    if ((!_state.unsubs || !_state.unsubs.length) && _state.user) {
+                        // Resume — re-attach BOTH listeners (uid + email)
+                        var u = _state.user;
+                        var attachR = function (q, label) {
+                            return q.onSnapshot(processSnapshot, function (err) {
                                 if (window.auth && !window.auth.currentUser) return;
-                                log('listener error (resumed):', err.message || err);
+                                log('listener error resumed (' + label + '):', err.message || err);
                             });
+                        };
+                        _state.unsubs = [];
+                        _state.unsubs.push(attachR(
+                            window.db.collection('solicitudes').where('userId', '==', u.uid), 'by-uid'
+                        ));
+                        if (u.email) {
+                            _state.unsubs.push(attachR(
+                                window.db.collection('solicitudes').where('email', '==', u.email), 'by-email'
+                            ));
+                        }
                         log('Resumed (tab visible)');
                     }
                 }
@@ -275,10 +317,15 @@
     }
 
     function stop() {
-        if (_state.unsub) {
-            try { _state.unsub(); } catch (e) {}
-            _state.unsub = null;
+        // MF1.1 — multiple listeners (userId + email)
+        if (_state.unsubs && _state.unsubs.length) {
+            _state.unsubs.forEach(function (u) { try { u(); } catch (e) {} });
+            _state.unsubs = [];
         }
+        if (_state.unsub && typeof _state.unsub === 'function') {
+            try { _state.unsub(); } catch (e) {}
+        }
+        _state.unsub = null;
         _state.user = null;
         _state.baseline = {};
         _state.firstSnapshot = true;

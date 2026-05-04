@@ -3548,6 +3548,70 @@ Todos `.catch(function() {})` — best-effort. localStorage es source of truth l
 
 ---
 
+## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)
+
+> Refactor profundo del sistema de formularios, comunicaciones y leads.
+> Inspirado en Bitrix24, Mercately, PlanOK, Carcutter y CarroYa.
+> Reemplaza el patron "redirect a WhatsApp" por una experiencia
+> moderna estilo SaaS con CRM, kanban, lead scoring, automatizacion.
+
+### Microfase MF1.1 — userId + auto-fill + source tracking ✓ COMPLETADA (2026-05-04)
+
+**Problema raiz que arregla**: el solicitudes-watcher (Pillar D) filtraba `where email == user.email`. Si el usuario logueado tipeaba un email distinto en el form (o lo dejaba vacio → "No proporcionado"), el listener no matcheaba y nunca llegaba la notificacion al cliente. Ademas no habia atribucion (de que pagina/CTA vino el lead).
+
+**Cambios** en los 4 formularios publicos (Vende Auto, Financiacion, Contacto, Cita por vehiculo):
+
+1. **Identidad sintetica en cada submission**:
+   ```js
+   {
+       userId: registered ? user.uid : null,         // null para guests
+       userEmail: registered ? user.email : null,    // separado del email de contacto
+       clientCategory: 'registered' | 'guest'
+   }
+   ```
+
+2. **Auto-fill desde el usuario logueado** (no destructivo — solo rellena campos vacios):
+   - Sync inmediato: `displayName`, `email` desde Firebase Auth
+   - Async enrich: `telefono`, `prefijo` desde `clientes/{uid}` Firestore
+   - Foco va al primer campo vacio (skip campos pre-rellenados)
+
+3. **Source/device tracking**:
+   ```js
+   {
+       source: { page, cta, referrer },               // ej: { page: 'detalle-vehiculo', cta: 'btn-agendar-cita', referrer: 'busqueda.html' }
+       device: { type: 'mobile'|'desktop', browser, os }
+   }
+   ```
+
+4. **Solicitudes-watcher refactorizado** para filtrar por `userId` Y `email` (dos listeners paralelos con dedup por docId interno):
+   - Un listener: `where userId == user.uid` (post-MF1.1, confiable)
+   - Otro listener: `where email == user.email` (legacy docs sin userId)
+   - `processSnapshot()` ahora usa `docChanges()` y es additivo (no clobbering entre listeners)
+   - `_state.unsubs[]` reemplaza `_state.unsub` para manejar multiples listeners
+
+5. **Anti-impersonation en Firestore rules**:
+   ```
+   allow create: if (
+       !('userId' in request.resource.data)
+       || request.resource.data.userId == null
+       || (request.auth != null && request.resource.data.userId == request.auth.uid)
+   );
+   ```
+   Si `userId` esta presente, debe coincidir con `request.auth.uid`. Atacante no puede crear solicitudes a nombre de otro usuario.
+
+**Archivos modificados**: `js/contact-forms.js`, `js/contact.js`, `js/citas.js`, `js/solicitudes-watcher.js`, `firestore.rules`, `service-worker.js`, `js/cache-manager.js`
+
+**Pasos para probar**:
+1. **Sin login**: abrir Vende tu Auto → llenar → enviar. En Firestore Console verificar `userId == null`, `clientCategory == 'guest'`, `source.page == 'index.html'`, `source.cta == 'vende_auto_form'`.
+2. **Logueado**: recargar → abrir Vende tu Auto. Campos `nombre`, `email`, `telefono` aparecen pre-rellenados. Enviar → verificar `userId == auth.uid`, `clientCategory == 'registered'`.
+3. **Test 3 ahora funciona**: como cliente registrado, enviar solicitud → admin cambia estado a `contactado` → cliente recibe toast + entrada en bell sin recargar.
+4. **Anti-impersonation**: en consola, intentar `db.collection('solicitudes').add({userId: 'OTRO-UID', ...})` → falla con `permission-denied`.
+5. **Verificar dos listeners**: en `AltorraSolWatcher._state.unsubs.length` debe ser 2 (uid + email).
+
+> **DEPLOY MANUAL REQUERIDO**: `firebase deploy --only firestore:rules` para activar la regla anti-impersonation.
+
+---
+
 ## 14. SEO
 
 Ver `SITEMAP-FIX.md` para estado detallado del sitemap y Google Search Console.

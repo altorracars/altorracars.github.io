@@ -773,6 +773,7 @@
                         (a.state ? 'data-quick-state="' + a.state + '"' : 'data-quick-action="' + a.action + '"') +
                         '>' + a.label + '</button>';
                 }).join('') +
+                '<button type="button" class="btn btn-sm btn-ghost" data-action="schedule-followup">⏰ Recordame</button>' +
             '</div>';
 
         var insertBefore = document.getElementById('amTemplateBlock')

@@ -4873,7 +4873,103 @@ tope.
 - `js/admin-auth.js` — 2 emits (logged-in, logged-out)
 - `service-worker.js` + `js/cache-manager.js` — version bump v20260505150000
 
+### Microfase I.4 — Diff metadata en payloads + transition rendering ✓ COMPLETADA (2026-05-05)
 
+**Objetivo**: convertir los emits de I.3 de "algo cambió" a "X → Y", de
+modo que (a) el Activity Feed muestre transiciones legibles ("estado:
+pendiente → contactado", "precio: $76M → $72M (↓5%)") y (b) los
+workflows del Bloque K puedan disparar reglas tipo "cuando estado
+cambie a contactado, asigna asesor". El bus ya auto-llenaba `bySource`
+desde I.1 (línea 65 de event-bus.js detecta `window.AP` o
+`/admin/` en URL); I.4 cierra el lado de la convención del payload.
+
+**Convención canónica `_previous`**:
+
+Cualquier emit que represente un update DEBE incluir `payload._previous`
+con el subset de campos relevantes ANTES del cambio. El feed lo lee
+para renderizar la línea de diff. Workflows futuros lo usarán para
+matching:
+
+```js
+AltorraEventBus.on('vehicle.updated', function (event) {
+    var prev = event.payload._previous;
+    if (prev && prev.estado === 'disponible' && event.payload.estado === 'reservado') {
+        // → trigger workflow "vehiculo recién reservado"
+    }
+});
+```
+
+**Cambios aplicados**:
+
+1. **`js/admin-vehicles.js` `vehicle.updated`** — captura snapshot del
+   doc viejo (precio, precioOferta, estado, destacado) ANTES de que
+   AP.vehicles se actualice por el listener Firestore. El emit envía
+   `_previous: { precio, precioOferta, estado, destacado }`.
+
+2. **`js/admin-appointments.js` `comm.estado-changed`** — agrega
+   `_previous: { estado: prevEstado }` además de mantener los aliases
+   legacy `estadoNuevo`/`estadoPrevio` para subscribers que ya los leían.
+
+3. **`js/admin-section-router.js` `ui.section-changed`** — agrega
+   `_previous: { section: prev }` y un `title` precomputado de la
+   forma "Inicio → Vehículos" para que la card del feed se lea sola
+   sin llegar al renderer de diffs (los cambios de UI no necesitan la
+   caja monospace).
+
+4. **`js/admin-activity-feed.js`** — nuevo helper `diffSummary(type, payload)`
+   que detecta:
+   - **Estado transition**: `estado: pendiente → contactado`
+   - **Precio change**: `precio: $76M → $72M (↓5%)` con cálculo de %
+   - **Destacado toggle**: `marcado destacado` o `sin destacar`
+   `humanizeAction()` ahora retorna también `.diff` y `renderEntry()`
+   inyecta `<div class="aaf-entry-diff">` cuando hay contenido.
+
+5. **`css/admin.css`** — nueva regla `.aaf-entry-diff` con fondo dorado
+   tenue (8% alpha), border-left de acento, monospace para los
+   números, padding cómodo. Visualmente distinta de `.aaf-entry-detail`
+   (que sigue siendo el subtítulo gris).
+
+**Helper `fmtPriceShort(n)`**: formato compacto $76M / $1.2M / $850K
+para que la línea de diff quepa en el panel de 380px sin wrappear.
+Usa `Math.round(n / 1e5) / 10` para 1 decimal en millones (78.5M).
+
+**Por qué `bySource` no necesita cambio**: ya estaba auto en I.1.
+`_bySource()` retorna `'admin'` si existe `window.AP`, `'public'` si
+no. Bloque K cuando agregue triggers automáticos pasará explícitamente
+`{bySource: 'system'}` en el `opts`.
+
+**Pasos de prueba**:
+1. Abrir admin → Activity Feed
+2. Editar un vehículo: cambiar precio de 76M a 72M, marcar destacado
+3. Guardar → tarjeta `vehicle.updated` muestra:
+   - Detalle: "Toyota Hilux 2020"
+   - Diff (caja dorada monospace): `precio: $76M → $72M (↓5%) · marcado destacado`
+4. Cambiar estado de una solicitud `pendiente → contactado`
+5. Tarjeta `comm.estado-changed` muestra:
+   - Detalle: "Daniel — Toyota Hilux"
+   - Diff: `estado: pendiente → contactado`
+6. Navegar Inicio → Vehículos → tarjeta `ui.section-changed` muestra:
+   - Detalle: "Inicio → Vehículos" (en línea de detalle gris, no en diff
+     box — convención: navegación = detalle, datos = diff)
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| `_previous` enviado en creación (no aplica) | Sólo se setea en branch `if (isEdit)` |
+| Diff falso por strict equality en numbers/strings con tipos mezclados | Comparación con `!==` después de chequear `null` explícitamente |
+| Snapshot tomado DESPUÉS del save (Firestore listener ya actualizó AP) | Captura ANTES con `find(parseInt(existingId))` mientras el evento aún no llegó por onSnapshot |
+| Rendering de números enormes desbordando el panel | `fmtPriceShort()` compacta a M/K |
+| Backward compat con subscribers viejos | Aliases `estadoNuevo`/`estadoPrevio` preservados en payload |
+| Diff box que aparece vacía | Render condicional `(human.diff ? '<div...>...</div>' : '')` |
+
+**Archivos modificados**:
+- `js/admin-vehicles.js` — agrega `_previous` snapshot en vehicle.updated
+- `js/admin-appointments.js` — agrega `_previous: {estado}` en comm.estado-changed
+- `js/admin-section-router.js` — agrega title precomputado y `_previous: {section}`
+- `js/admin-activity-feed.js` — `diffSummary()` + `fmtPriceShort()` + render `.aaf-entry-diff`
+- `css/admin.css` — `.aaf-entry-diff` styles (gold-tinted monospace block)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505160000
 
 ---
 

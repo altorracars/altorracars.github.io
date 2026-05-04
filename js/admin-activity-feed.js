@@ -72,6 +72,37 @@
         return { icon: 'circle-dot', color: 'neutral' };
     }
 
+    function fmtPriceShort(n) {
+        if (n == null || isNaN(n)) return '';
+        if (n >= 1e6) return '$' + (Math.round(n / 1e5) / 10) + 'M';
+        if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';
+        return '$' + n;
+    }
+
+    // I.4 — derive a "X → Y" transition line from payload._previous
+    function diffSummary(type, payload) {
+        if (!payload || !payload._previous) return '';
+        var prev = payload._previous;
+        var bits = [];
+
+        // estado transition (vehicle or comm)
+        if (prev.estado && payload.estado && prev.estado !== payload.estado) {
+            bits.push('estado: ' + prev.estado + ' → ' + payload.estado);
+        }
+        // precio change (vehicle)
+        if (prev.precio != null && payload.precio != null && prev.precio !== payload.precio) {
+            var pct = prev.precio > 0 ? Math.round(((payload.precio - prev.precio) / prev.precio) * 100) : 0;
+            var arrow = payload.precio < prev.precio ? '↓' : '↑';
+            bits.push('precio: ' + fmtPriceShort(prev.precio) + ' → ' + fmtPriceShort(payload.precio) +
+                      ' (' + arrow + Math.abs(pct) + '%)');
+        }
+        // destacado toggle (vehicle)
+        if (typeof prev.destacado === 'boolean' && typeof payload.destacado === 'boolean' && prev.destacado !== payload.destacado) {
+            bits.push(payload.destacado ? 'marcado destacado' : 'sin destacar');
+        }
+        return bits.join(' · ');
+    }
+
     function humanizeAction(type, payload) {
         // Best-effort human description from event type + payload
         var parts = type.split('.');
@@ -86,7 +117,8 @@
             else if (payload.vehiculo) detail = payload.vehiculo;
             else if (payload.id) detail = payload.id;
         }
-        return { domain: domain, action: humanized, detail: detail };
+        var diff = diffSummary(type, payload);
+        return { domain: domain, action: humanized, detail: detail, diff: diff };
     }
 
     function renderEntry(event) {
@@ -102,6 +134,7 @@
                     '<span class="aaf-entry-action">' + escTxt(human.action) + '</span>' +
                 '</div>' +
                 (human.detail ? '<div class="aaf-entry-detail">' + escTxt(human.detail) + '</div>' : '') +
+                (human.diff ? '<div class="aaf-entry-diff">' + escTxt(human.diff) + '</div>' : '') +
                 '<div class="aaf-entry-meta">' +
                     '<span>' + escTxt(when) + '</span>' +
                     (event.bySource ? '<span> · ' + escTxt(event.bySource) + '</span>' : '') +

@@ -103,12 +103,16 @@
         listeners.forEach(function (fn) {
             try { fn(section, prev); } catch (e) {}
         });
-        // I.3 — emit to EventBus so Activity Feed + future workflows see it
+        // I.3+I.4 — emit to EventBus so Activity Feed + future workflows see it
         if (window.AltorraEventBus) {
+            var prevLabel = prev && REGISTRY[prev] ? REGISTRY[prev].label : (prev || null);
+            var newLabel = REGISTRY[section] ? REGISTRY[section].label : section;
             window.AltorraEventBus.emit('ui.section-changed', {
                 section: section,
                 previous: prev,
-                meta: REGISTRY[section] || null
+                meta: REGISTRY[section] || null,
+                title: prev ? (prevLabel + ' → ' + newLabel) : newLabel,
+                _previous: prev ? { section: prev } : null
             });
         }
     }

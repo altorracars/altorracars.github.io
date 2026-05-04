@@ -4036,6 +4036,18 @@ body.sidebar-collapsed .sidebar-collapse-btn i {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
+.aaf-entry-diff {
+    margin-top: var(--space-1);
+    font-size: 0.72rem;
+    color: var(--brand-gold, #b89658);
+    line-height: var(--line-height-snug);
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    background: rgba(184, 150, 88, 0.08);
+    border-left: 2px solid rgba(184, 150, 88, 0.4);
+    padding: 4px 8px;
+    border-radius: 3px;
+    word-break: break-word;
+}
 .aaf-entry-meta {
     margin-top: var(--space-1);
     font-size: 0.68rem;

@@ -1089,18 +1089,34 @@
             var label = (vehicleData.marca || '') + ' ' + (vehicleData.modelo || '') + ' ' + (vehicleData.year || '');
             var codeLabel = vehicleData.codigoUnico ? ' [' + vehicleData.codigoUnico + ']' : '';
             AP.writeAuditLog(isEdit ? 'vehicle_update' : 'vehicle_create', 'vehiculo #' + vehicleData.id + codeLabel, label.trim());
-            // I.3 — EventBus emission for Activity Feed + workflows
+            // I.3+I.4 — EventBus emission with diff metadata for transitions
             if (window.AltorraEventBus) {
-                window.AltorraEventBus.emit(isEdit ? 'vehicle.updated' : 'vehicle.created', {
+                var evtPayload = {
                     id: vehicleData.id,
                     codigoUnico: vehicleData.codigoUnico || null,
                     marca: vehicleData.marca,
                     modelo: vehicleData.modelo,
                     year: vehicleData.year,
                     precio: vehicleData.precio,
+                    precioOferta: vehicleData.precioOferta || null,
                     estado: vehicleData.estado,
+                    destacado: !!vehicleData.destacado,
                     title: label.trim()
-                });
+                };
+                // I.4: capture _previous snapshot of relevant fields so workflows
+                // can detect specific transitions (precio drop, estado change, etc.)
+                if (isEdit) {
+                    var prevSnap = AP.vehicles.find(function(v) { return v.id === parseInt(existingId, 10); });
+                    if (prevSnap) {
+                        evtPayload._previous = {
+                            precio: prevSnap.precio,
+                            precioOferta: prevSnap.precioOferta || null,
+                            estado: prevSnap.estado,
+                            destacado: !!prevSnap.destacado
+                        };
+                    }
+                }
+                window.AltorraEventBus.emit(isEdit ? 'vehicle.updated' : 'vehicle.created', evtPayload);
             }
             // Per-vehicle audit log entry
             if (isEdit) {

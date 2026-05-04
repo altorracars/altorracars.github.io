@@ -1087,14 +1087,21 @@
             window.db.collection('solicitudes').doc(docId).update(updateData).then(function() {
                 AP.toast('Solicitud actualizada a: ' + updateData.estado);
                 AP.writeAuditLog('appointment_' + updateData.estado, 'solicitud ' + docId, updateData.observaciones || '');
-                // I.3 — EventBus emission
+                // I.3+I.4 — EventBus emission with diff metadata
                 if (window.AltorraEventBus) {
                     var doc = AP.appointments.find(function (a) { return a._docId === docId; }) || {};
+                    var prevEstado = doc.estado || null;
                     window.AltorraEventBus.emit('comm.estado-changed', {
                         id: docId,
                         kind: getKindOf(doc),
+                        estado: updateData.estado,
+                        // Legacy aliases (kept for any subscriber that already reads them)
                         estadoNuevo: updateData.estado,
-                        estadoPrevio: doc.estado || null,
+                        estadoPrevio: prevEstado,
+                        // I.4 canonical diff
+                        _previous: { estado: prevEstado },
+                        nombre: doc.nombre || null,
+                        vehiculo: doc.vehiculo || null,
                         title: (doc.nombre || '') + ' — ' + (doc.vehiculo || '')
                     });
                 }

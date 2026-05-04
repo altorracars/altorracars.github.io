@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504430000'; // MF4.3 — Bulk actions + CSV export with 5 tabs (mensajes/)
+const CACHE_VERSION = 'v20260504440000'; // MF4.4 — Dashboard CRM with KPIs and funnel with 5 tabs (mensajes/)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

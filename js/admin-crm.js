@@ -226,16 +226,94 @@
             return (b.lastCommAt || '').localeCompare(a.lastCommAt || '');
         });
 
-        // KPIs
+        // KPIs (MF4.4 — Dashboard CRM metrics)
         var total = contacts.length;
         var registered = contacts.filter(function (c) { return c.type === 'registered'; }).length;
-        var guests = total - registered;
         var totalComms = contacts.reduce(function (acc, c) { return acc + (c.comms || []).length; }, 0);
-        var avg = total > 0 ? (totalComms / total).toFixed(1) : '0';
+
+        // New today / this week (based on first comm or registration date)
+        var oneDayMs = 86400000;
+        var weekStart = new Date(Date.now() - 7 * oneDayMs).getTime();
+        var todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+        var newToday = 0, newWeek = 0;
+        contacts.forEach(function (c) {
+            var ts = c.creadoEn || (c.comms && c.comms[c.comms.length - 1] && c.comms[c.comms.length - 1].createdAt) || c.lastCommAt;
+            if (!ts) return;
+            var tsMs = new Date(ts).getTime();
+            if (tsMs >= todayStart.getTime()) newToday++;
+            if (tsMs >= weekStart) newWeek++;
+        });
+
+        // Conversion: contacts with at least one solicitud or cita / total
+        var converted = contacts.filter(function (c) {
+            return (c.comms || []).some(function (s) {
+                return s.kind === 'solicitud' || s.kind === 'cita';
+            });
+        }).length;
+        var convRate = total > 0 ? Math.round((converted / total) * 100) : 0;
+
+        // Avg response time: avg(updatedAt - createdAt) for comms with both
+        var responseTimes = [];
+        AP.appointments.forEach(function (s) {
+            if (s.createdAt && s.updatedAt && s.updatedAt !== s.createdAt) {
+                var ms = new Date(s.updatedAt) - new Date(s.createdAt);
+                if (ms > 0 && ms < 7 * oneDayMs) responseTimes.push(ms);
+            }
+        });
+        var avgRespMs = responseTimes.length
+            ? responseTimes.reduce(function (a, b) { return a + b; }, 0) / responseTimes.length
+            : 0;
+        var avgRespLabel = '—';
+        if (avgRespMs > 0) {
+            var hours = avgRespMs / 3600000;
+            avgRespLabel = hours < 1 ? Math.round(avgRespMs / 60000) + 'm'
+                : hours < 24 ? hours.toFixed(1) + 'h'
+                : (hours / 24).toFixed(1) + 'd';
+        }
+
+        // Tier distribution
+        var tiers = { hot: 0, warm: 0, cold: 0 };
+        contacts.forEach(function (c) {
+            var s = computeScore(c);
+            if (s >= 70) tiers.hot++;
+            else if (s >= 40) tiers.warm++;
+            else tiers.cold++;
+        });
+
         if ($('crmKpiTotal')) $('crmKpiTotal').textContent = total;
-        if ($('crmKpiRegistered')) $('crmKpiRegistered').textContent = registered;
-        if ($('crmKpiGuests')) $('crmKpiGuests').textContent = guests;
-        if ($('crmKpiAvgComms')) $('crmKpiAvgComms').textContent = avg;
+        if ($('crmKpiNewToday')) $('crmKpiNewToday').textContent = newToday;
+        if ($('crmKpiNewWeek')) $('crmKpiNewWeek').textContent = newWeek;
+        if ($('crmKpiConv')) $('crmKpiConv').textContent = convRate + '%';
+        if ($('crmKpiAvgResp')) $('crmKpiAvgResp').textContent = avgRespLabel;
+        if ($('crmKpiTiers')) $('crmKpiTiers').innerHTML = '🔥' + tiers.hot + ' · 🟧' + tiers.warm + ' · 🟦' + tiers.cold;
+
+        // Funnel: leads → solicitudes → citas → convertidos
+        var leadCount = AP.appointments.filter(function (s) { return (s.kind || 'lead') === 'lead'; }).length;
+        var solicCount = AP.appointments.filter(function (s) { return s.kind === 'solicitud'; }).length;
+        var citaCount = AP.appointments.filter(function (s) { return s.kind === 'cita'; }).length;
+        var convCount = AP.appointments.filter(function (s) {
+            return s.estado === 'convertido' || s.estado === 'aprobada' || s.estado === 'completada';
+        }).length;
+        var funnelMax = Math.max(1, leadCount, solicCount, citaCount, convCount);
+        var funnelEl = document.getElementById('crmFunnel');
+        if (funnelEl) {
+            funnelEl.innerHTML = [
+                { label: 'Leads', count: leadCount, color: '#a5b4fc' },
+                { label: 'Solicitudes', count: solicCount, color: '#fde047' },
+                { label: 'Citas', count: citaCount, color: '#4ade80' },
+                { label: 'Convertidos', count: convCount, color: '#fb923c' }
+            ].map(function (s) {
+                var pct = (s.count / funnelMax) * 100;
+                return '<div class="crm-funnel-row">' +
+                    '<div class="crm-funnel-label">' + s.label + '</div>' +
+                    '<div class="crm-funnel-bar">' +
+                        '<div class="crm-funnel-fill" style="width:' + pct + '%;background:' + s.color + ';">' +
+                            '<span class="crm-funnel-count">' + s.count + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
 
         // Update sidebar nav badge with total contacts
         var navBadge = $('navBadgeCrm');

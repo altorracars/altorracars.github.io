@@ -3376,3 +3376,51 @@ table th:focus-visible,
     margin-bottom: 10px;
     font-size: 0.86rem;
 }
+
+/* MF4.4 — Dashboard funnel */
+.crm-funnel-card {
+    background: var(--admin-card);
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 12px;
+}
+.crm-funnel-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--admin-text-muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.crm-funnel { display: flex; flex-direction: column; gap: 8px; }
+.crm-funnel-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 10px;
+    align-items: center;
+}
+.crm-funnel-label {
+    font-size: 0.86rem;
+    color: var(--admin-text);
+    font-weight: 600;
+}
+.crm-funnel-bar {
+    height: 28px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.crm-funnel-fill {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    transition: width 0.4s cubic-bezier(0.22,1,0.36,1);
+    color: #1a1100;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+.crm-funnel-count {
+    margin-left: auto;
+}

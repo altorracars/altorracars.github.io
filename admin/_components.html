@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Storybook · Altorra Components (T.3)</title>
+
+    <!-- Mega-plan v4 stack -->
+    <link rel="stylesheet" href="../css/tokens.css">
+    <link rel="stylesheet" href="../css/components.css">
+
+    <!-- Lucide icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+
+    <style>
+        body {
+            font-family: var(--font-family-base);
+            background: var(--bg-base);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .sb-header {
+            position: sticky;
+            top: 0;
+            z-index: var(--z-sticky);
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-default);
+            padding: var(--space-3) var(--space-6);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-4);
+            backdrop-filter: blur(8px);
+        }
+        .sb-title {
+            margin: 0;
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-bold);
+            letter-spacing: var(--letter-spacing-tight);
+        }
+        .sb-title-sub {
+            display: block;
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            font-weight: var(--font-weight-regular);
+            letter-spacing: var(--letter-spacing-normal);
+        }
+        .sb-controls {
+            display: flex;
+            gap: var(--space-2);
+        }
+        .sb-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-6);
+        }
+        .sb-section {
+            margin-bottom: var(--space-12);
+        }
+        .sb-section h2 {
+            margin: 0 0 var(--space-4) 0;
+            padding-bottom: var(--space-2);
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+        }
+        .sb-section p {
+            color: var(--text-tertiary);
+            font-size: var(--font-size-sm);
+            margin: 0 0 var(--space-4) 0;
+            max-width: 60ch;
+        }
+        .sb-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+        .sb-tile {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            min-height: 120px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .sb-tile-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wide);
+            font-weight: var(--font-weight-semibold);
+        }
+        .sb-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            align-items: center;
+        }
+        code {
+            background: var(--bg-card);
+            color: var(--brand-primary);
+            padding: 1px 6px;
+            border-radius: var(--radius-xs);
+            font-family: var(--font-family-mono);
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+
+<header class="sb-header">
+    <div>
+        <h1 class="sb-title">
+            🎨 Altorra Components
+            <span class="sb-title-sub">Storybook lite (T.3) — preview de los 12 core components</span>
+        </h1>
+    </div>
+    <div class="sb-controls">
+        <button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="theme" data-theme-value="dark">Dark</button>
+        <button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="theme" data-theme-value="light">Light</button>
+        <button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="theme" data-theme-value="high-contrast">A11y AAA</button>
+    </div>
+</header>
+
+<main class="sb-content">
+
+<!-- 1. BUTTONS -->
+<section class="sb-section">
+    <h2>1. Button</h2>
+    <p>Variantes de color (<code>--primary/--secondary/--ghost/--danger/--success</code>) × tamaños (<code>--sm</code> default <code>--lg</code>) × estados.</p>
+
+    <div class="sb-grid">
+        <div class="sb-tile">
+            <span class="sb-tile-label">Variants</span>
+            <div class="sb-row">
+                <button class="alt-btn alt-btn--primary">Primary</button>
+                <button class="alt-btn alt-btn--secondary">Secondary</button>
+                <button class="alt-btn alt-btn--ghost">Ghost</button>
+            </div>
+            <div class="sb-row">
+                <button class="alt-btn alt-btn--danger">Danger</button>
+                <button class="alt-btn alt-btn--success">Success</button>
+            </div>
+        </div>
+
+        <div class="sb-tile">
+            <span class="sb-tile-label">Sizes</span>
+            <div class="sb-row">
+                <button class="alt-btn alt-btn--primary alt-btn--sm">Small</button>
+                <button class="alt-btn alt-btn--primary">Default</button>
+                <button class="alt-btn alt-btn--primary alt-btn--lg">Large</button>
+            </div>
+        </div>
+
+        <div class="sb-tile">
+            <span class="sb-tile-label">States</span>
+            <div class="sb-row">
+                <button class="alt-btn alt-btn--primary" disabled>Disabled</button>
+                <button class="alt-btn alt-btn--primary" data-loading="true">Loading</button>
+            </div>
+        </div>
+
+        <div class="sb-tile">
+            <span class="sb-tile-label">Icon-only</span>
+            <div class="sb-row">
+                <button class="alt-btn alt-btn--secondary alt-btn--icon" data-tooltip="Editar"><i data-lucide="edit-3"></i></button>
+                <button class="alt-btn alt-btn--ghost alt-btn--icon" data-tooltip="Eliminar"><i data-lucide="trash-2"></i></button>
+                <button class="alt-btn alt-btn--primary alt-btn--icon alt-btn--lg" data-tooltip="Crear"><i data-lucide="plus"></i></button>
+            </div>
+        </div>
+
+        <div class="sb-tile">
+            <span class="sb-tile-label">Block</span>
+            <button class="alt-btn alt-btn--primary alt-btn--block">
+                <i data-lucide="send"></i> Enviar solicitud
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- 2. INPUT + FIELD -->
+<section class="sb-section">
+    <h2>2. Input + Field group</h2>
+    <p><code>.alt-input</code> con <code>.alt-field</code> wrapper que agrupa label + hint + error.</p>
+
+    <div class="sb-grid">
+        <div class="sb-tile">
+            <div class="alt-field" style="width:100%;">
+                <label class="alt-field-label">Email</label>
+                <input class="alt-input" type="email" placeholder="cliente@ejemplo.com">
+                <span class="alt-field-hint">Te enviaremos la cotización aquí</span>
+            </div>
+        </div>
+
+        <div class="sb-tile">
+            <div class="alt-field" style="width:100%;">
+                <label class="alt-field-label">Teléfono</label>
+                <input class="alt-input" aria-invalid="true" value="abc">
+                <span class="alt-field-error">El teléfono solo debe contener números</span>
+            </div>
+        </div>
+
+        <div class="sb-tile">
+            <div class="alt-field" style="width:100%;">
+                <label class="alt-field-label">Comentarios</label>
+                <textarea class="alt-input" rows="3" placeholder="Escribe aquí..."></textarea>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 3. SELECT -->
+<section class="sb-section">
+    <h2>3. Select</h2>
+    <p>Estilo unificado con input. Flecha SVG inline que adapta a tema.</p>
+
+    <div class="sb-grid">
+        <div class="sb-tile">
+            <select class="alt-select" style="width:100%;">
+                <option>Selecciona marca</option>
+                <option>Chevrolet</option>
+                <option>Toyota</option>
+                <option>Mazda</option>
+            </select>
+        </div>
+        <div class="sb-tile">
+            <select class="alt-select alt-select--sm" style="width:100%;" disabled>
+                <option>Disabled</option>
+            </select>
+        </div>
+    </div>
+</section>
+
+<!-- 4. CARD -->
+<section class="sb-section">
+    <h2>4. Card</h2>
+    <p>Variantes <code>--interactive/--elevated/--flat</code> con header/body/footer estructurados.</p>
+
+    <div class="sb-grid">
+        <article class="alt-card">
+            <header class="alt-card-header">
+                <div>
+                    <h3 class="alt-card-title">Cliente: Daniel Pérez</h3>
+                    <p class="alt-card-subtitle">Lead caliente · score 78</p>
+                </div>
+                <span class="alt-badge alt-badge--brand alt-badge--dot">Activo</span>
+            </header>
+            <div class="alt-card-body">
+                <p style="margin:0;color:var(--text-secondary);font-size:var(--font-size-sm);">
+                    Cliente interesado en SUVs entre $60M-$90M. Última interacción: hace 2 días.
+                </p>
+            </div>
+            <footer class="alt-card-footer">
+                <button class="alt-btn alt-btn--ghost alt-btn--sm">Cancelar</button>
+                <button class="alt-btn alt-btn--primary alt-btn--sm">Ver 360°</button>
+            </footer>
+        </article>
+
+        <article class="alt-card alt-card--interactive alt-card--elevated">
+            <div class="alt-card-body">
+                <span class="alt-tile-label" style="font-size:var(--font-size-xs);color:var(--text-tertiary);text-transform:uppercase;">Hover me</span>
+                <h3 class="alt-card-title" style="margin-top:var(--space-2)">Card interactiva</h3>
+                <p style="margin:var(--space-2) 0 0;color:var(--text-secondary);font-size:var(--font-size-sm);">Cambia border + sombra al hover.</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<!-- 5. MODAL -->
+<section class="sb-section">
+    <h2>5. Modal</h2>
+    <p>Click el botón para ver el modal. Esc + click backdrop cierran.</p>
+    <div class="sb-row">
+        <button class="alt-btn alt-btn--primary" data-action="modal-open">Abrir modal</button>
+    </div>
+
+    <div class="alt-modal-backdrop" data-modal aria-hidden="true">
+        <div class="alt-modal" role="dialog" aria-labelledby="sb-modal-title">
+            <header class="alt-modal-header">
+                <h3 class="alt-modal-title" id="sb-modal-title">Confirmar acción</h3>
+                <button class="alt-modal-close" data-action="modal-close" aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+            <div class="alt-modal-body">
+                <p style="margin:0;">¿Estás seguro de que querés realizar esta acción? No podrás deshacerla.</p>
+            </div>
+            <footer class="alt-modal-footer">
+                <button class="alt-btn alt-btn--ghost" data-action="modal-close">Cancelar</button>
+                <button class="alt-btn alt-btn--danger">Sí, continuar</button>
+            </footer>
+        </div>
+    </div>
+</section>
+
+<!-- 6. TABS -->
+<section class="sb-section">
+    <h2>6. Tabs</h2>
+    <p>Variante default (border-bottom) y <code>--pills</code> (boxed).</p>
+
+    <div class="sb-tile">
+        <span class="sb-tile-label">Default</span>
+        <nav class="alt-tabs" role="tablist" style="width:100%;">
+            <button class="alt-tab" role="tab" aria-selected="true">
+                <i data-lucide="inbox" width="14" height="14"></i> Inbox
+                <span class="alt-tab-badge">12</span>
+            </button>
+            <button class="alt-tab" role="tab" aria-selected="false">
+                <i data-lucide="users-round" width="14" height="14"></i> CRM
+            </button>
+            <button class="alt-tab" role="tab" aria-selected="false">
+                <i data-lucide="bar-chart-3" width="14" height="14"></i> Reportes
+            </button>
+        </nav>
+    </div>
+
+    <div class="sb-tile" style="margin-top:var(--space-4);">
+        <span class="sb-tile-label">Pills</span>
+        <nav class="alt-tabs alt-tabs--pills" role="tablist">
+            <button class="alt-tab" role="tab" aria-selected="true">Citas</button>
+            <button class="alt-tab" role="tab" aria-selected="false">Solicitudes</button>
+            <button class="alt-tab" role="tab" aria-selected="false">Leads</button>
+        </nav>
+    </div>
+</section>
+
+<!-- 7. BADGE -->
+<section class="sb-section">
+    <h2>7. Badge</h2>
+    <p>7 variantes semánticas + dot prefix.</p>
+
+    <div class="sb-tile">
+        <span class="sb-tile-label">Variantes</span>
+        <div class="sb-row">
+            <span class="alt-badge">Default</span>
+            <span class="alt-badge alt-badge--brand">Brand</span>
+            <span class="alt-badge alt-badge--success">Activo</span>
+            <span class="alt-badge alt-badge--warning">Pendiente</span>
+            <span class="alt-badge alt-badge--danger">Vencido</span>
+            <span class="alt-badge alt-badge--info">Info</span>
+            <span class="alt-badge alt-badge--ai">AI</span>
+            <span class="alt-badge alt-badge--solid">Solid</span>
+        </div>
+        <div class="sb-row" style="margin-top:var(--space-3);">
+            <span class="alt-badge alt-badge--success alt-badge--dot">En vivo</span>
+            <span class="alt-badge alt-badge--warning alt-badge--dot">Esperando</span>
+            <span class="alt-badge alt-badge--danger alt-badge--dot">Offline</span>
+        </div>
+    </div>
+</section>
+
+<!-- 8. AVATAR -->
+<section class="sb-section">
+    <h2>8. Avatar</h2>
+    <p>Iniciales + foto + grupos. Sizes <code>sm/lg/xl</code> y modificador <code>--ring</code>.</p>
+
+    <div class="sb-tile">
+        <div class="sb-row">
+            <span class="alt-avatar alt-avatar--sm">DR</span>
+            <span class="alt-avatar">DR</span>
+            <span class="alt-avatar alt-avatar--lg">DR</span>
+            <span class="alt-avatar alt-avatar--xl alt-avatar--ring">DR</span>
+        </div>
+        <span class="sb-tile-label" style="margin-top:var(--space-3);">Avatar group</span>
+        <div class="alt-avatar-group">
+            <span class="alt-avatar">D</span>
+            <span class="alt-avatar" style="background:linear-gradient(135deg,#22c55e,#15803d);">M</span>
+            <span class="alt-avatar" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">J</span>
+            <span class="alt-avatar" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);">+5</span>
+        </div>
+    </div>
+</section>
+
+<!-- 9. TOOLTIP -->
+<section class="sb-section">
+    <h2>9. Tooltip</h2>
+    <p>Pure CSS via <code>data-tooltip="..."</code>. Hover los botones de arriba para ver tooltips.</p>
+
+    <div class="sb-tile">
+        <div class="sb-row">
+            <button class="alt-btn alt-btn--secondary" data-tooltip="Tooltip arriba (default)">Hover top</button>
+            <button class="alt-btn alt-btn--secondary" data-tooltip="Tooltip abajo" data-tooltip-pos="bottom">Hover bottom</button>
+        </div>
+    </div>
+</section>
+
+<!-- 10. TOGGLE -->
+<section class="sb-section">
+    <h2>10. Toggle / Switch</h2>
+    <p>Wrap <code>&lt;input type="checkbox"&gt;</code> + <code>.alt-toggle-track</code>.</p>
+
+    <div class="sb-tile">
+        <div class="sb-row" style="gap:var(--space-4);">
+            <label class="alt-cluster" style="cursor:pointer;">
+                <span class="alt-toggle">
+                    <input type="checkbox" checked>
+                    <span class="alt-toggle-track"></span>
+                </span>
+                <span style="font-size:var(--font-size-sm);">Notificaciones del bell</span>
+            </label>
+            <label class="alt-cluster" style="cursor:pointer;">
+                <span class="alt-toggle">
+                    <input type="checkbox">
+                    <span class="alt-toggle-track"></span>
+                </span>
+                <span style="font-size:var(--font-size-sm);">Sonidos al recibir mensaje</span>
+            </label>
+            <label class="alt-cluster" style="cursor:not-allowed;opacity:0.5;">
+                <span class="alt-toggle">
+                    <input type="checkbox" disabled>
+                    <span class="alt-toggle-track"></span>
+                </span>
+                <span style="font-size:var(--font-size-sm);">Disabled</span>
+            </label>
+        </div>
+    </div>
+</section>
+
+<!-- 11. SKELETON -->
+<section class="sb-section">
+    <h2>11. Skeleton</h2>
+    <p>Loading placeholders animados con shimmer.</p>
+
+    <div class="sb-grid">
+        <div class="sb-tile">
+            <span class="sb-tile-label">Text</span>
+            <div class="alt-stack" style="width:100%;">
+                <div class="alt-skeleton alt-skeleton--title"></div>
+                <div class="alt-skeleton alt-skeleton--text"></div>
+                <div class="alt-skeleton alt-skeleton--text" style="width:80%;"></div>
+            </div>
+        </div>
+        <div class="sb-tile">
+            <span class="sb-tile-label">Avatar + content</span>
+            <div class="alt-cluster" style="align-items:flex-start;width:100%;">
+                <div class="alt-skeleton alt-skeleton--circle" style="width:40px;height:40px;"></div>
+                <div class="alt-stack alt-stack--xs" style="flex:1;">
+                    <div class="alt-skeleton alt-skeleton--title" style="width:50%;"></div>
+                    <div class="alt-skeleton alt-skeleton--text" style="width:80%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="sb-tile">
+            <span class="sb-tile-label">Card body</span>
+            <div class="alt-skeleton alt-skeleton--block" style="width:100%;height:80px;"></div>
+        </div>
+    </div>
+</section>
+
+<!-- 12. STACK / CLUSTER -->
+<section class="sb-section">
+    <h2>12. Stack / Cluster (layout primitives)</h2>
+    <p><code>.alt-stack</code> = flex column · <code>.alt-cluster</code> = flex row con wrap. Tamaños <code>xs/sm/lg</code>.</p>
+
+    <div class="sb-grid">
+        <div class="sb-tile">
+            <span class="sb-tile-label">Stack (gap-4 default)</span>
+            <div class="alt-stack" style="width:100%;">
+                <div style="background:var(--bg-elevated);padding:var(--space-2);border-radius:var(--radius-sm);">Item 1</div>
+                <div style="background:var(--bg-elevated);padding:var(--space-2);border-radius:var(--radius-sm);">Item 2</div>
+                <div style="background:var(--bg-elevated);padding:var(--space-2);border-radius:var(--radius-sm);">Item 3</div>
+            </div>
+        </div>
+        <div class="sb-tile">
+            <span class="sb-tile-label">Cluster (wraps + center align)</span>
+            <div class="alt-cluster">
+                <span class="alt-badge alt-badge--brand">tag1</span>
+                <span class="alt-badge alt-badge--brand">tag2</span>
+                <span class="alt-badge alt-badge--brand">tag3</span>
+                <span class="alt-badge alt-badge--brand">muy-largo-tag</span>
+                <span class="alt-badge alt-badge--brand">otra-cosa</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<script>
+    // Theme switcher
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-action="theme"]');
+        if (b) {
+            document.documentElement.setAttribute('data-theme', b.getAttribute('data-theme-value'));
+        }
+        // Modal
+        if (e.target.closest('[data-action="modal-open"]')) {
+            document.querySelector('[data-modal]').setAttribute('aria-hidden', 'false');
+        }
+        if (e.target.closest('[data-action="modal-close"]')) {
+            document.querySelector('[data-modal]').setAttribute('aria-hidden', 'true');
+        }
+    });
+    // Backdrop click closes
+    document.querySelector('[data-modal]').addEventListener('click', function (e) {
+        if (e.target === this) {
+            this.setAttribute('aria-hidden', 'true');
+        }
+    });
+    // Esc to close
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelector('[data-modal]').setAttribute('aria-hidden', 'true');
+        }
+    });
+    // Init Lucide
+    if (window.lucide && window.lucide.createIcons) {
+        window.lucide.createIcons();
+    } else {
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.lucide) window.lucide.createIcons();
+        });
+    }
+</script>
+
+</body>
+</html>

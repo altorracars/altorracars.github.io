@@ -4057,6 +4057,140 @@ SEMANA 12: P + buffer + QA + estabilización
 4. Cambiar `<html data-theme="light">` en consola → verificar que `--bg-base` cambia a `#fafafa`
 5. Cambiar `<html data-theme="high-contrast">` → verificar contraste extremo
 
+---
+
+### Microfase T.2 — Component Library (`css/components.css`) ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: T.1 dio los tokens. T.2 los usa para construir 12 componentes core reusables. Toda nueva feature debe usar estos componentes — el admin viejo migra en T.6.
+
+**12 componentes creados** (todos prefijo `alt-` para evitar colisiones):
+
+| # | Componente | Clases / API |
+|---|---|---|
+| 1 | **Button** | `.alt-btn` + `--primary/--secondary/--ghost/--danger/--success` + `--sm/--lg/--icon/--block`. Estado `data-loading="true"` muestra spinner automático. `:focus-visible` con `--shadow-focus-ring`. `:disabled` y `[aria-disabled]`. |
+| 2 | **Input** | `.alt-input` (textarea también). Estado `aria-invalid="true"` ring rojo. Hover/focus/disabled. `--sm/--lg`. |
+| 3 | **Field group** | `.alt-field` + `.alt-field-label` + `.alt-field-hint` + `.alt-field-error`. Compose with `.alt-input`. |
+| 4 | **Select** | `.alt-select` con SVG inline para flecha (currentColor — adapta al tema). Misma estética que input. |
+| 5 | **Card** | `.alt-card` + `--interactive/--elevated/--flat`. Sub-blocks: `.alt-card-header`, `.alt-card-title`, `.alt-card-body`, `.alt-card-footer`. |
+| 6 | **Modal** | `.alt-modal-backdrop` + `.alt-modal` + `--sm/--lg/--xl`. `aria-hidden="false"` o `.is-open` activa. Animaciones spring. Header/body/footer estructurados. |
+| 7 | **Tabs** | `.alt-tabs` + `.alt-tab` + `.alt-tab-badge`. Variant `--pills` para boxed. `aria-selected="true"` activa el border-bottom dorado. |
+| 8 | **Badge** | `.alt-badge` + 7 variantes (success/warning/danger/info/brand/ai/solid). Variant `--dot` con dot prefix. |
+| 9 | **Avatar** | `.alt-avatar` + `--sm/--lg/--xl/--ring`. Soporta `<img>` o iniciales. `.alt-avatar-group` apila con overlap. |
+| 10 | **Tooltip** | `[data-tooltip="texto"]` puro CSS via `::after` + `attr()`. `data-tooltip-pos="bottom"` cambia posición. Auto-hide en touch. |
+| 11 | **Toggle/Switch** | `.alt-toggle` con `<input type="checkbox">` interno. Spring animation al cambiar. `aria-checked` accesible. |
+| 12 | **Skeleton** | `.alt-skeleton` + `--circle/--text/--title/--block`. Shimmer animation con tokens. |
+| + | **Stack/Cluster** | Layout primitives: `.alt-stack` (vertical) y `.alt-cluster` (horizontal flex+wrap) con gap variants xs/sm/lg/xl. |
+
+**Características transversales**:
+
+- Todos respetan `prefers-reduced-motion` (heredan de tokens.css)
+- Todos funcionan en dark/light/high-contrast sin código extra (semantic tokens)
+- Focus rings consistentes (`--shadow-focus-ring`)
+- ARIA attributes apropiados (`aria-disabled`, `aria-selected`, `aria-invalid`, `aria-hidden`)
+- BEM naming: `.alt-btn--primary`, `.alt-card-header`, etc.
+- Utility `.alt-visually-hidden` para screen reader only
+
+**Diseño (D)**:
+- Cards y modals usan `--shadow-md` por default, `--xl` para modals (más elevación)
+- Sizes consistentes: `sm` (compact), default, `lg` (prominent), `xl` solo para hero/modals
+- Animaciones con `--ease-snap` (default), `--ease-spring` (toggles + modals para overshoot natural)
+- Border radius escalonado: chips usan `--pill`, cards `--lg`, modals `--xl`
+
+**Migración (M)**: ningún cambio destructivo. `components.css` se carga después de `tokens.css` y antes de `admin.css`. El admin existente sigue funcionando con sus estilos legacy hasta T.6.
+
+**Archivos modificados**: `css/components.css` (new), `admin.html` (link agregado), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Abrir admin → en cualquier sección agregar manualmente `<button class="alt-btn alt-btn--primary">Test</button>` en consola → verificar que se ve dorado con hover lift
+2. Mismo con `<span class="alt-badge alt-badge--success alt-badge--dot">Activo</span>` → badge verde con dot
+3. T.3 (siguiente) creará la página de Storybook lite para verlos todos juntos.
+
+---
+
+### Microfase T.3 — Storybook lite (`admin/_components.html`) ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: necesitamos una página interna que muestre TODOS los componentes (T.2) en todos sus estados/variantes para QA visual rápido. Antes de migrar el admin (T.6) o agregar features nuevas, validamos visualmente que el sistema se ve consistente.
+
+**Lo que se creó**: página standalone `admin/_components.html` con:
+
+1. **Header sticky** con título + 3 toggles de tema (Dark / Light / A11y AAA) — permite verificar in-place que cada componente funciona en los 3 modos.
+2. **12 secciones** (una por componente) con:
+   - Descripción + ejemplo de código inline (`<code>`)
+   - Tiles que muestran cada variante/estado
+   - Casos de uso reales (ej: card de cliente con badge "Activo", avatar group, tab strip con badge contador)
+3. **Modal funcional** con apertura/cierre via JS minimal (Esc + click backdrop + close button — todos funcionan).
+4. **robots.txt actualizado** con `Disallow: /admin/` para evitar indexación de la carpeta interna.
+
+**Cómo usarla**:
+- Local: abrir `admin/_components.html` en el browser
+- Production: `https://altorracars.github.io/admin/_components.html` (no indexada por robots)
+- Workflow: cuando agregues una feature, abrir Storybook → ver el componente correspondiente → copiar el snippet
+
+**Diseño (D)**: la página misma usa los componentes que muestra (dogfooding) — botones, badges, cards, tabs son todos `.alt-*`. Header sticky con `backdrop-filter`. Grid responsive `auto-fill minmax(280px, 1fr)`.
+
+**Migración (M)**: ninguna — página nueva sin afectar nada existente. `robots.txt` actualizado para que `/admin/` no se indexe.
+
+**Archivos**: `admin/_components.html` (new), `robots.txt`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Abrir `admin/_components.html`
+2. Toggle "Dark" / "Light" / "A11y AAA" en header → verificar que TODO se adapta sin código extra (los tokens hacen el trabajo)
+3. Click "Abrir modal" → verificar animación spring + Esc cierra + click backdrop cierra
+4. Hover botones → tooltips aparecen
+5. Verificar focus rings con Tab key → todos los elementos focusables muestran el ring dorado
+6. DevTools → Rendering → activar "prefers-reduced-motion" → verificar que las animaciones se vuelven instantáneas
+
+---
+
+### Microfase T.4 — Light/Dark/High-Contrast theme toggle real ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: el admin estaba 100% dark fijo. Sin opción de tema claro para entornos con sol fuerte (Cartagena), sin alta-contraste para WCAG. T.4 agrega switch real con 3 capas de persistencia.
+
+**Cómo funciona**:
+
+1. **Inline script en `<head>`** (3 líneas en admin.html): lee `localStorage.altorra-theme` ANTES del primer paint y aplica `data-theme` al `<html>`. Cero flash de tema incorrecto. Si no hay preferencia, fallback a `prefers-color-scheme` del SO.
+
+2. **`js/theme-switcher.js`**: módulo `AltorraTheme` con API:
+   - `get()` — tema actual
+   - `set(theme)` — aplica + persiste localStorage + Firestore (debounced 800ms)
+   - `cycle()` — alterna dark ↔ light (skippea high-contrast, ése es toggle aparte en T.8)
+   - `bindToggle(el)` — agrega click handler + actualiza aria-label/tooltip
+   - `onChange(fn)` — subscribe
+   - `syncFromUser(profile)` — aplica desde Firestore profile
+
+3. **CSS theme transition**: nueva clase `.alt-theme-transitioning` agregada por 280ms al cambiar tema. Anima `background-color`, `color`, `border-color`, `box-shadow`, `fill`, `stroke` simultáneamente con `--ease-snap`. Cross-fade suave en TODA la página.
+
+4. **3 capas de persistencia**:
+   - **localStorage** (instant) — aplicado antes del paint
+   - **Firestore** (`usuarios/{uid}.theme` para admins, `clientes/{uid}.preferencias.theme` para clientes) — sync cross-device
+   - **System preference** (`prefers-color-scheme`) — fallback solo si no hay otra preferencia
+
+5. **Toggle UI** en admin header: reemplaza el toggle viejo (emoji 🌙) con `<button class="alt-btn alt-btn--ghost alt-btn--icon" data-altorra-theme-toggle>` con dos íconos Lucide (moon + sun) que rotan/escalan al cambiar via CSS spring transition.
+
+6. **Auto-bind**: cualquier elemento con atributo `data-altorra-theme-toggle` se bindea automáticamente al cargar.
+
+7. **System change listener**: si el OS cambia entre dark/light Y el usuario no tiene preferencia explícita guardada, sigue al sistema.
+
+**Diseño (D)**:
+- Cross-fade suave entre temas (no salto brusco)
+- Iconos sun/moon con rotación 90° + scale 0→1 al cambiar (spring)
+- aria-label dinámico ("Cambiar a claro" / "Cambiar a oscuro")
+- Tooltip via `data-tooltip` (T.2)
+
+**Migración (M)**:
+- Toggle viejo en admin header (emoji + clase `theme-toggle`) reemplazado por componente `.alt-btn`
+- Lógica de tema vieja se reemplaza por `AltorraTheme`
+- Storage key `altorra-theme` (nueva). Si había preferencia vieja con otra key, se ignora (queda en dark default + el usuario puede re-seleccionar).
+
+**Archivos**: `js/theme-switcher.js` (new), `admin.html` (inline script + script tag + toggle markup), `css/tokens.css` (transition rule), `css/components.css` (icon swap), `js/admin-auth.js` (sync hook).
+
+**Pasos para probar**:
+1. Login admin → click el toggle del header → ver cross-fade smooth a light mode
+2. Recargar la página → tema light persiste sin flash de dark
+3. Logout, login en otra ventana/dispositivo (con misma cuenta) → tema light cargado de Firestore
+4. DevTools → cambiar OS theme con `prefers-color-scheme` simulation → si nunca tocaste el toggle, sigue al SO
+5. `<html data-theme="high-contrast">` en consola → A11y mode activa (T.8 lo refinará)
+
 
 
 ---

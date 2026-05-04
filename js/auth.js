@@ -736,7 +736,7 @@
     // After user selects account: callback fires with `response.credential`
     // which is a JWT ID token. We pass it to firebase.auth().signInWithCredential().
     var GIS_BLOCKED_KEY = 'altorra_gis_blocked';
-    var GIS_BLOCKED_TTL = 24 * 3600 * 1000; // 1 day
+    var GIS_BLOCKED_TTL = 6 * 3600 * 1000; // 6 hours — short enough to recover from transient blocks
 
     function _isGisBlocked() {
         try {
@@ -765,7 +765,7 @@
             return;
         }
         if (_isGisBlocked()) {
-            console.info('[GIS] Skipping — previously blocked (cached). Going straight to legacy popup.');
+            // Silent skip — expected when FedCM is blocked. Going straight to popup.
             _legacyPopupSignIn();
             return;
         }
@@ -790,8 +790,7 @@
             promptResolved = true;
             _markGisBlocked();
             _legacyPopupInFlight = true;
-            console.info('[GIS] Prompt watchdog fired — FedCM appears blocked. Opening legacy popup.');
-            // _legacyPopupSignIn re-locks the controls; release first to keep state consistent
+            // Silent fallback — opening popup is the expected recovery path
             _lockAuthControls(false);
             _legacyPopupSignIn();
         }, 2500);
@@ -800,7 +799,7 @@
             _ensureGisInit(function (response) {
                 // Drop late GIS callback if we already opened the legacy popup
                 if (_legacyPopupInFlight) {
-                    console.info('[GIS] Ignoring late credential — legacy popup already in flight');
+                    // Silent — legacy popup already opened, ignore late GIS callback
                     return;
                 }
                 if (!promptResolved) {
@@ -862,8 +861,7 @@
                     _shakeModal();
                     return;
                 }
-                // Other errors: try legacy popup as last resort
-                console.info('[GIS] Falling back to legacy popup after credential error');
+                // Other errors: try legacy popup as last resort (silent)
                 _legacyPopupSignIn();
             });
         } catch (e) {
@@ -1568,7 +1566,19 @@
         open:    function (tab) { openAuthModal(tab || 'login'); },
         close:   closeAuthModal,
         logout:  handleLogout,
-        current: function () { return _currentUser; }
+        current: function () { return _currentUser; },
+        // Diagnostic helper: reset GIS/FedCM state and reload.
+        // Call from DevTools console: AltorraAuth.resetGisState()
+        // Useful after re-enabling FedCM in chrome://settings — clears the
+        // "blocked" flag so One Tap and modern sign-in are tried again.
+        resetGisState: function () {
+            try {
+                localStorage.removeItem('altorra_gis_blocked');
+                localStorage.removeItem('altorra_onetap_dismiss');
+                console.info('[Auth] GIS state cleared. Reloading...');
+            } catch (e) {}
+            window.location.reload();
+        }
     };
 
     // Reemplazar el placeholder de "coming soon"

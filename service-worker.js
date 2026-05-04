@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504060000'; // Fix vehicleDB ref error + skip GIS when FedCM blocked
+const CACHE_VERSION = 'v20260504070000'; // Silence expected logs + 6h TTL + AltorraAuth.resetGisState helper
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

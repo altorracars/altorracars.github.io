@@ -3205,6 +3205,62 @@ AltorraFavWatcher.runDiff();
 
 **Archivos modificados**: `js/favorites-watcher.js`, `favoritos.html`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase E1+E2+E3 — Vistos recientemente con diff visual y bell selectivo ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: cuando el usuario revisita un vehiculo que vio antes, mostrar visualmente en la card del homepage si cambio el precio o el estado **desde su ultima visita**. Para cambios significativos, registrar tambien una entrada en el bell.
+
+**E1 — Snapshot at view-time** (`js/historial-visitas.js`):
+
+Schema extendido del item de historial:
+```js
+{ id: '123', timestamp: 1234, snap: { precio, precioOferta, estado } }
+```
+
+`_snapshotFor(vehicleId)` lee `vehicleDB.vehicles` y captura el estado actual al momento de tracking. Si vehicleDB no esta listo aun (lazy load) → `addToHistory(id, null)` y se agenda un retry via `vehicleDB.onChange()`. Cuando llega data, se hace `addToHistory(id, snap)` — preservando timestamp original (no se reordena el item en el historial).
+
+**E2 — Diff badge en `renderHistoryCard(vehicle)`**:
+
+Nuevo helper `diffForVehicle(vehicleId, currentVehicle)` que compara `entry.snap` vs current:
+- **Status diff** (gana sobre precio): "Reservado ahora" / "Vendido" / "Volvio disponible"
+- **Price diff ≥1%**: "↓ N.N% desde tu visita" / "↑ N.N%"
+
+Badge renderizado dentro de `.history-card-image` con CSS `.rv-diff-badge--{drop|up|warn|gone}`:
+- `--drop`: verde, "Bajo X% desde tu visita"
+- `--up`: ambar, "↑ X%"
+- `--warn`: ambar, "Reservado ahora"
+- `--gone`: rojo, "Vendido"
+
+**E3 — Bell entry SOLO para cambios significativos**:
+
+Threshold curado para no inundar:
+- **Price drop ≥5%** → `notifyCenter.notify('price_alert', ...)` con mensaje "Lo viste antes a $X, ahora esta a $Y"
+- **Status → vendido/reservado** → `notifyCenter.notify('inventory_change', ...)` con mensaje "Un vehiculo que viste fue vendido/reservado"
+
+Resto (price drop <5%, price increase, otros status changes) → solo el badge visual, sin bell entry. Evita la fatiga de notificaciones para cambios menores.
+
+**Dedup heredado de A2**:
+- `entityRef: 'rv-vehicle:' + id` → A2 default de 6h por price_alert, 1h por inventory_change
+- Aunque el usuario revisite la home 5 veces en una hora, max 1 entry en el bell
+
+**Comparacion con Pillar B**:
+
+| | Pillar B (Favoritos) | Pillar E (Vistos) |
+|---|---|---|
+| Trigger | Real-time (`vehicleDB.onChange`) | Render-time (cuando renderiza la seccion) |
+| Threshold precio | ≥1% | ≥5% (mas estricto, vehiculo solo "visto") |
+| Threshold status | Cualquier cambio | Solo vendido/reservado |
+| Persistencia diff | `_pendingChanges` map | Implicit en el snap del entry |
+| Badge | Top-left card en `favoritos.html` | Top-left card en seccion home |
+| Bell | Siempre (con dedup) | Solo significativos |
+
+**Anti-patrones evitados**:
+- Snapshot null en first track (vehicleDB no listo) → retry on `onChange`
+- Re-track de la misma URL no resetea timestamp si snap viene tarde
+- Notificaciones spam de "viste un vehiculo y bajo $1000" → threshold 5%
+- Repeat visit emite duplicate entries → dedup via entityRef
+
+**Archivos modificados**: `js/historial-visitas.js`, `css/historial-visitas.css`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

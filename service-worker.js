@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260504170000'; // Phase B4 — visual diff badges on favoritos.html (pending-changes API)
+const CACHE_VERSION = 'v20260504180000'; // Phase E1+E2+E3 — recently viewed snapshot + badges + significant-change bell entries
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

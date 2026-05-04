@@ -4057,6 +4057,54 @@ SEMANA 12: P + buffer + QA + estabilización
 4. Cambiar `<html data-theme="light">` en consola → verificar que `--bg-base` cambia a `#fafafa`
 5. Cambiar `<html data-theme="high-contrast">` → verificar contraste extremo
 
+---
+
+### Microfase T.2 — Component Library (`css/components.css`) ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: T.1 dio los tokens. T.2 los usa para construir 12 componentes core reusables. Toda nueva feature debe usar estos componentes — el admin viejo migra en T.6.
+
+**12 componentes creados** (todos prefijo `alt-` para evitar colisiones):
+
+| # | Componente | Clases / API |
+|---|---|---|
+| 1 | **Button** | `.alt-btn` + `--primary/--secondary/--ghost/--danger/--success` + `--sm/--lg/--icon/--block`. Estado `data-loading="true"` muestra spinner automático. `:focus-visible` con `--shadow-focus-ring`. `:disabled` y `[aria-disabled]`. |
+| 2 | **Input** | `.alt-input` (textarea también). Estado `aria-invalid="true"` ring rojo. Hover/focus/disabled. `--sm/--lg`. |
+| 3 | **Field group** | `.alt-field` + `.alt-field-label` + `.alt-field-hint` + `.alt-field-error`. Compose with `.alt-input`. |
+| 4 | **Select** | `.alt-select` con SVG inline para flecha (currentColor — adapta al tema). Misma estética que input. |
+| 5 | **Card** | `.alt-card` + `--interactive/--elevated/--flat`. Sub-blocks: `.alt-card-header`, `.alt-card-title`, `.alt-card-body`, `.alt-card-footer`. |
+| 6 | **Modal** | `.alt-modal-backdrop` + `.alt-modal` + `--sm/--lg/--xl`. `aria-hidden="false"` o `.is-open` activa. Animaciones spring. Header/body/footer estructurados. |
+| 7 | **Tabs** | `.alt-tabs` + `.alt-tab` + `.alt-tab-badge`. Variant `--pills` para boxed. `aria-selected="true"` activa el border-bottom dorado. |
+| 8 | **Badge** | `.alt-badge` + 7 variantes (success/warning/danger/info/brand/ai/solid). Variant `--dot` con dot prefix. |
+| 9 | **Avatar** | `.alt-avatar` + `--sm/--lg/--xl/--ring`. Soporta `<img>` o iniciales. `.alt-avatar-group` apila con overlap. |
+| 10 | **Tooltip** | `[data-tooltip="texto"]` puro CSS via `::after` + `attr()`. `data-tooltip-pos="bottom"` cambia posición. Auto-hide en touch. |
+| 11 | **Toggle/Switch** | `.alt-toggle` con `<input type="checkbox">` interno. Spring animation al cambiar. `aria-checked` accesible. |
+| 12 | **Skeleton** | `.alt-skeleton` + `--circle/--text/--title/--block`. Shimmer animation con tokens. |
+| + | **Stack/Cluster** | Layout primitives: `.alt-stack` (vertical) y `.alt-cluster` (horizontal flex+wrap) con gap variants xs/sm/lg/xl. |
+
+**Características transversales**:
+
+- Todos respetan `prefers-reduced-motion` (heredan de tokens.css)
+- Todos funcionan en dark/light/high-contrast sin código extra (semantic tokens)
+- Focus rings consistentes (`--shadow-focus-ring`)
+- ARIA attributes apropiados (`aria-disabled`, `aria-selected`, `aria-invalid`, `aria-hidden`)
+- BEM naming: `.alt-btn--primary`, `.alt-card-header`, etc.
+- Utility `.alt-visually-hidden` para screen reader only
+
+**Diseño (D)**:
+- Cards y modals usan `--shadow-md` por default, `--xl` para modals (más elevación)
+- Sizes consistentes: `sm` (compact), default, `lg` (prominent), `xl` solo para hero/modals
+- Animaciones con `--ease-snap` (default), `--ease-spring` (toggles + modals para overshoot natural)
+- Border radius escalonado: chips usan `--pill`, cards `--lg`, modals `--xl`
+
+**Migración (M)**: ningún cambio destructivo. `components.css` se carga después de `tokens.css` y antes de `admin.css`. El admin existente sigue funcionando con sus estilos legacy hasta T.6.
+
+**Archivos modificados**: `css/components.css` (new), `admin.html` (link agregado), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Abrir admin → en cualquier sección agregar manualmente `<button class="alt-btn alt-btn--primary">Test</button>` en consola → verificar que se ve dorado con hover lift
+2. Mismo con `<span class="alt-badge alt-badge--success alt-badge--dot">Activo</span>` → badge verde con dot
+3. T.3 (siguiente) creará la página de Storybook lite para verlos todos juntos.
+
 
 
 ---

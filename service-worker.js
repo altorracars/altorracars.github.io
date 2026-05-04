@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505010000'; // T.1 (mega-plan v4) — Design Tokens introduced
+const CACHE_VERSION = 'v20260505020000'; // T.2 (mega-plan v4) — Component Library (12 core)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

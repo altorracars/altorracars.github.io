@@ -3699,6 +3699,65 @@ Todos `.catch(function() {})` — best-effort. localStorage es source of truth l
 
 **Archivos modificados**: `js/contact.js`, `simulador-credito.html`, `css/style.css`, `css/contact-forms.css`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase MF1.2 — kind discriminator + per-kind state machines + migración ✓ COMPLETADA (2026-05-04)
+
+**Problema raiz**: la coleccion `solicitudes` mezclaba citas, solicitudes y leads bajo un mismo conjunto de estados (`pendiente / confirmada / reprogramada / completada / cancelada`). Una financiacion pasaba a "reprogramada" sin sentido semantico. No habia forma limpia de filtrar por tipo de comunicacion.
+
+**Solucion**: discriminator explicito `kind` con 3 valores y maquinas de estados independientes.
+
+**Nuevo archivo `js/comm-schema.js`** (single source of truth, cargado en admin + paginas publicas futuras):
+- `KIND_CITA = 'cita'` — requiereCita == true (test drive, llamada agendada, consulta presencial)
+- `KIND_SOLICITUD = 'solicitud'` — actionable: financiacion, consignacion_venta, peritaje, compra
+- `KIND_LEAD = 'lead'` — soft contact: consulta general, otro
+
+**Estados validos por kind** (`STATES`):
+
+| Kind | Estados validos |
+|---|---|
+| cita | pendiente, confirmada, reprogramada, completada, cancelada, no_show |
+| solicitud | pendiente, en_revision, contactado, aprobada, rechazada, completada, sin_respuesta |
+| lead | nuevo, contactado, interesado, frio, convertido, descartado |
+
+**Mapeo legacy → nuevo** (`STATE_REMAP`):
+- Para cita: estados se mantienen 1:1
+- Para solicitud: `confirmada → aprobada`, `reprogramada → en_revision`, `cancelada → rechazada`
+- Para lead: `pendiente → nuevo`, `confirmada → interesado`, `cancelada → descartado`, etc.
+
+**Helpers expuestos** (`window.AltorraCommSchema.*`):
+- `inferKind(doc)` — infiere kind desde `requiereCita` + `tipo`
+- `remapEstado(legacyEstado, newKind)` — remap segun `STATE_REMAP`
+- `isValidStateForKind(kind, estado)` — validacion
+- `getDefaultState(kind)` — primer estado del array
+- `STATE_LABELS`, `STATE_COLORS` para UI
+
+**Submission writes actualizados** — los 4 forms ahora setean `kind` directamente (sin necesitar migracion):
+- `contact-forms.js` Vende Auto → `kind: 'solicitud'`
+- `contact-forms.js` Financiacion → `kind: 'solicitud'`
+- `contact.js` Contacto general → `kind: 'solicitud'` si tipo en {venta, financiacion, peritaje}, sino `kind: 'lead'`
+- `citas.js` Cita por vehiculo → `kind: 'cita'`
+- `simulador-credito.html` → `kind: 'solicitud'`
+
+**Migracion automatica** (`AP.migrateCommunicationsSchema()` en `admin-sync.js`):
+- Corre una sola vez por sesion admin (`_commMigrationRan` guard)
+- Solo si el rol es editor+ (writes requieren ese permiso)
+- Filtra docs sin `kind`, infiere uno, remapea `estado` si es necesario
+- Preserva `legacyEstado` para auditoria
+- Marca `_migration_v1: true` y `_migrationAt: ISO`
+- Batch de hasta 500 (limite Firestore), commits secuenciales
+- Toast informativo al admin: "Esquema actualizado: 47 docs (12 citas, 23 solicitudes, 12 leads)"
+- Idempotente: re-correr no toca docs ya migrados
+
+**Pasos para probar**:
+1. Login como super_admin → ver consola con `[CommMigration] Migrated N solicitudes: citas=X solicitudes=Y leads=Z`
+2. Toast aparece confirmando la migracion
+3. Verificar en Firestore Console que docs viejos ahora tienen `kind`, `_migration_v1: true`, `legacyEstado` preservado
+4. Recargar admin → migracion no corre de nuevo (no hay docs sin kind)
+5. Enviar nueva solicitud desde public site → llega con `kind` directo, sin necesidad de migracion
+6. Login como editor → migracion tambien corre (si quedan docs sin kind)
+7. Login como viewer → migracion NO corre (no tiene permisos para escribir)
+
+**Archivos modificados**: `js/comm-schema.js` (nuevo), `js/admin-sync.js`, `js/admin-appointments.js`, `js/contact-forms.js`, `js/contact.js`, `js/citas.js`, `simulador-credito.html`, `admin.html`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

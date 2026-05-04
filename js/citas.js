@@ -470,6 +470,7 @@ class AppointmentSystem {
                 email: email,
                 tipo: tipo,
                 origen: 'vehiculo',
+                kind: 'cita', // MF1.2
                 fecha: fecha,
                 hora: hora,
                 requiereCita: true,

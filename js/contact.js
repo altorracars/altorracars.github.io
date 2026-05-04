@@ -111,6 +111,12 @@ if (contactForm) {
                 email: data.email || 'No proporcionado',
                 tipo: tipoMap[data.asunto] || 'consulta_general',
                 origen: 'contacto',
+                // MF1.2 — Contacto general: si el asunto es venta/financiacion/peritaje
+                // es solicitud (acción concreta). Resto va como lead (consulta general).
+                kind: (function (asunto) {
+                    if (asunto === 'venta' || asunto === 'financiacion' || asunto === 'peritaje') return 'solicitud';
+                    return 'lead';
+                })(data.asunto),
                 requiereCita: false,
                 vehiculo: data.vehiculo || 'No especificado',
                 comentarios: '',

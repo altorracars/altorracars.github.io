@@ -497,6 +497,7 @@ class ContactFormManager {
                 email: email || 'No proporcionado',
                 tipo: 'consignacion_venta',
                 origen: 'vende_tu_auto',
+                kind: 'solicitud', // MF1.2 — discriminator (cita | solicitud | lead)
                 requiereCita: false,
                 vehiculo: marca + ' ' + modelo + ' ' + year,
                 datosExtra: {
@@ -555,6 +556,7 @@ class ContactFormManager {
                 email: email || 'No proporcionado',
                 tipo: 'financiacion',
                 origen: 'financiacion',
+                kind: 'solicitud', // MF1.2
                 requiereCita: false,
                 vehiculo: vehiculoInteres || 'No especificado',
                 datosExtra: {

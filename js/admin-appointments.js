@@ -64,6 +64,10 @@
         if (AP.unsubAppointments) AP.unsubAppointments();
         AP.unsubAppointments = window.db.collection('solicitudes').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
             AP.appointments = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
+
+            // MF1.2 — one-shot migration: infer kind + remap estado for legacy docs
+            try { if (typeof AP.migrateCommunicationsSchema === 'function') AP.migrateCommunicationsSchema(AP.appointments); } catch (e) {}
+
             renderAppointmentsTable();
             renderAdminCalendar(); // refresh calendar counts
             var pending = AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length;

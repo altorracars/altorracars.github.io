@@ -158,86 +158,154 @@
         <div class="sidebar-logo">
             <h2>ALTORRA CARS</h2>
             <small>Panel Admin</small>
+            <!-- B.4 (mega-plan v4) — sidebar collapse toggle (desktop only) -->
+            <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="Colapsar sidebar" data-tooltip="⌘+B">
+                <i data-lucide="panel-left-close"></i>
+            </button>
         </div>
 
-        <!-- Dashboard (standalone) -->
+        <!-- B.1 (mega-plan v4) — Sidebar reorganizado en 7 grupos collapsables (8º Calendario en bloque D) -->
+
+        <!-- 🏠 INICIO (standalone, no group) -->
         <button class="nav-item active" data-section="dashboard">
             <i data-lucide="layout-dashboard"></i>
-            Dashboard
+            <span>Inicio</span>
         </button>
 
-        <!-- INVENTARIO -->
-        <div class="nav-category">Inventario</div>
-        <button class="nav-item" data-section="vehicles">
-            <i data-lucide="car"></i>
-            <span>Vehiculos</span>
-            <span class="nav-badge" id="navBadgeVehicles"></span>
-        </button>
-        <button class="nav-item" data-section="brands">
-            <i data-lucide="tag"></i>
-            <span>Marcas</span>
-            <span class="nav-badge" id="navBadgeBrands"></span>
-        </button>
-        <button class="nav-item" data-section="banners">
-            <i data-lucide="image"></i>
-            <span>Banners</span>
-            <span class="nav-badge" id="navBadgeBanners"></span>
-        </button>
+        <!-- 🚗 INVENTARIO -->
+        <div class="nav-group" data-group="inventario" data-workspace-color="gold">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-inventario">
+                <i data-lucide="car" class="nav-group-icon"></i>
+                <span class="nav-group-label">Inventario</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-inventario">
+                <button class="nav-item" data-section="vehicles">
+                    <i data-lucide="car"></i><span>Vehículos</span>
+                    <span class="nav-badge" id="navBadgeVehicles"></span>
+                </button>
+                <button class="nav-item" data-section="brands">
+                    <i data-lucide="tag"></i><span>Marcas</span>
+                    <span class="nav-badge" id="navBadgeBrands"></span>
+                </button>
+                <button class="nav-item" data-section="dealers">
+                    <i data-lucide="handshake"></i><span>Aliados</span>
+                </button>
+                <button class="nav-item" data-section="banners">
+                    <i data-lucide="image"></i><span>Banners</span>
+                    <span class="nav-badge" id="navBadgeBanners"></span>
+                </button>
+                <button class="nav-item" data-section="reviews">
+                    <i data-lucide="star"></i><span>Reseñas</span>
+                    <span class="nav-badge" id="navBadgeReviews"></span>
+                </button>
+            </div>
+        </div>
 
-        <!-- COMERCIAL -->
-        <div class="nav-category">Comercial</div>
-        <button class="nav-item" data-section="appointments">
-            <i data-lucide="inbox"></i>
-            <span>Comunicaciones</span>
-            <span class="nav-badge" id="navBadgeAppointments"></span>
-        </button>
-        <button class="nav-item" data-section="crm">
-            <i data-lucide="users-round"></i>
-            <span>CRM</span>
-            <span class="nav-badge" id="navBadgeCrm"></span>
-        </button>
-        <button class="nav-item" data-section="inbox">
-            <i data-lucide="message-square-text"></i>
-            <span>Inbox</span>
-            <span class="nav-badge" id="navBadgeInbox"></span>
-        </button>
-        <button class="nav-item" data-section="dealers">
-            <i data-lucide="handshake"></i>
-            <span>Aliados</span>
-        </button>
-        <button class="nav-item" data-section="reviews">
-            <i data-lucide="star"></i>
-            <span>Reseñas</span>
-            <span class="nav-badge" id="navBadgeReviews"></span>
-        </button>
-        <button class="nav-item" data-section="lists">
-            <i data-lucide="clipboard-list"></i>
-            <span>Listas</span>
-        </button>
+        <!-- 💬 COMUNICACIONES -->
+        <div class="nav-group" data-group="comunicaciones" data-workspace-color="green">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-comunicaciones">
+                <i data-lucide="messages-square" class="nav-group-icon"></i>
+                <span class="nav-group-label">Comunicaciones</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-comunicaciones">
+                <button class="nav-item" data-section="appointments">
+                    <i data-lucide="inbox"></i><span>Bandeja</span>
+                    <span class="nav-badge" id="navBadgeAppointments"></span>
+                </button>
+                <button class="nav-item" data-section="inbox">
+                    <i data-lucide="message-square-text"></i><span>Mensajes vehículo</span>
+                    <span class="nav-badge" id="navBadgeInbox"></span>
+                </button>
+                <button class="nav-item" data-section="lists">
+                    <i data-lucide="sparkles"></i><span>Leads (legacy)</span>
+                </button>
+            </div>
+        </div>
 
-        <!-- SISTEMA -->
-        <div class="nav-category">Sistema</div>
-        <button class="nav-item" data-section="automation">
-            <i data-lucide="zap"></i>
-            <span>Automatización</span>
-        </button>
-        <button class="nav-item" data-section="templates">
-            <i data-lucide="file-edit"></i>
-            <span>Plantillas</span>
-        </button>
-        <button class="nav-item" data-section="audit">
-            <i data-lucide="scroll-text"></i>
-            <span>Auditoria</span>
-            <span class="nav-badge" id="navBadgeAudit"></span>
-        </button>
-        <button class="nav-item" data-section="users">
-            <i data-lucide="users"></i>
-            Usuarios
-        </button>
-        <button class="nav-item" data-section="settings">
-            <i data-lucide="settings"></i>
-            Configuracion
-        </button>
+        <!-- 👥 CRM -->
+        <div class="nav-group" data-group="crm" data-workspace-color="blue">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-crm">
+                <i data-lucide="users-round" class="nav-group-icon"></i>
+                <span class="nav-group-label">CRM</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-crm">
+                <button class="nav-item" data-section="crm">
+                    <i data-lucide="users-round"></i><span>Contactos 360°</span>
+                    <span class="nav-badge" id="navBadgeCrm"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 📅 CALENDARIO (placeholder — se llena en bloque D) -->
+        <div class="nav-group" data-group="calendario" data-workspace-color="violet">
+            <button class="nav-group-header" aria-expanded="false" aria-controls="nav-group-calendario">
+                <i data-lucide="calendar" class="nav-group-icon"></i>
+                <span class="nav-group-label">Calendario</span>
+                <span class="alt-badge alt-badge--ai" style="margin-left:auto;font-size:0.6rem;">Pronto</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-calendario">
+                <button class="nav-item" data-section="calendar-disabled" disabled style="opacity:0.5;cursor:not-allowed;">
+                    <i data-lucide="calendar-clock"></i><span>Vista calendario</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ⚡ AUTOMATIZACIÓN -->
+        <div class="nav-group" data-group="automatizacion" data-workspace-color="orange">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-automatizacion">
+                <i data-lucide="zap" class="nav-group-icon"></i>
+                <span class="nav-group-label">Automatización</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-automatizacion">
+                <button class="nav-item" data-section="automation">
+                    <i data-lucide="zap"></i><span>Reglas</span>
+                </button>
+                <button class="nav-item" data-section="templates">
+                    <i data-lucide="file-edit"></i><span>Plantillas</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 📊 REPORTES (placeholder — se llena en bloque O) -->
+        <div class="nav-group" data-group="reportes" data-workspace-color="cyan">
+            <button class="nav-group-header" aria-expanded="false" aria-controls="nav-group-reportes">
+                <i data-lucide="bar-chart-3" class="nav-group-icon"></i>
+                <span class="nav-group-label">Reportes</span>
+                <span class="alt-badge alt-badge--ai" style="margin-left:auto;font-size:0.6rem;">Pronto</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-reportes">
+                <button class="nav-item" data-section="reports-disabled" disabled style="opacity:0.5;cursor:not-allowed;">
+                    <i data-lucide="line-chart"></i><span>Dashboard ejecutivo</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ⚙️ CONFIGURACIÓN -->
+        <div class="nav-group" data-group="configuracion" data-workspace-color="neutral">
+            <button class="nav-group-header" aria-expanded="false" aria-controls="nav-group-configuracion">
+                <i data-lucide="settings" class="nav-group-icon"></i>
+                <span class="nav-group-label">Configuración</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-configuracion">
+                <button class="nav-item" data-section="users">
+                    <i data-lucide="users"></i><span>Usuarios</span>
+                </button>
+                <button class="nav-item" data-section="audit">
+                    <i data-lucide="scroll-text"></i><span>Auditoría</span>
+                    <span class="nav-badge" id="navBadgeAudit"></span>
+                </button>
+                <button class="nav-item" data-section="settings">
+                    <i data-lucide="settings"></i><span>Ajustes</span>
+                </button>
+            </div>
+        </div>
         <!-- F7.3: Ver sitio -->
         <a class="nav-item" href="/" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
             <i data-lucide="external-link"></i>
@@ -435,7 +503,7 @@
         </div>
 
         <!-- VEHICLES -->
-        <div id="sec-vehicles" class="section">
+        <div id="sec-vehicles" class="section" data-workspace-color="gold">
             <div class="page-header">
                 <div><h1>Vehiculos</h1><p class="page-subtitle" id="vehiclesCount"></p></div>
                 <button class="btn btn-primary" id="btnAddVehicle">
@@ -501,7 +569,7 @@
         </div>
 
         <!-- BRANDS -->
-        <div id="sec-brands" class="section">
+        <div id="sec-brands" class="section" data-workspace-color="gold">
             <div class="page-header">
                 <div><h1>Marcas</h1><p class="page-subtitle" id="brandsCount"></p></div>
                 <button class="btn btn-primary" id="btnAddBrand">
@@ -521,7 +589,7 @@
         </div>
 
         <!-- USERS -->
-        <div id="sec-users" class="section">
+        <div id="sec-users" class="section" data-workspace-color="neutral">
             <div class="page-header">
                 <div><h1>Usuarios</h1><p class="page-subtitle">Gestiona los accesos al panel de administracion</p></div>
                 <button class="btn btn-primary" id="btnAddUser">
@@ -556,7 +624,7 @@
 
         <!-- SETTINGS -->
         <!-- APPOINTMENTS / CITAS — renamed to Comunicaciones in MF3.1 -->
-        <div id="sec-appointments" class="section">
+        <div id="sec-appointments" class="section" data-workspace-color="green">
             <div class="page-header">
                 <div>
                     <h1>Centro de Comunicaciones</h1>
@@ -775,7 +843,7 @@
 
         <!-- ALIADOS Y OPERACIONES -->
         <!-- MF6.3 — Message templates section -->
-        <div id="sec-templates" class="section">
+        <div id="sec-templates" class="section" data-workspace-color="orange">
             <div class="page-header">
                 <div>
                     <h1>Plantillas de Mensajes</h1>
@@ -805,7 +873,7 @@
         </div>
 
         <!-- MF6.1 — Automation rules section -->
-        <div id="sec-automation" class="section">
+        <div id="sec-automation" class="section" data-workspace-color="orange">
             <div class="page-header">
                 <div>
                     <h1>Automatización — Reglas Inteligentes</h1>
@@ -818,7 +886,7 @@
         </div>
 
         <!-- MF4.7 — Inbox section -->
-        <div id="sec-inbox" class="section">
+        <div id="sec-inbox" class="section" data-workspace-color="green">
             <div class="page-header">
                 <div>
                     <h1>Inbox — Mensajes por Vehículo</h1>
@@ -841,7 +909,7 @@
         </div>
 
         <!-- MF4.1 — CRM section -->
-        <div id="sec-crm" class="section">
+        <div id="sec-crm" class="section" data-workspace-color="blue">
             <div class="page-header">
                 <div>
                     <h1>CRM — Vista 360° de Clientes</h1>
@@ -907,7 +975,7 @@
             </div>
         </div>
 
-        <div id="sec-dealers" class="section">
+        <div id="sec-dealers" class="section" data-workspace-color="gold">
             <div class="page-header">
                 <div>
                     <h1>Aliados y Operaciones</h1>
@@ -1023,7 +1091,7 @@
 
         <!-- LISTAS CONFIGURABLES -->
         <!-- ========== RESENAS ========== -->
-        <div id="sec-reviews" class="section">
+        <div id="sec-reviews" class="section" data-workspace-color="gold">
             <div class="page-header">
                 <div>
                     <h1>Reseñas de Clientes</h1>
@@ -1156,7 +1224,7 @@
             </div>
         </div>
 
-        <div id="sec-lists" class="section">
+        <div id="sec-lists" class="section" data-workspace-color="green">
             <div class="page-header">
                 <div>
                     <h1>Listas Configurables</h1>
@@ -1175,7 +1243,7 @@
         </div>
 
         <!-- ========== BANNERS ========== -->
-        <div id="sec-banners" class="section">
+        <div id="sec-banners" class="section" data-workspace-color="gold">
             <div class="page-header">
                 <div>
                     <h1>Banners y Promociones</h1>
@@ -1343,7 +1411,7 @@
         </div>
 
         <!-- AUDIT LOG PANEL (F4.1) -->
-        <div id="sec-audit" class="section">
+        <div id="sec-audit" class="section" data-workspace-color="neutral">
             <div class="page-header">
                 <div><h1>Auditoria</h1><p class="page-subtitle">Registro completo de todas las acciones del sistema</p></div>
                 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
@@ -1437,7 +1505,7 @@
             </div>
         </div>
 
-        <div id="sec-settings" class="section">
+        <div id="sec-settings" class="section" data-workspace-color="neutral">
             <div class="page-header">
                 <div><h1>Configuracion</h1><p class="page-subtitle">Ajustes de tu cuenta y respaldo de datos</p></div>
             </div>
@@ -2139,10 +2207,14 @@
 
 <!-- SCRIPTS (defer preserves execution order, unblocks HTML parser) -->
 <script src="js/firebase-config.js" defer></script>
+<!-- I.1 (mega-plan v4) — Event Bus: load EARLY so all modules can emit/listen -->
+<script src="js/event-bus.js" defer></script>
 <script src="js/dynamic-lists.js" defer></script>
 <script src="js/comm-schema.js" defer></script>
 <script src="js/theme-switcher.js" defer></script>
 <script src="js/icons.js" defer></script>
+<script src="js/admin-sidebar.js" defer></script>
+<script src="js/admin-section-router.js" defer></script>
 <script src="js/admin-state.js" defer></script>
 <script src="js/admin-table-utils.js" defer></script>
 <script src="js/admin-auth.js" defer></script>

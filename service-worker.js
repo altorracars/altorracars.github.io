@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505070000'; // T.8 (mega-plan v4) — High-contrast WCAG AAA mode + separate toggle
+const CACHE_VERSION = 'v20260505130000'; // I.1 (mega-plan v4) — AltorraEventBus core (pub/sub + persistence + DOM dispatch)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

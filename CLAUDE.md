@@ -4364,6 +4364,370 @@ Estado del Design System al cerrar el bloque T:
 
 **Próximo bloque: B — Sidebar reorganizado + Workspaces**
 
+---
+
+### Microfase B.1 — Sidebar reorganizado en 7 grupos collapsables ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: el sidebar tenía 16 ítems planos sin agrupación. El admin se sentía disperso. B.1 agrupa por dominio en 7 grupos (8º Calendario en bloque D), con expand/collapse persistente, keyboard navigation, y color accents por workspace.
+
+**Estructura nueva**:
+
+```
+🏠 Inicio                      [standalone]
+🚗 Inventario [gold]
+   ├ Vehículos
+   ├ Marcas
+   ├ Aliados
+   ├ Banners
+   └ Reseñas
+💬 Comunicaciones [green]
+   ├ Bandeja  (era 'appointments')
+   ├ Mensajes vehículo  (era 'inbox')
+   └ Leads (legacy)  (era 'lists')
+👥 CRM [blue]
+   └ Contactos 360°
+📅 Calendario [violet]          [Pronto — bloque D]
+   └ Vista calendario           [disabled placeholder]
+⚡ Automatización [orange]
+   ├ Reglas
+   └ Plantillas
+📊 Reportes [cyan]              [Pronto — bloque O]
+   └ Dashboard ejecutivo        [disabled placeholder]
+⚙️ Configuración [neutral]
+   ├ Usuarios
+   ├ Auditoría
+   └ Ajustes
+```
+
+**Cambios en `admin.html`**: ~80 líneas de sidebar viejas reemplazadas por estructura de grupos.
+
+**Cada grupo**:
+- `<div class="nav-group" data-group="xxx" data-workspace-color="yyy">`
+- Header `<button class="nav-group-header">` con icono + label + chevron + `aria-expanded`/`aria-controls`
+- Items `<div class="nav-group-items">` con los `<button class="nav-item">` dentro
+
+**Comportamiento**:
+- Click en header → expand/collapse con animación max-height + chevron rotation
+- Estado persistido en `localStorage.altorra-sidebar-<group>` per-group ('0'|'1')
+- Auto-expande el grupo del item activo al cargar (ej: si la sección actual es "vehicles", el grupo Inventario se abre)
+- MutationObserver: cuando otro código pone `.active` en un nav-item, el grupo padre se auto-expande
+
+**Keyboard nav**:
+- Arrow Up/Down: navega entre items focusables (incluye headers)
+- Home/End: salta al primer/último
+- Enter/Space en header: toggle (default button behavior)
+
+**Workspace color accents**:
+- 7 colores semánticos: gold (Inventario), green (Comms), blue (CRM), violet (Calendar), orange (Automation), cyan (Reports), neutral (Config)
+- Hover sobre group icon → adopta el color del workspace
+- Item activo dentro del grupo → border-left de 2px del color
+- Esto va a tomar más prominencia en B.5 cuando agreguemos branding completo
+
+**Mobile**: padding reducido en items para preservar espacio. Grupos siguen siendo collapsables.
+
+**Diseño (D)**:
+- Headers en uppercase con letter-spacing wide (look "label" no "menu item")
+- Chevron 90° → 0° con `--ease-snap`
+- Items dentro indented 14px (vs 12px antes) para crear jerarquía visual clara
+- Disabled placeholders con opacity 0.5 + tooltip "Pronto"
+
+**Migración (M)**: cero cambios destructivos en data-section. Las secciones existentes (`vehicles`, `appointments`, `crm`, etc.) siguen funcionando idéntico — solo cambia su agrupación visual. B.3 agregará aliases legacy para secciones renombradas.
+
+**Archivos**: `admin.html`, `css/admin.css`, `js/admin-sidebar.js` (new), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Login admin → sidebar muestra 7 grupos colapsables (4 abiertos, 3 cerrados por default)
+2. Click en header de "Comunicaciones" → colapsa con animación
+3. Recargar la página → estado persiste
+4. Tab por la sidebar → keyboard nav funciona, focus rings visibles
+5. Click en "Vehículos" → grupo Inventario se queda abierto, item se marca activo, border-left dorado
+6. DevTools → en consola: `AltorraSidebar.toggle('crm')` → grupo CRM se cierra
+
+---
+
+### Microfase B.2 — Workspace pattern reutilizable ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: cada sección del admin tiene su propia mini-página con título, breadcrumb, acciones, tabs, cuerpo. Hoy cada una usa estilos ad-hoc. B.2 crea un patrón reusable `.alt-workspace` que toda sección puede adoptar para sentirse parte del mismo sistema.
+
+**Lo que se creó** (`css/components.css`):
+
+```html
+<div class="alt-workspace" data-workspace-color="green">
+  <header class="alt-workspace-header">
+    <div class="alt-workspace-title-row">
+      <div>
+        <nav class="alt-workspace-breadcrumb">
+          <span>Comunicaciones</span><span>/</span><span>Bandeja</span>
+        </nav>
+        <h1 class="alt-workspace-title">Bandeja unificada</h1>
+        <p class="alt-workspace-subtitle">...</p>
+      </div>
+      <div class="alt-workspace-actions">
+        <button class="alt-btn alt-btn--primary">Nueva</button>
+      </div>
+    </div>
+    <nav class="alt-workspace-tabs alt-tabs alt-tabs--pills" role="tablist">
+      <button class="alt-tab" aria-selected="true">Todos</button>
+      ...
+    </nav>
+  </header>
+  <main class="alt-workspace-body">
+    ...
+  </main>
+</div>
+```
+
+**Características**:
+
+1. **Header con accent color**: borde superior 3px que toma `--ws-accent` según `data-workspace-color`. Sutil gradiente top-down para profundidad.
+2. **Breadcrumb** (uppercase + letter-spacing wide): orienta al admin sobre dónde está.
+3. **Title + Subtitle**: jerárquico, con `font-size-2xl` para el title y `--font-size-sm` color tertiary para el subtitle.
+4. **Actions row**: alineadas a la derecha en desktop, full-width stack en mobile.
+5. **Tabs slot**: usa `.alt-tabs` (T.2) — tanto default como `--pills` variant.
+6. **Body**: contenedor `flex: 1` para el contenido específico de cada workspace.
+7. **Workspace colors** (alineados con sidebar B.1): gold/green/blue/violet/orange/cyan/neutral.
+8. **Mobile**: title-row se apila vertical, actions full-width.
+
+**Storybook** (`admin/_components.html`): nueva sección "Workspace pattern" con ejemplo completo de Comunicaciones-Bandeja para QA visual.
+
+**Diseño (D)**:
+- Header se "extiende" al ancho del padre (margin negativo) para dar look de "cabezera oficial" y no de simple título embebido
+- Breadcrumb subtle, no compite con title
+- Tabs separados del content por padding vertical
+- 7 colores workspace permiten distinción visual instantánea sin sobrecargar
+
+**Migración (M)**: ningún breaking change. Las secciones existentes seguirán funcionando con sus estilos legacy hasta que las migremos en bloques específicos (Comunicaciones en su propio bloque, CRM en F, etc.).
+
+**Archivos**: `css/components.css`, `admin/_components.html`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Abrir `admin/_components.html` → bajar hasta sección "Workspace pattern"
+2. Ver header verde con breadcrumb + title + subtitle + actions + 4 tabs (Todos/Citas/Solicitudes/Leads)
+3. Cambiar `data-workspace-color="green"` → `"gold"` en consola → header acent cambia a dorado
+4. Toggle theme → workspace adapta colores sin código extra
+
+---
+
+### Microfase B.3 — Section router + aliases + hash deep-linking ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: cuando bloques futuros (E, D, etc.) renombren secciones, los deep-links viejos van a romperse. B.3 establece un router central con aliases que mantiene compat hacia atrás. Además agrega hash deep-linking (`/admin#/crm`) y un registro de metadata de cada sección para uso futuro (command palette P.4, búsqueda global).
+
+**Lo que se creó** (`js/admin-section-router.js`):
+
+1. **Aliases map** (`ALIASES`): vacío por ahora, pero documentado con ejemplos de futuros renames:
+   ```js
+   // Cuando bloque E ship:
+   //   'appointments': 'comunicaciones'
+   //   'inbox': 'mensajes'
+   //   'lists': 'leads'
+   ```
+   Cuando una sección se rename, agregás la entrada aquí — los deep-links viejos siguen funcionando.
+
+2. **REGISTRY** con metadata canónica de las 15 secciones existentes: `{label, group, icon}`. Usado por:
+   - Command palette futuro (P.4) para autocomplete
+   - Search global para sugerir resultados
+   - Analytics para reportes de uso
+
+3. **`go(section)`**: navegación programática. Resuelve aliases, valida disabled, dispara click en el nav-item correcto.
+
+4. **Hash deep-linking**:
+   - URL `/admin#/crm` al cargar → navega a CRM section automáticamente
+   - Click en nav-item actualiza el hash (sin scroll jump)
+   - `hashchange` event listener para back/forward del browser
+   - Usa `history.replaceState` para no llenar el history stack
+
+5. **`onChange(fn)`**: subscribe events. Otros módulos pueden reaccionar (ej: cargar datos lazy cuando se abre una sección).
+
+6. **Click interceptor (capture phase)**: si algún elemento dispara click con `data-section="legacy-name"`, el router lo resuelve a la canonical antes del handler default.
+
+7. **MutationObserver sobre `.section`**: detecta cuándo otra parte del código cambia la sección activa y dispara el evento change.
+
+**Diseño (D)**: invisible al usuario — todo el efecto es hacer el sistema más robusto. Único cambio observable: ahora la URL refleja la sección actual y se puede compartir.
+
+**Migración (M)**: arquitectura para futuro. Cuando bloques posteriores renombren secciones, este es el lugar central donde se agregan aliases.
+
+**Archivos**: `js/admin-section-router.js` (new), `admin.html`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Login admin → click "Vehículos" en sidebar → URL cambia a `#/vehicles`
+2. Recargar la página → vuelve a Vehículos automáticamente
+3. Compartir URL → otra pestaña abre directo en Vehículos
+4. Consola: `AltorraSections.go('crm')` → navega a CRM
+5. Consola: `AltorraSections.registry` → metadata de las 15 secciones
+6. Consola: `AltorraSections.onChange((s, prev) => console.log('changed:', prev, '→', s))` + click otra sección
+
+---
+
+### Microfase B.4 — Sidebar global collapse + atajos teclado ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: power users quieren más espacio para el contenido. Sidebar full toma 240px que en monitores pequeños molesta. B.4 agrega modo "icon-only" (56px) con tooltips on hover.
+
+**Cambios**:
+
+1. **Botón collapse en logo del sidebar**: ícono `panel-left-close` (rota 180° al colapsar). Posición absoluta en el área del logo. Tooltip "⌘+B".
+
+2. **Modo colapsado** (CSS `body.sidebar-collapsed`):
+   - Sidebar pasa de 240px a 56px con transición smooth
+   - Hidden: labels, chevrons, badges, profile info, group group-label, divider, logo h2/small
+   - Visible: solo iconos, centrados
+   - Hover sobre nav-item → tooltip lateral muestra el aria-label (CSS pure via `::after`)
+
+3. **Persistencia**: `localStorage.altorra-sidebar-collapsed` = `'0'` | `'1'`. Restaurado al cargar.
+
+4. **Keyboard shortcut**: `⌘+B` (Mac) o `Ctrl+B` (Win/Linux) toggle collapse. No dispara si el foco está en input/textarea/contenteditable (no interrumpe escritura).
+
+5. **`syncAriaLabels()`**: lee el `<span>` de texto de cada nav-item y lo setea como `aria-label` del button. Esto:
+   - Hace los tooltips de collapsed-mode funcionar (CSS lee `attr(aria-label)`)
+   - Mejora accesibilidad para screen readers
+
+6. **Mobile** (`<768px`): collapse button hidden — mobile usa drawer pattern (otro UX, fuera de scope de B.4).
+
+7. **Public API extension**: `AltorraSidebar.toggleCollapsed()`, `setCollapsed(bool)`, `isCollapsed()`.
+
+**Diseño (D)**:
+- Animación `--ease-snap` en width transition (smooth, no jank)
+- Icon rotation 180° marca el estado on/off claramente
+- Tooltips en collapsed mode aparecen a la derecha (no se pisan con el sidebar)
+- aria-label dinámico ("Colapsar sidebar" / "Expandir sidebar")
+
+**Migración (M)**: ningún breaking change. Sidebar funciona exactamente igual en estado expandido. Estado collapsed es opt-in por click o atajo.
+
+**Archivos**: `admin.html`, `css/admin.css`, `js/admin-sidebar.js`.
+
+**Pasos para probar**:
+1. Login admin → click el botón de la esquina del logo del sidebar → sidebar se colapsa a iconos
+2. Hover sobre un ícono → tooltip lateral con el nombre de la sección
+3. Recargar la página → estado persiste
+4. ⌘+B (Mac) o Ctrl+B (Win) → toggle desde teclado
+5. Resize a mobile → botón se oculta (no aplica en mobile)
+6. Tab por la sidebar → focus rings funcionan tanto en colapsado como expandido
+
+---
+
+### Microfase B.5 — Workspace branding completo en secciones existentes ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: B.1 estableció los colores en el sidebar. B.2 los hizo disponibles en `.alt-workspace`. B.5 cierra el bloque B aplicando los colores a las **secciones existentes** del admin sin reescribirlas — solo agregando un `data-workspace-color` y reglas CSS que reaccionan.
+
+**Cambios**:
+
+1. **14 secciones marcadas con `data-workspace-color`** (script Python idempotente en el commit):
+   - **gold** (Inventario): `sec-vehicles`, `sec-brands`, `sec-dealers`, `sec-banners`, `sec-reviews`
+   - **green** (Comunicaciones): `sec-appointments`, `sec-inbox`, `sec-lists`
+   - **blue** (CRM): `sec-crm`
+   - **orange** (Automatización): `sec-automation`, `sec-templates`
+   - **neutral** (Configuración): `sec-users`, `sec-audit`, `sec-settings`
+   - `sec-dashboard` queda sin color (es Inicio, neutro)
+
+2. **CSS en `admin.css`** (~30 líneas):
+   - Variables `--ws-accent` y `--ws-accent-soft` por color
+   - **3px top accent border** en `.page-header` de cada sección con color
+   - **Subtle gradient** (80px de altura) bajo el header para crear "halo" del workspace
+   - z-index management para que el H1 quede sobre el gradient
+
+3. **Resultado visual**: cada sección tiene una identidad clara sin necesidad de reescribir el contenido. El admin reconoce instantáneamente "estoy en Inventario" por el accent dorado, "estoy en CRM" por el azul, etc.
+
+**Diseño (D)**:
+- Línea de 3px arriba (sutil, no chillón) marca "esta sección pertenece al workspace X"
+- Gradiente decae rápido (80px) — no compite con el contenido
+- Aliñado con los colores del sidebar (consistencia inmediata)
+- Mantenemos el esquema existente intacto — los estilos legacy de `.page-header` siguen funcionando
+
+**Migración (M)**: cero cambios destructivos. Solo se agregaron atributos HTML y reglas CSS adicivas. Las secciones se ven idénticas a antes excepto por la barra superior + halo sutil.
+
+**Archivos**: `admin.html`, `css/admin.css`, `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Click "Vehículos" en sidebar → ver barra dorada top de la sección + halo dorado sutil
+2. Click "CRM" → barra azul + halo azul
+3. Click "Automatización" → barra naranja
+4. Click "Inicio" → sin barra (es neutral)
+5. Toggle theme dark → light → high-contrast → colores se mantienen consistentes
+
+---
+
+## ✓ BLOQUE B COMPLETADO (5/5 microfases)
+
+Estado del Sidebar + Workspaces al cerrar el bloque B:
+- ✅ B.1 — Sidebar reorganizado en 7 grupos collapsables (8º Calendario placeholder)
+- ✅ B.2 — Workspace pattern reutilizable (.alt-workspace component)
+- ✅ B.3 — Section router + aliases + hash deep-linking
+- ✅ B.4 — Sidebar global collapse + Cmd+B + aria tooltips
+- ✅ B.5 — Workspace branding aplicado a 14 secciones existentes
+
+**Próximo bloque: I — Event Bus + Activity Feed (5 microfases, ~4 días)**
+
+---
+
+### Microfase I.1 — AltorraEventBus core ✓ COMPLETADA (2026-05-05)
+
+**Por qué**: hoy los módulos se llaman entre sí directamente (admin-vehicles llama a admin-sync, que llama a admin-state, etc.). Resultado: acoplamiento alto, difícil agregar features cross-cutting. I.1 introduce un Event Bus central — todos los módulos emiten eventos cuando pasan cosas, y los demás los escuchan declarativamente.
+
+**Lo que se creó** (`js/event-bus.js`):
+
+**API pública** (`window.AltorraEventBus`):
+- `emit(type, payload, opts)` — dispara evento. `opts.persist: true` lo guarda en Firestore `events/`
+- `on(pattern, handler)` — subscribe. Retorna unsubscribe fn
+  - `on('vehicle.created', fn)` — match exacto
+  - `on('vehicle.', fn)` — prefix (cualquier `vehicle.*`)
+  - `on('*', fn)` — wildcard (todos)
+- `once(pattern, handler)` — auto-unsubscribe tras primer fire
+- `off(pattern, handler)` — quitar listener
+- `history(filter)` — buffer in-memory de últimos 200 eventos (para I.5 replay)
+- `clear()` — wipe history
+
+**Convenios de naming**: `domain.action`
+- `vehicle.created`, `vehicle.updated`, `vehicle.priced`, `vehicle.sold`
+- `comm.created`, `comm.assigned`, `comm.estado-changed`, `comm.replied`
+- `crm.contact-created`, `crm.score-changed`, `crm.tag-added`
+- `appointment.confirmed`, `appointment.cancelled`, `appointment.no-show`
+- `user.logged-in`, `user.logged-out`, `user.role-changed`
+- `ui.section-changed`, `ui.modal-opened`
+
+**Estructura del evento**:
+```js
+{
+    id: 'evt_<timestamp>_<rand>',
+    type: 'vehicle.created',
+    payload: { ...whatever },
+    timestamp: 1234567890,
+    by: 'uid-del-usuario',
+    bySource: 'admin' | 'public' | 'system'
+}
+```
+
+**Mecanismos de delivery** (orden):
+1. **History ring buffer** (cap 200, in-memory) → para I.5 replay
+2. **Direct listeners** (exact match)
+3. **Prefix listeners** (`vehicle.` capta todo `vehicle.*`)
+4. **Wildcard listeners** (`*` capta TODO)
+5. **DOM CustomEvent** `altorra:<type>` → `window.dispatchEvent` para listeners no-imported
+6. **Firestore persist** si `opts.persist === true` → `events/{id}` para Activity Feed (I.2) y replay (I.5)
+
+**Performance**:
+- listeners: `Map<string, Set<fn>>` para O(1) lookup
+- history: array con shift al cap → O(1) amortizado
+- Persistence opt-in: solo eventos importantes pegan a Firestore
+
+**Tolerancia a errores**: cada handler envuelto en try/catch — un listener fallando no rompe el bus ni a los demás.
+
+**Convenience globals**: `window.altorraEmit(type, payload)` y `window.altorraOn(pattern, fn)` como atajos para uso rápido.
+
+**Cargado early** en admin.html — antes de cualquier admin-* module — para que TODO el código posterior pueda emit/listen.
+
+**Diseño (D)**: API liviana, similar a EventEmitter de Node + DOM EventTarget. Familiar para devs JS.
+
+**Migración (M)**: ningún breaking change. CustomEvents existentes (`favoritesChanged`) siguen funcionando. Migración a EventBus se hará incrementalmente (módulos opt-in cuando se refactoricen en sus bloques específicos).
+
+**Archivos**: `js/event-bus.js` (new), `admin.html` (script tag), `service-worker.js`, `js/cache-manager.js`.
+
+**Pasos para probar**:
+1. Login admin → consola → `AltorraEventBus._setDebug(true)`
+2. `AltorraEventBus.on('test.', e => console.log('got:', e))` → suscribe a prefix
+3. `AltorraEventBus.emit('test.hello', { msg: 'hi' })` → ver el evento en consola
+4. `AltorraEventBus.history()` → ver buffer de eventos recientes
+5. `window.addEventListener('altorra:test.hello', e => console.log('DOM:', e.detail))` + emit → recibe vía CustomEvent
+6. `AltorraEventBus.emit('test.persist', {}, {persist: true})` → ver doc en Firestore `events/`
+
 
 
 ---

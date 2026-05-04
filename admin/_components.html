@@ -455,6 +455,43 @@
     </div>
 </section>
 
+<!-- WORKSPACE PATTERN (B.2) -->
+<section class="sb-section">
+    <h2>Workspace pattern (B.2)</h2>
+    <p>Wrapper para cada sección admin con header (breadcrumb + title + subtitle + actions) + tabs + body. <code>data-workspace-color</code> aplica el accent color según dominio.</p>
+
+    <div class="sb-tile" style="display:block;padding:0;overflow:hidden;">
+        <div class="alt-workspace" data-workspace-color="green">
+            <header class="alt-workspace-header">
+                <div class="alt-workspace-title-row">
+                    <div>
+                        <nav class="alt-workspace-breadcrumb">
+                            <span>Comunicaciones</span>
+                            <span>/</span>
+                            <span>Bandeja</span>
+                        </nav>
+                        <h1 class="alt-workspace-title">Bandeja unificada</h1>
+                        <p class="alt-workspace-subtitle">Gestiona citas, solicitudes y leads. Filtros + Kanban + asignaciones.</p>
+                    </div>
+                    <div class="alt-workspace-actions">
+                        <button class="alt-btn alt-btn--ghost"><i data-lucide="filter"></i> Filtros</button>
+                        <button class="alt-btn alt-btn--primary"><i data-lucide="plus"></i> Nueva</button>
+                    </div>
+                </div>
+                <nav class="alt-workspace-tabs alt-tabs alt-tabs--pills" role="tablist">
+                    <button class="alt-tab" aria-selected="true"><i data-lucide="layers" width="14" height="14"></i> Todos <span class="alt-tab-badge">28</span></button>
+                    <button class="alt-tab" aria-selected="false"><i data-lucide="calendar-check-2" width="14" height="14"></i> Citas</button>
+                    <button class="alt-tab" aria-selected="false"><i data-lucide="file-text" width="14" height="14"></i> Solicitudes</button>
+                    <button class="alt-tab" aria-selected="false"><i data-lucide="message-circle" width="14" height="14"></i> Leads</button>
+                </nav>
+            </header>
+            <main class="alt-workspace-body" style="padding:var(--space-5);color:var(--text-tertiary);font-size:var(--font-size-sm);">
+                Aquí va la tabla / kanban / vista del workspace…
+            </main>
+        </div>
+    </div>
+</section>
+
 <!-- 12. STACK / CLUSTER -->
 <section class="sb-section">
     <h2>12. Stack / Cluster (layout primitives)</h2>

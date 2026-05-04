@@ -1059,7 +1059,21 @@
     //       suppressToast: false                      // optional
     //   });
     //
-    // Returns: id of bell entry, or null if deduped/invalid.
+    // Returns: id of bell entry, or null if deduped/invalid/disabled.
+
+    // G2 — User-level opt-out per category. Each category can be muted
+    // by the user in perfil → Preferencias → Notificaciones. Read from
+    // localStorage for hot-path performance (no JSON parse on every emit).
+    // Key format: altorra_notif_cat_<category> = '0' (disabled) | '1' (default)
+    // Security category is NEVER mutable — those alerts are too important.
+    function isCategoryEnabled(category) {
+        if (category === 'security') return true;
+        try {
+            var v = localStorage.getItem('altorra_notif_cat_' + category);
+            return v !== '0';
+        } catch (e) { return true; }
+    }
+
     function emitCategorical(category, payload) {
         var defaults = CATEGORY_DEFAULTS[category];
         if (!defaults) {
@@ -1069,6 +1083,8 @@
             }
             return null;
         }
+        // G2 — respect user opt-out
+        if (!isCategoryEnabled(category)) return null;
         payload = payload || {};
         var title = payload.title || defaults.defaultTitle;
         var message = payload.message || '';

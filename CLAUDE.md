@@ -3361,6 +3361,72 @@ Solo para usuarios registrados con email. Anonimos skip silencioso.
 
 **Archivos modificados**: `js/admin-appointments.js`, `service-worker.js`, `js/cache-manager.js`
 
+### Microfase G2 — Preferencias granulares por categoria ✓ COMPLETADA (2026-05-04)
+
+**Objetivo**: el usuario puede silenciar categorias del bell que no le interesan. Patron Slack/Twitter/GitHub: control granular por tipo.
+
+**UI** (`js/perfil.js` → seccion Preferencias, nueva card "Que tipo de notificaciones quieres recibir"):
+
+6 toggles, uno por categoria persistible:
+
+| Categoria | Icono | Etiqueta | Hint |
+|---|---|---|---|
+| `price_alert` | `trending-down` | Alertas de precio | "Cambios en el precio de tus favoritos y vehiculos vistos" |
+| `request_update` | `message-square-text` | Solicitudes | "Cuando un asesor responde o cambia el estado de una solicitud" |
+| `appointment_update` | `calendar-check-2` | Citas | "Confirmacion, reprogramacion o cancelacion de tus citas" |
+| `search_match` | `search-check` | Busquedas guardadas | "Vehiculos nuevos que coinciden con tus busquedas" |
+| `inventory_change` | `package` | Cambios de inventario | "Tus favoritos cuando son reservados o vendidos" |
+| `system` | `bell-ring` | Avisos del sistema | "Nuevas versiones, mantenimiento, cambios importantes" |
+
+**Categoria `security` NO es muteable**: aunque el schema la incluye, el toggle no se renderiza. Las alertas de seguridad son siempre visibles.
+
+**Storage dual**:
+1. **Firestore canonical**: `clientes/{uid}.preferencias.notificaciones.categories = {price_alert: bool, ...}`
+2. **localStorage hot-path**: `altorra_notif_cat_<category>` = `'0'` | `'1'` — un key por categoria, leido sin JSON parse en el hot-path de `notifyCenter.notify()`
+
+**Sync logico**:
+- Al cargar perfil.html, las preferencias se leen de Firestore y se sincronizan a localStorage (asi notifyCenter las honra en cualquier pagina)
+- Al togglear, localStorage se actualiza inmediatamente (UI optimistica) + Firestore via `savePref()` debounced
+- Al cambiar de dispositivo: el primer load de perfil sincroniza desde Firestore
+
+**Read path en `notifyCenter.notify(category, payload)`**:
+
+```js
+function isCategoryEnabled(category) {
+    if (category === 'security') return true;       // never mutable
+    try {
+        var v = localStorage.getItem('altorra_notif_cat_' + category);
+        return v !== '0';                            // default: enabled
+    } catch (e) { return true; }
+}
+
+function emitCategorical(category, payload) {
+    if (!CATEGORY_DEFAULTS[category]) return null;   // unknown
+    if (!isCategoryEnabled(category)) return null;   // user opted out
+    ...
+}
+```
+
+Cero costo cuando esta enabled (default). Si el user opta out, `notifyCenter.notify()` retorna `null` sin tocar el bell ni mostrar toast.
+
+**Anti-patrones evitados**:
+
+| Riesgo | Mitigacion |
+|---|---|
+| Hot-path lee Firestore en cada notify | localStorage cache, sync en perfil load |
+| Otra tab abierta no respeta el cambio | `storage` event nativo del browser propaga (libre) |
+| Default OFF accidental tras refactor | `v !== '0'` permite que claves no-seteadas sigan ON |
+| Security mute por error | Hardcoded en `isCategoryEnabled` |
+| Nuevo dispositivo sin prefs | Default ON hasta que el user visita perfil |
+
+**Visibilidad para el usuario**:
+- Toggle en perfil → cambio inmediato (localStorage)
+- En el background, Firestore se actualiza
+- Notificacion de la categoria muteada deja de aparecer en bell + toast
+- No requiere recargar pagina
+
+**Archivos modificados**: `js/perfil.js`, `js/toast.js`, `service-worker.js`, `js/cache-manager.js`
+
 ---
 
 ## 14. SEO

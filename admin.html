@@ -954,6 +954,19 @@
                 </div>
             </div>
 
+            <!-- Q.4 — Búsqueda semántica con NER -->
+            <div class="crm-semantic-search">
+                <div class="crm-semantic-input-wrap">
+                    <i data-lucide="sparkles"></i>
+                    <input type="text" id="crmSemanticInput" class="form-input"
+                        placeholder="Búsqueda inteligente: &quot;interesados en SUV menor a $100M en Cartagena&quot;">
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="crmSemanticClear" style="display:none;" data-tooltip="Limpiar">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div id="crmSemanticResults" class="crm-semantic-results" style="display:none;"></div>
+            </div>
+
             <!-- KPI cards -->
             <div class="crm-kpis">
                 <div class="crm-kpi"><div class="crm-kpi-label">Total contactos</div><div class="crm-kpi-value" id="crmKpiTotal">0</div></div>
@@ -2258,6 +2271,7 @@
 <script src="js/ai/scoring.js" defer></script>
 <script src="js/ai/nba.js" defer></script>
 <script src="js/ai/forecast.js" defer></script>
+<script src="js/ai/knowledge-graph.js" defer></script>
 <script src="js/admin-vehicles.js" defer></script>
 <script src="js/admin-brands.js" defer></script>
 <script src="js/admin-users.js" defer></script>

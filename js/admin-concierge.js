@@ -150,6 +150,158 @@
             }, function () {});
     }
 
+    /* ═══════════════════════════════════════════════════════════
+       U.12 — Smart Suggestions para asesor
+       Genera 3 respuestas sugeridas basadas en último mensaje del
+       cliente + sentiment + entities + KB + contexto del chat.
+       Patrón Gmail Smart Reply sin LLM (heurísticas + templates).
+       ═══════════════════════════════════════════════════════════ */
+    function generateSmartSuggestions(chat, messages) {
+        // Encontrar último mensaje del cliente
+        var lastUserMsg = null;
+        for (var i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].from === 'user') { lastUserMsg = messages[i]; break; }
+        }
+        if (!lastUserMsg) return [];
+
+        var text = lastUserMsg.text || '';
+        var lower = text.toLowerCase();
+        var asesorName = (AP.currentUserProfile && AP.currentUserProfile.nombre) || 'tu asesor';
+        var firstName = (chat.userNombre || '').split(' ')[0] || '';
+        var greeting = firstName ? 'Hola ' + firstName + ', ' : 'Hola, ';
+
+        // Análisis AI
+        var sentiment = window.AltorraAI ? window.AltorraAI.sentiment(text) : null;
+        var ner = window.AltorraNER ? window.AltorraNER.extract(text) : { summary: {} };
+        var summary = ner.summary || {};
+
+        var suggestions = [];
+
+        // 1. Si sentiment muy negativo → disculpa + ofrecer llamada
+        if (sentiment && sentiment.label === 'negative' && sentiment.score < -0.4) {
+            suggestions.push({
+                text: greeting + 'lamento mucho lo que ha pasado. Soy ' + asesorName +
+                      ' y voy a ayudarte personalmente. ¿Te puedo llamar ahora para resolverlo?',
+                tag: '🛟 Recuperar',
+                priority: 100
+            });
+        }
+
+        // 2. Si pregunta por precio / cotización
+        if (/precio|cuanto|cuesta|cotizaci|valor/i.test(text)) {
+            var precioBit = summary.precio ? ' por aproximadamente $' + Math.round(summary.precio / 1000000) + 'M' : '';
+            var marcaBit = summary.marca ? ' del ' + summary.marca : '';
+            suggestions.push({
+                text: greeting + 'te preparo la cotización' + marcaBit + precioBit +
+                      ' con todas las condiciones (financiación, peritaje, garantía). ¿Tienes una hora para que te la presente?',
+                tag: '💵 Cotización',
+                priority: 90
+            });
+        }
+
+        // 3. Si menciona fecha o "agendar/cita/visita/ver"
+        if (/agendar|cita|visita|ver el|conocer el|cuando puedo/i.test(text) || summary.fecha) {
+            var fechaBit = summary.fecha ? ' el ' + summary.fecha : ' esta semana';
+            suggestions.push({
+                text: greeting + '¡con gusto te agendo una cita' + fechaBit +
+                      '! ¿Qué horario te queda mejor: mañana, tarde o final del día?',
+                tag: '📅 Agendar',
+                priority: 88
+            });
+        }
+
+        // 4. Si menciona marca/modelo/año específico
+        if (summary.marca || summary.modelo) {
+            var bits = [];
+            if (summary.marca) bits.push(summary.marca);
+            if (summary.modelo) bits.push(summary.modelo);
+            if (summary.year) bits.push(summary.year);
+            suggestions.push({
+                text: greeting + 'te paso ahora mismo todo el detalle del ' + bits.join(' ') +
+                      ' (fotos, kilometraje, peritaje y precio final). ¿Te interesa pasar a verlo?',
+                tag: '🚗 Info vehículo',
+                priority: 80
+            });
+        }
+
+        // 5. Si menciona financiación
+        if (/financ|cuota|pagar|crédito|credito/i.test(text)) {
+            suggestions.push({
+                text: greeting + 'tenemos planes de financiación con cuota inicial desde 30%. ' +
+                      'Cuéntame: ¿cuál es tu cuota inicial disponible y a qué plazo te gustaría pagarlo?',
+                tag: '💳 Financiación',
+                priority: 78
+            });
+        }
+
+        // 6. Si NER detectó ciudad fuera de Cartagena
+        if (summary.ciudad && summary.ciudad.toLowerCase().indexOf('cartagena') === -1) {
+            suggestions.push({
+                text: greeting + 'estamos en Cartagena pero podemos coordinar el envío del vehículo a ' +
+                      summary.ciudad + '. ¿Te gustaría que te explique los pasos y costos?',
+                tag: '🚚 Envío',
+                priority: 70
+            });
+        }
+
+        // 7. Knowledge Base — si hay match, sugerir respuesta del KB
+        if (window.AltorraKB && window.AltorraKB.findBest) {
+            var kb = window.AltorraKB.findBest(text);
+            if (kb && kb.answer) {
+                suggestions.push({
+                    text: kb.answer,
+                    tag: '📖 KB',
+                    priority: 65
+                });
+            }
+        }
+
+        // 8. Fallback genérico siempre presente
+        suggestions.push({
+            text: greeting + 'soy ' + asesorName + ' de Altorra Cars. Cuéntame un poco más sobre lo que estás buscando y te ayudo en seguida.',
+            tag: '👋 Saludo',
+            priority: 30
+        });
+
+        // Sort por prioridad y limitar a 3
+        suggestions.sort(function (a, b) { return b.priority - a.priority; });
+        // Dedup por texto similar
+        var seen = {};
+        var unique = [];
+        suggestions.forEach(function (s) {
+            var key = s.text.slice(0, 40);
+            if (!seen[key]) { seen[key] = true; unique.push(s); }
+        });
+        return unique.slice(0, 3);
+    }
+
+    function renderSmartSuggestions(chat, messages) {
+        var container = $('cncSmartSuggestions');
+        if (!container) return;
+        var sugs = generateSmartSuggestions(chat, messages);
+        if (sugs.length === 0) {
+            container.style.display = 'none';
+            container.innerHTML = '';
+            return;
+        }
+        container.style.display = '';
+        container.innerHTML =
+            '<div class="cnc-smart-head">' +
+                '<i data-lucide="sparkles"></i>' +
+                '<span>Sugerencias inteligentes</span>' +
+            '</div>' +
+            '<div class="cnc-smart-list">' +
+                sugs.map(function (s) {
+                    return '<button class="cnc-smart-suggestion" data-suggestion="' + escTxt(s.text) + '">' +
+                        '<span class="cnc-smart-tag">' + escTxt(s.tag) + '</span>' +
+                        '<span class="cnc-smart-text">' + escTxt(s.text.slice(0, 120)) + (s.text.length > 120 ? '…' : '') + '</span>' +
+                    '</button>';
+                }).join('') +
+            '</div>';
+        if (window.AltorraIcons) window.AltorraIcons.refresh(container);
+        else if (window.lucide) try { window.lucide.createIcons({ context: container }); } catch (e) {}
+    }
+
     function renderChatDetail(chat, messages) {
         var detailEl = $('conciergeChatDetail');
         if (!detailEl) return;
@@ -189,6 +341,7 @@
                 '</div>' +
             '</div>' +
             '<div class="cnc-admin-detail-messages" id="cncAdminMessages">' + msgsHTML + '</div>' +
+            '<div class="cnc-smart-suggestions" id="cncSmartSuggestions" style="display:none;"></div>' +
             '<div class="cnc-admin-detail-quick-replies">' +
                 '<button class="cnc-quick-reply" data-text="Hola, soy [tu nombre], asesor de Altorra. ¿En qué te puedo ayudar?">👋 Saludo</button>' +
                 '<button class="cnc-quick-reply" data-text="Te envío la información del vehículo que te interesa por aquí mismo.">📋 Info vehículo</button>' +
@@ -206,6 +359,9 @@
 
         if (window.AltorraIcons) window.AltorraIcons.refresh(detailEl);
         else if (window.lucide) try { window.lucide.createIcons({ context: detailEl }); } catch (e) {}
+
+        // U.12 — generar smart suggestions basadas en el último mensaje
+        renderSmartSuggestions(chat, messages);
     }
 
     function sendAsesorMessage() {
@@ -430,6 +586,18 @@
             if (input) {
                 input.value = quickReply.getAttribute('data-text');
                 input.focus();
+            }
+            return;
+        }
+        // U.12 — click en smart suggestion pre-llena el input
+        var smartSug = e.target.closest('.cnc-smart-suggestion');
+        if (smartSug) {
+            var input2 = $('cncAdminReply');
+            if (input2) {
+                input2.value = smartSug.getAttribute('data-suggestion');
+                input2.focus();
+                // Mover cursor al final
+                input2.setSelectionRange(input2.value.length, input2.value.length);
             }
             return;
         }

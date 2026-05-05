@@ -344,6 +344,13 @@ function loadAuthSystem() {
                     kb.defer = true;
                     document.body.appendChild(kb);
                 }
+                // U.19 — Marketing opt-in granular + GDPR
+                if (!document.querySelector('script[src*="concierge-optin.js"]')) {
+                    var optin = document.createElement('script');
+                    optin.src = 'js/concierge-optin.js';
+                    optin.defer = true;
+                    document.body.appendChild(optin);
+                }
             })
             .catch(function(e) { console.warn('[Auth] No se pudo cargar auth-modal.html', e); });
     }

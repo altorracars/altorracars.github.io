@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505420000'; // D.5+N.2 (mega-plan v4) — Recordatorios automáticos de citas + Sidebar adaptativo según uso
+const CACHE_VERSION = 'v20260505430000'; // U.18+U.19 (mega-plan v4) — Identity merge en login + Marketing opt-in granular + GDPR right-to-forget
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

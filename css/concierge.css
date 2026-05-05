@@ -292,3 +292,91 @@
     .cnc-msg { animation: none; }
     .altorra-concierge { transition: opacity 0.15s linear; transform: none; }
 }
+
+/* U.19 — Opt-in modal */
+.altorra-optin {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.optin-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(8px);
+}
+.optin-modal {
+    position: relative;
+    background: linear-gradient(180deg, #15110a, #0d0a06);
+    border: 1px solid rgba(184, 150, 88, 0.35);
+    border-radius: 14px;
+    padding: 28px 32px;
+    width: min(440px, 92vw);
+    color: #f0e6d2;
+}
+.optin-modal h3 {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+}
+.optin-modal p {
+    margin: 0 0 20px;
+    color: rgba(240, 230, 210, 0.75);
+    font-size: 0.9rem;
+}
+.optin-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.optin-row:hover { background: rgba(184, 150, 88, 0.10); }
+.optin-row input[type="checkbox"] {
+    margin-top: 3px;
+    accent-color: #b89658;
+    width: 16px;
+    height: 16px;
+}
+.optin-row strong {
+    display: block;
+    font-size: 0.92rem;
+    margin-bottom: 2px;
+}
+.optin-row small {
+    display: block;
+    color: rgba(240, 230, 210, 0.55);
+    font-size: 0.74rem;
+}
+.optin-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+.optin-btn-skip {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(240, 230, 210, 0.75);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+}
+.optin-btn-save {
+    background: linear-gradient(135deg, #c9a663, #9a7d44);
+    color: #1a1500;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+}

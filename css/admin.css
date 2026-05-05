@@ -627,6 +627,47 @@ body {
     background: rgba(0, 0, 0, 0.2);
 }
 
+/* M.2 — Co-edit locks blandos (badge en modales) */
+.coedit-badge-host {
+    margin-bottom: 14px;
+}
+.coedit-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.10), rgba(250, 204, 21, 0.04));
+    border: 1px solid rgba(250, 204, 21, 0.25);
+    border-radius: 10px;
+}
+.coedit-badge-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #facc15, #eab308);
+    color: #422006;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.coedit-badge-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0a0a0);
+    line-height: 1.4;
+}
+.coedit-badge-text strong {
+    color: var(--text-primary, #e5e5e5);
+}
+.coedit-badge-warning {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--status-warning, #facc15);
+    margin-top: 2px;
+}
+
 /* L.2 — Notas dictadas en textareas */
 .alt-dictate-wrap {
     position: relative;

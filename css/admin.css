@@ -627,6 +627,50 @@ body {
     background: rgba(0, 0, 0, 0.2);
 }
 
+/* L.2 — Notas dictadas en textareas */
+.alt-dictate-wrap {
+    position: relative;
+    display: block;
+}
+.alt-dictate-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(184, 150, 88, 0.10);
+    border: 1px solid rgba(184, 150, 88, 0.20);
+    color: var(--brand-gold, #b89658);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+.alt-dictate-btn:hover {
+    background: rgba(184, 150, 88, 0.25);
+    transform: scale(1.08);
+}
+.alt-dictate-btn.alt-dictate-active {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-color: rgba(239, 68, 68, 0.50);
+    animation: dictatePulse 1.4s ease-in-out infinite;
+}
+@keyframes dictatePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+    50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+.alt-dictate-textarea-active {
+    border-color: rgba(239, 68, 68, 0.45) !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+    .alt-dictate-btn.alt-dictate-active { animation: none; }
+}
+
 /* H.4 — Re-auth modal para acciones críticas */
 .alt-sec-modal {
     position: fixed;

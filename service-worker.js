@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505360000'; // H.4 (mega-plan v4) — Re-auth para acciones críticas con sudo timestamp 5min + auto-instrumentación data-secure-action
+const CACHE_VERSION = 'v20260505370000'; // L.2 (mega-plan v4) — Dictado en textareas: auto-instrumenta cada textarea con mic button + Speech Recognition continuo
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

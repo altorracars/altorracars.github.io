@@ -6242,6 +6242,143 @@ DOM residual de los widgets legacy (`.whatsapp-widget-fab` y
 - `css/whatsapp-widget.css` y `css/ai-assistant.css` (si existen) —
   no referenciados, eventual cleanup en U.15
 
+### Microfase U.10+U.11 — Concierge bandeja admin + chat detail ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: dar al asesor humano la UI para ver y responder las
+conversaciones que escalaron al modo `live`. Sprint 2 del Bloque U.
+
+**Lo que se creó**:
+
+#### `js/admin-concierge.js` — bandeja admin (~280 líneas)
+
+API pública `window.AltorraAdminConcierge`:
+```js
+AltorraAdminConcierge.refresh()           → recargar lista
+AltorraAdminConcierge.openChat(sessionId) → abrir chat detail
+```
+
+**Listener realtime** sobre `conciergeChats/`:
+- Query `orderBy(lastMessageAt, 'desc').limit(50)`
+- Solo activo para `editor+` (RBAC)
+- Auto-arranque cuando admin entra a la sección "concierge" o cuando
+  el panel admin se carga (para que el badge de unread funcione globalmente)
+
+**Renderizado lista**: cada item con avatar (iniciales), nombre, mode
+icon (🤖 bot / 👨 live / 📲 wa), snippet del último mensaje, tiempo
+relativo, badge de unread si aplica.
+
+**Click en un chat**:
+- Marca leído (`unreadByAdmin: 0`)
+- Cancela listener previo de mensajes
+- Inicia listener `messages/` ordenado por timestamp
+- Renderiza chat detail con burbujas (cliente/asesor/bot) + meta
+  (email, teléfono, vehículo origen)
+
+**Quick replies** en footer del chat detail:
+- "👋 Saludo" — template "Hola, soy [tu nombre], asesor..."
+- "📋 Info vehículo" — template para enviar info
+- "📅 Agendar" — template para invitar a visita
+- "📲 A WhatsApp" — template para handoff
+
+**Send asesor message**:
+- Crea doc en `conciergeChats/<sid>/messages/` con `from:'asesor'`,
+  `asesorUid`, `asesorNombre` (del perfil admin)
+- Update parent doc con `lastMessage`, `lastMessageAt`, `unreadByUser` + 1
+- El listener del cliente (en `concierge.js`) recibe el mensaje
+  realtime y lo muestra al cliente
+
+**Marcar resuelto**:
+- Confirmación + `status: 'resolved'`, `resolvedAt`, `resolvedBy`
+
+#### Sincronización bidireccional en `js/concierge.js`
+
+Cuando el cliente clica "Asesor en vivo":
+1. `escalateToLive()` llama `ensureFirestoreChatDoc()`
+2. Crea doc en `conciergeChats/<sessionId>` con identidad + sourcePage
+3. Sube todos los mensajes existentes (incluyendo welcome del bot)
+4. Inicia `onSnapshot` de la subcolección `messages/` filtrado por
+   `from === 'asesor'`
+5. Cada nuevo mensaje del asesor se inserta en `session.messages` y
+   re-renderiza el panel del cliente (con `unreadByUser` reseteado)
+
+`syncMessageToFirestore(msg)`:
+- Crea doc en subcolección + actualiza parent doc
+- `unreadByAdmin += 1` cuando el cliente escribe
+- `lastMessage` truncado a 80 chars
+
+**Reglas Firestore** (`firestore.rules`):
+```
+match /conciergeChats/{sessionId} {
+  allow read: editor+ OR auth.uid == resource.userId
+  allow create: auth != null AND (userId == null OR userId == auth.uid)
+  allow update: editor+ OR auth.uid == resource.userId
+  allow delete: super_admin
+
+  match /messages/{msgId} {
+    allow read: editor+ OR matches parent owner
+    allow create: auth != null AND (
+      from in ['user', 'bot'] OR
+      (from == 'asesor' AND editor+)
+    )
+    allow delete: super_admin
+  }
+}
+```
+
+> **DEPLOY MANUAL**: `firebase deploy --only firestore:rules` para
+> activar la nueva colección.
+
+**UI sidebar** (admin.html):
+- Nuevo nav-item "Concierge" en grupo Comunicaciones (icono `bot`)
+- Badge de unread chats actualizado realtime
+- Sección `sec-concierge` con layout grid 2-cols (lista + detail)
+- Mobile: single-column con lista colapsable
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Eco entre cliente y admin (mismo mensaje 2 veces) | Cliente no procesa `from:'user'` o `'bot'` que ya tiene; admin no procesa `from:'asesor'` que es propio |
+| Listener de chats activo cuando admin no es editor+ | RBAC check antes de `onSnapshot` |
+| Permission-denied al cerrar sesión | Error callback chequea `auth.currentUser`, suprime |
+| Mensajes duplicados al re-conectar | Set `_lastSyncedMsgIds[id]` dedup |
+| Multiple admin tabs envían mismo reply | Cada doc tiene ID único auto-generado por Firestore |
+| Cliente con `userId: null` (anónimo) no puede leer su propio chat | Reglas permiten lectura si `userId == null` (solo el que conoce el sessionId puede acceder) |
+| sessionId duplicado entre clientes | localStorage genera un ID único `cnc_<ts>_<rand>` por cliente |
+| Conversaciones acumulándose forever | Marcar resuelto cierra el chat (futuro: cleanup en U.15) |
+| Asesor escribe sin estar logueado | Reglas exigen `editor+` para `from:'asesor'` |
+| RACE: chat doc aún no creado pero cliente envía mensaje | `addMessage` sólo sincroniza si `_chatDocCreated === true` |
+
+**Pasos de prueba**:
+1. Cliente público abre Concierge → "Asesor en vivo"
+2. Verificar Firestore: doc creado en `conciergeChats/<sessionId>` con
+   subcolección `messages/`
+3. Login admin → sidebar muestra item "Concierge" con badge 1
+4. Click "Concierge" → lista con la conversación
+5. Click en la conversación → chat detail con todos los mensajes
+6. Click una quick reply → texto pre-cargado en el input
+7. Escribir respuesta y enviar → cliente la recibe en tiempo real
+8. Cliente escribe respuesta → admin la ve aparecer
+9. Click "Marcar resuelto" → status: 'resolved' en Firestore
+10. Multi-tab: abrir admin en 2 pestañas, ambas reciben los nuevos
+    mensajes simultáneamente
+
+**Archivos creados/modificados**:
+- `js/admin-concierge.js` — módulo nuevo (~280 líneas)
+- `js/concierge.js` — añadido bloque de sync Firestore (~80 líneas)
+- `admin.html` — nav-item + sección concierge + script tag
+- `js/admin-section-router.js` — `concierge` agregado al REGISTRY
+- `css/admin.css` — `.cnc-admin-*` (~190 líneas)
+- `firestore.rules` — colección `conciergeChats/{sid}/messages/{mid}`
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505260000
+
+**Pendiente de Bloque U** (los próximos sprints):
+- U.5 — Knowledge Base CRUD admin
+- U.6 — Embeddings + RAG
+- U.7-U.9 — Intent classifier + response generator + auto-escalation
+- U.12-U.13 — Smart suggestions + summarization
+- U.14-U.19 — WhatsApp handoff refinement, cleanup, CRM integration completa
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

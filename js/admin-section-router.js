@@ -49,6 +49,7 @@
         reviews:        { label: 'Reseñas',          group: 'inventario',   icon: 'star' },
         appointments:   { label: 'Bandeja',          group: 'comunicaciones', icon: 'inbox' },
         inbox:          { label: 'Mensajes vehículo', group: 'comunicaciones', icon: 'message-square-text' },
+        concierge:      { label: 'Concierge',         group: 'comunicaciones', icon: 'bot' },
         lists:          { label: 'Leads (legacy)',   group: 'comunicaciones', icon: 'sparkles' },
         crm:            { label: 'Contactos 360°',   group: 'crm',          icon: 'users-round' },
         automation:     { label: 'Reglas',           group: 'automatizacion', icon: 'zap' },

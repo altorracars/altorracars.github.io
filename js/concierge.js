@@ -179,11 +179,16 @@
             from: from,         // 'user' | 'bot' | 'asesor'
             text: text,
             timestamp: Date.now(),
-            cta: opts.cta || null
+            cta: opts.cta || null,
+            _synced: false
         };
         session.messages.push(msg);
         saveSession(session);
         renderMessages();
+        // Sync a Firestore si el chat doc ya existe (post-escalate)
+        if (_chatDocCreated && from !== 'asesor') {
+            syncMessageToFirestore(msg);
+        }
         // Notify EventBus
         if (window.AltorraEventBus) {
             window.AltorraEventBus.emit('concierge.message', {
@@ -217,6 +222,8 @@
         addMessage('bot', '✅ Conectándote con un asesor humano. En breve te respondemos por aquí o por WhatsApp.');
         // Crear lead en CRM (U.16 ampliará esto)
         createLeadInCRM();
+        // Crear chat doc en Firestore + iniciar sync bidireccional (U.10)
+        ensureFirestoreChatDoc();
     }
 
     function handoverToWhatsApp() {
@@ -240,6 +247,116 @@
             lines.push('• ' + m.text);
         });
         return lines.join('\n');
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       FIRESTORE SYNC — bidireccional con conciergeChats/<sessionId>
+       Solo se activa cuando el chat escala a live mode (U.10).
+       ═══════════════════════════════════════════════════════════ */
+    var _firestoreUnsub = null;
+    var _chatDocCreated = false;
+    var _lastSyncedMsgIds = {}; // dedup contra eco
+
+    function ensureFirestoreChatDoc() {
+        if (_chatDocCreated || !window.db) return Promise.resolve();
+        var doc = {
+            sessionId: session.sessionId,
+            userId: session.uid || null,
+            userEmail: session.email || null,
+            userNombre: session.nombre || null,
+            telefono: session.telefono || null,
+            sourcePage: session.sourcePage,
+            sourceVehicleId: session.sourceVehicleId,
+            status: 'active',
+            mode: session.mode,
+            unreadByAdmin: 0,
+            unreadByUser: 0,
+            createdAt: new Date().toISOString(),
+            lastMessageAt: new Date().toISOString(),
+            lastMessage: ''
+        };
+        _chatDocCreated = true;
+        return window.db.collection('conciergeChats').doc(session.sessionId)
+            .set(doc, { merge: true })
+            .then(function () { startFirestoreSync(); })
+            .catch(function () { _chatDocCreated = false; });
+    }
+
+    function startFirestoreSync() {
+        if (_firestoreUnsub || !window.db) return;
+        // Subir todos los mensajes existentes que aún no estén sincronizados
+        var batch = window.db.batch();
+        var hadAny = false;
+        session.messages.forEach(function (m, i) {
+            if (m._synced) return;
+            hadAny = true;
+            var ref = window.db.collection('conciergeChats').doc(session.sessionId)
+                .collection('messages').doc('init_' + i + '_' + Date.now());
+            batch.set(ref, {
+                from: m.from,
+                text: m.text,
+                timestamp: new Date(m.timestamp).toISOString()
+            });
+            m._synced = true;
+        });
+        if (hadAny) batch.commit().catch(function () {});
+        saveSession(session);
+
+        // Listener para mensajes nuevos del asesor
+        _firestoreUnsub = window.db.collection('conciergeChats').doc(session.sessionId)
+            .collection('messages')
+            .orderBy('timestamp', 'asc')
+            .onSnapshot(function (snap) {
+                snap.docChanges().forEach(function (chg) {
+                    if (chg.type !== 'added') return;
+                    var d = chg.doc.data();
+                    if (_lastSyncedMsgIds[chg.doc.id]) return;
+                    _lastSyncedMsgIds[chg.doc.id] = true;
+                    // Solo procesamos mensajes del asesor (los nuestros ya están en local)
+                    if (d.from === 'asesor') {
+                        var alreadyHave = session.messages.some(function (m) {
+                            return m.from === 'asesor' && m.text === d.text;
+                        });
+                        if (!alreadyHave) {
+                            session.messages.push({
+                                from: 'asesor',
+                                text: d.text,
+                                timestamp: new Date(d.timestamp).getTime(),
+                                _synced: true
+                            });
+                            saveSession(session);
+                            renderMessages();
+                            // Reset unread count en Firestore
+                            window.db.collection('conciergeChats').doc(session.sessionId)
+                                .update({ unreadByUser: 0 }).catch(function () {});
+                        }
+                    }
+                });
+            }, function () { /* permission errors silenced */ });
+    }
+
+    function syncMessageToFirestore(msg) {
+        if (!_chatDocCreated || !window.db) return;
+        var ref = window.db.collection('conciergeChats').doc(session.sessionId)
+            .collection('messages').doc();
+        ref.set({
+            from: msg.from,
+            text: msg.text,
+            timestamp: new Date(msg.timestamp).toISOString()
+        }).then(function () {
+            msg._synced = true;
+            saveSession(session);
+        }).catch(function () {});
+        // Update parent doc lastMessage + counters
+        var update = {
+            lastMessage: msg.text.slice(0, 80),
+            lastMessageAt: new Date(msg.timestamp).toISOString(),
+            mode: session.mode
+        };
+        if (msg.from === 'user') update.unreadByAdmin = (window.firebase && window.firebase.firestore) ?
+            window.firebase.firestore.FieldValue.increment(1) : 1;
+        window.db.collection('conciergeChats').doc(session.sessionId)
+            .set(update, { merge: true }).catch(function () {});
     }
 
     /* ═══════════════════════════════════════════════════════════

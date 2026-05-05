@@ -218,6 +218,10 @@
                     <i data-lucide="message-square-text"></i><span>Mensajes vehículo</span>
                     <span class="nav-badge" id="navBadgeInbox"></span>
                 </button>
+                <button class="nav-item" data-section="concierge">
+                    <i data-lucide="bot"></i><span>Concierge</span>
+                    <span class="nav-badge" id="navBadgeConcierge"></span>
+                </button>
                 <button class="nav-item" data-section="lists">
                     <i data-lucide="sparkles"></i><span>Leads (legacy)</span>
                 </button>
@@ -911,6 +915,27 @@
                 <div class="automation-history-list" id="automationHistoryList">
                     <div class="table-empty">Sin ejecuciones aún.</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- U.10+U.11 (mega-plan v4) — Concierge section: bandeja de chats activos -->
+        <div id="sec-concierge" class="section" data-workspace-color="green">
+            <div class="page-header">
+                <div>
+                    <h1>Concierge — Chats en vivo</h1>
+                    <p class="page-subtitle">Conversaciones del bot Concierge que escalaron a un asesor. Responde como asesor humano y mantén el contexto.</p>
+                </div>
+            </div>
+            <div class="cnc-admin-layout">
+                <aside class="cnc-admin-list" id="conciergeChatList">
+                    <div class="cnc-admin-empty">Cargando…</div>
+                </aside>
+                <main class="cnc-admin-detail" id="conciergeChatDetail">
+                    <div class="cnc-admin-detail-empty">
+                        <i data-lucide="message-circle" style="width:48px;height:48px;opacity:0.3;"></i>
+                        <p>Selecciona una conversación para responder</p>
+                    </div>
+                </main>
             </div>
         </div>
 
@@ -2278,6 +2303,7 @@
 <script src="js/admin-appointments.js" defer></script>
 <script src="js/admin-crm.js" defer></script>
 <script src="js/admin-predictive.js" defer></script>
+<script src="js/admin-concierge.js" defer></script>
 <script src="js/admin-inbox.js" defer></script>
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

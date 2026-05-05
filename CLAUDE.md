@@ -6074,6 +6074,174 @@ auto-suggest en vehicle.created, y dos UIs de consumo (tab Red + buscador
 semántico). Listo para que **Bloque U (Concierge)** lo use al recomendar
 vehículos al cliente en el chat.
 
+### Microfase U.1+U.2+U.3+U.4 — Concierge Unificado: arranque del bloque U ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: primer sprint del Bloque U, la **estrella del plan**.
+Reemplaza los 2 widgets actuales (`whatsapp-widget.js` + `ai-assistant.js`)
+con UN solo Concierge inteligente que tiene 3 modos seamless: 🤖 bot
+AI 24/7, 👨 asesor en vivo, 📲 WhatsApp gateway. Captura todo lead
+progresivamente al CRM.
+
+**Decisión de diseño**: el plan original tenía 19 microfases en U.
+Las shipeo en sprints de 4-5 cada uno para mantener PR-able size.
+Este primer sprint cubre:
+- **U.1**: Design system del widget (CSS dorado con animaciones)
+- **U.2**: Schema unificado de mensajes (`localStorage` + `sessionId`)
+- **U.3**: Migración de los widgets legacy (handover preservando wa.me)
+- **U.4**: Frontend `concierge.js` que reemplaza `whatsapp-widget.js` + `ai-assistant.js`
+
+**Lo que se creó**:
+
+#### `js/concierge.js` — singleton
+
+API pública `window.AltorraConcierge`:
+```js
+AltorraConcierge.open()        → abrir widget
+AltorraConcierge.close()       → cerrar
+AltorraConcierge.send(text)    → enviar mensaje (programático)
+AltorraConcierge.session()     → estado actual (snapshot)
+```
+
+**Estado de sesión** persistido en `localStorage.altorra_concierge_session`:
+- `sessionId` único por cliente (`cnc_<timestamp>_<rand>`)
+- `mode`: `'bot' | 'live' | 'wa_handed_over'`
+- `messages[]`: array de `{from, text, timestamp, cta}`
+- `uid, email, nombre, telefono`: identidad (rellena al loguearse)
+- `level`: 0..5 (progressive profiling — U.17)
+- `sourcePage, sourceVehicleId`: tracking del origen
+
+**Flujo bot**:
+1. Cliente escribe → `addMessage('user', text)`
+2. Después de 500-1100ms (sentir natural) → `generateBotResponse(text)`:
+   - Primero sentiment check via J.1: si muy negativo, escala
+   - FAQ matching (6 entradas: financiación, vender auto, catálogo,
+     ubicación, horario, agendar cita)
+   - Si NER (J.2) detecta marca/modelo/precio → ofrece conectar
+   - Fallback: oferta de hablar con asesor
+
+**Modo live**:
+- `escalateToLive()` cambia `mode='live'`, agrega mensaje confirmando
+- Crea lead en `solicitudes/` con `kind:'lead'`, `origen:'concierge'`,
+  `comentarios` con resumen de los primeros 5 mensajes del cliente
+- Aplica `AltorraCommSchema.computeMeta()` para inferir priority/SLA/tags
+  (heredado del schema de Bloque MF1.x)
+
+**WhatsApp handover**:
+- `handoverToWhatsApp()` construye un mensaje resumen con ticket +
+  identidad + último contexto, abre `wa.me/+573235016747?text=...`
+- Marca `mode='wa_handed_over'` para que el admin vea el handoff
+
+**Auth hook**:
+- Listener a `auth.onAuthStateChanged`: si el cliente se loguea,
+  copia `uid`/`email`/`displayName` a la sesión y bumpea `level: 0 → 2`
+  (L2 contactable). Identity merge completo en U.18.
+
+**Quick actions** (botones arriba del chat):
+- "👨 Asesor en vivo" → `escalateToLive()`
+- "📲 WhatsApp" → `handoverToWhatsApp()`
+
+**CTAs por mensaje del bot** (botón opcional dentro de la burbuja):
+- `goto-simulador` → simulador-credito.html
+- `goto-busqueda` → busqueda.html
+- `open-modal-vende` → modal Vende tu Auto
+- `open-modal-financiacion` → modal Financiación
+- `open-wa` → handover WhatsApp
+- `escalate` → modo live
+
+#### `css/concierge.css` — design system del widget
+
+- **FAB botón flotante** (60×60px, dorado con gradiente, animación pulse
+  3s loop, hover scale 1.08 + lift). Bottom-right en desktop, bottom
+  con safe-area en mobile.
+- **Panel deslizable** (380×560px desktop / full-width mobile):
+  - Header con avatar + título + status text + close X
+  - Quick actions row con 2 botones
+  - Messages area scrolleable con burbujas estilo iMessage
+  - Input + send button con glow dorado al focus
+- **Burbujas tipadas**:
+  - `.cnc-bot-bubble` — beige tenue con borde inferior izq cuadrado
+  - `.cnc-asesor-bubble` — verde con border-left cuando responde asesor
+  - `.cnc-user-bubble` — gradiente dorado oscuro alineada a la derecha
+- **Welcome bubble** — borde discontinuo dorado, mensaje inicial
+- **Animations**:
+  - `cncMsgIn` — fade-up 280ms al aparecer cada mensaje
+  - `cncPulse` — pulse exterior del FAB (rojo glow 3s loop)
+  - Panel open: opacity + scale + translateY con cubic-bezier "snap"
+- **prefers-reduced-motion**: animaciones desactivadas, transition lineal
+
+#### Reemplazo en `js/components.js`
+
+Sección `loadAuthSystem()`:
+- ❌ Eliminada: carga de `js/whatsapp-widget.js` y `js/ai-assistant.js`
+- ✅ Agregada: carga de `css/concierge.css`, `js/concierge.js`,
+  `js/ai/engine.js`, `js/ai/ner.js`, `js/comm-schema.js` (en orden, defer)
+
+El Concierge en su `init()` además detecta y remueve cualquier elemento
+DOM residual de los widgets legacy (`.whatsapp-widget-fab` y
+`.ai-assistant-fab`) por si alguna página antigua los inyectó manualmente.
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Widget legacy + Concierge ambos visibles | `init()` busca y remueve DOMs legacy |
+| Lead duplicado al escalar varias veces | Flag `_leadCreated` previene duplicados en una sesión |
+| Sesión perdida al recargar la página | localStorage persiste todo el state |
+| Bot responde antes de que el sentiment carga | Guard `if (window.AltorraAI)` antes de usarlo |
+| Welcome aparece después de mensajes guardados (race) | renderMessages chequea `messages.length === 0` para mostrar welcome |
+| Send vacío | Trim + validación antes de addMessage |
+| Sourcing del vehículo en páginas generadas | Lee `window.PRERENDERED_VEHICLE_ID` del meta inyectado en el HTML |
+| Mobile keyboard tapando input | Layout flex permite que el panel se acomode al viewport |
+| Prefers-reduced-motion ignorado | Media query desactiva animaciones |
+| Re-cargar el widget en cada navegación | `if (document.querySelector('script[src*="concierge.js"]'))` skip |
+
+**Pasos de prueba**:
+1. Abrir cualquier página pública (index, busqueda, detalle-vehiculo)
+2. Ver el botón dorado pulsante en bottom-right
+3. Click → panel desliza con animación
+4. Mensaje welcome aparece
+5. Escribir "quiero financiar un Mazda CX-5" → bot responde con FAQ
+   de financiación + CTA "Ir al simulador"
+6. Click "Asesor en vivo" → status cambia a "Asesor en vivo · respondemos
+   pronto", se crea lead en Firestore `solicitudes/`
+7. Verificar Firestore: doc creado con `kind:'lead'`, `origen:'concierge'`,
+   `sessionId` único, `comentarios` con resumen
+8. Click "WhatsApp" → abre wa.me con mensaje pre-rellenado incluyendo
+   ticket # y resumen
+9. Recargar la página → mensajes anteriores siguen ahí (localStorage)
+10. Loguearse → siguiente apertura del panel: la sesión tiene `uid`,
+    `email`, `nombre` populated
+11. Mobile: panel ocupa pantalla completa con safe-area correcta
+
+**Pendiente del Bloque U** (próximos sprints):
+- U.5 — Knowledge Base CRUD admin (vehículos auto-sync, FAQs)
+- U.6 — Embeddings + RAG (Xenova/all-MiniLM-L6-v2 lazy ~25MB)
+- U.7 — Intent classifier + NER per-turn
+- U.8 — Response generator con personalidad Altorra
+- U.9 — Sentiment + auto-escalation con threshold
+- U.10 — Bandeja admin Concierge (lista realtime de conversaciones)
+- U.11 — Chat detail admin estilo WhatsApp
+- U.12 — Smart suggestions para asesor (3 respuestas sugeridas)
+- U.13 — Conversation summarization
+- U.14 — WhatsApp handover refinado con contexto completo
+- U.15 — Cleanup de chats viejos (>2 semanas)
+- U.16 — Soft contact a CRM al primer mensaje
+- U.17 — Progressive profiling completo (L0→L5)
+- U.18 — Identity merge cuando guest se registra con email matching
+- U.19 — Marketing opt-in granular + GDPR
+
+**Archivos creados/modificados**:
+- `js/concierge.js` — módulo nuevo (~470 líneas)
+- `css/concierge.css` — stylesheet nuevo (~250 líneas)
+- `js/components.js` — reemplazada carga de widgets legacy por Concierge
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505250000
+
+**Archivos legacy preservados** (transitoriamente, 2 semanas):
+- `js/whatsapp-widget.js` — ya NO se carga, Concierge lo cubre
+- `js/ai-assistant.js` — ya NO se carga, Concierge lo cubre
+- `css/whatsapp-widget.css` y `css/ai-assistant.css` (si existen) —
+  no referenciados, eventual cleanup en U.15
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

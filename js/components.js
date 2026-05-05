@@ -301,19 +301,41 @@ function loadAuthSystem() {
                     swScript.defer = true;
                     document.body.appendChild(swScript);
                 }
-                // 5c. MF5.1 — WhatsApp widget with template chooser
-                if (!document.querySelector('script[src*="whatsapp-widget.js"]')) {
-                    var waScript = document.createElement('script');
-                    waScript.src = 'js/whatsapp-widget.js';
-                    waScript.defer = true;
-                    document.body.appendChild(waScript);
+                // 5c. Bloque U (mega-plan v4) — Concierge Unificado
+                // REEMPLAZA whatsapp-widget.js + ai-assistant.js con
+                // un único botón inteligente (bot AI + asesor live + WhatsApp gateway).
+                // CSS y JS cargados juntos para inicialización atómica.
+                if (!document.querySelector('link[href*="concierge.css"]')) {
+                    var cncCss = document.createElement('link');
+                    cncCss.rel = 'stylesheet';
+                    cncCss.href = 'css/concierge.css';
+                    document.head.appendChild(cncCss);
                 }
-                // 5d. MF5.3 — AI assistant FAQ
-                if (!document.querySelector('script[src*="ai-assistant.js"]')) {
-                    var aiScript = document.createElement('script');
-                    aiScript.src = 'js/ai-assistant.js';
-                    aiScript.defer = true;
-                    document.body.appendChild(aiScript);
+                if (!document.querySelector('script[src*="concierge.js"]')) {
+                    var cncScript = document.createElement('script');
+                    cncScript.src = 'js/concierge.js';
+                    cncScript.defer = true;
+                    document.body.appendChild(cncScript);
+                }
+                // Cargar AI Engine + NER en paginas publicas (Concierge los usa)
+                if (!document.querySelector('script[src*="ai/engine.js"]')) {
+                    var aiEng = document.createElement('script');
+                    aiEng.src = 'js/ai/engine.js';
+                    aiEng.defer = true;
+                    document.body.appendChild(aiEng);
+                }
+                if (!document.querySelector('script[src*="ai/ner.js"]')) {
+                    var aiNer = document.createElement('script');
+                    aiNer.src = 'js/ai/ner.js';
+                    aiNer.defer = true;
+                    document.body.appendChild(aiNer);
+                }
+                // Comm schema para que el Concierge pueda crear leads bien tipados
+                if (!document.querySelector('script[src*="comm-schema.js"]')) {
+                    var schema = document.createElement('script');
+                    schema.src = 'js/comm-schema.js';
+                    schema.defer = true;
+                    document.body.appendChild(schema);
                 }
             })
             .catch(function(e) { console.warn('[Auth] No se pudo cargar auth-modal.html', e); });

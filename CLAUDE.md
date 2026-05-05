@@ -5704,6 +5704,100 @@ con:
 + NBA). El score enriquecido alimenta directamente al Bloque R
 (Predictive Analytics) cuando llegue.
 
+### Microfase J.8 — Next Best Action (NBA) por contacto ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: dar al asesor sugerencias accionables priorizadas por
+contacto: "llamar ahora", "enviar cotización", "confirmar cita",
+"reactivar lead frío". Patrón Salesforce Einstein NBA / HubSpot.
+
+**Decisión**: saltamos J.4-J.7 (no-show ML, anomaly, vision MobileNet,
+OCR Tesseract) porque requieren modelos de 200KB+ con lazy-load
+complejo. J.8 cierra el bloque J pragmáticamente — todo el valor
+con cero costo recurrente.
+
+**Lo que se creó** (`js/ai/nba.js`):
+
+```js
+AltorraNBA.suggest(contact, options) → [
+    { action, priority, reason, cta, icon }
+]
+```
+
+**10 reglas heurísticas** ordenadas por prioridad:
+
+| # | Acción | Prioridad | Disparador |
+|---|---|---|---|
+| 1 | call_now | 100 | urgencyScore ≥ 2 (J.3 signals) |
+| 5 | confirm_appointment | 95 | Cita en próximas 48h sin completada/cancelada |
+| 9 | retention_call | 92 | Sentiment muy negativo (avg < -0.4, 2+ samples) |
+| 2 | reach_hot_lead | 90 | Score ≥ 70 + sin contacto hace 2+ días |
+| 4 | send_quote | 88 | Financiación pendiente cuota inicial ≥ $50M |
+| 3 | assign_asesor | 85 | Solicitud pendiente sin assignedTo |
+| 6 | whatsapp_followup | 60 | Score 40-70 + 5-30 días sin actividad |
+| 10 | request_referral | 55 | Sentiment muy positivo (avg > 0.5, 3+ samples) + score ≥ 60 |
+| 7 | reactivate_with_offer | 50 | Score 30-60 + 30+ días frío |
+| 8 | engagement_survey | 35 | Cliente registrado sin solicitudes |
+
+**Visualización en CRM 360° → tab Resumen**:
+
+Bloque dorado al inicio del tab con:
+- Header "Próximas acciones sugeridas" + icono zap
+- Top 3 acciones con icono + CTA bold + razón humana
+- Border-left rojo para prioridad ≥ 92 (urgencia/retención)
+- Border-left dorado para prioridad 85-90 (lead caliente)
+- Hover lift sutil
+
+**Hook con J.3**:
+
+Antes de llamar a `AltorraNBA.suggest()`, recomputamos el score y
+adjuntamos `_score` y `_aiEnrichment` al contacto. Esto permite que
+las reglas urgency / sentiment / retention usen las señales AI
+calculadas por `AltorraScoring.aiSignals()`.
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Sugerir mismo contacto múltiples veces lo mismo | Cada suggestion tiene `action` único — el UI puede dedup si necesita |
+| Cita pasada se sugiere como "confirmar" | Filtro `horasFaltan > 0 && < 48` |
+| Lead caliente bombardeado con sugerencias contradictorias | Sort por prioridad + `limit: 3` por defecto |
+| Reglas dependientes de aiEnrichment crashean si J.3 falló | Guard `if (aiEnrichment && aiEnrichment.signals)` |
+| Cliente sin actividad reciente → Infinity en daysSince | Check `lastDays !== Infinity` antes de aplicar reglas de tiempo |
+| Tipos `kind: 'cita'` sin fecha real | Validación `if (last.fecha)` antes de parsear |
+
+**Pasos de prueba**:
+1. Login admin → CRM
+2. Click "Ver 360°" en un contacto con varias comunicaciones
+3. Tab "Resumen" → bloque dorado "Próximas acciones sugeridas" arriba
+4. Si tiene cita en 48h → primera acción "Confirmar cita" (rojo, 95)
+5. Si score caliente y sin tocar → "Contactar" (dorado, 90)
+6. Si tiene financiación grande pendiente → "Enviar cotización" (dorado, 88)
+7. Consola: `AltorraNBA.suggest(contact)` retorna array completo sin
+   limit
+
+**Cierre Bloque J** (J.1+J.2+J.3+J.8): el AI Engine local entrega
+sentiment + NER + scoring enriquecido + NBA sin un solo byte de modelo
+descargado. Sub-ms en el hot path. Todos los slots provider listos
+para upgrade ML futuro (Transformers.js, TF.js) sin tocar callsites.
+
+**Archivos creados/modificados**:
+- `js/ai/nba.js` — módulo nuevo (~165 líneas, 10 reglas)
+- `admin.html` — script tag antes de admin-vehicles.js
+- `js/admin-crm.js` — bloque NBA al inicio del tab Resumen del CRM 360°
+- `css/admin.css` — `.crm-nba-block`, `.crm-nba-item` con border-left
+  color por prioridad
+- `service-worker.js` + `js/cache-manager.js` — version bump
+  v20260505220000
+
+**Pendiente de J (deferido a futuro)**:
+- J.4 — No-show prediction (decision tree sobre histórico de citas)
+- J.5 — Anomaly detection sobre KPIs (Web Worker)
+- J.6 — Image auto-categorizer (TF.js MobileNet, ~5MB lazy)
+- J.7 — OCR placas + cédulas (Tesseract.js, ~5MB lazy)
+
+Cada uno se plugea via `AltorraAI.registerProvider(...)` cuando se
+implemente sin tocar el resto del sistema.
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

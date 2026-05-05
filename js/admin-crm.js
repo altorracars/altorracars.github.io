@@ -423,7 +423,37 @@
         var schema = window.AltorraCommSchema;
 
         if (tab === 'resumen') {
+            // J.8 — Next Best Action sugerencias
+            var nbaBlock = '';
+            if (window.AltorraNBA) {
+                // Pasar score + AI enrichment al contacto antes del NBA
+                try {
+                    var bdForNBA = computeScoreBreakdown(c);
+                    c._score = bdForNBA.score;
+                    c._aiEnrichment = bdForNBA.aiEnrichment || null;
+                } catch (e) {}
+                var actions = window.AltorraNBA.suggest(c, { limit: 3 });
+                if (actions && actions.length > 0) {
+                    nbaBlock =
+                        '<div class="crm-nba-block">' +
+                            '<div class="crm-nba-head">' +
+                                '<i data-lucide="zap"></i>' +
+                                '<strong>Próximas acciones sugeridas</strong>' +
+                            '</div>' +
+                            actions.map(function (a) {
+                                return '<div class="crm-nba-item" data-priority="' + a.priority + '">' +
+                                    '<i data-lucide="' + escTxt(a.icon) + '"></i>' +
+                                    '<div class="crm-nba-body">' +
+                                        '<div class="crm-nba-cta">' + escTxt(a.cta) + '</div>' +
+                                        '<div class="crm-nba-reason">' + escTxt(a.reason) + '</div>' +
+                                    '</div>' +
+                                '</div>';
+                            }).join('') +
+                        '</div>';
+                }
+            }
             body.innerHTML =
+                nbaBlock +
                 '<div class="crm-detail-summary">' +
                     '<div class="crm-detail-row"><strong>Email</strong><span>' + escTxt(c.email || '—') + '</span></div>' +
                     '<div class="crm-detail-row"><strong>Teléfono</strong><span>' + escTxt(c.telefono || '—') + '</span></div>' +
@@ -433,6 +463,8 @@
                     (c.creadoEn ? '<div class="crm-detail-row"><strong>Registro</strong><span>' + escTxt(formatDate(c.creadoEn)) + '</span></div>' : '') +
                     '<div class="crm-detail-row"><strong>Asesor asignado</strong><span>' + escTxt(c.assignedToName || '—') + '</span></div>' +
                 '</div>';
+            if (window.AltorraIcons) window.AltorraIcons.refresh(body);
+            else if (window.lucide) try { window.lucide.createIcons({ context: body }); } catch (e) {}
         } else if (tab === 'comms') {
             var sorted = (c.comms || []).slice().sort(function (a, b) {
                 return (b.createdAt || '').localeCompare(a.createdAt || '');

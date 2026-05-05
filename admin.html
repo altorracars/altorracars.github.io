@@ -39,6 +39,8 @@
     <script src="js/toast.js" defer></script>
 </head>
 <body>
+<!-- P.3 — Skip to content link para keyboard users (WCAG AAA) -->
+<a href="#sec-dashboard" class="skip-to-content">Saltar al contenido</a>
 
 <!-- AUTH LOADING SCREEN (visible por defecto hasta que Firebase resuelva el estado) -->
 <div id="authLoadingScreen" class="auth-loading-screen">
@@ -423,6 +425,16 @@
                     <h3><i data-lucide="bar-chart-3"></i> KPIs del mes</h3>
                 </div>
                 <div id="kpisGrid" class="kpis-grid">
+                    <div class="pred-empty">Calculando…</div>
+                </div>
+            </div>
+
+            <!-- O.3 (mega-plan v4) — Performance per asesor -->
+            <div class="predictive-card">
+                <div class="predictive-card-head">
+                    <h3><i data-lucide="users"></i> Performance del equipo</h3>
+                </div>
+                <div id="performanceTable">
                     <div class="pred-empty">Calculando…</div>
                 </div>
             </div>
@@ -2419,6 +2431,7 @@
 <script src="js/admin-sidebar-adaptive.js" defer></script>
 <script src="js/admin-native-notifications.js" defer></script>
 <script src="js/admin-color-extract.js" defer></script>
+<script src="js/admin-performance.js" defer></script>
 <script src="js/admin-inbox.js" defer></script>
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

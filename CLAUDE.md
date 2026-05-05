@@ -6827,6 +6827,852 @@ para acentos colombianos.
 - L.3 — OCR de placas vía cámara (requiere Tesseract.js lazy ~5MB)
 - L.4 — OCR de cédula del cliente
 
+### Microfase O.6 — Insights automáticos en dashboard ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: panel "Lo que el sistema notó esta semana" en el
+dashboard que combina señales de R (predictive) + J (AI) + CRM + KB
+en una sola card de insights accionables priorizados.
+
+**Lo que se creó** (`js/admin-insights.js`, ~280 líneas):
+
+7 generadores de insights, cada uno retorna 0+ insights con
+`{severity, icon, title, message, action}`:
+
+| Generador | Trigger | Severity |
+|---|---|---|
+| `genStaleVehicles` | ≥3 vehículos +90 días sin moverse | warning |
+| `genHotLeadsUnreached` | hot leads (score≥50) con 3+ días sin contacto | critical/warning |
+| `genChurnRisk` | contactos que eran hot pero llevan 20+ días sin tocar | warning |
+| `genVolumeAnomaly` | z-score sobre solicitudes/día (`AltorraForecast.detectAnomaly`) | info/warning |
+| `genSalesForecastTrend` | forecast próximo mes vs actual ±20-30% | warning/info |
+| `genNegativeSentimentRecent` | 3+ mensajes negativos esta semana | warning |
+| `genUnusedKB` | KB vacía o 5+ FAQs sin uso | info |
+
+**Render**: card dorada bajo el Predictive widget en dashboard. Cada
+insight con icon Lucide en círculo coloreado por severity (crítico
+rojo / warning ámbar / info azul), título + mensaje + botón "Ver X"
+que navega via `AltorraSections.go`.
+
+Empty state con check-circle verde si todo va bien.
+
+Auto-refresh: `AltorraSections.onChange('dashboard')` + bus emite
+`vehicle.*` o `comm.*`. Botón refresh manual.
+
+**Pasos de prueba**:
+1. Login admin → Dashboard
+2. Ver card "Lo que el sistema notó" debajo de Insights del día
+3. Si hay 5+ vehículos con createdAt > 60 días → insight stale aparece
+4. Click "Ver inventario" → navega a sec-vehicles
+
+**Archivos**: `js/admin-insights.js`, `admin.html` (panel + script tag),
+`css/admin.css` (.insights-card / .insight-item).
+
+### Microfase G.4 — PWA installable del admin ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: el admin se vuelve installable como app nativa con
+icono propio + splash + 4 shortcuts directos a secciones.
+
+**Lo que se creó**:
+
+`manifest-admin.json`: manifest dedicado con `start_url:'/admin.html'`,
+`scope:'/admin.html'`, `display:'standalone'`, theme_color dorado,
+4 shortcuts (Dashboard, Bandeja, Concierge, Calendario).
+
+`admin.html` head: meta tags PWA (manifest link, theme-color,
+apple-mobile-web-app-*).
+
+`js/admin-pwa.js` (~150 líneas):
+- Captura `beforeinstallprompt` y muestra botón "Instalar" en header
+- `triggerInstall()` ejecuta prompt nativo + emite `pwa.installed`
+  al EventBus + persiste flag en localStorage
+- `isStandalone()` / `isInstalled()` detection
+- Welcome toast la primera vez en standalone
+- Re-registra Service Worker si no está activo (defensive)
+
+CSS `.pwa-install-btn` dorado tenue, label oculto en mobile.
+
+**Pasos de prueba**:
+1. Chrome/Edge → "Instalar app" en menú o botón en header del admin
+2. Click → prompt nativo del browser
+3. Aceptar → app instalada con su propio icono y window
+4. Click en shortcut "Concierge" desde icono installed → abre directo
+
+**Archivos**: `manifest-admin.json` (new), `js/admin-pwa.js` (new),
+`admin.html` (meta + script), `css/admin.css` (.pwa-install-btn).
+
+### Microfase N.3 — Adaptive UI: atajos personalizados ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: el sistema aprende qué secciones usa más cada admin y
+las muestra como botones pinned en el dashboard.
+
+**Lo que se creó** (`js/admin-adaptive.js`, ~140 líneas):
+
+Tracking 100% local (`localStorage`), no envía nada al servidor:
+- `altorra_admin_section_visits` = `{section: count}`
+- `altorra_admin_section_lastvisit` = `{section: timestamp}`
+
+Score por sección: `visits * 0.7 + recency_bonus * 30`
+- `recency_bonus = 1` si <24h, `0.5` si <7d, `0` si más
+
+Threshold: ≥3 secciones distintas con `count ≥ 2` para activar el
+panel (evita ruido al inicio).
+
+Subscripción a `AltorraSections.onChange` — cada navegación incrementa
+contador. Dashboard no se cuenta a sí mismo.
+
+UI: card violeta tenue sobre el dashboard con header "Atajos
+personalizados · Basado en tu uso" y grid de hasta 5 botones con
+icono Lucide del registry, label de la sección y contador.
+
+**API**: `AltorraAdaptive.topSections(n)` / `.reset()`.
+
+**Archivos**: `js/admin-adaptive.js` (new), `admin.html` (panel),
+`css/admin.css` (.adaptive-shortcuts).
+
+### Microfase P.4 — Command Palette ⌘+K ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: spotlight para el admin estilo Linear/Stripe/GitHub.
+Cmd+K (Mac) o Ctrl+K (Win/Linux) abre un palette centrado donde el
+admin busca y ejecuta cualquier acción con teclado.
+
+**Lo que se creó** (`js/admin-palette.js`, ~290 líneas):
+
+Catálogo auto-construido:
+- 16+ secciones de `AltorraSections.registry` (navegación)
+- 7 acciones rápidas (nuevo vehículo, nueva FAQ, activar voz,
+  refrescar insights, calendario hoy, cerrar sesión, instalar PWA)
+- Top 20 contactos del CRM (búsqueda dinámica)
+
+Fuzzy matching: substring por palabra contra `label + keywords`.
+Score: label match = 5pts, keyword = 3pts, combined = 1pt.
+
+Atajos: `⌘/Ctrl+K` toggle · `Esc` cerrar · `↑↓` navegar (con
+`scrollIntoView`) · `Enter` ejecutar.
+
+UI: backdrop-filter blur, modal centrado con header (icono search +
+input + Esc kbd), lista agrupada por categoría (Navegación, Acciones,
+Contactos), footer con atajos visibles. Border-left dorado en
+selected. Animation slideDown 220ms cubic-bezier al abrir.
+
+**Archivos**: `js/admin-palette.js` (new), `admin.html` (script tag),
+`css/admin.css` (.alt-palette-*).
+
+### Microfase M.1+M.4 — Realtime collab: Presence + Comentarios ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: dos features de colaboración en realtime entre admins.
+
+**M.4 — Comentarios threaded** (`js/admin-comments.js`, ~280 líneas):
+
+Sistema universal de comentarios entre admins sobre cualquier
+entidad (vehicle, contact, solicitud, thread, kb).
+
+Schema `comments/{commentId}`:
+```
+entityType, entityId, body, authorUid/Nombre/Email,
+parentId (threading), mentions[uid], createdAt, edited
+```
+
+Public API:
+- `AltorraComments.attach(container, {entityType, entityId})`
+- `AltorraComments.detach(container)`
+- `AltorraComments.count(entityType, entityId)` → Promise<number>
+- `AltorraComments.post / .delete`
+
+Features:
+- @menciones con autocomplete contra `AP.users`
+- Highlighting visual de mentions con badge azul
+- Threading: `parentId` → cmt-children render recursivo,
+  `cmt-item--reply` con border-left dorado
+- Reply form inline expandible per-comment
+- Delete: `super_admin` O author propio
+- ⌘+Enter envía
+- EventBus emit `comment.mention` (persistido) por usuario mencionado
+
+Reglas Firestore: read editor+, create editor+ AND
+`authorUid==auth.uid`, update solo body+edited+updatedAt, delete
+super_admin O author.
+
+Integración: nuevo tab "Comentarios" en CRM 360°. `AltorraComments`
+se monta en `#crmCommentsHost` cuando admin abre el tab.
+
+**M.1 — Presence avanzada** (`js/admin-presence-ui.js`, ~140 líneas):
+
+Construye sobre el sistema de presence existente (RTDB `/presence/`).
+Añade:
+- `updatePresenceSection()` actualiza nodo RTDB con `currentSection`
+  cada vez que admin navega via `AltorraSections.onChange`
+- Listener sobre `/presence` orderBy online filtra peers (excluye
+  uno mismo, dedup por uid, descarta stale >5min)
+- Overlay flotante bottom-right con avatares de admins activos
+- Verde pulsante en avatares de quienes están en MI sección actual
+- Tooltip con nombre + sección donde está cada uno
+- Mobile: overlay oculto
+
+CSS `.cmt-*` y `.alt-presence-*` (~200 líneas).
+
+**DEPLOY MANUAL REQUERIDO**: `firebase deploy --only firestore:rules`
+para activar la colección `comments/`.
+
+### Microfase H.4 — Re-auth para acciones críticas (sudo mode) ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: capa de seguridad que pide al admin re-confirmar su
+password antes de ejecutar acciones sensibles. Patrón GitHub/Stripe
+sudo mode con timestamp cache de 5 minutos.
+
+**Lo que se creó** (`js/admin-security.js`, ~210 líneas):
+
+API pública `AltorraSecurity`:
+- `requireReauth(reason)` → Promise<void>
+- `guard(reason, fn)` → wrapper que ejecuta fn solo si reauth pasa
+- `isSudoActive()` → true si reauth dentro de últimos 5 min
+- `invalidate()` → fuerza nueva reauth en próxima acción
+
+Modal centrado con icono `shield-check`, input password autocomplete
+`current-password`, error inline con shake animation 400ms en
+password incorrecta, hint sobre TTL 5 min.
+
+Implementación:
+- `firebase.auth.EmailAuthProvider.credential` +
+  `reauthenticateWithCredential`
+- Cache `_lastReauth` timestamp con TTL `SUDO_TTL_MS`
+- Single concurrent: si modal ya abierto, retorna misma Promise
+- Esc + click backdrop + cancel button → reject('cancelled')
+- EventBus emit `security.reauth` (persisted) para audit log
+
+Auto-instrumentación: cualquier botón con `[data-secure-action]`
+dispara reauth antes del click handler original. Se previene el
+evento, se ejecuta reauth, y si pasa, se re-dispara el click con
+flag `_secureProcessed`. `data-secure-reason="razón humana"`
+personaliza el modal.
+
+Errores manejados:
+- `auth/wrong-password` → "Contraseña incorrecta. Intentá de nuevo."
+- `auth/too-many-requests` → "Demasiados intentos."
+- Otros → "Error: {message|code}"
+
+Uso en código:
+```js
+AltorraSecurity.guard('Eliminar vehículo', function () { return deleteVehicle(id); });
+// O en HTML:
+<button data-secure-action data-secure-reason="...">Delete</button>
+```
+
+**Archivos**: `js/admin-security.js` (new), `admin.html` (script),
+`css/admin.css` (.alt-sec-*).
+
+### Microfase L.2 — Dictado por voz en textareas ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: auto-instrumenta cada `<textarea>` del admin con un
+mini-botón micrófono. Click activa Speech Recognition continuo en
+es-CO; cada frase reconocida se appendea al textarea con
+capitalización automática.
+
+**Lo que se creó** (`js/admin-voice-dictate.js`, ~210 líneas):
+
+API `AltorraDictate`:
+- `attach(textarea)` manualmente
+- `refresh()` re-escanear DOM
+- `stop()` parar dictado activo
+
+Implementación:
+- `SpeechRecognition` con `continuous:true`, `interimResults:true`
+- Resultado final (`isFinal`) → trim + cap primera letra + append
+- Resultado interim → mostrado provisionalmente (no committed)
+- `input` event dispatched para que el form bind reaccione
+- `Esc` cancela dictado activo
+- `WeakSet _attached` previene doble-attach
+- `MutationObserver` con debounce 150ms para textareas dinámicos
+  (modals que abren después)
+
+Visual feedback:
+- Botón mic con glow rojo pulsante mientras activo
+  (animación `dictatePulse` 1.4s)
+- Border-color del textarea rojo tenue + box-shadow doble ring
+- Wrap automático con `.alt-dictate-wrap` si no estaba envuelto
+
+No interfiere con L.1 (comandos globales): instancia separada.
+
+Skip de textareas `readonly`/`disabled`. Skip explícito con
+`data-alt-skip-dictate`.
+
+**Archivos**: `js/admin-voice-dictate.js` (new), `admin.html`
+(script tag), `css/admin.css` (.alt-dictate-*).
+
+### Microfase C.5+M.2 — Generador de descripción + Co-edit locks ✓ COMPLETADA (2026-05-05)
+
+**C.5 — Generador de descripciones** (`js/admin-desc-gen.js`, ~190 líneas):
+
+Genera párrafos de descripción profesional para vehículos a partir
+de specs. Sin LLM — templates + heurísticas locales sub-ms.
+
+Templates con 4+ variantes para intro/specs/features/CTA. Variables
+contextuales: `tipoLabel` (cero km / semi-nuevo / usado),
+`categoriaLabel`, `audience` según categoría
+(familias / profesionales / aventura), `benefitTxt` (potencia /
+eficiencia), `kmTxt` formateado.
+
+6 párrafos: intro + specs + features (top 8) + color + trust
+(peritaje/revisión) + CTA.
+
+Botón "Generar" con icono `sparkles` agregado al label del campo
+Descripcion en el modal de vehículo. Click lee specs del form,
+llama `AltorraDescGen.generate`, sustituye el textarea con
+confirm si hay descripción previa.
+
+API:
+- `AltorraDescGen.generate(specs)` → string
+- `AltorraDescGen.variants(specs, n)` → array N descripciones únicas
+
+**M.2 — Co-edit locks blandos** (`js/admin-coedit.js`, ~210 líneas):
+
+Cuando un admin abre un modal de edición (vehículo, comm), escribe
+a `coediting/{entityType_entityId}` con uid + heartbeat cada 15s.
+Otros admins viendo el mismo entity ven badge ámbar "Daniel está
+editando esto. Tus cambios pueden colisionar."
+
+No bloquea ediciones (último write gana, `_version` sigue siendo
+optimistic locking real). Solo informa.
+
+TTL 60s sin heartbeat → considera lock expirado.
+`beforeunload` limpia todos los locks activos.
+
+Auto-instrumentación: `MutationObserver` sobre `#vehicleModal` y
+`#appointmentManagerModal` para detectar visibilidad. Lock al abrir,
+unlock al cerrar.
+
+`observe(entityType, entityId, callback)` suscribe a quién más está
+editando — usado por el badge UI.
+
+Reglas Firestore: read editor+, create/update only own uid,
+delete super_admin O dueño.
+
+CSS `.coedit-badge` dorado-amber con avatar iniciales + warning text.
+
+**DEPLOY MANUAL**: `firebase deploy --only firestore:rules`
+para activar `coediting/`.
+
+### Microfase G.3+H.5 — Offline detection + Anomaly behavior ✓ COMPLETADA (2026-05-05)
+
+**G.3 — Offline detection** (`js/admin-offline.js`, ~150 líneas):
+
+Detector de conexión + banner amber persistente cuando offline,
+banner verde 3s al recuperar.
+
+- `navigator.onLine` + `'online'`/`'offline'` events
+- Banner top-center con icono SVG inline (sin Lucide para no
+  depender de carga)
+- Cola simple en localStorage (`altorra_offline_queue`) con
+  `queue()` + `flush()`
+- EventBus emit `connectivity.online`/`.offline` +
+  `offline.queued`/`.replay` para que listeners externos procesen
+- Auto-flush al recuperar conexión + arranque inicial si hay queue
+
+API: `AltorraOffline.isOnline / .queue / .flush / .queueLength`.
+
+**H.5 — Anomaly behavior detection** (`js/admin-anomaly.js`, ~140 líneas):
+
+Rate limiting con sliding window. Detecta:
+- 10+ deletes en 5 min → freeze + alert + reauth (H.4)
+- 5+ deletes en 5 min → warning toast
+- 5+ role changes en 10 min → freeze + alert
+- Export CSV ≥100 filas → alert (preventive)
+
+Listeners al EventBus: `vehicle.deleted`, `comm.deleted`,
+`crm.contact-deleted`, `kb.deleted`, `user.role-changed`,
+`export.csv`.
+
+`alertSuperAdmin()` escribe a `auditLog` con `anomaly:true` +
+emite `anomaly.detected` (persisted) + notifyCenter critical
+priority.
+
+`freeze()` invalida sudo de H.4 + fuerza reauth — la próxima
+acción sensible re-pide password.
+
+API debug:
+- `AltorraAnomaly.snapshot()` → buckets actuales
+- `AltorraAnomaly.config` → reglas activas
+
+CSS `.alt-offline-banner` con keyframes `offlineSlideDown` 300ms.
+
+### Microfase D.3+D.4+U.16+U.17 — Calendar config + Soft contact + Profiling ✓ COMPLETADA (2026-05-05)
+
+**D.3 — Config calendario** (`js/admin-calendar-config.js`, ~190 líneas):
+
+Config global del calendario en `config/calendarConfig`:
+- `workDays`: [1..6] (Lun-Sab default)
+- `workHours`: 08:00-18:00
+- `slotDurationMin`: 30
+- `bufferMin`: 15
+- `maxPerSlot`: 1
+- `holidays`: 18 festivos colombianos 2026 hardcoded
+
+API:
+- `isHoliday(dateStr)` / `isWorkDay(dateStr)`
+- `isWithinWorkHours(hora)`
+- `checkOverbooking(fecha, hora, citasExistentes)` →
+  `{ok, warnings, conflicts}`
+- `suggestSlot(fecha, citasExistentes)` → próximo slot libre
+
+**D.4 — Anti-overbooking** integrado en `admin-calendar.js`:
+
+`reprogramarCita()` ahora invoca
+`AltorraCalendarConfig.checkOverbooking` ANTES del confirm. Si hay
+festivo / día no laboral / fuera de horario / conflicto buffer →
+muestra warnings en el confirm. Si `check.ok===false` (overflow >150%
+capacity) requiere confirmación adicional.
+
+**U.16 — Soft contact al primer mensaje del Concierge**:
+
+Antes: `createLeadInCRM` solo se llamaba en `escalateToLive()`.
+Ahora: `send()` crea lead en `solicitudes/` con `kind:'lead'`,
+`tipo:'concierge_soft'`, `level:0..3` desde el PRIMER mensaje del
+usuario, sin esperar escalate.
+
+`updateSoftContact()` actualiza el lead con cada turno: nuevos
+email/telefono/nombre detectados por NER, level actualizado,
+comentarios consolidados (últimos 5 mensajes).
+
+`escalateToLive` bumpea `level=4` (asignado a asesor) +
+`ensureFirestoreChatDoc`.
+
+**U.17 — Progressive profiling (L0→L5)**:
+
+`maybeAskForProfile()` corre después de cada bot response y decide
+qué pedir al cliente según turnos:
+- L0 → 3+ turnos sin nombre → "¿cómo te llamas?"
+- L1 → 5+ turnos con nombre, sin email/tel → "¿me dejás tu correo
+  o WhatsApp?"
+- L2 → 7+ turnos con contacto → "¿tenés un rango de presupuesto?"
+- L4 → al escalar: bumpa a asignado
+
+NER auto-extrae email/telefono de cualquier mensaje del cliente y
+actualiza `session.email/telefono` + level sin necesidad de pregunta
+explícita.
+
+Flags `_asked_nombre`, `_asked_contact`, `_asked_qualify` evitan
+re-pedir lo mismo si el cliente ignora.
+
+### Microfase N.4+O.1 — Onboarding tour + KPIs ejecutivos ✓ COMPLETADA (2026-05-05)
+
+**N.4 — Onboarding tour** (`js/admin-onboarding.js`, ~180 líneas):
+
+Tour interactivo de 6 pasos la primera vez que un admin entra:
+1. Bienvenida
+2. ⌘+K palette
+3. Espacio+V comandos por voz
+4. Insights automáticos en dashboard
+5. Concierge unificado
+6. Listo para arrancar
+
+Modal centrado con icono Lucide grande, progress dots animados,
+navegación Anterior/Siguiente/Saltar.
+
+Auto-arranque solo si:
+- `localStorage 'altorra_admin_onboarded'` no está
+- `clientes/{uid}.onboardingCompleted` no es true
+
+Espera 2.5s tras login para que dashboard se renderee.
+
+Al finalizar: setea ambos flags + emite EventBus
+`onboarding.completed`.
+
+`AltorraOnboarding.start()` / `.reset()` expuestos para debug y
+repetir.
+
+> **NOTA**: en el FIX integral posterior se agregó `display:none` por
+> default + clase `.is-active` para evitar que el modal bloquee el
+> header si queda colgado.
+
+**O.1 — KPIs ejecutivos** (`js/admin-kpis.js`, ~210 líneas):
+
+Card en dashboard con 6 KPIs del mes:
+- Tasa de conversión (vendidos/solicitudes %, color por threshold)
+- Ticket promedio ($M de los vendidos del mes)
+- Tiempo de respuesta (avg hrs `createdAt` → `estado!=pendiente`)
+- SLA cumplido (% solicitudes contestadas dentro de slaDeadline)
+- Top asesor del mes (más ventas con `assignedTo`)
+- Embudo: leads → solicitudes → ventas (visual con barras
+  proporcionales en O.2 posterior)
+
+`compute()` recorre `AP.appointments` + `AP.vehicles` del último mes
+(30d).
+
+Color thresholds:
+- conversión: ≥15% verde / ≥8% ámbar / <8% rojo
+- response: ≤4h verde / ≤24h ámbar / >24h rojo
+- SLA: ≥85% verde / ≥60% ámbar / <60% rojo
+
+Auto-refresh en cambios de bus + entrada al dashboard.
+
+### Microfase D.5+N.2 — Recordatorios + Sidebar adaptativo ✓ COMPLETADA (2026-05-05)
+
+**D.5 — Recordatorios automáticos** (`js/admin-reminders.js`, ~140 líneas):
+
+Cron-like en el browser del super_admin (única tab por defecto)
+que revisa `AP.appointments` cada 5 min y dispara avisos en notify
+center según reglas:
+
+- Citas para MAÑANA con estado pendiente/confirmada → category
+  `appointment_update` priority normal: "Cita mañana: {nombre}.
+  A las {hora} por {vehiculo}. Confirmá con el cliente."
+- Citas en PRÓXIMAS 2H todavía sin completar → priority high:
+  "Cita en 1h: {nombre}"
+- Citas vencidas (>2h pasadas) sin estado completada/cancelada →
+  category `system` high: "Cita vencida sin actualizar."
+
+Dedup runtime (`_shownThisSession`) + persistencia en
+`appointmentReminders/{reminderId}` para tracking cross-session.
+
+Solo super_admin lo corre (evita dup multi-tab).
+
+**Reglas Firestore**: editor+ create con `shownTo == auth.uid`;
+super_admin delete.
+
+**N.2 — Sidebar adaptativo** (`js/admin-sidebar-adaptive.js`, ~120 líneas):
+
+Aprovecha tracking de N.3. Reorganiza el sidebar según uso:
+- Top 3 más usadas (count >= 5) → clase `.nav-item--frequent` con
+  border-left dorado + estrella ★ al final
+- No usadas en 30+ días → clase `.nav-item--rare` oculta hasta
+  click en "Mostrar menos usadas" (toggle al fondo del sidebar)
+
+Auto-refresh cada vez que cambia sección. Mínimo 5 secciones
+distintas trackeadas para activar adaptación.
+
+CSS `.nav-item--frequent` / `.nav-item--rare` / `.nav-rare-toggle`.
+
+### Microfase U.18+U.19 — Identity merge + Marketing opt-in ✓ COMPLETADA (2026-05-05)
+
+**U.18 — Identity Merge** en `js/concierge.js`:
+
+Cuando un cliente que estaba conversando como guest se loguea o
+registra (`auth.onAuthStateChanged` dispara con user no-anónimo y
+session no tenía uid), `mergeIdentity(user)` busca:
+
+1. `conciergeChats/` con `userEmail==email` AND `userId==null` →
+   batch update con uid, userNombre, mergedAt
+2. `solicitudes/` con `email==email` AND `userId==null` →
+   batch update con uid, `clientCategory:'registered'`, mergedAt
+
+Eventos emitidos: `identity.merged` con uid, email, chatsLinked.
+
+También llama `updateSoftContact()` para sincronizar el lead activo
+con la nueva identidad.
+
+**U.19 — Marketing opt-in granular**
+(`js/concierge-optin.js`, ~190 líneas):
+
+Detector de intención de opt-in (regex: "avísenme cuando", "quiero
+recibir", "promociones", "ofertas"). Hook en `concierge.send()` que
+dispara modal opt-in 1.8s después.
+
+Modal con 3 toggles independientes:
+- Email (default ON, 1/mes max)
+- WhatsApp (default OFF, solo matches con búsquedas guardadas)
+- SMS (default OFF, solo confirmaciones)
+
+Botón "Ahora no" guarda preferencia con todo OFF y `source:'declined'`.
+
+`savePreference()` persiste en:
+- `solicitudes/{leadId}.marketingOptIn`
+- `clientes/{uid}.marketingOptIn` (si registered)
+
+Schema `marketingOptIn = {email, whatsapp, sms, askedAt, source}`.
+
+GDPR right-to-forget: `AltorraOptIn.eraseClient(uid)` anonimiza
+solicitudes/ del uid (preserva audit log) + delete conciergeChats/
++ delete `clientes/{uid}`. Solo callable por super_admin.
+
+CSS `.optin-*` en `concierge.css` con backdrop-filter blur, rows
+con border-left dorado al hover, accent-color en checkbox.
+
+### Microfase C.4+C.8+D.7 — Smart prioridad + Validaciones + Auto-Scheduling ✓ COMPLETADA (2026-05-05)
+
+**C.4 — Smart field `prioridad_destacado`** en `js/smart-fields.js`:
+
+Calcula `prioridadDestacado` (0-100) automáticamente cuando blank:
+- base 50
+- + 25 si `tipo=nuevo` (15 si semi-nuevo)
+- + 15 si oferta o `precioOferta < precio`
+- + 5 si `categoria=suv|pickup`
+- - 10 si `km>100K`, -10 más si >150K
+
+Clamp 0-100. Reason: "calculado por tipo+oferta+km".
+
+**C.8 — Validaciones inteligentes** (warnings, no fail):
+
+`AltorraSmartFields.validate(doc)` recorre 8 reglas y retorna issues
+con `{field, severity:'warning'|'error', message, ruleId}`:
+- `classic_anomaly`: año<2000 + km<50K → "¿es clásico?"
+- `cuota_vs_precio`: cuotaInicial > precio → ERROR
+- `precio_alto`: > $1B → warning verificar
+- `precio_bajo`: < $5M → warning verificar
+- `oferta_mayor_que_precio`: precioOferta > precio → ERROR
+- `year_futuro`: > currentYear+1 → warning
+- `km_negativo`: kilometraje < 0 → ERROR
+- `sin_imagen`: imagenes:[] → warning
+
+Hook en `updateSmartFieldsPreview` de `admin-vehicles.js`: el preview
+ahora muestra suggestions (existentes) + issues (nuevos) en bloques
+separados. Triggers expandidos: `vYear` + `vCategoria`.
+
+CSS `.smart-validation-warning` (ámbar) / `-error` (rojo).
+
+**D.7 — AI Auto-Scheduling** en `admin-calendar-config.js`:
+
+`parseSchedulingHint(text, citasExistentes)` →
+`{fecha, hora, preferredTime, confidence}`.
+
+Detecta:
+- NER fecha (J.2: "el 15 de marzo", "mañana", "pasado mañana")
+- "hoy" / "mañana" / "pasado mañana"
+- Días de la semana ("el martes" → próximo martes)
+- Momento del día: morning/afternoon/evening
+- Hora explícita: "a las 10", "a las 3pm"
+
+Si fecha cae en festivo o día no laboral → mueve al siguiente día
+laboral (loop con safety 7 iteraciones).
+
+Si `preferredTime` es 'morning'/'afternoon'/'evening', busca slot
+desde startHour (9/14/16) avanzando en `slotDurationMin` chunks.
+Usa buffer/maxPerSlot del config.
+
+Hook en `concierge.js generateBotResponse`:
+`detectSchedulingIntent` regex → si match, `parseSchedulingHint`
+con el texto del cliente → bot responde "📅 Te puedo agendar para
+el martes 23 de marzo a las 14:00. ¿Lo coordino con un asesor?"
+con CTA escalate.
+
+Cargado en `components.js` para páginas públicas (Concierge lo usa
+desde el frontend del cliente).
+
+`admin-calendar-config.js` ahora detecta `IS_PUBLIC` (sin AP) y skip
+init de Firestore listener — usa DEFAULT_CONFIG con festivos COL
+hardcoded.
+
+### Microfase O.2+U.14+U.15 — Funnel chart + WhatsApp + Cleanup ✓ COMPLETADA (2026-05-05)
+
+**O.2 — Funnel chart visual** en `js/admin-kpis.js`:
+
+Reemplaza la línea de texto "X leads → Y solicitudes → Z ventas"
+por un funnel chart horizontal con 4 stages (Leads / Solicitudes /
+Citas / Ventas) y barras proporcionales al máximo.
+
+Cada stage:
+- Color semántico (azul / amarillo / violeta / verde)
+- Width % proporcional a `max(stages, 1)`
+- Counter visible dentro de la barra (mín 8% width para visibilidad)
+- Drop % de pérdida vs stage anterior (rojo) ej: ↓ 35%
+
+Animation 0.6s cubic-bezier al renderizar. Tile ocupa todo el grid
+(`kpi-tile--full`).
+
+**U.14 — WhatsApp handover refinado** en `js/concierge.js`:
+
+`buildWhatsAppSummary()` con formato WhatsApp markdown completo:
+
+```
+🚗 *Altorra Cars Concierge*
+*Ticket:* #ABC12345
+👤 Daniel Pérez
+📧 daniel@example.com
+📲 +57320...
+🔑 Vehículo de interés: #abc123
+📊 Nivel: L3 (calificado)
+💬 Sentiment: positivo 😊 (5 mensajes)
+
+*Últimos mensajes del cliente:*
+1. "Quiero un Mazda CX-5 2020 blanco..."
+2. "..."
+3. "..."
+
+👉 Abrir conversación: altorracars.github.io/admin.html#concierge
+Hola, soy el cliente del ticket #ABC12345.
+```
+
+Sentiment label calculado con `AltorraAI` promediando todos los
+mensajes del cliente. Ticket es últimos 8 chars del sessionId
+uppercase.
+
+**U.15 — Cleanup chats viejos** en `admin-concierge.js`:
+
+`cleanupOldChats()` (~50 líneas) borra `conciergeChats` con
+`status='resolved'` AND `lastMessageAt > 14d`. Solo super_admin.
+Para cada chat: get subcollection messages, batch delete msgs +
+chat, en serie.
+
+Botón "Limpiar antiguos" en sec-concierge header con
+`data-secure-action` (H.4 reauth) y `data-secure-reason`. Confirm
+doble con count.
+
+EventBus emit `concierge.cleanup` (persistido) con count + cutoffDays.
+
+### Microfase G.2+C.3 — Native notifications + Color extractor ✓ COMPLETADA (2026-05-05)
+
+**G.2 — Native notifications** (`js/admin-native-notifications.js`,
+~170 líneas):
+
+Hook al `notifyCenter` que cuando llega notificación priority `high`
+o `critical` (y permission granted) dispara también una `Notification`
+API nativa visible aunque el tab esté minimizado.
+
+Permission flow progresivo (no spam al cargar):
+1. No pide permiso al inicio
+2. Después de 3+ notificaciones importantes en la sesión, muestra
+   invitation modal sutil bottom-right "¿Recibir avisos del SO?"
+3. Si acepta → `Notification.requestPermission()`
+4. Decision persistida en localStorage (`granted`/`declined`/
+   `postponed`)
+
+Solo dispara si `document.visibilityState !== 'visible'` (no spam
+si el admin ya está mirando la pestaña).
+
+Click en notification → `window.focus()` + navega al link del payload.
+`requireInteraction:true` para `priority='critical'` (no se autocierra).
+
+Reemplaza `notifyCenter.notify` con wrapper que delega al original
+pero ANTES dispara la native cuando aplica.
+
+**C.3 — Color extractor** (`js/admin-color-extract.js`, ~150 líneas):
+
+Extrae color primario de una imagen via Canvas API (sin ML).
+Algoritmo lite k-means con 512 buckets (3 bits per channel).
+
+`fromImage(imgElement, callback)` → `{hex, rgb:[r,g,b], name, samples}`
+`fromUrl(url, callback)` → idem (con `crossOrigin='anonymous'`)
+
+Heurística:
+- Sample cada N pixels (max 10K samples para velocidad)
+- Skip transparent pixels (alpha < 128)
+- Skip pixels muy oscuros (<15) o muy claros (>245)
+- Bucket por canales reducidos (`>>5` = 8 niveles c/u)
+- Score = `count * (1 + saturación promedio)` — prioriza colores
+  saturados sobre grises
+
+Mapping a 13 nombres conocidos del catálogo Altorra: Blanco/Negro/
+Gris/Plateado/Rojo/Azul/Verde/Amarillo/Naranja/Morado/Marrón/
+Dorado/Beige (matching por distancia euclidiana RGB).
+
+Resize a max 200px para velocidad (sub-100ms en imagen típica).
+
+CORS: si la imagen viene de Firebase Storage, requiere configuración
+de bucket. Si falla → `callback(null)` silencioso.
+
+### Microfase O.3+P.3 — Performance per asesor + WCAG AAA ✓ COMPLETADA (2026-05-05)
+
+**O.3 — Performance per asesor** (`js/admin-performance.js`, ~180 líneas):
+
+Tabla "Performance del equipo" en el dashboard. Recopila stats
+mensuales por cada asesor (super_admin + editor activos):
+- Ventas (vehículos vendidos donde `assignedTo` o `lastModifiedBy`)
+- Solicitudes asignadas
+- Solicitudes contactadas (estado != pendiente/nuevo)
+- Tiempo medio de respuesta (`createdAt` → `updatedAt`)
+- SLA cumplido %
+
+Sort por ventas desc. Top 3 con medallas 🥇🥈🥉.
+
+Fila por asesor: nombre + rol (small) + ventas + asignadas +
+contactadas (con %) + avg respuesta + SLA% color-coded.
+
+Auto-refresh: `AltorraSections.onChange('dashboard')` + bus events
+`vehicle.*` + `comm.*`.
+
+**P.3 — Accessibility WCAG AAA** en `css/admin.css`:
+
+- `*:focus-visible` con `outline 2px` dorado + `box-shadow ring 4px`
+  rgba dorado tenue (alta visibilidad sin ruido)
+- Skip-to-content link en body del admin (oculto fuera de foco,
+  aparece desde `top:0` en focus para teclado users)
+- `.sr-only` utility para screen readers
+- `prefers-reduced-motion: reduce` → todas las animaciones a 0.01ms
+  (scroll-behavior auto incluido)
+- `prefers-contrast: more` → border 2px currentColor en alt-btn/
+  nav-item/vehicle-card
+
+### FIX integral — Overlays huérfanos ya no bloquean header ✓ APLICADO (2026-05-05)
+
+**Síntomas reportados** (todos los botones del header no respondían
+al click/tap):
+1. FAB del micrófono no respondía
+2. Botón de actividad no respondía
+3. Botón de notificaciones no respondía
+4. Toggle tema claro/oscuro no respondía
+5. Toggle alto contraste no respondía
+
+**Causa raíz** (4 problemas combinados):
+
+A) **Doble bind del themeToggle**:
+- `admin-phase5.js` bindeaba con su propio `toggleTheme()`
+- `theme-switcher.js` (T.4) también bindea via `data-altorra-theme-toggle`
+- Click ejecutaba ambos handlers en orden → se cancelaban entre sí
+
+B) **Overlays con `position:fixed inset:0 z-index:99999 display:flex`
+por default**, sin clase de activación. Si por error transitorio
+(network drop, JS exception, modal cerrado mid-render) un overlay
+quedaba colgado en el DOM, cubría toda la pantalla invisible y
+bloqueaba TODOS los clicks:
+- `.alt-onboard` (onboarding tour)
+- `.altorra-voice-overlay` (voice escuchando)
+- `.alt-palette` (Cmd+K)
+
+C) **Voice FAB independiente bottom-left** interfería visualmente y
+ocupaba un slot que mejor estaba en el header.
+
+D) **Sin defense-in-depth** para limpiar overlays huérfanos en runtime.
+
+**Fixes aplicados**:
+
+1. Eliminado handler legacy en `admin-phase5.js` (deprecated comment).
+   Theme toggle ahora gestionado solo por T.4.
+
+2. CSS overlays con clase de activación obligatoria:
+   ```css
+   .alt-onboard         { display: none; }
+   .alt-onboard.is-active { display: flex; }
+   .altorra-voice-overlay { display: none; }
+   .altorra-voice-overlay.alt-voice-active { display: flex; }
+   ```
+
+3. **SAFETY GLOBAL CSS**:
+   ```css
+   .alt-onboard:not(.is-active),
+   .altorra-voice-overlay:not(.alt-voice-active),
+   .alt-palette:not(.alt-palette-open) {
+       pointer-events: none !important;
+       display: none !important;
+   }
+   ```
+
+4. **Voice FAB → botón en header**:
+   - `admin-voice.js init()` ahora inserta `<button id="altorra-voice-btn">`
+     a la izquierda del `#activityFeedTrigger`
+   - Estilo `.alt-btn alt-btn--ghost alt-btn--icon` consistente con
+     los demás botones del header
+   - Tooltip "Comandos por voz · Espacio+V"
+   - `.altorra-voice-fab` legacy oculto con `display: none !important`
+
+5. **Defense-in-depth — `js/admin-overlay-guard.js`** (~120 líneas):
+   - Scan cada 5s del DOM
+   - Detecta overlays watched (alt-onboard, alt-palette, voice-overlay)
+     que existen pero NO tienen su clase activa por más de 30s →
+     marca como huérfano y elimina silenciosamente
+   - Detecta también overlays dinámicos (children del body con
+     `position:fixed z-index>=99000`) que llevan >30s sin razón →
+     elimina
+   - Whitelist de IDs conocidos (altorra-concierge, aaf-panel,
+     alt-presence-overlay, altorra-voice-btn, altorra-update-banner,
+     etc.) que se preservan
+   - API `AltorraOverlayGuard.scan()` / `.dump()` para diagnóstico
+
+**Lecciones aprendidas**:
+
+| Problema | Lección |
+|---|---|
+| Microfases muy granulares con muchos archivos JS | Cada archivo agrega su propio listener global. Conflictos entre handlers son inevitables sin testing integrado |
+| Overlays con `display: flex` + z-index extremo por default | SIEMPRE poner `display: none` o `pointer-events: none` por default. Activar con clase, no quitar lo que rompió |
+| Sin testing E2E entre commits | Los próximos sprints serán **commits más grandes y testeados antes del próximo bloque** |
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

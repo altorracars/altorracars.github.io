@@ -52,6 +52,7 @@
         concierge:      { label: 'Concierge',         group: 'comunicaciones', icon: 'bot' },
         lists:          { label: 'Leads (legacy)',   group: 'comunicaciones', icon: 'sparkles' },
         crm:            { label: 'Contactos 360°',   group: 'crm',          icon: 'users-round' },
+        calendar:       { label: 'Calendario',       group: 'calendario',   icon: 'calendar-clock' },
         automation:     { label: 'Reglas',           group: 'automatizacion', icon: 'zap' },
         templates:      { label: 'Plantillas',       group: 'automatizacion', icon: 'file-edit' },
         kb:             { label: 'Knowledge Base',   group: 'automatizacion', icon: 'book-open' },

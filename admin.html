@@ -245,14 +245,13 @@
 
         <!-- 📅 CALENDARIO (placeholder — se llena en bloque D) -->
         <div class="nav-group" data-group="calendario" data-workspace-color="violet">
-            <button class="nav-group-header" aria-expanded="false" aria-controls="nav-group-calendario">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-calendario">
                 <i data-lucide="calendar" class="nav-group-icon"></i>
                 <span class="nav-group-label">Calendario</span>
-                <span class="alt-badge alt-badge--ai" style="margin-left:auto;font-size:0.6rem;">Pronto</span>
                 <i data-lucide="chevron-down" class="nav-group-chevron"></i>
             </button>
             <div class="nav-group-items" id="nav-group-calendario">
-                <button class="nav-item" data-section="calendar-disabled" disabled style="opacity:0.5;cursor:not-allowed;">
+                <button class="nav-item" data-section="calendar">
                     <i data-lucide="calendar-clock"></i><span>Vista calendario</span>
                 </button>
             </div>
@@ -918,6 +917,33 @@
                 <div class="automation-history-list" id="automationHistoryList">
                     <div class="table-empty">Sin ejecuciones aún.</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- D.1+D.2 (mega-plan v4) — Calendario dedicado: vista mes + lista del día -->
+        <div id="sec-calendar" class="section" data-workspace-color="violet">
+            <div class="page-header">
+                <div>
+                    <h1 id="calendarTitle">Calendario de Citas</h1>
+                    <p class="page-subtitle">Vista mensual de todas las citas. Click en cualquier día para ver el detalle. Arrastra una cita para reprogramar.</p>
+                </div>
+                <div class="cal-toolbar">
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="calPrev" data-tooltip="Mes anterior">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="calToday">Hoy</button>
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="calNext" data-tooltip="Mes siguiente">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                    <div class="cal-view-toggle">
+                        <button class="alt-btn alt-btn--ghost alt-btn--sm cal-view-btn active" data-view="month">Mes</button>
+                        <button class="alt-btn alt-btn--ghost alt-btn--sm cal-view-btn" data-view="day">Día</button>
+                    </div>
+                </div>
+            </div>
+            <div class="cal-stats" id="calStats"></div>
+            <div class="cal-grid-wrap" id="calGridWrap">
+                <div class="cal-loading">Cargando…</div>
             </div>
         </div>
 
@@ -2327,6 +2353,7 @@
 <script src="js/admin-predictive.js" defer></script>
 <script src="js/admin-concierge.js" defer></script>
 <script src="js/admin-kb.js" defer></script>
+<script src="js/admin-calendar.js" defer></script>
 <script src="js/admin-inbox.js" defer></script>
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

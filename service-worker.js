@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505400000'; // D.3+D.4+U.16+U.17 (mega-plan v4) — Calendar config con festivos COL + buffer/anti-overbooking + soft contact + progressive profiling
+const CACHE_VERSION = 'v20260505410000'; // N.4+O.1 (mega-plan v4) — Onboarding tour 6 pasos + KPIs ejecutivos del mes (conversión, ticket, SLA, top asesor)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -132,7 +132,30 @@
     /* ═══════════════════════════════════════════════════════════
        BOT RESPONSE — fast path con FAQ + NER + sentiment hooks
        ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════
+       D.7 — AI Auto-Scheduling: detecta intent de agendar y sugiere
+       slot disponible al cliente.
+       ═══════════════════════════════════════════════════════════ */
+    function detectSchedulingIntent(text) {
+        var lower = (text || '').toLowerCase();
+        return /agend(ar|emos|amos)|cita|visita|cuando puedo|me gustar[íi]a (verlo|ver)|conocer (el|la) (auto|carro|veh)/i.test(lower);
+    }
+
     function generateBotResponse(userMsg) {
+        // D.7 — Si el cliente quiere agendar, sugerir slot
+        if (detectSchedulingIntent(userMsg) && window.AltorraCalendarConfig &&
+            window.AltorraCalendarConfig.parseSchedulingHint) {
+            var hint = window.AltorraCalendarConfig.parseSchedulingHint(userMsg, []);
+            if (hint && hint.fecha) {
+                var dayName = new Date(hint.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+                return {
+                    text: '📅 Te puedo agendar para el ' + dayName +
+                          (hint.hora ? ' a las ' + hint.hora : ' (te confirmamos la hora exacta)') + '. ¿Lo coordino con un asesor?',
+                    cta: { label: 'Sí, agendar', action: 'escalate' }
+                };
+            }
+        }
+
         // 1. Sentiment check — si muy negativo, escalar inmediatamente
         if (window.AltorraAI) {
             var s = window.AltorraAI.sentiment(userMsg);

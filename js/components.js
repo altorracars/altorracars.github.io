@@ -351,6 +351,13 @@ function loadAuthSystem() {
                     optin.defer = true;
                     document.body.appendChild(optin);
                 }
+                // D.7 — AI Auto-Scheduling helper para el Concierge
+                if (!document.querySelector('script[src*="admin-calendar-config.js"]')) {
+                    var calCfg = document.createElement('script');
+                    calCfg.src = 'js/admin-calendar-config.js';
+                    calCfg.defer = true;
+                    document.body.appendChild(calCfg);
+                }
             })
             .catch(function(e) { console.warn('[Auth] No se pudo cargar auth-modal.html', e); });
     }

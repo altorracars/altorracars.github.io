@@ -5598,6 +5598,44 @@ table th:focus-visible,
     font-style: normal;
     font-size: 0.7rem;
 }
+
+/* C.8 — Validaciones inteligentes */
+.smart-validations-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    color: var(--status-warning, #facc15);
+    font-weight: 500;
+    font-size: 0.78rem;
+}
+.smart-validations-head [data-lucide] {
+    width: 14px;
+    height: 14px;
+}
+.smart-validations-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.smart-validations-list li {
+    padding: 4px 0;
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+.smart-validations-list li.smart-validation-warning {
+    color: var(--status-warning, #facc15);
+}
+.smart-validations-list li.smart-validation-error {
+    color: var(--status-danger, #ff6b6b);
+}
+.smart-validations-list li strong {
+    color: inherit;
+    text-transform: capitalize;
+    margin-right: 4px;
+}
 .automation-toggle {
     position: relative;
     display: inline-block;

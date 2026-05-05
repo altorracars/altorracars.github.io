@@ -2032,8 +2032,10 @@
         var box = document.getElementById('smartFieldsPreview');
         if (!box || !window.AltorraSmartFields) return;
         var draft = {
+            year: parseInt(($('vYear') || {}).value, 10),
             kilometraje: parseInt(($('vKm') || {}).value, 10),
             tipo: ($('vTipo') || {}).value || null,
+            categoria: ($('vCategoria') || {}).value || null,
             estado: ($('vEstado') || {}).value || null,
             precio: parseInt(($('vPrecio') || {}).value, 10),
             precioOferta: parseInt(($('vPrecioOferta') || {}).value, 10),
@@ -2045,14 +2047,18 @@
         if (draft.tipo === '') draft.tipo = null;
         if (draft.estado === '') draft.estado = null;
         var suggestions = window.AltorraSmartFields.preview(draft);
-        if (!suggestions || suggestions.length === 0) {
+        // C.8 — Validaciones inteligentes
+        var issues = window.AltorraSmartFields.validate(draft) || [];
+
+        if ((!suggestions || suggestions.length === 0) && issues.length === 0) {
             box.style.display = 'none';
             box.innerHTML = '';
             return;
         }
-        box.style.display = '';
-        box.innerHTML =
-            '<div class="smart-fields-preview-head">' +
+
+        var html = '';
+        if (suggestions && suggestions.length > 0) {
+            html += '<div class="smart-fields-preview-head">' +
                 '<i data-lucide="sparkles"></i>' +
                 '<span>Smart Fields auto-completará al guardar:</span>' +
             '</div>' +
@@ -2061,10 +2067,27 @@
                     return '<li><strong>' + s.field + ':</strong> ' + s.value + ' <em>· ' + s.reason + '</em></li>';
                 }).join('') +
             '</ul>';
+        }
+        if (issues.length > 0) {
+            html += '<div class="smart-validations-head">' +
+                '<i data-lucide="alert-triangle"></i>' +
+                '<span>Validaciones a revisar:</span>' +
+            '</div>' +
+            '<ul class="smart-validations-list">' +
+                issues.map(function (i) {
+                    return '<li class="smart-validation-' + i.severity + '">' +
+                        '<strong>' + i.field + ':</strong> ' + i.message +
+                    '</li>';
+                }).join('') +
+            '</ul>';
+        }
+
+        box.style.display = '';
+        box.innerHTML = html;
         if (window.AltorraIcons) window.AltorraIcons.refresh(box);
     }
 
-    var smartTriggers = ['vKm', 'vTipo', 'vEstado', 'vPrecio', 'vPrecioOferta', 'vPuertas', 'vPasajeros', 'vUbicacion'];
+    var smartTriggers = ['vKm', 'vTipo', 'vEstado', 'vPrecio', 'vPrecioOferta', 'vPuertas', 'vPasajeros', 'vUbicacion', 'vYear', 'vCategoria'];
     smartTriggers.forEach(function (id) {
         var el = $(id);
         if (el) {

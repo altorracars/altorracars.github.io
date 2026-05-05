@@ -2072,4 +2072,45 @@
             el.addEventListener('change', updateSmartFieldsPreview);
         }
     });
+
+    // C.5 — Generador de descripción automática
+    var btnGenDesc = $('btnGenDesc');
+    if (btnGenDesc) {
+        btnGenDesc.addEventListener('click', function () {
+            if (!window.AltorraDescGen) {
+                AP.toast('Generador no disponible.', 'error');
+                return;
+            }
+            var specs = {
+                marca: ($('vMarca') || {}).value,
+                modelo: ($('vModelo') || {}).value,
+                year: ($('vYear') || {}).value,
+                tipo: ($('vTipo') || {}).value,
+                categoria: ($('vCategoria') || {}).value,
+                kilometraje: parseInt(($('vKm') || {}).value, 10),
+                transmision: ($('vTransmision') || {}).value,
+                combustible: ($('vCombustible') || {}).value,
+                motor: ($('vMotor') || {}).value,
+                traccion: ($('vTraccion') || {}).value,
+                color: ($('vColor') || {}).value,
+                peritaje: ($('vPeritaje') || {}).checked,
+                revisionTecnica: ($('vRevision') || {}).checked,
+                caracteristicas: collectAllFeatures()
+            };
+            if (!specs.marca || !specs.modelo) {
+                AP.toast('Llená marca y modelo primero.', 'warning');
+                return;
+            }
+            var desc = window.AltorraDescGen.generate(specs);
+            var ta = $('vDescripcion');
+            if (ta) {
+                if (ta.value && ta.value.trim()) {
+                    if (!confirm('Ya hay descripción escrita. ¿Reemplazarla por la generada?')) return;
+                }
+                ta.value = desc;
+                ta.dispatchEvent(new Event('input', { bubbles: true }));
+                AP.toast('Descripción generada. Editala antes de guardar si querés.');
+            }
+        });
+    }
 })();

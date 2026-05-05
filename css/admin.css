@@ -627,6 +627,85 @@ body {
     background: rgba(0, 0, 0, 0.2);
 }
 
+/* G.3 — Offline banner */
+.alt-offline-banner {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99000;
+    border-radius: 10px;
+    padding: 8px 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    animation: offlineSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes offlineSlideDown {
+    from { opacity: 0; transform: translate(-50%, -20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+.alt-offline-banner--off {
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.95), rgba(234, 179, 8, 0.95));
+    color: #422006;
+    border: 1px solid rgba(250, 204, 21, 0.6);
+}
+.alt-offline-banner--on {
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.95), rgba(34, 197, 94, 0.95));
+    color: #052e0e;
+    border: 1px solid rgba(74, 222, 128, 0.6);
+}
+.alt-offline-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+.alt-offline-content em {
+    font-style: italic;
+    opacity: 0.85;
+}
+
+/* M.2 — Co-edit locks blandos (badge en modales) */
+.coedit-badge-host {
+    margin-bottom: 14px;
+}
+.coedit-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.10), rgba(250, 204, 21, 0.04));
+    border: 1px solid rgba(250, 204, 21, 0.25);
+    border-radius: 10px;
+}
+.coedit-badge-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #facc15, #eab308);
+    color: #422006;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.coedit-badge-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0a0a0);
+    line-height: 1.4;
+}
+.coedit-badge-text strong {
+    color: var(--text-primary, #e5e5e5);
+}
+.coedit-badge-warning {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--status-warning, #facc15);
+    margin-top: 2px;
+}
+
 /* L.2 — Notas dictadas en textareas */
 .alt-dictate-wrap {
     position: relative;

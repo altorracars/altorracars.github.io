@@ -225,6 +225,20 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ========== COEDITING (Bloque M.2 — co-edit locks blandos) ==========
+    // Lock informativo cuando un admin abre un modal de edición.
+    // Solo editor+ pueden leer/escribir. Solo el dueño del lock o
+    // super_admin lo elimina.
+    match /coediting/{lockId} {
+      allow read: if isEditorOrAbove();
+      allow create: if isEditorOrAbove() &&
+                     request.resource.data.editorUid == request.auth.uid;
+      allow update: if isEditorOrAbove() &&
+                     resource.data.editorUid == request.auth.uid;
+      allow delete: if isSuperAdmin() ||
+                     (isEditorOrAbove() && resource.data.editorUid == request.auth.uid);
+    }
+
     // ========== COMMENTS (Bloque M.4 — comentarios threaded entre admins) ==========
     // Sistema universal de comentarios sobre cualquier entidad. Solo
     // editor+ pueden leer/comentar. Author del comentario o super_admin

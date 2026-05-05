@@ -420,6 +420,19 @@
                 </div>
             </div>
 
+            <!-- O.6 (mega-plan v4) — Insights automáticos: lo que el sistema notó -->
+            <div class="predictive-card insights-card">
+                <div class="predictive-card-head">
+                    <h3><i data-lucide="lightbulb"></i> Lo que el sistema notó</h3>
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="insightsRefresh" data-tooltip="Refrescar">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+                </div>
+                <div id="insightsList">
+                    <div class="insights-empty">Analizando…</div>
+                </div>
+            </div>
+
             <!-- F8.1: ACCIONES RAPIDAS -->
             <div class="quick-actions" id="quickActions">
                 <button class="quick-action-btn" data-action="quickNewVehicle" title="Nuevo vehiculo">
@@ -2355,6 +2368,7 @@
 <script src="js/admin-kb.js" defer></script>
 <script src="js/admin-calendar.js" defer></script>
 <script src="js/admin-voice.js" defer></script>
+<script src="js/admin-insights.js" defer></script>
 <script src="js/admin-inbox.js" defer></script>
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

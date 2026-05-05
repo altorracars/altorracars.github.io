@@ -627,6 +627,84 @@ body {
     background: rgba(0, 0, 0, 0.2);
 }
 
+/* O.6 — Insights automáticos */
+.insights-card {
+    margin-top: 16px;
+}
+.insights-card .predictive-card-head h3 [data-lucide] {
+    color: var(--status-warning, #facc15);
+}
+.insights-empty {
+    text-align: center;
+    color: var(--text-tertiary, #888);
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.insight-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-left: 3px solid rgba(184, 150, 88, 0.4);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: background 0.15s ease;
+}
+.insight-item:hover { background: rgba(184, 150, 88, 0.06); }
+.insight-item:last-child { margin-bottom: 0; }
+.insight-item--critical {
+    border-left-color: var(--status-danger, #ff6b6b);
+    background: rgba(255, 107, 107, 0.04);
+}
+.insight-item--warning {
+    border-left-color: var(--status-warning, #facc15);
+    background: rgba(250, 204, 21, 0.04);
+}
+.insight-item--info {
+    border-left-color: var(--status-info, #60a5fa);
+    background: rgba(96, 165, 250, 0.04);
+}
+.insight-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.insight-icon [data-lucide] {
+    width: 18px;
+    height: 18px;
+}
+.insight-item--critical .insight-icon { background: rgba(255, 107, 107, 0.15); }
+.insight-item--critical .insight-icon [data-lucide] { color: var(--status-danger, #ff6b6b); }
+.insight-item--warning .insight-icon { background: rgba(250, 204, 21, 0.15); }
+.insight-item--warning .insight-icon [data-lucide] { color: var(--status-warning, #facc15); }
+.insight-item--info .insight-icon { background: rgba(96, 165, 250, 0.15); }
+.insight-item--info .insight-icon [data-lucide] { color: var(--status-info, #60a5fa); }
+.insight-body {
+    flex: 1;
+    min-width: 0;
+}
+.insight-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-primary, #e5e5e5);
+    margin-bottom: 3px;
+}
+.insight-message {
+    font-size: 0.78rem;
+    color: var(--text-secondary, #a0a0a0);
+    line-height: 1.4;
+}
+
 /* L.1 — Comandos de voz globales */
 .altorra-voice-fab {
     position: fixed;

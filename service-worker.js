@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505300000'; // L.1 (mega-plan v4) — Comandos de voz globales: Web Speech API + parser + 6 tipos de comando + overlay con waveform
+const CACHE_VERSION = 'v20260505310000'; // O.6 (mega-plan v4) — Insights automáticos en dashboard combinando R+J+CRM+KB en alertas accionables
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

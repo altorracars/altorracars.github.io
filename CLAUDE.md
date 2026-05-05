@@ -5452,6 +5452,146 @@ por diseño y devuelve el mismo formato sin cambiar el input.
 - `service-worker.js` + `js/cache-manager.js` — version bump
   v20260505190000
 
+### Microfase J.1 — AI Engine local: foundation + rule-based sentiment ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: dar al admin "inteligencia local" sin costo recurrente y
+sin descargar modelos pesados al inicio. La estrategia: capa de reglas
+sub-milisegundo que funciona ya, con un slot de upgrade para que un
+ML provider (Transformers.js) tome el relevo cuando el admin lo solicite.
+
+**Lo que se creó** (`js/ai/engine.js`):
+
+API pública `window.AltorraAI`:
+```js
+AltorraAI.sentiment(text)              // sync, sub-ms
+AltorraAI.sentimentAsync(text)         // async, opt-in para ML
+AltorraAI.registerProvider(name, fn)   // ML upgrade slot
+AltorraAI.capabilities()                // qué está disponible
+AltorraAI.health()                      // diagnóstico
+```
+
+**Sentiment rule-based**:
+- Diccionario bilingüe (español primario, inglés fallback) con 60+
+  términos calibrados para conversaciones car-buying:
+  - Strong positive: excelente, perfecto, encanta, increíble, genial
+  - Moderate positive: bueno, gracias, contento, recomiendo, interesado
+  - Strong negative: pésimo, horrible, estafa, fraude, engañado
+  - Moderate negative: malo, caro, lento, problema, frustrado
+- **Negación**: "no me gusta" → flips el siguiente término
+- **Intensifiers**: "muy bueno" → score ×1.5
+- **Salida**: `{label: 'positive'|'negative'|'neutral', score: -1..1, magnitude: 0..1, source: 'rules'}`
+- **Threshold**: score > 0.15 → positive, < -0.15 → negative, else neutral
+
+**Provider registry**: cuando un futuro J.1+ cargue Transformers.js
+distilbert-multilingual (~25MB, lazy), llamará
+`AltorraAI.registerProvider('sentiment', mlFn)` y `sentiment()` lo
+usará automáticamente, retornando al rules fallback si la ML throws.
+
+**Privacy**: TODA la inferencia corre en el browser. Los textos no
+salen del cliente excepto cuando el admin persiste el score
+explícitamente (futuro: `solicitudes/{id}.aiSentiment`).
+
+**Stats tracking**: `_stats.callsByCapability` rastrea uso para
+diagnóstico de carga ML futuro.
+
+**Integración inicial — sentiment dot en tabla de Comunicaciones**:
+- En `renderAppointmentsTable` la columna observaciones ahora muestra
+  un dot color-coded antes del texto
+- Verde para sentiment positivo, rojo para negativo, sin dot para neutro
+- Tooltip muestra el score numérico
+- Solo se computa si hay al menos 8 chars (evita ruido en respuestas
+  cortas como "ok")
+
+### Microfase J.2 — NER (entity extraction) ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: extraer entidades estructuradas (marca, modelo, año,
+precio, kilometraje, ciudad, fecha, teléfono, email, placa) de
+mensajes en lenguaje natural. Patrón Salesforce Einstein / Drift.
+
+**Lo que se creó** (`js/ai/ner.js`):
+
+API pública `window.AltorraNER`:
+```js
+AltorraNER.extract(text) → {
+    entities: [{type, value, raw, position: [start, end]}],
+    summary: { marca, modelo, year, precio, ... }  // primer match wins
+}
+AltorraNER.matchVehicle(text, vehiclesArr) → {vehicle, score} | null
+```
+
+**Lexicons + regexes**:
+- **Marca**: 50+ marcas conocidas (Toyota, Mazda, Mercedes-Benz, MG, BYD…)
+- **Ciudad**: 30+ ciudades colombianas (Cartagena, Bogotá, Medellín, Cali…)
+- **Year**: regex `/\b(19[7-9]\d|20\d{2})\b/g` (1970–2099)
+- **Precio**: `$1.000.000` numérico OR `50 millones` / `50M`
+  - Si número < 10K sin formato decimal → asume millones
+- **Kilometraje**: `50.000 km` / `50K kilometros`
+- **Email**: regex estándar
+- **Teléfono**: Colombia +57 prefix, 10 dígitos con espacios/guiones
+- **Placa**: `AAA000` / `AAA-000` (formato colombiano)
+- **Fecha**: 4 formatos:
+  - `15/03/2026` numérico
+  - `15 de marzo` literal con month-map (ene/feb/.../dic)
+  - `mañana / hoy / pasado mañana` relativo (resuelve a ISO)
+
+**Vehicle matcher**: dado un texto + array de vehículos, usa NER summary
+para encontrar mejor match con scoring multi-factor:
+- Marca match → +3
+- Modelo match → +4
+- Year ±1 → +2
+- Precio ±10% → +1
+- Score ≥4 retorna match (umbral conservador para evitar falsos positivos)
+
+**Provider upgrade slot**: igual que sentiment, futuras ML implementations
+(spaCy.js / Transformers NER) registran via
+`AltorraAI.registerProvider('ner', fn)` y NER lo intercepta antes del
+fallback rules.
+
+**Casos de uso futuros** (Bloques posteriores los consumirán):
+- **Concierge bot (U.7)**: extraer entities en cada turno del cliente
+  para guardar en CRM (progressive profiling L0→L5)
+- **Inbox (E.12)**: highlight de entities inline + acciones one-click
+  ("crear cita con esta fecha")
+- **Lead scoring (J.3)**: usa entities como features (tiene presupuesto?
+  ciudad? timeline?)
+
+**Pasos de prueba**:
+1. Login admin → consola
+2. `AltorraAI.sentiment('me encanta este auto, gracias')` →
+   `{label: 'positive', score: ~0.6, ...}`
+3. `AltorraAI.sentiment('precio caro, pésima atención')` →
+   `{label: 'negative', score: ~-0.7, ...}`
+4. `AltorraNER.extract('Quiero un Toyota Hilux 2020 en Cartagena, presupuesto 80 millones, mi celular 3201234567')` →
+   summary: `{marca: 'toyota', year: 2020, ciudad: 'cartagena', precio: 80000000, telefono: '3201234567'}`
+5. Admin → Comunicaciones → fila con mensaje negativo muestra dot rojo
+6. Admin → Comunicaciones → fila con "gracias por la atención" muestra dot verde
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Sentiment lento en hot path render | Sub-ms rule-based, llamado solo si msg.length > 8 |
+| Lexicon parcial → falsos negativos | Cobertura de 60+ términos con calibración manual |
+| Negación rota ("no es malo" → negativo) | Stack-based: el siguiente término scored se flipea |
+| Precio numérico ambiguo (50 vs 50.000.000) | Default a millones si número pequeño sin punto |
+| Fecha relativa cuando se cambia el día | Recomputa cada llamada (no cacheado) |
+| Ciudad como falso match en mid-word | Word-boundary check via regex `\b...\b` |
+| Vehicle matcher falso positivo en pocas señales | Threshold ≥4 (requiere 2+ entities en match) |
+| NER llamado antes de carga | Guard `if (window.AltorraNER)` en callsites |
+
+**Archivos creados/modificados**:
+- `js/ai/engine.js` — módulo nuevo (~190 líneas)
+- `js/ai/ner.js` — módulo nuevo (~350 líneas)
+- `admin.html` — `<script>` tags antes de admin-vehicles.js
+- `js/admin-appointments.js` — sentiment dot inline en columna observaciones
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505200000
+
+**Próximos pasos del bloque**: J.3 (lead scoring v2 con regresión
+sobre entities + sentiment), J.4 (no-show prediction), J.5 (anomaly
+detection sobre KPIs), J.6 (image categorizer con MobileNet),
+J.7 (OCR Tesseract.js lazy), J.8 (Next Best Action). Cada una se
+plugea en `AltorraAI.registerProvider(...)`.
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

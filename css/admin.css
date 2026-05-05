@@ -627,6 +627,44 @@ body {
     background: rgba(0, 0, 0, 0.2);
 }
 
+/* G.3 — Offline banner */
+.alt-offline-banner {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99000;
+    border-radius: 10px;
+    padding: 8px 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    animation: offlineSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes offlineSlideDown {
+    from { opacity: 0; transform: translate(-50%, -20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+.alt-offline-banner--off {
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.95), rgba(234, 179, 8, 0.95));
+    color: #422006;
+    border: 1px solid rgba(250, 204, 21, 0.6);
+}
+.alt-offline-banner--on {
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.95), rgba(34, 197, 94, 0.95));
+    color: #052e0e;
+    border: 1px solid rgba(74, 222, 128, 0.6);
+}
+.alt-offline-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+.alt-offline-content em {
+    font-style: italic;
+    opacity: 0.85;
+}
+
 /* M.2 — Co-edit locks blandos (badge en modales) */
 .coedit-badge-host {
     margin-bottom: 14px;

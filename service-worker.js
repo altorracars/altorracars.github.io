@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505380000'; // C.5+M.2 (mega-plan v4) — Generador descripción vehículos + co-edit locks blandos con badge entre admins
+const CACHE_VERSION = 'v20260505390000'; // G.3+H.5 (mega-plan v4) — Offline banner + queue + anomaly detection con freeze + reauth
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

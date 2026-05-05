@@ -64,20 +64,10 @@
             return false;
         }
 
-        // PASADA 0 — restaurar elementos legítimos que mi script previo
-        // pudo haber ocultado por error (style inline display:none + pointer-events:none).
-        // Identificamos por clase protegida.
-        Array.prototype.slice.call(document.body.children).forEach(function (el) {
-            if (hasProtectedClass(el) || (el.id && WHITELIST_IDS.indexOf(el.id) !== -1)) {
-                // Si tiene style inline que mi script puso, removerlo
-                if (el.style.display === 'none' && el.dataset && !el.dataset.altOriginallyHidden) {
-                    el.style.display = '';
-                }
-                if (el.style.pointerEvents === 'none' && el.dataset && !el.dataset.altOriginallyHidden) {
-                    el.style.pointerEvents = '';
-                }
-            }
-        });
+        // NOTA: No "rescatamos" elementos ocultos. El código que los oculta
+        // (admin-auth.js, auth.js, etc.) tiene autoridad sobre su propio estado.
+        // Aquí solo OCULTAMOS overlays huérfanos sospechosos, nunca mostramos
+        // nada que esté hidden por otro motivo.
 
         Array.prototype.slice.call(document.body.children).forEach(function (el) {
             if (!el.tagName || (el.tagName !== 'DIV' && el.tagName !== 'ASIDE' && el.tagName !== 'SECTION')) return;
@@ -323,11 +313,10 @@
         run();
     }
 
-    // Re-bind cada 2s durante los primeros 30s (para el bell que se monta tarde)
-    var iterations = 0;
-    var iv = setInterval(function () {
-        iterations++;
-        run();
-        if (iterations > 15) clearInterval(iv);
-    }, 2000);
+    // Re-run 3 veces escalonado para capturar elementos que se montan tarde
+    // (bell, voice button). NO loop continuo — el cleanup repetido era el
+    // que causaba el loop visual del auth-loading-screen.
+    setTimeout(run, 500);
+    setTimeout(run, 2000);
+    setTimeout(run, 5000);
 })();

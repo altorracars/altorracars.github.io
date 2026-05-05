@@ -627,6 +627,110 @@ body {
     background: rgba(0, 0, 0, 0.2);
 }
 
+/* H.4 — Re-auth modal para acciones críticas */
+.alt-sec-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.alt-sec-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(8px);
+}
+.alt-sec-card {
+    position: relative;
+    background: linear-gradient(180deg, #15110a 0%, #0d0a06 100%);
+    border: 1px solid rgba(184, 150, 88, 0.30);
+    border-radius: 16px;
+    padding: 32px 36px;
+    width: min(440px, 92vw);
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+    animation: secAppear 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes secAppear {
+    from { opacity: 0; transform: scale(0.96) translateY(-12px); }
+    to { opacity: 1; transform: none; }
+}
+.alt-sec-shake {
+    animation: secShake 0.4s;
+}
+@keyframes secShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+.alt-sec-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.20), rgba(184, 150, 88, 0.05));
+    border: 1px solid rgba(184, 150, 88, 0.30);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+.alt-sec-icon [data-lucide] {
+    width: 28px;
+    height: 28px;
+    color: var(--brand-gold, #b89658);
+}
+.alt-sec-title {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+    color: var(--text-primary, #e5e5e5);
+}
+.alt-sec-reason {
+    margin: 0 0 18px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0a0a0);
+    line-height: 1.5;
+}
+.alt-sec-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.alt-sec-input {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(184, 150, 88, 0.25);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text-primary, #e5e5e5);
+    font-size: 0.95rem;
+    transition: border-color 0.15s ease;
+}
+.alt-sec-input:focus {
+    outline: none;
+    border-color: rgba(184, 150, 88, 0.55);
+    box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.10);
+}
+.alt-sec-error {
+    color: var(--status-danger, #ff6b6b);
+    font-size: 0.78rem;
+    text-align: left;
+    min-height: 16px;
+}
+.alt-sec-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+.alt-sec-actions [data-lucide] { width: 14px; height: 14px; }
+.alt-sec-hint {
+    display: block;
+    margin-top: 14px;
+    color: var(--text-tertiary, #888);
+    font-size: 0.7rem;
+}
+
 /* M.4 — Comentarios threaded */
 .cmt-wrap {
     display: flex;

@@ -140,6 +140,28 @@
         return matches;
     }
 
+    /** K.3 — log each rule execution to Firestore for auditing
+     * Best-effort write to `automationLog/{auto_id}` — silent on failure */
+    function logExecution(match, outcome) {
+        if (!window.db) return;
+        try {
+            var entry = {
+                ruleId: match.rule.id,
+                ruleName: match.rule.name,
+                trigger: match.rule.trigger,
+                action: match.result.action,
+                reason: match.result.reason || '',
+                docId: (match.doc && match.doc._docId) || null,
+                docTitle: (match.doc && (match.doc.nombre || match.doc.marca || '')) || '',
+                outcome: outcome || 'applied',
+                timestamp: new Date(),
+                by: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
+                bySource: 'automation'
+            };
+            window.db.collection('automationLog').add(entry).catch(function () {});
+        } catch (e) {}
+    }
+
     function applyAction(match) {
         var doc = match.doc;
         var action = match.result.action;
@@ -154,7 +176,10 @@
                     assignedToName: sa.nombre || sa.email,
                     assignedAt: new Date().toISOString(),
                     automationRule: match.rule.id
-                }).catch(function () {});
+                }).then(function () { logExecution(match, 'applied'); })
+                  .catch(function () { logExecution(match, 'failed'); });
+            } else {
+                logExecution(match, 'skipped:no-super-admin');
             }
         } else if (action === 'notify_super_admin') {
             if (window.notifyCenter && window.notifyCenter.notify) {
@@ -165,6 +190,7 @@
                     entityRef: 'sla-breach:' + doc._docId,
                     priority: 'high'
                 });
+                logExecution(match, 'applied');
             }
         }
     }
@@ -245,6 +271,64 @@
                 '</label>' +
             '</div>';
         }).join('');
+    }
+
+    // ─── K.3: Execution history viewer ──────────────────────────
+    function loadHistory() {
+        var listEl = document.getElementById('automationHistoryList');
+        if (!listEl || !window.db) return;
+        listEl.innerHTML = '<div class="table-empty">Cargando…</div>';
+        window.db.collection('automationLog')
+            .orderBy('timestamp', 'desc')
+            .limit(50)
+            .get()
+            .then(function (snap) {
+                if (snap.empty) {
+                    listEl.innerHTML = '<div class="table-empty">Sin ejecuciones aún.</div>';
+                    return;
+                }
+                var rows = [];
+                snap.forEach(function (d) {
+                    var x = d.data();
+                    var ts = x.timestamp;
+                    if (ts && typeof ts.toMillis === 'function') ts = new Date(ts.toMillis());
+                    else ts = new Date(ts);
+                    var when = ts.toLocaleString('es-CO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    var outcomeColor = x.outcome === 'applied' ? 'var(--status-success)' :
+                                       (x.outcome === 'failed' ? 'var(--status-danger)' : 'var(--text-tertiary)');
+                    rows.push(
+                        '<div class="automation-history-row">' +
+                            '<div class="automation-history-row-main">' +
+                                '<span class="automation-history-rule">' + (x.ruleName || x.ruleId || 'regla') + '</span>' +
+                                (x.docTitle ? '<span class="automation-history-doc"> · ' + x.docTitle + '</span>' : '') +
+                            '</div>' +
+                            '<div class="automation-history-row-meta">' +
+                                '<span style="color:' + outcomeColor + ';">' + (x.outcome || 'applied') + '</span>' +
+                                '<span> · ' + when + '</span>' +
+                                (x.action ? '<span> · ' + x.action + '</span>' : '') +
+                            '</div>' +
+                        '</div>'
+                    );
+                });
+                listEl.innerHTML = rows.join('');
+            })
+            .catch(function (err) {
+                listEl.innerHTML = '<div class="table-empty">Error: ' + (err.message || err) + '</div>';
+            });
+    }
+
+    // Refresh button
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.closest && e.target.closest('#automationHistoryRefresh')) {
+            loadHistory();
+        }
+    });
+
+    // Auto-load when admin opens the Automatización section
+    if (window.AltorraSections && window.AltorraSections.onChange) {
+        window.AltorraSections.onChange(function (section) {
+            if (section === 'automation') loadHistory();
+        });
     }
 
     // Wire toggle changes

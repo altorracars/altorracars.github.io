@@ -887,6 +887,18 @@
             <div class="automation-rules" id="automationRulesList">
                 <div class="table-empty">Cargando reglas...</div>
             </div>
+            <!-- K.3 — Execution history -->
+            <div class="automation-history-card" style="margin-top:24px;">
+                <div class="automation-history-head">
+                    <h3 style="margin:0;font-size:1rem;">Historial de ejecuciones</h3>
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="automationHistoryRefresh" data-tooltip="Refrescar">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+                </div>
+                <div class="automation-history-list" id="automationHistoryList">
+                    <div class="table-empty">Sin ejecuciones aún.</div>
+                </div>
+            </div>
         </div>
 
         <!-- MF4.7 — Inbox section -->
@@ -1663,6 +1675,8 @@
                             <div class="form-group">
                                 <label class="form-label">Kilometraje *</label>
                                 <input type="number" id="vKm" class="form-input" required min="0" placeholder="0">
+                                <!-- K.4 — Smart Fields live preview -->
+                                <div id="smartFieldsPreview" class="smart-fields-preview" style="display:none;"></div>
                             </div>
                         </div>
                         <div class="form-row">

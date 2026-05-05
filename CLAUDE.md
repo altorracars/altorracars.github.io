@@ -5320,6 +5320,138 @@ declarativa donde:
 - `js/admin-vehicles.js` — `buildVehicleData` aplica derive al final
   + toast info con suggestions cuando hay derivations
 
+### Microfase K.3 — Automation execution log + history viewer ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: cada vez que una regla de automatización se ejecuta,
+queda grabada en Firestore. El admin puede ver el historial en la
+sección Automatización para auditar "esta regla disparó N veces ayer,
+con qué outcome".
+
+**Schema `automationLog/{logId}`**:
+```js
+{
+    ruleId: 'route_high_value_financiacion',
+    ruleName: 'Asignar financiación alto-valor a super_admin',
+    trigger: 'comm_created',
+    action: 'assign_to_super_admin',
+    reason: 'financiación de alto valor',
+    docId: 'abc123',
+    docTitle: 'Daniel — Toyota Hilux',
+    outcome: 'applied' | 'failed' | 'skipped:no-super-admin',
+    timestamp: <serverTimestamp>,
+    by: '<uid>',
+    bySource: 'automation'
+}
+```
+
+**Reglas Firestore** (`firestore.rules`):
+```
+match /automationLog/{logId} {
+    allow read: if isAuthenticated();      // admins audit
+    allow create: if request.auth != null; // engine writes from client
+    allow delete: if isSuperAdmin();       // immutable except super_admin purge
+}
+```
+
+> **DEPLOY MANUAL REQUERIDO**: `firebase deploy --only firestore:rules`
+> para activar la nueva colección.
+
+**`logExecution(match, outcome)`** — best-effort write desde
+`applyAction()`. Falla silenciosamente si Firestore no responde
+(no bloquea la acción real). Outcomes posibles:
+- `applied` — la acción se ejecutó OK
+- `failed` — Firestore update falló
+- `skipped:no-super-admin` — regla matchea pero no hay un asesor para asignar
+- En el futuro K.5 puede agregar más outcomes (`rate-limited`, `condition-changed`, etc.)
+
+**UI viewer** (`admin.html` sección Automatización):
+- Card "Historial de ejecuciones" debajo de la lista de reglas
+- Botón refresh para fetch manual
+- Auto-load cuando el admin entra a la sección (via
+  `AltorraSections.onChange` de B.3)
+- Hasta 50 entries más recientes ordenadas desc por timestamp
+- Cada row: nombre regla · doc title · outcome (color-coded) · timestamp · action
+
+**Pasos de prueba**:
+1. Login como super_admin → Automatización
+2. Verificar que aparece "Sin ejecuciones aún" si no hay log previo
+3. Disparar una regla (e.g. crear solicitud de financiación
+   alto-valor desde web pública)
+4. Click refresh → ver entrada con outcome `applied` (verde)
+5. Verificar en Firebase Console: doc en `automationLog/` con todos
+   los campos
+6. Logout/login → seguir viendo la entrada (persistente)
+
+**Archivos modificados**:
+- `js/admin-automation.js` — `logExecution()` + auto-load history
+- `admin.html` — sección "Historial de ejecuciones" con refresh button
+- `css/admin.css` — `.automation-history-*` styles
+- `firestore.rules` — colección `automationLog/`
+
+### Microfase K.4 — Smart Fields live preview en modal de vehículo ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: feedback inmediato mientras el admin escribe. Cuando
+escribe `kilometraje = 0` y deja `tipo` en blanco, una caja dorada
+aparece debajo del input avisando "Smart Fields auto-completará al
+guardar: tipo: nuevo (kilometraje 0)". Patrón Linear/Stripe — el
+admin ve lo que va a pasar antes de comprometerse.
+
+**`updateSmartFieldsPreview()`**:
+- Lee los inputs relevantes (`vKm`, `vTipo`, `vEstado`, `vPrecio`,
+  `vPrecioOferta`, `vPuertas`, `vPasajeros`, `vUbicacion`)
+- Construye un draft doc, normaliza empty selects a `null`
+- Llama `AltorraSmartFields.preview(draft)` (read-only)
+- Si hay sugerencias: renderiza la caja dorada con icon sparkles,
+  título y lista. Si no: oculta la caja
+- Re-corre en cada `input` y `change` de los triggers
+
+**HTML insertado** (debajo de `<input id="vKm">`):
+```html
+<div id="smartFieldsPreview" class="smart-fields-preview" style="display:none;"></div>
+```
+
+**Diseño**:
+- Background dorado tenue (8% alpha) + border-left dorado sólido
+- Icon sparkles (Lucide) animado por hover
+- Lista con `<strong>` para campo, `<em>` para razón
+- Fade-in suave al aparecer
+
+**Por qué no usamos `derive()` en preview**: `derive()` muta el doc
+y devuelve `result + derived`. Para preview solo necesitamos las
+sugerencias (`derived`), no aplicar nada. `preview()` es read-only
+por diseño y devuelve el mismo formato sin cambiar el input.
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Preview lagged behind input typing | Listeners `input` + `change` (cobertura completa) |
+| Empty `<select>` value `''` no triggea reglas blank-check | Normaliza `'' → null` antes de preview |
+| Preview se queda pegado al cambiar de vehículo (modal abierto-cerrado) | El reset es trivial: cuando el admin abre el modal, los inputs se recargan, y el primer change re-invoca preview |
+| Preview con campos que ya se llenaron del vehículo cargado | preview chequea blank — si los campos están llenos, no genera sugerencias (caja oculta) |
+| Modal viewer (no editor) muestra preview sin sentido | El listener fires en cambios; sin cambios sin preview cosmético |
+
+**Pasos de prueba**:
+1. Admin → Crear vehículo nuevo
+2. Escribir kilometraje = 0 → caja dorada aparece: "Tipo: nuevo
+   (kilometraje 0) · Estado: disponible (sin estado) · Puertas: 5
+   (default) · Pasajeros: 5 (default) · Ubicación: Cartagena (sede)"
+3. Escribir tipo = "usado" manual → la sugerencia de tipo desaparece
+   de la caja (admin ya lo definió)
+4. Cambiar km a 5000 → caja muestra "Tipo: semi-nuevo"
+5. Cambiar km a 50000 → caja muestra "Tipo: usado"
+6. Llenar todos los campos → caja se oculta (nada para sugerir)
+7. Editar un vehículo existente con `tipo` ya seteado → caja oculta
+   en apertura (no flash visual)
+
+**Archivos modificados**:
+- `admin.html` — `<div id="smartFieldsPreview">` después de `vKm`
+- `js/admin-vehicles.js` — `updateSmartFieldsPreview()` + listeners
+  en 8 inputs relevantes
+- `css/admin.css` — `.smart-fields-preview` + sub-elementos
+- `service-worker.js` + `js/cache-manager.js` — version bump
+  v20260505190000
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

@@ -946,6 +946,7 @@
             vehicleData.createdByName = auditUser.name;
             vehicleData.createdAt = new Date().toISOString();
         }
+        // K.4 — Smart Fields preview already shown live in modal; here we apply.
         // K.2 — Smart Fields engine: derives tipo / estado / oferta / etc.
         // when blank. Only fills missing values, never overrides admin input.
         if (window.AltorraSmartFields) {
@@ -2024,5 +2025,51 @@
         document.querySelectorAll('.vehicle-cb:checked').forEach(function(cb) { cb.checked = false; });
         if (selectAll) selectAll.checked = false;
         updateBatchBar();
+    });
+
+    // K.4 — Smart Fields live preview as admin types in vehicle modal
+    function updateSmartFieldsPreview() {
+        var box = document.getElementById('smartFieldsPreview');
+        if (!box || !window.AltorraSmartFields) return;
+        var draft = {
+            kilometraje: parseInt(($('vKm') || {}).value, 10),
+            tipo: ($('vTipo') || {}).value || null,
+            estado: ($('vEstado') || {}).value || null,
+            precio: parseInt(($('vPrecio') || {}).value, 10),
+            precioOferta: parseInt(($('vPrecioOferta') || {}).value, 10),
+            puertas: parseInt(($('vPuertas') || {}).value, 10),
+            pasajeros: parseInt(($('vPasajeros') || {}).value, 10),
+            ubicacion: ($('vUbicacion') || {}).value || null
+        };
+        // Treat empty selects as blank for preview
+        if (draft.tipo === '') draft.tipo = null;
+        if (draft.estado === '') draft.estado = null;
+        var suggestions = window.AltorraSmartFields.preview(draft);
+        if (!suggestions || suggestions.length === 0) {
+            box.style.display = 'none';
+            box.innerHTML = '';
+            return;
+        }
+        box.style.display = '';
+        box.innerHTML =
+            '<div class="smart-fields-preview-head">' +
+                '<i data-lucide="sparkles"></i>' +
+                '<span>Smart Fields auto-completará al guardar:</span>' +
+            '</div>' +
+            '<ul class="smart-fields-preview-list">' +
+                suggestions.map(function (s) {
+                    return '<li><strong>' + s.field + ':</strong> ' + s.value + ' <em>· ' + s.reason + '</em></li>';
+                }).join('') +
+            '</ul>';
+        if (window.AltorraIcons) window.AltorraIcons.refresh(box);
+    }
+
+    var smartTriggers = ['vKm', 'vTipo', 'vEstado', 'vPrecio', 'vPrecioOferta', 'vPuertas', 'vPasajeros', 'vUbicacion'];
+    smartTriggers.forEach(function (id) {
+        var el = $(id);
+        if (el) {
+            el.addEventListener('input', updateSmartFieldsPreview);
+            el.addEventListener('change', updateSmartFieldsPreview);
+        }
     });
 })();

@@ -215,6 +215,16 @@ service cloud.firestore {
       // F4.3: Audit log entries are IMMUTABLE — no updates allowed
     }
 
+    // ========== AUTOMATION LOG (K.3 — workflow rule executions) ==========
+    match /automationLog/{logId} {
+      // Authenticated admins can read for auditing
+      allow read: if isAuthenticated();
+      // Anyone authenticated can create — automation runs in client
+      allow create: if request.auth != null;
+      // Immutable: rule executions are historical facts
+      allow delete: if isSuperAdmin();
+    }
+
     // ========== EVENT BUS (I.1 / I.2 — admin Activity Feed) ==========
     match /events/{eventId} {
       // Authenticated users can read (Activity Feed shows them)

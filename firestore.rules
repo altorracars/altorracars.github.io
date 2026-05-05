@@ -225,6 +225,16 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ========== APPOINTMENT REMINDERS (Bloque D.5 — recordatorios mostrados) ==========
+    // Tracking de qué recordatorios ya se mostraron al admin para
+    // evitar dups cross-session. Solo editor+ pueden leer/escribir.
+    match /appointmentReminders/{reminderId} {
+      allow read: if isEditorOrAbove();
+      allow create: if isEditorOrAbove() &&
+                     request.resource.data.shownTo == request.auth.uid;
+      allow delete: if isSuperAdmin();
+    }
+
     // ========== COEDITING (Bloque M.2 — co-edit locks blandos) ==========
     // Lock informativo cuando un admin abre un modal de edición.
     // Solo editor+ pueden leer/escribir. Solo el dueño del lock o

@@ -627,6 +627,75 @@ body {
     background: rgba(0, 0, 0, 0.2);
 }
 
+/* N.3 — Atajos personalizados (Adaptive UI) */
+.adaptive-shortcuts {
+    margin: 16px 0;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.06), rgba(184, 150, 88, 0.04));
+    border: 1px solid rgba(167, 139, 250, 0.15);
+    border-radius: 12px;
+}
+.adaptive-shortcuts-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 0.78rem;
+    color: var(--text-secondary, #a0a0a0);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.adaptive-shortcuts-head [data-lucide] {
+    color: #a78bfa;
+    width: 14px;
+    height: 14px;
+}
+.adaptive-shortcuts-head small {
+    margin-left: auto;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.7rem;
+    color: var(--text-tertiary, #888);
+    font-weight: 400;
+}
+.adaptive-shortcuts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+}
+.adaptive-shortcut {
+    background: rgba(0, 0, 0, 0.20);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text-primary, #e5e5e5);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.adaptive-shortcut:hover {
+    background: rgba(167, 139, 250, 0.10);
+    border-color: rgba(167, 139, 250, 0.35);
+    transform: translateY(-2px);
+}
+.adaptive-shortcut [data-lucide] {
+    width: 22px;
+    height: 22px;
+    color: #a78bfa;
+    margin-bottom: 4px;
+}
+.adaptive-shortcut-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+.adaptive-shortcut-count {
+    font-size: 0.7rem;
+    color: var(--text-tertiary, #888);
+}
+
 /* G.4 — PWA install button en header */
 .pwa-install-btn {
     background: rgba(184, 150, 88, 0.12);

@@ -869,6 +869,73 @@ body.sidebar-show-rare .nav-item--rare {
     gap: 10px;
 }
 
+/* G.2 — Native notifications invitation */
+.alt-native-invite {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9989;
+    max-width: 400px;
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.18), rgba(184, 150, 88, 0.05));
+    border: 1px solid rgba(184, 150, 88, 0.30);
+    border-radius: 12px;
+    padding: 14px 16px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    animation: nativeSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes nativeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.alt-native-invite-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.alt-native-invite-content [data-lucide]:first-child {
+    width: 24px;
+    height: 24px;
+    color: var(--brand-gold, #b89658);
+    flex-shrink: 0;
+}
+.alt-native-invite-body {
+    flex: 1;
+    min-width: 0;
+}
+.alt-native-invite-body strong {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--text-primary, #e5e5e5);
+}
+.alt-native-invite-body small {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--text-secondary, #a0a0a0);
+    margin-top: 2px;
+}
+.alt-native-invite-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    justify-content: flex-end;
+}
+
+/* C.3 — Color swatch en vehicle modal */
+.color-swatch {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    vertical-align: middle;
+    margin-right: 6px;
+}
+.color-extract-btn {
+    margin-top: 4px;
+    font-size: 0.72rem;
+}
+
 /* G.3 — Offline banner */
 .alt-offline-banner {
     position: fixed;

@@ -777,9 +777,12 @@ body.sidebar-show-rare .nav-item--rare {
     position: fixed;
     inset: 0;
     z-index: 99999;
-    display: flex;
+    display: none;            /* HIDDEN by default — activado por JS */
     align-items: center;
     justify-content: center;
+}
+.alt-onboard.is-active {
+    display: flex;
 }
 .alt-onboard-backdrop {
     position: absolute;
@@ -960,6 +963,33 @@ select:focus-visible {
     .alt-btn, .nav-item, .vehicle-card {
         border: 2px solid currentColor !important;
     }
+}
+
+/* SAFETY GLOBAL — overlays huérfanos no bloquean clicks del header.
+ * Patrón: cualquier elemento con position:fixed inset:0 z-index>9000
+ * que haya sido insertado al body por error (sin estado "abierto")
+ * tiene display:none aplicado.
+ *
+ * Los modales legítimos (alt-onboard.is-active, alt-palette.alt-palette-open,
+ * altorra-voice-overlay.alt-voice-active) siguen visibles porque la
+ * regla solo aplica cuando NO está la clase activa.
+ *
+ * Para modales creados dinámicamente y removidos al cerrar
+ * (alt-sec-modal, altorra-optin, cnc-summary-modal) el patrón es
+ * diferente: existen sólo cuando deben verse, así que NO necesitan
+ * estado "abierto" — pero igual los protegemos con un guard de
+ * orphan removal en JS. */
+.alt-onboard:not(.is-active),
+.altorra-voice-overlay:not(.alt-voice-active),
+.alt-palette:not(.alt-palette-open) {
+    pointer-events: none !important;
+    display: none !important;
+}
+/* Cualquier overlay con clase "altorra-orphan" (marker JS de fallback)
+ * queda oculto por safety. */
+.altorra-orphan {
+    display: none !important;
+    pointer-events: none !important;
 }
 
 /* G.2 — Native notifications invitation */
@@ -1757,38 +1787,23 @@ select:focus-visible {
     line-height: 1.4;
 }
 
-/* L.1 — Comandos de voz globales */
-.altorra-voice-fab {
-    position: fixed;
-    bottom: 24px;
-    left: 24px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: rgba(184, 150, 88, 0.20);
-    color: var(--brand-gold, #b89658);
-    border: 1px solid rgba(184, 150, 88, 0.35);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9990;
-    transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-    backdrop-filter: blur(6px);
+/* L.1 — Comandos de voz: botón en header */
+.altorra-voice-btn {
+    /* hereda alt-btn alt-btn--ghost alt-btn--icon */
 }
-.altorra-voice-fab:hover {
-    background: rgba(184, 150, 88, 0.35);
-    transform: scale(1.08);
-    box-shadow: 0 6px 20px rgba(184, 150, 88, 0.25);
+.altorra-voice-btn [data-lucide] {
+    width: 18px;
+    height: 18px;
 }
-.altorra-voice-fab [data-lucide] { width: 18px; height: 18px; }
+/* Legacy FAB selector kept oculto si existe en DOM viejo */
+.altorra-voice-fab { display: none !important; }
 .altorra-voice-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.70);
     backdrop-filter: blur(8px);
     z-index: 99999;
-    display: flex;
+    display: none;          /* HIDDEN por default — activa solo cuando .alt-voice-active */
     align-items: center;
     justify-content: center;
     opacity: 0;
@@ -1796,6 +1811,7 @@ select:focus-visible {
     transition: opacity 0.22s ease;
 }
 .altorra-voice-overlay.alt-voice-active {
+    display: flex;
     opacity: 1;
     pointer-events: auto;
 }

@@ -5,31 +5,10 @@
     var $ = AP.$;
 
     // ========== F5.3: DARK/LIGHT MODE TOGGLE ==========
-    function initTheme() {
-        var saved = localStorage.getItem('altorra_admin_theme');
-        if (saved === 'light') {
-            document.documentElement.classList.add('light-mode');
-            updateThemeIcon(true);
-        }
-    }
-
-    function toggleTheme() {
-        var isLight = document.documentElement.classList.toggle('light-mode');
-        localStorage.setItem('altorra_admin_theme', isLight ? 'light' : 'dark');
-        updateThemeIcon(isLight);
-    }
-
-    function updateThemeIcon(isLight) {
-        var icon = $('themeIcon');
-        if (icon) {
-            icon.innerHTML = '<i data-lucide="' + (isLight ? 'sun' : 'moon') + '"></i>';
-            AP.refreshIcons();
-        }
-    }
-
-    var toggleBtn = $('themeToggle');
-    if (toggleBtn) toggleBtn.addEventListener('click', toggleTheme);
-    initTheme();
+    // [DEPRECATED] Reemplazado por T.4 — js/theme-switcher.js (AltorraTheme).
+    // El botón #themeToggle ahora se bindea via data-altorra-theme-toggle
+    // por theme-switcher.js. Este handler quedó residual y se eliminó
+    // para evitar doble-bind que causaba que el click NO surtiera efecto.
 
     // ========== F5.2: DASHBOARD CHARTS (Pure CSS — no library) ==========
 

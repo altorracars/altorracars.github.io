@@ -239,6 +239,14 @@
             createSoftContact();
         }
 
+        // U.19 — Detectar intención de opt-in en el mensaje del cliente
+        if (window.AltorraOptIn && window.AltorraOptIn.detectOptInIntent(text)) {
+            // Esperar al bot response y luego mostrar modal opt-in
+            setTimeout(function () {
+                window.AltorraOptIn.requestOptIn();
+            }, 1800);
+        }
+
         // Bot response (delayed para sentir natural)
         if (session.mode === 'bot') {
             setTimeout(function () {
@@ -668,22 +676,100 @@
     function toggle() { _isOpen ? close() : open(); }
 
     /* ═══════════════════════════════════════════════════════════
-       AUTH HOOK — actualizar session cuando se loguea (U.18 prep)
+       AUTH HOOK + U.18 Identity Merge — vincular conversaciones
+       anónimas al uid cuando el cliente se loguea/registra.
        ═══════════════════════════════════════════════════════════ */
     if (window.firebaseReady) {
         window.firebaseReady.then(function () {
             if (window.auth) {
                 window.auth.onAuthStateChanged(function (user) {
                     if (user && !user.isAnonymous) {
+                        var prevUid = session.uid;
+                        var prevEmail = session.email;
                         session.uid = user.uid;
                         session.email = user.email;
-                        session.nombre = user.displayName;
+                        session.nombre = user.displayName || session.nombre;
                         if (session.level === 0) session.level = 2; // L2 contactable
                         saveSession(session);
+
+                        // U.18 — Si la sesión anterior era anónima Y ahora se identifica,
+                        // vincular leads + chats con el uid nuevo
+                        if (!prevUid && user.email) {
+                            mergeIdentity(user);
+                        }
+
+                        // Update soft contact si existe
+                        if (typeof updateSoftContact === 'function') {
+                            updateSoftContact();
+                        }
                     }
                 });
             }
         });
+    }
+
+    function mergeIdentity(user) {
+        if (!window.db) return;
+        var email = user.email;
+        if (!email) return;
+
+        // 1. Vincular chats del Concierge (conciergeChats/) que tienen este email
+        //    pero userId null
+        try {
+            window.db.collection('conciergeChats')
+                .where('userEmail', '==', email)
+                .where('userId', '==', null)
+                .get()
+                .then(function (snap) {
+                    var batch = window.db.batch();
+                    var count = 0;
+                    snap.forEach(function (doc) {
+                        batch.update(doc.ref, {
+                            userId: user.uid,
+                            userNombre: user.displayName || doc.data().userNombre || null,
+                            mergedAt: new Date().toISOString()
+                        });
+                        count++;
+                    });
+                    if (count > 0) {
+                        batch.commit().then(function () {
+                            console.info('[Concierge] Vinculados ' + count + ' chats anónimos al uid');
+                            if (window.AltorraEventBus) {
+                                window.AltorraEventBus.emit('identity.merged', {
+                                    uid: user.uid,
+                                    email: email,
+                                    chatsLinked: count
+                                });
+                            }
+                        }).catch(function () {});
+                    }
+                }).catch(function () {});
+        } catch (e) {}
+
+        // 2. Vincular leads anónimos de solicitudes/ con este email
+        try {
+            window.db.collection('solicitudes')
+                .where('email', '==', email)
+                .where('userId', '==', null)
+                .get()
+                .then(function (snap) {
+                    var batch = window.db.batch();
+                    var count = 0;
+                    snap.forEach(function (doc) {
+                        batch.update(doc.ref, {
+                            userId: user.uid,
+                            clientCategory: 'registered',
+                            mergedAt: new Date().toISOString()
+                        });
+                        count++;
+                    });
+                    if (count > 0) {
+                        batch.commit().then(function () {
+                            console.info('[Concierge] Vinculados ' + count + ' leads anónimos al uid');
+                        }).catch(function () {});
+                    }
+                }).catch(function () {});
+        } catch (e) {}
     }
 
     /* ═══════════════════════════════════════════════════════════

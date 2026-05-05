@@ -627,6 +627,60 @@ body {
     background: rgba(0, 0, 0, 0.2);
 }
 
+/* N.2 — Sidebar adaptativo */
+.nav-item--frequent {
+    background: linear-gradient(90deg, rgba(184, 150, 88, 0.10), transparent);
+    border-left: 2px solid var(--brand-gold, #b89658);
+    padding-left: 12px !important;
+}
+.nav-item--frequent::after {
+    content: '★';
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: var(--brand-gold, #b89658);
+    opacity: 0.7;
+}
+.nav-item--rare {
+    display: none;
+}
+body.sidebar-show-rare .nav-item--rare {
+    display: flex;
+    opacity: 0.55;
+}
+.nav-rare-toggle {
+    width: 100%;
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.10);
+    color: var(--text-tertiary, #888);
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    margin: 12px 12px 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+    width: calc(100% - 24px);
+}
+.nav-rare-toggle:hover {
+    background: rgba(184, 150, 88, 0.10);
+    color: var(--brand-gold, #b89658);
+}
+.nav-rare-toggle [data-lucide] {
+    width: 14px;
+    height: 14px;
+}
+.nav-rare-count {
+    margin-left: auto;
+    background: rgba(184, 150, 88, 0.20);
+    color: var(--brand-gold, #b89658);
+    font-size: 0.7rem;
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
 /* O.1 — KPIs ejecutivos */
 .kpis-grid {
     display: grid;

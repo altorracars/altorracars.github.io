@@ -221,7 +221,25 @@
 
     function reprogramarCita(docId, newDate) {
         if (!docId || !newDate || !window.db) return;
-        if (!confirm('¿Reprogramar esta cita para el ' + newDate + '?')) return;
+
+        // D.4 — verificación de overbooking + festivos
+        var warnings = '';
+        if (window.AltorraCalendarConfig) {
+            var citasExistentes = (AP.appointments || []).filter(function (a) {
+                return a._docId !== docId;
+            });
+            // Hora actual de la cita (mantenemos al reprogramar)
+            var cita = AP.appointments.find(function (a) { return a._docId === docId; });
+            var hora = cita && cita.hora ? cita.hora : null;
+            var check = window.AltorraCalendarConfig.checkOverbooking(newDate, hora, citasExistentes);
+            if (check.warnings.length > 0) {
+                warnings = '\n\n⚠️ Atención:\n' + check.warnings.map(function (w) { return '• ' + w; }).join('\n');
+                if (!check.ok) warnings += '\n\n¿Continuar de todos modos?';
+            }
+        }
+
+        if (!confirm('¿Reprogramar esta cita para el ' + newDate + '?' + warnings)) return;
+
         window.db.collection('solicitudes').doc(docId).update({
             fecha: newDate,
             estado: 'reprogramada',

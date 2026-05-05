@@ -214,23 +214,163 @@
         if (!text || !text.trim()) return;
         addMessage('user', text.trim());
 
+        // U.17 — Progressive profiling: extraer entities del mensaje
+        // y actualizar identidad de la sesión sin pedir aún
+        if (window.AltorraNER) {
+            try {
+                var ext = window.AltorraNER.extract(text);
+                if (ext.summary) {
+                    if (ext.summary.email && !session.email) {
+                        session.email = ext.summary.email;
+                        session.level = Math.max(session.level, 2); // L2 contactable
+                    }
+                    if (ext.summary.telefono && !session.telefono) {
+                        session.telefono = ext.summary.telefono;
+                        session.level = Math.max(session.level, 2);
+                    }
+                    saveSession(session);
+                }
+            } catch (e) {}
+        }
+
+        // U.16 — Crear soft contact al primer mensaje (incluso sin escalate)
+        // El lead queda en estado L0 inicialmente, se enriquece con cada turno
+        if (!_leadCreated && session.messages.filter(function (m) { return m.from === 'user'; }).length >= 1) {
+            createSoftContact();
+        }
+
         // Bot response (delayed para sentir natural)
         if (session.mode === 'bot') {
             setTimeout(function () {
                 var resp = generateBotResponse(text);
                 addMessage('bot', resp.text, { cta: resp.cta });
+                // U.17 — Después del bot response, decidir si pedir datos
+                setTimeout(function () { maybeAskForProfile(); }, 1200);
             }, 500 + Math.random() * 600);
+        } else if (_leadCreated) {
+            // Si está en modo live, actualizar el lead con cada nuevo mensaje
+            updateSoftContact();
         }
-        // Si está en modo live, el mensaje queda esperando al asesor
-        // (U.10/U.11 implementarán la bandeja admin que lee este chat)
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       U.17 — Progressive profiling
+       Pide datos del cliente en orden óptimo según los turnos del bot
+       L0 anónimo → L1 nombre → L2 email/telefono → L3 calificado
+       ═══════════════════════════════════════════════════════════ */
+    function maybeAskForProfile() {
+        // Solo en modo bot
+        if (session.mode !== 'bot') return;
+
+        var userTurns = session.messages.filter(function (m) { return m.from === 'user'; }).length;
+        var botTurns = session.messages.filter(function (m) { return m.from === 'bot'; }).length;
+        // No preguntar muy pronto (deja conversación fluir)
+        if (userTurns < 2) return;
+
+        // Si no tiene nombre y van 3+ turnos del usuario → pedir nombre
+        if (!session.nombre && userTurns >= 3 && !session._asked_nombre) {
+            session._asked_nombre = true;
+            saveSession(session);
+            setTimeout(function () {
+                addMessage('bot', 'Por cierto, ¿cómo te llamas? Así puedo personalizarte la atención. 😊');
+            }, 800);
+            return;
+        }
+
+        // Si tiene nombre pero no email/teléfono y 5+ turnos → pedir contacto
+        if (session.nombre && !session.email && !session.telefono &&
+            userTurns >= 5 && !session._asked_contact) {
+            session._asked_contact = true;
+            saveSession(session);
+            setTimeout(function () {
+                var firstName = session.nombre.split(' ')[0];
+                addMessage('bot', 'Genial ' + firstName + '. Para que un asesor te pueda contactar después, ¿me dejás tu correo o WhatsApp?');
+            }, 800);
+            return;
+        }
+
+        // Si tiene email/telefono pero no level >= 3 → calificar (preguntar presupuesto/categoría)
+        if ((session.email || session.telefono) && session.level < 3 &&
+            userTurns >= 7 && !session._asked_qualify) {
+            session._asked_qualify = true;
+            session.level = Math.max(session.level, 3);
+            saveSession(session);
+            setTimeout(function () {
+                addMessage('bot', '¿Tenés un rango de presupuesto o tipo de vehículo en mente? Así te muestro las mejores opciones.');
+            }, 800);
+            return;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       U.16 — Soft contact: crear lead L0 al primer mensaje
+       Sin esperar a escalate. El lead se enriquece con cada turno.
+       ═══════════════════════════════════════════════════════════ */
+    var _softContactRef = null;
+    var _leadCreated = false;
+    function createSoftContact() {
+        if (_leadCreated || !window.db) return;
+        _leadCreated = true;
+
+        var firstUserMsgs = session.messages.filter(function (m) { return m.from === 'user'; }).slice(0, 3);
+        var summary = firstUserMsgs.map(function (m) { return m.text; }).join(' / ');
+
+        var lead = {
+            kind: 'lead',
+            tipo: 'concierge_soft',
+            origen: 'concierge',
+            nombre: session.nombre || 'Concierge ' + session.sessionId.slice(-6),
+            email: session.email || null,
+            telefono: session.telefono || null,
+            comentarios: summary,
+            estado: 'pendiente',
+            userId: session.uid || null,
+            clientCategory: session.uid ? 'registered' : 'guest',
+            sessionId: session.sessionId,
+            sourcePage: session.sourcePage,
+            sourceVehicleId: session.sourceVehicleId,
+            level: session.level,
+            createdAt: new Date().toISOString(),
+            lastMessageAt: new Date().toISOString()
+        };
+        if (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta) {
+            try { lead = window.AltorraCommSchema.computeMeta(lead); } catch (e) {}
+        }
+
+        window.db.collection('solicitudes').add(lead).then(function (ref) {
+            _softContactRef = ref;
+            session.leadId = ref.id;
+            saveSession(session);
+        }).catch(function () {});
+    }
+
+    function updateSoftContact() {
+        if (!_softContactRef || !session.leadId || !window.db) return;
+        var update = {
+            level: session.level,
+            lastMessageAt: new Date().toISOString()
+        };
+        if (session.nombre) update.nombre = session.nombre;
+        if (session.email) update.email = session.email;
+        if (session.telefono) update.telefono = session.telefono;
+        // Acumular últimos 5 mensajes del usuario en comentarios
+        var lastUser = session.messages
+            .filter(function (m) { return m.from === 'user'; })
+            .slice(-5)
+            .map(function (m) { return m.text; }).join(' / ');
+        update.comentarios = lastUser;
+        window.db.collection('solicitudes').doc(session.leadId)
+            .update(update).catch(function () {});
     }
 
     function escalateToLive() {
         session.mode = 'live';
+        session.level = Math.max(session.level || 0, 4); // L4 — asignado a asesor
         saveSession(session);
         addMessage('bot', '✅ Conectándote con un asesor humano. En breve te respondemos por aquí o por WhatsApp.');
-        // Crear lead en CRM (U.16 ampliará esto)
-        createLeadInCRM();
+        // U.16 — Si no hay soft contact aún (raro), crear ahora
+        if (!_leadCreated) createSoftContact();
+        else updateSoftContact(); // bumpear level=4
         // Crear chat doc en Firestore + iniciar sync bidireccional (U.10)
         ensureFirestoreChatDoc();
     }
@@ -368,41 +508,8 @@
             .set(update, { merge: true }).catch(function () {});
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       CRM INTEGRATION — soft contact al primer mensaje
-       ═══════════════════════════════════════════════════════════ */
-    var _leadCreated = false;
-    function createLeadInCRM() {
-        if (_leadCreated) return;
-        if (!window.db) return;
-        _leadCreated = true;
-
-        var firstMessages = session.messages.filter(function (m) { return m.from === 'user'; }).slice(0, 5);
-        var summary = firstMessages.map(function (m) { return m.text; }).join(' / ');
-
-        var lead = {
-            kind: 'lead',
-            tipo: 'consulta_concierge',
-            origen: 'concierge',
-            nombre: session.nombre || 'Concierge ' + session.sessionId.slice(-6),
-            email: session.email || null,
-            telefono: session.telefono || null,
-            comentarios: summary,
-            estado: 'pendiente',
-            userId: session.uid || null,
-            clientCategory: session.uid ? 'registered' : 'guest',
-            sessionId: session.sessionId,
-            sourcePage: session.sourcePage,
-            sourceVehicleId: session.sourceVehicleId,
-            createdAt: new Date().toISOString()
-        };
-        // Apply schema meta if available (computeMeta agrega priority, slaDeadline, tags)
-        if (window.AltorraCommSchema && window.AltorraCommSchema.computeMeta) {
-            try { lead = window.AltorraCommSchema.computeMeta(lead); } catch (e) {}
-        }
-
-        window.db.collection('solicitudes').add(lead).catch(function () {});
-    }
+    // LEGACY alias — createLeadInCRM ahora delega a createSoftContact (U.16)
+    function createLeadInCRM() { return createSoftContact(); }
 
     /* ═══════════════════════════════════════════════════════════
        UI — botón flotante + panel

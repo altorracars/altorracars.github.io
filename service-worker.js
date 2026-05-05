@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505440000'; // C.4+C.8+D.7 (mega-plan v4) — Smart prioridad destacado + Validaciones inteligentes + AI Auto-Scheduling
+const CACHE_VERSION = 'v20260505450000'; // O.2+U.14+U.15 (mega-plan v4) — Funnel chart visual + WhatsApp handover refinado + Cleanup chats viejos
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

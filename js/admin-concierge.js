@@ -613,6 +613,11 @@
             summarizeCurrentChat();
             return;
         }
+        // U.15 — Cleanup botón
+        if (e.target && e.target.closest && e.target.closest('#cncCleanupOldBtn')) {
+            cleanupOldChats().catch(function () {});
+            return;
+        }
     });
 
     document.addEventListener('keydown', function (e) {
@@ -644,11 +649,64 @@
     }, 1000);
 
     /* ═══════════════════════════════════════════════════════════
+       U.15 — Cleanup de chats viejos
+       Borra chats con status='resolved' y lastMessageAt > 14 días.
+       Solo super_admin. Borra el doc + toda la subcolección messages.
+       ═══════════════════════════════════════════════════════════ */
+    function cleanupOldChats() {
+        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+            AP.toast('Solo super_admin puede limpiar chats', 'error');
+            return Promise.reject('not-allowed');
+        }
+        if (!window.db) return Promise.reject('no-db');
+        var cutoff = new Date(Date.now() - 14 * 86400000).toISOString();
+
+        return window.db.collection('conciergeChats')
+            .where('status', '==', 'resolved')
+            .where('lastMessageAt', '<', cutoff)
+            .get()
+            .then(function (snap) {
+                if (snap.empty) {
+                    AP.toast('No hay chats antiguos para limpiar.');
+                    return 0;
+                }
+                if (!confirm('Vas a eliminar ' + snap.size + ' chat' + (snap.size !== 1 ? 's' : '') +
+                    ' resueltos hace 14+ días. Esta acción no se puede deshacer. ¿Continuar?')) {
+                    return 0;
+                }
+                // Para cada chat, borrar subcolección messages primero (Firestore no
+                // tiene cascade). Por simplicidad, hacemos best-effort en serie.
+                var promises = [];
+                snap.forEach(function (doc) {
+                    promises.push(
+                        doc.ref.collection('messages').get().then(function (msgsSnap) {
+                            var batch = window.db.batch();
+                            msgsSnap.forEach(function (m) { batch.delete(m.ref); });
+                            batch.delete(doc.ref);
+                            return batch.commit();
+                        })
+                    );
+                });
+                return Promise.all(promises).then(function () {
+                    AP.toast(snap.size + ' chat' + (snap.size !== 1 ? 's' : '') + ' eliminado' + (snap.size !== 1 ? 's' : ''));
+                    if (window.AltorraEventBus) {
+                        window.AltorraEventBus.emit('concierge.cleanup', {
+                            count: snap.size,
+                            cutoffDays: 14
+                        }, { persist: true });
+                    }
+                    return snap.size;
+                });
+            });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        Public API
        ═══════════════════════════════════════════════════════════ */
     window.AltorraAdminConcierge = {
         refresh: startChatsListener,
         openChat: openChat,
-        stop: stopChatsListener
+        stop: stopChatsListener,
+        cleanupOldChats: cleanupOldChats // U.15
     };
 })();

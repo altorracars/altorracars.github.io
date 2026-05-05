@@ -1,18 +1,50 @@
 /**
- * ALTORRA CARS — Admin automation rules (MF6.1)
+ * ALTORRA CARS — Admin automation rules (MF6.1 + Mega-Plan v4 K.1)
  *
  * Predefined automation rules with admin-toggleable enable/disable.
- * Stored in config/automationRules. Evaluated client-side when
- * AP.appointments updates.
+ * Stored in config/automationRules. Evaluated client-side via two paths:
+ *
+ *   1. EventBus subscriptions (K.1) — REAL-TIME, the canonical path.
+ *      Subscribes to `comm.created`, `comm.estado-changed`, `vehicle.updated`
+ *      and runs matching rules. Fires immediately when an admin action
+ *      happens, no polling.
+ *
+ *   2. Periodic SLA loop — scheduled checks for time-based rules
+ *      (`sla_check`) that can't be event-driven.
+ *
+ * Event-trigger mapping:
+ *   comm_created          ← AltorraEventBus 'comm.created'
+ *   comm_status_change    ← AltorraEventBus 'comm.estado-changed'
+ *   vehicle_updated       ← AltorraEventBus 'vehicle.updated'
+ *   sla_check             ← timer (60s loop on super_admin sessions)
+ *
+ * Cycle protection (K.1):
+ *   - Per-event execution counter caps at MAX_RULES_PER_EVENT (10) to
+ *     prevent infinite loops where a rule's action triggers another event
+ *     that re-fires the rule.
+ *   - Replays from Activity Feed (`__replay: true`) are skipped — replays
+ *     are for debugging listeners visually, not for re-running automation.
  *
  * Future-proofed structure: rules have id, name, trigger, condition,
- * action descriptors so custom rules can be added in MF6.x.
+ * action descriptors so custom rules can be added in K.6 (visual builder).
  */
 (function () {
     'use strict';
     var AP = window.AP;
     if (!AP) return;
     var $ = AP.$;
+
+    // K.1 — cycle protection cap
+    var MAX_RULES_PER_EVENT = 10;
+    var _executionCount = 0;
+    var _executionEventId = null;
+
+    // K.1 — map EventBus types to legacy trigger names used in BUILT_IN_RULES
+    var BUS_TO_TRIGGER = {
+        'comm.created':         'comm_created',
+        'comm.estado-changed':  'comm_status_change',
+        'vehicle.updated':      'vehicle_updated'
+    };
 
     // ─── Built-in rule library ───────────────────────────────────
     var BUILT_IN_RULES = [
@@ -108,6 +140,28 @@
         return matches;
     }
 
+    /** K.3 — log each rule execution to Firestore for auditing
+     * Best-effort write to `automationLog/{auto_id}` — silent on failure */
+    function logExecution(match, outcome) {
+        if (!window.db) return;
+        try {
+            var entry = {
+                ruleId: match.rule.id,
+                ruleName: match.rule.name,
+                trigger: match.rule.trigger,
+                action: match.result.action,
+                reason: match.result.reason || '',
+                docId: (match.doc && match.doc._docId) || null,
+                docTitle: (match.doc && (match.doc.nombre || match.doc.marca || '')) || '',
+                outcome: outcome || 'applied',
+                timestamp: new Date(),
+                by: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
+                bySource: 'automation'
+            };
+            window.db.collection('automationLog').add(entry).catch(function () {});
+        } catch (e) {}
+    }
+
     function applyAction(match) {
         var doc = match.doc;
         var action = match.result.action;
@@ -122,7 +176,10 @@
                     assignedToName: sa.nombre || sa.email,
                     assignedAt: new Date().toISOString(),
                     automationRule: match.rule.id
-                }).catch(function () {});
+                }).then(function () { logExecution(match, 'applied'); })
+                  .catch(function () { logExecution(match, 'failed'); });
+            } else {
+                logExecution(match, 'skipped:no-super-admin');
             }
         } else if (action === 'notify_super_admin') {
             if (window.notifyCenter && window.notifyCenter.notify) {
@@ -133,6 +190,7 @@
                     entityRef: 'sla-breach:' + doc._docId,
                     priority: 'high'
                 });
+                logExecution(match, 'applied');
             }
         }
     }
@@ -144,6 +202,39 @@
             if (chg.type !== 'added') return;
             var d = Object.assign({ _docId: chg.doc.id }, chg.doc.data());
             evaluateRules('comm_created', d).forEach(applyAction);
+        });
+    }
+
+    /** K.1 — EventBus dispatcher with cycle protection */
+    function onBusEvent(event) {
+        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+        if (!event || !event.type) return;
+        // Skip replays — they exist to debug listeners visually, not to re-fire rules
+        if (event.payload && event.payload.__replay === true) return;
+
+        var triggerName = BUS_TO_TRIGGER[event.type];
+        if (!triggerName) return;
+
+        // Cycle protection: cap executions per source event
+        if (_executionEventId !== event.id) {
+            _executionEventId = event.id;
+            _executionCount = 0;
+        }
+        if (_executionCount >= MAX_RULES_PER_EVENT) {
+            console.warn('[Automation] Cycle cap reached for event', event.id, 'type', event.type);
+            return;
+        }
+
+        // Build a doc-shaped object the rules can evaluate
+        var doc = Object.assign({ _docId: (event.payload && event.payload.id) || null }, event.payload || {});
+        // For comm.estado-changed, the canonical estado is in payload.estado (I.4)
+        if (event.type === 'comm.estado-changed' && event.payload && event.payload.estado) {
+            doc.estado = event.payload.estado;
+        }
+
+        evaluateRules(triggerName, doc).forEach(function (m) {
+            _executionCount++;
+            applyAction(m);
         });
     }
 
@@ -182,6 +273,64 @@
         }).join('');
     }
 
+    // ─── K.3: Execution history viewer ──────────────────────────
+    function loadHistory() {
+        var listEl = document.getElementById('automationHistoryList');
+        if (!listEl || !window.db) return;
+        listEl.innerHTML = '<div class="table-empty">Cargando…</div>';
+        window.db.collection('automationLog')
+            .orderBy('timestamp', 'desc')
+            .limit(50)
+            .get()
+            .then(function (snap) {
+                if (snap.empty) {
+                    listEl.innerHTML = '<div class="table-empty">Sin ejecuciones aún.</div>';
+                    return;
+                }
+                var rows = [];
+                snap.forEach(function (d) {
+                    var x = d.data();
+                    var ts = x.timestamp;
+                    if (ts && typeof ts.toMillis === 'function') ts = new Date(ts.toMillis());
+                    else ts = new Date(ts);
+                    var when = ts.toLocaleString('es-CO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    var outcomeColor = x.outcome === 'applied' ? 'var(--status-success)' :
+                                       (x.outcome === 'failed' ? 'var(--status-danger)' : 'var(--text-tertiary)');
+                    rows.push(
+                        '<div class="automation-history-row">' +
+                            '<div class="automation-history-row-main">' +
+                                '<span class="automation-history-rule">' + (x.ruleName || x.ruleId || 'regla') + '</span>' +
+                                (x.docTitle ? '<span class="automation-history-doc"> · ' + x.docTitle + '</span>' : '') +
+                            '</div>' +
+                            '<div class="automation-history-row-meta">' +
+                                '<span style="color:' + outcomeColor + ';">' + (x.outcome || 'applied') + '</span>' +
+                                '<span> · ' + when + '</span>' +
+                                (x.action ? '<span> · ' + x.action + '</span>' : '') +
+                            '</div>' +
+                        '</div>'
+                    );
+                });
+                listEl.innerHTML = rows.join('');
+            })
+            .catch(function (err) {
+                listEl.innerHTML = '<div class="table-empty">Error: ' + (err.message || err) + '</div>';
+            });
+    }
+
+    // Refresh button
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.closest && e.target.closest('#automationHistoryRefresh')) {
+            loadHistory();
+        }
+    });
+
+    // Auto-load when admin opens the Automatización section
+    if (window.AltorraSections && window.AltorraSections.onChange) {
+        window.AltorraSections.onChange(function (section) {
+            if (section === 'automation') loadHistory();
+        });
+    }
+
     // Wire toggle changes
     document.addEventListener('change', function (e) {
         if (e.target && e.target.matches('input[data-rule-id]')) {
@@ -195,6 +344,17 @@
         }
     });
 
+    // K.1 — subscribe to EventBus once (idempotent guard)
+    var _busUnsub = null;
+    function subscribeToBus() {
+        if (_busUnsub) return;
+        if (!window.AltorraEventBus) return;
+        _busUnsub = window.AltorraEventBus.on('*', onBusEvent);
+    }
+    function unsubscribeFromBus() {
+        if (_busUnsub) { try { _busUnsub(); } catch (e) {} _busUnsub = null; }
+    }
+
     // Init when admin authenticates
     var attempts = 0;
     var int = setInterval(function () {
@@ -203,6 +363,7 @@
             loadRules().then(function () {
                 renderRulesUI();
                 startSlaCheckLoop();
+                subscribeToBus(); // K.1
             });
             clearInterval(int);
         } else if (attempts > 60) clearInterval(int);
@@ -216,6 +377,11 @@
         rules: BUILT_IN_RULES,
         isEnabled: isRuleEnabled,
         evaluate: evaluateRules,
-        renderUI: renderRulesUI
+        renderUI: renderRulesUI,
+        // K.1 — bus integration helpers (mainly for diagnostics)
+        _onBusEvent: onBusEvent,
+        _subscribeToBus: subscribeToBus,
+        _unsubscribeFromBus: unsubscribeFromBus,
+        _executionState: function () { return { count: _executionCount, eventId: _executionEventId, cap: MAX_RULES_PER_EVENT }; }
     };
 })();

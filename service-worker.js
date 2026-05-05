@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505260000'; // U.10+U.11 (mega-plan v4) — Concierge: bandeja admin + chat detail + sync Firestore bidireccional
+const CACHE_VERSION = 'v20260505270000'; // U.5+U.13 (mega-plan v4) — Knowledge Base CRUD + bot consume FAQs + conversation summarization para handover
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

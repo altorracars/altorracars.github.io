@@ -225,6 +225,21 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ========== KNOWLEDGE BASE (Bloque U.5 — FAQs del bot Concierge) ==========
+    // Admin (editor+) gestiona via UI. Cliente público lee para que el bot
+    // del Concierge consulte respuestas.
+    match /knowledgeBase/{kbId} {
+      allow read: if true; // público lee para el bot
+      allow create: if isEditorOrAbove();
+      // Editor+ puede modificar todo. Cualquier usuario autenticado puede
+      // tocar SOLO usageCount + lastUsedAt (analytics que el bot reporta).
+      allow update: if isEditorOrAbove() ||
+        (request.auth != null
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['usageCount', 'lastUsedAt']));
+      allow delete: if isSuperAdmin();
+    }
+
     // ========== EVENT BUS (I.1 / I.2 — admin Activity Feed) ==========
     match /events/{eventId} {
       // Authenticated users can read (Activity Feed shows them)

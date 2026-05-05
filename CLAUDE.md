@@ -6372,11 +6372,171 @@ match /conciergeChats/{sessionId} {
 - `firestore.rules` — colección `conciergeChats/{sid}/messages/{mid}`
 - `service-worker.js` + `js/cache-manager.js` — version bump v20260505260000
 
-**Pendiente de Bloque U** (los próximos sprints):
-- U.5 — Knowledge Base CRUD admin
-- U.6 — Embeddings + RAG
+### Microfase U.5+U.13 — Knowledge Base + Conversation summarization ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: sprint 3 del Bloque U. El bot del Concierge ahora aprende
+respuestas que el admin define sin tocar código (U.5), y el asesor puede
+generar resúmenes auto para handover entre asesores (U.13). U.6
+(embeddings RAG, modelo 25MB) deferido — el FAQ matching simple ya
+cubre la mayoría de casos sin el peso del modelo.
+
+#### U.5 — Knowledge Base CRUD admin
+
+**Schema `knowledgeBase/{kbId}`**:
+```js
+{
+    question: 'Cuál es el horario de atención',
+    answer: 'Atendemos lunes a sábado 8AM-6PM.',
+    keywords: ['horario', 'cuándo', 'abren'],
+    category: 'horarios',
+    enabled: true,
+    priority: 50,
+    usageCount: 12,
+    lastUsedAt: ISO,
+    createdAt, createdBy, updatedAt, updatedBy
+}
+```
+
+**Reglas Firestore** — diff-keys para que el bot incremente usageCount
+sin necesitar editor+:
+```
+match /knowledgeBase/{kbId} {
+  allow read: if true;                      // público lee para el bot
+  allow create: if isEditorOrAbove();
+  allow update: if isEditorOrAbove() ||
+    (request.auth != null
+      && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['usageCount', 'lastUsedAt']));
+  allow delete: if isSuperAdmin();
+}
+```
+
+**Lo que se creó**:
+
+##### `js/admin-kb.js` (~280 líneas)
+
+API pública `window.AltorraKB` (full CRUD + scoring):
+```js
+AltorraKB.findBest(query)  → entry o null  (scoring: keywords+question+priority)
+AltorraKB.list()           → array de entries
+AltorraKB.recordUsage(id)  → incrementa usageCount
+```
+
+UI admin:
+- Sección "Knowledge Base" en sidebar grupo Automatización (icono `book-open`)
+- Botón "Nueva FAQ" → form inline con question/answer/category/priority/keywords
+- Lista de FAQs con toggle activa/pausada por entry, edit + delete
+- Categorías: general, financiacion, inventario, politica, horarios, ubicacion, consignacion
+- Cada entry muestra: pregunta, respuesta, keywords como chips, contador usageCount
+
+##### `js/kb-client.js` (~80 líneas)
+
+Versión liviana SOLO read para páginas públicas. Cargada desde
+`components.js` junto al Concierge. Si admin-kb.js ya cargó (en admin.html),
+no se sobrescribe (`if (window.AltorraKB) return`).
+
+##### Hook en `concierge.js` `generateBotResponse()`
+
+Orden de prioridad ajustado:
+1. Sentiment muy negativo → escalate
+2. **AltorraKB.findBest(userMsg)** → respuesta del admin (NUEVO)
+3. FAQ hardcoded (fallback)
+4. NER detecta marca/modelo → ofrecer conectar
+5. Fallback genérico
+
+Cada vez que el bot usa una FAQ del KB, llama `recordUsage(kbId)` para
+analytics — el admin ve qué FAQs son más usadas.
+
+#### U.13 — Conversation summarization
+
+Botón "Resumen" en el header del chat detail del admin Concierge.
+Click genera modal con análisis extractivo:
+
+**Algoritmo**:
+1. Carga todos los mensajes del chat desde Firestore
+2. Para cada mensaje del cliente:
+   - `AltorraAI.sentiment(text)` → score
+   - `AltorraNER.extract(text)` → entities (marca, ciudad, precio, fecha, etc.)
+   - Importance score = `entityCount * 3 + |sentiment| * 2 + length/200`
+3. Agrega entities únicas por tipo (no duplica valores)
+4. Calcula sentiment promedio y label (positivo / negativo / neutral)
+5. Top 3 mensajes por importance score
+6. Render en modal centrado con backdrop
+
+**Modal contiene**:
+- **Cliente**: nombre, email, teléfono, vehículo origen
+- **Conversación**: total mensajes, cliente vs asesor, sentiment promedio
+- **Datos detectados**: chips por tipo de entity con valores
+- **Top 3 mensajes**: extractos con border-left dorado
+
+**Botón "Copiar al portapapeles"** genera versión texto plano lista
+para pegar en Slack / WhatsApp interno / handover entre asesores:
+```
+RESUMEN — Daniel Pérez
+Sessión: cnc_xyz
+Email: daniel@example.com
+Teléfono: +57320...
+Vehículo origen: #abc123
+
+Conversación: 14 mensajes · sentiment positivo 😊
+
+Datos detectados:
+  • marca: toyota
+  • ciudad: cartagena
+  • precio: $45000000
+
+Top mensajes del cliente:
+  #1. "Quiero un Toyota Hilux 2020 blanco..."
+  ...
+```
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Bot responde con FAQ vieja después de admin la pause | listener realtime mantiene `_entries` actualizado |
+| Anyone authenticated escribe answers fake | reglas restringen create/update a editor+ excepto usageCount |
+| Modal summary sin datos si AltorraAI/NER no cargaron | Guards `if (window.AltorraAI)` graceful, devuelve datos vacíos |
+| Top 3 mensajes son siempre los más largos sin sustancia | Importance combina entities + sentiment magnitude (no solo length) |
+| KB matching demasiado laxo (cualquier keyword dispara) | Threshold `bestScore >= 2` (necesita 1+ keyword fuerte o question match) |
+| usageCount overflow | Firestore `FieldValue.increment(1)` es atómico y server-side |
+| Race entre admin-kb y kb-client | `if (window.AltorraKB) return` previene doble registro |
+
+**Pasos de prueba**:
+1. Login admin → sidebar nueva sección "Knowledge Base"
+2. Click "Nueva FAQ" → form con question="cuándo abren", answer="Lun-Sáb 8AM-6PM",
+   keywords="horario,cuándo,abren,atención", category="horarios", priority=80
+3. Guardar → aparece en la lista con usageCount 0
+4. Página pública → abrir Concierge → escribir "cuándo abren?"
+5. Bot responde con la respuesta del admin (no la hardcoded)
+6. Refresh admin → usageCount = 1
+7. Toggle pausada → bot vuelve a usar FAQ hardcoded
+8. Cliente escala a vivo, intercambia varios mensajes
+9. Admin abre el chat → click "Resumen"
+10. Modal aparece con sentiment, entities detectadas, top 3 mensajes
+11. Click "Copiar al portapapeles" → texto pegable en cualquier app
+
+**Archivos creados/modificados**:
+- `js/admin-kb.js` — módulo nuevo CRUD (~280 líneas)
+- `js/kb-client.js` — módulo liviano para páginas públicas (~80 líneas)
+- `js/concierge.js` — hook a AltorraKB.findBest antes del FAQ hardcoded
+- `js/admin-concierge.js` — botón "Resumen" + función `summarizeCurrentChat`
+  + modal con extracción de entities/sentiment/top mensajes (~150 líneas)
+- `js/components.js` — carga `kb-client.js` en páginas públicas
+- `admin.html` — nav-item KB + sección sec-kb + script tag
+- `js/admin-section-router.js` — `kb` agregado al REGISTRY
+- `firestore.rules` — colección `knowledgeBase/` con regla diff-keys
+- `css/admin.css` — `.kb-*` y `.cnc-summary-*` (~140 líneas)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505270000
+
+> **DEPLOY MANUAL**: `firebase deploy --only firestore:rules` para
+> activar la regla nueva de `knowledgeBase/`.
+
+**Pendiente de Bloque U** (próximos sprints):
+- U.6 — Embeddings + RAG (Xenova/all-MiniLM-L6-v2 ~25MB lazy) — diferido
+  porque el FAQ matching ya cubre la mayoría de casos
 - U.7-U.9 — Intent classifier + response generator + auto-escalation
-- U.12-U.13 — Smart suggestions + summarization
+- U.12 — Smart suggestions para asesor
 - U.14-U.19 — WhatsApp handoff refinement, cleanup, CRM integration completa
 
 ---

@@ -272,6 +272,9 @@
                 <button class="nav-item" data-section="templates">
                     <i data-lucide="file-edit"></i><span>Plantillas</span>
                 </button>
+                <button class="nav-item" data-section="kb">
+                    <i data-lucide="book-open"></i><span>Knowledge Base</span>
+                </button>
             </div>
         </div>
 
@@ -915,6 +918,25 @@
                 <div class="automation-history-list" id="automationHistoryList">
                     <div class="table-empty">Sin ejecuciones aún.</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- U.5 (mega-plan v4) — Knowledge Base: FAQs editables que el bot consulta -->
+        <div id="sec-kb" class="section" data-workspace-color="orange">
+            <div class="page-header">
+                <div>
+                    <h1>Knowledge Base — FAQs del bot</h1>
+                    <p class="page-subtitle">Define las respuestas que el Concierge usará automáticamente. Cuando un cliente pregunta algo que coincide con keywords, el bot responde con tu respuesta.</p>
+                </div>
+                <div>
+                    <button class="alt-btn alt-btn--primary" id="kbAddBtn">
+                        <i data-lucide="plus"></i> Nueva FAQ
+                    </button>
+                </div>
+            </div>
+            <div id="kbForm" class="kb-form" style="display:none;"></div>
+            <div id="kbList" class="kb-list">
+                <div class="table-empty">Cargando…</div>
             </div>
         </div>
 
@@ -2304,6 +2326,7 @@
 <script src="js/admin-crm.js" defer></script>
 <script src="js/admin-predictive.js" defer></script>
 <script src="js/admin-concierge.js" defer></script>
+<script src="js/admin-kb.js" defer></script>
 <script src="js/admin-inbox.js" defer></script>
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

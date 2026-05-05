@@ -144,11 +144,20 @@
             }
         }
 
-        // 2. Intent — buscar en FAQ
+        // 2. U.5 — Knowledge Base del admin (más prioritario que FAQ hardcoded)
+        if (window.AltorraKB && window.AltorraKB.findBest) {
+            var kbEntry = window.AltorraKB.findBest(userMsg);
+            if (kbEntry) {
+                window.AltorraKB.recordUsage(kbEntry._id);
+                return { text: kbEntry.answer, kbId: kbEntry._id };
+            }
+        }
+
+        // 3. Intent — buscar en FAQ hardcoded (fallback)
         var faq = findFAQ(userMsg);
         if (faq) return { text: faq.text, cta: faq.cta || null };
 
-        // 3. NER — si menciona marca/modelo/precio, ofrecer conectar
+        // 4. NER — si menciona marca/modelo/precio, ofrecer conectar
         if (window.AltorraNER) {
             var ext = window.AltorraNER.extract(userMsg);
             if (ext.summary && (ext.summary.marca || ext.summary.precio)) {
@@ -163,7 +172,7 @@
             }
         }
 
-        // 4. Fallback genérico
+        // 5. Fallback genérico
         return {
             text: '👋 Estoy aquí para ayudarte con info del catálogo, financiación, citas y más. ¿Qué te gustaría saber? También puedo conectarte con un asesor.',
             cta: { label: 'Hablar con asesor', action: 'escalate' }

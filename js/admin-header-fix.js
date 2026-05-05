@@ -142,8 +142,12 @@
         }
 
         // Theme toggle (claro/oscuro)
+        // CRÍTICO: si tiene data-altorra-theme-toggle, theme-switcher.js
+        // ya bindeó cycleTheme directamente. NO bindeamos de nuevo —
+        // hacerlo causaría que cycle() corra 2 veces por click y el
+        // estado quede igual (el bug que veía el usuario).
         var themeBtn = document.getElementById('themeToggle');
-        if (themeBtn && !themeBtn._headerFixBound) {
+        if (themeBtn && !themeBtn._headerFixBound && !themeBtn.hasAttribute('data-altorra-theme-toggle')) {
             themeBtn._headerFixBound = true;
             themeBtn.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -159,11 +163,25 @@
                     try { localStorage.setItem('altorra-theme', next); } catch (e2) {}
                 }
             });
+        } else if (themeBtn && themeBtn.hasAttribute('data-altorra-theme-toggle') && !themeBtn._headerFixBound) {
+            // theme-switcher YA bindeó. Solo verificamos que AltorraTheme exista
+            // como red de seguridad. Si no existe (script no cargó), bindeamos
+            // fallback inline.
+            themeBtn._headerFixBound = true;
+            if (!window.AltorraTheme) {
+                themeBtn.addEventListener('click', function (e) {
+                    var html = document.documentElement;
+                    var current = html.getAttribute('data-theme') || 'dark';
+                    var next = current === 'light' ? 'dark' : 'light';
+                    html.setAttribute('data-theme', next);
+                    try { localStorage.setItem('altorra-theme', next); } catch (e2) {}
+                });
+            }
         }
 
-        // Contrast toggle (alto contraste)
+        // Contrast toggle (alto contraste) — mismo patrón anti-doble-bind
         var contrastBtn = document.getElementById('contrastToggle');
-        if (contrastBtn && !contrastBtn._headerFixBound) {
+        if (contrastBtn && !contrastBtn._headerFixBound && !contrastBtn.hasAttribute('data-altorra-contrast-toggle')) {
             contrastBtn._headerFixBound = true;
             contrastBtn.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -171,7 +189,6 @@
                 if (window.AltorraTheme && window.AltorraTheme.toggleHighContrast) {
                     window.AltorraTheme.toggleHighContrast();
                 } else {
-                    // Fallback: toggle data-theme high-contrast
                     var html = document.documentElement;
                     var current = html.getAttribute('data-theme');
                     if (current === 'high-contrast') {
@@ -181,6 +198,19 @@
                     }
                 }
             });
+        } else if (contrastBtn && contrastBtn.hasAttribute('data-altorra-contrast-toggle') && !contrastBtn._headerFixBound) {
+            contrastBtn._headerFixBound = true;
+            if (!window.AltorraTheme) {
+                contrastBtn.addEventListener('click', function (e) {
+                    var html = document.documentElement;
+                    var current = html.getAttribute('data-theme');
+                    if (current === 'high-contrast') {
+                        html.setAttribute('data-theme', 'dark');
+                    } else {
+                        html.setAttribute('data-theme', 'high-contrast');
+                    }
+                });
+            }
         }
 
         // Notification bell — buscamos el button DENTRO del slot

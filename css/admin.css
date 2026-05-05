@@ -966,8 +966,9 @@ select:focus-visible {
 }
 
 /* HEADER FIX — los botones del header SIEMPRE deben ser clickables.
- * position: relative + z-index alto garantiza que ningún overlay
- * inferior los pueda tapar. */
+ * position: relative + z-index 99999 garantiza que estén POR ENCIMA
+ * de cualquier overlay huérfano (los cuales suelen tener z-index 9000+).
+ * Sin esto, overlays invisibles capturan clicks intermitentemente. */
 #activityFeedTrigger,
 #themeToggle,
 #contrastToggle,
@@ -976,13 +977,18 @@ select:focus-visible {
 #altorra-voice-btn,
 #pwaInstallBtn {
     position: relative !important;
-    z-index: 100 !important;
+    z-index: 99999 !important;
     pointer-events: auto !important;
 }
 /* También el padre directo (page-header del dashboard) */
 .page-header > div[style*="display:flex"] {
     position: relative;
-    z-index: 50;
+    z-index: 99998;
+}
+/* El header completo también debe estar por encima de overlays */
+.page-header {
+    position: relative;
+    z-index: 99997;
 }
 
 /* SAFETY GLOBAL — overlays huérfanos no bloquean clicks del header.

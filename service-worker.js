@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505310000'; // O.6 (mega-plan v4) — Insights automáticos en dashboard combinando R+J+CRM+KB en alertas accionables
+const CACHE_VERSION = 'v20260505320000'; // G.4 (mega-plan v4) — PWA installable: manifest-admin.json + install button + standalone detection
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -627,6 +627,25 @@ body {
     background: rgba(0, 0, 0, 0.2);
 }
 
+/* G.4 — PWA install button en header */
+.pwa-install-btn {
+    background: rgba(184, 150, 88, 0.12);
+    border: 1px solid rgba(184, 150, 88, 0.30);
+    color: var(--brand-gold, #b89658);
+    margin-right: 8px;
+}
+.pwa-install-btn:hover {
+    background: rgba(184, 150, 88, 0.22);
+    color: var(--brand-gold, #b89658);
+}
+.pwa-install-btn [data-lucide] {
+    width: 14px;
+    height: 14px;
+}
+@media (max-width: 768px) {
+    .pwa-install-label { display: none; }
+}
+
 /* O.6 — Insights automáticos */
 .insights-card {
     margin-top: 16px;

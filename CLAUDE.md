@@ -6735,6 +6735,98 @@ cursor al final → asesor puede editar antes de enviar.
 - `css/admin.css` — `.cnc-smart-*` (~60 líneas)
 - `service-worker.js` + `js/cache-manager.js` — version bump v20260505290000
 
+### Microfase L.1 — Comandos de voz globales ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: dar al admin la opción de navegar y ejecutar acciones
+con la voz, usando Web Speech API nativa del navegador. Cero costo,
+sin modelos descargados, browser-native. Patrón Stripe/Linear command
+palette pero por voz.
+
+**Activación**:
+- **Atajo `Espacio + V`**: presionar Espacio + tecla V activa el modo
+  escucha. Si el foco está en input/textarea, se ignora (no interrumpe
+  escritura del admin).
+- **FAB**: pequeño botón `mic` floating bottom-left (44px) para
+  activar/desactivar manualmente.
+- **`Esc`** cancela mientras escucha.
+
+**Comandos soportados** (parser por keywords + integración con NER J.2):
+
+| Patrón | Ejemplo | Acción |
+|---|---|---|
+| `ir a / abrir [sección]` | "ir a vehículos" | `AltorraSections.go('vehicles')` |
+| `buscar [texto]` | "buscar Toyota Hilux" | Fill primer search input visible |
+| `nuevo vehículo / nueva FAQ` | "nuevo vehículo" | Click `quickNewVehicle` o `kbAddBtn` |
+| `cerrar sesión / salir` | "cerrar sesión" | Click `logoutBtn` con confirm |
+| `calendario hoy/siguiente/anterior` | "calendario hoy" | Navega + click toolbar |
+| Texto libre con marca/precio (NER) | "mazda cx-5 80 millones" | Va a vehicles + autofill search |
+
+**Section aliases** (~30 entradas humanas → keys):
+- "inicio/dashboard" → `dashboard`
+- "vehículos/autos/carros/inventario" → `vehicles`
+- "comunicaciones/bandeja/citas" → `appointments`
+- "concierge/chats" → `concierge`
+- "calendario/agenda" → `calendar`
+- "knowledge base/FAQs" → `kb`
+- "usuarios" → `users`
+- etc.
+
+**Overlay visual**: cuando escucha, oscurece la pantalla con
+`backdrop-filter: blur(8px)` y muestra una card centrada con:
+- Icono mic dorado pulsante (animation `voicePulse` 1.4s glow ring)
+- Status: "Escuchando…" → "Ejecutando…"
+- Transcript en vivo (interim results)
+- Hint de teclado: `Espacio+V` para ejecutar, `Esc` para cancelar
+
+**Idioma**: `lang = 'es-CO'` (español Colombia). Reconocimiento mediano
+para acentos colombianos.
+
+**Soporte**:
+- ✅ Chrome/Chromium (desktop y Android)
+- ✅ Edge
+- ✅ Safari iOS 14+
+- ❌ Firefox (Web Speech no habilitado por default)
+- Si no soportado, el módulo loguea info y NO monta UI (degrada graceful)
+
+**EventBus integration**: cada comando emite `voice.command` con
+`{transcript, command, executed}` para Activity Feed + workflows futuros.
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Atajo Espacio+V interrumpe escritura | Ignora si activeElement es INPUT/TEXTAREA |
+| Reconocimiento empieza pero permission denegado | onerror handler + toast informativo |
+| Comando no reconocido → admin frustrado | Fallback NER detecta marca/precio → search en inventario |
+| Tab cerrada con recognition activo | onend handler + cleanup |
+| Multiple instancias del recognition | `_isListening` flag |
+| FAB choca con Concierge widget público | FAB en bottom-left vs Concierge bottom-right (panels separados) |
+| Espacio en otros contextos rompe app | Guard contra inputs + e.preventDefault solo cuando V se presiona |
+
+**Pasos de prueba** (en Chrome/Edge):
+1. Login admin
+2. Ver FAB del mic en esquina inferior izquierda
+3. Click → permite el browser pedir mic permission (primera vez)
+4. Decir "ir a vehículos" → navega a Vehículos
+5. Decir "buscar Toyota" → fills search input + filtra
+6. Decir "nuevo vehículo" → abre modal de creación
+7. Decir "calendario siguiente" → va a Calendario y pasa al mes próximo
+8. Decir "cerrar sesión" → confirm dialog y logout
+9. Mantener Espacio+V presionado → mismo flujo sin click
+10. Esc cancela en cualquier momento
+
+**Archivos creados/modificados**:
+- `js/admin-voice.js` — módulo nuevo (~340 líneas)
+- `admin.html` — script tag defer
+- `css/admin.css` — `.altorra-voice-*` + overlay + FAB + animation
+  voicePulse (~110 líneas)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505300000
+
+**Pendientes Bloque L** (próximos sprints):
+- L.2 — Notas dictadas: botón micrófono en cualquier `<textarea>`
+- L.3 — OCR de placas vía cámara (requiere Tesseract.js lazy ~5MB)
+- L.4 — OCR de cédula del cliente
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

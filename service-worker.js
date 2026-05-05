@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505290000'; // U.12 (mega-plan v4) — Smart Suggestions para asesor: 3 respuestas auto-generadas por contexto (sentiment + NER + KB)
+const CACHE_VERSION = 'v20260505300000'; // L.1 (mega-plan v4) — Comandos de voz globales: Web Speech API + parser + 6 tipos de comando + overlay con waveform
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

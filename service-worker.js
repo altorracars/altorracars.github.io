@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505500000'; // FIX header-buttons round 3 — toggleTheme ReferenceError + safety CSS más fuerte + cleanup overlays 3 pasadas
+const CACHE_VERSION = 'v20260505510000'; // FIX header round 4 — bell panel ya no se oculta + auditoría código muerto (eliminados whatsapp-widget + ai-assistant)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

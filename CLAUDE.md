@@ -6074,6 +6074,311 @@ auto-suggest en vehicle.created, y dos UIs de consumo (tab Red + buscador
 semántico). Listo para que **Bloque U (Concierge)** lo use al recomendar
 vehículos al cliente en el chat.
 
+### Microfase U.1+U.2+U.3+U.4 — Concierge Unificado: arranque del bloque U ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: primer sprint del Bloque U, la **estrella del plan**.
+Reemplaza los 2 widgets actuales (`whatsapp-widget.js` + `ai-assistant.js`)
+con UN solo Concierge inteligente que tiene 3 modos seamless: 🤖 bot
+AI 24/7, 👨 asesor en vivo, 📲 WhatsApp gateway. Captura todo lead
+progresivamente al CRM.
+
+**Decisión de diseño**: el plan original tenía 19 microfases en U.
+Las shipeo en sprints de 4-5 cada uno para mantener PR-able size.
+Este primer sprint cubre:
+- **U.1**: Design system del widget (CSS dorado con animaciones)
+- **U.2**: Schema unificado de mensajes (`localStorage` + `sessionId`)
+- **U.3**: Migración de los widgets legacy (handover preservando wa.me)
+- **U.4**: Frontend `concierge.js` que reemplaza `whatsapp-widget.js` + `ai-assistant.js`
+
+**Lo que se creó**:
+
+#### `js/concierge.js` — singleton
+
+API pública `window.AltorraConcierge`:
+```js
+AltorraConcierge.open()        → abrir widget
+AltorraConcierge.close()       → cerrar
+AltorraConcierge.send(text)    → enviar mensaje (programático)
+AltorraConcierge.session()     → estado actual (snapshot)
+```
+
+**Estado de sesión** persistido en `localStorage.altorra_concierge_session`:
+- `sessionId` único por cliente (`cnc_<timestamp>_<rand>`)
+- `mode`: `'bot' | 'live' | 'wa_handed_over'`
+- `messages[]`: array de `{from, text, timestamp, cta}`
+- `uid, email, nombre, telefono`: identidad (rellena al loguearse)
+- `level`: 0..5 (progressive profiling — U.17)
+- `sourcePage, sourceVehicleId`: tracking del origen
+
+**Flujo bot**:
+1. Cliente escribe → `addMessage('user', text)`
+2. Después de 500-1100ms (sentir natural) → `generateBotResponse(text)`:
+   - Primero sentiment check via J.1: si muy negativo, escala
+   - FAQ matching (6 entradas: financiación, vender auto, catálogo,
+     ubicación, horario, agendar cita)
+   - Si NER (J.2) detecta marca/modelo/precio → ofrece conectar
+   - Fallback: oferta de hablar con asesor
+
+**Modo live**:
+- `escalateToLive()` cambia `mode='live'`, agrega mensaje confirmando
+- Crea lead en `solicitudes/` con `kind:'lead'`, `origen:'concierge'`,
+  `comentarios` con resumen de los primeros 5 mensajes del cliente
+- Aplica `AltorraCommSchema.computeMeta()` para inferir priority/SLA/tags
+  (heredado del schema de Bloque MF1.x)
+
+**WhatsApp handover**:
+- `handoverToWhatsApp()` construye un mensaje resumen con ticket +
+  identidad + último contexto, abre `wa.me/+573235016747?text=...`
+- Marca `mode='wa_handed_over'` para que el admin vea el handoff
+
+**Auth hook**:
+- Listener a `auth.onAuthStateChanged`: si el cliente se loguea,
+  copia `uid`/`email`/`displayName` a la sesión y bumpea `level: 0 → 2`
+  (L2 contactable). Identity merge completo en U.18.
+
+**Quick actions** (botones arriba del chat):
+- "👨 Asesor en vivo" → `escalateToLive()`
+- "📲 WhatsApp" → `handoverToWhatsApp()`
+
+**CTAs por mensaje del bot** (botón opcional dentro de la burbuja):
+- `goto-simulador` → simulador-credito.html
+- `goto-busqueda` → busqueda.html
+- `open-modal-vende` → modal Vende tu Auto
+- `open-modal-financiacion` → modal Financiación
+- `open-wa` → handover WhatsApp
+- `escalate` → modo live
+
+#### `css/concierge.css` — design system del widget
+
+- **FAB botón flotante** (60×60px, dorado con gradiente, animación pulse
+  3s loop, hover scale 1.08 + lift). Bottom-right en desktop, bottom
+  con safe-area en mobile.
+- **Panel deslizable** (380×560px desktop / full-width mobile):
+  - Header con avatar + título + status text + close X
+  - Quick actions row con 2 botones
+  - Messages area scrolleable con burbujas estilo iMessage
+  - Input + send button con glow dorado al focus
+- **Burbujas tipadas**:
+  - `.cnc-bot-bubble` — beige tenue con borde inferior izq cuadrado
+  - `.cnc-asesor-bubble` — verde con border-left cuando responde asesor
+  - `.cnc-user-bubble` — gradiente dorado oscuro alineada a la derecha
+- **Welcome bubble** — borde discontinuo dorado, mensaje inicial
+- **Animations**:
+  - `cncMsgIn` — fade-up 280ms al aparecer cada mensaje
+  - `cncPulse` — pulse exterior del FAB (rojo glow 3s loop)
+  - Panel open: opacity + scale + translateY con cubic-bezier "snap"
+- **prefers-reduced-motion**: animaciones desactivadas, transition lineal
+
+#### Reemplazo en `js/components.js`
+
+Sección `loadAuthSystem()`:
+- ❌ Eliminada: carga de `js/whatsapp-widget.js` y `js/ai-assistant.js`
+- ✅ Agregada: carga de `css/concierge.css`, `js/concierge.js`,
+  `js/ai/engine.js`, `js/ai/ner.js`, `js/comm-schema.js` (en orden, defer)
+
+El Concierge en su `init()` además detecta y remueve cualquier elemento
+DOM residual de los widgets legacy (`.whatsapp-widget-fab` y
+`.ai-assistant-fab`) por si alguna página antigua los inyectó manualmente.
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Widget legacy + Concierge ambos visibles | `init()` busca y remueve DOMs legacy |
+| Lead duplicado al escalar varias veces | Flag `_leadCreated` previene duplicados en una sesión |
+| Sesión perdida al recargar la página | localStorage persiste todo el state |
+| Bot responde antes de que el sentiment carga | Guard `if (window.AltorraAI)` antes de usarlo |
+| Welcome aparece después de mensajes guardados (race) | renderMessages chequea `messages.length === 0` para mostrar welcome |
+| Send vacío | Trim + validación antes de addMessage |
+| Sourcing del vehículo en páginas generadas | Lee `window.PRERENDERED_VEHICLE_ID` del meta inyectado en el HTML |
+| Mobile keyboard tapando input | Layout flex permite que el panel se acomode al viewport |
+| Prefers-reduced-motion ignorado | Media query desactiva animaciones |
+| Re-cargar el widget en cada navegación | `if (document.querySelector('script[src*="concierge.js"]'))` skip |
+
+**Pasos de prueba**:
+1. Abrir cualquier página pública (index, busqueda, detalle-vehiculo)
+2. Ver el botón dorado pulsante en bottom-right
+3. Click → panel desliza con animación
+4. Mensaje welcome aparece
+5. Escribir "quiero financiar un Mazda CX-5" → bot responde con FAQ
+   de financiación + CTA "Ir al simulador"
+6. Click "Asesor en vivo" → status cambia a "Asesor en vivo · respondemos
+   pronto", se crea lead en Firestore `solicitudes/`
+7. Verificar Firestore: doc creado con `kind:'lead'`, `origen:'concierge'`,
+   `sessionId` único, `comentarios` con resumen
+8. Click "WhatsApp" → abre wa.me con mensaje pre-rellenado incluyendo
+   ticket # y resumen
+9. Recargar la página → mensajes anteriores siguen ahí (localStorage)
+10. Loguearse → siguiente apertura del panel: la sesión tiene `uid`,
+    `email`, `nombre` populated
+11. Mobile: panel ocupa pantalla completa con safe-area correcta
+
+**Pendiente del Bloque U** (próximos sprints):
+- U.5 — Knowledge Base CRUD admin (vehículos auto-sync, FAQs)
+- U.6 — Embeddings + RAG (Xenova/all-MiniLM-L6-v2 lazy ~25MB)
+- U.7 — Intent classifier + NER per-turn
+- U.8 — Response generator con personalidad Altorra
+- U.9 — Sentiment + auto-escalation con threshold
+- U.10 — Bandeja admin Concierge (lista realtime de conversaciones)
+- U.11 — Chat detail admin estilo WhatsApp
+- U.12 — Smart suggestions para asesor (3 respuestas sugeridas)
+- U.13 — Conversation summarization
+- U.14 — WhatsApp handover refinado con contexto completo
+- U.15 — Cleanup de chats viejos (>2 semanas)
+- U.16 — Soft contact a CRM al primer mensaje
+- U.17 — Progressive profiling completo (L0→L5)
+- U.18 — Identity merge cuando guest se registra con email matching
+- U.19 — Marketing opt-in granular + GDPR
+
+**Archivos creados/modificados**:
+- `js/concierge.js` — módulo nuevo (~470 líneas)
+- `css/concierge.css` — stylesheet nuevo (~250 líneas)
+- `js/components.js` — reemplazada carga de widgets legacy por Concierge
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505250000
+
+**Archivos legacy preservados** (transitoriamente, 2 semanas):
+- `js/whatsapp-widget.js` — ya NO se carga, Concierge lo cubre
+- `js/ai-assistant.js` — ya NO se carga, Concierge lo cubre
+- `css/whatsapp-widget.css` y `css/ai-assistant.css` (si existen) —
+  no referenciados, eventual cleanup en U.15
+
+### Microfase U.10+U.11 — Concierge bandeja admin + chat detail ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: dar al asesor humano la UI para ver y responder las
+conversaciones que escalaron al modo `live`. Sprint 2 del Bloque U.
+
+**Lo que se creó**:
+
+#### `js/admin-concierge.js` — bandeja admin (~280 líneas)
+
+API pública `window.AltorraAdminConcierge`:
+```js
+AltorraAdminConcierge.refresh()           → recargar lista
+AltorraAdminConcierge.openChat(sessionId) → abrir chat detail
+```
+
+**Listener realtime** sobre `conciergeChats/`:
+- Query `orderBy(lastMessageAt, 'desc').limit(50)`
+- Solo activo para `editor+` (RBAC)
+- Auto-arranque cuando admin entra a la sección "concierge" o cuando
+  el panel admin se carga (para que el badge de unread funcione globalmente)
+
+**Renderizado lista**: cada item con avatar (iniciales), nombre, mode
+icon (🤖 bot / 👨 live / 📲 wa), snippet del último mensaje, tiempo
+relativo, badge de unread si aplica.
+
+**Click en un chat**:
+- Marca leído (`unreadByAdmin: 0`)
+- Cancela listener previo de mensajes
+- Inicia listener `messages/` ordenado por timestamp
+- Renderiza chat detail con burbujas (cliente/asesor/bot) + meta
+  (email, teléfono, vehículo origen)
+
+**Quick replies** en footer del chat detail:
+- "👋 Saludo" — template "Hola, soy [tu nombre], asesor..."
+- "📋 Info vehículo" — template para enviar info
+- "📅 Agendar" — template para invitar a visita
+- "📲 A WhatsApp" — template para handoff
+
+**Send asesor message**:
+- Crea doc en `conciergeChats/<sid>/messages/` con `from:'asesor'`,
+  `asesorUid`, `asesorNombre` (del perfil admin)
+- Update parent doc con `lastMessage`, `lastMessageAt`, `unreadByUser` + 1
+- El listener del cliente (en `concierge.js`) recibe el mensaje
+  realtime y lo muestra al cliente
+
+**Marcar resuelto**:
+- Confirmación + `status: 'resolved'`, `resolvedAt`, `resolvedBy`
+
+#### Sincronización bidireccional en `js/concierge.js`
+
+Cuando el cliente clica "Asesor en vivo":
+1. `escalateToLive()` llama `ensureFirestoreChatDoc()`
+2. Crea doc en `conciergeChats/<sessionId>` con identidad + sourcePage
+3. Sube todos los mensajes existentes (incluyendo welcome del bot)
+4. Inicia `onSnapshot` de la subcolección `messages/` filtrado por
+   `from === 'asesor'`
+5. Cada nuevo mensaje del asesor se inserta en `session.messages` y
+   re-renderiza el panel del cliente (con `unreadByUser` reseteado)
+
+`syncMessageToFirestore(msg)`:
+- Crea doc en subcolección + actualiza parent doc
+- `unreadByAdmin += 1` cuando el cliente escribe
+- `lastMessage` truncado a 80 chars
+
+**Reglas Firestore** (`firestore.rules`):
+```
+match /conciergeChats/{sessionId} {
+  allow read: editor+ OR auth.uid == resource.userId
+  allow create: auth != null AND (userId == null OR userId == auth.uid)
+  allow update: editor+ OR auth.uid == resource.userId
+  allow delete: super_admin
+
+  match /messages/{msgId} {
+    allow read: editor+ OR matches parent owner
+    allow create: auth != null AND (
+      from in ['user', 'bot'] OR
+      (from == 'asesor' AND editor+)
+    )
+    allow delete: super_admin
+  }
+}
+```
+
+> **DEPLOY MANUAL**: `firebase deploy --only firestore:rules` para
+> activar la nueva colección.
+
+**UI sidebar** (admin.html):
+- Nuevo nav-item "Concierge" en grupo Comunicaciones (icono `bot`)
+- Badge de unread chats actualizado realtime
+- Sección `sec-concierge` con layout grid 2-cols (lista + detail)
+- Mobile: single-column con lista colapsable
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Eco entre cliente y admin (mismo mensaje 2 veces) | Cliente no procesa `from:'user'` o `'bot'` que ya tiene; admin no procesa `from:'asesor'` que es propio |
+| Listener de chats activo cuando admin no es editor+ | RBAC check antes de `onSnapshot` |
+| Permission-denied al cerrar sesión | Error callback chequea `auth.currentUser`, suprime |
+| Mensajes duplicados al re-conectar | Set `_lastSyncedMsgIds[id]` dedup |
+| Multiple admin tabs envían mismo reply | Cada doc tiene ID único auto-generado por Firestore |
+| Cliente con `userId: null` (anónimo) no puede leer su propio chat | Reglas permiten lectura si `userId == null` (solo el que conoce el sessionId puede acceder) |
+| sessionId duplicado entre clientes | localStorage genera un ID único `cnc_<ts>_<rand>` por cliente |
+| Conversaciones acumulándose forever | Marcar resuelto cierra el chat (futuro: cleanup en U.15) |
+| Asesor escribe sin estar logueado | Reglas exigen `editor+` para `from:'asesor'` |
+| RACE: chat doc aún no creado pero cliente envía mensaje | `addMessage` sólo sincroniza si `_chatDocCreated === true` |
+
+**Pasos de prueba**:
+1. Cliente público abre Concierge → "Asesor en vivo"
+2. Verificar Firestore: doc creado en `conciergeChats/<sessionId>` con
+   subcolección `messages/`
+3. Login admin → sidebar muestra item "Concierge" con badge 1
+4. Click "Concierge" → lista con la conversación
+5. Click en la conversación → chat detail con todos los mensajes
+6. Click una quick reply → texto pre-cargado en el input
+7. Escribir respuesta y enviar → cliente la recibe en tiempo real
+8. Cliente escribe respuesta → admin la ve aparecer
+9. Click "Marcar resuelto" → status: 'resolved' en Firestore
+10. Multi-tab: abrir admin en 2 pestañas, ambas reciben los nuevos
+    mensajes simultáneamente
+
+**Archivos creados/modificados**:
+- `js/admin-concierge.js` — módulo nuevo (~280 líneas)
+- `js/concierge.js` — añadido bloque de sync Firestore (~80 líneas)
+- `admin.html` — nav-item + sección concierge + script tag
+- `js/admin-section-router.js` — `concierge` agregado al REGISTRY
+- `css/admin.css` — `.cnc-admin-*` (~190 líneas)
+- `firestore.rules` — colección `conciergeChats/{sid}/messages/{mid}`
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505260000
+
+**Pendiente de Bloque U** (los próximos sprints):
+- U.5 — Knowledge Base CRUD admin
+- U.6 — Embeddings + RAG
+- U.7-U.9 — Intent classifier + response generator + auto-escalation
+- U.12-U.13 — Smart suggestions + summarization
+- U.14-U.19 — WhatsApp handoff refinement, cleanup, CRM integration completa
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

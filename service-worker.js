@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505240000'; // Q.1+Q.2+Q.3+Q.4 (mega-plan v4) — Knowledge Graph in-memory + tab Red en CRM 360° + búsqueda semántica + auto-match en vehicle.created
+const CACHE_VERSION = 'v20260505260000'; // U.10+U.11 (mega-plan v4) — Concierge: bandeja admin + chat detail + sync Firestore bidireccional
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

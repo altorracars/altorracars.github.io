@@ -236,6 +236,49 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ========== CONCIERGE CHATS (Bloque U — chat unificado bot/live) ==========
+    // Cada cliente tiene su propia conversación identificada por sessionId.
+    // El cliente puede leer/escribir su propio chat. Los admins (editor+) leen
+    // y responden todos. La regla de anti-impersonation requiere que el
+    // userId del doc matchee el auth.uid si está seteado.
+    match /conciergeChats/{sessionId} {
+      allow read: if isEditorOrAbove() ||
+        (request.auth != null && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.userId == null
+        ));
+      allow create: if request.auth != null && (
+        !('userId' in request.resource.data) ||
+        request.resource.data.userId == null ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isEditorOrAbove() ||
+        (request.auth != null && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.userId == null
+        ));
+      allow delete: if isSuperAdmin();
+
+      // Subcolección de mensajes — cada turno del bot/asesor/cliente
+      match /messages/{msgId} {
+        allow read: if isEditorOrAbove() ||
+          (request.auth != null && (
+            get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.userId == request.auth.uid ||
+            get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.userId == null
+          ));
+        // Cualquiera autenticado (cliente o asesor) puede escribir mensajes,
+        // pero el campo `from` debe ser coherente con su rol:
+        //   from: 'user' o 'bot' → cualquiera (cliente escribe)
+        //   from: 'asesor'       → solo isEditorOrAbove
+        allow create: if request.auth != null && (
+          request.resource.data.from in ['user', 'bot'] ||
+          (request.resource.data.from == 'asesor' && isEditorOrAbove())
+        );
+        // Mensajes son inmutables (historial limpio)
+        allow delete: if isSuperAdmin();
+      }
+    }
+
     // ========== CONFIG ==========
     match /config/{docId} {
       allow read: if true;

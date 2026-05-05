@@ -180,6 +180,9 @@
                     '</div>' +
                 '</div>' +
                 '<div class="cnc-admin-detail-actions">' +
+                    '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminSummarize" data-tooltip="Generar resumen para handover">' +
+                        '<i data-lucide="file-text"></i> Resumen' +
+                    '</button>' +
                     '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminCloseChat" data-tooltip="Cerrar chat">' +
                         '<i data-lucide="check"></i> Marcar resuelto' +
                     '</button>' +
@@ -245,6 +248,174 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       U.13 — Conversation summarization (extractivo)
+       Genera un resumen útil para handover a otro asesor:
+       - Datos de identidad detectados (NER)
+       - Sentiment promedio del cliente
+       - Top 3 mensajes del cliente con mayor "señal" (entities + length)
+       - Acciones sugeridas
+       ═══════════════════════════════════════════════════════════ */
+    function summarizeCurrentChat() {
+        if (!_activeSessionId || !window.db) return;
+        var chat = _chats.find(function (c) { return c._docId === _activeSessionId; });
+        if (!chat) return;
+
+        // Cargar todos los mensajes del chat
+        window.db.collection('conciergeChats').doc(_activeSessionId)
+            .collection('messages').orderBy('timestamp', 'asc').get()
+            .then(function (snap) {
+                var messages = [];
+                snap.forEach(function (doc) { messages.push(doc.data()); });
+                renderSummary(chat, messages);
+            })
+            .catch(function (err) {
+                AP.toast('Error al generar resumen: ' + err.message, 'error');
+            });
+    }
+
+    function renderSummary(chat, messages) {
+        var userMsgs = messages.filter(function (m) { return m.from === 'user'; });
+        var asesorMsgs = messages.filter(function (m) { return m.from === 'asesor'; });
+
+        // Análisis con AltorraAI / AltorraNER
+        var allEntities = {};
+        var sentimentScores = [];
+        var scored = userMsgs.map(function (m) {
+            var sigs = { entityCount: 0, sentiment: 0, length: m.text.length };
+            if (window.AltorraAI) {
+                var s = window.AltorraAI.sentiment(m.text);
+                if (s) { sigs.sentiment = s.score; sentimentScores.push(s.score); }
+            }
+            if (window.AltorraNER) {
+                var ext = window.AltorraNER.extract(m.text);
+                sigs.entityCount = ext.entities.length;
+                ext.entities.forEach(function (e) {
+                    if (!allEntities[e.type]) allEntities[e.type] = [];
+                    if (allEntities[e.type].indexOf(e.value) === -1) {
+                        allEntities[e.type].push(e.value);
+                    }
+                });
+            }
+            // Score de "importancia" = entities + magnitud sentiment + length normalizado
+            var importance = sigs.entityCount * 3 + Math.abs(sigs.sentiment) * 2 + Math.min(1, sigs.length / 200);
+            return { msg: m, importance: importance, sigs: sigs };
+        });
+        scored.sort(function (a, b) { return b.importance - a.importance; });
+        var top3 = scored.slice(0, 3);
+
+        var avgSentiment = sentimentScores.length ?
+            sentimentScores.reduce(function (a, b) { return a + b; }, 0) / sentimentScores.length : 0;
+        var sentimentLabel = avgSentiment > 0.2 ? 'positivo 😊' :
+                             avgSentiment < -0.2 ? 'negativo 😟' : 'neutral 😐';
+
+        // Construir HTML de summary
+        var entitiesHTML = Object.keys(allEntities).length === 0
+            ? '<em style="color:var(--text-tertiary);">Ninguna detectada.</em>'
+            : Object.keys(allEntities).map(function (type) {
+                return '<span class="kb-keyword"><strong>' + escTxt(type) + ':</strong> ' +
+                    escTxt(allEntities[type].slice(0, 3).join(', ')) + '</span>';
+            }).join(' ');
+
+        var topMsgsHTML = top3.length === 0
+            ? '<em>Sin mensajes del cliente todavía.</em>'
+            : top3.map(function (s, i) {
+                return '<div class="cnc-summary-top-msg">' +
+                    '<strong>#' + (i + 1) + '</strong> "' + escTxt(s.msg.text) + '"' +
+                '</div>';
+            }).join('');
+
+        var summaryHTML =
+            '<div class="cnc-summary-modal-backdrop" id="cncSummaryBackdrop"></div>' +
+            '<div class="cnc-summary-modal">' +
+                '<div class="cnc-summary-head">' +
+                    '<h3><i data-lucide="file-text"></i> Resumen para handover</h3>' +
+                    '<button class="alt-btn alt-btn--ghost alt-btn--icon" id="cncSummaryClose" aria-label="Cerrar">×</button>' +
+                '</div>' +
+                '<div class="cnc-summary-body">' +
+                    '<section>' +
+                        '<h4>Cliente</h4>' +
+                        '<p>' +
+                            '<strong>' + escTxt(chat.userNombre || chat.userEmail || 'Cliente ' + chat._docId.slice(-6)) + '</strong>' +
+                            (chat.userEmail ? '<br>📧 ' + escTxt(chat.userEmail) : '') +
+                            (chat.telefono ? '<br>📲 ' + escTxt(chat.telefono) : '') +
+                            (chat.sourceVehicleId ? '<br>🚗 Vehículo origen: #' + escTxt(chat.sourceVehicleId) : '') +
+                        '</p>' +
+                    '</section>' +
+                    '<section>' +
+                        '<h4>Conversación</h4>' +
+                        '<p>' +
+                            messages.length + ' mensajes · ' +
+                            userMsgs.length + ' del cliente · ' +
+                            asesorMsgs.length + ' del asesor<br>' +
+                            'Sentiment promedio: <strong>' + sentimentLabel + '</strong> (' + avgSentiment.toFixed(2) + ')' +
+                        '</p>' +
+                    '</section>' +
+                    '<section>' +
+                        '<h4>Datos detectados</h4>' +
+                        '<div class="kb-entry-keywords">' + entitiesHTML + '</div>' +
+                    '</section>' +
+                    '<section>' +
+                        '<h4>Top 3 mensajes más importantes del cliente</h4>' +
+                        topMsgsHTML +
+                    '</section>' +
+                '</div>' +
+                '<div class="cnc-summary-footer">' +
+                    '<button class="alt-btn alt-btn--ghost" id="cncSummaryCopy">' +
+                        '<i data-lucide="copy"></i> Copiar al portapapeles' +
+                    '</button>' +
+                    '<button class="alt-btn alt-btn--primary" id="cncSummaryDone">Cerrar</button>' +
+                '</div>' +
+            '</div>';
+
+        var wrap = document.createElement('div');
+        wrap.id = 'cncSummaryWrap';
+        wrap.innerHTML = summaryHTML;
+        document.body.appendChild(wrap);
+        if (window.AltorraIcons) window.AltorraIcons.refresh(wrap);
+        else if (window.lucide) try { window.lucide.createIcons({ context: wrap }); } catch (e) {}
+
+        // Wire close + copy
+        function close() {
+            var w = document.getElementById('cncSummaryWrap');
+            if (w) w.remove();
+        }
+        document.getElementById('cncSummaryClose').addEventListener('click', close);
+        document.getElementById('cncSummaryDone').addEventListener('click', close);
+        document.getElementById('cncSummaryBackdrop').addEventListener('click', close);
+        document.getElementById('cncSummaryCopy').addEventListener('click', function () {
+            // Generar texto plano para clipboard
+            var lines = [
+                'RESUMEN — ' + (chat.userNombre || chat.userEmail || 'Cliente'),
+                'Sessión: ' + chat._docId,
+                ''
+            ];
+            if (chat.userEmail) lines.push('Email: ' + chat.userEmail);
+            if (chat.telefono) lines.push('Teléfono: ' + chat.telefono);
+            if (chat.sourceVehicleId) lines.push('Vehículo origen: #' + chat.sourceVehicleId);
+            lines.push('');
+            lines.push('Conversación: ' + messages.length + ' mensajes · sentiment ' + sentimentLabel);
+            lines.push('');
+            lines.push('Datos detectados:');
+            Object.keys(allEntities).forEach(function (type) {
+                lines.push('  • ' + type + ': ' + allEntities[type].join(', '));
+            });
+            lines.push('');
+            lines.push('Top mensajes del cliente:');
+            top3.forEach(function (s, i) {
+                lines.push('  #' + (i + 1) + '. "' + s.msg.text + '"');
+            });
+            var text = lines.join('\n');
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function () {
+                    AP.toast('Resumen copiado al portapapeles');
+                });
+            } else {
+                AP.toast('Copy no soportado en este navegador', 'error');
+            }
+        });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        EVENT WIRING
        ═══════════════════════════════════════════════════════════ */
     document.addEventListener('click', function (e) {
@@ -268,6 +439,10 @@
         }
         if (e.target && e.target.closest && e.target.closest('#cncAdminCloseChat')) {
             closeChat();
+            return;
+        }
+        if (e.target && e.target.closest && e.target.closest('#cncAdminSummarize')) {
+            summarizeCurrentChat();
             return;
         }
     });

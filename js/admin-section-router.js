@@ -54,6 +54,7 @@
         crm:            { label: 'Contactos 360°',   group: 'crm',          icon: 'users-round' },
         automation:     { label: 'Reglas',           group: 'automatizacion', icon: 'zap' },
         templates:      { label: 'Plantillas',       group: 'automatizacion', icon: 'file-edit' },
+        kb:             { label: 'Knowledge Base',   group: 'automatizacion', icon: 'book-open' },
         users:          { label: 'Usuarios',         group: 'configuracion',icon: 'users' },
         audit:          { label: 'Auditoría',        group: 'configuracion',icon: 'scroll-text' },
         settings:       { label: 'Ajustes',          group: 'configuracion',icon: 'settings' }

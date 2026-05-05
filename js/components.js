@@ -337,6 +337,13 @@ function loadAuthSystem() {
                     schema.defer = true;
                     document.body.appendChild(schema);
                 }
+                // U.5 — Knowledge Base client (FAQ que admin gestiona)
+                if (!document.querySelector('script[src*="kb-client.js"]')) {
+                    var kb = document.createElement('script');
+                    kb.src = 'js/kb-client.js';
+                    kb.defer = true;
+                    document.body.appendChild(kb);
+                }
             })
             .catch(function(e) { console.warn('[Auth] No se pudo cargar auth-modal.html', e); });
     }

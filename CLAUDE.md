@@ -5592,6 +5592,118 @@ detection sobre KPIs), J.6 (image categorizer con MobileNet),
 J.7 (OCR Tesseract.js lazy), J.8 (Next Best Action). Cada una se
 plugea en `AltorraAI.registerProvider(...)`.
 
+### Microfase J.3 — Lead scoring v2 enriquecido con señales AI ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: el `computeScoreBreakdown` de `admin-crm.js` (MF4.5)
+calcula un score base con 7 factores ponderados (engagement, económico,
+recencia, etc.). J.3 agrega una capa "AI insights" que ajusta el score
+±15 puntos basándose en sentiment + entities + urgencia detectados por
+J.1 y J.2 sobre los mensajes del cliente.
+
+**Decisión de diseño**: NO usamos TensorFlow.js + regresión logística
+(plan original) porque son ~200KB extras y el ROI es marginal cuando
+ya tenemos un scorer multifactor sólido. J.3 enriquece, no reemplaza.
+
+**Lo que se creó** (`js/ai/scoring.js`):
+
+API pública `window.AltorraScoring`:
+```js
+AltorraScoring.aiSignals(contact, communications) → {
+    avgSentiment, sentimentVariance, sentimentSamples,
+    entityTypes, entityRichness,           // 0..7 tipos qualifying
+    urgencyScore,                          // count de palabras urgentes
+    intentDiversity,                       // cita+solicitud+lead
+    messageCount, avgMessageLength
+}
+
+AltorraScoring.enrichScore(baseScore, signals) → {
+    score, baseScore, delta, adjustments[], signals
+}
+
+AltorraScoring.explainEnrichment(enrichment) → texto humano
+```
+
+**Reglas de ajuste**:
+
+| Señal | Condición | Ajuste |
+|---|---|---|
+| Sentiment muy positivo + 2+ samples + variance baja | avg > 0.3, σ < 0.3 | **+8** |
+| Sentiment positivo (variable) | avg > 0.3 | **+5** |
+| Sentiment muy negativo + consistente | avg < -0.3, σ < 0.3 | **-10** |
+| Sentiment negativo (variable) | avg < -0.3 | **-6** |
+| Lead muy informativo | entityRichness ≥ 4 | **+5** |
+| Lead moderadamente informativo | entityRichness ≥ 2 | **+2** |
+| Alta urgencia | 3+ palabras urgentes | **+7** |
+| Urgencia detectada | 1-2 palabras urgentes | **+3** |
+
+**Cap global**: ±15 puntos. Score final clampeado a 0..100.
+
+**URGENCY_TOKENS** (15 palabras): urgente, rápido, ya, ahora, pronto,
+inmediato, asap, "cuanto antes", "esta semana", etc.
+
+**Qualifying entity types** (7): precio, ciudad, year, kilometraje,
+fecha, marca, modelo. Un cliente que mencionó 4+ tipos es lead caliente
+con info concreta — bonus.
+
+**Hook en `computeScoreBreakdown`**:
+
+Después de calcular el score base, si `AltorraScoring` está disponible
+y el contacto tiene comms:
+1. `aiSignals(c, comms)` recorre todos los mensajes y agrega sentiment
+   + NER + urgencia
+2. `enrichScore(baseScore, signals)` calcula el delta
+3. Retorna `{score: enriched, factors, weights, aiEnrichment: {...}}`
+
+Si AltorraScoring no está cargado (página pública sin admin) o falla,
+retorna el score base intacto. **No-regresión garantizada**.
+
+**Visualización en CRM 360° → tab Score**:
+
+Bajo el breakdown de factores tradicional, aparece un bloque dorado
+con:
+- Icono sparkles + título "AI insights"
+- Delta total: "+12 ajuste" o "-8 ajuste" (color-coded)
+- "Score base 65 → final 73 · 4 mensajes analizados"
+- Lista de razones: "(+8) sentiment positivo y consistente · (+5) lead muy informativo"
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| AI cambia score sin transparencia | aiEnrichment expone delta + razones por adjustment |
+| Score base se rompe si AI falla | Try/catch retorna baseScore intacto |
+| Mensajes cortos generan ruido | `getMessages()` retorna empty si < 4 chars |
+| Ajuste descontrolado | Cap absoluto ±15 puntos |
+| Llamadas excesivas a AI engine | Cada render del CRM ya re-corre breakdown — sin overhead extra (sub-ms por mensaje) |
+| Sentiment muy positivo en 1 solo mensaje | Requiere ≥2 samples para aplicar bonus |
+| Urgencia falso positivo (e.g. "ya" significa "todavía") | Requiere 3+ hits para alta urgencia, 1-2 para moderada |
+| Variance ignora outliers | sentiment outliers reducen confianza → bonus moderado en vez de fuerte |
+
+**Pasos de prueba**:
+1. Login admin → CRM
+2. Click "Ver 360°" en un contacto que tenga al menos 2 comunicaciones
+   con mensajes (observaciones/comentarios/mensaje)
+3. Tab "Score" → ver score base con factores Y bloque AI insights
+4. Si los mensajes son positivos ("excelente, gracias, recomiendo") →
+   delta > 0 con bonus de sentiment
+5. Si mencionaron precio + ciudad + año en mensajes → bonus de
+   entity richness
+6. Consola: `AltorraScoring.aiSignals(contact, contact.comms)` →
+   inspeccionar señales raw
+
+**Archivos creados/modificados**:
+- `js/ai/scoring.js` — módulo nuevo (~210 líneas)
+- `admin.html` — script tag antes de admin-vehicles.js
+- `js/admin-crm.js` — `computeScoreBreakdown` enriquece con AI signals
+  + tab "Score" muestra bloque AI insights con razones
+- `service-worker.js` + `js/cache-manager.js` — version bump
+  v20260505210000
+
+**Próximos pasos**: J.4 (no-show prediction usando histórico de citas
++ sentiment), J.5 (anomaly detection sobre KPIs), J.6+ (vision + OCR
++ NBA). El score enriquecido alimenta directamente al Bloque R
+(Predictive Analytics) cuando llegue.
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

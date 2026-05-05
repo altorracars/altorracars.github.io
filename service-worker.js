@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505200000'; // J.1+J.2 (mega-plan v4) — AI Engine local foundation + rule-based sentiment + NER (entity extraction)
+const CACHE_VERSION = 'v20260505210000'; // J.3 (mega-plan v4) — Lead scoring v2 enriquecido con señales AI (sentiment + entities + urgencia)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

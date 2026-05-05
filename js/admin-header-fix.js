@@ -28,16 +28,23 @@
        1. CLEANUP INMEDIATO — elimina overlays huérfanos
        ═══════════════════════════════════════════════════════════ */
     function cleanupOverlays() {
-        var WHITELIST = ['altorra-concierge', 'altorra-concierge-btn',
-                         'aaf-panel', 'alt-presence-overlay',
-                         'altorra-voice-btn',
-                         'header-placeholder', 'adminPanel',
-                         'altorra-update-banner', 'page-loader',
-                         'loginScreen', 'loginPanel'];
+        var WHITELIST_IDS = [
+            'altorra-concierge', 'altorra-concierge-btn',
+            'aaf-panel', 'alt-presence-overlay',
+            'altorra-voice-btn', 'altorra-voice-overlay',
+            'header-placeholder', 'adminPanel',
+            'altorra-update-banner', 'page-loader',
+            'loginScreen', 'loginPanel',
+            'authLoadingScreen', 'auth-loading-screen',
+            'app', 'main', 'wrap',
+            'alt-onboard', 'alt-palette', 'alt-sec-modal',
+            'altorra-optin', 'cncSummaryWrap',
+            'alt-native-invite', 'alt-offline-banner'
+        ];
 
         Array.prototype.slice.call(document.body.children).forEach(function (el) {
             if (!el.tagName || (el.tagName !== 'DIV' && el.tagName !== 'ASIDE' && el.tagName !== 'SECTION')) return;
-            if (el.id && WHITELIST.indexOf(el.id) !== -1) return;
+            if (el.id && WHITELIST_IDS.indexOf(el.id) !== -1) return;
 
             var cs;
             try { cs = getComputedStyle(el); } catch (e) { return; }
@@ -45,21 +52,45 @@
             var z = parseInt(cs.zIndex, 10);
             if (isNaN(z) || z < 9000) return;
             if (cs.display === 'none') return;
-            if (cs.pointerEvents === 'none' && parseFloat(cs.opacity) < 0.05) return;
 
-            // Elementos especiales que SÍ pueden tener z-index alto pero
-            // no son huérfanos:
-            //   - paneles con clase "active"/"open" → respetarlos
             var activeClasses = ['active', 'open', 'visible', 'aaf-open',
                                  'alt-palette-open', 'alt-voice-active',
                                  'is-active', 'cnc-open'];
             if (activeClasses.some(function (c) { return el.classList.contains(c); })) return;
 
-            // Si llegamos aquí, es un overlay sospechoso. Hide it.
-            // No lo borramos — solo aseguramos que no bloquee.
+            // Sospechoso. Hide it.
             el.style.pointerEvents = 'none';
             el.style.display = 'none';
             console.warn('[HeaderFix] Hidden suspected overlay:', el.id || el.className);
+        });
+
+        // SEGUNDA PASADA — overlays watched que se quedaron sin clase activa
+        // Si .alt-onboard, .altorra-voice-overlay etc. están en el DOM PERO
+        // no tienen su clase activa, forzamos display none.
+        var WATCHED_PAIRS = [
+            { selector: '#alt-onboard', activeClass: 'is-active' },
+            { selector: '#alt-palette', activeClass: 'alt-palette-open' },
+            { selector: '#altorra-voice-overlay', activeClass: 'alt-voice-active' }
+        ];
+        WATCHED_PAIRS.forEach(function (pair) {
+            var el = document.querySelector(pair.selector);
+            if (!el) return;
+            if (el.classList.contains(pair.activeClass)) return;
+            el.style.display = 'none';
+            el.style.pointerEvents = 'none';
+        });
+
+        // TERCERA PASADA — modales dinámicos que existen pero podrían
+        // estar vacíos / huérfanos. Si tienen contenido renderizado,
+        // están siendo usados; si no, se ocultan.
+        ['altorra-optin', 'alt-sec-modal', 'cncSummaryWrap'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            // Si el modal dinámico no tiene contenido visible, hide.
+            if (!el.firstElementChild) {
+                el.style.display = 'none';
+                el.style.pointerEvents = 'none';
+            }
         });
     }
 

@@ -362,7 +362,7 @@
 
     // ========== EXPOSE ==========
     AP.renderDashboardCharts = renderDashboardCharts;
-    AP.toggleTheme = toggleTheme;
+    // AP.toggleTheme = toggleTheme;  // [REMOVED] T.4 — usar AltorraTheme.cycle()
     AP.wizardGoTo = wizardGoTo;
     AP.resetWizard = resetWizard;
 })();

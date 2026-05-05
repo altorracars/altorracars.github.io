@@ -986,30 +986,36 @@ select:focus-visible {
 }
 
 /* SAFETY GLOBAL — overlays huérfanos no bloquean clicks del header.
- * Patrón: cualquier elemento con position:fixed inset:0 z-index>9000
- * que haya sido insertado al body por error (sin estado "abierto")
- * tiene display:none aplicado.
  *
- * Los modales legítimos (alt-onboard.is-active, alt-palette.alt-palette-open,
- * altorra-voice-overlay.alt-voice-active) siguen visibles porque la
- * regla solo aplica cuando NO está la clase activa.
+ * Estrategia: cualquier elemento con position:fixed + inset:0 +
+ * z-index alto que NO tenga su clase activa correspondiente queda
+ * con display:none + pointer-events:none. Los modales dinámicos
+ * (alt-sec-modal, altorra-optin) si quedan huérfanos quedan
+ * INVISIBLES porque NO existen en CSS estático — solo se renderizan
+ * cuando el JS los inserta. Esa inserción incluye estilos inline
+ * que sobreescriben este reset.
  *
- * Para modales creados dinámicamente y removidos al cerrar
- * (alt-sec-modal, altorra-optin, cnc-summary-modal) el patrón es
- * diferente: existen sólo cuando deben verse, así que NO necesitan
- * estado "abierto" — pero igual los protegemos con un guard de
- * orphan removal en JS. */
+ * Para los que SÍ existen estáticamente con display:flex permanente,
+ * forzamos hide hasta que tengan clase activa: */
 .alt-onboard:not(.is-active),
 .altorra-voice-overlay:not(.alt-voice-active),
 .alt-palette:not(.alt-palette-open) {
     pointer-events: none !important;
     display: none !important;
+    visibility: hidden !important;
 }
-/* Cualquier overlay con clase "altorra-orphan" (marker JS de fallback)
- * queda oculto por safety. */
+
+/* SAFETY EXTRA — overlays creados dinámicamente que pueden quedar
+ * huérfanos en el DOM. Si su HTML interno se borra pero el wrapper
+ * permanece, este reset garantiza que NO bloqueen clicks.
+ * Identificados por id + clase específica de su modal: */
+#alt-sec-modal:empty,
+#altorra-optin:empty,
+#cncSummaryWrap:empty,
 .altorra-orphan {
     display: none !important;
     pointer-events: none !important;
+    visibility: hidden !important;
 }
 
 /* G.2 — Native notifications invitation */

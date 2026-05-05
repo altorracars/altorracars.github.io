@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505460000'; // G.2+C.3 (mega-plan v4) — Native notifications + Color extractor desde imagen del vehículo
+const CACHE_VERSION = 'v20260505470000'; // O.3+P.3 (mega-plan v4) — Performance per asesor + Accessibility WCAG AAA
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

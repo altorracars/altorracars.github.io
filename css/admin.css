@@ -869,6 +869,99 @@ body.sidebar-show-rare .nav-item--rare {
     gap: 10px;
 }
 
+/* O.3 — Performance per asesor table */
+.performance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+}
+.performance-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 0.72rem;
+    color: var(--text-tertiary, #888);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.performance-table td {
+    padding: 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0a0a0);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+.performance-table tr:hover td {
+    background: rgba(184, 150, 88, 0.04);
+}
+.performance-table strong {
+    color: var(--text-primary, #e5e5e5);
+}
+
+/* P.3 — Accessibility WCAG AAA mejoras */
+*:focus {
+    outline: none;
+}
+*:focus-visible {
+    outline: 2px solid var(--brand-gold, #b89658) !important;
+    outline-offset: 2px;
+    border-radius: 4px;
+    transition: outline-color 0.1s ease;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--brand-gold, #b89658) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(184, 150, 88, 0.15);
+}
+/* Skip link - solo aparece on focus */
+.skip-to-content {
+    position: absolute;
+    top: -100px;
+    left: 12px;
+    z-index: 100000;
+    padding: 10px 16px;
+    background: var(--brand-gold, #b89658);
+    color: #1a1500;
+    border-radius: 0 0 8px 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: top 0.2s ease;
+}
+.skip-to-content:focus,
+.skip-to-content:focus-visible {
+    top: 0;
+}
+/* Screen reader only utility */
+.sr-only {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+/* High contrast mode */
+@media (prefers-contrast: more) {
+    .alt-btn, .nav-item, .vehicle-card {
+        border: 2px solid currentColor !important;
+    }
+}
+
 /* G.2 — Native notifications invitation */
 .alt-native-invite {
     position: fixed;

@@ -395,6 +395,7 @@
                     '<button class="crm-detail-tab" data-tab="red">Red</button>' +
                     '<button class="crm-detail-tab" data-tab="score">Score</button>' +
                     '<button class="crm-detail-tab" data-tab="notas">Notas</button>' +
+                    '<button class="crm-detail-tab" data-tab="comentarios">Comentarios</button>' +
                 '</div>' +
                 '<div class="crm-detail-body" id="crmDetailBody"></div>' +
             '</div>';
@@ -625,6 +626,19 @@
             loadNotes(c);
             var btn = document.getElementById('crmAddNoteBtn');
             if (btn) btn.addEventListener('click', function () { addNote(c); });
+        } else if (tab === 'comentarios') {
+            // M.4 — Comentarios threaded entre admins sobre este contacto
+            body.innerHTML = '<div id="crmCommentsHost"></div>';
+            var host = document.getElementById('crmCommentsHost');
+            if (window.AltorraComments && host) {
+                var entityKey = c.uid || c.email || c.key;
+                window.AltorraComments.attach(host, {
+                    entityType: 'contact',
+                    entityId: entityKey
+                });
+            } else if (host) {
+                host.innerHTML = '<div class="crm-detail-empty">Sistema de comentarios no disponible.</div>';
+            }
         }
     }
 

@@ -225,6 +225,22 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ========== COMMENTS (Bloque M.4 — comentarios threaded entre admins) ==========
+    // Sistema universal de comentarios sobre cualquier entidad. Solo
+    // editor+ pueden leer/comentar. Author del comentario o super_admin
+    // pueden eliminarlo.
+    match /comments/{commentId} {
+      allow read: if isEditorOrAbove();
+      allow create: if isEditorOrAbove() &&
+                     request.resource.data.authorUid == request.auth.uid;
+      allow update: if isEditorOrAbove() &&
+                     resource.data.authorUid == request.auth.uid &&
+                     request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['body', 'edited', 'updatedAt']);
+      allow delete: if isSuperAdmin() ||
+                     (isEditorOrAbove() && resource.data.authorUid == request.auth.uid);
+    }
+
     // ========== KNOWLEDGE BASE (Bloque U.5 — FAQs del bot Concierge) ==========
     // Admin (editor+) gestiona via UI. Cliente público lee para que el bot
     // del Concierge consulte respuestas.

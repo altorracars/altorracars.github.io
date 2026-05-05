@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505340000'; // P.4 (mega-plan v4) — Command Palette ⌘+K con búsqueda fuzzy + 23+ comandos + navegación con flechas
+const CACHE_VERSION = 'v20260505350000'; // M.1+M.4 (mega-plan v4) — Realtime collab: presence avanzada con currentSection + comentarios threaded entre admins
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

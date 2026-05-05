@@ -1,0 +1,264 @@
+/**
+ * ALTORRA CARS — Header Fix (último recurso)
+ * ============================================
+ * Garantiza que los botones del header funcionen aunque otros scripts
+ * fallen. Corre al final, después de TODOS los demás, y:
+ *
+ *   1. Elimina cualquier overlay flotante con z-index extremo que
+ *      pueda estar bloqueando clicks (limpieza inmediata + cada 2s)
+ *
+ *   2. Bindea con event listeners DIRECTOS los 5 botones críticos:
+ *      - #activityFeedTrigger     → AltorraActivityFeed.toggle
+ *      - #themeToggle             → AltorraTheme.cycle
+ *      - #contrastToggle          → AltorraTheme.toggleHighContrast
+ *      - #headerNotifBell button  → notifyCenter.toggle (panel)
+ *      - #altorra-voice-btn       → AltorraVoice.toggle (si existe)
+ *
+ *   3. Provee fallbacks si las APIs principales no cargaron.
+ *
+ *   4. Diagnostic logger: window.__altorraHeaderDiag() reporta el
+ *      estado de cada botón y sus listeners.
+ */
+(function () {
+    'use strict';
+    if (window.__altorraHeaderFixed) return;
+    window.__altorraHeaderFixed = true;
+
+    /* ═══════════════════════════════════════════════════════════
+       1. CLEANUP INMEDIATO — elimina overlays huérfanos
+       ═══════════════════════════════════════════════════════════ */
+    function cleanupOverlays() {
+        var WHITELIST = ['altorra-concierge', 'altorra-concierge-btn',
+                         'aaf-panel', 'alt-presence-overlay',
+                         'altorra-voice-btn',
+                         'header-placeholder', 'adminPanel',
+                         'altorra-update-banner', 'page-loader',
+                         'loginScreen', 'loginPanel'];
+
+        Array.prototype.slice.call(document.body.children).forEach(function (el) {
+            if (!el.tagName || (el.tagName !== 'DIV' && el.tagName !== 'ASIDE' && el.tagName !== 'SECTION')) return;
+            if (el.id && WHITELIST.indexOf(el.id) !== -1) return;
+
+            var cs;
+            try { cs = getComputedStyle(el); } catch (e) { return; }
+            if (cs.position !== 'fixed') return;
+            var z = parseInt(cs.zIndex, 10);
+            if (isNaN(z) || z < 9000) return;
+            if (cs.display === 'none') return;
+            if (cs.pointerEvents === 'none' && parseFloat(cs.opacity) < 0.05) return;
+
+            // Elementos especiales que SÍ pueden tener z-index alto pero
+            // no son huérfanos:
+            //   - paneles con clase "active"/"open" → respetarlos
+            var activeClasses = ['active', 'open', 'visible', 'aaf-open',
+                                 'alt-palette-open', 'alt-voice-active',
+                                 'is-active', 'cnc-open'];
+            if (activeClasses.some(function (c) { return el.classList.contains(c); })) return;
+
+            // Si llegamos aquí, es un overlay sospechoso. Hide it.
+            // No lo borramos — solo aseguramos que no bloquee.
+            el.style.pointerEvents = 'none';
+            el.style.display = 'none';
+            console.warn('[HeaderFix] Hidden suspected overlay:', el.id || el.className);
+        });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       2. BIND DIRECTO de botones del header
+       ═══════════════════════════════════════════════════════════ */
+    function bindHeaderButtons() {
+        // Activity Feed
+        var actBtn = document.getElementById('activityFeedTrigger');
+        if (actBtn && !actBtn._headerFixBound) {
+            actBtn._headerFixBound = true;
+            actBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.AltorraActivityFeed && window.AltorraActivityFeed.toggle) {
+                    window.AltorraActivityFeed.toggle();
+                } else {
+                    console.warn('[HeaderFix] AltorraActivityFeed no disponible');
+                }
+            });
+        }
+
+        // Theme toggle (claro/oscuro)
+        var themeBtn = document.getElementById('themeToggle');
+        if (themeBtn && !themeBtn._headerFixBound) {
+            themeBtn._headerFixBound = true;
+            themeBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.AltorraTheme && window.AltorraTheme.cycle) {
+                    window.AltorraTheme.cycle();
+                } else {
+                    // Fallback: toggle simple light/dark
+                    var html = document.documentElement;
+                    var current = html.getAttribute('data-theme') || 'dark';
+                    var next = current === 'light' ? 'dark' : 'light';
+                    html.setAttribute('data-theme', next);
+                    try { localStorage.setItem('altorra-theme', next); } catch (e2) {}
+                }
+            });
+        }
+
+        // Contrast toggle (alto contraste)
+        var contrastBtn = document.getElementById('contrastToggle');
+        if (contrastBtn && !contrastBtn._headerFixBound) {
+            contrastBtn._headerFixBound = true;
+            contrastBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.AltorraTheme && window.AltorraTheme.toggleHighContrast) {
+                    window.AltorraTheme.toggleHighContrast();
+                } else {
+                    // Fallback: toggle data-theme high-contrast
+                    var html = document.documentElement;
+                    var current = html.getAttribute('data-theme');
+                    if (current === 'high-contrast') {
+                        html.setAttribute('data-theme', 'dark');
+                    } else {
+                        html.setAttribute('data-theme', 'high-contrast');
+                    }
+                }
+            });
+        }
+
+        // Notification bell — buscamos el button DENTRO del slot
+        var bellSlot = document.getElementById('headerNotifBell');
+        if (bellSlot) {
+            var bellBtn = bellSlot.querySelector('button') || bellSlot.querySelector('[role="button"]');
+            if (bellBtn && !bellBtn._headerFixBound) {
+                bellBtn._headerFixBound = true;
+                bellBtn.addEventListener('click', function (e) {
+                    // No preventDefault aquí — dejar que el handler original
+                    // del bell también corra (panel del notify center)
+                    if (window.notifyCenter) {
+                        // notifyCenter ya debería tener su propio handler;
+                        // si por alguna razón no reaccionó, forzamos togglePanel
+                        if (window.notifyCenter.togglePanel) {
+                            setTimeout(function () { window.notifyCenter.togglePanel(); }, 50);
+                        }
+                    }
+                }, { capture: false });
+            }
+        }
+
+        // Voice mic button (puede aparecer asíncrono)
+        var voiceBtn = document.getElementById('altorra-voice-btn');
+        if (voiceBtn && !voiceBtn._headerFixBound) {
+            voiceBtn._headerFixBound = true;
+            voiceBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.AltorraVoice && window.AltorraVoice.toggle) {
+                    window.AltorraVoice.toggle();
+                }
+            });
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       3. CLICK DEBUGGER — registra qué elemento está en (x,y)
+       ═══════════════════════════════════════════════════════════ */
+    window.__altorraClickPath = function (x, y) {
+        // Lista TODOS los elementos en (x,y) ordenados por z-index
+        var path = (document.elementsFromPoint && document.elementsFromPoint(x, y)) || [];
+        return path.slice(0, 10).map(function (el, i) {
+            try {
+                var cs = getComputedStyle(el);
+                return {
+                    rank: i,
+                    tag: el.tagName,
+                    id: el.id || '',
+                    cls: (el.className || '').toString().substr(0, 60),
+                    zIndex: cs.zIndex,
+                    position: cs.position,
+                    pointerEvents: cs.pointerEvents,
+                    display: cs.display
+                };
+            } catch (e) { return { error: String(e) }; }
+        });
+    };
+
+    // Loga cada click al document — si nada aparece cuando clickeas, el
+    // click no llegó al document (overlay invisible bloqueando)
+    document.addEventListener('click', function (e) {
+        // Solo loga si hay debug flag
+        if (!window.__altorraDebugClicks) return;
+        console.log('[ClickDebug]', {
+            x: e.clientX, y: e.clientY,
+            target: e.target.tagName + (e.target.id ? '#' + e.target.id : '') + '.' + e.target.className,
+            path: window.__altorraClickPath(e.clientX, e.clientY)
+        });
+    }, true);
+
+    /* ═══════════════════════════════════════════════════════════
+       4. DIAGNOSTIC LOGGER
+       ═══════════════════════════════════════════════════════════ */
+    window.__altorraHeaderDiag = function () {
+        var report = {
+            buttons: {},
+            apis: {
+                AltorraActivityFeed: !!window.AltorraActivityFeed,
+                AltorraTheme: !!window.AltorraTheme,
+                notifyCenter: !!window.notifyCenter,
+                AltorraVoice: !!window.AltorraVoice
+            },
+            highZOverlays: []
+        };
+        ['activityFeedTrigger', 'themeToggle', 'contrastToggle',
+         'headerNotifBell', 'altorra-voice-btn'].forEach(function (id) {
+            var el = document.getElementById(id);
+            report.buttons[id] = el ? {
+                exists: true,
+                bound: !!el._headerFixBound,
+                rect: el.getBoundingClientRect()
+            } : { exists: false };
+        });
+        // Listar overlays con z-index alto
+        Array.prototype.slice.call(document.body.children).forEach(function (el) {
+            try {
+                var cs = getComputedStyle(el);
+                if (cs.position !== 'fixed') return;
+                var z = parseInt(cs.zIndex, 10);
+                if (isNaN(z) || z < 9000) return;
+                report.highZOverlays.push({
+                    id: el.id || '(no-id)',
+                    class: el.className,
+                    zIndex: z,
+                    display: cs.display,
+                    pointerEvents: cs.pointerEvents,
+                    opacity: cs.opacity
+                });
+            } catch (e) {}
+        });
+        console.table(report.buttons);
+        console.log('APIs:', report.apis);
+        console.table(report.highZOverlays);
+        return report;
+    };
+
+    /* ═══════════════════════════════════════════════════════════
+       INIT — corre al cargar + reintenta para bindings tardíos
+       ═══════════════════════════════════════════════════════════ */
+    function run() {
+        cleanupOverlays();
+        bindHeaderButtons();
+    }
+
+    // Primera ejecución
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', run);
+    } else {
+        run();
+    }
+
+    // Re-bind cada 2s durante los primeros 30s (para el bell que se monta tarde)
+    var iterations = 0;
+    var iv = setInterval(function () {
+        iterations++;
+        run();
+        if (iterations > 15) clearInterval(iv);
+    }, 2000);
+})();

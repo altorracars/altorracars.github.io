@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505480000'; // FIX integral — overlays huérfanos ya no bloquean header + voice mic en header + theme toggle deduped + overlay guard
+const CACHE_VERSION = 'v20260505490000'; // FIX header-buttons round 2 — z-index forzado + bind directo + click path debugger + overlay guard removido
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

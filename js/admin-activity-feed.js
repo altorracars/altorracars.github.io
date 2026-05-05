@@ -212,7 +212,7 @@
         if (filtered.length === 0) {
             listEl.innerHTML =
                 '<div class="aaf-empty">' +
-                    '<i data-lucide="inbox-x" style="width:32px;height:32px;opacity:0.4;"></i>' +
+                    '<i data-lucide="inbox" style="width:32px;height:32px;opacity:0.4;"></i>' +
                     '<p>Sin actividad reciente.<br><small>Los eventos aparecen aquí en tiempo real.</small></p>' +
                 '</div>';
         } else {
@@ -334,7 +334,7 @@
                 '</div>' +
                 '<div class="aaf-list" id="aaf-list" tabindex="0">' +
                     '<div class="aaf-empty">' +
-                        '<i data-lucide="inbox-x" style="width:32px;height:32px;opacity:0.4;"></i>' +
+                        '<i data-lucide="inbox" style="width:32px;height:32px;opacity:0.4;"></i>' +
                         '<p>Sin actividad reciente.<br><small>Los eventos aparecen aquí en tiempo real.</small></p>' +
                     '</div>' +
                 '</div>' +

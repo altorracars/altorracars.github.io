@@ -946,6 +946,20 @@
             vehicleData.createdByName = auditUser.name;
             vehicleData.createdAt = new Date().toISOString();
         }
+        // K.2 — Smart Fields engine: derives tipo / estado / oferta / etc.
+        // when blank. Only fills missing values, never overrides admin input.
+        if (window.AltorraSmartFields) {
+            // Treat empty-string fields as blank so the engine can fill them.
+            // Form selects with no choice return '' which we want derived.
+            ['tipo', 'estado'].forEach(function (k) {
+                if (vehicleData[k] === '') vehicleData[k] = null;
+            });
+            var smart = window.AltorraSmartFields.derive(vehicleData);
+            vehicleData = smart.result;
+            if (smart.derived.length > 0) {
+                vehicleData._smartDerived = smart.derived; // surfaced in toast/audit
+            }
+        }
         return vehicleData;
     }
 
@@ -1129,6 +1143,11 @@
                 logVehicleAction(vehicleData.id, 'created', [{ field: '(nuevo)', from: null, to: label.trim() }]);
             }
             AP.toast(isEdit ? 'Vehiculo actualizado (v' + vehicleData._version + ')' : 'Vehiculo ' + vehicleData.codigoUnico + ' agregado');
+            // K.2 — surface auto-derived fields so admin sees what Smart Fields filled in
+            if (vehicleData._smartDerived && vehicleData._smartDerived.length > 0 && window.AltorraSmartFields) {
+                var derived = vehicleData._smartDerived.map(window.AltorraSmartFields.formatSuggestion).join(' · ');
+                if (window.notify) window.notify.info('Smart Fields: ' + derived);
+            }
             clearDraftFromFirestore();
             closeModalFn(true);
         }).catch(function(err) {

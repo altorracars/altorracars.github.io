@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505170000'; // I.5 (mega-plan v4) — Activity Feed replay + JSON inspector + export (super_admin debugging tools)
+const CACHE_VERSION = 'v20260505180000'; // K.1+K.2 (mega-plan v4) — Automation engine subscribes to EventBus + Smart Fields engine for vehicle inventory
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

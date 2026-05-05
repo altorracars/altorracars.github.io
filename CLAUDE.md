@@ -5109,6 +5109,217 @@ realtime con filtros, diff de transiciones renderizado, e
 inspección/replay para debugging. Listo para que Bloque K (Workflows)
 lo consuma como motor de triggers.
 
+### Microfase K.1 — Automation engine consume el EventBus ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: el sistema de reglas de `js/admin-automation.js`
+(MF6.1) hasta ahora dependía de hooks manuales para detectar nuevos
+docs (`AP.checkRulesForNewDocs(snap)`). K.1 lo conecta al EventBus
+(I.1-I.5) para que las reglas se evalúen **automáticamente** cuando
+cualquier módulo del admin emite el evento canónico, sin polling y
+sin hooks ad-hoc.
+
+**Cambios en `js/admin-automation.js`**:
+
+1. **`BUS_TO_TRIGGER` map**: traduce los nombres de evento del bus a
+   los `trigger` strings que ya usan las reglas (`'comm.created'` →
+   `'comm_created'`). Mantiene compatibilidad con la librería de
+   reglas existente sin renombrarlas.
+
+2. **`onBusEvent(event)`**: nuevo dispatcher central. Para cada
+   evento del bus:
+   - Skip si el usuario actual no es super_admin (auto-routing es
+     responsabilidad del super_admin para evitar conflicts entre tabs)
+   - Skip si `payload.__replay === true` (los replays del Activity
+     Feed son para debug visual, no para re-disparar reglas reales)
+   - Mapea el `event.type` a un trigger conocido. Si no matchea,
+     ignora silenciosamente (eventos de UI, login, etc.)
+   - Construye un `doc`-shaped object desde `event.payload` y lo
+     pasa a `evaluateRules(triggerName, doc)`
+   - Aplica cada match con cycle protection (ver abajo)
+
+3. **Cycle protection** (CRÍTICO):
+   - `_executionCount` y `_executionEventId` rastrean cuántas reglas
+     se ejecutaron por evento fuente
+   - Cap `MAX_RULES_PER_EVENT = 10` previene loops del estilo
+     "regla A asigna asesor → emite `comm.estado-changed` → regla B
+     re-asigna → loop"
+   - Reset por evento: cuando llega un nuevo `event.id`, el contador
+     vuelve a 0
+
+4. **`subscribeToBus()` / `unsubscribeFromBus()`**: handlers
+   idempotentes. La suscripción se hace en init después de cargar
+   las reglas. Si el bus aún no está cargado (race en init temprano),
+   la suscripción es no-op silenciosa — el polling SLA loop sigue
+   funcionando como red de seguridad.
+
+5. **Diagnostic API**:
+   ```js
+   AltorraAutomation._executionState()
+   // → {count: 3, eventId: 'evt_abc', cap: 10}
+   ```
+
+**Por qué dejamos `checkRulesForNewDocs` legacy**: el código en
+`admin-appointments.js` ya no lo llama (verificado con grep), pero
+está expuesto en `AP.checkRulesForNewDocs` para retrocompatibilidad
+si alguien hubiera hookado externamente. Eventual cleanup en K.5.
+
+**Por qué el SLA loop NO usa el bus**: SLA es un check basado en
+tiempo (cada minuto, busca docs cuyo `slaDeadline` venció). No hay
+un evento "el reloj avanzó 60 segundos" — es polling por diseño.
+K.6 podría agregar un trigger sintético `time.tick.minute` pero no
+es prioritario.
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Loop infinito (rule A → emit → rule A) | Cap por event.id en `_executionCount` |
+| Replay del Activity Feed dispara reglas reales | Skip si `payload.__replay === true` |
+| Multi-tab admin: cada tab corre el routing → race | Solo super_admin corre, y la regla "ya asignado" guard previene double-assign |
+| Bus indefinido en page load | Subscribe es try/catch + retry implícito (init loop ya espera auth) |
+| Rules subscriben antes de tener el doc real | Payload del bus llega completo desde admin-* — los emit incluyen título y campos clave |
+| Listener nunca se libera | `unsubscribeFromBus()` expuesto para futuros teardowns (logout) |
+
+**Pasos de prueba**:
+1. Login como super_admin
+2. Cliente envía solicitud de financiación con cuota inicial $50M+
+   (desde web pública o crear manual en Firestore con `tags: ['alto-valor']`)
+3. Verificar en consola: `AltorraAutomation._executionState()` →
+   debería mostrar 1 ejecución
+4. La regla `route_high_value_financiacion` auto-asigna al super_admin
+   sin polling — verificar `assignedTo` se actualiza en Firestore
+5. Cambiar estado de la solicitud a "contactado" desde el admin
+6. Activity Feed: ver `comm.estado-changed` → automation observa
+   pero no dispara nada (no hay regla para ese trigger todavía)
+7. Activity Feed → click cualquier evento → click "Replay local" →
+   verificar en consola que `_executionState()` NO incrementa
+   (porque payload tiene `__replay: true`)
+
+**Archivos modificados**:
+- `js/admin-automation.js` — `BUS_TO_TRIGGER` map, `onBusEvent`
+  dispatcher con cycle protection, `subscribeToBus` en init, public
+  API extendida
+- `service-worker.js` + `js/cache-manager.js` — version bump
+  v20260505180000
+
+### Microfase K.2 — Smart Fields engine para inventario de vehículos ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: cuando el admin crea/edita un vehículo y deja campos
+en blanco, el sistema **deriva** valores razonables a partir de
+otros datos del doc. Patrón Salesforce/HubSpot "implied fields" —
+reduce data entry y mantiene consistencia.
+
+**Lo que se creó** (`js/smart-fields.js`):
+
+API pública `window.AltorraSmartFields`:
+
+```js
+// Aplica todas las reglas y devuelve resultado + qué se derivó
+AltorraSmartFields.derive(doc) → { result, derived: [{field, value, reason}] }
+
+// Inspecciona qué se derivaría sin mutar
+AltorraSmartFields.preview(doc) → [{field, value, reason}]
+
+// Lista introspectable de reglas (para K.6 visual builder)
+AltorraSmartFields.rules → [{id, field, description}]
+
+// Helper de formato para UI
+AltorraSmartFields.formatSuggestion(s) → "Tipo: nuevo (kilometraje 0)"
+```
+
+**Reglas built-in (6)**:
+
+| ID | Campo derivado | Lógica |
+|---|---|---|
+| `tipo_from_km` | `tipo` | km==0 → 'nuevo' · km≤10K → 'semi-nuevo' · km>10K → 'usado' |
+| `estado_default` | `estado` | blank → 'disponible' |
+| `oferta_from_precioOferta` | `oferta` | precioOferta válido y < precio → true |
+| `puertas_default` | `puertas` | blank → 5 |
+| `pasajeros_default` | `pasajeros` | blank (y asientos blank) → 5 |
+| `ubicacion_default` | `ubicacion` | blank → 'Cartagena' |
+
+**Política de no-override**: cada regla tiene un `condition(doc)`
+que chequea `isBlank(doc[field])`. Si el admin escribió un valor,
+la regla nunca lo pisa. Solo rellena lo que falta.
+
+**Idempotencia**: re-correr `derive(result)` sobre un objeto ya
+procesado no produce nuevas derivations (todas las reglas fallan
+su condition). Útil para re-validate en flujos de import/migración.
+
+**Hook en `admin-vehicles.js` `buildVehicleData`**:
+
+Al final de la función, después de armar el `vehicleData` desde
+los inputs del form, se aplica:
+
+```js
+if (window.AltorraSmartFields) {
+    // Tratar empty-string como blank (los selects sin elección retornan '')
+    ['tipo', 'estado'].forEach(function (k) {
+        if (vehicleData[k] === '') vehicleData[k] = null;
+    });
+    var smart = window.AltorraSmartFields.derive(vehicleData);
+    vehicleData = smart.result;
+    if (smart.derived.length > 0) {
+        vehicleData._smartDerived = smart.derived;
+    }
+}
+```
+
+`_smartDerived` se preserva en el doc temporal para que el toast
+de éxito muestre lo que se autocompletó:
+
+```js
+if (vehicleData._smartDerived && vehicleData._smartDerived.length > 0) {
+    var derived = vehicleData._smartDerived.map(formatSuggestion).join(' · ');
+    notify.info('Smart Fields: ' + derived);
+}
+```
+
+**Por qué los defaults ya en buildVehicleData no son redundantes**:
+el form tiene `parseInt($('vPuertas').value, 10) || 5` que da 5
+si el input está vacío. Smart-fields refuerza esto en una capa
+declarativa donde:
+- La condición es expresable (no condicional inline)
+- Es introspectable (admin puede ver "estas son las reglas activas")
+- Migración futura a server-side (Cloud Function pre-write hook)
+  reusa la misma lib
+
+**Carga**: `<script src="js/smart-fields.js" defer>` antes de
+`admin-vehicles.js` en `admin.html`.
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Pisar valor que el admin escribió | `condition` chequea `isBlank()` antes de derivar |
+| `''` (empty string del form) cuenta como "no blank" | `isBlank()` trata `''` como blank explícitamente |
+| Reglas dependen unas de otras → orden importa | Aplicación serial — reglas posteriores leen `result` actualizado |
+| Side-effects en condition o derive | Funciones puras documentadas; `derive` recibe doc y retorna {value, reason} |
+| Toast spammea cuando no hay derivations | Render condicional `if (_smartDerived.length > 0)` |
+| Smart-fields fall on broken module | `if (window.AltorraSmartFields)` guard en admin-vehicles |
+| Re-correr derive duplica entries | Idempotente por construcción (re-condition retorna false) |
+
+**Pasos de prueba**:
+1. Admin → Crear vehículo nuevo
+2. Llenar marca/modelo/año/precio, dejar **tipo en blanco**, kilometraje = 0
+3. Guardar → toast principal "Vehículo ALT-XXX agregado", luego
+   toast info "Smart Fields: Tipo: nuevo (kilometraje 0)"
+4. Verificar en Firestore: `tipo: 'nuevo'`
+5. Repetir con km = 5000 → tipo derivado = 'semi-nuevo'
+6. Repetir con km = 50000 → tipo derivado = 'usado'
+7. Crear con `precioOferta = 80M` y `precio = 100M`, dejar oferta
+   sin marcar → derivado: oferta: true (precioOferta < precio)
+8. Editar uno existente con `tipo` ya seteado → smart-fields NO
+   pisa, ningún toast info aparece
+9. Consola: `AltorraSmartFields.preview({kilometraje: 0})` →
+   ver array de suggestions sin mutación
+
+**Archivos modificados**:
+- `js/smart-fields.js` — módulo nuevo (~165 líneas)
+- `admin.html` — `<script>` tag antes de admin-vehicles.js
+- `js/admin-vehicles.js` — `buildVehicleData` aplica derive al final
+  + toast info con suggestions cuando hay derivations
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

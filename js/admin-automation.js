@@ -1,18 +1,50 @@
 /**
- * ALTORRA CARS — Admin automation rules (MF6.1)
+ * ALTORRA CARS — Admin automation rules (MF6.1 + Mega-Plan v4 K.1)
  *
  * Predefined automation rules with admin-toggleable enable/disable.
- * Stored in config/automationRules. Evaluated client-side when
- * AP.appointments updates.
+ * Stored in config/automationRules. Evaluated client-side via two paths:
+ *
+ *   1. EventBus subscriptions (K.1) — REAL-TIME, the canonical path.
+ *      Subscribes to `comm.created`, `comm.estado-changed`, `vehicle.updated`
+ *      and runs matching rules. Fires immediately when an admin action
+ *      happens, no polling.
+ *
+ *   2. Periodic SLA loop — scheduled checks for time-based rules
+ *      (`sla_check`) that can't be event-driven.
+ *
+ * Event-trigger mapping:
+ *   comm_created          ← AltorraEventBus 'comm.created'
+ *   comm_status_change    ← AltorraEventBus 'comm.estado-changed'
+ *   vehicle_updated       ← AltorraEventBus 'vehicle.updated'
+ *   sla_check             ← timer (60s loop on super_admin sessions)
+ *
+ * Cycle protection (K.1):
+ *   - Per-event execution counter caps at MAX_RULES_PER_EVENT (10) to
+ *     prevent infinite loops where a rule's action triggers another event
+ *     that re-fires the rule.
+ *   - Replays from Activity Feed (`__replay: true`) are skipped — replays
+ *     are for debugging listeners visually, not for re-running automation.
  *
  * Future-proofed structure: rules have id, name, trigger, condition,
- * action descriptors so custom rules can be added in MF6.x.
+ * action descriptors so custom rules can be added in K.6 (visual builder).
  */
 (function () {
     'use strict';
     var AP = window.AP;
     if (!AP) return;
     var $ = AP.$;
+
+    // K.1 — cycle protection cap
+    var MAX_RULES_PER_EVENT = 10;
+    var _executionCount = 0;
+    var _executionEventId = null;
+
+    // K.1 — map EventBus types to legacy trigger names used in BUILT_IN_RULES
+    var BUS_TO_TRIGGER = {
+        'comm.created':         'comm_created',
+        'comm.estado-changed':  'comm_status_change',
+        'vehicle.updated':      'vehicle_updated'
+    };
 
     // ─── Built-in rule library ───────────────────────────────────
     var BUILT_IN_RULES = [
@@ -147,6 +179,39 @@
         });
     }
 
+    /** K.1 — EventBus dispatcher with cycle protection */
+    function onBusEvent(event) {
+        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+        if (!event || !event.type) return;
+        // Skip replays — they exist to debug listeners visually, not to re-fire rules
+        if (event.payload && event.payload.__replay === true) return;
+
+        var triggerName = BUS_TO_TRIGGER[event.type];
+        if (!triggerName) return;
+
+        // Cycle protection: cap executions per source event
+        if (_executionEventId !== event.id) {
+            _executionEventId = event.id;
+            _executionCount = 0;
+        }
+        if (_executionCount >= MAX_RULES_PER_EVENT) {
+            console.warn('[Automation] Cycle cap reached for event', event.id, 'type', event.type);
+            return;
+        }
+
+        // Build a doc-shaped object the rules can evaluate
+        var doc = Object.assign({ _docId: (event.payload && event.payload.id) || null }, event.payload || {});
+        // For comm.estado-changed, the canonical estado is in payload.estado (I.4)
+        if (event.type === 'comm.estado-changed' && event.payload && event.payload.estado) {
+            doc.estado = event.payload.estado;
+        }
+
+        evaluateRules(triggerName, doc).forEach(function (m) {
+            _executionCount++;
+            applyAction(m);
+        });
+    }
+
     /** Periodic SLA check — runs every minute on super_admin sessions */
     function startSlaCheckLoop() {
         if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
@@ -195,6 +260,17 @@
         }
     });
 
+    // K.1 — subscribe to EventBus once (idempotent guard)
+    var _busUnsub = null;
+    function subscribeToBus() {
+        if (_busUnsub) return;
+        if (!window.AltorraEventBus) return;
+        _busUnsub = window.AltorraEventBus.on('*', onBusEvent);
+    }
+    function unsubscribeFromBus() {
+        if (_busUnsub) { try { _busUnsub(); } catch (e) {} _busUnsub = null; }
+    }
+
     // Init when admin authenticates
     var attempts = 0;
     var int = setInterval(function () {
@@ -203,6 +279,7 @@
             loadRules().then(function () {
                 renderRulesUI();
                 startSlaCheckLoop();
+                subscribeToBus(); // K.1
             });
             clearInterval(int);
         } else if (attempts > 60) clearInterval(int);
@@ -216,6 +293,11 @@
         rules: BUILT_IN_RULES,
         isEnabled: isRuleEnabled,
         evaluate: evaluateRules,
-        renderUI: renderRulesUI
+        renderUI: renderRulesUI,
+        // K.1 — bus integration helpers (mainly for diagnostics)
+        _onBusEvent: onBusEvent,
+        _subscribeToBus: subscribeToBus,
+        _unsubscribeFromBus: unsubscribeFromBus,
+        _executionState: function () { return { count: _executionCount, eventId: _executionEventId, cap: MAX_RULES_PER_EVENT }; }
     };
 })();

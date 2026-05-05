@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260505520000'; // FIX login stuck — eliminada Pasada 0 que restauraba auth-loading-screen en loop + interval continuo eliminado
+const CACHE_VERSION = 'v20260505530000'; // FIX theme/contrast doble bind + z-index header botones 99999
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

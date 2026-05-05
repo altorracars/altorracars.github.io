@@ -1135,6 +1135,67 @@ body {
     text-align: right;
 }
 
+/* U.12 — Smart Suggestions para asesor */
+.cnc-smart-suggestions {
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.10), rgba(184, 150, 88, 0.04));
+    border-top: 1px solid rgba(184, 150, 88, 0.18);
+    padding: 10px 14px;
+}
+.cnc-smart-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 0.72rem;
+    color: var(--brand-gold, #b89658);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+.cnc-smart-head [data-lucide] {
+    width: 14px;
+    height: 14px;
+}
+.cnc-smart-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.cnc-smart-suggestion {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    text-align: left;
+    background: rgba(0, 0, 0, 0.20);
+    border: 1px solid rgba(184, 150, 88, 0.20);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    color: var(--text-primary, #e5e5e5);
+}
+.cnc-smart-suggestion:hover {
+    background: rgba(184, 150, 88, 0.10);
+    border-color: rgba(184, 150, 88, 0.45);
+    transform: translateX(2px);
+}
+.cnc-smart-tag {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    background: rgba(184, 150, 88, 0.18);
+    color: var(--brand-gold, #b89658);
+    border-radius: 8px;
+    white-space: nowrap;
+}
+.cnc-smart-text {
+    flex: 1;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: var(--text-secondary, #a0a0a0);
+}
+
 .cnc-admin-detail-quick-replies {
     display: flex;
     flex-wrap: wrap;

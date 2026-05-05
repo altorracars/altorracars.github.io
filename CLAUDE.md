@@ -6643,6 +6643,98 @@ grupo Calendario, sin badge "Pronto".
 - D.8 — Optimizador de ruta diaria por proximidad geográfica (Haversine
   sobre direcciones, sin API)
 
+### Microfase U.12 — Smart Suggestions para asesor ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: cuando el asesor abre un chat live del Concierge, debajo
+de los mensajes aparecen 3 respuestas sugeridas pre-generadas basadas
+en el contexto: sentiment del último mensaje + entities detectadas +
+KB del admin + sentido común. Patrón Gmail Smart Reply pero
+personalizado al dominio Altorra Cars (financiación, citas, vehículos
+específicos, envíos a otras ciudades).
+
+**Decisión**: sin LLM externo. Todo se computa con heurísticas +
+templates sobre `AltorraAI.sentiment`, `AltorraNER.extract` y
+`AltorraKB.findBest`. Sub-ms, sin tokens cobrados, sin latencia.
+
+**Lo que se creó** (`js/admin-concierge.js` ~150 líneas adicionales):
+
+`generateSmartSuggestions(chat, messages)` recorre:
+1. Encuentra último mensaje del cliente
+2. Análisis con AltorraAI + AltorraNER
+3. Aplica reglas heurísticas y produce candidatas
+
+**8 reglas de suggestions** ordenadas por prioridad:
+
+| Prioridad | Trigger | Tag | Ejemplo |
+|---|---|---|---|
+| 100 | sentiment muy negativo (< -0.4) | 🛟 Recuperar | "Hola Daniel, lamento mucho lo que pasó. Soy [asesor] y voy a ayudarte personalmente. ¿Te puedo llamar ahora?" |
+| 90 | menciona precio/cuanto/cotización | 💵 Cotización | "Te preparo la cotización del Toyota por aproximadamente $80M con financiación, peritaje, garantía…" |
+| 88 | pide agendar/cita/visita o NER detecta fecha | 📅 Agendar | "¡Con gusto te agendo una cita el 2026-05-10! ¿Mañana, tarde o final del día?" |
+| 80 | NER detecta marca/modelo | 🚗 Info vehículo | "Te paso ahora el detalle del Mazda CX-5 2020 (fotos, kilometraje, peritaje, precio final)…" |
+| 78 | menciona financiación/cuota/crédito | 💳 Financiación | "Tenemos planes desde 30% cuota inicial. ¿Cuál es tu cuota disponible y a qué plazo?" |
+| 70 | NER detecta ciudad ≠ Cartagena | 🚚 Envío | "Estamos en Cartagena pero coordinamos envío a Bogotá. ¿Te explico pasos y costos?" |
+| 65 | KB matchea | 📖 KB | (respuesta del admin via AltorraKB.findBest) |
+| 30 | Fallback siempre | 👋 Saludo | "Hola, soy [asesor] de Altorra Cars. Cuéntame qué buscas y te ayudo en seguida" |
+
+**Personalización**:
+- `firstName` del cliente extraído de `chat.userNombre` para "Hola Daniel,"
+- `asesorName` extraído de `AP.currentUserProfile.nombre` para identificación
+- Bits de NER inyectados (precio en millones, marca, año, ciudad, fecha ISO)
+
+**Dedup**: por primeros 40 chars del texto, evita 2 sugerencias casi idénticas.
+**Limit**: top 3 después de sort por prioridad.
+
+**Render**:
+- Bloque `cnc-smart-suggestions` entre messages y quick-replies
+- Background dorado tenue con gradient + border-top
+- Header pequeño con icono sparkles + "Sugerencias inteligentes"
+- 3 cards con tag pill + texto truncado a 120 chars
+- Hover: lift translateX(2px) + border más marcada
+
+**Click en suggestion** → pre-llena `cncAdminReply` input + focus +
+cursor al final → asesor puede editar antes de enviar.
+
+**Re-genera** automáticamente cuando:
+- Llega un nuevo mensaje del cliente (onSnapshot trigger)
+- Se abre un chat distinto
+
+**Hooks integration con todo lo construido**:
+- J.1 (sentiment) → regla "recuperar" cuando muy negativo
+- J.2 (NER) → 5 reglas dependen de entities (marca, modelo, año, ciudad, fecha)
+- U.5 (KB) → si admin definió FAQ relevante, aparece como suggestion priority 65
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Suggestions repetidas (precio + cotización) | Dedup por primeros 40 chars |
+| Suggestions vacías cuando AltorraAI no cargó | Guards `if (window.AltorraAI)` graceful |
+| Chip muy largo rompe UI | `slice(0, 120)` con elipsis si excede |
+| Asesor presiona suggestion pero quiere editar | Click pre-llena input pero no envía — asesor revisa |
+| Suggestions en idioma incorrecto | Templates 100% en español (sin i18n por ahora) |
+| Misma suggestion para todos los clientes | Personalización con firstName + asesorName |
+| Triggers regex muy laxos (false positive) | Regex específicas con `\b` boundaries y combinaciones |
+| Re-render pesado en cada keystroke | Solo se llama cuando llega mensaje nuevo, no en cada input change |
+
+**Pasos de prueba**:
+1. Login admin → Concierge → abrir un chat con varios mensajes
+2. Ver 3 sugerencias entre los mensajes y los quick replies
+3. Si el último mensaje del cliente es "¿cuánto cuesta el Mazda?" → ver
+   "💵 Cotización" como primera suggestion personalizada
+4. Si menciona "agendar para mañana" → ver "📅 Agendar" con fecha
+   resuelta en ISO (vía NER fecha relativa)
+5. Si sentiment del cliente muy negativo (palabras como "horrible",
+   "mentira") → suggestion "🛟 Recuperar" aparece de primera
+6. Click en cualquier suggestion → input se pre-llena → editable
+7. Crear FAQ en KB con keyword "horario" → cliente pregunta horario
+   → suggestion "📖 KB" aparece con la respuesta del admin
+
+**Archivos modificados**:
+- `js/admin-concierge.js` — `generateSmartSuggestions()` +
+  `renderSmartSuggestions()` + click handler + render trigger
+- `css/admin.css` — `.cnc-smart-*` (~60 líneas)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505290000
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

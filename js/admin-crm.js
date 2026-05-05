@@ -167,8 +167,28 @@
             total += factors[k] * weights[k];
         });
 
+        var baseScore = Math.round(total * 100);
+
+        // J.3 — enriquecer con señales del AI Engine local (sentiment + entities + urgencia)
+        // Si AltorraScoring no está cargado, retornamos el score base intacto.
+        if (window.AltorraScoring && comms.length > 0) {
+            try {
+                var aiSig = window.AltorraScoring.aiSignals(c, comms);
+                var enriched = window.AltorraScoring.enrichScore(baseScore, aiSig);
+                return {
+                    score: enriched.score,
+                    factors: factors,
+                    weights: weights,
+                    // Información AI extra — opt-in para vistas que la quieran mostrar
+                    aiEnrichment: enriched
+                };
+            } catch (e) {
+                // Si algo falla en el enrichment, score base es source of truth
+            }
+        }
+
         return {
-            score: Math.round(total * 100),
+            score: baseScore,
             factors: factors,
             weights: weights
         };
@@ -403,7 +423,37 @@
         var schema = window.AltorraCommSchema;
 
         if (tab === 'resumen') {
+            // J.8 — Next Best Action sugerencias
+            var nbaBlock = '';
+            if (window.AltorraNBA) {
+                // Pasar score + AI enrichment al contacto antes del NBA
+                try {
+                    var bdForNBA = computeScoreBreakdown(c);
+                    c._score = bdForNBA.score;
+                    c._aiEnrichment = bdForNBA.aiEnrichment || null;
+                } catch (e) {}
+                var actions = window.AltorraNBA.suggest(c, { limit: 3 });
+                if (actions && actions.length > 0) {
+                    nbaBlock =
+                        '<div class="crm-nba-block">' +
+                            '<div class="crm-nba-head">' +
+                                '<i data-lucide="zap"></i>' +
+                                '<strong>Próximas acciones sugeridas</strong>' +
+                            '</div>' +
+                            actions.map(function (a) {
+                                return '<div class="crm-nba-item" data-priority="' + a.priority + '">' +
+                                    '<i data-lucide="' + escTxt(a.icon) + '"></i>' +
+                                    '<div class="crm-nba-body">' +
+                                        '<div class="crm-nba-cta">' + escTxt(a.cta) + '</div>' +
+                                        '<div class="crm-nba-reason">' + escTxt(a.reason) + '</div>' +
+                                    '</div>' +
+                                '</div>';
+                            }).join('') +
+                        '</div>';
+                }
+            }
             body.innerHTML =
+                nbaBlock +
                 '<div class="crm-detail-summary">' +
                     '<div class="crm-detail-row"><strong>Email</strong><span>' + escTxt(c.email || '—') + '</span></div>' +
                     '<div class="crm-detail-row"><strong>Teléfono</strong><span>' + escTxt(c.telefono || '—') + '</span></div>' +
@@ -413,6 +463,8 @@
                     (c.creadoEn ? '<div class="crm-detail-row"><strong>Registro</strong><span>' + escTxt(formatDate(c.creadoEn)) + '</span></div>' : '') +
                     '<div class="crm-detail-row"><strong>Asesor asignado</strong><span>' + escTxt(c.assignedToName || '—') + '</span></div>' +
                 '</div>';
+            if (window.AltorraIcons) window.AltorraIcons.refresh(body);
+            else if (window.lucide) try { window.lucide.createIcons({ context: body }); } catch (e) {}
         } else if (tab === 'comms') {
             var sorted = (c.comms || []).slice().sort(function (a, b) {
                 return (b.createdAt || '').localeCompare(a.createdAt || '');
@@ -466,12 +518,43 @@
                 '</div>';
             }).join('');
             var tier = tierOf(bd.score);
+
+            // J.3 — bloque AI enrichment (sentiment + entities + urgencia)
+            var aiBlock = '';
+            if (bd.aiEnrichment && bd.aiEnrichment.adjustments && bd.aiEnrichment.adjustments.length > 0) {
+                var enr = bd.aiEnrichment;
+                var sigs = enr.signals || {};
+                var deltaSign = enr.delta > 0 ? '+' : '';
+                var deltaColor = enr.delta > 0 ? 'var(--status-success, #4ade80)' : (enr.delta < 0 ? 'var(--status-danger, #ff6b6b)' : 'var(--text-tertiary)');
+                var rowsAI = enr.adjustments.map(function (a) {
+                    var s = a.delta > 0 ? '+' : '';
+                    return '<li><strong style="color:' + (a.delta > 0 ? 'var(--status-success)' : 'var(--status-danger)') + ';">' + s + a.delta + '</strong> ' + AP.escapeHtml(a.reason) + '</li>';
+                }).join('');
+                aiBlock =
+                    '<div class="crm-ai-enrichment" style="margin-top:16px;padding:12px;background:rgba(184,150,88,0.06);border-left:2px solid var(--brand-gold,#b89658);border-radius:4px;">' +
+                        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">' +
+                            '<i data-lucide="sparkles" style="width:14px;height:14px;color:var(--brand-gold,#b89658);"></i>' +
+                            '<strong style="font-size:0.85rem;">AI insights</strong>' +
+                            '<span style="margin-left:auto;color:' + deltaColor + ';font-weight:600;">' + deltaSign + enr.delta + ' ajuste</span>' +
+                        '</div>' +
+                        '<div style="font-size:0.72rem;color:var(--text-tertiary);margin-bottom:6px;">' +
+                            'Score base ' + enr.baseScore + ' → final ' + enr.score +
+                            ' · ' + sigs.messageCount + ' mensaje' + (sigs.messageCount !== 1 ? 's' : '') +
+                            ' analizado' + (sigs.messageCount !== 1 ? 's' : '') +
+                        '</div>' +
+                        '<ul style="margin:0;padding-left:18px;font-size:0.78rem;line-height:1.45;">' + rowsAI + '</ul>' +
+                    '</div>';
+            }
+
             body.innerHTML =
                 '<div class="crm-detail-score-summary">' +
                     '<div class="crm-detail-score-big ' + tier.cls + '">' + tier.emoji + ' ' + bd.score + '</div>' +
                     '<div style="font-size:0.78rem;color:var(--admin-text-muted);">Tier: <strong>' + tier.name + '</strong></div>' +
                 '</div>' +
-                '<div class="crm-detail-score-rows">' + rows + '</div>';
+                '<div class="crm-detail-score-rows">' + rows + '</div>' +
+                aiBlock;
+            if (window.AltorraIcons) window.AltorraIcons.refresh(body);
+            else if (window.lucide) try { window.lucide.createIcons({ context: body }); } catch (e) {}
         } else if (tab === 'notas') {
             body.innerHTML =
                 '<div class="crm-detail-notes">' +

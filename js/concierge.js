@@ -132,7 +132,30 @@
     /* ═══════════════════════════════════════════════════════════
        BOT RESPONSE — fast path con FAQ + NER + sentiment hooks
        ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════
+       D.7 — AI Auto-Scheduling: detecta intent de agendar y sugiere
+       slot disponible al cliente.
+       ═══════════════════════════════════════════════════════════ */
+    function detectSchedulingIntent(text) {
+        var lower = (text || '').toLowerCase();
+        return /agend(ar|emos|amos)|cita|visita|cuando puedo|me gustar[íi]a (verlo|ver)|conocer (el|la) (auto|carro|veh)/i.test(lower);
+    }
+
     function generateBotResponse(userMsg) {
+        // D.7 — Si el cliente quiere agendar, sugerir slot
+        if (detectSchedulingIntent(userMsg) && window.AltorraCalendarConfig &&
+            window.AltorraCalendarConfig.parseSchedulingHint) {
+            var hint = window.AltorraCalendarConfig.parseSchedulingHint(userMsg, []);
+            if (hint && hint.fecha) {
+                var dayName = new Date(hint.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+                return {
+                    text: '📅 Te puedo agendar para el ' + dayName +
+                          (hint.hora ? ' a las ' + hint.hora : ' (te confirmamos la hora exacta)') + '. ¿Lo coordino con un asesor?',
+                    cta: { label: 'Sí, agendar', action: 'escalate' }
+                };
+            }
+        }
+
         // 1. Sentiment check — si muy negativo, escalar inmediatamente
         if (window.AltorraAI) {
             var s = window.AltorraAI.sentiment(userMsg);
@@ -392,17 +415,43 @@
     }
 
     function buildWhatsAppSummary() {
-        var lines = ['Hola, vengo del Concierge de Altorra Cars.', ''];
-        lines.push('Ticket: ' + session.sessionId);
-        if (session.nombre) lines.push('Nombre: ' + session.nombre);
-        if (session.email) lines.push('Email: ' + session.email);
-        if (session.sourceVehicleId) lines.push('Vehículo de interés: ID ' + session.sourceVehicleId);
-        lines.push('');
-        lines.push('Resumen de la conversación:');
+        // U.14 — handover refinado con identidad completa + sentiment + ticket
+        var ticket = session.sessionId.slice(-8).toUpperCase();
+        var lines = ['🚗 *Altorra Cars Concierge*', '*Ticket:* #' + ticket, ''];
+
+        // Identidad
+        if (session.nombre) lines.push('👤 ' + session.nombre);
+        if (session.email) lines.push('📧 ' + session.email);
+        if (session.telefono) lines.push('📲 ' + session.telefono);
+        if (session.sourceVehicleId) lines.push('🔑 Vehículo de interés: #' + session.sourceVehicleId);
+        if (session.level >= 3) lines.push('📊 Nivel: L' + session.level + ' (calificado)');
+
+        // Sentiment promedio
+        if (window.AltorraAI) {
+            try {
+                var userMsgs = session.messages.filter(function (m) { return m.from === 'user'; });
+                if (userMsgs.length > 0) {
+                    var scores = userMsgs.map(function (m) {
+                        var s = window.AltorraAI.sentiment(m.text);
+                        return s ? s.score : 0;
+                    });
+                    var avg = scores.reduce(function (a, b) { return a + b; }, 0) / scores.length;
+                    var label = avg > 0.2 ? 'positivo 😊' : avg < -0.2 ? 'negativo 😟' : 'neutral';
+                    lines.push('💬 Sentiment: ' + label + ' (' + scores.length + ' mensajes)');
+                }
+            } catch (e) {}
+        }
+
+        // Top 3 mensajes del cliente
+        lines.push('', '*Últimos mensajes del cliente:*');
         var lastUserMsgs = session.messages.filter(function (m) { return m.from === 'user'; }).slice(-3);
-        lastUserMsgs.forEach(function (m) {
-            lines.push('• ' + m.text);
+        lastUserMsgs.forEach(function (m, i) {
+            var trimmed = m.text.length > 120 ? m.text.slice(0, 117) + '...' : m.text;
+            lines.push((i + 1) + '. ' + trimmed);
         });
+
+        lines.push('', '👉 Abrir conversación: altorracars.github.io/admin.html#concierge');
+        lines.push('Hola, soy el cliente del ticket #' + ticket + '.');
         return lines.join('\n');
     }
 

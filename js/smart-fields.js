@@ -107,8 +107,161 @@
             derive: function () {
                 return { value: 'Cartagena', reason: 'sede principal' };
             }
+        },
+        {
+            // C.4 — Prioridad destacado calculada por antigüedad + tipo
+            id: 'prioridad_destacado',
+            field: 'prioridadDestacado',
+            description: 'Prioridad de destacado calculada (0-100) según antigüedad + tipo + estado',
+            condition: function (doc) {
+                return isBlank(doc.prioridadDestacado);
+            },
+            derive: function (doc) {
+                var score = 50; // base
+                // + bonus por ser nuevo
+                if (doc.tipo === 'nuevo') score += 25;
+                else if (doc.tipo === 'semi-nuevo') score += 15;
+                // + bonus por estar en oferta
+                if (doc.oferta || (doc.precioOferta && doc.precio && doc.precioOferta < doc.precio)) {
+                    score += 15;
+                }
+                // + bonus por categorías premium (suv/pickup tienen alta demanda)
+                if (doc.categoria === 'suv' || doc.categoria === 'pickup') score += 5;
+                // - penalty si km alto
+                if (doc.kilometraje > 100000) score -= 10;
+                if (doc.kilometraje > 150000) score -= 10;
+                score = Math.max(0, Math.min(100, score));
+                return { value: score, reason: 'calculado por tipo+oferta+km' };
+            }
         }
     ];
+
+    /* ═══════════════════════════════════════════════════════════
+       C.8 — VALIDACIONES INTELIGENTES (warnings, no fail)
+       Cada regla devuelve {field, severity, message} si detecta algo
+       inusual. Severity: 'warning' | 'error'.
+       ═══════════════════════════════════════════════════════════ */
+    var VALIDATIONS = [
+        {
+            id: 'classic_anomaly',
+            check: function (doc) {
+                var year = parseInt(doc.year, 10);
+                var km = parseInt(doc.kilometraje, 10);
+                if (year && year < 2000 && km && km < 50000) {
+                    return {
+                        field: 'kilometraje',
+                        severity: 'warning',
+                        message: 'Año antiguo (' + year + ') con kilometraje bajo (' + km.toLocaleString() + ' km). ¿Es un clásico restaurado o el km es correcto?'
+                    };
+                }
+            }
+        },
+        {
+            id: 'cuota_vs_precio',
+            check: function (doc) {
+                if (doc.cuotaInicial && doc.precio &&
+                    parseInt(doc.cuotaInicial, 10) > parseInt(doc.precio, 10)) {
+                    return {
+                        field: 'cuotaInicial',
+                        severity: 'error',
+                        message: 'La cuota inicial no puede ser mayor al precio del vehículo.'
+                    };
+                }
+            }
+        },
+        {
+            id: 'precio_alto',
+            check: function (doc) {
+                var p = parseInt(doc.precio, 10);
+                if (p && p > 1000000000) {
+                    return {
+                        field: 'precio',
+                        severity: 'warning',
+                        message: 'Precio elevado: $' + (p / 1e6).toFixed(0) + 'M. Verificar.'
+                    };
+                }
+            }
+        },
+        {
+            id: 'precio_bajo',
+            check: function (doc) {
+                var p = parseInt(doc.precio, 10);
+                if (p && p > 0 && p < 5000000) {
+                    return {
+                        field: 'precio',
+                        severity: 'warning',
+                        message: 'Precio inusualmente bajo: $' + (p / 1e6).toFixed(1) + 'M. ¿Verificar?'
+                    };
+                }
+            }
+        },
+        {
+            id: 'oferta_mayor_que_precio',
+            check: function (doc) {
+                if (doc.precioOferta && doc.precio &&
+                    parseInt(doc.precioOferta, 10) > parseInt(doc.precio, 10)) {
+                    return {
+                        field: 'precioOferta',
+                        severity: 'error',
+                        message: 'El precio de oferta no puede ser mayor al precio regular.'
+                    };
+                }
+            }
+        },
+        {
+            id: 'year_futuro',
+            check: function (doc) {
+                var year = parseInt(doc.year, 10);
+                var currentYear = new Date().getFullYear();
+                if (year && year > currentYear + 1) {
+                    return {
+                        field: 'year',
+                        severity: 'warning',
+                        message: 'Año ' + year + ' es futuro. ¿Modelo del próximo año?'
+                    };
+                }
+            }
+        },
+        {
+            id: 'km_negativo',
+            check: function (doc) {
+                if (doc.kilometraje && parseInt(doc.kilometraje, 10) < 0) {
+                    return {
+                        field: 'kilometraje',
+                        severity: 'error',
+                        message: 'El kilometraje no puede ser negativo.'
+                    };
+                }
+            }
+        },
+        {
+            id: 'sin_imagen',
+            check: function (doc) {
+                if (doc.imagenes && Array.isArray(doc.imagenes) && doc.imagenes.length === 0) {
+                    return {
+                        field: 'imagen',
+                        severity: 'warning',
+                        message: 'Sin imágenes. El vehículo no se mostrará bien en el catálogo.'
+                    };
+                }
+            }
+        }
+    ];
+
+    function validate(doc) {
+        var d = doc || {};
+        var issues = [];
+        VALIDATIONS.forEach(function (v) {
+            try {
+                var result = v.check(d);
+                if (result) {
+                    result.ruleId = v.id;
+                    issues.push(result);
+                }
+            } catch (e) {}
+        });
+        return issues;
+    }
 
     /* ═══════════════════════════════════════════════════════════
        PREVIEW — read-only inspection of what would be derived
@@ -181,11 +334,16 @@
     window.AltorraSmartFields = {
         derive: derive,
         preview: preview,
+        validate: validate,    // C.8 — validaciones inteligentes
         rules: RULES.map(function (r) {
             return { id: r.id, field: r.field, description: r.description };
         }),
+        validations: VALIDATIONS.map(function (v) {
+            return { id: v.id };
+        }),
         formatSuggestion: formatSuggestion,
         // For K.6 (visual builder): the raw rule list including functions
-        _internalRules: RULES
+        _internalRules: RULES,
+        _internalValidations: VALIDATIONS
     };
 })();

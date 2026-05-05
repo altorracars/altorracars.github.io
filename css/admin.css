@@ -721,6 +721,56 @@ body.sidebar-show-rare .nav-item--rare {
     color: var(--brand-gold, #b89658);
     font-weight: 600;
 }
+.kpi-tile--full {
+    grid-column: 1 / -1;
+}
+
+/* O.2 — Funnel chart */
+.funnel-chart {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.funnel-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 80px;
+    align-items: center;
+    gap: 12px;
+}
+.funnel-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0a0a0);
+    font-weight: 500;
+}
+.funnel-bar-wrap {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    height: 28px;
+    overflow: hidden;
+}
+.funnel-bar {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 12px;
+    border-radius: 6px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08));
+}
+.funnel-bar-count {
+    color: #1a1500;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.funnel-drop {
+    font-size: 0.7rem;
+    color: var(--status-danger, #ff6b6b);
+    text-align: right;
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
 
 /* N.4 — Onboarding tour */
 .alt-onboard {
@@ -5597,6 +5647,44 @@ table th:focus-visible,
     color: var(--text-tertiary, #888);
     font-style: normal;
     font-size: 0.7rem;
+}
+
+/* C.8 — Validaciones inteligentes */
+.smart-validations-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    color: var(--status-warning, #facc15);
+    font-weight: 500;
+    font-size: 0.78rem;
+}
+.smart-validations-head [data-lucide] {
+    width: 14px;
+    height: 14px;
+}
+.smart-validations-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.smart-validations-list li {
+    padding: 4px 0;
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+.smart-validations-list li.smart-validation-warning {
+    color: var(--status-warning, #facc15);
+}
+.smart-validations-list li.smart-validation-error {
+    color: var(--status-danger, #ff6b6b);
+}
+.smart-validations-list li strong {
+    color: inherit;
+    text-transform: capitalize;
+    margin-right: 4px;
 }
 .automation-toggle {
     position: relative;

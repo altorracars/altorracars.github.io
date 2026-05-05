@@ -176,14 +176,37 @@
                     '<div class="kpi-sub">' + k.topAsesor.count + ' venta' + (k.topAsesor.count !== 1 ? 's' : '') + '</div>' +
                 '</div>'
             : '') +
-            '<div class="kpi-tile">' +
-                '<div class="kpi-label">Embudo del mes</div>' +
-                '<div class="kpi-funnel">' +
-                    '<span>' + k.leads + ' leads</span> → ' +
-                    '<span>' + k.solicitudes + ' solicitudes</span> → ' +
-                    '<span>' + k.vendidos + ' ventas</span>' +
-                '</div>' +
+            '<div class="kpi-tile kpi-tile--full">' +
+                '<div class="kpi-label">Embudo de conversión del mes</div>' +
+                renderFunnelChart(k) +
             '</div>';
+    }
+
+    function renderFunnelChart(k) {
+        var max = Math.max(k.leads, k.solicitudes, k.vendidos, 1);
+        var stages = [
+            { label: 'Leads', count: k.leads, color: '#60a5fa' },
+            { label: 'Solicitudes', count: k.solicitudes, color: '#facc15' },
+            { label: 'Citas', count: k.solicitudes, color: '#a78bfa' },
+            { label: 'Ventas', count: k.vendidos, color: '#4ade80' }
+        ];
+        return '<div class="funnel-chart">' +
+            stages.map(function (s, i) {
+                var widthPct = max > 0 ? Math.max(8, (s.count / max) * 100) : 0;
+                var dropPct = i > 0 && stages[i - 1].count > 0 ?
+                    Math.round(((stages[i - 1].count - s.count) / stages[i - 1].count) * 100) : 0;
+                return '<div class="funnel-row">' +
+                    '<div class="funnel-label">' + s.label + '</div>' +
+                    '<div class="funnel-bar-wrap">' +
+                        '<div class="funnel-bar" style="width:' + widthPct + '%; background:' + s.color + ';">' +
+                            '<span class="funnel-bar-count">' + s.count + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    (i > 0 && dropPct > 0 ?
+                        '<div class="funnel-drop">↓ ' + dropPct + '%</div>' : '<div class="funnel-drop"></div>') +
+                '</div>';
+            }).join('') +
+        '</div>';
     }
 
     function refresh() {

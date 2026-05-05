@@ -796,6 +796,7 @@
     window.AltorraCRM = {
         renderCRM: renderCRM,
         buildContacts: buildContacts,
+        getContacts: buildContacts, // alias para Bloque R (predictive)
         computeScore: computeScore,
         computeScoreBreakdown: computeScoreBreakdown,
         tierOf: tierOf

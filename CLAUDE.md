@@ -5798,6 +5798,137 @@ para upgrade ML futuro (Transformers.js, TF.js) sin tocar callsites.
 Cada uno se plugea via `AltorraAI.registerProvider(...)` cuando se
 implemente sin tocar el resto del sistema.
 
+### Microfase R.1+R.2+R.3+R.4 — Predictive Analytics ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: Bloque R completo — entrega un widget "Insights del día"
+en el dashboard del admin con 4 secciones: forecast de ventas, hot
+leads del día, vehículos al borde (stale) y riesgo de churn. Construye
+sobre J.3 (scoring) y aporta valor visible inmediato cada vez que el
+admin abre el panel.
+
+**Decisión de diseño**: Sin TensorFlow.js. La regresión lineal por
+mínimos cuadrados es matemática elemental (~30 líneas) y entrega 95%
+del valor con 0% del peso. Las reglas heurísticas de hot leads / stale
+/ churn corren sub-millisegundo sobre `AP.vehicles` y `AltorraCRM.getContacts()`.
+
+**Lo que se creó**:
+
+#### `js/ai/forecast.js` — librería de predicción numérica
+
+API pública `window.AltorraForecast`:
+```js
+AltorraForecast.linear(values)            → {slope, intercept, predict, r2, n}
+AltorraForecast.predictNext(values, n=1)  → array de n predicciones
+AltorraForecast.confidence(values, n=1)   → {predictions, lower, upper, sigma, r2}
+AltorraForecast.movingAverage(values, w)  → array suavizado
+AltorraForecast.detectAnomaly(values, σ=2) → array con índices anómalos
+```
+
+- **Regresión lineal por mínimos cuadrados** con cálculo de R² (calidad
+  del ajuste, 0..1)
+- **Confidence interval ±1.96σ** (≈95% confianza) basado en residuales
+  del fit
+- **Moving average** para suavizar series con ruido
+- **Anomaly detection** por z-score
+- Mínimo 3 puntos para retornar fit (evita fits espurios sobre 2 puntos)
+- Predicciones clampeadas a ≥0 (no tiene sentido predecir ventas negativas)
+
+#### `js/admin-predictive.js` — orquestador del widget
+
+API pública `window.AltorraPredictive`:
+```js
+AltorraPredictive.refresh()         → recalcula y renderiza
+AltorraPredictive.hotLeads(n=5)     → top N hot leads
+AltorraPredictive.staleVehicles(d=60) → vehículos sin movimiento >d días
+AltorraPredictive.churnRisk()       → contactos en riesgo
+AltorraPredictive.salesForecast()   → forecast de ventas próximo mes
+```
+
+**R.2 — Hot leads del día**:
+- Lee contactos vía `AltorraCRM.getContacts()`, ranking por score
+  (de J.3 enriquecido) - penalty leve por días sin tocar
+- Filtro: `score ≥ 50` AND última actividad < 30 días
+- Heat = score - min(20, lastDays * 0.5) → prioriza warm-recientes
+- Top 5 por defecto
+- **Fallback**: si AltorraCRM no expone API (race en init), reconstruye
+  contactos desde `AP.appointments` agrupados por email
+
+**R.3 — Vehículos al borde**:
+- Filtra `AP.vehicles` con `estado === 'disponible'` Y `daysSince(createdAt) ≥ 60`
+- Ordena por `daysStale` desc (los más viejos primero)
+- Top 5 mostrados; admin ve fácilmente qué inventario tiene quemado
+
+**R.4 — Churn risk**:
+- Contactos con `score ≥ 50` (eran hot/tibios) pero `lastDays ≥ 20 && < 90`
+- Ordena por score descendente (los más valiosos primero)
+- Top 5 — sugiere reconexión proactiva
+
+**Sales forecast**:
+- Cuenta vehículos vendidos por mes en últimos 6 meses
+- Si total ≥ 3, llama `AltorraForecast.confidence()` para predecir
+  próximo mes con intervalo 95%
+- Renderiza con flecha ↑/↓ vs último mes (color verde/rojo) + rango
+  inferior-superior + R² (calidad del ajuste %)
+
+**Renderizado del widget**:
+
+Card al inicio del dashboard (después de stats-grid, antes de
+quick-actions) con:
+- Header `<i data-lucide="sparkles"></i> Insights del día` + botón refresh
+- Grid responsive `auto-fit minmax(220px, 1fr)` con 3-4 columnas
+- Cada columna con título + lista de items + empty state
+- Hot leads: avatar con iniciales + nombre + score/días
+- Stale: icono car + marca/modelo/año + días sin moverse
+- Churn: icono alert-triangle + nombre + score/días
+- Forecast (cuando hay datos): número grande con flecha + rango + R²
+
+**Auto-refresh**:
+- Re-render cuando admin entra al dashboard (vía
+  `AltorraSections.onChange`)
+- Re-render cuando bus emite `vehicle.*` o `comm.*` (data nueva)
+- Refresh manual via botón (icono refresh-cw)
+- Init bloquea hasta que `AP.vehicles.length > 0` (max 60 intentos)
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Forecast espurio sobre 1-2 puntos | `linear()` requiere ≥ 3 valores |
+| División por cero si todos los valores son iguales | Guard `denom === 0` retorna null |
+| Predicciones negativas (ventas no pueden ser <0) | `Math.max(0, predicted)` |
+| Confidence interval irreal con muestra pequeña | Sigma usa `n-2` en denominador (corrección Bessel) |
+| Hot leads sin datos del CRM | Fallback a `AP.appointments` reconstruyendo agrupado por email |
+| Recompute caro en cada render del CRM | Widget solo se re-renderiza en eventos relevantes, no en cada tick |
+| Stale vehicles falsos positivos (acaba de cambiar estado) | Filtra solo `estado === 'disponible'` (vendido/reservado excluidos) |
+| Churn risk sobre contactos nunca activos | Filtro `lastDays !== Infinity` y `< 90` (no demasiado viejos) |
+| Forecast de meses futuros sin contexto | `predictNext(values, 1)` solo predice 1 paso (más allá es ruido) |
+
+**Pasos de prueba**:
+1. Login admin → Dashboard
+2. Card "Insights del día" aparece después de stats con 3-4 columnas
+3. Si hay vehículos vendidos en los últimos 6 meses con datos
+   suficientes, aparece el forecast con número grande
+4. Cambiar estado de un vehículo a "vendido" → Activity Feed dispara
+   `vehicle.updated`, widget se re-renderiza solo
+5. Click refresh manual → recalcula todo
+6. Consola: `AltorraForecast.linear([5, 7, 9, 11])` → `{slope: 2, intercept: 5, r2: 1}`
+7. Consola: `AltorraPredictive.hotLeads(10)` → array completo
+
+**Archivos creados/modificados**:
+- `js/ai/forecast.js` — módulo nuevo (~150 líneas)
+- `js/admin-predictive.js` — módulo nuevo (~280 líneas)
+- `admin.html` — `<div id="predictiveInsights">` en dashboard +
+  scripts cargados
+- `js/admin-crm.js` — `AltorraCRM.getContacts` alias para que el
+  predictive module lo consuma
+- `css/admin.css` — `.predictive-card` + `.pred-grid` + 12 sub-clases
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505230000
+
+**Cierre Bloque R**: con esta entrega, el Bloque R queda completo en
+una sola microfase compuesta. La extensión natural sería persistir
+score histórico en Firestore para R.4 más preciso (detectar caídas
+reales vs estimaciones), pero el patrón funciona ya con buen ROI.
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

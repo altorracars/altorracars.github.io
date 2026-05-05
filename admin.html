@@ -401,6 +401,19 @@
                 </div>
             </div>
 
+            <!-- R.2/R.3/R.4 — Insights del día (Bloque R - Predictive Analytics) -->
+            <div class="predictive-card">
+                <div class="predictive-card-head">
+                    <h3><i data-lucide="sparkles"></i> Insights del día</h3>
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="predictiveRefresh" data-tooltip="Refrescar">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+                </div>
+                <div id="predictiveInsights">
+                    <div class="pred-empty">Cargando insights…</div>
+                </div>
+            </div>
+
             <!-- F8.1: ACCIONES RAPIDAS -->
             <div class="quick-actions" id="quickActions">
                 <button class="quick-action-btn" data-action="quickNewVehicle" title="Nuevo vehiculo">
@@ -2244,11 +2257,13 @@
 <script src="js/ai/ner.js" defer></script>
 <script src="js/ai/scoring.js" defer></script>
 <script src="js/ai/nba.js" defer></script>
+<script src="js/ai/forecast.js" defer></script>
 <script src="js/admin-vehicles.js" defer></script>
 <script src="js/admin-brands.js" defer></script>
 <script src="js/admin-users.js" defer></script>
 <script src="js/admin-appointments.js" defer></script>
 <script src="js/admin-crm.js" defer></script>
+<script src="js/admin-predictive.js" defer></script>
 <script src="js/admin-inbox.js" defer></script>
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

@@ -42,9 +42,47 @@
             'alt-native-invite', 'alt-offline-banner'
         ];
 
+        // CRÍTICO: clases protegidas — elementos con cualquiera de estas
+        // clases NO se tocan, sin importar que NO tengan id.
+        var WHITELIST_CLASSES = [
+            'altorra-notify-center',  // panel del bell (toast.js createPanel)
+            'altorra-notify',          // toasts
+            'altorra-notify-stack',    // contenedor de toasts apilados
+            'altorra-bell',            // bell button
+            'altorra-spotlight',       // spotlight de favoritos
+            'modal-overlay',           // modales del admin (vehiculo, etc.)
+            'sidebar-overlay',         // overlay del sidebar mobile
+            'crm-detail-panel',        // CRM 360
+            'auth-modal-backdrop',     // login modal
+            'altorra-auth-modal'       // login modal
+        ];
+
+        function hasProtectedClass(el) {
+            for (var i = 0; i < WHITELIST_CLASSES.length; i++) {
+                if (el.classList && el.classList.contains(WHITELIST_CLASSES[i])) return true;
+            }
+            return false;
+        }
+
+        // PASADA 0 — restaurar elementos legítimos que mi script previo
+        // pudo haber ocultado por error (style inline display:none + pointer-events:none).
+        // Identificamos por clase protegida.
+        Array.prototype.slice.call(document.body.children).forEach(function (el) {
+            if (hasProtectedClass(el) || (el.id && WHITELIST_IDS.indexOf(el.id) !== -1)) {
+                // Si tiene style inline que mi script puso, removerlo
+                if (el.style.display === 'none' && el.dataset && !el.dataset.altOriginallyHidden) {
+                    el.style.display = '';
+                }
+                if (el.style.pointerEvents === 'none' && el.dataset && !el.dataset.altOriginallyHidden) {
+                    el.style.pointerEvents = '';
+                }
+            }
+        });
+
         Array.prototype.slice.call(document.body.children).forEach(function (el) {
             if (!el.tagName || (el.tagName !== 'DIV' && el.tagName !== 'ASIDE' && el.tagName !== 'SECTION')) return;
             if (el.id && WHITELIST_IDS.indexOf(el.id) !== -1) return;
+            if (hasProtectedClass(el)) return;
 
             var cs;
             try { cs = getComputedStyle(el); } catch (e) { return; }
@@ -53,20 +91,23 @@
             if (isNaN(z) || z < 9000) return;
             if (cs.display === 'none') return;
 
+            // Si ya tiene pointer-events: none, NO captura clicks.
+            // No es sospechoso. Skip.
+            if (cs.pointerEvents === 'none') return;
+
             var activeClasses = ['active', 'open', 'visible', 'aaf-open',
                                  'alt-palette-open', 'alt-voice-active',
-                                 'is-active', 'cnc-open'];
+                                 'is-active', 'cnc-open',
+                                 'altorra-notify-center--open'];
             if (activeClasses.some(function (c) { return el.classList.contains(c); })) return;
 
-            // Sospechoso. Hide it.
+            // Sospechoso de bloquear clicks. Hide it.
             el.style.pointerEvents = 'none';
             el.style.display = 'none';
             console.warn('[HeaderFix] Hidden suspected overlay:', el.id || el.className);
         });
 
         // SEGUNDA PASADA — overlays watched que se quedaron sin clase activa
-        // Si .alt-onboard, .altorra-voice-overlay etc. están en el DOM PERO
-        // no tienen su clase activa, forzamos display none.
         var WATCHED_PAIRS = [
             { selector: '#alt-onboard', activeClass: 'is-active' },
             { selector: '#alt-palette', activeClass: 'alt-palette-open' },
@@ -80,13 +121,10 @@
             el.style.pointerEvents = 'none';
         });
 
-        // TERCERA PASADA — modales dinámicos que existen pero podrían
-        // estar vacíos / huérfanos. Si tienen contenido renderizado,
-        // están siendo usados; si no, se ocultan.
+        // TERCERA PASADA — modales dinámicos vacíos
         ['altorra-optin', 'alt-sec-modal', 'cncSummaryWrap'].forEach(function (id) {
             var el = document.getElementById(id);
             if (!el) return;
-            // Si el modal dinámico no tiene contenido visible, hide.
             if (!el.firstElementChild) {
                 el.style.display = 'none';
                 el.style.pointerEvents = 'none';

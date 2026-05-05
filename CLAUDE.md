@@ -7673,6 +7673,94 @@ D) **Sin defense-in-depth** para limpiar overlays huérfanos en runtime.
 | Overlays con `display: flex` + z-index extremo por default | SIEMPRE poner `display: none` o `pointer-events: none` por default. Activar con clase, no quitar lo que rompió |
 | Sin testing E2E entre commits | Los próximos sprints serán **commits más grandes y testeados antes del próximo bloque** |
 
+### FIX rounds 2 y 3 — Header buttons + cleanup overlays + ReferenceError ✓ APLICADO (2026-05-05)
+
+Tras el FIX integral inicial, el usuario reportó que **los botones del
+header todavía no funcionaban consistentemente**. La consola reveló:
+
+1. **`Uncaught ReferenceError: toggleTheme is not defined`**
+   en `admin-phase5.js:365`. Cuando T.4 (theme-switcher) tomó el bind,
+   eliminé las funciones de phase5 pero la línea
+   `AP.toggleTheme = toggleTheme` quedó residual y reventaba el IIFE.
+   **Fix**: comentado.
+
+2. **Icon `inbox-x` no existe en Lucide** (warning cosmético).
+   **Fix**: cambiado a `inbox` en admin-activity-feed.js (2 usos).
+
+3. **Mi propio `cleanupOverlays` ocultaba `altorra-notify-center`**
+   (el panel del bell). El bell aparecía bound pero al click no
+   abría el panel porque mi script lo había hidden. Reportado en
+   consola como `[HeaderFix] Hidden suspected overlay: altorra-notify-center`.
+   **Fix**:
+   - Whitelist de **clases protegidas** (no solo IDs):
+     `altorra-notify-center`, `altorra-notify`, `altorra-notify-stack`,
+     `altorra-bell`, `altorra-spotlight`, `modal-overlay`,
+     `sidebar-overlay`, `crm-detail-panel`, `auth-modal-backdrop`,
+     `altorra-auth-modal`
+   - Skip si `pointer-events: none` ya está aplicado (el elemento NO
+     captura clicks por sí mismo, NO es sospechoso)
+   - Pasada 0 nueva: restaurar elementos legítimos cuyo style inline
+     `display:none` haya sido aplicado por mi script anteriormente
+   - `altorra-notify-center--open` añadido a `activeClasses`
+
+4. **z-index forzado en botones del header** vía CSS:
+   ```
+   #activityFeedTrigger, #themeToggle, #contrastToggle,
+   #headerNotifBell, #headerNotifBell button,
+   #altorra-voice-btn, #pwaInstallBtn {
+     position: relative !important;
+     z-index: 100 !important;
+     pointer-events: auto !important;
+   }
+   ```
+   Garantiza que ningún overlay inferior los pueda tapar.
+
+5. **Nuevo diagnostic API** en consola del browser:
+   - `__altorraDebugClicks = true` → loga cada click con path
+     completo de elementos en (x,y)
+   - `__altorraClickPath(x, y)` → lista elementos ordenados
+     por z-index en esas coordenadas
+   - `__altorraHeaderDiag()` → reporte completo de buttons +
+     APIs disponibles + overlays con z-index alto
+
+### Auditoría de código residual / muerto ✓ EJECUTADA (2026-05-05)
+
+Tras la cantidad de microfases, el usuario pidió un escaneo de código
+muerto. Resultados:
+
+**Archivos JS eliminados** (ya no cargados en ningún HTML):
+- `js/whatsapp-widget.js` (173 líneas) — reemplazado por `concierge.js`
+  en U.4
+- `js/ai-assistant.js` (221 líneas) — reemplazado por `concierge.js`
+  en U.4
+- `js/admin-overlay-guard.js` (eliminado en round 2 — patrón "borrar
+  cosas que no entiendo" causaba más problemas que resolvía,
+  reemplazado por `admin-header-fix.js` que solo OCULTA con whitelist)
+
+Total: **~580 líneas de código muerto eliminadas**.
+
+**Archivos legacy que SÍ siguen en uso** (NO eliminados):
+- `js/historial-visitas.js` — usado en index, detalle-vehiculo, perfil
+- `js/admin-phase5.js` — funciones charts y wizard aún usadas (theme
+  toggle eliminado pero el resto del archivo sigue activo)
+
+**APIs huérfanas detectadas** (expuestas pero no usadas):
+- `AltorraOverlayGuard` — 0 referencias (eliminado con el archivo)
+- `AltorraNativeNotifs` — 6 refs (en uso, vía wrap del notifyCenter)
+- `AltorraColorExtract` — 4 refs (módulo cargado pero la integración
+  con el modal de vehículo está pendiente — futuro sprint)
+
+**CSS legacy oculto pero presente**:
+- `.altorra-voice-fab { display: none !important; }` — selector
+  legacy del FAB del voice (ahora botón en header). Mantenido por
+  defensa contra cache vieja, eventualmente eliminable.
+
+**Funciones residuales en admin-phase5.js**:
+- `initTheme`, `toggleTheme`, `updateThemeIcon` — eliminadas en T.4
+- Línea `AP.toggleTheme = toggleTheme` — comentada (era la que
+  causaba el ReferenceError)
+- Resto del archivo (charts, wizard) sigue funcional
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

@@ -578,7 +578,20 @@
                 '<td>' + (a.fecha ? '<div>' + AP.escapeHtml(a.fecha) + '</div><div style="font-weight:600;">' + AP.escapeHtml(a.hora || '-') + '</div>' : '<span style="color:var(--admin-text-muted);font-size:0.8rem;">N/A</span>') + '</td>' +
                 '<td>' + slaDot + '<span style="color:var(--' + estadoClass + ');font-weight:600;font-size:0.85rem;">' + estadoLbl + '</span></td>' +
                 '<td style="font-size:0.78rem;color:var(--admin-text-muted);">' + AP.escapeHtml(a.assignedToName || '—') + '</td>' +
-                '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + AP.escapeHtml(a.observaciones || a.comentarios || a.mensaje || '-') + '</td>' +
+                '<td style="max-width:150px;font-size:0.8rem;color:var(--admin-text-muted);">' + (function () {
+                    var msg = a.observaciones || a.comentarios || a.mensaje || '';
+                    if (!msg) return '-';
+                    var dot = '';
+                    if (window.AltorraAI && msg.length > 8) {
+                        var s = window.AltorraAI.sentiment(msg);
+                        if (s && s.label !== 'neutral') {
+                            var color = s.label === 'positive' ? 'var(--status-success)' : 'var(--status-danger)';
+                            var title = 'Sentimiento: ' + s.label + ' (score ' + s.score.toFixed(2) + ')';
+                            dot = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + color + ';margin-right:4px;vertical-align:middle;" title="' + AP.escapeHtml(title) + '"></span>';
+                        }
+                    }
+                    return dot + AP.escapeHtml(msg);
+                })() + '</td>' +
                 '<td style="white-space:nowrap;">' +
                     (AP.RBAC.canManageAppointment() ? '<button class="btn btn-sm btn-ghost" data-action="manageAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Gestionar">Gestionar</button>' : '') +
                     (AP.RBAC.canDeleteAppointment() ? ' <button class="btn btn-sm btn-danger" data-action="deleteAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Eliminar">&times;</button>' : '') +

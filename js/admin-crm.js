@@ -392,6 +392,7 @@
                     '<button class="crm-detail-tab active" data-tab="resumen">Resumen</button>' +
                     '<button class="crm-detail-tab" data-tab="comms">Comunicaciones</button>' +
                     '<button class="crm-detail-tab" data-tab="actividad">Actividad</button>' +
+                    '<button class="crm-detail-tab" data-tab="red">Red</button>' +
                     '<button class="crm-detail-tab" data-tab="score">Score</button>' +
                     '<button class="crm-detail-tab" data-tab="notas">Notas</button>' +
                 '</div>' +
@@ -502,6 +503,65 @@
                     (c.type !== 'registered' ? '<div class="crm-detail-empty" style="margin-top:12px;">Solo se registra actividad para usuarios registrados.</div>' : '') +
                 '</div>';
             if (window.lucide) try { window.lucide.createIcons(); } catch (e) {}
+        } else if (tab === 'red') {
+            // Q.2 — Red del contacto en el Knowledge Graph
+            if (!window.AltorraGraph) {
+                body.innerHTML = '<div class="crm-detail-empty">Knowledge Graph aún no cargado.</div>';
+                return;
+            }
+            var nodeId = 'contact:' + (c.email || '').toLowerCase().trim();
+            var brands = window.AltorraGraph.neighborsOf(nodeId, { kind: 'likes_brand', limit: 5 });
+            var vehicles = window.AltorraGraph.neighborsOf(nodeId, { kind: 'interested_in', limit: 5 });
+            var similar = window.AltorraGraph.neighborsOf(nodeId, { kind: 'similar_to', limit: 5 });
+
+            var brandsHTML = brands.length === 0
+                ? '<div class="crm-graph-empty">Sin marcas detectadas todavía</div>'
+                : brands.map(function (n) {
+                    return '<div class="crm-graph-item">' +
+                        '<i data-lucide="tag" style="color:var(--brand-gold);"></i>' +
+                        '<span>' + escTxt(n.node.name) + '</span>' +
+                        '<span class="crm-graph-weight">·' + n.weight + '</span>' +
+                    '</div>';
+                }).join('');
+
+            var vehiclesHTML = vehicles.length === 0
+                ? '<div class="crm-graph-empty">Sin vehículos consultados</div>'
+                : vehicles.map(function (n) {
+                    var v = n.node;
+                    return '<div class="crm-graph-item">' +
+                        '<i data-lucide="car" style="color:var(--brand-gold);"></i>' +
+                        '<span>' + escTxt((v.marca || '') + ' ' + (v.modelo || '') + ' ' + (v.year || '')) + '</span>' +
+                        '<span class="crm-graph-weight">·' + n.weight + '</span>' +
+                    '</div>';
+                }).join('');
+
+            var similarHTML = similar.length === 0
+                ? '<div class="crm-graph-empty">Sin contactos similares</div>'
+                : similar.map(function (n) {
+                    return '<div class="crm-graph-item">' +
+                        '<i data-lucide="user" style="color:var(--brand-gold);"></i>' +
+                        '<span>' + escTxt(n.node.nombre || n.node.email) + '</span>' +
+                        '<span class="crm-graph-weight">·' + n.weight + ' marcas</span>' +
+                    '</div>';
+                }).join('');
+
+            body.innerHTML =
+                '<div class="crm-graph-block">' +
+                    '<div class="crm-graph-section">' +
+                        '<h4 class="crm-graph-title"><i data-lucide="tag"></i> Marcas de interés</h4>' +
+                        brandsHTML +
+                    '</div>' +
+                    '<div class="crm-graph-section">' +
+                        '<h4 class="crm-graph-title"><i data-lucide="car"></i> Vehículos consultados</h4>' +
+                        vehiclesHTML +
+                    '</div>' +
+                    '<div class="crm-graph-section">' +
+                        '<h4 class="crm-graph-title"><i data-lucide="users-round"></i> Contactos similares</h4>' +
+                        similarHTML +
+                    '</div>' +
+                '</div>';
+            if (window.AltorraIcons) window.AltorraIcons.refresh(body);
+            else if (window.lucide) try { window.lucide.createIcons({ context: body }); } catch (e) {}
         } else if (tab === 'score') {
             var bd = computeScoreBreakdown(c);
             var weights = bd.weights;
@@ -634,6 +694,64 @@
         if (e.target && e.target.id === 'crmSearchInput') {
             clearTimeout(inputDebounce);
             inputDebounce = setTimeout(renderCRM, 200);
+        }
+        // Q.4 — Búsqueda semántica
+        if (e.target && e.target.id === 'crmSemanticInput') {
+            clearTimeout(inputDebounce);
+            inputDebounce = setTimeout(runSemanticSearch, 350);
+        }
+    });
+
+    function runSemanticSearch() {
+        var input = $('crmSemanticInput');
+        var resultsEl = $('crmSemanticResults');
+        var clearBtn = $('crmSemanticClear');
+        if (!input || !resultsEl) return;
+        var q = input.value.trim();
+        if (!q) {
+            resultsEl.style.display = 'none';
+            resultsEl.innerHTML = '';
+            if (clearBtn) clearBtn.style.display = 'none';
+            return;
+        }
+        if (clearBtn) clearBtn.style.display = '';
+        if (!window.AltorraGraph || !window.AltorraGraph.searchContacts) {
+            resultsEl.style.display = '';
+            resultsEl.innerHTML = '<div class="crm-semantic-empty">Knowledge Graph aún cargando…</div>';
+            return;
+        }
+        var matches = window.AltorraGraph.searchContacts(q);
+        if (matches.length === 0) {
+            resultsEl.style.display = '';
+            resultsEl.innerHTML = '<div class="crm-semantic-empty">Sin coincidencias.</div>';
+            return;
+        }
+        resultsEl.style.display = '';
+        resultsEl.innerHTML =
+            '<div class="crm-semantic-head">' + matches.length + ' contacto' + (matches.length !== 1 ? 's' : '') + ' coincide' + (matches.length !== 1 ? 'n' : '') + ':</div>' +
+            matches.slice(0, 10).map(function (m) {
+                var c = m.contact;
+                var initials = (c.nombre || c.email || '?').split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+                return '<div class="crm-semantic-item" data-email="' + escTxt(c.email) + '">' +
+                    '<div class="crm-semantic-avatar">' + escTxt(initials) + '</div>' +
+                    '<div class="crm-semantic-body">' +
+                        '<div class="crm-semantic-name">' + escTxt(c.nombre || c.email) + '</div>' +
+                        '<div class="crm-semantic-reasons">' + m.reasons.join(' · ') + '</div>' +
+                    '</div>' +
+                    '<div class="crm-semantic-score">' + m.matchScore + '</div>' +
+                '</div>';
+            }).join('');
+    }
+
+    // Limpiar búsqueda semántica
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.closest && e.target.closest('#crmSemanticClear')) {
+            var input = $('crmSemanticInput');
+            if (input) {
+                input.value = '';
+                runSemanticSearch();
+                input.focus();
+            }
         }
     });
     document.addEventListener('change', function (e) {

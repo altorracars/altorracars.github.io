@@ -5929,6 +5929,151 @@ una sola microfase compuesta. La extensión natural sería persistir
 score histórico en Firestore para R.4 más preciso (detectar caídas
 reales vs estimaciones), pero el patrón funciona ya con buen ROI.
 
+### Microfase Q.1+Q.2+Q.3+Q.4 — Knowledge Graph completo ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: red de relaciones implícitas que conecta contactos ↔
+vehículos ↔ marcas. Permite responder "¿quién está interesado en este
+vehículo nuevo?", "¿qué contactos son similares?", "¿quién busca SUV
+menor a $100M en Cartagena?". Patrón LinkedIn/Salesforce knowledge
+graph.
+
+**Decisión de diseño**: Sin Web Worker + IndexedDB (overkill para
+nuestros datasets de pocos miles de docs). Grafo in-memory plano que
+se reconstruye con throttle de 5s al cambiar los datos. Vacía y
+reconstruye completo en cada build — más simple que mantener delta
+updates, y como reconstruir es O(n) y los datos caben en memoria,
+es perfectamente eficiente.
+
+**Lo que se creó** (`js/ai/knowledge-graph.js`):
+
+API pública `window.AltorraGraph`:
+```js
+AltorraGraph.build()                    → reconstruir (con throttle)
+AltorraGraph.neighborsOf(nodeId, opts)  → vecinos del nodo, ordenados por weight
+AltorraGraph.matchContactsForVehicle(v) → contactos que probablemente quieren v
+AltorraGraph.searchContacts(query)      → búsqueda NL con NER + filtros semánticos
+AltorraGraph.stats()                    → métricas del grafo
+```
+
+**Estructura del grafo**:
+
+| Nodo | Key | Datos |
+|---|---|---|
+| Contact | `contact:<email>` | nombre, telefono, ciudad, score, commCount |
+| Vehicle | `vehicle:<id>` | marca, modelo, year, precio, categoria, estado |
+| Brand | `brand:<nombre>` | name, count |
+
+**Aristas** con weight (mayor = relación más fuerte):
+
+| From | To | Kind | Weight |
+|---|---|---|---|
+| contact | vehicle | `interested_in` | 4 si cita, 3 si solicitud, 1 si lead |
+| vehicle | contact | `attracted_contact` | mismo weight inverso |
+| contact | brand | `likes_brand` | sumado del weight del comm |
+| contact | brand | `mentioned_brand` | 1 cada vez que NER detecta marca en texto libre |
+| vehicle | brand | `is_brand` | 1 |
+| contact | contact | `similar_to` | # marcas compartidas |
+
+**Edges similar_to**: solo se computan entre contactos con `score ≥ 30`
+para no inflar el grafo con guests sin actividad. O(n²) sobre el
+subset hot, lo cual es manejable.
+
+**Q.1 — Build automático con throttle**:
+- Reconstruir es O(n) sobre `AP.vehicles + AP.appointments`
+- Throttle de 5s evita rebuilds excesivos cuando llegan eventos en ráfaga
+- Listener al `AltorraEventBus` reconstruye en `vehicle.*` y `comm.*`
+- Al terminar emite `graph.built` con métricas (contacts/vehicles/brands/edges)
+
+**Q.2 — Tab "Red" en CRM 360°**:
+
+Nuevo tab con 3 secciones:
+- **Marcas de interés**: top 5 brands con `likes_brand`, ordenadas por weight
+- **Vehículos consultados**: top 5 vehicles con `interested_in`
+- **Contactos similares**: top 5 contacts con `similar_to`, ordenados por #marcas compartidas
+
+Cada item con icono Lucide + nombre + weight numérico al final.
+Empty state en español si no hay data todavía.
+
+**Q.3 — matchContactsForVehicle(vehicle)**:
+
+Algoritmo de matching:
+1. Encuentra contactos con edge `likes_brand` o `mentioned_brand` apuntando a la marca del vehículo
+2. Score base = weight del edge × 10
+3. Bonus +5 si el contacto pidió antes la misma categoría (suv/sedan/etc.)
+4. Bonus +8 si presupuesto esperado del contacto está dentro de ±20% del precio del vehículo
+5. Bonus general por score CRM del contacto (lead caliente prioritario)
+
+**Auto-suggest en `vehicle.created`**: listener al EventBus que cuando
+un nuevo vehículo se crea espera 6s (para que el grafo lo incluya en
+el rebuild), llama `matchContactsForVehicle()` y si hay matches,
+emite una notificación "Nuevo vehículo: N contactos interesados"
+con link a `admin.html#crm`.
+
+**Q.4 — Búsqueda semántica `searchContacts(query)`**:
+
+Input box dorado con icono sparkles arriba de la tabla CRM:
+"interesados en SUV menor a $100M en Cartagena"
+
+Algoritmo:
+1. NER extrae `summary.marca`, `summary.ciudad` del query
+2. Detecta categoría buscada (SUV, sedan, pickup, hatchback) por keywords
+3. Detecta límite de precio con regex de "menor/menos/hasta/máximo + número + m/k"
+4. Para cada contacto del grafo, score por:
+   - +10 si tiene edge a la marca mencionada
+   - +8 si su ciudad coincide
+   - +7 si pidió antes esa categoría (vía categoria del comm o vehicleId conectado)
+   - +5 si tiene comm con `precioEsperado ≤ priceLimit`
+5. Filtra `matchScore ≥ 5` y ordena descendente
+6. Top 20
+
+Resultados en una card debajo del input con avatar + nombre + razones
+("le interesa toyota · en cartagena · busca suv · presupuesto ≤ $100M")
++ score numérico dorado.
+
+Debounce de 350ms para no recalcular en cada tecla.
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Rebuild en ráfaga (10 events/s) | Throttle de 5s con timeout pendiente |
+| Grafo enorme con O(n²) edges | similar_to solo en hot contacts (score ≥ 30) |
+| Auto-notify de vehicle.created en replay del Activity Feed | Skip si `payload.__replay === true` |
+| matchContactsForVehicle antes del rebuild | Auto-suggest espera 6s antes de query |
+| NER en query vacío | Guard `if (!query)` retorna [] |
+| Edges perdidos al reconstruir | `build()` reset completo de nodes/edges, no merge |
+| Contactos duplicados por email mayúsculo/minúsculo | Normalizar `email.toLowerCase().trim()` en nodeKey |
+| Estallar memoria con muchos vehículos | nodes son referencias, no copias profundas (raw apunta a AP.vehicles) |
+| Búsqueda semántica retornando contactos sin razones | Filtro `matchScore >= 5` garantiza al menos 1 razón |
+
+**Pasos de prueba**:
+1. Login admin → CRM
+2. Buscar en el input dorado "interesados en SUV en Cartagena" →
+   ver resultados con razones
+3. Click "Ver 360°" en cualquier contacto → tab "Red" muestra
+   marcas/vehículos/similares
+4. Crear un vehículo nuevo (e.g. Toyota Hilux) →
+   esperar 6s → ver notificación "Nuevo vehículo: N interesados"
+5. Consola: `AltorraGraph.stats()` → ver tamaño del grafo
+6. Consola: `AltorraGraph.matchContactsForVehicle(AP.vehicles[0])` →
+   array completo
+7. Consola: `AltorraGraph.searchContacts('mazda en bogota')` →
+   resultados sin filtro de UI
+
+**Archivos creados/modificados**:
+- `js/ai/knowledge-graph.js` — módulo nuevo (~360 líneas)
+- `admin.html` — script tag + buscador semántico + nuevo tab "Red"
+- `js/admin-crm.js` — render del tab Red + lógica `runSemanticSearch()`
+  con debounce
+- `css/admin.css` — `.crm-graph-*` + `.crm-semantic-*` (~110 líneas)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505240000
+
+**Cierre Bloque Q**: el Knowledge Graph queda funcionando con auto-rebuild,
+3 funciones de query (neighborsOf / matchContactsForVehicle / searchContacts),
+auto-suggest en vehicle.created, y dos UIs de consumo (tab Red + buscador
+semántico). Listo para que **Bloque U (Concierge)** lo use al recomendar
+vehículos al cliente en el chat.
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

@@ -6539,6 +6539,110 @@ Top mensajes del cliente:
 - U.12 — Smart suggestions para asesor
 - U.14-U.19 — WhatsApp handoff refinement, cleanup, CRM integration completa
 
+### Microfase D.1+D.2 — Calendario dedicado ✓ COMPLETADA (2026-05-05)
+
+**Objetivo**: workspace nuevo en el admin para visualizar y gestionar
+las citas con vista mensual y vista por día. Antes solo había una
+tabla en Comunicaciones; ahora el admin tiene un calendario real con
+drag-drop para reprogramar.
+
+**Lo que se creó**:
+
+#### `js/admin-calendar.js` (~310 líneas)
+
+Filtra `AP.appointments` con `kind:'cita'` (o `requiereCita:true` para
+docs legacy via `AltorraCommSchema.inferKind`). Agrupa por fecha
+ISO `YYYY-MM-DD` y construye dos vistas:
+
+**Vista mes** (`renderMonth`):
+- Grid 7 columnas × 6 filas (42 cells max)
+- Cada cell muestra hasta 3 eventos + "+ N más" si hay más
+- Cell del día actual con borde violeta + acento color
+- Cells de meses adyacentes pintados como "empty" (no clickables)
+- Drag-drop nativo HTML5: arrastrar evento a otra cell → confirma
+  reprogramación + Firestore update con `estado:'reprogramada'`
+- Visual feedback: `.cal-cell--drop-target` con shadow dorado al
+  hacer dragover
+- Click en evento → abre `AP.openAppointmentManager(docId)` (modal
+  del Comunicaciones existente). Click en cell vacía → cambia a
+  vista del día.
+
+**Vista día** (`renderDay`):
+- Lista de citas del día seleccionado con hora, nombre, vehículo,
+  teléfono, estado y observaciones
+- Date block dorado con la hora destacada
+- Click en item abre el modal de gestión
+- Botón "Volver al mes" para regresar
+
+**Stats bar** (`renderStats`):
+- Total mes / Pendientes / Confirmadas / Completadas
+- Cada stat con border-left del color semántico del estado
+
+**Toolbar**:
+- Anterior / Hoy / Siguiente — navegación entre meses
+- Toggle Mes/Día — cambia vista activa
+
+**Color por estado** (`statusColor`):
+- pendiente / nuevo → ámbar `#f59e0b`
+- confirmada / aprobada → verde `#4ade80`
+- reprogramada / contactado → azul `#60a5fa`
+- completada → violeta `#a78bfa`
+- cancelada / rechazada → rojo `#ef4444`
+- no_show → gris
+
+**Auto-refresh**:
+- `AltorraSections.onChange('calendar')` re-renderiza al entrar
+- `AltorraEventBus.on('comm.')` re-renderiza cuando admin cambia
+  estado de cita en otro lugar
+
+**Sidebar**: el placeholder `calendar-disabled` que existía desde B.1
+ahora es funcional. Nav-item `data-section="calendar"` activo en el
+grupo Calendario, sin badge "Pronto".
+
+**Anti-patterns evitados**:
+
+| Riesgo | Mitigación |
+|---|---|
+| Drag-drop en mobile no funciona | Patrón nativo HTML5; mobile touch tendrá UX limitada — D.2 podría añadir touch handlers pero no está en este sprint |
+| Reprogramar pisa fecha sin confirmar | `confirm()` antes de update Firestore |
+| Cita reprogramada sin cambiar estado | Force `estado:'reprogramada'` en update |
+| Click en evento dispara click en cell también | `closest('.cal-event')` early return |
+| Cells vacías clickables | `.cal-cell--empty` con `pointer-events:none` |
+| Mes con menos de 28 días | Padding al final hasta múltiplo de 7 |
+| Citas sin fecha aparecen | Filtro `if (a.fecha)` en `getCitas()` |
+| Render lento con cientos de citas | Slice top 3 en cell + indicador "+N más" |
+
+**Pasos de prueba**:
+1. Login admin → sidebar → grupo Calendario → "Vista calendario"
+2. Mes actual aparece con día de hoy resaltado en violeta
+3. Citas del mes visibles en sus respectivas cells
+4. Click anterior/siguiente → navegación de meses
+5. Click "Hoy" → vuelve al mes actual + vista mes
+6. Arrastrar una cita a otra cell → confirm → fecha se actualiza
+   en Firestore y vista re-renderiza
+7. Click en una cita → abre modal de gestión existente
+8. Click en cell con citas → cambia a vista día con detalle
+9. Click "Volver al mes" → regresa a vista mes
+
+**Archivos creados/modificados**:
+- `js/admin-calendar.js` — módulo nuevo (~310 líneas)
+- `admin.html` — sidebar nav-group calendario activado + sec-calendar
+  con toolbar + stats + grid
+- `js/admin-section-router.js` — `calendar` agregado al REGISTRY
+- `css/admin.css` — `.cal-*` estilos (~190 líneas)
+- `service-worker.js` + `js/cache-manager.js` — version bump v20260505280000
+
+**Pendiente del Bloque D** (próximos sprints):
+- D.3 — Config avanzada (turnos múltiples, festivos COL, capacidad por slot)
+- D.4 — Buffer entre citas + anti-overbooking
+- D.5 — Recordatorios automáticos (consume el sistema de notificaciones
+  + Cloud Functions actuales para email)
+- D.6 — No-show prediction (espera J.4 — decision tree, modelo lazy)
+- D.7 — AI Auto-Scheduling: cliente pide "martes tarde" → sistema sugiere
+  el mejor slot con NER del query + slots disponibles
+- D.8 — Optimizador de ruta diaria por proximidad geográfica (Haversine
+  sobre direcciones, sin API)
+
 ---
 
 ## 13.ter Comunicaciones + CRM v2 (Plan MF1-MF6, 2026-05-04)

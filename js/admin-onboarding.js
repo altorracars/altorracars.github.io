@@ -147,6 +147,8 @@
         _currentStep = 0;
         _isActive = true;
         ensureModal();
+        var wrap = document.getElementById('alt-onboard');
+        if (wrap) wrap.classList.add('is-active');
         renderStep();
     }
     function reset() {

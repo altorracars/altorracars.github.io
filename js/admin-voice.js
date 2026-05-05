@@ -391,17 +391,35 @@
             console.info('[Voice] Web Speech API no disponible en este navegador');
             return;
         }
-        // FAB pequeño en bottom-left para activar manualmente
-        var fab = document.createElement('button');
-        fab.id = 'altorra-voice-fab';
-        fab.className = 'altorra-voice-fab';
-        fab.setAttribute('aria-label', 'Activar comandos por voz');
-        fab.setAttribute('title', 'Comandos por voz (Espacio+V)');
-        fab.innerHTML = '<i data-lucide="mic"></i>';
-        fab.addEventListener('click', toggle);
-        document.body.appendChild(fab);
-        if (window.AltorraIcons) window.AltorraIcons.refresh(fab);
-        else if (window.lucide) try { window.lucide.createIcons({ context: fab }); } catch (e) {}
+        // L.1 (fix) — Botón en header en lugar de FAB independiente.
+        // Se inserta a la izquierda del Activity Feed trigger.
+        // Si Cmd+Espacio+V no es ergonómico, click sirve también.
+        var attempts = 0;
+        var iv = setInterval(function () {
+            attempts++;
+            var hostHeader = document.querySelector('.admin-header .header-actions, .admin-header > div:last-child');
+            var actBtn = document.getElementById('activityFeedTrigger');
+            var anchor = actBtn || hostHeader;
+            if (anchor) {
+                clearInterval(iv);
+                if (document.getElementById('altorra-voice-btn')) return;
+                var btn = document.createElement('button');
+                btn.id = 'altorra-voice-btn';
+                btn.className = 'alt-btn alt-btn--ghost alt-btn--icon altorra-voice-btn';
+                btn.setAttribute('type', 'button');
+                btn.setAttribute('aria-label', 'Comandos por voz (Espacio+V)');
+                btn.setAttribute('data-tooltip', 'Comandos por voz · Espacio+V');
+                btn.innerHTML = '<i data-lucide="mic"></i>';
+                btn.addEventListener('click', toggle);
+                if (actBtn && actBtn.parentNode) {
+                    actBtn.parentNode.insertBefore(btn, actBtn);
+                } else if (hostHeader) {
+                    hostHeader.insertBefore(btn, hostHeader.firstChild);
+                }
+                if (window.AltorraIcons) window.AltorraIcons.refresh(btn);
+                else if (window.lucide) try { window.lucide.createIcons({ context: btn }); } catch (e) {}
+            } else if (attempts > 60) clearInterval(iv);
+        }, 500);
     }
 
     if (document.readyState === 'loading') {

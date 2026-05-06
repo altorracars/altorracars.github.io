@@ -727,17 +727,87 @@
         var chat = _chats.find(function (c) { return c._docId === _activeSessionId; });
         if (!chat) return;
 
-        // Cargar todos los mensajes del chat
-        window.db.collection('conciergeChats').doc(_activeSessionId)
-            .collection('messages').orderBy('timestamp', 'asc').get()
-            .then(function (snap) {
-                var messages = [];
-                snap.forEach(function (doc) { messages.push(doc.data()); });
-                renderSummary(chat, messages);
-            })
-            .catch(function (err) {
-                AP.toast('Error al generar resumen: ' + err.message, 'error');
-            });
+        // F.1 — Si el Cerebro AI está enabled, usar el callable summarizeChat
+        // que genera un resumen vía LLM (mucho mejor calidad que extractivo).
+        // Fallback al renderSummary local si falla.
+        var brainEnabled = window.AltorraKB && window.AltorraKB.getBrain && (window.AltorraKB.getBrain() || {}).enabled;
+        var sid = _activeSessionId;
+
+        function localFallback() {
+            window.db.collection('conciergeChats').doc(sid)
+                .collection('messages').orderBy('timestamp', 'asc').get()
+                .then(function (snap) {
+                    var messages = [];
+                    snap.forEach(function (doc) { messages.push(doc.data()); });
+                    renderSummary(chat, messages);
+                })
+                .catch(function (err) {
+                    AP.toast('Error al generar resumen: ' + err.message, 'error');
+                });
+        }
+
+        if (brainEnabled && window.functions) {
+            try {
+                AP.toast('Generando resumen con IA…', 'info');
+                var callable = window.functions.httpsCallable('summarizeChat');
+                callable({ sessionId: sid }).then(function (res) {
+                    var data = (res && res.data) || {};
+                    if (data.success && data.summary) {
+                        renderLLMSummary(chat, data.summary, data.turnsAnalyzed, data.usage);
+                    } else if (data.skipped) {
+                        AP.toast('Resumen IA omitido (' + data.reason + '). Generando local…', 'info');
+                        localFallback();
+                    } else {
+                        localFallback();
+                    }
+                }).catch(function (err) {
+                    console.warn('[summarizeChat] LLM failed:', err.message);
+                    AP.toast('LLM falló — usando resumen local', 'warning');
+                    localFallback();
+                });
+            } catch (e) {
+                localFallback();
+            }
+        } else {
+            localFallback();
+        }
+    }
+
+    /**
+     * F.1 — Render de un summary generado por LLM (un solo bloque de texto)
+     * Se muestra en la misma área que el resumen extractivo local.
+     */
+    function renderLLMSummary(chat, summary, turnsAnalyzed, usage) {
+        var detail = $('conciergeChatDetail');
+        if (!detail) return;
+        var modalHtml =
+            '<div class="cnc-summary-overlay" id="cncSummaryOverlay">' +
+                '<div class="cnc-summary-card">' +
+                    '<div class="cnc-summary-head">' +
+                        '<h3><i data-lucide="sparkles"></i> Resumen IA · ' + escTxt(chat.userNombre || 'Cliente') + '</h3>' +
+                        '<button class="cnc-summary-close" data-action="close-summary" aria-label="Cerrar">×</button>' +
+                    '</div>' +
+                    '<div class="cnc-summary-body">' +
+                        '<div class="cnc-summary-meta">' +
+                            '<span><i data-lucide="message-circle"></i> ' + turnsAnalyzed + ' mensajes analizados</span>' +
+                            (usage && usage.input_tokens ? '<span><i data-lucide="cpu"></i> ' + (usage.input_tokens + (usage.output_tokens || 0)) + ' tokens</span>' : '') +
+                        '</div>' +
+                        '<div class="cnc-summary-text">' + escTxt(summary).replace(/\n/g, '<br>') + '</div>' +
+                    '</div>' +
+                    '<div class="cnc-summary-actions">' +
+                        '<button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="copy-summary" data-text="' + escTxt(summary) + '">' +
+                            '<i data-lucide="copy"></i> Copiar' +
+                        '</button>' +
+                        '<button class="alt-btn alt-btn--primary alt-btn--sm" data-action="close-summary">Cerrar</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        var existing = document.getElementById('cncSummaryOverlay');
+        if (existing) existing.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        if (window.AltorraIcons && window.AltorraIcons.refresh) {
+            window.AltorraIcons.refresh(document.getElementById('cncSummaryOverlay'));
+        }
     }
 
     function renderSummary(chat, messages) {
@@ -942,6 +1012,23 @@
         }
         if (e.target && e.target.closest && e.target.closest('#cncAdminSummarize')) {
             summarizeCurrentChat();
+            return;
+        }
+        // F.1 — Cerrar overlay del summary IA
+        if (e.target && e.target.closest && e.target.closest('[data-action="close-summary"]')) {
+            var overlay = document.getElementById('cncSummaryOverlay');
+            if (overlay) overlay.remove();
+            return;
+        }
+        // F.1 — Copiar el summary al clipboard
+        var copyBtn = e.target && e.target.closest && e.target.closest('[data-action="copy-summary"]');
+        if (copyBtn) {
+            var txt = copyBtn.getAttribute('data-text') || '';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(txt).then(function () {
+                    AP.toast('Resumen copiado al portapapeles', 'success');
+                });
+            }
             return;
         }
         // U.15 — Cleanup botón

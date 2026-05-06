@@ -278,7 +278,7 @@
                     <i data-lucide="file-edit"></i><span>Plantillas</span>
                 </button>
                 <button class="nav-item" data-section="kb">
-                    <i data-lucide="book-open"></i><span>Knowledge Base</span>
+                    <i data-lucide="brain"></i><span>Cerebro Altorra AI</span>
                 </button>
             </div>
         </div>
@@ -980,22 +980,190 @@
             </div>
         </div>
 
-        <!-- U.5 (mega-plan v4) — Knowledge Base: FAQs editables que el bot consulta -->
+        <!-- FASE 3 — Cerebro Altorra AI: identidad, contexto, instrucciones,
+             FAQs y reglas de seguridad que alimentan al LLM en tiempo real -->
         <div id="sec-kb" class="section" data-workspace-color="orange">
             <div class="page-header">
                 <div>
-                    <h1>Knowledge Base — FAQs del bot</h1>
-                    <p class="page-subtitle">Define las respuestas que el Concierge usará automáticamente. Cuando un cliente pregunta algo que coincide con keywords, el bot responde con tu respuesta.</p>
+                    <h1><i data-lucide="brain"></i> Cerebro Altorra AI</h1>
+                    <p class="page-subtitle">Centro de inteligencia del bot ALTOR. Configura su identidad, tono, contexto del negocio, instrucciones base y FAQs. Todo se aplica en tiempo real al motor LLM.</p>
                 </div>
-                <div>
-                    <button class="alt-btn alt-btn--primary" id="kbAddBtn">
-                        <i data-lucide="plus"></i> Nueva FAQ
-                    </button>
+                <div class="cerebro-actions">
+                    <span class="cerebro-status" id="cerebroStatus" data-status="loading">
+                        <i data-lucide="loader-2"></i> Cargando…
+                    </span>
                 </div>
             </div>
-            <div id="kbForm" class="kb-form" style="display:none;"></div>
-            <div id="kbList" class="kb-list">
-                <div class="table-empty">Cargando…</div>
+
+            <!-- Tabs del Cerebro -->
+            <div class="cerebro-tabs">
+                <button class="cerebro-tab is-active" data-cerebro-tab="identidad">
+                    <i data-lucide="sparkles"></i> Identidad
+                </button>
+                <button class="cerebro-tab" data-cerebro-tab="contexto">
+                    <i data-lucide="building-2"></i> Contexto
+                </button>
+                <button class="cerebro-tab" data-cerebro-tab="instrucciones">
+                    <i data-lucide="scroll-text"></i> Instrucciones
+                </button>
+                <button class="cerebro-tab" data-cerebro-tab="faqs">
+                    <i data-lucide="book-open"></i> FAQs
+                </button>
+                <button class="cerebro-tab" data-cerebro-tab="seguridad">
+                    <i data-lucide="shield-alert"></i> Reglas de Seguridad
+                </button>
+                <button class="cerebro-tab" data-cerebro-tab="modelo">
+                    <i data-lucide="cpu"></i> Modelo LLM
+                </button>
+            </div>
+
+            <!-- Tab panels -->
+            <div class="cerebro-panels">
+                <!-- Identidad -->
+                <div class="cerebro-panel is-active" data-cerebro-panel="identidad">
+                    <div class="cerebro-panel-head">
+                        <h3>Identidad del bot</h3>
+                        <p class="cerebro-panel-sub">Cómo se presenta y qué tono usa cuando habla con los clientes.</p>
+                    </div>
+                    <div class="cerebro-field">
+                        <label>Nombre del asistente</label>
+                        <input type="text" id="cerebroIdNombre" class="form-input" placeholder="ALTOR">
+                    </div>
+                    <div class="cerebro-field">
+                        <label>Tono de la marca</label>
+                        <input type="text" id="cerebroIdTono" class="form-input" placeholder="Cálido, profesional pero cercano, colombiano">
+                    </div>
+                    <div class="cerebro-field">
+                        <label>Personalidad / presentación inicial</label>
+                        <textarea id="cerebroIdPersonalidad" class="form-textarea" rows="4" placeholder="Soy ALTOR, el asistente virtual IA de Altorra Cars. Estoy aquí para ayudarte a encontrar el auto perfecto, resolver dudas sobre financiación, peritaje, y conectarte con un asesor humano cuando lo necesites."></textarea>
+                    </div>
+                </div>
+
+                <!-- Contexto del negocio -->
+                <div class="cerebro-panel" data-cerebro-panel="contexto">
+                    <div class="cerebro-panel-head">
+                        <h3>Contexto del negocio</h3>
+                        <p class="cerebro-panel-sub">Información sobre Altorra Cars que el bot usa para responder con conocimiento real.</p>
+                    </div>
+                    <div class="cerebro-field">
+                        <label>Descripción</label>
+                        <textarea id="cerebroCtxDescripcion" class="form-textarea" rows="3" placeholder="Altorra Cars es un concesionario líder en Cartagena especializado en venta de vehículos nuevos y usados con peritaje técnico, financiación con aliados estratégicos y consignación."></textarea>
+                    </div>
+                    <div class="cerebro-field">
+                        <label>Valores (uno por línea)</label>
+                        <textarea id="cerebroCtxValores" class="form-textarea" rows="4" placeholder="Transparencia&#10;Peritaje técnico de 50+ puntos&#10;Financiación accesible&#10;Garantía mecánica de 3 meses"></textarea>
+                    </div>
+                    <div class="cerebro-field">
+                        <label>Servicios (uno por línea)</label>
+                        <textarea id="cerebroCtxServicios" class="form-textarea" rows="4" placeholder="Compra de vehículos nuevos y usados&#10;Venta y consignación&#10;Financiación con cuota inicial desde 30%&#10;Test drive con cita previa&#10;Peritaje técnico"></textarea>
+                    </div>
+                </div>
+
+                <!-- Instrucciones base (system prompt principal) -->
+                <div class="cerebro-panel" data-cerebro-panel="instrucciones">
+                    <div class="cerebro-panel-head">
+                        <h3>Instrucciones base</h3>
+                        <p class="cerebro-panel-sub">El system prompt principal que recibe el LLM. Define cómo debe comportarse, qué priorizar, cuándo escalar a un asesor humano.</p>
+                    </div>
+                    <div class="cerebro-field">
+                        <label>System Prompt</label>
+                        <textarea id="cerebroInstrucciones" class="form-textarea" rows="14" placeholder="Eres ALTOR, asistente virtual IA de Altorra Cars. Tu misión es ayudar a clientes a encontrar el auto ideal, resolver dudas sobre financiación, peritaje, garantías y agendar visitas.
+
+REGLAS:
+- Responde siempre en español, en tono cálido y colombiano natural.
+- Si el cliente pide un precio específico, consulta el inventario en tiempo real (te lo paso en cada turno) y solo confirma precios que están en la lista.
+- Si el cliente quiere agendar una cita, ofrece conectarlo con un asesor humano.
+- Si detectas frustración, ofrece escalar a un asesor sin demorar.
+- NUNCA inventes datos. Si no tienes la info, ofrece conectar con asesor.
+- Sé breve: 2-3 oraciones por respuesta. Si el tema requiere más, pide al cliente confirmar antes de extender."></textarea>
+                    </div>
+                </div>
+
+                <!-- FAQs (la KB existente) -->
+                <div class="cerebro-panel" data-cerebro-panel="faqs">
+                    <div class="cerebro-panel-head">
+                        <h3>FAQs (Knowledge Base)</h3>
+                        <p class="cerebro-panel-sub">Respuestas pre-aprobadas para preguntas frecuentes. Útiles cuando el LLM no está disponible o como contexto adicional.</p>
+                        <button class="alt-btn alt-btn--primary alt-btn--sm" id="kbAddBtn">
+                            <i data-lucide="plus"></i> Nueva FAQ
+                        </button>
+                    </div>
+                    <div id="kbForm" class="kb-form" style="display:none;"></div>
+                    <div id="kbList" class="kb-list">
+                        <div class="table-empty">Cargando…</div>
+                    </div>
+                </div>
+
+                <!-- Reglas de seguridad -->
+                <div class="cerebro-panel" data-cerebro-panel="seguridad">
+                    <div class="cerebro-panel-head">
+                        <h3>Reglas de seguridad</h3>
+                        <p class="cerebro-panel-sub">Qué NO debe hacer ni decir el bot. Estas reglas se inyectan al system prompt y son INVIOLABLES.</p>
+                    </div>
+                    <div class="cerebro-field">
+                        <label>Reglas (una por línea, las más críticas primero)</label>
+                        <textarea id="cerebroReglas" class="form-textarea" rows="10" placeholder="NUNCA confirmes un precio que no esté en el inventario actual.
+NUNCA prometas garantías o servicios que no estén en la lista oficial.
+NUNCA des datos personales de otros clientes ni del equipo.
+NUNCA inventes ni alucines información sobre vehículos, financiación o políticas.
+NUNCA aceptes negociar descuentos sin escalar a un asesor humano.
+NUNCA confirmes una cita sin que un asesor la valide."></textarea>
+                    </div>
+                </div>
+
+                <!-- Modelo LLM -->
+                <div class="cerebro-panel" data-cerebro-panel="modelo">
+                    <div class="cerebro-panel-head">
+                        <h3>Configuración del modelo</h3>
+                        <p class="cerebro-panel-sub">Proveedor LLM, modelo específico y parámetros de generación.</p>
+                    </div>
+                    <div class="cerebro-field cerebro-toggle-field">
+                        <label class="cerebro-toggle-label">
+                            <input type="checkbox" id="cerebroEnabled">
+                            <span class="cerebro-toggle-text">
+                                <strong>Cerebro AI activo</strong>
+                                <small>Si está apagado, el bot usa solo reglas + KB (sin LLM).</small>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="cerebro-field">
+                        <label>Proveedor LLM</label>
+                        <select id="cerebroLlmProvider" class="form-select">
+                            <option value="anthropic">Anthropic Claude (recomendado)</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="google">Google Gemini</option>
+                        </select>
+                    </div>
+                    <div class="cerebro-field">
+                        <label>Modelo</label>
+                        <input type="text" id="cerebroLlmModel" class="form-input" placeholder="claude-haiku-4-5">
+                        <small class="form-hint">Anthropic: <code>claude-haiku-4-5</code> · OpenAI: <code>gpt-4o-mini</code> · Google: <code>gemini-2.0-flash</code></small>
+                    </div>
+                    <div class="cerebro-field cerebro-field-row">
+                        <div>
+                            <label>Temperatura (0-1)</label>
+                            <input type="number" id="cerebroTemperature" class="form-input" min="0" max="1" step="0.1" value="0.7">
+                        </div>
+                        <div>
+                            <label>Max tokens por respuesta</label>
+                            <input type="number" id="cerebroMaxTokens" class="form-input" min="100" max="4000" step="50" value="600">
+                        </div>
+                    </div>
+                    <div class="cerebro-deploy-warn">
+                        <i data-lucide="info"></i>
+                        Para que el LLM funcione, el super_admin debe configurar
+                        <code>LLM_API_KEY</code> en Firebase Functions Secrets y desplegar la función
+                        <code>chatLLM</code>. Si la key no está, el bot usa fallback rule-based.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer con botón Guardar -->
+            <div class="cerebro-footer">
+                <button class="alt-btn alt-btn--primary" id="cerebroSaveBtn">
+                    <i data-lucide="save"></i> Guardar cambios
+                </button>
+                <span class="cerebro-savestate" id="cerebroSaveState"></span>
             </div>
         </div>
 

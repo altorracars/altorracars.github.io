@@ -398,6 +398,94 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       FASE 3 — respondWithLLMOrRules
+       Async: intenta LLM primero (Cloud Function chatLLM via
+       AltorraAI.chat). Si LLM disabled / sin key / timeout / error
+       → fallback al rule-based generateBotResponse.
+
+       Pre-checks que SIEMPRE corren rule-based (más rápido y seguro):
+         - Sentiment muy negativo / frustration / ask_human → escalar
+       Esto evita gastar tokens LLM en casos de escalamiento crítico.
+       ═══════════════════════════════════════════════════════════ */
+    function respondWithLLMOrRules(userMsg) {
+        var ctx = session.context || {};
+
+        // 1. Pre-check: detectar escalamiento crítico SIN LLM
+        var classification = window.AltorraIntent
+            ? window.AltorraIntent.classify(userMsg, ctx)
+            : { intent: 'none', confidence: 0 };
+        var sentimentNeg = false;
+        if (window.AltorraAI) {
+            var s = window.AltorraAI.sentiment(userMsg);
+            sentimentNeg = s && s.label === 'negative' && s.score < -0.5;
+        }
+        if (sentimentNeg || classification.intent === 'frustration' || classification.intent === 'ask_human') {
+            var firstName = getClientFirstName();
+            return Promise.resolve({
+                text: (firstName ? firstName + ', ' : '') +
+                      'te entiendo. Déjame conectarte con un asesor humano que pueda ayudarte directamente.',
+                cta: { label: 'Hablar con asesor', action: 'escalate' }
+            });
+        }
+
+        // 2. Intentar LLM si está disponible
+        if (window.AltorraAI && window.AltorraAI.providers && window.AltorraAI.providers.chat) {
+            // Construir messages para el LLM (últimos 12 turnos para mantener contexto
+            // sin exceder context window). Filtramos system messages y CTA buttons —
+            // solo mandamos el texto humano.
+            var llmMessages = session.messages.slice(-12).filter(function (m) {
+                return m.from === 'user' || m.from === 'bot' || m.from === 'asesor';
+            }).map(function (m) {
+                return {
+                    role: m.from === 'user' ? 'user' : 'assistant',
+                    content: m.text
+                };
+            });
+            // Asegurar que el último mensaje sea el del usuario que acabamos de enviar
+            // (puede no estar aún en session.messages dependiendo del timing)
+            if (llmMessages.length === 0 || llmMessages[llmMessages.length - 1].role !== 'user') {
+                llmMessages.push({ role: 'user', content: userMsg });
+            }
+
+            return window.AltorraAI.chat(llmMessages, { sessionId: session.sessionId, timeoutMs: 12000 })
+                .then(function (resp) {
+                    if (resp && resp.text) {
+                        return { text: resp.text, cta: resp.cta || null, source: 'llm' };
+                    }
+                    // LLM no disponible (disabled/noKey) → fallback rules
+                    return generateBotResponse(userMsg);
+                })
+                .catch(function (err) {
+                    console.warn('[Concierge] LLM failed, using rules:', err.message);
+                    return generateBotResponse(userMsg);
+                });
+        }
+
+        // 3. Sin LLM disponible → rule-based
+        return Promise.resolve(generateBotResponse(userMsg));
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       FASE 3 — Typing indicator
+       Mientras esperamos al LLM, mostramos 3 puntitos animados en
+       la zona de mensajes (estilo iMessage / WhatsApp).
+       ═══════════════════════════════════════════════════════════ */
+    function showTypingIndicator() {
+        var box = document.getElementById('cncMessages');
+        if (!box || document.getElementById('cncTypingIndicator')) return;
+        var dots = document.createElement('div');
+        dots.id = 'cncTypingIndicator';
+        dots.className = 'cnc-msg cnc-bot-bubble cnc-typing';
+        dots.innerHTML = '<span></span><span></span><span></span>';
+        box.appendChild(dots);
+        box.scrollTop = box.scrollHeight;
+    }
+    function hideTypingIndicator() {
+        var el = document.getElementById('cncTypingIndicator');
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        MESSAGE HANDLING
        ═══════════════════════════════════════════════════════════ */
     function addMessage(from, text, opts) {
@@ -477,12 +565,24 @@
 
         // Bot response (delayed para sentir natural)
         if (session.mode === 'bot') {
+            // Mostrar typing indicator mientras se piensa la respuesta
+            showTypingIndicator();
             setTimeout(function () {
-                var resp = generateBotResponse(text);
-                addMessage('bot', resp.text, { cta: resp.cta });
-                // U.17 — Después del bot response, decidir si pedir datos
-                setTimeout(function () { maybeAskForProfile(); }, 1200);
-            }, 500 + Math.random() * 600);
+                respondWithLLMOrRules(text).then(function (resp) {
+                    hideTypingIndicator();
+                    if (!resp) return;
+                    addMessage('bot', resp.text, { cta: resp.cta });
+                    // U.17 — Después del bot response, decidir si pedir datos
+                    setTimeout(function () { maybeAskForProfile(); }, 1200);
+                }).catch(function (err) {
+                    hideTypingIndicator();
+                    console.warn('[Concierge] Response error:', err && err.message);
+                    // Último recurso: rule-based fallback síncrono
+                    var fallback = generateBotResponse(text);
+                    addMessage('bot', fallback.text, { cta: fallback.cta });
+                    setTimeout(function () { maybeAskForProfile(); }, 1200);
+                });
+            }, 350 + Math.random() * 400);
         } else if (_leadCreated) {
             // Si está en modo live, actualizar el lead con cada nuevo mensaje
             updateSoftContact();
@@ -777,6 +877,28 @@
                                 saveSession(session);
                                 applyClosedState();
                             }
+                        }
+                        return;
+                    }
+
+                    // F.3 — Mensajes proactivos del bot enviados desde Cloud Function
+                    // (proactiveEngagement). Los renderemos con clase distinta
+                    // para que se sientan como un nudge del bot, no respuesta.
+                    if (d.from === 'bot' && d.proactive) {
+                        var alreadyHaveProactive = session.messages.some(function (m) {
+                            return m.from === 'bot' && m.proactive && m.text === d.text;
+                        });
+                        if (!alreadyHaveProactive) {
+                            session.messages.push({
+                                from: 'bot',
+                                proactive: true,
+                                triggerType: d.triggerType || null,
+                                text: d.text,
+                                timestamp: new Date(d.timestamp).getTime(),
+                                _synced: true
+                            });
+                            saveSession(session);
+                            renderMessages();
                         }
                         return;
                     }
@@ -1387,6 +1509,12 @@
             }
             var bubbleClass = m.from === 'user' ? 'cnc-user-bubble' :
                               m.from === 'asesor' ? 'cnc-asesor-bubble' : 'cnc-bot-bubble';
+            // F.3 — Proactive messages tienen un acento visual sutil
+            // (un brillito dorado tenue) para distinguirlos de respuestas
+            // a mensajes del cliente.
+            if (m.from === 'bot' && m.proactive) {
+                bubbleClass += ' cnc-proactive-bubble';
+            }
             var ctaHTML = '';
             if (m.cta && m.cta.action) {
                 ctaHTML = '<button class="cnc-bubble-cta" data-action="' + m.cta.action + '">' + m.cta.label + '</button>';
@@ -1545,6 +1673,51 @@
        AUTH HOOK + U.18 Identity Merge — vincular conversaciones
        anónimas al uid cuando el cliente se loguea/registra.
        ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════
+       FASE 3 — Registrar chat provider (LLM via Cloud Function)
+       Llama al callable `chatLLM` con los mensajes de la sesión +
+       contexto. La función server-side se encarga de leer el doc
+       _brain, construir system prompt, llamar al LLM, y retornar
+       la respuesta. Si la function no está deployada o el _brain
+       está disabled, devuelve null y el caller hace fallback rules.
+       ═══════════════════════════════════════════════════════════ */
+    if (window.firebaseReady && window.AltorraAI && window.AltorraAI.registerProvider) {
+        window.firebaseReady.then(function () {
+            if (!window.functions) return;
+            try {
+                var chatLLMCallable = window.functions.httpsCallable('chatLLM');
+                window.AltorraAI.registerProvider('chat', function (messages, opts) {
+                    opts = opts || {};
+                    var payload = {
+                        messages: messages,
+                        sessionId: session.sessionId,
+                        sourceVehicleId: session.sourceVehicleId || null,
+                        sourcePage: session.sourcePage || null,
+                        profile: session.profile || null,
+                        context: session.context || null,
+                        activeAsesor: session.activeAsesor || null
+                    };
+                    return chatLLMCallable(payload).then(function (result) {
+                        var data = (result && result.data) || {};
+                        // Si server retorna `disabled:true` o `noKey:true`,
+                        // tratar como "sin LLM" → fallback rules.
+                        if (data.disabled || data.noKey) return null;
+                        if (!data.text) return null;
+                        return {
+                            text: data.text,
+                            cta: data.cta || null,
+                            source: 'llm',
+                            model: data.model || null,
+                            usage: data.usage || null
+                        };
+                    });
+                });
+            } catch (e) {
+                console.warn('[Concierge] Chat LLM provider not registered:', e.message);
+            }
+        });
+    }
+
     if (window.firebaseReady) {
         window.firebaseReady.then(function () {
             if (window.auth) {

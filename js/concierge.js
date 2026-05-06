@@ -878,6 +878,49 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       VEHICLE CONTEXT — abrir Concierge desde detalle de vehículo
+       Reemplaza el legacy vehicle-thread.js eliminado en la unificación
+       de bandejas. Cuando el usuario clickea "Hacer pregunta" en la
+       ficha del vehículo, esta función:
+         1. Setea sourceVehicleId en la sesión
+         2. Setea sourcePage al pathname actual
+         3. Si la sesión NO tiene mensajes aún, agrega un greeting
+            contextualizado al vehículo
+         4. Abre el panel
+       ═══════════════════════════════════════════════════════════ */
+    function openWithVehicleContext(opts) {
+        opts = opts || {};
+        var vehicleId = opts.vehicleId || window.PRERENDERED_VEHICLE_ID || null;
+        var vehicleTitle = opts.vehicleTitle || (function () {
+            var t = document.querySelector('.vehicle-title, h1');
+            return t ? t.textContent.trim() : 'este vehículo';
+        })();
+        if (vehicleId) {
+            session.sourceVehicleId = String(vehicleId);
+            session.sourcePage = window.location.pathname;
+        }
+        // Si no hay mensajes previos, sembrar un greeting contextualizado
+        if (!session.messages || session.messages.length === 0) {
+            addMessage('bot', '👋 ¡Hola! Veo que te interesa el ' + vehicleTitle +
+                '. Pregúntame lo que quieras: precio final, financiación, peritaje, ' +
+                'agendar una visita, o lo que necesites. También puedo conectarte ' +
+                'con un asesor humano cuando quieras.');
+        }
+        saveSession(session);
+        open();
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       GLOBAL CLICK INTERCEPTOR — botones que invocan al Concierge
+       ═══════════════════════════════════════════════════════════ */
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest && e.target.closest('[data-action="open-concierge-vehicle"]');
+        if (!btn) return;
+        e.preventDefault();
+        openWithVehicleContext();
+    });
+
+    /* ═══════════════════════════════════════════════════════════
        Public API
        ═══════════════════════════════════════════════════════════ */
     window.AltorraConcierge = {
@@ -885,6 +928,7 @@
         close: close,
         toggle: toggle,
         send: send,
+        openWithVehicleContext: openWithVehicleContext,
         session: function () { return Object.assign({}, session); },
         // Debug
         _state: function () { return { session: session, isOpen: _isOpen }; }

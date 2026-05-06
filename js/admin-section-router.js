@@ -27,13 +27,9 @@
        Add entries here when renaming. Keys are old, values are new.
        ═══════════════════════════════════════════════════════════ */
     var ALIASES = {
-        // No renames yet — placeholders for future bloques
-        // E.g. when bloque E ships:
-        //   'appointments': 'comunicaciones'
-        //   'inbox': 'mensajes'
-        //   'lists': 'leads'
-        // Or when D ships:
-        //   'calendar-disabled': 'calendario'
+        // Unificación de bandejas: deep-links viejos a #/inbox redirigen al
+        // Concierge unificado (mismo destino, sin código duplicado).
+        'inbox': 'concierge'
     };
 
     /* ═══════════════════════════════════════════════════════════
@@ -48,8 +44,7 @@
         banners:        { label: 'Banners',          group: 'inventario',   icon: 'image' },
         reviews:        { label: 'Reseñas',          group: 'inventario',   icon: 'star' },
         appointments:   { label: 'Bandeja',          group: 'comunicaciones', icon: 'inbox' },
-        inbox:          { label: 'Mensajes vehículo', group: 'comunicaciones', icon: 'message-square-text' },
-        concierge:      { label: 'Concierge',         group: 'comunicaciones', icon: 'bot' },
+        concierge:      { label: 'Inbox unificado',   group: 'comunicaciones', icon: 'message-square-text' },
         lists:          { label: 'Leads (legacy)',   group: 'comunicaciones', icon: 'sparkles' },
         crm:            { label: 'Contactos 360°',   group: 'crm',          icon: 'users-round' },
         calendar:       { label: 'Calendario',       group: 'calendario',   icon: 'calendar-clock' },

@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260508030000'; // §23 ACD Enterprise COMPLETO — Sprints 5-8: workload aggregator + locks/claiming + queue + SLA F5-proof + doble fallback + FCM Web Push
+const CACHE_VERSION = 'v20260508040000'; // FCM Web Push activado — VAPID key configurada
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

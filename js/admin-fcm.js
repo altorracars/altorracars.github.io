@@ -27,9 +27,12 @@
     if (window.AltorraAdminFCM) return;
     var AP = window.AP || {};
 
-    // ⚠️ TODO: pegar aquí la VAPID public key generada en Firebase Console.
-    // Hasta que se setee, AltorraAdminFCM.init() es no-op silencioso.
-    var VAPID_PUBLIC_KEY = '';
+    // §23 FASE 4 — VAPID public key generada en Firebase Console
+    // (Project Settings → Cloud Messaging → Web Push certificates).
+    // Esta key es PÚBLICA — no es un secreto, identifica al servidor
+    // emisor de las push notifications. La autoridad real es Firebase
+    // Admin SDK del lado server (Cloud Function).
+    var VAPID_PUBLIC_KEY = 'BDhFxNdH98lu9a1fHx0AyKzEhDkQ9-7Im7AHIpj6LiYpARA-XBUomOc5Q06LrJbedfX1qSkPzMp1KDgHYaJBhFU';
 
     var _initialized = false;
     var _currentToken = null;

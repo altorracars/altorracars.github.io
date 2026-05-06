@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506080000'; // Concierge refactor — FAB sparkles Lucide, eliminado quick-action WhatsApp, escalate espera auth, KB seeder 10 FAQs
+const CACHE_VERSION = 'v20260506090000'; // PURGA TOTAL — IIFE legacy 1032 lineas eliminado de components.js + vehicle-thread.js + admin-inbox.js eliminados + Inbox admin unificado
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

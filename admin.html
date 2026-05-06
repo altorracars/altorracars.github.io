@@ -224,12 +224,8 @@
                     <i data-lucide="inbox"></i><span>Bandeja</span>
                     <span class="nav-badge" id="navBadgeAppointments"></span>
                 </button>
-                <button class="nav-item" data-section="inbox">
-                    <i data-lucide="message-square-text"></i><span>Mensajes vehículo</span>
-                    <span class="nav-badge" id="navBadgeInbox"></span>
-                </button>
                 <button class="nav-item" data-section="concierge">
-                    <i data-lucide="bot"></i><span>Concierge</span>
+                    <i data-lucide="message-square-text"></i><span>Inbox unificado</span>
                     <span class="nav-badge" id="navBadgeConcierge"></span>
                 </button>
                 <button class="nav-item" data-section="lists">
@@ -1003,12 +999,14 @@
             </div>
         </div>
 
-        <!-- U.10+U.11 (mega-plan v4) — Concierge section: bandeja de chats activos -->
+        <!-- U.10+U.11 (mega-plan v4) — Inbox unificado: TODA conversación de cliente
+             (bot escalado + chats por vehículo) llega aquí. Reemplaza el sec-inbox
+             legacy eliminado en la unificación de bandejas. -->
         <div id="sec-concierge" class="section" data-workspace-color="green">
             <div class="page-header">
                 <div>
-                    <h1>Concierge — Chats en vivo</h1>
-                    <p class="page-subtitle">Conversaciones del bot Concierge que escalaron a un asesor. Responde como asesor humano y mantén el contexto.</p>
+                    <h1>Inbox unificado</h1>
+                    <p class="page-subtitle">Todas las conversaciones de clientes en un solo lugar: chats del Concierge, escaladas a asesor y consultas por vehículo. Responde y mantén el contexto.</p>
                 </div>
                 <div>
                     <button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncCleanupOldBtn"
@@ -1031,28 +1029,8 @@
             </div>
         </div>
 
-        <!-- MF4.7 — Inbox section -->
-        <div id="sec-inbox" class="section" data-workspace-color="green">
-            <div class="page-header">
-                <div>
-                    <h1>Inbox — Mensajes por Vehículo</h1>
-                    <p class="page-subtitle">Conversaciones de clientes preguntando sobre vehículos. Responde aquí mismo.</p>
-                </div>
-                <div style="display:flex;gap:8px;">
-                    <input type="text" id="inboxSearch" class="form-input" placeholder="Buscar..." style="min-width:200px;">
-                    <select id="inboxFilter" class="form-select">
-                        <option value="all">Todos</option>
-                        <option value="unread">No leídos</option>
-                        <option value="open">Abiertos</option>
-                        <option value="closed">Cerrados</option>
-                    </select>
-                </div>
-            </div>
-            <div class="inbox-layout">
-                <div class="inbox-list" id="inboxThreadList"><div class="inbox-empty">Cargando...</div></div>
-                <div class="inbox-detail" id="inboxThreadBody"><div class="inbox-empty">Selecciona un mensaje</div></div>
-            </div>
-        </div>
+        <!-- MF4.7 sec-inbox ELIMINADA — todo flujo unificado al sec-concierge (Inbox unificado).
+             vehicle-thread.js + admin-inbox.js eliminados. mensajes/ Firestore deprecated. -->
 
         <!-- MF4.1 — CRM section -->
         <div id="sec-crm" class="section" data-workspace-color="blue">
@@ -2424,7 +2402,7 @@
 <script src="js/admin-native-notifications.js" defer></script>
 <script src="js/admin-color-extract.js" defer></script>
 <script src="js/admin-performance.js" defer></script>
-<script src="js/admin-inbox.js" defer></script>
+<!-- admin-inbox.js eliminado — unificado al Concierge (sec-concierge → Inbox unificado) -->
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>
 <script src="js/admin-templates.js" defer></script>

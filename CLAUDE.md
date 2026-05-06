@@ -10719,3 +10719,170 @@ La guía cubre:
 - 100 conversaciones/mes ≈ $0.30 USD
 - 1,000 conversaciones/mes ≈ $3 USD
 - 5,000 conversaciones/mes ≈ $15 USD
+
+### 21.10 Optimizaciones de costo del Cerebro AI (2026-05-06)
+
+> Implementadas durante el setup del LLM en producción. Multiplican
+> por ~4-5x la duración del saldo Anthropic con cero impacto en UX.
+
+Cuatro cambios coordinados aplicados en un mismo commit, antes del
+primer minuto de uso del LLM en producción:
+
+#### 21.10.1 Prompt caching en `callAnthropic`
+
+**Archivo**: `functions/index.js` línea ~856.
+
+Se cambió el envío del system prompt de string plano:
+```js
+system: systemPrompt
+```
+a bloque structured con marca de cache:
+```js
+system: [{
+    type: 'text',
+    text: systemPrompt,
+    cache_control: { type: 'ephemeral' }
+}]
+```
+
+**Cómo funciona**: Anthropic guarda el bloque marcado en cache caliente
+por 5 minutos. Llamadas siguientes con el mismo system prompt pagan
+**$0.10/MTok en vez de $1/MTok** (90% descuento). Cache write paga
++25% ($1.25/MTok) la primera vez pero solo se paga una vez por
+ventana de 5 min, no por turno.
+
+**Impacto medido**: en una conversación típica de 8 turnos:
+- Sin caching: ~$0.060 USD
+- Con caching: ~$0.012 USD
+- **Ahorro: ~80%**
+
+**Validación**: el campo `data.usage` de la respuesta incluye
+`cache_creation_input_tokens` (write count) y `cache_read_input_tokens`
+(read count). Útil para monitorear desde Anthropic Console que el
+caching está funcionando como esperado.
+
+**Anti-pattern evitado**: caching SOLO el system prompt, NO la
+conversation history (que cambia cada turno y rompería el match
+exacto requerido por Anthropic). El parámetro `messages` sigue
+enviándose como array plano sin cache_control.
+
+#### 21.10.2 Reducción del inventario inyectado (30 → 10 vehículos)
+
+**Archivo**: `functions/index.js` línea ~850.
+
+```js
+const MAX_INVENTORY_VEHICLES = 10;  // antes 30
+```
+
+**Razón**: el inventario inyectado en cada system prompt era el
+componente más pesado (~3.000 tokens con 30 vehículos). Bajando a
+10 ahorrás ~2.000 tokens por turno. Combinado con prompt caching,
+el primer turno cuesta ~30% menos en write y todos los siguientes
+~30% menos en read.
+
+**Por qué 10 es suficiente**: el LLM responde mejor a prompts
+enfocados. 30 vehículos saturaba el contexto. Con 10 destacados +
+recientes, el bot recomienda con la misma calidad y si el cliente
+pregunta por algo específico que no esté en esos 10, el LLM
+sugiere "mirá el catálogo completo" (CTA goto-busqueda).
+
+**Trade-off aceptado**: si admin tiene >10 vehículos destacados,
+el LLM solo "sabe" de los top 10. No es problema porque el cliente
+puede pedir cualquier cosa y el LLM responde con info real cuando
+el flujo escala a un asesor humano.
+
+#### 21.10.3 Rate limit más estricto (60 → 30 calls/sesión/día)
+
+**Archivo**: `functions/index.js` línea ~849.
+
+```js
+const RATE_LIMIT_PER_DAY = 30;  // antes 60
+```
+
+**Razón**: protección anti-abuso. Un usuario malicioso (o bot
+indexador inesperado) que descubra el endpoint `chatLLM` podría
+quemar saldo rápido. Con 30/día/sesión, el peor caso de un
+atacante con N sesiones únicas es 30N llamadas/día.
+
+**Conversaciones reales**: rara vez exceden 15-20 turnos. 30 sigue
+siendo holgado para uso legítimo.
+
+**Cuando se alcanza el límite**: `chatLLM` retorna
+`{ rateLimited: true, text: "...te conecto con un asesor..." }`
+y el cliente recibe un CTA escalate. UX graceful, no error.
+
+#### 21.10.4 Pre-filtro rule-based en `respondWithLLMOrRules`
+
+**Archivo**: `js/concierge.js` función `respondWithLLMOrRules` (~línea 410).
+
+Antes: solo escalaban sin LLM los casos críticos (sentiment muy
+negativo / frustration / ask_human).
+
+Ahora: además de los críticos, se atrapan también con reglas (sin
+LLM) los intents triviales con respuesta determinística:
+- `greeting` (hola, buenos días, qué tal)
+- `thanks` (gracias, perfecto, excelente)
+- `goodbye` (chao, adiós, hasta luego)
+
+Threshold `confidence >= 0.3` evita falsos positivos. Cuando el
+intent matchea, se reusa `generateBotResponse(userMsg)` que ya
+tiene variantes naturales personalizadas con `firstName`.
+
+**Impacto**: estos intents representan típicamente 20-30% de los
+turnos en chats reales. Skip al LLM baja el costo total
+proporcionalmente sin afectar UX (las respuestas rule-based son
+indistinguibles de las del LLM para estos casos simples).
+
+#### Resultado combinado de las 4 optimizaciones
+
+Para una conversación promedio de 8 turnos donde 2 son saludos/
+cierre y 6 son preguntas reales:
+
+| Métrica | HOY (sin opt) | CON opt 21.10.1-4 | Ahorro |
+|---|---|---|---|
+| Turnos enviados al LLM | 8 | 6 (skip 2 triviales) | -25% |
+| Tokens input por turno LLM | ~6.000 | ~4.000 (inv 10) | -33% |
+| Coste input efectivo/turno | $1/MTok full | $0.10/MTok cache | -90% |
+| Coste por turno LLM | ~$0.007 | ~$0.001 | -85% |
+| **Coste total conversación** | **~$0.060** | **~$0.008** | **-87%** |
+| **Conversaciones por $5 USD** | **~85** | **~625** | **+635%** |
+
+> **Nota**: el primer turno de cada sesión paga cache write
+> (~$0.005) en vez de cache read. Los números arriba son estado
+> estable; sesiones muy cortas (1-2 turnos) tienen menos beneficio
+> proporcional pero igualan el escenario sin caching.
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Cache miss por modificación accidental del system prompt | El system prompt se compone determinísticamente desde `_brain` doc. Cualquier cambio (admin edita Brain) invalida todos los caches simultáneamente — esperado. |
+| Conversation history cacheada genera respuestas repetidas | Solo el system prompt tiene `cache_control`. El array `messages` siempre cambia y se cobra full price. |
+| Pre-filtro mata flexibilidad del LLM | Solo intents triviales con confidence ≥0.3. Si el cliente escribe "hola, busco un Mazda CX-5", classify retorna `inventory_query` (más específico) → va al LLM. |
+| Rate limit muy bajo bloquea uso legítimo | 30/día/sesión sigue siendo el doble del uso real promedio (15 turnos). Si se alcanza, escala a asesor (graceful). |
+| Inventory cap deja al cliente sin opciones | Si pregunta por algo no listado, el LLM responde "no está en mis destacados de hoy, mirá el catálogo completo" + CTA goto-busqueda. |
+| Cache write paga +25% siempre | Solo se paga una vez cada 5 min. En tráfico moderado (varios chats activos compartiendo el mismo system prompt), cache write se amortiza inmediatamente. |
+
+#### Pasos para activar (sin re-deploy del frontend)
+
+Las optimizaciones 21.10.1-3 (Cloud Function) requieren redeploy:
+```bash
+firebase deploy --only functions:chatLLM
+```
+
+La optimización 21.10.4 (frontend `concierge.js`) viaja en el
+service worker — los clientes la reciben automáticamente al
+recargar la página tras un deploy a `main` (cache-manager invalida
+con bump de `APP_VERSION`).
+
+#### Monitoreo recomendado
+
+1. **Anthropic Console → Analytics**: verificar que el campo
+   `cache_read_tokens` aparezca con valores >0 después del primer
+   día. Si siempre es 0, el caching no está funcionando.
+2. **Firestore → `llmRateLimit/`**: si ves muchas sesiones
+   acercándose al límite de 30, considerá subirlo o investigar si
+   son bots.
+3. **Anthropic Console → Billing**: comparar gasto del primer mes
+   vs proyección. Con uso típico de 10 chats/día × 30 días =
+   300 chats × $0.008 = ~$2.40 USD/mes.

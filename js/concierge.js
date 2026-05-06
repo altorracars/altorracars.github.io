@@ -403,14 +403,25 @@
        AltorraAI.chat). Si LLM disabled / sin key / timeout / error
        → fallback al rule-based generateBotResponse.
 
-       Pre-checks que SIEMPRE corren rule-based (más rápido y seguro):
-         - Sentiment muy negativo / frustration / ask_human → escalar
-       Esto evita gastar tokens LLM en casos de escalamiento crítico.
+       Pre-filtro rule-based (2026-05-06 — optimización de costos):
+       Intents triviales con respuesta determinística NO se mandan al
+       LLM. Cada turno LLM cuesta ~$0.005-0.010 USD; el pre-filtro los
+       resuelve sub-ms en $0:
+         - greeting (hola, buenos días, etc.) → variantes amigables
+         - thanks (gracias, perfecto) → acknowledgment
+         - goodbye (chao, adiós) → despedida
+         - frustration / ask_human → escalar al asesor
+         - sentiment muy negativo → escalar al asesor
+
+       Estos representan ~20-30% de los turnos típicos. Skip al LLM
+       baja el costo proporcionalmente sin perder calidad de UX
+       (las respuestas rule-based de generateBotResponse para estos
+       casos ya son naturales y personalizadas con firstName).
        ═══════════════════════════════════════════════════════════ */
     function respondWithLLMOrRules(userMsg) {
         var ctx = session.context || {};
 
-        // 1. Pre-check: detectar escalamiento crítico SIN LLM
+        // 1. Pre-check: clasificar intent + sentiment SIN LLM
         var classification = window.AltorraIntent
             ? window.AltorraIntent.classify(userMsg, ctx)
             : { intent: 'none', confidence: 0 };
@@ -419,6 +430,8 @@
             var s = window.AltorraAI.sentiment(userMsg);
             sentimentNeg = s && s.label === 'negative' && s.score < -0.5;
         }
+
+        // 2. Escalamiento crítico → skip LLM, escalar directo
         if (sentimentNeg || classification.intent === 'frustration' || classification.intent === 'ask_human') {
             var firstName = getClientFirstName();
             return Promise.resolve({
@@ -428,7 +441,16 @@
             });
         }
 
-        // 2. Intentar LLM si está disponible
+        // 3. Intents triviales → skip LLM, respuesta rule-based determinística
+        // generateBotResponse ya tiene variantes para greeting/thanks/goodbye con
+        // firstName. Llamarlo aquí para esos intents reaprovecha el código sin
+        // pagar tokens LLM. Confidence >= 0.3 evita falsos positivos.
+        var trivialIntents = { greeting: true, thanks: true, goodbye: true };
+        if (trivialIntents[classification.intent] && classification.confidence >= 0.3) {
+            return Promise.resolve(generateBotResponse(userMsg));
+        }
+
+        // 4. Intentar LLM si está disponible
         if (window.AltorraAI && window.AltorraAI.providers && window.AltorraAI.providers.chat) {
             // Construir messages para el LLM (últimos 12 turnos para mantener contexto
             // sin exceder context window). Filtramos system messages y CTA buttons —
@@ -461,7 +483,7 @@
                 });
         }
 
-        // 3. Sin LLM disponible → rule-based
+        // 5. Sin LLM disponible → rule-based
         return Promise.resolve(generateBotResponse(userMsg));
     }
 

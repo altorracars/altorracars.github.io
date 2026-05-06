@@ -846,12 +846,35 @@ exports.updateUserRoleV2 = onCall(callableOptionsV2, async (request) => {
 // Provider abstraction: SDK nativo de Node 22 (fetch) — sin deps extras.
 //
 
-const RATE_LIMIT_PER_DAY = 60;
-const MAX_INVENTORY_VEHICLES = 30;
+// Optimización 2026-05-06: tope de inventario reducido de 30 → 10
+// Cada vehículo en el prompt cuesta ~80-150 tokens. Con 30 vehículos
+// el system prompt llegaba a ~5000 tokens en cada turno. Bajar a 10
+// reduce ~2000 tokens/turno (~30% menos coste de input antes del cache).
+const RATE_LIMIT_PER_DAY = 30;          // antes 60 — protección anti-abuso
+const MAX_INVENTORY_VEHICLES = 10;      // antes 30 — system prompt más liviano
 
 /**
  * callAnthropic — Claude Messages API
  * docs: https://docs.anthropic.com/en/api/messages
+ *
+ * Prompt caching activado (2026-05-06):
+ *   El system prompt se envía como bloque con cache_control:'ephemeral'.
+ *   Anthropic guarda ese bloque en cache caliente por 5 minutos. Mientras
+ *   esté caliente, llamadas siguientes pagan 0.10 USD/MTok en vez de
+ *   1.00 USD/MTok (90% descuento) en la parte cacheada.
+ *
+ *   Solo se cachea la PARTE FIJA (system prompt). La conversation history
+ *   sigue cobrándose full price porque cambia cada turno.
+ *
+ *   Cache write: cobra +25% (1.25 USD/MTok) la primera vez. Pero solo se
+ *   paga UNA vez cada 5 min, así que el ahorro neto es enorme.
+ *
+ *   Mínimo 1024 tokens para cachear (Haiku/Sonnet). Nuestro system prompt
+ *   con identidad+contexto+inventario(10)+reglas pesa ~2500-3500 tokens,
+ *   bien por encima del mínimo.
+ *
+ *   Header anthropic-version 2023-06-01 ya soporta prompt caching stable
+ *   (no requiere beta header).
  */
 async function callAnthropic(apiKey, model, system, messages, temperature, maxTokens) {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -865,7 +888,16 @@ async function callAnthropic(apiKey, model, system, messages, temperature, maxTo
             model: model,
             max_tokens: maxTokens,
             temperature: temperature,
-            system: system,
+            // Prompt caching: el system prompt es la parte fija que se reutiliza
+            // entre turnos del mismo chat. Lo enviamos como bloque structured
+            // con cache_control para que Anthropic lo cachee.
+            system: [
+                {
+                    type: 'text',
+                    text: system,
+                    cache_control: { type: 'ephemeral' }
+                }
+            ],
             messages: messages
         })
     });
@@ -875,6 +907,9 @@ async function callAnthropic(apiKey, model, system, messages, temperature, maxTo
     }
     const data = await resp.json();
     const text = (data.content && data.content[0] && data.content[0].text) || '';
+    // data.usage incluye cache_creation_input_tokens (write) y
+    // cache_read_input_tokens (read) cuando el caching aplica.
+    // Los exponemos para que el cliente / admin pueda monitorearlo.
     return {
         text: text,
         usage: data.usage || null,

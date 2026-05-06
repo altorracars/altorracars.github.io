@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506240000'; // Cerebro AI optimizado — prompt caching + inventory cap 10 + rate limit 30 + pre-filtro rules (§21.10)
+const CACHE_VERSION = 'v20260506141039'; // Cerebro AI optimizado — prompt caching + inventory cap 10 + rate limit 30 + pre-filtro rules (§21.10)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

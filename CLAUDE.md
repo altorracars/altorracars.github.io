@@ -10655,3 +10655,67 @@ downtime garantizado por el fallback).
 > capa (engine.js providers, _brain doc, chatLLM function, fallback
 > rules) puede actualizarse independientemente sin romper el resto.
 > Si vas a tocar algo, leé §21.7 para no romper la cascada.
+
+### 21.9 Estado del LLM al 2026-05-06: PENDIENTE de activar
+
+**Lo que se shippeó al repo (todo el código merged a main)**:
+
+- ✅ Cloud Functions implementadas: `chatLLM`, `summarizeChat`,
+  `onConciergeMessageAdded`, `proactiveEngagement`
+- ✅ Schema `knowledgeBase/_brain` documentado con DEFAULTS sensatos
+- ✅ Admin UI "Cerebro Altorra AI" con 6 tabs operativa (renombrada
+  desde "Knowledge Base")
+- ✅ `engine.js` provider slot `chat` listo
+- ✅ `concierge.js` con cascada LLM-first → fallback rules
+- ✅ Provider abstraction (anthropic/openai/google) sin SDKs externos
+- ✅ Rate limit 60 calls/sesión/día implementado
+- ✅ Firestore rules `match /llmRateLimit/{sessionId}` agregada
+- ✅ CTA tags whitelist parsing en `chatLLM`
+- ✅ Conversation summary cada 10 turnos (auto-trigger)
+- ✅ Proactive engagement scheduled cada 5 min
+
+**Lo que el cliente NO ejecutó (deploy manual del lado del cliente)**:
+
+- ❌ `firebase functions:secrets:set LLM_API_KEY` (requiere obtener
+  key de Anthropic Console y cargar saldo, $5 USD mínimo)
+- ❌ `firebase deploy --only functions` (las 4 nuevas Cloud Functions
+  NO están corriendo en producción)
+- ❌ `firebase deploy --only firestore:rules` (la rule
+  `llmRateLimit` no está activa en producción, pero como las CF
+  tampoco están deployadas, no afecta)
+- ❌ Toggle "Cerebro AI activo" en admin (sin sentido marcarlo si las
+  CF no están deployadas)
+
+**Razón del aplazamiento**: el cliente no tiene presupuesto para
+saldo de Anthropic API ahora mismo. Decidió postergar el setup.
+
+**Comportamiento actual del bot ALTOR (mientras LLM está apagado)**:
+
+El bot funciona NORMALMENTE con la cascada de rule-based existente
+(intent classifier 13 intents + KB FAQs + sentiment + NER + fallback
+genérico). El cliente NO percibe nada raro. Cero downtime garantizado
+por la arquitectura: en `concierge.js respondWithLLMOrRules()`, si
+`window.AltorraAI.providers.chat` no está registrado o el callable
+chatLLM retorna `disabled` o `noKey`, el bot cae automáticamente al
+`generateBotResponse` rule-based.
+
+**Para activar en el futuro**: ver guía detallada en
+`docs/SETUP-LLM.md` (creada específicamente Windows-friendly para el
+entorno del cliente: `C:\Users\romad\Documents\GitHub\altorracars.github.io`).
+
+La guía cubre:
+1. Pre-requisitos (Node.js, npm, Firebase CLI)
+2. Crear cuenta Anthropic + obtener API key
+3. Configurar secret en Firebase
+4. Deploy de Cloud Functions
+5. Deploy de Firestore rules
+6. Activar el toggle en admin
+7. Probar end-to-end
+8. Troubleshooting + comandos útiles + tips de costos
+
+**Tiempo estimado del setup**: ~15 minutos cuando se decida activar.
+
+**Costo recurrente esperado** con `claude-haiku-4-5`:
+- 100 conversaciones/mes ≈ $0.30 USD
+- 1,000 conversaciones/mes ≈ $3 USD
+- 5,000 conversaciones/mes ≈ $15 USD

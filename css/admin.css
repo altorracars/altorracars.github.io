@@ -6536,3 +6536,141 @@ body.sidebar-collapsed .sidebar-collapse-btn i {
         max-width: 100vw;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN CONCIERGE — POWER-UPS (filter bar, menu, state badges)
+   ═══════════════════════════════════════════════════════════ */
+.cnc-admin-list-wrap {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-default, rgba(255, 255, 255, 0.08));
+    min-width: 0;
+}
+.cnc-admin-filter-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-default, rgba(255, 255, 255, 0.08));
+    background: var(--bg-elevated, rgba(0, 0, 0, 0.2));
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.cnc-admin-filter-chip {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.cnc-admin-filter-chip:hover {
+    background: rgba(184, 150, 88, 0.10);
+    border-color: rgba(184, 150, 88, 0.30);
+    color: var(--text-primary, #fff);
+}
+.cnc-admin-filter-chip.is-active {
+    background: rgba(184, 150, 88, 0.20);
+    border-color: rgba(184, 150, 88, 0.55);
+    color: #f3e8c8;
+}
+.cnc-admin-filter-count {
+    display: inline-block;
+    margin-left: 4px;
+    background: rgba(184, 150, 88, 0.30);
+    color: #f3e8c8;
+    border-radius: 8px;
+    padding: 0 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Botón "..." de acciones por chat */
+.cnc-admin-chat-item {
+    position: relative;
+    cursor: pointer;
+}
+.cnc-admin-chat-more {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.45);
+    padding: 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.cnc-admin-chat-item:hover .cnc-admin-chat-more,
+.cnc-admin-chat-more:focus {
+    opacity: 1;
+}
+.cnc-admin-chat-more:hover {
+    background: rgba(255, 255, 255, 0.10);
+    color: #fff;
+}
+.cnc-admin-chat-more [data-lucide] { width: 16px; height: 16px; }
+
+/* Badges de estado del chat (pin, archive, delete) */
+.cnc-admin-chat-states {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+.cnc-admin-state-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+}
+.cnc-admin-state-badge [data-lucide] { width: 11px; height: 11px; }
+.cnc-admin-state-badge.cnc-pin { background: rgba(201, 166, 99, 0.20); color: #c9a663; }
+.cnc-admin-state-badge.cnc-arch { background: rgba(120, 120, 120, 0.20); color: #aaa; }
+.cnc-admin-state-badge.cnc-del { background: rgba(239, 68, 68, 0.20); color: #ef4444; }
+
+/* Menú contextual flotante */
+.cnc-admin-chat-menu {
+    background: var(--bg-elevated, #1a1a1a);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(184, 150, 88, 0.10);
+    z-index: 10000;
+    min-width: 180px;
+    padding: 4px;
+    animation: cncMenuIn 0.15s ease-out;
+}
+@keyframes cncMenuIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.cnc-admin-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-primary, #fff);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.84rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+.cnc-admin-menu-item:hover {
+    background: rgba(184, 150, 88, 0.15);
+}
+.cnc-admin-menu-item.is-danger { color: #ff6b6b; }
+.cnc-admin-menu-item.is-danger:hover { background: rgba(239, 68, 68, 0.15); }
+.cnc-admin-menu-item [data-lucide] { width: 14px; height: 14px; flex-shrink: 0; }

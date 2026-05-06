@@ -421,11 +421,214 @@
     }, 1000);
 
     /* ═══════════════════════════════════════════════════════════
+       FASE 3 — CEREBRO ALTORRA AI
+       Sub-controlador para el doc singleton knowledgeBase/_brain
+       que define identidad, contexto, instrucciones, reglas de
+       seguridad y configuración del modelo LLM.
+       ═══════════════════════════════════════════════════════════ */
+    var BRAIN_DOC = 'knowledgeBase/_brain';
+
+    var DEFAULT_BRAIN = {
+        enabled: false,
+        llmProvider: 'anthropic',
+        llmModel: 'claude-haiku-4-5',
+        llmTemperature: 0.7,
+        maxTokens: 600,
+        identidad: {
+            nombre: 'ALTOR',
+            tono: 'cálido, profesional pero cercano, colombiano natural',
+            personalidad: 'Soy ALTOR, el asistente virtual IA de Altorra Cars. Estoy aquí para ayudarte a encontrar el auto perfecto, resolver dudas sobre financiación, peritaje y conectarte con un asesor humano cuando lo necesites.'
+        },
+        contexto: {
+            descripcion: 'Altorra Cars es un concesionario líder en Cartagena especializado en venta de vehículos nuevos y usados con peritaje técnico, financiación con aliados estratégicos y consignación.',
+            valores: ['Transparencia', 'Peritaje técnico de 50+ puntos', 'Financiación accesible', 'Garantía mecánica de 3 meses'],
+            servicios: ['Compra de vehículos nuevos y usados', 'Venta y consignación', 'Financiación con cuota inicial desde 30%', 'Test drive con cita previa', 'Peritaje técnico']
+        },
+        instrucciones: 'Eres ALTOR, asistente virtual IA de Altorra Cars. Tu misión es ayudar a clientes a encontrar el auto ideal, resolver dudas sobre financiación, peritaje, garantías y agendar visitas.\n\nREGLAS:\n- Responde siempre en español, en tono cálido y colombiano natural.\n- Si el cliente pide un precio específico, consulta el inventario en tiempo real (te lo paso en cada turno) y solo confirma precios que están en la lista.\n- Si el cliente quiere agendar una cita, ofrece conectarlo con un asesor humano.\n- Si detectas frustración, ofrece escalar a un asesor sin demorar.\n- NUNCA inventes datos. Si no tienes la info, ofrece conectar con asesor.\n- Sé breve: 2-3 oraciones por respuesta. Si el tema requiere más, pide al cliente confirmar antes de extender.',
+        reglas_seguridad: [
+            'NUNCA confirmes un precio que no esté en el inventario actual.',
+            'NUNCA prometas garantías o servicios que no estén en la lista oficial.',
+            'NUNCA des datos personales de otros clientes ni del equipo.',
+            'NUNCA inventes ni alucines información sobre vehículos, financiación o políticas.',
+            'NUNCA aceptes negociar descuentos sin escalar a un asesor humano.',
+            'NUNCA confirmes una cita sin que un asesor la valide.'
+        ]
+    };
+
+    var _brainData = null;
+    var _brainUnsub = null;
+    var _brainDirty = false;
+
+    function loadBrain() {
+        if (_brainUnsub || !window.db) return;
+        _brainUnsub = window.db.doc(BRAIN_DOC).onSnapshot(function (snap) {
+            _brainData = snap.exists ? snap.data() : null;
+            renderBrainForm();
+        }, function (err) {
+            if (window.auth && !window.auth.currentUser) return;
+            console.warn('[Cerebro] listener error:', err.message);
+        });
+    }
+
+    function $b(id) { return document.getElementById(id); }
+    function val(id) { var el = $b(id); return el ? el.value : ''; }
+    function setVal(id, v) { var el = $b(id); if (el) el.value = (v == null ? '' : v); }
+    function setChecked(id, v) { var el = $b(id); if (el) el.checked = !!v; }
+
+    function renderBrainForm() {
+        var d = _brainData || DEFAULT_BRAIN;
+        var id = d.identidad || DEFAULT_BRAIN.identidad;
+        var ctx = d.contexto || DEFAULT_BRAIN.contexto;
+
+        setVal('cerebroIdNombre', id.nombre || '');
+        setVal('cerebroIdTono', id.tono || '');
+        setVal('cerebroIdPersonalidad', id.personalidad || '');
+
+        setVal('cerebroCtxDescripcion', ctx.descripcion || '');
+        setVal('cerebroCtxValores', (ctx.valores || []).join('\n'));
+        setVal('cerebroCtxServicios', (ctx.servicios || []).join('\n'));
+
+        setVal('cerebroInstrucciones', d.instrucciones || '');
+        setVal('cerebroReglas', (d.reglas_seguridad || []).join('\n'));
+
+        setVal('cerebroLlmProvider', d.llmProvider || 'anthropic');
+        setVal('cerebroLlmModel', d.llmModel || 'claude-haiku-4-5');
+        setVal('cerebroTemperature', d.llmTemperature == null ? 0.7 : d.llmTemperature);
+        setVal('cerebroMaxTokens', d.maxTokens || 600);
+        setChecked('cerebroEnabled', !!d.enabled);
+
+        // Status pill
+        var status = $b('cerebroStatus');
+        if (status) {
+            if (_brainData && _brainData.enabled) {
+                status.setAttribute('data-status', 'on');
+                status.innerHTML = '<i data-lucide="zap"></i> Activo · ' + (_brainData.llmModel || '');
+            } else if (_brainData) {
+                status.setAttribute('data-status', 'off');
+                status.innerHTML = '<i data-lucide="power-off"></i> Apagado';
+            } else {
+                status.setAttribute('data-status', 'new');
+                status.innerHTML = '<i data-lucide="plus-circle"></i> Sin configurar';
+            }
+            if (window.AltorraIcons && window.AltorraIcons.refresh) {
+                window.AltorraIcons.refresh(status);
+            }
+        }
+        _brainDirty = false;
+        var saveState = $b('cerebroSaveState');
+        if (saveState) saveState.textContent = '';
+    }
+
+    function gatherBrainForm() {
+        function lines(v) {
+            return (v || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+        }
+        return {
+            enabled: !!($b('cerebroEnabled') && $b('cerebroEnabled').checked),
+            llmProvider: val('cerebroLlmProvider') || 'anthropic',
+            llmModel: val('cerebroLlmModel') || 'claude-haiku-4-5',
+            llmTemperature: parseFloat(val('cerebroTemperature')) || 0.7,
+            maxTokens: parseInt(val('cerebroMaxTokens'), 10) || 600,
+            identidad: {
+                nombre: val('cerebroIdNombre').trim() || 'ALTOR',
+                tono: val('cerebroIdTono').trim(),
+                personalidad: val('cerebroIdPersonalidad').trim()
+            },
+            contexto: {
+                descripcion: val('cerebroCtxDescripcion').trim(),
+                valores: lines(val('cerebroCtxValores')),
+                servicios: lines(val('cerebroCtxServicios'))
+            },
+            instrucciones: val('cerebroInstrucciones').trim(),
+            reglas_seguridad: lines(val('cerebroReglas')),
+            updatedAt: new Date().toISOString(),
+            updatedBy: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null
+        };
+    }
+
+    function saveBrain() {
+        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+            AP.toast('Solo super_admin puede modificar el Cerebro AI', 'error');
+            return;
+        }
+        var data = gatherBrainForm();
+        var saveState = $b('cerebroSaveState');
+        var btn = $b('cerebroSaveBtn');
+        if (btn) btn.disabled = true;
+        if (saveState) saveState.textContent = 'Guardando…';
+
+        window.db.doc(BRAIN_DOC).set(data, { merge: true }).then(function () {
+            if (saveState) {
+                saveState.textContent = '✓ Guardado';
+                setTimeout(function () { saveState.textContent = ''; }, 2500);
+            }
+            if (btn) btn.disabled = false;
+            _brainDirty = false;
+        }).catch(function (err) {
+            if (saveState) saveState.textContent = '✗ Error: ' + err.message;
+            if (btn) btn.disabled = false;
+            AP.toast('No se pudo guardar el Cerebro: ' + err.message, 'error');
+        });
+    }
+
+    // Tabs del Cerebro
+    document.addEventListener('click', function (e) {
+        var tab = e.target.closest && e.target.closest('[data-cerebro-tab]');
+        if (tab) {
+            var name = tab.getAttribute('data-cerebro-tab');
+            document.querySelectorAll('[data-cerebro-tab]').forEach(function (t) {
+                t.classList.toggle('is-active', t.getAttribute('data-cerebro-tab') === name);
+            });
+            document.querySelectorAll('[data-cerebro-panel]').forEach(function (p) {
+                p.classList.toggle('is-active', p.getAttribute('data-cerebro-panel') === name);
+            });
+            return;
+        }
+        // Save button
+        if (e.target && e.target.closest && e.target.closest('#cerebroSaveBtn')) {
+            saveBrain();
+            return;
+        }
+    });
+
+    // Marcar dirty al cambiar cualquier campo del Cerebro
+    document.addEventListener('input', function (e) {
+        var el = e.target;
+        if (el && el.id && el.id.indexOf('cerebro') === 0) {
+            _brainDirty = true;
+            var saveState = $b('cerebroSaveState');
+            if (saveState) saveState.textContent = '· Cambios sin guardar';
+        }
+    });
+
+    // Cargar el brain doc cuando el admin entra a la sección kb
+    if (window.AltorraSections && window.AltorraSections.onChange) {
+        window.AltorraSections.onChange(function (section) {
+            if (section === 'kb') {
+                loadBrain();
+                renderBrainForm();
+            }
+        });
+    }
+    // También arrancar el listener si user es editor+ (para que el status pill
+    // refleje el estado del Cerebro aunque no entre a la sección)
+    var brainAttempts = 0;
+    var brainIv = setInterval(function () {
+        brainAttempts++;
+        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+            loadBrain();
+            clearInterval(brainIv);
+        } else if (brainAttempts > 60) clearInterval(brainIv);
+    }, 1000);
+
+    /* ═══════════════════════════════════════════════════════════
        Public API
        ═══════════════════════════════════════════════════════════ */
     window.AltorraKB = {
         findBest: findBest,
         list: function () { return _entries.slice(); },
-        recordUsage: recordUsage
+        recordUsage: recordUsage,
+        // FASE 3 — Cerebro AI
+        getBrain: function () { return _brainData; }
     };
 })();

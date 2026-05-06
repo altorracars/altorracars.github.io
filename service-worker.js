@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506190000'; // Fase 1+2 — hard delete + status closed + purge vehicle bleed + cedula en registro/perfil + auth profile en chat
+const CACHE_VERSION = 'v20260506200000'; // Fase 3 Bloque 1 — Cerebro Altorra AI + chat provider + Cloud Function chatLLM + LLM fallback rules
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

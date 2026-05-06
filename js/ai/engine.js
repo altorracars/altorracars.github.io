@@ -41,11 +41,12 @@
         sentiment: null,    // ML upgrade slot — null until loaded
         ner: null,
         scoring: null,
-        nba: null
+        nba: null,
+        chat: null          // FASE 3 — LLM chat provider (Cloud Function callable)
     };
 
     var stats = {
-        callsByCapability: { sentiment: 0, ner: 0, scoring: 0, nba: 0 },
+        callsByCapability: { sentiment: 0, ner: 0, scoring: 0, nba: 0, chat: 0 },
         upgradedCapabilities: []
     };
 
@@ -168,6 +169,44 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       CHAT (LLM) — async, retorna {text, source} o null si no
+       hay provider registrado. El caller debe manejar el fallback
+       a rule-based. Timeout configurable (default 12s).
+       ═══════════════════════════════════════════════════════════ */
+    function chat(messages, opts) {
+        opts = opts || {};
+        stats.callsByCapability.chat++;
+        if (!providers.chat) return Promise.resolve(null);
+        var timeoutMs = opts.timeoutMs || 12000;
+        return new Promise(function (resolve, reject) {
+            var done = false;
+            var timer = setTimeout(function () {
+                if (done) return;
+                done = true;
+                reject(new Error('chat timeout (' + timeoutMs + 'ms)'));
+            }, timeoutMs);
+            try {
+                Promise.resolve(providers.chat(messages, opts)).then(function (result) {
+                    if (done) return;
+                    done = true;
+                    clearTimeout(timer);
+                    resolve(result);
+                }).catch(function (err) {
+                    if (done) return;
+                    done = true;
+                    clearTimeout(timer);
+                    reject(err);
+                });
+            } catch (err) {
+                if (done) return;
+                done = true;
+                clearTimeout(timer);
+                reject(err);
+            }
+        });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        INTROSPECTION
        ═══════════════════════════════════════════════════════════ */
     function capabilities() {
@@ -175,7 +214,8 @@
             sentiment: { available: true, source: providers.sentiment ? 'ml' : 'rules' },
             ner: { available: !!providers.ner, source: providers.ner ? 'ml' : 'rules' },
             scoring: { available: !!providers.scoring, source: providers.scoring ? 'ml' : 'rules' },
-            nba: { available: !!providers.nba, source: providers.nba ? 'ml' : 'rules' }
+            nba: { available: !!providers.nba, source: providers.nba ? 'ml' : 'rules' },
+            chat: { available: !!providers.chat, source: providers.chat ? 'llm' : 'none' }
         };
     }
 
@@ -198,10 +238,14 @@
         sentiment: sentiment,
         // Async — opt-in for higher accuracy when ML provider available
         sentimentAsync: sentimentAsync,
+        // FASE 3 — LLM chat (async, requires registered chat provider)
+        chat: chat,
         // ML model registration (for J.1+ when Transformers.js loads)
         registerProvider: registerProvider,
         capabilities: capabilities,
         health: health,
+        // Expose providers para que callers puedan check `if (AltorraAI.providers.chat)`
+        get providers() { return providers; },
         // Private — escape hatches for testing/debugging
         _providers: providers,
         _stats: stats

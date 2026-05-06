@@ -283,11 +283,21 @@ service cloud.firestore {
       allow create: if isEditorOrAbove();
       // Editor+ puede modificar todo. Cualquier usuario autenticado puede
       // tocar SOLO usageCount + lastUsedAt (analytics que el bot reporta).
+      // El doc singleton `knowledgeBase/_brain` (Cerebro Altorra AI) usa la
+      // misma rule: editor+ puede leer/escribir sus campos identidad,
+      // contexto, instrucciones, reglas_seguridad, llmProvider, etc.
       allow update: if isEditorOrAbove() ||
         (request.auth != null
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['usageCount', 'lastUsedAt']));
       allow delete: if isSuperAdmin();
+    }
+
+    // FASE 3 — Rate limit per session para el LLM (chatLLM Cloud Function).
+    // La Cloud Function escribe via Admin SDK (bypasea rules). Desde cliente
+    // bloqueamos lectura/escritura para evitar manipulación del contador.
+    match /llmRateLimit/{sessionId} {
+      allow read, write: if false;
     }
 
     // ========== EVENT BUS (I.1 / I.2 — admin Activity Feed) ==========

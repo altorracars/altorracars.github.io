@@ -6674,3 +6674,173 @@ body.sidebar-collapsed .sidebar-collapse-btn i {
 .cnc-admin-menu-item.is-danger { color: #ff6b6b; }
 .cnc-admin-menu-item.is-danger:hover { background: rgba(239, 68, 68, 0.15); }
 .cnc-admin-menu-item [data-lucide] { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   FASE 3 — CEREBRO ALTORRA AI (admin)
+   ═══════════════════════════════════════════════════════════ */
+.cerebro-actions { display: flex; align-items: center; }
+.cerebro-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.cerebro-status[data-status="loading"] {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+}
+.cerebro-status[data-status="on"] {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+}
+.cerebro-status[data-status="off"] {
+    background: rgba(120, 120, 120, 0.20);
+    color: #aaa;
+}
+.cerebro-status[data-status="new"] {
+    background: rgba(201, 166, 99, 0.18);
+    color: #c9a663;
+}
+.cerebro-status [data-lucide] { width: 14px; height: 14px; }
+
+.cerebro-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border-default, rgba(255,255,255,0.08));
+    margin: 14px 0 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.cerebro-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, rgba(255,255,255,0.7));
+    padding: 10px 16px;
+    font-size: 0.86rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.cerebro-tab:hover { color: #c9a663; }
+.cerebro-tab.is-active {
+    color: #c9a663;
+    border-bottom-color: #c9a663;
+}
+.cerebro-tab [data-lucide] { width: 15px; height: 15px; }
+
+.cerebro-panels {
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid var(--border-default, rgba(255,255,255,0.08));
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 22px;
+    min-height: 320px;
+}
+.cerebro-panel { display: none; }
+.cerebro-panel.is-active { display: block; }
+.cerebro-panel-head { margin-bottom: 18px; }
+.cerebro-panel-head h3 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    color: var(--text-primary, #fff);
+}
+.cerebro-panel-head .cerebro-panel-sub {
+    margin: 0 0 8px;
+    font-size: 0.82rem;
+    color: var(--text-secondary, rgba(255,255,255,0.6));
+    line-height: 1.45;
+}
+
+.cerebro-field {
+    margin-bottom: 14px;
+}
+.cerebro-field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary, rgba(255,255,255,0.75));
+    margin-bottom: 5px;
+    letter-spacing: 0.02em;
+}
+.cerebro-field .form-input,
+.cerebro-field .form-textarea,
+.cerebro-field .form-select {
+    width: 100%;
+}
+.cerebro-field .form-textarea {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.84rem;
+    line-height: 1.5;
+}
+.cerebro-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.cerebro-toggle-field { padding-bottom: 4px; }
+.cerebro-toggle-label {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    padding: 14px;
+    background: rgba(184, 150, 88, 0.06);
+    border: 1px solid rgba(184, 150, 88, 0.20);
+    border-radius: 8px;
+    margin-bottom: 0 !important;
+}
+.cerebro-toggle-label input[type="checkbox"] {
+    margin-top: 3px;
+    accent-color: #c9a663;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.cerebro-toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.cerebro-toggle-text strong { font-size: 0.9rem; color: var(--text-primary, #fff); }
+.cerebro-toggle-text small { font-size: 0.78rem; color: var(--text-secondary, rgba(255,255,255,0.6)); }
+.cerebro-deploy-warn {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: rgba(96, 165, 250, 0.08);
+    border-left: 3px solid #60a5fa;
+    border-radius: 6px;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+.cerebro-deploy-warn [data-lucide] { width: 18px; height: 18px; flex-shrink: 0; color: #60a5fa; }
+.cerebro-deploy-warn code {
+    background: rgba(0, 0, 0, 0.35);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+}
+
+.cerebro-footer {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-top: 16px;
+    margin-top: 14px;
+    border-top: 1px solid var(--border-default, rgba(255,255,255,0.08));
+}
+.cerebro-savestate {
+    font-size: 0.82rem;
+    color: var(--text-secondary, rgba(255,255,255,0.6));
+}

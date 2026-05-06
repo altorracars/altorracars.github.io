@@ -16,6 +16,12 @@ const githubPat = defineSecret('GITHUB_PAT');
 const emailUser = defineSecret('EMAIL_USER');
 const emailPass = defineSecret('EMAIL_PASS');
 
+// FASE 3 — LLM secret para el Cerebro Altorra AI (ALTOR bot)
+// Set with: firebase functions:secrets:set LLM_API_KEY
+// El provider se lee del doc Firestore knowledgeBase/_brain.llmProvider
+// (anthropic | openai | google). NO requiere secret separado.
+const llmApiKey = defineSecret('LLM_API_KEY');
+
 // ========== SOLICITUDES: SHARED HELPERS ==========
 
 const TIPO_LABELS = {
@@ -817,5 +823,346 @@ exports.updateUserRoleV2 = onCall(callableOptionsV2, async (request) => {
     return {
         success: true,
         message: 'Usuario actualizado.'
+    };
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FASE 3 — chatLLM: callable que conecta el Concierge con un LLM
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Flujo:
+//   1. Lee `knowledgeBase/_brain` (singleton con identidad, contexto,
+//      instrucciones, reglas, modelo configurado por el admin).
+//   2. Si _brain.enabled === false → retorna { disabled: true }, el cliente
+//      hace fallback a rule-based.
+//   3. Si LLM_API_KEY no está configurado → retorna { noKey: true }.
+//   4. Lee inventario (vehiculos/) filtrando vendidos/reservados, top 30.
+//   5. Compone system prompt + contexto + tools (function calling Phase 3.B).
+//   6. Llama al provider LLM (anthropic / openai / google) via fetch nativo.
+//   7. Rate limit por sessionId: max 60 calls/día (proteger costos).
+//   8. Retorna { text, model, usage, source: 'llm' } o error.
+//
+// Provider abstraction: SDK nativo de Node 22 (fetch) — sin deps extras.
+//
+
+const RATE_LIMIT_PER_DAY = 60;
+const MAX_INVENTORY_VEHICLES = 30;
+
+/**
+ * callAnthropic — Claude Messages API
+ * docs: https://docs.anthropic.com/en/api/messages
+ */
+async function callAnthropic(apiKey, model, system, messages, temperature, maxTokens) {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: model,
+            max_tokens: maxTokens,
+            temperature: temperature,
+            system: system,
+            messages: messages
+        })
+    });
+    if (!resp.ok) {
+        const errBody = await resp.text();
+        throw new Error('Anthropic ' + resp.status + ': ' + errBody.slice(0, 400));
+    }
+    const data = await resp.json();
+    const text = (data.content && data.content[0] && data.content[0].text) || '';
+    return {
+        text: text,
+        usage: data.usage || null,
+        model: data.model || model,
+        stopReason: data.stop_reason || null
+    };
+}
+
+/**
+ * callOpenAI — Chat Completions API
+ * docs: https://platform.openai.com/docs/api-reference/chat/create
+ */
+async function callOpenAI(apiKey, model, system, messages, temperature, maxTokens) {
+    const fullMessages = [{ role: 'system', content: system }].concat(messages);
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + apiKey,
+            'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: model,
+            max_tokens: maxTokens,
+            temperature: temperature,
+            messages: fullMessages
+        })
+    });
+    if (!resp.ok) {
+        const errBody = await resp.text();
+        throw new Error('OpenAI ' + resp.status + ': ' + errBody.slice(0, 400));
+    }
+    const data = await resp.json();
+    const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+    return {
+        text: text,
+        usage: data.usage || null,
+        model: data.model || model,
+        stopReason: data.choices && data.choices[0] && data.choices[0].finish_reason || null
+    };
+}
+
+/**
+ * callGoogle — Gemini generateContent API
+ * docs: https://ai.google.dev/api/generate-content
+ */
+async function callGoogle(apiKey, model, system, messages, temperature, maxTokens) {
+    // Gemini espera contents tipo: [{ role: 'user'|'model', parts: [{text: '...'}] }]
+    // y el system instruction es separate.
+    const contents = messages.map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+    }));
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+        encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
+    const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+            contents: contents,
+            systemInstruction: { parts: [{ text: system }] },
+            generationConfig: {
+                temperature: temperature,
+                maxOutputTokens: maxTokens
+            }
+        })
+    });
+    if (!resp.ok) {
+        const errBody = await resp.text();
+        throw new Error('Google ' + resp.status + ': ' + errBody.slice(0, 400));
+    }
+    const data = await resp.json();
+    const text = (data.candidates && data.candidates[0] &&
+                  data.candidates[0].content && data.candidates[0].content.parts &&
+                  data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text) || '';
+    return {
+        text: text,
+        usage: data.usageMetadata || null,
+        model: model,
+        stopReason: data.candidates && data.candidates[0] && data.candidates[0].finishReason || null
+    };
+}
+
+/**
+ * Construye el system prompt final inyectando identidad, contexto,
+ * instrucciones, reglas y el inventario en tiempo real.
+ */
+function composeSystemPrompt(brain, inventory) {
+    const id = brain.identidad || {};
+    const ctx = brain.contexto || {};
+    const valores = (ctx.valores || []).join(', ');
+    const servicios = (ctx.servicios || []).map((s) => '- ' + s).join('\n');
+    const reglas = (brain.reglas_seguridad || []).map((r) => '- ' + r).join('\n');
+
+    let invSection = '';
+    if (inventory && inventory.length > 0) {
+        invSection = '\n\nINVENTARIO DISPONIBLE EN TIEMPO REAL (top ' + inventory.length + '):\n' +
+            inventory.map((v, i) => {
+                const precio = v.precioOferta || v.precio;
+                const precioStr = precio ? '$' + (precio / 1e6).toFixed(1) + 'M' : 'consultar';
+                return (i + 1) + '. ' + (v.marca || '?') + ' ' + (v.modelo || '') +
+                    ' ' + (v.year || '') + ' — ' + precioStr +
+                    (v.kilometraje ? ' · ' + v.kilometraje + ' km' : '') +
+                    (v.categoria ? ' · ' + v.categoria : '') +
+                    (v.estado === 'reservado' ? ' (RESERVADO)' : '') +
+                    (v.id ? ' [id:' + v.id + ']' : '');
+            }).join('\n');
+    }
+
+    return [
+        id.personalidad || 'Soy ALTOR, asistente virtual de Altorra Cars.',
+        '',
+        'CONTEXTO DEL NEGOCIO:',
+        ctx.descripcion || '',
+        valores ? 'NUESTROS VALORES: ' + valores : '',
+        servicios ? 'SERVICIOS:\n' + servicios : '',
+        '',
+        'INSTRUCCIONES:',
+        brain.instrucciones || '',
+        '',
+        reglas ? 'REGLAS DE SEGURIDAD (INVIOLABLES):\n' + reglas : '',
+        invSection,
+        '',
+        id.tono ? 'TONO: ' + id.tono : ''
+    ].filter(Boolean).join('\n').trim();
+}
+
+/**
+ * Lee el inventario disponible (no vendido), ordenado por destacado y
+ * fecha de ingreso. Cap a top N para mantener el system prompt
+ * dentro de un budget razonable.
+ */
+async function fetchInventoryForLLM(limit) {
+    try {
+        const snap = await db.collection('vehiculos')
+            .where('estado', 'in', ['disponible', 'reservado'])
+            .limit(100)
+            .get();
+        const items = [];
+        snap.forEach((doc) => {
+            const v = doc.data();
+            items.push({
+                id: doc.id,
+                marca: v.marca,
+                modelo: v.modelo,
+                year: v.year,
+                precio: v.precio,
+                precioOferta: v.precioOferta,
+                kilometraje: v.kilometraje,
+                categoria: v.categoria,
+                estado: v.estado,
+                destacado: !!v.destacado,
+                createdAt: v.createdAt || v.creadoEn || ''
+            });
+        });
+        // Sort: destacados primero, luego por fecha desc
+        items.sort((a, b) => {
+            if (a.destacado !== b.destacado) return a.destacado ? -1 : 1;
+            const at = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+            const bt = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+            return bt - at;
+        });
+        return items.slice(0, limit);
+    } catch (err) {
+        console.warn('[chatLLM] Failed to fetch inventory:', err.message);
+        return [];
+    }
+}
+
+/**
+ * Rate limit per session — max N calls/día. Track con doc en
+ * Firestore: llmRateLimit/{sessionId} con {count, day}.
+ * Reset diario implícito al cambiar de día.
+ */
+async function checkRateLimit(sessionId) {
+    if (!sessionId) return true; // sin sessionId no podemos rate-limit
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const ref = db.collection('llmRateLimit').doc(sessionId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+        await ref.set({ count: 1, day: today, lastAt: new Date().toISOString() });
+        return true;
+    }
+    const data = snap.data();
+    if (data.day !== today) {
+        // nuevo día → reset
+        await ref.set({ count: 1, day: today, lastAt: new Date().toISOString() });
+        return true;
+    }
+    if ((data.count || 0) >= RATE_LIMIT_PER_DAY) return false;
+    await ref.update({
+        count: admin.firestore.FieldValue.increment(1),
+        lastAt: new Date().toISOString()
+    });
+    return true;
+}
+
+exports.chatLLM = onCall({
+    region: 'us-central1',
+    secrets: [llmApiKey],
+    cors: true,
+    timeoutSeconds: 30,
+    memory: '512MiB'
+}, async (request) => {
+    const data = request.data || {};
+    const messages = Array.isArray(data.messages) ? data.messages : [];
+    const sessionId = data.sessionId || null;
+
+    if (messages.length === 0) {
+        throw new HttpsError('invalid-argument', 'messages is required');
+    }
+
+    // 1. Leer doc _brain
+    let brain;
+    try {
+        const brainSnap = await db.doc('knowledgeBase/_brain').get();
+        brain = brainSnap.exists ? brainSnap.data() : null;
+    } catch (err) {
+        console.warn('[chatLLM] No se pudo leer _brain:', err.message);
+        return { disabled: true, reason: 'brain-read-error' };
+    }
+
+    if (!brain || !brain.enabled) {
+        return { disabled: true, reason: 'brain-disabled' };
+    }
+
+    // 2. Verificar API key
+    let apiKey;
+    try {
+        apiKey = llmApiKey.value();
+    } catch (err) {
+        return { noKey: true, reason: 'secret-not-set' };
+    }
+    if (!apiKey) return { noKey: true, reason: 'empty-secret' };
+
+    // 3. Rate limit
+    const allowed = await checkRateLimit(sessionId);
+    if (!allowed) {
+        return {
+            text: 'Has alcanzado el límite diario de respuestas automáticas. Te conecto con un asesor humano.',
+            cta: { label: 'Hablar con asesor', action: 'escalate' },
+            rateLimited: true
+        };
+    }
+
+    // 4. Inventario en tiempo real
+    const inventory = await fetchInventoryForLLM(MAX_INVENTORY_VEHICLES);
+
+    // 5. Compose system prompt
+    const system = composeSystemPrompt(brain, inventory);
+
+    // 6. Sanitize messages: solo role + content, alternar correctamente
+    const cleanMessages = messages
+        .filter((m) => m && m.role && m.content && typeof m.content === 'string')
+        .map((m) => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.content.slice(0, 4000) // cap por mensaje para safety
+        }));
+
+    if (cleanMessages.length === 0 || cleanMessages[cleanMessages.length - 1].role !== 'user') {
+        throw new HttpsError('invalid-argument', 'last message must be from user');
+    }
+
+    // 7. Llamar al provider
+    const provider = brain.llmProvider || 'anthropic';
+    const model = brain.llmModel || 'claude-haiku-4-5';
+    const temperature = typeof brain.llmTemperature === 'number' ? brain.llmTemperature : 0.7;
+    const maxTokens = brain.maxTokens || 600;
+
+    let result;
+    try {
+        if (provider === 'openai') {
+            result = await callOpenAI(apiKey, model, system, cleanMessages, temperature, maxTokens);
+        } else if (provider === 'google') {
+            result = await callGoogle(apiKey, model, system, cleanMessages, temperature, maxTokens);
+        } else {
+            // default anthropic
+            result = await callAnthropic(apiKey, model, system, cleanMessages, temperature, maxTokens);
+        }
+    } catch (err) {
+        console.error('[chatLLM] LLM call failed:', err.message);
+        // Devolver disabled para que cliente haga fallback (no propagar error)
+        return { disabled: true, reason: 'llm-call-failed', error: err.message.slice(0, 200) };
+    }
+
+    return {
+        text: result.text,
+        model: result.model,
+        usage: result.usage,
+        provider: provider,
+        source: 'llm'
     };
 });

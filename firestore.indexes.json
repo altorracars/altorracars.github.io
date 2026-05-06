@@ -32,6 +32,15 @@
         { "fieldPath": "email", "order": "ASCENDING" },
         { "fieldPath": "rol", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "banners",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "position", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

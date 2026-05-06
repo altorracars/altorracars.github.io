@@ -74,11 +74,46 @@
             ]);
         })
         .then(function() {
-            var app = firebase.initializeApp(FIREBASE_CONFIG);
-            var db = firebase.firestore();
-            var auth = firebase.auth();
+            // §23 FASE 6 (Capa 3) — AISLAMIENTO TOTAL ADMIN ↔ WEB PÚBLICA
+            // ───────────────────────────────────────────────────────────
+            // Antes: una sola app Firebase con appName=[DEFAULT]. Como TODAS
+            // las páginas del sitio cargaban este mismo firebase-config.js,
+            // la sesión de Firebase Auth se compartía entre admin.html e
+            // index.html. Resultado: si te logueabas en admin, automáticamente
+            // aparecías logueado en la web pública (con la misma cuenta).
+            // Era imposible estar simultáneamente como super_admin en
+            // admin.html Y como cliente normal en otra tab.
+            //
+            // Solución: detectar el contexto (admin vs público) y usar
+            // appName DIFERENTE. Firebase Auth genera storage keys distintas
+            // por appName (`firebase:authUser:<apiKey>:<appName>`), por lo
+            // que cada contexto tiene su propio IndexedDB de auth.
+            //
+            // Trade-off: usuarios actuales serán deslogueados UNA VEZ
+            // tras este deploy (storage key cambió). Es esperado y aceptable.
+            //
+            // Caveat operacional: si alguien navega de admin.html → index.html
+            // dentro del MISMO tab, ambas apps quedan instanciadas en memoria.
+            // No es problema funcional — `window.auth` siempre apunta a la app
+            // del contexto actual porque firebase-config.js solo se carga
+            // UNA vez por page load.
+            var isAdminPage = location.pathname.indexOf('admin.html') !== -1
+                              || location.pathname.endsWith('/admin')
+                              || location.pathname.endsWith('/admin/');
+            var APP_NAME = isAdminPage ? 'altorra-admin' : 'altorra-public';
+
+            var app;
+            try {
+                // Si la app ya existe (raro: HMR/dev tools), reusar
+                app = firebase.app(APP_NAME);
+            } catch (e) {
+                app = firebase.initializeApp(FIREBASE_CONFIG, APP_NAME);
+            }
+            var db = firebase.firestore(app);
+            var auth = firebase.auth(app);
 
             window.firebaseApp = app;
+            window.firebaseAppName = APP_NAME;  // útil para debugging
             window.db = db;
             window.auth = auth;
 
@@ -112,43 +147,41 @@
             });
 
             // Defer non-critical SDKs (load in background after login is ready)
+            // §23 — todos pasan `app` explícitamente para que apunten a la
+            // app namespaced (altorra-admin o altorra-public), no a [DEFAULT]
             Promise.all([
                 loadScript(CDN_BASE + '/firebase-storage-compat.js'),
                 loadScript(CDN_BASE + '/firebase-functions-compat.js'),
                 loadScript(CDN_BASE + '/firebase-analytics-compat.js'),
                 loadScript(CDN_BASE + '/firebase-database-compat.js')
             ]).then(function() {
-                window.storage = firebase.storage();
-                window.functions = firebase.functions();
-                window.firebaseAnalytics = firebase.analytics();
-                window.rtdb = firebase.database();
-                console.log('Firebase deferred SDKs loaded (Storage, Functions, Analytics, RTDB)');
+                window.storage = firebase.storage(app);
+                window.functions = firebase.functions(app);
+                // Analytics: solo se inicializa para la default app por
+                // limitación del SDK Compat. Para evitar errores cuando
+                // app !== default, lo intentamos pero no fallamos si no.
+                try { window.firebaseAnalytics = firebase.analytics(app); }
+                catch (e) { window.firebaseAnalytics = null; }
+                window.rtdb = firebase.database(app);
+                console.log('Firebase deferred SDKs loaded (' + APP_NAME + ')');
             }).catch(function(err) {
                 console.warn('Deferred Firebase SDKs failed:', err);
             });
 
             // Troubleshooting: clear stale offline writes from IndexedDB
-            // Call window.clearFirestoreCache() from browser console if permission errors persist
             window.clearFirestoreCache = function() {
-                console.info('[Cache] Terminating Firestore and clearing persistence...');
-                firebase.firestore().terminate().then(function() {
-                    return firebase.firestore().clearPersistence();
+                console.info('[Cache] Terminating Firestore (' + APP_NAME + ') and clearing persistence...');
+                firebase.firestore(app).terminate().then(function() {
+                    return firebase.firestore(app).clearPersistence();
                 }).then(function() {
                     console.info('[Cache] Persistence cleared. Reloading...');
                     window.location.reload();
                 }).catch(function(err) {
                     console.error('[Cache] Error clearing persistence:', err);
-                    // Fallback: delete IndexedDB directly
-                    var dbNames = ['firestore/[DEFAULT]/altorra-cars/main'];
-                    dbNames.forEach(function(name) {
-                        indexedDB.deleteDatabase(name);
-                    });
-                    console.info('[Cache] IndexedDB deleted. Reloading...');
-                    window.location.reload();
                 });
             };
 
-            console.log('Firebase core ready (Auth + Firestore)');
+            console.log('Firebase core ready (Auth + Firestore) [' + APP_NAME + ']');
             return { app: app, db: db, auth: auth };
         })
         .catch(function(error) {

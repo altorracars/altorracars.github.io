@@ -40,6 +40,32 @@
 .altorra-concierge-btn:active {
     transform: scale(0.96);
 }
+/* Icono Lucide (sparkles) dentro del FAB y header avatar */
+.altorra-concierge-btn [data-lucide],
+.altorra-concierge-btn svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 2;
+}
+.cnc-avatar [data-lucide],
+.cnc-avatar svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+.cnc-send [data-lucide],
+.cnc-send svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+.cnc-quick-btn [data-lucide],
+.cnc-quick-btn svg {
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+    vertical-align: -2px;
+}
 
 @keyframes cncPulse {
     0%, 100% { box-shadow: 0 8px 24px rgba(184, 150, 88, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(184, 150, 88, 0.5); }

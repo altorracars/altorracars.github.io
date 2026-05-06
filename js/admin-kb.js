@@ -45,6 +45,7 @@
        ═══════════════════════════════════════════════════════════ */
     function startListener() {
         if (_unsub || !window.db) return;
+        var firstSnap = true;
         _unsub = window.db.collection('knowledgeBase')
             .orderBy('priority', 'desc')
             .onSnapshot(function (snap) {
@@ -53,10 +54,128 @@
                     _entries.push(Object.assign({ _id: doc.id }, doc.data()));
                 });
                 renderUI();
+                // Seed condicional: SOLO en el primer snapshot, SOLO si vacía,
+                // SOLO super_admin (rules requieren editor+ para create).
+                // Flag localStorage previene re-seeds accidentales aunque el
+                // admin elimine FAQs después.
+                if (firstSnap) {
+                    firstSnap = false;
+                    maybeSeedKB();
+                }
             }, function (err) {
                 if (window.auth && !window.auth.currentUser) return;
                 console.warn('[KB] listener error:', err.message);
             });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SEEDER — 10 FAQs fundacionales
+       Se ejecuta UNA SOLA VEZ si:
+         1. La colección knowledgeBase/ está vacía (primer snapshot)
+         2. El usuario es super_admin (rules exigen editor+ para create)
+         3. localStorage flag `altorra_kb_seeded` NO está seteado
+       Después del primer seed marca el flag para no repetir aunque admin
+       borre FAQs manualmente.
+       ═══════════════════════════════════════════════════════════ */
+    var SEED_FAQS = [
+        {
+            question: '¿Cuál es el horario de atención?',
+            answer: '🕒 Atendemos de lunes a sábado de 8:00 AM a 6:00 PM. Fuera de horario el bot te responde y dejamos a un asesor pendiente para contactarte al día siguiente.',
+            category: 'horarios',
+            keywords: ['horario', 'cuando abren', 'cuando atienden', 'a que hora', 'cuando atienen']
+        },
+        {
+            question: '¿Dónde están ubicados?',
+            answer: '📍 Estamos en Cartagena, Colombia. Si quieres agendar una visita o que un asesor te envíe la dirección exacta + cómo llegar, dime "agendar cita" y te conecto.',
+            category: 'ubicacion',
+            keywords: ['ubicacion', 'donde estan', 'donde queda', 'direccion', 'como llegar', 'sede']
+        },
+        {
+            question: '¿Qué requisitos necesito para financiar un vehículo?',
+            answer: '💳 Para financiación pedimos: cédula de ciudadanía, comprobante de ingresos (últimos 3 meses), referencia familiar y comercial. Cuota inicial mínima del 30%. Plazos hasta 72 meses. ¿Quieres que te conecte con un asesor para una propuesta personalizada?',
+            category: 'financiacion',
+            keywords: ['requisitos financiacion', 'requisitos credito', 'que necesito para financiar', 'documentos credito', 'papeles para financiar']
+        },
+        {
+            question: '¿Cuál es la cuota inicial mínima?',
+            answer: '💰 La cuota inicial mínima es del 30% del valor del vehículo. Si tienes una cuota inicial mayor obtienes mejores tasas y plazos más cómodos. ¿Quieres que un asesor te haga una simulación?',
+            category: 'financiacion',
+            keywords: ['cuota inicial', 'inicial minima', 'primer pago', 'anticipo', 'cuanto debo dar']
+        },
+        {
+            question: '¿A qué plazos puedo financiar?',
+            answer: '📅 Trabajamos plazos desde 12 hasta 72 meses (6 años). Entre más corto el plazo, menos intereses pagas. El simulador de crédito en nuestra web te muestra opciones en tiempo real.',
+            category: 'financiacion',
+            keywords: ['plazos', 'cuantos meses', 'a cuanto puedo financiar', 'tiempo financiar', 'cuanto plazo']
+        },
+        {
+            question: '¿Puedo agendar un test drive antes de comprar?',
+            answer: '🚗 ¡Por supuesto! Todos nuestros vehículos están disponibles para prueba de manejo previa cita. Dime el modelo que te interesa y te conecto con un asesor para coordinar fecha y hora.',
+            category: 'inventario',
+            keywords: ['test drive', 'prueba de manejo', 'probar el carro', 'probar el auto', 'manejar antes', 'ver el vehiculo']
+        },
+        {
+            question: '¿Qué garantía ofrecen sobre los vehículos?',
+            answer: '🛡️ Todos nuestros vehículos usados incluyen garantía mecánica de 3 meses sobre componentes principales (motor, caja, transmisión). Los vehículos nuevos mantienen la garantía de fábrica. Cualquier inquietud específica te la resuelve un asesor.',
+            category: 'politica',
+            keywords: ['garantia', 'tienen garantia', 'cuanto garantia', 'respaldo', 'garantizan']
+        },
+        {
+            question: '¿Cómo es el proceso de peritaje?',
+            answer: '🔍 Cada vehículo en nuestro inventario pasa por un peritaje mecánico de 50+ puntos antes de ser publicado: motor, frenos, suspensión, eléctrico, carrocería, kilometraje real, historial. Recibes el reporte completo del vehículo que te interese.',
+            category: 'politica',
+            keywords: ['peritaje', 'revision', 'inspeccion', 'verifican', 'tecnomecanica', 'estado del vehiculo']
+        },
+        {
+            question: '¿Cómo puedo vender mi auto a través de ustedes?',
+            answer: '🚙 Ofrecemos dos modalidades: (1) compra directa con valuación inmediata, o (2) consignación en nuestro inventario. Iniciamos con peritaje gratuito sin compromiso. Dime "vender mi auto" y te conecto con un asesor de compras.',
+            category: 'consignacion',
+            keywords: ['vender mi auto', 'vender mi carro', 'consignacion', 'consigna', 'venden carros usados', 'compran carros']
+        },
+        {
+            question: '¿Qué documentos necesito para comprar un vehículo?',
+            answer: '📋 Para la compra necesitas: cédula de ciudadanía vigente, RUT (si aplica para factura), y comprobante de ingresos si vas a financiar. Para el traspaso te acompañamos en todo el proceso ante la SIM.',
+            category: 'general',
+            keywords: ['documentos compra', 'que necesito comprar', 'papeles comprar', 'requisitos comprar', 'que llevar para comprar']
+        }
+    ];
+
+    function maybeSeedKB() {
+        if (_entries.length > 0) return;
+        try {
+            if (localStorage.getItem('altorra_kb_seeded') === '1') return;
+        } catch (e) {}
+        if (!window.auth || !window.auth.currentUser) return;
+        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+
+        var batch = window.db.batch();
+        var now = new Date().toISOString();
+        var uid = window.auth.currentUser.uid;
+        SEED_FAQS.forEach(function (faq) {
+            var ref = window.db.collection('knowledgeBase').doc();
+            batch.set(ref, {
+                question: faq.question,
+                answer: faq.answer,
+                category: faq.category,
+                keywords: faq.keywords,
+                priority: 50,
+                enabled: true,
+                usageCount: 0,
+                createdAt: now,
+                createdBy: uid,
+                updatedAt: now,
+                updatedBy: uid,
+                seedSource: 'altorra-foundational-v1'
+            });
+        });
+
+        batch.commit().then(function () {
+            try { localStorage.setItem('altorra_kb_seeded', '1'); } catch (e) {}
+            console.info('[KB] Seed: ' + SEED_FAQS.length + ' FAQs fundacionales inyectadas.');
+            if (AP.toast) AP.toast(SEED_FAQS.length + ' FAQs base inyectadas en Knowledge Base', 'success');
+        }).catch(function (err) {
+            console.warn('[KB] Seed failed:', err.message);
+        });
     }
 
     /* ═══════════════════════════════════════════════════════════

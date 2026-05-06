@@ -2221,6 +2221,229 @@ Cero `vehicleDB is not defined`. Cero `GSI_LOGGER deprecated`. Cero
 `AudioContext was not allowed`. Cero `permission-denied` espurios.
 Cero notificaciones silenciadas. Cero toasts apilados en favoritos.
 
+### RCA STRUCTURAL FIX — Clicks bloqueados en centro de botones del admin (2026-05-06)
+
+> **Una de las investigaciones más importantes del proyecto.** Documentada
+> con detalle para que futuros devs no repitan el patrón que causó el bug.
+> Resuelta tras múltiples intentos fallidos (header-fix v1 → v5).
+
+**Sintoma reportado** (admin.html, 3 botones del header: micrófono,
+actividad, campana):
+- Clicks en el **centro** de los botones no respondían.
+- Clicks en las **esquinas** (~7-10px del borde) sí respondían.
+- Campana no respondía en NINGÚN punto.
+- Tras "muchos clicks repetidos" eventualmente funcionaba.
+- Una vez abierto cualquier panel, las **X de cierre tampoco
+  respondían**, pero **Esc sí cerraba** los paneles.
+
+**Fase 1 — Diagnóstico fallido (cuatro intentos de parche)**:
+
+| Intento | Hipótesis | Por qué falló |
+|---|---|---|
+| header-fix v2 | Doble bind cancela cycle() | Cierto pero solo afectaba theme/contrast (eliminados después) |
+| header-fix v3 | Capture-phase listener intercepta antes de overlays | Llamaba `notifyCenter.togglePanel` que no existía → bell rompido |
+| header-fix v4 | No interceptar, confiar en handlers nativos + cleanup overlays | El bug NO era de overlays con z-index alto |
+| header-fix v5 | Listeners directos en cada botón + stopImmediatePropagation | El click EVENT mismo no se disparaba en el centro — listeners directos no ayudaban |
+
+Tras 5 commits sin resolver, el usuario pidió diagnóstico estructural
+(RCA mode) en lugar de más parches.
+
+**Fase 2 — Telemetría inyectada**:
+
+Se reemplazó el contenido de `admin-header-fix.js` por un capture-phase
+listener PURO (sin bindings, sin parches) que reportaba:
+- El `e.target` exacto del click.
+- El stack completo de elementos en el punto del click vía
+  `document.elementsFromPoint(x, y)` con z-index, position y
+  pointer-events de cada uno.
+- Si el target estaba dentro o fuera del rect del botón.
+
+**Resultado de la telemetría** (6 clicks: centro + esquina de cada
+botón):
+
+| Click | Logged? | e.target |
+|---|---|---|
+| Bell centro | ❌ NADA | — |
+| Bell esquina sup-izq | ✅ | BUTTON.altorra-bell |
+| Activity centro | ❌ NADA | — |
+| Activity esquina sup-izq | ✅ | BUTTON#activityFeedTrigger |
+| Voice centro | ❌ NADA | — |
+| Voice esquina sup-izq | ✅ | BUTTON#altorra-voice-btn |
+
+**Insight crítico**: cuando se hace click en el CENTRO, **el
+navegador no dispara ningún evento `click`**. Mi capture-phase
+listener captura cualquier click globalmente — si nada se loguea
+es porque el evento NO existió.
+
+**El navegador NO dispara `click` cuando**:
+- `mousedown` y `mouseup` ocurren en elementos DIFERENTES.
+- Esto pasa si el elemento bajo el cursor es **reemplazado entre
+  mousedown y mouseup**.
+
+**CAUSA RAÍZ identificada**: `js/icons.js` líneas 245-269 tenía un
+MutationObserver global:
+
+```js
+var observer = new MutationObserver(function (mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        for (var j = 0; j < m.addedNodes.length; j++) {
+            var n = m.addedNodes[j];
+            if (n.nodeType === 1) {
+                if (n.matches && n.matches('[data-lucide]')) { scheduleRefresh(); return; }
+                if (n.querySelector && n.querySelector('[data-lucide]')) { scheduleRefresh(); return; }
+            }
+        }
+    }
+});
+observer.observe(document.body, { childList: true, subtree: true });
+```
+
+**Cómo causaba el bug**:
+1. Usuario hace `mousedown` en el centro de un botón. El target es
+   un `<svg>` inserted por Lucide (el icono de 18-22px).
+2. Cualquier mutación del DOM (toast, realtime listener Firestore,
+   badge counter actualizándose, otro módulo agregando contenido)
+   dispara el observer.
+3. `scheduleRefresh()` con debounce 50ms ejecuta
+   `lucide.createIcons()` que **reemplaza TODOS los `<svg>` en el
+   document por SVGs nuevos**.
+4. Cuando el usuario suelta (`mouseup`), el SVG bajo el cursor ya
+   NO es el mismo nodo del DOM (es uno nuevo).
+5. **El browser cancela el evento `click`** porque mousedown y
+   mouseup ocurrieron en elementos distintos según la spec.
+
+**Por qué encaja con todos los síntomas**:
+
+| Síntoma | Explicación |
+|---|---|
+| Esquinas funcionan | mousedown y mouseup ambos en el `<button>` (sin SVG en bordes) → mismo elemento → click sí dispara |
+| Centro NO funciona | mousedown sobre `<svg>` viejo, mouseup sobre `<svg>` nuevo → click NO dispara |
+| X de paneles NO funcionan | Tienen icons Lucide en el centro → mismo bug |
+| Esc SÍ cierra paneles | `keydown` no depende de element identity, no se rompe |
+| Tras muchos clicks funciona | A veces el timing del MutationObserver es favorable y los SVGs no se reemplazan en ese intervalo de mousedown→mouseup específico |
+| Campana NO funciona ni en bordes | Bell tiene `<i class="altorra-bell__badge">` con realtime updates → más mutaciones → 100% chance de reemplazo |
+
+**Solución estructural aplicada**:
+
+1. **`js/icons.js`**: ELIMINADO el MutationObserver global. Mantenido
+   `AltorraIcons.refresh(scope)` para uso explícito desde callsites.
+   El audit confirmó **99 callsites del repo ya llaman refresh
+   manualmente** (toast.js, admin-state.js → AP.refreshIcons,
+   admin-vehicles, admin-crm, etc.). El observer era una "red de
+   seguridad" innecesaria.
+
+2. **`js/admin-header-fix.js`**: ELIMINADO COMPLETAMENTE. No quedan
+   parches en el codebase. Los botones del header tienen sus
+   listeners nativos correctos:
+   - Activity: `document.addEventListener('click', e => closest('#activityFeedTrigger') && toggle())` en `admin-activity-feed.js:540`
+   - Bell: `bell.addEventListener('click', togglePanel)` directo en `toast.js:1027`
+   - Voice: `btn.addEventListener('click', toggle)` directo en `admin-voice.js:413`
+
+3. **`css/admin.css`**: removidas reglas `z-index: 99999 !important`
+   en `#activityFeedTrigger`, `#headerNotifBell`, `#altorra-voice-btn`,
+   `#pwaInstallBtn`. Eran defense innecesaria del bug ya inexistente.
+   Mantenido el SAFETY de `.alt-onboard:not(.is-active)`,
+   `.altorra-voice-overlay:not(.alt-voice-active)` y
+   `.alt-palette:not(.alt-palette-open)` con `display:none` por
+   default — esos overlays existen estáticamente en el DOM y deben
+   permanecer ocultos hasta su clase activa.
+
+**REGLA OPERATIVA derivada** (agregar a §17 si no estaba):
+
+> NUNCA usar un MutationObserver global con `subtree: true` que
+> ejecute operaciones DOM costosas. Si necesitás re-procesar HTML
+> nuevo, llamá explícitamente desde el callsite que lo inyecta:
+>
+> ```js
+> container.innerHTML = '...<i data-lucide="x"></i>...';
+> AltorraIcons.refresh(container); // scoped, no global
+> ```
+>
+> Un observer global puede reemplazar elementos del DOM mientras
+> el usuario los está clickeando, cancelando eventos `click` del
+> browser silenciosamente.
+
+**Patrón de debug aprendido**: cuando un click "no funciona" pero
+no hay errores en consola, ANTES de bindear listeners alternativos
+verificar primero si el evento `click` se dispara. Si capture-phase
+listener en `document` no lo loguea, el bug es del browser cancelando
+el evento — buscar mutaciones DOM que ocurran entre mousedown y mouseup.
+
+**Archivos modificados**: `js/icons.js`, `js/admin-header-fix.js`
+(eliminado), `admin.html`, `css/admin.css`, `service-worker.js`,
+`js/cache-manager.js`.
+
+**Cache version bumped**: v20260506050000.
+
+### Meta tag deprecated apple-mobile-web-app-capable (2026-05-06)
+
+**Sintoma**: Chrome console mostraba warning amarillo:
+```
+<meta name="apple-mobile-web-app-capable" content="yes"> is deprecated.
+Please include <meta name="mobile-web-app-capable" content="yes">
+```
+
+**Fix aplicado** (`admin.html:13-14`): agregado el meta tag moderno
+junto al de Apple (NO reemplazar — Safari iOS aún lo usa, coexisten).
+
+```html
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+```
+
+### CRM clientes — permission-denied (2026-05-06)
+
+**Sintoma**: console mostraba:
+```
+[CRM] Could not load clientes: Missing or insufficient permissions
+   admin-crm.js:894
+```
+
+**Causa raíz**: `firestore.rules:111` permitía read solo si
+`auth.uid == uid`:
+```
+match /clientes/{uid} {
+    allow read: if request.auth != null && request.auth.uid == uid;
+}
+```
+
+Pero `js/admin-crm.js:887` ejecuta:
+```js
+window.db.collection('clientes').get();
+```
+
+Esto es un **list/get de la colección entera**. Para que pase la regla,
+**cada documento devuelto** debe satisfacer la regla de read. La regla
+solo aprobaba el doc cuyo `uid == auth.uid` (el doc del propio admin).
+Cualquier otro doc → `permission-denied` → la query falla.
+
+**Fix aplicado** (`firestore.rules:110-127`): agregada rama
+`isEditorOrAbove()` para read y `isSuperAdmin()` para update:
+
+```
+match /clientes/{uid} {
+    // Self-service: el cliente lee su propio doc.
+    // Admin (editor+): necesario para que admin-crm.js liste TODOS
+    // los clientes en el CRM 360.
+    allow read: if request.auth != null && (
+        request.auth.uid == uid || isEditorOrAbove()
+    );
+    allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.uid == request.auth.uid;
+    // Update: el cliente edita su perfil; super_admin puede agregar
+    // notas/tags del CRM desde el panel admin (crmTags, crmNotes).
+    allow update: if request.auth != null && (
+        request.auth.uid == uid || isSuperAdmin()
+    );
+    allow delete: if false;
+}
+```
+
+> **REQUIERE DEPLOY MANUAL**: `firebase deploy --only firestore:rules`
+> después de mergear. Sin esto, el error de permisos persiste en
+> producción.
+
 ---
 
 ## 9. Fases Completadas (Historico)
@@ -8954,8 +9177,41 @@ Lista corta de cosas que YA fixeamos y deberían quedar fixeadas:
 | `<img>` sin `width/height` | CLS layout shift cuando carga | Bonus B.1 |
 | Hero JPG 412KB sin variantes | LCP lento en mobile | Bonus B.2 |
 | Logo del page-loader 412KB PNG | Critical asset gigante | (pendiente — sigue siendo PNG) |
+| MutationObserver global con `subtree:true` que ejecuta operaciones DOM | Reemplaza nodos durante mousedown→mouseup, browser cancela `click` event silenciosamente. Síntoma: clicks "perdidos" en el centro de botones donde están los icons | RCA STRUCTURAL FIX 2026-05-06 |
+| Acumulación de "header-fix v1, v2, v3..." sin diagnóstico real | Cada parche agrega listeners competidores. Síntoma se vuelve más confuso. Hay que detenerse y diagnosticar la CAUSA, no agregar más capas | RCA mode pidió detenerse y diagnosticar |
+| Asumir que un click no funciona porque "algún overlay tapa" sin verificar el evento | Antes de bindear listeners alternativos, verificar si el evento `click` SE DISPARA. Capture-phase listener en `document` que loguee `e.target` y `elementsFromPoint` | RCA mode (telemetría reveló que click no se disparaba) |
 
-### 17.13 — Cuando dudes, preguntá
+### 17.13 — Cómo diagnosticar "click no funciona"
+
+Antes de implementar parches, validar la hipótesis. Pasos en orden:
+
+1. **¿El evento click se dispara?** Inyectar capture-phase listener:
+   ```js
+   document.addEventListener('click', e => console.log(e.target, e.clientX, e.clientY), true);
+   ```
+   Si NO aparece nada en consola, el browser está cancelando el evento.
+   Causas posibles: mousedown y mouseup en elementos diferentes
+   (mutación DOM en medio del click), elemento removido durante click,
+   drag operation activa.
+
+2. **¿`e.target` es el botón o un descendiente?** Si está dentro del
+   botón, es problema de handler. Si está fuera, hay overlay tapando.
+
+3. **¿Qué hay en el stack en ese punto?**
+   ```js
+   document.elementsFromPoint(x, y).slice(0, 8)
+   ```
+   Lista todos los elementos bajo el cursor ordenados por z-index.
+   El `[0]` es el top — si NO es el botón, ese es el culpable.
+
+4. **¿Hay MutationObservers globales activos?**
+   ```js
+   // En consola — instanciar uno propio detecta otros activos indirectamente
+   ```
+   Buscar en código `MutationObserver` con `subtree: true` observando
+   `document.body`. Estos pueden reemplazar nodos durante interactions.
+
+### 17.14 — Cuando dudes, preguntá
 
 Si no estás seguro de si algo afectará la performance:
 

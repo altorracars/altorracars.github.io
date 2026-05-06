@@ -359,6 +359,29 @@ function loadAuthSystem() {
                     aiRanker.defer = true;
                     document.body.appendChild(aiRanker);
                 }
+                // §24 FASE 1 — Small Talk Engine (saludos coloquiales colombianos)
+                if (!document.querySelector('script[src*="ai/small-talk.js"]')) {
+                    var aiST = document.createElement('script');
+                    aiST.src = 'js/ai/small-talk.js';
+                    aiST.defer = true;
+                    document.body.appendChild(aiST);
+                }
+                // §24 FASE 3 — Transformers.js (lazy stub, opt-in via flag)
+                if (!document.querySelector('script[src*="ai/transformers.js"]')) {
+                    var aiTF = document.createElement('script');
+                    aiTF.src = 'js/ai/transformers.js';
+                    aiTF.defer = true;
+                    document.body.appendChild(aiTF);
+                }
+                // §24 FASE 4 — DualCore router (debe cargar DESPUÉS de los demás
+                // módulos AI porque depende de AltorraIntent + AltorraSmallTalk +
+                // AltorraTransformers + AltorraAI providers)
+                if (!document.querySelector('script[src*="ai/dual-core.js"]')) {
+                    var aiDC = document.createElement('script');
+                    aiDC.src = 'js/ai/dual-core.js';
+                    aiDC.defer = true;
+                    document.body.appendChild(aiDC);
+                }
                 // Comm schema para que el Concierge pueda crear leads bien tipados
                 if (!document.querySelector('script[src*="comm-schema.js"]')) {
                     var schema = document.createElement('script');

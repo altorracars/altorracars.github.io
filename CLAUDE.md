@@ -12407,3 +12407,454 @@ silencioso. Las Cloud Functions sirven sin push activo (no hay tokens).
 - `service-worker.js` + `js/cache-manager.js` (cache version bumps)
 - `CLAUDE.md` (esta sección §23)
 
+
+---
+
+## 24. Offline Ultra Brain 2.0 — Arquitectura Dual-Core (2026-05-09)
+
+> Refactor en 5 sprints que repotencia el motor JS local del bot ALTOR
+> sin tocar el código del LLM (§21). Filosofía: **Dual-Core** — el
+> Core Premium (LLM Anthropic) sigue intacto y "apagado" por
+> presupuesto; el Core Free (motor local) toma el control con
+> small-talk natural, fuzzy matching agresivo, memoria conversacional
+> compartida, anáfora 2.0, y Transformers.js opcional. Cuando el
+> cliente cargue saldo en Anthropic, el toggle `_brain.enabled` activa
+> el Premium transparentemente vía router `AltorraDualCore`.
+
+### 24.1 Diagnóstico — Por qué el bot sonaba robótico antes
+
+Audité el motor en producción con dos casos del cliente:
+
+| Caso | Diagnóstico técnico |
+|---|---|
+| `"Hola que mas"` | Lexicon ya tenía `que mas` → matcheaba greeting con confidence 0.58 (pasaba threshold 0.3). El bot SÍ respondía pero con UNA frase seca, sin continuar la conversación naturalmente. |
+| `"tendras autos por ahi"` | Lexicon NO tenía `tendras` ni `manejan` ni `por ahi`. Fuzzy threshold 0.82 era demasiado estricto: similarity('tendras', 'tienes') ≈ 0.43 → NO matcheaba. Cae al fallback genérico → robotismo. |
+
+**Causas raíz identificadas**:
+1. Lexicon pobre (~14 keywords por intent, sin formas conjugadas)
+2. Fuzzy threshold fijo 0.82 rechazaba conjugaciones verbales
+3. No había small-talk module — saludos respondían con frase seca sin follow-up
+4. No había stems verbales — "tendras"/"tienes"/"tendrán" eran tratados como palabras distintas
+5. No había n-gram matching — "carros por ahi" como frase compuesta no se reconocía
+
+### 24.2 Arquitectura Dual-Core
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   Cliente abre Concierge                          │
+└─────────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+                ┌──────────────────────┐
+                │   AltorraDualCore     │
+                │   .respond(text, sess)│
+                └──────────────────────┘
+                            │
+            ┌───────────────┴───────────────┐
+            │ ¿brain.enabled                  │
+            │   && AltorraAI.providers.chat   │
+            │   && circuit-breaker NO open?   │
+            └───────────────┬───────────────┘
+                            │
+            ┌──────YES──────┴──────NO──────┐
+            ▼                              ▼
+    ┌──────────────┐                ┌─────────────────┐
+    │ CORE PREMIUM │                │   CORE FREE     │
+    │ (LLM Anthropic)│              │ (Offline 2.0)   │
+    │ §21 — INTACTO │                │ Cascada:        │
+    │ via AltorraAI│                │ 1. Anáfora 2.0  │
+    │ .chat()       │                │ 2. Small Talk   │
+    │ chatLLM CF    │                │ 3. Rule-based   │
+    └──────────────┘                │ 4. Transformers │
+            │                       │    (opt-in)     │
+            │                       │ 5. Fallback     │
+            │                       └─────────────────┘
+            │                                │
+            │   ┌──────────────────┐         │
+            │   │ SHARED MEMORY     │         │
+            └──►│ session.context  │◄────────┘
+                │ turnHistory +     │
+                │ slots + intents  │
+                └──────────────────┘
+                       │
+                       ▼
+            ┌──────────────────────┐
+            │   addMessage(bot)    │
+            └──────────────────────┘
+```
+
+### 24.3 Sprint 1 — Small Talk + Fuzzy 2.0 + Lexicon enriquecido
+
+#### 24.3.1 `js/ai/small-talk.js` (NEW)
+
+Module dedicado de small talk colombiano. Intercepta saludos / fillers
+ANTES del intent classifier formal, responde con variantes naturales
+que **siempre incluyen una pregunta abierta** o invitación a la próxima
+acción → evita el "muere ahí" del bot rule-based clásico.
+
+**Patterns con regex robustas**:
+- `greeting`: `/h+ola+s?|h+oli+s?|buen[oa]s|hey+|qubo|q\s*hubo|qu[eé]\s*hubo|qu[eé]\s*m[aá]s|qu[eé]\s*onda|qu[eé]\s*tal|saludos|hi|hello/i` — soporta repetición vocal ("hooooola"), variantes ortográficas ("qubo"/"q hubo"/"qhubo"), y todas las formas con/sin tilde.
+- `casual_check`: "como estas", "como va", "como te va"
+- `thanks` / `goodbye` / `laughter` / `polite_filler`
+
+**Memoria contextual del greeting**:
+- Si el cliente saluda 2da vez en la sesión → variant `returningTurn` que menciona el `lastTopicLabel`: "¡Volviste! 😄 ¿Continuamos con lo del catálogo?"
+- Si es 1ra vez → variant `firstTurn` con follow-up: "¡Hola! 👋 Todo excelente por acá. ¿Qué te trae por aquí — buscas algún carro en particular?"
+
+**Anti-falso-positivo**: si NER detecta entity de inventario en el texto (marca, modelo, precio), `skipIfEntity` evita matchear small-talk → el flujo regular del intent classifier toma prioridad.
+
+#### 24.3.2 Fuzzy 2.0 — Stems + N-grams + Threshold adaptativo
+
+`js/ai/fuzzy.js` extendido con:
+
+**`VERB_STEMS` map** — raíces verbales españolas mapeadas a sus conjugaciones:
+```js
+'ten': ['tener', 'tienes', 'tiene', 'tendras', 'tendrás', 'tienen', 'tengo', ...]
+'mostr': ['mostrar', 'muestra', 'muéstrame', ...]
+'ver' / 'busc' / 'quer' / 'pod' / 'sab' / 'hab' / 'man' / 'compr' / 'vend'
+```
+
+**`stemmize(word)`**: convierte una palabra a su raíz canonical:
+- `stemmize('tendras')` → `'ten'`
+- `stemmize('tienes')` → `'ten'`
+- `stemmize('xyz')` → `'xyz'` (sin cambio)
+
+Algoritmo:
+1. Lookup directo en STEM_LOOKUP (variante → stem canonical)
+2. Si no, fallback: si la palabra empieza con un stem ≥3 chars conocido, retorna el stem como prefijo
+
+**`matchAdaptive(needle, haystack)`**: nuevo matcher con threshold dinámico según length:
+| Length | Threshold |
+|---|---|
+| 2-3 chars | 1.0 (match exacto, anti-falso-positivo) |
+| 4-5 chars | 0.80 |
+| 6-8 chars | 0.72 ← `"tendras"` vs `"tienes"` passes |
+| 9+ chars | 0.65 |
+
+Adicionalmente prueba match por stem si una palabra tiene stem verbal conocido.
+
+**`generateNgrams(text, [2,3])`**: bigramas y trigramas para reconocer frases compuestas como `"carros por ahi"` o `"tendras autos"` como unidad léxica.
+
+#### 24.3.3 Lexicon enriquecido x4
+
+`js/ai/intent.js` LEXICON expandido de ~14 keywords por intent a ~50-60. Ejemplos para `inventory_query`:
+
+```
++ tendras, tendrás, tendran, tendrán
++ que manejan, qué manejan, manejan carros, manejan autos
++ que venden, qué venden, venden carros, venden autos
++ opciones, alternativas, mostrame, muéstrame, enseñame
++ vea, ver carros, ver autos, ver inventario
++ autos por ahi, carros por ahi, vehiculos por ahi
++ qué hay por ahi, ofrecen carros, ofrecen autos
++ queda algo, hay algo, tienen algo
+```
+
+Igual para `pricing_query` (lukas, palos, kilos, plata, precio justo, está caro), `financiacion_query` (mensual, abono, enganche, banco, prestamo), `appointment_request` (paso a verlo, conocer, horario, ubicación), `confirmation` (hagale, parce, bacano, simon, "el primero", "el segundo", "ese", "este").
+
+#### 24.3.4 `classify` ahora cascada multi-stage
+
+```
+1. Match exacto en texto expandido (sinónimos)         → score = kw.length
+2. Match en n-grams (frases compuestas)                → score = kw.length
+3. Match en texto stemmizado (formas verbales)         → score = kw.length × 0.92
+4. Fuzzy adaptativo (matchAdaptive con thresh dinámico) → score = kw.length × 0.82
+```
+
+El score más alto gana. Confidence = `min(1, score / max(textLen, 6))`.
+
+### 24.4 Sprint 2 — Memoria conversacional compartida + Anáfora 2.0
+
+#### 24.4.1 `pendingChoice` slot
+
+Cuando el bot hace una pregunta con opciones explícitas (ej. "¿SUV o Sedán?", "¿Toyota o Mazda?"), llamamos:
+
+```js
+AltorraIntent.setPendingChoice(context, ['SUV', 'Sedán'], 'category_pick');
+```
+
+El cliente puede responder corto:
+- `"el primero"` → resuelto a `'SUV'` con source `'pendingChoice'`
+- `"el segundo"` → `'Sedán'`
+- `"ese"` / `"este"` / `"el"` → `options[0]` (más reciente)
+- TTL 5 min (mismo decay que turnHistory)
+
+#### 24.4.2 `parseOrdinal(text)`
+
+Detecta índices ordinales en español:
+- `"primero"`, `"1ro"`, `"el 1"` → 0
+- `"segundo"`, `"2do"` → 1
+- `"tercero"`, `"3ro"` → 2
+- `"último"`, `"ultimo"` → -1
+- pronombres demostrativos cortos (`"ese"`, `"este"`, `"aquel"`) → 0
+
+#### 24.4.3 `resolvePronominalChoice(text, context)`
+
+Pipeline:
+1. `parseOrdinal(text)` → si null, NO hay anáfora
+2. ¿Hay `slots.pendingChoice` activo y < 5 min? → resolver desde array
+3. ¿Hay `slots.lastVehiclesShown`? → resolver al vehículo del inventario via `AltorraInventorySearch.lookupById`
+4. null si no se pudo
+
+**Caso real cubierto**: bot pregunta "¿Te muestro Toyota o Mazda?" → cliente responde "el primero" → DualCore detecta anáfora → responde "Listo, hablemos de Toyota. ¿Te muestro las opciones que tenemos?".
+
+### 24.5 Sprint 3 — DualCore Router + Circuit Breaker
+
+#### 24.5.1 `js/ai/dual-core.js` (NEW)
+
+Router central que reemplaza la cascada interna de `respondWithLLMOrRules`. La función `concierge.js respondWithLLMOrRules` ahora hace 2 cosas:
+
+1. Pre-check sentiment/frustration/ask_human → escalar inmediato (esto NO va al router)
+2. Delega al router: `AltorraDualCore.respond(userText, session)`
+
+#### 24.5.2 `isPremiumAvailable()`
+
+Cache 60s. Premium ON si:
+- `knowledgeBase/_brain.enabled === true`
+- `AltorraAI.providers.chat` registrado
+- Circuit breaker NO está OPEN
+
+#### 24.5.3 Circuit Breaker
+
+Tracking en memoria de fallos del Premium:
+- Sliding window 5 min
+- Si `≥3 fallos` en la ventana → CB OPEN durante 3 min → bypass automático a Free
+- Tras 3 min → CB se cierra y reintenta Premium
+
+Esto resuelve el problema "Anthropic está caído → cada turno espera 12s timeout antes de fallback". Con CB, después del 3er fallo va directo a Free durante 3 min.
+
+#### 24.5.4 Cascada Free Core
+
+```
+1. Anáfora 2.0 (resolvePronominalChoice)
+2. Small Talk (saludos, fillers)
+3. Rule-based existente (window._altorraConciergeRespondLocal hook)
+4. Transformers.js (opt-in via flag)
+5. Fallback empático con CTA escalate
+```
+
+#### 24.5.5 `_altorraConciergeRespondLocal` hook
+
+Como `concierge.js` es IIFE, no podemos importar `generateBotResponse`. Solución: lo exponemos como hook global cuando el módulo se carga. `dual-core.js` lo invoca en cascade.
+
+#### 24.5.6 Diagnostics
+
+`AltorraDualCore.health()`:
+```js
+{
+    premiumCacheValid: bool,
+    premiumCacheValue: bool,
+    recentFailures: int,
+    circuitBreakerOpen: bool,
+    circuitBreakerExpiresIn: ms,
+    forceFreeMode: bool
+}
+```
+
+`AltorraDualCore.forceFreeMode(true)`: para testing, fuerza Free aunque Premium esté OK.
+
+### 24.6 Sprint 4 — Transformers.js (opt-in)
+
+#### 24.6.1 `js/ai/transformers.js` (NEW)
+
+**Feature flag DESACTIVADO por defecto**. El módulo NO descarga nada hasta que se active explícitamente:
+
+```js
+localStorage.setItem('altorra_tf_enabled', '1');
+// O via UI: AltorraTransformers.enable()
+```
+
+**Razón del opt-in**: el modelo `Xenova/nli-deberta-v3-xsmall` pesa ~70MB. Sin consentimiento, descargarlo en cada page load arruinaría datos móviles del cliente.
+
+#### 24.6.2 Lazy loading + IndexedDB cache
+
+Cuando está enabled:
+- `_loadPipeline()` se llama solo al primer `classify()` invocado por DualCore
+- Transformers.js v2.17+ cachea automáticamente en IndexedDB (`useBrowserCache: true`)
+- Web Worker via `numThreads = navigator.hardwareConcurrency`
+- Progress callback expone `_state.downloadProgress` para UI futura
+
+#### 24.6.3 Zero-shot classification
+
+```js
+AltorraTransformers.classify(text, candidateLabels);
+// candidateLabels default:
+//   ['consulta sobre inventario o catálogo',
+//    'pregunta de precio',
+//    'consulta de financiación',
+//    'agendar cita o visita', ...]
+// returns: { label, score, allLabels, allScores } o null si flag OFF
+```
+
+`mapToIntent(label)` convierte el label de zero-shot al intent canonical (LEXICON keys).
+
+#### 24.6.4 Integración con DualCore
+
+En la cascada Free, capa 4 (después de rule-based):
+- Solo si `AltorraTransformers.isEnabled()` Y rule-based devolvió `_isFallback: true`
+- Si Transformers detecta intent con score ≥0.65 → log para análisis (v3 podría re-invocar generateBotResponse con hint del intent)
+
+**Estado actual**: la integración es **observacional** (loguea el intent detectado) — no fuerza re-invocación. Eso evita inestabilidad mientras se valida en producción. Versión futura del DualCore puede agregar `generateBotResponse(text, hintIntent)` si los logs muestran que Transformers identifica intents que el rule-based pierde.
+
+### 24.7 Carga de scripts
+
+**Sitio público** (`js/components.js loadAuthSystem`):
+
+```
+1. js/ai/fuzzy.js        ← deps de intent + ranker
+2. js/ai/engine.js
+3. js/ai/ner.js
+4. js/ai/intent.js
+5. js/ai/inventory-search.js
+6. js/ai/faq-ranker.js
+7. js/ai/small-talk.js   ← NEW (§24)
+8. js/ai/transformers.js ← NEW (§24, lazy)
+9. js/ai/dual-core.js    ← NEW (§24, debe ser último)
+10. js/comm-schema.js
+11. js/kb-client.js
+12. js/concierge.js
+13. js/concierge-optin.js
+```
+
+**Admin** (`admin.html`): mismo orden con scripts adicionales del admin (admin-kb, admin-concierge, etc.).
+
+### 24.8 Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Tocar el código del LLM (§21) y romper retrocompat | DualCore es router NUEVO. `chatLLM` Cloud Function, `AltorraAI.providers.chat`, prompt caching, CTA tags — todo INTACTO. |
+| Lexicon hardcoded sigue siendo rígido | Stems verbales + n-grams + matchAdaptive + small-talk regex layer reemplazan el indexOf simple |
+| Transformers.js descarga 70MB en cada page load | Feature flag opt-in + IndexedDB cache automático |
+| Memoria duplicada entre cores | Shared `session.context` schema usado por ambos cores |
+| Switch Premium↔Free notorio para el cliente | Circuit breaker + cascada Free preserva el tono via shared memory |
+| LLM falla por saldo agotado → cada turno espera 12s timeout | Circuit Breaker abre tras 3 fallos en 5 min, bypass directo durante 3 min |
+| Loop de fallback (Premium falla → Free falla → ?) | Si Free Core también devuelve `_isFallback`, escalada a asesor (consume §23.6 doble fallback) |
+| Stems mal-aplicados ("teneme" matchea "tener") | Solo aplicar stem si word.length ≥3 Y no está en STOP_WORDS |
+| Small Talk responde sobre cualquier mensaje | Regex con `\b` boundaries y `skipIfEntity`: si NER detecta marca/precio/modelo, NO matchear small-talk |
+| `pendingChoice` corrupto entre turnos | TTL 5 min + clearPendingChoice tras resolver |
+| `parseOrdinal('ese')` matchea cuando ya no hay choices activos | Verificar `pendingChoice` o `lastVehiclesShown` antes de retornar |
+| `_altorraConciergeRespondLocal` hook se pierde si concierge.js no carga | DualCore tiene fallback final empático que NO depende del hook |
+
+### 24.9 Validación E2E (post-deploy)
+
+Tests manuales para confirmar el upgrade:
+
+1. **Saludo coloquial natural**:
+   - Cliente: `"Hola que mas"`
+   - ✅ Bot: variante con follow-up tipo "¡Hola! Todo excelente por acá. ¿Qué te trae por aquí — buscas algún carro en particular?"
+
+2. **Fuzzy matching agresivo (caso real del cliente)**:
+   - Cliente: `"tendras autos por ahi"`
+   - ✅ Bot: detecta `inventory_query` (vía stem `ten` → `tener` + n-gram `autos por ahi` + lexicon enriquecido)
+   - ✅ Bot: responde con cantidad de vehículos disponibles, NO fallback genérico
+
+3. **Anáfora pendingChoice**:
+   - Bot: `"¿Te muestro SUV o Sedán?"` + `setPendingChoice(['SUV', 'Sedán'])`
+   - Cliente: `"el primero"`
+   - ✅ Bot: `"Listo, **SUV**. ¿Te muestro las opciones?"`
+
+4. **Memoria turn history**:
+   - Turno 1 — Cliente: `"¿tienen Mazda CX-5?"` → bot encuentra match
+   - Turno 2 — Cliente: `"¿de qué año es?"`
+   - ✅ Bot: detecta anáfora + lee `slots.lastVehicleDiscussed` → responde con año del Mazda CX-5
+
+5. **Returning greeting**:
+   - Sesión previa: cliente preguntó por inventario
+   - Cliente: `"Hola"` (2da vez en la sesión)
+   - ✅ Bot: `"¡Volviste! 😄 ¿Continuamos con lo del catálogo?"`
+
+6. **Circuit Breaker** (testing manual):
+   - Consola: `AltorraDualCore.forceFreeMode(true)` → fuerza Free
+   - Cliente conversa normal → ✅ todas las respuestas marcadas `source: 'small-talk' / 'rule-based' / etc`
+   - Consola: `AltorraDualCore.forceFreeMode(false)` → vuelve a Auto
+
+7. **Premium activo (cuando se cargue saldo)**:
+   - Admin → Cerebro AI → toggle ON
+   - `AltorraDualCore.isPremiumAvailable()` → `true` tras 60s (cache TTL)
+   - Bot empieza a responder con `source: 'llm'`
+   - Sin downtime perceptible — la memoria del cliente sigue siendo la misma
+
+8. **Transformers.js opt-in** (experimental):
+   - Consola: `AltorraTransformers.enable()`
+   - Cliente conversa con frase ambigua → DualCore loguea: `[DualCore] Transformers detected intent: pricing_query score: 0.78`
+   - Modelo se descarga UNA vez (~70MB), luego cache hit en IndexedDB
+
+### 24.10 Resumen de archivos modificados/creados
+
+**NEW**:
+- `js/ai/small-talk.js` (~250 líneas) — Module Small Talk colombiano
+- `js/ai/dual-core.js` (~300 líneas) — Router central + Circuit Breaker
+- `js/ai/transformers.js` (~250 líneas) — Lazy loader Transformers.js opt-in
+
+**MODIFIED**:
+- `js/ai/fuzzy.js` — VERB_STEMS + stemmize + matchAdaptive + generateNgrams + STEM_LOOKUP
+- `js/ai/intent.js` — LEXICON enriquecido x4 + classify usa stems/n-grams/matchAdaptive + parseOrdinal + resolvePronominalChoice + setPendingChoice + clearPendingChoice
+- `js/concierge.js` — `respondWithLLMOrRules` simplificado: pre-check + delegate a DualCore. Hook `window._altorraConciergeRespondLocal`
+- `js/components.js` — carga small-talk + transformers + dual-core después de los demás módulos AI
+- `admin.html` — mismos scripts en el bloque admin
+- `service-worker.js` + `js/cache-manager.js` — cache version bump v20260509010000
+- `CLAUDE.md` — esta sección §24
+
+### 24.11 Lóbulos del Cerebro ALTOR (actualizado)
+
+```
+                        ┌────────────────┐
+                        │  ALTOR Brain    │
+                        └────────────────┘
+                                │
+   ┌──────┬──────┬──────┬──────┼──────┬──────┬──────┬──────┐
+   ▼      ▼      ▼      ▼      ▼      ▼      ▼      ▼      ▼
+ ┌────┐┌─────┐┌─────┐┌─────┐┌─────┐┌────┐┌─────┐┌─────┐┌──────┐
+ │Smal││NLP  ││Mem  ││Conc ││Cere ││ ACD││Cierre││FCM  ││DUAL  │
+ │ Tk ││Fuzy ││ §22 ││ §20 ││bro  ││§23 ││§23.5 ││§23  ││CORE  │
+ │§24 ││ 2.0 ││+§24 ││+§22 ││ AI  ││    ││      ││.11  ││§24   │
+ │    ││§24  ││     ││.15  ││ §21 ││    ││      ││     ││ROUTER│
+ └────┘└─────┘└─────┘└─────┘└─────┘└────┘└─────┘└─────┘└──────┘
+                                                          │
+                                                ┌─────────┴────────┐
+                                                ▼                  ▼
+                                          ┌─────────┐       ┌──────────┐
+                                          │Anáfora 2│       │ Trans-   │
+                                          │pending  │       │formers JS│
+                                          │Choice   │       │ §24      │
+                                          │§24      │       │ (opt-in) │
+                                          └─────────┘       └──────────┘
+```
+
+**Reglas de no-interferencia (verificadas)**:
+- DualCore NO toca el LLM Provider — solo lo invoca via `AltorraAI.chat`
+- Small Talk NO compite con Intent Classifier — corre ANTES en cascada
+- Transformers.js NO se carga sin opt-in — cero impacto si flag OFF
+- Memoria turnHistory + slots SHARED entre Premium y Free
+- Circuit Breaker NO interfiere con escalado por sentiment/frustration (esos pre-checks van ANTES del router)
+
+### 24.12 Sin deploy manual requerido
+
+Todos los cambios son **frontend-only**. No hay nuevas Cloud Functions ni nuevas reglas Firestore en este §24. Sólo:
+
+- Nuevos archivos JS en `/js/ai/`
+- Modificaciones en archivos JS existentes
+- Cache version bump
+
+Cuando hagas push a main + el SW invalida cache, los clientes reciben la versión nueva al recargar la página. Ningún `firebase deploy` requerido.
+
+### 24.13 Costo recurrente
+
+**$0 USD/mes** mientras Premium esté apagado. El motor JS local corre 100% en el browser.
+
+Cuando se cargue saldo en Anthropic y se active el toggle del Cerebro AI:
+- Premium responde por defecto
+- Free Core responde solo si Premium falla (saldo agotado, network, circuit breaker open)
+- **Costo proyectado**: ~$2-5 USD/mes (§21.10 ya optimizado con prompt caching, inventory cap 10, rate limit 30)
+
+### 24.14 Activación de Transformers.js (cuando el cliente lo decida)
+
+```js
+// En la consola del browser (cliente o admin):
+AltorraTransformers.enable();
+AltorraTransformers.preload();  // dispara descarga del modelo
+```
+
+Tras la descarga (UNA vez, ~70MB), el modelo queda cacheado en IndexedDB del browser y siguientes inferencias son instant (~50-150ms).
+
+Si el cliente no tiene buenos datos móviles, **NO activar**. El motor rule-based + small-talk + fuzzy 2.0 ya entrega ~80% del valor sin descargar nada.

@@ -633,10 +633,20 @@
        (las respuestas rule-based de generateBotResponse para estos
        casos ya son naturales y personalizadas con firstName).
        ═══════════════════════════════════════════════════════════ */
+    /**
+     * §24 (Offline Ultra Brain 2.0) — respondWithLLMOrRules ahora delega
+     * a AltorraDualCore que maneja el switch Premium↔Free con circuit
+     * breaker. La lógica de pre-checks críticos (sentiment, frustración)
+     * se preserva ANTES de invocar al router para escalar inmediato.
+     *
+     * El generateBotResponse legacy se expone como hook global para que
+     * dual-core.js pueda invocarlo dentro de la cascada Free.
+     */
     function respondWithLLMOrRules(userMsg) {
         var ctx = session.context || {};
 
-        // 1. Pre-check: clasificar intent + sentiment SIN LLM
+        // 1. Pre-check sentiment / frustration / ask_human → escalar SIN dual-core
+        // (estos casos siempre escalan, independiente del core activo)
         var classification = window.AltorraIntent
             ? window.AltorraIntent.classify(userMsg, ctx)
             : { intent: 'none', confidence: 0 };
@@ -645,62 +655,33 @@
             var s = window.AltorraAI.sentiment(userMsg);
             sentimentNeg = s && s.label === 'negative' && s.score < -0.5;
         }
-
-        // 2. Escalamiento crítico → skip LLM, escalar directo
         if (sentimentNeg || classification.intent === 'frustration' || classification.intent === 'ask_human') {
             var firstName = getClientFirstName();
             return Promise.resolve({
                 text: (firstName ? firstName + ', ' : '') +
                       'te entiendo. Déjame conectarte con un asesor humano que pueda ayudarte directamente.',
-                cta: { label: 'Hablar con asesor', action: 'escalate' }
+                cta: { label: 'Hablar con asesor', action: 'escalate' },
+                source: 'rules-pre-check'
             });
         }
 
-        // 3. Intents triviales → skip LLM, respuesta rule-based determinística
-        // generateBotResponse ya tiene variantes para greeting/thanks/goodbye con
-        // firstName. Llamarlo aquí para esos intents reaprovecha el código sin
-        // pagar tokens LLM. Confidence >= 0.3 evita falsos positivos.
-        var trivialIntents = { greeting: true, thanks: true, goodbye: true };
-        if (trivialIntents[classification.intent] && classification.confidence >= 0.3) {
-            return Promise.resolve(generateBotResponse(userMsg));
+        // 2. Delegar al router DualCore (Sprint 3 §24)
+        if (window.AltorraDualCore && typeof window.AltorraDualCore.respond === 'function') {
+            return window.AltorraDualCore.respond(userMsg, session);
         }
 
-        // 4. Intentar LLM si está disponible
-        if (window.AltorraAI && window.AltorraAI.providers && window.AltorraAI.providers.chat) {
-            // Construir messages para el LLM (últimos 12 turnos para mantener contexto
-            // sin exceder context window). Filtramos system messages y CTA buttons —
-            // solo mandamos el texto humano.
-            var llmMessages = session.messages.slice(-12).filter(function (m) {
-                return m.from === 'user' || m.from === 'bot' || m.from === 'asesor';
-            }).map(function (m) {
-                return {
-                    role: m.from === 'user' ? 'user' : 'assistant',
-                    content: m.text
-                };
-            });
-            // Asegurar que el último mensaje sea el del usuario que acabamos de enviar
-            // (puede no estar aún en session.messages dependiendo del timing)
-            if (llmMessages.length === 0 || llmMessages[llmMessages.length - 1].role !== 'user') {
-                llmMessages.push({ role: 'user', content: userMsg });
-            }
-
-            return window.AltorraAI.chat(llmMessages, { sessionId: session.sessionId, timeoutMs: 12000 })
-                .then(function (resp) {
-                    if (resp && resp.text) {
-                        return { text: resp.text, cta: resp.cta || null, source: 'llm' };
-                    }
-                    // LLM no disponible (disabled/noKey) → fallback rules
-                    return generateBotResponse(userMsg);
-                })
-                .catch(function (err) {
-                    console.warn('[Concierge] LLM failed, using rules:', err.message);
-                    return generateBotResponse(userMsg);
-                });
-        }
-
-        // 5. Sin LLM disponible → rule-based
+        // 3. Fallback de seguridad si dual-core no cargó (raro)
         return Promise.resolve(generateBotResponse(userMsg));
     }
+
+    // §24 — Hook global para que AltorraDualCore pueda invocar el
+    // generateBotResponse rule-based existente sin importar este módulo
+    // (concierge.js es IIFE, no exportable). Esta función NO crea un
+    // nuevo contrato — solo expone el existente.
+    window._altorraConciergeRespondLocal = function (userMsg) {
+        try { return generateBotResponse(userMsg); }
+        catch (e) { return null; }
+    };
 
     /* ═══════════════════════════════════════════════════════════
        FASE 3 — Typing indicator

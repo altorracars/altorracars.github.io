@@ -27,75 +27,156 @@
     /* ═══════════════════════════════════════════════════════════
        LEXICON — keywords por intent
        ═══════════════════════════════════════════════════════════ */
+    // §24 FASE 1 — Lexicon enriquecido x4 con vocabulario coloquial colombiano,
+    // formas conjugadas verbales (manejadas por stemmize), formas alternas con
+    // typos comunes, y frases compuestas (n-grams).
     var LEXICON = {
         greeting: [
+            // Saludos formales
             'hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches',
-            'que tal', 'que hubo', 'que onda', 'que mas', 'qué tal',
-            'qué hubo', 'saludos', 'hi', 'hey', 'hola como estas',
-            'como estas', 'como va', 'que hay', 'aló'
+            'saludos', 'hi', 'hey', 'hello',
+            // Coloquiales colombianos
+            'que tal', 'qué tal', 'que hubo', 'qué hubo', 'qubo', 'qhubo',
+            'que onda', 'qué onda', 'que mas', 'qué más',
+            'hola que mas', 'hola que tal', 'hola como estas',
+            'como estas', 'cómo estás', 'como va', 'cómo va',
+            'que hay', 'qué hay', 'aló', 'alo',
+            'parce', 'parcero',
+            // Saludos con extensión emotiva
+            'hola mi pana', 'hola hermano', 'hola amigo',
+            'que mas pues', 'qué más pues', 'todo bien'
         ],
         thanks: [
-            'gracias', 'te agradezco', 'muchas gracias', 'mil gracias',
-            'super', 'genial', 'perfecto gracias', 'bien gracias', 'thanks'
+            'gracias', 'graci', 'te agradezco', 'muchas gracias', 'mil gracias',
+            'mil graci', 'muchísimas gracias', 'muy amable', 'amable',
+            'super', 'súper', 'genial', 'excelente', 'perfecto gracias',
+            'bien gracias', 'thanks', 'thx', 'gentil', 'mil veces gracias'
         ],
         goodbye: [
-            'chao', 'adios', 'hasta luego', 'nos vemos', 'me voy',
-            'hasta pronto', 'bye', 'listo gracias', 'eso era todo',
-            'eso es todo', 'cierro'
+            'chao', 'adios', 'adiós', 'hasta luego', 'nos vemos',
+            'me voy', 'hasta pronto', 'hasta mañana', 'bye',
+            'listo gracias', 'eso era todo', 'eso es todo', 'cierro',
+            'ya me voy', 'tengo que irme', 'me retiro'
         ],
         inventory_query: [
+            // Originales
             'que carros', 'que autos', 'que vehiculos', 'que tienen',
             'cuales tienen', 'muestrame inventario', 'muéstrame inventario',
             'me muestras inventario', 'catalogo', 'catálogo',
             'inventario', 'que hay disponible', 'que disponible',
-            'que tienes', 'me muestras los autos'
+            'que tienes', 'me muestras los autos',
+            // §24 FASE 1 — keywords colombianos coloquiales
+            'tienen carros', 'tienen autos', 'tienen vehiculos', 'tienen disponible',
+            'manejan carros', 'manejan autos', 'venden carros', 'venden autos',
+            'tendras', 'tendrás', 'tendran', 'tendrán',
+            'que manejan', 'qué manejan', 'que venden', 'qué venden',
+            'opciones', 'alternativas', 'me ensenas', 'me enseñas',
+            'mostrame', 'muéstrame', 'enseñame', 'ensename',
+            'vea', 'ver carros', 'ver autos', 'ver inventario',
+            'me muestras', 'me ensenas autos', 'me enseñas autos',
+            'autos por ahi', 'carros por ahi', 'autos por ahí', 'carros por ahí',
+            'vehiculos por ahi', 'qué hay por ahi', 'que hay por ahi',
+            'que ofrecen', 'qué ofrecen', 'ofrecen carros', 'ofrecen autos',
+            'queda algo', 'queda algún', 'algun carro', 'algún carro',
+            'tienen algo', 'hay algo'
         ],
         pricing_query: [
+            // Originales
             'cuanto cuesta', 'cuánto cuesta', 'que precio', 'qué precio',
             'precio del', 'precio de', 'cuanto vale', 'cuánto vale',
             'a como', 'a cómo', 'cuanto sale', 'me cobran',
-            'valor del', 'valor de'
+            'valor del', 'valor de',
+            // §24 FASE 1 — coloquial COL
+            'en cuanto', 'en cuánto', 'cuanto piden', 'cuánto piden',
+            'cuanto pide', 'cuánto pide', 'cuesta cuanto', 'sale cuanto',
+            'precio final', 'qué tan caro', 'que tan caro',
+            'plata', 'cuanto plata', 'cuanta plata', 'cuánta plata',
+            'lukas', 'palos', 'kilos', 'millones', 'precio justo',
+            'esta caro', 'está caro', 'es caro', 'es barato', 'esta barato'
         ],
         availability_query: [
             'tienen disponible', 'lo tienen', 'esta disponible', 'está disponible',
-            'hay stock', 'queda alguno', 'queda algun', 'ya se vendio',
-            'ya se vendió', 'aun lo tienen', 'aún lo tienen'
+            'hay stock', 'queda alguno', 'queda algun', 'queda algún',
+            'ya se vendio', 'ya se vendió', 'aun lo tienen', 'aún lo tienen',
+            // §24 FASE 1
+            'lo siguen teniendo', 'todavia esta', 'todavía está',
+            'aun esta', 'aún está', 'no se vendió', 'no se ha vendido'
         ],
         financiacion_query: [
             'financiacion', 'financiación', 'financiar', 'credito', 'crédito',
             'cuota', 'plazo', 'pagar a plazos', 'simulador', 'creditos',
             'cuanto pago', 'cuánto pago', 'cuanto seria de cuota',
-            'cuotas', 'mensualidad'
+            'cuotas', 'mensualidad', 'mensualidades',
+            // §24 FASE 1
+            'plan de pagos', 'a cuotas', 'pagar mensual', 'mensual',
+            'a plazos', 'abono', 'cuota inicial', 'inicial', 'enganche',
+            'banco', 'prestamo', 'préstamo', 'aprobacion', 'aprobación',
+            'me prestan', 'financian', 'financien', 'financiamiento',
+            'ya me prestan', 'me alcanza para', 'cuanto me prestan'
         ],
         appointment_request: [
             'agendar', 'cita', 'visita', 'cuando puedo ir', 'cuando ir',
             'verlo en persona', 'ir a verlo', 'ver el carro', 'ver el auto',
-            'test drive', 'prueba de manejo', 'manejarlo'
+            'test drive', 'prueba de manejo', 'manejarlo',
+            // §24 FASE 1
+            'cuándo puedo ir', 'cuándo ir', 'pasar a verlo', 'paso a verlo',
+            'voy a verlo', 'visitarlo', 'conocer', 'conocerlo',
+            'puedo ir', 'puedo pasar', 'cuándo abren', 'cuando abren',
+            'horario', 'horarios', 'donde están', 'dónde están',
+            'donde quedan', 'dónde quedan', 'ubicación', 'ubicacion',
+            'agendame', 'agéndame', 'reservar', 'separar', 'apartar'
         ],
         sell_my_car: [
             'vender mi', 'vendo mi', 'quiero vender', 'consignar', 'consignación',
             'consignacion', 'compran carros', 'compran autos', 'me lo compran',
-            'tomar mi auto', 'tomar mi carro', 'cambio mi', 'permuta'
+            'tomar mi auto', 'tomar mi carro', 'cambio mi', 'permuta',
+            // §24 FASE 1
+            'comprarian', 'comprarían', 'me compran',
+            'cuanto me dan por', 'cuánto me dan por',
+            'me reciben', 'tomar como parte de pago', 'me lo cambian',
+            'avaluó', 'avalúo', 'avaluar', 'me avalúan',
+            'mi carro', 'mi auto', 'mi vehiculo'
         ],
         confirmation: [
+            // Originales
             'si', 'sí', 'ok', 'okay', 'okey', 'dale', 'listo', 'va',
             'claro', 'por supuesto', 'obvio', 'de una', 'me sirve',
-            'esta bien', 'está bien'
+            'esta bien', 'está bien',
+            // §24 FASE 1 — colombianismos
+            'hagale', 'hágale', 'de una', 'parce', 'bacano', 'chevere',
+            'chévere', 'genial', 'perfecto', 'sirve', 'cuadrame',
+            'cuadrame eso', 'va', 'va pues', 'sii', 'siiii',
+            'simon', 'simón', 'eso eso', 'el primero', 'el segundo',
+            'el tercero', 'ese', 'este', 'aquel'
         ],
         negation: [
             'no', 'no me interesa', 'eso no', 'no gracias', 'paso',
             'no por ahora', 'mas tarde', 'más tarde', 'despues',
-            'después', 'no es lo que busco'
+            'después', 'no es lo que busco',
+            // §24 FASE 1
+            'nope', 'nada', 'no quiero', 'olvidalo', 'olvídalo',
+            'mejor no', 'no por el momento', 'ahora no', 'luego',
+            'tal vez despues', 'tal vez después'
         ],
         frustration: [
             'no entiendo', 'eso ya lo dijiste', 'no me sirve', 'eres un bot',
             'eres robot', 'inutil', 'inútil', 'esto no funciona',
-            'me estas repitiendo', 'me estás repitiendo'
+            'me estas repitiendo', 'me estás repitiendo',
+            // §24 FASE 1
+            'esto es horrible', 'que pereza', 'qué pereza', 'no sirves',
+            'esto es una basura', 'no me ayudas', 'no me entiendes',
+            'estas repitiendo lo mismo', 'siempre lo mismo'
         ],
         ask_human: [
             'asesor', 'persona real', 'humano', 'ayuda real', 'no eres humano',
             'quiero hablar con alguien', 'pasame con', 'pásame con',
-            'quien atiende', 'quién atiende'
+            'quien atiende', 'quién atiende',
+            // §24 FASE 1
+            'persona', 'agente', 'vendedor', 'alguien real',
+            'comuníqueme con', 'comuniqueme con', 'pasame a', 'pásame a',
+            'quiero hablar con un humano', 'quiero un asesor',
+            'una persona', 'un asesor', 'un agente', 'me atienden ustedes',
+            'hablar con alguien', 'que me atienda alguien'
         ]
     };
 
@@ -132,6 +213,25 @@
             catch (e) { expanded = norm; }
         }
 
+        // §24 FASE 1 — generar n-grams del texto para matching de frases
+        // compuestas como "carros por ahi" o "tendras autos"
+        var ngrams = [];
+        if (window.AltorraFuzzy && window.AltorraFuzzy.generateNgrams) {
+            try { ngrams = window.AltorraFuzzy.generateNgrams(expanded, [2, 3]); }
+            catch (e) {}
+        }
+
+        // §24 FASE 1 — stemmizar el texto para reconocer formas verbales
+        // conjugadas. "tendras carros" → tokens stems = ['ten', 'carro']
+        var stemmedTokens = [];
+        if (window.AltorraFuzzy && window.AltorraFuzzy.stemmize && window.AltorraFuzzy.tokenize) {
+            try {
+                stemmedTokens = window.AltorraFuzzy.tokenize(expanded)
+                    .map(window.AltorraFuzzy.stemmize);
+            } catch (e) {}
+        }
+        var stemmedText = stemmedTokens.join(' ');
+
         var best = { intent: 'none', score: 0, keyword: null };
         Object.keys(LEXICON).forEach(function (intent) {
             LEXICON[intent].forEach(function (kw) {
@@ -140,17 +240,27 @@
                     best = { intent: intent, score: kw.length, keyword: kw };
                     return;
                 }
-                // Capa A — Fuzzy match si AltorraFuzzy disponible
-                // Solo para keywords de >= 5 chars (evita falsos positivos)
-                // y solo si NO hubo match exacto en el texto original
-                if (kw.length >= 5 && window.AltorraFuzzy &&
-                    norm.indexOf(kw) === -1 && expanded.indexOf(kw) === -1) {
-                    if (window.AltorraFuzzy.match(kw, expanded, 0.82) &&
-                        kw.length > best.score) {
-                        // Score atenuado para fuzzy matches (penalty 0.85)
+                // §24 FASE 1 — match contra n-grams (frases compuestas)
+                if (kw.indexOf(' ') !== -1 && ngrams.indexOf(kw) !== -1 && kw.length > best.score) {
+                    best = { intent: intent, score: kw.length, keyword: kw, ngram: true };
+                    return;
+                }
+                // §24 FASE 1 — match contra texto stemmizado (formas verbales)
+                if (stemmedText && stemmedText.indexOf(kw) !== -1 && kw.length > best.score) {
+                    best = { intent: intent, score: Math.floor(kw.length * 0.92), keyword: kw, stemmed: true };
+                    return;
+                }
+                // §24 FASE 1 — Fuzzy match adaptativo (threshold según length)
+                // Reemplaza el match clásico con threshold fijo 0.82 → ahora
+                // usa thresholds 0.65-0.80 según length de la palabra.
+                if (kw.length >= 4 && window.AltorraFuzzy &&
+                    norm.indexOf(kw) === -1 && expanded.indexOf(kw) === -1 &&
+                    ngrams.indexOf(kw) === -1) {
+                    var matchFn = window.AltorraFuzzy.matchAdaptive || window.AltorraFuzzy.match;
+                    if (matchFn(kw, expanded) && kw.length > best.score) {
                         best = {
                             intent: intent,
-                            score: Math.floor(kw.length * 0.85),
+                            score: Math.floor(kw.length * 0.82),
                             keyword: kw,
                             fuzzy: true
                         };
@@ -329,8 +439,117 @@
             brand: context.slots.lastBrandDiscussed || null,
             category: context.slots.lastCategoryDiscussed || null,
             priceMax: context.slots.lastPriceMaxDiscussed || null,
-            vehiclesShown: context.slots.lastVehiclesShown || []
+            vehiclesShown: context.slots.lastVehiclesShown || [],
+            pendingChoice: context.slots.pendingChoice || null
         };
+    }
+
+    /**
+     * §24 FASE 2 — parseOrdinal: extrae índice ordinal de un texto.
+     * "el primero" → 0, "el segundo" → 1, "el tercero" → 2,
+     * "el ultimo" → -1, "ese" / "este" → 0 (asume el más reciente)
+     */
+    function parseOrdinal(text) {
+        if (!text) return null;
+        var n = String(text).toLowerCase();
+        // Ordinales explícitos
+        if (/\b(primer[oa]?|1er[oa]?|el\s*1)\b/.test(n)) return 0;
+        if (/\b(segund[oa]|2d[oa]|el\s*2)\b/.test(n)) return 1;
+        if (/\b(tercer[oa]?|3er[oa]?|el\s*3)\b/.test(n)) return 2;
+        if (/\b(cuart[oa]|4t[oa]|el\s*4)\b/.test(n)) return 3;
+        if (/\b(quint[oa]|5t[oa]|el\s*5)\b/.test(n)) return 4;
+        if (/\b(ultim[oa]|últim[oa])\b/.test(n)) return -1;
+        // Pronombres demostrativos cortos sin ordinal explícito → 0
+        if (/^\s*(ese|esa|este|esta|aquel|aquella|el|ese mismo|el mismo)\s*\.?\s*$/.test(n)) return 0;
+        return null;
+    }
+
+    /**
+     * §24 FASE 2 — resolvePronominalChoice: para respuestas cortas como
+     * "el primero", "ese", "el segundo" que el cliente da después de
+     * que el bot ofreció opciones.
+     *
+     * Retorna { resolved, source } donde:
+     *   - source 'pendingChoice' = el bot ofreció opciones explícitas
+     *     (ej. "¿SUV o Sedán?") → resolved es el string literal
+     *   - source 'vehiclesShown' = el bot listó vehículos →
+     *     resolved es el objeto vehículo del inventario
+     *   - null si no se pudo resolver
+     */
+    function resolvePronominalChoice(text, context) {
+        if (!context || !context.slots) return null;
+        var ord = parseOrdinal(text);
+        if (ord === null) return null;
+
+        // 1. ¿Hay pendingChoice activo del último turno bot?
+        var pending = context.slots.pendingChoice;
+        if (pending && Array.isArray(pending.options) && pending.options.length > 0) {
+            // pendingChoice expira a los 5 min como el resto de slots
+            if (pending.timestamp && (Date.now() - pending.timestamp) > 5 * 60 * 1000) {
+                pending = null;
+            }
+            if (pending) {
+                var idx = ord >= 0 ? ord : pending.options.length + ord;
+                if (idx >= 0 && idx < pending.options.length) {
+                    return {
+                        resolved: pending.options[idx],
+                        source: 'pendingChoice',
+                        contextLabel: pending.context || null
+                    };
+                }
+            }
+        }
+
+        // 2. ¿Hay vehiclesShown del último turno?
+        var vs = context.slots.lastVehiclesShown;
+        if (Array.isArray(vs) && vs.length > 0) {
+            var vIdx = ord >= 0 ? ord : vs.length + ord;
+            if (vIdx >= 0 && vIdx < vs.length) {
+                var vehicleId = vs[vIdx];
+                // Lookup en vehicleDB si está disponible
+                var vehicle = null;
+                if (window.AltorraInventorySearch && window.AltorraInventorySearch.lookupById) {
+                    vehicle = window.AltorraInventorySearch.lookupById(vehicleId);
+                }
+                return {
+                    resolved: vehicle || vehicleId,
+                    source: 'vehiclesShown'
+                };
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * §24 FASE 2 — setPendingChoice: el bot llama esto cuando hace una
+     * pregunta que ofrece opciones (ej. "¿SUV o Sedán?", "¿Toyota o Mazda?").
+     * El cliente puede responder "el primero" / "el segundo" y resolveAnaphora
+     * lo entiende.
+     *
+     * Args:
+     *   context — session.context (mutado in-place)
+     *   options — array de strings ("SUV", "Sedán")
+     *   contextLabel — 'category_pick' / 'brand_pick' / 'vehicle_pick' / etc
+     */
+    function setPendingChoice(context, options, contextLabel) {
+        if (!context || !Array.isArray(options) || options.length === 0) return;
+        context.slots = context.slots || {};
+        context.slots.pendingChoice = {
+            options: options.slice(0, 5),  // cap a 5 opciones
+            context: contextLabel || null,
+            timestamp: Date.now()
+        };
+    }
+
+    /**
+     * §24 FASE 2 — clearPendingChoice: limpia el pendingChoice
+     * (cuando el bot ya resolvió la elección o el cliente cambió de tema)
+     */
+    function clearPendingChoice(context) {
+        if (context && context.slots) {
+            context.slots.pendingChoice = null;
+        }
     }
 
     /**
@@ -346,6 +565,11 @@
         classifyMultiple: classifyMultiple,
         updateContext: updateContext,
         resolveAnaphora: resolveAnaphora,
+        // §24 FASE 2 — Anáfora 2.0 + pendingChoice
+        resolvePronominalChoice: resolvePronominalChoice,
+        parseOrdinal: parseOrdinal,
+        setPendingChoice: setPendingChoice,
+        clearPendingChoice: clearPendingChoice,
         shouldVary: shouldVary,
         normalize: normalize,
         intents: Object.keys(LEXICON)

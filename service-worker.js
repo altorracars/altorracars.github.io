@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506170000'; // Eliminado tail SVG del panel — feedback usuario, se veia como elemento desconectado
+const CACHE_VERSION = 'v20260506180000'; // ALTOR mas grande 108x108 (+17%) + doc CLAUDE.md secciones 20.15-20.18
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

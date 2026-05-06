@@ -10149,3 +10149,187 @@ necesitarlo en el futuro):
 > intent → escalate → asesor responde). Si rompés cualquier parte
 > de la cascada de generateBotResponse, los siguientes turnos se
 > sienten robóticos. Ver §20.5 para extension safe.
+
+### 20.15 Iteración: hover happy dance + sparkles + CTA timing 2/6/6 + burbuja de pensamiento
+
+Tras feedback inicial del cliente sobre la primera versión del CTA y
+la animación de hover, se rediseñaron tres comportamientos clave:
+
+**Hover animation rediseñada — happy dance**:
+
+La versión inicial (spin 360° en 0.85s) se sintió robótica. Se
+reemplazó por un loop infinito de tilt rítmico ±10° con bounce
+vertical y scale variable, easing in-out humano natural.
+
+```css
+@keyframes altorHappyDance {
+    0%, 100% → rotate 0   / translateY 0   / scale 1
+    12%      → rotate -10 / translateY -4  / scale 1.06
+    25%      → rotate +10 / translateY -7  / scale 1.10
+    37%      → rotate -8  / translateY -3  / scale 1.06
+    50%      → rotate +8  / translateY -7  / scale 1.10
+    62%      → rotate -5  / translateY -3  / scale 1.06
+    75%      → rotate +5  / translateY -5  / scale 1.08
+    87%      → rotate -2  / translateY -1  / scale 1.03
+}
+```
+
+Duración 1.6s, loop infinito mientras el hover se mantiene. La
+rotación se aplica a la `<img>` interna (no al button) para coexistir
+con el transform del button (`scale(1.10) translateY(-3px)`) que
+sigue activo en hover.
+
+**Sparkles orbitando** — `::before` y `::after` del FAB con
+backgrounds `radial-gradient(circle, #fff5d0 0%, #c9a663 60%, transparent)`:
+- Solo visibles en hover (transition opacity)
+- Trayectorias circulares con `keyframes altorSparkleA` y
+  `altorSparkleB` (translate + scale + opacity)
+- B con `animation-delay: 0.4s` para asincronía
+
+**CTA bubble — timing exacto pedido por el cliente**:
+
+```js
+CTA_FIRST_DELAY_MS = 2000      // primer mensaje a los 2s del page load
+CTA_VISIBLE_MS = 6000          // visible 6s
+CTA_HIDE_INTERVAL_MS = 6000    // 6s de pausa entre mensaje y mensaje
+```
+
+Implementación con `setTimeout` recursivo (no `setInterval`) para
+control exacto del visible/hide. Ciclo total = 12s. Anti-spam
+preservado (panel abierto / snooze localStorage / tab oculto
+suprimen el mensaje pero el ciclo sigue).
+
+**Burbuja de pensamiento — panel emana del FAB**:
+
+El panel del chat ahora aparece como un bocadillo de cómic saliendo
+de ALTOR:
+
+```css
+.altorra-concierge {
+    transform-origin: bottom right;
+    transform: scale(0.06) translate(40px, 40px);  /* casi invisible cerca del FAB */
+}
+.altorra-concierge.cnc-open {
+    transform: scale(1) translate(0, 0);
+}
+/* Easing: cubic-bezier(0.34, 1.5, 0.55, 1) — overshoot suave tipo
+   "burbuja inflando". Duración 0.50s. */
+```
+
+### 20.16 Iteración: tail SVG intentado y descartado
+
+El cliente pidió una "punta" para el panel del chat tipo bocadillo
+de cómic apuntando hacia la cabeza de ALTOR.
+
+**Intento 1**: agregar SVG `<svg class="cnc-tail">` como primer hijo
+del panel con un path orgánico curvado (`M0,0 L34,0 Q52,4 54,18 ...`),
+posicionado absolute en `bottom: -34px right: -10px`. Para que el
+SVG saliera del bounding box del panel, se cambió `overflow: hidden`
+→ `visible`. Eso requirió a su vez que cada hijo directo recibiera
+sus propias `border-{top,bottom}-{left,right}-radius: 22px` para
+que las esquinas siguieran redondeadas.
+
+Panel también se movió de `right: 24px` → `right: 50px` para dejar
+espacio horizontal entre el panel y ALTOR para que la punta tuviera
+camino visual.
+
+**Resultado visual**: el cliente reportó que el SVG quedaba como
+"basura encima de la cabeza de ALTOR" — se veía como un objeto
+desconectado, no como una extensión orgánica del panel. Pidió
+eliminarlo.
+
+**Eliminación completa**:
+- Removido el `<svg class="cnc-tail">` del innerHTML del panel
+- Removidas TODAS las reglas `.cnc-tail` del CSS (~30 líneas)
+- Restaurado `overflow: hidden` en el panel
+- Removidas reglas auxiliares de `border-radius` en hijos directos
+  (innecesarias sin overflow:visible)
+- Panel vuelto a `right: 24px`
+
+**Lección aprendida**: una "punta" decorativa no funciona si está
+visualmente desconectada del panel principal. El border-radius
+asimétrico previo (`22px 22px 6px 22px`) tampoco era ideal — quedaba
+como una esquina rota en vez de una conexión natural.
+
+**Solución actual**: la conexión visual del panel hacia ALTOR la hace
+**solo la animación de apertura** (`scale(0.06 → 1)` con
+`transform-origin: bottom right`). El panel "emana" del FAB
+visualmente sin necesitar elemento gráfico explícito. Más limpio,
+menos vulnerable a quedar feo si las dimensiones cambian.
+
+**Anti-patrón documentado**: si una decoración visual depende de
+proporciones geométricas precisas (relación entre tamaño del FAB,
+posición del panel, ángulo del tail), es frágil. Cualquier cambio
+de tamaño la rompe. Mejor confiar en el lenguaje de animación
+(transform-origin) para sugerir la conexión.
+
+### 20.17 Iteración final: ALTOR más grande (108×108 desktop, 92×92 mobile)
+
+Tras eliminar el tail, ALTOR pasó de 92×92 a **108×108 px** en
+desktop (+17%) y de 78×78 a **92×92 px** en mobile (+18%).
+
+**Ajustes geométricos en cascada**:
+
+| Elemento | Antes | Ahora |
+|---|---|---|
+| FAB desktop | 92×92 | 108×108 |
+| FAB mobile | 78×78 | 92×92 |
+| Panel desktop `bottom` | 130px | 148px (FAB 108 + 24 base + 16 gap) |
+| Panel mobile `bottom` | 105px | 124px (FAB 92 + 16 base + 16 gap) |
+| Panel mobile `max-height` | calc(100vh − 125) | calc(100vh − 144) |
+| CTA bubble `bottom` | 56px | 62px (alineado con boca de ALTOR mayor) |
+| CTA bubble `right` | 130px | 146px (FAB 108 + ~38 gap) |
+
+**Reglas operativas para ajustar tamaño de ALTOR en el futuro**:
+
+Si necesitás cambiar el tamaño del FAB, hay 5 valores que cascadean:
+
+1. `.altorra-concierge-btn { width, height }` (desktop)
+2. `@media (max-width: 480px) .altorra-concierge-btn { width, height }` (mobile)
+3. `.altorra-concierge { bottom }` (desktop) = `FAB_height + 24px + 16px gap`
+4. `@media (max-width: 480px) .altorra-concierge { bottom, max-height }` (mobile)
+5. `.cnc-cta-bubble { bottom, right }` (alineación con la cara de ALTOR)
+
+Si NO ajustás los puntos 3-5 después de cambiar 1-2, el panel queda
+solapando el FAB o el CTA bubble queda flotando "lejos" del FAB.
+
+### 20.18 Estado final del Bloque U (commits resumen)
+
+| # | Commit | Descripción |
+|---|---|---|
+| 1 | `066e239` | Refactor Concierge — sparkles + KB seeder + escalateToLive con waitForAuthThen |
+| 2 | `dd0f2b9` | PURGA TOTAL — IIFE legacy 1032 líneas eliminado de components.js + Inbox unificado |
+| 3 | `d9779a4` | Concierge IA — Lead Gate + intent classifier + handoff + admin power-ups |
+| 4 | `d10f2fc` | Lead Gate compactado |
+| 5 | `fa1f111` | ALTOR rebrand — PNG propio + naming Asistente Virtual IA |
+| 6 | `d6f848a` | ALTOR FAB flotante — sin círculo, drop-shadow respeta canal alpha |
+| 7 | `950fa23` | ALTOR personalidad — más grande + spin + CTA bubble cada 38s |
+| 8 | `2d17693` | ALTOR final polish — happy dance + CTA timing 2/6/6 + burbuja pensamiento + doc §20 |
+| 9 | `37a320c` | Tail SVG apuntando a ALTOR (intentado) |
+| 10 | `8ea9ebd` | Tail SVG eliminado tras feedback negativo del cliente |
+| 11 | (este commit) | ALTOR más grande 108×108 + doc §20.15-20.18 |
+
+**Archivos modificados/creados durante el bloque U entero**:
+
+| Archivo | Tipo |
+|---|---|
+| `js/concierge.js` | refactor masivo (Lead Gate, intent, handoff, ALTOR) |
+| `js/admin-concierge.js` | power-ups (pin/archive/unread/delete + filter bar) |
+| `js/admin-kb.js` | seeder de 10 FAQs fundacionales |
+| `js/ai/intent.js` | NUEVO — clasificador de 13 intents |
+| `js/components.js` | eliminado IIFE legacy 1032 líneas + carga de `intent.js` |
+| `js/admin-section-router.js` | alias `inbox → concierge` |
+| `js/admin-inbox.js` | ELIMINADO |
+| `js/vehicle-thread.js` | ELIMINADO |
+| `css/concierge.css` | rebranding + tail iteraciones + happy dance + sparkles + CTA bubble |
+| `css/admin.css` | filter bar admin, menu contextual, badges de estado |
+| `admin.html` | nav-item Inbox unificado, sec-concierge renombrado, filter bar div, eliminada sec-inbox |
+| `firestore.rules` | branch `isEditorOrAbove()` para `clientes/{uid}` (CRM) |
+| `detalle-vehiculo.html` + 25 generadas | botón cambia a `data-action="open-concierge-vehicle"` |
+| `ALTOR.png` | NUEVO — imagen del bot subida por el cliente a la raíz |
+| `service-worker.js` | bumps en cada commit del bloque |
+| `js/cache-manager.js` | bumps en cada commit del bloque |
+| `CLAUDE.md` | sección 20 completa con sub-secciones 1-18 |
+
+**Total**: 11 commits, ~3000+ líneas afectadas, 4 archivos nuevos,
+2 eliminados, 38 modificados.

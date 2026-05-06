@@ -21,8 +21,8 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: 92px;
-    height: 92px;
+    width: 108px;
+    height: 108px;
     background: transparent;
     border: none;
     padding: 0;
@@ -167,8 +167,8 @@
    ═══════════════════════════════════════════════════════════ */
 .cnc-cta-bubble {
     position: fixed;
-    bottom: 56px;          /* alineado con la "boca" de ALTOR (92px FAB) */
-    right: 130px;          /* a la izquierda del FAB + gap */
+    bottom: 62px;          /* alineado con la "boca" de ALTOR (108px FAB) */
+    right: 146px;          /* a la izquierda del FAB de 108 + gap */
     background: linear-gradient(135deg, #fefdf6 0%, #fff7e0 100%);
     color: #1a1500;
     padding: 11px 38px 11px 16px;
@@ -292,7 +292,7 @@
    ═══════════════════════════════════════════════════════════ */
 .altorra-concierge {
     position: fixed;
-    bottom: 130px;
+    bottom: 148px;
     right: 24px;
     width: 380px;
     max-width: calc(100vw - 32px);
@@ -520,16 +520,16 @@
 @media (max-width: 480px) {
     .altorra-concierge {
         right: 8px;
-        bottom: 105px;                  /* sobre el FAB de 78px + 27 gap */
+        bottom: 124px;                  /* sobre el FAB de 92px + 16px + 16 gap */
         width: calc(100vw - 16px);
-        height: calc(100vh - 125px);
-        max-height: calc(100vh - 125px);
+        height: calc(100vh - 144px);
+        max-height: calc(100vh - 144px);
     }
     .altorra-concierge-btn {
         bottom: 16px;
         right: 16px;
-        width: 78px;
-        height: 78px;
+        width: 92px;
+        height: 92px;
     }
 }
 

@@ -1140,18 +1140,47 @@
 
         // Listener 2: doc parent — detecta status closed/active sin esperar
         // a que llegue un system message (defensa por si admin solo updateó status)
+        // §23 FASE 5: también captura el radicado asignado por la Cloud Function
+        // onConciergeChatCreated (~1s después de crear el chat)
         _firestoreParentUnsub = window.db.collection('conciergeChats').doc(session.sessionId)
             .onSnapshot(function (doc) {
                 if (!doc.exists) return;
                 var d = doc.data();
+                var changed = false;
                 var wasClosed = !!session.closed;
                 var nowClosed = d.status === 'closed';
                 if (wasClosed !== nowClosed) {
                     session.closed = nowClosed;
+                    changed = true;
+                }
+                // §23 — propagar radicado cuando la Cloud Function lo asigne
+                if (d.radicado && session.radicado !== d.radicado) {
+                    session.radicado = d.radicado;
+                    changed = true;
+                    // Refresh del radicado en el header del chat
+                    updateRadicadoBadge();
+                }
+                if (changed) {
                     saveSession(session);
-                    applyClosedState();
+                    if (wasClosed !== nowClosed) applyClosedState();
                 }
             }, function () {});
+    }
+
+    /**
+     * §23 FASE 5 — actualiza el badge del radicado en el header del widget.
+     * El radicado lo asigna la Cloud Function `onConciergeChatCreated` y
+     * llega vía listener parent (~1s post-create del chat).
+     */
+    function updateRadicadoBadge() {
+        var statusEl = document.getElementById('cncStatus');
+        if (!statusEl) return;
+        if (!session.radicado) return;
+        // Solo agregar el badge si no está ya
+        if (statusEl.textContent.indexOf(session.radicado) === -1) {
+            statusEl.innerHTML = 'Asistente Virtual IA · Altorra Cars · ' +
+                '<span class="cnc-radicado-inline">' + session.radicado + '</span>';
+        }
     }
     var _firestoreParentUnsub = null;
 
@@ -1623,6 +1652,9 @@
             if (inputWrap) inputWrap.style.display = 'none';
 
             // Inyectar bloque de cierre con CTA
+            // §23 FASE 5 — el bloque incluye el radicado del chat finalizado
+            // para que el cliente lo conserve como referencia.
+            var radicadoTxt = session.radicado ? session.radicado : '';
             if (!closedBlock) {
                 closedBlock = document.createElement('div');
                 closedBlock.id = 'cncClosedBlock';
@@ -1631,6 +1663,9 @@
                     '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
                     '<div class="cnc-closed-title">Esta conversación ha finalizado</div>' +
                     '<div class="cnc-closed-sub">Iniciá una nueva cuando quieras hablar con nosotros otra vez.</div>' +
+                    (radicadoTxt
+                        ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
+                        : '') +
                     '<button class="cnc-closed-cta" id="cncResetSessionBtn">' +
                         '<i data-lucide="refresh-cw"></i> Iniciar nueva conversación' +
                     '</button>';
@@ -1641,6 +1676,21 @@
                 }
                 var resetBtn = document.getElementById('cncResetSessionBtn');
                 if (resetBtn) resetBtn.addEventListener('click', resetSession);
+            } else {
+                // Re-render del radicado por si cambió tras un reload
+                var radEl = document.getElementById('cncClosedRadicado');
+                if (radEl && radicadoTxt) {
+                    radEl.innerHTML = 'Radicado: <strong>' + radicadoTxt + '</strong>';
+                } else if (!radEl && radicadoTxt) {
+                    var sub = closedBlock.querySelector('.cnc-closed-sub');
+                    if (sub) {
+                        var newRad = document.createElement('div');
+                        newRad.id = 'cncClosedRadicado';
+                        newRad.className = 'cnc-closed-radicado';
+                        newRad.innerHTML = 'Radicado: <strong>' + radicadoTxt + '</strong>';
+                        sub.parentNode.insertBefore(newRad, sub.nextSibling);
+                    }
+                }
             }
             closedBlock.style.display = 'flex';
         } else {

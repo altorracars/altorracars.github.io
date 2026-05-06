@@ -7,6 +7,63 @@
     <meta name="robots" content="noindex, nofollow">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
+    <!-- §23 FASE 7 — Auth-hint pre-paint: si la última sesión admin todavía
+         está vigente (TTL 8h), pre-rendereamos el shell del panel para evitar
+         flicker del loginScreen → loadingScreen → adminPanel en cada F5.
+         El estado real lo confirma onAuthStateChanged ~200ms después. -->
+    <script>
+    (function () {
+        try {
+            var raw = localStorage.getItem('altorra_admin_auth_hint');
+            if (!raw) return;
+            var snap = JSON.parse(raw);
+            if (!snap || !snap.uid || !snap.expiresAt) return;
+            if (Date.now() > snap.expiresAt) {
+                localStorage.removeItem('altorra_admin_auth_hint');
+                return;
+            }
+            // Marcar el <html> con clase para que el CSS oculte loginScreen
+            // y muestre adminPanel (skeleton) ANTES del primer paint.
+            document.documentElement.classList.add('admin-restoring');
+            // Restaurar última sección visitada (si existe hash en URL gana)
+            var lastSection = window.location.hash.replace(/^#\/?/, '') ||
+                              localStorage.getItem('altorra_admin_last_section') ||
+                              'dashboard';
+            window.__ALTORRA_ADMIN_RESTORING__ = {
+                uid: snap.uid,
+                rol: snap.rol,
+                nombre: snap.nombre,
+                email: snap.email,
+                section: lastSection
+            };
+        } catch (e) { /* fail-open: comportamiento clásico */ }
+    })();
+    </script>
+    <style>
+    /* §23 FASE 7 — pre-paint optimista del shell del admin
+       (oculta loginScreen, muestra adminPanel skeleton) */
+    html.admin-restoring #loginScreen { display: none !important; }
+    html.admin-restoring #adminPanel { display: flex !important; }
+    /* Skeleton dorado mientras Firebase confirma la sesión */
+    html.admin-restoring #adminPanel::before {
+        content: '';
+        position: fixed; inset: 0;
+        background: rgba(15, 12, 0, 0.35);
+        backdrop-filter: blur(2px);
+        z-index: 99998;
+        pointer-events: none;
+        animation: adminRestoringPulse 1.4s ease-in-out infinite;
+    }
+    html:not(.admin-restoring) #adminPanel::before { display: none; }
+    html.admin-restored #adminPanel::before { display: none; }
+    @keyframes adminRestoringPulse {
+        0%, 100% { opacity: 0.55; }
+        50% { opacity: 0.25; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        html.admin-restoring #adminPanel::before { animation: none; }
+    }
+    </style>
     <!-- G.4 (mega-plan v4) — PWA installable del admin -->
     <link rel="manifest" href="manifest-admin.json">
     <meta name="theme-color" content="#b89658">

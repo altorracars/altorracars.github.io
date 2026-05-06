@@ -99,6 +99,10 @@
     }
 
     function notifyChange(section, prev) {
+        // §23 FASE 7 — Persistir la última sección visitada para que un F5
+        // restaure la vista actual en lugar del dashboard default.
+        try { localStorage.setItem('altorra_admin_last_section', section); } catch (e) {}
+
         listeners.forEach(function (fn) {
             try { fn(section, prev); } catch (e) {}
         });

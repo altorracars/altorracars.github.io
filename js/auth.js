@@ -401,38 +401,67 @@
             // dropping the anonymous data on login is the honest behavior.
             return window.auth.signInWithEmailAndPassword(email, pass);
         }).then(function () {
-            // Pre-apply auth state INSTANTLY for snappy header switch
             var u = window.auth.currentUser;
-            if (u) _preApplyAuthHint(u);
-
-            // Close modal immediately — don't wait for the Firestore profile write.
-            // The profile save runs in background; user sees the close happen instantly.
-            closeAuthModal();
-            _toast('¡Bienvenido de vuelta!', 'success');
-
-            // Persist email for next-visit pre-fill + offer browser to save credentials
-            _persistLastEmail(email);
-            _saveCredential(email, pass);
-
             if (!u || u.isAnonymous) return;
-            // Check if this is an admin account — don't create clientes/ doc for admins
+
+            // §23 FASE 6 — AISLAMIENTO AUTH ADMIN/WEB PÚBLICA (Capa 2):
+            // Defensive post-login check. Si la cuenta es admin/editor,
+            // hacemos signOut INMEDIATO sin permitir que onAuthStateChanged
+            // dispare más logica downstream. Esto previene que un admin/editor
+            // entre por la web pública (que NO tiene 2FA) y quede autenticado
+            // bypaseando el panel admin que SÍ tiene 2FA.
+            //
+            // Capa 1 (pre-check email) está en signInIfNotAdmin() abajo, pero
+            // por defense-in-depth chequeamos también AQUÍ post-login en caso
+            // de que la Capa 1 haya fallado (race, network, query error).
             return window.db.collection('usuarios').doc(u.uid).get().then(function (doc) {
                 if (doc.exists) {
-                    // Admin logging in from public web — just let onAuthStateChanged handle header
-                    return;
+                    // ⚠️ Admin/editor intentando loguear en web pública.
+                    // Marcar logout explícito para que onAuthStateChanged NO cree
+                    // sesión anónima ni clientes/{uid} doc, y signOut inmediato.
+                    _explicitLogout = true;
+                    return window.auth.signOut().then(function () {
+                        // Restore email para que el admin lo vea en el form
+                        showMsg('loginMessage',
+                            '🔒 Esta cuenta es de administrador. Por favor iniciá sesión desde admin.html.',
+                            'error');
+                        _shakeModal();
+                        // NO cerrar modal — dejar el form visible para que el admin
+                        // vea el mensaje y entienda qué pasó.
+                        throw new Error('admin-account-on-public-web');
+                    });
                 }
+                // Es cliente normal: aplicar hint + cerrar modal + persist
+                _preApplyAuthHint(u);
+                closeAuthModal();
+                _toast('¡Bienvenido de vuelta!', 'success');
+                _persistLastEmail(email);
+                _saveCredential(email, pass);
                 return saveClientProfile(u.uid, {
                     nombre: u.displayName || '',
                     email:  u.email || email
                 });
-            }).catch(function () {
-                // On error checking, save profile anyway (fail-open)
+            }).catch(function (err) {
+                if (err && err.message === 'admin-account-on-public-web') {
+                    // Ya manejado arriba — propagar sin hacer nada extra
+                    throw err;
+                }
+                // Error de red al chequear usuarios/: fail-open guardando
+                // perfil del cliente (pero NO autenticando como admin).
+                _preApplyAuthHint(u);
+                closeAuthModal();
+                _toast('¡Bienvenido de vuelta!', 'success');
+                _persistLastEmail(email);
+                _saveCredential(email, pass);
                 return saveClientProfile(u.uid, {
                     nombre: u.displayName || '',
                     email:  u.email || email
                 });
             });
         }).catch(function (err) {
+            // §23 FASE 6 — admin-account-on-public-web ya tiene mensaje propio,
+            // no aplicar friendlyError genérico encima
+            if (err && err.message === 'admin-account-on-public-web') return;
             var msg = friendlyError(err);
             if (msg) showMsg('loginMessage', msg, 'error');
             _shakeModal();

@@ -7076,3 +7076,83 @@ body.sidebar-collapsed .sidebar-collapse-btn i {
     .unmatched-entry-head { flex-direction: column; align-items: flex-start; }
     .unmatched-entry-actions { width: 100%; flex-wrap: wrap; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   §23 FASE 5 — Cierre Bidireccional (admin-concierge)
+   Banner sticky cuando chat.status === 'closed' + radicado prominente
+   ═══════════════════════════════════════════════════════════════ */
+
+.cnc-admin-radicado {
+    display: inline-block;
+    background: rgba(184, 150, 88, 0.18);
+    color: var(--brand-primary);
+    font-size: 0.74rem;
+    font-weight: 700;
+    font-family: ui-monospace, 'SF Mono', monospace;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+    border: 1px solid rgba(184, 150, 88, 0.32);
+}
+
+.cnc-admin-closed-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(120, 200, 130, 0.10), rgba(120, 200, 130, 0.04));
+    border: 1px solid rgba(120, 200, 130, 0.28);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 10px 14px 4px 14px;
+}
+.cnc-admin-closed-icon {
+    color: rgba(120, 200, 130, 0.85);
+    flex-shrink: 0;
+}
+.cnc-admin-closed-icon [data-lucide],
+.cnc-admin-closed-icon {
+    width: 22px;
+    height: 22px;
+}
+.cnc-admin-closed-info {
+    flex: 1;
+    min-width: 0;
+}
+.cnc-admin-closed-title {
+    color: var(--text-primary);
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.cnc-admin-closed-sub {
+    color: var(--text-tertiary);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.cnc-admin-detail-input-wrap--closed {
+    opacity: 0.55;
+    pointer-events: none;  /* defensa extra UI — la rule Firestore es la autoridad */
+}
+.cnc-admin-detail-input-wrap--closed .cnc-admin-detail-input,
+.cnc-admin-detail-input-wrap--closed .alt-btn {
+    background: rgba(255, 255, 255, 0.02) !important;
+    cursor: not-allowed !important;
+}
+
+.cnc-detail-system {
+    text-align: center;
+    margin: 10px 0;
+}
+.cnc-detail-system-bubble {
+    display: inline-block;
+    background: rgba(184, 150, 88, 0.08);
+    color: var(--text-secondary);
+    border: 1px dashed rgba(184, 150, 88, 0.28);
+    font-size: 0.82rem;
+    font-style: italic;
+    padding: 6px 14px;
+    border-radius: 12px;
+}

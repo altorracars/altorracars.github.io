@@ -569,9 +569,19 @@
         var modeLabel = chat.mode === 'wa_handed_over' ? 'WhatsApp' :
                         chat.mode === 'live' ? 'En vivo' : 'Bot AI';
 
+        // §23 FASE 5 — chat cerrado = read-only bidireccional
+        var isClosed = chat.status === 'closed';
+        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
+
         var msgsHTML = messages.length === 0
             ? '<div class="cnc-admin-detail-empty">Sin mensajes en esta conversación.</div>'
             : messages.map(function (m) {
+                if (m.from === 'system') {
+                    return '<div class="cnc-detail-msg cnc-detail-system">' +
+                        '<div class="cnc-detail-system-bubble">' + escTxt(m.text) + '</div>' +
+                        '<div class="cnc-detail-time">' + escTxt(timeAgo(m.timestamp)) + '</div>' +
+                    '</div>';
+                }
                 var bubbleClass = m.from === 'user' ? 'cnc-detail-user' :
                                   m.from === 'asesor' ? 'cnc-detail-asesor' : 'cnc-detail-bot';
                 return '<div class="cnc-detail-msg ' + bubbleClass + '">' +
@@ -580,10 +590,43 @@
                 '</div>';
             }).join('');
 
+        // §23 FASE 5 — banner sticky de cierre con metadata
+        var closedBanner = '';
+        if (isClosed) {
+            var closedAtTxt = chat.closedAt ? timeAgo(chat.closedAt) : '';
+            var closedByTxt = chat.closedByName || (chat.closedByRole === 'client' ? 'el cliente' : 'un asesor');
+            var reasonLabel = ({
+                client_finalized: 'Cliente finalizó la conversación',
+                admin_resolved: 'Asesor marcó como resuelta',
+                sla_breach_handover: 'Cliente prefirió WhatsApp por SLA',
+                idle_timeout: 'Cerrada por inactividad'
+            })[chat.closedReason] || 'Conversación finalizada';
+            closedBanner =
+                '<div class="cnc-admin-closed-banner">' +
+                    '<i data-lucide="lock" class="cnc-admin-closed-icon"></i>' +
+                    '<div class="cnc-admin-closed-info">' +
+                        '<div class="cnc-admin-closed-title">' + escTxt(reasonLabel) + '</div>' +
+                        '<div class="cnc-admin-closed-sub">Por ' + escTxt(closedByTxt) +
+                            (closedAtTxt ? ' · ' + escTxt(closedAtTxt) : '') +
+                            (chat.radicado ? ' · ' + escTxt(chat.radicado) : '') +
+                        '</div>' +
+                    '</div>' +
+                    (isSuper ?
+                        '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminReopenChat" data-tooltip="Reabrir conversación (solo super_admin)">' +
+                            '<i data-lucide="refresh-cw"></i> Reabrir' +
+                        '</button>' : '') +
+                '</div>';
+        }
+
+        // Radicado prominente en el header
+        var radicadoBadge = chat.radicado
+            ? '<span class="cnc-admin-radicado">' + escTxt(chat.radicado) + '</span>'
+            : '';
+
         detailEl.innerHTML =
             '<div class="cnc-admin-detail-head">' +
                 '<div class="cnc-admin-detail-info">' +
-                    '<div class="cnc-admin-detail-name">' + escTxt(name) + '</div>' +
+                    '<div class="cnc-admin-detail-name">' + escTxt(name) + ' ' + radicadoBadge + '</div>' +
                     '<div class="cnc-admin-detail-meta">' +
                         '<span class="cnc-admin-detail-mode">' + escTxt(modeLabel) + '</span>' +
                         (chat.userEmail ? ' · <span>' + escTxt(chat.userEmail) + '</span>' : '') +
@@ -595,27 +638,30 @@
                     '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminSummarize" data-tooltip="Generar resumen para handover">' +
                         '<i data-lucide="file-text"></i> Resumen' +
                     '</button>' +
-                    (chat.status === 'closed'
-                        ? '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminReopenChat" data-tooltip="Reabrir chat">' +
-                            '<i data-lucide="refresh-cw"></i> Reabrir' +
-                          '</button>'
-                        : '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminCloseChat" data-tooltip="Cerrar chat">' +
+                    (!isClosed
+                        ? '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminCloseChat" data-tooltip="Cerrar chat">' +
                             '<i data-lucide="check"></i> Cerrar chat' +
                           '</button>'
+                        : ''
                     ) +
                 '</div>' +
             '</div>' +
+            closedBanner +
             '<div class="cnc-admin-detail-messages" id="cncAdminMessages">' + msgsHTML + '</div>' +
-            '<div class="cnc-smart-suggestions" id="cncSmartSuggestions" style="display:none;"></div>' +
-            '<div class="cnc-admin-detail-quick-replies">' +
-                '<button class="cnc-quick-reply" data-text="Hola, soy [tu nombre], asesor de Altorra. ¿En qué te puedo ayudar?">👋 Saludo</button>' +
-                '<button class="cnc-quick-reply" data-text="Te envío la información del vehículo que te interesa por aquí mismo.">📋 Info vehículo</button>' +
-                '<button class="cnc-quick-reply" data-text="¿Te gustaría agendar una visita para ver el carro? Tenemos disponibilidad esta semana.">📅 Agendar</button>' +
-                '<button class="cnc-quick-reply" data-text="Listo, te paso a WhatsApp para continuar la conversación.">📲 A WhatsApp</button>' +
-            '</div>' +
-            '<div class="cnc-admin-detail-input-wrap">' +
-                '<input type="text" class="form-input cnc-admin-detail-input" id="cncAdminReply" placeholder="Responder como asesor…" autocomplete="off">' +
-                '<button class="alt-btn alt-btn--primary" id="cncAdminSend">Enviar</button>' +
+            (isClosed ? '' :
+                '<div class="cnc-smart-suggestions" id="cncSmartSuggestions" style="display:none;"></div>' +
+                '<div class="cnc-admin-detail-quick-replies">' +
+                    '<button class="cnc-quick-reply" data-text="Hola, soy [tu nombre], asesor de Altorra. ¿En qué te puedo ayudar?">👋 Saludo</button>' +
+                    '<button class="cnc-quick-reply" data-text="Te envío la información del vehículo que te interesa por aquí mismo.">📋 Info vehículo</button>' +
+                    '<button class="cnc-quick-reply" data-text="¿Te gustaría agendar una visita para ver el carro? Tenemos disponibilidad esta semana.">📅 Agendar</button>' +
+                    '<button class="cnc-quick-reply" data-text="Listo, te paso a WhatsApp para continuar la conversación.">📲 A WhatsApp</button>' +
+                '</div>'
+            ) +
+            '<div class="cnc-admin-detail-input-wrap' + (isClosed ? ' cnc-admin-detail-input-wrap--closed' : '') + '">' +
+                '<input type="text" class="form-input cnc-admin-detail-input" id="cncAdminReply" ' +
+                    (isClosed ? 'disabled placeholder="🔒 Conversación cerrada — solo lectura"' : 'placeholder="Responder como asesor…"') +
+                    ' autocomplete="off">' +
+                '<button class="alt-btn alt-btn--primary" id="cncAdminSend"' + (isClosed ? ' disabled' : '') + '>Enviar</button>' +
             '</div>';
 
         // Auto-scroll al final

@@ -1258,6 +1258,9 @@
         stopInactivityTracking();
         AP.stopRealtimeSync();
         resetLoginBtn();
+        // §23 FASE 7 — limpiar hint y clases de pre-paint
+        try { localStorage.removeItem('altorra_admin_auth_hint'); } catch (e) {}
+        document.documentElement.classList.remove('admin-restoring', 'admin-restored');
         $('loginScreen').style.display = 'flex';
         $('adminPanel').style.display = 'none';
         $('loginForm').reset();
@@ -1278,6 +1281,39 @@
         resetLoginBtn();
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'flex';
+
+        // §23 FASE 7 — Auth hint para pre-paint del próximo F5/cold reload.
+        // TTL de 8 horas (mismo que la sesión absoluta del admin).
+        // Cuando expire, el inline script del <head> lo limpia y vuelve al
+        // flujo normal (loginScreen visible).
+        try {
+            localStorage.setItem('altorra_admin_auth_hint', JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                rol: AP.currentUserRole,
+                nombre: AP.currentUserProfile ? AP.currentUserProfile.nombre : '',
+                expiresAt: Date.now() + 8 * 60 * 60 * 1000
+            }));
+        } catch (e) {}
+        document.documentElement.classList.remove('admin-restoring');
+        document.documentElement.classList.add('admin-restored');
+
+        // §23 FASE 7 — Restaurar última sección visitada en lugar de
+        // mandar al dashboard por defecto. Si hay hash en URL, gana.
+        // Si el admin estaba en CRM y refrescó, vuelve al CRM.
+        try {
+            var pendingRestore = window.__ALTORRA_ADMIN_RESTORING__;
+            var lastSection = (pendingRestore && pendingRestore.section) ||
+                              window.location.hash.replace(/^#\/?/, '') ||
+                              localStorage.getItem('altorra_admin_last_section') ||
+                              null;
+            if (lastSection && window.AltorraSections && typeof window.AltorraSections.go === 'function') {
+                // Diferido para que renderUI termine antes
+                setTimeout(function () {
+                    try { window.AltorraSections.go(lastSection); } catch (e) {}
+                }, 50);
+            }
+        } catch (e) {}
 
         // Mount notification center bell (Phase N3)
         if (window.notifyCenter && document.getElementById('headerNotifBell')) {

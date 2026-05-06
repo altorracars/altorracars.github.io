@@ -1496,6 +1496,69 @@ const PROACTIVE_RETURNING_THRESHOLD_DAYS = 7; // cliente vuelve tras N días
  * 2 docs (mensaje + update parent). En tier free de Firestore este costo
  * es despreciable.
  */
+// ═══════════════════════════════════════════════════════════════════════════
+// §23 FASE 5 — onConciergeChatCreated: asigna radicado único
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Trigger: cuando se crea un nuevo doc en conciergeChats/{sid}, le asignamos
+// un número de radicado humano-legible: `REQ-YYYYMM-XXXX` (ej. REQ-202605-0042).
+//
+// Generación atómica vía transaction sobre `config/counters_YYYYMM`. Counter
+// reinicia cada mes (XXXX vuelve a 0001) → reportes mensuales naturales.
+//
+// Idempotencia: si `data.radicado` ya existe, skip (escenario raro: re-trigger).
+//
+// historicalUserKey: group key normalizado (email lowercase, fallback uid)
+// para agrupar tickets de un mismo cliente sin pisarlos. Se usa en queries
+// de bandeja admin para mostrar "tickets históricos" del cliente.
+//
+exports.onConciergeChatCreated = onDocumentCreated({
+    document: 'conciergeChats/{sessionId}',
+    region: 'us-central1',
+    timeoutSeconds: 30,
+    memory: '256MiB'
+}, async (event) => {
+    const data = event.data && event.data.data();
+    if (!data) return;
+    if (data.radicado) return; // ya tiene radicado (idempotency)
+
+    const yearMonth = new Date().toISOString().slice(0, 7).replace('-', ''); // 202605
+    const counterRef = db.doc(`config/counters_${yearMonth}`);
+
+    let radicado;
+    try {
+        radicado = await db.runTransaction(async (tx) => {
+            const snap = await tx.get(counterRef);
+            const currentSeq = (snap.exists && snap.data().radicadoSeq) || 0;
+            const newSeq = currentSeq + 1;
+            tx.set(counterRef, { radicadoSeq: newSeq, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            return `REQ-${yearMonth}-${String(newSeq).padStart(4, '0')}`;
+        });
+    } catch (err) {
+        console.error('[onConciergeChatCreated] radicado transaction failed:', err.message);
+        return;
+    }
+
+    // historicalUserKey: agrupa tickets del mismo cliente (preferimos email,
+    // fallback uid; null para anónimos sin identificar — esos se muestran
+    // independientes en la bandeja sin agrupación).
+    const historicalUserKey =
+        (data.userEmail && String(data.userEmail).toLowerCase().trim()) ||
+        data.userId ||
+        null;
+
+    try {
+        await event.data.ref.update({
+            radicado: radicado,
+            radicadoAt: new Date().toISOString(),
+            historicalUserKey: historicalUserKey
+        });
+        console.log(`[onConciergeChatCreated] Asignado ${radicado} a ${event.params.sessionId}`);
+    } catch (err) {
+        console.error('[onConciergeChatCreated] update failed:', err.message);
+    }
+});
+
 exports.proactiveEngagement = onSchedule({
     schedule: 'every 5 minutes',
     region: 'us-central1',

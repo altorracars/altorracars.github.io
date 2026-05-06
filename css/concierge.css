@@ -1077,3 +1077,30 @@
     justify-content: center;
     border: 1px solid rgba(184, 150, 88, 0.4);
 }
+
+/* ─── §23 FASE 5 — Radicado en header + closed block ─────────── */
+.cnc-radicado-inline {
+    display: inline-block;
+    background: rgba(184, 150, 88, 0.20);
+    color: #d4b67a;
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 1px 7px;
+    border-radius: 6px;
+    margin-left: 4px;
+    border: 1px solid rgba(184, 150, 88, 0.30);
+}
+.cnc-closed-radicado {
+    color: rgba(212, 182, 122, 0.85);
+    font-family: ui-monospace, 'SF Mono', monospace;
+    font-size: 0.78rem;
+    margin: 8px 0 14px 0;
+    text-align: center;
+    letter-spacing: 0.04em;
+}
+.cnc-closed-radicado strong {
+    color: #d4b67a;
+    font-weight: 700;
+}

@@ -293,31 +293,25 @@
 .altorra-concierge {
     position: fixed;
     bottom: 130px;
-    /* Movido más a la izquierda — el panel queda mejor centrado y
-       deja espacio para que la punta del bocadillo apunte hacia ALTOR
-       (que está en bottom-right, ~24px). */
-    right: 50px;
+    right: 24px;
     width: 380px;
     max-width: calc(100vw - 32px);
     height: 560px;
     max-height: calc(100vh - 170px);
     background: linear-gradient(180deg, #15110a 0%, #0d0a06 100%);
     border: 1px solid rgba(184, 150, 88, 0.25);
-    /* border-radius simétrico (sin tail visual fake) — el tail real
-       lo da el SVG .cnc-tail apuntando hacia ALTOR */
     border-radius: 22px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(184, 150, 88, 0.08);
     z-index: 9999;
     display: flex;
     flex-direction: column;
-    /* overflow visible para que el SVG del tail pueda salir del panel */
-    overflow: visible;
+    overflow: hidden;
     opacity: 0;
-    /* Burbuja de pensamiento: el panel emana de la posición del FAB
-       (esquina inferior derecha). Comienza muy pequeño cerca del FAB
-       y crece a su tamaño final con un easing tipo "burbuja inflando". */
+    /* El panel emana de la posición del FAB (esquina inferior derecha).
+       Comienza muy pequeño cerca del FAB y crece a su tamaño final con
+       un easing tipo "burbuja inflando". */
     transform-origin: bottom right;
-    transform: scale(0.06) translate(50px, 40px);
+    transform: scale(0.06) translate(40px, 40px);
     transition: opacity 0.32s ease-out 0.05s,
                 transform 0.50s cubic-bezier(0.34, 1.5, 0.55, 1);
     pointer-events: none;
@@ -326,64 +320,6 @@
     opacity: 1;
     transform: scale(1) translate(0, 0);
     pointer-events: auto;
-}
-
-/* Hijos directos del panel — z-index para quedar sobre el SVG del tail.
-   Esquinas redondeadas matching el panel ya que el panel ahora tiene
-   overflow:visible (necesario para que el tail salga del bounding box). */
-.altorra-concierge > .cnc-header,
-.altorra-concierge > .cnc-quick-actions,
-.altorra-concierge > .cnc-messages,
-.altorra-concierge > .cnc-input-wrap,
-.altorra-concierge > .cnc-gate {
-    position: relative;
-    z-index: 1;
-}
-.altorra-concierge > .cnc-header {
-    border-top-left-radius: 22px;
-    border-top-right-radius: 22px;
-}
-.altorra-concierge > .cnc-input-wrap {
-    border-bottom-left-radius: 22px;
-    border-bottom-right-radius: 22px;
-}
-/* Si el gate está visible (sin input-wrap), el gate redondea las esquinas
-   inferiores. Cuando gate desaparece, el input-wrap toma el rol. */
-.altorra-concierge > .cnc-gate {
-    border-bottom-left-radius: 22px;
-    border-bottom-right-radius: 22px;
-}
-
-/* TAIL del bocadillo de cómic — apunta hacia ALTOR.
-   SVG inyectado como primer hijo del panel, posicionado absolute en
-   bottom-right del panel con extensión hacia abajo-derecha. */
-.cnc-tail {
-    position: absolute;
-    bottom: -34px;
-    right: -10px;
-    width: 58px;
-    height: 46px;
-    pointer-events: none;
-    z-index: 0;
-    /* Drop-shadow integrado para que el tail tenga la misma profundidad
-       que el panel principal (matching el box-shadow del panel) */
-    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
-    /* Aparece con un ligero delay tras el panel para que se vea como
-       "el último toque" — la conexión visual hacia ALTOR */
-    opacity: 0;
-    transform: scale(0.4) translate(20px, 20px);
-    transform-origin: top left;
-    transition: opacity 0.28s ease-out 0.30s,
-                transform 0.40s cubic-bezier(0.34, 1.5, 0.55, 1) 0.30s;
-}
-.altorra-concierge.cnc-open .cnc-tail {
-    opacity: 1;
-    transform: scale(1) translate(0, 0);
-}
-.cnc-tail svg {
-    width: 100%;
-    height: 100%;
-    display: block;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -595,9 +531,6 @@
         width: 78px;
         height: 78px;
     }
-    /* En mobile el panel es casi full-width; el tail se ve apretado y
-       no ayuda visualmente. Lo ocultamos. */
-    .cnc-tail { display: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -68,8 +68,8 @@
         },
         {
             keywords: ['ubicación', 'ubicacion', 'dónde', 'donde', 'dirección', 'direccion'],
-            text: '📍 Estamos en Cartagena, Colombia. ¿Quieres agendar una visita o que te enviemos la dirección por WhatsApp?',
-            cta: { label: 'Hablar por WhatsApp', action: 'open-wa' }
+            text: '📍 Estamos en Cartagena, Colombia. ¿Quieres agendar una visita o que un asesor te envíe la dirección aquí mismo?',
+            cta: { label: 'Hablar con asesor', action: 'escalate' }
         },
         {
             keywords: ['horario', 'cuando abren', 'cuándo', 'cuando atienden'],
@@ -398,12 +398,38 @@
         session.mode = 'live';
         session.level = Math.max(session.level || 0, 4); // L4 — asignado a asesor
         saveSession(session);
-        addMessage('bot', '✅ Conectándote con un asesor humano. En breve te respondemos por aquí o por WhatsApp.');
+        addMessage('bot', '✅ Conectándote con un asesor humano. En breve te respondemos aquí mismo en este chat.');
         // U.16 — Si no hay soft contact aún (raro), crear ahora
         if (!_leadCreated) createSoftContact();
         else updateSoftContact(); // bumpear level=4
         // Crear chat doc en Firestore + iniciar sync bidireccional (U.10)
-        ensureFirestoreChatDoc();
+        // Espera a que auth resuelva (signInAnonymously suele estar en flight)
+        // antes de intentar el write — sin esto, permission-denied silenciosa.
+        waitForAuthThen(function () {
+            ensureFirestoreChatDoc().catch(function (err) {
+                console.warn('[Concierge] No se pudo crear el chat:', err && err.message);
+                addMessage('bot', '⚠️ No pude conectar con el asesor en este momento. Por favor intenta de nuevo en unos segundos.');
+            });
+        });
+    }
+
+    /**
+     * waitForAuthThen — espera hasta 2s a que window.auth.currentUser exista
+     * (signInAnonymously en auth.js tarda ~50-300ms). Si pasa el timeout sin
+     * resolver, ejecuta callback igual y deja que ensureFirestoreChatDoc maneje
+     * el error.
+     */
+    function waitForAuthThen(cb) {
+        if (window.auth && window.auth.currentUser) { cb(); return; }
+        var attempts = 0;
+        var iv = setInterval(function () {
+            attempts++;
+            if (window.auth && window.auth.currentUser) {
+                clearInterval(iv); cb();
+            } else if (attempts >= 10) { // 10 × 200ms = 2s
+                clearInterval(iv); cb();
+            }
+        }, 200);
     }
 
     function handoverToWhatsApp() {
@@ -579,8 +605,9 @@
         var btn = document.createElement('button');
         btn.id = 'altorra-concierge-btn';
         btn.className = 'altorra-concierge-btn';
-        btn.setAttribute('aria-label', 'Abrir Concierge');
-        btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>';
+        btn.setAttribute('aria-label', 'Abrir Concierge — chatea con nuestra IA');
+        // Icono Lucide sparkles — sugiere AI/asistente inteligente, brand-neutral
+        btn.innerHTML = '<i data-lucide="sparkles" aria-hidden="true"></i>';
         btn.addEventListener('click', toggle);
         document.body.appendChild(btn);
 
@@ -593,26 +620,37 @@
         panel.innerHTML =
             '<div class="cnc-header">' +
                 '<div class="cnc-header-info">' +
-                    '<div class="cnc-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>' +
+                    '<div class="cnc-avatar"><i data-lucide="sparkles" aria-hidden="true"></i></div>' +
                     '<div>' +
                         '<div class="cnc-title">Concierge Altorra</div>' +
-                        '<div class="cnc-status" id="cncStatus">Asistente · respuesta inmediata</div>' +
+                        '<div class="cnc-status" id="cncStatus">Asistente IA · respuesta inmediata</div>' +
                     '</div>' +
                 '</div>' +
                 '<button class="cnc-close" aria-label="Cerrar">×</button>' +
             '</div>' +
             '<div class="cnc-quick-actions">' +
-                '<button class="cnc-quick-btn" data-action="escalate">👨 Asesor en vivo</button>' +
-                '<button class="cnc-quick-btn" data-action="open-wa">📲 WhatsApp</button>' +
+                '<button class="cnc-quick-btn" data-action="escalate">' +
+                    '<i data-lucide="user-circle" aria-hidden="true"></i> Hablar con asesor' +
+                '</button>' +
             '</div>' +
             '<div class="cnc-messages" id="cncMessages"></div>' +
             '<div class="cnc-input-wrap">' +
                 '<input type="text" class="cnc-input" id="cncInput" placeholder="Escribe tu mensaje..." autocomplete="off">' +
                 '<button class="cnc-send" id="cncSend" aria-label="Enviar">' +
-                    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>' +
+                    '<i data-lucide="send" aria-hidden="true"></i>' +
                 '</button>' +
             '</div>';
         document.body.appendChild(panel);
+
+        // Refresh Lucide para que renderice los <i data-lucide> recién insertados.
+        // (Sin observer global: llamada explícita scoped — patrón post-RCA fix.)
+        if (window.AltorraIcons && window.AltorraIcons.refresh) {
+            window.AltorraIcons.refresh(btn);
+            window.AltorraIcons.refresh(panel);
+        } else if (window.lucide && window.lucide.createIcons) {
+            try { window.lucide.createIcons({ context: btn }); } catch (e) {}
+            try { window.lucide.createIcons({ context: panel }); } catch (e) {}
+        }
 
         // Wire UI
         panel.querySelector('.cnc-close').addEventListener('click', close);
@@ -642,9 +680,10 @@
             case 'escalate':
                 escalateToLive();
                 break;
-            case 'open-wa':
-                handoverToWhatsApp();
-                break;
+            // 'open-wa' eliminado del flujo público — el bot debe escalar al
+            // asesor en vivo, NO redirigir a WhatsApp. handoverToWhatsApp()
+            // se conserva como utilidad interna para uso manual del admin
+            // desde la bandeja Concierge (caso U.14 — handover refinado).
             case 'goto-simulador':
                 window.location.href = 'simulador-credito.html';
                 break;

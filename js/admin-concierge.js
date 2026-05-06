@@ -573,6 +573,13 @@
         var isClosed = chat.status === 'closed';
         var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
 
+        // §23 FASE 3 — Locks: detectar si el chat fue tomado por OTRO asesor.
+        // Si claimedByOther es true Y no soy super_admin, el input se bloquea.
+        var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : null;
+        var claimedByOther = !!(chat.claimedBy && chat.claimedBy !== currentUid);
+        var canWrite = !isClosed && (!claimedByOther || isSuper);
+        var lockReadonly = claimedByOther && !isSuper;
+
         var msgsHTML = messages.length === 0
             ? '<div class="cnc-admin-detail-empty">Sin mensajes en esta conversación.</div>'
             : messages.map(function (m) {
@@ -623,6 +630,35 @@
             ? '<span class="cnc-admin-radicado">' + escTxt(chat.radicado) + '</span>'
             : '';
 
+        // §23 FASE 3 — Banner de claim (solo si OTRO asesor tiene el lock)
+        var claimedBanner = '';
+        if (claimedByOther) {
+            var claimedTimeAgo = chat.claimedAt ? timeAgo(chat.claimedAt) : '';
+            claimedBanner =
+                '<div class="cnc-admin-claimed-banner' + (isSuper ? ' cnc-admin-claimed-banner--override' : '') + '">' +
+                    '<i data-lucide="' + (isSuper ? 'alert-triangle' : 'lock') + '" class="cnc-admin-claimed-icon"></i>' +
+                    '<div class="cnc-admin-claimed-info">' +
+                        '<div class="cnc-admin-claimed-title">' +
+                            (isSuper
+                                ? '⚠️ ' + escTxt(chat.claimedByName || 'Otro asesor') + ' está atendiendo este chat'
+                                : '🔒 Este chat lo está atendiendo ' + escTxt(chat.claimedByName || 'otro asesor')
+                            ) +
+                        '</div>' +
+                        '<div class="cnc-admin-claimed-sub">' +
+                            (isSuper
+                                ? 'Si escribís acá vas a interrumpir su atención. Mejor liberá el lock o reasigná.'
+                                : 'Solo el asesor que tomó el chat puede responder. Esperá a que termine o pedí a un super_admin liberarlo.'
+                            ) +
+                            (claimedTimeAgo ? ' · Tomado ' + claimedTimeAgo : '') +
+                        '</div>' +
+                    '</div>' +
+                    (isSuper ?
+                        '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminReleaseClaim" data-tooltip="Liberar lock (solo super_admin)">' +
+                            '<i data-lucide="unlock"></i> Liberar' +
+                        '</button>' : '') +
+                '</div>';
+        }
+
         detailEl.innerHTML =
             '<div class="cnc-admin-detail-head">' +
                 '<div class="cnc-admin-detail-info">' +
@@ -647,8 +683,9 @@
                 '</div>' +
             '</div>' +
             closedBanner +
+            claimedBanner +
             '<div class="cnc-admin-detail-messages" id="cncAdminMessages">' + msgsHTML + '</div>' +
-            (isClosed ? '' :
+            (canWrite ?
                 '<div class="cnc-smart-suggestions" id="cncSmartSuggestions" style="display:none;"></div>' +
                 '<div class="cnc-admin-detail-quick-replies">' +
                     '<button class="cnc-quick-reply" data-text="Hola, soy [tu nombre], asesor de Altorra. ¿En qué te puedo ayudar?">👋 Saludo</button>' +
@@ -656,12 +693,18 @@
                     '<button class="cnc-quick-reply" data-text="¿Te gustaría agendar una visita para ver el carro? Tenemos disponibilidad esta semana.">📅 Agendar</button>' +
                     '<button class="cnc-quick-reply" data-text="Listo, te paso a WhatsApp para continuar la conversación.">📲 A WhatsApp</button>' +
                 '</div>'
+                : ''
             ) +
-            '<div class="cnc-admin-detail-input-wrap' + (isClosed ? ' cnc-admin-detail-input-wrap--closed' : '') + '">' +
+            '<div class="cnc-admin-detail-input-wrap' +
+                (isClosed ? ' cnc-admin-detail-input-wrap--closed' : '') +
+                (lockReadonly ? ' cnc-admin-detail-input-wrap--locked' : '') + '">' +
                 '<input type="text" class="form-input cnc-admin-detail-input" id="cncAdminReply" ' +
-                    (isClosed ? 'disabled placeholder="🔒 Conversación cerrada — solo lectura"' : 'placeholder="Responder como asesor…"') +
+                    (isClosed ? 'disabled placeholder="🔒 Conversación cerrada — solo lectura"'
+                              : lockReadonly ? 'disabled placeholder="🔒 Atendido por ' + escTxt(chat.claimedByName || 'otro asesor') + '"'
+                                             : 'placeholder="Responder como asesor…"') +
                     ' autocomplete="off">' +
-                '<button class="alt-btn alt-btn--primary" id="cncAdminSend"' + (isClosed ? ' disabled' : '') + '>Enviar</button>' +
+                '<button class="alt-btn alt-btn--primary" id="cncAdminSend"' +
+                    (canWrite ? '' : ' disabled') + '>Enviar</button>' +
             '</div>';
 
         // Auto-scroll al final
@@ -675,11 +718,120 @@
         renderSmartSuggestions(chat, messages);
     }
 
+    /**
+     * §23 FASE 3 — claimChat: adquiere el lock del chat con Firestore
+     * Transaction (read-then-write atómico). Si dos asesores hacen click
+     * en "Tomar chat" en el mismo milisegundo, solo UNO adquiere el lock.
+     * El segundo recibe ConflictError con el nombre del que ganó.
+     *
+     * Returns: Promise que resuelve {success:true, claimedByName} o
+     * rejecta con {code:'already-claimed', claimedByName} | {code:'closed'}
+     */
+    function claimChat(sessionId) {
+        if (!window.db || !window.auth || !window.auth.currentUser) {
+            return Promise.reject(new Error('not-authenticated'));
+        }
+        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) {
+            return Promise.reject(new Error('not-authorized'));
+        }
+        var ref = window.db.collection('conciergeChats').doc(sessionId);
+        var currentUid = window.auth.currentUser.uid;
+        var currentName = (AP.currentUserProfile && AP.currentUserProfile.nombre) || 'Asesor';
+
+        return window.db.runTransaction(function (tx) {
+            return tx.get(ref).then(function (snap) {
+                if (!snap.exists) {
+                    return Promise.reject({ code: 'chat-not-found' });
+                }
+                var data = snap.data();
+                if (data.status === 'closed') {
+                    return Promise.reject({ code: 'chat-closed' });
+                }
+                if (data.claimedBy && data.claimedBy !== currentUid) {
+                    return Promise.reject({
+                        code: 'already-claimed',
+                        claimedByName: data.claimedByName || 'Otro asesor',
+                        claimedByUid: data.claimedBy
+                    });
+                }
+                tx.update(ref, {
+                    claimedBy: currentUid,
+                    claimedByName: currentName,
+                    claimedAt: new Date().toISOString(),
+                    mode: 'live',
+                    // Compat con CRM legacy que usa assignedTo
+                    assignedTo: currentUid,
+                    assignedToName: currentName
+                });
+                return { success: true, claimedByName: currentName };
+            });
+        });
+    }
+
+    /**
+     * §23 FASE 3 — releaseClaim (solo super_admin override).
+     * Libera el claim para que otro asesor pueda tomar el chat.
+     */
+    function releaseClaim(sessionId) {
+        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+            if (AP.toast) AP.toast('Solo super_admin puede liberar claims', 'error');
+            return Promise.reject(new Error('not-authorized'));
+        }
+        var ref = window.db.collection('conciergeChats').doc(sessionId);
+        return ref.update({
+            claimedBy: null,
+            claimedByName: null,
+            claimReleasedBy: window.auth.currentUser.uid,
+            claimReleasedAt: new Date().toISOString()
+        }).then(function () {
+            if (AP.toast) AP.toast('Lock liberado — otro asesor ya puede tomar el chat', 'success');
+        }).catch(function (err) {
+            if (AP.toast) AP.toast('No se pudo liberar: ' + err.message, 'error');
+        });
+    }
+
     function sendAsesorMessage() {
         var input = $('cncAdminReply');
         if (!input || !_activeSessionId || !window.db) return;
         var text = input.value.trim();
         if (!text) return;
+
+        // §23 FASE 3 — auto-claim al primer mensaje del asesor.
+        // Si el chat NO tiene claimedBy aún, lo adquirimos antes de enviar.
+        // Si otro asesor ya lo tomó, esto fallará con 'already-claimed' y
+        // mostramos toast informativo + bloqueamos el input.
+        var chat = _chats.find(function (c) { return c._docId === _activeSessionId; });
+        var needsClaim = chat && !chat.claimedBy;
+        var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : null;
+        var alreadyClaimedByOther = chat && chat.claimedBy && chat.claimedBy !== currentUid;
+        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
+
+        if (alreadyClaimedByOther && !isSuper) {
+            if (AP.toast) AP.toast('Este chat lo está atendiendo ' + (chat.claimedByName || 'otro asesor'), 'warning');
+            return;
+        }
+
+        var sendNow = function () {
+            _sendAsesorMessageInternal(input, text);
+        };
+
+        if (needsClaim) {
+            claimChat(_activeSessionId).then(sendNow).catch(function (err) {
+                if (err && err.code === 'already-claimed') {
+                    if (AP.toast) AP.toast('Daniel u otro asesor tomó este chat hace un momento. ' + (err.claimedByName || ''), 'warning');
+                } else if (err && err.code === 'chat-closed') {
+                    if (AP.toast) AP.toast('Este chat ya está cerrado', 'error');
+                } else {
+                    if (AP.toast) AP.toast('No se pudo enviar: ' + (err.message || err.code || 'error'), 'error');
+                }
+            });
+            return;
+        }
+
+        sendNow();
+    }
+
+    function _sendAsesorMessageInternal(input, text) {
         input.value = '';
         var msg = {
             from: 'asesor',
@@ -1073,6 +1225,11 @@
         }
         if (e.target && e.target.closest && e.target.closest('#cncAdminReopenChat')) {
             reopenChat();
+            return;
+        }
+        // §23 FASE 3 — Liberar lock (solo super_admin)
+        if (e.target && e.target.closest && e.target.closest('#cncAdminReleaseClaim')) {
+            if (_activeSessionId) releaseClaim(_activeSessionId);
             return;
         }
         if (e.target && e.target.closest && e.target.closest('#cncAdminSummarize')) {

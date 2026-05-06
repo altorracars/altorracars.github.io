@@ -7156,3 +7156,59 @@ body.sidebar-collapsed .sidebar-collapse-btn i {
     padding: 6px 14px;
     border-radius: 12px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   §23 FASE 3 — Locks (Claiming) banner
+   Cuando OTRO asesor tiene el chat tomado, mostramos un banner que
+   bloquea visualmente la posibilidad de responder. Para super_admin
+   el banner es ámbar (override permitido), para editor es gris (lock).
+   ═══════════════════════════════════════════════════════════════ */
+.cnc-admin-claimed-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(120, 130, 150, 0.10), rgba(120, 130, 150, 0.04));
+    border: 1px solid rgba(120, 130, 150, 0.28);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 10px 14px 4px 14px;
+}
+.cnc-admin-claimed-banner--override {
+    background: linear-gradient(135deg, rgba(245, 200, 90, 0.12), rgba(245, 200, 90, 0.04));
+    border-color: rgba(245, 200, 90, 0.42);
+}
+.cnc-admin-claimed-icon {
+    color: rgba(180, 190, 210, 0.85);
+    flex-shrink: 0;
+}
+.cnc-admin-claimed-banner--override .cnc-admin-claimed-icon {
+    color: rgba(245, 200, 90, 0.95);
+}
+.cnc-admin-claimed-icon [data-lucide] {
+    width: 22px;
+    height: 22px;
+}
+.cnc-admin-claimed-info {
+    flex: 1;
+    min-width: 0;
+}
+.cnc-admin-claimed-title {
+    color: var(--text-primary);
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.cnc-admin-claimed-sub {
+    color: var(--text-tertiary);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+.cnc-admin-detail-input-wrap--locked {
+    opacity: 0.5;
+    pointer-events: none;
+}
+.cnc-admin-detail-input-wrap--locked .cnc-admin-detail-input,
+.cnc-admin-detail-input-wrap--locked .alt-btn {
+    cursor: not-allowed !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+}

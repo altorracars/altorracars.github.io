@@ -377,10 +377,25 @@ service cloud.firestore {
         request.resource.data.userId == null ||
         request.resource.data.userId == request.auth.uid
       );
-      allow update: if isEditorOrAbove() ||
-        (request.auth != null && (
-          resource.data.userId == request.auth.uid ||
-          resource.data.userId == null
+      // §23 FASE 3 — Locks (Claiming).
+      // Update permitido si:
+      //   1. Es super_admin (override total: liberación de lock, reasignación)
+      //   2. El claim no existe (claimedBy == null) → cualquier editor+ puede tomar
+      //   3. El que actualiza ES el claimer original (claimedBy == auth.uid)
+      //   4. El cliente dueño actualiza su propio chat (campos limitados via diff
+      //      keys — pero permisivo aquí, la subcolección messages ya tiene su
+      //      propio guard de status='closed')
+      //
+      // Esto previene que un asesor B pise el lock de A: si A claimed el chat,
+      // B's update fallará con permission-denied a menos que sea super_admin.
+      allow update: if isSuperAdmin()
+        || (isEditorOrAbove() && (
+            resource.data.claimedBy == null
+            || resource.data.claimedBy == request.auth.uid
+        ))
+        || (request.auth != null && (
+            resource.data.userId == request.auth.uid
+            || resource.data.userId == null
         ));
       allow delete: if isSuperAdmin();
 
@@ -411,7 +426,26 @@ service cloud.firestore {
           )
           && (
             request.resource.data.from in ['user', 'bot']
-            || (request.resource.data.from == 'asesor' && isEditorOrAbove())
+            // §23 FASE 3 — Solo el CLAIMER (o super_admin override) puede
+            // escribir mensajes 'asesor'. Esto previene colisión donde
+            // dos asesores responden al mismo cliente.
+            //
+            // Lógica:
+            //   a) Si el chat NO tiene claim (claimedBy null) → cualquier
+            //      editor+ puede escribir (compatibilidad con flujo viejo
+            //      pre-claiming + casos donde el asesor escribe ANTES de
+            //      claim explícito; el claim se asigna server-side
+            //      automáticamente al primer mensaje del asesor)
+            //   b) Si tiene claim → solo claimedBy == auth.uid
+            //   c) super_admin siempre puede (override de auditoría)
+            || (request.resource.data.from == 'asesor' && (
+                isSuperAdmin()
+                || (isEditorOrAbove() && (
+                    !('claimedBy' in get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data)
+                    || get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.claimedBy == null
+                    || get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.claimedBy == request.auth.uid
+                ))
+            ))
             || (request.resource.data.from == 'system' && isEditorOrAbove())
           );
         // Mensajes son inmutables (historial limpio)

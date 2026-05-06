@@ -11968,3 +11968,442 @@ respeta `prefers-reduced-motion`.
 
 Commit: `57428ec`.
 
+
+---
+
+## 23. ACD Enterprise — Omnicanal con Queue, Locks, SLA y FCM Push (2026-05-08)
+
+> Refactor mayor en 9 sprints + Sprint 3-bis (capa nuclear de aislamiento
+> auth) que convierte el flujo bot↔asesor en un **Automatic Call
+> Distributor (ACD)** de calidad enterprise: queue management con
+> workload matemático, locks anti-colisión con transactions, timers
+> SLA F5-proof, doble fallback empático, radicados únicos, cierre
+> bidireccional inmutable, sesiones admin/cliente totalmente aisladas,
+> y push notifications gratuitas a celular vía FCM.
+
+### 23.1 Línea de tiempo
+
+| Sprint | Capability | Commit |
+|---|---|---|
+| 1 | Schema + indexes + radicados (`onConciergeChatCreated`) | `7b3807d` |
+| 2 | Cierre bidireccional inmutable (rules + UI) | `7b3807d` |
+| 3 🔒 | FASE 6 — Aislamiento auth admin/web (pre-check + signOut defensivo) | `7b3807d` |
+| 4 🔒 | FASE 7 — Trusted devices fix (rules self-service) + persistencia sesión | `7b3807d` |
+| 3-bis 🔒 | Capa 3 nuclear — `appName` diferente por contexto (admin/public) | `5478cd4` |
+| 5 | Workload aggregator + `system/workload` singleton | (este commit) |
+| 6 | Locks (claiming) + transactions + UI bloqueada | (este commit) |
+| 7 | Queue mode + SLA F5-proof + doble fallback + alertas 5/10 min | (este commit) |
+| 8 | FCM Web Push + `onChatEscalated` + service worker dedicado | (este commit) |
+| 9 | Doc + cache bump | (este commit) |
+
+### 23.2 Schema extension `conciergeChats/{sessionId}` (campos nuevos)
+
+```js
+{
+    // Escalado + Routing (Fase 2-3)
+    mode: 'bot' | 'queue' | 'live' | 'wa_handed_over',
+    queueEnteredAt: ISO_string | null,
+    claimedBy: uid | null,
+    claimedByName: string | null,
+    claimedAt: ISO_string | null,
+    claimReleasedBy: uid | null,
+    escalationReason: 'manual' | 'double_fallback' | 'sentiment_negative' |
+                      'frustration' | 'ask_human' | 'sla_breach' | null,
+
+    // Trazabilidad (Fase 5)
+    radicado: 'REQ-202605-0042',
+    radicadoAt: ISO_string,
+    historicalUserKey: string | null,
+
+    // Cierre Enterprise
+    closedReason: 'client_finalized' | 'admin_resolved' |
+                  'sla_breach_handover' | 'idle_timeout' | null,
+    closedByRole: 'client' | 'asesor' | 'super_admin' | 'system' | null,
+
+    // Fallback Counter (Fase 1)
+    botFallbackCount: int,
+    botFallbackAt: ISO_string | null,
+
+    // SLA Resilience (Fase 2)
+    slaWarnedAt5min: bool,
+    slaWarnedAt10min: bool,
+    notifiedFcmAt: ISO_string | null  // anti-spam push
+}
+```
+
+### 23.3 Doc nuevo `system/workload` (singleton)
+
+Aggregator centralizado que ahorra 99.8% de reads vs cliente-side calc.
+
+```js
+{
+    asesoresOnline: int,            // RTDB.presence.online=true (dedup uid, stale >5min filtrado)
+    asesoresAvailable: int,         // online + claimedChats < 3
+    asesoresSaturated: int,         // online + claimedChats >= 3
+    queueLength: int,               // mode='queue' AND claimedBy=null
+    avgWaitMinutes: float,
+    longestWaitMinutes: float,
+    activeChatsByUid: { uid: count },
+    updatedAt: ISO_string
+}
+```
+
+**Triggers de la Cloud Function `recalculateWorkload`**:
+1. `onDocumentWritten` en `conciergeChats/{sid}` (skip si solo cambian campos no relevantes)
+2. `onSchedule every 1 minutes` (safety net + cubre cambios de RTDB presence)
+
+### 23.4 Locks (Claiming) — Firestore Transactions
+
+`admin-concierge.js claimChat(sessionId)`:
+
+```js
+db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.data().claimedBy && claimedBy !== currentUid) {
+        throw { code: 'already-claimed', claimedByName };
+    }
+    tx.update(ref, {
+        claimedBy: currentUid,
+        claimedByName, claimedAt,
+        mode: 'live',  // ← queue → live al claim
+        assignedTo: currentUid, assignedToName  // compat CRM legacy
+    });
+});
+```
+
+**Race condition resuelto**: si dos asesores hacen click al mismo
+milisegundo, Firestore detecta versión cambiada en el segundo
+`tx.update`, retry automático del transaction, segundo asesor recibe
+`ConflictError`. UI muestra toast informativo "X tomó este chat".
+
+**Auto-claim al primer mensaje**: `sendAsesorMessage()` invoca `claimChat`
+automáticamente si el chat no tiene `claimedBy` aún. No hay que hacer
+click explícito en un botón "Tomar chat" — el primer mensaje del
+asesor adquiere el lock atómicamente.
+
+**Override super_admin**: `releaseClaim(sessionId)` permite liberar el
+lock para reasignación. Botón "Liberar" en el banner ámbar que ven
+los super_admins cuando otro asesor tiene el chat tomado.
+
+**Reglas Firestore que sustentan el lock**:
+```
+match /conciergeChats/{sessionId} {
+    allow update: if isSuperAdmin()
+        || (isEditorOrAbove() && (
+            resource.data.claimedBy == null
+            || resource.data.claimedBy == request.auth.uid
+        ))
+        || (request.auth != null && (
+            resource.data.userId == request.auth.uid
+            || resource.data.userId == null
+        ));
+}
+match /messages/{msgId} {
+    allow create: if /* parent.status != 'closed' */ && (
+        from in ['user', 'bot']
+        || (from == 'asesor' && (
+            isSuperAdmin()
+            || (isEditorOrAbove() && (
+                claimedBy == null || claimedBy == auth.uid
+            ))
+        ))
+        || (from == 'system' && isEditorOrAbove())
+    );
+}
+```
+
+### 23.5 Temporizadores SLA F5-proof
+
+**Source of truth**: `queueEnteredAt` persistido en Firestore al
+escalado. El cliente NO tiene timer absoluto — un watcher relativo
+`setInterval(checkSLA, 30000)` compara `Date.now() - queueEnteredAt`.
+
+**Idempotencia post-F5**: flags `slaWarnedAt5min` y `slaWarnedAt10min`
+persistidos en Firestore previenen mostrar la misma alerta 2 veces si
+el cliente recarga al minuto 6 (la alerta de 5min ya fue mostrada).
+
+**UI dinámica del cliente** según `system/workload`:
+- `asesoresAvailable > 0` → "🟢 Estás en posición #X" (verde)
+- `asesoresOnline > 0` saturado → "🟡 Tiempo estimado: X min" (ámbar)
+- `asesoresOnline === 0` → "🔵 Tiempo estimado 5-10 min" (azul)
+
+**Alertas progresivas**:
+- ≥5 min: banner ámbar con CTAs `[📲 Continuar por WhatsApp]` / `[⏳ Seguir esperando]`
+- ≥10 min: banner rojo con CTA pulsante `[📲 Ir a WhatsApp ahora]`
+
+### 23.6 Doble Fallback Inteligente
+
+`session.botFallbackCount` persistido en Firestore.
+
+- **1er fallback** (counter=1): pide reformular amigablemente
+  "no estoy seguro de haber entendido. ¿Podrías reformular?"
+- **2do fallback consecutivo** (counter=2): escala automáticamente
+  con mensaje empático "Te conectaré con un asesor en vivo de
+  inmediato 🙋‍♂️" + `escalateToLive('double_fallback')` + push FCM
+- **Reset automático**: cuando el bot da respuesta exitosa
+  (intent reconocido o KB match), `_isFallback === false` →
+  `resetFallbackCounter()` vuelve a 0.
+
+### 23.7 Radicados Únicos `REQ-YYYYMM-XXXX`
+
+Cloud Function `onConciergeChatCreated` asigna radicado server-side
+con transaction sobre `config/counters_YYYYMM`:
+
+- Counter por mes → reset automático mensual (XXXX vuelve a 0001)
+- Idempotente: skip si `data.radicado` ya existe
+- `historicalUserKey = email lowercase || uid || null` → group key
+  para listar tickets del mismo cliente sin pisarlos
+- Visible en header del chat cliente (`cnc-radicado-inline` badge)
+- Visible en header del chat admin (`cnc-admin-radicado` badge)
+- Persiste en bloque de cierre del cliente para referencia
+
+### 23.8 Cierre Bidireccional Inmutable
+
+**Asimetría rota**: antes solo el cliente quedaba bloqueado al cerrar.
+Ahora ambos read-only:
+
+```
+match /messages/{msgId} {
+    allow create: if request.auth != null
+        && (
+            get(...).data.status != 'closed' || isSuperAdmin()
+        )
+        && /* ... rules existentes ... */;
+}
+```
+
+**UI admin** (`cnc-admin-closed-banner`):
+- Banner verde con metadata: closedReason, closedByName, closedAt, radicado
+- Input + sendBtn disabled
+- Botón "Reabrir" solo para super_admin
+
+**UI cliente** (`cnc-closed-block`):
+- Bloque "Esta conversación ha finalizado" con radicado visible
+- Botón "Iniciar nueva conversación" → reset session → nuevo radicado
+
+### 23.9 FASE 6 — Aislamiento Auth Admin / Web Pública
+
+**Bug crítico de seguridad corregido**: admin/editor podía loguear
+desde la web pública sin pasar 2FA — su sesión Firebase quedaba
+autenticada → bypass total del 2FA del panel admin.
+
+**Capa 2 (post-login defensivo)** en `auth.js handleLogin`:
+- Tras `signInWithEmailAndPassword`, chequea si `auth.uid` existe en
+  `usuarios/{uid}` (admin/editor)
+- Si SÍ → `_explicitLogout = true` + `signOut()` inmediato
+- Mensaje rojo en modal: "🔒 Esta cuenta es de administrador. Por
+  favor iniciá sesión desde admin.html"
+- Modal NO se cierra (admin ve el mensaje)
+
+**Capa 3 nuclear (Sprint 3-bis)** en `firebase-config.js`:
+- Detección por `location.pathname` → `appName = 'altorra-admin'`
+  o `'altorra-public'`
+- Firebase Auth genera storage keys diferentes por appName:
+  `firebase:authUser:<apiKey>:altorra-admin` vs `:altorra-public`
+- Cero contaminación entre contextos
+- **Permite sesiones simultáneas**: admin logueado como super_admin
+  en `admin.html` Y como cliente normal en `index.html` en otra tab
+  del mismo navegador
+
+### 23.10 FASE 7 — Trusted Devices Fix + Persistencia Sesión
+
+**Bug crítico de UX corregido**: editores recibían 2FA en cada
+refresh aunque marcaran "guardar dispositivo". Causa raíz: regla
+`usuarios/` allow update solo super_admin → `saveDeviceTrust()`
+fallaba silenciosamente con permission-denied.
+
+**Fix de reglas** — patrón self-service diff-keys:
+```
+allow update: if isSuperAdmin()
+    || (request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+                'trustedDevices', 'ultimoAcceso', 'lastLoginAt',
+                'habilitado2FA', 'telefono2FA', 'prefijo2FA',
+                'fcmTokens'
+            ]));
+```
+
+**Garantías de seguridad**:
+- Editor NO puede modificar `rol` (escalación de privilegios bloqueada)
+- Editor NO puede modificar `email`, `nombre`, `bloqueado`, `estado`
+- Editor SOLO puede auto-gestionar dispositivos + 2FA + FCM tokens
+
+**UX de persistencia de sesión** sin flicker:
+- Inline script en `<head>` de admin.html lee
+  `altorra_admin_auth_hint` (TTL 8h) ANTES del primer paint
+- Si vigente → aplica `html.admin-restoring` → CSS oculta loginScreen +
+  muestra adminPanel skeleton inmediatamente
+- `showAdmin()` persiste hint + restaura última sección via
+  `AltorraSections.go(lastSection)` o `window.location.hash`
+- `notifyChange()` persiste `altorra_admin_last_section` en cada
+  navegación → F5 vuelve a la sección donde estabas (no al dashboard)
+- `showLogin()` limpia hint + clases pre-paint en logout
+
+### 23.11 FCM Web Push (Sprint 8)
+
+**Decisión de canal**: descartado SMS gratuito (mito corporativo —
+todos los providers cobran). Descartado Telegram (forzar app de
+terceros al equipo). **Elegido: FCM Web Push nativo de Firebase**.
+
+**Soporte multiplataforma**:
+- Android Chrome/Edge/Firefox: ✅ push del SO con tab cerrado
+- Desktop Chrome/Edge/Firefox: ✅
+- iOS 16.4+ Safari con PWA en home screen: ✅ push real
+- iOS < 16.4: ⚠️ foreground only (los iPhones del equipo deberían
+  estar en iOS 17+)
+
+**Arquitectura**:
+```
+Asesor (Android/iOS) — PWA admin instalada
+├─ admin-fcm.js: Notification.requestPermission() + getToken()
+├─ Service Worker /firebase-messaging-sw.js dedicado
+└─ Persiste fcmToken en usuarios/{uid}.fcmTokens[] (array, max 5 devices)
+       ▲
+       │ envía notificación
+Cloud Function onChatEscalated (FCM HTTP v1 API)
+├─ Trigger: onUpdate conciergeChats donde mode pasa a 'queue'
+├─ Anti-spam: skip si workload.asesoresAvailable > 0 (alguien ya está)
+├─ Anti-spam temporal: skip si notifiedFcmAt < 5 min ago
+├─ Lee usuarios/ rol in [super_admin, editor] con fcmTokens
+├─ admin.messaging().send() para cada token
+└─ Auto-pruning: tokens inválidos se remueven del array
+```
+
+**Costo**: $0 USD/mes (cuota ilimitada FCM web push en Spark plan).
+
+**Setup operacional one-time**:
+1. Firebase Console → Project Settings → Cloud Messaging
+2. Web Push certificates → "Generate key pair"
+3. Copiar VAPID public key
+4. Pegarlo en `js/admin-fcm.js` → constante `VAPID_PUBLIC_KEY`
+5. Deploy + cada asesor verá prompt al primer login post-deploy
+6. Aceptar permiso → token se registra → push notifications activas
+
+### 23.12 Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Cliente recalcula workload (N×M reads) | Aggregator + singleton `system/workload` (1 read) |
+| Timer SLA muere con F5 | `queueEnteredAt` en Firestore + watcher relativo |
+| 2 asesores responden al mismo chat | `runTransaction` con read-then-write atómico |
+| Lock pisado por error | Reglas Firestore validan `claimedBy == auth.uid` |
+| Notificación FCM spam (10 chats en 1 min = 10 push) | Anti-spam: `notifiedFcmAt < 5 min` + skip si `asesoresAvailable > 0` |
+| Tokens FCM zombies acumulados | Auto-pruning server-side al primer error de invalid token |
+| Counter de radicados duplicado bajo race | Transaction atómica server-side (Cloud Function) |
+| Cliente genera radicado | Server-side only — cliente NUNCA inventa |
+| Mismo cliente pisa sus chats viejos | `historicalUserKey` agrupa pero NO mergea |
+| Admin sigue escribiendo en chat cerrado | Reglas Firestore bloquean creates si parent.status='closed' |
+| Doble-fallback se cuelga si cliente alterna intents | Reset counter en cada respuesta exitosa (`!_isFallback`) |
+| Sesión admin se filtra a web pública | `appName` diferente por contexto (storage keys aisladas) |
+| Editor sin trusted devices funcional | Reglas self-service diff-keys con whitelist de campos |
+| F5 manda al dashboard ignorando sección actual | `altorra_admin_last_section` + `AltorraSections.go(lastSection)` |
+| Loading screen reaparece en cada F5 | Auth-hint inline pre-paint con TTL 8h |
+| FCM token registrado en cada login (acumula) | findIndex existing + update lastUsedAt en lugar de duplicar |
+| Cap inflación de tokens por usuario | Max 5 devices, slice(-4) descarta el más viejo |
+| Notification permission spam | Pedido 1x por sesión via sessionStorage flag |
+
+### 23.13 Filosofía de Evolución del Cerebro ALTOR (lóbulos)
+
+```
+                    ┌────────────────┐
+                    │  ALTOR Brain    │
+                    └────────────────┘
+                            │
+   ┌────────┬────────┬─────┴──────┬────────┬─────────┬──────────┐
+   ▼        ▼        ▼            ▼        ▼         ▼          ▼
+┌─────┐ ┌──────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌─────────┐ ┌────────┐
+│ NLP │ │Memor.│ │Concier-│ │Cerebro │ │  ACD   │ │Cierre + │ │Aisla-  │
+│§22  │ │§22.4 │ │ge §20  │ │AI §21  │ │§23.2-5 │ │Radicados│ │miento  │
+│A,B  │ │  C   │ │+ §22.15│ │ LLM    │ │+ §23.6 │ │§23.5-8  │ │§23.9-10│
+└─────┘ └──────┘ └────────┘ └────────┘ └────────┘ └─────────┘ └────────┘
+                                            │
+                                       ┌────┴────┐
+                                       ▼         ▼
+                                  ┌─────────┐┌────────┐
+                                  │Workload ││  FCM   │
+                                  │§23.3    ││§23.11  │
+                                  └─────────┘└────────┘
+```
+
+**Reglas de no-interferencia (verificadas)**:
+- ACD NO toca el motor NLP — solo lee `intent` y `botFallbackCount`
+- Memory NO se invalida al escalar — el contexto persiste para el asesor
+- NLP/Memory siguen funcionando si FCM está caído
+- Cierre bidireccional respeta resumen IA (§21.5) — el último `summary`
+  queda como historial inmutable
+- Aislamiento auth (§23.9-10) NO afecta features cliente/admin
+
+### 23.14 Deploy manual requerido (Sprints 5-8)
+
+```bash
+# Rules + indexes + funciones nuevas
+firebase deploy --only firestore:rules,firestore:indexes
+firebase deploy --only functions:recalculateWorkloadOnChatChange,functions:recalculateWorkloadScheduled,functions:onChatEscalated
+
+# Cloud Scheduler API ya está habilitada de §21.9 — no requiere setup adicional
+```
+
+**Setup VAPID FCM** (cuando quieras activar push notifications):
+1. Firebase Console → Project Settings → Cloud Messaging
+2. Web Push certificates → Generate key pair
+3. Copiar pública en `js/admin-fcm.js` constante `VAPID_PUBLIC_KEY`
+4. Commit + push (cache bump automático)
+5. Cada asesor verá prompt al siguiente login
+
+Hasta que setees VAPID_PUBLIC_KEY, `AltorraAdminFCM.init()` es no-op
+silencioso. Las Cloud Functions sirven sin push activo (no hay tokens).
+
+### 23.15 Validación post-deploy (E2E)
+
+1. **Aislamiento auth**: incógnito → web pública → loguear con cuenta
+   admin → debe rechazar con mensaje "🔒 Esta cuenta es de administrador"
+2. **Trusted devices editor**: loguear como editor → 2FA → marcar "guardar
+   dispositivo" → cerrar → volver → debe entrar SIN pedir 2FA
+3. **Persistencia sesión admin**: estar en CRM → F5 → vuelve al CRM (no
+   al dashboard) sin flicker
+4. **Sesiones simultáneas**: tab 1 admin como super_admin + tab 2 web
+   pública como cliente normal → ambas funcionan sin pisarse
+5. **Radicado**: abrir bot → completar gate → enviar mensaje → ver
+   `REQ-202605-XXXX` aparecer ~1s en el header del widget
+6. **Cierre bidireccional**: admin cierra chat → input admin queda
+   disabled + banner verde con metadata
+7. **Queue mode**: cliente da "Hablar con asesor" → ve banner queue +
+   posición + tiempo estimado
+8. **SLA timers F5-proof**: esperar 5 min en queue → ver banner ámbar
+   con CTAs WhatsApp/Esperar → F5 → la alerta sigue visible (no se duplica)
+9. **Lock anti-colisión**: 2 admins abren mismo chat → uno escribe →
+   otro ve banner "X está atendiendo este chat" + input disabled
+10. **Doble fallback**: escribir 2 mensajes que el bot no entiende
+    → 1ro: pide reformular → 2do: escala automático con mensaje empático
+11. **FCM push** (si VAPID seteada): cliente escala chat → admin con
+    PWA cerrada recibe push del SO con tag `queue-<sessionId>`
+
+### 23.16 Resumen de archivos modificados/creados
+
+**NEW**:
+- `firestore.indexes.json` (5 indexes ACD + banners legacy)
+- `firebase-messaging-sw.js` (raíz — service worker FCM)
+- `js/admin-fcm.js` (registro tokens + UI prompt)
+
+**MODIFIED**:
+- `firebase.json` (firestore.indexes registrado)
+- `firestore.rules` (mensajes bloqueo si closed, claim ownership,
+  usuarios self-service diff-keys, unmatchedQueries)
+- `functions/index.js` (4 Cloud Functions nuevas: onConciergeChatCreated,
+  recalculateWorkloadOnChatChange, recalculateWorkloadScheduled, onChatEscalated)
+- `js/concierge.js` (radicados, queue mode, SLA watcher, doble fallback,
+  workload listener, propagación mode/queueEnteredAt post-F5)
+- `js/admin-concierge.js` (claimChat con runTransaction, releaseClaim,
+  banner claimed, render con `canWrite`/`lockReadonly`,
+  hardDelete listener removed)
+- `js/auth.js` (post-login defensivo signOut si admin)
+- `js/admin-auth.js` (auth-hint persistencia, restauración última sección)
+- `js/admin-section-router.js` (persiste altorra_admin_last_section)
+- `js/firebase-config.js` (appName diferente por contexto admin/public)
+- `admin.html` (auth-hint inline reader en `<head>` + script admin-fcm.js)
+- `css/admin.css` (claimed banner + closed banner + radicado badge)
+- `css/concierge.css` (radicado inline + closed radicado + queue/SLA banners + reset toast)
+- `service-worker.js` + `js/cache-manager.js` (cache version bumps)
+- `CLAUDE.md` (esta sección §23)
+

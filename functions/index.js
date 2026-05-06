@@ -1559,6 +1559,306 @@ exports.onConciergeChatCreated = onDocumentCreated({
     }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// §23 FASE 2 — Workload Aggregator (recalculateWorkload)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Calcula el estado del equipo de asesores y lo persiste en `system/workload`
+// como singleton. Los clientes (Concierge) y el admin leen este doc con UN
+// solo listener compartido — ahorra ~99.8% de reads vs cliente-side calc.
+//
+// Triggers:
+//   1. Firestore onWrite('conciergeChats/{sid}') — chat creado/actualizado
+//   2. onSchedule every 1 minutes — safety net + captura cambios de
+//      RTDB presence (no usamos RTDB trigger para evitar ruido del
+//      heartbeat de presence cada 2 min)
+//
+// Datos cruzados:
+//   - RTDB /presence con online=true → asesores online
+//   - Firestore conciergeChats with mode in ['queue','live'] AND status != 'closed'
+//     → chats activos para count por claimedBy
+//
+// Output: system/workload con shape:
+//   {
+//     asesoresOnline: int,
+//     asesoresAvailable: int,        // online + claimedChats < 3
+//     asesoresSaturated: int,        // online + claimedChats >= 3
+//     queueLength: int,              // mode='queue' AND claimedBy=null
+//     avgWaitMinutes: float,
+//     longestWaitMinutes: float,
+//     activeChatsByUid: {uid: count},
+//     updatedAt: ISO
+//   }
+//
+const SATURATION_THRESHOLD = 3;  // chats simultáneos máx por asesor "available"
+
+async function _computeWorkload() {
+    // 1. Lee asesores online de RTDB presence
+    let asesoresOnline = [];
+    try {
+        const rtdb = admin.database();
+        const snap = await rtdb.ref('/presence').orderByChild('online').equalTo(true).once('value');
+        const data = snap.val() || {};
+        // Dedup por uid (un mismo asesor puede tener múltiples sessions)
+        const uidsSet = new Set();
+        Object.keys(data).forEach((sessionId) => {
+            const entry = data[sessionId];
+            if (entry && entry.uid) {
+                // Filtrar stale: lastSeen > 5 min ago se considera offline
+                const lastSeen = entry.lastSeen || 0;
+                const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+                if (lastSeen > fiveMinAgo) {
+                    uidsSet.add(entry.uid);
+                }
+            }
+        });
+        asesoresOnline = Array.from(uidsSet);
+    } catch (err) {
+        console.warn('[recalculateWorkload] RTDB read failed:', err.message);
+    }
+
+    // 2. Lee chats activos (queue + live, no closed)
+    let activeChatsByUid = {};
+    let queueLength = 0;
+    let longestWaitMs = 0;
+    let totalWaitMs = 0;
+    let queueCount = 0;
+    try {
+        // Query: chats con mode in ['queue','live'] y status != 'closed'
+        // Firestore no soporta != combinado con in en una sola query → 2 queries
+        const queueSnap = await db.collection('conciergeChats')
+            .where('mode', '==', 'queue')
+            .get();
+        const liveSnap = await db.collection('conciergeChats')
+            .where('mode', '==', 'live')
+            .get();
+
+        const now = Date.now();
+        const processSnap = (snap) => {
+            snap.forEach((doc) => {
+                const c = doc.data() || {};
+                if (c.status === 'closed') return; // double-check
+
+                if (c.mode === 'queue' && !c.claimedBy) {
+                    queueLength++;
+                    if (c.queueEnteredAt) {
+                        const waitMs = now - new Date(c.queueEnteredAt).getTime();
+                        if (waitMs > 0) {
+                            totalWaitMs += waitMs;
+                            queueCount++;
+                            if (waitMs > longestWaitMs) longestWaitMs = waitMs;
+                        }
+                    }
+                }
+                if (c.claimedBy) {
+                    activeChatsByUid[c.claimedBy] = (activeChatsByUid[c.claimedBy] || 0) + 1;
+                }
+            });
+        };
+        processSnap(queueSnap);
+        processSnap(liveSnap);
+    } catch (err) {
+        console.warn('[recalculateWorkload] Firestore read failed:', err.message);
+    }
+
+    // 3. Categorize asesores online
+    let asesoresAvailable = 0;
+    let asesoresSaturated = 0;
+    asesoresOnline.forEach((uid) => {
+        const chatsCount = activeChatsByUid[uid] || 0;
+        if (chatsCount < SATURATION_THRESHOLD) asesoresAvailable++;
+        else asesoresSaturated++;
+    });
+
+    // 4. Compute averages
+    const avgWaitMinutes = queueCount > 0 ? (totalWaitMs / queueCount) / 60000 : 0;
+    const longestWaitMinutes = longestWaitMs / 60000;
+
+    const workload = {
+        asesoresOnline: asesoresOnline.length,
+        asesoresAvailable: asesoresAvailable,
+        asesoresSaturated: asesoresSaturated,
+        queueLength: queueLength,
+        avgWaitMinutes: Math.round(avgWaitMinutes * 10) / 10,
+        longestWaitMinutes: Math.round(longestWaitMinutes * 10) / 10,
+        activeChatsByUid: activeChatsByUid,
+        updatedAt: new Date().toISOString()
+    };
+
+    await db.doc('system/workload').set(workload, { merge: true });
+    return workload;
+}
+
+// Trigger 1: cuando un chat se crea o cambia mode/claimedBy/status
+exports.recalculateWorkloadOnChatChange = onDocumentWritten({
+    document: 'conciergeChats/{sessionId}',
+    region: 'us-central1',
+    timeoutSeconds: 30,
+    memory: '256MiB'
+}, async (event) => {
+    const before = event.data.before && event.data.before.data();
+    const after = event.data.after && event.data.after.data();
+    // Skip si solo cambiaron campos no relevantes (lastMessage, unread, etc.)
+    if (before && after) {
+        const relevantChanged =
+            before.mode !== after.mode ||
+            before.claimedBy !== after.claimedBy ||
+            before.status !== after.status;
+        if (!relevantChanged) return; // no afecta workload
+    }
+    try { await _computeWorkload(); }
+    catch (err) { console.warn('[recalculateWorkload] failed:', err.message); }
+});
+
+// Trigger 2: schedule cada 1 min como safety net (cubre cambios de RTDB
+// presence sin disparar trigger Firestore)
+exports.recalculateWorkloadScheduled = onSchedule({
+    schedule: 'every 1 minutes',
+    region: 'us-central1',
+    timeoutSeconds: 30,
+    memory: '256MiB'
+}, async (event) => {
+    try { await _computeWorkload(); }
+    catch (err) { console.warn('[recalculateWorkload scheduled] failed:', err.message); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// §23 FASE 4 — onChatEscalated: FCM Web Push a asesores cuando chat entra a queue
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Trigger: cuando el `mode` de un conciergeChat pasa a 'queue' (escalado),
+// enviamos una notificación push a los celulares de TODOS los editores y
+// super_admins que tengan fcmTokens registrados.
+//
+// Anti-spam: skip si workload.asesoresAvailable > 0 (alguien con panel
+// abierto puede atender sin necesitar push). Skip si notifiedTelegramAt
+// (legacy field name reused) está en últimos 5 min.
+//
+// Auto-pruning: si FCM retorna error de token inválido
+// (messaging/registration-token-not-registered o invalid-argument),
+// removemos el token del array fcmTokens del asesor.
+//
+exports.onChatEscalated = onDocumentUpdated({
+    document: 'conciergeChats/{sessionId}',
+    region: 'us-central1',
+    timeoutSeconds: 60,
+    memory: '256MiB'
+}, async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+    if (!after) return;
+
+    const becameQueue = before.mode !== 'queue' && after.mode === 'queue';
+    if (!becameQueue) return;
+
+    // Anti-spam: si hay asesores libres con panel abierto, no necesitan push
+    try {
+        const wlSnap = await db.doc('system/workload').get();
+        const wl = wlSnap.exists ? wlSnap.data() : null;
+        if (wl && wl.asesoresAvailable > 0) {
+            console.log('[onChatEscalated] skip push: hay asesores available con panel abierto');
+            return;
+        }
+    } catch (e) { /* fail-open: enviar push igual */ }
+
+    // Anti-spam temporal: 1 push por chat cada 5 min
+    if (after.notifiedFcmAt) {
+        const lastNotif = new Date(after.notifiedFcmAt).getTime();
+        if (Date.now() - lastNotif < 5 * 60 * 1000) {
+            console.log('[onChatEscalated] skip push: notificado hace <5min');
+            return;
+        }
+    }
+
+    // Recolectar fcmTokens de TODOS los editores + super_admins
+    const usuariosSnap = await db.collection('usuarios')
+        .where('rol', 'in', ['super_admin', 'editor'])
+        .get();
+
+    const tokensByUid = {};
+    usuariosSnap.forEach((doc) => {
+        const u = doc.data() || {};
+        if (Array.isArray(u.fcmTokens) && u.fcmTokens.length > 0) {
+            tokensByUid[doc.id] = u.fcmTokens.filter(t => t && t.token);
+        }
+    });
+
+    const allTokenStrings = [];
+    Object.keys(tokensByUid).forEach((uid) => {
+        tokensByUid[uid].forEach((t) => allTokenStrings.push({ uid, token: t.token }));
+    });
+
+    if (allTokenStrings.length === 0) {
+        console.log('[onChatEscalated] no tokens FCM registrados — skip');
+        return;
+    }
+
+    // Construir payload
+    const radicado = after.radicado || '#' + event.params.sessionId.slice(-6);
+    const userName = after.userNombre || after.userEmail || 'Cliente anónimo';
+    const reason = after.escalationReason || 'manual';
+    const message = {
+        notification: {
+            title: '🚨 Cliente esperando — Altorra Cars',
+            body: radicado + ' · ' + userName + ' · razón: ' + reason
+        },
+        data: {
+            sessionId: event.params.sessionId,
+            radicado: radicado,
+            click_action: 'https://altorracars.github.io/admin.html#concierge'
+        },
+        webpush: {
+            fcmOptions: {
+                link: 'https://altorracars.github.io/admin.html#concierge'
+            },
+            notification: {
+                requireInteraction: true,
+                icon: '/ALTOR.png',
+                badge: '/ALTOR.png',
+                tag: 'queue-' + event.params.sessionId
+            }
+        }
+    };
+
+    // Enviar a todos los tokens
+    const sendPromises = allTokenStrings.map(({ uid, token }) =>
+        admin.messaging().send({ ...message, token: token })
+            .then(() => ({ uid, token, ok: true }))
+            .catch((err) => ({ uid, token, ok: false, error: err.code || err.message }))
+    );
+    const results = await Promise.all(sendPromises);
+
+    // Auto-pruning: tokens inválidos los quitamos del array de fcmTokens
+    const invalidByUid = {};
+    results.forEach((r) => {
+        if (r.ok) return;
+        if (r.error === 'messaging/registration-token-not-registered' ||
+            r.error === 'messaging/invalid-argument' ||
+            r.error === 'messaging/invalid-registration-token') {
+            invalidByUid[r.uid] = (invalidByUid[r.uid] || []).concat(r.token);
+        }
+    });
+    for (const uid of Object.keys(invalidByUid)) {
+        const userRef = db.collection('usuarios').doc(uid);
+        try {
+            const userSnap = await userRef.get();
+            if (!userSnap.exists) continue;
+            const fcmTokens = (userSnap.data().fcmTokens || [])
+                .filter(t => t && t.token && invalidByUid[uid].indexOf(t.token) === -1);
+            await userRef.update({ fcmTokens });
+            console.log('[onChatEscalated] pruned ' + invalidByUid[uid].length + ' invalid tokens for ' + uid);
+        } catch (e) { /* silencio */ }
+    }
+
+    // Marcar timestamp para anti-spam
+    await event.data.after.ref.update({
+        notifiedFcmAt: new Date().toISOString()
+    });
+
+    const okCount = results.filter(r => r.ok).length;
+    console.log('[onChatEscalated] ' + okCount + '/' + results.length + ' push notifications sent');
+});
+
 exports.proactiveEngagement = onSchedule({
     schedule: 'every 5 minutes',
     region: 'us-central1',

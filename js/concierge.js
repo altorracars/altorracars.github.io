@@ -88,7 +88,22 @@
     function loadSession() {
         try {
             var raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) return JSON.parse(raw);
+            if (raw) {
+                var s = JSON.parse(raw);
+                // Defensive cleanup: si una sesión vieja tiene un greeting con
+                // vehicleTitle vacío ("Veo que te interesa el ."), lo limpiamos.
+                if (s.messages && s.messages.length > 0) {
+                    s.messages = s.messages.filter(function (m) {
+                        return !(m.from === 'bot' && /Veo que te interesa el \.\s/.test(m.text));
+                    });
+                }
+                // Asegurar que los campos nuevos existan en sesiones viejas
+                if (typeof s.gateCompleted === 'undefined') s.gateCompleted = false;
+                if (typeof s.context === 'undefined') s.context = { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 };
+                if (typeof s.activeAsesor === 'undefined') s.activeAsesor = null;
+                if (typeof s.profile === 'undefined') s.profile = null;
+                return s;
+            }
         } catch (e) {}
         return {
             sessionId: 'cnc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
@@ -99,6 +114,13 @@
             email: null,
             nombre: null,
             telefono: null,
+            // Lead Capture Gate
+            gateCompleted: false,    // true tras submit del form de captura
+            profile: null,           // { nombre, apellido, cedula, celular, correo, consent }
+            // Intent classifier memoria conversacional
+            context: { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 },
+            // Handoff dinámico
+            activeAsesor: null,      // { uid, nombre, photoURL } cuando un asesor toma el chat
             // L0-L5 progressive profiling
             level: 0,
             // Source tracking — qué página originó la conversación
@@ -141,33 +163,178 @@
         return /agend(ar|emos|amos)|cita|visita|cuando puedo|me gustar[íi]a (verlo|ver)|conocer (el|la) (auto|carro|veh)/i.test(lower);
     }
 
+    /**
+     * Devuelve el primer nombre del cliente (capitalizado) o '' si no hay perfil.
+     */
+    function getClientFirstName() {
+        if (session.profile && session.profile.nombre) {
+            return String(session.profile.nombre).trim().split(/\s+/)[0];
+        }
+        return '';
+    }
+
+    /**
+     * Cuenta de vehículos disponibles (lazy desde vehicleDB si está cargado).
+     */
+    function getInventoryCount() {
+        try {
+            if (window.vehicleDB && window.vehicleDB.vehicles) {
+                return window.vehicleDB.vehicles.filter(function (v) {
+                    return v && v.estado !== 'vendido' && v.estado !== 'reservado';
+                }).length;
+            }
+        } catch (e) {}
+        return 25; // fallback razonable
+    }
+
+    /**
+     * Variantes de respuesta para evitar repetición robótica.
+     * AltorraIntent.shouldVary marca cuando el bot debe variar.
+     */
+    function pickVariant(arr, ctx) {
+        if (!arr || !arr.length) return '';
+        var idx = ctx && ctx.bot_repeated_count ? ctx.bot_repeated_count % arr.length : 0;
+        return arr[idx];
+    }
+
     function generateBotResponse(userMsg) {
-        // D.7 — Si el cliente quiere agendar, sugerir slot
+        var ctx = session.context || {};
+        var firstName = getClientFirstName();
+        var personalGreet = firstName ? firstName : '';
+
+        // D.7 — Detectar intent de agendar PRIMERO si hay fecha explícita
         if (detectSchedulingIntent(userMsg) && window.AltorraCalendarConfig &&
             window.AltorraCalendarConfig.parseSchedulingHint) {
             var hint = window.AltorraCalendarConfig.parseSchedulingHint(userMsg, []);
             if (hint && hint.fecha) {
                 var dayName = new Date(hint.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
                 return {
-                    text: '📅 Te puedo agendar para el ' + dayName +
+                    text: '📅 Te puedo agendar' + (firstName ? ', ' + firstName : '') + ' para el ' + dayName +
                           (hint.hora ? ' a las ' + hint.hora : ' (te confirmamos la hora exacta)') + '. ¿Lo coordino con un asesor?',
                     cta: { label: 'Sí, agendar', action: 'escalate' }
                 };
             }
         }
 
-        // 1. Sentiment check — si muy negativo, escalar inmediatamente
+        // 1. Intent classifier — clasificar intención del cliente PRIMERO
+        var classification = window.AltorraIntent
+            ? window.AltorraIntent.classify(userMsg, ctx)
+            : { intent: 'none', confidence: 0 };
+
+        // 2. Sentiment — si muy negativo o frustration intent, escalar
+        var sentimentNeg = false;
         if (window.AltorraAI) {
             var s = window.AltorraAI.sentiment(userMsg);
-            if (s && s.label === 'negative' && s.score < -0.5) {
+            sentimentNeg = s && s.label === 'negative' && s.score < -0.5;
+        }
+        if (sentimentNeg || classification.intent === 'frustration' || classification.intent === 'ask_human') {
+            return {
+                text: (firstName ? firstName + ', ' : '') +
+                      'te entiendo. Déjame conectarte con un asesor humano que pueda ayudarte directamente.',
+                cta: { label: 'Hablar con asesor', action: 'escalate' }
+            };
+        }
+
+        // 3. Intent: greeting — respuesta natural, NO menú
+        if (classification.intent === 'greeting' && classification.confidence >= 0.3) {
+            var greetVariants = firstName ? [
+                '¡Hola ' + firstName + '! 👋 Bien por aquí, listo para ayudarte. ¿Qué andás buscando?',
+                'Hola de nuevo ' + firstName + '. ¿En qué puedo ayudarte hoy?',
+                '¡Qué tal ' + firstName + '! Cuéntame qué necesitas.'
+            ] : [
+                '¡Hola! 👋 Bien por aquí, listo para ayudarte. ¿Qué andás buscando?',
+                '¡Qué tal! ¿En qué puedo ayudarte hoy?',
+                'Hola, gusto saludarte. Cuéntame qué necesitas.'
+            ];
+            return { text: pickVariant(greetVariants, ctx) };
+        }
+
+        // 4. Intent: thanks — agradecer naturalmente
+        if (classification.intent === 'thanks') {
+            var thanksVariants = [
+                '¡De nada' + (firstName ? ' ' + firstName : '') + '! Cualquier otra cosa, aquí estoy 🙌',
+                'Un gusto. Si necesitas algo más, escribime.',
+                '¡Para servirte! Cualquier duda, sigo por aquí.'
+            ];
+            return { text: pickVariant(thanksVariants, ctx) };
+        }
+
+        // 5. Intent: goodbye
+        if (classification.intent === 'goodbye') {
+            return {
+                text: '¡Hasta pronto' + (firstName ? ' ' + firstName : '') + '! 👋 Cuando quieras volver, aquí estaré.'
+            };
+        }
+
+        // 6. Intent: confirmation / negation cuando hay topic discutido previo
+        if (classification.intent === 'confirmation' && ctx.discussedTopics && ctx.discussedTopics.length) {
+            var lastTopic = ctx.discussedTopics[ctx.discussedTopics.length - 1];
+            if (lastTopic === 'cita' || lastTopic === 'financiacion') {
                 return {
-                    text: 'Entiendo tu preocupación 🙏 Déjame conectarte con un asesor que pueda ayudarte directamente.',
-                    cta: { label: 'Hablar con asesor', action: 'escalate' }
+                    text: 'Perfecto. Te conecto con un asesor para que coordinemos lo de ' + lastTopic + '.',
+                    cta: { label: 'Conectar ahora', action: 'escalate' }
                 };
             }
         }
 
-        // 2. U.5 — Knowledge Base del admin (más prioritario que FAQ hardcoded)
+        // 7. Intent: inventory_query — sutil con link al catálogo + cifra real
+        if (classification.intent === 'inventory_query') {
+            var n = getInventoryCount();
+            return {
+                text: '📋 Tenemos ' + n + ' vehículos disponibles ahora mismo' +
+                      (firstName ? ', ' + firstName : '') + '. ' +
+                      'Te dejo el catálogo completo con filtros por marca, precio, año y kilometraje. ' +
+                      '¿Hay algún modelo específico en mente?',
+                cta: { label: 'Ver catálogo', action: 'goto-busqueda' }
+            };
+        }
+
+        // 8. Intent: financiacion_query con CTA al simulador
+        if (classification.intent === 'financiacion_query') {
+            return {
+                text: '💳 Trabajamos con varios aliados financieros. Cuota inicial mínima del 30%, plazos hasta 72 meses. ' +
+                      '¿Quieres simular tu cuota o que te conecte con un asesor para una propuesta personalizada?',
+                cta: { label: 'Ir al simulador', action: 'goto-simulador' }
+            };
+        }
+
+        // 9. Intent: pricing_query + NER detecta vehículo → buscar precio real
+        if (classification.intent === 'pricing_query' && window.AltorraNER) {
+            var pExt = window.AltorraNER.extract(userMsg);
+            if (pExt.summary && pExt.summary.marca && window.vehicleDB && window.vehicleDB.vehicles) {
+                var match = window.vehicleDB.vehicles.find(function (v) {
+                    return v && v.marca && String(v.marca).toLowerCase().indexOf(pExt.summary.marca) === 0;
+                });
+                if (match) {
+                    var p = match.precio || match.precioOferta;
+                    if (p) {
+                        return {
+                            text: '💰 El ' + match.marca + ' ' + (match.modelo || '') + ' ' + (match.year || '') +
+                                  ' está en $' + (p / 1e6).toFixed(1) + 'M. ¿Te muestro la ficha completa o coordinamos una cita?',
+                            cta: { label: 'Ver ficha', action: 'goto-busqueda' }
+                        };
+                    }
+                }
+            }
+        }
+
+        // 10. Intent: appointment_request — escalar para agendar
+        if (classification.intent === 'appointment_request') {
+            return {
+                text: '📅 Para agendar una cita o test drive, te conecto con un asesor que coordina fecha y hora directamente contigo. ¿Procedemos?',
+                cta: { label: 'Agendar con asesor', action: 'escalate' }
+            };
+        }
+
+        // 11. Intent: sell_my_car
+        if (classification.intent === 'sell_my_car') {
+            return {
+                text: '🚙 Te ayudamos a vender tu auto. Tenemos compra directa con valuación inmediata o consignación. Inicia con peritaje gratis sin compromiso.',
+                cta: { label: 'Vender mi auto', action: 'open-modal-vende' }
+            };
+        }
+
+        // 12. KB del admin (más confiable que FAQ hardcoded)
         if (window.AltorraKB && window.AltorraKB.findBest) {
             var kbEntry = window.AltorraKB.findBest(userMsg);
             if (kbEntry) {
@@ -176,11 +343,11 @@
             }
         }
 
-        // 3. Intent — buscar en FAQ hardcoded (fallback)
+        // 13. FAQ hardcoded fallback
         var faq = findFAQ(userMsg);
         if (faq) return { text: faq.text, cta: faq.cta || null };
 
-        // 4. NER — si menciona marca/modelo/precio, ofrecer conectar
+        // 14. NER — si menciona marca/modelo/precio sin intent claro
         if (window.AltorraNER) {
             var ext = window.AltorraNER.extract(userMsg);
             if (ext.summary && (ext.summary.marca || ext.summary.precio)) {
@@ -189,15 +356,23 @@
                 if (ext.summary.year) bits.push('año ' + ext.summary.year);
                 if (ext.summary.precio) bits.push('por ~$' + Math.round(ext.summary.precio / 1000000) + 'M');
                 return {
-                    text: '¿Te interesa un ' + bits.join(' ') + '? Déjame revisar el inventario y conectarte con un asesor.',
+                    text: 'Veo que te interesa un ' + bits.join(' ') + '. ¿Quieres ver opciones similares en el catálogo o te conecto con un asesor?',
                     cta: { label: 'Ver inventario', action: 'goto-busqueda' }
                 };
             }
         }
 
-        // 5. Fallback genérico
+        // 15. Fallback INTELIGENTE — varía si el cliente repitió y sugiere acción concreta
+        if (window.AltorraIntent && window.AltorraIntent.shouldVary(ctx)) {
+            return {
+                text: 'Parece que necesitas algo específico. Déjame conectarte con un asesor humano que pueda ayudarte mejor.',
+                cta: { label: 'Hablar con asesor', action: 'escalate' }
+            };
+        }
         return {
-            text: '👋 Estoy aquí para ayudarte con info del catálogo, financiación, citas y más. ¿Qué te gustaría saber? También puedo conectarte con un asesor.',
+            text: (firstName ? firstName + ', ' : '') +
+                  'puedo ayudarte con info del catálogo, financiación, citas y peritaje. ' +
+                  'Escribime con más detalle qué necesitas, o si prefieres, te paso con un asesor.',
             cta: { label: 'Hablar con asesor', action: 'escalate' }
         };
     }
@@ -236,6 +411,14 @@
     function send(text) {
         if (!text || !text.trim()) return;
         addMessage('user', text.trim());
+
+        // Intent classifier: actualizar memoria conversacional ANTES del response
+        if (window.AltorraIntent) {
+            var classification = window.AltorraIntent.classify(text, session.context || {});
+            session.context = session.context || {};
+            window.AltorraIntent.updateContext(session.context, classification.intent, text);
+            saveSession(session);
+        }
 
         // U.17 — Progressive profiling: extraer entities del mensaje
         // y actualizar identidad de la sesión sin pedir aún
@@ -292,6 +475,8 @@
     function maybeAskForProfile() {
         // Solo en modo bot
         if (session.mode !== 'bot') return;
+        // Si el Lead Capture Gate ya capturó perfil completo, no preguntar más
+        if (session.gateCompleted && session.profile) return;
 
         var userTurns = session.messages.filter(function (m) { return m.from === 'user'; }).length;
         var botTurns = session.messages.filter(function (m) { return m.from === 'bot'; }).length;
@@ -550,6 +735,24 @@
                             return m.from === 'asesor' && m.text === d.text;
                         });
                         if (!alreadyHave) {
+                            // PRIMER mensaje del asesor → anunciar incorporación + actualizar header
+                            var isFirstAsesorMsg = !session.activeAsesor;
+                            if (isFirstAsesorMsg) {
+                                var asesorNombre = d.asesorNombre || 'Asesor';
+                                session.activeAsesor = {
+                                    uid: d.asesorUid || null,
+                                    nombre: asesorNombre,
+                                    photoURL: d.asesorPhotoURL || null
+                                };
+                                // Mensaje de sistema visualmente distinto
+                                session.messages.push({
+                                    from: 'system',
+                                    text: '✓ ' + asesorNombre + ' se ha unido al chat',
+                                    timestamp: new Date(d.timestamp).getTime() - 1, // antes que el msg real
+                                    _synced: true
+                                });
+                                applyAsesorHeader();
+                            }
                             session.messages.push({
                                 from: 'asesor',
                                 text: d.text,
@@ -599,15 +802,33 @@
        ═══════════════════════════════════════════════════════════ */
     var _isOpen = false;
 
+    /**
+     * SVG corporativo del Asistente Virtual Altorra.
+     * Círculo dorado con monograma "AC" custom — único de Altorra,
+     * NO confundible con Gemini/sparkles. Usado en FAB y header avatar.
+     */
+    var AC_LOGO_SVG =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 48 48" aria-hidden="true">' +
+            '<defs>' +
+                '<linearGradient id="acGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+                    '<stop offset="0%" stop-color="#1a1500"/>' +
+                    '<stop offset="100%" stop-color="#3d2f0a"/>' +
+                '</linearGradient>' +
+            '</defs>' +
+            '<circle cx="24" cy="24" r="22" fill="url(#acGrad)" stroke="#c9a663" stroke-width="1.5"/>' +
+            '<text x="24" y="30" text-anchor="middle" font-family="Poppins, sans-serif" ' +
+                'font-weight="800" font-size="16" fill="#c9a663" letter-spacing="0.5">AC</text>' +
+            '<circle cx="38" cy="11" r="3" fill="#c9a663" opacity="0.85"/>' +
+        '</svg>';
+
     function ensureUI() {
         if (document.getElementById('altorra-concierge')) return;
 
         var btn = document.createElement('button');
         btn.id = 'altorra-concierge-btn';
         btn.className = 'altorra-concierge-btn';
-        btn.setAttribute('aria-label', 'Abrir Concierge — chatea con nuestra IA');
-        // Icono Lucide sparkles — sugiere AI/asistente inteligente, brand-neutral
-        btn.innerHTML = '<i data-lucide="sparkles" aria-hidden="true"></i>';
+        btn.setAttribute('aria-label', 'Abrir Asistente Virtual Altorra Cars');
+        btn.innerHTML = AC_LOGO_SVG;
         btn.addEventListener('click', toggle);
         document.body.appendChild(btn);
 
@@ -615,26 +836,48 @@
         panel.id = 'altorra-concierge';
         panel.className = 'altorra-concierge';
         panel.setAttribute('role', 'dialog');
-        panel.setAttribute('aria-label', 'Concierge Altorra Cars');
+        panel.setAttribute('aria-label', 'Asistente Virtual Altorra Cars');
         panel.setAttribute('aria-hidden', 'true');
         panel.innerHTML =
             '<div class="cnc-header">' +
                 '<div class="cnc-header-info">' +
-                    '<div class="cnc-avatar"><i data-lucide="sparkles" aria-hidden="true"></i></div>' +
+                    '<div class="cnc-avatar" id="cncAvatar">' + AC_LOGO_SVG + '</div>' +
                     '<div>' +
-                        '<div class="cnc-title">Concierge Altorra</div>' +
-                        '<div class="cnc-status" id="cncStatus">Asistente IA · respuesta inmediata</div>' +
+                        '<div class="cnc-title" id="cncTitle">Asistente Virtual</div>' +
+                        '<div class="cnc-status" id="cncStatus">Altorra Cars · respuesta inmediata</div>' +
                     '</div>' +
                 '</div>' +
                 '<button class="cnc-close" aria-label="Cerrar">×</button>' +
             '</div>' +
-            '<div class="cnc-quick-actions">' +
+            // Lead Capture Gate — visible si gateCompleted === false
+            '<div class="cnc-gate" id="cncGate" style="display:none;">' +
+                '<div class="cnc-gate-head">' +
+                    '<div class="cnc-gate-title">Antes de empezar</div>' +
+                    '<div class="cnc-gate-sub">Cuéntanos quién eres para que podamos darte el mejor servicio.</div>' +
+                '</div>' +
+                '<form class="cnc-gate-form" id="cncGateForm" autocomplete="on" novalidate>' +
+                    '<div class="cnc-gate-row">' +
+                        '<label><span>Nombre *</span><input type="text" name="nombre" required minlength="2" autocomplete="given-name"></label>' +
+                        '<label><span>Apellido *</span><input type="text" name="apellido" required minlength="2" autocomplete="family-name"></label>' +
+                    '</div>' +
+                    '<label><span>Cédula *</span><input type="tel" name="cedula" required pattern="[0-9]{5,12}" inputmode="numeric" placeholder="Sin puntos"></label>' +
+                    '<label><span>Celular *</span><input type="tel" name="celular" required pattern="3[0-9]{9}" inputmode="numeric" autocomplete="tel-national" placeholder="3201234567"></label>' +
+                    '<label><span>Correo *</span><input type="email" name="correo" required autocomplete="email" placeholder="tu@correo.com"></label>' +
+                    '<label class="cnc-gate-consent"><input type="checkbox" name="consent" required>' +
+                        '<span>Autorizo que un asesor de Altorra Cars me contacte por email/WhatsApp.</span>' +
+                    '</label>' +
+                    '<button type="submit" class="cnc-gate-submit">Iniciar conversación</button>' +
+                    '<div class="cnc-gate-error" id="cncGateError" role="alert" aria-live="polite"></div>' +
+                '</form>' +
+            '</div>' +
+            // Quick action — solo visible cuando gate completado
+            '<div class="cnc-quick-actions" id="cncQuickActions">' +
                 '<button class="cnc-quick-btn" data-action="escalate">' +
                     '<i data-lucide="user-circle" aria-hidden="true"></i> Hablar con asesor' +
                 '</button>' +
             '</div>' +
             '<div class="cnc-messages" id="cncMessages"></div>' +
-            '<div class="cnc-input-wrap">' +
+            '<div class="cnc-input-wrap" id="cncInputWrap">' +
                 '<input type="text" class="cnc-input" id="cncInput" placeholder="Escribe tu mensaje..." autocomplete="off">' +
                 '<button class="cnc-send" id="cncSend" aria-label="Enviar">' +
                     '<i data-lucide="send" aria-hidden="true"></i>' +
@@ -642,13 +885,10 @@
             '</div>';
         document.body.appendChild(panel);
 
-        // Refresh Lucide para que renderice los <i data-lucide> recién insertados.
-        // (Sin observer global: llamada explícita scoped — patrón post-RCA fix.)
+        // Refresh Lucide en los <i data-lucide> recién insertados (scoped, no global)
         if (window.AltorraIcons && window.AltorraIcons.refresh) {
-            window.AltorraIcons.refresh(btn);
             window.AltorraIcons.refresh(panel);
         } else if (window.lucide && window.lucide.createIcons) {
-            try { window.lucide.createIcons({ context: btn }); } catch (e) {}
             try { window.lucide.createIcons({ context: panel }); } catch (e) {}
         }
 
@@ -673,7 +913,165 @@
             if (!btn) return;
             handleAction(btn.getAttribute('data-action'));
         });
+
+        // Lead Capture Gate form handler
+        var gateForm = document.getElementById('cncGateForm');
+        if (gateForm) {
+            gateForm.addEventListener('submit', handleGateSubmit);
+        }
+
+        // Aplicar estado inicial: mostrar gate si falta + sync header con activeAsesor
+        applyGateVisibility();
+        applyAsesorHeader();
     }
+
+    /* ═══════════════════════════════════════════════════════════
+       LEAD CAPTURE GATE — captura datos antes del primer mensaje
+       ═══════════════════════════════════════════════════════════ */
+    function isGateRequired() {
+        // Si el cliente está logueado con un perfil completo (auth + email + nombre),
+        // saltamos el gate
+        if (session.uid && session.email && session.nombre) return false;
+        return !session.gateCompleted || !session.profile;
+    }
+
+    function applyGateVisibility() {
+        var gate = document.getElementById('cncGate');
+        var qa = document.getElementById('cncQuickActions');
+        var msgs = document.getElementById('cncMessages');
+        var inp = document.getElementById('cncInputWrap');
+        if (!gate) return;
+        if (isGateRequired()) {
+            gate.style.display = 'flex';
+            if (qa) qa.style.display = 'none';
+            if (msgs) msgs.style.display = 'none';
+            if (inp) inp.style.display = 'none';
+        } else {
+            gate.style.display = 'none';
+            if (qa) qa.style.display = '';
+            if (msgs) msgs.style.display = '';
+            if (inp) inp.style.display = '';
+        }
+    }
+
+    function handleGateSubmit(e) {
+        e.preventDefault();
+        var form = e.target;
+        var errEl = document.getElementById('cncGateError');
+        function fail(msg) { if (errEl) errEl.textContent = msg; }
+        fail('');
+
+        var fd = {
+            nombre: (form.nombre.value || '').trim(),
+            apellido: (form.apellido.value || '').trim(),
+            cedula: (form.cedula.value || '').trim(),
+            celular: (form.celular.value || '').trim(),
+            correo: (form.correo.value || '').trim().toLowerCase(),
+            consent: !!form.consent.checked
+        };
+
+        // Validaciones explícitas (los HTML5 validators a veces no disparan bien en mobile)
+        if (fd.nombre.length < 2) return fail('Por favor escribe tu nombre.');
+        if (fd.apellido.length < 2) return fail('Por favor escribe tu apellido.');
+        if (!/^[0-9]{5,12}$/.test(fd.cedula)) return fail('Cédula inválida (solo números, 5-12 dígitos).');
+        if (!/^3[0-9]{9}$/.test(fd.celular)) return fail('Celular inválido (formato colombiano: 3XX XXX XXXX).');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fd.correo)) return fail('Correo inválido.');
+        if (!fd.consent) return fail('Necesitamos tu autorización para contactarte.');
+
+        // Persistir en sesión
+        session.profile = fd;
+        session.nombre = fd.nombre + ' ' + fd.apellido;
+        session.email = fd.correo;
+        session.telefono = fd.celular;
+        session.gateCompleted = true;
+        session.level = Math.max(session.level || 0, 2); // L2 contactable
+        saveSession(session);
+
+        // Crear soft contact con perfil COMPLETO (NER ya tiene todo)
+        if (!_leadCreated) createSoftContact();
+        else updateSoftContact();
+
+        // Sembrar greeting personalizado
+        var firstName = fd.nombre.trim().split(/\s+/)[0];
+        var sourceVeh = session.sourceVehicleId ? resolveVehicleTitleFromCache(session.sourceVehicleId) : null;
+        var greet;
+        if (sourceVeh) {
+            greet = '¡Hola ' + firstName + '! 👋 Veo que te interesa el ' + sourceVeh +
+                    '. Pregúntame lo que quieras: precio final, financiación, peritaje, ' +
+                    'agendar una visita, o lo que necesites.';
+        } else {
+            greet = '¡Hola ' + firstName + '! 👋 Soy tu Asistente Virtual de Altorra Cars. ' +
+                    'Pregúntame por el catálogo, financiación, citas, o lo que necesites. ' +
+                    'Si en algún momento querés hablar con un asesor humano, decime nomás.';
+        }
+        addMessage('bot', greet);
+        applyGateVisibility();
+
+        // Focus al input para escribir inmediatamente
+        setTimeout(function () {
+            var inp = document.getElementById('cncInput');
+            if (inp) inp.focus();
+        }, 250);
+    }
+
+    /**
+     * Resuelve el título del vehículo (Marca Modelo Año) desde múltiples fuentes
+     * en cascada: sesión actual → vehicleDB → DOM .vehicle-title → DOM h1 → fallback.
+     * Defensivo: si todo falla, retorna null para que el callsite use fallback genérico.
+     */
+    function resolveVehicleTitleFromCache(vehicleId) {
+        if (!vehicleId) return null;
+        try {
+            if (window.vehicleDB && window.vehicleDB.vehicles) {
+                var v = window.vehicleDB.vehicles.find(function (x) {
+                    return x && String(x.id) === String(vehicleId);
+                });
+                if (v) {
+                    var parts = [v.marca, v.modelo, v.year].filter(function (p) { return p; });
+                    if (parts.length) return parts.join(' ');
+                }
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       HANDOFF DINÁMICO — header cambia cuando un asesor toma el chat
+       ═══════════════════════════════════════════════════════════ */
+    function applyAsesorHeader() {
+        var titleEl = document.getElementById('cncTitle');
+        var statusEl = document.getElementById('cncStatus');
+        var avatarEl = document.getElementById('cncAvatar');
+        if (!titleEl) return;
+        if (session.activeAsesor && session.activeAsesor.nombre) {
+            var asesor = session.activeAsesor;
+            titleEl.textContent = asesor.nombre;
+            statusEl.textContent = 'En vivo · responde ahora';
+            // Avatar: si tiene photoURL la usamos, sino iniciales
+            if (asesor.photoURL) {
+                avatarEl.innerHTML = '<img src="' + escapeHtml(asesor.photoURL) +
+                    '" alt="" class="cnc-asesor-photo" onerror="this.parentNode.innerHTML=\'' +
+                    escapeHtml(getAsesorInitials(asesor.nombre)) + '\'">';
+            } else {
+                avatarEl.innerHTML = '<span class="cnc-asesor-initials">' +
+                    escapeHtml(getAsesorInitials(asesor.nombre)) + '</span>';
+            }
+        } else {
+            titleEl.textContent = 'Asistente Virtual';
+            statusEl.textContent = 'Altorra Cars · respuesta inmediata';
+            avatarEl.innerHTML = AC_LOGO_SVG;
+        }
+    }
+
+    function getAsesorInitials(name) {
+        if (!name) return 'AC';
+        var parts = String(name).trim().split(/\s+/);
+        var first = parts[0] ? parts[0].charAt(0) : '';
+        var last = parts[parts.length - 1] ? parts[parts.length - 1].charAt(0) : '';
+        return (first + last).toUpperCase() || 'AC';
+    }
+
+    // (escapeHtml definido más abajo en el archivo)
 
     function handleAction(action) {
         switch (action) {
@@ -714,6 +1112,10 @@
             return;
         }
         box.innerHTML = session.messages.map(function (m) {
+            // Mensaje de sistema (handoff "X se ha unido", desconexión, etc.)
+            if (m.from === 'system') {
+                return '<div class="cnc-system-msg">' + escapeHtml(m.text) + '</div>';
+            }
             var bubbleClass = m.from === 'user' ? 'cnc-user-bubble' :
                               m.from === 'asesor' ? 'cnc-asesor-bubble' : 'cnc-bot-bubble';
             var ctaHTML = '';
@@ -891,20 +1293,47 @@
     function openWithVehicleContext(opts) {
         opts = opts || {};
         var vehicleId = opts.vehicleId || window.PRERENDERED_VEHICLE_ID || null;
-        var vehicleTitle = opts.vehicleTitle || (function () {
-            var t = document.querySelector('.vehicle-title, h1');
-            return t ? t.textContent.trim() : 'este vehículo';
-        })();
+
+        // Resolver vehicleTitle con cascada de fuentes — la más confiable primero
+        var vehicleTitle = (opts.vehicleTitle || '').trim();
+        if (!vehicleTitle && vehicleId) {
+            vehicleTitle = resolveVehicleTitleFromCache(vehicleId) || '';
+        }
+        if (!vehicleTitle) {
+            // DOM fallback: probar selectores específicos antes que h1 genérico
+            var candidates = [
+                '.vehicle-title',
+                'h1.vehicle-name',
+                'h1.car-title',
+                'h1'
+            ];
+            for (var i = 0; i < candidates.length; i++) {
+                var el = document.querySelector(candidates[i]);
+                if (el && el.textContent && el.textContent.trim()) {
+                    var t = el.textContent.trim();
+                    // Filtrar h1 genéricos del homepage que no son títulos de vehículo
+                    if (!/encuentra el auto|altorra cars|inicio/i.test(t)) {
+                        vehicleTitle = t;
+                        break;
+                    }
+                }
+            }
+        }
+        // Fallback final
+        if (!vehicleTitle) vehicleTitle = 'este vehículo';
+
         if (vehicleId) {
             session.sourceVehicleId = String(vehicleId);
             session.sourcePage = window.location.pathname;
         }
-        // Si no hay mensajes previos, sembrar un greeting contextualizado
-        if (!session.messages || session.messages.length === 0) {
-            addMessage('bot', '👋 ¡Hola! Veo que te interesa el ' + vehicleTitle +
-                '. Pregúntame lo que quieras: precio final, financiación, peritaje, ' +
-                'agendar una visita, o lo que necesites. También puedo conectarte ' +
-                'con un asesor humano cuando quieras.');
+        // Solo sembrar greeting si: no hay mensajes Y el gate ya está completado
+        // (sino el gate aparece primero y el greeting se siembra POST-gate con el nombre).
+        if ((!session.messages || session.messages.length === 0) && session.gateCompleted) {
+            var firstName = getClientFirstName();
+            addMessage('bot',
+                '¡Hola' + (firstName ? ' ' + firstName : '') + '! 👋 Veo que te interesa el ' +
+                vehicleTitle + '. Pregúntame lo que quieras: precio final, financiación, ' +
+                'peritaje, agendar una visita, o lo que necesites.');
         }
         saveSession(session);
         open();

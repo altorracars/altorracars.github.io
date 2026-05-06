@@ -47,24 +47,94 @@
     /* ═══════════════════════════════════════════════════════════
        LISTA DE CONVERSACIONES — listener realtime
        ═══════════════════════════════════════════════════════════ */
+    // Filtro activo del listado: 'active' (default) | 'pinned' | 'archived' | 'deleted'
+    var _activeFilter = 'active';
+
+    function setFilter(f) {
+        _activeFilter = f;
+        renderChatList();
+        renderFilterBar();
+    }
+
     function startChatsListener() {
         if (_chatsUnsub || !window.db) return;
         if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
 
         _chatsUnsub = window.db.collection('conciergeChats')
             .orderBy('lastMessageAt', 'desc')
-            .limit(50)
+            .limit(100)
             .onSnapshot(function (snap) {
                 _chats = [];
                 snap.forEach(function (doc) {
                     _chats.push(Object.assign({ _docId: doc.id }, doc.data()));
                 });
                 renderChatList();
+                renderFilterBar();
                 updateNavBadge();
             }, function (err) {
                 if (window.auth && !window.auth.currentUser) return;
                 console.warn('[AdminConcierge] listener error:', err.message);
             });
+    }
+
+    /**
+     * Aplica el filtro activo y devuelve la lista de chats visibles.
+     * Sort: pinned primero, luego por lastMessageAt desc.
+     */
+    function getVisibleChats() {
+        var filtered = _chats.filter(function (c) {
+            if (_activeFilter === 'pinned') return c.isPinned && !c.isDeleted;
+            if (_activeFilter === 'archived') return c.isArchived && !c.isDeleted;
+            if (_activeFilter === 'deleted') return c.isDeleted;
+            // default 'active': no archived, no deleted
+            return !c.isArchived && !c.isDeleted;
+        });
+        filtered.sort(function (a, b) {
+            // Pin pinned al top dentro del bucket
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            // Sort por lastMessageAt desc (Firestore ya lo entrega así, esto es safety)
+            var at = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+            var bt = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+            return bt - at;
+        });
+        return filtered;
+    }
+
+    /**
+     * Render del filter bar (chips) arriba de la lista.
+     * Counts dinámicos por bucket para feedback visual.
+     */
+    function renderFilterBar() {
+        var bar = $('conciergeFilterBar');
+        if (!bar) return;
+        var counts = {
+            active: 0,
+            pinned: 0,
+            archived: 0,
+            deleted: 0
+        };
+        _chats.forEach(function (c) {
+            if (c.isDeleted) counts.deleted++;
+            else if (c.isArchived) counts.archived++;
+            else counts.active++;
+            if (c.isPinned && !c.isDeleted) counts.pinned++;
+        });
+        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
+        var chips = [
+            { f: 'active',   label: 'Activos',    count: counts.active,    show: true },
+            { f: 'pinned',   label: 'Fijados',    count: counts.pinned,    show: true },
+            { f: 'archived', label: 'Archivados', count: counts.archived,  show: true },
+            { f: 'deleted',  label: 'Eliminados', count: counts.deleted,   show: isSuper }
+        ];
+        bar.innerHTML = chips.filter(function (c) { return c.show; }).map(function (c) {
+            return '<button class="cnc-admin-filter-chip' +
+                (_activeFilter === c.f ? ' is-active' : '') +
+                '" data-filter="' + c.f + '">' +
+                escTxt(c.label) +
+                (c.count > 0 ? ' <span class="cnc-admin-filter-count">' + c.count + '</span>' : '') +
+            '</button>';
+        }).join('');
     }
 
     function stopChatsListener() {
@@ -87,17 +157,28 @@
     function renderChatList() {
         var listEl = $('conciergeChatList');
         if (!listEl) return;
-        if (_chats.length === 0) {
-            listEl.innerHTML = '<div class="cnc-admin-empty">Sin conversaciones aún.</div>';
+        var visible = getVisibleChats();
+        if (visible.length === 0) {
+            var emptyMsg = _activeFilter === 'active'   ? 'Sin conversaciones activas.' :
+                           _activeFilter === 'pinned'   ? 'No hay chats fijados.' :
+                           _activeFilter === 'archived' ? 'Sin chats archivados.' :
+                                                          'Sin chats eliminados.';
+            listEl.innerHTML = '<div class="cnc-admin-empty">' + emptyMsg + '</div>';
             return;
         }
-        listEl.innerHTML = _chats.map(function (c) {
+        listEl.innerHTML = visible.map(function (c) {
             var isActive = c._docId === _activeSessionId;
-            var unread = c.unreadByAdmin || 0;
+            var unread = (c.unreadByAdmin || 0) || (c.forceUnreadByAdmin ? 1 : 0);
             var name = c.userNombre || c.userEmail || 'Cliente ' + c._docId.slice(-6);
             var initials = name.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
             var modeIcon = c.mode === 'wa_handed_over' ? '📲' :
                            c.mode === 'live' ? '👨' : '🤖';
+            // Badges de estado
+            var stateBadges = '';
+            if (c.isPinned) stateBadges += '<span class="cnc-admin-state-badge cnc-pin" title="Fijado"><i data-lucide="pin"></i></span>';
+            if (c.isArchived) stateBadges += '<span class="cnc-admin-state-badge cnc-arch" title="Archivado"><i data-lucide="archive"></i></span>';
+            if (c.isDeleted) stateBadges += '<span class="cnc-admin-state-badge cnc-del" title="Eliminado"><i data-lucide="trash-2"></i></span>';
+
             return '<div class="cnc-admin-chat-item' + (isActive ? ' active' : '') + (unread > 0 ? ' has-unread' : '') +
                 '" data-session="' + escTxt(c._docId) + '">' +
                 '<div class="cnc-admin-avatar">' + escTxt(initials) + '</div>' +
@@ -110,10 +191,170 @@
                         '<span class="cnc-admin-chat-mode">' + modeIcon + '</span>' +
                         '<span>' + escTxt((c.lastMessage || '').slice(0, 60)) + '</span>' +
                     '</div>' +
+                    (stateBadges ? '<div class="cnc-admin-chat-states">' + stateBadges + '</div>' : '') +
                 '</div>' +
                 (unread > 0 ? '<div class="cnc-admin-unread-badge">' + unread + '</div>' : '') +
+                // Menú contextual con acciones (siempre presente, abierto on hover/click)
+                '<button class="cnc-admin-chat-more" data-chat-action="menu" data-session="' + escTxt(c._docId) + '" aria-label="Acciones">' +
+                    '<i data-lucide="more-vertical"></i>' +
+                '</button>' +
             '</div>';
         }).join('');
+        if (window.AltorraIcons && window.AltorraIcons.refresh) {
+            window.AltorraIcons.refresh(listEl);
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ACCIONES POR CHAT — pin, archive, mark unread, delete
+       ═══════════════════════════════════════════════════════════ */
+    function togglePin(sessionId) {
+        var chat = _chats.find(function (c) { return c._docId === sessionId; });
+        if (!chat) return;
+        var newVal = !chat.isPinned;
+        window.db.collection('conciergeChats').doc(sessionId).set({
+            isPinned: newVal,
+            pinnedAt: newVal ? new Date().toISOString() : null
+        }, { merge: true }).then(function () {
+            if (AP.toast) AP.toast(newVal ? 'Chat fijado' : 'Chat desfijado', 'success');
+        }).catch(function (err) {
+            if (AP.toast) AP.toast('No se pudo actualizar: ' + err.message, 'error');
+        });
+    }
+
+    function toggleArchive(sessionId) {
+        var chat = _chats.find(function (c) { return c._docId === sessionId; });
+        if (!chat) return;
+        var newVal = !chat.isArchived;
+        var uid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : null;
+        window.db.collection('conciergeChats').doc(sessionId).set({
+            isArchived: newVal,
+            archivedAt: newVal ? new Date().toISOString() : null,
+            archivedBy: newVal ? uid : null
+        }, { merge: true }).then(function () {
+            if (AP.toast) AP.toast(newVal ? 'Chat archivado' : 'Chat desarchivado', 'success');
+            // Si el chat archivado era el activo, cerrar detail
+            if (newVal && _activeSessionId === sessionId) {
+                _activeSessionId = null;
+                renderChatDetail(null, []);
+            }
+        }).catch(function (err) {
+            if (AP.toast) AP.toast('No se pudo actualizar: ' + err.message, 'error');
+        });
+    }
+
+    function markUnread(sessionId) {
+        window.db.collection('conciergeChats').doc(sessionId).set({
+            forceUnreadByAdmin: true,
+            unreadByAdmin: 1
+        }, { merge: true }).then(function () {
+            if (AP.toast) AP.toast('Marcado como no leído', 'success');
+        }).catch(function (err) {
+            if (AP.toast) AP.toast('No se pudo actualizar: ' + err.message, 'error');
+        });
+    }
+
+    function softDelete(sessionId) {
+        if (!confirm('¿Eliminar este chat? Quedará oculto pero se puede recuperar desde el filtro "Eliminados" (solo super_admin).')) return;
+        var uid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : null;
+        window.db.collection('conciergeChats').doc(sessionId).set({
+            isDeleted: true,
+            deletedAt: new Date().toISOString(),
+            deletedBy: uid
+        }, { merge: true }).then(function () {
+            if (AP.toast) AP.toast('Chat eliminado', 'success');
+            if (_activeSessionId === sessionId) {
+                _activeSessionId = null;
+                renderChatDetail(null, []);
+            }
+        }).catch(function (err) {
+            if (AP.toast) AP.toast('No se pudo eliminar: ' + err.message, 'error');
+        });
+    }
+
+    function restoreDeleted(sessionId) {
+        window.db.collection('conciergeChats').doc(sessionId).set({
+            isDeleted: false,
+            deletedAt: null,
+            deletedBy: null
+        }, { merge: true }).then(function () {
+            if (AP.toast) AP.toast('Chat restaurado', 'success');
+        }).catch(function (err) {
+            if (AP.toast) AP.toast('No se pudo restaurar: ' + err.message, 'error');
+        });
+    }
+
+    /**
+     * Render del menú contextual del chat (3 puntos verticales).
+     * Posicionado absolute relativo al item.
+     */
+    function showChatMenu(sessionId, anchorEl) {
+        // Cerrar cualquier menú abierto previamente
+        var existing = document.querySelector('.cnc-admin-chat-menu');
+        if (existing) existing.remove();
+
+        var chat = _chats.find(function (c) { return c._docId === sessionId; });
+        if (!chat) return;
+        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
+
+        var items = [
+            { action: 'pin',     label: chat.isPinned ? 'Quitar fijación' : 'Fijar al top', icon: 'pin' },
+            { action: 'archive', label: chat.isArchived ? 'Desarchivar' : 'Archivar',       icon: 'archive' },
+            { action: 'unread',  label: 'Marcar como no leído',                              icon: 'mail' }
+        ];
+        if (chat.isDeleted) {
+            items.push({ action: 'restore', label: 'Restaurar', icon: 'rotate-ccw' });
+        } else {
+            items.push({ action: 'delete', label: 'Eliminar', icon: 'trash-2', danger: true });
+        }
+
+        var menu = document.createElement('div');
+        menu.className = 'cnc-admin-chat-menu';
+        menu.innerHTML = items.map(function (it) {
+            return '<button class="cnc-admin-menu-item' + (it.danger ? ' is-danger' : '') +
+                '" data-chat-menu-action="' + it.action + '" data-session="' + escTxt(sessionId) + '">' +
+                '<i data-lucide="' + it.icon + '"></i>' +
+                '<span>' + escTxt(it.label) + '</span>' +
+            '</button>';
+        }).join('');
+
+        // Posicionamiento relativo al botón
+        var rect = anchorEl.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.top = (rect.bottom + 4) + 'px';
+        menu.style.left = Math.max(8, rect.right - 180) + 'px';
+        document.body.appendChild(menu);
+        if (window.AltorraIcons && window.AltorraIcons.refresh) {
+            window.AltorraIcons.refresh(menu);
+        }
+
+        // Cerrar al hacer click fuera
+        function onDocClick(ev) {
+            if (!menu.contains(ev.target) && ev.target !== anchorEl) {
+                menu.remove();
+                document.removeEventListener('click', onDocClick, true);
+            }
+        }
+        // En el siguiente tick para no detectar el click que abrió el menú
+        setTimeout(function () {
+            document.addEventListener('click', onDocClick, true);
+        }, 0);
+
+        // Wire menu actions
+        menu.addEventListener('click', function (ev) {
+            var btn = ev.target.closest('[data-chat-menu-action]');
+            if (!btn) return;
+            ev.stopPropagation();
+            var action = btn.getAttribute('data-chat-menu-action');
+            var sid = btn.getAttribute('data-session');
+            menu.remove();
+            document.removeEventListener('click', onDocClick, true);
+            if (action === 'pin')     togglePin(sid);
+            else if (action === 'archive') toggleArchive(sid);
+            else if (action === 'unread')  markUnread(sid);
+            else if (action === 'delete')  softDelete(sid);
+            else if (action === 'restore') restoreDeleted(sid);
+        });
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -126,7 +367,7 @@
         // Marcar leído
         if (window.db) {
             window.db.collection('conciergeChats').doc(sessionId)
-                .update({ unreadByAdmin: 0 }).catch(function () {});
+                .update({ unreadByAdmin: 0, forceUnreadByAdmin: false }).catch(function () {});
         }
 
         // Cancelar listener previo
@@ -375,7 +616,8 @@
             text: text,
             timestamp: new Date().toISOString(),
             asesorUid: window.auth.currentUser.uid,
-            asesorNombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || window.auth.currentUser.email
+            asesorNombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || window.auth.currentUser.email,
+            asesorPhotoURL: (AP.currentUserProfile && AP.currentUserProfile.photoURL) || null
         };
         window.db.collection('conciergeChats').doc(_activeSessionId)
             .collection('messages').add(msg)
@@ -575,6 +817,22 @@
        EVENT WIRING
        ═══════════════════════════════════════════════════════════ */
     document.addEventListener('click', function (e) {
+        // Filter chip click (Activos / Fijados / Archivados / Eliminados)
+        var chip = e.target.closest('[data-filter]');
+        if (chip && chip.parentElement && chip.parentElement.id === 'conciergeFilterBar') {
+            setFilter(chip.getAttribute('data-filter'));
+            return;
+        }
+        // Botón "..." de acciones por chat — abre menú contextual
+        var moreBtn = e.target.closest('[data-chat-action="menu"]');
+        if (moreBtn) {
+            e.stopPropagation();
+            showChatMenu(moreBtn.getAttribute('data-session'), moreBtn);
+            return;
+        }
+        // Click en menu item (capturado por el listener interno del menú)
+        if (e.target.closest('[data-chat-menu-action]')) return;
+
         var item = e.target.closest('[data-session]');
         if (item) {
             openChat(item.getAttribute('data-session'));

@@ -330,6 +330,13 @@ function loadAuthSystem() {
                     aiNer.defer = true;
                     document.body.appendChild(aiNer);
                 }
+                // AI Intent classifier (Concierge inteligencia conversacional)
+                if (!document.querySelector('script[src*="ai/intent.js"]')) {
+                    var aiInt = document.createElement('script');
+                    aiInt.src = 'js/ai/intent.js';
+                    aiInt.defer = true;
+                    document.body.appendChild(aiInt);
+                }
                 // Comm schema para que el Concierge pueda crear leads bien tipados
                 if (!document.querySelector('script[src*="comm-schema.js"]')) {
                     var schema = document.createElement('script');

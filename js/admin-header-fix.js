@@ -1,30 +1,31 @@
 /**
- * ALTORRA CARS — Header Fix v4 (no-intercept, defensive only)
- * ============================================================
+ * ALTORRA CARS — Header Fix v5 (DEFINITIVO)
+ * ==========================================
  *
- * Los 3 botones del header tienen sus propios listeners nativos:
- *   - #activityFeedTrigger: document listener en admin-activity-feed.js:540
- *   - #headerNotifBell .altorra-bell: button listener en toast.js:1027
- *   - #altorra-voice-btn: button listener en admin-voice.js:413
+ * SOLUCIÓN DE FONDO al problema de clicks que no responden al primer
+ * intento en los botones del header (actividad, micrófono, campana).
  *
- * Esos listeners SIEMPRE funcionan si el click llega al botón o al
- * document. El problema reportado ("no funcionan a veces") es por
- * overlays invisibles (z-index 9000+) que capturan el click antes
- * de que llegue al document/botón.
+ * CAUSA RAÍZ DEL BUG:
+ *   Cada botón tenía su propio handler nativo, pero esos handlers
+ *   vivían en `document.addEventListener('click')` en bubble phase.
+ *   El evento click tenía que recorrer TODO el DOM tree desde el
+ *   target hasta el document. Cualquier listener intermedio que
+ *   llamara `e.stopPropagation()` — o cualquier overlay que capturara
+ *   el click ANTES — hacía que el handler nativo nunca se ejecutara.
+ *   Síntoma: clicks "perdidos" intermitentemente.
  *
- * Estrategia: defense-in-depth, sin interceptar:
- *   1. Cleanup periódico de overlays huérfanos (z-index alto, sin
- *      clase activa esperada → ocultar y desactivar pointer-events).
- *   2. CSS z-index 99999 en los botones (en admin.css) — los pone
- *      por encima de cualquier overlay.
- *   3. NO bind nuevos handlers — los nativos funcionan solos.
- *   4. Diagnostic tools para que el usuario reporte overlays
- *      sospechosos cuando los botones fallen.
+ * SOLUCIÓN v5:
+ *   Listeners DIRECTAMENTE en cada botón (no en document).
+ *   `stopImmediatePropagation()` evita que CUALQUIER otro handler
+ *   corra después y cause doble toggle.
+ *   MutationObserver: re-bind cuando bell/voice se montan tarde.
  *
- * Diagnostic:
- *   window.__altorraHeaderDiag()   → reporte completo
- *   window.__altorraDebugClicks    → loga cada click + path
- *   window.__altorraClickPath(x,y) → lista elementos en (x,y)
+ * BOTONES:
+ *   - #activityFeedTrigger      → AltorraActivityFeed.toggle
+ *   - #headerNotifBell .bell    → notifyCenter.togglePanel  (público en v5)
+ *   - #altorra-voice-btn        → AltorraVoice.toggle
+ *
+ * Diagnostic: window.__altorraHeaderDiag()
  */
 (function () {
     'use strict';
@@ -32,7 +33,91 @@
     window.__altorraHeaderFixed = true;
 
     /* ═══════════════════════════════════════════════════════════
-       1. CLEANUP DE OVERLAYS HUÉRFANOS
+       1. BIND DIRECTO POR BOTÓN — listener en el botón mismo
+       ═══════════════════════════════════════════════════════════ */
+    var BUTTONS = [
+        {
+            selector: '#activityFeedTrigger',
+            action: function () {
+                if (window.AltorraActivityFeed && window.AltorraActivityFeed.toggle) {
+                    window.AltorraActivityFeed.toggle();
+                } else {
+                    console.warn('[HeaderFix] AltorraActivityFeed no disponible');
+                }
+            }
+        },
+        {
+            selector: '#altorra-voice-btn',
+            action: function () {
+                if (window.AltorraVoice && window.AltorraVoice.toggle) {
+                    window.AltorraVoice.toggle();
+                } else {
+                    console.warn('[HeaderFix] AltorraVoice no disponible');
+                }
+            }
+        },
+        {
+            // El bell vive DENTRO de #headerNotifBell, lo monta toast.js mount()
+            selector: '#headerNotifBell .altorra-bell',
+            action: function () {
+                if (window.notifyCenter && window.notifyCenter.togglePanel) {
+                    window.notifyCenter.togglePanel();
+                } else {
+                    console.warn('[HeaderFix] notifyCenter.togglePanel no disponible');
+                }
+            }
+        }
+    ];
+
+    function bindButton(spec) {
+        var btn = document.querySelector(spec.selector);
+        if (!btn) return false;
+        if (btn._headerFixV5Bound) return true;
+        btn._headerFixV5Bound = true;
+
+        btn.addEventListener('click', function (e) {
+            // stopImmediatePropagation: evita que CUALQUIER otro handler
+            // del mismo elemento (ej. el listener nativo del bell en
+            // toast.js:1027) corra después y haga doble-toggle.
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            try {
+                spec.action();
+            } catch (err) {
+                console.error('[HeaderFix] Error en acción de', spec.selector, err);
+            }
+        }, false);
+        return true;
+    }
+
+    function bindAll() {
+        BUTTONS.forEach(bindButton);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       2. MUTATION OBSERVER — re-bind cuando elementos se montan tarde
+       ═══════════════════════════════════════════════════════════ */
+    var observer = null;
+    var lastBindAttempt = 0;
+    function startObserver() {
+        if (observer || !window.MutationObserver) return;
+        observer = new MutationObserver(function (mutations) {
+            // Throttle a max 1 bind cada 100ms para no saturar
+            var now = Date.now();
+            if (now - lastBindAttempt < 100) return;
+            for (var i = 0; i < mutations.length; i++) {
+                if (mutations[i].addedNodes && mutations[i].addedNodes.length > 0) {
+                    lastBindAttempt = now;
+                    bindAll();
+                    return;
+                }
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       3. CLEANUP DE OVERLAYS HUÉRFANOS (defense-in-depth)
        ═══════════════════════════════════════════════════════════ */
     var WHITELIST_IDS = [
         'altorra-concierge', 'altorra-concierge-btn',
@@ -79,7 +164,6 @@
             if (isNaN(z) || z < 9000) return;
             if (cs.display === 'none' || cs.pointerEvents === 'none') return;
             if (ACTIVE_CLASSES.some(function (c) { return el.classList.contains(c); })) return;
-            // Sospechoso. Hide.
             el.style.pointerEvents = 'none';
             el.style.display = 'none';
             console.warn('[HeaderFix] Hidden suspected overlay:', el.id || el.className);
@@ -87,7 +171,7 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-       2. DIAGNOSTIC TOOLS
+       4. DIAGNOSTIC TOOLS
        ═══════════════════════════════════════════════════════════ */
     window.__altorraClickPath = function (x, y) {
         var path = (document.elementsFromPoint && document.elementsFromPoint(x, y)) || [];
@@ -95,12 +179,10 @@
             try {
                 var cs = getComputedStyle(el);
                 return {
-                    rank: i,
-                    tag: el.tagName,
+                    rank: i, tag: el.tagName,
                     id: el.id || '',
                     cls: (el.className || '').toString().substr(0, 60),
-                    zIndex: cs.zIndex,
-                    pointerEvents: cs.pointerEvents
+                    zIndex: cs.zIndex, pointerEvents: cs.pointerEvents
                 };
             } catch (e) { return { error: String(e) }; }
         });
@@ -121,30 +203,26 @@
             apis: {
                 AltorraActivityFeed: !!window.AltorraActivityFeed,
                 notifyCenter: !!window.notifyCenter,
-                AltorraVoice: !!window.AltorraVoice,
-                bellMounted: !!document.querySelector('.altorra-bell'),
-                panelMounted: !!document.querySelector('.altorra-notify-center')
+                notifyCenterTogglePanel: !!(window.notifyCenter && window.notifyCenter.togglePanel),
+                AltorraVoice: !!window.AltorraVoice
             },
             highZOverlays: []
         };
-        ['activityFeedTrigger', 'headerNotifBell', 'altorra-voice-btn'].forEach(function (id) {
-            var el = document.getElementById(id);
+        BUTTONS.forEach(function (spec) {
+            var el = document.querySelector(spec.selector);
             if (!el) {
-                report.buttons[id] = { exists: false };
+                report.buttons[spec.selector] = { exists: false };
                 return;
             }
             var rect = el.getBoundingClientRect();
-            // Test elementFromPoint en el centro del botón
             var cx = rect.left + rect.width / 2;
             var cy = rect.top + rect.height / 2;
             var topEl = document.elementFromPoint(cx, cy);
-            var topInfo = topEl ? (topEl.tagName + (topEl.id ? '#' + topEl.id : '') +
-                                   (topEl.className ? '.' + (topEl.className + '').substr(0, 30) : '')) : 'null';
-            report.buttons[id] = {
+            report.buttons[spec.selector] = {
                 exists: true,
-                rect: rect,
-                topElementAtCenter: topInfo,
-                isCovered: topEl !== el && !el.contains(topEl) && !topEl.closest(el.id ? '#' + el.id : '__'),
+                bound: !!el._headerFixV5Bound,
+                topAtCenter: topEl ? (topEl.tagName + (topEl.id ? '#' + topEl.id : '') + '.' + (topEl.className + '').substr(0, 30)) : 'null',
+                isCovered: topEl !== el && !el.contains(topEl)
             };
         });
         Array.prototype.slice.call(document.body.children).forEach(function (el) {
@@ -156,9 +234,7 @@
                 report.highZOverlays.push({
                     id: el.id || '(no-id)',
                     class: (el.className || '').toString().substr(0, 60),
-                    zIndex: z,
-                    display: cs.display,
-                    pointerEvents: cs.pointerEvents
+                    zIndex: z, display: cs.display, pointerEvents: cs.pointerEvents
                 });
             } catch (e) {}
         });
@@ -169,15 +245,21 @@
     };
 
     /* ═══════════════════════════════════════════════════════════
-       3. INIT — cleanup puntual al cargar y a 2s/5s
+       5. INIT
        ═══════════════════════════════════════════════════════════ */
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', cleanupOverlays);
-    } else {
+    function init() {
         cleanupOverlays();
+        bindAll();
+        startObserver();
     }
-    setTimeout(cleanupOverlays, 2000);
-    setTimeout(cleanupOverlays, 5000);
 
-    console.info('[HeaderFix] v4 instalado — cleanup defensivo. Handlers nativos de cada botón se encargan de los clicks.');
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+    setTimeout(function () { bindAll(); cleanupOverlays(); }, 1000);
+    setTimeout(function () { bindAll(); cleanupOverlays(); }, 3000);
+
+    console.info('[HeaderFix] v5 instalado — listeners directos en cada botón con stopImmediatePropagation.');
 })();

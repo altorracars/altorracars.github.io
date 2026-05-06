@@ -1280,6 +1280,10 @@
     }
 
     // ─── Public API ─────────────────────────────────────────────
+    // Refs accesibles para bindings externos (admin-header-fix.js)
+    var _publicBellRef = null;
+    var _publicPanelRef = null;
+
     window.notifyCenter = {
         add: add,
         notify: emitCategorical,
@@ -1297,9 +1301,23 @@
         stopFirestoreSync: stopFirestoreSync,
         mount: function(target) {
             var el = typeof target === 'string' ? document.querySelector(target) : target;
-            return createBell(el);
+            var bell = createBell(el);
+            // Guarda refs para que admin-header-fix pueda invocar togglePanel
+            _publicBellRef = bell;
+            _publicPanelRef = document.querySelector('.altorra-notify-center');
+            return bell;
         },
-        injectIntoHeader: injectIntoHeader
+        injectIntoHeader: injectIntoHeader,
+        // Expuesto para admin-header-fix v5 — toggle programático del panel
+        togglePanel: function() {
+            if (!_publicPanelRef) _publicPanelRef = document.querySelector('.altorra-notify-center');
+            if (!_publicBellRef) _publicBellRef = document.querySelector('.altorra-bell');
+            if (_publicPanelRef) togglePanel(_publicPanelRef, _publicBellRef);
+        },
+        closePanel: function() {
+            if (!_publicPanelRef) _publicPanelRef = document.querySelector('.altorra-notify-center');
+            if (_publicPanelRef) closePanel(_publicPanelRef);
+        }
     };
 
     // ─── Init ──────────────────────────────────────────────────

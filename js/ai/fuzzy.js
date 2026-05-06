@@ -354,18 +354,134 @@
     }
 
     /* ─────────────────────────────────────────────────────────────
+       §24 FASE 1 — Stems verbales (raíces conjugacionales españolas)
+       Mapea variantes verbales conjugadas a su forma canonical para
+       que el classifier pueda reconocer "tendras" → "tener" sin
+       necesitar todas las conjugaciones en el LEXICON.
+       ───────────────────────────────────────────────────────────── */
+    var VERB_STEMS = {
+        'ten': ['tener', 'tienes', 'tiene', 'tendras', 'tendrás', 'tendran', 'tendrá', 'tendrán', 'tienen', 'tengo', 'tenés', 'teneis', 'tienen'],
+        'mostr': ['mostrar', 'muestra', 'muestrame', 'muéstrame', 'muestran', 'muestre'],
+        'ver': ['ver', 've', 'viendo', 'mirar', 'mira', 'mireme', 'mirame', 'miremos'],
+        'busc': ['buscar', 'busco', 'busca', 'buscando', 'buscaba', 'buscarás'],
+        'quer': ['querer', 'quiero', 'quieres', 'quisiera', 'querría', 'queria', 'quería'],
+        'pod': ['poder', 'puede', 'pueden', 'podría', 'podrias', 'puedo', 'podemos'],
+        'sab': ['saber', 'sabes', 'sabe', 'saben', 'sabré', 'sabras'],
+        'hab': ['haber', 'hay', 'había', 'habrá', 'habría'],
+        'man': ['manejar', 'manejan', 'maneja', 'venden', 'vendés'],
+        'compr': ['comprar', 'compro', 'compre', 'compraré', 'comprando'],
+        'vend': ['vender', 'vendo', 'vende', 'venden', 'vendés', 'vendiendo']
+    };
+    // Map inverso: variante → canonical stem
+    var STEM_LOOKUP = {};
+    Object.keys(VERB_STEMS).forEach(function (stem) {
+        VERB_STEMS[stem].forEach(function (variant) {
+            STEM_LOOKUP[normalize(variant)] = stem;
+        });
+    });
+
+    /**
+     * stemmize — convierte una palabra a su raíz canonical si la conoce.
+     * Si no, retorna la palabra original.
+     * Ejemplo: stemmize('tendras') → 'ten'
+     *          stemmize('tienes')  → 'ten'
+     *          stemmize('xyz')     → 'xyz'
+     */
+    function stemmize(word) {
+        if (!word) return word;
+        var n = normalize(word);
+        if (STEM_LOOKUP[n]) return STEM_LOOKUP[n];
+        // Fallback: si la palabra empieza con un stem conocido (≥3 chars),
+        // usamos el stem como prefijo canonical
+        var keys = Object.keys(VERB_STEMS);
+        for (var i = 0; i < keys.length; i++) {
+            var s = keys[i];
+            if (s.length >= 3 && n.indexOf(s) === 0) {
+                return s;
+            }
+        }
+        return n;
+    }
+
+    /**
+     * §24 FASE 1 — matchAdaptive (versión más permisiva de match()).
+     * Threshold adaptativo según longitud de la palabra:
+     *   2-3 chars → 1.0 (match exacto, anti-falso-positivo)
+     *   4-5 chars → 0.80
+     *   6-8 chars → 0.72  ← "tendras" vs "tienes" passes
+     *   9+ chars  → 0.65
+     *
+     * Además de fuzzy, prueba match por stem si una de las palabras
+     * tiene un stem verbal conocido.
+     */
+    function matchAdaptive(needle, haystack) {
+        if (!needle || !haystack) return false;
+        needle = normalize(needle);
+        haystack = normalize(haystack);
+        if (needle === haystack) return true;
+        if (haystack.indexOf(needle) !== -1) return true;
+
+        // Stem match
+        var needleStem = stemmize(needle);
+        var hayWords = haystack.split(/\s+/).filter(Boolean);
+        for (var i = 0; i < hayWords.length; i++) {
+            var hw = hayWords[i];
+            if (stemmize(hw) === needleStem && needleStem.length >= 3) return true;
+        }
+
+        // Threshold adaptativo
+        function thresholdFor(w) {
+            if (w.length <= 3) return 1.0;   // match exacto
+            if (w.length <= 5) return 0.80;
+            if (w.length <= 8) return 0.72;
+            return 0.65;
+        }
+
+        for (var j = 0; j < hayWords.length; j++) {
+            var hw2 = hayWords[j];
+            if (!hw2) continue;
+            var th = thresholdFor(needle);
+            if (similarity(needle, hw2) >= th) return true;
+        }
+        // Comparación full-string como último recurso
+        return similarity(needle, haystack) >= thresholdFor(needle);
+    }
+
+    /**
+     * §24 FASE 1 — generateNgrams: bigramas y trigramas del texto.
+     * Útil para que el classifier matchee frases compuestas como
+     * "carros por ahi" o "tendras autos" como una unidad.
+     */
+    function generateNgrams(text, sizes) {
+        sizes = sizes || [2, 3];
+        var tokens = tokenize(text);
+        var grams = [];
+        sizes.forEach(function (n) {
+            for (var i = 0; i <= tokens.length - n; i++) {
+                grams.push(tokens.slice(i, i + n).join(' '));
+            }
+        });
+        return grams;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
        PUBLIC API
        ───────────────────────────────────────────────────────────── */
     window.AltorraFuzzy = {
         distance: distance,
         similarity: similarity,
         match: match,
+        matchAdaptive: matchAdaptive,
+        stemmize: stemmize,
+        generateNgrams: generateNgrams,
         bestMatch: bestMatch,
         expandSynonyms: expandSynonyms,
         tokenize: tokenize,
         normalize: normalize,
         SYNONYMS: SYNONYMS,
         STOP_WORDS: STOP_WORDS,
-        _REVERSE_INDEX: REVERSE_INDEX
+        VERB_STEMS: VERB_STEMS,
+        _REVERSE_INDEX: REVERSE_INDEX,
+        _STEM_LOOKUP: STEM_LOOKUP
     };
 })();

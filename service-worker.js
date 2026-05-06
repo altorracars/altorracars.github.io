@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506060000'; // Documentación RCA en CLAUDE.md (lección aprendida + reglas operativas 17.12-17.14)
+const CACHE_VERSION = 'v20260506070000'; // Doc CLAUDE.md §19 — Metodología RCA Mode (4 fases + plantilla prompt + anti-patterns)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

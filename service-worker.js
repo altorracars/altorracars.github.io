@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506100000'; // Concierge IA: Lead Gate + intent classifier + handoff dinamico + AC logo + admin power-ups (pin/archive/unread/delete)
+const CACHE_VERSION = 'v20260506110000'; // Lead Gate compactado — entra todo sin scroll, Cédula+Celular en row, paddings reducidos, breakpoint pantallas cortas
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

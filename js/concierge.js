@@ -860,8 +860,10 @@
                         '<label><span>Nombre *</span><input type="text" name="nombre" required minlength="2" autocomplete="given-name"></label>' +
                         '<label><span>Apellido *</span><input type="text" name="apellido" required minlength="2" autocomplete="family-name"></label>' +
                     '</div>' +
-                    '<label><span>Cédula *</span><input type="tel" name="cedula" required pattern="[0-9]{5,12}" inputmode="numeric" placeholder="Sin puntos"></label>' +
-                    '<label><span>Celular *</span><input type="tel" name="celular" required pattern="3[0-9]{9}" inputmode="numeric" autocomplete="tel-national" placeholder="3201234567"></label>' +
+                    '<div class="cnc-gate-row">' +
+                        '<label><span>Cédula *</span><input type="tel" name="cedula" required pattern="[0-9]{5,12}" inputmode="numeric" placeholder="Sin puntos"></label>' +
+                        '<label><span>Celular *</span><input type="tel" name="celular" required pattern="3[0-9]{9}" inputmode="numeric" autocomplete="tel-national" placeholder="3201234567"></label>' +
+                    '</div>' +
                     '<label><span>Correo *</span><input type="email" name="correo" required autocomplete="email" placeholder="tu@correo.com"></label>' +
                     '<label class="cnc-gate-consent"><input type="checkbox" name="consent" required>' +
                         '<span>Autorizo que un asesor de Altorra Cars me contacte por email/WhatsApp.</span>' +

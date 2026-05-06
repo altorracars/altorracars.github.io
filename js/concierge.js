@@ -1182,13 +1182,11 @@
         '¿Quieres ver opciones de financiación? 💳'
     ];
     var _ctaTimer = null;
-    var _ctaShownAt = 0;
     var _ctaSnoozeUntil = 0;
-    var CTA_FIRST_DELAY_MS = 8000;
-    var CTA_INTERVAL_MS = 38000;          // cada ~38s en modo activo
-    var CTA_INTERVAL_LOW_MS = 180000;     // cada 3 min si ya conversó
-    var CTA_VISIBLE_MS = 6500;            // visible 6.5s
-    var CTA_SNOOZE_MS = 5 * 60 * 1000;    // 5 min tras cerrar manualmente
+    var CTA_FIRST_DELAY_MS = 2000;        // primer mensaje a los 2s del page load
+    var CTA_VISIBLE_MS = 6000;            // visible exactamente 6s
+    var CTA_HIDE_INTERVAL_MS = 6000;      // 6s de pausa entre mensaje y mensaje
+    var CTA_SNOOZE_MS = 5 * 60 * 1000;    // 5 min tras cerrar manualmente con X
     var SNOOZE_KEY = 'altorra_cta_snooze';
 
     function pickCtaMessage() {
@@ -1213,27 +1211,19 @@
         try { localStorage.setItem(SNOOZE_KEY, String(_ctaSnoozeUntil)); } catch (e) {}
     }
 
+    function canShowCta() {
+        if (_isOpen) return false;
+        if (Date.now() < _ctaSnoozeUntil) return false;
+        if (document.hidden) return false;
+        return true;
+    }
+
     function showCtaBubble() {
         var el = document.getElementById('altorra-cta-bubble');
         var txt = document.getElementById('altorraCtaBubbleText');
-        if (!el || !txt) return;
-        // No mostrar si: panel abierto, snooze activo, o tab oculto
-        if (_isOpen) return;
-        if (Date.now() < _ctaSnoozeUntil) return;
-        if (document.hidden) return;
-
+        if (!el || !txt || !canShowCta()) return;
         txt.textContent = pickCtaMessage();
         el.classList.add('is-visible');
-        _ctaShownAt = Date.now();
-
-        // Auto-hide tras N segundos
-        setTimeout(function () {
-            // Solo ocultar si el bubble sigue siendo el mismo turno
-            // (si lo cerraron antes con X, no hacer nada)
-            if (Date.now() - _ctaShownAt >= CTA_VISIBLE_MS - 100) {
-                hideCtaBubble();
-            }
-        }, CTA_VISIBLE_MS);
     }
 
     function hideCtaBubble() {
@@ -1241,24 +1231,36 @@
         if (el) el.classList.remove('is-visible');
     }
 
+    /**
+     * Ciclo del CTA bubble:
+     *   2s tras page load → primer mensaje
+     *   6s visible
+     *   6s sin mensaje
+     *   próximo mensaje (loop)
+     *
+     * Si el panel está abierto, snooze activo o tab oculto, salta el
+     * mensaje pero mantiene el ritmo (no acelera al volver visible —
+     * sigue el ciclo natural de 6s+6s).
+     */
     function scheduleCtaBubble() {
         loadCtaSnooze();
-        // Primer trigger después de delay inicial
         if (_ctaTimer) clearTimeout(_ctaTimer);
-        _ctaTimer = setTimeout(function tick() {
-            // Solo mostrar si el panel NO está abierto y no hay snooze
-            if (!_isOpen && Date.now() >= _ctaSnoozeUntil && !document.hidden) {
-                showCtaBubble();
-            }
-            // Reagendar
-            var nextInterval = (session.gateCompleted || (session.messages && session.messages.length > 0))
-                ? CTA_INTERVAL_LOW_MS
-                : CTA_INTERVAL_MS;
-            _ctaTimer = setTimeout(tick, nextInterval);
-        }, CTA_FIRST_DELAY_MS);
 
-        // Si el tab pasa a background, no spam — pausamos el ciclo y
-        // resumimos al volver visible.
+        function showThenHide() {
+            if (canShowCta()) showCtaBubble();
+            // Sea que se mostró o no, después de CTA_VISIBLE_MS lo ocultamos
+            // y agendamos el próximo ciclo.
+            _ctaTimer = setTimeout(function () {
+                hideCtaBubble();
+                _ctaTimer = setTimeout(showThenHide, CTA_HIDE_INTERVAL_MS);
+            }, CTA_VISIBLE_MS);
+        }
+
+        // Primer trigger: 2s tras page load
+        _ctaTimer = setTimeout(showThenHide, CTA_FIRST_DELAY_MS);
+
+        // Tab oculto → ocultar inmediatamente. Cuando vuelva visible
+        // el ciclo natural retoma con su próximo tick.
         document.addEventListener('visibilitychange', function () {
             if (document.hidden) hideCtaBubble();
         });

@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506140000'; // ALTOR mas grande + spin feliz on hover + CTA bubble rotativo cada 38s
+const CACHE_VERSION = 'v20260506150000'; // ALTOR happy dance + sparkles + CTA timing 2/6/6 + burbuja pensamiento + doc seccion 20
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

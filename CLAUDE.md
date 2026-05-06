@@ -9751,3 +9751,401 @@ hipótesis obvia**.
 > sección y aplicá las 4 fases. La metodología funcionó:
 > resolvió en 1 sesión un bug que 5 commits anteriores no
 > habían podido arreglar.
+
+---
+
+## 20. Concierge → ALTOR (Iteraciones cliente 2026-05-06)
+
+> Refactor del Bloque U del Mega-Plan v4 ejecutado bajo RCA Mode
+> tras feedback iterativo del cliente. La sesión arrancó con un
+> Concierge genérico tipo "sparkles + wizard rígido legacy" y
+> terminó con **ALTOR** — bot con identidad propia, IA conversacional
+> real, y power-ups admin-side. Todo documentado para futuras
+> referencias.
+
+### 20.1 Línea de tiempo de iteraciones
+
+| # | Cambio | Commit |
+|---|---|---|
+| 1 | Refactor Concierge — íconos sparkles + KB seeder de 10 FAQs fundacionales + escalateToLive con waitForAuthThen | `066e239` |
+| 2 | PURGA TOTAL — eliminado IIFE legacy 1032 líneas embebido en `components.js` + vehicle-thread.js + admin-inbox.js eliminados + Inbox unificado | `dd0f2b9` |
+| 3 | Concierge IA — Lead Gate + intent classifier + handoff dinámico + admin power-ups (pin/archive/unread/delete) | `d9779a4` |
+| 4 | Lead Gate compactado para entrar sin scroll en panel de 560px | `d10f2fc` |
+| 5 | ALTOR — rebranding con imagen PNG propia + naming "Asistente Virtual IA" | `fa1f111` |
+| 6 | ALTOR FAB flotante — sin círculo dorado, drop-shadow respeta canal alpha | `d6f848a` |
+| 7 | ALTOR mejoras de personalidad — más grande + hover spin + CTA bubble rotativo cada 38s | `950fa23` |
+| 8 | ALTOR happy dance + CTA timing 6s+6s + burbuja de pensamiento + sparkles orbitando | (este commit) |
+
+### 20.2 Causa raíz del wizard verde de WhatsApp
+
+El cliente reportó que tras shippear el Concierge unificado (U.4)
+seguía apareciendo un "wizard rígido con botón verde de WhatsApp"
+en bottom-right de las páginas públicas. Tras el primer escaneo
+NADA aparecía cargando `whatsapp-widget.js` ni `ai-assistant.js`
+externamente.
+
+**Causa real**: dentro de `js/components.js` líneas 910-1942 vivía
+un IIFE separado de **1,032 líneas** marcado como
+`// ASISTENTE WHATSAPP — integrado aquí para evitar HTTP extra`.
+Era el wizard completo (FAB verde con logo WhatsApp, panel "AC /
+Asistente ALTORRA / En linea", 5 botones rígidos
+"Comprar/Financiar/Vender/Agendar/Asesor", redirect a `wa.me/`).
+
+Cuando se shippeó U.4 eliminamos los archivos externos pero NUNCA
+borramos este IIFE embebido. Por eso el flujo legacy seguía vivo
+aunque components.js no cargara los scripts viejos.
+
+**Patrón de debugging que lo encontró**: grep del texto literal
+"Asistente ALTORRA" en todo el repo. El usuario había compartido
+captura con ese texto exacto, y el grep lo encontró en components.js.
+
+**Fix**: eliminadas líneas 910-1942 con awk truncate. Conservadas
+las funciones exportadas (`loadAllComponents`, etc.) en líneas
+1-909.
+
+### 20.3 Inbox admin unificado
+
+Antes había DOS bandejas redundantes:
+- `Mensajes vehículo` → `js/admin-inbox.js` → colección `mensajes/`
+- `Concierge` → `js/admin-concierge.js` → colección `conciergeChats/`
+
+Asesor tenía que revisar dos lugares. Solución:
+
+1. `js/vehicle-thread.js` ELIMINADO. Botón "Hacer pregunta" en
+   detalle-vehiculo cambia handler de `data-action="ask-vehicle"`
+   a `data-action="open-concierge-vehicle"`.
+2. `js/admin-inbox.js` ELIMINADO. Sec-inbox HTML removida.
+3. `js/concierge.js` nueva función `openWithVehicleContext(opts)`:
+   - Setea `session.sourceVehicleId`
+   - Si la sesión está vacía, siembra greeting contextualizado
+     mencionando marca+modelo+año del vehículo (resuelto via
+     cascada: `opts.vehicleTitle` → `vehicleDB.vehicles.find(id)`
+     → DOM `.vehicle-title` → `<h1>` filtrado por regex →
+     fallback "este vehículo")
+4. `admin.html` sec-concierge renombrado a "Inbox unificado".
+5. `js/admin-section-router.js` añadido alias `inbox → concierge`
+   para que deep-links viejos `#/inbox` redirijan automáticamente.
+6. Total 26 archivos HTML actualizados con script Python idempotente
+   (detalle-vehiculo + 25 vehiculos/*.html generadas).
+
+### 20.4 Lead Capture Gate
+
+Form obligatorio antes del primer mensaje del cliente (inspirado
+en flujos bancarios). 5 campos:
+- Nombre + Apellido (en flex-row)
+- Cédula (regex `[0-9]{5,12}`) + Celular (regex `3[0-9]{9}` Colombia,
+  ambos en flex-row)
+- Correo (regex email)
+- Checkbox consent (obligatorio para legal/GDPR)
+
+Al submit:
+- Persist `session.profile = {...}` + `session.gateCompleted = true`
+- `session.level = 2` (L2 contactable de progressive profiling)
+- Trigger `createSoftContact()` con datos completos
+- Fade-out gate, fade-in chat con greeting personalizado por nombre
+
+Auth users con perfil completo (uid+email+nombre) saltan el gate
+automáticamente.
+
+**Compactación CSS** tras feedback del cliente (form salía del
+viewport en panel de 560px):
+- Padding 18→12px, font-sizes -1 escalón cada uno
+- Gap 10→7px, input padding 9×10→7×9
+- Cédula+Celular en row (ahorra ~70px verticales)
+- `@media (max-height: 600px)` adicional para laptops chicos
+
+### 20.5 Intent Classifier (`js/ai/intent.js`)
+
+Módulo nuevo rule-based, sub-ms, 13 intents:
+- `greeting`, `thanks`, `goodbye`
+- `inventory_query`, `pricing_query`, `availability_query`
+- `financiacion_query`, `appointment_request`, `sell_my_car`
+- `confirmation`, `negation`, `frustration`, `ask_human`
+
+Lexicon con 100+ keywords coloquiales colombianos. Match score por
+longitud del keyword (más largo = más específico). Confidence
+proporcional a cobertura del keyword sobre el mensaje.
+
+**Memoria conversacional** en `session.context`:
+```js
+{
+    lastIntent: 'greeting',
+    lastTurnAt: timestamp,
+    discussedTopics: ['financiacion', 'mazda'],
+    bot_repeated_count: 0
+}
+```
+
+`AltorraIntent.shouldVary(context)` → true si bot_repeated_count
+≥ 2, marca para variar respuesta y no parecer robótico.
+
+**Refactor `generateBotResponse()`**: 15 ramas en cascada con
+prioridades. Detección de intent ANTES del KB para responder
+naturalmente:
+- `greeting` → 3 variantes con personalización por firstName
+- `thanks` → "¡De nada! Cualquier otra cosa, aquí estoy 🙌"
+- `goodbye` → "¡Hasta pronto! 👋"
+- `inventory_query` → consulta `vehicleDB.vehicles` para conteo real
+- `pricing_query` + NER detecta marca → busca precio real en vehicleDB
+- `frustration` / `ask_human` / sentiment <-0.5 → escalar inmediato
+- Context-aware: `confirmation` tras topic discutido → escalar al topic
+
+Anti-repetición: si cliente repite mismo intent 2+ veces, fallback
+varía y sugiere escalar.
+
+### 20.6 Handoff dinámico
+
+Cuando llega el primer mensaje `from='asesor'` vía onSnapshot:
+1. Detecta primer asesor mensaje (`!session.activeAsesor`)
+2. Inserta mensaje sistema `from='system'` con texto
+   `"✓ {asesorNombre} se ha unido al chat"` con clase `cnc-system-msg`
+   (verde claro, centrado, animación cncMsgIn)
+3. `session.activeAsesor = { uid, nombre, photoURL }`
+4. `applyAsesorHeader()`:
+   - Title: "ALTOR" → `{asesorNombre}` (ej. "Daniel Romero")
+   - Status: "Asistente Virtual IA · Altorra Cars" → "En vivo · responde ahora"
+   - Avatar: ALTOR.png → `<img src="photoURL">` o `<span>` con iniciales
+
+`admin-concierge.js sendAsesorMessage()` envía `asesorPhotoURL` desde
+`AP.currentUserProfile.photoURL` para que cliente vea avatar real.
+
+`renderMessages()` extendido para soportar `from='system'`: clase
+distinta `.cnc-system-msg` con border verde y centrado.
+
+### 20.7 Admin Concierge Power-ups
+
+**Schema extendido** `conciergeChats/{sid}` (sin requerir cambio
+de rules — la regla `allow update if isEditorOrAbove()` cubre):
+- `isPinned: bool, pinnedAt: timestamp`
+- `isArchived: bool, archivedAt, archivedBy`
+- `isDeleted: bool, deletedAt, deletedBy` (soft-delete)
+- `forceUnreadByAdmin: bool` (marca manual no leído)
+
+**Filter bar** (4 chips encima de la lista):
+- Activos (default — `!isArchived && !isDeleted`)
+- Fijados (`isPinned`)
+- Archivados (`isArchived`)
+- Eliminados (`isDeleted` — solo super_admin)
+
+Cada chip con count dinámico calculado on-render.
+
+**Menú contextual** botón "..." aparece on hover/focus en cada chat:
+- 📌 Fijar / Quitar fijación → toggle `isPinned`
+- 📁 Archivar / Desarchivar → toggle `isArchived` (chat sale del
+  default view, accesible vía filtro)
+- ✉ Marcar como no leído → set `forceUnreadByAdmin: true`
+- 🗑 Eliminar → soft-delete con confirm doble (super_admin only)
+- ↺ Restaurar → desde filtro Eliminados
+
+**State badges** visuales en cada item:
+- Pin dorado si `isPinned`
+- Archive gris si `isArchived`
+- Trash rojo si `isDeleted`
+
+**Sort**: pinned primero, luego por `lastMessageAt` desc.
+Limit aumentado de 50 → 100.
+
+`openChat(sid)` resetea `forceUnreadByAdmin: false` además del unread.
+
+### 20.8 ALTOR — identidad y branding
+
+**Nombre**: el cliente subió un PNG propio (`ALTOR.png` en raíz del
+repo) con un robot dorado con headset, ojos cyan, sonriente. Decidió
+nombrarlo "ALTOR" y presentarlo como "Asistente Virtual IA · Altorra
+Cars".
+
+**Cambios**:
+- `AC_LOGO_SVG` (monograma SVG inline) → `ALTOR_AVATAR_HTML` con
+  `<img src="/ALTOR.png" loading="eager" decoding="async">`
+- Ruta absoluta `/ALTOR.png` para resolver desde cualquier página
+  (raíz, /vehiculos/, /marcas/)
+- `onerror` fallback a `<span class="cnc-altor-fallback">AL</span>`
+  (defensa si PNG falla a cargar)
+- Title del header: "Asistente Virtual" → **"ALTOR"**
+- Subtítulo: "Altorra Cars · respuesta inmediata" → **"Asistente
+  Virtual IA · Altorra Cars"**
+- Greeting post-gate y welcome bubble se presentan con el nombre:
+  `"¡Hola Daniel! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra
+  Cars. Veo que te interesa el {vehicle}..."`
+- aria-labels actualizados: "Abrir ALTOR — Asistente Virtual IA..."
+
+### 20.9 FAB flotante (sin círculo)
+
+Tras feedback del cliente "el PNG ya tiene su efecto integrado, no lo
+metas dentro de un círculo dorado":
+
+**FAB**:
+- Background → `transparent` (era radial-gradient dark)
+- Border → `none` (era 2px solid #c9a663)
+- Overflow → `visible` (era hidden — clipping circular eliminado)
+- `border-radius` removido del button
+- Width/Height → 92×92 desktop, 78×78 mobile
+- `box-shadow` → `filter: drop-shadow()` doble que **respeta canal
+  alpha** del PNG. Solo sombrea la silueta visible del bot, no el
+  bounding rectangle.
+
+**Avatar del header del chat**: SE MANTIENE dentro del círculo dorado
+(foto de perfil clásica recortada redonda). Override scoped:
+`.cnc-avatar .cnc-altor-img { object-fit: cover; border-radius: 50%; }`
+
+**Animaciones**:
+- `altorFloat` (3.4s loop) → `translateY 0 → -4px → 0`. Sutil flotación
+- `altorGlow` (3s loop) → `filter: drop-shadow` dorado pulsante con
+  tinte amarillo cálido en el peak (`rgba(245, 223, 128, 0.45)`)
+
+**Hover happy dance** (1.6s loop infinito mientras hover):
+```css
+@keyframes altorHappyDance {
+    0%, 100% { rotate(0)   translateY(0)  scale(1); }
+    25%      { rotate(10)  translateY(-7) scale(1.10); }
+    50%      { rotate(8)   translateY(-7) scale(1.10); }
+    75%      { rotate(5)   translateY(-5) scale(1.08); }
+    /* + alternaciones tilt -10/-8/-5/-2 deg con bounce */
+}
+```
+Sin giro completo (era robótico). Tilt rítmico ±10° + bounce
+vertical + scale variable. Easing in-out humano natural.
+
+**Sparkles orbitando**: 2 pseudo-elementos del button (`::before`
+y `::after`) con backgrounds radial dorados. Solo visibles on hover.
+Trayectorias circulares con `keyframes altorSparkleA/B` que combinan
+translate + scale + opacity.
+
+### 20.10 CTA Bubble — invitación rotativa
+
+Burbuja blanca cremosa flotante junto al FAB con mensajes rotativos
+invitando a conversar. Inspirado en chat-bubbles de Drift/Intercom.
+
+**Diseño**:
+- Background `linear-gradient(135deg, #fefdf6, #fff7e0)` (blanco crema)
+- `border-radius: 18px` con esquina inferior derecha 6px (tail visual)
+- Tail triangular CSS via `::after` apuntando al FAB
+- Box-shadow doble: drop + tinte dorado + ring sutil
+
+**Mensajes rotativos** (no repite el anterior, sessionStorage de last_idx):
+```js
+[
+    '👋 ¡Hola! ¿Quieres hablar conmigo?',
+    '¡Quiero hablar contigo!',
+    '¿Buscas tu auto ideal? Pregúntame 🚗',
+    '💬 Estoy aquí para ayudarte',
+    '¿Tienes dudas? Te respondo en segundos',
+    'Hola, soy ALTOR. ¿En qué te ayudo?',
+    '¿Quieres ver opciones de financiación? 💳'
+]
+```
+
+**Timing exacto pedido por cliente**:
+- 2s tras page load → primer mensaje
+- 6s visible
+- 6s sin mensaje
+- Próximo mensaje (loop ad infinitum)
+- Ciclo total = 12s
+
+**Anti-spam**:
+- Panel abierto → `hideCtaBubble()` y no aparece
+- `document.hidden` (tab background) → ocultar
+- Click en X → snooze 5 min con persistencia en
+  `localStorage.altorra_cta_snooze`
+- Click en bubble (fuera de X) → abre el panel directo
+
+**Animación de aparición**:
+- Scale 0.85 → 1 + slide right→0 con cubic-bezier overshoot (0.55s)
+- 0.5s después: ping subtle `scale(1.05)` (animation `ctaBubbleAttention`)
+
+**Mobile** (`max-width: 480px`): bubble se posiciona ARRIBA del FAB
+en vez de a la izquierda (no hay espacio horizontal). Tail apunta
+hacia abajo.
+
+### 20.11 Burbuja de pensamiento — el panel sale de ALTOR
+
+El panel del chat ahora "emana" del FAB con efecto cómic:
+
+**Origen visual**:
+- `transform-origin: bottom right` (esquina cerca del FAB)
+- Estado cerrado: `transform: scale(0.06) translate(40px, 40px)` →
+  el panel arranca casi invisible cerca de la posición del FAB
+- Estado abierto: `transform: scale(1) translate(0, 0)`
+- Easing: `cubic-bezier(0.34, 1.5, 0.55, 1)` — overshoot suave tipo
+  burbuja inflando
+
+**Forma del panel**:
+- `border-radius: 22px 22px 6px 22px` — esquina inferior derecha
+  cuadrada (apunta hacia el FAB, refuerza la idea de tail)
+
+**Burbujas de pensamiento intermedias** (estilo cómic):
+- Pseudo-elementos `::before` (16×16px) y `::after` (9×9px) del
+  panel mismo
+- Posicionados entre el FAB y el panel (`bottom: -22px / -38px`)
+- Background dark gradient con border dorado (matching el panel)
+- Aparecen con delay escalonado (`::after` instant, `::before` 0.08s)
+- `transform: scale(0)` → `scale(1)` con cubic-bezier overshoot
+- Refuerzan visualmente que "el chat sale de ALTOR"
+
+### 20.12 Configuración Firestore — sin deploys manuales requeridos
+
+Todo el bloque de cambios v20.X NO requirió deploy manual de:
+- `firestore.rules` — la regla existente
+  `match /conciergeChats/{sid} { allow update: if isEditorOrAbove() ...}`
+  ya cubre los nuevos campos `isPinned`/`isArchived`/`isDeleted`/
+  `forceUnreadByAdmin`/`pinnedAt`/`archivedAt`/`archivedBy`/`deletedAt`/
+  `deletedBy`. No requiere `firebase deploy --only firestore:rules`.
+- Storage rules
+- Cloud Functions
+- RTDB rules
+
+Cache se invalida automáticamente en próximo page load del cliente
+vía bump del `CACHE_VERSION` en service-worker.js.
+
+### 20.13 Anti-patrones detectados durante el bloque
+
+| Anti-pattern | Caso real | Lección |
+|---|---|---|
+| Código legacy "integrado para evitar HTTP extra" embebido en otro archivo | IIFE de 1032 líneas en components.js | Si vas a "integrar" código de otro archivo, hacelo en una función exportada explícita o agregá un comment header MUY visible. NO embeberlo como IIFE separado donde se olvida con el tiempo. |
+| `document.querySelector('.vehicle-title, h1')` sin fallback de string vacío | "Veo que te interesa el ." | Siempre validar `if (!str || !str.trim())`, no solo `if (!el)`. Un h1 vacío retorna string vacío, no null. |
+| Animar SVG inline complejo en hover causa jank | Spin 360° sobre SVG con paths múltiples | Mejor usar `<img>` PNG con animation, o limitar SVG a 1-2 paths. |
+| `setInterval` para CTA bubble con tiempos rígidos | Cliente quería timing 2s+6s+6s preciso | Usar setTimeout recursivo en vez de setInterval para tener control exacto del ciclo (visible/hide). Más legible y reseteable. |
+| `transform-origin` default en panel grande hace que la animación se sienta "centrada" en la pantalla | Panel cnc-open arranca con `scale(0.96) translateY(20)` | Si querés que un panel salga de un punto específico (ej. FAB), `transform-origin: {posición del origen}` + scale agresivo (0.05-0.1) + translate del estado inicial. Da efecto burbuja-cómic auténtico. |
+
+### 20.14 Cómo extender ALTOR
+
+**Para agregar un mensaje nuevo al CTA bubble**:
+1. Agregar string al array `CTA_MESSAGES` en `js/concierge.js`
+2. Sin más cambios — el rotativo lo recoge automáticamente
+
+**Para agregar un nuevo intent al classifier**:
+1. Agregar entrada al objeto `LEXICON` en `js/ai/intent.js` con
+   keywords coloquiales relevantes
+2. Agregar rama `if (classification.intent === 'X')` en
+   `generateBotResponse()` con la respuesta apropiada
+3. Si es "topic-able" (ej. precio, financiación), agregar al
+   `topicMap` de `updateContext()` para que entre en
+   `discussedTopics[]`
+
+**Para agregar una nueva acción admin a chats**:
+1. Definir nuevo campo en el schema (ej. `isPriority`)
+2. Agregar la acción al menú contextual en `showChatMenu()` de
+   `admin-concierge.js` con su `action` y `icon`
+3. Crear función `togglePriority(sessionId)` que haga el `set({...},
+   { merge: true })`
+4. Agregar entrada al `case` de menu actions en `addEventListener`
+5. Optional: badge visual en `renderChatList()` con clase `.cnc-X`
+
+Sin requerir cambios de rules — la regla actual cubre cualquier
+campo nuevo del doc.
+
+**Para agregar un canal de WhatsApp legacy** (si volvemos a
+necesitarlo en el futuro):
+- `handoverToWhatsApp()` y `buildWhatsAppSummary()` en
+  `concierge.js` siguen existiendo como utilidades
+- NO están bound a botones públicos
+- Pueden invocarse manualmente desde el admin (caso U.14 — handover
+  refinado)
+- O llamarse directamente desde código nuevo:
+  `AltorraConcierge.session()` retorna estado completo
+
+> **Para Claude**: ALTOR es una pieza viva. Antes de tocar el bot,
+> probar el flujo end-to-end (open FAB → gate → primer mensaje →
+> intent → escalate → asesor responde). Si rompés cualquier parte
+> de la cascada de generateBotResponse, los siguientes turnos se
+> sienten robóticos. Ver §20.5 para extension safe.

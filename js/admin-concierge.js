@@ -82,11 +82,11 @@
      * Sort: pinned primero, luego por lastMessageAt desc.
      */
     function getVisibleChats() {
+        // isDeleted ya no existe (Hard delete real elimina el doc).
+        // Conservamos el filtro `!c.isDeleted` por compat con docs viejos.
         var filtered = _chats.filter(function (c) {
             if (_activeFilter === 'pinned') return c.isPinned && !c.isDeleted;
             if (_activeFilter === 'archived') return c.isArchived && !c.isDeleted;
-            if (_activeFilter === 'deleted') return c.isDeleted;
-            // default 'active': no archived, no deleted
             return !c.isArchived && !c.isDeleted;
         });
         filtered.sort(function (a, b) {
@@ -108,26 +108,20 @@
     function renderFilterBar() {
         var bar = $('conciergeFilterBar');
         if (!bar) return;
-        var counts = {
-            active: 0,
-            pinned: 0,
-            archived: 0,
-            deleted: 0
-        };
+        var counts = { active: 0, pinned: 0, archived: 0 };
         _chats.forEach(function (c) {
-            if (c.isDeleted) counts.deleted++;
-            else if (c.isArchived) counts.archived++;
+            if (c.isDeleted) return; // ignora docs viejos con flag legacy
+            if (c.isArchived) counts.archived++;
             else counts.active++;
-            if (c.isPinned && !c.isDeleted) counts.pinned++;
+            if (c.isPinned) counts.pinned++;
         });
-        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
+        // 3 chips — el "Eliminados" se removió: hard-delete purga el doc.
         var chips = [
-            { f: 'active',   label: 'Activos',    count: counts.active,    show: true },
-            { f: 'pinned',   label: 'Fijados',    count: counts.pinned,    show: true },
-            { f: 'archived', label: 'Archivados', count: counts.archived,  show: true },
-            { f: 'deleted',  label: 'Eliminados', count: counts.deleted,   show: isSuper }
+            { f: 'active',   label: 'Activos',    count: counts.active },
+            { f: 'pinned',   label: 'Fijados',    count: counts.pinned },
+            { f: 'archived', label: 'Archivados', count: counts.archived }
         ];
-        bar.innerHTML = chips.filter(function (c) { return c.show; }).map(function (c) {
+        bar.innerHTML = chips.map(function (c) {
             return '<button class="cnc-admin-filter-chip' +
                 (_activeFilter === c.f ? ' is-active' : '') +
                 '" data-filter="' + c.f + '">' +
@@ -177,7 +171,7 @@
             var stateBadges = '';
             if (c.isPinned) stateBadges += '<span class="cnc-admin-state-badge cnc-pin" title="Fijado"><i data-lucide="pin"></i></span>';
             if (c.isArchived) stateBadges += '<span class="cnc-admin-state-badge cnc-arch" title="Archivado"><i data-lucide="archive"></i></span>';
-            if (c.isDeleted) stateBadges += '<span class="cnc-admin-state-badge cnc-del" title="Eliminado"><i data-lucide="trash-2"></i></span>';
+            if (c.status === 'closed') stateBadges += '<span class="cnc-admin-state-badge cnc-closed" title="Cerrado"><i data-lucide="check-circle-2"></i></span>';
 
             return '<div class="cnc-admin-chat-item' + (isActive ? ' active' : '') + (unread > 0 ? ' has-unread' : '') +
                 '" data-session="' + escTxt(c._docId) + '">' +
@@ -254,33 +248,40 @@
         });
     }
 
-    function softDelete(sessionId) {
-        if (!confirm('¿Eliminar este chat? Quedará oculto pero se puede recuperar desde el filtro "Eliminados" (solo super_admin).')) return;
-        var uid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : null;
-        window.db.collection('conciergeChats').doc(sessionId).set({
-            isDeleted: true,
-            deletedAt: new Date().toISOString(),
-            deletedBy: uid
-        }, { merge: true }).then(function () {
-            if (AP.toast) AP.toast('Chat eliminado', 'success');
+    /**
+     * Hard delete — borra el chat permanentemente de Firestore junto
+     * con su subcolección de mensajes. Doble confirmación porque es
+     * irreversible. Solo super_admin (rules `allow delete: if isSuperAdmin()`).
+     */
+    function hardDeleteChat(sessionId) {
+        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+            if (AP.toast) AP.toast('Solo super admin puede eliminar chats', 'error');
+            return;
+        }
+        if (!confirm('⚠️ ELIMINAR PERMANENTEMENTE este chat?\n\nEsto borrará la conversación y todos sus mensajes de Firestore. NO se puede recuperar.')) return;
+        if (!confirm('Confirma una segunda vez: ¿borrar definitivamente?')) return;
+
+        var ref = window.db.collection('conciergeChats').doc(sessionId);
+        // 1. Borrar todos los mensajes de la subcolección en batch
+        ref.collection('messages').get().then(function (snap) {
+            var batch = window.db.batch();
+            var count = 0;
+            snap.forEach(function (doc) { batch.delete(doc.ref); count++; });
+            // Firestore batch limit is 500; con chats muy largos podría
+            // requerir paginar, pero conciergeChats típicamente tienen <100 msgs.
+            return batch.commit().then(function () { return count; });
+        }).then(function (count) {
+            // 2. Borrar el doc parent
+            return ref.delete().then(function () { return count; });
+        }).then(function (count) {
+            if (AP.toast) AP.toast('Chat y ' + count + ' mensajes eliminados', 'success');
             if (_activeSessionId === sessionId) {
                 _activeSessionId = null;
+                if (_messagesUnsub) { try { _messagesUnsub(); } catch (e) {} _messagesUnsub = null; }
                 renderChatDetail(null, []);
             }
         }).catch(function (err) {
             if (AP.toast) AP.toast('No se pudo eliminar: ' + err.message, 'error');
-        });
-    }
-
-    function restoreDeleted(sessionId) {
-        window.db.collection('conciergeChats').doc(sessionId).set({
-            isDeleted: false,
-            deletedAt: null,
-            deletedBy: null
-        }, { merge: true }).then(function () {
-            if (AP.toast) AP.toast('Chat restaurado', 'success');
-        }).catch(function (err) {
-            if (AP.toast) AP.toast('No se pudo restaurar: ' + err.message, 'error');
         });
     }
 
@@ -297,15 +298,15 @@
         if (!chat) return;
         var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
 
+        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
         var items = [
             { action: 'pin',     label: chat.isPinned ? 'Quitar fijación' : 'Fijar al top', icon: 'pin' },
             { action: 'archive', label: chat.isArchived ? 'Desarchivar' : 'Archivar',       icon: 'archive' },
             { action: 'unread',  label: 'Marcar como no leído',                              icon: 'mail' }
         ];
-        if (chat.isDeleted) {
-            items.push({ action: 'restore', label: 'Restaurar', icon: 'rotate-ccw' });
-        } else {
-            items.push({ action: 'delete', label: 'Eliminar', icon: 'trash-2', danger: true });
+        // Eliminar permanente: solo super_admin (hard delete real, sin soft).
+        if (isSuper) {
+            items.push({ action: 'delete', label: 'Eliminar permanente', icon: 'trash-2', danger: true });
         }
 
         var menu = document.createElement('div');
@@ -352,8 +353,7 @@
             if (action === 'pin')     togglePin(sid);
             else if (action === 'archive') toggleArchive(sid);
             else if (action === 'unread')  markUnread(sid);
-            else if (action === 'delete')  softDelete(sid);
-            else if (action === 'restore') restoreDeleted(sid);
+            else if (action === 'delete')  hardDeleteChat(sid);
         });
     }
 
@@ -576,9 +576,14 @@
                     '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminSummarize" data-tooltip="Generar resumen para handover">' +
                         '<i data-lucide="file-text"></i> Resumen' +
                     '</button>' +
-                    '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminCloseChat" data-tooltip="Cerrar chat">' +
-                        '<i data-lucide="check"></i> Marcar resuelto' +
-                    '</button>' +
+                    (chat.status === 'closed'
+                        ? '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminReopenChat" data-tooltip="Reabrir chat">' +
+                            '<i data-lucide="refresh-cw"></i> Reabrir' +
+                          '</button>'
+                        : '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminCloseChat" data-tooltip="Cerrar chat">' +
+                            '<i data-lucide="check"></i> Cerrar chat' +
+                          '</button>'
+                    ) +
                 '</div>' +
             '</div>' +
             '<div class="cnc-admin-detail-messages" id="cncAdminMessages">' + msgsHTML + '</div>' +
@@ -633,15 +638,79 @@
 
     function closeChat() {
         if (!_activeSessionId || !window.db) return;
-        if (!confirm('¿Marcar esta conversación como resuelta?')) return;
-        window.db.collection('conciergeChats').doc(_activeSessionId).set({
-            status: 'resolved',
-            resolvedAt: new Date().toISOString(),
-            resolvedBy: window.auth.currentUser.uid
-        }, { merge: true }).then(function () {
-            AP.toast('Conversación marcada como resuelta');
+        if (!confirm('¿Cerrar esta conversación?\n\nEl cliente verá un aviso de cierre y sólo podrá iniciar una conversación nueva. Los mensajes se conservan.')) return;
+        var sid = _activeSessionId;
+        var asesorNombre = (AP.currentUserProfile && AP.currentUserProfile.nombre) || 'Un asesor';
+        var asesorUid = window.auth.currentUser.uid;
+        var nowIso = new Date().toISOString();
+
+        // 1. Marcar el doc parent como cerrado
+        var p1 = window.db.collection('conciergeChats').doc(sid).set({
+            status: 'closed',
+            closedAt: nowIso,
+            closedBy: asesorUid,
+            closedByName: asesorNombre,
+            // Aliases legacy preservados para chats viejos en pipelines
+            resolvedAt: nowIso,
+            resolvedBy: asesorUid,
+            // lastMessageAt actualizado para que el chat suba en la lista del admin
+            lastMessageAt: nowIso,
+            lastMessage: '✓ Conversación cerrada por ' + asesorNombre
+        }, { merge: true });
+
+        // 2. Insertar mensaje system "✓ Conversación cerrada por X"
+        // El cliente lo recibirá vía onSnapshot y aplicará applyClosedState()
+        var p2 = window.db.collection('conciergeChats').doc(sid)
+            .collection('messages').add({
+                from: 'system',
+                systemType: 'closed',
+                text: '✓ ' + asesorNombre + ' cerró esta conversación. Iniciá una nueva cuando quieras.',
+                timestamp: nowIso,
+                asesorNombre: asesorNombre,
+                asesorUid: asesorUid
+            });
+
+        Promise.all([p1, p2]).then(function () {
+            AP.toast('Conversación cerrada');
         }).catch(function (err) {
-            AP.toast('Error: ' + err.message, 'error');
+            AP.toast('Error al cerrar: ' + err.message, 'error');
+        });
+    }
+
+    /**
+     * Reabre un chat cerrado: limpia status, agrega mensaje system y
+     * permite al cliente continuar la conversación.
+     */
+    function reopenChat() {
+        if (!_activeSessionId || !window.db) return;
+        if (!confirm('¿Reabrir esta conversación?\n\nEl cliente podrá volver a escribir aquí mismo.')) return;
+        var sid = _activeSessionId;
+        var asesorNombre = (AP.currentUserProfile && AP.currentUserProfile.nombre) || 'Un asesor';
+        var asesorUid = window.auth.currentUser.uid;
+        var nowIso = new Date().toISOString();
+
+        var p1 = window.db.collection('conciergeChats').doc(sid).set({
+            status: 'active',
+            reopenedAt: nowIso,
+            reopenedBy: asesorUid,
+            lastMessageAt: nowIso,
+            lastMessage: '↻ Conversación reabierta por ' + asesorNombre
+        }, { merge: true });
+
+        var p2 = window.db.collection('conciergeChats').doc(sid)
+            .collection('messages').add({
+                from: 'system',
+                systemType: 'reopened',
+                text: '↻ ' + asesorNombre + ' reabrió la conversación. Podés seguir escribiendo.',
+                timestamp: nowIso,
+                asesorNombre: asesorNombre,
+                asesorUid: asesorUid
+            });
+
+        Promise.all([p1, p2]).then(function () {
+            AP.toast('Conversación reabierta');
+        }).catch(function (err) {
+            AP.toast('Error al reabrir: ' + err.message, 'error');
         });
     }
 
@@ -865,6 +934,10 @@
         }
         if (e.target && e.target.closest && e.target.closest('#cncAdminCloseChat')) {
             closeChat();
+            return;
+        }
+        if (e.target && e.target.closest && e.target.closest('#cncAdminReopenChat')) {
+            reopenChat();
             return;
         }
         if (e.target && e.target.closest && e.target.closest('#cncAdminSummarize')) {

@@ -124,11 +124,21 @@
                     <div class="auth-form-group" style="flex:1">
                         <label class="auth-label" for="regTelefono">
                             <i data-lucide="phone"></i>
-                            Teléfono <span class="auth-optional">(opcional)</span>
+                            Teléfono *
                         </label>
                         <input type="tel" id="regTelefono" class="auth-input" placeholder="3001234567"
-                               autocomplete="tel-national" inputmode="tel">
+                               autocomplete="tel-national" inputmode="tel" required>
                     </div>
+                </div>
+
+                <div class="auth-form-group">
+                    <label class="auth-label" for="regCedula">
+                        <i data-lucide="id-card"></i>
+                        Cédula *
+                    </label>
+                    <input type="tel" id="regCedula" class="auth-input" placeholder="Solo números (sin puntos)"
+                           autocomplete="off" inputmode="numeric" pattern="[0-9]{5,12}" required>
+                    <small class="auth-hint">Necesaria para procesos de financiación, peritaje y consignación.</small>
                 </div>
 
                 <div class="auth-form-group">

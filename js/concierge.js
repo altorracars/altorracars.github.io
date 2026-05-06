@@ -102,6 +102,24 @@
                 if (typeof s.context === 'undefined') s.context = { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 };
                 if (typeof s.activeAsesor === 'undefined') s.activeAsesor = null;
                 if (typeof s.profile === 'undefined') s.profile = null;
+                if (typeof s.closed === 'undefined') s.closed = false;
+
+                // FASE 1.C — Purga de fuga de contexto (vehicle bleed):
+                // Si la página actual NO es página de vehículo, eliminar
+                // sourceVehicleId residual de visitas previas. Esto evita
+                // que un chat iniciado en /vehiculos/X siga mostrando
+                // "Veo que te interesa el X" cuando el cliente vuelve a
+                // index.html semanas después.
+                var isVehiclePage = !!window.PRERENDERED_VEHICLE_ID ||
+                                    /\/vehiculos\//.test(window.location.pathname);
+                if (!isVehiclePage && s.sourceVehicleId) {
+                    s.sourceVehicleId = null;
+                    s.sourcePage = window.location.pathname;
+                } else if (isVehiclePage && window.PRERENDERED_VEHICLE_ID) {
+                    // Sincronizar al vehículo actual (puede haber cambiado)
+                    s.sourceVehicleId = String(window.PRERENDERED_VEHICLE_ID);
+                    s.sourcePage = window.location.pathname;
+                }
                 return s;
             }
         } catch (e) {}
@@ -121,6 +139,8 @@
             context: { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 },
             // Handoff dinámico
             activeAsesor: null,      // { uid, nombre, photoURL } cuando un asesor toma el chat
+            // Cierre de sesión (admin marca status=closed → cliente bloqueado)
+            closed: false,
             // L0-L5 progressive profiling
             level: 0,
             // Source tracking — qué página originó la conversación
@@ -410,6 +430,8 @@
 
     function send(text) {
         if (!text || !text.trim()) return;
+        // Bloqueo: si la sesión está cerrada por el admin, ignorar
+        if (session.closed) return;
         addMessage('user', text.trim());
 
         // Intent classifier: actualizar memoria conversacional ANTES del response
@@ -719,7 +741,7 @@
         if (hadAny) batch.commit().catch(function () {});
         saveSession(session);
 
-        // Listener para mensajes nuevos del asesor
+        // Listener 1: mensajes nuevos (asesor + system: closed/reopened)
         _firestoreUnsub = window.db.collection('conciergeChats').doc(session.sessionId)
             .collection('messages')
             .orderBy('timestamp', 'asc')
@@ -729,7 +751,37 @@
                     var d = chg.doc.data();
                     if (_lastSyncedMsgIds[chg.doc.id]) return;
                     _lastSyncedMsgIds[chg.doc.id] = true;
-                    // Solo procesamos mensajes del asesor (los nuestros ya están en local)
+
+                    // Mensajes system desde el admin (ej. cierre/reapertura)
+                    if (d.from === 'system') {
+                        var alreadySys = session.messages.some(function (m) {
+                            return m.from === 'system' && m.text === d.text;
+                        });
+                        if (!alreadySys) {
+                            session.messages.push({
+                                from: 'system',
+                                systemType: d.systemType || null,
+                                text: d.text,
+                                timestamp: new Date(d.timestamp).getTime(),
+                                _synced: true
+                            });
+                            saveSession(session);
+                            renderMessages();
+                            // Si el system message es de cierre, aplicar el bloqueo
+                            if (d.systemType === 'closed') {
+                                session.closed = true;
+                                saveSession(session);
+                                applyClosedState();
+                            } else if (d.systemType === 'reopened') {
+                                session.closed = false;
+                                saveSession(session);
+                                applyClosedState();
+                            }
+                        }
+                        return;
+                    }
+
+                    // Mensajes del asesor
                     if (d.from === 'asesor') {
                         var alreadyHave = session.messages.some(function (m) {
                             return m.from === 'asesor' && m.text === d.text;
@@ -744,11 +796,10 @@
                                     nombre: asesorNombre,
                                     photoURL: d.asesorPhotoURL || null
                                 };
-                                // Mensaje de sistema visualmente distinto
                                 session.messages.push({
                                     from: 'system',
                                     text: '✓ ' + asesorNombre + ' se ha unido al chat',
-                                    timestamp: new Date(d.timestamp).getTime() - 1, // antes que el msg real
+                                    timestamp: new Date(d.timestamp).getTime() - 1,
                                     _synced: true
                                 });
                                 applyAsesorHeader();
@@ -761,14 +812,29 @@
                             });
                             saveSession(session);
                             renderMessages();
-                            // Reset unread count en Firestore
                             window.db.collection('conciergeChats').doc(session.sessionId)
                                 .update({ unreadByUser: 0 }).catch(function () {});
                         }
                     }
                 });
             }, function () { /* permission errors silenced */ });
+
+        // Listener 2: doc parent — detecta status closed/active sin esperar
+        // a que llegue un system message (defensa por si admin solo updateó status)
+        _firestoreParentUnsub = window.db.collection('conciergeChats').doc(session.sessionId)
+            .onSnapshot(function (doc) {
+                if (!doc.exists) return;
+                var d = doc.data();
+                var wasClosed = !!session.closed;
+                var nowClosed = d.status === 'closed';
+                if (wasClosed !== nowClosed) {
+                    session.closed = nowClosed;
+                    saveSession(session);
+                    applyClosedState();
+                }
+            }, function () {});
     }
+    var _firestoreParentUnsub = null;
 
     function syncMessageToFirestore(msg) {
         if (!_chatDocCreated || !window.db) return;
@@ -959,10 +1025,78 @@
        LEAD CAPTURE GATE — captura datos antes del primer mensaje
        ═══════════════════════════════════════════════════════════ */
     function isGateRequired() {
-        // Si el cliente está logueado con un perfil completo (auth + email + nombre),
-        // saltamos el gate
+        // FASE 2.B — Si gate ya completado (sea por form o por auth profile), skip
+        if (session.gateCompleted && session.profile) return false;
+        // Si el cliente está logueado con perfil COMPLETO (auth + email + nombre + cedula),
+        // saltamos el gate. Si falta cedula (usuario viejo pre-fix), pedimos solo eso
+        // a través de maybeAskForProfile más adelante en lugar del gate completo.
         if (session.uid && session.email && session.nombre) return false;
-        return !session.gateCompleted || !session.profile;
+        return true;
+    }
+
+    /**
+     * FASE 2.B — Carga el perfil del usuario logueado desde clientes/{uid}
+     * y lo inyecta en la sesión del chat. Llamado desde onAuthStateChanged
+     * cuando el user es no-anónimo.
+     *
+     * Resultado: el cliente logueado salta el Lead Capture Gate; sus datos
+     * (nombre, apellido, cedula, celular, correo) ya están en el chat
+     * disponibles para el bot y el asesor.
+     */
+    function loadProfileFromAuth() {
+        if (!window.auth || !window.auth.currentUser ||
+            window.auth.currentUser.isAnonymous || !window.db) {
+            return Promise.resolve(null);
+        }
+        var user = window.auth.currentUser;
+        return window.db.collection('clientes').doc(user.uid).get().then(function (snap) {
+            if (!snap.exists) return null;
+            var d = snap.data() || {};
+            var fullName = (d.nombre || user.displayName || '').trim();
+            var parts = fullName.split(/\s+/);
+            var firstName = parts[0] || '';
+            var lastName  = parts.slice(1).join(' ');
+            return {
+                uid: user.uid,
+                nombre: firstName,
+                apellido: lastName,
+                correo: d.email || user.email || '',
+                cedula: d.cedula || '',
+                celular: d.telefono || '',
+                consent: true,         // user ya aceptó al registrarse
+                source: 'auth_profile'
+            };
+        }).catch(function () {
+            return null;
+        });
+    }
+
+    /**
+     * Aplica el perfil del auth user a la sesión del chat. Marca
+     * gateCompleted si el perfil tiene los datos esenciales (nombre + email).
+     * Si falta cedula, NO marca gateCompleted — el gate aparece pero
+     * pre-rellenado con lo que ya tenemos.
+     */
+    function applyAuthProfileToSession(profile) {
+        if (!profile) return;
+        session.uid = profile.uid;
+        session.email = profile.correo;
+        session.nombre = (profile.nombre + ' ' + profile.apellido).trim();
+        session.telefono = profile.celular;
+        // Si tiene los datos esenciales (incluyendo cédula), saltamos el gate
+        if (profile.nombre && profile.correo && profile.cedula && profile.celular) {
+            session.profile = profile;
+            session.gateCompleted = true;
+            session.level = Math.max(session.level || 0, 2);
+        } else {
+            // Perfil incompleto (usuario viejo sin cédula) — gate aparece pre-rellenado
+            session.profile = null;
+            session.gateCompleted = false;
+            session.level = Math.max(session.level || 0, 1);
+        }
+        saveSession(session);
+        // Re-aplicar UI si está abierto
+        if (_isOpen) applyGateVisibility();
     }
 
     function applyGateVisibility() {
@@ -1090,6 +1224,111 @@
             titleEl.textContent = 'ALTOR';
             statusEl.textContent = 'Asistente Virtual IA · Altorra Cars';
             avatarEl.innerHTML = ALTOR_AVATAR_HTML;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       FASE 1.B — Cierre de sesión: bloqueo del input + botón nuevo chat
+       ═══════════════════════════════════════════════════════════ */
+    function applyClosedState() {
+        var inputWrap = document.getElementById('cncInputWrap');
+        var inp = document.getElementById('cncInput');
+        var sendBtn = document.getElementById('cncSend');
+        var quickActions = document.getElementById('cncQuickActions');
+        // Buscar/crear el bloque "conversation closed"
+        var closedBlock = document.getElementById('cncClosedBlock');
+
+        if (session.closed) {
+            // Ocultar quick-actions y el input wrap
+            if (quickActions) quickActions.style.display = 'none';
+            if (inp) {
+                inp.disabled = true;
+                inp.placeholder = 'Conversación cerrada';
+            }
+            if (sendBtn) sendBtn.disabled = true;
+            if (inputWrap) inputWrap.style.display = 'none';
+
+            // Inyectar bloque de cierre con CTA
+            if (!closedBlock) {
+                closedBlock = document.createElement('div');
+                closedBlock.id = 'cncClosedBlock';
+                closedBlock.className = 'cnc-closed-block';
+                closedBlock.innerHTML =
+                    '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
+                    '<div class="cnc-closed-title">Esta conversación ha finalizado</div>' +
+                    '<div class="cnc-closed-sub">Iniciá una nueva cuando quieras hablar con nosotros otra vez.</div>' +
+                    '<button class="cnc-closed-cta" id="cncResetSessionBtn">' +
+                        '<i data-lucide="refresh-cw"></i> Iniciar nueva conversación' +
+                    '</button>';
+                var panel = document.getElementById('altorra-concierge');
+                if (panel) panel.appendChild(closedBlock);
+                if (window.AltorraIcons && window.AltorraIcons.refresh) {
+                    window.AltorraIcons.refresh(closedBlock);
+                }
+                var resetBtn = document.getElementById('cncResetSessionBtn');
+                if (resetBtn) resetBtn.addEventListener('click', resetSession);
+            }
+            closedBlock.style.display = 'flex';
+        } else {
+            // Restaurar UI normal (chat reabierto por el admin)
+            if (quickActions) quickActions.style.display = '';
+            if (inp) {
+                inp.disabled = false;
+                inp.placeholder = 'Escribe tu mensaje...';
+            }
+            if (sendBtn) sendBtn.disabled = false;
+            if (inputWrap) inputWrap.style.display = '';
+            if (closedBlock) closedBlock.style.display = 'none';
+        }
+    }
+
+    /**
+     * resetSession — purga la sesión actual y arranca una nueva.
+     * Limpia localStorage, refs locales, listeners de Firestore, y
+     * re-renderiza el panel desde cero (gate o greeting según contexto).
+     */
+    function resetSession() {
+        // Cerrar listeners activos
+        if (_firestoreUnsub) { try { _firestoreUnsub(); } catch (e) {} _firestoreUnsub = null; }
+        if (_firestoreParentUnsub) { try { _firestoreParentUnsub(); } catch (e) {} _firestoreParentUnsub = null; }
+        // Limpiar localStorage
+        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        // Reset refs
+        _chatDocCreated = false;
+        _lastSyncedMsgIds = {};
+        _leadCreated = false;
+        _asesorJoinedAnnounced = false;
+        // Reload sesión limpia (genera nuevo sessionId)
+        session = loadSession();
+        // Re-aplicar perfil del auth si user logueado
+        if (typeof loadProfileFromAuth === 'function') {
+            loadProfileFromAuth().then(function (profile) {
+                if (profile) {
+                    session.profile = profile;
+                    session.gateCompleted = true;
+                    session.uid = profile.uid;
+                    session.email = profile.correo;
+                    session.nombre = profile.nombre + ' ' + profile.apellido;
+                    session.telefono = profile.celular;
+                    session.level = Math.max(session.level || 0, 2);
+                    saveSession(session);
+                }
+                continueResetUI();
+            });
+        } else {
+            continueResetUI();
+        }
+        function continueResetUI() {
+            // Limpiar y re-renderizar
+            var msgsBox = document.getElementById('cncMessages');
+            if (msgsBox) msgsBox.innerHTML = '';
+            var closedBlock = document.getElementById('cncClosedBlock');
+            if (closedBlock) closedBlock.remove();
+            applyClosedState();           // restaura input/quickActions
+            applyGateVisibility();         // muestra gate si no logueado
+            applyAsesorHeader();           // resetea header a ALTOR
+            // Re-mostrar welcome si la sesión es nueva
+            renderMessages();
         }
     }
 
@@ -1276,6 +1515,8 @@
         // Ocultar el CTA bubble al abrir el panel
         hideCtaBubble();
         renderMessages();
+        // Aplicar estado de cierre si la sesión está marcada como closed
+        applyClosedState();
         // Update status
         var statusEl = document.getElementById('cncStatus');
         if (statusEl) {
@@ -1487,12 +1728,51 @@
     /* ═══════════════════════════════════════════════════════════
        Public API
        ═══════════════════════════════════════════════════════════ */
+    /**
+     * applyAuthProfile — método público para que auth.js notifique
+     * cuando el user se loguea/desloguea. Usado para sincronizar el
+     * estado del chat con el perfil de auth.
+     */
+    function applyAuthProfile() {
+        loadProfileFromAuth().then(function (profile) {
+            if (profile) {
+                applyAuthProfileToSession(profile);
+            } else if (window.auth && window.auth.currentUser && window.auth.currentUser.isAnonymous) {
+                // Logout o anónimo: si la sesión tenía datos del auth profile,
+                // volver al estado guest (forzar gate de nuevo si no completaron uno propio)
+                if (session.profile && session.profile.source === 'auth_profile') {
+                    session.profile = null;
+                    session.gateCompleted = false;
+                    session.uid = null;
+                    saveSession(session);
+                    if (_isOpen) applyGateVisibility();
+                }
+            }
+        });
+    }
+
+    // Auto-aplicar al cargar si ya hay user logueado
+    if (window.auth && window.auth.currentUser && !window.auth.currentUser.isAnonymous) {
+        applyAuthProfile();
+    } else if (window.firebaseReady) {
+        window.firebaseReady.then(function () {
+            // Listener auth: cada cambio de estado actualiza el chat
+            if (window.auth && typeof window.auth.onAuthStateChanged === 'function') {
+                window.auth.onAuthStateChanged(function () {
+                    applyAuthProfile();
+                });
+            }
+        });
+    }
+
     window.AltorraConcierge = {
         open: open,
         close: close,
         toggle: toggle,
         send: send,
         openWithVehicleContext: openWithVehicleContext,
+        applyAuthProfile: applyAuthProfile,
+        resetSession: resetSession,
         session: function () { return Object.assign({}, session); },
         // Debug
         _state: function () { return { session: session, isOpen: _isOpen }; }

@@ -10333,3 +10333,325 @@ solapando el FAB o el CTA bubble queda flotando "lejos" del FAB.
 
 **Total**: 11 commits, ~3000+ líneas afectadas, 4 archivos nuevos,
 2 eliminados, 38 modificados.
+
+---
+
+## 21. Bot Ultra Mega Cerebro — Lifecycle real + Identidad unificada + LLM (2026-05-06)
+
+> Refactor en 3 fases ejecutado bajo RCA Mode tras feedback del cliente
+> sobre fallos graves en el ciclo de vida de las sesiones, identidad
+> fragmentada entre auth y chat, y nivel de inteligencia inaceptable.
+> Resultado: ALTOR pasa de "bot de reglas básicas" a "Agente de IA
+> Cognitivo empresarial" con LLM real, memoria de conversación,
+> function calling y triggers proactivos.
+
+### 21.1 Línea de tiempo
+
+| # | Commit | Descripción |
+|---|---|---|
+| 1 | `3a7e465` | Fase 1+2 — hard delete + status closed + purge vehicle bleed + cédula obligatoria + auth profile en chat |
+| 2 | `de82c08` | Fase 3 Bloque 1 — Cerebro Altorra AI + chat provider + Cloud Function chatLLM + LLM fallback rules |
+| 3 | `b233395` | Fase 3 Bloque 2 — F.1 conversation summary + F.2 CTA tags + F.3 proactive triggers |
+
+### 21.2 Fase 1 — Lifecycle real
+
+**Soft delete eliminado**:
+- `softDelete` (set `isDeleted: true`) → `hardDeleteChat`: doble confirm
+  + borrado real de la subcolección `messages/` en batch + `delete()`
+  del doc parent. Sin soft delete porque "Eliminados" generaba
+  confusión y los docs nunca se purgaban realmente.
+- Filter chip "Eliminados" removido del filter bar admin.
+- `restoreDeleted()` eliminado (no aplica sobre datos borrados).
+- `isDeleted` ya no se setea (defensa solo para docs viejos en
+  `getVisibleChats`).
+
+**Cierre de sesión real**:
+- Admin: `closeChat()` ahora setea `status: 'closed'` + inyecta mensaje
+  system "✓ {asesor} cerró esta conversación".
+- `reopenChat()` nueva: revierte a `status: 'active'` + mensaje system
+  de reapertura. Botón cambia dinámicamente "Cerrar chat" ↔ "Reabrir"
+  según `chat.status`.
+- Cliente: nuevo listener `_firestoreParentUnsub` al doc parent detecta
+  cambios de status sin esperar mensajes. `applyClosedState()`:
+  bloquea input/sendBtn, oculta quickActions, inyecta `cnc-closed-block`
+  con CTA "🔄 Iniciar nueva conversación".
+- `resetSession()`: cierra listeners, limpia localStorage, genera nuevo
+  `sessionId`, re-aplica perfil del auth si user logueado, re-renderiza
+  panel desde cero.
+- `send()` bloqueado con guard `if (session.closed) return`.
+
+**Fuga de contexto eliminada (vehicle bleed)**:
+- En `loadSession()` después de leer localStorage: si la página actual
+  NO es página de vehículo Y hay `sourceVehicleId` residual → purgar.
+- Si SÍ es página de vehículo Y `PRERENDERED_VEHICLE_ID` existe →
+  sincronizar a ese ID actual.
+- Detección `isVehiclePage`: check `window.PRERENDERED_VEHICLE_ID` o
+  pathname `/vehiculos/`.
+
+### 21.3 Fase 2 — Identidad unificada con cédula
+
+**Cédula obligatoria en registro**:
+- `snippets/auth-modal.html`: nuevo `<input id="regCedula">` con
+  pattern `[0-9]{5,12}`, required, hint "Necesaria para procesos
+  de financiación, peritaje y consignación".
+- `js/auth.js handleRegister`: validación regex + persistencia.
+- Teléfono también ahora obligatorio (consistencia identidad).
+- `saveClientProfile`: incluye `cedula: data.cedula || ''` al crear
+  doc en `clientes/{uid}`.
+
+**Cédula en perfil del usuario**:
+- `js/perfil.js`: campo cédula en barra de completitud (entre
+  telefono y ciudad), vista read-only con icon `id-card` + valor o
+  "No registrada", vista edit con `pfEditCedula` + validación regex.
+- Save handler valida cédula y persiste en `updates`.
+- Cancel handler resetea `pfEditCedula` al valor original.
+
+**Concierge unifica con auth profile**:
+- Nueva función `loadProfileFromAuth()` consulta `clientes/{uid}` y
+  devuelve `{uid, nombre, apellido, correo, cedula, celular, consent,
+  source: 'auth_profile'}`.
+- `applyAuthProfileToSession(profile)`: si user logueado tiene perfil
+  COMPLETO (nombre + correo + cedula + celular) → marca `gateCompleted = true`
+  y salta el Lead Capture Gate. Si falta cédula (usuario viejo
+  pre-fix), `gateCompleted = false` y el gate aparece pre-rellenado
+  pidiendo solo cédula.
+- `applyAuthProfile()` público + listener `onAuthStateChanged`
+  interno: cada cambio de auth state actualiza la sesión del chat.
+- Logout: si la sesión tenía `source: 'auth_profile'`, se limpia y
+  reaparece el gate.
+
+**Regla `isGateRequired()` refinada**:
+1. Si `gateCompleted && profile` → skip
+2. Si user con perfil completo (uid + email + nombre) → skip
+3. Default: gate
+
+### 21.4 Fase 3 Bloque 1 — Cerebro Altorra AI + LLM
+
+**Schema `knowledgeBase/_brain` (singleton)**:
+```js
+{
+    enabled: false,                    // toggle global
+    llmProvider: 'anthropic',          // | 'openai' | 'google'
+    llmModel: 'claude-haiku-4-5',
+    llmTemperature: 0.7,
+    maxTokens: 600,
+    identidad: { nombre, tono, personalidad },
+    contexto: { descripcion, valores: [], servicios: [] },
+    instrucciones: '...',              // system prompt principal
+    reglas_seguridad: ['NUNCA...'],    // inviolables
+    updatedAt, updatedBy
+}
+```
+
+**Admin UI "Cerebro Altorra AI"** (`js/admin-kb.js` extendido):
+- Sidebar nav-item: "Knowledge Base" (`book-open`) → "Cerebro Altorra
+  AI" (`brain`).
+- Sec-kb reescrita con tabs en 6 panels:
+    - **Identidad**: nombre del bot, tono, personalidad
+    - **Contexto**: descripción del negocio, valores, servicios
+    - **Instrucciones**: system prompt principal
+    - **FAQs**: la KB de FAQs existente
+    - **Reglas Seguridad**: una por línea (textarea)
+    - **Modelo LLM**: provider, model ID, temperatura, max_tokens,
+      toggle global enabled
+- Status pill dinámica: Activo (verde) / Apagado (gris) / Sin
+  configurar (dorado) según estado del `_brain`.
+- Footer con botón "Guardar cambios" + savestate.
+- `loadBrain()` listener realtime sobre `knowledgeBase/_brain`.
+- `saveBrain()` valida super_admin antes de persistir.
+- `AltorraKB.getBrain()` expuesto en API para que otros módulos
+  detecten estado del Cerebro.
+
+**Cliente — `js/ai/engine.js`**:
+- Capability registry extendido: `providers.chat`.
+- Función `chat(messages, opts)` async con timeout 12s default.
+- `AltorraAI.providers` expuesto como getter para `if (AltorraAI.providers.chat)`.
+- `capabilities()` incluye `chat: { available, source: 'llm'|'none' }`.
+
+**Cliente — `js/concierge.js`**:
+- Registra el chat provider que llama al callable `chatLLM`,
+  pasando session.sessionId, sourceVehicleId, sourcePage, profile,
+  context, activeAsesor.
+- `respondWithLLMOrRules(userMsg)` async:
+    1. Pre-check rule-based: sentiment muy negativo / frustration /
+       ask_human → escalar SIN gastar tokens LLM
+    2. Si LLM disponible: llamar con últimos 12 turnos mapeados a
+       `{role, content}`
+    3. Fallback a `generateBotResponse` rule-based
+- `send()` ahora usa `respondWithLLMOrRules` (async). Mientras se
+  procesa, muestra typing indicator (3 puntos animados estilo iMessage).
+
+**Cloud Function `chatLLM`** (`functions/index.js`):
+- Nuevo secret declarado: `LLM_API_KEY` (set con
+  `firebase functions:secrets:set LLM_API_KEY`).
+- Provider abstraction sin SDKs externos (usa `fetch` nativo de Node 22):
+    - `callAnthropic`: Claude Messages API (https://api.anthropic.com/v1/messages)
+    - `callOpenAI`: Chat Completions
+    - `callGoogle`: Gemini generateContent
+- `composeSystemPrompt(brain, inventory, chatSummary, sessionContext)`:
+  inyecta identidad + contexto + servicios + instrucciones + reglas
+  + INVENTARIO en tiempo real + summary + sessionContext.
+- `fetchInventoryForLLM(limit)`: query a `vehiculos/` filtrando estado
+  `disponible/reservado`, sort destacados primero + fecha desc, top N (30).
+- `checkRateLimit(sessionId)`: 60 calls/día/sesión via doc
+  `llmRateLimit/{sid}`. Auto-reset diario.
+- Flow:
+    1. Lee `_brain`. Si `!enabled` → `{ disabled: true }`.
+    2. Verifica `LLM_API_KEY`. Si falta → `{ noKey: true }`.
+    3. Rate limit check.
+    4. Fetch inventario.
+    5. Compose system prompt (incluye summary + sessionContext).
+    6. Llama provider con timeout 30s.
+    7. Parsea CTA tag al final del response (F.2).
+    8. Retorna `{ text, cta, model, usage, provider, source: 'llm' }`.
+
+**Firestore rules**:
+- `knowledgeBase/{kbId}` cubre el `_brain` singleton (matchea cualquier
+  ID).
+- Nueva: `match /llmRateLimit/{sessionId} { allow read, write: if false }`.
+  La Cloud Function escribe via Admin SDK (bypassa rules); cliente
+  bloqueado para evitar manipulación.
+
+### 21.5 Fase 3 Bloque 2 — 3 mejoras competitivas
+
+**F.1 — Conversation Summary** (Zendesk pattern):
+- Nueva callable `summarizeChat` (auth + super_admin/editor).
+- Trigger automático `onConciergeMessageAdded`: cuando un chat alcanza
+  múltiplo de 10 turnos del cliente (10, 20, 30…), dispara summarize.
+  Idempotente (skip si `summaryUpToTurn >= newCount`).
+- `summarizeChatBySessionId()`: helper compartido. Carga todos los
+  mensajes, llama LLM con prompt dedicado (3-5 líneas: identidad,
+  intereses, decisiones, próximo paso), persiste `summary`,
+  `summaryUpToTurn`, `summaryUpdatedAt`, `summaryModel` en doc parent.
+- `composeSystemPrompt` extendido: si chat tiene `summary`, lo inyecta
+  como "RESUMEN DE LA CONVERSACIÓN HASTA AHORA" antes del inventario.
+- Admin UI: `summarizeCurrentChat` ahora intenta callable `summarizeChat`
+  (LLM real) primero. Si Brain enabled + LLM disponible → muestra
+  overlay `cnc-summary-overlay` con título "Resumen IA", badge de
+  tokens usados, botón Copiar al clipboard, botón Cerrar. Si falla,
+  fallback al resumen extractivo local.
+
+**F.2 — Function Calling lite (CTA tags)** (WhatsApp Enterprise pattern lite):
+- System prompt extendido con sección "ACCIONES DISPONIBLES (CTAs)":
+  el LLM puede agregar UN tag al final: `[CTA:Texto:action_id]`.
+- Whitelist de 5 actions: `escalate`, `goto-busqueda`, `goto-simulador`,
+  `open-modal-vende`, `open-modal-financiacion`.
+- Reglas estrictas en el prompt: máx 1 tag por respuesta, solo de la
+  whitelist, no para preguntas genéricas.
+- `chatLLM` parsea regex `/\[CTA:([^:\]]+):([a-z\-]+)\]\s*$/i` del
+  final del text, valida label (1-60 chars) + action (whitelist),
+  separa en `{text, cta}` y devuelve al cliente.
+- Cliente ya sabe renderear botones CTA en burbujas — solo ejecuta
+  el `action` que venga del LLM como si fuera generado por rule-based.
+- **Por qué LITE en lugar de tool-use real**: tool-use completo
+  requeriría re-llamada al LLM con resultado de la herramienta (cara
+  y compleja). Con CTAs whitelisted obtenemos 80% del valor con 10%
+  de la complejidad.
+
+**F.3 — Proactive Engagement Triggers** (Intercom playbooks pattern):
+- Scheduled function `proactiveEngagement` cada 5 minutos
+  (`onSchedule({ schedule: 'every 5 minutes' })`).
+- Query: chats con `mode='bot'` Y `lastMessageAt` en últimas 6h
+  (no procesa chats inactivos viejos).
+- Para cada chat:
+    1. Skip si `status='closed' / isArchived / isDeleted`.
+    2. Cooldown 24h: skip si `lastProactiveAt > 24h ago`.
+    3. Detecta señal:
+       - **inactivity_no_msg**: cliente abrió chat (existe doc) pero
+         NO ha escrito ningún mensaje propio Y han pasado 3+ min
+         desde el welcome del bot → enviar nudge:
+         "¿Sigues por aquí? Si tenés alguna pregunta…"
+    4. Inyecta msg con `from='bot' proactive=true triggerType=...`.
+    5. Update parent: `lastProactiveAt` + `lastMessage` para que
+       el admin vea el chat moverse en la lista.
+- Anti-spam: 1 proactive máx/chat/día.
+- **Cliente** (`concierge.js`): listener extendido para procesar
+  `d.from === 'bot' && d.proactive`. Render con clase extra
+  `cnc-proactive-bubble` (gradient dorado tenue + sparkle ✨ en
+  esquina top-left para distinguir del bot reactivo).
+
+### 21.6 Anti-patrones detectados durante el bloque
+
+| Anti-pattern | Caso real | Lección |
+|---|---|---|
+| Soft delete sin purga real | `isDeleted: true` con filter chip "Eliminados" → cliente esperaba borrado, terminamos manteniendo registros indefinidamente | Si la UX dice "Eliminar", el delete debe ser `delete()`. Soft-delete solo cuando hay valor real (audit trail, data retention legal). |
+| Status sin sincronizar con cliente | Admin marcaba `status='resolved'` pero cliente seguía escribiendo en chat cerrado | Cuando el server cambia un estado lifecycle del chat, el cliente DEBE reaccionar (listener en doc parent + UI block). |
+| `sourceVehicleId` global en localStorage | Chat iniciado en `/vehiculos/X` seguía mostrando "Veo que te interesa el X" semanas después en `index.html` | Estado de contexto vinculado a una página NO puede persistir indefinidamente entre páginas distintas. Purga al detectar cambio de contexto. |
+| Cédula faltante en perfil pero pedida en chat | Lead Gate del Concierge pedía cédula a guests, pero registro de auth NUNCA la pedía → cliente registrado tenía perfil incompleto | Identidad del cliente debe ser CONSISTENTE entre todos los puntos de captura: registro, perfil, chat. |
+| LLM sin fallback rule-based | Si LLM_API_KEY falta o se cae el provider → chat queda mudo | Toda integración LLM debe tener fallback determinístico. Cero downtime garantizado por arquitectura. |
+| Tool-use completo sin necesidad real | Function calling con re-llamada al LLM tras cada herramienta es cara y lenta | Para acciones simples (CTAs whitelisted), tag al final del response es suficiente. Tool-use real solo cuando el LLM necesita el RESULTADO de la tool para componer la respuesta. |
+| Schedule function sin cooldown | Proactive triggers cada 5 min sin idempotencia spamean al cliente | Cooldown 24h por chat + tracking en doc parent (`lastProactiveAt`). Idempotencia es crítica en cualquier scheduled job. |
+
+### 21.7 Cómo extender el Cerebro Altorra AI
+
+**Para cambiar el modelo LLM**:
+1. Admin → Cerebro Altorra AI → tab "Modelo LLM".
+2. Cambiar provider (anthropic/openai/google) y model ID.
+3. Click "Guardar".
+4. Las próximas llamadas a `chatLLM` usan el nuevo modelo.
+
+**Para agregar un nuevo CTA action**:
+1. Frontend (`js/concierge.js handleAction`): agregar el `case '<action>'`
+   con lógica del side-effect (navigation, modal open, etc.).
+2. Backend (`functions/index.js`): agregar string al array `ALLOWED_CTAS`.
+3. System prompt: documentar el nuevo action en la sección "ACCIONES
+   DISPONIBLES" del `composeSystemPrompt` (extra string).
+
+**Para agregar un nuevo proactive trigger**:
+1. `functions/index.js exports.proactiveEngagement`: dentro del loop
+   por chat, agregar la heurística (ej. `lastMessageAt > 7 días &&
+   userTurns === 0` → "Volviste, ¿podemos ayudarte?").
+2. Setear `proactiveText` y `triggerType` apropiados.
+3. El resto del flow (cooldown, inject, update parent) ya está.
+
+**Para agregar tools real con re-llamada al LLM** (futuro):
+1. Implementar tool-use de Anthropic en `callAnthropic`: si la
+   respuesta tiene `stop_reason: 'tool_use'`, ejecutar la tool,
+   re-llamar con resultado, repetir hasta `stop_reason: 'end_turn'`.
+2. Definir tools en el system prompt o como parámetro `tools`.
+3. Tools sugeridas: `search_inventory`, `get_vehicle_details`,
+   `check_availability_slot`, `create_lead`, `send_quote`.
+
+### 21.8 Deploys manuales requeridos
+
+Para que la Fase 3 funcione end-to-end, el super_admin debe:
+
+1. **Setear el secret LLM_API_KEY** (Anthropic recomendado):
+   ```bash
+   firebase functions:secrets:set LLM_API_KEY
+   # Pegar la key de https://console.anthropic.com/settings/keys
+   ```
+
+2. **Deploy de las 4 nuevas Cloud Functions**:
+   ```bash
+   firebase deploy --only \
+     functions:chatLLM,functions:summarizeChat,functions:onConciergeMessageAdded,functions:proactiveEngagement
+   ```
+
+3. **Cloud Scheduler API habilitada** (para `proactiveEngagement`):
+   ```bash
+   gcloud services enable cloudscheduler.googleapis.com --project=altorra-cars
+   ```
+   `firebase deploy` generalmente lo habilita automáticamente.
+
+4. **Firestore rules** (`llmRateLimit` colección nueva):
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
+
+5. **Configurar el Cerebro** en admin → "Cerebro Altorra AI":
+   - Tab Identidad: confirmar nombre/tono/personalidad
+   - Tab Contexto: ajustar descripción del negocio
+   - Tab Instrucciones: revisar system prompt
+   - Tab Reglas Seguridad: revisar
+   - Tab Modelo LLM: marcar **"Cerebro AI activo"** + confirmar
+     provider/model
+   - Click **"Guardar cambios"**
+
+Sin pasos 1-2-5 → el chat sigue operativo con rule-based (zero
+downtime garantizado por el fallback).
+
+> **Para Claude**: la arquitectura del Cerebro es modular. Cada
+> capa (engine.js providers, _brain doc, chatLLM function, fallback
+> rules) puede actualizarse independientemente sin romper el resto.
+> Si vas a tocar algo, leé §21.7 para no romper la cascada.

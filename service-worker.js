@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506210000'; // Fase 3 Bloque 2 — F.1 conversation summary + F.2 CTA tags + F.3 proactive triggers
+const CACHE_VERSION = 'v20260506220000'; // CLAUDE.md §21 — doc completa Bot Ultra Mega Cerebro (Fases 1+2+3)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

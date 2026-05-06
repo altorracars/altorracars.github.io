@@ -828,6 +828,38 @@
         btn.addEventListener('click', toggle);
         document.body.appendChild(btn);
 
+        // CTA bubble — flota junto al FAB con mensajes rotativos cada N segundos
+        var ctaBubble = document.createElement('div');
+        ctaBubble.id = 'altorra-cta-bubble';
+        ctaBubble.className = 'cnc-cta-bubble';
+        ctaBubble.setAttribute('role', 'button');
+        ctaBubble.setAttribute('tabindex', '0');
+        ctaBubble.setAttribute('aria-label', 'Abrir ALTOR');
+        ctaBubble.innerHTML =
+            '<span class="cnc-cta-bubble-text" id="altorraCtaBubbleText">¡Quiero hablar contigo!</span>' +
+            '<button class="cnc-cta-bubble-close" aria-label="Cerrar invitación">×</button>';
+        document.body.appendChild(ctaBubble);
+        // Click en el bubble (excepto en X) abre el panel
+        ctaBubble.addEventListener('click', function (e) {
+            if (e.target.closest('.cnc-cta-bubble-close')) {
+                e.stopPropagation();
+                hideCtaBubble();
+                snoozeCtaBubble(); // suprimir 5 min
+                return;
+            }
+            hideCtaBubble();
+            open();
+        });
+        ctaBubble.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                hideCtaBubble();
+                open();
+            }
+        });
+
+        scheduleCtaBubble();
+
         var panel = document.createElement('div');
         panel.id = 'altorra-concierge';
         panel.className = 'altorra-concierge';
@@ -1131,6 +1163,107 @@
         return d.innerHTML;
     }
 
+    /* ═══════════════════════════════════════════════════════════
+       CTA BUBBLE — invitación flotante junto al FAB
+       Muestra mensajes rotativos cada N segundos para invitar al
+       cliente a abrir el chat. Respeta:
+         - panel abierto → suprime
+         - usuario ya cerró el bubble → snooze 5 min
+         - cliente ya conversó (gateCompleted) → frecuencia mucho más baja
+         - prefers-reduced-motion → sin animaciones, mensaje estático
+       ═══════════════════════════════════════════════════════════ */
+    var CTA_MESSAGES = [
+        '👋 ¡Hola! ¿Quieres hablar conmigo?',
+        '¡Quiero hablar contigo!',
+        '¿Buscas tu auto ideal? Pregúntame 🚗',
+        '💬 Estoy aquí para ayudarte',
+        '¿Tienes dudas? Te respondo en segundos',
+        'Hola, soy ALTOR. ¿En qué te ayudo?',
+        '¿Quieres ver opciones de financiación? 💳'
+    ];
+    var _ctaTimer = null;
+    var _ctaShownAt = 0;
+    var _ctaSnoozeUntil = 0;
+    var CTA_FIRST_DELAY_MS = 8000;
+    var CTA_INTERVAL_MS = 38000;          // cada ~38s en modo activo
+    var CTA_INTERVAL_LOW_MS = 180000;     // cada 3 min si ya conversó
+    var CTA_VISIBLE_MS = 6500;            // visible 6.5s
+    var CTA_SNOOZE_MS = 5 * 60 * 1000;    // 5 min tras cerrar manualmente
+    var SNOOZE_KEY = 'altorra_cta_snooze';
+
+    function pickCtaMessage() {
+        // Mensaje aleatorio pero NO igual al anterior
+        var lastIdx = parseInt(sessionStorage.getItem('altorra_cta_lastIdx') || '-1', 10);
+        var idx;
+        do { idx = Math.floor(Math.random() * CTA_MESSAGES.length); }
+        while (idx === lastIdx && CTA_MESSAGES.length > 1);
+        try { sessionStorage.setItem('altorra_cta_lastIdx', String(idx)); } catch (e) {}
+        return CTA_MESSAGES[idx];
+    }
+
+    function loadCtaSnooze() {
+        try {
+            var v = parseInt(localStorage.getItem(SNOOZE_KEY) || '0', 10);
+            if (v && Date.now() < v) _ctaSnoozeUntil = v;
+        } catch (e) {}
+    }
+
+    function snoozeCtaBubble() {
+        _ctaSnoozeUntil = Date.now() + CTA_SNOOZE_MS;
+        try { localStorage.setItem(SNOOZE_KEY, String(_ctaSnoozeUntil)); } catch (e) {}
+    }
+
+    function showCtaBubble() {
+        var el = document.getElementById('altorra-cta-bubble');
+        var txt = document.getElementById('altorraCtaBubbleText');
+        if (!el || !txt) return;
+        // No mostrar si: panel abierto, snooze activo, o tab oculto
+        if (_isOpen) return;
+        if (Date.now() < _ctaSnoozeUntil) return;
+        if (document.hidden) return;
+
+        txt.textContent = pickCtaMessage();
+        el.classList.add('is-visible');
+        _ctaShownAt = Date.now();
+
+        // Auto-hide tras N segundos
+        setTimeout(function () {
+            // Solo ocultar si el bubble sigue siendo el mismo turno
+            // (si lo cerraron antes con X, no hacer nada)
+            if (Date.now() - _ctaShownAt >= CTA_VISIBLE_MS - 100) {
+                hideCtaBubble();
+            }
+        }, CTA_VISIBLE_MS);
+    }
+
+    function hideCtaBubble() {
+        var el = document.getElementById('altorra-cta-bubble');
+        if (el) el.classList.remove('is-visible');
+    }
+
+    function scheduleCtaBubble() {
+        loadCtaSnooze();
+        // Primer trigger después de delay inicial
+        if (_ctaTimer) clearTimeout(_ctaTimer);
+        _ctaTimer = setTimeout(function tick() {
+            // Solo mostrar si el panel NO está abierto y no hay snooze
+            if (!_isOpen && Date.now() >= _ctaSnoozeUntil && !document.hidden) {
+                showCtaBubble();
+            }
+            // Reagendar
+            var nextInterval = (session.gateCompleted || (session.messages && session.messages.length > 0))
+                ? CTA_INTERVAL_LOW_MS
+                : CTA_INTERVAL_MS;
+            _ctaTimer = setTimeout(tick, nextInterval);
+        }, CTA_FIRST_DELAY_MS);
+
+        // Si el tab pasa a background, no spam — pausamos el ciclo y
+        // resumimos al volver visible.
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) hideCtaBubble();
+        });
+    }
+
     function open() {
         ensureUI();
         var panel = document.getElementById('altorra-concierge');
@@ -1138,6 +1271,8 @@
         panel.setAttribute('aria-hidden', 'false');
         panel.classList.add('cnc-open');
         _isOpen = true;
+        // Ocultar el CTA bubble al abrir el panel
+        hideCtaBubble();
         renderMessages();
         // Update status
         var statusEl = document.getElementById('cncStatus');

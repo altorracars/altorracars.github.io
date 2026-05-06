@@ -21,8 +21,8 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: 72px;
-    height: 72px;
+    width: 92px;
+    height: 92px;
     background: transparent;
     border: none;
     padding: 0;
@@ -40,8 +40,12 @@
 }
 .altorra-concierge-btn:hover {
     transform: scale(1.10) translateY(-3px);
-    filter: drop-shadow(0 12px 28px rgba(184, 150, 88, 0.85))
+    filter: drop-shadow(0 12px 28px rgba(184, 150, 88, 0.95))
+            drop-shadow(0 0 18px rgba(245, 223, 128, 0.55))
             drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+    /* La animación float+glow del button se pausa en hover; el spin "feliz"
+       lo aplicamos a la <img> interna para que ambos transforms coexistan
+       (el button hace scale, la img rota). */
     animation: none;
 }
 .altorra-concierge-btn:active {
@@ -58,6 +62,19 @@
     pointer-events: none; /* el button captura clicks, no la img */
     -webkit-user-drag: none;
     user-select: none;
+    transform-origin: 50% 50%;
+}
+/* Hover = ALTOR da una vuelta completa con un easing alegre (overshoot).
+   Solo se ejecuta una vez por hover (forwards mantiene estado final). */
+.altorra-concierge-btn:hover .cnc-altor-img {
+    animation: altorHappySpin 0.85s cubic-bezier(0.34, 1.4, 0.55, 1) 1;
+}
+@keyframes altorHappySpin {
+    0%   { transform: rotate(0deg)   scale(1); }
+    20%  { transform: rotate(-15deg) scale(1.04); }
+    55%  { transform: rotate(360deg) scale(1.08); }
+    80%  { transform: rotate(345deg) scale(1.02); }
+    100% { transform: rotate(360deg) scale(1); }
 }
 /* Avatar dentro del header del chat — SÍ va dentro de un círculo dorado
    (ahí queremos foto de perfil clásica, recortada redonda). */
@@ -91,6 +108,95 @@
     font-size: 0.78rem;
     text-shadow: none;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   CTA BUBBLE — invitación flotante junto al FAB con mensaje
+   tipo "¡Quiero hablar contigo!" rotativo cada N segundos
+   ═══════════════════════════════════════════════════════════ */
+.cnc-cta-bubble {
+    position: fixed;
+    bottom: 50px;          /* alineado con la "boca" de ALTOR */
+    right: 130px;          /* a la izquierda del FAB de 92px + 38 gap */
+    background: linear-gradient(135deg, #fefdf6 0%, #fff7e0 100%);
+    color: #1a1500;
+    padding: 11px 38px 11px 16px;
+    border-radius: 18px;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.30),
+                0 2px 8px rgba(184, 150, 88, 0.35),
+                0 0 0 1px rgba(184, 150, 88, 0.20);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.35;
+    max-width: 240px;
+    white-space: normal;
+    z-index: 9997;
+    transform: translateX(20px) scale(0.85);
+    transform-origin: 100% 80%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.40s ease-out,
+                transform 0.55s cubic-bezier(0.34, 1.6, 0.64, 1);
+    user-select: none;
+    cursor: pointer;
+}
+.cnc-cta-bubble.is-visible {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+    animation: ctaBubbleAttention 1.6s ease-out 0.5s 1;
+}
+.cnc-cta-bubble:hover {
+    transform: translateX(-2px) scale(1.03);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.36),
+                0 0 0 2px rgba(184, 150, 88, 0.55);
+}
+/* Tail apuntando hacia el FAB (a la derecha) */
+.cnc-cta-bubble::after {
+    content: '';
+    position: absolute;
+    right: -9px;
+    bottom: 14px;
+    width: 0;
+    height: 0;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+    border-left: 11px solid #fff7e0;
+    filter: drop-shadow(1px 0 0 rgba(184, 150, 88, 0.20));
+}
+.cnc-cta-bubble-text {
+    display: block;
+    color: #2a1f08;
+}
+.cnc-cta-bubble-close {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: rgba(42, 31, 8, 0.5);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.cnc-cta-bubble-close:hover {
+    background: rgba(42, 31, 8, 0.10);
+    color: rgba(42, 31, 8, 0.9);
+}
+/* Pulse de atención cuando aparece — un pequeño "ping" sin invadir */
+@keyframes ctaBubbleAttention {
+    0%, 100% { transform: translateX(0) scale(1); }
+    50%      { transform: translateX(0) scale(1.05); }
+}
+
 /* Send button mantiene Lucide icon */
 .cnc-send [data-lucide],
 .cnc-send svg {
@@ -365,8 +471,8 @@
     .altorra-concierge-btn {
         bottom: 16px;
         right: 16px;
-        width: 64px;
-        height: 64px;
+        width: 78px;
+        height: 78px;
     }
 }
 
@@ -375,8 +481,32 @@
    ═══════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
     .altorra-concierge-btn { animation: none; }
+    .altorra-concierge-btn:hover .cnc-altor-img { animation: none; }
     .cnc-msg { animation: none; }
+    .cnc-cta-bubble.is-visible { animation: none; }
     .altorra-concierge { transition: opacity 0.15s linear; transform: none; }
+}
+
+@media (max-width: 480px) {
+    /* En mobile, el bubble se muestra arriba del FAB en vez de a la
+       izquierda (no hay espacio horizontal suficiente) */
+    .cnc-cta-bubble {
+        right: 16px;
+        bottom: 105px;
+        max-width: calc(100vw - 32px);
+        font-size: 0.82rem;
+        padding: 10px 32px 10px 14px;
+        border-bottom-right-radius: 18px;
+        border-bottom-left-radius: 6px;
+    }
+    .cnc-cta-bubble::after {
+        right: 28px;
+        bottom: -9px;
+        border-left: 9px solid transparent;
+        border-right: 9px solid transparent;
+        border-top: 11px solid #fff7e0;
+        border-bottom: 0;
+    }
 }
 
 /* U.19 — Opt-in modal */

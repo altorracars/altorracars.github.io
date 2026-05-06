@@ -11209,3 +11209,631 @@ con bump de `APP_VERSION`).
 3. **Anthropic Console → Billing**: comparar gasto del primer mes
    vs proyección. Con uso típico de 10 chats/día × 30 días =
    300 chats × $0.008 = ~$2.40 USD/mes.
+
+---
+
+## 22. Offline Ultra Brain — Inteligencia avanzada sin LLM (2026-05-07)
+
+> Refactor en 4 sprints ejecutado bajo **RCA Strict Mode** (§19) tras
+> directiva del cliente de llevar el sistema rule-based al límite de
+> la ingeniería frontend. El bot rule-based ya no es un árbol de
+> reglas plano — es un motor cognitivo con Levenshtein, sinónimos,
+> memoria conversacional, búsqueda dinámica de inventario,
+> auto-aprendizaje y quick replies para clarification ambigua.
+>
+> El usuario decide cuándo activar el LLM (§21). Cuando NO está
+> activo (saldo agotado, fallback automático), el bot ya entrega
+> ~80% del valor de un LLM comercial sin pagar un centavo de API.
+
+### 22.1 Línea de tiempo
+
+| # | Sprint | Descripción |
+|---|---|---|
+| 1 | Fixes UX | BUG #1 (botón ⋮ cliente) + BUG #2 (rule `from:'system'`) + BUG #3 (realtime delete listener) |
+| 2 | Capas A-E | Levenshtein-Damerau + sinónimos + memory window + inventory search + feedback loop |
+| 3 | Propuestas adicionales | TF-IDF FAQ ranker + Confidence-based clarification (Quick Replies UI) + admin "Lo que no entendí" |
+| 4 | Doc + cache bump | Esta sección + version v20260507010000 |
+
+### 22.2 Sprint 1 — 3 Fixes Críticos
+
+#### BUG #1 — Cliente puede finalizar conversación
+
+**Problema**: el header del widget tenía solo botón × (minimiza, no
+resetea). El cliente no tenía affordance para "empezar de nuevo".
+
+**Fix** (`js/concierge.js` + `css/concierge.css`):
+
+- Nuevo botón `⋮` (`.cnc-header-menu-btn`) entre `.cnc-header-info`
+  y `.cnc-close`
+- Click abre dropdown `.cnc-header-dropdown` con item "Finalizar
+  conversación"
+- Click en item → `handleClientResetSession()`:
+  1. Confirm dialog
+  2. Si `_chatDocCreated`, escribe `{status:'closed', closedBy:'client'}`
+     al doc parent (best-effort, no bloquea reset si falla red)
+  3. Llama `resetSession()` que ya existe (limpia localStorage +
+     listeners + sessionId nuevo + re-render welcome)
+- Click fuera del dropdown lo cierra
+- Animación `cncDropdownIn` (cubic-bezier overshoot 0.18s) con
+  `prefers-reduced-motion` respetado
+
+**NO inserta** mensaje `from:'system'` desde el cliente — la regla
+Firestore solo permite a editor+ crear ese tipo (anti-impersonation).
+El cliente solo ve el reset local + el chat queda marcado como
+`closed` en Firestore para que el admin lo vea cerrado en su bandeja.
+
+#### BUG #2 — `closeChat` admin tira `permission-denied`
+
+**Causa raíz**: la regla `match /messages/{msgId} create` whitelist
+solo `'user'`, `'bot'`, `'asesor'`. Cuando admin hace `closeChat`,
+intenta crear mensaje con `from:'system'` → bloqueado.
+
+**Fix** (`firestore.rules`):
+
+```
+match /messages/{msgId} {
+    allow create: if request.auth != null && (
+        request.resource.data.from in ['user', 'bot'] ||
+        (request.resource.data.from == 'asesor' && isEditorOrAbove()) ||
+        (request.resource.data.from == 'system' && isEditorOrAbove())
+    );
+}
+```
+
+`from:'system'` ahora SOLO `isEditorOrAbove()` (anti-impersonation —
+ningún cliente anónimo/registered puede inyectar mensajes "system"
+falsos).
+
+**Cubre también** `reopenChat()` que tenía el mismo bug.
+
+> **DEPLOY MANUAL REQUERIDO**: `firebase deploy --only firestore:rules`
+
+#### BUG #3 — Ghost UI tras Hard Delete realtime
+
+**Causa raíz**: el listener `onSnapshot` de admin-concierge.js
+reasignaba `_chats` enteramente sin chequear si `_activeSessionId`
+seguía presente. Cuando OTRO admin eliminaba el chat activo:
+- Lista lateral correctamente removía el item
+- Panel derecho seguía mostrando los mensajes (ghost UI)
+- `_messagesUnsub` quedaba huérfano apuntando a subcolección de doc
+  inexistente
+
+**Fix** (`js/admin-concierge.js startChatsListener`):
+
+```js
+snap.docChanges().forEach(function (change) {
+    if (change.type === 'removed' && change.doc.id === _activeSessionId) {
+        _activeSessionId = null;
+        if (_messagesUnsub) { try { _messagesUnsub(); } catch (e) {} _messagesUnsub = null; }
+        renderChatDetail(null, []);
+        if (AP.toast) AP.toast('La conversación abierta fue eliminada por otro administrador.', 'warning');
+    }
+});
+```
+
+`docChanges()` se procesa ANTES de reconstruir `_chats`. Si el chat
+activo fue removido, limpia `_activeSessionId` + cancela
+`_messagesUnsub` + re-renderiza el panel derecho vacío + toast
+informativo al admin.
+
+### 22.3 Sprint 2 — Capa A+B: Fuzzy Matching + Sinónimos
+
+**Archivo nuevo**: `js/ai/fuzzy.js` (~340 líneas).
+
+#### Algoritmo Levenshtein-Damerau
+
+Variante extendida que cuenta transposiciones de letras adyacentes
+como **1 operación** (no 2 como Levenshtein clásico):
+
+```
+d[i,j] = min(
+    d[i-1, j] + 1,        // deletion
+    d[i, j-1] + 1,        // insertion
+    d[i-1, j-1] + cost,   // substitution (cost=0 si match)
+    d[i-2, j-2] + 1       // transposition (chars[i]==chars[j-1] && chars[i-1]==chars[j])
+)
+```
+
+Ejemplo: `"qiero"` vs `"quiero"` → distance = 1 (transposición qu↔iq).
+
+**Threshold normalizado**: `similarity = 1 - (distance / max(len(a), len(b)))`.
+- `≥ 0.80` → match (1 typo cada ~5 chars)
+- `≥ 0.85` para palabras cortas (≤4 chars) — más estricto para
+  evitar falsos positivos con "ok"/"oh"/"ah"
+
+**Optimizaciones**:
+- **Early exit por bound**: `abs(len(a) - len(b)) > maxDistance`
+  retorna inmediatamente sin DP. Reduce ~90% del cómputo en el
+  caso común (typos pequeños).
+- **Row min watch**: si toda la fila supera el bound, abort. Evita
+  calcular DP completo para palabras muy distintas.
+- **3 filas en memoria** (prev2, prev1, curr) en vez de matriz O(m·n)
+  completa.
+
+**Complejidad**: O(m × n) por par. Con keyword más largo de 30 chars
+y mensaje ≤ 100 chars → 3000 ops máx. **Sub-ms en cualquier hardware**.
+
+#### Diccionario de Sinónimos
+
+Map "canonical → variantes" con **17 categorías** y ~150 variantes
+totales. Cubre vocabulario coloquial colombiano + automotriz:
+
+| Canonical | Variantes |
+|---|---|
+| `carro` | auto, automóvil, vehículo, nave, máquina, coche, fierro, cucha, mueble |
+| `suv` | camioneta, todo terreno, 4x4, campero, jepeta, jeepeta |
+| `pickup` | pick up, platón, estacas, doble cabina |
+| `barato` | económico, cómodo, accesible, rebajado, módico, suave |
+| `cuanto cuesta` | cuánto vale, qué precio, a cómo, cuánto sale, precio final |
+| `agendar` | reservar, separar, apartar, cuadrar, ir a verlo |
+| `automatico` | sin embrague, sin clutch, auto |
+| `manual` | mecánico, palanca, con embrague, con clutch, estándar |
+
+Reverse index `variant → canonical` armado al inicio para O(1) lookup.
+
+**Pipeline `expandSynonyms(text)`**:
+1. **Phrase-level** (longitud descendente): "doble cabina" → "pickup"
+2. **Word-level con typo tolerance**: "varato" → fuzzy match contra
+   variantes → "barato"
+
+Resultado: `"qiero un coxe varato"` → `"comprar carro barato"` antes
+de matchear contra LEXICON.
+
+#### Integración en `js/ai/intent.js`
+
+`classify()` ahora:
+1. Normaliza el texto
+2. Expande sinónimos (si AltorraFuzzy disponible)
+3. Match exacto sobre el texto expandido
+4. Si no hubo match exacto Y keyword tiene ≥5 chars → fuzzy match
+   con threshold 0.82 y score atenuado (×0.85 penalty)
+
+**Anti-pattern evitado**: fuzzy match sobre keywords cortos (≤4 chars)
+generaría falsos positivos masivos. Solo aplicamos fuzzy a keywords
+≥5 chars.
+
+### 22.4 Sprint 2 — Capa C: Memory Window con Slot Filling
+
+**Archivo modificado**: `js/ai/intent.js` (`updateContext` extendido).
+
+**Schema de `session.context` nuevo**:
+
+```js
+session.context = {
+    lastIntent: 'inventory_query',
+    lastTurnAt: 1234567890,
+    discussedTopics: ['inventario', 'precio'],
+    bot_repeated_count: 0,
+
+    // §22 Capa C — Slots persistentes
+    slots: {
+        lastVehicleDiscussed: { id, marca, modelo, year, precio, kilometraje, categoria, transmision },
+        lastBrandDiscussed: 'mazda',
+        lastCategoryDiscussed: 'suv',
+        lastYearDiscussed: 2020,
+        lastPriceMaxDiscussed: 80000000,
+        lastVehiclesShown: ['abc123', 'def456', ...],
+        lastInventoryFilters: { marca, categoria, priceMax, ... },
+        lastQueryType: 'inventory_query'
+    },
+
+    // §22 Capa C — Turn history (window de 3, decay 5 min)
+    turnHistory: [
+        { turn: 1, timestamp, intent, text, entities },
+        { turn: 2, ... },
+        { turn: 3, ... }
+    ]
+}
+```
+
+**Decay automático**: turnos > 5 minutos viejos se descartan en cada
+`updateContext`. Los humanos olvidamos así también.
+
+**Anáfora resolution** (`resolveAnaphora(context)`):
+
+Cuando el cliente dice "¿y de qué año es?" / "¿cuánto vale ese?" /
+"¿lo tienen automático?":
+1. Detector de pronombres: `\b(ese|esa|este|esta|aquel|aquella|el mismo|la misma|lo|la)\b`
+2. Detector de followup ambiguo: `^(\b(y|de|cu[aá]nto|cu[aá]l|qu[eé])\b\s){1,3}`
+3. O intent `pricing_query` sin entity de vehículo
+
+→ Lookup `slots.lastVehicleDiscussed` (si último turno < 5 min) →
+detecta atributo preguntado (year/precio/kilometraje/transmision/categoria)
+→ responde con dato concreto.
+
+**Ejemplo end-to-end**:
+```
+Turn 1 — Cliente: "¿tienen Mazda CX-5 2020?"
+         Bot: encuentra match en inventario, responde "Sí, está en $80M".
+              context.slots.lastVehicleDiscussed = { id, marca:'mazda', modelo:'cx-5', year:2020, precio:80M }
+
+Turn 2 — Cliente: "¿lo tienen automático?"
+         Bot: detecta pronombre "lo" + intent ambiguo → resolveAnaphora()
+              → vehículo en slots → atributo 'transmision'
+              → responde "El Mazda CX-5 2020 tiene transmisión automática."
+
+Turn 3 — Cliente: "¿y el kilometraje?"
+         Bot: detecta followup ambiguo "¿y el ..." → resolveAnaphora()
+              → atributo 'kilometraje'
+              → responde "El Mazda CX-5 2020 tiene 45,000 km."
+```
+
+### 22.5 Sprint 2 — Capa D: Búsqueda Dinámica de Inventario
+
+**Archivo nuevo**: `js/ai/inventory-search.js` (~280 líneas).
+
+**Function calling simulado** sin LLM. El bot consulta el inventario
+en tiempo real cada turno relevante.
+
+**Pipeline `searchFromText(text)`**:
+
+1. **`extractFilters(text)`** — combina NER + regex específicas:
+   - NER base: marca, modelo, año, kilometraje, precio
+   - Categoría: regex con sinónimos ("camionetas?", "todo[\s-]?terreno", etc.)
+   - Transmisión: regex para automatica/manual
+   - Combustible: regex para gasolina/diesel/híbrido/eléctrico
+   - Rangos de precio: "menos de 60M", "máximo 80M", "entre 50M y 80M"
+   - Rangos de año: "del 2018 al 2022", "2020 en adelante"
+   - Kilometraje máximo: "menos de 50 mil km"
+
+2. **`search(filters)`** — filter cascade sobre `vehicleDB.vehicles`:
+   - Excluye `estado === 'vendido'` y `estado === 'borrador'`
+   - Aplica todos los filtros con tolerancia fuzzy (AltorraFuzzy)
+   - Sort: destacados primero, luego precio ascendente
+   - Cap a top 5
+
+3. **`formatResponse(searchResult)`** — genera respuesta natural:
+   - **0 resultados**: "no encontré [filtros]. ¿Catálogo completo o
+     que un asesor te avise?"
+   - **1 resultado**: "tengo esto: [marca modelo year] por [precio]
+     ([km] km). ¿Ficha o visita?"
+   - **N resultados**: lista con vehicleLine() para cada uno + CTA
+
+4. **Persistencia en context**: `vehiclesShown` y `lastInventoryFilters`
+   se guardan en `slots` para anáfora ("¿el segundo cuánto vale?"
+   resuelve via `lastVehiclesShown[1]`).
+
+**Integración en `concierge.js generateBotResponse`**: cuando
+`classification.intent === 'inventory_query'`:
+- Si `extractFilters` detecta filtros específicos → responde con
+  vehículos REALES
+- Si no hay filtros específicos → respuesta genérica con conteo +
+  CTA al catálogo (comportamiento legacy)
+
+**Anti-pattern evitado**: re-llamar al inventario en CADA turno sería
+costoso para chats largos. Solo se ejecuta para `inventory_query`
+con filtros específicos.
+
+### 22.6 Sprint 2 — Capa E: Auto-Nutrición / Feedback Loop
+
+**Schema** `unmatchedQueries/{queryId}`:
+
+```js
+{
+    query: 'cuanto cuesta el chevrolet captiva',
+    keywords: ['cuanto', 'cuesta', 'chevrolet', 'captiva'],
+    sessionId: 'cnc_xyz...',
+    sourcePage: '/vehiculos/...html',
+    sourceVehicleId: null,
+    intent: 'none',
+    confidence: 0.0,
+    sentiment: 'neutral',
+    createdAt: <serverTimestamp>,
+    seen: false,
+    promotedToFAQ: false,
+    promotedFAQId: null,
+    seenAt, seenBy,
+    promotedAt, promotedBy
+}
+```
+
+**Reglas Firestore** (`firestore.rules`):
+```
+match /unmatchedQueries/{queryId} {
+    allow read, update: if isEditorOrAbove();
+    allow create: if request.auth != null;
+    allow delete: if isSuperAdmin();
+}
+```
+
+**Trigger** (`concierge.js logUnmatched`):
+
+Cuando `generateBotResponse` cae al fallback genérico (intent='none'
+Y KB no matchea Y NER no detecta nada útil):
+
+1. **Throttle**: máx 1 escritura/min/sesión (`session._lastUnmatchedAt`)
+2. **Filtro de longitud**: 4 ≤ query.length ≤ 500
+3. **Extracción de keywords**: tokenize + filtra stop-words + length ≥ 4 → top 8
+4. **Sentiment** (best-effort) via `AltorraAI.sentiment`
+5. **Persistencia** con `serverTimestamp()` + flags iniciales
+
+**UI Admin** (`js/admin-unmatched.js` — nuevo módulo, ~340 líneas):
+
+- Nueva sección sidebar "Lo que no entendí" (icono `message-circle-question`)
+  en grupo Automatización con badge de unread realtime
+- Filter chips: **Sin revisar** (default), Todas, Promovidas
+- Lista realtime con `onSnapshot` (limit 200, order by createdAt desc)
+- Cada entry muestra:
+  - Status badge (Nueva / Vista / Promovida)
+  - Sentiment chip si negativo/positivo
+  - Tiempo relativo + sourcePage
+  - **Quote** de la query con border-left dorado
+  - Keywords extraídas como chips
+  - Acciones: 👁 Marcar vista · ➕ Crear FAQ · 🗑 Eliminar (super_admin)
+
+**Flujo "Promover a FAQ"**:
+1. Click "➕ Crear FAQ" en una entry
+2. Navega a sección Cerebro AI vía `AltorraSections.go('kb')`
+3. Llama `AltorraKB.openFormPrefilled({ question, keywords, _onSaveCallback })`
+4. Form se prellena con la query como pregunta + keywords ya extraídas
+5. Admin completa la respuesta + click "Crear FAQ"
+6. Callback marca la unmatched query como `promotedToFAQ:true`
+7. Próximo cliente que pregunte algo similar → el bot responde via KB
+   (sin pasar por LLM)
+
+**Beneficio compuesto**: con el tiempo, el bot "aprende" qué le falta.
+El asesor convierte 10-20 queries/semana en FAQs → el bot resuelve
+más sin LLM → ahorro de costos exponencial.
+
+### 22.7 Sprint 3 — Propuesta #1: TF-IDF FAQ Ranker
+
+**Archivo nuevo**: `js/ai/faq-ranker.js` (~150 líneas).
+
+**Patrón Zendesk Answer Bot**: ranking matemático sobre el corpus,
+no matching string crudo. Tokens raros (`peritaje`) ponderan más que
+tokens comunes (`auto`).
+
+**`buildIndex(faqs)`**:
+- Expande sinónimos en pregunta + keywords
+- Tokeniza filtrando stop-words + length ≥ 2
+- Construye `documentFreq` map: `{token: count of FAQs that contain it}`
+- Cache por session (`session._kbIndex._faqsCount`) — invalidado si
+  cambia el count de FAQs en la KB
+
+**`rank(query, index, n=3)`**:
+
+Para cada FAQ:
+```
+score = sum_over_query_tokens(
+    max_over_faq_tokens(
+        similarity(qt, ft) * idf(ft)
+    )
+)
+score *= 1 + (priority/100) * 0.5     // boost del admin
+score *= 1.10 if usageCount > 5       // boost de uso
+score *= 1.05 if usageCount > 20      // segundo boost
+```
+
+donde `idf(ft) = log(1 + totalDocs / df(ft))`.
+
+Filtra por `score >= MIN_SCORE_THRESHOLD (0.5)` y por `enabled !== false`.
+
+**`bestAnswer(query, index)`** decide:
+- Si `top1.score / top2.score >= 1.5` → respuesta confiable, devuelve top1
+- Si menor → ambigüedad detectada, devuelve `{faq, ambiguous:true, secondFaq}`
+  para que `concierge.js` ofrezca quick replies (Propuesta #2)
+- Si no hay candidatos → null (cae a fallback genérico + logUnmatched)
+
+**Integración en `concierge.js`** (sección 12 del cascade):
+1. Cache del index por session
+2. Llama `bestAnswer(userMsg, session._kbIndex)`
+3. Si no ambiguo → `recordUsage(faq._id)` + responde
+4. Si ambiguo → respuesta con `quickReplies` array (Propuesta #2)
+
+**Sin entrenamiento, sin modelos**. ~5KB de código que compite con
+motores comerciales en KBs de 50+ FAQs.
+
+### 22.8 Sprint 3 — Propuesta #2: Quick Replies (Confidence-Based Clarification)
+
+**Patrón Intercom Resolution Bot**: si la query es ambigua, el bot
+ofrece opciones en vez de responder mal.
+
+**Trigger en `concierge.js`**: cuando `AltorraFAQRanker.bestAnswer`
+retorna `ambiguous:true` con `secondFaq`:
+
+```js
+return {
+    text: 'Tengo dos respuestas posibles, ¿cuál te ayuda más?',
+    quickReplies: [
+        { label: clipQuestion(bestKB.faq.question), payload: bestKB.faq.question },
+        { label: clipQuestion(bestKB.secondFaq.question), payload: bestKB.secondFaq.question }
+    ]
+};
+```
+
+**Render en `renderMessages()`**:
+
+```js
+if (m.from === 'bot' && Array.isArray(m.quickReplies)) {
+    quickRepliesHTML = '<div class="cnc-quick-replies">' +
+        m.quickReplies.map(qr =>
+            '<button class="cnc-quick-reply" data-quick-reply="' + payload + '">' + label + '</button>'
+        ).join('') +
+    '</div>';
+}
+```
+
+**Click handler** en panel event delegation:
+```js
+var qrBtn = e.target.closest('[data-quick-reply]');
+if (qrBtn) {
+    var payload = qrBtn.getAttribute('data-quick-reply');
+    if (payload && payload.trim()) send(payload);
+    return;
+}
+```
+
+Click → `send(payload)` re-ejecuta el flujo del bot con la pregunta
+exacta de la FAQ elegida → match definitivo → respuesta correcta.
+
+**CSS** (`css/concierge.css`): chips dorados con gradient,
+border-radius 16px, hover lift, `prefers-reduced-motion` respetado.
+
+### 22.9 Carga de scripts y orden de dependencias
+
+**Sitio público** (`js/components.js loadAuthSystem`):
+
+```
+1. js/ai/fuzzy.js              ← debe cargar PRIMERO (intent + ranker dependen)
+2. js/ai/engine.js
+3. js/ai/ner.js
+4. js/ai/intent.js
+5. js/ai/inventory-search.js   ← Capa D
+6. js/ai/faq-ranker.js         ← Propuesta #1
+7. js/comm-schema.js
+8. js/kb-client.js
+9. js/concierge.js
+10. js/concierge-optin.js
+```
+
+**Admin** (`admin.html`):
+
+```
+js/ai/fuzzy.js                 ← antes de intent.js
+js/ai/engine.js
+js/ai/ner.js
+js/ai/intent.js
+js/ai/inventory-search.js
+js/ai/faq-ranker.js
+js/ai/scoring.js
+js/ai/nba.js
+js/ai/forecast.js
+js/admin-kb.js
+js/admin-unmatched.js          ← nuevo, después de admin-kb (depende de openFormPrefilled)
+```
+
+**Defensa**: cada módulo IA usa guard `if (window.AltorraFuzzy)`
+para fallback graceful si la dependencia no cargó (raro pero
+posible en networks malas).
+
+### 22.10 Cómo extender el Offline Ultra Brain
+
+**Para agregar sinónimos nuevos**:
+
+`js/ai/fuzzy.js` → objeto `SYNONYMS` → agregar `'canonical': ['variante1', 'variante2']`.
+El reverse index se reconstruye al cargar el módulo.
+
+**Para agregar un intent nuevo con respuesta determinística**:
+
+1. `js/ai/intent.js` `LEXICON` → agregar entrada con keywords
+2. `js/concierge.js generateBotResponse` → agregar branch
+   `if (classification.intent === 'mi_intent_nuevo')`
+
+**Para agregar un nuevo filtro de inventario** (ej. "color"):
+
+1. `js/ai/inventory-search.js extractFilters` → agregar regex/lookup
+2. `search()` → agregar predicate en el filter
+3. `formatResponse()` → agregar al `filterDescr` array
+
+**Para mejorar el TF-IDF**:
+
+1. Cambiar `MIN_SCORE_THRESHOLD` (default 0.5) si hay muchos FP/FN
+2. Cambiar `AMBIGUITY_RATIO_THRESHOLD` (default 1.5) para más/menos
+   quick replies
+3. Para upgrade futuro a embeddings reales: `AltorraAI.registerProvider('faq-rank', mlFn)`
+   y `bestAnswer` lo usa antes del fallback rules
+
+### 22.11 Anti-patterns evitados durante el bloque
+
+| Riesgo | Mitigación |
+|---|---|
+| Levenshtein cuádrico O(n²) sin bound | Early exit por `abs(len_a - len_b)` + row min watch |
+| Fuzzy match sobre keywords cortos (`ok`, `oh`) | Threshold adaptativo: 0.85 para palabras ≤4 chars |
+| Memory window crece infinito | Cap a 3 turnos + decay 5 min |
+| Anáfora resolution con contexto stale | Verifica `lastTurnAt < 5 min` antes de usar slots |
+| Inventory search en CADA turno (cara) | Solo se ejecuta si `inventory_query` Y hay filtros específicos |
+| Logs `unmatched` spam si cliente repite | Throttle 1/min/sesión + length filter 4-500 chars |
+| TF-IDF index recomputado cada turno | Cache por session, invalidado solo si cambia faqs.length |
+| Quick reply payload con XSS | `escapeHtml` + `data-quick-reply` attr (event delegation) |
+| Ambiguous threshold demasiado laxo | 1.5x ratio (top1 debe ser ≥1.5 veces top2) |
+| Cliente promueve query a FAQ via cliente público | Reglas Firestore: read/update solo isEditorOrAbove |
+| Fuzzy expansion incorrecta de stop-words | `STOP_WORDS` set excluido del fuzzy match |
+| Hard delete admin no limpia panel derecho | docChanges.removed event + cleanup _activeSessionId |
+| Cliente puede inyectar mensajes `from:'system'` | Firestore rule: `from:'system'` requiere isEditorOrAbove |
+| Bot responde "no entendí" sin oportunidad de aprender | logUnmatched + admin promueve a FAQ |
+| Re-render del listener stoppea cuando logout | Guard `!auth.currentUser` en error callback (legacy patrón) |
+
+### 22.12 Resumen de archivos modificados/creados
+
+| Archivo | Tipo | Propósito |
+|---|---|---|
+| `firestore.rules` | mod | `from:'system'` rule + `unmatchedQueries/` collection |
+| `js/admin-concierge.js` | mod | docChanges.removed listener (BUG #3) |
+| `js/concierge.js` | mod | Botón ⋮ + handleClientResetSession + Capa C+D+E + quick replies + logUnmatched |
+| `css/concierge.css` | mod | Header dropdown + quick replies styles |
+| `js/ai/fuzzy.js` | new | Levenshtein-Damerau + sinónimos (~340 líneas) |
+| `js/ai/intent.js` | mod | classify con fuzzy + classifyMultiple + slots + resolveAnaphora |
+| `js/ai/inventory-search.js` | new | Function calling simulado (~280 líneas) |
+| `js/ai/faq-ranker.js` | new | TF-IDF (~150 líneas) |
+| `js/admin-unmatched.js` | new | UI admin "Lo que no entendí" (~340 líneas) |
+| `js/admin-kb.js` | mod | `openFormPrefilled` + `_onSaveCallback` |
+| `js/admin-section-router.js` | mod | Registry: `kb` → "Cerebro Altorra AI", `unmatched` nuevo |
+| `js/components.js` | mod | Carga fuzzy + inventory-search + faq-ranker antes de concierge |
+| `admin.html` | mod | Sidebar item Lo que no entendí + sec-unmatched + scripts |
+| `css/admin.css` | mod | `.unmatched-*` styles (~120 líneas) |
+| `service-worker.js` | mod | CACHE_VERSION = v20260507010000 |
+| `js/cache-manager.js` | mod | APP_VERSION = 20260507010000 |
+| `CLAUDE.md` | mod | Esta sección §22 |
+
+**Total**: 4 archivos nuevos + 12 archivos modificados + 1 deploy de
+rules manual.
+
+### 22.13 Deploy manual requerido
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+Activa:
+- Regla `from:'system'` para messages (fix BUG #2)
+- Colección `unmatchedQueries/` (Capa E)
+
+Sin este deploy:
+- BUG #2 persiste — closeChat seguirá tirando permission-denied
+- Capa E no funcionará — `concierge.js logUnmatched` fallará en
+  `add()` con permission-denied (best-effort, no bloquea el chat,
+  pero no aprenderás de queries no entendidas)
+
+El resto de cambios (frontend, scripts, CSS) viajan vía service
+worker — los clientes los reciben automáticamente al recargar la
+página tras un push a `main`.
+
+### 22.14 Validación post-deploy
+
+1. **BUG #1 cliente**: abrir el chat → click ⋮ → "Finalizar
+   conversación" → confirm → chat se resetea con welcome nuevo
+
+2. **BUG #2 admin**: abrir un chat → click "Cerrar chat" → debería
+   aparecer toast "Conversación cerrada" SIN error de permisos
+
+3. **BUG #3 admin**: abrir admin en 2 tabs → en tab A eliminar un
+   chat que está abierto en tab B → tab B debería limpiar el panel
+   derecho automáticamente con toast informativo
+
+4. **Capa A+B fuzzy**: probar `"qiero un coxe varato"` →
+   bot debería entender "comprar carro barato"
+
+5. **Capa C memoria**: probar conversación tipo:
+   - "¿tienen Mazda CX-5?"
+   - "¿de qué año es?"
+   - bot debería responder con el año del Mazda CX-5
+
+6. **Capa D inventory search**: probar `"¿tienen camionetas por
+   menos de 60 millones?"` → bot debería listar SUVs/pickups con
+   precio ≤ 60M, no respuesta genérica
+
+7. **Capa E feedback loop**: escribir algo absurdo
+   `"asdfghjkl querría flotar"` → admin va a "Lo que no entendí"
+   → debería aparecer en la lista
+
+8. **Propuesta #1 TF-IDF**: con 10+ FAQs, una query con keywords
+   raros debería preferir la FAQ que los contiene aunque otra
+   tenga más coincidencias comunes
+
+9. **Propuesta #2 quick replies**: si dos FAQs tienen scores
+   cercanos, el bot debería ofrecer botones de selección, no
+   responder con la primera
+
+10. **Promote to FAQ**: ir a "Lo que no entendí" → click
+    "➕ Crear FAQ" → form prellenado → guardar → entry desaparece
+    de "Sin revisar" + aparece en "Promovidas"

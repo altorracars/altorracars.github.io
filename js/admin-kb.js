@@ -311,6 +311,11 @@
         if (formEl) { formEl.style.display = 'none'; formEl.innerHTML = ''; }
     }
 
+    // Callback opcional registrado por admin-unmatched.js cuando promueve
+    // una query a FAQ. Recibe el ID de la FAQ recién creada para poder
+    // marcar la unmatched query como `promotedToFAQ:true`.
+    var _onSaveCallback = null;
+
     function saveEntry() {
         if (!window.db) return;
         var id = $('kbFormId') && $('kbFormId').value;
@@ -338,19 +343,49 @@
         };
         var promise;
         if (id) {
-            promise = window.db.collection('knowledgeBase').doc(id).set(data, { merge: true });
+            promise = window.db.collection('knowledgeBase').doc(id).set(data, { merge: true })
+                .then(function () { return id; });
         } else {
             data.createdAt = new Date().toISOString();
             data.createdBy = window.auth.currentUser.uid;
             data.usageCount = 0;
-            promise = window.db.collection('knowledgeBase').add(data);
+            promise = window.db.collection('knowledgeBase').add(data)
+                .then(function (ref) { return ref.id; });
         }
-        promise.then(function () {
+        promise.then(function (newId) {
             AP.toast('FAQ guardada correctamente');
+            // §22 Capa E — disparar callback si la FAQ vino de "Lo que no entendí"
+            if (typeof _onSaveCallback === 'function') {
+                try { _onSaveCallback(newId); } catch (e) {}
+                _onSaveCallback = null;
+            }
             hideForm();
         }).catch(function (err) {
             AP.toast('Error al guardar: ' + err.message, 'error');
         });
+    }
+
+    /**
+     * §22 Capa E — openFormPrefilled
+     * Llamado por admin-unmatched.js para crear una FAQ con la query
+     * del cliente prellenada. Acepta opcional onSaveCallback que recibe
+     * el ID de la FAQ recién creada para marcar la unmatched como
+     * `promotedToFAQ:true`.
+     */
+    function openFormPrefilled(opts) {
+        opts = opts || {};
+        showForm({
+            question: opts.question || '',
+            keywords: opts.keywords || [],
+            category: 'general',
+            priority: 50
+        });
+        _onSaveCallback = opts._onSaveCallback || null;
+        // Foco al campo answer porque pregunta + keywords ya están llenos
+        setTimeout(function () {
+            var ans = $('kbFormAnswer');
+            if (ans) ans.focus();
+        }, 100);
     }
 
     function deleteEntry(id) {
@@ -629,6 +664,8 @@
         list: function () { return _entries.slice(); },
         recordUsage: recordUsage,
         // FASE 3 — Cerebro AI
-        getBrain: function () { return _brainData; }
+        getBrain: function () { return _brainData; },
+        // §22 Capa E — promoción desde "Lo que no entendí"
+        openFormPrefilled: openFormPrefilled
     };
 })();

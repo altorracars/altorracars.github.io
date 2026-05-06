@@ -297,8 +297,38 @@
             }
         }
 
-        // 7. Intent: inventory_query — sutil con link al catálogo + cifra real
+        // 7. Intent: inventory_query — §22 Capa D: Búsqueda dinámica
+        // Si AltorraInventorySearch detecta filtros específicos (marca, precio,
+        // categoría, etc.), responde con vehículos REALES del inventario.
+        // Si no hay filtros específicos, responde con conteo + CTA al catálogo.
         if (classification.intent === 'inventory_query') {
+            if (window.AltorraInventorySearch && window.vehicleDB && window.vehicleDB.vehicles) {
+                var searchResult = window.AltorraInventorySearch.searchFromText(userMsg, { limit: 4 });
+                var hasFilters = Object.keys(searchResult.filters).some(function (k) {
+                    var v = searchResult.filters[k];
+                    return v !== null && (!Array.isArray(v) || v.length > 0);
+                });
+                if (hasFilters) {
+                    var formatted = window.AltorraInventorySearch.formatResponse(searchResult, { firstName: firstName });
+                    // Persistir vehículos mostrados en context para anáfora
+                    if (formatted.vehiclesShown && session.context) {
+                        session.context.slots = session.context.slots || {};
+                        session.context.slots.lastVehiclesShown = formatted.vehiclesShown;
+                        session.context.slots.lastInventoryFilters = searchResult.filters;
+                        if (formatted.vehiclesShown.length === 1) {
+                            var v0 = searchResult.vehicles[0];
+                            session.context.slots.lastVehicleDiscussed = {
+                                id: v0.id, marca: v0.marca, modelo: v0.modelo,
+                                year: v0.year, precio: v0.precioOferta || v0.precio,
+                                kilometraje: v0.kilometraje, categoria: v0.categoria,
+                                transmision: v0.transmision
+                            };
+                        }
+                    }
+                    return { text: formatted.text, cta: formatted.cta };
+                }
+            }
+            // Sin filtros específicos → respuesta genérica con conteo
             var n = getInventoryCount();
             return {
                 text: '📋 Tenemos ' + n + ' vehículos disponibles ahora mismo' +
@@ -354,8 +384,75 @@
             };
         }
 
-        // 12. KB del admin (más confiable que FAQ hardcoded)
-        if (window.AltorraKB && window.AltorraKB.findBest) {
+        // 11.5 §22 Capa C — Anáfora resolution
+        // "¿y de qué año es?" / "¿cuánto vale ese?" / "¿lo tienen automático?"
+        // → busca el último vehículo discutido en context.slots.
+        var anaphora = window.AltorraIntent && window.AltorraIntent.resolveAnaphora
+            ? window.AltorraIntent.resolveAnaphora(ctx) : null;
+        var pronominalRe = /\b(ese|esa|eso|este|esta|esto|aquel|aquella|el mismo|la misma|lo|la)\b/i;
+        var ambiguousFollowupRe = /^(\b(y|de|cu[aá]nto|cu[aá]l|qu[eé])\b\s){1,3}/i;
+        if (anaphora && anaphora.vehicle &&
+            (pronominalRe.test(userMsg) || ambiguousFollowupRe.test(userMsg) ||
+             classification.intent === 'pricing_query')) {
+            var v = anaphora.vehicle;
+            // Detectar el atributo preguntado
+            var lowerMsg = userMsg.toLowerCase();
+            var attr = null;
+            if (/\baño\b|\bano\b|\bque año|del año/i.test(lowerMsg)) attr = 'year';
+            else if (/precio|cuanto|cuánto|vale|cuesta/i.test(lowerMsg)) attr = 'precio';
+            else if (/\bkm\b|kilometraje|kilómetros|kilometros|recorrido/i.test(lowerMsg)) attr = 'kilometraje';
+            else if (/transmisi[oó]n|autom[aá]tic|manual|mecanic/i.test(lowerMsg)) attr = 'transmision';
+            else if (/categoria|tipo|suv|sedan|pickup|hatchback/i.test(lowerMsg)) attr = 'categoria';
+
+            if (attr && v[attr]) {
+                var vTitle = v.marca + ' ' + v.modelo + ' ' + v.year;
+                var answers = {
+                    year: 'El ' + vTitle + ' es del año **' + v.year + '**.',
+                    precio: 'El ' + vTitle + ' está en **$' + (v.precio / 1e6).toFixed(1) + 'M**.',
+                    kilometraje: 'El ' + vTitle + ' tiene **' + (v.kilometraje || 0).toLocaleString('es-CO') + ' km**.',
+                    transmision: 'El ' + vTitle + ' tiene transmisión **' + (v.transmision || 'consultar') + '**.',
+                    categoria: 'El ' + vTitle + ' es **' + (v.categoria || 'consultar') + '**.'
+                };
+                return {
+                    text: answers[attr] + ' ¿Querés ver la ficha completa o agendar una visita?',
+                    cta: { label: 'Ver ficha', action: 'goto-busqueda' }
+                };
+            }
+        }
+
+        // 12. §22 Propuesta #1 — TF-IDF ranker sobre las FAQs del admin (KB)
+        // Reemplaza el findBest simple (keyword matching) con ranking matemático
+        // que pondera tokens raros (peritaje > auto) y penaliza tokens comunes.
+        if (window.AltorraKB && window.AltorraFAQRanker) {
+            var faqs = window.AltorraKB.list ? window.AltorraKB.list() : [];
+            if (faqs.length > 0) {
+                // Cache del index por session — invalidado si cambia el count
+                if (!session._kbIndex || session._kbIndex._faqsCount !== faqs.length) {
+                    session._kbIndex = window.AltorraFAQRanker.buildIndex(faqs);
+                    session._kbIndex._faqsCount = faqs.length;
+                }
+                var bestKB = window.AltorraFAQRanker.bestAnswer(userMsg, session._kbIndex);
+                if (bestKB && !bestKB.ambiguous) {
+                    if (window.AltorraKB.recordUsage && bestKB.faq._id) {
+                        window.AltorraKB.recordUsage(bestKB.faq._id);
+                    }
+                    return { text: bestKB.faq.answer, kbId: bestKB.faq._id };
+                }
+                // Si hay ambigüedad → quick replies (Propuesta #2 abajo)
+                if (bestKB && bestKB.ambiguous && bestKB.secondFaq) {
+                    return {
+                        text: 'Tengo dos respuestas posibles, ¿cuál te ayuda más?',
+                        quickReplies: [
+                            { label: clipQuestion(bestKB.faq.question), payload: bestKB.faq.question },
+                            { label: clipQuestion(bestKB.secondFaq.question), payload: bestKB.secondFaq.question }
+                        ]
+                    };
+                }
+            }
+        }
+
+        // 12.5 — KB findBest legacy (fallback si AltorraFAQRanker no cargó)
+        if (window.AltorraKB && window.AltorraKB.findBest && !window.AltorraFAQRanker) {
             var kbEntry = window.AltorraKB.findBest(userMsg);
             if (kbEntry) {
                 window.AltorraKB.recordUsage(kbEntry._id);
@@ -382,6 +479,12 @@
             }
         }
 
+        // 15. §22 Capa E — Auto-Nutrición / Feedback Loop
+        // El bot llegó al fallback genérico = no entendió la pregunta.
+        // Logueamos la query a `unmatchedQueries/` para que el admin la
+        // promueva a FAQ desde el panel "Lo que no entendí".
+        logUnmatched(userMsg, classification);
+
         // 15. Fallback INTELIGENTE — varía si el cliente repitió y sugiere acción concreta
         if (window.AltorraIntent && window.AltorraIntent.shouldVary(ctx)) {
             return {
@@ -395,6 +498,69 @@
                   'Escribime con más detalle qué necesitas, o si prefieres, te paso con un asesor.',
             cta: { label: 'Hablar con asesor', action: 'escalate' }
         };
+    }
+
+    /**
+     * clipQuestion — recorta una pregunta de FAQ a tamaño botón.
+     */
+    function clipQuestion(q) {
+        if (!q) return '';
+        return q.length > 38 ? q.slice(0, 36) + '…' : q;
+    }
+
+    /**
+     * §22 Capa E — logUnmatched
+     * Persiste la query no entendida en Firestore `unmatchedQueries/`
+     * para que el admin la revise. Throttle: máximo 1 escritura/min/sesión
+     * (anti-spam). Idempotente vía session._lastUnmatchedAt.
+     */
+    function logUnmatched(query, classification) {
+        if (!query || query.length < 4 || query.length > 500) return;
+        if (!window.db || !window.firebase) return;
+
+        // Throttle: 1 unmatched/minuto/sesión
+        var now = Date.now();
+        if (session._lastUnmatchedAt && (now - session._lastUnmatchedAt) < 60000) return;
+        session._lastUnmatchedAt = now;
+
+        // Extracción de keywords clave (filtrar stop-words + cortos)
+        var keywords = [];
+        if (window.AltorraFuzzy) {
+            keywords = window.AltorraFuzzy.tokenize(query)
+                .filter(function (t) {
+                    return t.length >= 4 && !window.AltorraFuzzy.STOP_WORDS.has(t);
+                })
+                .slice(0, 8);
+        }
+
+        // Sentiment detection (asíncrono, best-effort)
+        var sentimentLabel = 'neutral';
+        try {
+            if (window.AltorraAI) {
+                var s = window.AltorraAI.sentiment(query);
+                sentimentLabel = (s && s.label) || 'neutral';
+            }
+        } catch (e) {}
+
+        var doc = {
+            query: query.slice(0, 500),
+            keywords: keywords,
+            sessionId: session.sessionId || null,
+            sourcePage: location.pathname || '/',
+            sourceVehicleId: session.sourceVehicleId || null,
+            intent: (classification && classification.intent) || 'none',
+            confidence: (classification && classification.confidence) || 0,
+            sentiment: sentimentLabel,
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+            seen: false,
+            promotedToFAQ: false,
+            promotedFAQId: null
+        };
+
+        window.db.collection('unmatchedQueries').add(doc).catch(function (err) {
+            // Best-effort: si falla red/permisos, no bloquear el chat
+            console.warn('[Concierge] logUnmatched failed:', err.message);
+        });
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -545,10 +711,19 @@
         addMessage('user', text.trim());
 
         // Intent classifier: actualizar memoria conversacional ANTES del response
+        // §22 Capa C — pasamos `extras` con entities NER para que updateContext
+        // pueda fillear los slots (lastBrandDiscussed, lastVehicleDiscussed, etc.)
         if (window.AltorraIntent) {
             var classification = window.AltorraIntent.classify(text, session.context || {});
             session.context = session.context || {};
-            window.AltorraIntent.updateContext(session.context, classification.intent, text);
+            var extras = {};
+            if (window.AltorraNER) {
+                try {
+                    var nerExt = window.AltorraNER.extract(text);
+                    extras.entities = nerExt.summary || null;
+                } catch (e) {}
+            }
+            window.AltorraIntent.updateContext(session.context, classification.intent, text, extras);
             saveSession(session);
         }
 
@@ -1085,7 +1260,18 @@
                         '<div class="cnc-status" id="cncStatus">Asistente Virtual IA · Altorra Cars</div>' +
                     '</div>' +
                 '</div>' +
-                '<button class="cnc-close" aria-label="Cerrar">×</button>' +
+                '<div class="cnc-header-actions">' +
+                    '<button class="cnc-header-menu-btn" id="cncHeaderMenuBtn" aria-label="Opciones" aria-haspopup="true" aria-expanded="false">' +
+                        '<i data-lucide="more-vertical"></i>' +
+                    '</button>' +
+                    '<button class="cnc-close" aria-label="Cerrar">×</button>' +
+                '</div>' +
+            '</div>' +
+            // Header dropdown menu (oculto por default, click ⋮ lo muestra)
+            '<div class="cnc-header-dropdown" id="cncHeaderDropdown" role="menu" hidden>' +
+                '<button class="cnc-header-dropdown-item" data-action="reset-session" role="menuitem">' +
+                    '<i data-lucide="refresh-ccw"></i><span>Finalizar conversación</span>' +
+                '</button>' +
             '</div>' +
             // Lead Capture Gate — visible si gateCompleted === false
             '<div class="cnc-gate" id="cncGate" style="display:none;">' +
@@ -1134,6 +1320,41 @@
 
         // Wire UI
         panel.querySelector('.cnc-close').addEventListener('click', close);
+
+        // BUG #1 FIX — Header dropdown menu (⋮) con "Finalizar conversación"
+        var menuBtn = document.getElementById('cncHeaderMenuBtn');
+        var dropdown = document.getElementById('cncHeaderDropdown');
+        if (menuBtn && dropdown) {
+            menuBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var isOpen = !dropdown.hasAttribute('hidden');
+                if (isOpen) {
+                    dropdown.setAttribute('hidden', '');
+                    menuBtn.setAttribute('aria-expanded', 'false');
+                } else {
+                    dropdown.removeAttribute('hidden');
+                    menuBtn.setAttribute('aria-expanded', 'true');
+                }
+            });
+            // Click en items del dropdown
+            dropdown.addEventListener('click', function (e) {
+                var btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                var action = btn.dataset.action;
+                dropdown.setAttribute('hidden', '');
+                menuBtn.setAttribute('aria-expanded', 'false');
+                if (action === 'reset-session') {
+                    handleClientResetSession();
+                }
+            });
+            // Click fuera cierra el dropdown
+            document.addEventListener('click', function (e) {
+                if (!dropdown.contains(e.target) && e.target !== menuBtn) {
+                    dropdown.setAttribute('hidden', '');
+                    menuBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
         var input = document.getElementById('cncInput');
         var sendBtn = document.getElementById('cncSend');
         function doSend() {
@@ -1149,6 +1370,15 @@
 
         // Quick action handlers
         panel.addEventListener('click', function (e) {
+            // §22 Propuesta #2 — Click en quick reply re-ejecuta send con el payload
+            var qrBtn = e.target.closest('[data-quick-reply]');
+            if (qrBtn) {
+                var payload = qrBtn.getAttribute('data-quick-reply');
+                if (payload && payload.trim()) {
+                    send(payload);
+                }
+                return;
+            }
             var btn = e.target.closest('[data-action]');
             if (!btn) return;
             handleAction(btn.getAttribute('data-action'));
@@ -1427,6 +1657,42 @@
     }
 
     /**
+     * handleClientResetSession — UX flow cuando el cliente clickea
+     * "Finalizar conversación" en el menú ⋮ del header.
+     *
+     * Flujo:
+     *   1. Confirm dialog (con texto claro de qué va a pasar).
+     *   2. Si chat ya tiene doc en Firestore (`_chatDocCreated`),
+     *      escribe `status:'closed'` + `closedBy:'client'`. Esto sirve
+     *      para que el admin vea la conversación cerrada en su bandeja
+     *      y para tener trazabilidad de quién cerró.
+     *      NOTA: NO inserta mensaje `from:'system'` desde el cliente —
+     *      la regla Firestore solo permite a editor+ crear ese tipo
+     *      (anti-impersonation). El cliente solo ve el reset local.
+     *   3. Llama `resetSession()` que limpia localStorage + listeners
+     *      + genera nuevo sessionId + re-renderiza el welcome.
+     */
+    function handleClientResetSession() {
+        if (!confirm('¿Finalizar esta conversación?\n\nSe va a limpiar el chat actual y vas a empezar uno nuevo. Los mensajes anteriores quedan guardados de tu lado, pero no podrás continuarlos.')) {
+            return;
+        }
+        // Marcar la sesión actual como cerrada en Firestore (best-effort —
+        // no bloquea el reset si falla por red).
+        if (_chatDocCreated && session.sessionId && window.db) {
+            window.db.collection('conciergeChats').doc(session.sessionId).set({
+                status: 'closed',
+                closedAt: new Date().toISOString(),
+                closedBy: 'client',
+                lastMessage: '✓ Cliente finalizó la conversación',
+                lastMessageAt: new Date().toISOString()
+            }, { merge: true }).catch(function (err) {
+                console.warn('[Concierge] Could not mark session closed:', err.message);
+            });
+        }
+        resetSession();
+    }
+
+    /**
      * resetSession — purga la sesión actual y arranca una nueva.
      * Limpia localStorage, refs locales, listeners de Firestore, y
      * re-renderiza el panel desde cero (gate o greeting según contexto).
@@ -1539,9 +1805,22 @@
             }
             var ctaHTML = '';
             if (m.cta && m.cta.action) {
-                ctaHTML = '<button class="cnc-bubble-cta" data-action="' + m.cta.action + '">' + m.cta.label + '</button>';
+                ctaHTML = '<button class="cnc-bubble-cta" data-action="' + m.cta.action + '">' + escapeHtml(m.cta.label) + '</button>';
             }
-            return '<div class="cnc-msg ' + bubbleClass + '">' + escapeHtml(m.text) + ctaHTML + '</div>';
+            // §22 Propuesta #2 — Quick Replies (clarification ambiguity)
+            // Cuando el bot detecta intent/FAQ ambiguo, ofrece 2-3 opciones
+            // como botones. Click → re-ejecuta send() con el payload elegido.
+            var quickRepliesHTML = '';
+            if (m.from === 'bot' && Array.isArray(m.quickReplies) && m.quickReplies.length > 0) {
+                quickRepliesHTML = '<div class="cnc-quick-replies">' +
+                    m.quickReplies.map(function (qr, i) {
+                        return '<button class="cnc-quick-reply" data-quick-reply="' + escapeHtml(qr.payload || qr.label) + '">' +
+                            escapeHtml(qr.label) +
+                        '</button>';
+                    }).join('') +
+                '</div>';
+            }
+            return '<div class="cnc-msg ' + bubbleClass + '">' + escapeHtml(m.text) + ctaHTML + quickRepliesHTML + '</div>';
         }).join('');
         box.scrollTop = box.scrollHeight;
     }

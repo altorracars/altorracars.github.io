@@ -376,6 +376,125 @@
 }
 .cnc-close:hover { background: rgba(255, 255, 255, 0.06); color: #f0e6d2; }
 
+/* ─── Header actions: ⋮ menu button + dropdown (BUG #1) ──────── */
+.cnc-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.cnc-header-menu-btn {
+    background: transparent;
+    border: none;
+    color: rgba(240, 230, 210, 0.7);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.cnc-header-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #f0e6d2;
+}
+.cnc-header-menu-btn[aria-expanded="true"] {
+    background: rgba(184, 150, 88, 0.18);
+    color: #d4b67a;
+}
+.cnc-header-menu-btn [data-lucide] {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+.cnc-header-dropdown {
+    position: absolute;
+    top: 56px;
+    right: 14px;
+    z-index: 10;
+    min-width: 220px;
+    background: linear-gradient(180deg, #2a2418, #1f1a10);
+    border: 1px solid rgba(184, 150, 88, 0.22);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45),
+                0 0 0 1px rgba(184, 150, 88, 0.06);
+    animation: cncDropdownIn 0.18s cubic-bezier(0.34, 1.5, 0.55, 1);
+}
+.cnc-header-dropdown[hidden] { display: none; }
+.cnc-header-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #e9dcc1;
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.cnc-header-dropdown-item:hover {
+    background: rgba(184, 150, 88, 0.12);
+    color: #f0e6d2;
+}
+.cnc-header-dropdown-item [data-lucide] {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    color: #c9a663;
+}
+@keyframes cncDropdownIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cnc-header-dropdown { animation: none; }
+}
+
+/* ─── Quick Replies (Propuesta #2 §22) ──────────────────────── */
+.cnc-quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(184, 150, 88, 0.18);
+}
+.cnc-quick-reply {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.18), rgba(184, 150, 88, 0.10));
+    border: 1px solid rgba(184, 150, 88, 0.42);
+    color: #d4b67a;
+    font-size: 0.86rem;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.cnc-quick-reply:hover {
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.32), rgba(184, 150, 88, 0.20));
+    border-color: rgba(184, 150, 88, 0.65);
+    color: #f0e6d2;
+    transform: translateY(-1px);
+}
+.cnc-quick-reply:active { transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+    .cnc-quick-reply { transition: none; }
+    .cnc-quick-reply:hover { transform: none; }
+}
+
 /* ═══════════════════════════════════════════════════════════
    QUICK ACTIONS
    ═══════════════════════════════════════════════════════════ */

@@ -317,6 +317,14 @@ function loadAuthSystem() {
                     cncScript.defer = true;
                     document.body.appendChild(cncScript);
                 }
+                // §22 Capa A+B — Fuzzy matching + sinónimos. CARGAR PRIMERO porque
+                // intent.js y faq-ranker.js lo usan vía window.AltorraFuzzy.
+                if (!document.querySelector('script[src*="ai/fuzzy.js"]')) {
+                    var aiFuzzy = document.createElement('script');
+                    aiFuzzy.src = 'js/ai/fuzzy.js';
+                    aiFuzzy.defer = true;
+                    document.body.appendChild(aiFuzzy);
+                }
                 // Cargar AI Engine + NER en paginas publicas (Concierge los usa)
                 if (!document.querySelector('script[src*="ai/engine.js"]')) {
                     var aiEng = document.createElement('script');
@@ -336,6 +344,20 @@ function loadAuthSystem() {
                     aiInt.src = 'js/ai/intent.js';
                     aiInt.defer = true;
                     document.body.appendChild(aiInt);
+                }
+                // §22 Capa D — Inventory search (Concierge consulta vehículos reales)
+                if (!document.querySelector('script[src*="ai/inventory-search.js"]')) {
+                    var aiInv = document.createElement('script');
+                    aiInv.src = 'js/ai/inventory-search.js';
+                    aiInv.defer = true;
+                    document.body.appendChild(aiInv);
+                }
+                // §22 Propuesta #1 — TF-IDF FAQ ranker (KB matching avanzado)
+                if (!document.querySelector('script[src*="ai/faq-ranker.js"]')) {
+                    var aiRanker = document.createElement('script');
+                    aiRanker.src = 'js/ai/faq-ranker.js';
+                    aiRanker.defer = true;
+                    document.body.appendChild(aiRanker);
                 }
                 // Comm schema para que el Concierge pueda crear leads bien tipados
                 if (!document.querySelector('script[src*="comm-schema.js"]')) {

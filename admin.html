@@ -280,6 +280,10 @@
                 <button class="nav-item" data-section="kb">
                     <i data-lucide="brain"></i><span>Cerebro Altorra AI</span>
                 </button>
+                <button class="nav-item" data-section="unmatched">
+                    <i data-lucide="message-circle-question"></i><span>Lo que no entendí</span>
+                    <span id="navBadgeUnmatched" class="alt-badge alt-badge--warning" style="display:none;margin-left:auto;font-size:0.6rem;">0</span>
+                </button>
             </div>
         </div>
 
@@ -1164,6 +1168,44 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                     <i data-lucide="save"></i> Guardar cambios
                 </button>
                 <span class="cerebro-savestate" id="cerebroSaveState"></span>
+            </div>
+        </div>
+
+        <!-- §22 Capa E — Auto-Nutrición / Feedback Loop.
+             Lista de queries que el bot rule-based NO entendió. El admin las
+             revisa y promueve a FAQ con un click. Esto hace que el bot
+             "aprenda" sin pagar tokens LLM. Listener realtime sobre
+             `unmatchedQueries/` Firestore (filtra seen=false). -->
+        <div id="sec-unmatched" class="section" data-workspace-color="orange">
+            <div class="page-header">
+                <div>
+                    <h1><i data-lucide="message-circle-question"></i> Lo que no entendí</h1>
+                    <p class="page-subtitle">Queries de clientes que el bot rule-based no logró responder. Promove cualquiera a FAQ con un click — la próxima vez que un cliente pregunte algo similar, el bot responde correctamente.</p>
+                </div>
+                <div class="page-actions">
+                    <button id="unmatchedRefreshBtn" class="alt-btn alt-btn--ghost alt-btn--sm">
+                        <i data-lucide="refresh-cw"></i> Actualizar
+                    </button>
+                    <button id="unmatchedMarkAllSeenBtn" class="alt-btn alt-btn--ghost alt-btn--sm">
+                        <i data-lucide="eye"></i> Marcar todas vistas
+                    </button>
+                </div>
+            </div>
+            <div class="unmatched-toolbar">
+                <div class="unmatched-filter-chips">
+                    <button class="unmatched-chip is-active" data-unmatched-filter="unseen">
+                        Sin revisar <span class="unmatched-count" id="unmatchedCountUnseen">0</span>
+                    </button>
+                    <button class="unmatched-chip" data-unmatched-filter="all">
+                        Todas <span class="unmatched-count" id="unmatchedCountAll">0</span>
+                    </button>
+                    <button class="unmatched-chip" data-unmatched-filter="promoted">
+                        Promovidas <span class="unmatched-count" id="unmatchedCountPromoted">0</span>
+                    </button>
+                </div>
+            </div>
+            <div id="unmatchedList" class="unmatched-list">
+                <div class="table-empty">Cargando…</div>
             </div>
         </div>
 
@@ -2537,9 +2579,12 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-sync.js" defer></script>
 <script src="js/admin-activity.js" defer></script>
 <script src="js/smart-fields.js" defer></script>
+<script src="js/ai/fuzzy.js" defer></script>
 <script src="js/ai/engine.js" defer></script>
 <script src="js/ai/ner.js" defer></script>
 <script src="js/ai/intent.js" defer></script>
+<script src="js/ai/inventory-search.js" defer></script>
+<script src="js/ai/faq-ranker.js" defer></script>
 <script src="js/ai/scoring.js" defer></script>
 <script src="js/ai/nba.js" defer></script>
 <script src="js/ai/forecast.js" defer></script>
@@ -2552,6 +2597,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-predictive.js" defer></script>
 <script src="js/admin-concierge.js" defer></script>
 <script src="js/admin-kb.js" defer></script>
+<script src="js/admin-unmatched.js" defer></script>
 <script src="js/admin-calendar-config.js" defer></script>
 <script src="js/admin-calendar.js" defer></script>
 <script src="js/admin-voice.js" defer></script>

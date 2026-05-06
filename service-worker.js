@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260508020000'; // §23 Sprint 3-bis: Aislamiento TOTAL Firebase apps (admin vs public con appName diferente — sesiones simultáneas)
+const CACHE_VERSION = 'v20260508030000'; // §23 ACD Enterprise COMPLETO — Sprints 5-8: workload aggregator + locks/claiming + queue + SLA F5-proof + doble fallback + FCM Web Push
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

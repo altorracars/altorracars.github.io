@@ -480,12 +480,45 @@
         }
 
         // 15. §22 Capa E — Auto-Nutrición / Feedback Loop
-        // El bot llegó al fallback genérico = no entendió la pregunta.
-        // Logueamos la query a `unmatchedQueries/` para que el admin la
-        // promueva a FAQ desde el panel "Lo que no entendí".
         logUnmatched(userMsg, classification);
 
-        // 15. Fallback INTELIGENTE — varía si el cliente repitió y sugiere acción concreta
+        // §23 FASE 1 — Doble Fallback Inteligente.
+        // Counter persistido: incrementa con cada fallback consecutivo.
+        // Se resetea automáticamente cuando el bot da una respuesta exitosa
+        // (intent != 'none' o KB matchea). Aquí lo incrementamos.
+        session.botFallbackCount = (session.botFallbackCount || 0) + 1;
+        session.botFallbackAt = new Date().toISOString();
+        saveSession(session);
+        // Persistir a Firestore si hay chat doc
+        if (_chatDocCreated && session.sessionId && window.db) {
+            window.db.collection('conciergeChats').doc(session.sessionId).set({
+                botFallbackCount: session.botFallbackCount,
+                botFallbackAt: session.botFallbackAt
+            }, { merge: true }).catch(function () {});
+        }
+
+        // Doble fallback: 2do fallo consecutivo → escalado empático automático
+        if (session.botFallbackCount >= 2) {
+            session.botFallbackCount = 0;
+            saveSession(session);
+            setTimeout(function () { escalateToLive('double_fallback'); }, 800);
+            return {
+                text: 'Parece que tu consulta requiere la ayuda de un experto. Te conectaré con un asesor en vivo de inmediato. 🙋‍♂️',
+                _isFallback: true
+            };
+        }
+
+        // Primer fallback: pedir reformulación amablemente
+        if (session.botFallbackCount === 1) {
+            return {
+                text: (firstName ? firstName + ', ' : '') +
+                      'no estoy seguro de haber entendido bien. ¿Podrías reformular tu pregunta? ' +
+                      'Por ejemplo: *¿qué autos tienen disponibles?*, *¿cuánto cuesta el Mazda?* o *quiero financiar*.',
+                _isFallback: true
+            };
+        }
+
+        // Fallback de seguridad (no debería llegar acá, botFallbackCount empieza en 1)
         if (window.AltorraIntent && window.AltorraIntent.shouldVary(ctx)) {
             return {
                 text: 'Parece que necesitas algo específico. Déjame conectarte con un asesor humano que pueda ayudarte mejor.',
@@ -498,6 +531,22 @@
                   'Escribime con más detalle qué necesitas, o si prefieres, te paso con un asesor.',
             cta: { label: 'Hablar con asesor', action: 'escalate' }
         };
+    }
+
+    /**
+     * §23 FASE 1 — resetFallbackCounter llamado cuando el bot da respuesta
+     * exitosa (intent reconocido o KB match). Esto evita que el escalado
+     * empático se dispare si el cliente alterna preguntas (1 buena, 1 mala).
+     */
+    function resetFallbackCounter() {
+        if (!session || !session.botFallbackCount) return;
+        session.botFallbackCount = 0;
+        saveSession(session);
+        if (_chatDocCreated && session.sessionId && window.db) {
+            window.db.collection('conciergeChats').doc(session.sessionId).set({
+                botFallbackCount: 0
+            }, { merge: true }).catch(function () {});
+        }
     }
 
     /**
@@ -768,14 +817,17 @@
                 respondWithLLMOrRules(text).then(function (resp) {
                     hideTypingIndicator();
                     if (!resp) return;
-                    addMessage('bot', resp.text, { cta: resp.cta });
-                    // U.17 — Después del bot response, decidir si pedir datos
+                    // §23 FASE 1 — si la respuesta NO es del path de fallback,
+                    // reseteamos el counter (cliente fue entendido bien)
+                    if (!resp._isFallback) resetFallbackCounter();
+                    addMessage('bot', resp.text, { cta: resp.cta, quickReplies: resp.quickReplies });
                     setTimeout(function () { maybeAskForProfile(); }, 1200);
                 }).catch(function (err) {
                     hideTypingIndicator();
                     console.warn('[Concierge] Response error:', err && err.message);
                     // Último recurso: rule-based fallback síncrono
                     var fallback = generateBotResponse(text);
+                    if (!fallback._isFallback) resetFallbackCounter();
                     addMessage('bot', fallback.text, { cta: fallback.cta });
                     setTimeout(function () { maybeAskForProfile(); }, 1200);
                 });
@@ -898,23 +950,216 @@
             .update(update).catch(function () {});
     }
 
-    function escalateToLive() {
-        session.mode = 'live';
-        session.level = Math.max(session.level || 0, 4); // L4 — asignado a asesor
+    /**
+     * §23 FASE 2 — escalateToLive ahora pasa el chat a `mode='queue'`.
+     * El asesor que lo tome (vía claimChat del admin-concierge) lo
+     * promueve a `mode='live'`. Esto activa la lógica de cola con
+     * SLA timers F5-proof.
+     *
+     * Args opcionales:
+     *   reason: 'manual' | 'double_fallback' | 'sentiment_negative' |
+     *           'frustration' | 'ask_human' | 'sla_breach'
+     */
+    function escalateToLive(reason) {
+        var escalationReason = reason || 'manual';
+        var nowIso = new Date().toISOString();
+
+        session.mode = 'queue';
+        session.queueEnteredAt = nowIso;
+        session.escalationReason = escalationReason;
+        session.level = Math.max(session.level || 0, 4); // L4 — pendiente atención
         saveSession(session);
-        addMessage('bot', '✅ Conectándote con un asesor humano. En breve te respondemos aquí mismo en este chat.');
-        // U.16 — Si no hay soft contact aún (raro), crear ahora
+
+        // Mensaje empático según razón
+        var msg;
+        if (escalationReason === 'double_fallback') {
+            msg = 'Parece que tu consulta requiere la ayuda de un experto. Te conectaré con un asesor en vivo de inmediato. 🙋‍♂️';
+        } else if (escalationReason === 'frustration' || escalationReason === 'sentiment_negative') {
+            msg = 'Te entiendo. Déjame conectarte con un asesor humano que pueda ayudarte directamente.';
+        } else {
+            msg = '✅ Conectándote con un asesor humano. Estamos consultando disponibilidad…';
+        }
+        addMessage('bot', msg);
+
+        // Soft contact / lead
         if (!_leadCreated) createSoftContact();
-        else updateSoftContact(); // bumpear level=4
-        // Crear chat doc en Firestore + iniciar sync bidireccional (U.10)
-        // Espera a que auth resuelva (signInAnonymously suele estar en flight)
-        // antes de intentar el write — sin esto, permission-denied silenciosa.
+        else updateSoftContact();
+
+        // Crear chat doc en Firestore + iniciar sync bidireccional + SLA watcher
         waitForAuthThen(function () {
-            ensureFirestoreChatDoc().catch(function (err) {
+            ensureFirestoreChatDoc().then(function () {
+                // Asegurar que el doc parent tenga queueEnteredAt + escalationReason
+                // para que la Cloud Function workload + listeners cliente vean el cambio
+                if (window.db) {
+                    window.db.collection('conciergeChats').doc(session.sessionId).set({
+                        mode: 'queue',
+                        queueEnteredAt: nowIso,
+                        escalationReason: escalationReason
+                    }, { merge: true }).catch(function () {});
+                }
+                startSLAWatcher();
+                renderQueueState();
+            }).catch(function (err) {
                 console.warn('[Concierge] No se pudo crear el chat:', err && err.message);
                 addMessage('bot', '⚠️ No pude conectar con el asesor en este momento. Por favor intenta de nuevo en unos segundos.');
             });
         });
+    }
+
+    /**
+     * §23 FASE 2 — SLA Watcher F5-proof.
+     * Compara Date.now() contra session.queueEnteredAt cada 30s.
+     * Si elapsedMin >= 5 → render alerta con CTA WhatsApp + esperar
+     * Si elapsedMin >= 10 → render SLA breach (recomendar WhatsApp)
+     * Idempotency: persiste flags en Firestore via session.slaWarnedAt5min
+     * y session.slaWarnedAt10min (para que F5 no muestre la alerta 2 veces)
+     *
+     * Se cancela cuando:
+     *   - session.mode pasa a 'live' (asesor tomó el chat)
+     *   - session.mode pasa a 'wa_handed_over' (cliente eligió WhatsApp)
+     *   - session.closed === true (chat finalizó)
+     */
+    var _slaWatcherInterval = null;
+    function startSLAWatcher() {
+        if (_slaWatcherInterval) clearInterval(_slaWatcherInterval);
+        _slaWatcherInterval = setInterval(checkSLA, 30 * 1000);
+        checkSLA(); // primer check inmediato
+    }
+    function stopSLAWatcher() {
+        if (_slaWatcherInterval) { clearInterval(_slaWatcherInterval); _slaWatcherInterval = null; }
+    }
+    function checkSLA() {
+        if (!session || session.mode !== 'queue' || !session.queueEnteredAt) {
+            stopSLAWatcher();
+            return;
+        }
+        if (session.closed) { stopSLAWatcher(); return; }
+
+        var elapsedMin = (Date.now() - new Date(session.queueEnteredAt).getTime()) / 60000;
+
+        // ≥10 min — SLA breach (recomendación fuerte)
+        if (elapsedMin >= 10 && !session.slaWarnedAt10min) {
+            session.slaWarnedAt10min = true;
+            saveSession(session);
+            renderSLABreach();
+            // Persistir flag a Firestore para idempotencia post-F5
+            if (_chatDocCreated && session.sessionId && window.db) {
+                window.db.collection('conciergeChats').doc(session.sessionId).set({
+                    slaWarnedAt10min: true
+                }, { merge: true }).catch(function () {});
+            }
+            return;
+        }
+        // ≥5 min — alerta amigable
+        if (elapsedMin >= 5 && !session.slaWarnedAt5min) {
+            session.slaWarnedAt5min = true;
+            saveSession(session);
+            renderSLAWarning();
+            if (_chatDocCreated && session.sessionId && window.db) {
+                window.db.collection('conciergeChats').doc(session.sessionId).set({
+                    slaWarnedAt5min: true
+                }, { merge: true }).catch(function () {});
+            }
+        }
+        // Cada tick refresca el render del workload state (mensaje dinámico)
+        renderQueueState();
+    }
+
+    /**
+     * §23 FASE 2 — renderQueueState lee system/workload (singleton de
+     * Cloud Function recalculateWorkload) y actualiza el banner de cola
+     * con mensaje dinámico según asesoresAvailable / asesoresOnline / queueLength.
+     */
+    var _workloadCache = null;
+    var _workloadUnsub = null;
+    function ensureWorkloadListener() {
+        if (_workloadUnsub || !window.db) return;
+        _workloadUnsub = window.db.doc('system/workload').onSnapshot(function (doc) {
+            _workloadCache = doc.exists ? doc.data() : null;
+            if (session.mode === 'queue') renderQueueState();
+        }, function () {});
+    }
+    function renderQueueState() {
+        var msgsBox = document.getElementById('cncMessages');
+        if (!msgsBox) return;
+        ensureWorkloadListener();
+
+        // Si ya hay un banner de queue, lo actualizamos in-place
+        var existingBanner = document.getElementById('cncQueueBanner');
+        var w = _workloadCache || {};
+        var elapsedMin = session.queueEnteredAt
+            ? Math.floor((Date.now() - new Date(session.queueEnteredAt).getTime()) / 60000)
+            : 0;
+
+        var stateMsg, stateClass;
+        if (w.asesoresAvailable > 0) {
+            stateMsg = '🟢 Estás en la posición #' + Math.max(1, w.queueLength || 1) +
+                       '. Un asesor te atenderá en un momento.';
+            stateClass = 'cnc-queue-banner--available';
+        } else if (w.asesoresOnline > 0) {
+            var estMin = Math.ceil(((w.queueLength || 1) * 5) / w.asesoresOnline);
+            stateMsg = '🟡 Nuestros asesores están atendiendo a otros clientes. Tiempo estimado: ' + estMin + ' min.';
+            stateClass = 'cnc-queue-banner--saturated';
+        } else {
+            stateMsg = '🔵 Nuestros asesores no están disponibles en este instante. Tiempo estimado de respuesta: 5 a 10 minutos.';
+            stateClass = 'cnc-queue-banner--offline';
+        }
+
+        var html =
+            '<div id="cncQueueBanner" class="cnc-queue-banner ' + stateClass + '">' +
+                '<div class="cnc-queue-banner-msg">' + stateMsg + '</div>' +
+                '<div class="cnc-queue-banner-elapsed">⏱ Esperando hace ' + elapsedMin + ' min</div>' +
+            '</div>';
+
+        if (existingBanner) {
+            existingBanner.outerHTML = html;
+        } else {
+            msgsBox.insertAdjacentHTML('beforeend', html);
+            msgsBox.scrollTop = msgsBox.scrollHeight;
+        }
+    }
+    function renderSLAWarning() {
+        var msgsBox = document.getElementById('cncMessages');
+        if (!msgsBox) return;
+        // Eliminar banner queue genérico
+        var qb = document.getElementById('cncQueueBanner');
+        if (qb) qb.remove();
+        // Insertar SLA warning con CTAs
+        msgsBox.insertAdjacentHTML('beforeend',
+            '<div id="cncSLAWarning" class="cnc-sla-banner cnc-sla-banner--warning">' +
+                '<div class="cnc-sla-banner-icon">⏰</div>' +
+                '<div class="cnc-sla-banner-text">' +
+                    '<strong>La espera está siendo más larga de lo normal.</strong><br>' +
+                    '¿Prefieres continuar por WhatsApp o seguir esperando aquí?' +
+                '</div>' +
+                '<div class="cnc-sla-banner-actions">' +
+                    '<button class="cnc-sla-btn cnc-sla-btn--wa" data-action="open-wa">📲 Continuar por WhatsApp</button>' +
+                    '<button class="cnc-sla-btn cnc-sla-btn--wait" data-action="dismiss-sla-warning">⏳ Seguir esperando</button>' +
+                '</div>' +
+            '</div>'
+        );
+        msgsBox.scrollTop = msgsBox.scrollHeight;
+    }
+    function renderSLABreach() {
+        var msgsBox = document.getElementById('cncMessages');
+        if (!msgsBox) return;
+        var qb = document.getElementById('cncQueueBanner');
+        if (qb) qb.remove();
+        var sw = document.getElementById('cncSLAWarning');
+        if (sw) sw.remove();
+        msgsBox.insertAdjacentHTML('beforeend',
+            '<div id="cncSLABreach" class="cnc-sla-banner cnc-sla-banner--breach">' +
+                '<div class="cnc-sla-banner-icon">🚨</div>' +
+                '<div class="cnc-sla-banner-text">' +
+                    '<strong>En este momento todos nuestros asesores están ocupados.</strong><br>' +
+                    'Te recomendamos comunicarte por WhatsApp para no hacerte esperar más.' +
+                '</div>' +
+                '<div class="cnc-sla-banner-actions">' +
+                    '<button class="cnc-sla-btn cnc-sla-btn--wa cnc-sla-btn--pulsing" data-action="open-wa">📲 Ir a WhatsApp ahora</button>' +
+                '</div>' +
+            '</div>'
+        );
+        msgsBox.scrollTop = msgsBox.scrollHeight;
     }
 
     /**
@@ -1157,14 +1402,50 @@
                 if (d.radicado && session.radicado !== d.radicado) {
                     session.radicado = d.radicado;
                     changed = true;
-                    // Refresh del radicado en el header del chat
                     updateRadicadoBadge();
+                }
+                // §23 FASE 2 — propagar mode (queue → live cuando asesor claim)
+                if (d.mode && session.mode !== d.mode) {
+                    var prevMode = session.mode;
+                    session.mode = d.mode;
+                    changed = true;
+                    // Si pasamos a live: limpiar banners de queue + parar SLA watcher
+                    if (d.mode === 'live' && prevMode === 'queue') {
+                        stopSLAWatcher();
+                        var qb = document.getElementById('cncQueueBanner');
+                        if (qb) qb.remove();
+                        var sw = document.getElementById('cncSLAWarning');
+                        if (sw) sw.remove();
+                        var sb = document.getElementById('cncSLABreach');
+                        if (sb) sb.remove();
+                    }
+                }
+                // §23 FASE 2 — propagar queueEnteredAt (importante post-F5)
+                if (d.queueEnteredAt && session.queueEnteredAt !== d.queueEnteredAt) {
+                    session.queueEnteredAt = d.queueEnteredAt;
+                    changed = true;
+                    if (d.mode === 'queue') startSLAWatcher();
+                }
+                // §23 — propagar SLA flags para idempotencia post-F5
+                if (typeof d.slaWarnedAt5min !== 'undefined' && session.slaWarnedAt5min !== d.slaWarnedAt5min) {
+                    session.slaWarnedAt5min = d.slaWarnedAt5min;
+                    changed = true;
+                }
+                if (typeof d.slaWarnedAt10min !== 'undefined' && session.slaWarnedAt10min !== d.slaWarnedAt10min) {
+                    session.slaWarnedAt10min = d.slaWarnedAt10min;
+                    changed = true;
                 }
                 if (changed) {
                     saveSession(session);
                     if (wasClosed !== nowClosed) applyClosedState();
                 }
             }, function () {});
+
+        // §23 FASE 2 — si la sesión cargada (post-F5) ya estaba en mode='queue',
+        // restaurar el SLA watcher inmediatamente con el queueEnteredAt persistido
+        if (session.mode === 'queue' && session.queueEnteredAt && !session.closed) {
+            startSLAWatcher();
+        }
     }
 
     /**
@@ -1929,10 +2210,14 @@
             case 'escalate':
                 escalateToLive();
                 break;
-            // 'open-wa' eliminado del flujo público — el bot debe escalar al
-            // asesor en vivo, NO redirigir a WhatsApp. handoverToWhatsApp()
-            // se conserva como utilidad interna para uso manual del admin
-            // desde la bandeja Concierge (caso U.14 — handover refinado).
+            // §23 FASE 2 — botones del SLA banner del cliente
+            case 'open-wa':
+                handoverToWhatsApp();
+                break;
+            case 'dismiss-sla-warning':
+                var sw = document.getElementById('cncSLAWarning');
+                if (sw) sw.remove();
+                break;
             case 'goto-simulador':
                 window.location.href = 'simulador-credito.html';
                 break;

@@ -80,76 +80,198 @@
 
 | Archivo | Proposito |
 |---------|-----------|
-| `firebase-config.js` | Init Firebase app + Auth + Firestore + persistence + deferred SDKs |
-| `components.js` | Header/footer dinamicos (fetch snippets), smooth scroll, loadModalsIfNeeded() |
+| `firebase-config.js` | Init Firebase app + Auth + Firestore + persistence + deferred SDKs + GIS Client ID |
+| `components.js` | Header/footer dinamicos (fetch snippets), smooth scroll, loadModalsIfNeeded(), loadAuthSystem |
 | `database.js` | Lectura publica de Firestore: vehiculos, marcas, banners. Cache en localStorage |
 | `render.js` | Renderizado de cards de vehiculos en el DOM |
-| `contact-forms.js` | Modals: "Vende tu Auto" (wizard 3 pasos) + "Financiacion". Guarda en Firestore `solicitudes` |
-| `contact.js` | Formulario de contacto general |
+| `contact-forms.js` | Modals: "Vende tu Auto" (wizard 3 pasos) + "Financiacion". Guarda en Firestore `solicitudes` con confirmacion in-place (sin redirect WhatsApp, MF2.1) |
+| `contact.js` | Formulario de contacto general (confirmacion in-place MF2.2) |
 | `cache-manager.js` | Cache inteligente de 4 capas (Memory → IndexedDB → localStorage → SW) |
-| `favorites-manager.js` | Gestion de favoritos: Firestore para registrados, prompt login para anonimos |
+| `favorites-manager.js` | Gestion de favoritos: Firestore para registrados, prompt login para anonimos. Cola de pendingOps anti-race |
+| `favorites-watcher.js` | Snapshot + diff engine para detectar cambios en favoritos (precio, estado). Bell notifications + badges in-page (Pillar B v2) |
 | `filtros-avanzados.js` | Filtros sidebar: marca, precio, year, km, tipo, categoria |
 | `comparador.js` | Logica del comparador de vehiculos |
 | `cookies.js` | Banner de consentimiento de cookies |
-| `citas.js` | Formulario publico de solicitud de citas |
+| `citas.js` | Formulario publico de solicitud de citas (kind=cita por defecto, confirmacion in-place) |
+| `comm-schema.js` | Single source of truth para `kind/estado/priority/tags/slaDeadline` de comunicaciones (MF1.2/MF1.3) |
 | `dynamic-lists.js` | Listados dinamicos de vehiculos por categoria/marca |
 | `featured-week-banner.js` | Banner de vehiculo destacado de la semana |
-| `historial-visitas.js` | Historial de vehiculos visitados: localStorage para todos, Firestore sync para registrados |
-| `page-loader.js` | Animacion de carga de pagina |
-| `performance.js` | Lazy loading de imagenes, IntersectionObserver |
+| `historial-visitas.js` | Historial de vehiculos visitados con snapshot del estado (localStorage para todos, Firestore sync para registrados). Diff badges sobre cards "Vistos recientemente" |
+| `page-loader.js` | Animacion de carga de pagina (cinematic dissolve, cache-aware Sprint L) |
+| `performance.js` | Lazy loading de imagenes, IntersectionObserver, auto-reveal de secciones below-fold |
 | `reviews.js` | Renderizado publico de resenas |
+| `solicitudes-watcher.js` | Listener realtime de cambios en estado de solicitudes/citas del usuario logueado. Pillar D del centro de notificaciones |
 | `simulador/` | Directorio con logica del simulador de credito |
-| `toast.js` | Sistema de notificaciones toast |
-| `auth.js` | Login, registro, Google sign-in, reset password, onAuthStateChanged, saveClientProfile, header state |
-| `perfil.js` | Panel de usuario: 8 secciones, avatar upload, Firestore sync, busquedas guardadas, preferencias |
-| `main.js` | Punto de entrada general (legacy) |
+| `toast.js` | Sistema unificado de notificaciones (toast + centro de notificaciones bell + sounds + cross-device sync via Firestore A4) |
+| `auth.js` | Login, registro (con cedula obligatoria), Google sign-in (GIS + popup fallback), reset password, onAuthStateChanged, saveClientProfile, header state, identity merge para Concierge |
+| `perfil.js` | Panel de usuario: 10 secciones (B1-B10) con cedula, avatar upload, Firestore sync, busquedas guardadas, preferencias granulares de notificaciones (G2) |
+| `vehicle-hotspots.js` | Hotspots clickeables sobre imagen del vehiculo en detalle (MF5.2) |
+| `kb-client.js` | Cliente liviano read-only de Knowledge Base para que Concierge use FAQs del admin (U.5) |
+| `concierge.js` | Bot ALTOR — widget unificado (chat AI + asesor en vivo + WhatsApp gateway). Lead Gate, intent classifier, sync Firestore, identity merge, marketing opt-in (Bloque U Mega-Plan v4) |
+| `icons.js` | Helper `AltorraIcons` con glossary semantico de iconos Lucide (T.7). NO usa MutationObserver global (RCA fix) |
+| `theme-switcher.js` | `AltorraTheme` API: dark/light/high-contrast con sync Firestore + localStorage + system preference (T.4 + T.8) |
+| `main.js` | Punto de entrada general, retry logic con backoff para secciones que dependen de vehicleDB (P14) |
 
 ### JavaScript — Panel admin (`js/admin-*.js`)
+
+**Core / state / sync**:
 
 | Archivo | Proposito |
 |---------|-----------|
 | `admin-state.js` | Estado global `window.AP`, RBAC helpers, escapeHtml, closestAction, formatPrice, refreshIcons |
-| `admin-auth.js` | Login, logout, 2FA, rate limiting, presencia RTDB, session timeout |
-| `admin-sync.js` | Listeners realtime Firestore, migracion de schema, stats, cache invalidation |
-| `admin-vehicles.js` | CRUD vehiculos, imagenes, drafts, wizard, drag-reorder destacados |
-| `admin-brands.js` | CRUD de marcas |
-| `admin-dealers.js` | Gestion de aliados/concesionarios |
-| `admin-users.js` | Gestion de usuarios (solo super_admin) |
-| `admin-appointments.js` | Gestion de citas/solicitudes |
-| `admin-operations.js` | Registro de ventas, exportacion, deploy a GitHub |
-| `admin-lists.js` | Leads |
-| `admin-reviews.js` | Gestion de resenas |
-| `admin-banners.js` | Gestion de banners promocionales |
-| `admin-activity.js` | Visor de audit log |
+| `admin-auth.js` | Login, logout, 2FA, rate limiting, presencia RTDB, session timeout, REST bypass para perfil (race fix) |
+| `admin-sync.js` | Listeners realtime Firestore, migracion de schema (`migrateCommunicationsSchema` para kind), stats, cache invalidation |
+| `admin-section-router.js` | Router central de secciones con aliases legacy + hash deep-linking (B.3) |
+| `admin-sidebar.js` | Sidebar reorganizada en 7 grupos collapsables + ⌘+B collapse global (B.1+B.4) |
 | `admin-table-utils.js` | Paginacion, sort, search, export CSV para tablas |
-| `admin-phase5.js` | Wizard avanzado, charts de actividad, theme toggle |
+| `admin-phase5.js` | Wizard avanzado, charts de actividad (theme toggle eliminado, ahora en theme-switcher.js) |
 
-### CSS (`css/`)
+**Inventario**:
 
 | Archivo | Proposito |
 |---------|-----------|
-| `style.css` | Estilos principales del sitio publico |
+| `admin-vehicles.js` | CRUD vehiculos, imagenes, drafts, wizard, drag-reorder destacados, smart fields preview |
+| `admin-desc-gen.js` | Generador de descripciones via templates + heurísticas locales (C.5) |
+| `admin-color-extract.js` | Extrae color primario de imagen via Canvas API + mapping a 13 colores conocidos (C.3) |
+| `admin-brands.js` | CRUD de marcas |
+| `admin-dealers.js` | Gestion de aliados/concesionarios |
+| `admin-banners.js` | Gestion de banners promocionales |
+| `admin-reviews.js` | Gestion de resenas |
+
+**Comunicaciones / inbox / Concierge**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `admin-appointments.js` | Centro de Comunicaciones: tabla unificada + sub-tabs (Citas/Solicitudes/Leads), kanban, smart suggestions, plantillas, asesor dropdown (MF3.1-MF3.6) |
+| `admin-concierge.js` | Bandeja del Bot ALTOR: lista de chats live + filter bar (Activos/Fijados/Archivados) + chat detail estilo WhatsApp + smart suggestions + summary modal + cleanup viejos (U.10-U.15) |
+| `admin-kb.js` | "Cerebro Altorra AI" — CRUD del singleton `knowledgeBase/_brain` con 6 tabs (Identidad/Contexto/Instrucciones/FAQs/Reglas/Modelo LLM) (U.5 + Fase 3) |
+| `admin-templates.js` | CRUD de plantillas de respuesta rápida en `config/messageTemplates` (MF6.3) |
+| `admin-followups.js` | Recordatorios programados ("recordame") con scheduler en cliente (MF6.2) |
+| `admin-postventa.js` | Scheduler de follow-ups +3d/+30d/+90d post-venta + agregación NPS (MF4.8) |
+
+**CRM**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `admin-crm.js` | CRM 360°: tabla unificada (clientes + guests merged), 6 tabs detalle (Resumen/Comms/Actividad/Score/Notas/Red), score multi-factor, búsqueda semántica con NER, NBA suggestions, bulk export CSV (MF4.x) |
+| `admin-quote.js` | Cotizador con preview live + browser print PDF (MF4.6) |
+
+**Calendario**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `admin-calendar.js` | Vista mes + día con drag-drop reprogramar (D.1+D.2) |
+| `admin-calendar-config.js` | Config calendario: workDays/Hours, slot duration, buffer, festivos COL hardcoded, AI auto-scheduling parser (D.3+D.7) |
+| `admin-reminders.js` | Cron-like browser que dispara avisos de citas próximas/vencidas en notify center (D.5) |
+
+**Automatización / IA local**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `admin-automation.js` | Engine de reglas con 4 reglas built-in (route_high_value, sla_breach, etc.) + execution log + integración EventBus (MF6.1 + K.1+K.3) |
+| `admin-insights.js` | Panel "Lo que el sistema notó esta semana" con 7 generadores de insights (O.6) |
+| `admin-kpis.js` | KPIs ejecutivos del mes: conversión, ticket promedio, tiempo respuesta, SLA, top asesor + funnel chart (O.1+O.2) |
+| `admin-performance.js` | Tabla de performance per asesor con ventas/asignadas/SLA + top 3 medallas (O.3) |
+| `admin-predictive.js` | Widget "Insights del día": forecast ventas, hot leads, vehículos al borde, churn risk (R.1-R.4) |
+| `admin-onboarding.js` | Tour interactivo de 6 pasos primera vez que el admin entra (N.4) |
+| `admin-adaptive.js` | Tracking local de uso de secciones + atajos personalizados en dashboard (N.3) |
+| `admin-sidebar-adaptive.js` | Sidebar reorganizado por uso: top 3 con estrella + ocultas las no usadas (N.2) |
+| `admin-palette.js` | Command palette ⌘+K con búsqueda fuzzy de secciones/acciones/contactos (P.4) |
+
+**Realtime collab + admin power-ups**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `admin-activity-feed.js` | Activity Feed sliding panel: realtime + inspect + replay + export JSON + diff metadata (I.2-I.5) |
+| `admin-activity.js` | Visor de audit log (legacy) |
+| `admin-comments.js` | `AltorraComments` universal: comentarios threaded con @menciones sobre cualquier entidad (M.4) |
+| `admin-coedit.js` | Co-edit locks blandos: warning "X está editando esto" cuando 2 admins abren mismo modal (M.2) |
+| `admin-presence-ui.js` | Overlay flotante de presence con avatares de admins activos + indicador en MI sección (M.1) |
+| `admin-users.js` | Gestion de usuarios (solo super_admin) |
+| `admin-operations.js` | Registro de ventas, exportacion, deploy a GitHub |
+| `admin-lists.js` | Leads (legacy — ahora unificado en admin-crm.js) |
+
+**Voz / Multi-modal**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `admin-voice.js` | Comandos por voz globales (Espacio+V) + boton mic en header. Web Speech API es-CO (L.1) |
+| `admin-voice-dictate.js` | Auto-instrumenta cada `<textarea>` con boton dictate + capitalización automática (L.2) |
+
+**Seguridad / PWA / offline**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `admin-security.js` | Sudo mode: re-auth para acciones críticas con TTL 5 min cache (H.4) |
+| `admin-anomaly.js` | Sliding window detector: 10+ deletes/5min → freeze + alerta (H.5) |
+| `admin-pwa.js` | PWA installable del admin con shortcuts a 4 secciones (G.4) |
+| `admin-offline.js` | Banner offline + queue local + auto-flush al recuperar conexión (G.3) |
+| `admin-native-notifications.js` | Hook al notifyCenter para disparar `Notification` API nativa cuando priority high/critical (G.2) |
+
+### JavaScript — IA local (`js/ai/`)
+
+> Modulos IA que corren 100% en el browser. Sub-ms, sin descargar
+> modelos pesados. Diseñados para tener provider slots que un futuro
+> ML real (Transformers.js / TF.js) puede registrar via
+> `AltorraAI.registerProvider()` sin tocar callsites.
+
+| Archivo | Proposito |
+|---------|-----------|
+| `engine.js` | `window.AltorraAI` core: sentiment rule-based bilingüe (60+ términos) + provider registry para `chat` (Bloque J.1, conexión con LLM Fase 3) |
+| `ner.js` | `AltorraNER` — extracción de entidades (marca, modelo, año, precio, ciudad, fecha, teléfono, email, placa). 50+ marcas + 30+ ciudades COL. Vehicle matcher con scoring (J.2) |
+| `intent.js` | `AltorraIntent` — clasificador rule-based de 13 intents conversacionales (greeting/thanks/goodbye/inventory_query/pricing_query/financiacion_query/appointment_request/sell_my_car/confirmation/negation/frustration/ask_human + memoria conversacional) |
+| `scoring.js` | `AltorraScoring` — enriquece score base del CRM con señales AI (sentiment promedio + variance, entity richness, urgencia). Cap ±15 puntos (J.3) |
+| `nba.js` | `AltorraNBA` — Next Best Action: 10 reglas heurísticas que sugieren accionables priorizadas por contacto (J.8) |
+| `forecast.js` | `AltorraForecast` — regresión lineal + R² + confidence intervals + moving average + anomaly detection. Sin TF.js (R foundation) |
+| `knowledge-graph.js` | `AltorraGraph` — grafo in-memory contactos↔vehículos↔marcas con auto-build throttled. matchContactsForVehicle + searchContacts semántica (Bloque Q) |
+
+### CSS (`css/`)
+
+**Core sitio público**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `style.css` | Estilos principales del sitio publico (incluye 7 *-fixes.css mergeados al final P6 + auth-header.css mergeado por Header Loading Sprint) |
 | `dark-theme.css` | Variante dark mode |
-| `admin.css` | Estilos del panel admin |
-| `hero.css` | Hero banner de homepage |
-| `contact-forms.css` | Modals de contacto/financiacion |
-| `toast-notifications.css` | Notificaciones toast |
-| `comparador.css` | Estilos del comparador |
-| `calculadora-financiamiento.css` | Simulador de credito |
+| `hero.css` | Hero banner de homepage con LQIP cross-fade + sequential reveal (L1.2+L1.3) |
+| `page-loader.css` | Animación de carga (cinematic dissolve L1.1) |
+| `animaciones.css` | Animaciones legacy y transiciones |
+| `performance-fixes.css` | Overrides perf curados (P1+P3+P9 + content-visibility + auto-reveal) |
+| `auth.css` | Modal login/registro/reset: con campo cédula obligatoria, password strength, Google btn, shake animation, offline banner |
+| `auth-header.css` | DEPRECATED — mergeado en style.css (Header Loading Sprint). Mantenido por compat de cache |
+| `historial-visitas.css` | Carrusel "Vistos Recientemente" filmstrip cinematográfico + diff badges (E.2) |
+
+**Features cliente público**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `contact-forms.css` | Modals de contacto/financiación con `.contact-success` (confirmación in-place MF2.1) |
 | `cookies.css` | Banner de cookies |
 | `citas.css` | Formulario de citas |
-| `reviews.css` | Seccion de resenas |
-| `filtros-avanzados.css` | Filtros sidebar (busqueda) |
-| `favorites-page.css` | Pagina de favoritos |
-| `favorites-empty-fullpage.css` | Estado vacio de favoritos |
-| `featured-week-banner.css` | Banner vehiculo destacado |
-| `performance-fixes.css` | Optimizaciones CSS (overrides perf intencionales) |
-| `animaciones.css` | Animaciones y transiciones |
-| `historial-visitas.css` | Widget de historial de visitas |
-| `page-loader.css` | Animacion de carga |
-| `auth.css` | Modal de login/registro/reset: formularios, password strength, Google btn |
-| `auth-header.css` | Estado logueado en header: avatar dropdown desktop + mobile |
-| `perfil.css` | Panel de usuario: sidebar, cards, favoritos, solicitudes, citas, toggle, responsive |
+| `comparador.css` | Estilos del comparador |
+| `calculadora-financiamiento.css` | Simulador de credito |
+| `reviews.css` | Sección de reseñas |
+| `filtros-avanzados.css` | Filtros sidebar (búsqueda) |
+| `favorites-page.css` | Página de favoritos con diff badges (B.4) |
+| `favorites-empty-fullpage.css` | Estado vacío de favoritos |
+| `featured-week-banner.css` | Banner vehículo destacado |
+| `toast-notifications.css` | Sistema unificado de notificaciones (toasts + bell + variant attention + buzz) |
+| `concierge.css` | Bot ALTOR — FAB flotante 108×108, panel deslizable burbuja-cómic, Lead Gate, CTA bubble rotativo, happy dance hover, sparkles, marketing opt-in modal (Bloque U) |
+| `perfil.css` | Panel de usuario: 10 secciones, sidebar, cards, avatar upload, busquedas guardadas, preferencias granulares |
+
+**Admin**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `admin.css` | Estilos del panel admin: workspace pattern, filter chips, kanban, smart suggestions, comments threaded, presence overlay, KPIs, predictive widget, etc. |
+
+**Design System (Bloque T del Mega-Plan v4)**:
+
+| Archivo | Proposito |
+|---------|-----------|
+| `tokens.css` | Design tokens: 10 categorías (colors, spacing, typography, shadows, radius, animation, z-index, layout) + variantes light/high-contrast (T.1 + T.4 + T.8) |
+| `components.css` | Component library: 12 core components con variantes y estados (Button, Input, Select, Card, Modal, Tabs, Badge, Avatar, Tooltip, Toggle, Skeleton, Stack/Cluster) (T.2) |
+| `animations.css` | Sistema centralizado: keyframes + utility classes + stagger system + view-transitions API (T.5) |
 
 > **Nota P6 (2026-05-02)**: 7 archivos `*-fixes.css` (mobile-fixes, vehicles-cards-fix, sidebar-filters-fix, footer-fixes, featured-fixes, brands-fixes, favorites-fix) fueron consolidados en `style.css` al final, cada uno bajo un comentario `MERGED FROM css/<name>.css (P6 — MFx.x)`. Reduce HTTP requests bloqueantes y simplifica el cascade. `performance-fixes.css` se mantiene aparte como single source de overrides perf curados.
 
@@ -206,10 +328,10 @@ Fragmentos HTML inyectados dinamicamente por `components.js`:
 
 | Archivo | Contenido |
 |---------|-----------|
-| `index.js` | Cloud Functions V2 + triggers Firestore + email via nodemailer |
+| `index.js` | Cloud Functions V2: triggers Firestore + email via nodemailer + LLM provider abstraction (Anthropic/OpenAI/Google) + scheduled jobs |
 | `package.json` | Node 22, firebase-admin v13, firebase-functions v7, nodemailer |
 
-**Secrets requeridos**: `EMAIL_USER`, `EMAIL_PASS` (Gmail SMTP), `GITHUB_PAT`
+**Secrets requeridos**: `EMAIL_USER`, `EMAIL_PASS` (Gmail SMTP), `GITHUB_PAT`, `LLM_API_KEY` (Anthropic, opcional — bot funciona con fallback rules sin él)
 
 ### Otros directorios
 
@@ -219,6 +341,12 @@ Fragmentos HTML inyectados dinamicamente por `components.js`:
 | `backups/` | Snapshots de Firestore |
 | `public/` | `_redirects` (Netlify legacy, no usado en GitHub Pages) |
 | `js/simulador/` | Logica del simulador de credito (simulator.js, ui.js, data.js, finance.js) |
+| `js/ai/` | Modulos IA local (engine, ner, intent, scoring, nba, forecast, knowledge-graph) — ver subseccion JavaScript IA arriba |
+| `admin/` | `_components.html` (Storybook lite del Design System, T.3, no indexado por robots.txt) |
+| `docs/` | `SETUP-LLM.md` (guia Windows-friendly para activar Cerebro AI), `dependency-map.md` (snapshot de dependencias JS pre Mega-Plan v4) |
+| `multimedia/optimized/` | AVIF + WebP variantes responsive auto-generadas por workflow `optimize-images.yml` (Bonus B) |
+| `ALTOR.png` | Imagen del bot ALTOR (raíz del repo, servida desde `/ALTOR.png`) |
+| `manifest-admin.json` | PWA manifest dedicado del admin con shortcuts a 4 secciones (G.4) |
 
 ### GitHub Actions (`.github/workflows/`)
 
@@ -306,21 +434,50 @@ AP.isEditorOrAbove()        // editor o super_admin
 ### Firestore Rules (resumen)
 
 ```
+# Core inventario / contenido público
 vehiculos/{id}       — read: public | create/update: editor+ (con _version) | delete: super_admin
 usuarios/{uid}       — read: own doc OR super_admin | write: super_admin only
 marcas/{id}          — read: public | write: editor+ (con _version)
 banners/{id}         — read: public | write: editor+ (con _version)
-solicitudes/{id}     — read: authenticated | create: public | update: editor+ | delete: super_admin
+resenas/{id}         — read: public | create/update: editor+ | delete: super_admin
+
+# Comunicaciones (kind=cita/solicitud/lead, MF1.2)
+solicitudes/{id}     — read: authenticated | create: public (con userId == auth.uid si presente, MF1.1) | update: editor+ | delete: super_admin
 citas/{id}           — read: authenticated | create: public | update: editor+ | delete: super_admin
 leads/{id}           — read: authenticated | create: public | delete: super_admin
-resenas/{id}         — read: public | create/update: editor+ | delete: super_admin
+mensajes/{id}        — DEPRECATED — eliminado, reemplazado por conciergeChats/ (U.4 PURGA TOTAL)
+
+# Concierge (Bot ALTOR + chat asesor live)
+conciergeChats/{sid} — read: editor+ OR auth.uid == resource.userId | create: auth (con userId match) | update: editor+ OR owner | delete: super_admin
+conciergeChats/{sid}/messages/{mid} — read: editor+ OR matches parent owner | create: auth (from='asesor' requiere editor+) | delete: super_admin
+
+# Cerebro AI (Fase 3 LLM + KB)
+knowledgeBase/{kbId} — read: public (bot lee FAQs) | create/update: editor+ excepto usageCount/lastUsedAt (cualquier auth) | delete: super_admin
+knowledgeBase/_brain — singleton de identidad/contexto/instrucciones/reglas/modelo (cubierto por rule de knowledgeBase/{kbId})
+llmRateLimit/{sid}   — read/write: false (solo Cloud Function via Admin SDK escribe — bypassa rules)
+
+# Aliados / config / audit
 concesionarios/{id}  — read: authenticated | write: super_admin only
 loginAttempts/{hash} — read/write: public (rate limiting cross-device)
 auditLog/{id}        — read: authenticated | create: editor+ | delete: super_admin (INMUTABLE)
-config/{docId}       — read: public | write: varies (bookedSlots: public, counters: editor+)
+automationLog/{id}   — read: authenticated (admins audit) | create: auth (engine writes) | delete: super_admin (INMUTABLE)
+config/{docId}       — read: public | write: varies (bookedSlots: public, counters: editor+, calendarConfig: super_admin, followups: editor+, messageTemplates: editor+)
 system/{docId}       — read: public | write: editor+ (cache invalidation)
 drafts_activos/{uid} — read/write: editor+ (own uid only)
-clientes/{uid}/busquedasGuardadas/{searchId} — read/write: own uid only
+
+# Realtime collab + admin power-ups
+events/{eventId}            — read: auth | create: auth (cualquiera persiste opt-in con bus persist:true) | INMUTABLE | delete: super_admin (Bloque I.1)
+comments/{commentId}        — read: editor+ | create: editor+ AND authorUid == auth.uid | update: solo body+edited (M.4) | delete: super_admin OR author propio
+coediting/{entityType_entityId} — read: editor+ | create/update: solo own uid | delete: super_admin OR dueño (M.2)
+appointmentReminders/{id}   — read: editor+ | create: editor+ AND shownTo == auth.uid | delete: super_admin (D.5)
+
+# Cliente
+clientes/{uid}                                         — read: own OR isEditorOrAbove() (CRM 360°) | create: own | update: own OR super_admin (notas CRM) | delete: false
+clientes/{uid}/busquedasGuardadas/{searchId}          — read/write: own uid only
+clientes/{uid}/notifications/{nid}                    — read/write/delete: own uid (cross-device sync A4)
+clientes/{uid}/cotizaciones/{cotId}                   — read/write: own OR super_admin (MF4.6)
+clientes/{uid}/postventa/{saleId}                     — read/write: editor+ (NPS aggregation MF4.8)
+clientes/{uid}/crmNotes/{nid}                         — read/write: super_admin (notas internas CRM MF4.2)
 ```
 
 ### Optimistic Locking (`_version`)
@@ -333,16 +490,37 @@ clientes/{uid}/busquedasGuardadas/{searchId} — read/write: own uid only
 
 ### Cloud Functions (V2 — activas)
 
+**User management**:
+
 | Funcion | Guard | Accion |
 |---------|-------|--------|
 | `createManagedUserV2` | `verifySuperAdminV2` | Crea Auth user + doc en `usuarios/{uid}` |
 | `deleteManagedUserV2` | `verifySuperAdminV2` + self-delete protection | Elimina doc + Auth user |
 | `updateUserRoleV2` | `verifySuperAdminV2` | Actualiza rol, nombre en `usuarios/{uid}` |
+
+**Triggers de comunicaciones**:
+
+| Funcion | Guard | Accion |
+|---------|-------|--------|
 | `onNewSolicitud` | Trigger `onCreate` en `solicitudes/{id}` | Email al admin con datos de solicitud/cita. Idempotente (`emailSent` flag) |
 | `onSolicitudStatusChanged` | Trigger `onUpdate` en `solicitudes/{id}` | Email al cliente cuando estado cambia a confirmada/reprogramada/cancelada/completada. Idempotente (`statusEmailSent_{estado}` flag) |
+
+**Triggers de vehículos**:
+
+| Funcion | Guard | Accion |
+|---------|-------|--------|
 | `onVehicleChange` | Trigger `onWrite` en `vehiculos/{id}` | Dispatch GitHub Actions para regenerar paginas SEO. Debounce 5 min. Solo si cambian campos SEO |
 | `triggerSeoRegeneration` | `verifySuperAdmin` (callable) | Dispatch manual de regeneracion SEO desde admin panel |
 | `onVehiclePriceAlert` | Trigger `onUpdate` en `vehiculos/{id}` | Detecta baja de precio, busca `clientes/{uid}/busquedasGuardadas` con `alertas:true` que coincidan, envia email al cliente. Rate limit 1 email/cliente/vehiculo/dia |
+
+**Cerebro Altorra AI (Fase 3 + §21.10 optimizaciones, requiere `LLM_API_KEY`)**:
+
+| Funcion | Guard | Accion |
+|---------|-------|--------|
+| `chatLLM` | Callable, rate limit 30/sesion/dia (§21.10.3) | Lee `knowledgeBase/_brain` config, fetch top 10 vehiculos del inventario (§21.10.2), compone system prompt con `cache_control:'ephemeral'` (§21.10.1), llama provider Anthropic/OpenAI/Google, parsea CTA tag whitelisted, retorna `{text, cta, source:'llm'}` o `{disabled:true}` para fallback rules. Si Brain off → cliente cae a generateBotResponse (zero downtime). |
+| `summarizeChat` | Callable, super_admin/editor | Genera resumen extractivo con LLM (3-5 lineas) y lo persiste en `conciergeChats/{sid}.summary`. Reusa `composeSystemPrompt` con prompt dedicado (F.1) |
+| `onConciergeMessageAdded` | Trigger `onCreate` en `conciergeChats/{sid}/messages/{mid}` | Cuando el chat alcanza múltiplo de 10 turnos del cliente, dispara `summarizeChatBySessionId` automáticamente. Idempotente (skip si `summaryUpToTurn >= newCount`) |
+| `proactiveEngagement` | Schedule `every 5 minutes` (Cloud Scheduler) | Detecta chats con `mode='bot'` + `lastMessageAt` en últimas 6h + cooldown 24h. Si user nunca escribió Y pasaron 3+ min desde el welcome → inyecta nudge `proactive=true` con cooldown registrado en `lastProactiveAt` (F.3) |
 
 ### RTDB Rules (Realtime Database)
 
@@ -457,20 +635,118 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 
 ### solicitudes/{id} (sistema unificado de comunicaciones)
 
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| nombre, telefono, email | string | |
+| prefijoPais | string (default "+57") | |
+| tipo | string | "consignacion_venta", "financiacion", "contacto_general", "concierge_soft" (Bot ALTOR) |
+| origen | string | "vende_tu_auto", "financiacion", "form_contacto", "simulador_credito", "concierge", "ai_assistant", "whatsapp_widget" |
+| **kind** (MF1.2) | string | **"cita" / "solicitud" / "lead"** — discriminador con maquina de estados independiente |
+| **userId** (MF1.1) | string\|null | Firebase Auth uid del cliente; null para guests. Anti-impersonation: rule exige `userId == auth.uid` si presente |
+| **userEmail** (MF1.1) | string\|null | Email del usuario logueado (separado del email de contacto del form) |
+| **clientCategory** (MF1.1) | string | "registered" \| "guest" |
+| **priority** (MF1.3) | string | "alta" / "media" / "baja" — auto-computed por `comm-schema.js computeMeta()` |
+| **tags** (MF1.3) | array | Auto-tags: 'alto-valor', 'premium', 'desde-vehiculo', 'desde-simulador', 'cliente-registrado', etc. |
+| **slaDeadline** (MF1.3) | string ISO | Auto-calculado segun kind+tags (cita: 30min, financiacion alto-valor: 1h, lead: 24h) |
+| **slaMs** (MF1.3) | number | Mismo valor en ms desde createdAt |
+| **assignedTo** (MF3.4) | string | uid del asesor asignado (auto-routing super_admin para alto-valor, round-robin para resto) |
+| **assignedToName** (MF3.4) | string | Nombre cacheado |
+| **source** (MF1.1) | object | `{page, cta, referrer}` — atribucion del origen del lead |
+| **device** (MF1.1) | object | `{type:'mobile'\|'desktop', browser, os}` |
+| **requiereCita** | boolean | True si kind='cita' (legacy compat) |
+| vehiculo | string | |
+| vehiculoId | string | Si se origino desde una ficha de vehiculo |
+| datosExtra | object | datos especificos del tipo |
+| comentarios | string | |
+| estado | string | Estado segun kind. Cita: pendiente/confirmada/reprogramada/completada/cancelada/no_show. Solicitud: pendiente/en_revision/contactado/aprobada/rechazada/completada/sin_respuesta. Lead: nuevo/contactado/interesado/frio/convertido/descartado |
+| **legacyEstado** (MF1.2) | string | Estado original antes de la migracion automatica de schema |
+| observaciones | string | notas del admin |
+| **marketingOptIn** (U.19) | object | `{email, whatsapp, sms, askedAt, source}` granular per-canal |
+| createdAt, updatedAt | timestamp | |
+| _migration_v1 | boolean | Marcado por `migrateCommunicationsSchema` en admin-sync.js |
+| _migrationAt | string ISO | |
+
+### conciergeChats/{sessionId} (Bot ALTOR + chat asesor live, U.4)
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| sessionId | string | `cnc_<timestamp>_<rand>` único por cliente |
+| userId | string\|null | uid si registered, null para guests |
+| userEmail, userNombre | string | |
+| userTelefono, userCedula | string | Lead Gate obligatorio (Fase 2) |
+| mode | string | "bot" / "live" / "wa_handed_over" |
+| status | string | "active" / "closed" / "resolved" |
+| sourceVehicleId | string\|null | ID del vehículo si el chat se inició desde su ficha |
+| sourcePage | string | Página de origen |
+| level | number | 0..5 progressive profiling (L0 anónimo → L5 convertido) |
+| profile | object | Snapshot de la identidad del cliente al momento del chat |
+| lastMessage | string | Últimos 80 chars del último mensaje |
+| lastMessageAt | timestamp | |
+| unreadByAdmin | number | |
+| unreadByUser | number | |
+| forceUnreadByAdmin | boolean | Admin marca manual no leído (U.10 power-up) |
+| isPinned, pinnedAt | bool, ts | Admin fija al tope |
+| isArchived, archivedAt, archivedBy | bool, ts, uid | Admin archiva |
+| isDeleted, deletedAt, deletedBy | bool, ts, uid | DEPRECATED — ahora hard delete real (§20.2) |
+| activeAsesor | object | `{uid, nombre, photoURL}` del asesor actual |
+| context | object | Memoria conversacional: `{lastIntent, discussedTopics[], bot_repeated_count}` |
+| summary | string | Resumen IA generado cada 10 turnos por `summarizeChat` (F.1) |
+| summaryUpToTurn, summaryUpdatedAt, summaryModel | int, ts, str | Idempotencia summary |
+| lastProactiveAt | timestamp | F.3 — último nudge proactivo emitido (cooldown 24h) |
+| createdAt | timestamp | |
+
+**Subcollection** `conciergeChats/{sid}/messages/{mid}`:
+- `from` ('user'/'bot'/'asesor'/'system'), `text`, `timestamp`, `cta` (object opcional)
+- `proactive: true` + `triggerType` para mensajes generados por `proactiveEngagement` (F.3)
+- `asesorUid`, `asesorNombre`, `asesorPhotoURL` cuando from='asesor'
+
+### knowledgeBase/{kbId} y knowledgeBase/_brain (Cerebro Altorra AI)
+
+**FAQs** (`kbId` no es '_brain'):
+
 | Campo | Tipo |
 |-------|------|
-| nombre, telefono, email | string |
-| prefijoPais | string (default "+57") |
-| tipo | string ("consignacion_venta", "financiacion", "contacto_general") |
-| origen | string ("vende_tu_auto", "financiacion", "form_contacto") |
-| vehiculo | string |
-| datosExtra | object (datos especificos del tipo) |
-| comentarios | string |
-| estado | string ("pendiente", "contactado", "completado", "rechazado") |
-| observaciones | string (notas del admin) |
-| createdAt | timestamp |
+| question | string |
+| answer | string |
+| keywords | array |
+| category | string ('general' / 'financiacion' / 'inventario' / 'politica' / 'horarios' / 'ubicacion' / 'consignacion') |
+| enabled | boolean |
+| priority | number (0-100) |
+| usageCount | number (incrementado por bot al usar la FAQ — diff-key permite a cualquier auth) |
+| lastUsedAt | timestamp |
+| createdAt, createdBy, updatedAt, updatedBy | |
 
-### Otras colecciones
+**Singleton `_brain`** (Fase 3, §21.4):
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| enabled | boolean | Toggle "Cerebro AI activo" del admin |
+| llmProvider | string | "anthropic" / "openai" / "google" |
+| llmModel | string | ej. `claude-haiku-4-5` |
+| llmTemperature | number | 0-1 |
+| maxTokens | number | (recomendado 400 — §21.10) |
+| identidad | object | `{nombre, tono, personalidad}` |
+| contexto | object | `{descripcion, valores:[], servicios:[]}` |
+| instrucciones | string | System prompt principal |
+| reglas_seguridad | array | Reglas inviolables del bot |
+| updatedAt, updatedBy | | |
+
+### Otras colecciones nuevas (Mega-Plan v4)
+
+| Coleccion | Campos clave |
+|-----------|-------------|
+| `automationLog/{id}` | ruleId, ruleName, trigger, action, reason, docId, docTitle, outcome, timestamp, by (K.3) |
+| `events/{eventId}` | id, type, payload, timestamp, by, bySource ('admin'/'public'/'system') (Bloque I.1) |
+| `comments/{commentId}` | entityType, entityId, body, authorUid, authorNombre, parentId (threading), mentions[], createdAt (M.4) |
+| `coediting/{entityType_entityId}` | uid, browser, lastHeartbeat (TTL 60s), createdAt (M.2) |
+| `appointmentReminders/{id}` | reminderId, citaId, type, shownTo (uid), shownAt, notified (D.5) |
+| `llmRateLimit/{sessionId}` | count (max 30/dia §21.10.3), day, lastAt (Cloud Function only) |
+| `clientes/{uid}/notifications/{nid}` | id, type, title, message, link, category, priority, entityRef, actionLabel, timestamp, read (Bell A.4 cross-device) |
+| `clientes/{uid}/cotizaciones/{cotId}` | precio, descuento, cuotaInicial, plazo, tasa, vigencia, generatedAt (MF4.6) |
+| `clientes/{uid}/postventa/{saleId}` | saleData, npsScore, satisfaction, scheduledFollowups (MF4.8) |
+| `clientes/{uid}/crmNotes/{nid}` | body, authorUid, createdAt (notas internas super_admin) |
+
+### Otras colecciones legacy / sin cambios
 
 | Coleccion | Campos clave |
 |-----------|-------------|
@@ -482,7 +758,10 @@ Ejecutar despues de CUALQUIER cambio que toque auth, usuarios o Cloud Functions:
 | `auditLog/{id}` | action, user, timestamp, details (INMUTABLE) |
 | `config/counters` | vehicleCodeSeq (para codigoUnico) |
 | `config/bookedSlots` | Disponibilidad de citas |
-| `system/meta` | lastModified (senal de cache invalidation) |
+| `config/calendarConfig` | workDays, workHours, slotDurationMin, bufferMin, maxPerSlot, holidays (D.3) |
+| `config/messageTemplates` | items[] de plantillas de respuesta rápida (MF6.3) |
+| `config/followups` | items[] de recordatorios programados (MF6.2) |
+| `system/meta` | lastModified (señal de cache invalidation) |
 | `drafts_activos/{uid}` | Borradores activos visibles para colaboracion |
 
 ---

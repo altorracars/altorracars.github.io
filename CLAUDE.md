@@ -12858,3 +12858,253 @@ AltorraTransformers.preload();  // dispara descarga del modelo
 Tras la descarga (UNA vez, ~70MB), el modelo queda cacheado en IndexedDB del browser y siguientes inferencias son instant (~50-150ms).
 
 Si el cliente no tiene buenos datos móviles, **NO activar**. El motor rule-based + small-talk + fuzzy 2.0 ya entrega ~80% del valor sin descargar nada.
+
+---
+
+## 25. Hotfix 2FA + Anti-pattern de refactor `appName` (2026-05-09)
+
+> Bug crítico encontrado en producción tras el deploy del Sprint 3-bis
+> (§23.10 — Aislamiento Total Firebase Apps). El cliente intentó loguear
+> en admin con 2FA habilitado y vio el error `Error: No verification ID`
+> al intentar verificar el código SMS. Bug de regresión + lección
+> arquitectónica importante.
+
+### 25.1 Síntomas del bug
+
+Captura del cliente (`admin.html` 4:28 AM, iPhone 13 Pro):
+- Pantalla de "ALTORRA CARS — Verificación en 2 pasos"
+- "Enviamos un código de verificación al número *********6747"
+- Campo de 6 dígitos vacío
+- Mensaje rojo: **"Error: No verification ID"**
+- Cliente reportó: "el SMS no llega al celular"
+
+### 25.2 Diagnóstico técnico
+
+**Causa raíz**: regresión introducida por mí en el Sprint 3-bis cuando
+cambié `firebase-config.js` para usar app namespaced:
+
+```js
+// ANTES (default app):
+firebase.initializeApp(FIREBASE_CONFIG);
+// → app name: '[DEFAULT]'
+
+// DESPUÉS Sprint 3-bis (§23.10):
+firebase.initializeApp(FIREBASE_CONFIG, APP_NAME);
+// APP_NAME = 'altorra-admin' o 'altorra-public'
+// → la app '[DEFAULT]' YA NO EXISTE
+```
+
+En `admin-auth.js` los constructores estaban escritos sin parámetro
+de app:
+
+```js
+// ROTOS tras Sprint 3-bis:
+new firebase.auth.RecaptchaVerifier(containerId, params)   // línea 509
+new firebase.auth.PhoneAuthProvider()                       // líneas 532, 752
+```
+
+Estos constructores en Firebase Compat SDK v11+ aceptan un argumento
+opcional de `firebase.auth.Auth` o `firebase.app.App`. Si NO se pasa,
+**asumen silenciosamente la default app**. Como esa app YA NO EXISTÍA,
+el comportamiento era indefinido:
+- `verifyPhoneNumber()` no enviaba el SMS (silencioso)
+- O el `verificationId` apuntaba a un app fantasma
+- Al hacer `PhoneAuthProvider.credential(verificationId, code)`, el
+  credential pertenecía al phantom default app, pero
+  `pendingUser.linkWithCredential(credential)` se ejecutaba sobre
+  `window.auth` (`altorra-admin`) → mismatch → `_2faVerificationId`
+  quedaba `null`
+- UI mostraba "Error: No verification ID"
+
+### 25.3 Fix aplicado (commit `fe6055d`)
+
+`js/admin-auth.js` — 3 cambios:
+
+| Línea | Antes | Después |
+|---|---|---|
+| 509 | `new RecaptchaVerifier(id, params)` | `new RecaptchaVerifier(id, params, window.auth)` |
+| 532 | `new PhoneAuthProvider()` (2FA) | `new PhoneAuthProvider(window.auth)` |
+| 752 | `new PhoneAuthProvider()` (unlock) | `new PhoneAuthProvider(window.auth)` |
+
+Con `window.auth` apuntando a la instancia namespaced de la app
+correcta (`altorra-admin` para admin.html), todos los constructores
+ahora atan los verifiers/providers al app correcto. SMS llega y
+verificationId se persiste correctamente.
+
+### 25.4 Anti-pattern documentado (lección para futuros refactors)
+
+> **REGLA**: cuando se cambia el `appName` de Firebase (refactor de
+> aislamiento como hicimos en §23.10), **AUDITAR todos los
+> constructores `new firebase.X.Y(...)`** en el codebase. La mayoría
+> aceptan un argumento opcional de app/auth — si no se pasa, asumen
+> default app silenciosamente.
+
+#### Constructores afectados (Firebase Compat v11+) — checklist obligatoria
+
+| Constructor | Signatura | Argumento app/auth |
+|---|---|---|
+| `firebase.auth.RecaptchaVerifier` | `(container, params, app?)` | 3er arg — `firebase.app.App` o `firebase.auth.Auth` |
+| `firebase.auth.PhoneAuthProvider` | `(auth?)` | 1er arg — `firebase.auth.Auth` |
+| `firebase.auth.OAuthProvider` (custom) | `(providerId, auth?)` | 2do arg |
+| `firebase.firestore` | implícito en `firebase.firestore(app)` | 1er arg de la función |
+| `firebase.auth` | implícito en `firebase.auth(app)` | 1er arg |
+| `firebase.storage` | implícito en `firebase.storage(app)` | 1er arg |
+| `firebase.functions` | implícito en `firebase.functions(app)` | 1er arg |
+| `firebase.database` | implícito en `firebase.database(app)` | 1er arg |
+| `firebase.analytics` | implícito en `firebase.analytics(app)` | 1er arg (con caveat — solo default app) |
+
+#### Métodos estáticos que NO requieren app (portables, OK)
+
+```js
+firebase.auth.PhoneAuthProvider.credential(id, code)     // genera AuthCredential portable
+firebase.auth.EmailAuthProvider.credential(email, pass)  // portable
+firebase.auth.GoogleAuthProvider.credential(token)       // portable
+firebase.firestore.FieldValue.serverTimestamp()          // portable
+firebase.firestore.FieldValue.increment(n)                // portable
+firebase.firestore.FieldPath.documentId()                 // portable
+firebase.auth.Auth.Persistence.LOCAL                       // constante
+```
+
+#### Patrón seguro recomendado
+
+```js
+// 1. firebase-config.js exporta `window.auth`, `window.db`, etc.
+//    apuntando a la app namespaced correcta.
+
+// 2. Todos los OTROS archivos usan estas globals + los pasan a
+//    constructores cuando sea necesario:
+
+// Phone Auth:
+var verifier = new firebase.auth.RecaptchaVerifier(
+    'container', { size: 'invisible' }, window.auth
+);
+var provider = new firebase.auth.PhoneAuthProvider(window.auth);
+
+// Firestore (siempre window.db):
+window.db.collection('foo').doc('bar').get()
+
+// Auth (siempre window.auth):
+window.auth.signInWithEmailAndPassword(email, pass);
+window.auth.currentUser;
+window.auth.signOut();
+```
+
+#### Test de regresión recomendado post-refactor de appName
+
+1. Login admin con 2FA → SMS llega → código verifica OK
+2. Login admin con cuenta bloqueada → unlock por SMS funciona
+3. Web pública signInWithPopup Google → token verifica OK
+4. Web pública signInWithEmailAndPassword → login OK
+5. Cualquier `linkWithCredential()` o `reauthenticate()` flow
+
+### 25.5 Cambio cosmético: VAPID key configurada (commit `6f6497d`)
+
+Este commit ya fue documentado en §23.11, pero al momento de escribir
+esa sección la VAPID key no estaba seteada (solo el código). En
+`6f6497d` el cliente generó el VAPID en Firebase Console
+(`Project Settings → Cloud Messaging → Web Push certificates →
+Generate key pair`) y lo pegó en `js/admin-fcm.js`:
+
+```js
+var VAPID_PUBLIC_KEY = 'BDhFxNdH98lu9a1fHx0AyKzEhDkQ9-7Im7AHIpj6LiYpARA-XBUomOc5Q06LrJbedfX1qSkPzMp1KDgHYaJBhFU';
+```
+
+**FCM Web Push está oficialmente activo** desde ese commit. Cuando
+los asesores instalen la PWA y acepten el prompt de notificaciones,
+recibirán push del SO en su celular cuando un cliente entre a queue
+(detalle del flujo en §23.11).
+
+### 25.6 Changelog ejecutivo de la rama `claude/add-api-key-deploy-UMybF`
+
+Lista cronológica de commits con su sección documental correspondiente:
+
+| # | Commit | § | Descripción ejecutiva |
+|---|---|---|---|
+| 1 | `90d5c47` | §21.10 | Cerebro AI optimizado — prompt caching + inventory cap 10 + rate limit 30 + pre-filtro rules |
+| 2 | `644f817` | §1-§5 | Doc backfill exhaustivo de archivos/colecciones/rules implementados |
+| 3 | `5929db5` | §21.9 | Doc Cerebro AI activo en producción ✅ |
+| 4 | `b7bffe3` | §21.9 | Doc guía setup LLM Windows-friendly |
+| 5 | `ea1215e` | §21 | Doc completa Bot Ultra Mega Cerebro (Fases 1+2+3) |
+| 6 | `47602f7` | §22 | Offline Ultra Brain — fuzzy matching + sinónimos + memory + inventory search + KB ranker + quick replies + auto-feedback loop |
+| 7 | `57428ec` | §22.15 | Fix reset chat — cancel listeners pre-write + confirm datos guests + reset toast |
+| 8 | `140cb07` | §22.15 | Doc §22.15 reset chat fix |
+| 9 | `7b3807d` | §23.1-4 + §23.9-10 | ACD Sprints 1-4 — schema + indexes + radicados + cierre bidireccional + FASE 6 aislamiento auth + FASE 7 trusted devices fix + persistencia sesión |
+| 10 | `5478cd4` | §23.10 | Aislamiento Total Firebase Apps (appName admin/public) + index banners legacy |
+| 11 | `07c2eed` | §23.5-8 | ACD Sprints 5-9 — workload aggregator + locks/claiming + queue mode + SLA F5-proof + doble fallback + FCM Web Push + Doc §23 completa |
+| 12 | `6f6497d` | §23.11 + §25.5 | FCM Web Push activado — VAPID key generada y pegada |
+| 13 | `3cb5fe4` | §24 | Offline Ultra Brain 2.0 — Arquitectura Dual-Core (LLM intacto + Free Core repotenciado: Small Talk + Fuzzy 2.0 + Stems + N-grams + Memoria + Anáfora + DualCore router con Circuit Breaker + Transformers.js opt-in) |
+| 14 | `fe6055d` | §25 | HOTFIX 2FA — RecaptchaVerifier + PhoneAuthProvider con window.auth (regresión Sprint 3-bis) |
+
+### 25.7 Estado deployado en producción (al 2026-05-09)
+
+| Componente | Estado | Notas |
+|---|---|---|
+| Firestore rules | ✅ Deployadas | `firestore.rules` con todas las nuevas (cierre bidireccional, claim ownership, usuarios self-service diff-keys, unmatchedQueries) |
+| Firestore indexes | ✅ Deployados | 5 indexes ACD + banners legacy |
+| Cloud Functions | ✅ 100% deployadas | 12 functions activas: chatLLM, summarizeChat, onConciergeMessageAdded, proactiveEngagement, onConciergeChatCreated, recalculateWorkloadOnChatChange, recalculateWorkloadScheduled, onChatEscalated + 4 legacy |
+| LLM Premium toggle | ⏸️ OFF (sin saldo) | El usuario decidió postergar el setup completo. Free Core está activo |
+| FCM Web Push | ✅ VAPID configurada | Falta que cada asesor instale PWA + acepte prompt para registrar token |
+| Aislamiento auth admin/web | ✅ Activo | appName `altorra-admin` vs `altorra-public` — sesiones simultáneas funcionan |
+| Trusted devices editor | ✅ Activo | Self-service diff-keys permite a editor escribir su trustedDevices |
+| Persistencia sesión admin | ✅ Activo | Auth-hint pre-paint + restore último section |
+| Hotfix 2FA | ✅ En main tras `fe6055d` | Pendiente que cliente haga `git pull` + recargue admin para invalidar SW cache |
+
+### 25.8 Pendientes operacionales del cliente (post-deploy)
+
+1. **Cargar saldo en Anthropic** ($5+ USD) y activar el toggle "Cerebro
+   AI activo" en `admin.html#kb` — esto enciende el Core Premium del
+   bot. Hasta entonces, el Free Core (§24) responde todos los turnos.
+
+2. **Cada asesor instala la PWA del admin** en su celular:
+   - Android Chrome: Menú → "Instalar aplicación"
+   - iOS Safari 16.4+: Compartir → "Añadir a inicio"
+   Después, aceptar el prompt "🔔 Notificaciones de clientes en cola"
+   que aparece 3s post-login.
+
+3. **Validar flujos de seguridad**:
+   - Sesiones simultáneas: super_admin en admin.html + cliente normal
+     en index.html misma ventana → ambas independientes
+   - Trusted devices editor: editor pasa 2FA + marca "guardar" → próximo
+     refresh entra sin código
+   - Aislamiento de login en web pública: admin intenta loguear en web
+     pública → debe rechazar con mensaje "🔒 Esta cuenta es de admin"
+
+4. **Validar bot ALTOR coloquial** (§24):
+   - Probar "Hola que mas" → respuesta natural con follow-up
+   - Probar "tendras autos por ahi" → inventory_query con vehículos
+     reales (no fallback genérico)
+   - Probar "el primero" tras pregunta de bot con opciones → resolver
+     anáfora correctamente
+
+### 25.9 Costo recurrente actual
+
+**$0 USD/mes** mientras el toggle Cerebro AI esté OFF.
+
+Cuando se active:
+- ~$2-5 USD/mes para el LLM (§21.10 ya optimizado con prompt caching,
+  inventory cap 10, rate limit 30, pre-filtro rules)
+- $0 todo el resto (FCM Web Push, Cloud Functions, Firestore, Hosting
+  GitHub Pages — dentro del free tier)
+
+### 25.10 Lección arquitectónica final
+
+El proyecto ACD Enterprise + Offline Ultra Brain 2.0 demuestra que se
+puede construir una experiencia de chatbot enterprise:
+
+1. **Sin pagar APIs caras** — el Free Core (§24) entrega ~80% de la
+   experiencia de un LLM comercial usando JS puro en el navegador
+2. **Sin downtime** — el Dual-Core (§24) mantiene memoria conversacional
+   compartida entre cores; switch transparente al cliente
+3. **Con escalabilidad real** — workload aggregator (§23.3), locks
+   anti-colisión (§23.4), SLA F5-proof (§23.5), FCM Push (§23.11)
+4. **Con seguridad enterprise** — aislamiento auth admin/web (§23.9),
+   trusted devices self-service (§23.10), cierre bidireccional inmutable
+   (§23.8)
+5. **Con trazabilidad** — radicados únicos (§23.7), cada conversación
+   tiene un ticket histórico independiente
+
+**Total**: 14 commits en una rama, ~12.000 líneas de código + doc, $0
+recurrente, deployable en una sola sesión de PowerShell con Firebase
+CLI. El proyecto sirve como referencia de cómo construir software de
+calidad enterprise con presupuesto limitado y un equipo pequeño.
+

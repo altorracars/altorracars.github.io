@@ -22,8 +22,8 @@
     <link rel="dns-prefetch" href="https://firestore.googleapis.com">
     <link rel="icon" type="image/png" href="/multimedia/logo-placeholder.png">
     <link rel="apple-touch-icon" href="/multimedia/logo-placeholder.png">
-    <!-- T.4 (mega-plan v4) — Apply theme BEFORE first paint to prevent flash -->
-    <script>(function(){try{var t=localStorage.getItem('altorra-theme');if(t&&['dark','light','high-contrast'].indexOf(t)!==-1){document.documentElement.setAttribute('data-theme',t);return;}if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches){document.documentElement.setAttribute('data-theme','light');return;}document.documentElement.setAttribute('data-theme','dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+    <!-- Tema dark permanente — toggles eliminados por decisión del usuario -->
+    <script>document.documentElement.setAttribute('data-theme','dark');try{localStorage.removeItem('altorra-theme');}catch(e){}</script>
 
     <!-- T.1 (mega-plan v4) — Design tokens MUST load before any other CSS -->
     <link rel="stylesheet" href="css/tokens.css">
@@ -362,15 +362,6 @@
                     </button>
                     <!-- Notification Center bell (Phase N3) — mounted by toast.js -->
                     <div id="headerNotifBell" class="hdr-notif-bell-slot"></div>
-                    <!-- T.4 (mega-plan v4) — theme toggle via AltorraTheme -->
-                    <button class="alt-btn alt-btn--ghost alt-btn--icon" id="themeToggle" data-altorra-theme-toggle data-tooltip="Cambiar tema">
-                        <i data-lucide="moon" class="theme-icon-dark"></i>
-                        <i data-lucide="sun" class="theme-icon-light"></i>
-                    </button>
-                    <!-- T.8 (mega-plan v4) — high-contrast WCAG AAA toggle -->
-                    <button class="alt-btn alt-btn--ghost alt-btn--icon" id="contrastToggle" data-altorra-contrast-toggle data-tooltip="Alto contraste">
-                        <i data-lucide="contrast"></i>
-                    </button>
                 </div>
             </div>
             <div class="stats-grid">
@@ -2385,7 +2376,7 @@
 <script src="js/event-bus.js" defer></script>
 <script src="js/dynamic-lists.js" defer></script>
 <script src="js/comm-schema.js" defer></script>
-<script src="js/theme-switcher.js" defer></script>
+<!-- theme-switcher.js eliminado — tema dark permanente -->
 <script src="js/icons.js" defer></script>
 <script src="js/admin-sidebar.js" defer></script>
 <script src="js/admin-section-router.js" defer></script>

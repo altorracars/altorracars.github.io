@@ -11837,3 +11837,134 @@ página tras un push a `main`.
 10. **Promote to FAQ**: ir a "Lo que no entendí" → click
     "➕ Crear FAQ" → form prellenado → guardar → entry desaparece
     de "Sin revisar" + aparece en "Promovidas"
+
+### 22.15 Reset chat fix — Race condition + UX confirmación datos (2026-05-07)
+
+> Iteración inmediatamente posterior a §22 tras feedback del cliente:
+> al hacer "Finalizar conversación" del menú ⋮ (BUG #1 ya resuelto en
+> §22.2), la UI no se actualizaba sin F5. Además, para usuarios
+> anónimos con datos previos del Lead Gate, el chat retomaba esos
+> datos sin preguntar — el cliente quería confirmación.
+
+#### Diagnóstico — Race condition con listener Firestore
+
+**Bug observado**: tras dar "Aceptar" al confirm, el chat queda en
+estado inconsistente — los mensajes anteriores no se borran de la
+UI hasta que el cliente recarga manualmente (F5).
+
+**Causa raíz**:
+
+1. `handleClientResetSession()` escribía `status:'closed'` al doc parent
+   ANTES de cancelar `_firestoreParentUnsub`.
+2. El listener parent recibía el snapshot del cierre y disparaba
+   `applyClosedState()` con `session.closed = true`.
+3. Eso inyectaba el bloque `#cncClosedBlock` ("Esta conversación ha
+   finalizado") al DOM.
+4. `resetSession()` limpiaba localStorage y creaba nueva sesión, pero
+   el bloque ya estaba pintado y `session.closed` quedaba pisado por
+   el snapshot tardío.
+
+**Fix**: helper nuevo `cancelChatListeners()` se llama **ANTES** de
+cualquier write a Firestore. El listener queda muerto antes de poder
+recibir el snapshot del cierre.
+
+```js
+function cancelChatListeners() {
+    if (_firestoreUnsub) { try { _firestoreUnsub(); } catch (e) {} _firestoreUnsub = null; }
+    if (_firestoreParentUnsub) { try { _firestoreParentUnsub(); } catch (e) {} _firestoreParentUnsub = null; }
+}
+
+function handleClientResetSession() {
+    // ... confirm con datos según caso ...
+    cancelChatListeners();           // ← PRIMERO
+    markChatClosedInFirestore();     // best-effort, no bloquea
+    resetSession({ preserveProfile: keepData });
+}
+```
+
+#### UX nueva — Confirmación de datos para guests
+
+Tres caminos según el estado del cliente:
+
+| Caso | Comportamiento |
+|---|---|
+| **A** Anónimo con `session.profile` previo | Confirm con datos persistidos: "¿Estos siguen siendo tus datos? 👤 Nombre · 📱 Tel · 📧 Email" — Aceptar = preservar profile (no re-pide gate); Cancelar = reset completo (Lead Gate vacío) |
+| **B** Logueado | Reset completo; `loadProfileFromAuth()` re-aplica el profile del auth (source of truth en `/perfil.html`) |
+| **C** Anónimo sin profile | Confirm genérico "¿Finalizar esta conversación?" — reset normal |
+
+#### `resetSession({ preserveProfile })` extendido
+
+```js
+function resetSession(opts) {
+    var preserveProfile = opts && opts.preserveProfile === true;
+    var preserved = preserveProfile ? {
+        profile, gateCompleted, uid, nombre, email, telefono, level
+    } : null;
+
+    cancelChatListeners();              // defense-in-depth
+    localStorage.removeItem(STORAGE_KEY);
+    _chatDocCreated = false;
+    _lastSyncedMsgIds = {};
+    _leadCreated = false;
+    _asesorJoinedAnnounced = false;
+    session = loadSession();            // sesión limpia con nuevo sessionId
+
+    loadProfileFromAuth().then(function (profile) {
+        if (profile) { /* aplica auth profile */ }
+        // Si preserveProfile=true Y auth no aportó nada, restaura preserved
+        if (preserved && !session.profile) {
+            Object.assign(session, preserved);
+            saveSession(session);
+        }
+        // Cleanup DOM defensivo + re-render + toast
+        // ...
+    });
+}
+```
+
+#### `continueResetUI()` con cleanup DOM defensivo
+
+Tras el reset, ANTES del re-render:
+- Remueve `#cncClosedBlock` (bloque "conversación finalizada" que el
+  listener tardío pudo haber inyectado)
+- Cierra dropdown ⋮ del header (`hidden` + `aria-expanded=false`)
+- Limpia `cncMessages.innerHTML = ''`
+- Aplica orden: `applyClosedState()` → `applyGateVisibility()` →
+  `applyAsesorHeader()` → `renderMessages()`
+- Inyecta `#cncResetToast` con animación spring suave (2.2s
+  auto-dismiss): "✓ Conversación reiniciada"
+
+CSS nuevo `.cnc-reset-toast` con gradient verde, posición top-center,
+respeta `prefers-reduced-motion`.
+
+#### Validación
+
+| Escenario | Resultado esperado |
+|---|---|
+| Anónimo + profile → Aceptar | Mensajes desaparecen, no aparece gate, toast verde |
+| Anónimo + profile → Cancelar | Mensajes desaparecen, gate vacío visible, toast verde |
+| Logueado | Mensajes desaparecen, no aparece gate, profile re-aplicado, toast verde |
+| Anónimo sin profile | Mensajes desaparecen, gate vacío visible, toast verde |
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Listener pisa reset local | `cancelChatListeners()` ANTES de Firestore write |
+| Bloque "conversation closed" queda fantasma | Cleanup DOM en `continueResetUI` |
+| Cliente pierde datos al reiniciar | `preserveProfile: true` opt-in |
+| Cliente no sabe si el reset funcionó | Toast verde 2.2s con auto-dismiss |
+| Dropdown ⋮ queda abierto tras reset | `aria-expanded=false` en cleanup |
+| Race con `_firestoreParentUnsub` | Listener cancelado antes de write |
+
+#### Archivos modificados
+
+- `js/concierge.js` — refactor `handleClientResetSession` + helpers
+  `cancelChatListeners` / `markChatClosedInFirestore` + `resetSession`
+  con `preserveProfile` flag
+- `css/concierge.css` — `.cnc-reset-toast` styles
+- `service-worker.js` + `js/cache-manager.js` — bump v20260507020000
+- Sin cambios en Firestore rules ni Cloud Functions
+
+Commit: `57428ec`.
+

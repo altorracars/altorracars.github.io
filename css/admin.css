@@ -965,40 +965,10 @@ select:focus-visible {
     }
 }
 
-/* HEADER FIX — los botones del header SIEMPRE deben ser clickables.
- * z-index 99999 los pone por encima de cualquier overlay huérfano.
- * Además, admin-header-fix.js usa capture-phase listener que intercepta
- * clicks ANTES que cualquier overlay, así que esto es double-defense. */
-#activityFeedTrigger,
-#headerNotifBell,
-#headerNotifBell button,
-#altorra-voice-btn,
-#pwaInstallBtn {
-    position: relative !important;
-    z-index: 99999 !important;
-    pointer-events: auto !important;
-}
-.page-header > div[style*="display:flex"] {
-    position: relative;
-    z-index: 99998;
-}
-.page-header {
-    position: relative;
-    z-index: 99997;
-}
-
-/* SAFETY GLOBAL — overlays huérfanos no bloquean clicks del header.
- *
- * Estrategia: cualquier elemento con position:fixed + inset:0 +
- * z-index alto que NO tenga su clase activa correspondiente queda
- * con display:none + pointer-events:none. Los modales dinámicos
- * (alt-sec-modal, altorra-optin) si quedan huérfanos quedan
- * INVISIBLES porque NO existen en CSS estático — solo se renderizan
- * cuando el JS los inserta. Esa inserción incluye estilos inline
- * que sobreescriben este reset.
- *
- * Para los que SÍ existen estáticamente con display:flex permanente,
- * forzamos hide hasta que tengan clase activa: */
+/* SAFETY — overlays globales con position:fixed inset:0 que existen
+ * estáticamente en el DOM. Mientras NO tengan su clase activa, se
+ * mantienen ocultos para no interferir con la UI.
+ * (admin-header-fix.js fue eliminado — ya no hay parches de clicks). */
 .alt-onboard:not(.is-active),
 .altorra-voice-overlay:not(.alt-voice-active),
 .alt-palette:not(.alt-palette-open) {
@@ -1007,10 +977,7 @@ select:focus-visible {
     visibility: hidden !important;
 }
 
-/* SAFETY EXTRA — overlays creados dinámicamente que pueden quedar
- * huérfanos en el DOM. Si su HTML interno se borra pero el wrapper
- * permanece, este reset garantiza que NO bloqueen clicks.
- * Identificados por id + clase específica de su modal: */
+/* Modales dinámicos vacíos — el wrapper queda en DOM pero sin contenido */
 #alt-sec-modal:empty,
 #altorra-optin:empty,
 #cncSummaryWrap:empty,

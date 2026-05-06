@@ -108,11 +108,21 @@ service cloud.firestore {
     // always tied to a private uid (no localStorage). When they later register,
     // linkWithCredential preserves the uid → data carries over seamlessly.
     match /clientes/{uid} {
-      allow read:   if request.auth != null && request.auth.uid == uid;
+      // Self-service: el cliente lee su propio doc.
+      // Admin (editor+): necesario para que admin-crm.js liste TODOS
+      // los clientes en el CRM 360 con db.collection('clientes').get().
+      // Sin esta rama el list/get fallaba con permission-denied.
+      allow read:   if request.auth != null && (
+                        request.auth.uid == uid || isEditorOrAbove()
+                    );
       // Create only requires uid match — nombre/email may be empty for anon users
       allow create: if request.auth != null && request.auth.uid == uid
         && request.resource.data.uid == request.auth.uid;
-      allow update: if request.auth != null && request.auth.uid == uid;
+      // Update: el cliente edita su perfil; super_admin puede agregar
+      // notas/tags del CRM desde el panel admin (crmTags, crmNotes).
+      allow update: if request.auth != null && (
+                        request.auth.uid == uid || isSuperAdmin()
+                    );
       allow delete: if false; // Users cannot self-delete (data retention)
 
       match /busquedasGuardadas/{searchId} {

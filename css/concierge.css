@@ -17,14 +17,19 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #c9a663 0%, #b89658 50%, #9a7d44 100%);
+    /* Background gradient sutil dorado-oscuro detrás de ALTOR para suavizar
+       cualquier antialiasing de los bordes blancos del PNG. La imagen cubre
+       el círculo completo gracias a object-fit:cover. */
+    background: radial-gradient(circle at 50% 50%, #2a1f08 0%, #15110a 80%);
     color: #1a1500;
-    border: none;
+    border: 2px solid #c9a663;
+    padding: 0;
+    overflow: hidden;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(184, 150, 88, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px rgba(184, 150, 88, 0.45), 0 2px 8px rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -34,25 +39,37 @@
 }
 .altorra-concierge-btn:hover {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 0 12px 32px rgba(184, 150, 88, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 12px 32px rgba(184, 150, 88, 0.6), 0 4px 12px rgba(0, 0, 0, 0.45);
     animation: none;
 }
 .altorra-concierge-btn:active {
     transform: scale(0.96);
 }
-/* Icono Lucide (sparkles) dentro del FAB y header avatar */
-.altorra-concierge-btn [data-lucide],
-.altorra-concierge-btn svg {
-    width: 24px;
-    height: 24px;
-    stroke-width: 2;
+/* ALTOR avatar img — cubre el FAB entero y el header avatar */
+.altorra-concierge-btn .cnc-altor-img,
+.cnc-avatar .cnc-altor-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
 }
-.cnc-avatar [data-lucide],
-.cnc-avatar svg {
-    width: 18px;
-    height: 18px;
-    stroke-width: 2;
+/* Fallback si la imagen no carga: iniciales "AL" */
+.cnc-altor-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #c9a663, #9a7d44);
+    color: #1a1500;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
+    border-radius: 50%;
 }
+.cnc-avatar .cnc-altor-fallback { font-size: 0.78rem; }
+/* Send button mantiene Lucide icon */
 .cnc-send [data-lucide],
 .cnc-send svg {
     width: 18px;
@@ -119,15 +136,18 @@
     gap: 10px;
 }
 .cnc-avatar {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #c9a663, #9a7d44);
+    background: radial-gradient(circle at 50% 50%, #2a1f08 0%, #15110a 80%);
+    border: 1.5px solid #c9a663;
     color: #1a1500;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    overflow: hidden;
+    padding: 0;
 }
 .cnc-title {
     font-size: 0.95rem;

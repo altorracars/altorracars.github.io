@@ -803,23 +803,19 @@
     var _isOpen = false;
 
     /**
-     * SVG corporativo del Asistente Virtual Altorra.
-     * Círculo dorado con monograma "AC" custom — único de Altorra,
-     * NO confundible con Gemini/sparkles. Usado en FAB y header avatar.
+     * Avatar de ALTOR — el bot/asistente virtual con identidad propia.
+     * Imagen PNG corporativa subida a la raíz del sitio (/ALTOR.png).
+     * Usado en FAB, header del panel y avatar de mensajes del bot.
+     *
+     * Ruta absoluta `/ALTOR.png` para que resuelva igual desde cualquier
+     * página (raíz, /vehiculos/X, /marcas/X, etc.). Fallback a iniciales
+     * "AL" si el PNG falla a cargar (defensivo).
      */
-    var AC_LOGO_SVG =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 48 48" aria-hidden="true">' +
-            '<defs>' +
-                '<linearGradient id="acGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
-                    '<stop offset="0%" stop-color="#1a1500"/>' +
-                    '<stop offset="100%" stop-color="#3d2f0a"/>' +
-                '</linearGradient>' +
-            '</defs>' +
-            '<circle cx="24" cy="24" r="22" fill="url(#acGrad)" stroke="#c9a663" stroke-width="1.5"/>' +
-            '<text x="24" y="30" text-anchor="middle" font-family="Poppins, sans-serif" ' +
-                'font-weight="800" font-size="16" fill="#c9a663" letter-spacing="0.5">AC</text>' +
-            '<circle cx="38" cy="11" r="3" fill="#c9a663" opacity="0.85"/>' +
-        '</svg>';
+    var ALTOR_IMG_SRC = '/ALTOR.png';
+    var ALTOR_AVATAR_HTML =
+        '<img src="' + ALTOR_IMG_SRC + '" alt="ALTOR" class="cnc-altor-img" ' +
+        'loading="eager" decoding="async" ' +
+        'onerror="this.outerHTML=\'<span class=cnc-altor-fallback>AL</span>\'">';
 
     function ensureUI() {
         if (document.getElementById('altorra-concierge')) return;
@@ -827,8 +823,8 @@
         var btn = document.createElement('button');
         btn.id = 'altorra-concierge-btn';
         btn.className = 'altorra-concierge-btn';
-        btn.setAttribute('aria-label', 'Abrir Asistente Virtual Altorra Cars');
-        btn.innerHTML = AC_LOGO_SVG;
+        btn.setAttribute('aria-label', 'Abrir ALTOR — Asistente Virtual IA de Altorra Cars');
+        btn.innerHTML = ALTOR_AVATAR_HTML;
         btn.addEventListener('click', toggle);
         document.body.appendChild(btn);
 
@@ -836,15 +832,15 @@
         panel.id = 'altorra-concierge';
         panel.className = 'altorra-concierge';
         panel.setAttribute('role', 'dialog');
-        panel.setAttribute('aria-label', 'Asistente Virtual Altorra Cars');
+        panel.setAttribute('aria-label', 'ALTOR — Asistente Virtual IA de Altorra Cars');
         panel.setAttribute('aria-hidden', 'true');
         panel.innerHTML =
             '<div class="cnc-header">' +
                 '<div class="cnc-header-info">' +
-                    '<div class="cnc-avatar" id="cncAvatar">' + AC_LOGO_SVG + '</div>' +
+                    '<div class="cnc-avatar" id="cncAvatar">' + ALTOR_AVATAR_HTML + '</div>' +
                     '<div>' +
-                        '<div class="cnc-title" id="cncTitle">Asistente Virtual</div>' +
-                        '<div class="cnc-status" id="cncStatus">Altorra Cars · respuesta inmediata</div>' +
+                        '<div class="cnc-title" id="cncTitle">ALTOR</div>' +
+                        '<div class="cnc-status" id="cncStatus">Asistente Virtual IA · Altorra Cars</div>' +
                     '</div>' +
                 '</div>' +
                 '<button class="cnc-close" aria-label="Cerrar">×</button>' +
@@ -998,13 +994,13 @@
         var sourceVeh = session.sourceVehicleId ? resolveVehicleTitleFromCache(session.sourceVehicleId) : null;
         var greet;
         if (sourceVeh) {
-            greet = '¡Hola ' + firstName + '! 👋 Veo que te interesa el ' + sourceVeh +
-                    '. Pregúntame lo que quieras: precio final, financiación, peritaje, ' +
-                    'agendar una visita, o lo que necesites.';
+            greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
+                    'Veo que te interesa el ' + sourceVeh + '. Pregúntame lo que quieras: ' +
+                    'precio final, financiación, peritaje, agendar una visita, o lo que necesites.';
         } else {
-            greet = '¡Hola ' + firstName + '! 👋 Soy tu Asistente Virtual de Altorra Cars. ' +
-                    'Pregúntame por el catálogo, financiación, citas, o lo que necesites. ' +
-                    'Si en algún momento querés hablar con un asesor humano, decime nomás.';
+            greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
+                    'Estoy aquí para ayudarte con info del catálogo, financiación, citas, peritaje y más. ' +
+                    'Si en algún momento querés hablar con un asesor humano, decímelo nomás.';
         }
         addMessage('bot', greet);
         applyGateVisibility();
@@ -1059,18 +1055,18 @@
                     escapeHtml(getAsesorInitials(asesor.nombre)) + '</span>';
             }
         } else {
-            titleEl.textContent = 'Asistente Virtual';
-            statusEl.textContent = 'Altorra Cars · respuesta inmediata';
-            avatarEl.innerHTML = AC_LOGO_SVG;
+            titleEl.textContent = 'ALTOR';
+            statusEl.textContent = 'Asistente Virtual IA · Altorra Cars';
+            avatarEl.innerHTML = ALTOR_AVATAR_HTML;
         }
     }
 
     function getAsesorInitials(name) {
-        if (!name) return 'AC';
+        if (!name) return 'AL';
         var parts = String(name).trim().split(/\s+/);
         var first = parts[0] ? parts[0].charAt(0) : '';
         var last = parts[parts.length - 1] ? parts[parts.length - 1].charAt(0) : '';
-        return (first + last).toUpperCase() || 'AC';
+        return (first + last).toUpperCase() || 'AL';
     }
 
     // (escapeHtml definido más abajo en el archivo)
@@ -1107,9 +1103,9 @@
         if (session.messages.length === 0) {
             box.innerHTML =
                 '<div class="cnc-bot-bubble cnc-welcome">' +
-                    '<strong>👋 ¡Hola!</strong> Soy el Concierge de Altorra Cars.' +
+                    '<strong>👋 ¡Hola! Soy ALTOR</strong>, el Asistente Virtual IA de Altorra Cars.' +
                     '<br><br>' +
-                    'Pregúntame sobre vehículos, financiación, citas o lo que necesites. Si quieres, puedo conectarte directo con un asesor humano.' +
+                    'Pregúntame sobre vehículos, financiación, citas, peritaje o lo que necesites. Si querés, puedo conectarte directo con un asesor humano.' +
                 '</div>';
             return;
         }

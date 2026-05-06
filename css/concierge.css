@@ -456,6 +456,35 @@
     .cnc-header-dropdown { animation: none; }
 }
 
+/* ─── Reset toast (feedback visual tras finalizar conversación) ─── */
+.cnc-reset-toast {
+    position: absolute;
+    top: 64px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-12px);
+    z-index: 20;
+    background: linear-gradient(135deg, #2d4a30, #1a2f1d);
+    color: #d4f5d8;
+    border: 1px solid rgba(120, 200, 130, 0.42);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35),
+                0 0 0 1px rgba(120, 200, 130, 0.12);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.32s cubic-bezier(0.34, 1.5, 0.55, 1);
+}
+.cnc-reset-toast--show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+    .cnc-reset-toast { transition: opacity 0.15s linear; transform: translateX(-50%); }
+    .cnc-reset-toast--show { transform: translateX(-50%); }
+}
+
 /* ─── Quick Replies (Propuesta #2 §22) ──────────────────────── */
 .cnc-quick-replies {
     display: flex;

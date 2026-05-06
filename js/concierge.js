@@ -1660,36 +1660,95 @@
      * handleClientResetSession — UX flow cuando el cliente clickea
      * "Finalizar conversación" en el menú ⋮ del header.
      *
-     * Flujo:
-     *   1. Confirm dialog (con texto claro de qué va a pasar).
-     *   2. Si chat ya tiene doc en Firestore (`_chatDocCreated`),
-     *      escribe `status:'closed'` + `closedBy:'client'`. Esto sirve
-     *      para que el admin vea la conversación cerrada en su bandeja
-     *      y para tener trazabilidad de quién cerró.
-     *      NOTA: NO inserta mensaje `from:'system'` desde el cliente —
-     *      la regla Firestore solo permite a editor+ crear ese tipo
-     *      (anti-impersonation). El cliente solo ve el reset local.
-     *   3. Llama `resetSession()` que limpia localStorage + listeners
-     *      + genera nuevo sessionId + re-renderiza el welcome.
+     * Tres caminos según el estado del cliente:
+     *
+     * A) ANÓNIMO con profile previo (lead-gate completado antes):
+     *    Le preguntamos si sus datos siguen siendo correctos:
+     *      - Sí → preservar profile, solo limpiar mensajes/listeners
+     *        (no vuelve a pedir el gate)
+     *      - No → reset completo, vuelve a aparecer el gate vacío
+     *
+     * B) LOGUEADO (profile viene del auth):
+     *    Reset completo. loadProfileFromAuth() re-aplica el profile
+     *    automáticamente (no le preguntamos porque su info viene del
+     *    perfil que él mismo gestiona en /perfil.html).
+     *
+     * C) ANÓNIMO sin profile (primera vez):
+     *    Reset normal con confirm genérico.
+     *
+     * En todos los casos cancelamos listeners ANTES de escribir
+     * status:'closed' a Firestore. Esto evita el race condition donde
+     * el listener parent recibía el snapshot del cierre y disparaba
+     * applyClosedState() pisando nuestro reset local.
      */
     function handleClientResetSession() {
+        var isAnonymous = !window.auth || !window.auth.currentUser ||
+                          window.auth.currentUser.isAnonymous;
+        var hasGuestProfile = isAnonymous && session.profile &&
+                              (session.profile.nombre || session.profile.correo);
+
+        // CASO A: anónimo con datos previos → confirmar si siguen vigentes
+        if (hasGuestProfile) {
+            var p = session.profile;
+            var fullName = (p.nombre + (p.apellido ? ' ' + p.apellido : '')).trim() ||
+                           session.nombre || 'sin nombre';
+            var phone = p.celular || session.telefono || 'sin teléfono';
+            var email = p.correo || session.email || 'sin correo';
+            var msg =
+                'Antes de empezar de nuevo, ¿estos siguen siendo tus datos?\n\n' +
+                '👤  ' + fullName + '\n' +
+                '📱  ' + phone + '\n' +
+                '📧  ' + email + '\n\n' +
+                '✅  Aceptar = Sí, son correctos (continuar)\n' +
+                '✏️  Cancelar = No, quiero actualizarlos';
+            var keepData = confirm(msg);
+            // Cancelar listeners ANTES de cualquier Firestore write
+            cancelChatListeners();
+            // Marcar status:closed en Firestore (best-effort, no bloquea)
+            markChatClosedInFirestore();
+            if (keepData) {
+                resetSession({ preserveProfile: true });
+            } else {
+                resetSession({ preserveProfile: false });
+            }
+            return;
+        }
+
+        // CASO B/C: confirm genérico
         if (!confirm('¿Finalizar esta conversación?\n\nSe va a limpiar el chat actual y vas a empezar uno nuevo. Los mensajes anteriores quedan guardados de tu lado, pero no podrás continuarlos.')) {
             return;
         }
-        // Marcar la sesión actual como cerrada en Firestore (best-effort —
-        // no bloquea el reset si falla por red).
-        if (_chatDocCreated && session.sessionId && window.db) {
-            window.db.collection('conciergeChats').doc(session.sessionId).set({
-                status: 'closed',
-                closedAt: new Date().toISOString(),
-                closedBy: 'client',
-                lastMessage: '✓ Cliente finalizó la conversación',
-                lastMessageAt: new Date().toISOString()
-            }, { merge: true }).catch(function (err) {
-                console.warn('[Concierge] Could not mark session closed:', err.message);
-            });
-        }
-        resetSession();
+        cancelChatListeners();
+        markChatClosedInFirestore();
+        resetSession({ preserveProfile: false });
+    }
+
+    /**
+     * Cancela inmediatamente los listeners de Firestore. Llamado ANTES
+     * de cualquier write para evitar race conditions donde el listener
+     * parent recibe el snapshot del cierre y dispara applyClosedState
+     * pisando nuestro reset local.
+     */
+    function cancelChatListeners() {
+        if (_firestoreUnsub) { try { _firestoreUnsub(); } catch (e) {} _firestoreUnsub = null; }
+        if (_firestoreParentUnsub) { try { _firestoreParentUnsub(); } catch (e) {} _firestoreParentUnsub = null; }
+    }
+
+    /**
+     * Marca el chat como cerrado en Firestore (best-effort).
+     * Si falla por red o permisos, no bloquea el reset local.
+     */
+    function markChatClosedInFirestore() {
+        if (!_chatDocCreated || !session.sessionId || !window.db) return;
+        window.db.collection('conciergeChats').doc(session.sessionId).set({
+            status: 'closed',
+            closedAt: new Date().toISOString(),
+            closedBy: 'client',
+            lastMessage: '✓ Cliente finalizó la conversación',
+            lastMessageAt: new Date().toISOString()
+        }, { merge: true }).catch(function (err) {
+            console.warn('[Concierge] Could not mark session closed:', err.message);
+        });
     }
 
     /**
@@ -1697,20 +1756,43 @@
      * Limpia localStorage, refs locales, listeners de Firestore, y
      * re-renderiza el panel desde cero (gate o greeting según contexto).
      */
-    function resetSession() {
-        // Cerrar listeners activos
-        if (_firestoreUnsub) { try { _firestoreUnsub(); } catch (e) {} _firestoreUnsub = null; }
-        if (_firestoreParentUnsub) { try { _firestoreParentUnsub(); } catch (e) {} _firestoreParentUnsub = null; }
+    function resetSession(opts) {
+        opts = opts || {};
+        var preserveProfile = opts.preserveProfile === true;
+
+        // Snapshot del profile actual ANTES de tocar la sesión, para poder
+        // re-aplicarlo en continueResetUI si preserveProfile=true. Esto cubre
+        // el caso anónimo donde el cliente confirmó "estos siguen siendo mis
+        // datos" en el confirm de handleClientResetSession.
+        var preserved = preserveProfile ? {
+            profile: session.profile,
+            gateCompleted: !!session.gateCompleted,
+            uid: session.uid,
+            nombre: session.nombre,
+            email: session.email,
+            telefono: session.telefono,
+            level: session.level || 0
+        } : null;
+
+        // Cerrar listeners activos (defense-in-depth: handleClientResetSession
+        // ya los canceló, pero si resetSession se invoca desde otro path
+        // — ej. cnc-closed-block CTA "Iniciar nueva" — los cancelamos acá)
+        cancelChatListeners();
+
         // Limpiar localStorage
         try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+
         // Reset refs
         _chatDocCreated = false;
         _lastSyncedMsgIds = {};
         _leadCreated = false;
         _asesorJoinedAnnounced = false;
+
         // Reload sesión limpia (genera nuevo sessionId)
         session = loadSession();
-        // Re-aplicar perfil del auth si user logueado
+
+        // Re-aplicar perfil del auth si user logueado (siempre — auth profile
+        // es source of truth para usuarios registrados, no necesita confirm)
         if (typeof loadProfileFromAuth === 'function') {
             loadProfileFromAuth().then(function (profile) {
                 if (profile) {
@@ -1728,17 +1810,57 @@
         } else {
             continueResetUI();
         }
+
         function continueResetUI() {
-            // Limpiar y re-renderizar
-            var msgsBox = document.getElementById('cncMessages');
-            if (msgsBox) msgsBox.innerHTML = '';
+            // Si el caller pidió preservar el profile (caso anónimo "datos OK"),
+            // restauramos los campos guardados PERO solo si auth no aportó
+            // un profile más fresco (caller logueado).
+            if (preserved && !session.profile) {
+                session.profile = preserved.profile;
+                session.gateCompleted = preserved.gateCompleted;
+                session.uid = preserved.uid;
+                session.nombre = preserved.nombre;
+                session.email = preserved.email;
+                session.telefono = preserved.telefono;
+                session.level = preserved.level;
+                saveSession(session);
+            }
+
+            // Cleanup defensivo del DOM: bloque "conversation closed" + dropdown ⋮
             var closedBlock = document.getElementById('cncClosedBlock');
             if (closedBlock) closedBlock.remove();
+            var dropdown = document.getElementById('cncHeaderDropdown');
+            if (dropdown) dropdown.setAttribute('hidden', '');
+            var menuBtn = document.getElementById('cncHeaderMenuBtn');
+            if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+
+            // Limpiar mensajes del DOM antes de re-renderizar
+            var msgsBox = document.getElementById('cncMessages');
+            if (msgsBox) msgsBox.innerHTML = '';
+
+            // Aplicar UI states (orden: closed → gate → header → mensajes)
             applyClosedState();           // restaura input/quickActions
             applyGateVisibility();         // muestra gate si no logueado
             applyAsesorHeader();           // resetea header a ALTOR
-            // Re-mostrar welcome si la sesión es nueva
-            renderMessages();
+            renderMessages();              // muestra welcome bubble si messages=[]
+
+            // Toast de confirmación visual al cliente
+            var toastEl = document.getElementById('cncResetToast');
+            if (!toastEl) {
+                toastEl = document.createElement('div');
+                toastEl.id = 'cncResetToast';
+                toastEl.className = 'cnc-reset-toast';
+                toastEl.textContent = '✓ Conversación reiniciada';
+                var panel = document.getElementById('altorra-concierge');
+                if (panel) panel.appendChild(toastEl);
+            }
+            toastEl.classList.remove('cnc-reset-toast--show');
+            // Force reflow + add class para animar
+            void toastEl.offsetWidth;
+            toastEl.classList.add('cnc-reset-toast--show');
+            setTimeout(function () {
+                if (toastEl) toastEl.classList.remove('cnc-reset-toast--show');
+            }, 2200);
         }
     }
 

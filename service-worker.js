@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260507010000'; // §22 Offline Ultra Brain — Levenshtein-Damerau + sinónimos + memory window + dynamic inventory search + TF-IDF + quick replies + feedback loop + 3 fixes UX
+const CACHE_VERSION = 'v20260507020000'; // Fix reset chat: cancel listeners pre-write + preserveProfile flag + confirm datos para guests + reset toast
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

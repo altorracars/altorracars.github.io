@@ -6935,3 +6935,144 @@ body.sidebar-collapsed .sidebar-collapse-btn i {
     border-top: 1px solid rgba(184, 150, 88, 0.15);
     background: rgba(0, 0, 0, 0.25);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   §22 Capa E — Panel "Lo que no entendí" (admin-unmatched.js)
+   Lista de queries que el bot rule-based no respondió. Admin las
+   revisa y promueve a FAQ con un click.
+   ═══════════════════════════════════════════════════════════════ */
+
+.unmatched-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-default);
+    margin-bottom: 16px;
+}
+.unmatched-filter-chips {
+    display: flex;
+    gap: 6px;
+}
+.unmatched-chip {
+    background: transparent;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.unmatched-chip:hover {
+    background: rgba(184, 150, 88, 0.08);
+    border-color: rgba(184, 150, 88, 0.32);
+    color: var(--text-primary);
+}
+.unmatched-chip.is-active {
+    background: rgba(184, 150, 88, 0.18);
+    border-color: rgba(184, 150, 88, 0.45);
+    color: var(--brand-primary);
+}
+.unmatched-count {
+    background: rgba(184, 150, 88, 0.20);
+    color: var(--brand-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 999px;
+    min-width: 22px;
+    text-align: center;
+}
+.unmatched-chip.is-active .unmatched-count {
+    background: var(--brand-primary);
+    color: #1a140a;
+}
+
+.unmatched-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.unmatched-entry {
+    background: var(--bg-card, rgba(0, 0, 0, 0.20));
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.unmatched-entry:hover {
+    border-color: rgba(184, 150, 88, 0.40);
+    transform: translateY(-1px);
+}
+.unmatched-entry-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.unmatched-entry-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    font-size: 0.82rem;
+}
+.unmatched-time {
+    color: var(--text-tertiary);
+    font-size: 0.78rem;
+}
+.unmatched-source {
+    color: var(--text-tertiary);
+    font-size: 0.78rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.unmatched-source [data-lucide] {
+    width: 12px; height: 12px;
+}
+.unmatched-entry-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+.unmatched-query {
+    color: var(--text-primary);
+    font-size: 1.04rem;
+    line-height: 1.5;
+    margin-bottom: 8px;
+    font-style: italic;
+    padding: 8px 12px;
+    background: rgba(184, 150, 88, 0.06);
+    border-left: 3px solid var(--brand-primary);
+    border-radius: 6px;
+    quotes: '“' '”';
+}
+.unmatched-query::before { content: open-quote; }
+.unmatched-query::after { content: close-quote; }
+.unmatched-keywords {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+.unmatched-keyword {
+    background: rgba(184, 150, 88, 0.10);
+    color: var(--brand-primary);
+    font-size: 0.74rem;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .unmatched-entry-head { flex-direction: column; align-items: flex-start; }
+    .unmatched-entry-actions { width: 100%; flex-wrap: wrap; }
+}

@@ -64,6 +64,25 @@
             .orderBy('lastMessageAt', 'desc')
             .limit(100)
             .onSnapshot(function (snap) {
+                // BUG #3 FIX — Detectar removed events ANTES de reconstruir _chats.
+                // Si el chat actualmente abierto en el panel derecho fue eliminado
+                // por OTRO admin (en otra tab/dispositivo), tenemos que limpiar
+                // la UI inmediatamente para evitar "ghost UI" (panel mostrando
+                // un chat que ya no existe en Firestore).
+                snap.docChanges().forEach(function (change) {
+                    if (change.type === 'removed' && change.doc.id === _activeSessionId) {
+                        _activeSessionId = null;
+                        if (_messagesUnsub) {
+                            try { _messagesUnsub(); } catch (e) {}
+                            _messagesUnsub = null;
+                        }
+                        renderChatDetail(null, []);
+                        if (AP.toast) {
+                            AP.toast('La conversación abierta fue eliminada por otro administrador.', 'warning');
+                        }
+                    }
+                });
+
                 _chats = [];
                 snap.forEach(function (doc) {
                     _chats.push(Object.assign({ _docId: doc.id }, doc.data()));

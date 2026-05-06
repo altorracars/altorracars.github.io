@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506030000'; // header-fix v5 DEFINITIVO — listeners directos en botones + togglePanel público + MutationObserver
+const CACHE_VERSION = 'v20260506040000'; // RCA mode — telemetría temporal en admin-header-fix.js, sin parches
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

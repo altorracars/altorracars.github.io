@@ -224,48 +224,29 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-       Auto-refresh on DOMContentLoaded
+       Auto-refresh on DOMContentLoaded (initial pass only)
+       ───────────────────────────────────────────────────────────
+       NOTA HISTÓRICA: aquí existía un MutationObserver global que
+       observaba todo document.body con childList+subtree y llamaba
+       lucide.createIcons() ante cualquier mutación.
+       Esto causaba un bug critico: durante un click, si CUALQUIER
+       cosa modificaba el DOM (un toast, un realtime listener, un
+       update de badge), el observer reemplazaba los <svg> de Lucide
+       mientras el browser estaba procesando mousedown→mouseup. El
+       browser cancelaba el evento `click` porque el target del
+       mouseup ya no era el mismo nodo que el del mousedown.
+       Síntoma: clicks en el CENTRO de los botones (donde estan los
+       icons SVG) no se disparaban; en las esquinas sí.
+       Solución: refresh manual explícito desde cada callsite que
+       inyecte HTML con [data-lucide]. Patrones disponibles:
+         - AltorraIcons.refresh(scope)
+         - AP.refreshIcons() (admin-state.js)
+         - lucide.createIcons({ context: el })
        ═══════════════════════════════════════════════════════════ */
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () { refresh(); });
     } else {
         refresh();
-    }
-
-    /* ═══════════════════════════════════════════════════════════
-       Re-refresh whenever new content is added that has data-lucide
-       Use MutationObserver lite — only triggers on new elements with
-       [data-lucide] descendants, debounced 50ms.
-       ═══════════════════════════════════════════════════════════ */
-    var refreshTimer = null;
-    function scheduleRefresh() {
-        clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(refresh, 50);
-    }
-    if (typeof MutationObserver !== 'undefined') {
-        try {
-            var observer = new MutationObserver(function (mutations) {
-                for (var i = 0; i < mutations.length; i++) {
-                    var m = mutations[i];
-                    for (var j = 0; j < m.addedNodes.length; j++) {
-                        var n = m.addedNodes[j];
-                        if (n.nodeType === 1) {
-                            if (n.matches && n.matches('[data-lucide]')) { scheduleRefresh(); return; }
-                            if (n.querySelector && n.querySelector('[data-lucide]')) { scheduleRefresh(); return; }
-                        }
-                    }
-                }
-            });
-            // Observe body — start when ready
-            var startObs = function () {
-                if (document.body) observer.observe(document.body, { childList: true, subtree: true });
-            };
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', startObs);
-            } else {
-                startObs();
-            }
-        } catch (e) { /* defensive */ }
     }
 
     window.AltorraIcons = {

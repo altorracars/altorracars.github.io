@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260506130000'; // ALTOR FAB flotante — sin circulo dorado, drop-shadow respeta canal alpha, animaciones float+glow
+const CACHE_VERSION = 'v20260506140000'; // ALTOR mas grande + spin feliz on hover + CTA bubble rotativo cada 38s
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

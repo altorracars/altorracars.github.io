@@ -9508,3 +9508,246 @@ Una semana despues de la migracion, verificar:
 > pasos en orden. NO saltarse el paso de SSL Full (Paso 5) — es la
 > causa #1 de problemas. Confirmar con el usuario en cada paso critico
 > antes de proceder.
+
+---
+
+## 19. Metodología de Diagnóstico — RCA Mode (Root Cause Analysis)
+
+> Esta sección documenta la metodología que **resolvió en una sola
+> sesión** un bug que 5 commits anteriores no habían podido arreglar
+> (clicks bloqueados en centro de botones del admin, ver §8 → "RCA
+> STRUCTURAL FIX" 2026-05-06).
+>
+> El patrón "parche tras parche sin diagnosticar" es un anti-patrón
+> caro: agota tokens, cada parche introduce nuevos handlers
+> competidores, y el síntoma se vuelve más confuso. Esta metodología
+> obliga a detenerse y entender ANTES de modificar.
+
+### 19.1 — Cuándo aplicar RCA Mode
+
+Activá esta metodología cuando se cumple **al menos uno** de estos:
+
+| Trigger | Ejemplo |
+|---|---|
+| Más de 2 commits intentando arreglar el mismo bug sin éxito | header-fix v1 → v2 → v3 |
+| El síntoma cambia con cada parche pero no desaparece | "ahora funciona el mic pero no el bell" |
+| Hay sospecha de que la hipótesis previa es incorrecta | "los listeners están bindeados pero igual no responde" |
+| El usuario pierde confianza en los cambios | "te agotas los tokens en cada commit" |
+| El bug es intermitente o requiere "muchos clicks" | comportamiento no determinístico |
+| Hay datos contradictorios en los reportes del usuario | "esquinas funcionan pero centro no" |
+
+### 19.2 — La directiva (template de prompt para invocar el modo)
+
+Cuando el usuario quiera activar este modo, le pide a Claude algo así
+(plantilla basada en el prompt que resolvió el bug histórico):
+
+```
+Directiva de Diagnóstico y Corrección Estricta (RCA Mode)
+
+Contexto del Sistema:
+Estás trabajando sobre el repositorio de Altorra Cars. Se han
+detectado fallos que commits anteriores no han logrado resolver de
+fondo. Actúa como un Ingeniero de Software Principal enfocado en
+la estabilidad estructural.
+
+Problemas a Resolver:
+[lista cada problema con SÍNTOMA + EVIDENCIA observada]
+
+Restricción:
+Elimina cualquier rastro de [parches previos]. No quiero un "v6" de
+un parche; busca el elemento CSS/DOM/JS que es la causa raíz real.
+
+Protocolo de Ejecución:
+
+Fase de Escaneo:
+- Usa grep o lectura directa para analizar evidencia
+- NO asumas nada, busca el contenedor/listener/regla específica
+- Mapea jerarquía completa (z-index, position, listeners, mutaciones)
+
+Fase de Validación:
+- Si no encuentras el bloqueador con escaneo, INYECTA un log temporal
+  de telemetría
+- Pide al usuario datos específicos (clicks en posiciones específicas,
+  output de consola, screenshots)
+
+Fase de Reporte:
+- Antes de cualquier commit de solución, entregá un reporte de
+  Causa Raíz confirmando los puntos
+- Lista exactamente qué bloquea, qué línea, por qué falla
+
+🛑 STOP: Una vez tengas el diagnóstico, detente y pregunta:
+"He identificado las causas raíz, ¿autorizas la limpieza de parches
+y la implementación de la solución estructural?"
+```
+
+### 19.3 — Las 4 fases obligatorias
+
+#### FASE 1 — Escaneo
+
+**Objetivo**: mapear todos los elementos relevantes con evidencia, no
+con intuición.
+
+**Herramientas mínimas**:
+- `grep -rn` para encontrar definiciones, listeners, selectors
+- `Read` con offset/limit para inspeccionar código exacto
+- Contar ocurrencias para detectar acumulación
+  (ej: "43 setIntervals corriendo")
+
+**Reglas**:
+- ❌ NO asumir que conocés la causa antes de leer.
+- ❌ NO empezar a modificar archivos en esta fase.
+- ✅ Listar TODOS los candidatos posibles, no solo el primero
+  sospechoso.
+- ✅ Verificar el patrón opuesto (¿qué SÍ funciona y por qué?). Esto
+  delimita el problema. Ej: "esquinas funcionan pero centro no" →
+  algo del tamaño del icono cubre el centro.
+
+#### FASE 2 — Validación con telemetría
+
+**Cuándo**: si la Fase 1 no produjo una causa raíz confirmada con
+evidencia.
+
+**Cómo**:
+1. Inyectar un capture-phase listener o sensor minimal en el código
+   que reporte a consola exactamente qué pasa en runtime.
+2. Pedir al usuario datos PRECISOS (ej: "click 6 veces — 3 posiciones
+   × 2 botones — y pegame el log de cada uno").
+3. Cruzar los logs con la lista de candidatos de Fase 1.
+4. Identificar el elemento o pattern exacto culpable.
+
+**Ejemplo real** (RCA Fix 2026-05-06):
+```js
+document.addEventListener('click', function(e) {
+    var btn = findClickedHeaderButton(e);
+    if (!btn) return;
+    console.warn('[RCA-DIAG] click sobre área del botón');
+    console.log('Stack en el punto:', document.elementsFromPoint(e.clientX, e.clientY));
+    console.log('e.target:', e.target);
+    if (btn.contains(e.target)) console.log('✅ target dentro del botón');
+    else console.error('❌ target FUERA — overlay culpable:', path[0]);
+}, true);
+```
+
+Resultado: 3 de 6 clicks (los del centro) NO generaron NINGÚN log →
+el evento `click` no se disparaba → causa raíz era una mutación DOM,
+no un overlay.
+
+**Reglas**:
+- ❌ NO bindear handlers "por si acaso" durante la fase de telemetría.
+- ❌ NO modificar comportamiento; solo OBSERVAR.
+- ✅ El sensor debe ser puro: capture phase, sin preventDefault, sin
+  stopPropagation.
+- ✅ Pedir datos antes de inferir conclusiones. La intuición sin datos
+  fue lo que falló en los 5 commits previos.
+
+#### FASE 3 — Reporte de Causa Raíz
+
+**Antes de tocar código de solución**, entregar al usuario un reporte
+estructurado con:
+
+| Item | Contenido |
+|---|---|
+| **Qué bloquea** | El elemento/listener/regla EXACTO con archivo:línea |
+| **Por qué bloquea** | Mecanismo técnico (mutación DOM, race condition, regla incorrecta, etc.) |
+| **Evidencia** | Logs / código citado / cómo se mapea cada síntoma a la causa |
+| **Plan estructural** | Qué eliminar, qué agregar, qué patches previos quitar |
+| **Riesgos** | Qué podría romperse al aplicar el fix |
+
+**Formato sugerido del reporte**:
+```
+## 🎯 CAUSA RAÍZ CONFIRMADA
+
+[Mecanismo técnico explicado en 2-3 líneas]
+
+## El culpable: [archivo:líneas]
+
+[Bloque de código citado]
+
+**Lo que pasa**:
+1. [paso 1]
+2. [paso 2]
+...
+
+**Por qué encaja con todos los síntomas**:
+| Síntoma | Explicación |
+|---|---|
+
+## Solución estructural (sin parches)
+1. [acción]
+2. [acción]
+3. [acción]
+```
+
+#### FASE 4 — STOP obligatorio + autorización
+
+**REGLA INVIOLABLE**: después del reporte, NO escribir código de
+solución hasta que el usuario diga explícitamente "sí, autorizo" o
+equivalente.
+
+Esto sirve para:
+- **Validar el diagnóstico**: el usuario puede aportar contexto que
+  ajuste el plan.
+- **Filtrar falsas convicciones**: a veces lo que parece causa raíz
+  es solo un síntoma intermedio.
+- **Mantener al usuario en control**: él autoriza la limpieza de
+  parches que pueden tener dependencias.
+
+**Ejemplo de STOP**:
+```
+🛑 STOP
+
+He identificado las causas raíz de los 3 puntos:
+[tabla resumen]
+
+¿Autorizás la limpieza de parches y la implementación
+de la solución estructural?
+```
+
+### 19.4 — Anti-patrones que esta metodología previene
+
+| Anti-patrón | Por qué pasa | Cómo lo previene RCA Mode |
+|---|---|---|
+| "Parche v1, v2, v3..." sin causa raíz | Bajo contexto + presión de respuesta rápida | Fase 1 obliga a escaneo previo; Fase 4 STOP impide commit sin autorización |
+| Listeners competidores acumulados | Cada parche agrega un nuevo handler que peleaba con los previos | Fase 3 reporte menciona qué quitar antes de agregar |
+| `stopPropagation` / `stopImmediatePropagation` defensivos | Asunción "algún listener está interfiriendo" | Fase 2 telemetría confirma SI hay interferencia o no antes de defenderse |
+| z-index 99999 forzado en elementos | Asunción "algún overlay tapa" sin verificar | Fase 1 lista TODOS los `position: fixed` con z-index alto y descarta los whitelisted |
+| `setInterval` de cleanup que corre cada N segundos | Asunción "algo se rompe periódicamente, hay que limpiar siempre" | Fase 2 telemetría revela si hay un disparador específico, no algo "ambiente" |
+| Confiar en "lo que sé" del codebase | Conocimiento previo puede estar desactualizado | Fase 1 obliga a leer el código actual, no recordarlo |
+
+### 19.5 — Cuándo NO usar RCA Mode
+
+Esta metodología tiene overhead. Si el bug es trivial y la causa es
+visible en el primer escaneo, no justifica las 4 fases. Ejemplos
+donde NO aplica:
+
+- Typo evidente en un selector.
+- Variable mal nombrada que el linter ya detecta.
+- Feature nueva sin código previo.
+- Configuración faltante (ej: API key sin setear).
+
+Aplica a partir del **segundo intento fallido** del mismo bug, o
+cuando el bug es **intermitente** o **el síntoma no encaja con la
+hipótesis obvia**.
+
+### 19.6 — Resumen de principios
+
+1. **No asumir, observar**. Logs > intuición.
+2. **Verificar el patrón opuesto**. Lo que SÍ funciona delimita
+   lo que NO.
+3. **Escaneo antes que modificación**. Saber qué hay antes de
+   tocar.
+4. **Telemetría antes que parche**. Confirmar el mecanismo
+   exacto.
+5. **Reporte antes que solución**. Validar el diagnóstico con
+   el usuario.
+6. **STOP antes que código**. La autorización filtra falsas
+   convicciones.
+7. **Limpieza estructural > capa de defensa**. Eliminar la causa
+   raíz; no agregar otro handler que la compense.
+
+> **Para Claude**: cuando un usuario reporte un bug que ya tuvo
+> intentos previos fallidos, considerá invocar este modo
+> automáticamente. Antes de escribir el primer Edit, leé esta
+> sección y aplicá las 4 fases. La metodología funcionó:
+> resolvió en 1 sesión un bug que 5 commits anteriores no
+> habían podido arreglar.

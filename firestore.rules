@@ -91,7 +91,42 @@ service cloud.firestore {
     // ========== USUARIOS ==========
     match /usuarios/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
-      allow create, update, delete: if isSuperAdmin();
+
+      // Super admin gestiona todo el doc del usuario (alta, baja, rol, bloqueado, etc.)
+      allow create, delete: if isSuperAdmin();
+
+      // §23 FASE 7 — Self-service diff-keys.
+      // El propio usuario (admin/editor) puede actualizar SOLO su lista
+      // de dispositivos de confianza, su flag 2FA propio, su teléfono 2FA,
+      // su timestamp de último acceso, y sus tokens FCM (Sprint 8).
+      //
+      // Esto SOLUCIONA el bug "trusted devices no funcionan para editors":
+      // antes solo super_admin podía escribir, así que saveDeviceTrust()
+      // fallaba silenciosamente con permission-denied y el editor recibía
+      // el prompt 2FA en cada refresh.
+      //
+      // GARANTÍAS DE SEGURIDAD (campos PROHIBIDOS para self-update):
+      //   - rol: editor NO puede escalar a super_admin
+      //   - email: cambios sensibles solo super_admin
+      //   - nombre: idem
+      //   - bloqueado: editor NO puede auto-desbloquearse
+      //   - estado: idem
+      //   - habilitado2FA puede editarse por self (toggle propio)
+      //
+      // Patrón: diff().affectedKeys().hasOnly([whitelist]) garantiza
+      // que la lista de campos modificados es subconjunto del array.
+      allow update: if isSuperAdmin()
+        || (request.auth.uid == userId &&
+            request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly([
+                    'trustedDevices',     // self-management de dispositivos
+                    'ultimoAcceso',       // timestamp last login
+                    'lastLoginAt',        // alias legacy
+                    'habilitado2FA',      // toggle propio del 2FA
+                    'telefono2FA',        // self-update del teléfono 2FA
+                    'prefijo2FA',         // self-update prefijo país
+                    'fcmTokens'           // tokens FCM Web Push (Sprint 8)
+                ]));
 
       // ========== USER DRAFTS (subcollection) ==========
       match /drafts/{draftId} {
@@ -356,17 +391,29 @@ service cloud.firestore {
             get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.userId == request.auth.uid ||
             get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.userId == null
           ));
-        // Cualquiera autenticado (cliente o asesor) puede escribir mensajes,
-        // pero el campo `from` debe ser coherente con su rol:
-        //   from: 'user' o 'bot' → cualquiera (cliente escribe)
+        // §23 FASE 5 — Cierre bidireccional INMUTABLE.
+        // Si el parent.status == 'closed', NADIE puede crear messages
+        // excepto super_admin (override de auditoría / reapertura).
+        // Esto garantiza que un chat cerrado quede como registro
+        // histórico inmutable tanto para el cliente como para el asesor.
+        //
+        // Roles permitidos por tipo de from:
+        //   from: 'user' o 'bot' → cualquiera autenticado
         //   from: 'asesor'       → solo isEditorOrAbove
         //   from: 'system'       → solo isEditorOrAbove (closeChat/reopenChat,
         //                          handoff a asesor, etc. — anti-impersonation)
-        allow create: if request.auth != null && (
-          request.resource.data.from in ['user', 'bot'] ||
-          (request.resource.data.from == 'asesor' && isEditorOrAbove()) ||
-          (request.resource.data.from == 'system' && isEditorOrAbove())
-        );
+        allow create: if request.auth != null
+          && (
+            // BLOQUEO BIDIRECCIONAL: chat cerrado solo super_admin
+            // puede agregar mensajes (override / reapertura)
+            get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.status != 'closed'
+            || isSuperAdmin()
+          )
+          && (
+            request.resource.data.from in ['user', 'bot']
+            || (request.resource.data.from == 'asesor' && isEditorOrAbove())
+            || (request.resource.data.from == 'system' && isEditorOrAbove())
+          );
         // Mensajes son inmutables (historial limpio)
         allow delete: if isSuperAdmin();
       }

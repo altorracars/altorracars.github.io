@@ -452,14 +452,29 @@
         e.preventDefault();
         hideMsg('registerMessage');
 
-        var nombre  = ($id('regNombre').value  || '').trim();
-        var email   = ($id('regEmail').value   || '').trim();
-        var pass    = ($id('regPassword').value || '');
-        var confirm = ($id('regConfirm').value  || '');
-        var terms   = $id('regTerms').checked;
+        var nombre   = ($id('regNombre').value   || '').trim();
+        var email    = ($id('regEmail').value    || '').trim();
+        var prefijo  = ($id('regPrefijo').value  || '+57');
+        var telefono = ($id('regTelefono').value || '').trim();
+        var cedulaEl = $id('regCedula');
+        var cedula   = cedulaEl ? (cedulaEl.value || '').trim() : '';
+        var pass     = ($id('regPassword').value || '');
+        var confirm  = ($id('regConfirm').value  || '');
+        var terms    = $id('regTerms').checked;
 
         if (!nombre || !email || !pass || !confirm) {
             showMsg('registerMessage', 'Completa los campos obligatorios.', 'error');
+            return;
+        }
+        // Cédula obligatoria — necesaria para financiación, peritaje, consignación
+        if (cedulaEl && !/^[0-9]{5,12}$/.test(cedula)) {
+            showMsg('registerMessage', 'La cédula es obligatoria (solo números, 5-12 dígitos).', 'error');
+            cedulaEl.classList.add('is-error');
+            return;
+        }
+        // Teléfono obligatorio (antes era opcional)
+        if (!telefono || !/^[0-9]{7,15}$/.test(telefono)) {
+            showMsg('registerMessage', 'El teléfono es obligatorio (solo números).', 'error');
             return;
         }
         if (pass !== confirm) {
@@ -481,9 +496,6 @@
             _shakeModal();
             return;
         }
-
-        var prefijo  = ($id('regPrefijo').value  || '+57');
-        var telefono = ($id('regTelefono').value || '').trim();
 
         _lockAuthControls(true);
         setLoading('registerSubmitBtn', true);
@@ -538,7 +550,8 @@
                 nombre: nombre,
                 email: email,
                 prefijo: prefijo,
-                telefono: telefono
+                telefono: telefono,
+                cedula: cedula
             });
         }).catch(function (err) {
             var msg = friendlyError(err);
@@ -578,6 +591,7 @@
                 email: data.email || '',
                 prefijo: data.prefijo || '+57',
                 telefono: data.telefono || '',
+                cedula: data.cedula || '',     // FASE 2.A — cédula persistida en perfil
                 favoritos: [],
                 vehiculosVistos: [],
                 creadoEn: new Date().toISOString(),

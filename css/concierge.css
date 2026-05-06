@@ -819,3 +819,62 @@
     width: 100%;
     height: 100%;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   FASE 1.B — Bloque de conversación cerrada
+   Aparece cuando session.closed = true (admin cerró el chat)
+   ═══════════════════════════════════════════════════════════ */
+.cnc-closed-block {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 22px 18px 18px;
+    background: linear-gradient(180deg, rgba(74,222,128,0.06) 0%, transparent 80%);
+    border-top: 1px solid rgba(74, 222, 128, 0.20);
+    text-align: center;
+}
+.cnc-closed-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cnc-closed-icon [data-lucide] { width: 24px; height: 24px; stroke-width: 2.4; }
+.cnc-closed-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e8d8b3;
+}
+.cnc-closed-sub {
+    font-size: 0.78rem;
+    color: rgba(232, 216, 179, 0.65);
+    line-height: 1.4;
+    max-width: 280px;
+}
+.cnc-closed-cta {
+    margin-top: 6px;
+    background: linear-gradient(135deg, #c9a663 0%, #b89658 50%, #9a7d44 100%);
+    color: #1a1500;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 9px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.cnc-closed-cta [data-lucide] { width: 14px; height: 14px; }
+.cnc-closed-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(201, 166, 99, 0.35);
+}
+.cnc-closed-cta:active { transform: scale(0.97); }

@@ -40,6 +40,7 @@
             { key: 'nombre',   label: 'Nombre',   check: function () { return !!(data.nombre || user.displayName); } },
             { key: 'email',    label: 'Correo',    check: function () { return !!(data.email || user.email); } },
             { key: 'telefono', label: 'Telefono',  check: function () { return !!data.telefono; } },
+            { key: 'cedula',   label: 'Cédula',   check: function () { return !!data.cedula; } },
             { key: 'ciudad',   label: 'Ciudad',    check: function () { return !!data.ciudad; } },
             { key: 'avatarURL', label: 'Foto de perfil', check: function () { return !!(data.avatarURL || (user.photoURL && user.photoURL.indexOf('googleusercontent') !== -1)); } }
         ];
@@ -438,6 +439,7 @@
                     '<div class="pf-row"><span class="pf-label"><i data-lucide="user"></i> Nombre</span><span class="pf-value">' + escapeHtml(name) + '</span></div>' +
                     '<div class="pf-row"><span class="pf-label"><i data-lucide="mail"></i> Correo</span><span class="pf-value">' + escapeHtml(email) + '</span></div>' +
                     '<div class="pf-row"><span class="pf-label"><i data-lucide="phone"></i> Telefono</span><span class="pf-value">' + (phone ? escapeHtml(phone) : '<span class="pf-value-empty">No registrado</span>') + '</span></div>' +
+                    '<div class="pf-row"><span class="pf-label"><i data-lucide="id-card"></i> Cédula</span><span class="pf-value">' + (data.cedula ? escapeHtml(data.cedula) : '<span class="pf-value-empty">No registrada</span>') + '</span></div>' +
                     '<div class="pf-row"><span class="pf-label"><i data-lucide="map-pin"></i> Ciudad</span><span class="pf-value">' + (city ? escapeHtml(city) : '<span class="pf-value-empty">No registrada</span>') + '</span></div>' +
                     '<div class="pf-btn-group"><button class="pf-btn pf-btn-outline" id="pfEditBtn"><i data-lucide="pencil"></i> Editar datos</button></div>' +
                 '</div>' +
@@ -454,6 +456,11 @@
                             '<input class="pf-input pf-input--prefixed" id="pfEditPhone" value="' + escapeHtml(data.telefono || '') + '" placeholder="300 123 4567" maxlength="10" inputmode="tel">' +
                         '</div>' +
                         '<span class="pf-field-hint" id="pfPhoneHint"></span>' +
+                    '</div>' +
+                    '<div class="pf-field">' +
+                        '<label>Cédula</label>' +
+                        '<input class="pf-input" id="pfEditCedula" value="' + escapeHtml(data.cedula || '') + '" placeholder="Solo números (sin puntos)" maxlength="12" inputmode="numeric">' +
+                        '<span class="pf-field-hint" id="pfCedulaHint">Necesaria para financiación, peritaje y consignación.</span>' +
                     '</div>' +
                     '<div class="pf-field">' +
                         '<label>Ciudad</label>' +
@@ -1595,6 +1602,8 @@
             $id('pfEditPhone').value = data.telefono || '';
             var cityEl = $id('pfEditCity');
             if (cityEl) cityEl.value = data.ciudad || '';
+            var cedEl = $id('pfEditCedula');
+            if (cedEl) cedEl.value = data.cedula || '';
             clearHints();
         });
 
@@ -1620,6 +1629,8 @@
             var newName = ($id('pfEditName').value || '').trim();
             var newPhone = ($id('pfEditPhone').value || '').replace(/\s/g, '').trim();
             var newCity = ($id('pfEditCity').value || '').trim();
+            var cedulaEl = $id('pfEditCedula');
+            var newCedula = cedulaEl ? (cedulaEl.value || '').trim() : (data.cedula || '');
 
             // Validate
             if (!newName || newName.length < 2) {
@@ -1636,17 +1647,27 @@
                 $id('pfEditPhone').focus();
                 return;
             }
+            if (newCedula && !/^[0-9]{5,12}$/.test(newCedula)) {
+                var ce = $id('pfCedulaHint');
+                if (ce) {
+                    ce.textContent = 'Cédula inválida (solo números, 5-12 dígitos)';
+                    ce.className = 'pf-field-hint pf-hint-error';
+                }
+                if (cedulaEl) cedulaEl.focus();
+                return;
+            }
 
             saveBtn.disabled = true;
             showAutoSave('saving');
 
-            var updates = { nombre: newName, telefono: newPhone, ciudad: newCity };
+            var updates = { nombre: newName, telefono: newPhone, ciudad: newCity, cedula: newCedula };
 
             window.db.collection('clientes').doc(user.uid).update(updates).then(function () {
                 user.updateProfile({ displayName: newName }).catch(function () {});
                 _userData.nombre = newName;
                 _userData.telefono = newPhone;
                 _userData.ciudad = newCity;
+                _userData.cedula = newCedula;
                 showAutoSave('saved');
                 _toast('Datos actualizados.', 'success');
                 renderAllSections(user, _userData);

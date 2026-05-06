@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260509010000'; // §24 Offline Ultra Brain 2.0 — Dual-Core (LLM intacto + Free Core repotenciado: Small Talk + Fuzzy 2.0 + Stems + N-grams + Memoria + Anáfora pendingChoice + DualCore router con Circuit Breaker + Transformers.js opt-in)
+const CACHE_VERSION = 'v20260509020000'; // HOTFIX 2FA: RecaptchaVerifier + PhoneAuthProvider con window.auth (Sprint 3-bis regresión)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

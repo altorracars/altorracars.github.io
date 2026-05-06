@@ -506,22 +506,25 @@
     // not complete, leaving the invisible widget in a broken state.
     function createRecaptchaVerifier(containerId) {
         cleanRecaptchaContainer(containerId);
+        // §23.10/§24 fix — pasar `window.auth` explícitamente como 3er arg.
+        // Sin esto el constructor usa la default app que YA NO EXISTE
+        // (renombrada a 'altorra-admin' en firebase-config.js Sprint 3-bis).
+        // Resultado del bug previo: SMS nunca completaba el flow porque
+        // el verifier apuntaba a un app fantasma → _2faVerificationId
+        // quedaba null → "Error: No verification ID" al verificar.
         var verifier = new firebase.auth.RecaptchaVerifier(containerId, {
             size: 'invisible',
             callback: function() { /* solved */ },
             'expired-callback': function() {
-                // reCAPTCHA expired — will be recreated on next send
                 console.warn('[2FA] reCAPTCHA expired, will refresh on next attempt');
             }
-        });
-        // Explicitly render so the Enterprise→v2 fallback completes
+        }, window.auth);
         return verifier.render().then(function() {
             return verifier;
         });
     }
 
     function send2FACode(phoneNumber) {
-        // Always create a fresh verifier to avoid stale/expired state
         if (_2faRecaptchaVerifier) {
             _2faRecaptchaVerifier.clear();
             _2faRecaptchaVerifier = null;
@@ -529,7 +532,9 @@
         return createRecaptchaVerifier('recaptcha-container')
             .then(function(verifier) {
                 _2faRecaptchaVerifier = verifier;
-                var provider = new firebase.auth.PhoneAuthProvider();
+                // §23.10/§24 fix — PhoneAuthProvider debe recibir window.auth
+                // (la instancia de auth de la app namespaced 'altorra-admin')
+                var provider = new firebase.auth.PhoneAuthProvider(window.auth);
                 return provider.verifyPhoneNumber(phoneNumber, _2faRecaptchaVerifier);
             })
             .then(function(verificationId) {
@@ -749,7 +754,8 @@
         return createRecaptchaVerifier('unlock-recaptcha-container')
             .then(function(verifier) {
                 _unlockRecaptchaVerifier = verifier;
-                var provider = new firebase.auth.PhoneAuthProvider();
+                // §23.10/§24 fix — pasar window.auth explícito (app namespaced)
+                var provider = new firebase.auth.PhoneAuthProvider(window.auth);
                 return provider.verifyPhoneNumber(phoneNumber, _unlockRecaptchaVerifier);
             })
             .then(function(verificationId) {

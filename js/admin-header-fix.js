@@ -1,28 +1,30 @@
 /**
- * ALTORRA CARS — Header Fix v3 (capture-phase, bulletproof)
- * ==========================================================
+ * ALTORRA CARS — Header Fix v4 (no-intercept, defensive only)
+ * ============================================================
  *
- * Garantiza que los 3 botones del header SIEMPRE respondan a clicks,
- * sin importar qué overlay invisible esté tapando el área.
+ * Los 3 botones del header tienen sus propios listeners nativos:
+ *   - #activityFeedTrigger: document listener en admin-activity-feed.js:540
+ *   - #headerNotifBell .altorra-bell: button listener en toast.js:1027
+ *   - #altorra-voice-btn: button listener en admin-voice.js:413
  *
- * Estrategia:
- *   1. Listener delegado en `document` con `capture: true` — intercepta
- *      el click en la PRIMERA fase del bubble path, ANTES de que
- *      cualquier overlay con z-index alto pueda capturarlo.
- *   2. Walks up el DOM desde event.target buscando uno de los 3 IDs
- *      conocidos. Si lo encuentra, ejecuta la acción y para la propagación.
- *   3. Cada botón tiene su `_headerBound` flag — primer click bindea
- *      reglas, siguientes solo ejecutan.
+ * Esos listeners SIEMPRE funcionan si el click llega al botón o al
+ * document. El problema reportado ("no funcionan a veces") es por
+ * overlays invisibles (z-index 9000+) que capturan el click antes
+ * de que llegue al document/botón.
  *
- * Botones gestionados:
- *   - #activityFeedTrigger     → AltorraActivityFeed.toggle
- *   - #headerNotifBell button  → notifyCenter.togglePanel
- *   - #altorra-voice-btn       → AltorraVoice.toggle
+ * Estrategia: defense-in-depth, sin interceptar:
+ *   1. Cleanup periódico de overlays huérfanos (z-index alto, sin
+ *      clase activa esperada → ocultar y desactivar pointer-events).
+ *   2. CSS z-index 99999 en los botones (en admin.css) — los pone
+ *      por encima de cualquier overlay.
+ *   3. NO bind nuevos handlers — los nativos funcionan solos.
+ *   4. Diagnostic tools para que el usuario reporte overlays
+ *      sospechosos cuando los botones fallen.
  *
  * Diagnostic:
- *   - window.__altorraHeaderDiag()   → reporte de estado
- *   - window.__altorraDebugClicks    → flag, si true loga cada click
- *   - window.__altorraClickPath(x,y) → lista elementos en (x,y)
+ *   window.__altorraHeaderDiag()   → reporte completo
+ *   window.__altorraDebugClicks    → loga cada click + path
+ *   window.__altorraClickPath(x,y) → lista elementos en (x,y)
  */
 (function () {
     'use strict';
@@ -30,80 +32,7 @@
     window.__altorraHeaderFixed = true;
 
     /* ═══════════════════════════════════════════════════════════
-       1. ACCIONES POR BOTÓN
-       ═══════════════════════════════════════════════════════════ */
-    var ACTIONS = {
-        'activityFeedTrigger': function () {
-            if (window.AltorraActivityFeed && window.AltorraActivityFeed.toggle) {
-                window.AltorraActivityFeed.toggle();
-            } else {
-                console.warn('[HeaderFix] AltorraActivityFeed no disponible');
-            }
-        },
-        'altorra-voice-btn': function () {
-            if (window.AltorraVoice && window.AltorraVoice.toggle) {
-                window.AltorraVoice.toggle();
-            } else {
-                console.warn('[HeaderFix] AltorraVoice no disponible');
-            }
-        }
-    };
-
-    function fireBellAction() {
-        // El bell de notify-center tiene su propio handler interno.
-        // Si por alguna razón no respondió, forzamos panel toggle.
-        if (window.notifyCenter && window.notifyCenter.togglePanel) {
-            window.notifyCenter.togglePanel();
-        } else {
-            console.warn('[HeaderFix] notifyCenter no disponible');
-        }
-    }
-
-    /* ═══════════════════════════════════════════════════════════
-       2. CAPTURE-PHASE LISTENER — intercepta ANTES de overlays
-       ═══════════════════════════════════════════════════════════ */
-    function handleCapturedClick(e) {
-        // Walk up desde target buscando un botón conocido
-        var el = e.target;
-        var maxDepth = 8;
-        while (el && el !== document.body && maxDepth-- > 0) {
-            // Check ID directo
-            if (el.id && ACTIONS[el.id]) {
-                e.stopPropagation();
-                e.preventDefault();
-                try { ACTIONS[el.id](); } catch (err) {
-                    console.error('[HeaderFix] Error en acción', el.id, err);
-                }
-                return;
-            }
-            // Bell: el button vive dentro de #headerNotifBell slot
-            if (el.id === 'headerNotifBell' || (el.parentElement && el.parentElement.id === 'headerNotifBell')) {
-                e.stopPropagation();
-                e.preventDefault();
-                try { fireBellAction(); } catch (err) {
-                    console.error('[HeaderFix] Error en bell action', err);
-                }
-                return;
-            }
-            // Bell: si el target está más profundo (icon dentro del button)
-            if (el.closest && el.closest('#headerNotifBell')) {
-                e.stopPropagation();
-                e.preventDefault();
-                try { fireBellAction(); } catch (err) {
-                    console.error('[HeaderFix] Error en bell action', err);
-                }
-                return;
-            }
-            el = el.parentElement;
-        }
-    }
-
-    // Capture: true es CRÍTICO — el click se atrapa en la fase de
-    // descenso del DOM tree, antes de cualquier handler en bubble phase.
-    document.addEventListener('click', handleCapturedClick, true);
-
-    /* ═══════════════════════════════════════════════════════════
-       3. CLEANUP DE OVERLAYS HUÉRFANOS — ocultar por seguridad
+       1. CLEANUP DE OVERLAYS HUÉRFANOS
        ═══════════════════════════════════════════════════════════ */
     var WHITELIST_IDS = [
         'altorra-concierge', 'altorra-concierge-btn',
@@ -125,6 +54,11 @@
         'sidebar-overlay', 'crm-detail-panel',
         'auth-modal-backdrop', 'altorra-auth-modal'
     ];
+    var ACTIVE_CLASSES = ['active', 'open', 'visible', 'aaf-open',
+                          'alt-palette-open', 'alt-voice-active',
+                          'is-active', 'cnc-open',
+                          'altorra-notify-center--open'];
+
     function hasProtectedClass(el) {
         for (var i = 0; i < WHITELIST_CLASSES.length; i++) {
             if (el.classList && el.classList.contains(WHITELIST_CLASSES[i])) return true;
@@ -144,11 +78,7 @@
             var z = parseInt(cs.zIndex, 10);
             if (isNaN(z) || z < 9000) return;
             if (cs.display === 'none' || cs.pointerEvents === 'none') return;
-            var activeClasses = ['active', 'open', 'visible', 'aaf-open',
-                                 'alt-palette-open', 'alt-voice-active',
-                                 'is-active', 'cnc-open',
-                                 'altorra-notify-center--open'];
-            if (activeClasses.some(function (c) { return el.classList.contains(c); })) return;
+            if (ACTIVE_CLASSES.some(function (c) { return el.classList.contains(c); })) return;
             // Sospechoso. Hide.
             el.style.pointerEvents = 'none';
             el.style.display = 'none';
@@ -157,7 +87,7 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-       4. DIAGNOSTIC TOOLS
+       2. DIAGNOSTIC TOOLS
        ═══════════════════════════════════════════════════════════ */
     window.__altorraClickPath = function (x, y) {
         var path = (document.elementsFromPoint && document.elementsFromPoint(x, y)) || [];
@@ -191,17 +121,31 @@
             apis: {
                 AltorraActivityFeed: !!window.AltorraActivityFeed,
                 notifyCenter: !!window.notifyCenter,
-                AltorraVoice: !!window.AltorraVoice
+                AltorraVoice: !!window.AltorraVoice,
+                bellMounted: !!document.querySelector('.altorra-bell'),
+                panelMounted: !!document.querySelector('.altorra-notify-center')
             },
-            captureHandler: 'installed (cannot inspect)',
             highZOverlays: []
         };
         ['activityFeedTrigger', 'headerNotifBell', 'altorra-voice-btn'].forEach(function (id) {
             var el = document.getElementById(id);
-            report.buttons[id] = el ? {
+            if (!el) {
+                report.buttons[id] = { exists: false };
+                return;
+            }
+            var rect = el.getBoundingClientRect();
+            // Test elementFromPoint en el centro del botón
+            var cx = rect.left + rect.width / 2;
+            var cy = rect.top + rect.height / 2;
+            var topEl = document.elementFromPoint(cx, cy);
+            var topInfo = topEl ? (topEl.tagName + (topEl.id ? '#' + topEl.id : '') +
+                                   (topEl.className ? '.' + (topEl.className + '').substr(0, 30) : '')) : 'null';
+            report.buttons[id] = {
                 exists: true,
-                rect: el.getBoundingClientRect()
-            } : { exists: false };
+                rect: rect,
+                topElementAtCenter: topInfo,
+                isCovered: topEl !== el && !el.contains(topEl) && !topEl.closest(el.id ? '#' + el.id : '__'),
+            };
         });
         Array.prototype.slice.call(document.body.children).forEach(function (el) {
             try {
@@ -225,7 +169,7 @@
     };
 
     /* ═══════════════════════════════════════════════════════════
-       5. INIT — cleanup puntual al cargar y a 2s/5s
+       3. INIT — cleanup puntual al cargar y a 2s/5s
        ═══════════════════════════════════════════════════════════ */
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', cleanupOverlays);
@@ -235,5 +179,5 @@
     setTimeout(cleanupOverlays, 2000);
     setTimeout(cleanupOverlays, 5000);
 
-    console.info('[HeaderFix] Capture-phase listener installed. Botones del header garantizados.');
+    console.info('[HeaderFix] v4 instalado — cleanup defensivo. Handlers nativos de cada botón se encargan de los clicks.');
 })();

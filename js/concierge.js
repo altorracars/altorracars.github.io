@@ -881,6 +881,28 @@
                         return;
                     }
 
+                    // F.3 — Mensajes proactivos del bot enviados desde Cloud Function
+                    // (proactiveEngagement). Los renderemos con clase distinta
+                    // para que se sientan como un nudge del bot, no respuesta.
+                    if (d.from === 'bot' && d.proactive) {
+                        var alreadyHaveProactive = session.messages.some(function (m) {
+                            return m.from === 'bot' && m.proactive && m.text === d.text;
+                        });
+                        if (!alreadyHaveProactive) {
+                            session.messages.push({
+                                from: 'bot',
+                                proactive: true,
+                                triggerType: d.triggerType || null,
+                                text: d.text,
+                                timestamp: new Date(d.timestamp).getTime(),
+                                _synced: true
+                            });
+                            saveSession(session);
+                            renderMessages();
+                        }
+                        return;
+                    }
+
                     // Mensajes del asesor
                     if (d.from === 'asesor') {
                         var alreadyHave = session.messages.some(function (m) {
@@ -1487,6 +1509,12 @@
             }
             var bubbleClass = m.from === 'user' ? 'cnc-user-bubble' :
                               m.from === 'asesor' ? 'cnc-asesor-bubble' : 'cnc-bot-bubble';
+            // F.3 — Proactive messages tienen un acento visual sutil
+            // (un brillito dorado tenue) para distinguirlos de respuestas
+            // a mensajes del cliente.
+            if (m.from === 'bot' && m.proactive) {
+                bubbleClass += ' cnc-proactive-bubble';
+            }
             var ctaHTML = '';
             if (m.cta && m.cta.action) {
                 ctaHTML = '<button class="cnc-bubble-cta" data-action="' + m.cta.action + '">' + m.cta.label + '</button>';

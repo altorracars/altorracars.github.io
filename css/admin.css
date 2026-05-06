@@ -6844,3 +6844,94 @@ body.sidebar-collapsed .sidebar-collapse-btn i {
     font-size: 0.82rem;
     color: var(--text-secondary, rgba(255,255,255,0.6));
 }
+
+/* ═══════════════════════════════════════════════════════════
+   F.1 — Summary IA overlay (admin-concierge)
+   ═══════════════════════════════════════════════════════════ */
+.cnc-summary-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.18s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.cnc-summary-card {
+    background: linear-gradient(180deg, #15110a 0%, #0d0a06 100%);
+    border: 1px solid rgba(184, 150, 88, 0.30);
+    border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.60);
+    width: 100%;
+    max-width: 560px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.cnc-summary-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(184, 150, 88, 0.18);
+    background: linear-gradient(180deg, rgba(184, 150, 88, 0.10) 0%, transparent 100%);
+}
+.cnc-summary-head h3 {
+    margin: 0;
+    color: #e8d8b3;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cnc-summary-head h3 [data-lucide] { width: 18px; height: 18px; color: #c9a663; }
+.cnc-summary-close {
+    background: transparent;
+    border: none;
+    color: rgba(232, 220, 192, 0.7);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+.cnc-summary-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.cnc-summary-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 20px;
+}
+.cnc-summary-meta {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.cnc-summary-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: rgba(232, 220, 192, 0.65);
+}
+.cnc-summary-meta [data-lucide] { width: 13px; height: 13px; }
+.cnc-summary-text {
+    color: #e8dcc0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+}
+.cnc-summary-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(184, 150, 88, 0.15);
+    background: rgba(0, 0, 0, 0.25);
+}

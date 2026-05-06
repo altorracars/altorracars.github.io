@@ -1,5 +1,6 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentWritten, onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
@@ -960,7 +961,7 @@ async function callGoogle(apiKey, model, system, messages, temperature, maxToken
  * Construye el system prompt final inyectando identidad, contexto,
  * instrucciones, reglas y el inventario en tiempo real.
  */
-function composeSystemPrompt(brain, inventory) {
+function composeSystemPrompt(brain, inventory, chatSummary, sessionContext) {
     const id = brain.identidad || {};
     const ctx = brain.contexto || {};
     const valores = (ctx.valores || []).join(', ');
@@ -982,6 +983,32 @@ function composeSystemPrompt(brain, inventory) {
             }).join('\n');
     }
 
+    // F.1 — Summary previo si existe (chats largos comprimidos)
+    let summarySection = '';
+    if (chatSummary) {
+        summarySection = '\n\nRESUMEN DE LA CONVERSACIÓN HASTA AHORA:\n' + chatSummary;
+    }
+
+    // Contexto de sesión (vehículo de origen, asesor activo, perfil del cliente)
+    let sessionSection = '';
+    if (sessionContext) {
+        const bits = [];
+        if (sessionContext.profile && sessionContext.profile.nombre) {
+            bits.push('Cliente: ' + sessionContext.profile.nombre +
+                (sessionContext.profile.apellido ? ' ' + sessionContext.profile.apellido : '') +
+                (sessionContext.profile.cedula ? ' (CC: ' + sessionContext.profile.cedula + ')' : ''));
+        }
+        if (sessionContext.sourceVehicleId) {
+            bits.push('Cliente entró desde la ficha del vehículo ID: ' + sessionContext.sourceVehicleId);
+        }
+        if (sessionContext.activeAsesor && sessionContext.activeAsesor.nombre) {
+            bits.push('Asesor humano activo en este chat: ' + sessionContext.activeAsesor.nombre);
+        }
+        if (bits.length > 0) {
+            sessionSection = '\n\nCONTEXTO DE ESTA CONVERSACIÓN:\n' + bits.map((b) => '- ' + b).join('\n');
+        }
+    }
+
     return [
         id.personalidad || 'Soy ALTOR, asistente virtual de Altorra Cars.',
         '',
@@ -994,6 +1021,8 @@ function composeSystemPrompt(brain, inventory) {
         brain.instrucciones || '',
         '',
         reglas ? 'REGLAS DE SEGURIDAD (INVIOLABLES):\n' + reglas : '',
+        sessionSection,
+        summarySection,
         invSection,
         '',
         id.tono ? 'TONO: ' + id.tono : ''
@@ -1121,8 +1150,49 @@ exports.chatLLM = onCall({
     // 4. Inventario en tiempo real
     const inventory = await fetchInventoryForLLM(MAX_INVENTORY_VEHICLES);
 
-    // 5. Compose system prompt
-    const system = composeSystemPrompt(brain, inventory);
+    // 4.5 F.1 — Cargar summary previo del chat si existe (chats largos)
+    let chatSummary = null;
+    let sessionContext = null;
+    if (sessionId) {
+        try {
+            const chatSnap = await db.collection('conciergeChats').doc(sessionId).get();
+            if (chatSnap.exists) {
+                const c = chatSnap.data();
+                chatSummary = c.summary || null;
+            }
+        } catch (e) { /* silencio */ }
+    }
+
+    // Pasar contexto de sesión desde el cliente para que el LLM sepa el
+    // vehículo de origen, perfil del cliente, asesor activo, etc.
+    sessionContext = {
+        sourceVehicleId: data.sourceVehicleId || null,
+        sourcePage: data.sourcePage || null,
+        profile: data.profile || null,
+        activeAsesor: data.activeAsesor || null
+    };
+
+    // 5. Compose system prompt (con tool/CTA hints)
+    const system = composeSystemPrompt(brain, inventory, chatSummary, sessionContext) +
+        // F.2 — Function-calling lite: el LLM puede sugerir un CTA accionable
+        // al final de su respuesta usando un tag especial que el cliente
+        // parsea. No es full tool-use (que requeriría re-llamada) pero
+        // permite acciones útiles sin gastar tokens extras.
+        '\n\n--- ACCIONES DISPONIBLES (CTAs) ---\n' +
+        'Si tu respuesta naturalmente sugiere una acción, podés agregar UN tag al FINAL:\n' +
+        '  [CTA:Texto del botón:action_id]\n' +
+        'action_id válidos:\n' +
+        '  - escalate: conectar con asesor humano (mode=live, crea registro en Firestore)\n' +
+        '  - goto-busqueda: enviar al catálogo (busqueda.html)\n' +
+        '  - goto-simulador: enviar al simulador de crédito (simulador-credito.html)\n' +
+        '  - open-modal-vende: abrir modal de "Vende tu auto"\n' +
+        '  - open-modal-financiacion: abrir modal de financiación\n' +
+        'Ejemplo correcto: "Te paso al simulador para que veas tu cuota. [CTA:Ir al simulador:goto-simulador]"\n' +
+        'Reglas estrictas:\n' +
+        '  - Máximo UN tag por respuesta.\n' +
+        '  - Solo úsalo si el cliente claramente se beneficia de la acción.\n' +
+        '  - NO inventes action_ids que no estén en la lista.\n' +
+        '  - NO uses el tag para preguntas genéricas (ej. "¿quieres ver más?" sin acción concreta).';
 
     // 6. Sanitize messages: solo role + content, alternar correctamente
     const cleanMessages = messages
@@ -1158,11 +1228,332 @@ exports.chatLLM = onCall({
         return { disabled: true, reason: 'llm-call-failed', error: err.message.slice(0, 200) };
     }
 
+    // F.2 — Parsear el tag [CTA:label:action] si el LLM lo añadió al final.
+    // Whitelist de actions para evitar inyecciones.
+    const ALLOWED_CTAS = ['escalate', 'goto-busqueda', 'goto-simulador',
+                          'open-modal-vende', 'open-modal-financiacion'];
+    let finalText = result.text || '';
+    let finalCta = null;
+    const ctaMatch = finalText.match(/\[CTA:([^:\]]+):([a-z\-]+)\]\s*$/i);
+    if (ctaMatch) {
+        const label = ctaMatch[1].trim();
+        const action = ctaMatch[2].trim();
+        if (ALLOWED_CTAS.indexOf(action) !== -1 && label.length > 0 && label.length < 60) {
+            finalCta = { label: label, action: action };
+            // Remover el tag del text para que no aparezca al cliente
+            finalText = finalText.replace(/\[CTA:[^:\]]+:[a-z\-]+\]\s*$/i, '').trim();
+        }
+    }
+
     return {
-        text: result.text,
+        text: finalText,
+        cta: finalCta,
         model: result.model,
         usage: result.usage,
         provider: provider,
         source: 'llm'
     };
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FASE 3 — F.1 Conversation Summary
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Trigger: cuando un chat alcanza N turnos del cliente (cada 10), comprime
+// los mensajes viejos en un summary que el LLM usa en lugar de reprocesar
+// todos los turnos. Mantiene coherencia en chats largos sin gastar tokens
+// innecesarios.
+//
+// Modelo: el doc parent conciergeChats/{sid} tiene `summary` (string) +
+// `summaryUpToTurn` (int). chatLLM lo lee si existe y lo inyecta al
+// system prompt como "RESUMEN PREVIO".
+//
+// Trigger: onDocumentWritten en conciergeChats/{sid}/messages/{mid}.
+// Si el conteo de mensajes user pasa un múltiplo de 10, dispara summarize.
+
+const SUMMARY_TRIGGER_EVERY = 10;
+
+exports.summarizeChat = onCall({
+    region: 'us-central1',
+    secrets: [llmApiKey],
+    cors: true,
+    timeoutSeconds: 30,
+    memory: '512MiB'
+}, async (request) => {
+    // Solo editor+ puede invocar manualmente desde el admin
+    const auth = request.auth;
+    if (!auth) throw new HttpsError('unauthenticated', 'Must be authenticated');
+
+    const userDoc = await db.collection('usuarios').doc(auth.uid).get();
+    if (!userDoc.exists) throw new HttpsError('permission-denied', 'No tienes permisos');
+    const role = userDoc.data().rol;
+    if (role !== 'super_admin' && role !== 'editor') {
+        throw new HttpsError('permission-denied', 'Solo editor+ puede resumir chats');
+    }
+
+    const sessionId = request.data && request.data.sessionId;
+    if (!sessionId) throw new HttpsError('invalid-argument', 'sessionId required');
+
+    return await summarizeChatBySessionId(sessionId);
+});
+
+/**
+ * Comprime los mensajes user/asesor de un chat en un summary corto
+ * (3-5 líneas) que captura: identidad del cliente, intereses, decisiones
+ * tomadas, próximos pasos.
+ */
+async function summarizeChatBySessionId(sessionId) {
+    let apiKey;
+    try { apiKey = llmApiKey.value(); } catch (err) { return { skipped: true, reason: 'no-key' }; }
+    if (!apiKey) return { skipped: true, reason: 'no-key' };
+
+    const brainSnap = await db.doc('knowledgeBase/_brain').get();
+    if (!brainSnap.exists) return { skipped: true, reason: 'no-brain' };
+    const brain = brainSnap.data();
+    if (!brain.enabled) return { skipped: true, reason: 'brain-disabled' };
+
+    // Cargar todos los mensajes del chat ordenados
+    const msgsSnap = await db.collection('conciergeChats').doc(sessionId)
+        .collection('messages').orderBy('timestamp', 'asc').get();
+    const allMsgs = [];
+    msgsSnap.forEach((doc) => {
+        const d = doc.data();
+        if (d.from === 'user' || d.from === 'bot' || d.from === 'asesor') {
+            allMsgs.push({ from: d.from, text: d.text, ts: d.timestamp });
+        }
+    });
+    if (allMsgs.length < SUMMARY_TRIGGER_EVERY) {
+        return { skipped: true, reason: 'too-few-messages', count: allMsgs.length };
+    }
+
+    // Construir el prompt de summarization
+    const conversation = allMsgs.map((m) => {
+        const speaker = m.from === 'user' ? 'CLIENTE' :
+                        m.from === 'asesor' ? 'ASESOR' : 'BOT';
+        return speaker + ': ' + m.text;
+    }).join('\n');
+
+    const summarySystem = 'Eres un asistente que resume conversaciones de ventas de autos. ' +
+        'Tu salida debe ser un resumen MUY breve (3-5 líneas) en español, capturando:\n' +
+        '1. Identidad y datos de contacto del cliente (si los hay)\n' +
+        '2. Lo que busca (marca, modelo, presupuesto, necesidades)\n' +
+        '3. Decisiones o compromisos tomados (citas, cotizaciones)\n' +
+        '4. Próximo paso pendiente\n' +
+        'NO inventes nada. Si algo no se mencionó, omítelo.';
+
+    const summaryUserMsg = 'Resumí esta conversación:\n\n' + conversation;
+
+    const provider = brain.llmProvider || 'anthropic';
+    const model = brain.llmModel || 'claude-haiku-4-5';
+
+    let result;
+    try {
+        const messages = [{ role: 'user', content: summaryUserMsg }];
+        if (provider === 'openai') {
+            result = await callOpenAI(apiKey, model, summarySystem, messages, 0.3, 400);
+        } else if (provider === 'google') {
+            result = await callGoogle(apiKey, model, summarySystem, messages, 0.3, 400);
+        } else {
+            result = await callAnthropic(apiKey, model, summarySystem, messages, 0.3, 400);
+        }
+    } catch (err) {
+        console.warn('[summarizeChat] LLM failed:', err.message);
+        return { skipped: true, reason: 'llm-failed', error: err.message.slice(0, 200) };
+    }
+
+    const summary = (result.text || '').trim();
+    if (!summary) return { skipped: true, reason: 'empty-summary' };
+
+    await db.collection('conciergeChats').doc(sessionId).set({
+        summary: summary,
+        summaryUpToTurn: allMsgs.length,
+        summaryUpdatedAt: new Date().toISOString(),
+        summaryModel: result.model || model
+    }, { merge: true });
+
+    return {
+        success: true,
+        summary: summary,
+        turnsAnalyzed: allMsgs.length,
+        usage: result.usage
+    };
+}
+
+/**
+ * Trigger automático: cada vez que se agrega un mensaje a la subcolección
+ * messages/, contamos los turnos del cliente. Si pasamos un múltiplo de
+ * SUMMARY_TRIGGER_EVERY (10, 20, 30…) y todavía no hay summary actualizado
+ * para ese turn count, disparamos summarize.
+ *
+ * Idempotente: si summaryUpToTurn ya >= newCount, skip.
+ */
+exports.onConciergeMessageAdded = onDocumentCreated({
+    document: 'conciergeChats/{sessionId}/messages/{messageId}',
+    region: 'us-central1',
+    secrets: [llmApiKey],
+    timeoutSeconds: 60,
+    memory: '512MiB'
+}, async (event) => {
+    const sessionId = event.params.sessionId;
+    if (!sessionId) return;
+
+    // Solo procesar mensajes user (los del asesor/bot/system NO triggean summary)
+    const data = event.data && event.data.data();
+    if (!data || data.from !== 'user') return;
+
+    // Contar mensajes user totales en el chat
+    const msgsSnap = await db.collection('conciergeChats').doc(sessionId)
+        .collection('messages')
+        .where('from', '==', 'user')
+        .get();
+    const userTurns = msgsSnap.size;
+
+    // Solo summarize cuando llegamos a múltiplo de SUMMARY_TRIGGER_EVERY
+    if (userTurns < SUMMARY_TRIGGER_EVERY) return;
+    if (userTurns % SUMMARY_TRIGGER_EVERY !== 0) return;
+
+    // Idempotencia: si ya tenemos summary para este turn count, skip
+    const chatSnap = await db.collection('conciergeChats').doc(sessionId).get();
+    if (!chatSnap.exists) return;
+    const chat = chatSnap.data();
+    if ((chat.summaryUpToTurn || 0) >= userTurns) return;
+
+    try {
+        const result = await summarizeChatBySessionId(sessionId);
+        if (result.success) {
+            console.log('[summarizeChat] auto-summary @ turn', userTurns, 'sid', sessionId);
+        }
+    } catch (err) {
+        console.warn('[summarizeChat] auto-trigger failed:', err.message);
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FASE 3 — F.3 Proactive Engagement Triggers
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Scheduled function que corre cada 5 minutos escaneando sesiones activas
+// y enviando mensajes proactivos del bot al chat según señales:
+//
+// - Cliente lleva 90s+ sin escribir y el bot fue el último en hablar →
+//   nada (no spam)
+// - Cliente abrió chat pero no envió mensaje en 3 min → engagement message
+// - Cliente registrado vuelve después de 7+ días → mensaje "¿Encontraste lo que buscabas?"
+//
+// Estos mensajes se escriben en conciergeChats/{sid}/messages/ con
+// from='bot' y proactive=true. Aparecen en el chat del cliente vía
+// onSnapshot del listener existente.
+//
+// Anti-spam: cada chat puede recibir máximo 1 proactive/día. Trackeado
+// con campo lastProactiveAt en el doc parent.
+//
+
+const PROACTIVE_MIN_INTERVAL_HOURS = 24; // máx 1 proactive/chat/día
+const PROACTIVE_INACTIVITY_THRESHOLD_MIN = 3; // chat abierto sin actividad 3min
+const PROACTIVE_RETURNING_THRESHOLD_DAYS = 7; // cliente vuelve tras N días
+
+/**
+ * Ejecuta cada 5 minutos. Escanea conciergeChats con `mode='bot'` (no live)
+ * y `status` distinto de 'closed'. Aplica heurísticas y envía proactives
+ * cuando corresponde.
+ *
+ * Costo: una pasada toca ~50 chats activos típicos. Cada proactive escribe
+ * 2 docs (mensaje + update parent). En tier free de Firestore este costo
+ * es despreciable.
+ */
+exports.proactiveEngagement = onSchedule({
+    schedule: 'every 5 minutes',
+    region: 'us-central1',
+    timeoutSeconds: 60,
+    memory: '256MiB'
+}, async (event) => {
+    const now = Date.now();
+    const inactivityCutoff = now - PROACTIVE_INACTIVITY_THRESHOLD_MIN * 60 * 1000;
+    const proactiveCooldown = now - PROACTIVE_MIN_INTERVAL_HOURS * 60 * 60 * 1000;
+
+    // Query: chats con mode='bot' y lastMessageAt en últimas 6h
+    // (no procesamos chats inactivos viejos, no aporta engagement)
+    const recentCutoff = new Date(now - 6 * 60 * 60 * 1000).toISOString();
+    let chatsSnap;
+    try {
+        chatsSnap = await db.collection('conciergeChats')
+            .where('mode', '==', 'bot')
+            .where('lastMessageAt', '>=', recentCutoff)
+            .limit(100)
+            .get();
+    } catch (err) {
+        console.warn('[proactive] query failed:', err.message);
+        return;
+    }
+
+    let processedCount = 0;
+    let triggeredCount = 0;
+
+    for (const doc of chatsSnap.docs) {
+        const sessionId = doc.id;
+        const chat = doc.data();
+        processedCount++;
+
+        // Skip si chat está closed o archived
+        if (chat.status === 'closed') continue;
+        if (chat.isArchived) continue;
+        if (chat.isDeleted) continue;
+
+        // Cooldown: 24h entre proactives por chat
+        const lastProactive = chat.lastProactiveAt
+            ? new Date(chat.lastProactiveAt).getTime()
+            : 0;
+        if (lastProactive > proactiveCooldown) continue;
+
+        // Última actividad
+        const lastMsgTime = chat.lastMessageAt
+            ? new Date(chat.lastMessageAt).getTime()
+            : 0;
+
+        // Trigger 1: chat abierto, último mensaje fue del bot/welcome,
+        // y el cliente NO ha escrito en 3+ minutos
+        // (señal de que duda o se distrajo — empujarlo a continuar)
+        const userMsgsSnap = await db.collection('conciergeChats').doc(sessionId)
+            .collection('messages')
+            .where('from', '==', 'user')
+            .limit(1)
+            .get();
+        const hasUserMsgs = !userMsgsSnap.empty;
+
+        let proactiveText = null;
+        let triggerType = null;
+
+        if (!hasUserMsgs && lastMsgTime > 0 && lastMsgTime < inactivityCutoff) {
+            // Cliente abrió pero no escribió en 3+ min
+            proactiveText = '¿Sigues por aquí? Si tenés alguna pregunta sobre nuestros vehículos, financiación o citas, escribime y te ayudo en seguida 😊';
+            triggerType = 'inactivity_no_msg';
+        }
+
+        if (proactiveText && triggerType) {
+            try {
+                // Inyectar mensaje system+bot al chat
+                const msgRef = db.collection('conciergeChats').doc(sessionId)
+                    .collection('messages').doc();
+                await msgRef.set({
+                    from: 'bot',
+                    text: proactiveText,
+                    timestamp: new Date().toISOString(),
+                    proactive: true,
+                    triggerType: triggerType
+                });
+                // Actualizar parent: lastProactiveAt + lastMessage para que
+                // la lista del admin refleje el cambio
+                await db.collection('conciergeChats').doc(sessionId).set({
+                    lastProactiveAt: new Date().toISOString(),
+                    lastMessage: proactiveText.slice(0, 80),
+                    lastMessageAt: new Date().toISOString()
+                }, { merge: true });
+                triggeredCount++;
+            } catch (err) {
+                console.warn('[proactive] write failed for sid', sessionId, ':', err.message);
+            }
+        }
+    }
+
+    console.log('[proactive] processed=' + processedCount + ' triggered=' + triggeredCount);
 });

@@ -966,12 +966,10 @@ select:focus-visible {
 }
 
 /* HEADER FIX — los botones del header SIEMPRE deben ser clickables.
- * position: relative + z-index 99999 garantiza que estén POR ENCIMA
- * de cualquier overlay huérfano (los cuales suelen tener z-index 9000+).
- * Sin esto, overlays invisibles capturan clicks intermitentemente. */
+ * z-index 99999 los pone por encima de cualquier overlay huérfano.
+ * Además, admin-header-fix.js usa capture-phase listener que intercepta
+ * clicks ANTES que cualquier overlay, así que esto es double-defense. */
 #activityFeedTrigger,
-#themeToggle,
-#contrastToggle,
 #headerNotifBell,
 #headerNotifBell button,
 #altorra-voice-btn,
@@ -980,12 +978,10 @@ select:focus-visible {
     z-index: 99999 !important;
     pointer-events: auto !important;
 }
-/* También el padre directo (page-header del dashboard) */
 .page-header > div[style*="display:flex"] {
     position: relative;
     z-index: 99998;
 }
-/* El header completo también debe estar por encima de overlays */
 .page-header {
     position: relative;
     z-index: 99997;

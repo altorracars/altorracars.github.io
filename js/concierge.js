@@ -867,6 +867,30 @@
         panel.setAttribute('aria-label', 'ALTOR — Asistente Virtual IA de Altorra Cars');
         panel.setAttribute('aria-hidden', 'true');
         panel.innerHTML =
+            // Tail tipo bocadillo de cómic — apunta desde el bottom-right
+            // del panel hacia la cabeza de ALTOR (que está abajo-derecha).
+            // SVG con curva orgánica suave, fill matching el panel + stroke dorado.
+            '<svg class="cnc-tail" width="58" height="46" viewBox="0 0 58 46" aria-hidden="true">' +
+                '<defs>' +
+                    '<linearGradient id="cncTailGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+                        '<stop offset="0%" stop-color="#15110a"/>' +
+                        '<stop offset="100%" stop-color="#0d0a06"/>' +
+                    '</linearGradient>' +
+                '</defs>' +
+                // Path:
+                //   M(0,0)             top-left — conecta con bottom-right del panel
+                //   L(34,0)            top-right del tail
+                //   Q(52,4) (54,18)    curva exterior superior derecha
+                //   Q(56,40) (40,44)   curva hasta la PUNTA (apunta a ALTOR)
+                //   Q(26,30) (18,18)   curva interior subiendo
+                //   Q(10,6) (0,0)      cierre suave hacia top-left
+                '<path d="M0,0 L34,0 Q52,4 54,18 Q56,40 40,44 Q26,30 18,18 Q10,6 0,0 Z" ' +
+                      'fill="url(#cncTailGrad)" ' +
+                      'stroke="rgba(184,150,88,0.30)" ' +
+                      'stroke-width="1.2" ' +
+                      'stroke-linejoin="round" ' +
+                      'stroke-linecap="round"/>' +
+            '</svg>' +
             '<div class="cnc-header">' +
                 '<div class="cnc-header-info">' +
                     '<div class="cnc-avatar" id="cncAvatar">' + ALTOR_AVATAR_HTML + '</div>' +

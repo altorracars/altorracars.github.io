@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510040000'; // §27.4 Agenda unificada: tabs Calendario/Disponibilidad/Festivos + workDays/workHours/slotConfig form + festivos CRUD + integra AltorraCalendarConfig
+const CACHE_VERSION = 'v20260510050000'; // §27.5 Reportes ejecutivos: KPIs hero + Funnel conversión + Forecast lineal + Performance asesores + Anomalías + Export CSV
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

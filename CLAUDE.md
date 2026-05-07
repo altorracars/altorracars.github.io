@@ -15151,3 +15151,141 @@ Aliases nuevos no necesarios — los existentes ya cubren:
 - §27.5 Reportes ejecutivos implementados de cero (forecast + funnel + performance + anomalías)
 - §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
 - §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)
+
+### 27.5 Sprint Reportes ejecutivos — Implementados de cero (2026-05-10)
+
+**Objetivo del sprint**: el sec-reports era un placeholder muerto.
+Sprint §27.5 lo convierte en un dashboard ejecutivo real con métricas
+del negocio computadas desde data viva en Firestore. Cero placeholders,
+cero "Próximamente". El dueño del negocio entra y ve la salud del mes
+en 30 segundos.
+
+#### A. Componentes del Dashboard (5)
+
+1. **KPIs Hero del periodo** (4 cards):
+   - 💰 Ventas del periodo (suma de precios + count)
+   - 🎯 Tasa de conversión (% leads → ventas)
+   - 💵 Ticket promedio (totalSales / saleCount)
+   - ⏱️ Tiempo de respuesta promedio (createdAt → updatedAt si estado != pendiente)
+
+2. **Funnel de conversión** (visual):
+   - 4 stages: Leads → Solicitudes → Citas → Ventas
+   - Barras con gradient color (cyan → blue → violet → green)
+   - Drop-off % por stage con flecha ↓ en color coral
+   - Animation spring 0.6s al renderizar
+
+3. **Forecast de ventas** (regresión lineal):
+   - Layout 2 columnas: cifra grande izquierda + barras histórico derecha
+   - Reusa `AltorraForecast.confidence(values, 1)` (existente bloque R.1)
+   - Muestra: predicción próximo mes + tendencia vs último mes (↑/↓ %)
+   - Intervalo de confianza 95% (lower-upper)
+   - Calidad del modelo (R² %) con warning si < 50%
+   - Gráfica histórica con barras + barra "predicted" dashed gold
+   - Empty state si < 3 meses de datos
+
+4. **Performance del equipo** (top 5 asesores):
+   - Agrega ventas + leads por `assignedTo`/`lastModifiedBy`
+   - Sort por sales desc + total desc
+   - Medallas 🥇🥈🥉 para top 3, número 4-5 para resto
+   - Stats: ventas count + total facturado + conversión % (si tiene leads)
+
+5. **Anomalías y patrones detectados** (4 tipos):
+   - **High**: SLA breach >3 vencidos sin atender
+   - **Warn**: Vehículos stale >60 días en disponible (≥3)
+   - **Info**: Forecast anomaly via `AltorraForecast.detectAnomaly` (z-score 2σ)
+   - **High**: Conversión <5% en periodo con ≥10 leads
+   - Empty state amigable si todo OK ("Todo estable. Sin anomalías.")
+
+#### B. Periodo seleccionable
+
+Dropdown header con 3 opciones:
+- `month` (default) — últimos 30 días
+- `quarter` — últimos 90 días
+- `year` — últimos 365 días
+
+Cambia `_currentRange` global y dispara `renderAll()` inmediato.
+
+#### C. Export CSV
+
+Botón "CSV" header genera archivo descargable con todas las
+ventas + leads del periodo. Encoding UTF-8 con BOM. Escape RFC 4180.
+Filename: `altorra-reportes-YYYY-MM-DD.csv`.
+
+#### D. Módulo nuevo `js/admin-reports.js` (~480 líneas)
+
+Singleton `window.AltorraReports`:
+- `renderAll()` — invoca todas las renders en serie con try/catch
+- `renderKPIs()` — 4 KPIs hero
+- `renderFunnel()` — 4 stages con drop-off
+- `renderForecast()` — usa AltorraForecast (regresión lineal + confidence)
+- `renderPerformance()` — agrega asesores, sort, medallas
+- `renderAnomalies()` — heurísticas + AltorraForecast.detectAnomaly
+- `exportCSV()` — Blob + download
+- `setRange(r)` — cambia periodo + re-render
+- Listeners: AltorraSections.onChange (lazy render al entrar reports) +
+  EventBus `vehicle.*` y `comm.*` (re-render auto al cambiar data)
+- Throttle 1.5s en scheduleRender
+
+#### E. CSS HarmonyOS (~250 líneas)
+
+- `.reports-kpis` — grid auto-fit minmax(240px) responsive
+- `.reports-kpi-card` — radius 16, hover lift 1px, sombra soft-sm
+- `.reports-card` — wrapper genérico para los 5 componentes
+- `.reports-card-head h3 [data-lucide]` — icon cyan (workspace color)
+- `.funnel-stage-fill` — gradient con animation width 0.6s spring
+- `.funnel-stage-fill--{color}` — 4 variantes (cyan/blue/violet/green)
+- `.funnel-drop` — pill coral con drop %
+- `.forecast-grid` — 2 cols desktop, 1 col mobile
+- `.forecast-value` — 3rem font-size cyan, letter-spacing tight
+- `.forecast-bar--predicted` — barra gold dashed (futuro)
+- `.performance-item` — card 12px, hover dorado, ranking destacado
+- `.reports-anomaly--{level}` — 3 niveles color (coral/amber/blue)
+  con border-left 3px del color del nivel
+- `.reports-anomalies-ok` — empty state success verde
+- `prefers-reduced-motion`: animations desactivadas
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Reusar IDs del Inicio (kpisGrid, performanceTable) crea duplicados | NUEVO IDs (rkVentas, reportsKpis, etc) — Inicio sigue funcionando |
+| Forecast crashea con < 3 datos | Empty state + skip render |
+| AltorraForecast no cargado | Guard en `if (!window.AltorraForecast)` |
+| División por cero en conversión / ticket | Guards `if (saleCount > 0)` antes |
+| Periodo cambiado fuera de sec-reports | scheduleRender solo lazy al entrar a section |
+| Render pesado en cada delta de Firestore | Throttle 1.5s + listener específico |
+| Anomalías repetitivas (cada render genera mismas alertas) | Heurísticas idempotentes + leer state actual cada vez |
+| Performance sin asesores con assignedTo | Empty state + sin crash |
+| Export CSV con datos personales | Solo data agregada (cliente nombre + monto), no info sensible |
+| Forecast bar predicted indistinguible del histórico | Color gold dashed border claro vs histórico cyan sólido |
+
+#### Test E2E del sprint
+
+1. Login admin → click "Reportes" → carga sec-reports con dashboard completo
+2. Ver 4 KPIs hero: Ventas $X · Conversión Y% · Ticket $Z · Respuesta W
+3. Funnel con 4 barras animándose desde 0 al ancho proporcional
+4. Drop-off % visible entre stages (ej: "↓ 35% pérdida")
+5. Forecast con número grande (próximo mes) + histórico de barras
+6. Performance del equipo: top 5 con medallas 🥇🥈🥉
+7. Anomalías: 0 a N alerts según data real, o "Todo estable" si nada
+8. Cambiar dropdown a "Último trimestre" → todas las métricas se
+   recalculan para 90 días
+9. Cambiar a "Último año" → idem 365 días
+10. Click "Refrescar" → re-render forzado
+11. Click "CSV" → descarga archivo con todas las ventas + leads del periodo
+12. Visualmente: cards radius 16px, sombras difuminadas, transitions
+    fluidas (HarmonyOS lenguaje consistente)
+13. Mobile (<768px): forecast-grid colapsa a 1 columna
+14. Sin data: ve placeholders amigables ("Necesitamos 3+ meses…")
+
+**Archivos modificados**:
+- `admin.html` (sec-reports reescrito completo con 5 componentes;
+  range selector + export CSV en header)
+- `js/admin-reports.js` (NUEVO ~480 líneas — todo el dashboard)
+- `css/admin.css` (~250 líneas .reports-* + funnel + forecast + performance)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510050000)
+- `CLAUDE.md` (esta sección §27.5)
+
+**Pendiente del ADR-027** (commits siguientes):
+- §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
+- §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)

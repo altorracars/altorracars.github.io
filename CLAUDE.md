@@ -13034,7 +13034,135 @@ Lista cronológica de commits con su sección documental correspondiente:
 | 12 | `6f6497d` | §23.11 + §25.5 | FCM Web Push activado — VAPID key generada y pegada |
 | 13 | `3cb5fe4` | §24 | Offline Ultra Brain 2.0 — Arquitectura Dual-Core (LLM intacto + Free Core repotenciado: Small Talk + Fuzzy 2.0 + Stems + N-grams + Memoria + Anáfora + DualCore router con Circuit Breaker + Transformers.js opt-in) |
 | 14 | `fe6055d` | §25 | HOTFIX 2FA — RecaptchaVerifier + PhoneAuthProvider con window.auth (regresión Sprint 3-bis) |
-| 15 | (este commit) | §25.11 | HOTFIX 2FA v2 — RecaptchaVerifier debe recibir `firebaseApp` (App), no `auth` (Auth). Bug del hotfix anterior `fe6055d` causaba `auth/invalid-api-key` y SMS no llegaba |
+| 15 | `321be22` | §25.11 | HOTFIX 2FA v2 — RecaptchaVerifier debe recibir `firebaseApp` (App), no `auth` (Auth). Bug del hotfix anterior `fe6055d` causaba `auth/invalid-api-key` y SMS no llegaba |
+| 16 | (este commit) | §25.12 | HOTFIX 2FA v3 + FCM Activar — dual-app strategy (default + namespaced) para SDK internals que llaman `firebase.app()` sin args + FCM `messaging(app)` + fix API mismatch `onClick` vs `callback` en notify action button |
+
+### 25.12 Hotfix 2FA v3 + FCM Activar — Triple bug en una sesión (2026-05-09)
+
+> Tras el v2 (§25.11) el SMS pasó de `auth/invalid-api-key` a un nuevo
+> error: `Firebase: No Firebase App '[DEFAULT]' has been created`.
+> Además, el botón "Activar" del prompt de FCM nunca disparaba nada.
+> RCA encontró 3 bugs distintos compartiendo el mismo origen
+> arquitectónico: §23.10 cambió a appName namespaced, pero ni el SDK
+> Compat ni nuestros call sites estaban listos para vivir sin default app.
+
+#### Causa raíz #1 — SDK Compat fallback a default app
+
+Firebase Compat SDK v11 tiene paths internos en `RecaptchaVerifier`,
+`signInWithPhoneNumber`, `firebase.messaging` y otros que llaman a
+`firebase.app()` (sin args) como fallback **ignorando** el App
+explícitamente pasado por parámetro. Como en §23.10 (Sprint 3-bis)
+eliminamos la default app reemplazándola por la namespaced
+`altorra-admin`, esos paths internos crashean con
+`'[DEFAULT]' has been created`.
+
+**Confirmación**: audit completo del repo encontró cero llamadas a
+`firebase.X()` sin args en NUESTRO código (excepto el bug #2 de FCM
+abajo). El error venía 100% de internals del SDK.
+
+#### Causa raíz #2 — `firebase.messaging()` sin args en admin-fcm.js
+
+`js/admin-fcm.js:105` llamaba `window.firebase.messaging()` sin pasar
+el App. Esto hacía que la "Activar" nunca completara aunque su listener
+sí se llegara a invocar (que no era el caso por el bug #3).
+
+#### Causa raíz #3 — API mismatch `onClick` vs `callback` en notify
+
+`js/toast.js:190` chequea `typeof cfg.action.onClick === 'function'`
+para bindear el botón de acción. Pero `js/admin-fcm.js` usaba
+`action: { label: 'Activar', callback: registerSwAndGetToken }`. Como
+la propiedad esperada era `onClick`, **el listener jamás se bindeaba**.
+El botón "Activar" era visualmente clickable pero no disparaba nada.
+
+#### Solución — Dual-App Strategy + 2 fixes puntuales
+
+**Fix #1 (`js/firebase-config.js`)**: además de inicializar la app
+namespaced (`altorra-admin` o `altorra-public`), también inicializar
+la default app con la misma config:
+
+```js
+try {
+    firebase.app('[DEFAULT]');
+} catch (e) {
+    firebase.initializeApp(FIREBASE_CONFIG);  // ← default alias
+}
+```
+
+**Por qué esto NO rompe el aislamiento de auth admin/web**: Firebase
+Auth diferencia las storage keys por `appName`:
+- `firebase:authUser:<apiKey>:[DEFAULT]` ← default (sin uso real)
+- `firebase:authUser:<apiKey>:altorra-admin` ← admin
+- `firebase:authUser:<apiKey>:altorra-public` ← web pública
+
+`window.auth = firebase.auth(namespacedApp)` sigue apuntando al
+namespaced. La default solo existe para que SDK internals la
+encuentren. Como auditamos cero llamadas a `firebase.auth()` sin args
+en nuestro código, ningún flujo nuestro toca esa default.
+
+**Fix #2 (`js/admin-fcm.js:105`)**: pasar `window.firebaseApp`
+explícito al obtener messaging:
+
+```js
+var messaging = window.firebaseApp
+    ? window.firebase.messaging(window.firebaseApp)
+    : window.firebase.messaging();
+```
+
+**Fix #3 (`js/admin-fcm.js:189`)**: cambiar `callback` por `onClick`
+y agregar feedback de éxito/error:
+
+```js
+action: {
+    label: 'Activar',
+    onClick: function () {
+        registerSwAndGetToken().then(function (result) {
+            if (result) notify.success({...});
+            else if (Notification.permission === 'denied') notify.error({...});
+        });
+    }
+}
+```
+
+**Bonus defensivo (`js/admin-auth.js`)**: guard explícito antes de
+instanciar RecaptchaVerifier:
+
+```js
+if (!window.firebase || !window.firebase.apps || window.firebase.apps.length === 0) {
+    throw new Error('Firebase no está inicializado en este scope...');
+}
+if (!window.firebaseApp) {
+    throw new Error('window.firebaseApp no expuesto...');
+}
+```
+
+Si por race condition extrema el call llega antes que firebase-config
+complete, falla con mensaje accionable en vez de error críptico.
+
+#### Anti-patterns documentados
+
+| Riesgo | Mitigación |
+|---|---|
+| Renombrar default app sin auditar SDK internals | Dual-app strategy: tener default como alias siempre disponible |
+| Mismatch sutil de nombres de propiedad en APIs internas | Antes de pasar config a `notify.warning`, leer `toast.js:190` y confirmar el shape exacto esperado |
+| FCM "Activar" silencioso con error tragado | Action callback ahora muestra notify.success/error según resultado |
+| Confiar en que el SDK Compat respeta argumentos opcionales | NO lo hace en todos sus paths — defensivamente proveer la default app igualmente |
+
+#### Test E2E post-deploy
+
+1. Login con 2FA → SMS llega al celular en <30s ✅
+2. Console: cero `[DEFAULT]` errors ✅
+3. Tras login, después de 3s aparece prompt "🔔 Notificaciones de clientes en cola"
+4. Tap "Activar" → browser pide permiso de notificaciones
+5. Aceptar → toast verde "✅ Notificaciones activadas"
+6. Si rechazar → toast rojo "Permiso denegado"
+7. Verificar `usuarios/{uid}.fcmTokens[]` en Firestore tiene token
+
+**Archivos modificados**:
+- `js/firebase-config.js` — dual-app init
+- `js/admin-fcm.js` — `messaging(app)` + `onClick` + feedback toasts
+- `js/admin-auth.js` — guard explícito + comentario actualizado
+- `service-worker.js` + `js/cache-manager.js` — bump v20260509040000
+- `CLAUDE.md` — esta sección §25.12 + changelog
 
 ### 25.11 Hotfix 2FA v2 — RecaptchaVerifier expects App, not Auth (2026-05-09)
 

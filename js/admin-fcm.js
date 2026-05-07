@@ -102,7 +102,13 @@
             })
             .then(function (registration) {
                 if (!registration) return null;
-                var messaging = window.firebase.messaging();
+                // §25.12 fix — pasar window.firebaseApp explícito.
+                // Sin esto el call interno del SDK busca default app
+                // y aunque la default existe (dual-app strategy), ser
+                // explícito previene cualquier ambigüedad futura.
+                var messaging = window.firebaseApp
+                    ? window.firebase.messaging(window.firebaseApp)
+                    : window.firebase.messaging();
                 return messaging.getToken({
                     vapidKey: VAPID_PUBLIC_KEY,
                     serviceWorkerRegistration: registration
@@ -186,13 +192,33 @@
         // Diferir 3s para no bombardear al admin recién logueado
         setTimeout(function () {
             if (window.notify && window.notify.warning) {
+                // §25.12 fix — la API de notify espera `onClick`, NO `callback`.
+                // Antes se usaba `callback` y el listener jamás se bindeaba
+                // (toast.js:190 chequea typeof cfg.action.onClick === 'function').
+                // Resultado: tocar "Activar" no hacía nada.
                 window.notify.warning({
                     title: '🔔 Notificaciones de clientes en cola',
                     message: '¿Querés recibir avisos en tu celular cuando un cliente esté esperando? Te despertamos solo si nadie del equipo está atendiendo.',
                     duration: 12000,
                     action: {
                         label: 'Activar',
-                        callback: registerSwAndGetToken
+                        onClick: function () {
+                            registerSwAndGetToken().then(function (result) {
+                                if (result && window.notify && window.notify.success) {
+                                    window.notify.success({
+                                        title: '✅ Notificaciones activadas',
+                                        message: 'Te avisaremos cuando un cliente esté esperando.',
+                                        duration: 4000
+                                    });
+                                } else if (Notification.permission === 'denied' && window.notify) {
+                                    window.notify.error({
+                                        title: 'Permiso denegado',
+                                        message: 'Habilitá las notificaciones desde la configuración del navegador para recibir avisos.',
+                                        duration: 6000
+                                    });
+                                }
+                            });
+                        }
                     }
                 });
             }

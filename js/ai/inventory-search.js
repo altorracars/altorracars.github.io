@@ -83,6 +83,28 @@
             } catch (e) { /* silencio */ }
         }
 
+        // §26.6 — 1.5. Detectar MODELO contra inventario real si NER no lo identificó.
+        // Bug previo: cliente decía "Renault Twingo" y NER solo detectaba marca,
+        // ignorando "twingo". Al filtrar el inventario sin modelo, mostraba
+        // todos los Renault. AHORA: si NER no detectó modelo, recorremos los
+        // modelos reales del inventario y matcheamos word boundaries.
+        if (!filters.modelo && window.vehicleDB && Array.isArray(window.vehicleDB.vehicles)) {
+            var seenModels = {};
+            for (var iv = 0; iv < window.vehicleDB.vehicles.length; iv++) {
+                var vmod = window.vehicleDB.vehicles[iv].modelo;
+                if (!vmod) continue;
+                var modLower = String(vmod).toLowerCase().trim();
+                if (modLower.length < 3 || seenModels[modLower]) continue;
+                seenModels[modLower] = true;
+                // word boundary match en el texto del cliente
+                var modRe = new RegExp('\\b' + modLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+                if (modRe.test(lower)) {
+                    filters.modelo = vmod;
+                    break;
+                }
+            }
+        }
+
         // 2. Categoría
         Object.keys(CATEGORY_PATTERNS).forEach(function (cat) {
             if (CATEGORY_PATTERNS[cat].test(lower)) filters.categoria = cat;

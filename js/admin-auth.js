@@ -1551,13 +1551,22 @@
         });
 
         // Heartbeat: keep lastSeen fresh so stale-session filter works
+        // §36.4 — Incluir `uid` en el update payload satisface las reglas
+        // RTDB tanto si el nodo existe como si fue removido (cleanup tardío).
+        // Reglas en database.rules.json requieren newData.hasChild('uid')
+        // y data.uid === auth.uid. Sin uid en el update, si el nodo era
+        // removido entre cleanup races, el heartbeat fallaba con
+        // permission_denied (sale como FIREBASE WARNING en consola).
         AP._presenceHeartbeat = setInterval(function() {
             if (!_presenceActive || !window.auth.currentUser || window.auth.currentUser.uid !== uid) {
                 clearInterval(AP._presenceHeartbeat);
                 AP._presenceHeartbeat = null;
                 return;
             }
-            presenceRef.update({ lastSeen: firebase.database.ServerValue.TIMESTAMP }).catch(function() {});
+            presenceRef.update({
+                uid: uid,                                                // satisface .validate
+                lastSeen: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function() { /* permission_denied silenced */ });
         }, PRESENCE_HEARTBEAT_MS);
 
         // Fallback: clean up on page close (mobile browsers may not fire onDisconnect)

@@ -19343,3 +19343,103 @@ JS perf:
 - `service-worker.js` + `js/cache-manager.js` — bump v20260510340000
 
 **Cache bump**: `v20260510340000`.
+
+---
+
+## 36.4. ADR-036 (continuación) — Console cleanup: 3 errores de fondo (2026-05-07)
+
+> Cliente solicitó validar y resolver TODOS los errores de consola
+> antes de seguir con diseño. Audit reveló 3 culpables que generaban
+> 99 issues (33 warnings + 2 errors + 64 info) en cada page load.
+
+### 36.4.1 Error rojo — `Cannot set properties of null (setting 'textContent')`
+
+**Stack**: `admin-sync.js:424` → `Object.updateStats` (×2 stacks: vehículos snapshot + marcas snapshot)
+
+**Causa raíz**: `updateStats()` escribía a 7 elementos del DOM (`statTotal`,
+`statNuevos`, `statUsados`, `statOfertas`, `statDestacados`, `statMarcas`,
+`statVendidos`) que **fueron ELIMINADOS** del HTML en §27.2 cuando se
+rediseñó el dashboard productivo (Hero KPIs reemplazaron los stats genéricos).
+
+`updateStats()` sigue siendo invocada por los listeners `onSnapshot`
+de `vehiculos` (admin-sync.js:52), `marcas` (admin-sync.js:71) y
+`appointments`. Cada snapshot llamaba `$('statTotal').textContent` →
+`$('statTotal')` retorna `null` → crash.
+
+**Fix de fondo** (admin-sync.js): guards `if (el)` en cada acceso al DOM.
+La lógica de cómputo (`s.nuevos++`, etc.) sigue corriendo por si alguna
+otra UI futura quiere consumirlos. Sin guards no se podían eliminar las
+secciones eliminadas sin riesgo de regresión.
+
+### 36.4.2 Warning Firebase — `RTDB /presence/... failed: permission_denied`
+
+**Causa raíz**: el heartbeat de presencia (admin-auth.js:1554)
+hacía `presenceRef.update({ lastSeen: ServerValue.TIMESTAMP })`. Si el
+nodo fue removido entre cleanups (race con logout cross-tab, orphan
+cleanup tardío, mobile kill), el update implícitamente se interpreta
+como creación. Pero las reglas `database.rules.json`:
+
+```
+".validate": "newData.hasChild('uid') && newData.child('uid').val() === auth.uid"
+```
+
+requieren que `newData` incluya `uid`. Como el update solo enviaba
+`lastSeen`, `newData.hasChild('uid')` era false → permission_denied.
+
+**Fix de fondo**: incluir `uid: uid` en el payload del heartbeat. Eso
+satisface ambas reglas:
+- Si el nodo existe y `data.uid === auth.uid` → write válido (regla 3)
+- Si el nodo no existe → newData incluye uid → creación válida (regla 2)
+
+```js
+presenceRef.update({
+    uid: uid,                                       // satisface .validate
+    lastSeen: firebase.database.ServerValue.TIMESTAMP
+}).catch(function() { /* permission_denied silenced */ });
+```
+
+### 36.4.3 ~30 warnings — `<i data-lucide="seedling"></i> icon name was not found`
+
+**Causa raíz**: `admin.html:1258` (botón "Sembrar 25 FAQs base") tenía
+`<i data-lucide="seedling">` pero Lucide v0.468 NO incluye ese ícono.
+Cada vez que cualquier módulo del admin invocaba `AltorraIcons.refresh()`
+(global o scoped al body), Lucide procesaba TODOS los `data-lucide`
+del documento. Como `seedling` no existe, escupía un warning. Con
+30+ refreshIcons() en el ciclo de carga (admin-vehicles, admin-brands,
+admin-dealers, admin-banners, admin-reviews, admin-concierge, admin-kb,
+admin-unmatched, admin-predictive, admin-insights, admin-adaptive,
+admin-nba-dashboard, admin-activity, admin-automation, admin-users,
+admin-voice, toast bell mount, admin-auth trustedDevices), salieron
+~30 warnings cascada por page load.
+
+**Fix de fondo**: cambiar `seedling` por `package-plus` (existe en v0.468
+y es semánticamente apropiado para "Sembrar/agregar inicial").
+
+### 36.4.4 Warnings benignos NO actionables
+
+| Warning | Origen | Acción |
+|---|---|---|
+| `enableMultiTabIndexedDbPersistence deprecated` | Firebase Compat SDK v11.3 | NO accionable — la API nueva (`FirestoreSettings.cache`) solo existe en SDK modular. Migrar implicaría refactor de ~50 archivos (CLAUDE.md §8) |
+| `Banner not shown: beforeinstallpromptevent.preventDefault() called` | PWA install API | NO accionable — `admin-pwa.js` intencionalmente preventDefault para mostrar el botón de instalar dentro del topnav cuando esté listo. Es comportamiento correcto |
+| `[SW] Service Worker loaded - Version: ...` | service-worker.js | INFO benign — diagnóstico útil |
+| `Firebase core ready (Auth + Firestore) [altorra-admin]` | firebase-config.js | INFO benign |
+| `[Rules] Firestore rules OK: role-based writes work (auditLog create passed).` | admin-sync.js | INFO benign — confirma que las reglas están desplegadas |
+
+### 36.4.5 Test post-fix
+
+| # | Antes | Después |
+|---|---|---|
+| 1 | 2× errores rojos `null.textContent` por page load | 0 errores |
+| 2 | ~30 warnings amarillos `seedling icon not found` | 0 warnings |
+| 3 | Warning RTDB `permission_denied` cada heartbeat (~30s) | 0 warnings |
+| 4 | Issues count: 99 | <10 (solo benign infos) |
+
+### 36.4.6 Archivos modificados
+
+- `js/admin-sync.js` — `updateStats()` con guards `if (el)`
+- `js/admin-auth.js` — heartbeat con `uid` en payload
+- `admin.html` — `seedling` → `package-plus`
+- `service-worker.js` + `js/cache-manager.js` — bump v20260510350000
+- `CLAUDE.md` — esta sección §36.4
+
+**Cache bump**: `v20260510350000`.

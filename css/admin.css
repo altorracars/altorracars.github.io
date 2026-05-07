@@ -12081,3 +12081,379 @@ html.theme-changing-stop * {
 /* ═══════════════════════════════════════════════════════════════════
    FIN ADMIN-FINAL Sprint A
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-029 ADMIN-FINAL Sprint B — Components que faltaban
+   Paginación, presence overlay, palette, comments threaded,
+   activity feed, search results, KPI tiles refinados.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── PAGINATION (admin-table-utils) ────────────────────────── */
+.pagination,
+.paginator,
+.page-nav,
+[data-pagination] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 18px 0 8px;
+    flex-wrap: wrap;
+}
+.pagination button,
+.paginator button,
+.page-nav button,
+[data-pagination] button {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: var(--hmy-radius-button) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: var(--nova-border-glass) !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--nova-spring-snap) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.pagination button:hover:not(:disabled),
+.paginator button:hover:not(:disabled),
+.page-nav button:hover:not(:disabled) {
+    background: rgba(184, 150, 88, 0.10) !important;
+    border-color: rgba(184, 150, 88, 0.30) !important;
+    color: #ffffff !important;
+}
+.pagination button.active,
+.pagination button[aria-current="page"],
+.paginator button.active,
+.page-nav button.active {
+    background: linear-gradient(135deg,
+        rgba(184, 150, 88, 0.24) 0%,
+        rgba(184, 150, 88, 0.12) 100%) !important;
+    border-color: var(--brand-primary, #b89658) !important;
+    color: var(--brand-primary, #b89658) !important;
+    font-weight: 700;
+}
+.pagination button:disabled,
+.paginator button:disabled {
+    opacity: 0.40;
+    cursor: not-allowed;
+}
+.pagination-info,
+.page-info {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.82rem;
+    margin: 0 8px;
+}
+.page-size-selector,
+.pagination select {
+    border-radius: var(--hmy-radius-input) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: var(--nova-border-glass) !important;
+    padding: 6px 12px !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ─── PRESENCE OVERLAY refinado (avatares admins activos) ───── */
+.alt-presence-overlay {
+    backdrop-filter: blur(var(--nova-blur-md)) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(var(--nova-blur-md)) saturate(160%) !important;
+    background: var(--nova-mica-bg-strong) !important;
+    border: var(--nova-border-glass-hi) !important;
+    border-radius: var(--hmy-radius-pill) !important;
+    box-shadow: var(--nova-shadow-elev-2) !important;
+    padding: 6px 10px !important;
+}
+.alt-presence-avatar,
+.alt-presence-overlay [class*="avatar"] {
+    box-shadow: 0 0 0 2px var(--nova-mica-bg-strong),
+                0 2px 8px rgba(0, 0, 0, 0.30);
+    transition: transform var(--nova-spring-snap);
+}
+.alt-presence-avatar:hover,
+.alt-presence-overlay [class*="avatar"]:hover {
+    transform: translateY(-2px) scale(1.08);
+    z-index: 2;
+}
+
+/* ─── COMMAND PALETTE ⌘+K refinado ──────────────────────── */
+.alt-palette-modal {
+    background: var(--nova-mica-bg-strong) !important;
+    backdrop-filter: blur(var(--nova-blur-xl)) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(var(--nova-blur-xl)) saturate(180%) !important;
+    border: var(--nova-border-glass-hi) !important;
+    border-radius: var(--hmy-radius-modal) !important;
+    box-shadow: var(--nova-shadow-elev-4) !important;
+}
+.alt-palette-backdrop {
+    background: var(--nova-scrim) !important;
+    backdrop-filter: blur(var(--nova-blur-md)) !important;
+    -webkit-backdrop-filter: blur(var(--nova-blur-md)) !important;
+}
+.alt-palette-input-wrap {
+    border-bottom: var(--nova-border-glass) !important;
+    padding: 14px 18px !important;
+}
+.alt-palette-input {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-primary, #ffffff) !important;
+    font-size: 1rem !important;
+    width: 100%;
+}
+.alt-palette-input-wrap kbd {
+    border-radius: 6px !important;
+    background: rgba(184, 150, 88, 0.10) !important;
+    border: var(--nova-border-gold) !important;
+    color: var(--brand-primary, #b89658) !important;
+    padding: 3px 8px !important;
+    font-size: 0.74rem !important;
+}
+.alt-palette-cat {
+    padding: 8px 18px 4px !important;
+    color: var(--text-tertiary, rgba(255,255,255,0.45)) !important;
+    font-size: 0.7rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+}
+.alt-palette-item {
+    border-radius: 10px !important;
+    margin: 0 8px !important;
+    padding: 10px 14px !important;
+    transition: all var(--nova-spring-snap);
+    cursor: pointer;
+}
+.alt-palette-item:hover {
+    background: rgba(184, 150, 88, 0.06) !important;
+}
+.alt-palette-item.selected {
+    background: linear-gradient(90deg,
+        rgba(184, 150, 88, 0.16) 0%,
+        rgba(184, 150, 88, 0.08) 100%) !important;
+    border-left: 3px solid var(--brand-primary, #b89658);
+    padding-left: 11px !important;
+}
+
+/* ─── COMMENTS threaded refinados ──────────────────────────── */
+.cmt-item {
+    border-radius: var(--hmy-radius-card-soft) !important;
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    transition: border-color var(--nova-spring-snap),
+                background var(--nova-spring-snap);
+}
+.cmt-item:hover {
+    border-color: rgba(184, 150, 88, 0.16);
+    background: rgba(184, 150, 88, 0.02);
+}
+.cmt-item--reply {
+    border-left: 3px solid var(--brand-primary, #b89658) !important;
+}
+.cmt-author-avatar,
+.cmt-avatar {
+    border-radius: 50% !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+.cmt-mention,
+.cmt-mention-tag {
+    background: rgba(59, 130, 246, 0.16) !important;
+    color: #60a5fa !important;
+    border-radius: 6px !important;
+    padding: 1px 6px !important;
+    font-weight: 500;
+}
+
+/* ─── ACTIVITY FEED entries refinados ─────────────────────── */
+.aaf-entry {
+    border-radius: var(--hmy-radius-card-soft) !important;
+    transition: all var(--nova-spring-snap) !important;
+}
+.aaf-entry-row:hover {
+    background: rgba(184, 150, 88, 0.04) !important;
+}
+.aaf-entry--expanded > .aaf-entry-row {
+    background: rgba(184, 150, 88, 0.06) !important;
+}
+.aaf-inspector-json {
+    border-radius: 8px !important;
+    border: var(--nova-border-glass);
+    background: rgba(0, 0, 0, 0.40) !important;
+}
+
+/* ─── GLOBAL SEARCH RESULTS refinado ──────────────────────── */
+.global-search-results,
+#globalSearchResults,
+#globalSearchResultsMobile {
+    border-radius: var(--hmy-radius-card-soft) !important;
+    background: var(--nova-mica-bg-strong) !important;
+    backdrop-filter: blur(var(--nova-blur-lg)) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(var(--nova-blur-lg)) saturate(160%) !important;
+    border: var(--nova-border-glass-hi) !important;
+    box-shadow: var(--nova-shadow-elev-3) !important;
+}
+.global-search-result,
+.global-search-results-item,
+.search-result-item {
+    border-radius: 8px !important;
+    margin: 4px 6px !important;
+    padding: 10px 12px !important;
+    transition: all var(--nova-spring-snap);
+    cursor: pointer;
+}
+.global-search-result:hover,
+.global-search-results-item:hover,
+.search-result-item:hover {
+    background: rgba(184, 150, 88, 0.10) !important;
+}
+
+/* ─── KPI TILES (de §27.5 reports y §27.2 dashboard) ──────── */
+.kpi-card,
+.hero-kpi,
+.reports-kpi-card,
+.section-stat-tile {
+    transition: transform var(--nova-spring-snap),
+                box-shadow var(--nova-spring-snap),
+                border-color var(--nova-spring-snap) !important;
+}
+.kpi-card:hover,
+.reports-kpi-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--nova-shadow-elev-2),
+                0 0 24px rgba(184, 150, 88, 0.10) !important;
+    border-color: rgba(184, 150, 88, 0.24) !important;
+}
+.hero-kpi:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: var(--nova-shadow-elev-3),
+                0 0 32px rgba(184, 150, 88, 0.14) !important;
+}
+
+/* ─── BULK ACTIONS BAR (CRM bulk select) ─────────────────── */
+.bulk-actions-bar,
+.bulk-bar,
+.crm-bulk-bar,
+[data-bulk-bar] {
+    border-radius: var(--hmy-radius-pill) !important;
+    background: var(--nova-mica-bg-strong) !important;
+    backdrop-filter: blur(var(--nova-blur-md)) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(var(--nova-blur-md)) saturate(160%) !important;
+    border: var(--nova-border-gold-hi) !important;
+    box-shadow: var(--nova-shadow-elev-3),
+                var(--nova-shadow-glow);
+    padding: 10px 18px !important;
+    animation: novaBulkBarIn 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+@keyframes novaBulkBarIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .bulk-actions-bar { animation: none; }
+}
+
+/* ─── KANBAN columns refinados ──────────────────────────── */
+.kanban-board,
+.crm-kanban-board {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 6px 2px 14px;
+    scroll-snap-type: x mandatory;
+}
+.kanban-column,
+.crm-kanban-column {
+    min-width: 280px;
+    flex-shrink: 0;
+    border-radius: var(--hmy-radius-card-soft) !important;
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    padding: 12px 12px 14px;
+    scroll-snap-align: start;
+}
+.kanban-column-head,
+.crm-kanban-column-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 6px 4px 10px;
+    border-bottom: var(--nova-border-glass);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+}
+.kanban-card,
+.crm-kanban-card {
+    border-radius: var(--hmy-radius-card-soft) !important;
+    background: rgba(255, 255, 255, 0.04);
+    border: var(--nova-border-glass);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    transition: all var(--nova-spring-snap);
+    cursor: grab;
+}
+.kanban-card:hover,
+.crm-kanban-card:hover {
+    border-color: rgba(184, 150, 88, 0.32);
+    background: rgba(184, 150, 88, 0.04);
+    transform: translateY(-1px);
+    box-shadow: var(--nova-shadow-elev-1);
+}
+.kanban-card.dragging,
+.crm-kanban-card.dragging {
+    opacity: 0.6;
+    cursor: grabbing;
+}
+
+/* ─── NOTIFICATION CENTER bell + panel ─────────────────── */
+.altorra-notify-center {
+    border-radius: var(--hmy-radius-card-large) !important;
+    background: var(--nova-mica-bg-strong) !important;
+    backdrop-filter: blur(var(--nova-blur-xl)) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(var(--nova-blur-xl)) saturate(180%) !important;
+    border: var(--nova-border-glass-hi) !important;
+    box-shadow: var(--nova-shadow-elev-4) !important;
+}
+.altorra-notify-center__item {
+    border-radius: var(--hmy-radius-card-soft) !important;
+    transition: all var(--nova-spring-snap);
+}
+.altorra-notify-center__item:hover {
+    background: rgba(184, 150, 88, 0.06) !important;
+}
+.altorra-notify-center__item--linkable:hover {
+    background: rgba(184, 150, 88, 0.10) !important;
+    border-color: rgba(184, 150, 88, 0.24) !important;
+}
+.altorra-notify-center__item-meta {
+    color: var(--text-tertiary, rgba(255, 255, 255, 0.50));
+}
+
+/* ─── BELL BUTTON header con glow on unread ─────────────── */
+.altorra-bell {
+    border-radius: 50% !important;
+    transition: all var(--nova-spring-snap) !important;
+}
+.altorra-bell:hover {
+    background: rgba(184, 150, 88, 0.10) !important;
+    transform: rotate(-8deg);
+}
+.altorra-bell:has(.altorra-bell__badge:not(:empty)) {
+    animation: novaBellShake 1.6s ease-in-out 0.5s;
+}
+@keyframes novaBellShake {
+    0%, 100% { transform: rotate(0); }
+    10%, 30%, 50% { transform: rotate(-12deg); }
+    20%, 40%, 60% { transform: rotate(12deg); }
+    70% { transform: rotate(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .altorra-bell:has(.altorra-bell__badge:not(:empty)) { animation: none; }
+    .altorra-bell:hover { transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN ADMIN-FINAL Sprint B
+   ═══════════════════════════════════════════════════════════════════ */

@@ -506,19 +506,22 @@
     // not complete, leaving the invisible widget in a broken state.
     function createRecaptchaVerifier(containerId) {
         cleanRecaptchaContainer(containerId);
-        // §23.10/§24 fix — pasar `window.auth` explícitamente como 3er arg.
-        // Sin esto el constructor usa la default app que YA NO EXISTE
-        // (renombrada a 'altorra-admin' en firebase-config.js Sprint 3-bis).
-        // Resultado del bug previo: SMS nunca completaba el flow porque
-        // el verifier apuntaba a un app fantasma → _2faVerificationId
-        // quedaba null → "Error: No verification ID" al verificar.
+        // §25.11 fix — el 3er argumento de RecaptchaVerifier en Firebase
+        // Compat v11 espera `firebase.app.App`, NO `firebase.auth.Auth`.
+        // El hotfix anterior (§25, commit fe6055d) pasó `window.auth`
+        // (Auth instance) por error. Resultado: el SDK intentaba leer
+        // `app.options.apiKey` sobre un Auth → undefined → la request al
+        // Identity Toolkit se enviaba con `apiKey=undefined` → backend
+        // respondía `auth/invalid-api-key` → SMS nunca se enviaba.
+        // El argumento correcto es `window.firebaseApp` (App namespaced
+        // 'altorra-admin' expuesta por firebase-config.js).
         var verifier = new firebase.auth.RecaptchaVerifier(containerId, {
             size: 'invisible',
             callback: function() { /* solved */ },
             'expired-callback': function() {
                 console.warn('[2FA] reCAPTCHA expired, will refresh on next attempt');
             }
-        }, window.auth);
+        }, window.firebaseApp);
         return verifier.render().then(function() {
             return verifier;
         });

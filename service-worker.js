@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260509020000'; // HOTFIX 2FA: RecaptchaVerifier + PhoneAuthProvider con window.auth (Sprint 3-bis regresión)
+const CACHE_VERSION = 'v20260509030000'; // HOTFIX 2FA v2 (§25.11): RecaptchaVerifier debe recibir firebaseApp (App), no Auth — auth/invalid-api-key fix
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510120000'; // §28.5 Empty states ilustrados — 10 SVG illustrations inline (vehicles/contacts/conversations/calendar/reports/search/kb/unmatched/audit/generic) con AltorraEmptyStates API + auto-upgrade legacy empty containers + animation fadeIn spring + responsive mobile
+const CACHE_VERSION = 'v20260510140000'; // §28.7 Onboarding tour HarmonyOS polish — Mica strong glassmorphism + orbs flotantes detrás del card + icon premium con halo pulse + progress dots como bars dorados 24x4 (active 36px), title gradient text dorado, body refinado, action buttons gradient gold premium + spotlight target con animation pulse para iluminar elemento del paso actual
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

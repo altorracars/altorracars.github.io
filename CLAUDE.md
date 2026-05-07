@@ -16335,3 +16335,198 @@ TARGETS = [
 - `admin.html` (2 script tags)
 - `service-worker.js` + `js/cache-manager.js` (bump v20260510120000)
 - `CLAUDE.md` (esta sección §28.5)
+
+### 28.6 Sprint §28.6 — Skeleton screens realistas mimic per section (2026-05-10)
+
+**Objetivo del sprint**: reemplazar spinners genéricos por skeletons
+que imitan la forma EXACTA del contenido final de cada sección.
+Patrón Facebook/LinkedIn/Slack — la percepción de carga es más
+rápida aunque el tiempo real sea el mismo.
+
+#### A. Módulo `js/admin-skeletons.js` (~200 líneas)
+
+API pública `window.AltorraSkeletons`:
+- `AltorraSkeletons.html(kind, count)` → string HTML
+- `AltorraSkeletons.render(container, kind, count)` → render directo
+- `AltorraSkeletons.kinds` → lista de kinds
+
+**7 kinds disponibles**:
+
+| Kind | Mimic de | Estructura |
+|---|---|---|
+| `vehicleCards` | Grid de cards vehículo | Image 160px + body con title 70% + meta 40% + price 30% + 3 metas inline |
+| `vehicleRows` | Tabla vehículos | Thumbnail 60×44 + body 2 lines + status pill 80×22 |
+| `contactRows` | Lista contactos CRM | Avatar 38px circle + body 2 lines + meta pill |
+| `kpiCards` | Grid KPIs (4) | Icon 48×48 + value 60% × 28px + label 50% |
+| `conversationItems` | Lista chats ALTOR Hub | Avatar 40px + name + timestamp + snippet |
+| `calendarMonth` | Vista mes calendario | Header + 7×5 grid de cells 70px |
+| `reportsDashboard` | Dashboard ejecutivo | 4 KPIs + 2 cards (chart 180px + table 120px) |
+
+#### B. CSS shimmer dorado (`css/admin.css` ~140 líneas)
+
+`.sk-box` (caja base de cualquier skeleton):
+- `linear-gradient` 110deg con 5 stops
+- Color base alpha 4% + dos picks dorado alpha 10-15% al centro
+- `background-size: 200% 100%`
+- Animation `skShimmer` 1.6s ease-in-out infinite (background-position)
+- `border-radius: 6px` por default
+
+Containers (`.sk-grid`, `.sk-rows`, `.sk-vehicle-card`,
+`.sk-row`, `.sk-kpi-card`, etc.):
+- Border glass + radius card-soft
+- Background rgba 2% glass tenue
+- Padding consistente
+
+`prefers-reduced-motion`: animation desactivada (background estático).
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Skeletons demasiado fieles confunden con contenido real | Animation shimmer constante deja claro que está cargando |
+| Shimmer marea | 1.6s velocidad cómoda + reduced-motion cancela |
+| Render N skeletons cuando solo se necesita 1 | API explícita `count` parámetro |
+| Tabla mobile colapsa skeletons | `@media (max-width: 600px)` ajusta a 1 columna |
+| Calendar 35 cells genera 35 animations | `background-position` de cada cell se carga lazy |
+| Skeleton aparece después del contenido real | Solo se usa antes de la primera carga; API explícita |
+| Border-radius mismatch con card real | Constants iguales: `--hmy-radius-card-soft` |
+
+#### Test E2E del sprint
+
+1. Consola admin:
+   - `AltorraSkeletons.render('#someContainer', 'vehicleCards', 6)`
+   - Aparece grid 6 cards con shimmer dorado animado
+2. Probar otros kinds:
+   - `AltorraSkeletons.render('#x', 'kpiCards', 4)` → 4 KPI cards
+   - `AltorraSkeletons.render('#x', 'calendarMonth')` → calendar grid
+   - `AltorraSkeletons.render('#x', 'reportsDashboard')` → reports
+3. `prefers-reduced-motion: reduce` activado → shimmer estático
+4. Mobile (<600px): cards en 1 columna
+
+**Archivos creados/modificados**:
+- `js/admin-skeletons.js` (NUEVO ~200 líneas — 7 kinds)
+- `css/admin.css` (+140 líneas .sk-* + shimmer)
+- `admin.html` (script tag admin-skeletons.js)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510130000)
+- `CLAUDE.md` (esta sección §28.6)
+
+**Migración futura opcional**: callsites de spinners legacy
+(`<div class="loader"></div>`) pueden reemplazarse por
+`AltorraSkeletons.render()` para que cada sección tenga skeleton
+acorde. Trabajo de refactor incremental — el módulo está disponible.
+
+### 28.7 Sprint §28.7 — Onboarding tour HarmonyOS polish (2026-05-10)
+
+**Objetivo del sprint**: el onboarding tour del N.4 (admin-onboarding.js)
+ya funcionaba pero con look básico. Sprint 28.7 lo eleva a calidad
+**iOS 26 / HarmonyOS premium** sin tocar el JS — solo CSS override.
+
+#### A. Backdrop con scrim radial + Mica blur
+
+`.alt-onboard-backdrop`:
+- `background: var(--nova-scrim)` (radial dark)
+- `backdrop-filter: blur(24px) saturate(140%)`
+- Difumina el admin debajo durante el tour
+
+#### B. Card con Mica strong + orbs flotantes
+
+`.alt-onboard-card`:
+- Background `var(--nova-mica-bg-strong)` translúcido
+- `backdrop-filter: blur(48px) saturate(180%)` Mica máximo
+- Border glass-hi + shadow elev-4 + inner highlight blanco
+- Border-radius 20px HarmonyOS
+- Width 560px (vs 520px anterior)
+- Padding 44×44 (más respiro)
+- Animation `novaOnboardCardIn` 0.55s spring (translateY+scale)
+
+**Orbs flotantes detrás** (`::before` + `::after`):
+- 200×200 dorado top-left + 160×160 violeta bottom-right
+- `filter: blur(60px)`
+- Animation `novaOrbFloat` 12s/14s ease-in-out alternado
+- Liquid feel iOS 26 sin distraer del contenido
+
+#### C. Icon premium con halo pulse
+
+`.alt-onboard-icon`:
+- 96×96 (vs 80×80) con gradient dorado 32% → 8%
+- Border dorado 40% alpha
+- Box-shadow doble: glow externo 40px + inner highlight blanco
+- Animation `novaOnboardIconPulse` 3s ease-in-out (glow expansión)
+- Icon Lucide 44×44 dentro
+
+#### D. Progress dots como bars dorados
+
+`.alt-onboard-dot`:
+- 24×4 px (vs 8×8 dot anterior) — patrón Linear/iOS bars
+- `border-radius: 2px`
+- Active: ancho 36px + gradient dorado horizontal + glow
+- Done: alpha 40%
+
+#### E. Title con gradient text
+
+Background-clip text con gradient `#ffffff → #d4ad6e`. 1.5rem
+font-weight 700 letter-spacing tight.
+
+#### F. Body refinado
+
+- Font 1rem, line-height 1.65, max-width 440px centered
+- `<kbd>` y `<code>` estilizados con bg dorado tenue + border glass
+
+#### G. Action buttons premium
+
+Mismo gradient dorado del login button (§28.2):
+- Primary: gradient 3-stop gold con texto oscuro AAA
+- Secondary/Skip: glass tenue con hover dorado
+
+#### H. Spotlight target con pulse
+
+`.alt-onboard-spotlight`:
+- Position fixed, dynamic posicionado por JS al elemento del paso actual
+- Box-shadow doble: 9999px scrim oscuro fuera + ring dorado 4px alrededor
+- Animation `novaSpotlightPulse` 2.4s ease-in-out (ring expansion)
+- Border-radius 16px
+- `pointer-events: none` (no bloquea click)
+- Listo para que `admin-onboarding.js` futuro lo use opcionalmente
+  via `el.classList.add('alt-onboard-spotlight')` en su step.target
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Override CSS rompe tour existente | Selectores legacy `.alt-onboard-*` con `!important` quirúrgicos |
+| Orbs flotantes generan jank | `filter: blur(60px)` GPU layer, animation 12-14s lenta |
+| Animation icon pulse marea | 3s lento + reduced-motion cancela |
+| Progress dots bar 24×4 no parece progress | Active 36px gradient + glow lo hace inequívoco |
+| Spotlight aplica a elemento dinámico que se mueve | `transition: all spring` + recalcula position en window resize |
+| Card animation interfiere con welcome del N.4 | El N.4 base usa `secAppear` que es preservada como fallback; NOVA usa `novaOnboardCardIn` con `!important` |
+| `prefers-reduced-motion` | Todas las animations (icon pulse, orbs, spotlight, card entry) tienen guard |
+| Mobile padding insuficiente | Media query 480px reduce a 36×24 + icon 80×80 |
+
+#### Test E2E del sprint
+
+1. Login admin primera vez → tour aparece con card glass premium
+2. Backdrop con blur Mica fuerte detrás
+3. Orbs flotando sutilmente
+4. Icon dorado con halo pulse
+5. Progress: 6 bars 24×4, active 36 dorado
+6. Title con gradient text white-to-gold
+7. Click "Siguiente" → próximo paso anima entrada
+8. Click "Saltar" → tour cierra
+9. Para activar spotlight (cuando un paso tenga `target`): el JS
+   añade `.alt-onboard-spotlight` al elemento → ring dorado pulsante
+10. `prefers-reduced-motion` → animations desactivadas
+11. Mobile: card adaptado padding/font reducido
+
+**Archivos modificados**:
+- `css/admin.css` (+200 líneas Sprint §28.7 onboarding NOVA polish)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510140000)
+- `CLAUDE.md` (esta sección §28.7)
+
+**Sin cambios en JS** — el `admin-onboarding.js` legacy sigue
+funcionando idéntico. El polish llega 100% via CSS sobre las
+clases existentes (`alt-onboard`, `alt-onboard-backdrop`,
+`alt-onboard-card`, `alt-onboard-icon`, etc.).
+
+**Spotlight ready-to-use**: cuando se quiera usar el spotlight,
+`admin-onboarding.js` debe añadir `.alt-onboard-spotlight` clase
+al elemento target. El CSS ya hace el resto.

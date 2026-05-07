@@ -11164,3 +11164,371 @@ dialog::backdrop {
     .alt-empty-illustrated-title { font-size: 1rem; }
     .alt-empty-illustrated-text { font-size: 0.85rem; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-028 §28.6 — Skeleton screens realistas (mimic per section)
+   Patrón Facebook/LinkedIn: percepción de carga MÁS RÁPIDA.
+   ═══════════════════════════════════════════════════════════════════ */
+.sk-wrap {
+    width: 100%;
+    animation: skFadeIn 0.25s ease-out;
+}
+@keyframes skFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* ─── BOX base con shimmer dorado ──────────────────────────── */
+.sk-box {
+    background: linear-gradient(110deg,
+        rgba(255, 255, 255, 0.04) 0%,
+        rgba(184, 150, 88, 0.10) 40%,
+        rgba(184, 150, 88, 0.15) 50%,
+        rgba(184, 150, 88, 0.10) 60%,
+        rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    animation: skShimmer 1.6s ease-in-out infinite;
+}
+@keyframes skShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sk-box { animation: none; background-position: 0 0; }
+}
+
+/* ─── GRIDS ─────────────────────────────────────────────────── */
+.sk-grid {
+    display: grid;
+    gap: 18px;
+}
+.sk-grid-cards {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.sk-grid-kpis {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* ─── VEHICLE CARD skeleton ─────────────────────────────────── */
+.sk-vehicle-card {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    overflow: hidden;
+}
+.sk-vehicle-card-body {
+    padding: 14px 16px;
+}
+.sk-vehicle-card-meta {
+    display: flex;
+    gap: 8%;
+}
+
+/* ─── ROWS (vehicle/contact) ────────────────────────────────── */
+.sk-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sk-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    gap: 0;
+}
+.sk-row-body {
+    flex: 1;
+    min-width: 0;
+}
+.sk-row-meta {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* ─── KPI CARDS skeleton ───────────────────────────────────── */
+.sk-kpi-card {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    padding: 22px 24px;
+}
+
+/* ─── CONVERSATIONS skeleton ───────────────────────────────── */
+.sk-conv-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.sk-conv-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.sk-conv-body {
+    flex: 1;
+    min-width: 0;
+}
+.sk-conv-row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ─── CALENDAR MONTH skeleton ──────────────────────────────── */
+.sk-calendar-month {
+    width: 100%;
+}
+.sk-cal-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.sk-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+/* ─── REPORTS DASHBOARD skeleton ──────────────────────────── */
+.sk-reports-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+.sk-rep-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+}
+.sk-rep-kpi {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    padding: 18px;
+}
+.sk-rep-card {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    padding: 22px;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+    .sk-grid-cards { grid-template-columns: 1fr; }
+    .sk-cal-grid { gap: 4px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-028 §28.7 — Onboarding tour HarmonyOS polish + spotlight target
+   Override del N.4 base con look NOVA + glassmorphism Mica strong.
+   ═══════════════════════════════════════════════════════════════════ */
+.alt-onboard-backdrop {
+    background: var(--nova-scrim) !important;
+    backdrop-filter: blur(var(--nova-blur-md)) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(var(--nova-blur-md)) saturate(140%) !important;
+}
+
+.alt-onboard-card {
+    background: var(--nova-mica-bg-strong) !important;
+    backdrop-filter: blur(var(--nova-blur-xl)) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(var(--nova-blur-xl)) saturate(180%) !important;
+    border: var(--nova-border-glass-hi) !important;
+    border-radius: var(--hmy-radius-modal) !important;
+    box-shadow: var(--nova-shadow-elev-4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    width: min(560px, 92vw) !important;
+    padding: 44px 44px 32px !important;
+    animation: novaOnboardCardIn 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) !important;
+}
+@keyframes novaOnboardCardIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.94); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .alt-onboard-card { animation: none !important; }
+}
+
+/* Logo del welcome (orbs flotantes detrás) */
+.alt-onboard-card::before,
+.alt-onboard-card::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+}
+.alt-onboard-card::before {
+    width: 200px; height: 200px;
+    background: rgba(184, 150, 88, 0.18);
+    top: -60px; left: -40px;
+    animation: novaOrbFloat 12s ease-in-out infinite;
+}
+.alt-onboard-card::after {
+    width: 160px; height: 160px;
+    background: rgba(139, 92, 246, 0.14);
+    bottom: -40px; right: -30px;
+    animation: novaOrbFloat 14s ease-in-out infinite reverse;
+}
+@keyframes novaOrbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(20px, 30px) scale(1.10); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .alt-onboard-card::before,
+    .alt-onboard-card::after { animation: none; }
+}
+.alt-onboard-card > * { position: relative; z-index: 1; }
+
+/* Icon premium con halo */
+.alt-onboard-icon {
+    width: 96px !important;
+    height: 96px !important;
+    background: linear-gradient(135deg,
+        rgba(184, 150, 88, 0.32) 0%,
+        rgba(184, 150, 88, 0.08) 100%) !important;
+    border: 1px solid rgba(184, 150, 88, 0.40) !important;
+    box-shadow: 0 0 40px rgba(184, 150, 88, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    margin: 0 auto 22px !important;
+    animation: novaOnboardIconPulse 3s ease-in-out infinite;
+}
+.alt-onboard-icon [data-lucide] {
+    width: 44px !important;
+    height: 44px !important;
+}
+@keyframes novaOnboardIconPulse {
+    0%, 100% { box-shadow: 0 0 40px rgba(184, 150, 88, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+    50%      { box-shadow: 0 0 64px rgba(184, 150, 88, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.16); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .alt-onboard-icon { animation: none !important; }
+}
+
+/* Progress dots refinados */
+.alt-onboard-progress {
+    margin-bottom: 22px !important;
+    gap: 8px !important;
+}
+.alt-onboard-dot {
+    width: 24px !important;
+    height: 4px !important;
+    border-radius: 2px !important;
+    transition: all var(--nova-spring-snap) !important;
+}
+.alt-onboard-dot.active {
+    width: 36px !important;
+    background: linear-gradient(90deg, #d4ad6e, #b89658) !important;
+    transform: none !important;
+    box-shadow: 0 0 12px rgba(184, 150, 88, 0.40);
+}
+.alt-onboard-dot.done {
+    background: rgba(184, 150, 88, 0.40) !important;
+}
+
+/* Title premium */
+.alt-onboard-title {
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    margin-bottom: 14px !important;
+    background: linear-gradient(135deg, #ffffff 0%, #d4ad6e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Body refinado */
+.alt-onboard-body {
+    font-size: 1rem !important;
+    line-height: 1.65 !important;
+    margin-bottom: 28px !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    max-width: 440px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+.alt-onboard-body kbd {
+    background: rgba(184, 150, 88, 0.16) !important;
+    border: 1px solid rgba(184, 150, 88, 0.30) !important;
+    border-radius: 6px !important;
+    padding: 3px 9px !important;
+    font-size: 0.85rem !important;
+    color: var(--brand-primary, #b89658) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.10),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.20);
+}
+.alt-onboard-body code {
+    background: rgba(184, 150, 88, 0.10) !important;
+    border: 1px solid rgba(184, 150, 88, 0.20);
+    padding: 2px 8px !important;
+    border-radius: 6px !important;
+    color: var(--brand-primary, #b89658) !important;
+}
+
+/* Action buttons premium */
+.alt-onboard-actions .btn,
+.alt-onboard-actions button {
+    border-radius: var(--hmy-radius-button) !important;
+    padding: 10px 22px !important;
+    font-weight: 600 !important;
+    font-size: 0.92rem;
+    transition: all var(--nova-spring-snap);
+}
+.alt-onboard-actions .btn-primary {
+    background: linear-gradient(135deg, #c9a663 0%, #b89658 50%, #9a7d44 100%) !important;
+    border: none !important;
+    color: #1a1a1a !important;
+    box-shadow: 0 4px 14px rgba(184, 150, 88, 0.30),
+                inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+.alt-onboard-actions .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(184, 150, 88, 0.40),
+                inset 0 1px 0 rgba(255, 255, 255, 0.30);
+}
+.alt-onboard-actions .btn-secondary,
+.alt-onboard-actions .btn-skip {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+.alt-onboard-actions .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+}
+
+/* ─── SPOTLIGHT target — illumina elemento del paso actual ──── */
+.alt-onboard-spotlight {
+    position: fixed;
+    border-radius: 16px;
+    box-shadow:
+        0 0 0 9999px rgba(0, 0, 0, 0.78),
+        0 0 0 4px rgba(184, 150, 88, 0.50),
+        0 0 80px rgba(184, 150, 88, 0.40);
+    pointer-events: none;
+    z-index: 99998;
+    transition: all var(--nova-spring-flow);
+    animation: novaSpotlightPulse 2.4s ease-in-out infinite;
+}
+@keyframes novaSpotlightPulse {
+    0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.78), 0 0 0 4px rgba(184, 150, 88, 0.50), 0 0 80px rgba(184, 150, 88, 0.40); }
+    50%      { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.78), 0 0 0 6px rgba(184, 150, 88, 0.65), 0 0 120px rgba(184, 150, 88, 0.55); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .alt-onboard-spotlight { animation: none; }
+}
+
+@media (max-width: 480px) {
+    .alt-onboard-card { padding: 36px 24px 28px !important; }
+    .alt-onboard-title { font-size: 1.25rem !important; }
+    .alt-onboard-body { font-size: 0.92rem !important; }
+    .alt-onboard-icon { width: 80px !important; height: 80px !important; }
+    .alt-onboard-icon [data-lucide] { width: 36px !important; height: 36px !important; }
+}

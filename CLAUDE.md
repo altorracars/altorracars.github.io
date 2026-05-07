@@ -14855,3 +14855,154 @@ caótico, ahora es enfocado).
 - §27.5 Reportes ejecutivos implementados de cero
 - §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
 - §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)
+
+### 27.3 Sprint CRM unificado — 3 tabs internos (2026-05-10)
+
+**Objetivo del sprint**: destruir la fragmentación entre `sec-crm`
+(Contactos 360°) y `sec-appointments` (Bandeja). Ambas vivían como
+secciones separadas del sidebar pero conceptualmente son la misma
+operación: gestión de la relación con clientes y oportunidades de
+venta. Resultado: una sola sección con 3 tabs internos cohesionados.
+
+#### A. Estructura nueva del CRM unificado
+
+```
+👥 sec-crm (CRM & Ventas)
+   ├─ Tab strip arriba (HarmonyOS)
+   ├─ Tab "Contactos & Ventas"   → tabla 360° (era sec-crm)
+   ├─ Tab "Bandeja"              → solicitudes/citas (era sec-appointments)
+   └─ Tab "Pipeline" (Beta)      → Kanban segmentado por tier
+```
+
+**Cambios estructurales en `admin.html`**:
+- `sec-crm` reescrito como wrapper con `crm-tabstrip` + 3 `crm-tabpane`
+- Contenido viejo de `sec-crm` → tab pane "contactos" (76 líneas indented)
+- Contenido viejo de `sec-appointments` → tab pane "bandeja" (214 líneas indented)
+- `sec-appointments` queda como `display: none` con comentario explicativo
+- Tab "pipeline" nuevo con container `#pipelineKanban`
+
+**IDs internos preservados al 100%** — admin-crm.js, admin-appointments.js,
+admin-crm-tabs.js, admin-pipeline.js todos siguen funcionando porque sus
+selectores (`#crmSearchInput`, `#citaTable`, `#filtroEstado`, etc.) viven
+dentro de los panes pero existen igual en el DOM.
+
+#### B. Routing y deep-links
+
+**Aliases nuevos en `admin-section-router.js`**:
+- `'appointments': 'crm'` — deep-link `#/appointments` ahora navega
+  al CRM unificado. `admin-crm-tabs.js` detecta el hash y activa
+  automáticamente el tab "bandeja".
+
+**Deep-links soportados**:
+- `#/crm` → tab "contactos" (default)
+- `#/crm/bandeja` → tab "bandeja"
+- `#/crm/pipeline` → tab "pipeline"
+- `#/appointments` → tab "bandeja" (via alias)
+- `#/inbox` → sigue siendo `#/concierge` (alias §20.3)
+
+#### C. Módulos JS nuevos
+
+**`js/admin-crm-tabs.js`** (~150 líneas):
+- Singleton `window.AltorraCRMTabs`
+- `setActiveTab(name)`: toggle aria-selected + clases activas en
+  buttons y panes, persiste en localStorage, actualiza URL hash via
+  `history.replaceState`, emite evento `crm.tab-changed` al EventBus
+- `applyHashTab()`: parsea hash y activa el tab correspondiente.
+  Soporta `#/crm`, `#/crm/{tab}`, `#/appointments`, `#/bandeja`
+- `bindRouterHook()`: subscribe a `AltorraSections.onChange`. Al
+  entrar a sec-crm aplica el tab correcto
+- Click handler en `.crm-tab[data-crm-tab]`
+- `hashchange` listener para back/forward del browser
+- Lazy-render del Pipeline (solo cuando se activa el tab)
+
+**`js/admin-pipeline.js`** (~280 líneas):
+- Singleton `window.AltorraPipeline`
+- `getContacts()` reusa AltorraCRM.getContacts() o reconstruye
+- `getScore(c)` lee score del contacto (computeScoreBreakdown si AltorraCRM disponible)
+- `classifyTier(c)` → 'calientes' (≥70) | 'tibios' (40-70) | 'frios' (<40) | 'convertidos' (vendido/completada)
+- `getTopNBA(c)` invoca AltorraNBA.suggest({limit:1})
+- `render()` produce 4 columnas Kanban con cards: avatar + nombre + score
+  + lastCommAt + razón NBA + CTA "Ver detalle"
+- Limit 20 cards por columna (resto: "+N más")
+- Click en card o CTA → activa tab "contactos" + abre CRM detail
+- Listeners: EventBus `comm.*`, `crm.*`, `crm.tab-changed` (lazy)
+
+#### D. CSS HarmonyOS para tabs + Kanban (~250 líneas)
+
+**Tab strip**:
+- `.crm-tabstrip` — flex con borde inferior tenue, scroll-x mobile
+- `.crm-tab` — padding 10×16, radius top-only 12px, transition fluida
+- `.crm-tab.is-active` — color azul (workspace CRM), background tinted,
+  underline 2px abajo (patrón Material/Apple)
+- `.crm-tab-count` — pill diminuto con contador
+- `.crm-tab-badge` — pill "Beta" en pipeline (color AI)
+
+**Tab panes**:
+- `.crm-tabpane` — `display: none` por default
+- `.crm-tabpane.is-active` — `display: block` con animation fadeIn 0.25s
+- Page-header inner sin border-top duplicado (lo cancela tab pane)
+
+**Pipeline Kanban**:
+- `.pipeline-kanban` — grid 4 columnas (260px min), gap 14px
+- `.pipeline-column` — radius 16px, fondo sutil, min-height 200px
+- `.pipeline-col-icon` 4 colores por tier (coral/amber/blue/green)
+- `.pipeline-col-count` — pill con count contactos del tier
+- `.pipeline-card` — radius 12px, hover lift 1px + tinte dorado
+- `.pipeline-card-avatar` — gradient dorado 32×32 con iniciales
+- `.pipeline-card-score` — pill con número + tinte si > 0
+- `.pipeline-card-cta` — botón full-width azul que abre detail
+- Mobile: scroll horizontal de columnas, tabs con max-width truncado
+- `prefers-reduced-motion`: animaciones desactivadas
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| sec-appointments eliminado rompe admin-appointments.js | sec-appointments queda como wrapper vacío + el código JS sigue encontrando IDs en sec-crm pane "bandeja" |
+| Tab "Pipeline" pesado en primer load | Lazy render: solo dispara `AltorraPipeline.render()` al activar tab |
+| Click en sidebar "CRM" carga tab equivocado | applyHashTab respeta deep-link, sino último tab persistido en localStorage |
+| Deep-link #/appointments rompe (alias router lo manda a #/crm pero default es contactos) | admin-crm-tabs.js detecta hash y fuerza tab "bandeja" |
+| Tab strip overflow en mobile | scroll-x con scrollbar oculto, swipe gesture nativo |
+| Tabs activadas perdidas al hacer F5 | localStorage `altorra_crm_last_tab` persiste última visitada |
+| Eventos cross-tab del navegador (back/forward) | hashchange listener resincroniza tab correcto |
+| crm.tab-changed dispara render Pipeline en bucle | El listener verifica payload.tab === 'pipeline' antes de re-render |
+| Pipeline sin contactos crashea | Empty state amigable + skip render si lista vacía |
+
+#### Test E2E del sprint
+
+1. Login admin → sidebar muestra "CRM" como item único (sin
+   "Contactos 360" + "Bandeja" separados)
+2. Click "CRM" → carga sec-crm con tab "Contactos & Ventas" activo
+3. Ver tab strip arriba con 3 tabs: Contactos · Bandeja · Pipeline (Beta)
+4. Click tab "Bandeja" → muestra solicitudes/citas (lo que era sec-appointments)
+   - URL cambia a `#/crm/bandeja`
+   - Filtros, kanban, smart suggestions del admin-appointments funcionan
+5. Click tab "Pipeline" → muestra 4 columnas (Calientes/Tibios/Fríos/Convertidos)
+   con cards de contactos clasificados
+6. Click en una card del Kanban → activa tab "contactos" + abre CRM 360°
+   del contacto seleccionado
+7. Click tab "Contactos" → vuelve a la tabla 360° (lo que era sec-crm)
+8. Refrescar página estando en `#/crm/pipeline` → vuelve al tab pipeline
+9. Deep-link directo `#/appointments` → router redirige a sec-crm,
+   admin-crm-tabs detecta el hash y activa tab "bandeja"
+10. Back button del browser → tabs cambian correctamente
+11. Mobile (<600px): scroll horizontal de tabs, columnas pipeline en
+    scroll-x con cards full-width
+12. NBA Top 5 del Inicio (§27.2) sigue funcionando — click "Ver contacto"
+    abre CRM 360° en tab "contactos"
+
+**Archivos modificados**:
+- `admin.html` (sec-crm reescrito con 3 tab panes; sec-appointments
+  vaciado; scripts admin-crm-tabs.js + admin-pipeline.js cargados)
+- `js/admin-section-router.js` (alias appointments→crm)
+- `js/admin-crm-tabs.js` (NUEVO ~150 líneas)
+- `js/admin-pipeline.js` (NUEVO ~280 líneas, Kanban segmentado por tier)
+- `css/admin.css` (~250 líneas .crm-tab* + .pipeline-* + responsive)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510030000)
+- `CLAUDE.md` (esta sección §27.3)
+
+**Pendiente del ADR-027** (commits siguientes):
+- §27.4 Agenda con tabs internos (Mes · Día · Disponibilidad · Festivos)
+- §27.5 Reportes ejecutivos implementados de cero
+- §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
+- §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)

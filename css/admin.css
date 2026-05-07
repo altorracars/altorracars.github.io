@@ -8062,3 +8062,292 @@ select:focus {
         transform: none !important;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   §27.3 ALTORRA HARMONY CRM — CRM unificado (tabs + Pipeline Kanban)
+   Una sola sección con 3 tabs internos: Contactos · Bandeja · Pipeline.
+   Tab strip estilo HarmonyOS, lenguaje visual fluido.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── TAB STRIP del CRM ─── */
+.crm-tabstrip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+    margin: 0 0 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.crm-tabstrip::-webkit-scrollbar { display: none; }
+
+.crm-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-radius: var(--hmy-radius-button, 12px) var(--hmy-radius-button, 12px) 0 0;
+    color: rgba(255, 255, 255, 0.55);
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--hmy-transition-fluid, 0.3s ease);
+    position: relative;
+    white-space: nowrap;
+}
+.crm-tab:hover:not(.is-active) {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.85);
+}
+.crm-tab.is-active {
+    color: var(--ws-color-blue, #3b82f6);
+    background: rgba(59, 130, 246, 0.08);
+}
+.crm-tab.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -9px;
+    left: 16px;
+    right: 16px;
+    height: 2px;
+    background: var(--ws-color-blue, #3b82f6);
+    border-radius: 2px 2px 0 0;
+}
+.crm-tab [data-lucide] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+.crm-tab-count {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+    border-radius: var(--hmy-radius-pill, 999px);
+    padding: 1px 7px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 2px;
+}
+.crm-tab.is-active .crm-tab-count {
+    background: rgba(59, 130, 246, 0.18);
+    color: var(--ws-color-blue, #3b82f6);
+}
+.crm-tab-badge {
+    margin-left: 4px;
+}
+
+/* ─── TAB PANES — show/hide ─── */
+.crm-tabpane {
+    display: none;
+    animation: crmTabFadeIn 0.25s ease-out;
+}
+.crm-tabpane.is-active {
+    display: block;
+}
+@keyframes crmTabFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Quitar el page-header inner duplicado dentro de los panes */
+.crm-tabpane > .page-header {
+    border-top: none;
+    background: transparent;
+    padding-top: 0;
+}
+
+/* ─── PIPELINE KANBAN ─── */
+.pipeline-kanban {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 8px;
+    padding-bottom: 12px;
+    overflow-x: auto;
+}
+
+.pipeline-column {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--hmy-radius-card-soft, 16px);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+.pipeline-col-head {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.pipeline-col-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--admin-text, #fff);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.pipeline-col-icon {
+    width: 18px;
+    height: 18px;
+}
+.pipeline-col-icon--coral { color: var(--ws-color-coral, #f97066); }
+.pipeline-col-icon--amber { color: var(--ws-color-amber, #f59e0b); }
+.pipeline-col-icon--blue { color: var(--ws-color-blue, #3b82f6); }
+.pipeline-col-icon--green { color: var(--ws-color-green, #10b981); }
+.pipeline-col-count {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    border-radius: var(--hmy-radius-pill, 999px);
+    padding: 1px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+.pipeline-col-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+.pipeline-col-empty,
+.pipeline-col-more {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.78rem;
+    padding: 12px;
+    font-style: italic;
+}
+.pipeline-col-more {
+    background: rgba(184, 150, 88, 0.05);
+    border-radius: var(--hmy-radius-button, 12px);
+    color: rgba(184, 150, 88, 0.7);
+    font-style: normal;
+    font-weight: 600;
+}
+
+/* Pipeline cards */
+.pipeline-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--hmy-radius-button, 12px);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all var(--hmy-transition-fluid, 0.3s ease);
+}
+.pipeline-card:hover {
+    background: rgba(184, 150, 88, 0.08);
+    border-color: rgba(184, 150, 88, 0.25);
+    transform: translateY(-1px);
+    box-shadow: var(--hmy-shadow-soft-sm, 0 2px 12px rgba(0, 0, 0, 0.06));
+}
+.pipeline-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.pipeline-card-avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.25), rgba(184, 150, 88, 0.1));
+    border: 1px solid rgba(184, 150, 88, 0.3);
+    color: #b89658;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+.pipeline-card-body {
+    flex: 1;
+    min-width: 0;
+}
+.pipeline-card-name {
+    font-weight: 600;
+    color: var(--admin-text, #fff);
+    font-size: 0.82rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pipeline-card-time {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.7rem;
+}
+.pipeline-card-score {
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 3px 8px;
+    border-radius: var(--hmy-radius-pill, 999px);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.65);
+}
+.pipeline-card-score[data-score]:not([data-score="0"]) { color: #b89658; background: rgba(184, 150, 88, 0.12); }
+.pipeline-card-reason {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 6px;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.pipeline-card-cta {
+    margin-top: 8px;
+    width: 100%;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: var(--ws-color-blue, #3b82f6);
+    padding: 5px 8px;
+    border-radius: var(--hmy-radius-button, 12px);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all var(--hmy-transition-quick, 0.18s ease);
+}
+.pipeline-card-cta:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: var(--ws-color-blue, #3b82f6);
+}
+.pipeline-card-cta [data-lucide] {
+    width: 12px;
+    height: 12px;
+}
+
+/* Mobile: scroll horizontal de columnas */
+@media (max-width: 1100px) {
+    .pipeline-kanban {
+        grid-template-columns: repeat(4, minmax(240px, 280px));
+    }
+}
+@media (max-width: 600px) {
+    .pipeline-kanban {
+        grid-template-columns: repeat(4, 88vw);
+    }
+    .crm-tab span:not(.crm-tab-count) {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .crm-tabpane,
+    .pipeline-card { transition: none !important; animation: none !important; }
+    .pipeline-card:hover { transform: none !important; }
+}

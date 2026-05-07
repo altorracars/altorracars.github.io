@@ -35,9 +35,14 @@
         //   • "templates" (Plantillas) → integradas como chips en ALTOR Hub
         //     (deep-links viejos van al Hub para flow ininterrumpido)
         //   • "reports-disabled" (placeholder) → sec-reports real
+        //   • §27.3 — "appointments" (Bandeja) → unificado dentro del
+        //     sec-crm como tab interno. Deep-link #/appointments
+        //     navega a sec-crm; admin-crm-tabs.js detecta el hash y
+        //     activa automáticamente tab=bandeja.
         'automation': 'workflows',
         'templates': 'concierge',
         'reports-disabled': 'reports',
+        'appointments': 'crm',
         // Aliases UX para deep-links naturales en español
         'contactos': 'crm',
         'pipeline': 'crm',

@@ -9181,3 +9181,223 @@ select:focus {
     .workflow-card:hover,
     .cnc-tpl-item:hover { transform: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   §27.7 ALTORRA HARMONY CRM — Polish final
+   Spring animations · sidebar badges con tones · skeletons shimmer
+   dorado · empty states ilustrados · micro-interactions sutiles.
+   Cierre del ADR-027.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Sidebar nav-badge con tones (urgente/success/default) ─── */
+.nav-badge {
+    display: none;
+    background: rgba(184, 150, 88, 0.18);
+    color: #d4b67a;
+    border-radius: var(--hmy-radius-pill, 999px);
+    padding: 1px 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-left: auto;
+    transition: all var(--hmy-transition-fluid);
+    line-height: 1.4;
+    min-width: 18px;
+    text-align: center;
+}
+.nav-badge[data-tone="urgent"] {
+    background: rgba(249, 112, 102, 0.2);
+    color: #f97066;
+    animation: navBadgePulse 2s ease-in-out infinite;
+}
+.nav-badge[data-tone="success"] {
+    background: rgba(16, 185, 129, 0.18);
+    color: #10b981;
+}
+@keyframes navBadgePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(249, 112, 102, 0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(249, 112, 102, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nav-badge[data-tone="urgent"] { animation: none !important; }
+}
+
+/* ─── Section transition fluida (spring entrance) ─── */
+.section.active {
+    animation: sectionEnter 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+@keyframes sectionEnter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .section.active { animation: none !important; }
+}
+
+/* ─── Skeletons shimmer dorado (mejora del legacy genérico) ─── */
+.skeleton-hmy {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.04) 0%,
+        rgba(184, 150, 88, 0.12) 50%,
+        rgba(255, 255, 255, 0.04) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.4s ease-in-out infinite;
+    border-radius: var(--hmy-radius-button, 12px);
+}
+@keyframes skeletonShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.skeleton-hmy-card {
+    height: 80px;
+    margin-bottom: 12px;
+}
+.skeleton-hmy-line {
+    height: 14px;
+    margin-bottom: 8px;
+}
+.skeleton-hmy-line--sm { height: 10px; width: 60%; }
+@media (prefers-reduced-motion: reduce) {
+    .skeleton-hmy { animation: none !important; }
+}
+
+/* ─── Empty state utility class (alt-empty) ─── */
+.alt-empty {
+    text-align: center;
+    padding: 40px 24px;
+    color: rgba(255, 255, 255, 0.55);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.alt-empty-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(184, 150, 88, 0.08);
+    border-radius: 50%;
+    color: rgba(184, 150, 88, 0.55);
+}
+.alt-empty-icon [data-lucide] { width: 24px; height: 24px; }
+.alt-empty-title {
+    font-weight: 600;
+    color: var(--admin-text, #fff);
+    font-size: 0.95rem;
+    margin: 0;
+}
+.alt-empty-text {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.5);
+    max-width: 360px;
+    line-height: 1.5;
+    margin: 0;
+}
+.alt-empty-cta {
+    margin-top: 4px;
+}
+
+/* ─── Micro-interactions: ripple sutil en botones primarios ─── */
+.alt-btn--primary,
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+}
+.alt-btn--primary::after,
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+.alt-btn--primary:active::after,
+.btn-primary:active::after {
+    width: 200%;
+    height: 200%;
+    opacity: 1;
+    transition: width 0s, height 0s, opacity 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+    .alt-btn--primary::after,
+    .btn-primary::after { display: none !important; }
+}
+
+/* ─── Sidebar profile + logout polish ─── */
+.sidebar-profile {
+    margin: 8px 14px 4px;
+    padding: 10px 12px;
+    background: rgba(184, 150, 88, 0.06);
+    border: 1px solid rgba(184, 150, 88, 0.15);
+    border-radius: var(--hmy-radius-button, 12px);
+    transition: all var(--hmy-transition-fluid);
+}
+.sidebar-profile:hover {
+    background: rgba(184, 150, 88, 0.1);
+    border-color: rgba(184, 150, 88, 0.3);
+}
+
+/* ─── Cards entrando con stagger en grids ─── */
+.hero-kpis .hero-kpi {
+    animation: cardStaggerIn 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+.hero-kpis .hero-kpi:nth-child(1) { animation-delay: 0.05s; }
+.hero-kpis .hero-kpi:nth-child(2) { animation-delay: 0.12s; }
+.hero-kpis .hero-kpi:nth-child(3) { animation-delay: 0.19s; }
+
+.workflows-rules-grid .workflow-card {
+    animation: cardStaggerIn 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+.workflows-rules-grid .workflow-card:nth-child(1) { animation-delay: 0.05s; }
+.workflows-rules-grid .workflow-card:nth-child(2) { animation-delay: 0.12s; }
+.workflows-rules-grid .workflow-card:nth-child(3) { animation-delay: 0.19s; }
+.workflows-rules-grid .workflow-card:nth-child(4) { animation-delay: 0.26s; }
+
+.reports-kpis .reports-kpi-card {
+    animation: cardStaggerIn 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+.reports-kpis .reports-kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.reports-kpis .reports-kpi-card:nth-child(2) { animation-delay: 0.12s; }
+.reports-kpis .reports-kpi-card:nth-child(3) { animation-delay: 0.19s; }
+.reports-kpis .reports-kpi-card:nth-child(4) { animation-delay: 0.26s; }
+
+@keyframes cardStaggerIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .hero-kpi, .workflow-card, .reports-kpi-card { animation: none !important; }
+}
+
+/* ─── NBA dashboard items con stagger ─── */
+.nba-dashboard-list .nba-dash-item {
+    animation: nbaItemSlideIn 0.35s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
+}
+.nba-dashboard-list .nba-dash-item:nth-child(1) { animation-delay: 0.05s; }
+.nba-dashboard-list .nba-dash-item:nth-child(2) { animation-delay: 0.10s; }
+.nba-dashboard-list .nba-dash-item:nth-child(3) { animation-delay: 0.15s; }
+.nba-dashboard-list .nba-dash-item:nth-child(4) { animation-delay: 0.20s; }
+.nba-dashboard-list .nba-dash-item:nth-child(5) { animation-delay: 0.25s; }
+@keyframes nbaItemSlideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nba-dash-item { animation: none !important; }
+}
+
+/* ─── Funnel stage fill animation con delay (cascada) ─── */
+.funnel-stage:nth-child(1) .funnel-stage-fill { animation-delay: 0.1s; }
+.funnel-stage:nth-child(2) .funnel-stage-fill { animation-delay: 0.2s; }
+.funnel-stage:nth-child(3) .funnel-stage-fill { animation-delay: 0.3s; }
+.funnel-stage:nth-child(4) .funnel-stage-fill { animation-delay: 0.4s; }

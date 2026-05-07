@@ -16691,3 +16691,126 @@ A:
 ADR-028 ALTORRA NOVA cerrado. El admin ya no es un Frankenstein — es
 un producto premium con identidad visual coherente, customizable y
 accesible.
+
+---
+
+## 29. ADR-029 ADMIN-FINAL — Polish total al admin (lo que faltaba) (2026-05-10)
+
+> Tras cerrar ADR-028 (NOVA público no se ejecutó por decisión del cliente),
+> queda hacer audit del admin y aplicar polish a todas las zonas que aún
+> tienen restos pre-NOVA. Foco 100% admin, cero touchups al sitio público.
+
+### 29.1 Sprint admin-final A — Modales específicos NOVA (2026-05-10)
+
+**Objetivo del sprint**: los 6 modales principales del admin
+(`#vehicleModal`, `#brandModal`, `#dealerModal`, `#bannerModal`,
+`#reviewModal`, `#userModal`) + `#vehiclePreviewModal` y
+`#appointmentManagerModal` recibieron animation + scrim del Sprint
+NOVA-A (§28.1) pero sus headers/footers/upload-areas/galleries
+internas seguían con look pre-NOVA. Sprint admin-final A los pone
+a paridad premium total.
+
+#### A. Modal headers premium con accent line animado
+
+`.modal-header` específico de cada modal:
+- Padding 18×24
+- Background `linear-gradient` dorado tinted (6% → 1%)
+- `::before`: línea 2px arriba con gradient horizontal
+  (transparent → dorado → transparent), opacity 0.5
+- Border-bottom glass-hi
+- Title con gradient text `#ffffff → #d4ad6e`
+- Font-weight 700, letter-spacing tight
+
+#### B. Modal close circular con rotation hover
+
+`.modal-close` selector específico:
+- 36×36 circular con bg glass + border glass
+- Hover: bg rojo tenue + border rojo + texto `#fca5a5` + rotate 90°
+- Transition spring snap
+- Color tertiary por default
+
+#### C. Body + footer refinados
+
+- `.modal-body`: padding 22×24, max-height 72vh
+- `.modal-footer`: padding 16×24 + gap 12, gradient sutil bottom-up
+
+#### D. Upload area premium drag & drop
+
+`.upload-area`:
+- Border dashed dorado 30% alpha + bg dorado 2%
+- Hover: border full dorado + bg dorado 6% + scale 1.005
+- Dragover: border full + bg 10% + glow + scale 1.01
+- `::before` radial-gradient pseudo aparece en dragover (efecto luz)
+- Reduced-motion cancela transforms
+
+#### E. Image gallery / thumbs
+
+`.image-gallery`, `.image-grid`, `.images-grid`, `.uploaded-images`:
+- Grid auto-fill minmax(120px) gap 12
+- Items aspect 4/3 con border glass + hover lift
+- Image actions overlay aparece al hover (top-right)
+- Delete action: hover rojo lleno
+
+#### F. Form/modal tabs strip
+
+`.modal-tabs`, `.form-tabs`:
+- Container glass tenue padding 4 + radius card-soft
+- Tabs radius 10 + active dorado tint + scroll-x mobile
+
+#### G. Wizard steps (phase indicator)
+
+`.wizard-step`, `.phase-step`, `.step-item`:
+- Pill radius con border glass
+- Active: gradient dorado + glow + border dorado + texto dorado
+- Done: tint verde + texto verde claro
+- `.wizard-step-num` 22×22 circle con número bold
+
+#### H. Color swatches (color extractor en vehicle modal)
+
+`.color-swatch`, `.color-preview`, `.color-extracted`:
+- 28×28 circle con border 2px alpha 18% + shadow elev-1
+- Hover scale 1.15
+
+#### I. Preview iframe (vehicle preview)
+
+`.preview-iframe`, `#vehiclePreviewIframe`:
+- Radius card-soft + border glass-hi + shadow elev-2
+- Bg dark para que loading no se vea blanco
+
+#### J. Delete confirm + draft notice
+
+- `.delete-confirm`, `.danger-zone`: bg rojo 4% + border rojo 25% + radius
+- `.draft-notice`, `.unsaved-notice`: bg amber 8% + border amber 25%
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Selectores genéricos `.modal-header` rompen modales nuevos del §27 | Selectores con id específico `#vehicleModal .modal-header` |
+| Override `!important` masivo dificulta mantenimiento | Limitado solo a propiedades que admin.css legacy tenía con valores hardcoded |
+| Title gradient text rompe en browsers viejos | Fallback `-webkit-text-fill-color` + `background-clip` standard |
+| Upload area hover scale causa jank | Scale 1.005 (sutil), spring transition GPU-only |
+| Image actions opacity 0 default oculta accesibilidad | Aparecen en hover; `:focus-within` también opcional futuro |
+| Wizard steps glow pesa en grids con muchos items | Solo cuando `.active` (un step a la vez) |
+| Color swatch hover scale 1.15 puede salirse del container | `display: inline-block` + transition compositor |
+
+#### Test E2E del sprint
+
+1. Login admin → click "Crear vehículo" → modal aparece con animation
+2. Ver header con accent line dorada animada arriba + title gradient
+3. Hover en close X → rotate 90° + tinte rojo
+4. Drag & drop una imagen al upload area → border dorado + glow
+5. Ver thumbnails con aspect 4/3 + hover lift
+6. Wizard steps muestran active dorado glow + done verde
+7. Mismo test en brandModal, dealerModal, bannerModal,
+   reviewModal, userModal
+8. Vehicle preview modal: iframe con border + shadow
+9. Mobile: padding modal reducido pero close btn sigue accesible
+
+**Archivos modificados**:
+- `css/admin.css` (+330 líneas Sprint A admin-final)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510160000)
+- `CLAUDE.md` (esta sección §29.1)
+
+**Sin cambios en HTML ni JS** — el polish llega 100% via CSS sobre
+las clases/IDs existentes.

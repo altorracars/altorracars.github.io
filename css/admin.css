@@ -11682,3 +11682,402 @@ html.theme-changing-stop * {
     .atp-card .atp-swatch { transition: none; }
     * { transition: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-029 ADMIN-FINAL Sprint A — Modales específicos NOVA
+   Refuerzo a los 6 modales del admin: vehicles, brands, dealers,
+   banners, reviews, users — más cualquier modal con id="*Modal".
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── MODAL HEADERS premium con gradient + accent line ───────── */
+#vehicleModal .modal-header,
+#brandModal .modal-header,
+#dealerModal .modal-header,
+#bannerModal .modal-header,
+#reviewModal .modal-header,
+#userModal .modal-header,
+#vehiclePreviewModal .modal-header,
+#appointmentManagerModal .modal-header,
+.modal-overlay .modal-header {
+    padding: 18px 24px !important;
+    background: linear-gradient(180deg,
+        rgba(184, 150, 88, 0.06) 0%,
+        rgba(184, 150, 88, 0.01) 100%);
+    border-bottom: var(--nova-border-glass-hi) !important;
+    position: relative;
+    overflow: hidden;
+}
+#vehicleModal .modal-header::before,
+#brandModal .modal-header::before,
+#dealerModal .modal-header::before,
+#bannerModal .modal-header::before,
+#reviewModal .modal-header::before,
+#userModal .modal-header::before,
+#vehiclePreviewModal .modal-header::before,
+#appointmentManagerModal .modal-header::before,
+.modal-overlay .modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--brand-primary, #b89658) 50%,
+        transparent 100%);
+    opacity: 0.5;
+    pointer-events: none;
+}
+#vehicleModal .modal-header h2,
+#brandModal .modal-header h2,
+#dealerModal .modal-header h2,
+#bannerModal .modal-header h2,
+#reviewModal .modal-header h2,
+#userModal .modal-header h2,
+.modal-overlay .modal-header h2 {
+    font-size: 1.125rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+    margin: 0;
+    background: linear-gradient(135deg, #ffffff 0%, #d4ad6e 120%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ─── MODAL CLOSE button refinado ──────────────────────────── */
+.modal-overlay .modal-close,
+#vehicleModal .modal-close,
+#brandModal .modal-close,
+#dealerModal .modal-close,
+#bannerModal .modal-close,
+#reviewModal .modal-close,
+#userModal .modal-close,
+#appointmentManagerModal .modal-close {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: var(--nova-border-glass) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1rem !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+    transition: all var(--nova-spring-snap) !important;
+}
+.modal-overlay .modal-close:hover,
+#vehicleModal .modal-close:hover,
+#brandModal .modal-close:hover,
+#dealerModal .modal-close:hover,
+#bannerModal .modal-close:hover,
+#reviewModal .modal-close:hover,
+#userModal .modal-close:hover,
+#appointmentManagerModal .modal-close:hover {
+    background: rgba(239, 68, 68, 0.14) !important;
+    border-color: rgba(239, 68, 68, 0.32) !important;
+    color: #fca5a5 !important;
+    transform: rotate(90deg);
+}
+
+/* ─── MODAL BODY scrolling refinado ──────────────────────── */
+.modal-overlay .modal-body,
+#vehicleModal .modal-body,
+#brandModal .modal-body,
+#dealerModal .modal-body,
+#bannerModal .modal-body,
+#reviewModal .modal-body,
+#userModal .modal-body,
+#appointmentManagerModal .modal-body {
+    padding: 22px 24px !important;
+    max-height: 72vh !important;
+}
+
+/* ─── MODAL FOOTER premium ──────────────────────────────── */
+.modal-overlay .modal-footer,
+#vehicleModal .modal-footer,
+#brandModal .modal-footer,
+#dealerModal .modal-footer,
+#bannerModal .modal-footer,
+#reviewModal .modal-footer,
+#userModal .modal-footer,
+#appointmentManagerModal .modal-footer {
+    padding: 16px 24px !important;
+    border-top: var(--nova-border-glass) !important;
+    background: linear-gradient(0deg,
+        rgba(255, 255, 255, 0.02) 0%,
+        rgba(255, 255, 255, 0) 100%);
+    gap: 12px !important;
+}
+
+/* ─── UPLOAD AREA premium (drag & drop) ───────────────── */
+.upload-area {
+    border-radius: var(--hmy-radius-card-soft) !important;
+    border: 2px dashed rgba(184, 150, 88, 0.30) !important;
+    background: rgba(184, 150, 88, 0.02) !important;
+    padding: 32px 24px !important;
+    transition: all var(--nova-spring-snap);
+    position: relative;
+    overflow: hidden;
+}
+.upload-area:hover {
+    border-color: var(--brand-primary, #b89658) !important;
+    background: rgba(184, 150, 88, 0.06) !important;
+    transform: scale(1.005);
+}
+.upload-area.dragover {
+    border-color: var(--brand-primary, #b89658) !important;
+    background: rgba(184, 150, 88, 0.10) !important;
+    box-shadow: var(--nova-shadow-glow);
+    transform: scale(1.01);
+}
+.upload-area::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center,
+        rgba(184, 150, 88, 0.05) 0%,
+        transparent 60%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--nova-spring-snap);
+}
+.upload-area.dragover::before {
+    opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+    .upload-area, .upload-area:hover, .upload-area.dragover { transform: none; }
+}
+
+/* ─── IMAGE GALLERY THUMBS premium ──────────────────────── */
+.image-gallery,
+.image-grid,
+.images-grid,
+.uploaded-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+.image-thumb,
+.image-preview,
+.uploaded-image,
+.gallery-item {
+    border-radius: var(--hmy-radius-card-soft) !important;
+    overflow: hidden;
+    border: var(--nova-border-glass);
+    aspect-ratio: 4/3;
+    background: rgba(0, 0, 0, 0.20);
+    transition: all var(--nova-spring-snap);
+    position: relative;
+}
+.image-thumb:hover,
+.image-preview:hover,
+.uploaded-image:hover,
+.gallery-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--nova-shadow-elev-2);
+    border-color: rgba(184, 150, 88, 0.32);
+}
+.image-thumb img,
+.image-preview img,
+.uploaded-image img,
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.image-thumb-actions,
+.image-preview-actions {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity var(--nova-spring-snap);
+}
+.image-thumb:hover .image-thumb-actions,
+.image-preview:hover .image-preview-actions {
+    opacity: 1;
+}
+.image-thumb-action,
+.image-preview-action {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.85);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: all var(--nova-spring-snap);
+}
+.image-thumb-action:hover {
+    background: rgba(239, 68, 68, 0.85);
+    color: #ffffff;
+}
+
+/* ─── FORM TABS dentro de modales (tabs vehicle/branded) ─── */
+.modal-tabs,
+.form-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--hmy-radius-card-soft);
+    margin-bottom: 18px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.modal-tab,
+.form-tab {
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.65);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--nova-spring-snap);
+    font-size: 0.85rem;
+}
+.modal-tab:hover,
+.form-tab:hover {
+    background: rgba(184, 150, 88, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+}
+.modal-tab.active,
+.modal-tab[aria-selected="true"],
+.form-tab.active,
+.form-tab[aria-selected="true"] {
+    background: rgba(184, 150, 88, 0.16);
+    color: var(--brand-primary, #b89658);
+}
+
+/* ─── PHASE indicator (wizard steps en modales) ─────────── */
+.wizard-steps,
+.phase-indicator,
+.steps-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 22px;
+    padding: 14px 0;
+    border-bottom: var(--nova-border-glass);
+}
+.wizard-step,
+.phase-step,
+.step-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: var(--hmy-radius-pill);
+    background: rgba(255, 255, 255, 0.04);
+    border: var(--nova-border-glass);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: all var(--nova-spring-snap);
+}
+.wizard-step.active,
+.phase-step.active,
+.step-item.active {
+    background: linear-gradient(135deg,
+        rgba(184, 150, 88, 0.20) 0%,
+        rgba(184, 150, 88, 0.08) 100%);
+    border-color: var(--brand-primary, #b89658);
+    color: var(--brand-primary, #b89658);
+    box-shadow: 0 0 16px rgba(184, 150, 88, 0.15);
+}
+.wizard-step.done,
+.phase-step.done,
+.step-item.done {
+    background: rgba(16, 185, 129, 0.10);
+    border-color: rgba(16, 185, 129, 0.30);
+    color: #6ee7b7;
+}
+.wizard-step-num,
+.step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: currentColor;
+    color: #1a1a1a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+/* ─── COLOR PICKER (extracted color preview en vehicle modal) */
+.color-extracted,
+.color-preview,
+.color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
+    display: inline-block;
+    vertical-align: middle;
+    transition: transform var(--nova-spring-snap);
+}
+.color-swatch:hover {
+    transform: scale(1.15);
+}
+
+/* ─── PREVIEW IFRAME (vehicle preview modal) ───────────── */
+.preview-iframe,
+#vehiclePreviewIframe {
+    border-radius: var(--hmy-radius-card-soft);
+    border: var(--nova-border-glass-hi);
+    box-shadow: var(--nova-shadow-elev-2);
+    width: 100%;
+    background: rgba(0, 0, 0, 0.20);
+}
+
+/* ─── DELETE CONFIRMATION danger styling ─────────────── */
+.delete-confirm,
+.danger-zone {
+    border-radius: var(--hmy-radius-card-soft);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.04);
+    padding: 16px 18px;
+    margin: 14px 0;
+}
+.delete-confirm-title,
+.danger-zone-title {
+    color: #fca5a5;
+    font-weight: 600;
+    font-size: 0.92rem;
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ─── DRAFTS notification (vehicle modal) ──────────────── */
+.draft-notice,
+.unsaved-notice {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: #fcd34d;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN ADMIN-FINAL Sprint A
+   ═══════════════════════════════════════════════════════════════════ */

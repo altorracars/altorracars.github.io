@@ -17913,3 +17913,189 @@ Premium gradient dorado 3-stop + glow + lift hover scale 1.02.
 9. Mobile responsive → todo se adapta correctamente
 
 **Costo recurrente: $0**. Todo client-side. Cero impacto en sitio público.
+
+---
+
+## 32. ADR-032 ALTORRA VISIONARY MASTER PLAN — Plan completo de fases (2026-05-10)
+
+> Tras feedback del cliente: "no te limites a lo que te digo — haz revisión
+> profunda y total para crear un super hiper mega plan de fases que aborde
+> absolutamente todo".
+>
+> **Audit profundo del estado actual** revela deuda significativa:
+>
+> | Métrica | Valor | Estado |
+> |---|---|---|
+> | `!important` totales | 481 | 🔴 CRÍTICO (peleas de especificidad) |
+> | Inline styles HTML | 286 | 🔴 CRÍTICO (deuda visual) |
+> | Modales totales | 35 | 🟠 ALTO (muchos auxiliares de cancel) |
+> | Scripts cargados | 90 | 🟠 ALTO (bundle pesado) |
+> | Secciones funcionales | 17 | ✓ |
+> | Hardcoded `#b89658` | 129 | 🟠 ALTO (no semántico) |
+> | `setInterval` activos | 35 | 🟡 MEDIO (perf concern) |
+> | `onSnapshot` listeners | 25 | 🟡 MEDIO (Firestore reads) |
+> | `console.log` debt | 51 | 🟡 MEDIO (debug en prod) |
+> | CSS bundle | 1.2MB | 🟠 ALTO |
+> | JS bundle admin | 2.6MB | 🟠 ALTO |
+> | Líneas JS admin | 25,635 | — |
+> | Iconografía Lucide | 144 ✓ | ✓ |
+> | SVG inline | 7 (eliminables) | 🟡 |
+> | Emojis backup | 12 (a Lucide) | 🟡 |
+
+### Plan de 10 fases — visión completa
+
+#### 🏗️ FASE 1 — FOUNDATION CLEANUP
+
+| Sub | Entregable |
+|---|---|
+| 1A | Audit visual + UX por sección (documentación con screenshots de cada bug) |
+| 1B | Eliminar **286 inline styles** del HTML → CSS classes semánticas |
+| 1C | Reducir **90 scripts** → bundling estratégico (defer, idle load, lazy per section) |
+| 1D | Eliminar **481 `!important`** con sistema `@layer` formal (legacy → nova → visionary → utilities) |
+| 1E | Migrar **12 emojis + 7 SVG inline** a Lucide unified |
+| 1F | Eliminar 51 `console.log` o gatear con `if (DEBUG)` |
+| 1G | Auditar 35 modales — consolidar duplicados (cancelXxxModal redundantes) |
+
+#### 🎨 FASE 2 — DESIGN SYSTEM v3 (canonical)
+
+| Sub | Entregable |
+|---|---|
+| 2A | `tokens.css` refactor — **único sistema canonical** con `--vis-*`. Eliminar `--admin-*`, `--hmy-*`, `--nova-*` (alias de compat) |
+| 2B | Componentes base reescritos como **componentes web reales**: Button / Input / Select / Card / Modal / Toggle / Pill / Tag / Avatar / Badge |
+| 2C | Iconografía Lucide stroke-width unified (1.5 navigation / 1.75 actions / 2 buttons primary) |
+| 2D | Sistema tipográfico con `font-feature-settings` real + dynamic scale fluida con `clamp()` |
+| 2E | Color system 100% semántico (cero hardcoded `#b89658`) — usar `var(--vis-brand-*)` |
+| 2F | Storybook lite en `admin/_components.html` (visual reference) |
+
+#### 🚗 FASE 3 — REDISEÑO POR SECCIÓN COMPLETO
+
+| Sub | Sección | Rediseño propuesto |
+|---|---|---|
+| 3A | **Dashboard** | KPI cards Apple Music style + welcome card animado + hero greeting + activity timeline lateral |
+| 3B | **Vehículos** ⭐ | Vista grid premium (cards, no tabla) + filtros laterales drawer + bulk actions + búsqueda smart + imagen prominente + stats row |
+| 3C | **Marcas** | Galería visual con logos prominentes (no tabla) + click para edit + drag-drop reorder |
+| 3D | **Aliados (dealers)** | Cards business style + métricas (vehículos asociados, ventas) |
+| 3E | **Banners** | Preview live mientras editas + drag-drop reorder + A/B testing UI |
+| 3F | **Reseñas** | Cards Twitter/Instagram style + reply UI + moderation actions |
+| 3G | **CRM** | Pipeline kanban refinado + 360° contacto premium con tabs (info/historial/notas/ventas) |
+| 3H | **ALTOR Hub** | Chat IA + bandeja unificada + smart suggestions + quick replies + macro buttons |
+| 3I | **Cerebro AI** | KB editor visual + FAQ búsqueda en vivo + intent management UI |
+| 3J | **Lo que no entendí** | Workflow guided de promoción a FAQ con preview |
+| 3K | **Calendario** | Vista mes/semana/día + drag-drop citas + slot management visual |
+| 3L | **Workflows** | Visual rules builder con cards (no JSON) + flow diagram |
+| 3M | **Reportes** | Charts modernos custom theme + insights AI + export PDF/CSV |
+| 3N | **Usuarios** | Admin invite flow + permisos granulares + activity log |
+| 3O | **Auditoría** | Timeline visual con filtros + diff visualizer |
+| 3P | **Ajustes** | Secciones colapsables macOS Settings style |
+
+#### 🎯 FASE 4 — UX FLOWS PREMIUM
+
+| Sub | Entregable |
+|---|---|
+| 4A | Onboarding tour mejorado (5 pasos con spotlight real) |
+| 4B | Command palette ⌘+K extendido (todas las acciones, no solo navegación) |
+| 4C | Búsqueda global mejorada con preview en hover |
+| 4D | Notificaciones contextuales con threading + acknowledge |
+| 4E | Quick actions en cada sección (FAB con menú) |
+| 4F | Bulk actions universales en tablas (select-all + acciones masivas) |
+| 4G | Undo/redo system para acciones destructivas |
+
+#### 📊 FASE 5 — DATA VIZ WORLD-CLASS
+
+| Sub | Entregable |
+|---|---|
+| 5A | Chart.js custom theme dorado integrado |
+| 5B | Sparklines en KPI cards |
+| 5C | Heatmap activity (cuándo trabajan los asesores) |
+| 5D | Funnel visual con animations spring |
+| 5E | Pipeline kanban drag-drop fluido + drop zones visuales |
+| 5F | Geo map (ventas por ciudad) |
+
+#### ✨ FASE 6 — MICROINTERACCIONES PREMIUM
+
+| Sub | Entregable |
+|---|---|
+| 6A | Sound design opt-in (audio haptic) |
+| 6B | Page transitions cross-section (View Transitions API) |
+| 6C | Smart loading states (skeleton matched per section) |
+| 6D | Success/error feedback visual rico (confetti success, shake error) |
+| 6E | Cursor effects (pointer-aware highlights, magnetic buttons) |
+| 6F | Hover preview real (tooltips ricos con info) |
+
+#### ⚡ FASE 7 — PERFORMANCE WORLD-CLASS
+
+| Sub | Entregable |
+|---|---|
+| 7A | Code splitting por sección (lazy load JS de sec-* solo al activar) |
+| 7B | CSS `@layer` formal (cero `!important` necesarios) |
+| 7C | Service Worker prefetch inteligente (predict next section) |
+| 7D | Virtual scrolling en listas >100 items |
+| 7E | WebWorker para cómputos pesados (CSV export, scoring batch) |
+| 7F | Image lazy loading universal con blur-up placeholder |
+
+#### ♿ FASE 8 — ACCESIBILIDAD AAA
+
+| Sub | Entregable |
+|---|---|
+| 8A | ARIA completo (roles, labels, live regions) |
+| 8B | Keyboard navigation universal (Tab/Enter/Escape consistente) |
+| 8C | Screen reader optimization (announce changes) |
+| 8D | Focus management en modales (trap + restore) |
+| 8E | Color contrast AAA forzado (high contrast mode polish) |
+| 8F | Reduced motion respetado en TODA animation |
+
+#### 📱 FASE 9 — MOBILE PREMIUM
+
+| Sub | Entregable |
+|---|---|
+| 9A | Sidebar drawer animation refinada (spring physics) |
+| 9B | Touch gestures (swipe-to-back, pull-to-refresh) |
+| 9C | Bottom sheet para modales mobile (no fullscreen modal feo) |
+| 9D | Haptic vibration API |
+| 9E | PWA install flow polished con onboarding mobile |
+| 9F | Mobile typography fluida con `clamp()` |
+
+#### 🎁 FASE 10 — POLISH FINAL
+
+| Sub | Entregable |
+|---|---|
+| 10A | Empty states ilustrados (3D depth con SVG layered) |
+| 10B | 404/500 pages bonitas |
+| 10C | Splash screen premium con logo animado |
+| 10D | Theme picker con preview live (gold/blue/violet/coral) |
+| 10E | Easter eggs sutiles (Konami code → confetti) |
+
+### Estrategia de ejecución
+
+**Cantidad total**: ~75 sub-fases. Imposible ejecutar todo en una sesión.
+
+**Priorización por impacto visible vs esfuerzo**:
+
+1. 🔥 **PRIORIDAD MÁXIMA** (más impacto, menos esfuerzo):
+   - 3B Vehículos rediseño completo (es lo que el cliente más mira)
+   - 1B Eliminar inline styles HTML (deuda gigante)
+   - 2A+2E Tokens semánticos canonical
+
+2. ⭐ **PRIORIDAD ALTA** (alto impacto, esfuerzo moderado):
+   - 3A Dashboard premium
+   - 3G CRM pipeline + 360°
+   - 3K Calendario rediseño
+   - 4B Command palette extendido
+
+3. 🟢 **PRIORIDAD MEDIA**:
+   - Resto de secciones (3C-3P)
+   - Fase 4 UX flows
+   - Fase 5 data viz
+
+4. 🟡 **PRIORIDAD BAJA** (polish):
+   - Fases 6-10
+
+### Ejecución comenzada
+
+Esta sesión arranca con:
+- **3B Vehículos rediseño completo** (vista grid premium + filtros laterales + bulk actions)
+- **2A tokens semánticos** (eliminar hardcoded `#b89658` × 129 ocurrencias)
+- **1B inline styles cleanup** prioritarios
+
+Las fases siguientes se ejecutan en sesiones futuras, cada una con su sub-sección documentada en CLAUDE.md (§33+).
+

@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260510300000'; // §35.1 — class admin-panel agregada al div #adminPanel (selectores CSS ahora matchean)
+    const APP_VERSION = '20260510310000'; // §36 — Top nav Notion/Vercel reemplaza sidebar 256px
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

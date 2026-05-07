@@ -407,7 +407,7 @@
         <div id="sec-dashboard" class="section active">
             <div class="page-header">
                 <div>
-                    <h1 id="dashboardWelcome">Dashboard</h1>
+                    <h1 id="dashboardWelcome">Inicio</h1>
                     <p class="page-subtitle" id="adminEmail"></p>
                 </div>
                 <div style="display:flex;gap:0.75rem;align-items:center;">
@@ -415,7 +415,7 @@
                         <input type="text" class="search-input" id="globalSearch" placeholder="Buscar vehiculos, marcas, citas..." style="width:100%;">
                         <div class="global-search-results" id="globalSearchResults"></div>
                     </div>
-                    <!-- I.2 (mega-plan v4) — Activity Feed trigger -->
+                    <!-- I.2 (mega-plan v4) — Activity Feed trigger global -->
                     <button class="alt-btn alt-btn--ghost alt-btn--icon" id="activityFeedTrigger" data-tooltip="Actividad" aria-label="Activity feed">
                         <i data-lucide="activity"></i>
                     </button>
@@ -423,50 +423,57 @@
                     <div id="headerNotifBell" class="hdr-notif-bell-slot"></div>
                 </div>
             </div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon si-blue"><i data-lucide="car" width="22" height="22"></i></div>
-                    <div class="stat-label">Total Vehiculos</div>
-                    <div class="stat-value" id="statTotal">-</div>
+
+            <!-- §27.2 — HERO KPIs (3 grandes con tendencia vs ayer).
+                 Reemplaza la grilla genérica de 8 stats. Datos clave del día
+                 que el dueño/asesor necesita ver al primer vistazo.
+                 Poblado por js/admin-hero-kpis.js (commit §27.2). -->
+            <div class="hero-kpis" id="heroKpis">
+                <div class="hero-kpi hero-kpi--leads" id="heroKpiLeads">
+                    <div class="hero-kpi-icon"><i data-lucide="user-plus"></i></div>
+                    <div class="hero-kpi-body">
+                        <div class="hero-kpi-label">Leads de hoy</div>
+                        <div class="hero-kpi-value">—</div>
+                        <div class="hero-kpi-trend"></div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon si-green"><i data-lucide="sparkles" width="22" height="22"></i></div>
-                    <div class="stat-label">Nuevos</div>
-                    <div class="stat-value" id="statNuevos">-</div>
+                <div class="hero-kpi hero-kpi--citas" id="heroKpiCitas">
+                    <div class="hero-kpi-icon"><i data-lucide="calendar-check-2"></i></div>
+                    <div class="hero-kpi-body">
+                        <div class="hero-kpi-label">Citas de hoy</div>
+                        <div class="hero-kpi-value">—</div>
+                        <div class="hero-kpi-trend"></div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon si-purple"><i data-lucide="history" width="22" height="22"></i></div>
-                    <div class="stat-label">Usados</div>
-                    <div class="stat-value" id="statUsados">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon si-gold"><i data-lucide="percent" width="22" height="22"></i></div>
-                    <div class="stat-label">En Oferta</div>
-                    <div class="stat-value" id="statOfertas">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon si-gold"><i data-lucide="star" width="22" height="22"></i></div>
-                    <div class="stat-label">Destacados</div>
-                    <div class="stat-value" id="statDestacados">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon si-blue"><i data-lucide="tag" width="22" height="22"></i></div>
-                    <div class="stat-label">Marcas</div>
-                    <div class="stat-value" id="statMarcas">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon si-gold"><i data-lucide="circle-check" width="22" height="22"></i></div>
-                    <div class="stat-label">Vendidos</div>
-                    <div class="stat-value" id="statVendidos">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon si-purple"><i data-lucide="inbox" width="22" height="22"></i></div>
-                    <div class="stat-label">Solicitudes Pendientes</div>
-                    <div class="stat-value" id="statCitas">-</div>
+                <div class="hero-kpi hero-kpi--tareas" id="heroKpiTareas">
+                    <div class="hero-kpi-icon"><i data-lucide="alert-circle"></i></div>
+                    <div class="hero-kpi-body">
+                        <div class="hero-kpi-label">Tareas pendientes</div>
+                        <div class="hero-kpi-value">—</div>
+                        <div class="hero-kpi-trend"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- N.3 (mega-plan v4) — Atajos personalizados según uso del admin -->
+            <!-- §27.2 — Próximas acciones recomendadas (NBA, Top 5).
+                 Bloque J.8 del Mega-Plan v4. Reemplaza los atajos genéricos
+                 (Nuevo vehículo, Marcas, etc) que eran navegación inútil.
+                 Aquí va inteligencia accionable: "Llamar a Daniel — score 85,
+                 sin contacto 3d", etc. Poblado por js/admin-nba-dashboard.js. -->
+            <div class="predictive-card">
+                <div class="predictive-card-head">
+                    <h3><i data-lucide="zap"></i> Próximas acciones recomendadas</h3>
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="nbaDashRefresh" data-tooltip="Refrescar">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+                </div>
+                <div id="nbaDashboardList" class="nba-dashboard-list">
+                    <div class="pred-empty">Analizando contactos…</div>
+                </div>
+            </div>
+
+            <!-- N.3 (mega-plan v4) — Atajos personalizados según uso del admin.
+                 Solo aparece si el admin ya tiene patrón de uso establecido. -->
             <div id="adaptiveShortcuts" class="adaptive-shortcuts" style="display:none;"></div>
 
             <!-- O.1 (mega-plan v4) — KPIs ejecutivos del mes -->
@@ -515,109 +522,26 @@
                 </div>
             </div>
 
-            <!-- F8.1: ACCIONES RAPIDAS -->
-            <div class="quick-actions" id="quickActions">
-                <button class="quick-action-btn" data-action="quickNewVehicle" title="Nuevo vehiculo">
-                    <i data-lucide="plus" width="20" height="20"></i>
-                    <span>Nuevo vehiculo</span>
-                </button>
-                <button class="quick-action-btn" data-action="quickGoTo" data-section="brands" title="Gestionar marcas">
-                    <i data-lucide="tag" width="20" height="20"></i>
-                    <span>Marcas</span>
-                </button>
-                <button class="quick-action-btn" data-action="quickGoTo" data-section="appointments" title="Ver solicitudes">
-                    <i data-lucide="inbox" width="20" height="20"></i>
-                    <span>Solicitudes</span>
-                </button>
-                <button class="quick-action-btn" data-action="quickGoTo" data-section="dealers" title="Aliados">
-                    <i data-lucide="handshake" width="20" height="20"></i>
-                    <span>Aliados</span>
-                </button>
-            </div>
-
-            <!-- F12.7: ACTIVE SESSIONS -->
+            <!-- F12.7 (preservado) — Sesiones Activas (super_admin info crítica) -->
             <div class="stat-card" style="margin-bottom:1.5rem;">
-                <h3 style="margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                <h3 style="margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;font-size:0.95rem;">
                     <div style="width:8px;height:8px;border-radius:50%;background:#3fb950;"></div>
-                    Sesiones Activas
+                    Sesiones activas
                 </h3>
                 <div id="activeSessionsList" style="max-height:200px;overflow-y:auto;">
                     <div style="text-align:center;color:var(--admin-text-muted);padding:1rem;font-size:0.85rem;">Cargando...</div>
                 </div>
             </div>
 
-            <!-- F5.2: DASHBOARD CHARTS -->
-            <div class="charts-grid" id="dashboardCharts">
-                <div class="chart-card">
-                    <h4>Inventario por Tipo</h4>
-                    <div id="chartInventoryType" style="display:flex;align-items:center;gap:1.5rem;">
-                        <div class="donut-chart" id="donutType"></div>
-                        <div class="chart-legend" id="legendType" style="flex-direction:column;"></div>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h4>Vehiculos por Categoria</h4>
-                    <div class="mini-bars" id="chartCategories" style="height:80px;padding-bottom:20px;"></div>
-                </div>
-                <div class="chart-card">
-                    <h4>Estado del Inventario</h4>
-                    <div id="chartStatus" style="display:flex;align-items:center;gap:1.5rem;">
-                        <div class="donut-chart" id="donutStatus"></div>
-                        <div class="chart-legend" id="legendStatus" style="flex-direction:column;"></div>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h4>Actividad Reciente (7 dias)</h4>
-                    <div class="mini-bars" id="chartActivity" style="height:80px;padding-bottom:20px;"></div>
-                </div>
-            </div>
-
-            <!-- RECENT ACTIVITY -->
-            <div class="table-container mb-lg">
-                <div class="table-header">
-                    <h3>Actividad Reciente <span id="activityCount" style="font-size:0.75rem;color:var(--admin-text-muted);font-weight:400;"></span></h3>
-                    <div style="display:flex;gap:0.5rem;align-items:center;">
-                        <button class="btn btn-ghost btn-sm" id="btnSelectActivity" data-action="toggleActivitySelect">Seleccionar</button>
-                        <button class="btn btn-danger btn-sm" id="btnClearAllActivity" data-action="clearAllActivity" title="Limpiar todo">Limpiar todo</button>
-                    </div>
-                </div>
-                <div id="activitySelectActions" style="display:none;padding:0.5rem 1rem;gap:0.5rem;align-items:center;border-bottom:1px solid var(--admin-border);">
-                    <button class="btn btn-danger btn-sm" id="btnDeleteSelectedActivity" data-action="deleteSelectedActivity" disabled>Eliminar seleccionados (0)</button>
-                </div>
-                <div class="activity-feed" id="activityFeed">
-                    <div class="activity-empty">Sin actividad reciente</div>
-                </div>
-            </div>
-
-            <!-- SEO TOOLS -->
-            <div class="table-container mt-lg">
-                <div class="table-header">
-                    <h3>SEO — Herramientas</h3>
-                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                        <button class="btn btn-sm" id="btnGenerateSitemap" style="font-size:0.75rem;padding:0.35rem 0.75rem;">&#8635; Publicar sitemap.xml</button>
-                        <button class="btn btn-sm" id="btnRegenerateSeo" style="font-size:0.75rem;padding:0.35rem 0.75rem;background:var(--admin-gold,#b89658);color:#fff;border-color:var(--admin-gold,#b89658);">Regenerar Paginas SEO</button>
-                    </div>
-                </div>
-                <div style="padding:0.75rem 1.25rem;" id="sitemapStatus">
-                    <span style="color:var(--admin-text-muted);font-size:0.8rem;">Genera y publica el <code>sitemap.xml</code> directo al repositorio (requiere token GitHub abajo). <strong>Regenerar SEO</strong> actualiza miniaturas en redes sociales.</span>
-                </div>
-                <!-- GitHub Token para auto-publicar sitemap y regenerar SEO (solo Super Admin) -->
-                <div id="ghTokenSection" style="padding:0.75rem 1.25rem;border-top:1px solid var(--admin-border);display:none;">
-                    <p style="font-size:0.75rem;color:var(--admin-text-muted);margin-bottom:0.5rem;">
-                        <strong style="color:var(--admin-text);">Token GitHub</strong> — usado para:
-                        <strong style="color:var(--admin-text);">①</strong> publicar <code>sitemap.xml</code> directo al repo y
-                        <strong style="color:var(--admin-text);">②</strong> disparar la regeneracion de paginas SEO.<br>
-                        Crea un <em>Fine-grained token</em> con permiso <code>Contents: Read and write</code> y <code>Actions: Read and write</code> solo para este repositorio.
-                        Se guarda solo en este navegador (localStorage).
-                    </p>
-                    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-                        <input type="password" id="ghTokenInput" class="search-input" placeholder="github_pat_..." style="flex:1;min-width:200px;font-size:0.8rem;" autocomplete="off">
-                        <button class="btn btn-sm" id="btnSaveGhToken" style="font-size:0.75rem;white-space:nowrap;">Guardar token</button>
-                        <button class="btn btn-ghost btn-sm" id="btnClearGhToken" style="font-size:0.75rem;white-space:nowrap;color:var(--admin-danger);">Borrar</button>
-                    </div>
-                    <p id="ghTokenStatus" style="font-size:0.72rem;color:var(--admin-text-muted);margin-top:0.4rem;"></p>
-                </div>
-            </div>
+            <!-- §27.2 ELIMINADO de Inicio:
+                 - 8 stats genéricos (movido como mini-stats a sec-audit si super_admin lo quiere)
+                 - 4 quick-actions (Nuevo vehículo, Marcas, Solicitudes, Aliados) — navegación
+                   inútil reemplazada por NBA arriba
+                 - 4 charts estáticos (donutType/chartCategories/donutStatus/chartActivity) —
+                   no aportaban valor proactivo, eliminados con admin-phase5.js charts code
+                 - "Actividad Reciente" widget con btnSelectActivity/btnDeleteSelected/clearAll —
+                   movido a sec-audit (Auditoría) donde pertenece
+                 - SEO Tools — movido a sec-settings (Ajustes) -->
         </div>
 
         <!-- VEHICLES -->
@@ -1856,15 +1780,36 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
             </div>
         </div>
 
-        <!-- AUDIT LOG PANEL (F4.1) -->
+        <!-- AUDIT LOG PANEL (F4.1) — §27.2 ahora también incluye Actividad Reciente
+             (movida desde Inicio donde no pertenecía) con Seleccionar / Eliminar Todo / Eliminar Seleccionados. -->
         <div id="sec-audit" class="section" data-workspace-color="neutral">
             <div class="page-header">
-                <div><h1>Auditoria</h1><p class="page-subtitle">Registro completo de todas las acciones del sistema</p></div>
+                <div><h1>Auditoría</h1><p class="page-subtitle">Registro completo de todas las acciones del sistema + actividad reciente</p></div>
                 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
                     <button class="btn btn-ghost btn-sm btn-export" id="btnExportAuditCSV" title="Exportar CSV">
                         <i data-lucide="download" width="14" height="14"></i>
                         CSV
                     </button>
+                </div>
+            </div>
+
+            <!-- §27.2 — RECENT ACTIVITY (movido de Inicio).
+                 admin-activity.js sigue poblando el feed via los IDs intactos:
+                 btnSelectActivity / btnClearAllActivity / btnDeleteSelectedActivity /
+                 activityFeed / activitySelectActions / activityCount. -->
+            <div class="table-container mb-lg">
+                <div class="table-header">
+                    <h3>Actividad Reciente <span id="activityCount" style="font-size:0.75rem;color:var(--admin-text-muted);font-weight:400;"></span></h3>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <button class="btn btn-ghost btn-sm" id="btnSelectActivity" data-action="toggleActivitySelect">Seleccionar</button>
+                        <button class="btn btn-danger btn-sm" id="btnClearAllActivity" data-action="clearAllActivity" title="Limpiar todo">Limpiar todo</button>
+                    </div>
+                </div>
+                <div id="activitySelectActions" style="display:none;padding:0.5rem 1rem;gap:0.5rem;align-items:center;border-bottom:1px solid var(--admin-border);">
+                    <button class="btn btn-danger btn-sm" id="btnDeleteSelectedActivity" data-action="deleteSelectedActivity" disabled>Eliminar seleccionados (0)</button>
+                </div>
+                <div class="activity-feed" id="activityFeed">
+                    <div class="activity-empty">Sin actividad reciente</div>
                 </div>
             </div>
 
@@ -1953,12 +1898,48 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 
         <div id="sec-settings" class="section" data-workspace-color="neutral">
             <div class="page-header">
-                <div><h1>Configuracion</h1><p class="page-subtitle">Ajustes de tu cuenta y respaldo de datos</p></div>
+                <div><h1>Ajustes</h1><p class="page-subtitle">Cuenta, SEO, respaldo y herramientas del sistema</p></div>
             </div>
+
+            <!-- §27.2 — SEO Tools (movidos desde Inicio).
+                 Más apropiado en Ajustes: regenerar SEO + publicar sitemap son
+                 acciones de configuración técnica del super_admin, no info diaria. -->
+            <div class="stat-card" style="margin-bottom:1.5rem;">
+                <div class="table-header" style="padding:0;border:none;">
+                    <h3 style="margin:0;display:flex;align-items:center;gap:0.5rem;">
+                        <i data-lucide="search" width="18" height="18" style="color:var(--admin-gold);"></i>
+                        SEO — Herramientas
+                    </h3>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <button class="btn btn-sm" id="btnGenerateSitemap" style="font-size:0.75rem;padding:0.35rem 0.75rem;">⟳ Publicar sitemap.xml</button>
+                        <button class="btn btn-sm" id="btnRegenerateSeo" style="font-size:0.75rem;padding:0.35rem 0.75rem;background:var(--admin-gold,#b89658);color:#fff;border-color:var(--admin-gold,#b89658);">Regenerar Páginas SEO</button>
+                    </div>
+                </div>
+                <div style="padding:0.75rem 0 0;" id="sitemapStatus">
+                    <span style="color:var(--admin-text-muted);font-size:0.8rem;">Genera y publica el <code>sitemap.xml</code> directo al repositorio (requiere token GitHub abajo). <strong>Regenerar SEO</strong> actualiza miniaturas en redes sociales.</span>
+                </div>
+                <!-- GitHub Token — para auto-publicar sitemap y regenerar SEO (super_admin) -->
+                <div id="ghTokenSection" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--admin-border);display:none;">
+                    <p style="font-size:0.75rem;color:var(--admin-text-muted);margin-bottom:0.5rem;">
+                        <strong style="color:var(--admin-text);">Token GitHub</strong> — usado para
+                        <strong style="color:var(--admin-text);">①</strong> publicar <code>sitemap.xml</code> y
+                        <strong style="color:var(--admin-text);">②</strong> disparar regeneración de páginas SEO.<br>
+                        Crea un <em>Fine-grained token</em> con permiso <code>Contents: Read and write</code> y <code>Actions: Read and write</code> solo para este repositorio.
+                        Se guarda solo en este navegador (localStorage).
+                    </p>
+                    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                        <input type="password" id="ghTokenInput" class="search-input" placeholder="github_pat_..." style="flex:1;min-width:200px;font-size:0.8rem;" autocomplete="off">
+                        <button class="btn btn-sm" id="btnSaveGhToken" style="font-size:0.75rem;white-space:nowrap;">Guardar token</button>
+                        <button class="btn btn-ghost btn-sm" id="btnClearGhToken" style="font-size:0.75rem;white-space:nowrap;color:var(--admin-danger);">Borrar</button>
+                    </div>
+                    <p id="ghTokenStatus" style="font-size:0.72rem;color:var(--admin-text-muted);margin-top:0.4rem;"></p>
+                </div>
+            </div>
+
             <div class="stat-card card-narrow">
                 <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
                     <i data-lucide="lock" width="18" height="18" style="color:var(--admin-gold);"></i>
-                    Cambiar Contrasena
+                    Cambiar Contraseña
                 </h3>
                 <form id="changePasswordForm">
                     <div class="form-group">
@@ -2726,6 +2707,9 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-telegram.js" defer></script>
 <script src="js/admin-color-extract.js" defer></script>
 <script src="js/admin-performance.js" defer></script>
+<!-- §27.2 Inicio productivo — KPIs hero (3 grandes) + NBA dashboard (top 5) -->
+<script src="js/admin-hero-kpis.js" defer></script>
+<script src="js/admin-nba-dashboard.js" defer></script>
 <!-- admin-inbox.js eliminado — unificado al Concierge (sec-concierge → ALTOR Hub) -->
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

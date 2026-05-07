@@ -7804,3 +7804,261 @@ select:focus {
         transform: none !important;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   §27.2 ALTORRA HARMONY CRM — Inicio productivo
+   3 KPIs hero + Top 5 NBA del día. Cero atajos genéricos.
+   Lenguaje visual HarmonyOS (radii suaves, sombras difuminadas).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── HERO KPIs (3 grandes) ─── */
+.hero-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin: 8px 0 28px;
+}
+.hero-kpi {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--hmy-radius-card-large, 24px);
+    box-shadow: var(--hmy-shadow-soft-md, 0 4px 24px rgba(0, 0, 0, 0.08));
+    cursor: pointer;
+    transition: all var(--hmy-transition-fluid, 0.3s ease);
+    position: relative;
+    overflow: hidden;
+}
+.hero-kpi::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--hero-kpi-color, #b89658);
+    opacity: 0.7;
+}
+.hero-kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hmy-shadow-soft-lg, 0 12px 40px rgba(0, 0, 0, 0.10));
+    border-color: rgba(184, 150, 88, 0.3);
+}
+.hero-kpi--leads { --hero-kpi-color: var(--ws-color-blue, #3b82f6); }
+.hero-kpi--citas { --hero-kpi-color: var(--ws-color-violet, #8b5cf6); }
+.hero-kpi--tareas { --hero-kpi-color: var(--ws-color-amber, #f59e0b); }
+.hero-kpi--urgent { --hero-kpi-color: var(--ws-color-coral, #f97066); }
+
+.hero-kpi-icon {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(184, 150, 88, 0.12);
+    border-radius: var(--hmy-radius-button, 12px);
+    color: var(--hero-kpi-color, #b89658);
+}
+.hero-kpi--leads .hero-kpi-icon { background: rgba(59, 130, 246, 0.12); }
+.hero-kpi--citas .hero-kpi-icon { background: rgba(139, 92, 246, 0.12); }
+.hero-kpi--tareas .hero-kpi-icon { background: rgba(245, 158, 11, 0.12); }
+.hero-kpi--urgent .hero-kpi-icon { background: rgba(249, 112, 102, 0.18); }
+.hero-kpi-icon [data-lucide] {
+    width: 28px;
+    height: 28px;
+}
+
+.hero-kpi-body {
+    flex: 1;
+    min-width: 0;
+}
+.hero-kpi-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--admin-text-muted, rgba(255, 255, 255, 0.65));
+    text-transform: none;
+    letter-spacing: -0.005em;
+    margin-bottom: 6px;
+}
+.hero-kpi-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--admin-text, #fff);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+}
+.hero-kpi-trend {
+    margin-top: 6px;
+    line-height: 1;
+}
+.hero-kpi-trend-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: var(--hmy-radius-pill, 999px);
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.7);
+}
+.hero-kpi-trend-pill--up {
+    background: rgba(16, 185, 129, 0.16);
+    color: #10b981;
+}
+.hero-kpi-trend-pill--down {
+    background: rgba(249, 112, 102, 0.16);
+    color: #f97066;
+}
+.hero-kpi-trend-pill--neutral {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.55);
+}
+.hero-kpi-trend-pill--warn {
+    background: rgba(245, 158, 11, 0.16);
+    color: #f59e0b;
+}
+
+/* Mobile: stack vertical */
+@media (max-width: 900px) {
+    .hero-kpis {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .hero-kpi-value { font-size: 2rem; }
+    .hero-kpi-icon { width: 44px; height: 44px; }
+    .hero-kpi-icon [data-lucide] { width: 22px; height: 22px; }
+}
+
+/* ─── TOP 5 NBA dashboard ─── */
+.nba-dashboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+}
+.nba-dash-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--hmy-radius-card-soft, 16px);
+    transition: all var(--hmy-transition-fluid, 0.3s ease);
+    border-left: 3px solid var(--admin-text-muted, #6b7280);
+}
+.nba-dash-item:hover {
+    background: rgba(184, 150, 88, 0.05);
+    transform: translateX(2px);
+    box-shadow: var(--hmy-shadow-soft-sm, 0 2px 12px rgba(0, 0, 0, 0.06));
+}
+.nba-dash-priority--critical { border-left-color: var(--ws-color-coral, #f97066); }
+.nba-dash-priority--high     { border-left-color: var(--ws-color-amber, #f59e0b); }
+.nba-dash-priority--medium   { border-left-color: var(--ws-color-blue, #3b82f6); }
+.nba-dash-priority--low      { border-left-color: var(--admin-text-muted, #6b7280); }
+
+.nba-dash-rank {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(184, 150, 88, 0.15);
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #b89658;
+}
+.nba-dash-avatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.25), rgba(184, 150, 88, 0.1));
+    border: 1px solid rgba(184, 150, 88, 0.3);
+    color: #b89658;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.nba-dash-body {
+    flex: 1;
+    min-width: 0;
+}
+.nba-dash-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.nba-dash-name {
+    font-weight: 600;
+    color: var(--admin-text, #fff);
+    font-size: 0.92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.nba-dash-pri-pill {
+    padding: 2px 8px;
+    border-radius: var(--hmy-radius-pill, 999px);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+.nba-dash-pri-pill.nba-dash-priority--critical {
+    background: rgba(249, 112, 102, 0.18);
+    color: #f97066;
+}
+.nba-dash-pri-pill.nba-dash-priority--high {
+    background: rgba(245, 158, 11, 0.18);
+    color: #f59e0b;
+}
+.nba-dash-pri-pill.nba-dash-priority--medium {
+    background: rgba(59, 130, 246, 0.18);
+    color: #3b82f6;
+}
+.nba-dash-pri-pill.nba-dash-priority--low {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.55);
+}
+.nba-dash-reason {
+    font-size: 0.8rem;
+    color: var(--admin-text-muted, rgba(255, 255, 255, 0.6));
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.nba-dash-cta {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.nba-dash-empty {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--admin-text-muted, rgba(255, 255, 255, 0.6));
+}
+
+@media (max-width: 700px) {
+    .nba-dash-item {
+        flex-wrap: wrap;
+    }
+    .nba-dash-cta {
+        width: 100%;
+        margin-top: 8px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-kpi:hover, .nba-dash-item:hover {
+        transform: none !important;
+    }
+}

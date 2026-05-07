@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510100000'; // §28.3 NOVA Sprint C — Polish secciones legacy: page-headers premium con accent line dorado/coral/green/neutral por workspace, toolbars consistentes, empty-state util, settings cards, user avatars con role badges (super_admin/editor/viewer), audit entries glass, vehicle status pills coloreados, brand/dealer/review cards uniformes, KB faq cards, settings-section titles uppercase
+const CACHE_VERSION = 'v20260510110000'; // §28.4 NOVA Sprint D CIERRE ADR-028 — Sidebar Mica strong + acrylic layers nav-item active + view-transitions cross-section (Chrome 126+) + button shimmer hover effect + text selection dorada global + details/summary collapsibles estilizados + dialog HTML5 polish + tooltips Mica + global search pill rounded + badge urgent pulse + tabular-nums en KPIs + scroll-snap chips horizontales + blockquote/code/pre estilizados + profile card glow + nav-item active linear-gradient acrylic
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

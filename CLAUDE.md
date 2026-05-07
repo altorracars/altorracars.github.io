@@ -15871,3 +15871,145 @@ existentes (`.login-container`, `.login-box`, `.login-logo`, `.form-input`,
   brands, dealers, banners, reviews, kb, unmatched, audit, settings, users)
 - §28.4 Sprint NOVA-D — Final polish (Mica strong en sidebar, acrylic
   layers, empty states ilustrados, transitions globales)
+
+### 28.3 Sprint NOVA-C — Polish secciones legacy (2026-05-10)
+
+**Objetivo del sprint**: las 10 secciones que NO recibieron el polish
+de §27 (Vehicles, Brands, Dealers, Banners, Reviews, KB, Unmatched,
+Users, Audit, Settings) ahora tienen page-headers premium consistentes
+con accent line por workspace, empty-states utility, y cards
+uniformizadas. La capa NOVA-A ya les dio botones/modales/tablas/inputs
+premium; NOVA-C les da identidad visual de sección.
+
+#### A. Page-headers premium con accent line por workspace
+
+Cada sección legacy recibe:
+- `padding: 24px 28px` + `margin-bottom: 24px`
+- `background: linear-gradient` con tinte del workspace color (top
+  4-6% alpha → 0%)
+- `border-radius: 24px` HarmonyOS top-only
+- `backdrop-filter: blur(8px)` sutil
+- `::before` pseudo-element: línea de 3px arriba con gradient horizontal
+  (transparent → workspace color → transparent), opacity 0.4
+
+Workspace colors aplicados:
+| Sección | Color | Tinte bg |
+|---|---|---|
+| Vehicles, Brands, Dealers | gold | `--nova-tint-gold` |
+| Banners, Reviews | coral | `--nova-tint-coral` |
+| KB, Unmatched | green | `--nova-tint-green` |
+| Users, Audit, Settings | neutral | rgba(107,114,128,0.06) |
+
+#### B. Toolbars consistentes
+
+`.section-toolbar`, `.table-toolbar`, `.list-toolbar`,
+`.filter-toolbar` ahora todas con:
+- `display: flex; flex-wrap: wrap; gap: 12px`
+- `padding: 14px 18px`
+- `background: rgba(255,255,255,0.02)` glass
+- `border: var(--nova-border-glass)`
+- `border-radius: var(--hmy-radius-card-soft)` (16px)
+
+#### C. Empty state utility
+
+`.section-empty`, `.empty-state`, `.list-empty`:
+- Flex column centered con padding 48px 24px
+- Icon circular 56×56 con tinte dorado (alpha 10%)
+- Title bold + text 0.875rem secondary 1.55 line-height
+- Reusable en cualquier sección
+
+#### D. Cards específicas por sección
+
+| Selector | Estilo |
+|---|---|
+| `.settings-card`, `.config-card`, `.preference-card` | Card glass con hover dorado |
+| `.audit-entry`, `.activity-feed-item` | Card 16px radius con hover dorado tenue |
+| `.review-card`, `.review-item` | Card glass con hover coral; review-stars dorado |
+| `.dealer-card`, `.dealer-item` | Card 16px con hover lift + shadow |
+| `.brand-admin-card`, `.brand-item` | Card centered con hover lift 2px + shadow |
+| `.kb-faq-card` | Card glass con hover green |
+| `.banner-preview-card` | Overflow hidden + shadow elev-2 |
+
+#### E. User avatars + role badges
+
+`.user-row .user-avatar`:
+- 34×34 circular dorado (gradient `#b89658 → #9a7d44`)
+- Color texto `#1a1a1a` para contraste AAA
+- Iniciales con font-weight 700 letter-spacing wide
+
+`.role-badge`:
+- `super_admin` → tinte dorado 16% + texto dorado
+- `editor` → tinte azul 14% + texto `#60a5fa`
+- `viewer` → tinte gris 14% + texto blanco 65%
+- Pill radius + uppercase 0.06em letter-spacing
+
+#### F. Vehicle status pills (en tabla de Vehículos)
+
+`.vehicle-status--{disponible,reservado,vendido,borrador}`:
+- Pill radius + 3px padding vertical
+- Tintes alpha 0.15 + colores de status semánticos
+- `disponible` verde / `reservado` ámbar / `vendido` rojo / `borrador` gris
+
+`.vehicle-thumb` (en tabla):
+- 60×44 con border-radius 8px + object-fit cover + border glass
+
+#### G. Section stats tiles (genérico)
+
+`.section-stats` grid auto-fit minmax(160px) + cards con:
+- Value 1.5rem dorado bold
+- Label uppercase 0.74rem 0.06em letter-spacing
+- Hover lift + shadow elev-1
+
+#### H. Settings section titles
+
+`.settings-section-title`: uppercase 0.85rem font-weight 600, color
+text-tertiary, border-bottom glass para separar grupos en sec-settings.
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Page-headers ya cubiertos por §27 (sec-crm, etc) ahora se duplican | Selectores específicos `#sec-vehicles .page-header`, NO genérico |
+| Workspace color hardcoded por sección genera tabla rígida | Selectores agrupados por color + override específico (banners/reviews coral) |
+| Empty state utility choca con `.section-empty` existente en CRM/Reports | Selectores genéricos, classes pueden coexistir; el más específico gana |
+| User avatar gradient mismatch con users-table existente | Selector dual `.user-row .user-avatar` Y `.users-table .user-avatar` |
+| Vehicle status pills no aparecen porque admin-vehicles.js usa otras classes | NOVA aplica a `.vehicle-status--{kebab}` que es el patrón canonical; legacy classes con el mismo prefix también heredan |
+| Card hover transforms causan layout shift | `transition: all` con duration spring + transform GPU-only |
+| `:hover` no aplica en touch devices | Funcionalidad sigue funcionando sin hover, el polish es enhancement |
+| Backdrop-filter sobre page-header genera repaint en scroll | `position: relative` no fixed, blur-xs solo (8px) — bajo costo |
+| Selectores muy específicos con `#sec-X .page-header` rompen si renombras la section | Documentado: cuando se rename una section, ajustar el block aquí |
+
+#### Test E2E del sprint
+
+1. Click "Vehículos" en sidebar → page-header dorado con accent line
+   sutil arriba
+2. Click "Banners" → page-header coral, accent coral arriba
+3. Click "Reseñas" → coral consistente
+4. Click "Cerebro AI" → page-header verde, accent green
+5. Click "Lo que no entendí" → green consistente
+6. Click "Usuarios" → neutral gris
+7. Click "Auditoría" → neutral
+8. Click "Ajustes" → neutral
+9. Tabla Vehículos: thumbnails redondeados, status pills coloreados
+   por estado
+10. Tabla Usuarios: avatares dorados con iniciales, role badges
+    coloreados por rol
+11. Cards de aliados (Dealers): hover lift sutil + shadow
+12. Cards de marcas: centered con hover lift más pronunciado
+13. Reviews con stars dorados
+14. Empty states (KB sin FAQs, Audit vacío) con icon dorado +
+    título + texto centrado
+
+**Archivos modificados**:
+- `css/admin.css` (+380 líneas Sprint C polish secciones legacy)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510100000)
+- `CLAUDE.md` (esta sección §28.3)
+
+**Sin cambios en HTML ni JS** — el polish es 100% CSS sobre las
+clases existentes (`.user-avatar`, `.role-badge`, `.vehicle-status`,
+`.dealer-card`, `.review-card`, etc.).
+
+**Pendiente del ADR-028** (último sprint):
+- §28.4 Sprint NOVA-D — Final polish (Mica strong en sidebar admin,
+  acrylic layers, transitions globales, view-transitions cross-section,
+  micro-animations refinadas)

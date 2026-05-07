@@ -10353,3 +10353,380 @@ kbd {
 /* ═══════════════════════════════════════════════════════════════════
    FIN ADR-028 NOVA Sprint B
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-028 NOVA Sprint C — Polish secciones legacy
+   Vehicles, Brands, Dealers, Banners, Reviews, KB, Unmatched,
+   Users, Audit, Settings — consistencia HarmonyOS+NOVA total.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Page header consistente para TODAS las secciones legacy ──── */
+#sec-vehicles .page-header,
+#sec-brands .page-header,
+#sec-dealers .page-header,
+#sec-banners .page-header,
+#sec-reviews .page-header,
+#sec-kb .page-header,
+#sec-unmatched .page-header,
+#sec-users .page-header,
+#sec-audit .page-header,
+#sec-settings .page-header {
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    background: linear-gradient(180deg,
+        var(--nova-tint-gold) 0%,
+        rgba(184, 150, 88, 0.02) 60%,
+        transparent 100%);
+    border-radius: var(--hmy-radius-card-large) var(--hmy-radius-card-large) 0 0;
+    backdrop-filter: blur(var(--nova-blur-xs));
+    -webkit-backdrop-filter: blur(var(--nova-blur-xs));
+    position: relative;
+    overflow: hidden;
+}
+#sec-vehicles .page-header::before,
+#sec-brands .page-header::before,
+#sec-dealers .page-header::before,
+#sec-banners .page-header::before,
+#sec-reviews .page-header::before,
+#sec-kb .page-header::before,
+#sec-unmatched .page-header::before,
+#sec-users .page-header::before,
+#sec-audit .page-header::before,
+#sec-settings .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    color: var(--ws-color-gold);
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Workspace colors específicos por sección */
+#sec-banners .page-header,
+#sec-reviews .page-header { background: linear-gradient(180deg, var(--nova-tint-coral) 0%, rgba(249,112,102,0.02) 60%, transparent 100%); }
+#sec-banners .page-header::before,
+#sec-reviews .page-header::before { color: var(--ws-color-coral); }
+
+#sec-kb .page-header,
+#sec-unmatched .page-header { background: linear-gradient(180deg, var(--nova-tint-green) 0%, rgba(16,185,129,0.02) 60%, transparent 100%); }
+#sec-kb .page-header::before,
+#sec-unmatched .page-header::before { color: var(--ws-color-green); }
+
+#sec-users .page-header,
+#sec-audit .page-header,
+#sec-settings .page-header {
+    background: linear-gradient(180deg, rgba(107,114,128,0.06) 0%, rgba(107,114,128,0.02) 60%, transparent 100%);
+}
+#sec-users .page-header::before,
+#sec-audit .page-header::before,
+#sec-settings .page-header::before { color: var(--ws-color-neutral); }
+
+/* ─── Toolbars (filtros + búsqueda) consistentes ──────────────── */
+.section-toolbar,
+.table-toolbar,
+.list-toolbar,
+.filter-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    border-radius: var(--hmy-radius-card-soft);
+}
+
+/* ─── Empty state consistente para CUALQUIER sección ──────────── */
+.section-empty,
+.empty-state,
+.list-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+    gap: 12px;
+    color: var(--text-secondary, rgba(255,255,255,0.65));
+}
+.section-empty-icon,
+.empty-state-icon,
+.list-empty-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: rgba(184, 150, 88, 0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--brand-primary, #b89658);
+    margin-bottom: 4px;
+}
+.section-empty-title,
+.empty-state-title {
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+    font-size: 1rem;
+}
+.section-empty-text,
+.empty-state-text {
+    max-width: 420px;
+    line-height: 1.55;
+    color: var(--text-secondary, rgba(255,255,255,0.65));
+    font-size: 0.875rem;
+}
+
+/* ─── List items legacy (settings cards / rule cards / etc) ──── */
+.settings-card,
+.config-card,
+.preference-card {
+    background: var(--bg-card, rgba(255,255,255,0.02));
+    border: var(--nova-border-glass);
+    border-radius: var(--hmy-radius-card-soft);
+    padding: 20px 22px;
+    margin-bottom: 14px;
+    transition: all var(--nova-spring-snap);
+}
+.settings-card:hover,
+.config-card:hover,
+.preference-card:hover {
+    border-color: rgba(184, 150, 88, 0.18);
+    background: rgba(184, 150, 88, 0.02);
+}
+
+/* ─── Auth provider cards (Google + Email en perfil cliente) ─── */
+.auth-provider-card {
+    border-radius: var(--hmy-radius-card-soft);
+    border: var(--nova-border-glass);
+}
+
+/* ─── Stat tiles legacy en sec-vehicles si existen ─────────── */
+.section-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+.section-stat-tile {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255,255,255,0.025);
+    border: var(--nova-border-glass);
+    padding: 14px 16px;
+    transition: all var(--nova-spring-snap);
+}
+.section-stat-tile:hover {
+    transform: translateY(-1px);
+    border-color: rgba(184, 150, 88, 0.18);
+    box-shadow: var(--nova-shadow-elev-1);
+}
+.section-stat-tile-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--brand-primary, #b89658);
+    line-height: 1.2;
+}
+.section-stat-tile-label {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary, rgba(255,255,255,0.55));
+    margin-top: 2px;
+}
+
+/* ─── User row in users table — avatar + role badge ──────────── */
+.user-row .user-avatar,
+.users-table .user-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #b89658, #9a7d44);
+    color: #1a1a1a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+.user-row .role-badge,
+.users-table .role-badge {
+    border-radius: var(--hmy-radius-pill);
+    padding: 3px 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.user-row .role-badge--super_admin,
+.role-badge--super_admin {
+    background: rgba(184, 150, 88, 0.16);
+    color: var(--brand-primary, #b89658);
+}
+.user-row .role-badge--editor,
+.role-badge--editor {
+    background: rgba(59, 130, 246, 0.14);
+    color: #60a5fa;
+}
+.user-row .role-badge--viewer,
+.role-badge--viewer {
+    background: rgba(107, 114, 128, 0.14);
+    color: rgba(255,255,255,0.65);
+}
+
+/* ─── Audit log items ─────────────────────────────────────────── */
+.audit-entry,
+.activity-feed-item,
+.activity-item {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255,255,255,0.02);
+    border: var(--nova-border-glass);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: all var(--nova-spring-snap);
+}
+.audit-entry:hover,
+.activity-feed-item:hover,
+.activity-item:hover {
+    border-color: rgba(184, 150, 88, 0.16);
+    background: rgba(184, 150, 88, 0.02);
+}
+
+/* ─── Banner editor preview (sec-banners) ─────────────────────── */
+.banner-preview-card {
+    border-radius: var(--hmy-radius-card-soft);
+    overflow: hidden;
+    box-shadow: var(--nova-shadow-elev-2);
+    border: var(--nova-border-glass);
+}
+
+/* ─── Review item card (sec-reviews) ──────────────────────────── */
+.review-card,
+.review-item {
+    border-radius: var(--hmy-radius-card-soft);
+    border: var(--nova-border-glass);
+    background: rgba(255,255,255,0.02);
+    padding: 18px 20px;
+    transition: all var(--nova-spring-snap);
+}
+.review-card:hover,
+.review-item:hover {
+    border-color: rgba(249, 112, 102, 0.18);
+    background: rgba(249, 112, 102, 0.03);
+}
+.review-card .review-stars,
+.review-item .review-stars {
+    color: #fbbf24;
+    letter-spacing: 0.1em;
+}
+
+/* ─── Dealer card (sec-dealers) ──────────────────────────────── */
+.dealer-card,
+.dealer-item {
+    border-radius: var(--hmy-radius-card-soft);
+    border: var(--nova-border-glass);
+    background: rgba(255,255,255,0.02);
+    padding: 16px 18px;
+    transition: all var(--nova-spring-snap);
+}
+.dealer-card:hover,
+.dealer-item:hover {
+    border-color: rgba(184, 150, 88, 0.18);
+    transform: translateY(-1px);
+    box-shadow: var(--nova-shadow-elev-1);
+}
+
+/* ─── Brand card (sec-brands) ─────────────────────────────────── */
+.brand-admin-card,
+.brand-item {
+    border-radius: var(--hmy-radius-card-soft);
+    border: var(--nova-border-glass);
+    background: rgba(255,255,255,0.02);
+    padding: 16px;
+    text-align: center;
+    transition: all var(--nova-spring-snap);
+}
+.brand-admin-card:hover,
+.brand-item:hover {
+    border-color: rgba(184, 150, 88, 0.20);
+    transform: translateY(-2px);
+    box-shadow: var(--nova-shadow-elev-2);
+}
+.brand-admin-card img,
+.brand-item img {
+    max-width: 80%;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+/* ─── Vehicle row premium en tabla ────────────────────────────── */
+.vehicles-table-row .vehicle-thumb,
+#vehicleTable .vehicle-thumb {
+    width: 60px; height: 44px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: var(--nova-border-glass);
+}
+.vehicles-table-row .vehicle-status,
+#vehicleTable .vehicle-status {
+    border-radius: var(--hmy-radius-pill);
+    padding: 3px 9px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.vehicle-status--disponible,
+.vehicle-status--available {
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+}
+.vehicle-status--reservado,
+.vehicle-status--reserved {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+}
+.vehicle-status--vendido,
+.vehicle-status--sold {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+}
+.vehicle-status--borrador,
+.vehicle-status--draft {
+    background: rgba(107, 114, 128, 0.15);
+    color: rgba(255,255,255,0.65);
+}
+
+/* ─── KB FAQ cards (sec-kb) — uniformidad con admin-kb existente */
+.kb-faq-card {
+    border-radius: var(--hmy-radius-card-soft);
+    border: var(--nova-border-glass);
+    background: rgba(255,255,255,0.02);
+    padding: 16px 18px;
+    transition: all var(--nova-spring-snap);
+}
+.kb-faq-card:hover {
+    border-color: rgba(16, 185, 129, 0.18);
+    background: rgba(16, 185, 129, 0.02);
+}
+
+/* ─── Settings sections (sec-settings) ───────────────────────── */
+.settings-section {
+    margin-bottom: 24px;
+}
+.settings-section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary, rgba(255,255,255,0.55));
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: var(--nova-border-glass);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN ADR-028 NOVA Sprint C
+   ═══════════════════════════════════════════════════════════════════ */

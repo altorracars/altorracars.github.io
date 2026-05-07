@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510090000'; // §28.2 NOVA Sprint B — Auth screens premium (login/2FA/unlock): liquid-gradient bg + orbs animados + login-box glassmorphism + logo gradient text + form inputs focus-ring dorado + login button gradient gold + code inputs (2FA/unlock) monospace destacado + shake error animation + responsive mobile
+const CACHE_VERSION = 'v20260510100000'; // §28.3 NOVA Sprint C — Polish secciones legacy: page-headers premium con accent line dorado/coral/green/neutral por workspace, toolbars consistentes, empty-state util, settings cards, user avatars con role badges (super_admin/editor/viewer), audit entries glass, vehicle status pills coloreados, brand/dealer/review cards uniformes, KB faq cards, settings-section titles uppercase
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

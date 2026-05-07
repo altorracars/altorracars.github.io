@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260510290000'; // §35 — perf kill: anti-patterns purgados + scroll fix + FOUC blur fix
+    const APP_VERSION = '20260510300000'; // §35.1 — class admin-panel agregada al div #adminPanel (selectores CSS ahora matchean)
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

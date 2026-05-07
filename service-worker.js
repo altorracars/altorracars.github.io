@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510150000'; // §28.8 Theme picker (gold/blue/violet) — el admin elige paleta cromática del panel. Override de --brand-primary + --ws-color-* + --nova-tint-gold + --nova-reveal-color + --nova-focus-ring vía clase .theme-blue/.theme-violet en <html>. Pre-paint inline (cero flicker). Picker UI con 3 cards swatch, hover effect, active state border accent. Persistencia localStorage altorra_admin_theme. Toast feedback al cambiar. EventBus emit admin.theme-changed
+const CACHE_VERSION = 'v20260510160000'; // §29 ADMIN-FINAL Sprint A — Modales especificos del admin (vehicle/brand/dealer/banner/review/user/preview/appointmentManager): headers premium con gradient + accent line dorado animado, title gradient text white-to-gold, close btn circular 36px hover rotate 90 + tint rojo, body padding 22x24 + max-h 72vh, footer gradient sutil + gap 12. Upload area drag&drop con border dashed + radial gradient hover + glow on dragover. Image gallery thumbs con aspect 4/3 + hover lift + delete actions overlay. Form/modal tabs strip dorado active. Wizard steps pills con done/active estados. Color swatches hover scale. Preview iframe radius+border glass. Delete confirm + draft notice estilizados
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

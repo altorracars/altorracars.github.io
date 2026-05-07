@@ -60,6 +60,17 @@
         if (_chatsUnsub || !window.db) return;
         if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
 
+        // §34 — Section cleanup hook: cancela listeners de chats + messages
+        // al cambiar de seccion (concierge → otra). Previene leaks acumulados.
+        if (window.AltorraSectionCleanup && !startChatsListener._cleanupRegistered) {
+            startChatsListener._cleanupRegistered = true;
+            window.AltorraSectionCleanup.register('concierge', function() {
+                if (_chatsUnsub) { try { _chatsUnsub(); } catch (e) {} _chatsUnsub = null; }
+                if (_messagesUnsub) { try { _messagesUnsub(); } catch (e) {} _messagesUnsub = null; }
+                startChatsListener._cleanupRegistered = false;
+            });
+        }
+
         _chatsUnsub = window.db.collection('conciergeChats')
             .orderBy('lastMessageAt', 'desc')
             .limit(100)

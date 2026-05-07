@@ -900,7 +900,7 @@
     function setupAppointmentsHook() {
         // Hook into the existing onSnapshot via a periodic check (cheap)
         var lastLen = -1;
-        setInterval(function () {
+        var pollId = setInterval(function () {
             var section = document.getElementById('sec-crm');
             if (!section || !section.classList.contains('active')) return;
             var len = (AP.appointments || []).length;
@@ -909,6 +909,16 @@
                 renderCRM();
             }
         }, 1500);
+
+        // §34 — Section cleanup hook: detiene el setInterval al cambiar de seccion.
+        // Reanuda al volver a CRM via init().
+        if (window.AltorraSectionCleanup && !setupAppointmentsHook._cleanupRegistered) {
+            setupAppointmentsHook._cleanupRegistered = true;
+            window.AltorraSectionCleanup.register('crm', function() {
+                if (pollId) { clearInterval(pollId); pollId = null; }
+                setupAppointmentsHook._cleanupRegistered = false;
+            });
+        }
     }
 
     // Init when AP is ready (clientes load triggered when admin opens CRM)

@@ -15006,3 +15006,148 @@ dentro de los panes pero existen igual en el DOM.
 - §27.5 Reportes ejecutivos implementados de cero
 - §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
 - §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)
+
+### 27.4 Sprint Agenda unificada — Tabs Calendario/Disponibilidad/Festivos (2026-05-10)
+
+**Objetivo del sprint**: la sección Calendario actualmente solo
+muestra la vista mensual/diaria. La configuración de disponibilidad
+(workDays, workHours, slotDuration) y el listado de festivos viven
+solo en código (admin-calendar-config.js singleton sin UI). Sprint
+§27.4 consolida los 3 dominios en una sola sección con tabs.
+
+#### A. Estructura nueva
+
+```
+📅 sec-calendar (Agenda)
+   ├─ Tab "Calendario"      → vista mes/día (existing admin-calendar.js)
+   ├─ Tab "Disponibilidad"  → form de workDays + workHours + slots
+   └─ Tab "Festivos"        → CRUD de días no laborales
+```
+
+**Cambios HTML en `admin.html`**:
+- sec-calendar reescrito como wrapper con `cal-tabstrip` + 3 `cal-tabpane`
+- Tab pane "calendario" mantiene toolbar prev/today/next + view toggle
+  Mes/Día + grid wrap (admin-calendar.js intacto)
+- Tab pane "disponibilidad" NUEVO con form de 3 secciones:
+  - Días laborales: 7 checkboxes con accent violet HarmonyOS
+  - Horario: time inputs apertura/cierre
+  - Slots: duración (min) + buffer + máx por slot
+- Tab pane "festivos" NUEVO con CRUD: header + form add (date + label) + lista
+
+#### B. Módulo nuevo `js/admin-calendar-tabs.js` (~280 líneas)
+
+Singleton `window.AltorraCalendarTabs`:
+
+**Tabs**:
+- `setActiveTab(name)`: toggle active state + URL hash via
+  `history.replaceState`. Lazy render del pane recién activo.
+- `applyHashTab()`: parsea hash. Soporta `#/calendar`,
+  `#/calendar/disponibilidad`, `#/calendar/festivos`,
+  `#/disponibilidad`, `#/festivos`
+- Click handler en `.cal-tab[data-cal-tab]`
+- hashchange listener para back/forward
+
+**Disponibilidad**:
+- `renderAvailabilityForm()` lee `AltorraCalendarConfig.getConfig()`
+  y popula checkboxes + time inputs + number inputs
+- `saveAvailability()` super_admin only:
+  - Recolecta workDays activos, workHours start/end, slotDuration,
+    bufferMin, maxPerSlot
+  - Llama `AltorraCalendarConfig.save(data)` (existing API)
+  - Toast success + savestate inline
+
+**Festivos**:
+- `renderHolidaysList()` recorre `cfg.holidays`. Soporta entries
+  como string `'YYYY-MM-DD'` o objeto `{date, label}`.
+  Formatea fecha con `toLocaleDateString('es-CO', {day, month})`.
+- `showAddHoliday()` / `hideAddHoliday()` toggles del form
+- `saveHoliday()` super_admin only: agrega al array `holidays`
+  (dedupea si la fecha ya existe), llama save, re-renderiza
+- `removeHoliday(date)` super_admin only: confirm + filter
+
+**Polling suave**: cada 8s mientras estás en sec-calendar, re-render
+del tab activo si llegan cambios cross-device (admin-calendar-config.js
+ya tiene onSnapshot interno, solo necesitamos reflejar).
+
+#### C. Routing (admin-section-router.js)
+
+Aliases nuevos no necesarios — los existentes ya cubren:
+- `#/calendar` → tab calendario
+- `#/calendar/disponibilidad` → tab disponibilidad (parseado por admin-calendar-tabs)
+- `#/calendar/festivos` → tab festivos
+- `#/disponibilidad` → vía applyHashTab forza tab disponibilidad
+- `#/festivos` → vía applyHashTab forza tab festivos
+
+#### D. CSS HarmonyOS para los nuevos componentes (~200 líneas)
+
+**Tab strip**:
+- `.cal-tabstrip` — flex con borde inferior tenue, scroll-x mobile
+- `.cal-tab` — padding 10×16, radius top 12px, transition fluida 0.3s
+- `.cal-tab.is-active` — color violet (workspace agenda),
+  background tinted, underline 2px abajo
+- `.cal-tabpane` — display:none, .is-active fade-in 0.25s
+
+**Disponibilidad form**:
+- `.availability-section` — card 16px radius, padding 20×24
+- `.availability-day` — pill button con accent violet cuando checkbox
+  activo (`:has(input:checked)` selector)
+- `.availability-row` — grid auto-fit minmax(180px)
+- Time inputs y number inputs heredan radius 12px de tokens
+
+**Festivos**:
+- `.holidays-add-form` — fondo violet tenue + border tenue
+- `.holiday-item` — card 12px radius, hover violet tenue
+- `.holiday-formatted` — capitalize + bold (ej: "1 de enero")
+- `.holiday-remove:hover` — color coral (delete intent)
+
+`prefers-reduced-motion`: animaciones desactivadas en todos los componentes
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| AltorraCalendarConfig API real es getConfig() no get() | Detectado durante implementación, fallback inteligente |
+| AltorraCalendarConfig sin onLoad() callback | Polling suave cada 8s en sec-calendar (cubre cross-device) |
+| Festivos como string vs objeto {date, label} mezclados | Normalización: ambos formatos soportados en render |
+| Tabs cambiados sin lazy render | renderAvailabilityForm + renderHolidaysList solo al activar |
+| save() sin permisos super_admin | Guard explícito + toast error + return |
+| Holiday agregado duplicado | Filter por date antes de push |
+| Time inputs sin formato 24h en algunos browsers | type="time" nativo respeta locale del usuario |
+| Form submit por accidente con Enter | NO uso `<form>` — botón explícito Save |
+
+#### Test E2E del sprint
+
+1. Login admin → sidebar "Calendario" → carga sec-calendar con tab
+   "Calendario" activo (vista mensual existing)
+2. Click tab "Disponibilidad" → muestra form con:
+   - 7 días checkbox (Dom..Sáb), Lun-Sáb marcados por default
+   - Apertura/Cierre time inputs (08:00-18:00)
+   - Slot duration 30, buffer 15, max 1
+3. Toggle Sábado off + cambiar cierre a 17:00 + click "Guardar"
+   - Toast success + savestate "✓ Disponibilidad guardada"
+   - Verificar en Firestore: config/calendarConfig actualizado
+4. Click tab "Festivos" → muestra lista de 18 festivos COL hardcoded
+5. Click "Agregar festivo" → form aparece con date + label
+   - Seleccionar 2026-12-31 + label "Fin de año" + Guardar
+   - Item aparece en la lista formateado: "31 de diciembre · Fin de año"
+6. Click trash en un festivo → confirm + se elimina
+7. Refrescar página estando en `#/calendar/disponibilidad` → vuelve al tab disponibilidad
+8. Deep-link `#/festivos` → activa tab festivos
+9. Mobile: tabs con scroll-x si overflow
+10. El admin-calendar.js (vista mensual con drag-drop reprogramar)
+    sigue funcionando intacto — los IDs (calPrev, calNext, calToday,
+    calStats, calGridWrap) viven dentro del tab pane "calendario"
+11. Reprogramar una cita arrastrándola a un día → `AltorraCalendarConfig.checkOverbooking`
+    (existing) advierte si cae en festivo recién agregado
+
+**Archivos modificados**:
+- `admin.html` (sec-calendar reescrito con 3 tab panes; scripts admin-calendar-tabs.js cargado)
+- `js/admin-calendar-tabs.js` (NUEVO ~280 líneas: tabs + disponibilidad + festivos)
+- `css/admin.css` (~200 líneas .cal-tab* + .availability-* + .holiday-*)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510040000)
+- `CLAUDE.md` (esta sección §27.4)
+
+**Pendiente del ADR-027** (commits siguientes):
+- §27.5 Reportes ejecutivos implementados de cero (forecast + funnel + performance + anomalías)
+- §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
+- §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)

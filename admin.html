@@ -716,29 +716,139 @@
         </div>
 
         <!-- D.1+D.2 (mega-plan v4) — Calendario dedicado: vista mes + lista del día -->
+        <!-- §27.4 — AGENDA UNIFICADA con tabs internos.
+             Calendario · Disponibilidad · Festivos en una sola sección.
+             Deep-links: #/calendar, #/calendar/disponibilidad, #/calendar/festivos
+             admin-calendar.js (vista) + admin-calendar-config.js (config) intactos. -->
         <div id="sec-calendar" class="section" data-workspace-color="violet">
-            <div class="page-header">
+            <div class="page-header" style="margin-bottom:8px;">
                 <div>
-                    <h1 id="calendarTitle">Calendario de Citas</h1>
-                    <p class="page-subtitle">Vista mensual de todas las citas. Click en cualquier día para ver el detalle. Arrastra una cita para reprogramar.</p>
+                    <h1>Agenda</h1>
+                    <p class="page-subtitle">Calendario de citas, configuración de disponibilidad y festivos del año.</p>
                 </div>
-                <div class="cal-toolbar">
-                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="calPrev" data-tooltip="Mes anterior">
-                        <i data-lucide="chevron-left"></i>
-                    </button>
-                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="calToday">Hoy</button>
-                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="calNext" data-tooltip="Mes siguiente">
-                        <i data-lucide="chevron-right"></i>
-                    </button>
-                    <div class="cal-view-toggle">
-                        <button class="alt-btn alt-btn--ghost alt-btn--sm cal-view-btn active" data-view="month">Mes</button>
-                        <button class="alt-btn alt-btn--ghost alt-btn--sm cal-view-btn" data-view="day">Día</button>
+            </div>
+
+            <!-- Tab strip estilo HarmonyOS (workspace color violet) -->
+            <div class="cal-tabstrip" id="calTabstrip">
+                <button class="cal-tab is-active" data-cal-tab="calendario">
+                    <i data-lucide="calendar"></i>
+                    <span>Calendario</span>
+                </button>
+                <button class="cal-tab" data-cal-tab="disponibilidad">
+                    <i data-lucide="clock-3"></i>
+                    <span>Disponibilidad</span>
+                </button>
+                <button class="cal-tab" data-cal-tab="festivos">
+                    <i data-lucide="party-popper"></i>
+                    <span>Festivos</span>
+                </button>
+            </div>
+
+            <!-- TAB PANE: Calendario (toolbar + view toggle Mes/Día + grid) -->
+            <div class="cal-tabpane is-active" data-cal-pane="calendario">
+                <div class="cal-pane-header">
+                    <h2 id="calendarTitle" style="margin:0;font-size:1.05rem;color:var(--admin-text-muted);">Vista del mes</h2>
+                    <div class="cal-toolbar">
+                        <button class="alt-btn alt-btn--ghost alt-btn--sm" id="calPrev" data-tooltip="Mes anterior">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <button class="alt-btn alt-btn--ghost alt-btn--sm" id="calToday">Hoy</button>
+                        <button class="alt-btn alt-btn--ghost alt-btn--sm" id="calNext" data-tooltip="Mes siguiente">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                        <div class="cal-view-toggle">
+                            <button class="alt-btn alt-btn--ghost alt-btn--sm cal-view-btn active" data-view="month">Mes</button>
+                            <button class="alt-btn alt-btn--ghost alt-btn--sm cal-view-btn" data-view="day">Día</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="cal-stats" id="calStats"></div>
+                <div class="cal-grid-wrap" id="calGridWrap">
+                    <div class="cal-loading">Cargando…</div>
+                </div>
+            </div>
+
+            <!-- TAB PANE: Disponibilidad — config de horarios laborales y slots
+                 Conecta a config/calendarConfig de Firestore via AltorraCalendarConfig API. -->
+            <div class="cal-tabpane" data-cal-pane="disponibilidad">
+                <div class="availability-form" id="availabilityForm">
+                    <div class="availability-section">
+                        <h3 class="availability-title">Días laborales</h3>
+                        <p class="availability-hint">Marcá los días en los que el equipo atiende citas presenciales.</p>
+                        <div class="availability-days" id="availabilityDays">
+                            <label class="availability-day"><input type="checkbox" data-day="0"><span>Dom</span></label>
+                            <label class="availability-day"><input type="checkbox" data-day="1"><span>Lun</span></label>
+                            <label class="availability-day"><input type="checkbox" data-day="2"><span>Mar</span></label>
+                            <label class="availability-day"><input type="checkbox" data-day="3"><span>Mié</span></label>
+                            <label class="availability-day"><input type="checkbox" data-day="4"><span>Jue</span></label>
+                            <label class="availability-day"><input type="checkbox" data-day="5"><span>Vie</span></label>
+                            <label class="availability-day"><input type="checkbox" data-day="6"><span>Sáb</span></label>
+                        </div>
+                    </div>
+
+                    <div class="availability-section">
+                        <h3 class="availability-title">Horario de atención</h3>
+                        <p class="availability-hint">Rango horario en el que se aceptan citas.</p>
+                        <div class="availability-row">
+                            <label class="availability-field">
+                                <span>Apertura</span>
+                                <input type="time" id="availStartTime" class="form-input" value="08:00">
+                            </label>
+                            <label class="availability-field">
+                                <span>Cierre</span>
+                                <input type="time" id="availEndTime" class="form-input" value="18:00">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="availability-section">
+                        <h3 class="availability-title">Slots y capacidad</h3>
+                        <p class="availability-hint">Duración de cada cita, buffer entre ellas y máximo de citas simultáneas por slot.</p>
+                        <div class="availability-row">
+                            <label class="availability-field">
+                                <span>Duración slot (min)</span>
+                                <input type="number" id="availSlotDuration" class="form-input" value="30" min="10" max="120" step="5">
+                            </label>
+                            <label class="availability-field">
+                                <span>Buffer entre citas (min)</span>
+                                <input type="number" id="availBuffer" class="form-input" value="15" min="0" max="60" step="5">
+                            </label>
+                            <label class="availability-field">
+                                <span>Máx. simultáneas por slot</span>
+                                <input type="number" id="availMaxPerSlot" class="form-input" value="1" min="1" max="10">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="availability-footer">
+                        <button class="alt-btn alt-btn--primary" id="availabilitySaveBtn">
+                            <i data-lucide="save"></i> Guardar disponibilidad
+                        </button>
+                        <span class="availability-savestate" id="availabilitySaveState"></span>
                     </div>
                 </div>
             </div>
-            <div class="cal-stats" id="calStats"></div>
-            <div class="cal-grid-wrap" id="calGridWrap">
-                <div class="cal-loading">Cargando…</div>
+
+            <!-- TAB PANE: Festivos — CRUD de días no laborales. -->
+            <div class="cal-tabpane" data-cal-pane="festivos">
+                <div class="holidays-header">
+                    <div>
+                        <h3 style="margin:0;">Festivos del año</h3>
+                        <p class="page-subtitle" style="margin:4px 0 0;">Días en los que NO se aceptan citas. Al reprogramar una cita en festivo el sistema avisa.</p>
+                    </div>
+                    <button class="alt-btn alt-btn--primary alt-btn--sm" id="holidayAddBtn">
+                        <i data-lucide="plus"></i> Agregar festivo
+                    </button>
+                </div>
+                <div class="holidays-add-form" id="holidayAddForm" style="display:none;">
+                    <input type="date" id="holidayDate" class="form-input">
+                    <input type="text" id="holidayLabel" class="form-input" placeholder="Etiqueta (ej: Día del trabajo)">
+                    <button class="alt-btn alt-btn--primary alt-btn--sm" id="holidaySaveBtn">Guardar</button>
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="holidayCancelBtn">Cancelar</button>
+                </div>
+                <div class="holidays-list" id="holidaysList">
+                    <div class="pred-empty">Cargando festivos…</div>
+                </div>
             </div>
         </div>
 
@@ -2764,6 +2874,8 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <!-- §27.3 CRM unificado — tabs internos + Pipeline Kanban -->
 <script src="js/admin-crm-tabs.js" defer></script>
 <script src="js/admin-pipeline.js" defer></script>
+<!-- §27.4 Agenda unificada — tabs Calendario / Disponibilidad / Festivos -->
+<script src="js/admin-calendar-tabs.js" defer></script>
 <!-- admin-inbox.js eliminado — unificado al Concierge (sec-concierge → ALTOR Hub) -->
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

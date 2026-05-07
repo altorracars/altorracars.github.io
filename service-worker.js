@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510020000'; // §27.2 Inicio productivo: 3 KPIs hero + Top 5 NBA + eliminados quick-actions/charts/activity → migrados a sec-audit + SEO Tools → sec-settings
+const CACHE_VERSION = 'v20260510030000'; // §27.3 CRM unificado: tabs Contactos/Bandeja/Pipeline en sec-crm + sec-appointments vacío + alias appointments→crm + Pipeline Kanban segmentado por tier
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

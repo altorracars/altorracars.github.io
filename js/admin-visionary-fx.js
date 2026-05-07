@@ -1,17 +1,33 @@
 /**
  * AltorraVisionaryFx — Microinteracciones world-class
  * ====================================================
- * - Cursor-follow gradient (Vision Pro / Apple style):
- *   las cards reciben un radial-gradient que sigue al cursor.
- * - Haptic visual feedback en clicks (scale 0.97 momentáneo).
- * - Motion choreography: stagger automático en grids visibles.
- * - Smart attach: detecta cards/buttons y aplica.
- * - Respeta prefers-reduced-motion.
+ * §35 ADR-035 — DESACTIVADO POR PERFORMANCE.
+ *
+ * Originalmente:
+ * - Cursor-follow gradient (pointermove en cada card).
+ * - Haptic visual feedback en clicks.
+ * - Stagger automático en grids visibles.
+ * - MutationObserver con subtree:true.
+ *
+ * Causa raíz documentada: drenaba GPU con repaints en cada
+ * movimiento del cursor + 1 MutationObserver redundante.
+ *
+ * En modo perf-killed expone API stub para que callers
+ * existentes no crasheen (window.AltorraVisionaryFx.rescan).
  */
 (function () {
     'use strict';
     if (window.AltorraVisionaryFx) return;
 
+    // §35 — Stub API. Cero listeners, cero observers.
+    window.AltorraVisionaryFx = {
+        enabled: false,
+        rescan: function () {}
+    };
+    return;
+
+    /* eslint-disable */
+    /* CÓDIGO PRESERVADO POR REFERENCIA — NO EJECUTABLE (return arriba) */
     var _reduceMotion = false;
     try {
         _reduceMotion = window.matchMedia &&

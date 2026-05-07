@@ -366,6 +366,13 @@ function loadAuthSystem() {
                     aiInv.defer = true;
                     document.body.appendChild(aiInv);
                 }
+                // §26.2 — Vehicle Guide (asesor humano sobre vehículos específicos)
+                if (!document.querySelector('script[src*="ai/vehicle-guide.js"]')) {
+                    var aiVG = document.createElement('script');
+                    aiVG.src = 'js/ai/vehicle-guide.js';
+                    aiVG.defer = true;
+                    document.body.appendChild(aiVG);
+                }
                 // §22 Propuesta #1 — TF-IDF FAQ ranker (KB matching avanzado)
                 if (!document.querySelector('script[src*="ai/faq-ranker.js"]')) {
                     var aiRanker = document.createElement('script');

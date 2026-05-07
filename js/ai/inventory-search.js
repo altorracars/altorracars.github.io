@@ -286,23 +286,50 @@
             };
         }
 
+        // §26.2 — Genera vehicleCards inline cuando AltorraVehicleGuide
+        // está disponible. Esto hace que el bot muestre miniatura, specs,
+        // bullets humanos y CTAs en cada burbuja, no solo texto plano.
+        var hasGuide = !!window.AltorraVehicleGuide;
+        var vehicleCards = hasGuide
+            ? vehicles.map(function (v) { return window.AltorraVehicleGuide.cardData(v); }).filter(Boolean)
+            : null;
+
         if (vehicles.length === 1) {
             var v = vehicles[0];
+            // Pitch humano del Vehicle Guide
+            var pitchText;
+            if (hasGuide) {
+                pitchText = window.AltorraVehicleGuide.fullPitch(v, { intro: true, closeCTA: true });
+            } else {
+                pitchText = greet + 'tengo esto: ' + v.marca + ' ' + v.modelo + ' ' + v.year +
+                            ' por ' + fmtPrice(v.precioOferta || v.precio) +
+                            (v.kilometraje ? ' (' + v.kilometraje.toLocaleString('es-CO') + ' km)' : '') +
+                            '. ¿Querés ver la ficha completa o coordinar una visita?';
+            }
             return {
-                text: greet + 'tengo esto: ' + v.marca + ' ' + v.modelo + ' ' + v.year +
-                      ' por ' + fmtPrice(v.precioOferta || v.precio) +
-                      (v.kilometraje ? ' (' + v.kilometraje.toLocaleString('es-CO') + ' km)' : '') +
-                      '. ¿Querés ver la ficha completa o coordinar una visita?',
-                cta: { label: 'Ver ficha', action: 'goto-busqueda' },
+                text: pitchText,
+                cta: { label: 'Ver ficha completa', action: 'goto-busqueda' },
+                vehicleCards: vehicleCards,
                 vehiclesShown: [v.id]
             };
         }
 
-        var lines = vehicles.map(vehicleLine).join('\n');
+        // Multi-result: header conciso + cards inline (NO lista de texto plano)
+        var headerText = greet + 'encontré ' + vehicles.length + ' opciones para ' + filterStr + ':';
+        if (!hasGuide) {
+            // Fallback al formato viejo si Vehicle Guide no cargó
+            var lines = vehicles.map(vehicleLine).join('\n');
+            return {
+                text: '🚗 ' + headerText + '\n' + lines +
+                      '\n\n¿Cuál te llama más la atención? Puedo darte detalles de cualquiera.',
+                cta: { label: 'Ver catálogo', action: 'goto-busqueda' },
+                vehiclesShown: vehicles.map(function (x) { return x.id; })
+            };
+        }
         return {
-            text: '🚗 Encontré ' + vehicles.length + ' opciones para ' + filterStr + ':\n' +
-                  lines + '\n\n¿Cuál te llama más la atención? Puedo darte detalles de cualquiera.',
-            cta: { label: 'Ver catálogo', action: 'goto-busqueda' },
+            text: '🚗 ' + headerText + '\n\nDecime cuál te llama y te paso info detallada, o agendamos una visita 🙌',
+            cta: { label: 'Ver catálogo completo', action: 'goto-busqueda' },
+            vehicleCards: vehicleCards,
             vehiclesShown: vehicles.map(function (x) { return x.id; })
         };
     }

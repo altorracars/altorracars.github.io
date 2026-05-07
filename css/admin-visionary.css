@@ -4219,3 +4219,828 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 /* ═══════════════════════════════════════════════════════════════════
    FIN VISIONARY MASTER — Vehículos + Marcas + Dashboard + Sidebar
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-032 MASTER 2 — Secciones que faltan + modales premium
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 101. ALIADOS (Dealers) — cards business style ────── */
+.admin-panel #sec-dealers .dealer-card,
+.admin-panel #sec-dealers .dealer-row,
+.admin-panel #dealersList > div {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 20px 22px;
+    margin-bottom: 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    align-items: center;
+}
+.admin-panel #sec-dealers .dealer-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(184, 150, 88, 0.40);
+    box-shadow: var(--vis-elev-2),
+                var(--vis-elev-glow);
+}
+.admin-panel #sec-dealers .dealer-name {
+    font-size: var(--vis-fs-lg);
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: var(--vis-ls-tight);
+}
+.admin-panel #sec-dealers .dealer-meta {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+.admin-panel #sec-dealers .dealer-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.admin-panel #sec-dealers .dealer-meta-item [data-lucide] {
+    width: 14px;
+    height: 14px;
+    color: var(--vis-brand-400);
+}
+
+/* ─── 102. BANNERS — preview cards premium ───────── */
+.admin-panel #sec-banners .banner-preview-card,
+.admin-panel #sec-banners .banner-card,
+.admin-panel #bannersList > div {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    overflow: hidden;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel #sec-banners .banner-preview-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(184, 150, 88, 0.40);
+    box-shadow: var(--vis-elev-3),
+                var(--vis-elev-glow);
+}
+.admin-panel #sec-banners .banner-preview-card img {
+    width: 100%;
+    aspect-ratio: 3/1;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.40);
+}
+.admin-panel #sec-banners .banner-info {
+    padding: 14px 18px;
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.04) 0%,
+            transparent 100%);
+}
+
+/* ─── 103. RESENAS — Twitter card style ─────────── */
+.admin-panel #sec-reviews .review-card,
+.admin-panel #sec-reviews .review-item,
+.admin-panel #reviewsList > div {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: start;
+}
+.admin-panel #sec-reviews .review-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(249, 112, 102, 0.32);
+    box-shadow: var(--vis-elev-2),
+                0 0 24px rgba(249, 112, 102, 0.10);
+}
+.admin-panel #sec-reviews .review-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg,
+        #f97066 0%,
+        #c2410c 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: var(--vis-fs-md);
+    box-shadow: 0 2px 8px rgba(249, 112, 102, 0.30),
+                inset 0 1px 0 rgba(255, 255, 255, 0.40);
+    flex-shrink: 0;
+}
+.admin-panel #sec-reviews .review-content {
+    min-width: 0;
+}
+.admin-panel #sec-reviews .review-author {
+    font-size: var(--vis-fs-base);
+    font-weight: 650;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+.admin-panel #sec-reviews .review-stars {
+    color: #fcd34d;
+    letter-spacing: 0.1em;
+    font-size: var(--vis-fs-sm);
+    margin-bottom: 8px;
+}
+.admin-panel #sec-reviews .review-text {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: var(--vis-fs-sm);
+    line-height: var(--vis-lh-base);
+}
+
+/* ─── 104. CRM Pipeline lanes refinadas ─────────── */
+.admin-panel #sec-crm .pipeline-lane {
+    min-width: 280px;
+    flex-shrink: 0;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            transparent 100%),
+        var(--vis-surface-canvas);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 14px 14px 18px;
+}
+.admin-panel #sec-crm .pipeline-lane-header {
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    color: rgba(255, 255, 255, 0.55);
+    padding: 4px 4px 12px;
+    margin-bottom: 10px;
+    border-bottom: var(--vis-border-2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.admin-panel #sec-crm .pipeline-count {
+    background: var(--vis-brand-tint-strong);
+    color: var(--vis-brand-300);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-pill);
+    padding: 2px 8px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+}
+
+/* ─── 105. CALENDARIO — vista mes refinada ──── */
+.admin-panel #sec-calendar .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 14px;
+}
+.admin-panel #sec-calendar .cal-header-day {
+    text-align: center;
+    padding: 8px 4px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    color: rgba(255, 255, 255, 0.55);
+}
+.admin-panel #sec-calendar .cal-day,
+.admin-panel #sec-calendar .calendar-cell,
+.admin-panel #sec-calendar .day {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-sm);
+    padding: 8px 10px;
+    min-height: 90px;
+    cursor: pointer;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.admin-panel #sec-calendar .cal-day:hover {
+    border-color: var(--vis-brand-500);
+    background: var(--vis-state-hover-gold);
+    transform: scale(1.02);
+}
+.admin-panel #sec-calendar .cal-day .day-number {
+    font-size: var(--vis-fs-md);
+    font-weight: 650;
+    color: #ffffff;
+}
+.admin-panel #sec-calendar .cal-day--today {
+    background: linear-gradient(135deg,
+        rgba(184, 150, 88, 0.18) 0%,
+        rgba(184, 150, 88, 0.06) 100%);
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-elev-glow);
+}
+.admin-panel #sec-calendar .cal-day--today .day-number {
+    color: var(--vis-brand-200);
+    font-weight: 800;
+}
+.admin-panel #sec-calendar .cal-event {
+    background: linear-gradient(135deg,
+        var(--vis-brand-tint-strong),
+        var(--vis-brand-tint));
+    color: var(--vis-brand-200);
+    border-radius: var(--vis-r-xs);
+    padding: 3px 8px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 1px solid rgba(184, 150, 88, 0.30);
+}
+
+/* ─── 106. WORKFLOWS rules visual cards ───── */
+.admin-panel #sec-workflows .workflow-card,
+.admin-panel #sec-workflows .rule-card {
+    background:
+        linear-gradient(180deg,
+            rgba(245, 158, 11, 0.04) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-left: 3px solid rgba(245, 158, 11, 0.40);
+    border-radius: var(--vis-r-lg);
+    padding: 18px 22px;
+    margin-bottom: 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    align-items: center;
+}
+.admin-panel #sec-workflows .workflow-card:hover {
+    border-color: rgba(245, 158, 11, 0.55);
+    border-left-color: rgba(245, 158, 11, 0.85);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+    transform: translateX(2px);
+}
+.admin-panel #sec-workflows .workflow-card--on {
+    border-left-color: var(--vis-brand-500);
+}
+.admin-panel #sec-workflows .workflow-name {
+    font-size: var(--vis-fs-md);
+    font-weight: 650;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+.admin-panel #sec-workflows .workflow-desc {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+}
+
+/* ─── 107. REPORTES KPI cards refinados ───── */
+.admin-panel #sec-reports .reports-kpi-card,
+.admin-panel #sec-reports .kpi-card,
+.admin-panel #sec-reports .stat-card {
+    background:
+        linear-gradient(180deg,
+            rgba(6, 182, 212, 0.04) 0%,
+            rgba(6, 182, 212, 0) 60%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 22px 24px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel #sec-reports .reports-kpi-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(6, 182, 212, 0.40);
+    box-shadow: var(--vis-elev-3),
+                0 0 24px rgba(6, 182, 212, 0.20);
+}
+.admin-panel #sec-reports .reports-kpi-value,
+.admin-panel #sec-reports .kpi-value {
+    background: linear-gradient(135deg,
+        #67e8f9 0%,
+        #06b6d4 50%,
+        #0e7490 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ─── 108. KB (Cerebro AI) cards refinadas ───── */
+.admin-panel #sec-kb .kb-card,
+.admin-panel #kbList > div {
+    background:
+        linear-gradient(180deg,
+            rgba(16, 185, 129, 0.04) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-left: 3px solid rgba(16, 185, 129, 0.55);
+    border-radius: var(--vis-r-lg);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel #sec-kb .kb-card:hover {
+    transform: translateX(3px);
+    border-left-color: #10b981;
+    background:
+        linear-gradient(180deg,
+            rgba(16, 185, 129, 0.08) 0%,
+            transparent 100%),
+        var(--vis-surface-2);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.18);
+}
+.admin-panel #sec-kb .kb-question {
+    font-size: var(--vis-fs-md);
+    font-weight: 650;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+.admin-panel #sec-kb .kb-answer {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: var(--vis-fs-sm);
+    line-height: var(--vis-lh-base);
+}
+
+/* ─── 109. UNMATCHED cards refinadas ─────── */
+.admin-panel #sec-unmatched #unmatchedList > div,
+.admin-panel #sec-unmatched .unmatched-item {
+    background:
+        linear-gradient(180deg,
+            rgba(245, 158, 11, 0.06) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-left: 3px solid rgba(245, 158, 11, 0.55);
+    border-radius: var(--vis-r-lg);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel #sec-unmatched .unmatched-item:hover {
+    transform: translateX(3px);
+    border-left-color: #f59e0b;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.18);
+}
+.admin-panel #sec-unmatched .unmatched-query {
+    font-size: var(--vis-fs-md);
+    font-weight: 600;
+    color: #fcd34d;
+    margin-bottom: 6px;
+    font-family: var(--vis-font-mono);
+}
+
+/* ─── 110. USERS table cards style ────────── */
+.admin-panel #sec-users .users-table tbody tr {
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel #sec-users .users-table tbody tr:hover {
+    background: var(--vis-state-hover-gold);
+}
+.admin-panel #sec-users .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg,
+        var(--vis-brand-200) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: #1a1310;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(184, 150, 88, 0.30),
+                inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+/* ─── 111. AUDIT timeline visual ────────── */
+.admin-panel #sec-audit .audit-entry,
+.admin-panel #sec-audit .audit-row,
+.admin-panel #activityFeed > div {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: center;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+    position: relative;
+}
+.admin-panel #sec-audit .audit-entry::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--vis-brand-500);
+    box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.20);
+}
+.admin-panel #sec-audit .audit-entry:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(184, 150, 88, 0.30);
+    transform: translateX(4px);
+}
+.admin-panel #sec-audit .audit-action {
+    font-weight: 600;
+    color: #ffffff;
+    padding-left: 16px;
+}
+.admin-panel #sec-audit .audit-time {
+    color: rgba(255, 255, 255, 0.50);
+    font-size: var(--vis-fs-xs);
+    font-family: var(--vis-font-mono);
+}
+
+/* ─── 112. SETTINGS macOS-style cards ─────── */
+.admin-panel #sec-settings > div:not(:first-child),
+.admin-panel #sec-settings .setting-card,
+.admin-panel #sec-settings .stat-card,
+.admin-panel #sec-settings .form-card {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 22px 26px;
+    margin-bottom: 16px;
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel #sec-settings .setting-card-title,
+.admin-panel #sec-settings h3 {
+    font-size: var(--vis-fs-md);
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: var(--vis-ls-tight);
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.admin-panel #sec-settings h3 [data-lucide] {
+    color: var(--vis-brand-400);
+}
+
+/* ─── 113. MODALES refinement final premium ─────── */
+.admin-panel ~ .modal-overlay .modal,
+.modal-overlay .modal,
+#vehicleModal,
+#brandModal,
+#dealerModal,
+#bannerModal,
+#reviewModal,
+#userModal {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-modal) !important;
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border: var(--vis-border-4) !important;
+    border-radius: var(--vis-r-xl) !important;
+    box-shadow: var(--vis-elev-5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+.modal-overlay .modal-header,
+#vehicleModal .modal-header,
+#brandModal .modal-header,
+#dealerModal .modal-header,
+#bannerModal .modal-header,
+#reviewModal .modal-header,
+#userModal .modal-header {
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.10) 0%,
+            rgba(184, 150, 88, 0.02) 100%) !important;
+    border-bottom: var(--vis-border-gold) !important;
+    padding: 20px 28px !important;
+    border-radius: var(--vis-r-xl) var(--vis-r-xl) 0 0 !important;
+    position: relative;
+}
+.modal-overlay .modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 10%; right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--vis-brand-500) 50%,
+        transparent 100%);
+    opacity: 0.55;
+    pointer-events: none;
+}
+.modal-overlay .modal-header h2 {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-lg) !important;
+    font-weight: 700 !important;
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-300) 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    letter-spacing: var(--vis-ls-tight);
+}
+.modal-overlay .modal-close {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-3) !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3) !important;
+}
+.modal-overlay .modal-close:hover {
+    background: rgba(239, 68, 68, 0.18) !important;
+    border-color: rgba(239, 68, 68, 0.45) !important;
+    color: #fca5a5 !important;
+    transform: rotate(90deg);
+}
+
+/* ─── 114. FORMS dentro modales premium ───── */
+.modal-overlay .form-group,
+.modal-overlay .form-row,
+.modal-overlay label {
+    margin-bottom: 16px;
+}
+.modal-overlay label,
+.modal-overlay .form-label {
+    display: block;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wider);
+    color: rgba(255, 255, 255, 0.72);
+    margin-bottom: 6px;
+}
+.modal-overlay input[type="text"],
+.modal-overlay input[type="email"],
+.modal-overlay input[type="tel"],
+.modal-overlay input[type="number"],
+.modal-overlay input[type="password"],
+.modal-overlay input[type="url"],
+.modal-overlay input[type="date"],
+.modal-overlay textarea,
+.modal-overlay select {
+    width: 100% !important;
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.10) 0%,
+            rgba(0, 0, 0, 0.04) 100%),
+        var(--vis-surface-1) !important;
+    border: var(--vis-border-3) !important;
+    border-radius: var(--vis-r-sm) !important;
+    padding: 11px 14px !important;
+    color: #ffffff !important;
+    font-family: inherit;
+    font-size: var(--vis-fs-base);
+    transition: all var(--vis-d-fast) var(--vis-ease-snap) !important;
+}
+.modal-overlay input:focus,
+.modal-overlay textarea:focus,
+.modal-overlay select:focus {
+    border-color: var(--vis-brand-500) !important;
+    background-color: var(--vis-brand-tint) !important;
+    box-shadow: var(--vis-state-focus) !important;
+    outline: none !important;
+}
+
+/* ─── 115. MODAL FOOTER buttons premium ──── */
+.modal-overlay .modal-footer {
+    padding: 16px 28px !important;
+    border-top: var(--vis-border-2) !important;
+    background:
+        linear-gradient(0deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            transparent 100%);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.modal-overlay .modal-footer .btn-ghost,
+.modal-overlay .modal-footer .btn-secondary {
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-3) !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    border-radius: var(--vis-r-sm) !important;
+    padding: 9px 18px !important;
+    font-weight: 550;
+}
+.modal-overlay .modal-footer .btn-ghost:hover,
+.modal-overlay .modal-footer .btn-secondary:hover {
+    background: var(--vis-state-hover-gold) !important;
+    border-color: rgba(184, 150, 88, 0.40) !important;
+    color: #ffffff !important;
+}
+.modal-overlay .modal-footer .btn-primary {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%) !important;
+    color: #1a1310 !important;
+    font-weight: 700 !important;
+    border: 1px solid rgba(212, 173, 110, 0.55) !important;
+    border-radius: var(--vis-r-sm) !important;
+    padding: 9px 22px !important;
+    box-shadow:
+        var(--vis-elev-1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+}
+.modal-overlay .modal-footer .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        var(--vis-elev-2),
+        var(--vis-elev-glow) !important;
+}
+
+/* ─── 116. WIZARD STEPS rediseñados ─────── */
+.modal-overlay .wizard-steps,
+.modal-overlay .form-wizard-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 18px 0;
+    border-bottom: var(--vis-border-2);
+    margin-bottom: 18px;
+}
+.modal-overlay .wizard-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-pill);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wider);
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.modal-overlay .wizard-step.active {
+    background: linear-gradient(135deg,
+        rgba(184, 150, 88, 0.24) 0%,
+        rgba(184, 150, 88, 0.08) 100%);
+    border-color: var(--vis-brand-500);
+    color: var(--vis-brand-200);
+    box-shadow: 0 0 16px rgba(184, 150, 88, 0.18);
+    transform: scale(1.05);
+}
+.modal-overlay .wizard-step.done {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.40);
+    color: #6ee7b7;
+}
+
+/* ─── 117. CRM Detail Modal (360°) refinement ─── */
+.admin-panel #crmDetailModal,
+.admin-panel .crm-detail-modal {
+    /* placeholder for future CRM 360 */
+}
+
+/* ─── 118. EMPTY STATES refinados ─────── */
+.admin-panel .empty-state,
+.admin-panel .alt-empty-illustrated {
+    text-align: center;
+    padding: 64px 32px;
+}
+.admin-panel .empty-state-icon,
+.admin-panel .alt-empty-illustrated-svg {
+    margin-bottom: 16px;
+    opacity: 0.85;
+    filter: drop-shadow(0 4px 12px rgba(184, 150, 88, 0.20));
+}
+.admin-panel .empty-state-title,
+.admin-panel .alt-empty-illustrated-title {
+    font-size: var(--vis-fs-lg);
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 8px;
+    letter-spacing: var(--vis-ls-tight);
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.admin-panel .empty-state-text,
+.admin-panel .alt-empty-illustrated-text {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: var(--vis-fs-sm);
+    line-height: var(--vis-lh-base);
+    max-width: 440px;
+    margin: 0 auto 18px;
+}
+.admin-panel .empty-state .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ─── 119. SEARCH GLOBAL en topbar premium ─── */
+.admin-panel .global-search-wrapper input,
+.admin-panel #globalSearch {
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-3) !important;
+    border-radius: var(--vis-r-pill) !important;
+    padding: 9px 16px 9px 38px !important;
+    color: #ffffff !important;
+    font-size: var(--vis-fs-sm);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b89658' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: 12px center !important;
+    background-size: 16px !important;
+}
+.admin-panel #globalSearch:focus {
+    background-color: var(--vis-brand-tint) !important;
+    border-color: var(--vis-brand-500) !important;
+    box-shadow: var(--vis-state-focus) !important;
+}
+
+/* ─── 120. ALL TABS strips uniformizados ───── */
+.admin-panel .crm-tabstrip,
+.admin-panel .cal-tabstrip,
+.admin-panel .crm-detail-tabs,
+.admin-panel .form-tabs,
+.admin-panel .modal-tabs {
+    display: inline-flex;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 4px;
+    gap: 2px;
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.10);
+}
+.admin-panel .crm-tab,
+.admin-panel .cal-tab,
+.admin-panel .crm-detail-tab,
+.admin-panel .form-tab,
+.admin-panel .modal-tab {
+    background: transparent;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--vis-r-xs);
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+    font-weight: 550;
+    cursor: pointer;
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3);
+    white-space: nowrap;
+}
+.admin-panel .crm-tab:hover,
+.admin-panel .cal-tab:hover,
+.admin-panel .crm-detail-tab:hover {
+    background: var(--vis-state-hover-gold);
+    color: rgba(255, 255, 255, 0.92);
+}
+.admin-panel .crm-tab.is-active,
+.admin-panel .cal-tab.is-active,
+.admin-panel .crm-detail-tab.is-active,
+.admin-panel .crm-tab[aria-selected="true"] {
+    background: linear-gradient(180deg,
+        rgba(184, 150, 88, 0.32) 0%,
+        rgba(184, 150, 88, 0.14) 100%);
+    color: var(--vis-brand-200);
+    font-weight: 700;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10),
+                0 2px 8px rgba(184, 150, 88, 0.20);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN MASTER 2 — todas las secciones + modales + forms unificados
+   ═══════════════════════════════════════════════════════════════════ */

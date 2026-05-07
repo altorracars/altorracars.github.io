@@ -243,7 +243,7 @@
        ═══════════════════════════════════════════════════════════ */
     --layout-max-content: 1280px;
     --layout-sidebar-w-collapsed: 56px;
-    --layout-sidebar-w-expanded:  240px;
+    --layout-sidebar-w-expanded:  256px;  /* §27 HarmonyOS — más espacio para respirar */
     --layout-header-h:    64px;
     --layout-content-p:   var(--space-6);
 
@@ -251,6 +251,67 @@
        10. BREAKPOINTS (informational — used in @media queries)
        ═══════════════════════════════════════════════════════════ */
     /* sm: 480px / md: 768px / lg: 1024px / xl: 1280px / 2xl: 1536px */
+
+    /* ═══════════════════════════════════════════════════════════
+       11. HARMONYOS LANGUAGE (§27 — ALTORRA HARMONY CRM)
+       Tokens visuales inspirados en HarmonyOS: bordes suaves,
+       sombras difuminadas, transiciones fluidas, glassmorphism,
+       espacios respiran. Aplicar prefijo --hmy-* para mapeo claro.
+       ═══════════════════════════════════════════════════════════ */
+    --hmy-radius-card-soft:   16px;     /* cards default */
+    --hmy-radius-card-large:  24px;     /* hero KPIs / modales */
+    --hmy-radius-card-xl:     32px;     /* hero principal página */
+    --hmy-radius-button:      12px;     /* botones más redondeados */
+    --hmy-radius-input:       12px;
+    --hmy-radius-pill:        999px;
+    --hmy-radius-modal:       20px;
+
+    /* Sombras difuminadas (no más sombras sólidas duras) */
+    --hmy-shadow-soft-xs:  0 1px 4px rgba(0, 0, 0, 0.04);
+    --hmy-shadow-soft-sm:  0 2px 12px rgba(0, 0, 0, 0.06);
+    --hmy-shadow-soft-md:  0 4px 24px rgba(0, 0, 0, 0.08);
+    --hmy-shadow-soft-lg:  0 12px 40px rgba(0, 0, 0, 0.10);
+    --hmy-shadow-soft-xl:  0 24px 64px rgba(0, 0, 0, 0.12);
+    --hmy-shadow-glow-soft: 0 0 32px rgba(184, 150, 88, 0.18);
+    --hmy-shadow-glass:     0 8px 32px rgba(0, 0, 0, 0.20),
+                            0 1px 0 rgba(255, 255, 255, 0.04) inset;
+
+    /* Transiciones fluidas — duraciones extendidas */
+    --hmy-transition-fluid:  0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --hmy-transition-quick:  0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    --hmy-transition-spring: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Espacios — respiran (más generosos que defaults) */
+    --hmy-space-card-padding:  24px;    /* default 16-20px → 24px */
+    --hmy-space-card-gap:      20px;
+    --hmy-space-section-gap:   32px;
+    --hmy-space-page-gutter:   28px;
+
+    /* Glassmorphism (sidebar + modales) */
+    --hmy-glass-blur:           20px;
+    --hmy-glass-bg-dark:        rgba(15, 15, 15, 0.72);
+    --hmy-glass-bg-card:        rgba(255, 255, 255, 0.04);
+    --hmy-glass-border:         rgba(255, 255, 255, 0.08);
+
+    /* Workspace colors extendidos (§27 — coral nuevo) */
+    --ws-color-gold:    #b89658;
+    --ws-color-coral:   #f97066;       /* NUEVO — Sitio público */
+    --ws-color-blue:    #3b82f6;       /* CRM */
+    --ws-color-violet:  #8b5cf6;       /* Agenda */
+    --ws-color-green:   #10b981;       /* Comunicaciones */
+    --ws-color-cyan:    #06b6d4;       /* Reportes */
+    --ws-color-amber:   #f59e0b;       /* Workflows */
+    --ws-color-neutral: #6b7280;       /* Configuración */
+
+    /* Tipografía jerárquica HarmonyOS */
+    --hmy-font-page-title:     2rem;          /* 32px */
+    --hmy-font-page-title-lh:  1.2;
+    --hmy-font-page-title-ls:  -0.02em;       /* tight letter-spacing */
+    --hmy-font-section-title:  1.25rem;       /* 20px */
+    --hmy-font-card-title:     1.0625rem;     /* 17px */
+    --hmy-font-body:           0.9375rem;     /* 15px */
+    --hmy-font-body-lh:        1.6;           /* generoso */
+    --hmy-font-caption:        0.8125rem;     /* 13px */
 }
 
 /* ───────────────────────────────────────────────────────────────

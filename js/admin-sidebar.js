@@ -212,6 +212,55 @@
         init();
     }
 
+    /* §27 ALTORRA HARMONY CRM — Quick Search en sidebar.
+       Filtra los nav-items en vivo al tipear. Patrón Notion/Linear.
+       ⌘K abre el Command Palette global; este search filtra solo items. */
+    function initQuickSearch() {
+        var input = document.getElementById('sidebarSearchInput');
+        if (!input) return;
+        var sidebar = document.getElementById('adminSidebar');
+
+        function applyFilter(query) {
+            query = (query || '').trim().toLowerCase();
+            if (!query) {
+                sidebar.classList.remove('is-searching');
+                Array.prototype.slice.call(sidebar.querySelectorAll('.nav-item--filtered-out'))
+                    .forEach(function (el) { el.classList.remove('nav-item--filtered-out'); });
+                return;
+            }
+            sidebar.classList.add('is-searching');
+            var items = sidebar.querySelectorAll('.nav-item[data-section]');
+            items.forEach(function (item) {
+                var label = (item.textContent || '').toLowerCase();
+                var section = (item.getAttribute('data-section') || '').toLowerCase();
+                var visible = label.indexOf(query) !== -1 || section.indexOf(query) !== -1;
+                item.classList.toggle('nav-item--filtered-out', !visible);
+            });
+        }
+
+        input.addEventListener('input', function (e) { applyFilter(e.target.value); });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                input.value = '';
+                applyFilter('');
+                input.blur();
+            } else if (e.key === 'Enter') {
+                // Click en el primer item visible
+                var first = sidebar.querySelector('.nav-item[data-section]:not(.nav-item--filtered-out)');
+                if (first) {
+                    first.click();
+                    input.value = '';
+                    applyFilter('');
+                }
+            }
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initQuickSearch);
+    } else {
+        initQuickSearch();
+    }
+
     window.AltorraSidebar = {
         toggle: toggle,
         setExpanded: setExpanded,

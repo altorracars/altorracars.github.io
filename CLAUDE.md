@@ -18789,3 +18789,150 @@ post-deploy.
 **Total**: 10 archivos. Cero archivos eliminados (preservamos ADR-028-034 código por si hay que revertir).
 
 **Cache bump**: `v20260510290000`.
+
+---
+
+## 36. ADR-036 TOP NAV — Reemplazo de sidebar 256px por barra superior Notion/Vercel/Linear (2026-05-07)
+
+> Tras §35.1 (fix scroll con `class="admin-panel"`), el cliente
+> aprobó eliminar la sidebar tradicional para recuperar el 100%
+> del viewport. Eligió **Opción C** del menú de propuestas:
+> Top Tabs Adaptativas + ⌘K palette en paralelo.
+>
+> **Filosofía**: NO eliminamos la sidebar HTML (mantenida para
+> mobile drawer + compat con admin-sidebar.js). La OCULTAMOS en
+> desktop via CSS y agregamos un nuevo top nav 56px arriba que
+> es el punto principal de navegación.
+
+### 36.1 Estructura nueva
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║ [A] ALTORRA  🏠 Inicio  🚗 Inventario▼  👥 CRM  💬 Hub▼  📅 ⚡    ║
+║                              📊 ⚙️▼  [⌘K Buscar]  🔔  👤Daniel    ║   ← 56px top nav
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║   [Contenido del admin a 100% del viewport — sin sidebar]        ║
+║                                                                   ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+7 tabs visibles + 3 con dropdowns submenu en hover:
+- 🏠 Inicio (standalone)
+- 🚗 Inventario ▼ (Vehículos · Marcas · Aliados · Banners · Reseñas)
+- 👥 CRM (con badge contador)
+- 💬 Hub ▼ (ALTOR Hub · Cerebro AI · Lo que no entendí)
+- 📅 Agenda
+- 📊 Reportes
+- ⚙️ Config ▼ (Usuarios · Atributos · Workflows · Auditoría · Ajustes)
+
+Right side: search trigger ⌘K + view-site link + activity feed
++ notification bell (movido del legacy header) + user chip con
+dropdown (avatar + nombre + rol + logout).
+
+### 36.2 Archivos
+
+| Archivo | Tipo | Líneas |
+|---|---|---|
+| `css/admin-topnav.css` | NUEVO | ~470 líneas (tokens + layout grid override + tabs + menus + actions + user chip + mobile responsive) |
+| `js/admin-topnav.js` | NUEVO | ~250 líneas (wire clicks, sync con AltorraSections.onChange, sync user info, mover bell del legacy slot, ⌘K trigger, logout, hashchange listener) |
+| `admin.html` | Edit | Insertado `<header class="atn-topnav">` antes de la sidebar legacy + carga de admin-topnav.css/.js |
+| `service-worker.js` | Edit | CACHE_VERSION bump |
+| `js/cache-manager.js` | Edit | APP_VERSION bump |
+
+### 36.3 Layout grid override
+
+`admin-v2.css` definía grid de 2 columnas (sidebar + main).
+`admin-topnav.css` lo override a single-column con 2 rows:
+
+```css
+.admin-panel.admin-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 56px 1fr;
+    grid-template-areas: "topnav" "main";
+}
+.admin-panel .sidebar { display: none; }     /* Hide desktop */
+.admin-panel .mobile-topbar { display: none; }   /* Hide topbar legacy */
+.admin-panel main { grid-area: main; height: 100%; overflow-y: auto; }
+```
+
+### 36.4 Comportamiento de tabs
+
+**Click en tab simple** (`.atn-tab` sin `--has-menu`): navega a
+`AltorraSections.go(section)` directo.
+
+**Click en tab con menu** (`.atn-tab--has-menu`): navega a la primera
+sub-sección (la del `data-atn-section` del propio tab) Y abre el
+dropdown con el resto.
+
+**Hover sobre tab con menu**: dropdown aparece con animation spring
+0.18s (opacity + translateY). Al salir hover se cierra. Click fuera
+también cierra.
+
+**Active state**: se sincroniza via `AltorraSections.onChange`. Si
+una sub-sección está activa, también se marca el tab padre del grupo
+(ej: `vehicles` activa → tab "Inventario" también marca `is-active`).
+
+**Mobile (<900px)**: tabs son scroll-x con scrollbar oculto. Los
+labels se ocultan dejando solo iconos. Al cambiar sección, el tab
+activo se centra automáticamente con `scrollIntoView`.
+
+### 36.5 Integración con sistemas existentes
+
+- **Section router**: usa `AltorraSections.go()` y `.onChange()` (§B.3).
+- **Command palette ⌘K**: el botón `#atnSearchTrigger` invoca
+  `window.AltorraPalette.open()` o simula `keydown Cmd+K` como fallback.
+- **Notification bell**: el div `#atnNotifBellSlot` recibe el
+  componente del bell (toast.js lo monta en `#headerNotifBell` legacy
+  → admin-topnav.js lo mueve al slot del topnav vía `syncBell()`).
+- **User info**: `syncUser()` lee `AP.currentUserProfile` y popula
+  nombre/email/rol/avatar/iniciales.
+- **Logout**: el botón `#atnLogoutBtn` simula click en el legacy
+  `#logoutBtn` (que tiene toda la lógica de signOut + cleanup).
+- **Activity feed**: el botón `#atnActivityTrigger` simula click en
+  el legacy `#activityFeedTrigger`.
+
+**Resultado**: cero pérdida de funcionalidad. Todo lo que existía
+sigue funcionando. La nueva UI es un wrapper.
+
+### 36.6 Sidebar legacy preservada
+
+NO se elimina la sidebar del HTML. Razones:
+1. `admin-sidebar.js` tiene lógica de quick-search + collapse + mobile drawer
+2. Mobile drawer (resize <900px) seguirá funcional como fallback
+3. Si el cliente quiere volver al modelo viejo, basta con desactivar
+   admin-topnav.css (1 línea)
+4. CLAUDE.md §19 prohibe el patrón "eliminar arquitectura sin RCA"
+
+La sidebar simplemente queda `display: none` en desktop.
+
+### 36.7 Test E2E
+
+| # | Test | Resultado esperado |
+|---|---|---|
+| 1 | Ctrl+Shift+R en admin | Top nav 56px visible arriba, sin sidebar lateral |
+| 2 | Click tab "Vehículos" | Navega a sec-vehicles, tab marca activo dorado |
+| 3 | Hover tab "Inventario" | Dropdown aparece con 5 items |
+| 4 | Click "Marcas" en dropdown | Navega + tab "Inventario" sigue marcado activo |
+| 5 | Click ⌘K en topnav (o Cmd+K) | Abre command palette |
+| 6 | Click botón 🔔 | Abre notification center (bell movido al slot) |
+| 7 | Click avatar usuario | Dropdown user con nombre+email+logout |
+| 8 | Click "Cerrar sesión" | Logout real (delegado al legacy handler) |
+| 9 | Mobile (<900px) | Tabs scroll-x con labels ocultos, solo iconos |
+| 10 | Scroll en main con muchos vehículos | Funciona (grid override scroll OK) |
+| 11 | Section change via deep-link `#/crm` | Top nav refleja active correctamente |
+| 12 | Back/forward del browser | Hashchange listener actualiza active state |
+
+### 36.8 Bonus: ancho ganado
+
+| Layout | Ancho contenido |
+|---|---|
+| Pre-§36 (sidebar 256px) | viewport - 256px |
+| §36 top nav | viewport - 0px (full) |
+
+En 1920px desktop: **+256px de ancho** disponible para grids,
+tablas, cards, kanbans. Especialmente notable en CRM Pipeline,
+Vehicles grid, Reports dashboards.
+
+**Cache bump**: `v20260510310000`.

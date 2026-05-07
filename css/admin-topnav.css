@@ -1,0 +1,647 @@
+/**
+ * ALTORRA ADMIN — Top Navigation System (§36 ADR-036)
+ * =====================================================
+ * Reemplaza la sidebar tradicional de 256px por una top nav
+ * Notion/Vercel/Linear style. Recupera el ancho completo del
+ * viewport para el contenido (objetivo cliente).
+ *
+ * Estructura: 56px top bar con logo + tabs + actions.
+ * Hover dropdowns en tabs con submenús.
+ *
+ * Carga DESPUÉS de admin-perf-kill.css (gana especificidad).
+ *
+ * Mobile: top nav scroll-x, sidebar drawer mantenido como fallback.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   1. TOKENS y reset
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+    --atn-h:                    56px;
+    --atn-bg:                   rgba(15, 15, 17, 0.92);
+    --atn-bg-strong:            rgba(20, 20, 22, 0.96);
+    --atn-border:               1px solid rgba(255, 255, 255, 0.08);
+    --atn-border-hover:         1px solid rgba(184, 150, 88, 0.32);
+    --atn-text:                 rgba(255, 255, 255, 0.78);
+    --atn-text-muted:           rgba(255, 255, 255, 0.55);
+    --atn-text-strong:          rgba(255, 255, 255, 0.96);
+    --atn-gold:                 #b89658;
+    --atn-gold-soft:            rgba(184, 150, 88, 0.14);
+    --atn-gold-strong:          rgba(184, 150, 88, 0.30);
+    --atn-radius:               10px;
+    --atn-radius-pill:          999px;
+    --atn-spring:               cubic-bezier(0.22, 1, 0.36, 1);
+    --atn-d:                    0.18s;
+    --atn-shadow-menu:
+        0 12px 32px rgba(0, 0, 0, 0.42),
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2. LAYOUT — Override del grid en admin-v2.css
+   El nuevo layout es single-column (sin sidebar fija).
+   Top nav es position: sticky en top.
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel.admin-layout {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: var(--atn-h) 1fr !important;
+    grid-template-areas:
+        "topnav"
+        "main" !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+
+.admin-panel .atn-topnav {
+    grid-area: topnav;
+    position: relative;
+    z-index: 200;
+}
+
+.admin-panel main,
+.admin-panel main.main-content {
+    grid-area: main !important;
+    margin-left: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Hide sidebar tradicional en desktop — solo visible mobile drawer */
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    display: none !important;
+}
+
+/* Mobile topbar legacy — ocultar en desktop (top nav ocupa su rol) */
+.admin-panel .mobile-topbar {
+    display: none !important;
+}
+
+/* Padding interno del main para que el contenido respire */
+.admin-panel main > .section {
+    padding: 24px clamp(16px, 2.4vw, 36px);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3. TOP NAV BAR
+   ═══════════════════════════════════════════════════════════════════ */
+.atn-topnav {
+    height: var(--atn-h);
+    width: 100%;
+    background: var(--atn-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: var(--atn-border);
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.atn-bar {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 16px;
+    box-sizing: border-box;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   4. BRAND
+   ═══════════════════════════════════════════════════════════════════ */
+.atn-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    padding: 6px 12px 6px 4px;
+    border-radius: var(--atn-radius);
+    color: var(--atn-text-strong);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-right: 8px;
+    transition: background-color var(--atn-d) var(--atn-spring);
+    flex-shrink: 0;
+}
+.atn-brand:hover { background: var(--atn-gold-soft); }
+
+.atn-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #d4ad6e, #b89658, #9a7d44);
+    color: #1a1310;
+    font-weight: 800;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 6px rgba(184, 150, 88, 0.32);
+}
+
+.atn-brand-text {
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5. TABS
+   ═══════════════════════════════════════════════════════════════════ */
+.atn-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.atn-tabs::-webkit-scrollbar { display: none; }
+
+.atn-tab-group {
+    position: relative;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+}
+
+.atn-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 36px;
+    padding: 0 12px;
+    background: transparent;
+    border: none;
+    color: var(--atn-text);
+    font-size: 0.86rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    border-radius: var(--atn-radius);
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-family: inherit;
+    transition: background-color var(--atn-d) var(--atn-spring),
+                color var(--atn-d) var(--atn-spring);
+}
+
+.atn-tab i[data-lucide] {
+    width: 16px !important;
+    height: 16px !important;
+    opacity: 0.78;
+    transition: opacity var(--atn-d), color var(--atn-d);
+}
+
+.atn-tab-chev {
+    width: 13px !important;
+    height: 13px !important;
+    opacity: 0.55;
+    margin-left: -2px;
+}
+
+.atn-tab:hover {
+    background: var(--atn-gold-soft);
+    color: var(--atn-text-strong);
+}
+.atn-tab:hover i[data-lucide] { opacity: 1; }
+
+.atn-tab:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(184, 150, 88, 0.55);
+}
+
+/* Active tab — underline dorado + tinte */
+.atn-tab.is-active {
+    background: var(--atn-gold-soft);
+    color: var(--atn-gold);
+    font-weight: 600;
+}
+.atn-tab.is-active i[data-lucide] {
+    opacity: 1;
+    color: var(--atn-gold);
+}
+.atn-tab.is-active::after {
+    content: '';
+    position: absolute;
+    left: 12px; right: 12px;
+    bottom: -10px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--atn-gold) 30%, var(--atn-gold) 70%, transparent);
+    border-radius: 2px;
+}
+
+/* Tab badge (count) */
+.atn-tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--atn-gold);
+    color: #1a1310;
+    border-radius: var(--atn-radius-pill);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-left: -2px;
+}
+.atn-tab-badge:empty { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   6. DROPDOWNS — hover/click submenu por grupo
+   ═══════════════════════════════════════════════════════════════════ */
+.atn-menu {
+    position: absolute;
+    top: calc(100% - 6px);
+    left: 0;
+    min-width: 240px;
+    padding: 6px;
+    background: var(--atn-bg-strong);
+    backdrop-filter: blur(36px) saturate(200%);
+    -webkit-backdrop-filter: blur(36px) saturate(200%);
+    border: var(--atn-border);
+    border-radius: 12px;
+    box-shadow: var(--atn-shadow-menu);
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+    visibility: hidden;
+    transition: opacity var(--atn-d) var(--atn-spring),
+                transform var(--atn-d) var(--atn-spring),
+                visibility 0s linear var(--atn-d);
+    z-index: 250;
+}
+
+.atn-tab-group:hover .atn-menu,
+.atn-tab-group.is-open .atn-menu,
+.atn-tab-group:focus-within .atn-menu {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    visibility: visible;
+    transition-delay: 0s;
+}
+
+.atn-tab-group:hover .atn-tab-chev,
+.atn-tab-group.is-open .atn-tab-chev {
+    transform: rotate(180deg);
+}
+
+.atn-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    color: var(--atn-text);
+    font-size: 0.84rem;
+    font-weight: 500;
+    text-align: left;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+.atn-menu-item i[data-lucide] {
+    width: 15px !important;
+    height: 15px !important;
+    opacity: 0.65;
+    flex-shrink: 0;
+}
+
+.atn-menu-item:hover {
+    background: var(--atn-gold-soft);
+    color: var(--atn-text-strong);
+}
+.atn-menu-item:hover i[data-lucide] { opacity: 1; color: var(--atn-gold); }
+
+.atn-menu-item.is-active {
+    background: var(--atn-gold-soft);
+    color: var(--atn-gold);
+    font-weight: 600;
+}
+.atn-menu-item.is-active i[data-lucide] { opacity: 1; color: var(--atn-gold); }
+
+.atn-menu-sep {
+    height: 1px;
+    margin: 6px 4px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7. ACTIONS (right side)
+   ═══════════════════════════════════════════════════════════════════ */
+.atn-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.atn-search-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 10px 0 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--atn-radius);
+    color: var(--atn-text-muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color var(--atn-d), border-color var(--atn-d), color var(--atn-d);
+    min-width: 200px;
+    text-align: left;
+}
+.atn-search-trigger i[data-lucide] {
+    width: 14px !important;
+    height: 14px !important;
+    opacity: 0.65;
+}
+.atn-search-trigger span {
+    flex: 1;
+    font-weight: 400;
+}
+.atn-search-trigger:hover {
+    background: var(--atn-gold-soft);
+    border-color: var(--atn-gold-strong);
+    color: var(--atn-text-strong);
+}
+
+.atn-kbd {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    padding: 0 5px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 4px;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: var(--atn-text-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.02em;
+}
+
+.atn-icon-btn,
+.atn-icon-btn-slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px; height: 34px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--atn-radius);
+    color: var(--atn-text-muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color var(--atn-d), border-color var(--atn-d), color var(--atn-d);
+}
+.atn-icon-btn i[data-lucide] {
+    width: 17px !important;
+    height: 17px !important;
+}
+.atn-icon-btn:hover {
+    background: var(--atn-gold-soft);
+    border-color: var(--atn-gold-strong);
+    color: var(--atn-text-strong);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   8. USER chip
+   ═══════════════════════════════════════════════════════════════════ */
+.atn-user {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 2px 10px 2px 4px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--atn-radius);
+    cursor: pointer;
+    transition: background-color var(--atn-d), border-color var(--atn-d);
+    margin-left: 4px;
+}
+.atn-user:hover {
+    background: var(--atn-gold-soft);
+    border-color: var(--atn-gold-strong);
+}
+.atn-user:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(184, 150, 88, 0.55);
+}
+
+.atn-user-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #d4ad6e, #b89658);
+    color: #1a1310;
+    font-weight: 700;
+    font-size: 0.74rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.atn-user-avatar img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+}
+
+.atn-user-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+    min-width: 0;
+    max-width: 140px;
+}
+.atn-user-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--atn-text-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.atn-user-role {
+    font-size: 0.65rem;
+    color: var(--atn-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.atn-user-chev {
+    width: 13px !important;
+    height: 13px !important;
+    opacity: 0.55;
+    flex-shrink: 0;
+}
+
+.atn-user-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 240px;
+    padding: 6px;
+    background: var(--atn-bg-strong);
+    backdrop-filter: blur(36px) saturate(200%);
+    -webkit-backdrop-filter: blur(36px) saturate(200%);
+    border: var(--atn-border);
+    border-radius: 12px;
+    box-shadow: var(--atn-shadow-menu);
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+    visibility: hidden;
+    transition: opacity var(--atn-d) var(--atn-spring),
+                transform var(--atn-d) var(--atn-spring),
+                visibility 0s linear var(--atn-d);
+    z-index: 250;
+}
+.atn-user[aria-expanded="true"] .atn-user-menu,
+.atn-user:focus-within .atn-user-menu {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    visibility: visible;
+    transition-delay: 0s;
+}
+
+.atn-user-menu-head {
+    padding: 10px 12px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 4px;
+}
+.atn-user-menu-name {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--atn-text-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.atn-user-menu-email {
+    font-size: 0.74rem;
+    color: var(--atn-text-muted);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9. MOBILE — top nav scroll-x con tabs compactas
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    :root { --atn-h: 52px; }
+
+    .atn-bar {
+        padding: 0 10px;
+        gap: 2px;
+    }
+    .atn-brand-text {
+        display: none;
+    }
+    .atn-tab span:not(.atn-tab-badge) {
+        display: none;
+    }
+    .atn-tab {
+        padding: 0 9px;
+    }
+    .atn-tab-chev {
+        display: none;
+    }
+    .atn-search-trigger {
+        min-width: 0;
+        padding: 0 9px;
+    }
+    .atn-search-trigger span,
+    .atn-kbd {
+        display: none;
+    }
+    .atn-user-info {
+        display: none;
+    }
+    .atn-user {
+        padding: 2px 4px;
+    }
+    .atn-user-chev {
+        display: none;
+    }
+
+    /* Menus full-width en mobile */
+    .atn-menu {
+        position: fixed;
+        top: var(--atn-h);
+        left: 8px;
+        right: 8px;
+        min-width: 0;
+        max-height: calc(100vh - var(--atn-h) - 16px);
+        overflow-y: auto;
+    }
+
+    .admin-panel main > .section {
+        padding: 16px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .atn-tab i[data-lucide] {
+        width: 18px !important;
+        height: 18px !important;
+    }
+    .atn-actions {
+        gap: 4px;
+        margin-left: 4px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   10. LEGACY hide — page-header global search duplicada con search trigger
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel main #sec-dashboard .page-header .global-search-wrapper {
+    display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   11. PERF — reduced motion
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+    .atn-tab,
+    .atn-menu,
+    .atn-tab-chev,
+    .atn-search-trigger,
+    .atn-icon-btn,
+    .atn-user,
+    .atn-user-menu {
+        transition: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-topnav.css — §36 ADR-036
+   ═══════════════════════════════════════════════════════════════════ */

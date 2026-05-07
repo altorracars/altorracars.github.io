@@ -196,6 +196,8 @@
     <link rel="stylesheet" href="css/admin-v2.css">
     <!-- §35 ADR-035 PERF KILL — capa final que purga anti-patterns acumulados (transition:all global, animaciones infinite, backdrop-filter spam, view-transition blur). DEBE cargarse ULTIMA. -->
     <link rel="stylesheet" href="css/admin-perf-kill.css">
+    <!-- §36 ADR-036 TOP NAV — sistema Notion/Vercel/Linear que reemplaza la sidebar 256px por top bar 56px. Recupera 100% del viewport para contenido. -->
+    <link rel="stylesheet" href="css/admin-topnav.css">
     <!-- Lucide Icons — professional SVG icon library -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
     <!-- Unified notification system (Phase N1) -->
@@ -331,7 +333,114 @@
     </div>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- SIDEBAR -->
+    <!-- §36 ADR-036 — TOP NAV (Notion/Vercel/Linear pattern, replaces sidebar) -->
+    <header class="atn-topnav" id="adminTopNav">
+        <div class="atn-bar">
+            <a href="#/dashboard" class="atn-brand" data-atn-section="dashboard" aria-label="Inicio">
+                <span class="atn-brand-mark">A</span>
+                <span class="atn-brand-text">ALTORRA</span>
+            </a>
+
+            <nav class="atn-tabs" role="tablist" aria-label="Navegación principal">
+                <button class="atn-tab" data-atn-section="dashboard" role="tab">
+                    <i data-lucide="home"></i><span>Inicio</span>
+                </button>
+
+                <div class="atn-tab-group" data-atn-group="inventario">
+                    <button class="atn-tab atn-tab--has-menu" data-atn-section="vehicles" aria-haspopup="menu" aria-expanded="false">
+                        <i data-lucide="car"></i><span>Inventario</span>
+                        <i data-lucide="chevron-down" class="atn-tab-chev"></i>
+                    </button>
+                    <div class="atn-menu" role="menu">
+                        <button class="atn-menu-item" data-atn-section="vehicles"><i data-lucide="car"></i>Vehículos</button>
+                        <button class="atn-menu-item" data-atn-section="brands"><i data-lucide="tag"></i>Marcas</button>
+                        <button class="atn-menu-item" data-atn-section="dealers"><i data-lucide="handshake"></i>Aliados</button>
+                        <div class="atn-menu-sep"></div>
+                        <button class="atn-menu-item" data-atn-section="banners"><i data-lucide="image"></i>Banners</button>
+                        <button class="atn-menu-item" data-atn-section="reviews"><i data-lucide="star"></i>Reseñas</button>
+                    </div>
+                </div>
+
+                <button class="atn-tab" data-atn-section="crm">
+                    <i data-lucide="users-round"></i><span>CRM</span>
+                    <span class="atn-tab-badge" id="atnBadgeCrm"></span>
+                </button>
+
+                <div class="atn-tab-group" data-atn-group="hub">
+                    <button class="atn-tab atn-tab--has-menu" data-atn-section="concierge" aria-haspopup="menu" aria-expanded="false">
+                        <i data-lucide="messages-square"></i><span>Hub</span>
+                        <span class="atn-tab-badge" id="atnBadgeConcierge"></span>
+                        <i data-lucide="chevron-down" class="atn-tab-chev"></i>
+                    </button>
+                    <div class="atn-menu" role="menu">
+                        <button class="atn-menu-item" data-atn-section="concierge"><i data-lucide="message-square-text"></i>ALTOR Hub</button>
+                        <button class="atn-menu-item" data-atn-section="kb"><i data-lucide="brain"></i>Cerebro AI</button>
+                        <button class="atn-menu-item" data-atn-section="unmatched"><i data-lucide="message-circle-question"></i>Lo que no entendí</button>
+                    </div>
+                </div>
+
+                <button class="atn-tab" data-atn-section="calendar">
+                    <i data-lucide="calendar"></i><span>Agenda</span>
+                </button>
+
+                <button class="atn-tab" data-atn-section="reports">
+                    <i data-lucide="bar-chart-3"></i><span>Reportes</span>
+                </button>
+
+                <div class="atn-tab-group" data-atn-group="config">
+                    <button class="atn-tab atn-tab--has-menu" data-atn-section="settings" aria-haspopup="menu" aria-expanded="false">
+                        <i data-lucide="settings"></i><span>Config</span>
+                        <i data-lucide="chevron-down" class="atn-tab-chev"></i>
+                    </button>
+                    <div class="atn-menu" role="menu">
+                        <button class="atn-menu-item" data-atn-section="users"><i data-lucide="users"></i>Usuarios</button>
+                        <button class="atn-menu-item" data-atn-section="lists"><i data-lucide="list-tree"></i>Atributos</button>
+                        <button class="atn-menu-item" data-atn-section="workflows"><i data-lucide="zap"></i>Workflows</button>
+                        <button class="atn-menu-item" data-atn-section="audit"><i data-lucide="scroll-text"></i>Auditoría</button>
+                        <div class="atn-menu-sep"></div>
+                        <button class="atn-menu-item" data-atn-section="settings"><i data-lucide="settings"></i>Ajustes</button>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="atn-actions">
+                <button class="atn-search-trigger" id="atnSearchTrigger" aria-label="Buscar (Ctrl+K)">
+                    <i data-lucide="search"></i>
+                    <span>Buscar</span>
+                    <kbd class="atn-kbd">⌘K</kbd>
+                </button>
+
+                <a href="/" target="_blank" rel="noopener" class="atn-icon-btn" data-tooltip="Ver sitio público" aria-label="Ver sitio">
+                    <i data-lucide="external-link"></i>
+                </a>
+
+                <button class="atn-icon-btn" id="atnActivityTrigger" data-tooltip="Actividad" aria-label="Activity feed">
+                    <i data-lucide="activity"></i>
+                </button>
+
+                <div id="atnNotifBellSlot" class="atn-icon-btn-slot" aria-label="Notificaciones"></div>
+
+                <div class="atn-user" id="atnUser" tabindex="0" role="button" aria-label="Menú de usuario" aria-expanded="false">
+                    <div class="atn-user-avatar" id="atnUserAvatar"></div>
+                    <div class="atn-user-info">
+                        <div class="atn-user-name" id="atnUserName">—</div>
+                        <div class="atn-user-role" id="atnUserRole">—</div>
+                    </div>
+                    <i data-lucide="chevron-down" class="atn-user-chev"></i>
+
+                    <div class="atn-user-menu" role="menu">
+                        <div class="atn-user-menu-head">
+                            <div class="atn-user-menu-name" id="atnUserMenuName">—</div>
+                            <div class="atn-user-menu-email" id="atnUserMenuEmail">—</div>
+                        </div>
+                        <button class="atn-menu-item" id="atnLogoutBtn"><i data-lucide="log-out"></i>Cerrar sesión</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- SIDEBAR (legacy — oculta en desktop por admin-topnav.css; mantenida para mobile drawer) -->
     <nav class="sidebar" id="adminSidebar">
         <div class="sidebar-logo">
             <h2>ALTORRA CARS</h2>
@@ -3035,6 +3144,8 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/icons.js" defer></script>
 <script src="js/admin-sidebar.js" defer></script>
 <script src="js/admin-section-router.js" defer></script>
+<!-- §36 ADR-036 — Top Nav (debe cargar tras section-router para suscribirse) -->
+<script src="js/admin-topnav.js" defer></script>
 <script src="js/admin-activity-feed.js" defer></script>
 <script src="js/admin-state.js" defer></script>
 <script src="js/admin-table-utils.js" defer></script>

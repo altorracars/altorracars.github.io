@@ -13927,3 +13927,145 @@ Verificado en este sprint que sigue funcionando.
 **Pendiente del ADR-026** (próximos sprints):
 - §26.4 Sprint Claiming Explícito + SLA UI fix + Persistencia cola
 - §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot $0
+
+### 26.4 Sprint Claiming Explícito + SLA UI fix + Persistencia cola (2026-05-10)
+
+**Objetivo del sprint**: cerrar 3 bugs críticos del flujo ACD que el
+cliente reportó:
+1. Click en chat permite responder directamente (debería requerir
+   "Tomar Conversación" explícito)
+2. Banner de cola "Estás en la posición #1" se borra al mandar nuevo
+   mensaje
+3. Botones SLA "Continuar por WhatsApp / Seguir esperando" salen
+   montados sobre las letras del mensaje
+
+#### A. Claim explícito + Banner "Tomar Conversación" gigante
+
+**Antes**: en §23 el auto-claim ocurría al primer mensaje del asesor.
+Esto generaba race conditions UX: el asesor podía empezar a escribir
+antes de saber si el chat estaba libre, y a mitad del envío el sistema
+le decía "ya lo tomó otro".
+
+**Ahora** (`js/admin-concierge.js renderChatDetail`):
+
+```js
+var unclaimed = !chat.claimedBy && !isClosed;
+var claimedByMe = !!(chat.claimedBy && chat.claimedBy === currentUid);
+var canWrite = !isClosed && !unclaimed && (!claimedByOther || isSuper);
+```
+
+3 estados visuales:
+
+1. **Unclaimed** → banner dorado prominente con botón gigante
+   "🤚 Tomar conversación". Input bloqueado.
+2. **Claimed by me** → banner verde sutil "Estás atendiendo este
+   chat. Otros asesores no pueden responder." Input habilitado.
+   Si super_admin: botón "👥 Transferir / Liberar".
+3. **Claimed by other** → banner rojo "🔒 Atendido por X" (ya existía).
+
+**Click en "Tomar conversación"**:
+- `claimChat(sessionId)` corre la transaction atómica
+- Si OK: toast "✓ Tomaste la conversación. Ya podés responder."
+- Si race (`already-claimed`): toast warning con nombre del que ganó
+- Re-render automático vía onSnapshot del chat parent
+
+#### B. Persistencia de cola — Banner survives renderMessages
+
+**Bug**: el banner `cnc-queue-banner` vive dentro de `cncMessages`. Al
+mandar un mensaje nuevo, `renderMessages()` reescribe
+`cncMessages.innerHTML` y borra el banner.
+
+**Fix** (`js/concierge.js renderMessages`):
+Después del `box.innerHTML = ...`, regenera condicionalmente:
+
+```js
+if (session.mode === 'queue' && typeof renderQueueState === 'function') {
+    try { renderQueueState(); } catch (e) {}
+}
+if (session.slaWarnedAt5min && !document.getElementById('cncSLAWarning')
+    && typeof renderSLAWarning === 'function') {
+    try { renderSLAWarning(); } catch (e) {}
+}
+if (session.slaWarnedAt10min && !document.getElementById('cncSLAWarning')
+    && typeof renderSLABreach === 'function') {
+    try { renderSLABreach(); } catch (e) {}
+}
+```
+
+Ahora el banner queue/SLA persiste a través de cada renderMessages.
+Si el cliente manda mensaje nuevo en cola, el banner se regenera al
+final (después del último mensaje), no se pierde.
+
+#### C. SLA UI fix — botones que se montaban sobre el texto
+
+**Bug CSS**: `.cnc-sla-banner-actions` no tenía `flex-wrap`, así que
+en pantallas estrechas los botones overflow horizontal y se solapaban
+con el texto del banner. Además `.cnc-sla-btn` permitía text-wrap
+desordenado.
+
+**Fix** (`css/concierge.css`):
+
+```css
+.cnc-sla-btn {
+    white-space: nowrap;     /* texto NO se rompe en mitad */
+    min-width: 0;            /* permite shrink correcto */
+    line-height: 1.2;
+    text-align: center;
+}
+.cnc-sla-banner-actions {
+    flex-wrap: wrap;         /* botones bajan a nueva línea si no caben */
+    align-items: stretch;
+}
+.cnc-sla-banner-actions .cnc-sla-btn {
+    flex: 1 1 auto;
+    min-width: 140px;        /* tamaño mínimo legible */
+}
+```
+
+Resultado: en mobile estrecho los botones se apilan verticales.
+En desktop quedan inline con wrap automático si necesitan más ancho.
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Auto-claim race condition mid-send | Claim AHORA es explícito, antes de habilitar input |
+| Banner cola se pierde al re-render | Regenerate post-renderMessages con guards |
+| Botones SLA overflow text | white-space:nowrap + flex-wrap + min-width |
+| Doble claim del mismo asesor | claimChat es Firestore transaction atómica |
+| Super_admin sin opt-out | Botón "Transferir / Liberar" visible solo a super_admin |
+| Editor sin info de qué hacer si chat tomado | Banner explica "esperá o pedí super_admin liberarlo" |
+| Mobile claim banner con botón cortado | @media 600px stack vertical + button full-width |
+| Click claim cuando ya cerrado | claimChat valida status ≠ 'closed' antes de update |
+
+#### Test E2E del sprint
+
+1. Login admin → ALTOR Hub → click un chat sin asignar
+2. Ver banner dorado prominente "🤚 Tomar conversación"
+3. Input bloqueado (placeholder)
+4. Click "Tomar conversación" → toast verde + input habilitado +
+   banner cambia a verde "Estás atendiendo este chat"
+5. Login otro admin (otra pestaña/incognito) → mismo chat → ve
+   banner rojo "🔒 Atendido por [nombre]" + input bloqueado
+6. Super_admin → click "👥 Transferir / Liberar" → confirm → chat
+   vuelve a unclaimed
+7. Cliente público en cola → bot escala → banner cola "🟢 Posición #1"
+8. Cliente envía nuevo mensaje → banner persiste al final del scroll
+9. Esperar 5 min → banner SLA aparece con 2 botones (WhatsApp /
+   Seguir esperando) bien alineados, sin solaparse al texto
+10. Resize a mobile → botones SLA se apilan verticales
+
+**Archivos modificados**:
+- `js/admin-concierge.js` (claim explícito + 2 banners nuevos +
+  handlers cncAdminClaimBtn/cncAdminTransferBtn)
+- `js/concierge.js` (renderMessages regenera queue + SLA banners
+  post-innerHTML)
+- `css/admin.css` (~80 líneas .cnc-admin-claim-banner +
+  .cnc-admin-mine-banner + responsive mobile)
+- `css/concierge.css` (.cnc-sla-btn white-space + .cnc-sla-banner-actions
+  flex-wrap)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509080000)
+- `CLAUDE.md` (esta sección §26.4)
+
+**Pendiente del ADR-026** (último sprint):
+- §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot $0

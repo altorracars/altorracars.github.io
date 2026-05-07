@@ -1181,6 +1181,22 @@
     cursor: pointer;
     border: none;
     transition: transform 0.15s ease, background 0.15s ease;
+    /* §26.4 — fix: prevenir overflow + texto que se monta sobre botones.
+       white-space:nowrap + min-width 0 garantiza render limpio en cualquier ancho */
+    white-space: nowrap;
+    min-width: 0;
+    line-height: 1.2;
+    text-align: center;
+}
+/* §26.4 — fix layout actions container: flex-wrap garantiza que
+   los botones bajen a nueva línea si no caben. Antes se solapaban. */
+.cnc-sla-banner-actions {
+    flex-wrap: wrap;
+    align-items: stretch;
+}
+.cnc-sla-banner-actions .cnc-sla-btn {
+    flex: 1 1 auto;
+    min-width: 140px;
 }
 .cnc-sla-btn--wa {
     background: linear-gradient(135deg, #25d366, #128c7e);

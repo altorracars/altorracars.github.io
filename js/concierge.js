@@ -2325,6 +2325,23 @@
             return '<div class="cnc-msg ' + bubbleClass + '">' + escapeHtml(m.text) + ctaHTML + quickRepliesHTML + vehicleCardsHTML + '</div>';
         }).join('');
         box.scrollTop = box.scrollHeight;
+
+        // §26.4 — Persistencia de cola: si la sesión está en modo queue,
+        // re-renderizar el banner DESPUÉS del innerHTML para que NO se
+        // borre cuando llega un nuevo mensaje. Patrón "regenerate after wipe".
+        if (session.mode === 'queue' && typeof renderQueueState === 'function') {
+            try { renderQueueState(); } catch (e) {}
+        }
+        // Mismo patrón para SLA warnings (5min/10min) — deben persistir
+        // si ya se mostraron antes.
+        if (session.slaWarnedAt5min && !document.getElementById('cncSLAWarning')
+            && typeof renderSLAWarning === 'function') {
+            try { renderSLAWarning(); } catch (e) {}
+        }
+        if (session.slaWarnedAt10min && !document.getElementById('cncSLAWarning')
+            && typeof renderSLABreach === 'function') {
+            try { renderSLABreach(); } catch (e) {}
+        }
     }
 
     /**

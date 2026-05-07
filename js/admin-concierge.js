@@ -579,10 +579,15 @@
         var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
 
         // §23 FASE 3 — Locks: detectar si el chat fue tomado por OTRO asesor.
-        // Si claimedByOther es true Y no soy super_admin, el input se bloquea.
+        // §26.4 — Claiming Estricto: si el chat NO tiene claimedBy aún,
+        // input bloqueado + se muestra botón gigante "Tomar Conversación".
+        // Solo después de claim explícito el asesor puede responder.
         var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : null;
         var claimedByOther = !!(chat.claimedBy && chat.claimedBy !== currentUid);
-        var canWrite = !isClosed && (!claimedByOther || isSuper);
+        var claimedByMe = !!(chat.claimedBy && chat.claimedBy === currentUid);
+        var unclaimed = !chat.claimedBy && !isClosed;
+        // canWrite ahora requiere que el chat esté claimedByMe o que sea super_admin
+        var canWrite = !isClosed && !unclaimed && (!claimedByOther || isSuper);
         var lockReadonly = claimedByOther && !isSuper;
 
         var msgsHTML = messages.length === 0
@@ -689,6 +694,37 @@
             '</div>' +
             closedBanner +
             claimedBanner +
+            // §26.4 — Banner CLAIM: si el chat está sin tomar, ofrecer
+            // "Tomar Conversación" gigante. Bloquea el input.
+            (unclaimed && AP.isEditorOrAbove && AP.isEditorOrAbove() ?
+                '<div class="cnc-admin-claim-banner">' +
+                    '<div class="cnc-admin-claim-banner-icon"><i data-lucide="user-plus"></i></div>' +
+                    '<div class="cnc-admin-claim-banner-text">' +
+                        '<div class="cnc-admin-claim-banner-title">Conversación sin asignar</div>' +
+                        '<div class="cnc-admin-claim-banner-sub">Tomá esta conversación para responderle al cliente. Otros asesores no podrán escribir mientras vos atendés.</div>' +
+                    '</div>' +
+                    '<button class="alt-btn alt-btn--primary cnc-admin-claim-btn" id="cncAdminClaimBtn" data-session-id="' + escTxt(chat._docId) + '">' +
+                        '<i data-lucide="hand"></i> Tomar conversación' +
+                    '</button>' +
+                '</div>'
+                : ''
+            ) +
+            // §26.4 — Banner MINE: si soy yo el que lo tomó, mostrar
+            // botón "Transferir" para liberarlo (super_admin) o
+            // "Devolver a la cola" (editor).
+            (claimedByMe && !isClosed ?
+                '<div class="cnc-admin-mine-banner">' +
+                    '<i data-lucide="check-circle-2"></i>' +
+                    '<span>Estás atendiendo este chat. Otros asesores no pueden responder.</span>' +
+                    (isSuper ?
+                        '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminTransferBtn" data-session-id="' + escTxt(chat._docId) + '">' +
+                            '<i data-lucide="users"></i> Transferir / Liberar' +
+                        '</button>'
+                        : ''
+                    ) +
+                '</div>'
+                : ''
+            ) +
             '<div class="cnc-admin-detail-messages" id="cncAdminMessages">' + msgsHTML + '</div>' +
             (canWrite ?
                 '<div class="cnc-smart-suggestions" id="cncSmartSuggestions" style="display:none;"></div>' +
@@ -1235,6 +1271,32 @@
         // §23 FASE 3 — Liberar lock (solo super_admin)
         if (e.target && e.target.closest && e.target.closest('#cncAdminReleaseClaim')) {
             if (_activeSessionId) releaseClaim(_activeSessionId);
+            return;
+        }
+        // §26.4 — Tomar conversación explícito (claim button gigante)
+        if (e.target && e.target.closest && e.target.closest('#cncAdminClaimBtn')) {
+            var sid = e.target.closest('#cncAdminClaimBtn').getAttribute('data-session-id') || _activeSessionId;
+            if (!sid) return;
+            claimChat(sid).then(function (r) {
+                if (AP.toast) AP.toast('✓ Tomaste la conversación. Ya podés responder.', 'success');
+                // Re-render se hace solo via onSnapshot del chat parent
+            }).catch(function (err) {
+                if (err && err.code === 'already-claimed') {
+                    if (AP.toast) AP.toast(err.claimedByName + ' tomó este chat hace un momento', 'warning');
+                } else if (err && err.code === 'chat-closed') {
+                    if (AP.toast) AP.toast('Este chat ya está cerrado', 'error');
+                } else {
+                    if (AP.toast) AP.toast('No se pudo tomar: ' + (err.message || err.code || 'error'), 'error');
+                }
+            });
+            return;
+        }
+        // §26.4 — Transferir / liberar (super_admin desde botón mine)
+        if (e.target && e.target.closest && e.target.closest('#cncAdminTransferBtn')) {
+            var sid2 = e.target.closest('#cncAdminTransferBtn').getAttribute('data-session-id') || _activeSessionId;
+            if (sid2 && confirm('¿Liberar esta conversación para que otro asesor la tome?')) {
+                releaseClaim(sid2);
+            }
             return;
         }
         if (e.target && e.target.closest && e.target.closest('#cncAdminSummarize')) {

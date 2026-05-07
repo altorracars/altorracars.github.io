@@ -15871,3 +15871,368 @@ existentes (`.login-container`, `.login-box`, `.login-logo`, `.form-input`,
   brands, dealers, banners, reviews, kb, unmatched, audit, settings, users)
 - §28.4 Sprint NOVA-D — Final polish (Mica strong en sidebar, acrylic
   layers, empty states ilustrados, transitions globales)
+
+### 28.3 Sprint NOVA-C — Polish secciones legacy (2026-05-10)
+
+**Objetivo del sprint**: las 10 secciones que NO recibieron el polish
+de §27 (Vehicles, Brands, Dealers, Banners, Reviews, KB, Unmatched,
+Users, Audit, Settings) ahora tienen page-headers premium consistentes
+con accent line por workspace, empty-states utility, y cards
+uniformizadas. La capa NOVA-A ya les dio botones/modales/tablas/inputs
+premium; NOVA-C les da identidad visual de sección.
+
+#### A. Page-headers premium con accent line por workspace
+
+Cada sección legacy recibe:
+- `padding: 24px 28px` + `margin-bottom: 24px`
+- `background: linear-gradient` con tinte del workspace color (top
+  4-6% alpha → 0%)
+- `border-radius: 24px` HarmonyOS top-only
+- `backdrop-filter: blur(8px)` sutil
+- `::before` pseudo-element: línea de 3px arriba con gradient horizontal
+  (transparent → workspace color → transparent), opacity 0.4
+
+Workspace colors aplicados:
+| Sección | Color | Tinte bg |
+|---|---|---|
+| Vehicles, Brands, Dealers | gold | `--nova-tint-gold` |
+| Banners, Reviews | coral | `--nova-tint-coral` |
+| KB, Unmatched | green | `--nova-tint-green` |
+| Users, Audit, Settings | neutral | rgba(107,114,128,0.06) |
+
+#### B. Toolbars consistentes
+
+`.section-toolbar`, `.table-toolbar`, `.list-toolbar`,
+`.filter-toolbar` ahora todas con:
+- `display: flex; flex-wrap: wrap; gap: 12px`
+- `padding: 14px 18px`
+- `background: rgba(255,255,255,0.02)` glass
+- `border: var(--nova-border-glass)`
+- `border-radius: var(--hmy-radius-card-soft)` (16px)
+
+#### C. Empty state utility
+
+`.section-empty`, `.empty-state`, `.list-empty`:
+- Flex column centered con padding 48px 24px
+- Icon circular 56×56 con tinte dorado (alpha 10%)
+- Title bold + text 0.875rem secondary 1.55 line-height
+- Reusable en cualquier sección
+
+#### D. Cards específicas por sección
+
+| Selector | Estilo |
+|---|---|
+| `.settings-card`, `.config-card`, `.preference-card` | Card glass con hover dorado |
+| `.audit-entry`, `.activity-feed-item` | Card 16px radius con hover dorado tenue |
+| `.review-card`, `.review-item` | Card glass con hover coral; review-stars dorado |
+| `.dealer-card`, `.dealer-item` | Card 16px con hover lift + shadow |
+| `.brand-admin-card`, `.brand-item` | Card centered con hover lift 2px + shadow |
+| `.kb-faq-card` | Card glass con hover green |
+| `.banner-preview-card` | Overflow hidden + shadow elev-2 |
+
+#### E. User avatars + role badges
+
+`.user-row .user-avatar`:
+- 34×34 circular dorado (gradient `#b89658 → #9a7d44`)
+- Color texto `#1a1a1a` para contraste AAA
+- Iniciales con font-weight 700 letter-spacing wide
+
+`.role-badge`:
+- `super_admin` → tinte dorado 16% + texto dorado
+- `editor` → tinte azul 14% + texto `#60a5fa`
+- `viewer` → tinte gris 14% + texto blanco 65%
+- Pill radius + uppercase 0.06em letter-spacing
+
+#### F. Vehicle status pills (en tabla de Vehículos)
+
+`.vehicle-status--{disponible,reservado,vendido,borrador}`:
+- Pill radius + 3px padding vertical
+- Tintes alpha 0.15 + colores de status semánticos
+- `disponible` verde / `reservado` ámbar / `vendido` rojo / `borrador` gris
+
+`.vehicle-thumb` (en tabla):
+- 60×44 con border-radius 8px + object-fit cover + border glass
+
+#### G. Section stats tiles (genérico)
+
+`.section-stats` grid auto-fit minmax(160px) + cards con:
+- Value 1.5rem dorado bold
+- Label uppercase 0.74rem 0.06em letter-spacing
+- Hover lift + shadow elev-1
+
+#### H. Settings section titles
+
+`.settings-section-title`: uppercase 0.85rem font-weight 600, color
+text-tertiary, border-bottom glass para separar grupos en sec-settings.
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Page-headers ya cubiertos por §27 (sec-crm, etc) ahora se duplican | Selectores específicos `#sec-vehicles .page-header`, NO genérico |
+| Workspace color hardcoded por sección genera tabla rígida | Selectores agrupados por color + override específico (banners/reviews coral) |
+| Empty state utility choca con `.section-empty` existente en CRM/Reports | Selectores genéricos, classes pueden coexistir; el más específico gana |
+| User avatar gradient mismatch con users-table existente | Selector dual `.user-row .user-avatar` Y `.users-table .user-avatar` |
+| Vehicle status pills no aparecen porque admin-vehicles.js usa otras classes | NOVA aplica a `.vehicle-status--{kebab}` que es el patrón canonical; legacy classes con el mismo prefix también heredan |
+| Card hover transforms causan layout shift | `transition: all` con duration spring + transform GPU-only |
+| `:hover` no aplica en touch devices | Funcionalidad sigue funcionando sin hover, el polish es enhancement |
+| Backdrop-filter sobre page-header genera repaint en scroll | `position: relative` no fixed, blur-xs solo (8px) — bajo costo |
+| Selectores muy específicos con `#sec-X .page-header` rompen si renombras la section | Documentado: cuando se rename una section, ajustar el block aquí |
+
+#### Test E2E del sprint
+
+1. Click "Vehículos" en sidebar → page-header dorado con accent line
+   sutil arriba
+2. Click "Banners" → page-header coral, accent coral arriba
+3. Click "Reseñas" → coral consistente
+4. Click "Cerebro AI" → page-header verde, accent green
+5. Click "Lo que no entendí" → green consistente
+6. Click "Usuarios" → neutral gris
+7. Click "Auditoría" → neutral
+8. Click "Ajustes" → neutral
+9. Tabla Vehículos: thumbnails redondeados, status pills coloreados
+   por estado
+10. Tabla Usuarios: avatares dorados con iniciales, role badges
+    coloreados por rol
+11. Cards de aliados (Dealers): hover lift sutil + shadow
+12. Cards de marcas: centered con hover lift más pronunciado
+13. Reviews con stars dorados
+14. Empty states (KB sin FAQs, Audit vacío) con icon dorado +
+    título + texto centrado
+
+**Archivos modificados**:
+- `css/admin.css` (+380 líneas Sprint C polish secciones legacy)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510100000)
+- `CLAUDE.md` (esta sección §28.3)
+
+**Sin cambios en HTML ni JS** — el polish es 100% CSS sobre las
+clases existentes (`.user-avatar`, `.role-badge`, `.vehicle-status`,
+`.dealer-card`, `.review-card`, etc.).
+
+**Pendiente del ADR-028** (último sprint):
+- §28.4 Sprint NOVA-D — Final polish (Mica strong en sidebar admin,
+  acrylic layers, transitions globales, view-transitions cross-section,
+  micro-animations refinadas)
+
+### 28.4 Sprint NOVA-D — Final polish (CIERRE ADR-028) (2026-05-10)
+
+**Objetivo del sprint** (último de ADR-028): el último 5% que hace
+sentir el admin como un producto premium nivel iOS 26 / Windows 11.
+Sidebar con Mica strong, acrylic layers en navegación, view-transitions
+nativos, micro-animations refinadas (button shimmer, badge pulse,
+tooltip Mica), text selection dorada, details collapsibles, dialog
+HTML5 polish, scroll-snap, profile card con glow.
+
+#### A. Sidebar Mica strong (Windows 11 final feel)
+
+`.sidebar`:
+- `background: var(--nova-mica-bg)` (rgba 18,18,20,0.72)
+- `backdrop-filter: blur(48px) saturate(180%)` (Mica máximo)
+- Border-right glass + shadow lateral 4px 32px alpha 18%
+- `::before` pseudo-element: line vertical 1px gradient dorado
+  (transparent → 10% → transparent) que separa visualmente del workspace
+
+#### B. Header del admin con Mica
+
+`.admin-header`, `.dashboard-header`, `.global-search-wrapper`:
+- `backdrop-filter: blur(24px) saturate(160%)` (Mica medio)
+- Translúcido al scroll para permitir ver contenido detrás
+
+#### C. Text selection dorada global
+
+`::selection` y `::-moz-selection`:
+- Background `rgba(184, 150, 88, 0.32)`
+- Color blanco
+- Aplica a TODA selección de texto en el admin
+
+#### D. View-Transitions cross-section (Chrome 126+)
+
+`@supports (view-transition-name: none)`:
+- `.section.active { view-transition-name: section-content; }`
+- Cuando admin cambia de sección, el browser hace cross-fade nativo
+- Animation `novaSectionFadeOut/In` 0.32s con cubic-bezier suave
+- Translate +/- 6-8px durante la transición (parallax sutil)
+- Browsers sin soporte (Firefox/Safari): degradación graceful sin transición
+
+#### E. Button shimmer effect on hover (iOS 26 inspired)
+
+`.btn-primary::before` y `.alt-btn--primary::before`:
+- Capa horizontal con gradient `transparent → blanco 18% → transparent`
+- Position absolute `left: -100%` por default
+- Hover: `left: 100%` con transition 0.6s cubic-bezier suave
+- Genera efecto "luz pasando" sobre el botón
+- Respeta `prefers-reduced-motion`
+
+#### F. Acrylic layers en nav-item activo
+
+`.sidebar .nav-item.active`:
+- Background linear-gradient dorado (16% → 8%)
+- `backdrop-filter: blur(14px)` Mica sutil
+- Border-left 3px dorado sólido (mantiene anclaje visual)
+- Inner shadow dorado tenue (`inset 0 0 24px rgba(184,150,88,0.08)`)
+- Color del texto + font-weight 600 dorado
+
+#### G. Details/Summary collapsibles
+
+`<details>` HTML5 estilizado:
+- Card glass con border + radius 16
+- `<summary>`: padding generoso, cursor pointer, font-weight 600
+- Marker custom: chevron `⌄` dorado que rota 180° en open
+- Hover: bg dorado tenue
+- `[open]`: bg dorado más visible + border highlighted
+- `::-webkit-details-marker` oculto
+
+#### H. Dialog HTML5 polish
+
+`<dialog>` nativo:
+- Mica strong + blur 36px saturate 160%
+- Border glass-hi + radius 20
+- Shadow elev-4
+- `::backdrop`: scrim radial + blur 24px
+
+#### I. Tooltips Mica mejorados
+
+`[data-tooltip]:hover::after`:
+- Mica strong + blur 14px
+- Border glass-hi
+- Animation `novaTooltipIn` 0.2s cubic-bezier suave
+- Bottom positioning con translateX-50%
+- `@media (hover: none)` desactiva en touch
+- `prefers-reduced-motion` respetado
+
+#### J. Global search pill premium
+
+`.global-search-wrapper input`, `#globalSearch`:
+- `border-radius: pill` (999px)
+- `padding-left: 38px` (espacio para icon)
+- Hover/focus: bg dorado tenue + ring NOVA
+- Resultados dropdown: Mica strong + blur 36px + shadow elev-3
+
+#### K. Badge urgent pulse
+
+`.nav-badge[data-tone="urgent"]`:
+- Animation `novaBadgeUrgentPulse` 2.4s ease-in-out infinite
+- Box-shadow expansión `0 0 0 0 → 6px` rojo alpha 50% → 0%
+- Llama atención sin ser molesto
+- `prefers-reduced-motion` cancela
+
+#### L. Profile card sidebar con glow
+
+`.sidebar-profile`, `.user-profile-card`:
+- Background gradient dorado (8% → 2%)
+- Border dorado tenue
+- Hover: `--nova-shadow-glow` (anillo dorado + glow externo)
+
+#### M. Code/blockquote/pre estilizados
+
+- `code:not(pre code)`: bg dorado tenue + radius 6 + texto dorado
+- `pre`: bg dark + border glass + scroll-x para code blocks largos
+- `blockquote`: border-left dorado + bg dorado tenue + italic
+
+#### N. Scroll-snap en chips horizontales
+
+`.filter-chips`, `.cnc-smart-suggestions`, `.cal-tabstrip`,
+`.crm-tabstrip`:
+- `scroll-snap-type: x mandatory`
+- Items con `scroll-snap-align: start`
+- En mobile el swipe se siente nativo
+
+#### O. Tabular nums en KPIs
+
+`.kpi-value`, `.hero-kpi-value`, `.reports-kpi-value`,
+`.section-stat-tile-value`, `.forecast-value`:
+- `font-variant-numeric: tabular-nums`
+- Los números mantienen alineación al cambiar (ej. 11 → 12 no salta)
+
+#### P. Mobile topbar Mica
+
+`.mobile-topbar`:
+- `backdrop-filter: blur(24px) saturate(160%)`
+- Border-bottom glass
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Mica demasiado blur degrada perf en mobile | Mobile topbar usa blur-md (24px) NO blur-xl (48px) |
+| View-transitions rompen back/forward del browser | `@supports` guarda con feature detection |
+| Button shimmer hover excesivo en grids | Solo aplica a `.btn-primary` y `.alt-btn--primary` (no todos los botones) |
+| Acrylic en nav-item activo conflict con border-left existente | Border-left 3px MANTIENE como ancla visual fuerte (Material You + iOS feel) |
+| Details default browser styling visible | `::-webkit-details-marker` oculto + chevron CSS custom |
+| Dialog backdrop default opaco | `::backdrop` con scrim radial + blur |
+| Tooltip aparece en touch (donde no se puede ver hover) | `@media (hover: none)` desactiva |
+| Badge urgent pulse marea | 2.4s lento + reduced-motion cancela |
+| Sidebar Mica costoso en repaint scroll | Mica solo recompone una vez (sidebar fixed, sin scroll propio significativo) |
+| Code/pre rompe layout en code blocks largos | `overflow-x: auto` + scroll-x dorado heredado |
+| Tabular-nums no soportado en Safari < 15 | Fallback a normal nums sin issues |
+
+#### Test E2E del sprint
+
+1. Login admin → sidebar con Mica strong (blur fuerte translúcido)
+2. Hover botón primary → shimmer dorado pasa de izquierda a derecha
+3. Click otra sección → view-transition cross-fade nativo en Chrome
+   126+ (degrada graceful en otros)
+4. Hover sobre cualquier `[data-tooltip]` → tooltip Mica con animation
+5. Seleccionar texto en cualquier parte → highlight dorado
+6. Sidebar nav-item activo → acrylic gradient dorado + border-left
+7. Cards con `:focus-within` → ring dorado sutil + lift
+8. KPI numbers → tabular alignment al actualizar
+9. Badge urgent (anomalías auditoría) → pulse rojo expandiéndose
+10. Profile card sidebar → glow dorado en hover
+11. Mobile (<900px): topbar con Mica blur sin perf hit
+12. `<details>` → chevron rota 180° en open, bg dorado tenue
+13. Global search → pill rounded con focus ring dorado
+14. `prefers-reduced-motion: reduce` → shimmer + pulse + tooltip
+    animation desactivados
+
+**Archivos modificados**:
+- `css/admin.css` (+375 líneas Sprint D — final polish)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510110000)
+- `CLAUDE.md` (esta sección §28.4 — CIERRE ADR-028)
+
+#### ✅ ADR-028 — Cierre ALTORRA NOVA
+
+**Total ADR-028: 4 sprints, 4 commits, ~1700 líneas CSS + JS + doc.**
+
+| Sprint | Commit | Entregable |
+|---|---|---|
+| §28.1 NOVA-A Foundation | `32bd5b0` | Tokens NOVA + mass refactor legacy (.btn ripple, modales scrim, tablas sticky head, inputs focus ring, checkbox/radio custom, scrollbars dorados) |
+| §28.2 NOVA-B Auth | `e7af97c` | Login/2FA/unlock screens premium con orbs animados + glassmorphism + gradient text + code inputs destacados + shake error |
+| §28.3 NOVA-C Secciones legacy | `d99822e` | Page-headers premium con workspace colors (gold/coral/green/neutral) + cards uniformizadas + role badges + vehicle status pills + empty states |
+| §28.4 NOVA-D Final polish | (este) | Sidebar Mica strong + acrylic nav-item active + view-transitions + button shimmer + text selection dorada + tooltip Mica + details collapsibles + dialog HTML5 + global search pill + badge urgent pulse + tabular-nums + scroll-snap |
+
+**Resultado del refactor visual completo (ADR-027 + ADR-028)**:
+
+| Aspecto | Pre-§27 | Post-ADR-028 NOVA |
+|---|---|---|
+| Sistema de diseño | Frankenstein legacy | **HarmonyOS + Windows 11 Fluent + iOS 26 Liquid + Material You fusionados** |
+| Tokens CSS | ~30 vars dispersas | **180+ vars organizadas en 12 categorías** (--hmy-*, --nova-*, --ws-color-*, etc.) |
+| Border-radius | 4-12px inconsistente | **Pill, 12 (input/btn), 16 (card), 20 (modal), 24 (hero)** |
+| Sombras | Sólidas duras | **Stacks multi-layer suaves** (elev-1 a elev-4 + glow) |
+| Backdrop-filter | Casi inexistente | **5 niveles** (blur-xs/sm/md/lg/xl 8-48px) |
+| Animations | Fade básico | **Spring (4 curves) + stagger + cascade + ripple + shimmer + pulse + view-transitions** |
+| Workspace colors | 2-3 sin sistema | **8 paleta extendida con tinted backgrounds** |
+| Empty states | Texto plano | **Utility con icon + title + text + CTA** |
+| Auth screens | Pre-HarmonyOS | **Liquid bg + orbs + glassmorphism premium** |
+| Botones | Radius 8-12 sin lift | **Ripple + shimmer + lift + focus ring + state hover** |
+| Modales | Border-radius 8 | **Radius 20 + scrim radial + spring entrance + glass border** |
+| Tablas | Borders sólidos | **Sticky head Mica + radius outer + hover dorado** |
+| Inputs | Border 1px gris | **Radius 12 + focus ring 3px + states is-error** |
+| Sidebar | Background sólido | **Mica strong + acrylic items active + glow profile** |
+| Scrollbars | Default browser | **Dorados sutiles 8px + thin Firefox** |
+| Forms | Mezcla legacy | **Checkbox/radio/range/progress custom dorados** |
+| Tooltips | Default `title` | **Mica strong con animation suave** |
+| Iconografía | Mezcla SVG inline | **100% Lucide via AltorraIcons** |
+
+**El admin ya NO es un Frankenstein.** Es un producto premium con
+identidad visual coherente que combina lo mejor de los 4 sistemas
+operativos modernos, manteniendo el dark mode dorado de Altorra como
+seña de marca.
+
+**Costo recurrente**: $0 (todo CSS + JS client-side, cero APIs externas).
+
+**Pendiente futuro** (opcional, no urgente):
+- §28.5 Empty state ilustraciones SVG (cards vacíos con illustration custom)
+- §28.6 Skeleton loading shimmers más realistas (mimic shape per section)
+- §28.7 Onboarding tour HarmonyOS-style (anchor-positioning para tooltips)
+- §28.8 Theme picker (admin elige entre 3 paletas — gold/blue/violet)

@@ -17081,3 +17081,186 @@ Todos los interactivos `min-height: 44px` en mobile:
 - `css/admin.css` (+310 líneas Sprint C admin-final mobile)
 - `service-worker.js` + `js/cache-manager.js` (bump v20260510180000)
 - `CLAUDE.md` (esta sección §29.3)
+
+### 29.4 Sprint admin-final D — Animations + final polish (CIERRE ADR-029) (2026-05-10)
+
+**Objetivo del sprint** (último de ADR-029): el último 5% que cierra
+el polish total del admin. Animations universales, tooltips
+refinados, accesibilidad AA+, print styles, forced-colors mode,
+y utilities reusables.
+
+#### A. Section entrance universal
+
+`.section.active`, `.admin-section.active`:
+- Animation `novaSectionFadeUp` 0.42s cubic-bezier(0.22, 1, 0.36, 1)
+- TranslateY 8 → 0 + opacity 0 → 1
+- Cualquier sección que se haga active fade-up natural
+- Reduced-motion cancela
+
+#### B. Stagger children utility
+
+`.stagger-children > *:nth-child(N)` con delay 0.05*N (cap 8 hijos):
+- Animation `novaStaggerIn` 0.5s spring (translateY 12)
+- Aplica a cualquier container marcado con la clase
+- Útil para grids de KPIs/cards/items que aparecen escalonados
+
+#### C. Tooltips premium con Mica + arrow CSS
+
+`[data-tooltip]:hover::after`:
+- Background `nova-mica-bg-strong` + blur 24 saturate 160
+- Border glass-hi + radius 10 + shadow elev-3
+- Padding 7×12 + font 0.78rem letter-spacing wide
+- Animation `novaTooltipPop` 0.22s cubic-bezier overshoot
+
+`[data-tooltip]:hover::before`:
+- Arrow CSS triangular (5px border-trick) apuntando al elemento
+- Color matched al bg del tooltip (`rgba(15,15,17,0.85)`)
+
+Posiciones soportadas via `data-tooltip-pos`:
+- `top` (default)
+- `bottom`
+- `right`
+- `left`
+
+`@media (hover: none)` desactiva en touch.
+`prefers-reduced-motion` cancela animation.
+
+#### D. Focus rings universales (accesibilidad AA+)
+
+Todos los elementos focusables del admin reciben
+`box-shadow: var(--nova-focus-ring)` (3px alpha 32% dorado):
+- buttons (excluyendo `.alt-toggle`)
+- links (excluyendo `.nav-item` que tiene su propio active state)
+- inputs/textareas/selects
+- `[tabindex]`
+
+#### E. Skip-to-content para keyboard navigation
+
+`.skip-to-content`, `.skip-link`:
+- Position absolute top -100 (oculto por default)
+- En `:focus` → top 8 (aparece arriba)
+- Background Mica strong + border gold + texto dorado
+- Permite a screen-reader users saltar la nav
+
+#### F. Loading shimmer global helper
+
+`.is-loading`, `[data-loading="true"]`:
+- `pointer-events: none` + `color: transparent`
+- `::after` con shimmer dorado 1.4s ease-in-out infinite
+- Reusable para placeholders custom
+
+#### G. Button loading state
+
+`.btn[data-loading="true"]`, `.alt-btn[data-loading="true"]`:
+- Cursor wait + texto invisible
+- `::before` spinner CSS 16×16 con border dorado top transparent
+- Animation `novaSpinnerRotate` 0.8s linear infinite
+- Reduced-motion cancela rotation, deja opacity 0.5
+
+#### H. Print styles
+
+`@media print`:
+- Oculta: sidebar, topbar, presence overlay, palette, activity feed,
+  notification center, bell, voice fab, PWA install btn
+- admin-panel bg blanco + texto negro
+- Cards con border 1px gris (sin glass), shadow none
+- `page-break-inside: avoid` en sections + cards
+
+#### I. High contrast + forced colors
+
+`@media (prefers-contrast: more)`:
+- Borders glass más opacos (alpha 30-55%)
+- Borders gold más opacos (alpha 55-85%)
+- nav-item active con outline 2px
+- Botones primary outline 2px currentColor
+
+`@media (forced-colors: active)` (Windows High Contrast):
+- `forced-color-adjust: auto` para que respeta system colors
+- Active states con border CanvasText 2px
+
+#### J. Section headers con gradient text
+
+`.section .page-header h1`:
+- Background gradient `#ffffff → brand-primary`
+- background-clip text + transparent fill
+- Letter-spacing tight -0.015em
+- Aplica a TODAS las secciones admin
+
+#### K. Scroll-to-top button (ready-to-use)
+
+`.scroll-to-top`, `.back-to-top`:
+- Position fixed bottom-right 20px
+- 44×44 circle Mica + border dorado + shadow
+- `.visible` class controla aparición
+- Hover lift + glow
+
+#### L. Utilities reusables
+
+- `.divided-list > * + *`: border-top sutil + spacing
+- `.truncate`, `.line-clamp-1/2/3`: text-overflow helpers
+- `.visually-hidden`, `.sr-only`: screen-reader only
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Section entrance animation interfiere con view-transitions §28.4 | View-transitions usan view-transition-name específico, este es fallback general |
+| Stagger >8 children rompe (no más nth-child rules) | Cap a 8 (delays 0.05-0.40s); para más, JS añade animation-delay manual |
+| Tooltip arrow color mismatch con bg | Color hardcoded `rgba(15,15,17,0.85)` matchea nova-mica-bg-strong |
+| Focus rings demasiado intrusivos | Alpha 32% dorado sutil, no neon |
+| Skip-link visible en touch | Solo visible on `:focus` (keyboard) |
+| Spinner CSS no spin en reduced-motion | Opacity 0.5 estática como fallback |
+| Print con backdrop-filter rompe | `@media print` overridea TODO con bg blanco + sin shadows |
+| forced-colors rompe gradients | `forced-color-adjust: auto` permite system overrides |
+| Gradient text en page headers no se ve en Safari | webkit prefixes + fallback graceful |
+| Scroll-to-top siempre visible | `.visible` toggle por JS opcional (no auto-mount) |
+
+#### Test E2E del sprint
+
+1. Cualquier section change → fade-up smooth 0.42s
+2. Hover botón con `data-tooltip` → Mica tooltip con arrow CSS pop
+3. `data-tooltip-pos="bottom"` → tooltip aparece abajo con arrow
+   apuntando arriba
+4. Tab por la página → focus rings dorados sutiles
+5. Press Tab al cargar admin → skip-link aparece arriba con border dorado
+6. Form submit → button con `data-loading="true"` → spinner CSS rotate
+7. Window print preview → admin se imprime limpio sin blur ni overlays
+8. Windows con High Contrast → borders más opacos + outlines visibles
+9. Cualquier `<h1>` de page-header → gradient text white-to-gold
+10. Reduced-motion: TODO desactivado (sections, stagger, tooltips,
+    spinner, shimmer)
+
+**Archivos modificados**:
+- `css/admin.css` (+380 líneas Sprint D admin-final)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510190000)
+- `CLAUDE.md` (esta sección §29.4 — CIERRE ADR-029)
+
+#### ✅ ADR-029 — CIERRE TOTAL ADMIN-FINAL
+
+**4 sprints, 4 commits, ~1390 líneas CSS + doc**.
+
+| Sprint | Commit | Entregable |
+|---|---|---|
+| §29.1 ADMIN-FINAL A | `f9e65d4` | Modales específicos NOVA (vehicleModal/brandModal/dealerModal/bannerModal/reviewModal/userModal/preview/appointment) — headers gradient, close circular rotate, upload area drag&drop premium, image gallery thumbs hover lift, form/modal tabs strip, wizard steps pills, color swatches, preview iframe, delete-confirm |
+| §29.2 ADMIN-FINAL B | `d70a237` | Components que faltaban — pagination buttons, presence overlay Mica, command palette ⌘+K, comments threaded con --reply border-left, activity feed entries, global search results Mica, KPI tiles hover glow, bulk actions bar pill animation, kanban scroll-snap, notification center Mica strong, bell shake animation |
+| §29.3 ADMIN-FINAL C | `b04371e` | Mobile admin polish — topbar safe-area iPhone notch, hamburger 45deg rotate, sidebar mobile drawer 86vw Mica, touch targets 44×44 Apple HIG, modal mobile padding cómodo, tabs scroll-x sin scrollbar, tablas fade indicator, KPIs 2/1 col adaptativos, notification center 100vw, wizard steps scroll horizontal, PWA standalone notch fix |
+| §29.4 ADMIN-FINAL D | (este) | Animations globales + final polish — section entrance fadeUp, stagger-children utility, tooltips Mica con arrow CSS 4 posiciones, focus rings universales, skip-to-content a11y, loading shimmer global, button loading state spinner CSS, print styles, high-contrast + forced-colors mode, gradient text page headers, scroll-to-top button, text truncate utilities, visually-hidden a11y |
+
+**Resultado del refactor visual TOTAL del admin (ADR-026 + ADR-027 + ADR-028 + ADR-029)**:
+
+El admin de Altorra Cars pasó por 4 ADRs progresivos cada uno con 4-8
+sprints. Total: **22 sprints, ~25 commits, ~5500+ líneas de polish**.
+
+Estados:
+- **ADR-026** (10 sprints): refactor cognitivo del bot ALTOR + ALTOR Hub
+- **ADR-027** (7 sprints): ALTORRA HARMONY CRM — reestructuración + foundation HarmonyOS
+- **ADR-028** (8 sprints): ALTORRA NOVA — fusión visual HarmonyOS + Win11 + iOS 26 + Material You
+- **ADR-029** (4 sprints): ADMIN-FINAL — polish total a TODO lo restante
+
+El admin ya NO tiene ningún rincón sin polish. Todo respira HarmonyOS+
+Fluent+Liquid+Material You con identidad visual coherente, accesible
+(AAA + reduced-motion + forced-colors + print), responsive (desktop +
+tablet + mobile + PWA standalone), y customizable (theme picker
+gold/blue/violet).
+
+**Costo recurrente: $0**. Todo CSS + JS client-side, cero APIs externas.

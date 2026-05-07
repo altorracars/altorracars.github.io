@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510070000'; // §27.7 HarmonyOS polish: sidebar badges dinámicos con tones + section spring entrance + skeletons shimmer dorado + empty states + ripple micro-interactions + stagger cards (CIERRE ADR-027)
+const CACHE_VERSION = 'v20260510080000'; // §28.1 NOVA Sprint A — Foundation tokens NOVA (Mica/Acrylic/Liquid/Reveal) + mass refactor legacy: .btn radius+ripple, .modal-overlay scrim+blur, tablas sticky head + radius outer, inputs focus-ring dorado, checkbox/radio/range/progress custom, dropdown glassmorphism, scrollbars dorados globales, kbd Mac-style, page-headers tinted
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

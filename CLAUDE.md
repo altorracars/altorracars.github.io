@@ -15590,3 +15590,144 @@ implementadas (Reportes ejecutivos, Workflows funcional, Plantillas
 integradas en chat), y polish que se siente premium.
 
 **Costo recurrente**: $0 (todo cliente-side, reusa data viva de Firestore).
+
+---
+
+## 28. ADR-028 NOVA — Fusión visual ULTIMATE (en curso 2026-05-10)
+
+> Refactor de polish total combinando **HarmonyOS** + **Windows 11 Fluent**
+> + **iOS 26 Liquid** + **Material You**. Cero rincón sin atender.
+> El §27 cubrió las secciones nuevas (Inicio, CRM, Agenda, Reportes,
+> Workflows). §28 baja a la base: TODO el resto del admin (vehículos,
+> brands, dealers, banners, reviews, kb, unmatched, audit, settings,
+> users, modales legacy, auth screens, tablas, forms).
+
+### 28.1 Sprint NOVA-A — Foundation tokens NOVA + mass refactor legacy (2026-05-10)
+
+**Objetivo del sprint**: una sola capa CSS al final de `admin.css` que
+reemplace el look-and-feel de TODOS los `.btn`, `.modal-*`, tablas,
+inputs, checkboxes, dropdowns, scrollbars y badges legacy del admin.
+Fundamento sin tocar HTML — el polish llega gratis a 14+ secciones.
+
+#### A. Tokens NOVA en `css/tokens.css` (categoría 12)
+
+40+ tokens prefijo `--nova-*` agrupados por sistema de origen:
+
+| Sistema | Token | Uso |
+|---|---|---|
+| **Windows 11 Mica** | `--nova-mica-bg`, `--nova-mica-bg-strong` | Sidebars, modales, headers (capas semi-translúcidas) |
+| Windows 11 Mica | `--nova-acrylic-bg`, `--nova-acrylic-tint-gold` | Capas con saturación + tinte dorado |
+| Windows 11 Fluent | `--nova-blur-xs/sm/md/lg/xl` | Backdrop blur escalonado (8/14/24/36/48px) |
+| Windows 11 Fluent | `--nova-reveal-color/-hi` | Radial-gradient hover (cursor-following) |
+| **iOS 26 Liquid** | `--nova-border-glass`, `--nova-border-glass-hi` | Bordes con gradiente sutil |
+| iOS 26 Liquid | `--nova-border-gold`, `--nova-border-gold-hi` | Bordes dorados tinted |
+| iOS 26 Liquid | `--nova-spring-soft/-bounce/-snap/-flow` | Curvas spring (4 variantes) |
+| **Material You** | `--nova-tint-{gold,coral,blue,violet,green,cyan,amber}` | Tinted backgrounds por workspace (alpha 0.06) |
+| Material You | `--nova-focus-ring/-soft/-coral/-error` | Anillos suaves dorados (3px alpha) |
+| **HarmonyOS+ multi** | `--nova-shadow-elev-1/2/3/4` | Sombras stacked multi-layer |
+| HarmonyOS+ | `--nova-shadow-glow` | Glow dorado para destacados |
+| Universal | `--nova-density-compact/default/comfortable-row` | Variants 36/48/56px |
+| Universal | `--nova-scrim`, `--nova-scrim-light` | Radial dark gradient para modales |
+
+Tokens NUEVOS coexisten con `--hmy-*` del §27.1 (no rompen nada).
+HarmonyOS tokens siguen siendo la BASE; NOVA agrega capa de fusión.
+
+#### B. Mass refactor en `css/admin.css` (~700 líneas al final)
+
+Selectores genéricos pisan estilos legacy de:
+
+| Selector | Cambio NOVA |
+|---|---|
+| `.btn`, `.btn-primary`, `.btn-secondary`, etc. | `border-radius: 12px` + transition spring + hover `translateY(-1px)` + box-shadow elev-2 + **ripple effect** (`::after` expand 200% on `:active`) + focus ring NOVA |
+| `.modal-overlay` | `--nova-scrim` + `backdrop-filter: blur(24px) saturate(140%)` |
+| `.modal-container`, `.modal-content` | `border-radius: 20px` + glass border + shadow elev-4 + `novaModalIn` animation spring (translateY+scale) |
+| `.modal-close` | Circular 36×36 con hover `rotate(90deg)` y tinte rojo |
+| `.data-table`, `.admin-table`, `.users-table` | `border-radius: 16px` outer + `border-collapse: separate` + sticky header con Mica blur + thead uppercase letter-spacing wide + tbody hover dorado tenue |
+| `.form-row input/textarea/select` | `border-radius: 12px` + transition border + focus ring `--nova-focus-ring` + hover sutil + state `is-error` con ring rojo |
+| `.form-row input[type="checkbox"]` | Custom dorado 18×18 con check SVG-styled puro CSS |
+| `.form-row input[type="radio"]` | Custom dorado con dot interior |
+| `input[type="range"]` | Track 6px + thumb 18px dorado con shadow elev-2 + hover scale |
+| `progress`, `.progress-bar` | Custom track + value gradient dorado |
+| `input[type="file"]::file-selector-button` | Estilizado con gold border + hover tinted |
+| `.dropdown-menu`, `.context-menu`, `.popover` | Glassmorphism Mica + `novaDropdownIn` spring + items hover dorado |
+| `.toast`, `.notification` | Glassmorphism Mica + shadow elev-3 |
+| `.tab-bar`, `.tabs-strip` | Container radius + items radius 10px + active dorado |
+| `.badge`, `.status-badge`, `.tag`, `.pill` | `border-radius: pill` + uppercase letter-spacing wide |
+| `hr`, `.divider` | Gradient horizontal sutil (transparent → gris → transparent) |
+| `kbd` | Estilo Mac con border + inner shadow blanco/oscuro |
+| `.filter-chip`, `.chip` | Pill dorado con states hover + active |
+| `.card:not(.alt-card):not(...)` | Border-radius 16px + glass border + hover lift + shadow |
+| `.page-header` | Gradient tinted dorado (4% → 1% → transparent) |
+| `.admin-panel *::-webkit-scrollbar` | Globalmente scrollbars dorados sutiles 8px |
+
+#### C. JS — `js/admin-nova-fx.js` (NUEVO ~85 líneas)
+
+Singleton `window.AltorraNovaFx` con auto-attach:
+
+- **Reveal hover (Windows 11 Fluent)**: radial-gradient dorado sigue
+  el cursor sobre cualquier elemento con clase `.nova-reveal`.
+  Implementado vía pseudo-element `::before` con CSS variables
+  `--nova-mx/--nova-my` actualizadas en `pointermove` (passive, sin
+  jank).
+- **Auto-attach**: aplica clase `.nova-reveal` a selectores comunes
+  (`.btn-primary`, `.btn-secondary`, `.kpi-card`, `.workflow-card`,
+  `.reports-kpi-card`, `.hero-kpi`, `.nba-dash-item`, `.pipeline-card`)
+  al cargar y tras cada cambio de sección.
+- **MutationObserver** suave (debounced 200ms) para nodos nuevos
+  (modals dinámicos, cards lazy-loaded).
+- Listener de `AltorraSections.onChange` re-ejecuta auto-attach al
+  cambiar sección.
+- **prefers-reduced-motion**: módulo se desactiva entero (no aplica
+  reveal).
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Override masivo rompe modales del §27 | Selectores excluyen `.alt-card`, `.workflow-card`, `.reports-card`, `.kpi-card`, `.hero-kpi` con `:not()` |
+| Inputs `.alt-input`/`.cnc-input` (HarmonyOS) re-estilizados | Excluidos con `:not(.alt-input):not(.cnc-input)` |
+| Toggles HarmonyOS pisados por checkbox custom | Selector excluye `.alt-toggle input`, `.availability-day input` |
+| Reveal hover causa repaints excesivos | `pointermove` passive + radial-gradient compositing GPU |
+| Reveal en modales no detectados al abrir | MutationObserver con debounce 200ms |
+| Animation `novaModalIn` interfiere con anim existente del §27 | Solo aplica a `.modal-overlay.show .modal-container` (selector específico legacy) |
+| Cache no invalida en clientes viejos | `CACHE_VERSION` y `APP_VERSION` bumped a v20260510080000 |
+| Scroll-bars custom rompen layout | `width: 8px` + `scrollbar-width: thin` Firefox + transitions sutiles |
+| Range thumb default browser-styled | `appearance: none` + `-webkit-appearance: none` + custom thumb |
+| Progress browser default | `progress::-webkit-progress-bar` + `progress::-moz-progress-bar` ambos overridden |
+
+#### Test E2E del sprint
+
+1. Login admin → todos los botones (`.btn-primary`, `.btn-secondary`,
+   etc.) con radius 12px, hover lift + shadow, click ripple
+2. Abrir cualquier modal legacy (Nuevo vehículo, Nueva marca, Nuevo
+   aliado) → modal animation spring + scrim radial + glass border
+3. Hover sobre tabla de Vehículos/Marcas/Aliados → header sticky con
+   Mica blur, hover row dorado tenue
+4. Modal de creación de vehículo → inputs/textareas/selects con
+   radius 12px + focus ring dorado al tabular
+5. Checkbox/radio del form → estilizados gold con check SVG
+6. Click sobre `<input type="file">` → botón dorado embebido
+7. Cualquier `<select>` → flecha custom dorada
+8. Dropdowns (header de admin, palette, etc.) → glass blur + animation
+9. Scrollear cualquier sección → scrollbar 8px dorado sutil
+10. Hover sobre cards (`.kpi-card`, `.hero-kpi`, etc.) → reveal radial
+    sigue al cursor (Fluent effect)
+11. Abrir modal → cerrar con click X → rotate 90° + tint rojo
+12. `prefers-reduced-motion: reduce` activado en DevTools → ripples
+    + reveal effects desactivados
+13. Mobile: form inputs con padding correcto, modales full-width
+
+**Archivos modificados**:
+- `css/tokens.css` (+90 líneas categoría 12 NOVA — 40+ tokens)
+- `css/admin.css` (+700 líneas mass refactor al final)
+- `js/admin-nova-fx.js` (NUEVO ~85 líneas — reveal hover + auto-attach)
+- `admin.html` (script tag admin-nova-fx.js)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510080000)
+- `CLAUDE.md` (esta sección §28.1)
+
+**Pendiente del ADR-028** (próximos sprints):
+- §28.2 Sprint NOVA-B — Auth screens (login/2FA/unlock) HarmonyOS-style
+- §28.3 Sprint NOVA-C — Secciones sin completar (vehicles modals,
+  brands, dealers, banners, reviews, kb, unmatched, audit, settings, users)
+- §28.4 Sprint NOVA-D — Final polish (Mica strong en sidebar, acrylic
+  layers, empty states ilustrados, transitions globales)

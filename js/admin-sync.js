@@ -412,6 +412,13 @@
     }
 
     // F9.3: Single-pass updateStats with accumulator
+    // §36.4 — Guards `if (el)` en cada acceso al DOM. Los stats genéricos
+    // (statTotal, statNuevos, statUsados, etc.) fueron ELIMINADOS del
+    // dashboard en §27.2 cuando se rediseñó el Inicio productivo.
+    // updateStats() sigue siendo llamada por listeners viejos de
+    // vehiculos+marcas+appointments, pero los elementos del DOM ya no
+    // existen → null.textContent crash. Los guards lo silencian sin
+    // romper la lógica de cómputo (que sigue pre-calculando stats).
     function updateStats() {
         var s = { nuevos: 0, usados: 0, ofertas: 0, destacados: 0, vendidos: 0 };
         AP.vehicles.forEach(function(v) {
@@ -421,13 +428,14 @@
             if (v.destacado) s.destacados++;
             if (v.estado === 'vendido') s.vendidos++;
         });
-        $('statTotal').textContent = AP.vehicles.length;
-        $('statNuevos').textContent = s.nuevos;
-        $('statUsados').textContent = s.usados;
-        $('statOfertas').textContent = s.ofertas;
-        $('statDestacados').textContent = s.destacados;
-        $('statMarcas').textContent = AP.brands.length;
-        $('statVendidos').textContent = s.vendidos;
+        var el;
+        el = $('statTotal');      if (el) el.textContent = AP.vehicles.length;
+        el = $('statNuevos');     if (el) el.textContent = s.nuevos;
+        el = $('statUsados');     if (el) el.textContent = s.usados;
+        el = $('statOfertas');    if (el) el.textContent = s.ofertas;
+        el = $('statDestacados'); if (el) el.textContent = s.destacados;
+        el = $('statMarcas');     if (el) el.textContent = AP.brands.length;
+        el = $('statVendidos');   if (el) el.textContent = s.vendidos;
         var citasEl = $('statCitas');
         if (citasEl) citasEl.textContent = (AP.appointments && AP.appointments.length > 0) ? AP.appointments.filter(function(a) { return a.estado === 'pendiente'; }).length : '-';
     }

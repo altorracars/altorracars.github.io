@@ -497,23 +497,55 @@
             }, { merge: true }).catch(function () {});
         }
 
-        // Doble fallback: 2do fallo consecutivo → escalado empático automático
-        if (session.botFallbackCount >= 2) {
+        // §26.2 — Triple Fallback State Machine (anti-doble-negativa)
+        // Reemplaza el doble fallback simple por 3 estados crecientes:
+        //   1er fallback → pedir reformular (clarify_1)
+        //   2do fallback → ofrecer MENÚ de opciones (NO repetir "no entiendo")
+        //   3er fallback → escalar a asesor empáticamente
+        //
+        // Esta máquina garantiza que NUNCA aparezcan dos "no entiendo"
+        // seguidos. La 2da vez ofrecemos un menú de quick replies con
+        // las acciones más comunes para que el cliente pueda elegir
+        // sin tener que reformular.
+
+        // 3er fallback consecutivo → escalado empático automático
+        if (session.botFallbackCount >= 3) {
             session.botFallbackCount = 0;
             saveSession(session);
-            setTimeout(function () { escalateToLive('double_fallback'); }, 800);
+            setTimeout(function () { escalateToLive('triple_fallback'); }, 800);
             return {
-                text: 'Parece que tu consulta requiere la ayuda de un experto. Te conectaré con un asesor en vivo de inmediato. 🙋‍♂️',
+                text: (firstName ? firstName + ', ' : '') +
+                      'mejor te conecto con un asesor humano que te va a entender mejor lo que necesitás 🙋‍♂️ Un momento por favor.',
                 _isFallback: true
             };
         }
 
-        // Primer fallback: pedir reformulación amablemente
-        if (session.botFallbackCount === 1) {
+        // 2do fallback → ofrecer menú de opciones con quick replies
+        if (session.botFallbackCount === 2) {
             return {
                 text: (firstName ? firstName + ', ' : '') +
-                      'no estoy seguro de haber entendido bien. ¿Podrías reformular tu pregunta? ' +
-                      'Por ejemplo: *¿qué autos tienen disponibles?*, *¿cuánto cuesta el Mazda?* o *quiero financiar*.',
+                      'todavía no estoy seguro de qué necesitás. Mirá, te dejo opciones — tocá la que te sirva:',
+                quickReplies: [
+                    { label: '🚗 Ver autos', payload: 'muéstrame autos' },
+                    { label: '💰 Financiación', payload: 'quiero financiación' },
+                    { label: '📅 Agendar visita', payload: 'quiero agendar una visita' },
+                    { label: '👨 Hablar con asesor', payload: 'hablar con asesor' }
+                ],
+                _isFallback: true
+            };
+        }
+
+        // 1er fallback → pedir reformulación amablemente
+        if (session.botFallbackCount === 1) {
+            var clarifyVariants = [
+                'no estoy seguro de haber entendido bien. ¿Me lo podés decir de otra forma?',
+                'creo que no te entendí bien. ¿Me podés contar más?',
+                'mmm, no estoy seguro de qué necesitás. ¿Me explicás un poquito más?'
+            ];
+            var clarifyText = clarifyVariants[Math.floor(Math.random() * clarifyVariants.length)];
+            return {
+                text: (firstName ? firstName + ', ' : '') + clarifyText +
+                      ' (Por ejemplo: *¿qué autos tienen?*, *¿cuánto sale el Mazda?* o *quiero financiar*).',
                 _isFallback: true
             };
         }

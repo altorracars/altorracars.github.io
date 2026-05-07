@@ -189,11 +189,29 @@
         if (window.AltorraSmallTalk) {
             var stResp = window.AltorraSmallTalk.detect(userText, session);
             if (stResp && stResp.text) {
+                // §26.2 — Marker __INVENTORY_QUERY__: el small-talk
+                // matchea "muéstrame autos" (o variantes) pero quiere
+                // que el flujo de inventario tome el control.
+                // Caemos al rule-based con un hint sintético.
+                if (stResp.text === '__INVENTORY_QUERY__') {
+                    if (typeof window._altorraConciergeRespondLocal === 'function') {
+                        try {
+                            // Usar texto canonical para forzar match correcto
+                            var ruleR = window._altorraConciergeRespondLocal('muéstrame autos disponibles');
+                            if (ruleR && ruleR.text) {
+                                ruleR.source = ruleR.source || 'small-talk-bridged';
+                                return Promise.resolve(ruleR);
+                            }
+                        } catch (e) {}
+                    }
+                }
                 return Promise.resolve({
                     text: stResp.text,
                     source: 'small-talk',
                     matchedPattern: stResp.matchedPattern,
-                    intent: stResp.intent
+                    intent: stResp.intent,
+                    quickReplies: stResp.quickReplies,
+                    action: stResp.action
                 });
             }
         }

@@ -18613,3 +18613,179 @@ en TODOS los clientes que abran admin.html post-deploy.
 prohibe el patrón "v1→v5 sin diagnóstico" — extendí lo existente).
 
 **Cache bump**: `v20260510280000`.
+
+---
+
+## 35. ADR-035 PERF KILL — Purga de anti-patterns acumulados (2026-05-07)
+
+> Tras §34 el cliente reportó 3 problemas críticos: (1) admin
+> extremadamente lento, (2) scroll bloqueado en sidebar y main,
+> (3) refresh "se desenfoca, intenta enfocar y luego recupera
+> calidad". Aplicando RCA estricto §19 (NO parches), audit
+> profundo en paralelo (3 Explore agents) reveló que ADRs 028-034
+> apilaron polish premium SIN nunca eliminar lo viejo, dejando
+> el browser saturado.
+>
+> **Decisión arquitectónica**: NO crear admin-v3 ni "kill all".
+> Solo crear UN archivo CSS final `admin-perf-kill.css` que carga
+> ÚLTIMO y desactiva quirúrgicamente lo decorativo no esencial,
+> + convertir 3 módulos JS en stub APIs (preservando los call
+> sites que dependen de ellos), + 2 fixes scroll/blur puntuales.
+
+### 35.1 Métricas reales del audit
+
+| Métrica | Valor antes | Anti-pattern |
+|---|---|---|
+| `backdrop-filter` instances | 152 (78+60+14) | Saturación GPU cada repaint |
+| Animaciones `infinite` siempre activas | 34 keyframes | GPU layers permanentes |
+| `transition: all` instances | 46 en visionary | Reflow en cada cambio (§17.2) |
+| `* { transition: ... }` global | 1 (catastrófica) | Anima TODOS los elementos |
+| `pointermove` listeners cursor-follow | 3 (visionary-fx + master + nova-fx) | Repaint cada movimiento del mouse |
+| `MutationObserver subtree:true` activos | 8 | Procesan cada DOM change |
+| Bundle CSS | 619.6 KB | Parse cost alto |
+| Bundle JS | 1.8 MB | Network + parse |
+
+### 35.2 Solución — `css/admin-perf-kill.css` (NUEVO ~210 líneas)
+
+8 secciones de purga quirúrgica, cargado ÚLTIMO en admin.html:
+
+1. **KILL `* { transition }` global** → re-aplicar transiciones SOLO
+   en elementos interactivos (a/button/input/select/textarea/
+   nav-item/cards/modal). Resto del DOM con `transition: none`.
+2. **KILL 18 animaciones `infinite` decorativas** → keyframes
+   redefinidos con un solo step (sin movimiento).
+   Lista: visHeaderBreathe, visLogoBreathe, visHeroOrb, visHeroFloat,
+   visEmptyOrb, visSparkle/A/B, visSkeletonShine, visBreathe,
+   novaShimmerLoading, novaBadgeUrgentPulse, novaBellShake, novaPulse,
+   voicePulse, dictatePulse, shimmer, adminRestoringPulse.
+3. **KILL `backdrop-filter` en cards** (multiplicador GPU x N) →
+   `background: rgba(20, 20, 22, 0.96)` solid tinted. Mantenemos
+   blur SOLO en sidebar, header, modal-overlay (4 surfaces).
+4. **KILL view-transition + section.active blur** → keyframes
+   visSectionIn/Out/InVT/SecOut/SecIn/StaggerIn redefinidos sin
+   `filter: blur()`. Resuelve el FOUC blur al refresh.
+5. **KILL admin-restoring blur** → `backdrop-filter: blur(2px)` +
+   `animation pulse infinite` eliminados del inline `<style>` del head.
+6. **Scope `transition: all`** en cards/buttons → transition-property
+   explícita (background-color, border-color, color, transform,
+   box-shadow, opacity).
+7. **PERF refuerzo `content-visibility: hidden` + `contain: strict`**
+   en `.section:not(.active)`, `.crm-tabpane:not(.is-active)`,
+   `.cal-tabpane:not(.is-active)`.
+8. **PERF `prefers-reduced-motion`** override fuerte (`animation-duration: 0.001s`).
+
+### 35.3 Fix scroll bloqueado
+
+**Causa raíz**: admin-v2.css línea 99 tenía
+`.sidebar { overflow: visible !important }` — bloqueaba scroll
+vertical interno cuando los menús eran largos. Y admin.css legacy
+aplicaba `overflow: hidden` en `.section` SIN altura explícita,
+impidiendo que main genere scroll.
+
+**Fix en admin-v2.css**:
+```css
+.sidebar { overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+```
+
+**Fix en admin-perf-kill.css** (sección 7.bis):
+```css
+.admin-panel main .section { overflow: visible; height: auto; min-height: 0; max-height: none; }
+.admin-panel main { overflow-y: auto; height: 100vh; max-height: 100vh; -webkit-overflow-scrolling: touch; }
+.admin-panel main .admin-content, .admin-panel main .section-inner { overflow: visible; height: auto; max-width: none; }
+```
+
+### 35.4 Fix FOUC blur al refresh
+
+**Causa raíz**: 3 fuentes simultáneas:
+1. `admin.html:151-165` `html.admin-restoring #adminPanel::before`
+   con `backdrop-filter: blur(2px)` + `animation: adminRestoringPulse infinite`.
+2. `admin-visionary.css:1019-1025` aplicaba a `.section.active`:
+   ```css
+   animation: visSectionIn ...;
+   @keyframes visSectionIn {
+       from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+       to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+   }
+   ```
+   AL CARGAR la página, esa animación corría → "se desenfoca,
+   intenta enfocar y recupera calidad" descrito por el usuario.
+3. `admin-visionary.css:2773-2783, 5455-5468` view-transition
+   keyframes con `filter: blur(4px)`.
+
+**Fix admin.html inline `<style>`**: removido `backdrop-filter: blur(2px)` + `animation`. El preloader `#av2Preloader` (z-index 999999) ya cumple el rol de "esperar a Firebase" — no necesitamos doble overlay.
+
+**Fix admin-perf-kill.css sección 4**: redefinidos visSectionIn,
+visSectionOut, visSectionInVT, visSecOut, visSecIn, visStaggerIn
+sin `filter: blur()`. Solo conservan `opacity` (cross-fade limpio).
+Duración `.section.active` reducida a 0.18s. Stagger de hijos
+desactivado (`animation: none !important`) — eran N animaciones
+simultáneas innecesarias.
+
+### 35.5 Stub APIs en JS (cero MutationObserver redundantes)
+
+| Archivo | Acción | Por qué |
+|---|---|---|
+| `admin-visionary-fx.js` | Stub API (`{ enabled: false, rescan: noop }`) | Eliminado pointermove cursor-follow + MutationObserver subtree:true. Su CSS counterpart (cursor radial-gradient) sigue definido pero sin JS que actualice las CSS vars → no hace nada (zero costo). |
+| `admin-visionary-master.js` | Stub API con métodos noop | Eliminado ripple click + magnetic pull pointermove + MutationObserver. `showUndoToast` redirige a `notify.info` para preservar funcionalidad básica. |
+| `admin-nova-fx.js` | Stub API | Eliminado reveal hover + MutationObserver. |
+| `admin-empty-states-autoupgrade.js` | Removido MutationObserver | Mantenido upgrade en DOMContentLoaded + section onChange (cubre 99% casos). |
+
+**Código original preservado tras `return` early** con comentario
+`/* CÓDIGO PRESERVADO POR REFERENCIA — NO EJECUTABLE */`. Esto
+permite re-habilitar selectivamente en el futuro si telemetría real
+muestra que algún módulo es valioso. Pero en este momento NO se
+ejecuta nada.
+
+### 35.6 Cache bump
+
+- `service-worker.js CACHE_VERSION`: `v20260510280000` → `v20260510290000`
+- `js/cache-manager.js APP_VERSION`: idem.
+
+Forza invalidación SW + IndexedDB + localStorage en clientes
+post-deploy.
+
+### 35.7 Test E2E
+
+| # | Test | Resultado esperado |
+|---|---|---|
+| 1 | Ctrl+Shift+R en admin | NO blur al cargar (problema #3 resuelto) |
+| 2 | Scroll en sidebar con muchos menús | Scrollea verticalmente con scrollbar dorado |
+| 3 | Scroll en sec-vehicles con 50+ vehículos | Main scrollea, sidebar fija |
+| 4 | DevTools Performance → record 5s navegación | FPS estable >55, sin layout thrashing |
+| 5 | DevTools Memory → snapshot vs antes | Bajan listeners y GPU layers |
+| 6 | Cambio entre secciones | Cross-fade sutil (opacity), sin blur |
+| 7 | Hover sobre cards | Lift + shadow sin tilt 3D ni cursor-follow gradient |
+| 8 | Click en botones | Funciona sin ripple animation (no perceptible) |
+| 9 | `prefers-reduced-motion: reduce` | Animations duran 0.001s (instant) |
+| 10 | Layout responsivo mobile | Sidebar drawer + main scroll OK |
+
+### 35.8 Anti-patterns evitados (cruce con CLAUDE.md doctrina)
+
+| Patrón prohibido | Origen del veto | Cómo lo evitamos |
+|---|---|---|
+| Crear `admin-v3.css` o "perf-kill v2" | §19, §17.12 | UN solo archivo nuevo (admin-perf-kill.css) |
+| Eliminar archivos viejos (riesgo de romper layout validado) | §19 | Override quirúrgico via cascade, NO eliminamos admin-visionary.css/admin.css |
+| `MutationObserver subtree:true` | §17.12 | Eliminé los 4 redundantes (visionary-fx, visionary-master, nova-fx, empty-states-autoupgrade) |
+| `* { transition }` global | §17.2 | Reemplazado por scoped a interactivos |
+| Backdrop-filter en grids con N elementos | §17.2 | Solid tinted bg en cards |
+| `transition: all` | §17.2 | Property-specific transitions |
+| Re-leer files sin RCA | §19 | Audit profundo con 3 Explore agents en paralelo + cruce con CLAUDE.md antes de tocar nada |
+
+### 35.9 Archivos modificados
+
+| Archivo | Tipo | Detalle |
+|---|---|---|
+| `css/admin-perf-kill.css` | NUEVO | ~250 líneas — 8 secciones de purga |
+| `admin.html` | Edit | Link al perf-kill.css ULTIMO + remoción de inline blur en admin-restoring |
+| `css/admin-v2.css` | Edit | sidebar `overflow-y: auto` (era `visible` bloqueante) |
+| `js/admin-visionary-fx.js` | Edit | Convertido en stub API |
+| `js/admin-visionary-master.js` | Edit | Convertido en stub API |
+| `js/admin-nova-fx.js` | Edit | Convertido en stub API |
+| `js/admin-empty-states-autoupgrade.js` | Edit | Removido MutationObserver |
+| `service-worker.js` | Edit | CACHE_VERSION bump |
+| `js/cache-manager.js` | Edit | APP_VERSION bump |
+| `CLAUDE.md` | Append | Esta sección §35 |
+
+**Total**: 10 archivos. Cero archivos eliminados (preservamos ADR-028-034 código por si hay que revertir).
+
+**Cache bump**: `v20260510290000`.

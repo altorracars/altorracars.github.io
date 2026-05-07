@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510110000'; // §28.4 NOVA Sprint D CIERRE ADR-028 — Sidebar Mica strong + acrylic layers nav-item active + view-transitions cross-section (Chrome 126+) + button shimmer hover effect + text selection dorada global + details/summary collapsibles estilizados + dialog HTML5 polish + tooltips Mica + global search pill rounded + badge urgent pulse + tabular-nums en KPIs + scroll-snap chips horizontales + blockquote/code/pre estilizados + profile card glow + nav-item active linear-gradient acrylic
+const CACHE_VERSION = 'v20260510120000'; // §28.5 Empty states ilustrados — 10 SVG illustrations inline (vehicles/contacts/conversations/calendar/reports/search/kb/unmatched/audit/generic) con AltorraEmptyStates API + auto-upgrade legacy empty containers + animation fadeIn spring + responsive mobile
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

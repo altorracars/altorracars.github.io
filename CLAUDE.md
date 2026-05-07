@@ -16236,3 +16236,102 @@ seña de marca.
 - §28.6 Skeleton loading shimmers más realistas (mimic shape per section)
 - §28.7 Onboarding tour HarmonyOS-style (anchor-positioning para tooltips)
 - §28.8 Theme picker (admin elige entre 3 paletas — gold/blue/violet)
+
+### 28.5 Sprint §28.5 — Empty states ilustrados con SVG inline (2026-05-10)
+
+**Objetivo del sprint**: cuando una sección está vacía (sin
+vehículos, sin citas, sin contactos), reemplazar el texto plano
+"No hay X aún" por una ilustración SVG personalizada por dominio +
+título + texto + CTA opcional. Patrón Stripe / Linear / Notion.
+
+#### A. Módulo `js/admin-empty-states.js` (~200 líneas)
+
+Singleton `window.AltorraEmptyStates` con API:
+- `AltorraEmptyStates.html(kind, opts)` → string HTML completo
+- `AltorraEmptyStates.render(container, kind, opts)` → render directo
+- `AltorraEmptyStates.kinds` → lista de kinds disponibles
+- `AltorraEmptyStates.illustrations` → access raw a los SVGs
+
+**10 ilustraciones SVG** (inline, no requieren network):
+
+| Kind | Visual |
+|---|---|
+| `vehicles` | SUV stylized dorado con ruedas + faros |
+| `contacts` | 3 personas (avatares) con stagger de tamaño |
+| `conversations` | 2 burbujas de chat verdes superpuestas |
+| `calendar` | Calendario violeta con dots de días + cita destacada |
+| `reports` | Bar chart cyan + arrow trend ascendente |
+| `search` | Lupa dorada con anillo concéntrico + dot interior |
+| `kb` | Libro abierto verde con líneas + brain icon |
+| `unmatched` | Cloud ámbar con question mark `?` + dots flotantes |
+| `audit` | Clipboard gris con checkmarks verdes + items |
+| `generic` | Caja dashed dorada con dots — fallback universal |
+
+**Diseño**: cada ilustración tiene:
+- ViewBox 200×140 (proporción cómoda para empty state)
+- Elipse de "shadow" en bottom (rgba alpha 20%) para grounding
+- Stroke principal del workspace color
+- Fill rgba alpha 4-10% para efecto suave
+- Dots/details adicionales con opacity 0.4-0.8 para profundidad
+
+#### B. CSS HarmonyOS (`css/admin.css` ~50 líneas)
+
+`.alt-empty-illustrated`:
+- Flex column centered con padding generoso 56×24
+- SVG container 200px max-width 80vw
+- Filter `drop-shadow` dorado tenue para profundidad
+- Title 1.125rem font-weight 600
+- Text 0.9rem secondary line-height 1.55 max-width 380px
+- CTA opcional con btn-primary
+- Animation `novaEmptyIn` 0.55s spring (translateY+scale)
+- Mobile: padding reducido + SVG 160px
+
+#### C. Auto-upgrade module (`js/admin-empty-states-autoupgrade.js` ~80 líneas)
+
+Detecta selectores legacy de empty states y los reemplaza
+automáticamente con la versión ilustrada:
+
+```js
+TARGETS = [
+    { selector: '.unmatched-empty', kind: 'unmatched' },
+    { selector: '.kb-empty', kind: 'kb' },
+    { selector: '#auditFeed:empty, .audit-empty', kind: 'audit' },
+    { selector: '.cal-empty, .calendar-empty', kind: 'calendar' }
+];
+```
+
+- Corre al cargar + en cada section change + MutationObserver debounced
+- Soporta override de title/text via `data-empty-title` y `data-empty-text`
+- Idempotente: `_emptyUpgraded` flag previene doble-render
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| SVGs grandes inflate bundle JS | Inline strings ~600-900 chars cada uno; total ~7KB para los 10 |
+| Re-render constante reemplaza ilustraciones | `_emptyUpgraded` flag |
+| Animation cada ms genera jank | Animation 0.55s solo al primer render |
+| Auto-upgrade pisa contenido legítimo | Selectores muy específicos (`.unmatched-empty`, `.kb-empty`, etc.) |
+| Mobile SVG demasiado grande | Media query reduce a 160px y padding |
+| `prefers-reduced-motion` | Animation desactivada |
+| Drop-shadow dorado costoso GPU | `filter: drop-shadow` cacheado por GPU layer |
+| AltorraEmptyStates no cargado al usar | API defensiva: si no carga, fallback a texto plano vía DEFAULTS |
+
+#### Test E2E del sprint
+
+1. Login admin → KB sin FAQs → ilustración libro verde + texto "Sin FAQs"
+2. Audit log vacío → ilustración clipboard gris + "Sin actividad"
+3. "Lo que no entendí" sin entries → cloud ámbar con `?`
+4. Calendario sin citas → calendar violeta con dots
+5. CRM sin contactos → avatares 3 personas azules
+6. Consola: `AltorraEmptyStates.render('#someContainer', 'vehicles', { title: 'Custom', text: 'Custom text', ctaLabel: 'Crear', ctaAction: 'create' })`
+7. Mobile: SVG reducido + padding ajustado
+8. `prefers-reduced-motion: reduce` → sin animation entrada
+
+**Archivos creados/modificados**:
+- `js/admin-empty-states.js` (NUEVO ~200 líneas — 10 SVG illustrations + API)
+- `js/admin-empty-states-autoupgrade.js` (NUEVO ~80 líneas — detector + replacer)
+- `css/admin.css` (+50 líneas .alt-empty-illustrated)
+- `admin.html` (2 script tags)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510120000)
+- `CLAUDE.md` (esta sección §28.5)

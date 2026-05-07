@@ -14377,3 +14377,137 @@ modelo que esté en inventario, sin lexicon hardcoded.
 - `js/ai/inventory-search.js` (Fix #4 model detection contra inventario)
 - `service-worker.js` + `js/cache-manager.js` (bump v20260509100000)
 - `CLAUDE.md` (esta sección §26.6)
+
+### 26.7 Bug Fix Crítico — Cliente Reset + Admin Delete fantasma (2026-05-10)
+
+**Reporte del cliente** (2 bugs persistentes):
+1. Cliente da "Finalizar conversación" → confirma → la conversación
+   sigue abierta visualmente. Solo F5 limpia.
+2. Admin borra chat desde ALTOR Hub → toast "0 mensajes eliminados"
+   PERO el chat queda fantasma en la lista izquierda. Error en consola:
+   `Cannot read properties of null (reading 'userNombre')`
+
+#### RCA — 2 bugs independientes
+
+**Bug A — Cliente reset incompleto** (`js/concierge.js:2223`):
+
+`resetSession()` llamaba `loadProfileFromAuth().then(continueResetUI)`
+pero **SIN `.catch()`**. Si la promise rechazaba (cliente anónimo,
+permisos Firestore, network timeout), `continueResetUI` NUNCA se
+ejecutaba. Resultado: localStorage borrado pero el DOM intacto. Solo
+F5 forzaba un reload completo donde la sesión vacía se cargaba.
+
+**Bug B — Admin delete crash silencioso** (`js/admin-concierge.js:573`):
+
+`renderChatDetail(chat, messages)` accedía `chat.userNombre` en la
+primera línea **sin guard contra `chat=null`**. Cuando se llamaba
+`renderChatDetail(null, [])` desde:
+- `hardDeleteChat` post-delete cleanup (línea 300)
+- `startChatsListener` removed event (línea 79)
+- `closeChat` paths
+- Mobile back button
+
+El acceso `null.userNombre` crasheaba con `Cannot read properties of
+null (reading 'userNombre')`. Como el crash ocurría DENTRO del `.then`
+de hardDeleteChat, el `.catch` lo capturaba mostrando el toast rojo
+"No se pudo eliminar" CONJUNTAMENTE con el toast verde "X mensajes
+eliminados" (porque el delete sí completó antes del crash).
+
+El crash interrumpía el cleanup de UI:
+- `_activeSessionId = null` ← OK (antes del crash)
+- `_messagesUnsub()` ← OK
+- `renderChatDetail(null, [])` ← CRASH
+
+El listener `startChatsListener` SÍ recibía el `removed` event, pero
+también llamaba `renderChatDetail(null, [])` y crasheaba ahí también.
+Resultado: el chat quedaba fantasma en la lista izquierda hasta F5.
+
+#### Fixes aplicados
+
+**Fix A — Catch en resetSession** (`js/concierge.js:2237`):
+```js
+loadProfileFromAuth().then(function (profile) {
+    // ... procesar profile ...
+    continueResetUI();
+}).catch(function (err) {
+    console.warn('[Concierge] loadProfileFromAuth rejected:', err && err.message);
+    continueResetUI();   // ← garantía absoluta de que el DOM se limpie
+});
+```
+
+**Fix B — Guard null en renderChatDetail** (`js/admin-concierge.js:573`):
+```js
+function renderChatDetail(chat, messages) {
+    var detailEl = $('conciergeChatDetail');
+    if (!detailEl) return;
+    if (!chat) {
+        detailEl.innerHTML = '<div class="cnc-admin-detail-empty altor-hub-pane-empty">' +
+            '<i data-lucide="message-circle" style="..."></i>' +
+            '<p>Seleccioná una conversación para responder</p>' +
+        '</div>';
+        if (window.AltorraIcons) window.AltorraIcons.refresh(detailEl);
+        return;
+    }
+    var name = chat.userNombre || chat.userEmail || ...;
+    // ... resto del render normal ...
+}
+```
+
+Resultado: cualquier flow que llame `renderChatDetail(null)` (delete,
+mobile back, listener removed event) ahora limpia el panel sin
+crashear.
+
+**Bonus defensivo — Guards en listeners contra `_resetting`**:
+
+Agregado guard en `_firestoreParentUnsub` listener (concierge.js:1467):
+```js
+.onSnapshot(function (doc) {
+    if (!doc.exists) return;
+    if (session._resetting) return;   // ← ignora snapshots tardíos durante reset
+    var d = doc.data();
+    // ... procesa cambios ...
+});
+```
+
+Y `cancelChatListeners()` ahora también cancela:
+- `_workloadUnsub` (system/workload)
+- `stopSLAWatcher()` si activo
+
+Defensa-en-profundidad: aunque el bug A se resuelve con el catch, los
+guards adicionales previenen que listeners tardíos pisen el estado
+durante el ciclo de reset (cuando el confirm dialog del browser
+bloquea el JS por varios ms).
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Promise.then sin catch silencia errores | `.catch(continueResetUI)` garantiza ejecución |
+| Render functions sin guard contra null | Early return + render empty state |
+| Bug B causaba 2 toasts contradictorios | Eliminada la causa raíz, no se manifiesta |
+| Listeners tardíos durante reset pisaban estado | Guard `_resetting` + cancelación adicional de workload/SLA |
+| F5 como workaround del usuario | Reset completa el cleanup sin requerir reload |
+
+#### Test E2E del fix
+
+**Cliente — Bug A**:
+1. Cliente público en chat con varios mensajes → menú ⋮ → "Finalizar conversación"
+2. Confirm → click "Aceptar"
+3. **Inmediatamente** los mensajes desaparecen + welcome bubble del bot reaparece
+4. NO requiere F5 ni Ctrl+Shift+R
+
+**Admin — Bug B**:
+1. Admin → ALTOR Hub → click chat → menú ⋮ → "Eliminar"
+2. Doble confirm → click final
+3. Toast verde "Chat y N mensajes eliminados" (sin toast rojo)
+4. Chat **desaparece** de la lista izquierda inmediatamente
+5. Panel derecho muestra empty state "Seleccioná una conversación"
+6. NO requiere F5 ni queda fantasma
+
+**Archivos modificados**:
+- `js/concierge.js` (.catch en resetSession + guard _resetting en
+  parent listener + cancelChatListeners cancela workload/SLA)
+- `js/admin-concierge.js` (guard `if (!chat)` en renderChatDetail
+  con render empty state)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509110000)
+- `CLAUDE.md` (esta sección §26.7)

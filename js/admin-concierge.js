@@ -570,6 +570,22 @@
     function renderChatDetail(chat, messages) {
         var detailEl = $('conciergeChatDetail');
         if (!detailEl) return;
+
+        // §26.7 BUG B FIX — Guard contra chat=null. Antes accedía
+        // chat.userNombre directo y crashea con "Cannot read properties
+        // of null". Esto interrumpía hardDeleteChat post-delete cleanup
+        // y dejaba el chat fantasma en la lista. AHORA: si chat es null,
+        // mostrar empty state limpio y salir.
+        if (!chat) {
+            detailEl.innerHTML =
+                '<div class="cnc-admin-detail-empty altor-hub-pane-empty">' +
+                    '<i data-lucide="message-circle" style="width:48px;height:48px;opacity:0.3;"></i>' +
+                    '<p>Seleccioná una conversación para responder</p>' +
+                '</div>';
+            if (window.AltorraIcons) window.AltorraIcons.refresh(detailEl);
+            else if (window.lucide) try { window.lucide.createIcons({ context: detailEl }); } catch (e) {}
+            return;
+        }
         var name = chat.userNombre || chat.userEmail || 'Cliente ' + chat._docId.slice(-6);
         var modeLabel = chat.mode === 'wa_handed_over' ? 'WhatsApp' :
                         chat.mode === 'live' ? 'En vivo' : 'Bot AI';

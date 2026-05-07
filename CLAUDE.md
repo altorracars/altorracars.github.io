@@ -15731,3 +15731,143 @@ Singleton `window.AltorraNovaFx` con auto-attach:
   brands, dealers, banners, reviews, kb, unmatched, audit, settings, users)
 - §28.4 Sprint NOVA-D — Final polish (Mica strong en sidebar, acrylic
   layers, empty states ilustrados, transitions globales)
+
+### 28.2 Sprint NOVA-B — Auth Screens premium (2026-05-10)
+
+**Objetivo del sprint**: las 3 pantallas de autenticación del admin
+(login, 2FA, unlock) usaban estilos pre-HarmonyOS (radius 12 fijos
+admin.css legacy, sin glassmorphism, sin animation de entrada). Sprint
+B las eleva a calidad **iOS 26 Liquid + Windows 11 Mica**: background
+con orbs flotantes, login-box con glassmorphism premium, logo con
+gradient text, code inputs destacados.
+
+#### A. Background liquid-gradient con orbs animados
+
+`.login-container` ahora tiene:
+- Background base: 3 radial-gradients superpuestos (dorado top-left,
+  dorado bottom-right, violeta center) sobre `#0a0a0c`
+- 2 pseudo-elementos `::before` y `::after` como orbs flotantes
+  (480×480px dorado top-left, 380×380px violeta bottom-right) con
+  `filter: blur(80px)` y animaciones independientes 14s/18s
+- Animation `novaAuthOrbA/B`: translate 50-80px diagonal + scale 1.10-1.15
+- Liquid feel iOS 26: orbs se mueven sutilmente sin distraer
+- Respeta `prefers-reduced-motion` (orbs estáticos)
+
+#### B. Login-box glassmorphism premium
+
+- `background: var(--nova-mica-bg-strong)` (rgba 15,15,17,0.85)
+- `backdrop-filter: blur(48px) saturate(180%)` (Windows 11 Mica máximo)
+- Border `rgba(255,255,255,0.12)` con inner shadow blanco sutil
+- `border-radius: 20px` HarmonyOS modal
+- Shadow `--nova-shadow-elev-4` + inner border highlight
+- Animation `novaAuthBoxIn` 0.65s spring (translateY+scale)
+- max-width 420px (vs 400px legacy, más respiro)
+
+#### C. Logo con gradient text (ALTORRA CARS)
+
+`background-clip: text` + 3-stop gradient dorado (`#d4ad6e → #b89658 → #9a7d44`).
+Font-size 1.75rem (vs 1.5rem legacy), font-weight 800, letter-spacing -0.02em.
+Subtítulo blanco 55% alpha con letter-spacing wide.
+
+#### D. Form inputs premium (override admin.css legacy)
+
+- `border-radius: 12px` HarmonyOS
+- `background: rgba(255,255,255,0.03)` glass tenue
+- `border: 1px solid rgba(255,255,255,0.10)`
+- Hover: bg + border más visibles
+- Focus: border dorado + bg tinted + `--nova-focus-ring` (3px alpha 32%)
+- Padding 12×16, font-size 0.95rem
+
+#### E. Password eye toggle premium
+
+- `background: transparent` + `color: rgba(255,255,255,0.50)`
+- Hover: tinte dorado + bg dorada tenue
+- Border-radius 8px en hover area
+
+#### F. Login button premium
+
+`#loginBtn`, `#unlockBtn`, `#twoFaBtn`:
+- 3-stop gradient dorado (`#c9a663 → #b89658 → #9a7d44`)
+- Color texto `#1a1a1a` (oscuro sobre dorado para contraste AAA)
+- Font-weight 700, padding 13×18
+- Box-shadow doble: dorado externo (alpha 30%) + inner highlight blanco
+- Hover: lift `translateY(-1px)` + shadow más fuerte (alpha 40%)
+- Active: vuelve a translateY(0)
+
+#### G. Code inputs destacados (2FA + Unlock)
+
+`#twoFaCode`, `#unlockCode`:
+- `text-align: center`
+- `font-size: 1.6rem` (vs 1.4rem legacy)
+- `letter-spacing: 0.6rem` (gap visible entre dígitos)
+- `font-weight: 700`
+- `font-family: var(--font-family-mono)` (ui-monospace)
+- `color: var(--brand-primary)` (dorado)
+- Padding 14px
+
+#### H. Error messages con shake animation
+
+`#loginError`, `#twoFaError`, `#unlockError`:
+- `background: rgba(239, 68, 68, 0.08)` + border rojo tenue
+- `border-radius: 10px`
+- Animation `novaShake` 0.4s al aparecer (translate ±4px)
+- Respeta `prefers-reduced-motion`
+
+`#loginRateLimit`: amber tinted (warning color)
+`#forgotPasswordMsg`: green tinted (success color)
+
+#### I. Mobile responsive
+
+- max-width: `calc(100vw - 2rem)` para que respire
+- Padding reducido a 2rem 1.5rem
+- Border-radius 16px (más sutil)
+- Orbs reducidos (320×320 + 280×280) para no dominar pantalla pequeña
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| `.btn-primary.btn-block` se pisa con la regla genérica de Sprint A | Selectores específicos `.login-box .btn-primary.btn-block` con `!important` |
+| Orbs flotantes generan repaints constantes | `filter: blur(80px)` en pseudo-elements compositea via GPU layer separada |
+| `background-clip: text` no funciona en algunos browsers | Fallback `-webkit-background-clip` + `-webkit-text-fill-color` |
+| Login-box animation interfiere con loading flicker | `display: none !important` del `<html class="admin-restoring">` ya cubre el estado pre-paint |
+| Code inputs con monospace no se ven bien sin fuente disponible | `var(--font-family-mono)` con fallback `ui-monospace, monospace` |
+| Error shake puede causar mareo | `prefers-reduced-motion: reduce` desactiva la animación |
+| Mobile orbs dominan viewport | Reducidos a 320×280 con position ajustado |
+| `.form-input` legacy sobreescribe la regla NOVA-A genérica | Selectores `.login-box .form-input` ganan especificidad |
+| Inner shadow del login-box choca con border | `inset 0 1px 0 rgba(255,255,255,0.08)` sutil que SOLO marca el borde superior |
+| 2FA trust device checkbox sin estilizar | El checkbox custom de NOVA-A aplica automáticamente |
+
+#### Test E2E del sprint
+
+1. Logout admin → ver pantalla login con orbs flotantes animándose
+   sutilmente en el background
+2. Login-box aparece con animation spring (translateY+scale) 0.65s
+3. Logo "ALTORRA CARS" con gradient dorado vibrante
+4. Click en input email/password → focus ring dorado 3px + tinte
+   dorado en background del input
+5. Hover sobre eye toggle → cambia a dorado + bg dorada tenue
+6. Submit con error → error message con shake animation 0.4s
+7. Click en "¿Olvidaste tu contraseña?" → link dorado con hover más
+   brillante
+8. Pantalla 2FA → code input con monospace dorado, font-size 1.6rem,
+   letter-spacing 0.6rem
+9. Pantalla unlock → mismo estilo del 2FA
+10. Mobile (<480px): box reducido, orbs más pequeños
+11. `prefers-reduced-motion: reduce` → orbs estáticos + box sin animation
+
+**Archivos modificados**:
+- `css/admin.css` (+260 líneas Sprint B al final — auth screens premium)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510090000)
+- `CLAUDE.md` (esta sección §28.2)
+
+**Sin cambios en HTML** — el polish llega vía CSS sobre las clases
+existentes (`.login-container`, `.login-box`, `.login-logo`, `.form-input`,
+`#loginBtn`, etc.). HTML permanece compatible con el JS existente
+(`auth.js` sigue funcionando idéntico).
+
+**Pendiente del ADR-028** (próximos sprints):
+- §28.3 Sprint NOVA-C — Polish secciones sin completar (vehicles modals,
+  brands, dealers, banners, reviews, kb, unmatched, audit, settings, users)
+- §28.4 Sprint NOVA-D — Final polish (Mica strong en sidebar, acrylic
+  layers, empty states ilustrados, transitions globales)

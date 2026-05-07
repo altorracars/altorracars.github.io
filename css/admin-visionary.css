@@ -2807,3 +2807,657 @@ body:has(.admin-panel) {
 /* ═══════════════════════════════════════════════════════════════════
    FIN VISIONARY Sprint 4 — dashboard hero + section accents + collab
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-031 VISIONARY DEEP — Bug fixes + Vista Previa galeria moderna
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 70. LAYOUT FIX — gap entre sidebar y contenido ─────────── */
+.admin-panel.admin-layout {
+    display: grid;
+    grid-template-columns: var(--layout-sidebar-w-expanded, 256px) 1fr;
+    grid-template-areas: "sidebar main";
+    min-height: 100vh;
+    gap: 0;
+}
+body.sidebar-collapsed .admin-panel.admin-layout {
+    grid-template-columns: 64px 1fr;
+}
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    grid-area: sidebar;
+    width: 100% !important;
+    height: 100vh;
+    position: sticky !important;
+    top: 0;
+    overflow-y: auto;
+    margin: 0 !important;
+}
+.admin-panel .admin-content,
+.admin-panel main,
+.admin-panel #adminMain {
+    grid-area: main;
+    min-width: 0;
+    width: 100%;
+    margin-left: 0 !important;
+    padding: 0 !important;
+}
+@media (max-width: 768px) {
+    .admin-panel.admin-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas: "main";
+    }
+    .admin-panel .sidebar {
+        position: fixed !important;
+        z-index: 9999;
+        grid-area: unset;
+    }
+}
+
+/* ─── 71. SELECT options legibility fix CRITICO ─────────────── */
+.admin-panel select option,
+.admin-panel select optgroup {
+    background: #1a1a1c !important;
+    color: #ffffff !important;
+    padding: 8px 12px;
+}
+.admin-panel select option:hover,
+.admin-panel select option:checked {
+    background: rgba(184, 150, 88, 0.30) !important;
+    color: #ffffff !important;
+}
+/* Forzar text color en selects (Safari + Firefox bug) */
+.admin-panel select {
+    color: #ffffff !important;
+    background-color: var(--vis-surface-2) !important;
+}
+.admin-panel select:focus {
+    color: #ffffff !important;
+}
+
+/* Datalist + autocomplete chrome legible */
+.admin-panel input::-webkit-calendar-picker-indicator {
+    filter: invert(1) opacity(0.6);
+}
+
+/* ─── 72. PERFORMANCE — content-visibility + contain ─────────── */
+.admin-panel .section:not(.active),
+.admin-panel .admin-section:not(.active) {
+    content-visibility: hidden;
+    contain: strict;
+}
+.admin-panel .section.active,
+.admin-panel .admin-section.active {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 800px;
+}
+/* Cards en grids: skip rendering off-screen */
+.admin-panel .kpi-card,
+.admin-panel .reports-kpi-card,
+.admin-panel .workflow-card,
+.admin-panel .pipeline-card,
+.admin-panel .nba-dash-item,
+.admin-panel .review-card,
+.admin-panel .dealer-card,
+.admin-panel .brand-admin-card {
+    contain: layout style;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 200px;
+}
+/* Tabla rows (vehicles/users/admin tables) */
+.admin-panel .data-table tbody tr,
+.admin-panel .admin-table tbody tr,
+.admin-panel .users-table tbody tr {
+    contain: layout style;
+}
+
+/* ─── 73. PERF — backdrop-filter SOLO donde necesita visualmente ─── */
+/* El blur enorme 64px global es caro. Reducirlo en zonas que scrollean. */
+.admin-panel .nav-item,
+.admin-panel .alt-card,
+.admin-panel .stat-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* ─── 74. VISTA PREVIA — galeria moderna iOS Photos style ─── */
+.vis-prv-overlay {
+    /* hereda de .modal-overlay */
+}
+.vis-prv-modal {
+    max-width: min(1100px, 95vw) !important;
+    width: 100% !important;
+}
+.vis-prv-modal .modal-body {
+    padding: 0 !important;
+    max-height: calc(85vh - 120px) !important;
+    overflow: hidden !important;
+}
+.vis-prv-wrap {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 0;
+    height: calc(85vh - 120px);
+    min-height: 480px;
+}
+@media (max-width: 900px) {
+    .vis-prv-wrap {
+        grid-template-columns: 1fr;
+        height: auto;
+        max-height: calc(85vh - 120px);
+        overflow-y: auto;
+    }
+}
+
+/* GALERIA */
+.vis-prv-gallery {
+    background: linear-gradient(180deg,
+        rgba(0, 0, 0, 0.40) 0%,
+        rgba(0, 0, 0, 0.20) 100%),
+        var(--vis-surface-base);
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    gap: 14px;
+    border-right: var(--vis-border-3);
+    overflow: hidden;
+}
+@media (max-width: 900px) {
+    .vis-prv-gallery {
+        border-right: none;
+        border-bottom: var(--vis-border-3);
+    }
+}
+.vis-prv-main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--vis-r-lg);
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.40);
+    border: var(--vis-border-2);
+    box-shadow: var(--vis-elev-2);
+    position: relative;
+}
+.vis-prv-main img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+@media (max-width: 900px) {
+    .vis-prv-main {
+        height: 320px;
+    }
+}
+.vis-prv-thumbs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 4px;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+}
+.vis-prv-thumbs::-webkit-scrollbar { height: 6px; }
+.vis-prv-thumb {
+    width: 64px;
+    height: 48px;
+    border-radius: var(--vis-r-xs);
+    overflow: hidden;
+    border: 2px solid transparent;
+    background: rgba(0, 0, 0, 0.40);
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.vis-prv-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.vis-prv-thumb:hover {
+    border-color: rgba(184, 150, 88, 0.55);
+    transform: scale(1.05);
+}
+.vis-prv-thumb.is-active {
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-elev-glow);
+}
+
+/* INFO panel (derecha) */
+.vis-prv-info {
+    overflow-y: auto;
+    padding: 24px 28px;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+}
+.vis-prv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.vis-prv-codigo {
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-2xs);
+    color: var(--vis-brand-300);
+    background: var(--vis-brand-tint-strong);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-xs);
+    padding: 3px 9px;
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-wide);
+}
+.vis-prv-title {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-2xl);
+    font-weight: 750;
+    line-height: var(--vis-lh-tight);
+    letter-spacing: var(--vis-ls-tighter);
+    color: #ffffff;
+    margin: 0 0 6px;
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.vis-prv-subtitle {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wider);
+    font-weight: 500;
+    margin-bottom: 18px;
+}
+.vis-prv-price {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 22px;
+    padding: 16px 18px;
+    background:
+        linear-gradient(135deg,
+            rgba(184, 150, 88, 0.14) 0%,
+            rgba(184, 150, 88, 0.04) 100%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-md);
+    box-shadow: var(--vis-elev-1);
+}
+.vis-prv-price-main {
+    font-size: var(--vis-fs-2xl);
+    font-weight: 750;
+    color: var(--vis-brand-300);
+    letter-spacing: var(--vis-ls-tight);
+    font-feature-settings: 'tnum' 1;
+}
+.vis-prv-price-old {
+    font-size: var(--vis-fs-md);
+    color: rgba(255, 255, 255, 0.50);
+    text-decoration: line-through;
+    font-feature-settings: 'tnum' 1;
+}
+
+/* HIGHLIGHTS — 2x2 grid de specs principales */
+.vis-prv-highlights {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 22px;
+}
+.vis-prv-highlight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 10px 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.vis-prv-highlight:hover {
+    border-color: rgba(184, 150, 88, 0.32);
+    background: var(--vis-state-hover-gold);
+}
+.vis-prv-highlight [data-lucide] {
+    color: var(--vis-brand-400);
+    flex-shrink: 0;
+}
+.vis-prv-highlight-label {
+    font-size: var(--vis-fs-2xs);
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wider);
+    font-weight: 600;
+}
+.vis-prv-highlight-val {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: var(--vis-fs-sm);
+    margin-top: 2px;
+}
+
+/* Section (ficha + caracteristicas + descripcion) */
+.vis-prv-section {
+    margin-bottom: 18px;
+}
+.vis-prv-section-title {
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.62);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    margin: 0 0 10px;
+}
+.vis-prv-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    overflow: hidden;
+    background: var(--vis-surface-2);
+}
+.vis-prv-spec-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+.vis-prv-spec-row:nth-child(2n) { border-right: none; }
+.vis-prv-spec-row:nth-last-child(-n+2) { border-bottom: none; }
+.vis-prv-spec-label {
+    font-size: var(--vis-fs-2xs);
+    color: rgba(255, 255, 255, 0.50);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-wide);
+    font-weight: 600;
+}
+.vis-prv-spec-val {
+    font-size: var(--vis-fs-sm);
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* Features chips */
+.vis-prv-feat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.vis-prv-feat-chip {
+    background: var(--vis-brand-tint-strong);
+    color: var(--vis-brand-200);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-pill);
+    padding: 4px 12px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-base);
+}
+
+/* Descripción */
+.vis-prv-desc {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: var(--vis-fs-sm);
+    line-height: var(--vis-lh-loose);
+    margin: 0;
+}
+
+/* ─── 75. TABLA VEHICULOS — acciones inline organizadas ─────── */
+.admin-panel .v-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: nowrap;
+}
+.admin-panel .v-act {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--vis-r-sm);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3);
+    flex-shrink: 0;
+}
+.admin-panel .v-act [data-lucide] {
+    width: 16px;
+    height: 16px;
+    stroke-width: 1.75;
+}
+.admin-panel .v-act:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(184, 150, 88, 0.30);
+    color: var(--vis-brand-300);
+    transform: scale(1.08);
+}
+.admin-panel .v-act--danger:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.40);
+    color: #fca5a5;
+}
+.admin-panel .v-act--gold:hover,
+.admin-panel .v-act--featured:hover,
+.admin-panel .v-act--star:hover {
+    color: var(--vis-brand-300);
+}
+.admin-panel .v-act-sep {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.10);
+    margin: 0 4px;
+}
+.admin-panel .v-actions-row {
+    flex-wrap: nowrap !important;
+    flex-direction: row !important;
+}
+
+/* ─── 76. TABLA VEHICULOS — codigo+thumbnail premium layout ─── */
+.admin-panel .vehicle-thumb,
+.admin-panel #vehiclesTableBody img {
+    width: 64px !important;
+    height: 48px !important;
+    border-radius: var(--vis-r-xs) !important;
+    object-fit: cover;
+    border: var(--vis-border-2);
+    box-shadow: var(--vis-elev-1);
+}
+
+/* Codigo cell pill style */
+.admin-panel .vehicle-codigo,
+.admin-panel #vehiclesTableBody td:first-child .codigo,
+.admin-panel #vehiclesTableBody [class*="codigo"] {
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    color: var(--vis-brand-300);
+    background: var(--vis-brand-tint-strong);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-xs);
+    padding: 3px 9px;
+    letter-spacing: var(--vis-ls-wide);
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* ─── 77. ESTADO badge en tabla — pill consistente ─────────── */
+.admin-panel #vehiclesTableBody .estado-badge,
+.admin-panel #vehiclesTableBody [class*="estado"]:not(.section):not(td) {
+    text-transform: uppercase;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-widest);
+    padding: 3px 10px;
+    border-radius: var(--vis-r-pill);
+    border: 1px solid currentColor;
+    display: inline-block;
+}
+
+/* ─── 78. INVENTARIO TOOLBAR moderno ─────────────────────── */
+.admin-panel .table-toolbar,
+.admin-panel .vehicle-toolbar,
+.admin-panel #sec-vehicles .table-header,
+.admin-panel #sec-brands .table-header,
+.admin-panel #sec-dealers .table-header {
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.04) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg) var(--vis-r-lg) 0 0;
+    padding: 16px 20px;
+    border-bottom: var(--vis-border-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Search input dentro de toolbar */
+.admin-panel .table-toolbar input[type="search"],
+.admin-panel .table-toolbar input[type="text"] {
+    border-radius: var(--vis-r-pill);
+    padding: 8px 16px;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-3);
+    min-width: 280px;
+    flex: 1;
+}
+
+/* Filter selects pill style */
+.admin-panel .table-toolbar select,
+.admin-panel #sec-vehicles select,
+.admin-panel #sec-brands select,
+.admin-panel #sec-dealers select {
+    border-radius: var(--vis-r-pill);
+    padding: 7px 32px 7px 14px;
+    background-color: var(--vis-surface-2) !important;
+    border: var(--vis-border-3);
+    color: #ffffff !important;
+    font-size: var(--vis-fs-sm);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b89658' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 14px !important;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+/* CSV / Reordenar buttons */
+.admin-panel .table-toolbar .btn-ghost,
+.admin-panel #sec-vehicles button[id*="csv"],
+.admin-panel #sec-vehicles button[id*="reorder"] {
+    border-radius: var(--vis-r-pill);
+    padding: 7px 14px;
+    background: transparent;
+    border: var(--vis-border-3);
+    color: rgba(255, 255, 255, 0.78);
+    font-weight: 500;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .table-toolbar .btn-ghost:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(184, 150, 88, 0.40);
+    color: var(--vis-brand-300);
+}
+
+/* ─── 79. SIDEBAR widths fix ───────────────────────────── */
+:root {
+    --layout-sidebar-w-expanded: 256px;
+    --layout-sidebar-w-collapsed: 64px;
+}
+
+/* ─── 80. AGREGAR VEHICULO button (header section) ───────── */
+.admin-panel #btnAddVehicle,
+.admin-panel #addVehicleBtn,
+.admin-panel button[data-action="new-vehicle"] {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: #1a1310;
+    font-weight: 700;
+    border: 1px solid rgba(212, 173, 110, 0.55);
+    border-radius: var(--vis-r-pill);
+    padding: 10px 20px;
+    box-shadow:
+        var(--vis-elev-2),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.admin-panel #btnAddVehicle:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow:
+        var(--vis-elev-3),
+        var(--vis-elev-glow-strong),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+/* ─── 81. CONCESIONARIO origen text refinement ────────── */
+.admin-panel #vehiclesTableBody td {
+    font-size: var(--vis-fs-sm);
+}
+.admin-panel .origen-text,
+.admin-panel #vehiclesTableBody td:nth-child(7) {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: var(--vis-fs-xs);
+}
+
+/* ─── 82. ALL FORM SELECTS — universal fix ─────────── */
+.admin-panel select,
+.admin-panel select:not([multiple]) {
+    background-color: var(--vis-surface-2) !important;
+    color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b89658' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 36px;
+}
+
+/* ─── 83. HEADER del admin layout fix ─────────── */
+.admin-panel .admin-header {
+    width: 100%;
+    z-index: 50;
+}
+
+/* ─── 84. DARK MODE select FORCE — Firefox/Safari fallback ─── */
+@-moz-document url-prefix() {
+    .admin-panel select {
+        color: #ffffff;
+        background-color: rgba(26, 26, 28, 0.92) !important;
+    }
+    .admin-panel select option {
+        background-color: #1a1a1c !important;
+        color: #ffffff !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY DEEP — Bug fixes + Vista Previa galeria + perf
+   ═══════════════════════════════════════════════════════════════════ */

@@ -1474,15 +1474,12 @@
         });
     }
 
-    // ========== PREVIEW ==========
+    // ========== PREVIEW (rediseñado VISIONARY DEEP — galeria moderna iOS Photos style) ==========
     function previewVehicle(id) {
         var v = AP.vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
         var marca = (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1);
         var imgs = (v.imagenes || [v.imagen]).filter(Boolean);
-        var imgsHtml = imgs.map(function(url, i) {
-            return '<img src="' + url + '" style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;margin-bottom:0.5rem;" onerror="this.style.display=\'none\'" alt="Foto ' + (i + 1) + '">';
-        }).join('');
 
         var origenPreview = 'Propio';
         if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
@@ -1492,52 +1489,107 @@
             origenPreview = 'Consigna: ' + v.consignaParticular;
         }
 
-        var specs = [
-            { label: 'Codigo', val: v.codigoUnico || '—' },
-            { label: 'Marca', val: marca }, { label: 'Modelo', val: v.modelo },
-            { label: 'Año', val: v.year }, { label: 'Tipo', val: v.tipo },
-            { label: 'Categoria', val: v.categoria },
-            { label: 'Precio', val: AP.formatPrice(v.precio) },
-            { label: 'Precio Oferta', val: v.precioOferta ? AP.formatPrice(v.precioOferta) : '-' },
-            { label: 'Kilometraje', val: (v.kilometraje || 0).toLocaleString('es-CO') + ' km' },
-            { label: 'Transmision', val: v.transmision }, { label: 'Combustible', val: v.combustible },
-            { label: 'Motor', val: v.motor || '-' }, { label: 'Direccion', val: v.direccion || '-' },
-            { label: 'Traccion', val: v.traccion || '-' }, { label: 'Color', val: v.color || '-' },
-            { label: 'Puertas', val: v.puertas || 5 }, { label: 'Pasajeros', val: v.pasajeros || 5 },
-            { label: 'Placa', val: v.placa || '-' }, { label: 'Ubicacion', val: v.ubicacion || '-' },
-            { label: 'Origen / Concesionario', val: origenPreview },
-            { label: 'Estado', val: (v.estado || 'disponible') },
-            { label: 'Descripcion', val: v.descripcion ? v.descripcion.substring(0, 100) + (v.descripcion.length > 100 ? '...' : '') : '-' },
-            { label: 'Version', val: v._version || '-' },
-            { label: 'Ultima edicion', val: v.updatedAt ? AP.formatTimeAgo(v.updatedAt) + ' por ' + (v.updatedBy || '-') : '-' }
+        // Spec items principales (highlight cards)
+        var highlights = [
+            { icon: 'calendar', label: 'Año', val: v.year || '—' },
+            { icon: 'gauge', label: 'Kilometraje', val: (v.kilometraje || 0).toLocaleString('es-CO') + ' km' },
+            { icon: 'cog', label: 'Transmisión', val: v.transmision || '—' },
+            { icon: 'fuel', label: 'Combustible', val: v.combustible || '—' }
         ];
 
-        var specsHtml = '<table style="width:100%;font-size:0.8rem;border-collapse:collapse;">' +
-            specs.map(function(s) {
-                return '<tr style="border-bottom:1px solid var(--admin-border,#30363d);"><td style="padding:0.35rem 0.5rem;color:var(--admin-text-muted);white-space:nowrap;">' + s.label + '</td><td style="padding:0.35rem 0.5rem;color:var(--admin-text-primary,#f0f6fc);font-weight:500;">' + (s.val || '-') + '</td></tr>';
-            }).join('') + '</table>';
+        // Specs detalladas (ficha)
+        var specs = [
+            { label: 'Código', val: v.codigoUnico || '—' },
+            { label: 'Marca', val: marca },
+            { label: 'Modelo', val: v.modelo || '—' },
+            { label: 'Tipo', val: v.tipo || '—' },
+            { label: 'Categoría', val: v.categoria || '—' },
+            { label: 'Motor', val: v.motor || '—' },
+            { label: 'Tracción', val: v.traccion || '—' },
+            { label: 'Dirección', val: v.direccion || '—' },
+            { label: 'Color', val: v.color || '—' },
+            { label: 'Puertas', val: v.puertas || 5 },
+            { label: 'Pasajeros', val: v.pasajeros || 5 },
+            { label: 'Placa', val: v.placa || '—' },
+            { label: 'Ubicación', val: v.ubicacion || '—' },
+            { label: 'Origen', val: origenPreview },
+            { label: 'Última edición', val: v.updatedAt ? AP.formatTimeAgo(v.updatedAt) : '—' }
+        ];
+
+        // Galería: imagen principal + thumbs laterales
+        var mainImg = imgs[0] || '/multimedia/vehicles/placeholder-car.jpg';
+        var thumbsHtml = imgs.map(function(url, i) {
+            return '<button class="vis-prv-thumb' + (i === 0 ? ' is-active' : '') + '" data-vis-prv-idx="' + i + '" type="button" aria-label="Foto ' + (i + 1) + '"><img src="' + url + '" loading="lazy" decoding="async" alt="Foto ' + (i + 1) + '" onerror="this.parentElement.style.display=\'none\'"></button>';
+        }).join('');
+
+        var highlightsHtml = highlights.map(function(h) {
+            return '<div class="vis-prv-highlight"><i data-lucide="' + h.icon + '" width="18" height="18"></i><div><div class="vis-prv-highlight-label">' + h.label + '</div><div class="vis-prv-highlight-val">' + AP.escapeHtml(String(h.val)) + '</div></div></div>';
+        }).join('');
+
+        var specsHtml = specs.map(function(s) {
+            return '<div class="vis-prv-spec-row"><span class="vis-prv-spec-label">' + s.label + '</span><span class="vis-prv-spec-val">' + AP.escapeHtml(String(s.val || '—')) + '</span></div>';
+        }).join('');
 
         var features = (v.caracteristicas || []);
-        var featHtml = features.length > 0 ? '<div style="margin-top:0.75rem;"><strong style="font-size:0.8rem;">Caracteristicas:</strong><div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.35rem;">' +
-            features.map(function(f) { return '<span style="background:var(--admin-surface,#161b22);border:1px solid var(--admin-border,#30363d);border-radius:4px;padding:0.15rem 0.5rem;font-size:0.7rem;">' + AP.escapeHtml(f) + '</span>'; }).join('') +
+        var featHtml = features.length > 0 ? '<div class="vis-prv-features"><h4 class="vis-prv-section-title">Características</h4><div class="vis-prv-feat-chips">' +
+            features.map(function(f) { return '<span class="vis-prv-feat-chip">' + AP.escapeHtml(f) + '</span>'; }).join('') +
             '</div></div>' : '';
 
-        var content = '<div style="max-height:70vh;overflow-y:auto;padding-right:0.5rem;">' +
-            imgsHtml +
-            '<h3 style="margin:0.5rem 0 0.75rem;color:var(--admin-text-primary,#f0f6fc);">' + marca + ' ' + (v.modelo || '') + ' ' + (v.year || '') + '</h3>' +
-            specsHtml + featHtml +
-            (v.descripcion ? '<div style="margin-top:0.75rem;font-size:0.8rem;color:var(--admin-text-secondary);">' + AP.escapeHtml(v.descripcion) + '</div>' : '') +
+        var precioHtml = '<div class="vis-prv-price">' +
+            '<span class="vis-prv-price-main">' + AP.formatPrice(v.precio || 0) + '</span>' +
+            (v.precioOferta ? '<span class="vis-prv-price-old">' + AP.formatPrice(v.precioOferta) + '</span>' : '') +
+            '</div>';
+
+        var statusBadge = '<span class="vehicle-status vehicle-status--' + (v.estado || 'disponible') + '">' + (v.estado || 'disponible') + '</span>';
+
+        var content =
+            '<div class="vis-prv-wrap">' +
+                // GALERIA (izquierda)
+                '<div class="vis-prv-gallery">' +
+                    '<div class="vis-prv-main"><img id="visPrvMainImg" src="' + mainImg + '" loading="eager" decoding="async" alt="Foto principal" onerror="this.src=\'/multimedia/vehicles/placeholder-car.jpg\'"></div>' +
+                    (imgs.length > 1 ? '<div class="vis-prv-thumbs">' + thumbsHtml + '</div>' : '') +
+                '</div>' +
+                // FICHA (derecha)
+                '<div class="vis-prv-info">' +
+                    '<div class="vis-prv-header">' +
+                        '<div class="vis-prv-codigo">' + (v.codigoUnico || '#' + id) + '</div>' +
+                        statusBadge +
+                    '</div>' +
+                    '<h2 class="vis-prv-title">' + marca + ' ' + (v.modelo || '') + '</h2>' +
+                    '<div class="vis-prv-subtitle">' + (v.year || '') + ' · ' + (v.categoria || '') + (v.tipo ? ' · ' + v.tipo : '') + '</div>' +
+                    precioHtml +
+                    '<div class="vis-prv-highlights">' + highlightsHtml + '</div>' +
+                    '<div class="vis-prv-section"><h4 class="vis-prv-section-title">Ficha técnica</h4><div class="vis-prv-specs">' + specsHtml + '</div></div>' +
+                    featHtml +
+                    (v.descripcion ? '<div class="vis-prv-section"><h4 class="vis-prv-section-title">Descripción</h4><p class="vis-prv-desc">' + AP.escapeHtml(v.descripcion) + '</p></div>' : '') +
+                '</div>' +
             '</div>';
 
         var overlay = document.createElement('div');
-        overlay.className = 'modal-overlay active';
+        overlay.className = 'modal-overlay active vis-prv-overlay';
         overlay.style.zIndex = '999';
-        overlay.innerHTML = '<div class="modal" style="max-width:550px;"><div class="modal-header"><h2>Vista Previa — #' + id + '</h2><button class="modal-close" id="closePreview">&times;</button></div><div class="modal-body">' + content + '</div><div class="modal-footer"><button class="btn btn-ghost" id="closePreviewBtn">Cerrar</button><a href="detalle-vehiculo.html?id=' + id + '" target="_blank" class="btn btn-primary btn-sm">Abrir pagina publica</a></div></div>';
+        overlay.innerHTML = '<div class="modal vis-prv-modal"><div class="modal-header"><h2>Vista Previa — ' + (v.codigoUnico || '#' + id) + '</h2><button class="modal-close" id="closePreview" aria-label="Cerrar">&times;</button></div><div class="modal-body">' + content + '</div><div class="modal-footer"><button class="btn btn-ghost" id="closePreviewBtn">Cerrar</button><a href="detalle-vehiculo.html?id=' + id + '" target="_blank" class="btn btn-primary">Abrir página pública</a></div></div>';
         document.body.appendChild(overlay);
+
+        // Switch image al click thumbnail
+        var mainImgEl = overlay.querySelector('#visPrvMainImg');
+        overlay.querySelectorAll('[data-vis-prv-idx]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var idx = parseInt(btn.getAttribute('data-vis-prv-idx'), 10);
+                if (mainImgEl && imgs[idx]) {
+                    mainImgEl.src = imgs[idx];
+                    overlay.querySelectorAll('.vis-prv-thumb').forEach(function(t) { t.classList.remove('is-active'); });
+                    btn.classList.add('is-active');
+                }
+            });
+        });
         overlay.querySelector('#closePreview').addEventListener('click', function() { document.body.removeChild(overlay); });
         overlay.querySelector('#closePreviewBtn').addEventListener('click', function() { document.body.removeChild(overlay); });
         overlay.addEventListener('click', function(e) { if (e.target === overlay) document.body.removeChild(overlay); });
+        if (window.AltorraIcons) { try { AltorraIcons.refresh(overlay); } catch (e) {} }
+        else if (window.lucide && window.lucide.createIcons) { try { window.lucide.createIcons(); } catch (e) {} }
     }
+
 
     // ========== PREVIEW FROM FORM ==========
     function previewFromForm() {

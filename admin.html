@@ -7,6 +7,100 @@
     <meta name="robots" content="noindex, nofollow">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
+
+    <!-- §33 V2-2 ANTI-FOUC — visibility gate + preloader masking
+         Previene el "TV glitch" al refrescar. Body invisible hasta que
+         CSS+fonts pinten completos. -->
+    <style>
+        html.av2-loading body { visibility: hidden; }
+        html.av2-loading #av2Preloader {
+            visibility: visible !important;
+            position: fixed; inset: 0;
+            z-index: 999999;
+            background: #0a0a0c;
+            background-image:
+                radial-gradient(ellipse 800px 600px at center,
+                    rgba(184, 150, 88, 0.06) 0%, transparent 70%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 24px;
+        }
+        html.av2-loading body * { visibility: hidden !important; }
+        html.av2-loading #av2Preloader,
+        html.av2-loading #av2Preloader * {
+            visibility: visible !important;
+        }
+        #av2Preloader {
+            display: none;
+        }
+        html.av2-loading #av2Preloader {
+            display: flex;
+        }
+        html.av2-ready #av2Preloader {
+            animation: av2PreloaderOut 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        html.av2-ready body {
+            animation: av2BodyFadeIn 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes av2BodyFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes av2PreloaderOut {
+            to { opacity: 0; visibility: hidden; pointer-events: none; }
+        }
+        .av2-preloader-logo {
+            font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg,
+                #ecd292 0%,
+                #b89658 50%,
+                #8c6f3a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: av2LogoBreathe 2s ease-in-out infinite;
+        }
+        @keyframes av2LogoBreathe {
+            0%, 100% { transform: scale(1); opacity: 0.95; }
+            50%      { transform: scale(1.025); opacity: 1; }
+        }
+        .av2-preloader-spinner {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 3px solid rgba(184, 150, 88, 0.20);
+            border-top-color: #b89658;
+            animation: av2SpinnerSpin 0.85s linear infinite;
+        }
+        @keyframes av2SpinnerSpin {
+            to { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .av2-preloader-logo,
+            .av2-preloader-spinner,
+            html.av2-ready #av2Preloader,
+            html.av2-ready body {
+                animation: none !important;
+            }
+            html.av2-ready #av2Preloader {
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+            }
+        }
+    </style>
+    <script>
+        /* Marca el HTML como "loading" ANTES de cualquier CSS para que
+           la regla `html.av2-loading body { visibility: hidden }` se
+           aplique inmediatamente y oculte el render progresivo. */
+        document.documentElement.classList.add('av2-loading');
+    </script>
+
     <!-- §23 FASE 7 — Auth-hint pre-paint: si la última sesión admin todavía
          está vigente (TTL 8h), pre-rendereamos el shell del panel para evitar
          flicker del loginScreen → loadingScreen → adminPanel en cada F5.
@@ -102,12 +196,20 @@
     <link rel="stylesheet" href="css/toast-notifications.css">
     <!-- §30 ADR-030 VISIONARY — capa final world-class (carga ULTIMA para ganar especificidad) -->
     <link rel="stylesheet" href="css/admin-visionary.css">
+    <!-- §33 ADR-033 V2 — Layout core (FIX scroll bug + sidebar fija + scrollbars premium) -->
+    <link rel="stylesheet" href="css/admin-v2.css">
     <!-- Lucide Icons — professional SVG icon library -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
     <!-- Unified notification system (Phase N1) -->
     <script src="js/toast.js" defer></script>
 </head>
 <body>
+<!-- §33 V2-2 — Preloader anti-FOUC (visible solo durante html.av2-loading) -->
+<div id="av2Preloader" aria-hidden="true">
+    <div class="av2-preloader-logo">ALTORRA</div>
+    <div class="av2-preloader-spinner"></div>
+</div>
+
 <!-- P.3 — Skip to content link para keyboard users (WCAG AAA) -->
 <a href="#sec-dashboard" class="skip-to-content">Saltar al contenido</a>
 
@@ -3012,6 +3114,12 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-visionary-fx.js" defer></script>
 <!-- §32 ADR-032 MASTER — UX flows + Data Viz + Micro + A11y + Polish -->
 <script src="js/admin-visionary-master.js" defer></script>
+<!-- §33 V2-2 — Anti-FOUC bootstrap (window.load + doble rAF + reveal) -->
+<script src="js/admin-v2-bootstrap.js" defer></script>
+<!-- §33 V2-3 — Sidebar Island collapse + ⌘+B + mobile drawer -->
+<script src="js/admin-v2-sidebar.js" defer></script>
+<!-- §33 V2-4 — Core: DOMBus + ScrollBus + cleanup hooks + auto-scroll-top -->
+<script src="js/admin-v2-core.js" defer></script>
 <!-- §28.5 NOVA — empty state illustrations SVG + auto-upgrade -->
 <script src="js/admin-empty-states.js" defer></script>
 <script src="js/admin-empty-states-autoupgrade.js" defer></script>

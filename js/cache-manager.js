@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260510350000'; // §36.4 — console cleanup: updateStats guards + heartbeat uid + seedling→package-plus
+    const APP_VERSION = '20260510360000'; // §37 — doctrina IAP permanente
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

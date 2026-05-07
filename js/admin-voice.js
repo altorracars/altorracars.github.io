@@ -392,27 +392,32 @@
             console.info('[Voice] Web Speech API no disponible en este navegador');
             return;
         }
-        // L.1 (fix) — Botón en header en lugar de FAB independiente.
-        // Se inserta a la izquierda del Activity Feed trigger.
-        // Si Cmd+Espacio+V no es ergonómico, click sirve también.
+        // L.1 + §36.1 — Botón persistente en el TOP NAV (no se pierde al
+        // cambiar de sección). Anchor primario: #atnVoiceBtnSlot del topnav.
+        // Fallback: legacy activityFeedTrigger en dashboard.
         var attempts = 0;
         var iv = setInterval(function () {
             attempts++;
+            // §36.1 — Prioridad: slot del topnav (siempre visible)
+            var topnavSlot = document.getElementById('atnVoiceBtnSlot');
+            var actBtn = document.getElementById('atnActivityTrigger') || document.getElementById('activityFeedTrigger');
             var hostHeader = document.querySelector('.admin-header .header-actions, .admin-header > div:last-child');
-            var actBtn = document.getElementById('activityFeedTrigger');
-            var anchor = actBtn || hostHeader;
+            var anchor = topnavSlot || actBtn || hostHeader;
             if (anchor) {
                 clearInterval(iv);
                 if (document.getElementById('altorra-voice-btn')) return;
                 var btn = document.createElement('button');
                 btn.id = 'altorra-voice-btn';
-                btn.className = 'alt-btn alt-btn--ghost alt-btn--icon altorra-voice-btn';
+                // Si entra al topnav, usa la clase atn-icon-btn (mismo look)
+                btn.className = topnavSlot ? 'atn-icon-btn altorra-voice-btn' : 'alt-btn alt-btn--ghost alt-btn--icon altorra-voice-btn';
                 btn.setAttribute('type', 'button');
                 btn.setAttribute('aria-label', 'Comandos por voz (Espacio+V)');
-                btn.setAttribute('data-tooltip', 'Comandos por voz · Espacio+V');
+                btn.setAttribute('data-tooltip', 'Comandos por voz');
                 btn.innerHTML = '<i data-lucide="mic"></i>';
                 btn.addEventListener('click', toggle);
-                if (actBtn && actBtn.parentNode) {
+                if (topnavSlot) {
+                    topnavSlot.appendChild(btn);
+                } else if (actBtn && actBtn.parentNode) {
                     actBtn.parentNode.insertBefore(btn, actBtn);
                 } else if (hostHeader) {
                     hostHeader.insertBefore(btn, hostHeader.firstChild);

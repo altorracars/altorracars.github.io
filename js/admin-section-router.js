@@ -101,7 +101,10 @@
         lists:          { label: 'Atributos',        group: 'configuracion', icon: 'list-tree' },
         workflows:      { label: 'Workflows',        group: 'configuracion', icon: 'zap' },
         audit:          { label: 'Auditoría',        group: 'configuracion', icon: 'scroll-text' },
-        settings:       { label: 'Ajustes',          group: 'configuracion', icon: 'settings' }
+        settings:       { label: 'Ajustes',          group: 'configuracion', icon: 'settings' },
+
+        // §36.1 — Mi Perfil (accesible via avatar dropdown del topnav)
+        profile:        { label: 'Mi Perfil',        group: null,            icon: 'user-circle', _hidden: true }
     };
 
     var listeners = [];

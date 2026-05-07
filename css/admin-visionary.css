@@ -1,0 +1,1886 @@
+/**
+ * ALTORRA ADMIN VISIONARY
+ * =========================
+ * Capa final que GANA especificidad sobre admin.css legacy + NOVA.
+ * Lenguaje visual basado en lo MEJOR de:
+ *   - HarmonyOS NEXT (depth + breathing radii)
+ *   - Windows 11 Fluent (Mica + Acrylic + Reveal)
+ *   - iOS 26 Liquid Glass (refractive + spring physics)
+ *   - Material You / Android 14 (dynamic color + state layers)
+ *   - visionOS (depth perception + cursor follow)
+ *
+ * Filosofía: surface stack 6 capas, elevation system 6 niveles,
+ * motion choreography, micro-interactions con física real.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   1. VISIONARY TOKENS — lenguaje completo nuevo
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+    /* ─── Surface stack iOS 26 Liquid + Win 11 Mica ─── */
+    --vis-surface-base:      #0a0a0c;
+    --vis-surface-canvas:    rgba(14, 14, 16, 0.98);
+    --vis-surface-1:         rgba(20, 20, 22, 0.78);
+    --vis-surface-2:         rgba(26, 26, 28, 0.76);
+    --vis-surface-3:         rgba(32, 32, 34, 0.78);
+    --vis-surface-4:         rgba(40, 40, 42, 0.82);
+    --vis-surface-modal:     rgba(15, 15, 17, 0.88);
+    --vis-surface-popover:   rgba(18, 18, 20, 0.92);
+
+    /* ─── Brand color con dynamic stops ─── */
+    --vis-brand-50:          #fff8e6;
+    --vis-brand-100:         #f5e3b8;
+    --vis-brand-200:         #ecd292;
+    --vis-brand-300:         #d4ad6e;
+    --vis-brand-400:         #c4a065;
+    --vis-brand-500:         #b89658;
+    --vis-brand-600:         #a78649;
+    --vis-brand-700:         #8c6f3a;
+    --vis-brand-800:         #6f5829;
+    --vis-brand-glow:        rgba(184, 150, 88, 0.55);
+    --vis-brand-glow-soft:   rgba(184, 150, 88, 0.22);
+    --vis-brand-tint:        rgba(184, 150, 88, 0.06);
+    --vis-brand-tint-strong: rgba(184, 150, 88, 0.14);
+
+    /* ─── Borders glass refractive ─── */
+    --vis-border-1:          1px solid rgba(255, 255, 255, 0.05);
+    --vis-border-2:          1px solid rgba(255, 255, 255, 0.08);
+    --vis-border-3:          1px solid rgba(255, 255, 255, 0.12);
+    --vis-border-4:          1px solid rgba(255, 255, 255, 0.18);
+    --vis-border-gold:       1px solid rgba(184, 150, 88, 0.20);
+    --vis-border-gold-hi:    1px solid rgba(184, 150, 88, 0.45);
+    --vis-border-glow:       1px solid rgba(184, 150, 88, 0.32);
+
+    /* ─── Elevation 6 niveles físicos ─── */
+    --vis-elev-1:
+        0 1px 2px rgba(0, 0, 0, 0.20),
+        0 1px 3px rgba(0, 0, 0, 0.10);
+    --vis-elev-2:
+        0 2px 4px rgba(0, 0, 0, 0.20),
+        0 4px 12px rgba(0, 0, 0, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.08);
+    --vis-elev-3:
+        0 4px 8px rgba(0, 0, 0, 0.24),
+        0 8px 24px rgba(0, 0, 0, 0.16),
+        0 16px 48px rgba(0, 0, 0, 0.12);
+    --vis-elev-4:
+        0 8px 16px rgba(0, 0, 0, 0.30),
+        0 16px 40px rgba(0, 0, 0, 0.22),
+        0 32px 80px rgba(0, 0, 0, 0.16);
+    --vis-elev-5:
+        0 16px 32px rgba(0, 0, 0, 0.40),
+        0 32px 64px rgba(0, 0, 0, 0.30),
+        0 64px 128px rgba(0, 0, 0, 0.22);
+    --vis-elev-6:
+        0 24px 48px rgba(0, 0, 0, 0.50),
+        0 48px 96px rgba(0, 0, 0, 0.36),
+        0 96px 200px rgba(0, 0, 0, 0.28);
+    --vis-elev-glow:
+        0 0 0 1px rgba(184, 150, 88, 0.20),
+        0 8px 32px rgba(184, 150, 88, 0.20),
+        0 16px 64px rgba(184, 150, 88, 0.10);
+    --vis-elev-glow-strong:
+        0 0 0 1px rgba(184, 150, 88, 0.40),
+        0 12px 48px rgba(184, 150, 88, 0.32),
+        0 24px 96px rgba(184, 150, 88, 0.18);
+
+    /* ─── Motion 12 spring curves ─── */
+    --vis-ease-linear:       linear;
+    --vis-ease-snap:         cubic-bezier(0.4, 0, 0.2, 1);
+    --vis-ease-soft:         cubic-bezier(0.22, 1, 0.36, 1);
+    --vis-ease-decel:        cubic-bezier(0, 0, 0.2, 1);
+    --vis-ease-accel:        cubic-bezier(0.4, 0, 1, 1);
+    --vis-ease-bounce:       cubic-bezier(0.34, 1.56, 0.64, 1);
+    --vis-ease-spring-1:     cubic-bezier(0.16, 1, 0.3, 1);
+    --vis-ease-spring-2:     cubic-bezier(0.5, 0.5, 0.1, 1.4);
+    --vis-ease-spring-3:     cubic-bezier(0.34, 1.4, 0.64, 1);
+    --vis-ease-flow:         cubic-bezier(0.65, 0, 0.35, 1);
+    --vis-ease-overshoot:    cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    --vis-ease-anticipate:   cubic-bezier(0.36, 0, 0.66, -0.56);
+
+    /* Durations (12 escalones) */
+    --vis-d-instant:   80ms;
+    --vis-d-quickest:  120ms;
+    --vis-d-quick:     160ms;
+    --vis-d-fast:      220ms;
+    --vis-d-base:      300ms;
+    --vis-d-medium:    420ms;
+    --vis-d-slow:      560ms;
+    --vis-d-slower:    720ms;
+    --vis-d-stagger:   80ms;
+
+    /* ─── Blur stack ─── */
+    --vis-blur-2:      4px;
+    --vis-blur-4:      8px;
+    --vis-blur-8:      16px;
+    --vis-blur-12:     24px;
+    --vis-blur-16:     32px;
+    --vis-blur-24:     48px;
+    --vis-blur-32:     64px;
+
+    /* ─── Radii sistema breathing ─── */
+    --vis-r-xs:        6px;
+    --vis-r-sm:        10px;
+    --vis-r-md:        14px;
+    --vis-r-lg:        18px;
+    --vis-r-xl:        22px;
+    --vis-r-2xl:       28px;
+    --vis-r-3xl:       36px;
+    --vis-r-pill:      999px;
+
+    /* ─── Typography scale (golden ratio inspired) ─── */
+    --vis-fs-2xs:      0.6875rem;   /* 11 */
+    --vis-fs-xs:       0.75rem;     /* 12 */
+    --vis-fs-sm:       0.8125rem;   /* 13 */
+    --vis-fs-base:     0.9375rem;   /* 15 */
+    --vis-fs-md:       1rem;        /* 16 */
+    --vis-fs-lg:       1.125rem;    /* 18 */
+    --vis-fs-xl:       1.375rem;    /* 22 */
+    --vis-fs-2xl:      1.75rem;     /* 28 */
+    --vis-fs-3xl:      2.25rem;     /* 36 */
+    --vis-fs-4xl:      3rem;        /* 48 */
+    --vis-fs-5xl:      4rem;        /* 64 */
+
+    /* Letter spacing (iOS-inspired) */
+    --vis-ls-tightest: -0.04em;
+    --vis-ls-tighter:  -0.025em;
+    --vis-ls-tight:    -0.015em;
+    --vis-ls-base:     0;
+    --vis-ls-wide:     0.02em;
+    --vis-ls-wider:    0.05em;
+    --vis-ls-widest:   0.1em;
+
+    /* Line heights */
+    --vis-lh-tight:    1.1;
+    --vis-lh-snug:     1.3;
+    --vis-lh-base:     1.5;
+    --vis-lh-loose:    1.65;
+
+    /* Font feature settings */
+    --vis-font-sans: 'Inter', 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --vis-font-mono: 'SF Mono', ui-monospace, 'Cascadia Code', monospace;
+    --vis-font-display: 'Inter Display', 'Poppins', system-ui, sans-serif;
+
+    /* ─── State layers (Material You) ─── */
+    --vis-state-hover:       rgba(255, 255, 255, 0.04);
+    --vis-state-hover-gold:  rgba(184, 150, 88, 0.10);
+    --vis-state-active:      rgba(255, 255, 255, 0.08);
+    --vis-state-active-gold: rgba(184, 150, 88, 0.18);
+    --vis-state-focus:       0 0 0 3px rgba(184, 150, 88, 0.32);
+    --vis-state-focus-tight: 0 0 0 2px rgba(184, 150, 88, 0.55);
+    --vis-state-selected:    rgba(184, 150, 88, 0.14);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2. BACKGROUND — Mesh gradient + Noise SVG (Material You depth)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel,
+body:has(.admin-panel) {
+    background:
+        radial-gradient(ellipse 1200px 800px at 10% 0%,
+            rgba(184, 150, 88, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 1000px 700px at 90% 100%,
+            rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+        radial-gradient(ellipse 600px 400px at 50% 50%,
+            rgba(184, 150, 88, 0.03) 0%, transparent 70%),
+        var(--vis-surface-base);
+    background-attachment: fixed;
+    color: rgba(255, 255, 255, 0.92);
+    font-family: var(--vis-font-sans);
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1, 'ss01' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+/* Noise overlay sutil para textura HarmonyOS */
+.admin-panel::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' /%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0' /%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' /%3E%3C/svg%3E");
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+}
+.admin-panel > * { position: relative; z-index: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   3. TYPOGRAPHY system world-class
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel h1,
+.admin-panel .section-title,
+.admin-panel .page-header h1 {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-2xl);
+    font-weight: 700;
+    line-height: var(--vis-lh-tight);
+    letter-spacing: var(--vis-ls-tighter);
+    background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0.98) 0%,
+        rgba(255, 255, 255, 0.78) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-block: 0;
+}
+.admin-panel h2 {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-xl);
+    font-weight: 650;
+    line-height: var(--vis-lh-snug);
+    letter-spacing: var(--vis-ls-tight);
+}
+.admin-panel h3 {
+    font-size: var(--vis-fs-lg);
+    font-weight: 600;
+    line-height: var(--vis-lh-snug);
+    letter-spacing: var(--vis-ls-tight);
+}
+.admin-panel h4 {
+    font-size: var(--vis-fs-md);
+    font-weight: 600;
+    line-height: var(--vis-lh-snug);
+}
+.admin-panel p,
+.admin-panel li {
+    line-height: var(--vis-lh-base);
+}
+.admin-panel small,
+.admin-panel .text-small {
+    font-size: var(--vis-fs-xs);
+    color: rgba(255, 255, 255, 0.60);
+    letter-spacing: var(--vis-ls-base);
+}
+
+/* Tabular numerals universales en data */
+.admin-panel .kpi-value,
+.admin-panel .hero-kpi-value,
+.admin-panel .reports-kpi-value,
+.admin-panel .section-stat-tile-value,
+.admin-panel .forecast-value,
+.admin-panel [data-numeric],
+.admin-panel td[data-num],
+.admin-panel .nav-badge,
+.admin-panel .tabular {
+    font-feature-settings: 'tnum' 1, 'kern' 1, 'cv11' 1;
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Display gradients para hero values */
+.admin-panel .hero-kpi-value,
+.admin-panel .reports-kpi-value,
+.admin-panel .forecast-value {
+    font-size: var(--vis-fs-3xl);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: var(--vis-ls-tightest);
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   4. CARDS reimaginadas — depth + cursor follow + sparkles
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .kpi-card,
+.admin-panel .hero-kpi,
+.admin-panel .reports-kpi-card,
+.admin-panel .workflow-card,
+.admin-panel .alt-card,
+.admin-panel .section-stat-tile,
+.admin-panel .stat-card,
+.admin-panel .nba-dash-item,
+.admin-panel .pipeline-card,
+.admin-panel .insights-card,
+.admin-panel .insight-item,
+.admin-panel .review-card,
+.admin-panel .dealer-card,
+.admin-panel .brand-admin-card {
+    position: relative;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    backdrop-filter: blur(var(--vis-blur-12)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-12)) saturate(180%);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    box-shadow: var(--vis-elev-1);
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3),
+                box-shadow var(--vis-d-fast) var(--vis-ease-spring-3),
+                border-color var(--vis-d-fast) var(--vis-ease-snap);
+    isolation: isolate;
+    overflow: hidden;
+}
+/* Vision Pro cursor follow effect */
+.admin-panel .kpi-card::before,
+.admin-panel .hero-kpi::before,
+.admin-panel .reports-kpi-card::before,
+.admin-panel .workflow-card::before,
+.admin-panel .nba-dash-item::before,
+.admin-panel .pipeline-card::before,
+.admin-panel .insights-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle 280px at var(--vis-mx, 50%) var(--vis-my, 50%),
+        rgba(184, 150, 88, 0.10) 0%,
+        rgba(184, 150, 88, 0.04) 25%,
+        transparent 60%);
+    opacity: 0;
+    transition: opacity var(--vis-d-base) var(--vis-ease-snap);
+    pointer-events: none;
+    z-index: 0;
+}
+.admin-panel .kpi-card:hover::before,
+.admin-panel .hero-kpi:hover::before,
+.admin-panel .reports-kpi-card:hover::before,
+.admin-panel .workflow-card:hover::before,
+.admin-panel .nba-dash-item:hover::before,
+.admin-panel .pipeline-card:hover::before,
+.admin-panel .insights-card:hover::before {
+    opacity: 1;
+}
+/* Border gradient animation on hover */
+.admin-panel .kpi-card::after,
+.admin-panel .hero-kpi::after,
+.admin-panel .reports-kpi-card::after,
+.admin-panel .workflow-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(184, 150, 88, 0) 0%,
+        rgba(184, 150, 88, 0.40) 50%,
+        rgba(184, 150, 88, 0) 100%);
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--vis-d-medium) var(--vis-ease-snap);
+    pointer-events: none;
+}
+.admin-panel .kpi-card:hover::after,
+.admin-panel .hero-kpi:hover::after,
+.admin-panel .reports-kpi-card:hover::after,
+.admin-panel .workflow-card:hover::after {
+    opacity: 1;
+}
+/* Hover lift refinado */
+.admin-panel .kpi-card:hover,
+.admin-panel .reports-kpi-card:hover,
+.admin-panel .workflow-card:hover,
+.admin-panel .alt-card:hover,
+.admin-panel .nba-dash-item:hover,
+.admin-panel .pipeline-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--vis-elev-3),
+                0 0 0 1px rgba(184, 150, 88, 0.18);
+}
+.admin-panel .hero-kpi:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--vis-elev-4),
+                var(--vis-elev-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5. SIDEBAR reimaginada — depth real 3-layer
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.85) 0%,
+            rgba(15, 15, 17, 0.82) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border-right: var(--vis-border-3);
+    box-shadow:
+        4px 0 32px rgba(0, 0, 0, 0.28),
+        inset -1px 0 0 rgba(184, 150, 88, 0.06);
+    position: relative;
+}
+.admin-panel .sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(184, 150, 88, 0.18) 30%,
+        rgba(184, 150, 88, 0.18) 70%,
+        transparent 100%);
+    pointer-events: none;
+}
+
+/* Sidebar logo polish */
+.admin-panel .sidebar-logo h2 {
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-300) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 750;
+    letter-spacing: var(--vis-ls-tight);
+}
+
+/* Quick search refinada */
+.admin-panel .sidebar-quicksearch {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-md);
+    padding: 8px 12px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .sidebar-quicksearch:focus-within {
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-state-focus);
+    background: var(--vis-brand-tint);
+}
+
+/* Nav group headers refinados */
+.admin-panel .nav-group-header,
+.admin-panel .nav-group .nav-group-header {
+    color: rgba(255, 255, 255, 0.50);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 650;
+    letter-spacing: var(--vis-ls-widest);
+    text-transform: uppercase;
+    transition: color var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .nav-group-header:hover {
+    color: rgba(255, 255, 255, 0.85);
+}
+.admin-panel .nav-group-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--vis-brand-500);
+    opacity: 0.7;
+}
+
+/* Nav items premium */
+.admin-panel .nav-item,
+.admin-panel .sidebar .nav-item {
+    position: relative;
+    border-radius: var(--vis-r-sm);
+    padding: 9px 14px;
+    margin: 1px 4px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: var(--vis-fs-sm);
+    font-weight: 500;
+    letter-spacing: var(--vis-ls-base);
+    transition:
+        background var(--vis-d-quick) var(--vis-ease-snap),
+        color var(--vis-d-quick) var(--vis-ease-snap),
+        transform var(--vis-d-quick) var(--vis-ease-spring-3),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap);
+    background: transparent;
+    border: 1px solid transparent;
+    isolation: isolate;
+}
+.admin-panel .nav-item [data-lucide] {
+    color: currentColor;
+    opacity: 0.65;
+    transition: opacity var(--vis-d-quick) var(--vis-ease-snap),
+                transform var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel .nav-item:hover {
+    background: var(--vis-state-hover-gold);
+    color: rgba(255, 255, 255, 0.95);
+    transform: translateX(2px);
+}
+.admin-panel .nav-item:hover [data-lucide] {
+    opacity: 1;
+    color: var(--vis-brand-300);
+    transform: scale(1.08);
+}
+
+/* ACTIVE state premium con multi-layer */
+.admin-panel .sidebar .nav-item.active,
+.admin-panel .nav-item.active {
+    background:
+        linear-gradient(135deg,
+            rgba(184, 150, 88, 0.20) 0%,
+            rgba(184, 150, 88, 0.08) 100%);
+    color: var(--vis-brand-200);
+    font-weight: 600;
+    border-color: rgba(184, 150, 88, 0.30);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 0 24px rgba(184, 150, 88, 0.06),
+        0 4px 12px rgba(184, 150, 88, 0.10);
+}
+.admin-panel .sidebar .nav-item.active::before,
+.admin-panel .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: linear-gradient(180deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-300) 100%);
+    border-radius: var(--vis-r-pill);
+    box-shadow: 0 0 12px var(--vis-brand-glow-soft);
+}
+.admin-panel .nav-item.active [data-lucide] {
+    opacity: 1;
+    color: var(--vis-brand-300);
+}
+
+/* Badge en nav-item */
+.admin-panel .nav-badge {
+    background: linear-gradient(135deg,
+        rgba(184, 150, 88, 0.30) 0%,
+        rgba(184, 150, 88, 0.18) 100%);
+    color: var(--vis-brand-200);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-pill);
+    padding: 2px 8px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-wide);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.admin-panel .nav-badge[data-tone="urgent"] {
+    background: linear-gradient(135deg,
+        rgba(239, 68, 68, 0.30) 0%,
+        rgba(239, 68, 68, 0.18) 100%);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.40);
+}
+.admin-panel .nav-badge[data-tone="success"] {
+    background: linear-gradient(135deg,
+        rgba(16, 185, 129, 0.30) 0%,
+        rgba(16, 185, 129, 0.18) 100%);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.40);
+}
+
+/* Sidebar profile card */
+.admin-panel .sidebar-profile,
+.admin-panel .user-profile-card {
+    background:
+        linear-gradient(135deg,
+            rgba(184, 150, 88, 0.10) 0%,
+            rgba(184, 150, 88, 0.02) 100%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-md);
+    padding: 12px 14px;
+    transition: all var(--vis-d-base) var(--vis-ease-spring-1);
+}
+.admin-panel .sidebar-profile:hover {
+    border-color: rgba(184, 150, 88, 0.40);
+    box-shadow: var(--vis-elev-glow);
+    transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   6. BUTTONS world-class — haptic visual + iOS shimmer
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .btn-primary,
+.admin-panel .alt-btn--primary {
+    position: relative;
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: #1a1310;
+    font-weight: 650;
+    letter-spacing: var(--vis-ls-base);
+    border: 1px solid rgba(212, 173, 110, 0.50);
+    border-radius: var(--vis-r-sm);
+    padding: 10px 18px;
+    box-shadow:
+        var(--vis-elev-1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.10);
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+        transform var(--vis-d-quick) var(--vis-ease-spring-3),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap),
+        background var(--vis-d-base) var(--vis-ease-snap);
+}
+.admin-panel .btn-primary::before,
+.admin-panel .alt-btn--primary::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.32) 50%,
+        transparent 100%);
+    transition: left var(--vis-d-slower) var(--vis-ease-spring-1);
+    pointer-events: none;
+    z-index: 0;
+}
+.admin-panel .btn-primary:hover::before,
+.admin-panel .alt-btn--primary:hover::before {
+    left: 100%;
+}
+.admin-panel .btn-primary:hover:not(:disabled),
+.admin-panel .alt-btn--primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+        var(--vis-elev-2),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+/* Haptic visual scale on click */
+.admin-panel .btn-primary:active:not(:disabled),
+.admin-panel .alt-btn--primary:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+    transition-duration: 80ms;
+    box-shadow:
+        var(--vis-elev-1),
+        inset 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Button secondary world-class */
+.admin-panel .btn-secondary,
+.admin-panel .alt-btn--secondary {
+    background: var(--vis-surface-2);
+    color: rgba(255, 255, 255, 0.85);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-sm);
+    padding: 10px 18px;
+    font-weight: 550;
+    backdrop-filter: blur(var(--vis-blur-8));
+    -webkit-backdrop-filter: blur(var(--vis-blur-8));
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3);
+}
+.admin-panel .btn-secondary:hover:not(:disabled),
+.admin-panel .alt-btn--secondary:hover:not(:disabled) {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(184, 150, 88, 0.30);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: var(--vis-elev-2);
+}
+.admin-panel .btn-secondary:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+    transition-duration: 80ms;
+}
+
+/* Ghost / icon buttons */
+.admin-panel .alt-btn--ghost,
+.admin-panel .btn-ghost,
+.admin-panel .alt-btn--icon {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--vis-r-sm);
+    color: rgba(255, 255, 255, 0.65);
+    transition: all var(--vis-d-quick) var(--vis-ease-snap);
+}
+.admin-panel .alt-btn--ghost:hover:not(:disabled),
+.admin-panel .btn-ghost:hover:not(:disabled),
+.admin-panel .alt-btn--icon:hover:not(:disabled) {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(184, 150, 88, 0.20);
+    color: var(--vis-brand-300);
+    transform: scale(1.05);
+}
+.admin-panel .alt-btn--icon:active {
+    transform: scale(0.95);
+    transition-duration: 60ms;
+}
+
+/* Focus ring premium multi-layer */
+.admin-panel button:focus-visible,
+.admin-panel .btn:focus-visible,
+.admin-panel .alt-btn:focus-visible,
+.admin-panel input:focus-visible,
+.admin-panel textarea:focus-visible,
+.admin-panel select:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 2px var(--vis-surface-base),
+        0 0 0 4px rgba(184, 150, 88, 0.55),
+        0 0 16px rgba(184, 150, 88, 0.20);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7. INPUTS premium — floating labels iOS-style + spring
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel input[type="text"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="email"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="tel"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="number"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="password"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="search"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="url"]:not(.alt-input):not(.cnc-input),
+.admin-panel input[type="date"]:not(.alt-input):not(.cnc-input),
+.admin-panel textarea:not(.alt-input):not(.cnc-input),
+.admin-panel select:not(.alt-input):not(.cnc-input) {
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.10) 0%,
+            rgba(0, 0, 0, 0.04) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-sm);
+    padding: 11px 14px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: var(--vis-fs-base);
+    transition:
+        background var(--vis-d-fast) var(--vis-ease-snap),
+        border-color var(--vis-d-fast) var(--vis-ease-snap),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.admin-panel input:hover:not(:focus):not(:disabled),
+.admin-panel textarea:hover:not(:focus):not(:disabled),
+.admin-panel select:hover:not(:focus):not(:disabled) {
+    background: var(--vis-surface-2);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+.admin-panel input:focus,
+.admin-panel textarea:focus,
+.admin-panel select:focus {
+    background: var(--vis-brand-tint);
+    border-color: var(--vis-brand-500);
+    outline: none;
+    box-shadow:
+        0 0 0 3px rgba(184, 150, 88, 0.20),
+        inset 0 1px 0 rgba(184, 150, 88, 0.10);
+}
+.admin-panel input::placeholder,
+.admin-panel textarea::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   8. TABLES world-class — hover sliding accent
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .data-table,
+.admin-panel .admin-table,
+.admin-panel .users-table,
+.admin-panel table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    border-radius: var(--vis-r-md);
+    overflow: hidden;
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel .data-table thead th,
+.admin-panel .admin-table thead th,
+.admin-panel .users-table thead th,
+.admin-panel table thead th {
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.08) 0%,
+            rgba(184, 150, 88, 0.02) 100%);
+    backdrop-filter: blur(var(--vis-blur-8));
+    -webkit-backdrop-filter: blur(var(--vis-blur-8));
+    color: rgba(255, 255, 255, 0.72);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 650;
+    letter-spacing: var(--vis-ls-widest);
+    text-transform: uppercase;
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: var(--vis-border-gold);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.admin-panel .data-table tbody tr,
+.admin-panel .admin-table tbody tr,
+.admin-panel .users-table tbody tr,
+.admin-panel table tbody tr {
+    position: relative;
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .data-table tbody td,
+.admin-panel .admin-table tbody td,
+.admin-panel .users-table tbody td,
+.admin-panel table tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: var(--vis-fs-sm);
+    color: rgba(255, 255, 255, 0.85);
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+    position: relative;
+}
+.admin-panel .data-table tbody tr:hover td,
+.admin-panel .admin-table tbody tr:hover td,
+.admin-panel .users-table tbody tr:hover td,
+.admin-panel table tbody tr:hover td {
+    background: var(--vis-state-hover-gold);
+    color: #ffffff;
+}
+/* Sliding accent line en row hover */
+.admin-panel .data-table tbody tr td:first-child,
+.admin-panel .admin-table tbody tr td:first-child,
+.admin-panel .users-table tbody tr td:first-child {
+    position: relative;
+}
+.admin-panel .data-table tbody tr td:first-child::before,
+.admin-panel .admin-table tbody tr td:first-child::before,
+.admin-panel .users-table tbody tr td:first-child::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: linear-gradient(180deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 100%);
+    transition: width var(--vis-d-fast) var(--vis-ease-spring-3);
+    pointer-events: none;
+}
+.admin-panel .data-table tbody tr:hover td:first-child::before,
+.admin-panel .admin-table tbody tr:hover td:first-child::before,
+.admin-panel .users-table tbody tr:hover td:first-child::before {
+    width: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9. MODALS world-class — multi-layer scrim + spring physics
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ~ .modal-overlay,
+.modal-overlay {
+    background:
+        radial-gradient(circle at center,
+            rgba(0, 0, 0, 0.55) 0%,
+            rgba(0, 0, 0, 0.85) 100%);
+    backdrop-filter: blur(var(--vis-blur-12)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-12)) saturate(160%);
+    transition: opacity var(--vis-d-base) var(--vis-ease-snap);
+}
+.modal-overlay.active .modal-container,
+.modal-overlay.show .modal-container,
+.modal-overlay.active .modal-content,
+.modal-overlay.show .modal-content {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-modal);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(180%);
+    border: var(--vis-border-4);
+    border-radius: var(--vis-r-xl);
+    box-shadow:
+        var(--vis-elev-5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    animation: visModalIn var(--vis-d-medium) var(--vis-ease-bounce) both;
+}
+@keyframes visModalIn {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.94);
+        filter: blur(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .modal-overlay.active .modal-container { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   10. WORKSPACE color accents premium
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section[data-workspace-color="gold"] .page-header,
+.admin-panel #sec-vehicles .page-header,
+.admin-panel #sec-brands .page-header,
+.admin-panel #sec-dealers .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(184, 150, 88, 0.15) 0%,
+            rgba(184, 150, 88, 0.04) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+    margin: 0 -8px 24px;
+    position: relative;
+}
+.admin-panel .section[data-workspace-color="green"] .page-header,
+.admin-panel #sec-kb .page-header,
+.admin-panel #sec-unmatched .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(16, 185, 129, 0.12) 0%,
+            rgba(16, 185, 129, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="blue"] .page-header,
+.admin-panel #sec-crm .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(59, 130, 246, 0.12) 0%,
+            rgba(59, 130, 246, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="violet"] .page-header,
+.admin-panel #sec-calendar .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(139, 92, 246, 0.12) 0%,
+            rgba(139, 92, 246, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="cyan"] .page-header,
+.admin-panel #sec-reports .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(6, 182, 212, 0.12) 0%,
+            rgba(6, 182, 212, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="amber"] .page-header,
+.admin-panel #sec-workflows .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(245, 158, 11, 0.12) 0%,
+            rgba(245, 158, 11, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+.admin-panel .section[data-workspace-color="coral"] .page-header,
+.admin-panel #sec-banners .page-header,
+.admin-panel #sec-reviews .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 50% 0%,
+            rgba(249, 112, 102, 0.12) 0%,
+            rgba(249, 112, 102, 0.03) 40%,
+            transparent 80%);
+    border-bottom: var(--vis-border-2);
+    padding: 32px 32px 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   11. SCROLLBARS premium dorados refinados
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+.admin-panel ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.30);
+    border-radius: var(--vis-r-pill);
+}
+.admin-panel ::-webkit-scrollbar-thumb {
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.40) 0%,
+            rgba(184, 150, 88, 0.25) 100%);
+    border-radius: var(--vis-r-pill);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel ::-webkit-scrollbar-thumb:hover {
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.65) 0%,
+            rgba(184, 150, 88, 0.45) 100%);
+    background-clip: padding-box;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   12. ANIMATIONS choreography (stagger system real)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section.active {
+    animation: visSectionIn var(--vis-d-medium) var(--vis-ease-spring-1) both;
+}
+@keyframes visSectionIn {
+    from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* Stagger automatic en hijos de section.active */
+.admin-panel .section.active > * {
+    animation: visStaggerIn var(--vis-d-medium) var(--vis-ease-spring-1) both;
+}
+.admin-panel .section.active > *:nth-child(1) { animation-delay: 40ms; }
+.admin-panel .section.active > *:nth-child(2) { animation-delay: 80ms; }
+.admin-panel .section.active > *:nth-child(3) { animation-delay: 120ms; }
+.admin-panel .section.active > *:nth-child(4) { animation-delay: 160ms; }
+.admin-panel .section.active > *:nth-child(5) { animation-delay: 200ms; }
+.admin-panel .section.active > *:nth-child(6) { animation-delay: 240ms; }
+.admin-panel .section.active > *:nth-child(7) { animation-delay: 280ms; }
+.admin-panel .section.active > *:nth-child(8) { animation-delay: 320ms; }
+@keyframes visStaggerIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .section.active,
+    .admin-panel .section.active > * {
+        animation: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   13. TEXT SELECTION dorada signature
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ::selection {
+    background: rgba(184, 150, 88, 0.45);
+    color: #ffffff;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.30);
+}
+.admin-panel ::-moz-selection {
+    background: rgba(184, 150, 88, 0.45);
+    color: #ffffff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY Foundation
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   14. HAPTIC visual feedback (clicks)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .vis-haptic-active,
+.vis-haptic-active {
+    transform: scale(0.97) !important;
+    transition: transform 80ms var(--vis-ease-snap) !important;
+}
+.admin-panel .nav-item.vis-haptic-active {
+    transform: scale(0.97) translateX(2px) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   15. TILT 3D en hero KPIs
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .hero-kpi {
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    --vis-tilt-x: 0deg;
+    --vis-tilt-y: 0deg;
+    transform: perspective(1000px)
+               rotateX(var(--vis-tilt-x))
+               rotateY(var(--vis-tilt-y))
+               translateY(0);
+    transition: transform var(--vis-d-medium) var(--vis-ease-spring-1);
+}
+.admin-panel .hero-kpi:hover {
+    transform: perspective(1000px)
+               rotateX(var(--vis-tilt-x))
+               rotateY(var(--vis-tilt-y))
+               translateY(-4px);
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .hero-kpi { transform: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   16. STAGGER items entrada
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .vis-stagger-item {
+    animation: visStaggerFromBottom var(--vis-d-medium) var(--vis-ease-spring-1) both;
+}
+@keyframes visStaggerFromBottom {
+    from { opacity: 0; transform: translateY(16px); filter: blur(2px); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .vis-stagger-item { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   17. TOPBAR (admin header) premium con liquid material
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .admin-header,
+.admin-panel .dashboard-header,
+.admin-panel header.admin-header {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.85) 0%,
+            rgba(15, 15, 17, 0.78) 100%);
+    backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    border-bottom: var(--vis-border-3);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.05) inset,
+        0 8px 24px rgba(0, 0, 0, 0.18);
+    position: relative;
+}
+.admin-panel .admin-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 5%; right: 5%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(184, 150, 88, 0.20) 50%,
+        transparent 100%);
+    pointer-events: none;
+}
+
+/* Mobile topbar matching */
+.admin-panel .mobile-topbar {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.92) 0%,
+            rgba(15, 15, 17, 0.85) 100%);
+    backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    border-bottom: var(--vis-border-gold);
+}
+.admin-panel .mobile-topbar-logo {
+    background: linear-gradient(135deg,
+        var(--vis-brand-200) 0%,
+        var(--vis-brand-400) 60%,
+        var(--vis-brand-600) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 750;
+    letter-spacing: var(--vis-ls-tight);
+}
+
+/* Global search refinado */
+.admin-panel .global-search-wrapper input,
+.admin-panel #globalSearch,
+.admin-panel #globalSearchMobile {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-pill);
+    padding: 8px 16px 8px 38px;
+    font-size: var(--vis-fs-sm);
+    color: rgba(255, 255, 255, 0.92);
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.10);
+}
+.admin-panel .global-search-wrapper input:focus,
+.admin-panel #globalSearch:focus {
+    background: var(--vis-brand-tint);
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-state-focus);
+    outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   18. STATUS BADGES (vehicle/role/lead) world-class
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .status-badge,
+.admin-panel .badge,
+.admin-panel .pill,
+.admin-panel .vehicle-status,
+.admin-panel .role-badge,
+.admin-panel .estado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: var(--vis-r-pill);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 650;
+    letter-spacing: var(--vis-ls-wide);
+    text-transform: uppercase;
+    line-height: 1.5;
+    border: 1px solid currentColor;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 1px 2px rgba(0, 0, 0, 0.20);
+}
+.admin-panel .vehicle-status--disponible,
+.admin-panel .vehicle-status--available,
+.admin-panel .estado-badge--disponible {
+    background: rgba(16, 185, 129, 0.16);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.40);
+}
+.admin-panel .vehicle-status--reservado,
+.admin-panel .vehicle-status--reserved,
+.admin-panel .estado-badge--reservado {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.40);
+}
+.admin-panel .vehicle-status--vendido,
+.admin-panel .vehicle-status--sold,
+.admin-panel .estado-badge--vendido {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.40);
+}
+.admin-panel .vehicle-status--borrador,
+.admin-panel .vehicle-status--draft,
+.admin-panel .estado-badge--borrador {
+    background: rgba(107, 114, 128, 0.16);
+    color: rgba(255, 255, 255, 0.70);
+    border-color: rgba(107, 114, 128, 0.40);
+}
+.admin-panel .role-badge--super_admin {
+    background: linear-gradient(135deg,
+        rgba(184, 150, 88, 0.24) 0%,
+        rgba(184, 150, 88, 0.12) 100%);
+    color: var(--vis-brand-200);
+    border-color: rgba(184, 150, 88, 0.55);
+}
+.admin-panel .role-badge--editor {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.45);
+}
+.admin-panel .role-badge--viewer {
+    background: rgba(107, 114, 128, 0.18);
+    color: rgba(255, 255, 255, 0.78);
+    border-color: rgba(107, 114, 128, 0.40);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   19. MODAL HEADER premium con accent dorado
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ~ .modal-overlay .modal-header,
+.modal-overlay .modal-header,
+.modal-container .modal-header,
+#vehicleModal .modal-header,
+#brandModal .modal-header,
+#dealerModal .modal-header,
+#bannerModal .modal-header,
+#reviewModal .modal-header,
+#userModal .modal-header,
+#vehiclePreviewModal .modal-header,
+#appointmentManagerModal .modal-header {
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.10) 0%,
+            rgba(184, 150, 88, 0.02) 100%);
+    border-bottom: var(--vis-border-gold);
+    padding: 20px 26px;
+    position: relative;
+}
+.modal-overlay .modal-header h2,
+#vehicleModal .modal-header h2,
+#brandModal .modal-header h2,
+#dealerModal .modal-header h2,
+#bannerModal .modal-header h2,
+#reviewModal .modal-header h2,
+#userModal .modal-header h2,
+#appointmentManagerModal .modal-header h2 {
+    font-family: var(--vis-font-display);
+    font-size: var(--vis-fs-lg);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-tight);
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-300) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.modal-overlay .modal-header::before,
+#vehicleModal .modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--vis-brand-500) 50%,
+        transparent 100%);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.modal-overlay .modal-close {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--vis-r-pill);
+    background: var(--vis-surface-2);
+    border: var(--vis-border-3);
+    color: rgba(255, 255, 255, 0.65);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.modal-overlay .modal-close:hover {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+    transform: rotate(90deg);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   20. NOTIFY CENTER + BELL premium
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-notify-center {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.95) 0%,
+            rgba(15, 15, 17, 0.92) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border: var(--vis-border-4);
+    border-radius: var(--vis-r-xl);
+    box-shadow:
+        var(--vis-elev-5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.altorra-bell {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--vis-r-pill);
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    color: rgba(255, 255, 255, 0.78);
+}
+.altorra-bell:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(184, 150, 88, 0.30);
+    color: var(--vis-brand-300);
+    transform: rotate(-12deg) scale(1.08);
+}
+.altorra-bell__badge {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #ffffff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.20);
+    border: 1.5px solid var(--vis-surface-base);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   21. ACTIVITY FEED + SIDE PANEL premium
+   ═══════════════════════════════════════════════════════════════════ */
+.aaf-panel,
+.activity-feed-panel {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.96) 0%,
+            rgba(15, 15, 17, 0.92) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border-left: var(--vis-border-4);
+    box-shadow: var(--vis-elev-5);
+}
+.aaf-entry {
+    background: transparent;
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    margin-bottom: 6px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.aaf-entry:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: var(--vis-border-gold-hi);
+    transform: translateX(2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   22. PALETTE ⌘+K refinada
+   ═══════════════════════════════════════════════════════════════════ */
+.alt-palette-modal {
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.94) 0%,
+            rgba(15, 15, 17, 0.90) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border: var(--vis-border-4);
+    border-radius: var(--vis-r-xl);
+    box-shadow: var(--vis-elev-5);
+}
+.alt-palette-input-wrap {
+    border-bottom: var(--vis-border-gold);
+    padding: 18px 22px;
+}
+.alt-palette-input {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: var(--vis-fs-md);
+    font-weight: 500;
+    width: 100%;
+}
+.alt-palette-input::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+}
+.alt-palette-input-wrap kbd {
+    background: var(--vis-brand-tint-strong);
+    color: var(--vis-brand-300);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-xs);
+    padding: 3px 9px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+}
+.alt-palette-cat {
+    color: rgba(255, 255, 255, 0.40);
+    font-size: var(--vis-fs-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    font-weight: 700;
+    padding: 12px 22px 6px;
+}
+.alt-palette-item {
+    border-radius: var(--vis-r-sm);
+    margin: 0 10px;
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: all var(--vis-d-quick) var(--vis-ease-snap);
+}
+.alt-palette-item:hover {
+    background: var(--vis-state-hover-gold);
+}
+.alt-palette-item.selected {
+    background:
+        linear-gradient(90deg,
+            rgba(184, 150, 88, 0.24) 0%,
+            rgba(184, 150, 88, 0.08) 100%);
+    border-left: 3px solid var(--vis-brand-500);
+    padding-left: 11px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   23. AVATAR premium gradient + glow
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .user-avatar,
+.admin-panel .users-table .user-avatar,
+.admin-panel .nba-dash-avatar {
+    background: linear-gradient(135deg,
+        var(--vis-brand-200) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: #1a1310;
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-tight);
+    box-shadow:
+        0 2px 8px rgba(184, 150, 88, 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel .user-avatar:hover {
+    transform: scale(1.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   24. PRESENCE OVERLAY premium
+   ═══════════════════════════════════════════════════════════════════ */
+.alt-presence-overlay {
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.92) 0%,
+            rgba(15, 15, 17, 0.85) 100%);
+    backdrop-filter: blur(var(--vis-blur-16)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-16)) saturate(200%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-pill);
+    box-shadow: var(--vis-elev-3),
+                var(--vis-elev-glow);
+    padding: 6px 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   25. CRM & WORKSPACE TABS premium
+   ═══════════════════════════════════════════════════════════════════ */
+.crm-tabstrip,
+.cal-tabstrip,
+.crm-detail-tabs {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 4px;
+    display: inline-flex;
+    gap: 2px;
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.10);
+}
+.crm-tab,
+.cal-tab,
+.crm-detail-tab {
+    background: transparent;
+    border: none;
+    border-radius: var(--vis-r-xs);
+    padding: 8px 16px;
+    color: rgba(255, 255, 255, 0.62);
+    font-weight: 550;
+    font-size: var(--vis-fs-sm);
+    letter-spacing: var(--vis-ls-base);
+    cursor: pointer;
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3);
+    position: relative;
+    overflow: hidden;
+}
+.crm-tab:hover,
+.cal-tab:hover,
+.crm-detail-tab:hover {
+    background: var(--vis-state-hover-gold);
+    color: rgba(255, 255, 255, 0.92);
+}
+.crm-tab.is-active,
+.cal-tab.is-active,
+.crm-detail-tab.is-active,
+.crm-tab[aria-selected="true"],
+.cal-tab[aria-selected="true"] {
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.30) 0%,
+            rgba(184, 150, 88, 0.12) 100%);
+    color: var(--vis-brand-200);
+    font-weight: 650;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        0 2px 8px rgba(184, 150, 88, 0.20);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   26. HERO / DASHBOARD greeting card
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .dashboard-greeting,
+.admin-panel .welcome-card {
+    background:
+        radial-gradient(ellipse 600px 300px at 0% 0%,
+            rgba(184, 150, 88, 0.10) 0%, transparent 60%),
+        linear-gradient(135deg,
+            rgba(20, 20, 22, 0.85) 0%,
+            rgba(14, 14, 16, 0.92) 100%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-2xl);
+    padding: 32px 36px;
+    box-shadow: var(--vis-elev-3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(var(--vis-blur-12));
+    -webkit-backdrop-filter: blur(var(--vis-blur-12));
+    margin-bottom: 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   27. ICONS Lucide refinados (size + stroke consistente)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .nav-item [data-lucide],
+.admin-panel .nav-group-icon {
+    stroke-width: 1.75;
+}
+.admin-panel .btn [data-lucide],
+.admin-panel .alt-btn [data-lucide] {
+    stroke-width: 2;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   28. TOOLTIPS (data-tooltip) refinados Mica
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.95) 0%,
+            rgba(15, 15, 17, 0.92) 100%) !important;
+    backdrop-filter: blur(var(--vis-blur-12)) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(var(--vis-blur-12)) saturate(200%) !important;
+    border: var(--vis-border-gold) !important;
+    box-shadow: var(--vis-elev-3) !important;
+    color: var(--vis-brand-200) !important;
+    padding: 8px 14px !important;
+    border-radius: var(--vis-r-sm) !important;
+    font-size: var(--vis-fs-2xs) !important;
+    font-weight: 600 !important;
+    letter-spacing: var(--vis-ls-wide) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   29. WORKFLOW CARDS detail (existing — refinados)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .workflow-card--on {
+    border-color: rgba(184, 150, 88, 0.32);
+    box-shadow:
+        var(--vis-elev-1),
+        inset 0 0 24px rgba(184, 150, 88, 0.04);
+}
+.admin-panel .workflow-card--off {
+    opacity: 0.65;
+}
+.admin-panel .workflow-card .alt-toggle {
+    /* el switch de admin-toggle ya existente — solo refinamos */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   30. FORM groups + labels iOS-style
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .form-row,
+.admin-panel .form-group {
+    margin-bottom: 18px;
+}
+.admin-panel .form-row label,
+.admin-panel .form-group label,
+.admin-panel .form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.78);
+    letter-spacing: var(--vis-ls-wide);
+    text-transform: uppercase;
+}
+.admin-panel .form-row .form-hint,
+.admin-panel .form-group .form-hint,
+.admin-panel .form-hint {
+    font-size: var(--vis-fs-xs);
+    color: rgba(255, 255, 255, 0.50);
+    margin-top: 4px;
+    line-height: var(--vis-lh-snug);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   31. TOAST notifications refinadas
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-notify {
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.94) 0%,
+            rgba(15, 15, 17, 0.90) 100%);
+    backdrop-filter: blur(var(--vis-blur-16)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-16)) saturate(180%);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-md);
+    box-shadow: var(--vis-elev-4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   32. Pipeline cards refinados (Kanban)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .pipeline-card {
+    cursor: grab;
+    transition:
+        transform var(--vis-d-fast) var(--vis-ease-spring-3),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap),
+        border-color var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .pipeline-card.dragging {
+    cursor: grabbing;
+    transform: scale(1.02) rotate(1deg);
+    box-shadow: var(--vis-elev-4),
+                var(--vis-elev-glow-strong);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   33. Action buttons ATTENTION-getter
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .btn-cta,
+.admin-panel .alt-btn--cta {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: #1a1310;
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-base);
+    padding: 12px 24px;
+    border-radius: var(--vis-r-md);
+    border: 1px solid rgba(212, 173, 110, 0.55);
+    box-shadow:
+        var(--vis-elev-3),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel .btn-cta::before,
+.admin-panel .alt-btn--cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.32) 50%,
+        transparent 70%);
+    transform: translateX(-100%);
+    transition: transform var(--vis-d-slower) var(--vis-ease-spring-1);
+}
+.admin-panel .btn-cta:hover::before,
+.admin-panel .alt-btn--cta:hover::before {
+    transform: translateX(100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   34. ALTORRA HUB conversation list polish
+   ═══════════════════════════════════════════════════════════════════ */
+.cnc-admin-list-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding: 12px 16px;
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+    cursor: pointer;
+}
+.cnc-admin-list-item:hover {
+    background: var(--vis-state-hover-gold);
+}
+.cnc-admin-list-item.is-active {
+    background:
+        linear-gradient(90deg,
+            rgba(184, 150, 88, 0.18) 0%,
+            rgba(184, 150, 88, 0.06) 100%);
+    border-left: 3px solid var(--vis-brand-500);
+    padding-left: 13px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   35. EMPTY STATES refinados (compatibilidad con §28.5)
+   ═══════════════════════════════════════════════════════════════════ */
+.alt-empty-illustrated {
+    color: rgba(255, 255, 255, 0.85);
+}
+.alt-empty-illustrated-title {
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-tight);
+    background: linear-gradient(180deg,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.78) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.alt-empty-illustrated-text {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   36. PAGE HEADERS premium con title gradient + workspace accent
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .page-header {
+    margin-bottom: 28px;
+    padding: 20px 24px 24px;
+    border-radius: var(--vis-r-lg) var(--vis-r-lg) 0 0;
+    position: relative;
+}
+.admin-panel .page-header h1 {
+    font-size: var(--vis-fs-2xl);
+    font-weight: 750;
+    letter-spacing: var(--vis-ls-tighter);
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.75) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+.admin-panel .page-header .page-subtitle,
+.admin-panel .page-header p {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: var(--vis-fs-sm);
+    margin-top: 6px;
+    font-weight: 400;
+    letter-spacing: var(--vis-ls-base);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   37. KPI VALUE numbers — extra polish display
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .kpi-card .kpi-value,
+.admin-panel .stat-card .stat-value,
+.admin-panel .metric-value {
+    font-size: var(--vis-fs-2xl);
+    font-weight: 750;
+    line-height: 1.1;
+    letter-spacing: var(--vis-ls-tighter);
+    color: #ffffff;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+.admin-panel .kpi-label,
+.admin-panel .stat-label,
+.admin-panel .metric-label {
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-wider);
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   38. UPLOAD AREA premium drag&drop
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .upload-area {
+    background:
+        radial-gradient(ellipse at center,
+            rgba(184, 150, 88, 0.04) 0%, transparent 70%),
+        var(--vis-surface-1);
+    border: 2px dashed rgba(184, 150, 88, 0.30);
+    border-radius: var(--vis-r-lg);
+    padding: 36px 28px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel .upload-area:hover {
+    border-color: var(--vis-brand-500);
+    background:
+        radial-gradient(ellipse at center,
+            rgba(184, 150, 88, 0.08) 0%, transparent 70%),
+        var(--vis-surface-2);
+    transform: scale(1.005);
+}
+.admin-panel .upload-area.dragover {
+    border-color: var(--vis-brand-300);
+    background:
+        radial-gradient(ellipse at center,
+            rgba(184, 150, 88, 0.15) 0%, transparent 70%),
+        var(--vis-brand-tint);
+    box-shadow: var(--vis-elev-glow);
+    transform: scale(1.01);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   39. CHECKBOX y RADIO custom dorados
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel input[type="checkbox"]:not(.alt-toggle input),
+.admin-panel input[type="radio"]:not(.alt-toggle input) {
+    accent-color: var(--vis-brand-500);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   40. SECTIONS layout (better spacing)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section,
+.admin-panel .admin-section {
+    padding: 24px 28px;
+}
+.admin-panel .section .stat-card,
+.admin-panel .section .info-card {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 22px 24px;
+    box-shadow: var(--vis-elev-1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY Sprint 2 (refinements + components)
+   ═══════════════════════════════════════════════════════════════════ */

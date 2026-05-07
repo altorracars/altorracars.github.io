@@ -13577,3 +13577,174 @@ este orden:
 - §26.3 Sprint ALTOR Hub UI Redesign — Telegram/WhatsApp standard fullscreen
 - §26.4 Sprint Claiming Explícito + SLA UI fix
 - §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot
+
+### 26.2 Sprint Vehicle Guide — Cards inline con miniatura + Asesor humano (2026-05-10)
+
+**Objetivo del sprint**: cuando el bot menciona un vehículo, NO debe
+limitarse a "Toyota Hilux 2020 - $80M" + link. Debe comportarse como
+un asesor humano: mostrar **miniatura**, contar contexto del modelo,
+beneficios para el caso de uso, comparación de precio y CTAs
+accionables. Esta es la diferencia entre un scraper de datos y un
+vendedor real.
+
+#### A. Vehicle Guide Module (`js/ai/vehicle-guide.js` — NUEVO ~290 líneas)
+
+Singleton `window.AltorraVehicleGuide` con funciones:
+
+- **`describe(vehicle)`** → array de 3-5 bullets humanos:
+  - 📅 Year insight: "Modelo de 4 años — sweet spot entre precio y modernidad"
+  - 🛣️ KM insight: "Solo 35K km — bajo, vida útil completa por delante"
+  - ✨ Categoría insight: fortaleza top de la categoría
+  - 🏷️ Brand insight: reputación de la marca en Colombia
+  - ⚙️ Transmisión insight: "automática — comodísima en tráfico de Cartagena"
+  - ⛽ Combustible insight: "Diesel — mayor torque y rendimiento"
+
+- **`recommendByUse(vehicle, useCase)`** → frase humana
+  ("Para familia es excelente: SUVs son ideales para familias")
+
+- **`priceContext(vehicle)`** → frase sobre precio
+  ("🔥 En oferta - ahorras 12%. Buen precio para su segmento")
+
+- **`nextSteps(vehicle)`** → 3 CTAs apropiados (Agendar, Financiación, Asesor)
+
+- **`fullPitch(vehicle, opts)`** → pitch completo de 3-5 líneas con
+  título, top bullets, price context y CTA de cierre.
+
+- **`cardData(vehicle)`** → datos estructurados para el render UI:
+  `{id, title, year, kilometrajeFmt, transmision, combustible, precio,
+   precioFmt, oferta, precioOriginal, image, url, bullets[2], estado}`
+
+#### B. Diccionarios internos del Vehicle Guide
+
+**CATEGORY_INSIGHTS** (7 categorías): suv, camioneta, sedan,
+hatchback, pickup, coupe, minivan. Cada una con `audience`,
+`strengths[]` (4 puntos vendibles), y `useCases[]` (matchables).
+
+**BRAND_INSIGHTS** (15 marcas): Toyota, Mazda, Chevrolet, Renault,
+Kia, Hyundai, Nissan, Ford, Volkswagen, Honda, Suzuki, Mitsubishi,
+BMW, Mercedes-Benz, Audi. Cada una con frase de reputación
+contextualizada al mercado colombiano.
+
+**Year insights** (5 rangos): casi nuevo, reciente, 4-6 años (sweet
+spot), 7-10 años, 10+ (clásico).
+
+**KM insights** (6 rangos): 0, <10K, <30K, <60K, <100K, <150K, >150K.
+
+#### C. Inventory Search retorna vehicleCards (`js/ai/inventory-search.js`)
+
+`formatResponse()` actualizado:
+
+- **0 resultados**: igual que antes (mensaje + CTA catálogo)
+- **1 resultado**:
+  - Si Vehicle Guide cargado → `text = fullPitch(v)` (humano largo) +
+    `vehicleCards: [cardData(v)]` (1 card)
+  - Si no → fallback texto plano viejo
+- **N resultados**:
+  - Si Vehicle Guide cargado → `text = "encontré N opciones..."` +
+    `vehicleCards: [cardData(v), ...]` (N cards renderizadas)
+  - Si no → lista de texto plano vieja
+
+El bot ya NO escribe líneas largas tipo "• Toyota Hilux 2020 - $80M
+- 50K km, automática" — esa info ahora vive en cards visuales.
+
+#### D. Render Vehicle Cards (`js/concierge.js renderVehicleCard`)
+
+Render rico inline en cada burbuja del bot:
+
+```
+┌──────────────────────────────────────────┐
+│ ┌────────┐ Toyota Hilux                  │
+│ │ [foto] │ 2020 · 50K km · Automática    │
+│ │  110px │ $76M [80M] [OFERTA]           │
+│ │        │ • Modelo reciente, equipam... │
+│ │        │ • Solo 50K km                 │
+│ │        │ [Ver ficha] [📅 Agendar] [👨] │
+│ └────────┘                               │
+└──────────────────────────────────────────┘
+```
+
+Cada card incluye:
+- **Imagen miniatura** 110px (lazy load + fallback SVG si falla)
+- **Status badge** si reservado/vendido (top-left de la imagen)
+- **Título** con marca + modelo (ellipsis si largo)
+- **Meta**: año · km · transmisión
+- **Precio** con tachado del original si oferta + badge "OFERTA"
+- **2 bullets humanos** del describe()
+- **3 CTAs**: "Ver ficha" (link directo), "📅 Agendar"
+  (`data-vcard-action="agendar"` → trigger send programático con
+  vehicleId), "👨 Asesor" (escalateToLive directo)
+
+**Mobile** (`<480px`): cards apiladas verticales con imagen full-width
+arriba (140px), body abajo. Mejor legibilidad en pantalla pequeña.
+
+#### E. addMessage extendido para preservar vehicleCards
+
+`addMessage(from, text, opts)` ahora también acepta:
+- `opts.vehicleCards` — array de cardData objects
+- `opts.quickReplies` — array de quick reply objects (ya existía pero
+  no se persistía; ahora sí en el msg)
+
+Esto permite que las cards sobrevivan a re-renders y a F5
+(localStorage) sin perderse.
+
+#### F. Handlers de botones en cards (`js/concierge.js panel.click`)
+
+Listener captura clicks en `[data-vcard-action]`:
+- `action="agendar"` → `send('Quiero agendar una visita para el
+  vehículo ' + vehicleId)` — el bot detecta intent `appointment_request`
+  y procesa naturalmente
+- `action="escalate"` → `escalateToLive('vehicle_card_request')` —
+  escala directo al asesor con razón trazable
+
+#### Carga de scripts
+
+`js/components.js` y `admin.html` agregan después de
+`inventory-search.js`:
+```html
+<script src="js/ai/vehicle-guide.js" defer></script>
+```
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Vehicle Guide no carga (race) → texto plano feo | `formatResponse` chequea `window.AltorraVehicleGuide` y cae al formato viejo si falta |
+| Imagen rota corta el card | `onerror="this.style.display='none'"` + placeholder SVG |
+| Cards muy anchas en mobile | Media query `<480px` apila vertical |
+| Cards persisten al F5 mostrando autos vendidos | `cardData()` lee `vehicle.estado` actual cada vez (no se cachea data stale) |
+| Click en card "Agendar" no contextualiza | Send incluye vehicleId en el texto → el flujo del bot lo procesa con contexto |
+| Cards muestran precio sin formato | `fmtPriceShort()` reduce a $80M / $1.2K para que quepa |
+| Pitch del Vehicle Guide muy largo | `slice(0, 3)` limita a 3 bullets top |
+| Usar `dangerouslySetInnerHTML` con datos de Firestore | Todo pasa por `escapeHtml()` antes de inyectar |
+| Bullets repiten info ya en meta | Year/KM aparecen en bullets (humanizado) Y en meta (técnico) — complementario, no duplicado |
+
+#### Test E2E del sprint
+
+1. Cliente público → abrir ALTOR
+2. Escribir "muéstrame un Mazda CX-5" → bot responde con **vehicle
+   card rica**: imagen + título + año/km/transmisión + precio +
+   2 bullets humanos + 3 botones (Ver ficha · Agendar · Asesor)
+3. Click "Ver ficha" → abre detalle-vehiculo en nueva tab
+4. Click "📅 Agendar" → bot detecta intent y procesa "Quiero agendar
+   visita para vehículo X"
+5. Click "👨 Asesor" → escala a live con `escalateReason='vehicle_card_request'`
+6. Escribir "qué SUVs tienen" → bot responde "encontré N opciones" +
+   N cards apiladas (todas las SUVs con imagen + bullets diferentes)
+7. F5 → las cards persisten en el chat (localStorage preservó vehicleCards)
+8. Mobile → cards se apilan verticales con imagen full-width arriba
+
+**Archivos modificados**:
+- `js/ai/vehicle-guide.js` (NUEVO ~290 líneas)
+- `js/ai/inventory-search.js` (formatResponse retorna vehicleCards)
+- `js/concierge.js` (renderVehicleCard + addMessage extendido +
+  handlers data-vcard-action + paso de vehicleCards al addMessage)
+- `js/components.js` (carga vehicle-guide.js)
+- `admin.html` (script tag vehicle-guide.js)
+- `css/concierge.css` (~170 líneas .cnc-vcard-* + responsive mobile)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509060000)
+- `CLAUDE.md` (esta sección §26.2)
+
+**Pendiente del ADR-026** (próximos sprints):
+- §26.3 Sprint ALTOR Hub UI Redesign — Telegram/WhatsApp standard
+- §26.4 Sprint Claiming Explícito + SLA UI fix + Persistencia cola
+- §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot $0

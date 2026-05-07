@@ -1202,3 +1202,181 @@
 @media (prefers-reduced-motion: reduce) {
     .cnc-sla-btn--pulsing { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   §26.2 — Vehicle Cards inline en burbujas del bot
+   Render rico de vehículos cuando ALTOR los menciona: miniatura,
+   título, specs, precio, bullets humanos y CTAs.
+   Patrón Telegram/WhatsApp Business cards.
+   ═══════════════════════════════════════════════════════════════ */
+.cnc-vcard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+.cnc-vcard {
+    display: flex;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(184, 150, 88, 0.25);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.cnc-vcard:hover {
+    border-color: rgba(184, 150, 88, 0.55);
+    box-shadow: 0 4px 14px rgba(184, 150, 88, 0.18);
+    transform: translateY(-1px);
+}
+.cnc-vcard-imgwrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 110px;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cnc-vcard-img {
+    width: 100%;
+    height: 100%;
+    min-height: 130px;
+    object-fit: cover;
+    display: block;
+}
+.cnc-vcard-img-placeholder {
+    width: 100%;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(184, 150, 88, 0.5);
+}
+.cnc-vcard-status {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.cnc-vcard-status--reservado {
+    background: rgba(245, 158, 11, 0.92);
+    color: #1a1300;
+}
+.cnc-vcard-status--vendido {
+    background: rgba(220, 38, 38, 0.92);
+    color: #fff;
+}
+.cnc-vcard-body {
+    flex: 1;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.cnc-vcard-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #fff;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cnc-vcard-meta {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.65);
+}
+.cnc-vcard-price {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #b89658;
+    margin-top: 2px;
+}
+.cnc-vcard-price-old {
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: line-through;
+    font-weight: 400;
+    font-size: 0.78rem;
+    margin-right: 6px;
+}
+.cnc-vcard-price-new {
+    color: #b89658;
+}
+.cnc-vcard-oferta-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #b89658, #d4af37);
+    color: #1a1300;
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+    letter-spacing: 0.5px;
+}
+.cnc-vcard-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 0;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.4;
+}
+.cnc-vcard-bullets li {
+    padding: 1px 0;
+}
+.cnc-vcard-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+.cnc-vcard-btn {
+    flex: 1;
+    min-width: 70px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+.cnc-vcard-btn:hover {
+    background: rgba(184, 150, 88, 0.15);
+    border-color: rgba(184, 150, 88, 0.5);
+    color: #fff;
+}
+.cnc-vcard-btn--primary {
+    background: linear-gradient(135deg, #b89658, #a08348);
+    border-color: #b89658;
+    color: #1a1300;
+}
+.cnc-vcard-btn--primary:hover {
+    background: linear-gradient(135deg, #d4af37, #b89658);
+    color: #1a1300;
+}
+/* Mobile: cards apiladas verticales para mejor legibilidad */
+@media (max-width: 480px) {
+    .cnc-vcard {
+        flex-direction: column;
+    }
+    .cnc-vcard-imgwrap {
+        width: 100%;
+    }
+    .cnc-vcard-img,
+    .cnc-vcard-img-placeholder {
+        height: 140px;
+    }
+}

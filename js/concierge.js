@@ -745,6 +745,8 @@
             text: text,
             timestamp: Date.now(),
             cta: opts.cta || null,
+            quickReplies: opts.quickReplies || null,
+            vehicleCards: opts.vehicleCards || null,    // §26.2 vehicle cards inline
             _synced: false
         };
         session.messages.push(msg);
@@ -833,7 +835,11 @@
                     // §23 FASE 1 — si la respuesta NO es del path de fallback,
                     // reseteamos el counter (cliente fue entendido bien)
                     if (!resp._isFallback) resetFallbackCounter();
-                    addMessage('bot', resp.text, { cta: resp.cta, quickReplies: resp.quickReplies });
+                    addMessage('bot', resp.text, {
+                        cta: resp.cta,
+                        quickReplies: resp.quickReplies,
+                        vehicleCards: resp.vehicleCards   // §26.2 inline cards
+                    });
                     setTimeout(function () { maybeAskForProfile(); }, 1200);
                 }).catch(function (err) {
                     hideTypingIndicator();
@@ -841,7 +847,11 @@
                     // Último recurso: rule-based fallback síncrono
                     var fallback = generateBotResponse(text);
                     if (!fallback._isFallback) resetFallbackCounter();
-                    addMessage('bot', fallback.text, { cta: fallback.cta });
+                    addMessage('bot', fallback.text, {
+                        cta: fallback.cta,
+                        quickReplies: fallback.quickReplies,
+                        vehicleCards: fallback.vehicleCards
+                    });
                     setTimeout(function () { maybeAskForProfile(); }, 1200);
                 });
             }, 350 + Math.random() * 400);
@@ -1702,6 +1712,18 @@
                 }
                 return;
             }
+            // §26.2 — Vehicle card actions (agendar / escalate por auto específico)
+            var vcBtn = e.target.closest('[data-vcard-action]');
+            if (vcBtn) {
+                var action = vcBtn.getAttribute('data-vcard-action');
+                var vehicleId = vcBtn.getAttribute('data-vehicle-id') || '';
+                if (action === 'agendar') {
+                    send('Quiero agendar una visita para el vehículo ' + vehicleId);
+                } else if (action === 'escalate') {
+                    escalateToLive('vehicle_card_request');
+                }
+                return;
+            }
             var btn = e.target.closest('[data-action]');
             if (!btn) return;
             handleAction(btn.getAttribute('data-action'));
@@ -2290,9 +2312,66 @@
                     }).join('') +
                 '</div>';
             }
-            return '<div class="cnc-msg ' + bubbleClass + '">' + escapeHtml(m.text) + ctaHTML + quickRepliesHTML + '</div>';
+            // §26.2 — Vehicle Cards inline (miniatura + specs + CTAs).
+            // Cuando el bot menciona vehículos, no solo texto: cards
+            // ricas con imagen, precio, specs y botones de acción.
+            // Patrón Telegram/WhatsApp Business cards.
+            var vehicleCardsHTML = '';
+            if (m.from === 'bot' && Array.isArray(m.vehicleCards) && m.vehicleCards.length > 0) {
+                vehicleCardsHTML = '<div class="cnc-vcard-list">' +
+                    m.vehicleCards.map(renderVehicleCard).join('') +
+                '</div>';
+            }
+            return '<div class="cnc-msg ' + bubbleClass + '">' + escapeHtml(m.text) + ctaHTML + quickRepliesHTML + vehicleCardsHTML + '</div>';
         }).join('');
         box.scrollTop = box.scrollHeight;
+    }
+
+    /**
+     * §26.2 — Render de Vehicle Card inline en el chat.
+     * Imagen miniatura + título + año/km/transmisión + precio + bullets
+     * humanos + 3 CTAs (Ver ficha · Agendar visita · Asesor).
+     */
+    function renderVehicleCard(vc) {
+        if (!vc) return '';
+        var imgHTML = vc.image
+            ? '<img class="cnc-vcard-img" src="' + escapeHtml(vc.image) + '" alt="' + escapeHtml(vc.title) + '" loading="lazy" onerror="this.style.display=\'none\'">'
+            : '<div class="cnc-vcard-img-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M5 17a2 2 0 0 1-2-2V11l2-5h14l2 5v4a2 2 0 0 1-2 2M5 17v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2m6 0v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2"/></svg></div>';
+
+        var priceBlock = vc.oferta
+            ? '<div class="cnc-vcard-price"><span class="cnc-vcard-price-old">' + escapeHtml(vc.precioOriginalFmt || '') + '</span> <span class="cnc-vcard-price-new">' + escapeHtml(vc.precioFmt) + '</span> <span class="cnc-vcard-oferta-badge">OFERTA</span></div>'
+            : '<div class="cnc-vcard-price">' + escapeHtml(vc.precioFmt) + '</div>';
+
+        var metaBits = [];
+        if (vc.year) metaBits.push(escapeHtml(String(vc.year)));
+        if (vc.kilometrajeFmt) metaBits.push(escapeHtml(vc.kilometrajeFmt));
+        if (vc.transmision) metaBits.push(escapeHtml(vc.transmision));
+
+        var bulletsHTML = '';
+        if (Array.isArray(vc.bullets) && vc.bullets.length) {
+            bulletsHTML = '<ul class="cnc-vcard-bullets">' +
+                vc.bullets.map(function (b) { return '<li>' + escapeHtml(b) + '</li>'; }).join('') +
+            '</ul>';
+        }
+
+        var statusBadge = '';
+        if (vc.estado === 'reservado') statusBadge = '<span class="cnc-vcard-status cnc-vcard-status--reservado">Reservado</span>';
+        else if (vc.estado === 'vendido') statusBadge = '<span class="cnc-vcard-status cnc-vcard-status--vendido">Vendido</span>';
+
+        return '<div class="cnc-vcard" data-vehicle-id="' + escapeHtml(String(vc.id || '')) + '">' +
+            '<div class="cnc-vcard-imgwrap">' + imgHTML + statusBadge + '</div>' +
+            '<div class="cnc-vcard-body">' +
+                '<div class="cnc-vcard-title">' + escapeHtml(vc.title) + '</div>' +
+                (metaBits.length ? '<div class="cnc-vcard-meta">' + metaBits.join(' · ') + '</div>' : '') +
+                priceBlock +
+                bulletsHTML +
+                '<div class="cnc-vcard-actions">' +
+                    '<a class="cnc-vcard-btn cnc-vcard-btn--primary" href="' + escapeHtml(vc.url) + '" target="_blank" rel="noopener">Ver ficha</a>' +
+                    '<button class="cnc-vcard-btn" data-vcard-action="agendar" data-vehicle-id="' + escapeHtml(String(vc.id || '')) + '">📅 Agendar</button>' +
+                    '<button class="cnc-vcard-btn" data-vcard-action="escalate">👨 Asesor</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
     }
 
     function escapeHtml(s) {

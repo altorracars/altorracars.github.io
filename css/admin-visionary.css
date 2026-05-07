@@ -3461,3 +3461,761 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 /* ═══════════════════════════════════════════════════════════════════
    FIN VISIONARY DEEP — Bug fixes + Vista Previa galeria + perf
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-032 VISIONARY MASTER — Rediseño profundo por sección
+   Foco: Vehículos, Marcas, Dashboard, Sidebar, todos los modales
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 90. SIDEBAR refinado total — width perfecto + bordes ───── */
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    width: var(--layout-sidebar-w-expanded, 256px) !important;
+    padding: 18px 12px;
+    box-shadow: inset -1px 0 0 rgba(184, 150, 88, 0.08);
+}
+.admin-panel .sidebar-logo {
+    padding: 6px 12px 18px;
+    margin-bottom: 14px;
+    border-bottom: var(--vis-border-2);
+}
+.admin-panel .sidebar-logo h2 {
+    font-size: var(--vis-fs-md);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    margin: 0;
+    line-height: 1.2;
+}
+.admin-panel .sidebar-logo small {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: var(--vis-fs-2xs);
+    letter-spacing: var(--vis-ls-wider);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+.admin-panel .sidebar-collapse-btn {
+    position: absolute;
+    top: 14px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--vis-r-xs);
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    color: rgba(255, 255, 255, 0.55);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .sidebar-collapse-btn:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: rgba(184, 150, 88, 0.35);
+    color: var(--vis-brand-300);
+}
+
+/* Quick search refinado */
+.admin-panel .sidebar-quicksearch {
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .sidebar-quicksearch:focus-within {
+    border-color: var(--vis-brand-500);
+    background: var(--vis-brand-tint);
+    box-shadow: var(--vis-state-focus);
+}
+.admin-panel .sidebar-quicksearch-icon {
+    width: 16px;
+    height: 16px;
+    color: rgba(255, 255, 255, 0.50);
+    flex-shrink: 0;
+}
+.admin-panel .sidebar-quicksearch input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: var(--vis-fs-sm);
+    width: 100%;
+    outline: none;
+}
+.admin-panel .sidebar-quicksearch input::placeholder {
+    color: rgba(255, 255, 255, 0.40);
+}
+.admin-panel .sidebar-quicksearch-kbd {
+    background: rgba(255, 255, 255, 0.06);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-xs);
+    padding: 2px 7px;
+    font-size: var(--vis-fs-2xs);
+    font-family: var(--vis-font-mono);
+    color: rgba(255, 255, 255, 0.65);
+    flex-shrink: 0;
+}
+
+/* Nav group spacing perfeccionado */
+.admin-panel .nav-group {
+    margin-bottom: 6px;
+}
+.admin-panel .nav-group-header {
+    padding: 8px 14px 4px;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.admin-panel .nav-group-chevron {
+    margin-left: auto;
+    width: 14px;
+    height: 14px;
+    color: rgba(255, 255, 255, 0.40);
+    transition: transform var(--vis-d-fast) var(--vis-ease-snap);
+}
+
+/* Nav item — pulir letterspacing y heights */
+.admin-panel .sidebar .nav-item,
+.admin-panel .nav-group-items .nav-item {
+    width: calc(100% - 8px);
+    margin: 1px 4px;
+    padding: 9px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--vis-r-sm);
+    font-size: var(--vis-fs-sm);
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.72);
+}
+.admin-panel .nav-group-items {
+    margin-top: 2px;
+}
+
+/* ─── 91. TABLA VEHÍCULOS — visual transformation completa ──── */
+.admin-panel #vehiclesTable {
+    border-spacing: 0;
+    border-collapse: separate;
+    width: 100%;
+    background: var(--vis-surface-1);
+    border-radius: var(--vis-r-lg);
+    overflow: hidden;
+    border: var(--vis-border-2);
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel #vehiclesTable thead {
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.12) 0%,
+            rgba(184, 150, 88, 0.04) 100%);
+}
+.admin-panel #vehiclesTable thead th {
+    padding: 14px 16px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.78);
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    border-bottom: var(--vis-border-gold);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+.admin-panel #vehiclesTable thead th:hover {
+    background: rgba(184, 150, 88, 0.06);
+}
+.admin-panel #vehiclesTable thead th:first-child {
+    width: 40px;
+    text-align: center;
+}
+.admin-panel #vehiclesTable tbody tr {
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel #vehiclesTable tbody tr:hover {
+    background: var(--vis-state-hover-gold);
+}
+.admin-panel #vehiclesTable tbody tr:hover td:first-child {
+    border-left: 3px solid var(--vis-brand-500);
+    padding-left: 13px;
+}
+.admin-panel #vehiclesTable tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+    font-size: var(--vis-fs-sm);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Col código */
+.admin-panel #vehiclesTable tbody code {
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    color: var(--vis-brand-300) !important;
+    background: var(--vis-brand-tint-strong);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-xs);
+    padding: 4px 10px;
+    letter-spacing: var(--vis-ls-wide);
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* Col vehiculo (marca + modelo) */
+.admin-panel #vehiclesTable tbody td strong {
+    font-size: var(--vis-fs-base);
+    font-weight: 650;
+    color: #ffffff;
+    letter-spacing: var(--vis-ls-tight);
+}
+.admin-panel #vehiclesTable tbody td small {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: var(--vis-fs-xs);
+    letter-spacing: var(--vis-ls-base);
+    text-transform: uppercase;
+}
+
+/* Tipo badge premium */
+.admin-panel #vehiclesTable tbody .badge.badge-nuevo,
+.admin-panel #vehiclesTable tbody .badge.badge-usado,
+.admin-panel #vehiclesTable tbody .badge.badge-semi-nuevo {
+    text-transform: uppercase;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-widest);
+    padding: 4px 12px;
+    border-radius: var(--vis-r-pill);
+    border: 1px solid currentColor;
+    display: inline-block;
+}
+.admin-panel #vehiclesTable .badge.badge-nuevo {
+    background: rgba(16, 185, 129, 0.16);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-usado {
+    background: rgba(59, 130, 246, 0.16);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-semi-nuevo {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.40);
+}
+
+/* Estado badge premium (disponible/reservado/vendido/borrador) */
+.admin-panel #vehiclesTable .badge[class*="estado"],
+.admin-panel #vehiclesTable .badge.badge-success,
+.admin-panel #vehiclesTable .badge.badge-warning,
+.admin-panel #vehiclesTable .badge.badge-danger,
+.admin-panel #vehiclesTable .badge.badge-secondary {
+    text-transform: uppercase;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    letter-spacing: var(--vis-ls-widest);
+    padding: 4px 12px;
+    border-radius: var(--vis-r-pill);
+    border: 1px solid currentColor;
+    display: inline-block;
+}
+.admin-panel #vehiclesTable .badge.badge-success {
+    background: rgba(16, 185, 129, 0.16);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-warning {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-danger {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.40);
+}
+.admin-panel #vehiclesTable .badge.badge-secondary {
+    background: rgba(107, 114, 128, 0.16);
+    color: rgba(255, 255, 255, 0.70);
+    border-color: rgba(107, 114, 128, 0.40);
+}
+
+/* Precio premium */
+.admin-panel #vehiclesTable tbody td:nth-child(7) {
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-base);
+    font-weight: 650;
+    color: var(--vis-brand-200);
+    font-feature-settings: 'tnum' 1;
+    white-space: nowrap;
+}
+.admin-panel #vehiclesTable tbody td:nth-child(7) small {
+    color: rgba(245, 158, 11, 0.85);
+    font-size: var(--vis-fs-xs);
+    text-decoration: line-through;
+    font-family: var(--vis-font-mono);
+    margin-top: 2px;
+    display: block;
+}
+
+/* Origen text */
+.admin-panel #vehiclesTable tbody td small[style*="text-secondary"],
+.admin-panel #vehiclesTable tbody td:nth-last-child(2) small {
+    color: rgba(255, 255, 255, 0.55) !important;
+    font-size: var(--vis-fs-xs);
+    text-transform: capitalize;
+}
+
+/* Vehicle thumb consistente */
+.admin-panel .vehicle-thumb {
+    width: 80px !important;
+    height: 56px !important;
+    border-radius: var(--vis-r-sm) !important;
+    object-fit: cover;
+    border: var(--vis-border-3);
+    box-shadow: var(--vis-elev-1), 0 0 0 1px rgba(184, 150, 88, 0.10);
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel #vehiclesTable tbody tr:hover .vehicle-thumb {
+    transform: scale(1.08);
+    box-shadow: var(--vis-elev-2), 0 0 0 1px rgba(184, 150, 88, 0.30);
+}
+
+/* Acciones inline organizadas */
+.admin-panel .v-actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+}
+.admin-panel .v-act {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border: 1px solid transparent !important;
+    border-radius: var(--vis-r-sm) !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+    cursor: pointer;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all var(--vis-d-quick) var(--vis-ease-spring-3) !important;
+    flex-shrink: 0;
+}
+.admin-panel .v-act [data-lucide] {
+    width: 16px !important;
+    height: 16px !important;
+    stroke-width: 1.75;
+}
+.admin-panel .v-act:hover:not(:disabled) {
+    background: var(--vis-state-hover-gold) !important;
+    border-color: rgba(184, 150, 88, 0.30) !important;
+    color: var(--vis-brand-300) !important;
+    transform: scale(1.10);
+}
+.admin-panel .v-act--danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.14) !important;
+    border-color: rgba(239, 68, 68, 0.40) !important;
+    color: #fca5a5 !important;
+}
+.admin-panel .v-act--operation {
+    width: auto !important;
+    padding: 0 12px !important;
+    gap: 6px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    background: rgba(184, 150, 88, 0.10) !important;
+    border-color: rgba(184, 150, 88, 0.30) !important;
+    color: var(--vis-brand-300) !important;
+}
+.admin-panel .v-act--operation:hover {
+    background: rgba(184, 150, 88, 0.18) !important;
+}
+.admin-panel .v-act-sep {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.10);
+    margin: 0 4px;
+}
+
+/* ─── 92. SECTION HEADER vehiculos premium ───────────────── */
+.admin-panel #sec-vehicles .page-header,
+.admin-panel #sec-brands .page-header,
+.admin-panel #sec-dealers .page-header,
+.admin-panel #sec-banners .page-header,
+.admin-panel #sec-reviews .page-header {
+    background:
+        radial-gradient(ellipse 600px 200px at 0% 0%,
+            rgba(184, 150, 88, 0.18) 0%,
+            rgba(184, 150, 88, 0.02) 50%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-2xl);
+    padding: 28px 32px 24px;
+    margin: 0 0 24px;
+    box-shadow: var(--vis-elev-2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(var(--vis-blur-12));
+    -webkit-backdrop-filter: blur(var(--vis-blur-12));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.admin-panel #sec-vehicles .page-header h1,
+.admin-panel #sec-brands .page-header h1,
+.admin-panel #sec-dealers .page-header h1,
+.admin-panel #sec-banners .page-header h1,
+.admin-panel #sec-reviews .page-header h1 {
+    font-size: var(--vis-fs-2xl);
+    font-weight: 800;
+    letter-spacing: var(--vis-ls-tighter);
+    margin: 0;
+    background: linear-gradient(135deg,
+        #ffffff 0%,
+        var(--vis-brand-200) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.admin-panel #sec-vehicles .page-header .page-subtitle,
+.admin-panel #sec-vehicles .page-header > div > p,
+.admin-panel #sec-brands .page-header > div > p {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: var(--vis-fs-sm);
+    margin-top: 4px;
+}
+
+/* ─── 93. INVENTARIO toolbar premium ───────────────────── */
+.admin-panel #sec-vehicles .table-header,
+.admin-panel #sec-brands .table-header,
+.admin-panel #sec-dealers .table-header,
+.admin-panel #sec-banners .table-header,
+.admin-panel #sec-reviews .table-header,
+.admin-panel #sec-users .table-header {
+    background:
+        linear-gradient(180deg,
+            rgba(184, 150, 88, 0.06) 0%,
+            transparent 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-bottom: var(--vis-border-gold);
+    border-radius: var(--vis-r-lg) var(--vis-r-lg) 0 0;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+}
+.admin-panel #sec-vehicles .table-header h2,
+.admin-panel #sec-vehicles .table-header h3 {
+    font-size: var(--vis-fs-lg);
+    font-weight: 700;
+    margin: 0;
+    color: #ffffff;
+    letter-spacing: var(--vis-ls-tight);
+    margin-right: auto;
+}
+
+/* Tabla pegada al toolbar (sin gap visual) */
+.admin-panel .table-container,
+.admin-panel #sec-vehicles .table-container,
+.admin-panel #sec-brands .table-container {
+    border-radius: 0 0 var(--vis-r-lg) var(--vis-r-lg);
+    overflow: hidden;
+    margin-bottom: 18px;
+}
+
+/* ─── 94. INPUTS dentro del toolbar premium ─────────── */
+.admin-panel #sec-vehicles .table-header input[type="search"],
+.admin-panel #sec-vehicles .table-header input[type="text"],
+.admin-panel #sec-vehicles input#vehicleSearch,
+.admin-panel #sec-brands input[type="search"],
+.admin-panel #sec-dealers input[type="search"] {
+    flex: 1;
+    min-width: 240px;
+    max-width: 360px;
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-3) !important;
+    border-radius: var(--vis-r-pill) !important;
+    padding: 9px 16px 9px 38px !important;
+    font-size: var(--vis-fs-sm);
+    color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b89658' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: 12px center !important;
+    background-size: 16px !important;
+}
+.admin-panel #sec-vehicles .table-header input:focus,
+.admin-panel input#vehicleSearch:focus {
+    background-color: var(--vis-brand-tint) !important;
+    border-color: var(--vis-brand-500) !important;
+    box-shadow: var(--vis-state-focus) !important;
+    outline: none;
+}
+
+/* Botón "Agregar Vehiculo" en header */
+.admin-panel #btnAddVehicle,
+.admin-panel #addVehicleBtn,
+.admin-panel #sec-vehicles button[id*="add" i],
+.admin-panel #sec-brands button[id*="add" i],
+.admin-panel #sec-dealers button[id*="add" i] {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%) !important;
+    color: #1a1310 !important;
+    font-weight: 700 !important;
+    border: 1px solid rgba(212, 173, 110, 0.55) !important;
+    border-radius: var(--vis-r-pill) !important;
+    padding: 10px 22px !important;
+    box-shadow:
+        var(--vis-elev-2),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3) !important;
+}
+.admin-panel #btnAddVehicle:hover {
+    transform: translateY(-1px) scale(1.02) !important;
+    box-shadow:
+        var(--vis-elev-3),
+        var(--vis-elev-glow-strong),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40) !important;
+}
+
+/* ─── 95. STATS KPI vehículos refinados ────────────── */
+.admin-panel #sec-vehicles .stats-grid,
+.admin-panel #sec-vehicles .vehicle-stats,
+.admin-panel #sec-brands .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+/* ─── 96. MARCAS — galería visual moderna ───────── */
+.admin-panel #brandsTable,
+.admin-panel #sec-brands table {
+    /* Si sigue siendo tabla, refinarla */
+}
+.admin-panel #sec-brands .brand-card,
+.admin-panel #sec-brands #brandsList > div {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 24px 18px;
+    text-align: center;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    cursor: pointer;
+}
+.admin-panel #sec-brands .brand-card:hover {
+    transform: translateY(-3px) scale(1.02);
+    border-color: rgba(184, 150, 88, 0.40);
+    box-shadow: var(--vis-elev-3),
+                var(--vis-elev-glow);
+}
+.admin-panel #sec-brands .brand-card img {
+    max-width: 90%;
+    height: 64px;
+    object-fit: contain;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.30));
+}
+
+/* ─── 97. DASHBOARD hero greeting ──────────────── */
+.admin-panel #sec-dashboard .page-header,
+.admin-panel #sec-dashboard > div:first-child {
+    background:
+        radial-gradient(ellipse 800px 300px at 20% 0%,
+            rgba(184, 150, 88, 0.20) 0%,
+            rgba(184, 150, 88, 0.04) 40%,
+            transparent 80%),
+        radial-gradient(ellipse 600px 200px at 80% 100%,
+            rgba(139, 92, 246, 0.10) 0%,
+            transparent 60%),
+        var(--vis-surface-1);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-2xl);
+    padding: 36px 40px 32px;
+    margin: 0 0 24px;
+    box-shadow: var(--vis-elev-3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel #sec-dashboard .page-header::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle,
+        rgba(184, 150, 88, 0.15) 0%,
+        transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+    animation: visHeroOrb 14s ease-in-out infinite;
+}
+@keyframes visHeroOrb {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-40px, 30px) scale(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel #sec-dashboard .page-header::before { animation: none; }
+}
+
+/* ─── 98. KPIs grid Dashboard premium ───────────── */
+.admin-panel #sec-dashboard .stats-grid,
+.admin-panel #sec-dashboard .kpis-grid,
+.admin-panel #sec-dashboard .hero-kpis,
+.admin-panel #sec-dashboard .kpi-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 22px;
+}
+.admin-panel .stat-card,
+.admin-panel #sec-dashboard .stat-card,
+.admin-panel #sec-dashboard .kpi-card,
+.admin-panel #sec-dashboard .hero-kpi {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 22px 24px;
+    box-shadow: var(--vis-elev-1);
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel .stat-card::before,
+.admin-panel #sec-dashboard .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--vis-brand-500) 50%,
+        transparent 100%);
+    opacity: 0;
+    transition: opacity var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .stat-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(184, 150, 88, 0.32);
+    box-shadow: var(--vis-elev-3),
+                var(--vis-elev-glow);
+}
+.admin-panel .stat-card:hover::before {
+    opacity: 1;
+}
+.admin-panel .stat-card .stat-value,
+.admin-panel .kpi-value {
+    font-size: var(--vis-fs-3xl);
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.05;
+    letter-spacing: var(--vis-ls-tightest);
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+    background: linear-gradient(135deg,
+        var(--vis-brand-200) 0%,
+        var(--vis-brand-500) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+}
+.admin-panel .stat-card .stat-label,
+.admin-panel .kpi-label {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+}
+
+/* ─── 99. PAGINATION premium en tablas ─────────── */
+.admin-panel .pagination,
+.admin-panel .pagination-wrapper,
+.admin-panel [class*="paginat"] {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 6px;
+    padding: 16px 0;
+    margin-top: 12px;
+}
+.admin-panel .pagination button,
+.admin-panel .pagination-wrapper button,
+.admin-panel .page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    background: var(--vis-surface-2) !important;
+    border: var(--vis-border-2) !important;
+    border-radius: var(--vis-r-sm) !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.admin-panel .pagination button:hover:not(:disabled),
+.admin-panel .pagination-wrapper button:hover:not(:disabled) {
+    background: var(--vis-state-hover-gold) !important;
+    border-color: rgba(184, 150, 88, 0.40) !important;
+    color: var(--vis-brand-300) !important;
+}
+.admin-panel .pagination button.active,
+.admin-panel .pagination button[aria-current="page"],
+.admin-panel .page-btn.active {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 100%) !important;
+    border-color: var(--vis-brand-500) !important;
+    color: #1a1310 !important;
+    font-weight: 700;
+    box-shadow: var(--vis-elev-1),
+                var(--vis-elev-glow);
+}
+
+/* ─── 100. CHECKBOX universal en tablas ──────── */
+.admin-panel .vehicle-cb,
+.admin-panel input[type="checkbox"]:not(.alt-toggle input):not(.availability-day input) {
+    accent-color: var(--vis-brand-500);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    border-radius: var(--vis-r-xs);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY MASTER — Vehículos + Marcas + Dashboard + Sidebar
+   ═══════════════════════════════════════════════════════════════════ */

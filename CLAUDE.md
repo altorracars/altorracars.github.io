@@ -12943,7 +12943,7 @@ verificationId se persiste correctamente.
 
 | Constructor | Signatura | Argumento app/auth |
 |---|---|---|
-| `firebase.auth.RecaptchaVerifier` | `(container, params, app?)` | 3er arg — `firebase.app.App` o `firebase.auth.Auth` |
+| `firebase.auth.RecaptchaVerifier` | `(container, params, app?)` | 3er arg — **`firebase.app.App` ÚNICAMENTE** (NO Auth — ver §25.11) |
 | `firebase.auth.PhoneAuthProvider` | `(auth?)` | 1er arg — `firebase.auth.Auth` |
 | `firebase.auth.OAuthProvider` (custom) | `(providerId, auth?)` | 2do arg |
 | `firebase.firestore` | implícito en `firebase.firestore(app)` | 1er arg de la función |
@@ -12974,11 +12974,11 @@ firebase.auth.Auth.Persistence.LOCAL                       // constante
 // 2. Todos los OTROS archivos usan estas globals + los pasan a
 //    constructores cuando sea necesario:
 
-// Phone Auth:
+// Phone Auth (atención: RecaptchaVerifier toma App, no Auth):
 var verifier = new firebase.auth.RecaptchaVerifier(
-    'container', { size: 'invisible' }, window.auth
+    'container', { size: 'invisible' }, window.firebaseApp  // ← App, NO auth
 );
-var provider = new firebase.auth.PhoneAuthProvider(window.auth);
+var provider = new firebase.auth.PhoneAuthProvider(window.auth);  // ← Auth, sí
 
 // Firestore (siempre window.db):
 window.db.collection('foo').doc('bar').get()
@@ -13034,6 +13034,105 @@ Lista cronológica de commits con su sección documental correspondiente:
 | 12 | `6f6497d` | §23.11 + §25.5 | FCM Web Push activado — VAPID key generada y pegada |
 | 13 | `3cb5fe4` | §24 | Offline Ultra Brain 2.0 — Arquitectura Dual-Core (LLM intacto + Free Core repotenciado: Small Talk + Fuzzy 2.0 + Stems + N-grams + Memoria + Anáfora + DualCore router con Circuit Breaker + Transformers.js opt-in) |
 | 14 | `fe6055d` | §25 | HOTFIX 2FA — RecaptchaVerifier + PhoneAuthProvider con window.auth (regresión Sprint 3-bis) |
+| 15 | (este commit) | §25.11 | HOTFIX 2FA v2 — RecaptchaVerifier debe recibir `firebaseApp` (App), no `auth` (Auth). Bug del hotfix anterior `fe6055d` causaba `auth/invalid-api-key` y SMS no llegaba |
+
+### 25.11 Hotfix 2FA v2 — RecaptchaVerifier expects App, not Auth (2026-05-09)
+
+> Bug del hotfix anterior `fe6055d` (§25.3): pasé el tipo equivocado
+> al 3er argumento de `RecaptchaVerifier`. El SMS seguía sin llegar
+> y la consola mostraba `auth/invalid-api-key`. Resuelto con RCA Strict
+> Mode (§19) tras escaneo de tipos en Firebase Compat SDK v11.
+
+#### Causa raíz
+
+`firebase.auth.RecaptchaVerifier(container, params, app?)` en Firebase
+Compat v11 espera **`firebase.app.App` instance** como 3er argumento,
+NO `firebase.auth.Auth`. En `fe6055d` pasé `window.auth` (Auth) por
+error.
+
+**Cómo se manifestaba**:
+1. SDK accede a `app.options.apiKey` del 3er argumento internamente
+2. Auth no tiene `.options.apiKey` → retorna `undefined`
+3. Request a `identitytoolkit.googleapis.com/.../sendVerificationCode`
+   se envía con `apiKey=undefined` en query string
+4. Backend Google rechaza con `FirebaseError: auth/invalid-api-key`
+5. SMS NUNCA se envía → cliente ve la pantalla de 2FA con
+   `Reenviar codigo (11s)` countdown pero el código nunca llega
+
+#### Confirmación visual
+
+Console del cliente mostraba (incógnito Chrome desktop):
+- `Firebase core ready (Auth + Firestore) [altorra-admin]` — init OK
+- `[SW] Service Worker loaded - Version: v20260507025049` — versión correcta
+- **`Uncaught (in promise) FirebaseError: Firebase: Error (auth/invalid-api-key)` at `assert.ts:152`**
+
+El error es la firma exacta del bug — apiKey malformada en la request,
+no del lado del SDK init (que sí funcionó correcto con appName).
+
+#### Fix (1 línea)
+
+`js/admin-auth.js:521`:
+```diff
+-        }, window.auth);
++        }, window.firebaseApp);
+```
+
+`window.firebaseApp` ya estaba expuesto en `firebase-config.js:115`
+desde §23.10. El cambio es totalmente compatible con la API documentada
+de Firebase Compat v11.
+
+**No tocar** las líneas 537 y 758 (los `new PhoneAuthProvider(window.auth)`).
+PhoneAuthProvider SÍ recibe Auth — su signatura es distinta:
+```ts
+class PhoneAuthProvider {
+    constructor(auth?: firebase.auth.Auth);
+}
+```
+
+#### Por qué `fe6055d` rompió antes que la regla diff-keys
+
+El bug latente existió **dos veces** en la historia del proyecto:
+
+1. **Pre-Sprint 3-bis (§23.10)**: el constructor sin args usaba la
+   default app — funcionaba porque la default app existía
+2. **Post-Sprint 3-bis sin hotfix**: la default app fue eliminada
+   (renombrada a `altorra-admin`) → constructor sin args daba
+   "No Firebase App '[DEFAULT]' has been created"
+3. **Post-fe6055d**: pasé `window.auth` para arreglar el (2) pero
+   con tipo incorrecto → `auth/invalid-api-key`
+4. **Post-§25.11 (este commit)**: tipo correcto `window.firebaseApp`
+
+#### Lección documental
+
+Actualizada §25.4 — la fila de `RecaptchaVerifier` ahora dice
+explícitamente "**`firebase.app.App` ÚNICAMENTE** (NO Auth — ver §25.11)"
+para que cualquier futuro Claude/dev no repita el error.
+
+#### Test E2E post-deploy
+
+1. `git pull origin main` + recargar admin con Ctrl+Shift+R
+2. Login con email/password de cuenta con 2FA habilitado
+3. Pantalla de 2FA aparece con `**********6747`
+4. **SMS llega al celular en <30s**
+5. Tipear código → verificar OK → entra al panel
+6. Console del browser: cero `auth/invalid-api-key`
+
+#### Anti-pattern reforzado
+
+| Riesgo | Mitigación |
+|---|---|
+| Confundir `App` vs `Auth` instances cuando ambos están expuestos | Doc §25.4 con tipo explícito por constructor + ejemplo del patrón seguro |
+| Hacer hotfix sin verificar la signatura exacta de la API | RCA Strict Mode §19 — leer el archivo, leer la doc del SDK, validar tipo ANTES de proponer fix |
+| Hotfix-of-hotfix sin doc | Cada iteración del fix queda en su propia sub-sección (§25 → §25.11) con explicación de por qué el anterior no funcionó |
+
+**Archivos modificados**:
+- `js/admin-auth.js:521` (1 línea)
+- `service-worker.js` + `js/cache-manager.js` — bump v20260509030000
+- `CLAUDE.md` §25.4 (typo fix) + §25.11 (esta sección) + changelog
+
+**Sin Cloud Functions, sin Firestore rules, sin deploy manual**. Solo
+push a main → service worker invalida cache → próximo recarga del
+admin tiene el fix.
 
 ### 25.7 Estado deployado en producción (al 2026-05-09)
 
@@ -13047,7 +13146,7 @@ Lista cronológica de commits con su sección documental correspondiente:
 | Aislamiento auth admin/web | ✅ Activo | appName `altorra-admin` vs `altorra-public` — sesiones simultáneas funcionan |
 | Trusted devices editor | ✅ Activo | Self-service diff-keys permite a editor escribir su trustedDevices |
 | Persistencia sesión admin | ✅ Activo | Auth-hint pre-paint + restore último section |
-| Hotfix 2FA | ✅ En main tras `fe6055d` | Pendiente que cliente haga `git pull` + recargue admin para invalidar SW cache |
+| Hotfix 2FA | ✅ Fix definitivo en §25.11 | `fe6055d` rompía con `auth/invalid-api-key`. Fix de 1 línea en §25.11 (App en vez de Auth). Pendiente recargar admin con Ctrl+Shift+R |
 
 ### 25.8 Pendientes operacionales del cliente (post-deploy)
 

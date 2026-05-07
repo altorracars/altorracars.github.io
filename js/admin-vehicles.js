@@ -104,6 +104,101 @@
         return v._searchStr;
     }
 
+    // §34 — Cards-list container creator (replaces <table> arcaica)
+    // Idempotent: returns existing #vehiclesCardList or creates it as
+    // sibling de <table id="vehiclesTable">. Hides la tabla legacy.
+    function _ensureVehiclesCardList() {
+        var list = document.getElementById('vehiclesCardList');
+        if (list) return list;
+        var table = document.getElementById('vehiclesTable');
+        if (!table || !table.parentNode) return null;
+        list = document.createElement('div');
+        list.id = 'vehiclesCardList';
+        list.className = 'av2-card-list';
+        table.parentNode.insertBefore(list, table);
+        return list;
+    }
+
+    function _vehicleCardHTML(v, opts) {
+        var estado = v.estado || 'disponible';
+        var esVendido = estado === 'vendido';
+        var imageUrl = v.imagen || 'multimedia/vehicles/placeholder-car.jpg';
+        var marcaCap = (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1);
+        var titleStr = AP.escapeHtml(marcaCap + ' ' + (v.modelo || ''));
+        var yearStr = AP.escapeHtml(String(v.year || ''));
+        var catStr = AP.escapeHtml(v.categoria || '');
+        var kmStr = v.kilometraje ? AP.escapeHtml(String(v.kilometraje).replace(/\B(?=(\d{3})+(?!\d))/g, '.')) + ' km' : '';
+
+        // Origen del vehiculo
+        var origen = 'Propio';
+        if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
+            var dealer = AP.dealers.find(function(x) { return x._docId === v.concesionario; });
+            origen = dealer ? dealer.nombre : v.concesionario;
+        } else if (v.concesionario === '_particular' && v.consignaParticular) {
+            origen = 'Consigna: ' + v.consignaParticular;
+        }
+
+        // Actions footer (data-action — XSS safe, event delegation)
+        var actions = '';
+        actions += '<button class="v-act v-act--info" data-action="previewVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Vista previa"><i data-lucide="eye"></i></button>';
+        actions += '<button class="v-act v-act--info" data-action="showAuditTimeline" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Historial"><i data-lucide="clock-3"></i></button>';
+        if (AP.canCreateOrEditInventory()) {
+            actions += '<span class="v-act-sep"></span>';
+            actions += '<button class="v-act v-act--gold' + (v.destacado ? ' v-act--active' : '') + '" data-action="toggleDestacado" data-id="' + AP.escapeHtml(String(v.id)) + '" title="' + (v.destacado ? 'Quitar destacado' : 'Destacar') + '"><i data-lucide="star"></i></button>';
+            if (esVendido && !AP.isSuperAdmin()) {
+                actions += '<button class="v-act" disabled title="Solo Super Admin edita vendidos"><i data-lucide="pencil"></i></button>';
+            } else {
+                actions += '<button class="v-act v-act--success" data-action="editVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Editar"><i data-lucide="pencil"></i></button>';
+                actions += '<button class="v-act v-act--info" data-action="duplicateVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Duplicar"><i data-lucide="copy"></i></button>';
+            }
+            if (estado === 'disponible') {
+                actions += '<button class="v-act v-act--operation" data-action="markAsSold" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Gestionar operacion"><i data-lucide="handshake"></i></button>';
+            }
+        }
+        if (AP.canDeleteInventory()) {
+            actions += '<span class="v-act-sep"></span>';
+            actions += '<button class="v-act v-act--danger" data-action="deleteVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
+        }
+
+        // Price
+        var priceHTML = AP.formatPrice(v.precio);
+        if (v.precioOferta) {
+            priceHTML = AP.formatPrice(v.precioOferta) + '<span class="av2-card-price-old">' + AP.formatPrice(v.precio) + '</span>';
+        }
+
+        var featured = v.destacado
+            ? '<span class="av2-card-badge-featured"><i data-lucide="star"></i>Destacado</span>'
+            : '';
+
+        var grip = (opts && opts.reorder)
+            ? '<div class="av2-card-grip" title="Arrastra para reordenar"><i data-lucide="grip-vertical"></i></div>'
+            : '';
+
+        return ''
+            + '<article class="av2-card" data-vehicle-id="' + AP.escapeHtml(String(v.id)) + '"' + ((opts && opts.reorder) ? ' draggable="true"' : '') + '>'
+            +   '<div class="av2-card-thumb-wrap">'
+            +       grip
+            +       featured
+            +       '<img class="av2-card-thumb" src="' + AP.escapeHtml(imageUrl) + '" alt="" loading="lazy" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">'
+            +   '</div>'
+            +   '<div class="av2-card-body">'
+            +     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+            +       '<span class="av2-card-code">' + AP.escapeHtml(v.codigoUnico || '—') + '</span>'
+            +       '<input type="checkbox" class="vehicle-cb" data-vid="' + AP.escapeHtml(String(v.id)) + '" title="Seleccionar">'
+            +     '</div>'
+            +     '<h3 class="av2-card-title">' + titleStr + '</h3>'
+            +     '<div class="av2-card-meta">' + yearStr + (catStr ? ' · ' + catStr : '') + (kmStr ? ' · ' + kmStr : '') + '</div>'
+            +     '<div class="av2-card-meta">'
+            +       '<span class="av2-card-status av2-card-status--' + AP.escapeHtml(estado) + '">' + AP.escapeHtml(estado) + '</span>'
+            +       ' · <span class="badge badge-' + AP.escapeHtml(v.tipo || 'usado') + '" style="font-size:0.68rem;">' + AP.escapeHtml(v.tipo || 'usado') + '</span>'
+            +     '</div>'
+            +     '<div class="av2-card-price">' + priceHTML + '</div>'
+            +     '<div class="av2-card-meta" style="font-size:0.74rem;opacity:0.78;">' + AP.escapeHtml(origen) + '</div>'
+            +   '</div>'
+            +   '<div class="av2-card-actions">' + actions + '</div>'
+            + '</article>';
+    }
+
     function renderVehiclesTable(filter) {
         var filtered = AP.vehicles;
         if (filter) {
@@ -142,91 +237,28 @@
             filtered = AP.paginate(filtered, 'vehicles');
         }
 
-        var maxPrio = 1;
-        filtered.forEach(function(v) { if ((v.prioridad || 0) > maxPrio) maxPrio = v.prioridad; });
-
-        var html = '';
-        var colCount = _reorderMode ? 10 : 8;
-        filtered.forEach(function(v) {
-            var estado = v.estado || 'disponible';
-            var estadoInfo = AP.ESTADO_LABELS[estado] || AP.ESTADO_LABELS.disponible;
-            var estadoBadge = '<span class="badge ' + estadoInfo.cls + '">' + estadoInfo.text + '</span>';
-            var esVendido = estado === 'vendido';
-            var actions = '<div class="v-actions">';
-            // Group 1: View actions (always visible)
-            actions += '<button class="v-act v-act--info" data-action="previewVehicle" data-id="' + v.id + '" title="Vista previa"><i data-lucide="eye"></i></button>';
-            actions += '<button class="v-act v-act--info" data-action="showAuditTimeline" data-id="' + v.id + '" title="Historial"><i data-lucide="clock-3"></i></button>';
-            if (AP.canCreateOrEditInventory()) {
-                // Separator
-                actions += '<span class="v-act-sep"></span>';
-                // Group 2: Edit actions
-                actions += '<button class="v-act v-act--gold' + (v.destacado ? ' v-act--active' : '') + '" data-action="toggleDestacado" data-id="' + v.id + '" title="' + (v.destacado ? 'Quitar destacado' : 'Destacar') + '"><i data-lucide="' + (v.destacado ? 'star' : 'star') + '"></i></button>';
-                if (esVendido && !AP.isSuperAdmin()) {
-                    actions += '<button class="v-act" disabled title="Solo Super Admin edita vendidos"><i data-lucide="pencil"></i></button>';
-                    actions += '<span class="v-act-protected"><i data-lucide="shield-alert"></i>Protegido</span>';
-                } else {
-                    actions += '<button class="v-act v-act--success" data-action="editVehicle" data-id="' + v.id + '" title="Editar"><i data-lucide="pencil"></i></button>';
-                    actions += '<button class="v-act v-act--info" data-action="duplicateVehicle" data-id="' + v.id + '" title="Duplicar"><i data-lucide="copy"></i></button>';
-                }
-                if (estado === 'disponible') {
-                    actions += '<button class="v-act v-act--operation" data-action="markAsSold" data-id="' + v.id + '" title="Gestionar operacion"><i data-lucide="handshake"></i>Operacion</button>';
-                }
+        // §34 — Render cards (replaces <table> arcaica). Tabla legacy se oculta.
+        var cardList = _ensureVehiclesCardList();
+        var tableEl = document.getElementById('vehiclesTable');
+        if (cardList) {
+            if (tableEl) tableEl.style.display = 'none';
+            if (filtered.length === 0) {
+                cardList.innerHTML = '<div class="av2-card-empty"><i data-lucide="inbox"></i><div>No se encontraron vehiculos</div></div>';
+            } else {
+                var cardsHTML = '';
+                filtered.forEach(function(v) {
+                    cardsHTML += _vehicleCardHTML(v, { reorder: _reorderMode });
+                });
+                cardList.innerHTML = cardsHTML;
             }
-            if (AP.canDeleteInventory()) {
-                // Separator before danger zone
-                actions += '<span class="v-act-sep"></span>';
-                // Group 3: Danger
-                actions += '<button class="v-act v-act--danger" data-action="deleteVehicle" data-id="' + v.id + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
-            }
-            actions += '</div>';
-            var origen = 'Propio';
-            if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
-                var dealer = AP.dealers.find(function(x) { return x._docId === v.concesionario; });
-                origen = dealer ? dealer.nombre : v.concesionario;
-            } else if (v.concesionario === '_particular' && v.consignaParticular) {
-                origen = 'Consigna: ' + v.consignaParticular;
-            }
-
-            var prio = v.prioridad || 0;
-            var barPct = maxPrio > 0 ? Math.round((prio / maxPrio) * 100) : 0;
-            var barColor = prio === 0 ? '#333' : prio >= 70 ? '#b89658' : prio >= 30 ? '#f59e0b' : '#6b7280';
-
-            var dragCell = _reorderMode ? '<td class="col-drag" style="cursor:grab;text-align:center;color:var(--admin-text-muted);" title="Arrastra para reordenar"><i data-lucide="grip-vertical" style="width:16px;height:16px;"></i></td>' : '';
-            var posCell = _reorderMode ? '<td class="col-pos" style="min-width:70px;">' +
-                '<div style="display:flex;align-items:center;gap:6px;">' +
-                    '<span style="font-weight:700;font-size:0.8rem;min-width:22px;color:' + (prio > 0 ? '#b89658' : 'var(--admin-text-muted)') + ';">' + prio + '</span>' +
-                    '<div style="flex:1;height:6px;background:#1e1e1e;border-radius:3px;overflow:hidden;min-width:30px;">' +
-                        '<div style="height:100%;width:' + barPct + '%;background:' + barColor + ';border-radius:3px;transition:width 0.3s;"></div>' +
-                    '</div>' +
-                '</div>' +
-            '</td>' : '';
-
-            html += '<tr data-vehicle-id="' + v.id + '"' + (_reorderMode ? ' draggable="true"' : '') + '>' +
-                '<td><input type="checkbox" class="vehicle-cb" data-vid="' + v.id + '"></td>' +
-                dragCell +
-                '<td><code style="font-size:0.75rem;color:var(--admin-accent,#58a6ff);">' + AP.escapeHtml(v.codigoUnico || '—') + '</code></td>' +
-                '<td><img class="vehicle-thumb" src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" alt="" loading="lazy" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'"></td>' +
-                '<td><strong>' + (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1) + ' ' + (v.modelo || '') + '</strong><br><small style="color:#8b949e">' + v.year + ' &middot; ' + (v.categoria || '') + '</small>' +
-                (v.createdByName || v.createdBy ? '<br><small style="color:#6e7681;font-size:0.65rem;" title="Creado ' + (v.createdAt ? AP.timeAgo(v.createdAt) : '') + '">Creado por: ' + AP.escapeHtml(v.createdByName || v.createdBy || '') + '</small>' : '') +
-                (v.lastModifiedByName && v.lastModifiedBy !== v.createdBy ? '<br><small style="color:#d4af37;font-size:0.65rem;" title="' + (v.lastModifiedAt || '') + '">Mod: ' + AP.escapeHtml(v.lastModifiedByName) + ' ' + (v.lastModifiedAt ? AP.timeAgo(v.lastModifiedAt) : '') + '</small>' : '') +
-                '</td>' +
-                '<td><span class="badge badge-' + v.tipo + '">' + v.tipo + '</span></td>' +
-                '<td>' + AP.formatPrice(v.precio) + (v.precioOferta ? '<br><small style="color: var(--admin-warning);">' + AP.formatPrice(v.precioOferta) + '</small>' : '') + '</td>' +
-                '<td>' + estadoBadge + '</td>' +
-                posCell +
-                '<td><small style="color:var(--admin-text-secondary);">' + AP.escapeHtml(origen) + '</small></td>' +
-                '<td>' + actions + '</td>' +
-            '</tr>';
-        });
-        if (!html) html = '<tr><td colspan="' + colCount + '" style="text-align:center; padding:2rem; color:#8b949e;">No se encontraron vehiculos</td></tr>';
-        $('vehiclesTableBody').innerHTML = html;
-
-        // Update sort indicators in headers
-        document.querySelectorAll('#vehiclesTable th[data-sort]').forEach(function(th) {
-            var col = th.getAttribute('data-sort');
-            var si = th.querySelector('.sort-icon'); if (si) si.remove(); var text = th.textContent.trim();
-            th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('vehicles', col) : '');
-        });
+            // Limpiar tabla legacy (por si refresca: no quede stale)
+            var tbody = $('vehiclesTableBody');
+            if (tbody) tbody.innerHTML = '';
+        } else {
+            // Fallback ultraconservador a tabla legacy si #vehiclesTable no existe
+            var tbody2 = $('vehiclesTableBody');
+            if (tbody2) tbody2.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:#8b949e;">No hay contenedor de cards</td></tr>';
+        }
 
         // Render pagination
         if (!_reorderMode && AP.renderPagination) {
@@ -242,7 +274,36 @@
         if (countEl) countEl.textContent = totalFiltered + ' vehiculo' + (totalFiltered !== 1 ? 's' : '');
 
         AP.refreshIcons();
-        if (_reorderMode) initTableDragDrop();
+        if (_reorderMode) initCardsDragDrop();
+    }
+
+    // §34 — Drag-drop adapter para cards (reorder mode). Mantiene
+    // misma persistencia (window.db.batch update prioridad).
+    function initCardsDragDrop() {
+        var list = document.getElementById('vehiclesCardList');
+        if (!list) return;
+        var cards = list.querySelectorAll('.av2-card[draggable="true"]');
+        cards.forEach(function(card) {
+            card.addEventListener('dragstart', function(e) {
+                _dragSrcRow = card;
+                card.classList.add('av2-card--dragging');
+                if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; }
+            });
+            card.addEventListener('dragend', function() {
+                card.classList.remove('av2-card--dragging');
+                _dragSrcRow = null;
+            });
+            card.addEventListener('dragover', function(e) { e.preventDefault(); });
+            card.addEventListener('drop', function(e) {
+                e.preventDefault();
+                if (!_dragSrcRow || _dragSrcRow === card) return;
+                var srcId = parseInt(_dragSrcRow.getAttribute('data-vehicle-id'), 10);
+                var tgtId = parseInt(card.getAttribute('data-vehicle-id'), 10);
+                if (typeof handlePrioritySwap === 'function') {
+                    handlePrioritySwap(srcId, tgtId);
+                }
+            });
+        });
     }
 
     // ========== REORDER MODE TOGGLE ==========
@@ -1762,6 +1823,15 @@
             }, function() {
                 // Permission denied or collection doesn't exist — silent fail
             });
+
+            // §34 — Section cleanup hook
+            if (window.AltorraSectionCleanup && !startDraftsListener._cleanupRegistered) {
+                startDraftsListener._cleanupRegistered = true;
+                window.AltorraSectionCleanup.register('vehicles', function() {
+                    if (_unsubDrafts) { try { _unsubDrafts(); } catch (e) {} _unsubDrafts = null; }
+                    startDraftsListener._cleanupRegistered = false;
+                });
+            }
         } catch (_) {}
     }
 

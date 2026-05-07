@@ -18380,3 +18380,236 @@ Resultado: cambio de sección **instantáneo**. CPU idle al scrollear.
 9. **Reduced motion**: activar en DevTools → ✅ todas las animaciones desactivadas
 
 **Cache bump**: `v20260510270000`.
+
+---
+
+## 34. ADR-034 ADMIN OVERHAUL — Tablas legacy → Cards + XSS fix + Cleanup leaks (2026-05-07)
+
+> Cirugía microquirúrgica autorizada tras auditoría profunda (Fase 0
+> Escáner Claude). Confirmó que ADR-033 layout/FOUC YA está en
+> producción y NO debe re-tocarse. Lo que faltaba: 3 módulos con
+> markup `<table>` arcaico (Vehículos / Marcas / Reseñas), 2 brechas
+> XSS reales (Banners + Reseñas con `onclick="..."` sin escape),
+> 7 módulos con `onSnapshot` sin teardown que acumulaban listeners
+> al cambiar de sección, y un `MutationObserver subtree:true` en
+> `admin-sidebar.js:131` que repetía la regresión histórica §17.12
+> (bug "clicks bloqueados en centro de botones del header").
+>
+> **Decisión arquitectónica**: NO crear `admin-v3.css` ni
+> "V2-bis" — CLAUDE.md §19 + §17.12 prohíben el patrón "v1→v5 sin
+> diagnóstico". Extiendo `admin-v2.css` con sección "Cards
+> Components" y wirea `AltorraSectionCleanup` (definido en
+> §33.4 pero unused) en los módulos con listeners.
+
+### 34.1 Hallazgos del Escáner Claude (Fase 0)
+
+| Aspecto | Estado |
+|---|---|
+| ADR-033 scroll fix + FOUC + sidebar | ✅ Implementado y funcional |
+| `renderVehiclesTable` con `<table><tr><td>` legacy | 🔴 Confirmado (líneas 107-246) |
+| `renderBrandsTable` con `<table><tr><td>` legacy | 🔴 Confirmado (líneas 86-143) |
+| `renderReviewsTable` con `<table>` + XSS injection | 🔴 Confirmado (líneas 75-124) |
+| Banners con `onclick="AP.editBanner('"+_docId+"')"` | 🔴 Confirmado XSS |
+| `AltorraSectionCleanup` definido pero **0 callers** | 🟠 Unused — leaks acumulan |
+| `MutationObserver subtree:true` en sidebar:131 | 🟠 Regresión §17.12 latente |
+| `onSnapshot` sin teardown al cambiar sección | 🟠 35 setInterval + 25 listeners |
+| Aliados (admin-dealers.js) ya está moderno con grid+cards | ✅ Patrón viable confirmado |
+
+### 34.2 Sprint A — `admin-v2.css` extendido con Cards Components (~280 líneas)
+
+Append al final de `admin-v2.css` (no nueva capa). Selectores `.av2-*`
+para cero colisión con clases legacy. Cero `!important` adicionales.
+
+**Componentes nuevos**:
+- `.av2-card-list` (grid auto-fill minmax 320px)
+  + variantes `--gallery` (220px) y `--reviews` (360px)
+- `.av2-card` con backdrop-filter Mica + `contain: layout style` +
+  `content-visibility: auto` (perf §15-17 patrón validado)
+- `.av2-card-thumb` aspect 4/3 + variant `--logo` (16/10 contain)
+- `.av2-card-thumb-wrap` para overlay de badges
+- `.av2-card-body` flex column con title/meta/price
+- `.av2-card-title` con line-clamp 2
+- `.av2-card-price` con tabular-nums + tachado del precio original
+- `.av2-card-code` pill monospace dorado para códigos `ALT-XXXXXX-XXXX`
+- `.av2-card-status` semáforo de estados (disponible/reservado/vendido/borrador)
+- `.av2-card-badge-featured` pill dorado absoluto top-right
+- `.av2-card-badge-count` contador con icon
+- `.av2-card-stars` + `.av2-card-avatar` para reseñas
+- `.av2-card-actions` footer con border-top + grupo de buttons
+- `.av2-card-quote` con line-clamp 3 + italic para reseñas
+- `.av2-card-empty` empty state con icon + dashed border
+- `.av2-card-grip` handle de drag-drop para reorder mode
+- Mobile responsive: 1 columna en <600px
+- `prefers-reduced-motion` respetado
+
+### 34.3 Sprint B — Vehículos: tabla → Cards (`admin-vehicles.js`)
+
+`renderVehiclesTable` reescrita conservando:
+- Mismo nombre de función (compat con todos los callers)
+- Misma lógica de filter + advanced filters (estado, dealer)
+- Mismo sort (incluye reorder mode con prioridad desc)
+- Misma paginación (`AP.paginate('vehicles')`)
+- Mismo `data-action` para acciones (event delegation existente
+  líneas 2070-2086 sigue funcionando — XSS-safe)
+
+**Lo que cambia**:
+- `_ensureVehiclesCardList()` crea `<div id="vehiclesCardList">`
+  como sibling del `<table id="vehiclesTable">` la primera vez,
+  oculta la tabla legacy (`display: none`)
+- `_vehicleCardHTML(v, opts)` retorna markup de card con: thumbnail
+  prominente + featured badge + grip (reorder) + código monospace
+  + checkbox selección + título + meta (year · categoría · km)
+  + status pill + tipo badge + precio con oferta tachada + origen
+  + footer de acciones
+- `initCardsDragDrop()` adapta drag-drop nativo a cards. Reusa
+  `handlePrioritySwap(srcId, targetId)` existente
+
+**Cero pérdida de funcionalidad**: todos los `data-action`
+(previewVehicle, editVehicle, duplicateVehicle, toggleDestacado,
+markAsSold, deleteVehicle, showAuditTimeline) operan idénticos.
+
+### 34.4 Sprint C — Marcas: tabla → Gallery Cards (`admin-brands.js`)
+
+Variant `--gallery` (220px columns):
+- Logo prominente top (aspect 16/10, contain, padding 18px)
+- Fallback "Sin logo" elegante
+- Título + code pill + count vehículos asociados (icon `car`)
+- Descripción si existe
+- Acciones: editBrand + deleteBrand (RBAC respetado)
+
+### 34.5 Sprint D — Reseñas: tabla → Cards + FIX XSS crítico (`admin-reviews.js`)
+
+**FIX XSS**: las líneas 96 y 100 originales tenían
+`onclick="AP.editReview('" + r._docId + "')"` y
+`onclick="AP.deleteReviewConfirm('" + r._docId + "')"` sin escape.
+Si `_docId` contenía `'); alert(1); //`, era inyección directa.
+
+**Solución**: migrar a `data-action="editReview" data-id="' + AP.escapeHtml(r._docId) + '"` + agregar event delegation al final del IIFE
+que mapea action → handler → invoca `editReview(id)` o
+`deleteReviewConfirm(id)` con valor sanitizado.
+
+**Cards UX**:
+- Avatar circular dorado con iniciales
+- Nombre + check verde si verified + ubicación
+- Stars row alineado a la derecha
+- Quote en italic con line-clamp 3
+- Tags row: vehicle (icon) + source label + featured badge
+- Actions footer alineado a la derecha (edit + delete)
+
+### 34.6 Sprint E — FIX XSS en Banners (`admin-banners.js`)
+
+**Markup ya era card moderno** — solo cerré la brecha XSS:
+
+Antes: `<button onclick="AP.editBanner('" + b._docId + "')">`
++ `<img src="' + imgThumb + '">` (sin escape).
+
+Ahora:
+- `data-action="editBanner" data-id="' + AP.escapeHtml(b._docId) + '"`
+- `data-action="toggleBannerActive"` + `deleteBannerConfirm` idem
+- `<img src="' + imgThumb + '">` con `imgThumb = AP.escapeHtml(b.image || '')`
+- Todos los strings derivados de Firestore pasan por `escapeHtml`:
+  title, subtitle, category, _docId
+- Event delegation agregado al final del IIFE para los 3 actions
+
+### 34.7 Sprint F — `AltorraSectionCleanup` activado en 7 módulos
+
+`admin-v2-core.js` ya define el sistema (§33.4) con
+`register(section, fn)` y `run(section)` hookeado a
+`AltorraSections.onChange`. Solo faltaban callers.
+
+Wired en (cada uno con `_cleanupRegistered` flag idempotente):
+
+| Módulo | Sección | Cleanup |
+|---|---|---|
+| `admin-appointments.js` | `'crm'` + `'appointments'` (alias §27.3) | `AP.unsubAppointments()` |
+| `admin-reviews.js subscribeReviews` | `'reviews'` | `AP.unsubReviews()` |
+| `admin-banners.js subscribeBanners` | `'banners'` | `AP.unsubBanners()` |
+| `admin-dealers.js loadDealers` | `'dealers'` | `AP.unsubDealers()` |
+| `admin-concierge.js startChatsListener` | `'concierge'` | `_chatsUnsub() + _messagesUnsub()` |
+| `admin-crm.js setupAppointmentsHook` | `'crm'` | `clearInterval(pollId)` |
+| `admin-vehicles.js startDraftsListener` | `'vehicles'` | `_unsubDrafts()` |
+
+**Resultado**: al cambiar de sección, los listeners de la sección
+anterior se cancelan automáticamente. Firestore reads bajan
+correspondientemente. Si admin vuelve a la sección, el módulo
+re-suscribe (load/subscribe son idempotentes).
+
+### 34.8 Sprint G — Eliminar `MutationObserver subtree:true` (`admin-sidebar.js`)
+
+CLAUDE.md §17.12 prohíbe explícitamente este patrón:
+> NUNCA usar un MutationObserver global con `subtree: true` que
+> ejecute operaciones DOM costosas.
+
+`observeSectionChanges()` líneas 117-132 lo violaba. **Reemplazado**
+por:
+- **Path A (preferido)**: suscripción a `AltorraSections.onChange()`
+  → cuando el router emite cambio de sección, ejecuta
+  `expandActiveGroup()` directamente
+- **Path B (fallback)**: listener delegado en sidebar.click sobre
+  `.nav-item` con `setTimeout(expandActiveGroup, 30)` para que
+  el router tenga tiempo de aplicar `.active`
+
+Cero MutationObserver global. Cero riesgo de regresión §17.12.
+
+### 34.9 Sprint H — Cache bump
+
+- `service-worker.js CACHE_VERSION`: `v20260510270000` → `v20260510280000`
+- `js/cache-manager.js APP_VERSION`: idem.
+
+Forza invalidación del SW cache + IndexedDB cache + localStorage cache
+en TODOS los clientes que abran admin.html post-deploy.
+
+### 34.10 Test E2E
+
+| # | Test | Resultado esperado |
+|---|---|---|
+| 1 | Ctrl+Shift+R en admin.html | Preloader → admin sin scroll bug, sidebar siempre visible |
+| 2 | Ir a Vehículos | Grid de cards (NO tabla) con thumb + status pill + price + acciones inline |
+| 3 | Click "Editar" en una card | Modal abre con datos correctos (data-action funciona) |
+| 4 | Click "Eliminar" en una card | Confirm modal aparece (data-action delegation OK) |
+| 5 | Toggle reorder mode | Cards muestran grip handle, drag-drop funciona, prioridad persiste |
+| 6 | Selección masiva (checkboxes) | Batch bar aparece con conteo |
+| 7 | Ir a Marcas | Gallery de cards con logo + count vehículos |
+| 8 | Ir a Reseñas | Cards con avatar + stars + quote + acciones |
+| 9 | Click editar reseña | Modal abre (XSS fix con data-action) |
+| 10 | Ir a Banners → click editar | Modal abre (XSS fix) |
+| 11 | Cambiar entre secciones varias veces | DevTools Memory: NO acumula listeners |
+| 12 | DevTools Network → Firestore reads | Bajan al cambiar de sección |
+| 13 | Mobile (<600px) | Cards en 1 columna, layout fluido |
+| 14 | `prefers-reduced-motion: reduce` | Cards sin animations hover |
+| 15 | Click en cualquier botón del header | Funciona (sin MutationObserver bloqueando §17.12) |
+
+### 34.11 Anti-patterns evitados
+
+| Patrón prohibido | Origen del veto | Cómo lo evitamos |
+|---|---|---|
+| Crear `admin-v3.css` | §19, §17.12 | Extendí `admin-v2.css` con sección Cards Components |
+| `MutationObserver subtree:true` global | §17.12 | Eliminé el de admin-sidebar.js + suscripción a AltorraSections.onChange |
+| `onclick="..."` inline con datos usuario | §7 (XSS) | Migré 5 callsites a data-action + escapeHtml |
+| Animar `width/height/top/left` | §17.2 | Solo `transform` + `opacity` en cards hover |
+| `transition: all` | §17.2 | Especificar propiedades específicas |
+| Listeners `onSnapshot` sin teardown | §33.4 leaks | AltorraSectionCleanup wired en 7 módulos |
+| Re-leer files sin RCA | §19 | Auditoría profunda con 3 Explore agents en paralelo + cruce con CLAUDE.md antes de tocar nada |
+
+### 34.12 Archivos modificados
+
+| Archivo | Tipo | Detalle |
+|---|---|---|
+| `css/admin-v2.css` | Append | +280 líneas Cards Components |
+| `js/admin-vehicles.js` | Edit | renderVehiclesTable reescrita + initCardsDragDrop + cleanup hook drafts |
+| `js/admin-brands.js` | Edit | renderBrandsTable reescrita + _ensureBrandsCardList |
+| `js/admin-reviews.js` | Edit | renderReviewsTable reescrita + delegation handler + cleanup hook |
+| `js/admin-banners.js` | Edit | renderBannerList con escapeHtml + delegation handler + cleanup hook |
+| `js/admin-sidebar.js` | Edit | observeSectionChanges sin MutationObserver |
+| `js/admin-appointments.js` | Edit | cleanup hook bajo 'crm' + 'appointments' |
+| `js/admin-crm.js` | Edit | cleanup hook setupAppointmentsHook con clearInterval |
+| `js/admin-concierge.js` | Edit | cleanup hook startChatsListener |
+| `js/admin-dealers.js` | Edit | cleanup hook loadDealers |
+| `service-worker.js` | Edit | CACHE_VERSION bump |
+| `js/cache-manager.js` | Edit | APP_VERSION bump |
+| `CLAUDE.md` | Append | Esta sección §34 |
+
+**Total**: 13 archivos. Cero archivos nuevos creados (CLAUDE.md §19
+prohibe el patrón "v1→v5 sin diagnóstico" — extendí lo existente).
+
+**Cache bump**: `v20260510280000`.

@@ -23,6 +23,16 @@
     // ========== LOAD DEALERS ==========
     function loadDealers() {
         if (AP.unsubDealers) AP.unsubDealers();
+
+        // §34 — Section cleanup hook
+        if (window.AltorraSectionCleanup && !loadDealers._cleanupRegistered) {
+            loadDealers._cleanupRegistered = true;
+            window.AltorraSectionCleanup.register('dealers', function() {
+                if (AP.unsubDealers) { try { AP.unsubDealers(); } catch (e) {} AP.unsubDealers = null; }
+                loadDealers._cleanupRegistered = false;
+            });
+        }
+
         AP.unsubDealers = window.db.collection('concesionarios').onSnapshot(function(snap) {
             AP.dealers = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
             renderDealersList();

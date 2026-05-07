@@ -12,6 +12,15 @@
         if (AP.unsubBanners) AP.unsubBanners();
         var _initialized = false;
 
+        // §34 — Section cleanup hook
+        if (window.AltorraSectionCleanup && !subscribeBanners._cleanupRegistered) {
+            subscribeBanners._cleanupRegistered = true;
+            window.AltorraSectionCleanup.register('banners', function() {
+                if (AP.unsubBanners) { try { AP.unsubBanners(); } catch (e) {} AP.unsubBanners = null; }
+                subscribeBanners._cleanupRegistered = false;
+            });
+        }
+
         AP.unsubBanners = db.collection('banners').orderBy('order', 'asc').onSnapshot(function(snap) {
             AP.banners = [];
             snap.forEach(function(doc) {
@@ -59,31 +68,37 @@
 
         var html = '';
         items.forEach(function(b) {
+            // §34 — FIX XSS: escape ALL user-derived strings + replace
+            // onclick="..." con data-action (event delegation)
+            var docId = AP.escapeHtml(b._docId || '');
             var statusClass = b.active ? 'badge-nuevo' : '';
             var statusText = b.active ? 'Activo' : 'Inactivo';
-            var imgThumb = b.image || '';
-            var catLabel = b.category ? ' — ' + b.category : '';
+            var imgThumb = AP.escapeHtml(b.image || '');
+            var titleEsc = AP.escapeHtml(b.title || 'Sin titulo');
+            var subtitleEsc = AP.escapeHtml(b.subtitle || '');
+            var catLabel = b.category ? ' — ' + AP.escapeHtml(b.category) : '';
+            var orderNum = parseInt(b.order || 0, 10) || 0;
 
-            html += '<div class="banner-card" data-id="' + b._docId + '">' +
+            html += '<div class="banner-card" data-id="' + docId + '">' +
                 '<div class="banner-card-img">' +
-                    (imgThumb ? '<img src="' + imgThumb + '" alt="' + (b.title || '') + '" loading="lazy">' : '<div class="banner-card-placeholder">Sin imagen</div>') +
+                    (imgThumb ? '<img src="' + imgThumb + '" alt="' + titleEsc + '" loading="lazy">' : '<div class="banner-card-placeholder">Sin imagen</div>') +
                 '</div>' +
                 '<div class="banner-card-info">' +
                     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
                         '<span class="badge ' + statusClass + '" style="font-size:0.65rem;' + (b.active ? '' : 'background:#555;color:#aaa;') + '">' + statusText + '</span>' +
-                        '<span style="color:var(--admin-text-muted);font-size:0.7rem;">Orden: ' + (b.order || 0) + catLabel + '</span>' +
+                        '<span style="color:var(--admin-text-muted);font-size:0.7rem;">Orden: ' + orderNum + catLabel + '</span>' +
                     '</div>' +
-                    '<h4 style="font-size:0.95rem;margin-bottom:2px;">' + (b.title || 'Sin titulo') + '</h4>' +
-                    '<p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:8px;">' + (b.subtitle || '') + '</p>' +
+                    '<h4 style="font-size:0.95rem;margin-bottom:2px;">' + titleEsc + '</h4>' +
+                    '<p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:8px;">' + subtitleEsc + '</p>' +
                     '<div class="banner-card-actions">' +
-                        '<button class="btn btn-ghost btn-sm" onclick="AP.editBanner(\'' + b._docId + '\')" title="Editar">' +
+                        '<button class="btn btn-ghost btn-sm" data-action="editBanner" data-id="' + docId + '" title="Editar">' +
                             '<i data-lucide="pencil"></i> Editar' +
                         '</button>' +
-                        '<button class="btn btn-ghost btn-sm" onclick="AP.toggleBannerActive(\'' + b._docId + '\')" title="' + (b.active ? 'Desactivar' : 'Activar') + '">' +
+                        '<button class="btn btn-ghost btn-sm" data-action="toggleBannerActive" data-id="' + docId + '" title="' + (b.active ? 'Desactivar' : 'Activar') + '">' +
                             (b.active ? '<i data-lucide="eye-off"></i> Ocultar' : '<i data-lucide="eye"></i> Mostrar') +
                         '</button>' +
                         (AP.RBAC.canDeleteBanner() ?
-                        '<button class="btn btn-ghost btn-sm" onclick="AP.deleteBannerConfirm(\'' + b._docId + '\')" title="Eliminar" style="color:var(--admin-danger);">' +
+                        '<button class="btn btn-ghost btn-sm" data-action="deleteBannerConfirm" data-id="' + docId + '" title="Eliminar" style="color:var(--admin-danger);">' +
                             '<i data-lucide="trash-2"></i> Eliminar' +
                         '</button>' : '') +
                     '</div>' +
@@ -383,6 +398,24 @@
     var cancelDelBanner = $('cancelDeleteBanner');
     if (cancelDelBanner) cancelDelBanner.addEventListener('click', function() {
         $('bannerDeleteConfirm').classList.remove('active');
+    });
+
+    // §34 — Event delegation para data-action en banner cards (XSS-safe,
+    // reemplaza onclick="..." inline)
+    var bannerActions = {
+        editBanner: function(id) { editBanner(id); },
+        toggleBannerActive: function(id) { toggleBannerActive(id); },
+        deleteBannerConfirm: function(id) { deleteBannerConfirm(id); }
+    };
+    document.addEventListener('click', function(e) {
+        var btn = AP.closestAction ? AP.closestAction(e) : (e.target && e.target.closest && e.target.closest('[data-action]'));
+        if (!btn) return;
+        var action = btn.getAttribute('data-action');
+        var handler = bannerActions[action];
+        if (handler) {
+            e.preventDefault();
+            handler(btn.getAttribute('data-id'), btn);
+        }
     });
 
     // ========== EXPOSE ==========

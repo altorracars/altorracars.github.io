@@ -19,6 +19,15 @@
         if (AP.unsubReviews) AP.unsubReviews();
         var _initialized = false;
 
+        // §34 — Section cleanup hook
+        if (window.AltorraSectionCleanup && !subscribeReviews._cleanupRegistered) {
+            subscribeReviews._cleanupRegistered = true;
+            window.AltorraSectionCleanup.register('reviews', function() {
+                if (AP.unsubReviews) { try { AP.unsubReviews(); } catch (e) {} AP.unsubReviews = null; }
+                subscribeReviews._cleanupRegistered = false;
+            });
+        }
+
         AP.unsubReviews = db.collection('resenas').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
             AP.reviews = [];
             snap.forEach(function(doc) {
@@ -72,54 +81,88 @@
         return html;
     }
 
+    // §34 — Reviews Card list (replaces <table> arcaica) + FIX XSS:
+    // onclick="" reemplazado por data-action + escapeHtml(_docId)
+    function _ensureReviewsCardList() {
+        var list = document.getElementById('reviewsCardList');
+        if (list) return list;
+        var tbody = document.getElementById('reviewsTableBody');
+        var table = tbody ? tbody.parentNode : null;
+        if (!table || !table.parentNode) return null;
+        list = document.createElement('div');
+        list.id = 'reviewsCardList';
+        list.className = 'av2-card-list av2-card-list--reviews';
+        table.parentNode.insertBefore(list, table);
+        return list;
+    }
+
     function renderReviewsTable() {
+        var cardList = _ensureReviewsCardList();
+        var tableEl = document.getElementById('reviewsTable');
         var tbody = $('reviewsTableBody');
-        if (!tbody) return;
+
+        if (!cardList) {
+            // Fallback conservador
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No se pudo crear lista de cards</td></tr>';
+            return;
+        }
+        if (tableEl) tableEl.style.display = 'none';
 
         if (AP.reviews.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No hay reseñas registradas. Agrega la primera.</td></tr>';
+            cardList.innerHTML = '<div class="av2-card-empty"><i data-lucide="message-square-quote"></i><div>No hay reseñas registradas. Agrega la primera.</div></div>';
+            if (tbody) tbody.innerHTML = '';
+            AP.refreshIcons();
             return;
         }
 
         var canEdit = AP.RBAC.canEditReview();
         var canDelete = AP.RBAC.canDeleteReview();
 
-        tbody.innerHTML = AP.reviews.map(function(r) {
+        var html = '';
+        AP.reviews.forEach(function(r) {
             var initials = (r.name || 'NN').split(' ').map(function(w) { return w.charAt(0); }).join('').substring(0, 2).toUpperCase();
             var sourceLabel = SOURCE_LABELS[r.source] || r.source || '-';
-            var featuredBadge = r.featured
-                ? '<span style="display:inline-block;padding:2px 8px;background:rgba(184,150,88,0.2);color:var(--admin-gold);border-radius:4px;font-size:0.75rem;font-weight:600;">Sí</span>'
-                : '<span style="color:var(--admin-text-muted);font-size:0.8rem;">No</span>';
+            var docId = AP.escapeHtml(r._docId || '');
+            var rating = parseInt(r.rating, 10) || 0;
 
-            var actions = '<div class="v-actions">';
+            var featuredBadge = r.featured
+                ? '<span class="av2-card-badge-featured" style="position:static;display:inline-flex;"><i data-lucide="star"></i>Destacada</span>'
+                : '';
+
+            var actions = '';
             if (canEdit) {
-                actions += '<button class="v-act v-act--success" onclick="AP.editReview(\'' + r._docId + '\')" title="Editar"><i data-lucide="pencil"></i></button>';
+                actions += '<button class="v-act v-act--success" data-action="editReview" data-id="' + docId + '" title="Editar"><i data-lucide="pencil"></i></button>';
             }
             if (canDelete) {
                 if (canEdit) actions += '<span class="v-act-sep"></span>';
-                actions += '<button class="v-act v-act--danger" onclick="AP.deleteReviewConfirm(\'' + r._docId + '\')" title="Eliminar"><i data-lucide="trash-2"></i></button>';
+                actions += '<button class="v-act v-act--danger" data-action="deleteReviewConfirm" data-id="' + docId + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
             }
-            actions += '</div>';
+            if (!actions) actions = '<span style="color:rgba(255,255,255,0.45);font-size:0.74rem;font-style:italic;">Solo lectura</span>';
 
-            return '<tr>' +
-                '<td>' +
-                    '<div style="display:flex;align-items:center;gap:10px;">' +
-                        '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#b89658,#916652);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;flex-shrink:0;">' + initials + '</div>' +
-                        '<div>' +
-                            '<div style="font-weight:600;font-size:0.85rem;">' + AP.escapeHtml(r.name || '') +
-                                (r.verified ? ' <i data-lucide="check-circle" style="width:12px;height:12px;color:#10b981;vertical-align:middle;display:inline-block;"></i>' : '') +
-                            '</div>' +
-                            '<div style="font-size:0.75rem;color:var(--admin-text-muted);">' + AP.escapeHtml(r.location || '') + '</div>' +
-                        '</div>' +
-                    '</div>' +
-                '</td>' +
-                '<td><div style="display:flex;gap:1px;">' + renderStarsSmall(parseInt(r.rating, 10) || 0) + '</div></td>' +
-                '<td style="font-size:0.85rem;">' + AP.escapeHtml(r.vehicle || '-') + '</td>' +
-                '<td style="font-size:0.8rem;color:var(--admin-text-muted);">' + AP.escapeHtml(sourceLabel) + '</td>' +
-                '<td>' + featuredBadge + '</td>' +
-                '<td style="text-align:right;"><div style="display:flex;gap:4px;justify-content:flex-end;">' + actions + '</div></td>' +
-            '</tr>';
-        }).join('');
+            html += ''
+                + '<article class="av2-card" data-review-id="' + docId + '">'
+                +   '<div class="av2-card-body">'
+                +     '<div class="av2-card-avatar-row">'
+                +       '<div class="av2-card-avatar">' + AP.escapeHtml(initials) + '</div>'
+                +       '<div style="flex:1;min-width:0;">'
+                +         '<h3 class="av2-card-title" style="font-size:0.94rem;margin:0;">' + AP.escapeHtml(r.name || '') + (r.verified ? ' <i data-lucide="check-circle" style="width:13px;height:13px;color:#10b981;vertical-align:middle;display:inline-block;"></i>' : '') + '</h3>'
+                +         '<div class="av2-card-meta" style="font-size:0.74rem;">' + AP.escapeHtml(r.location || '—') + '</div>'
+                +       '</div>'
+                +       '<div class="av2-card-stars">' + renderStarsSmall(rating) + '</div>'
+                +     '</div>'
+                + (r.text ? '<p class="av2-card-quote">"' + AP.escapeHtml(r.text) + '"</p>' : '')
+                +     '<div class="av2-card-tags">'
+                +       (r.vehicle ? '<span class="av2-card-badge-count"><i data-lucide="car" style="width:11px;height:11px;"></i>' + AP.escapeHtml(r.vehicle) + '</span>' : '')
+                +       '<span class="av2-card-badge-count">' + AP.escapeHtml(sourceLabel) + '</span>'
+                +       featuredBadge
+                +     '</div>'
+                +   '</div>'
+                +   '<div class="av2-card-actions av2-card-actions--right">' + actions + '</div>'
+                + '</article>';
+        });
+        cardList.innerHTML = html;
+
+        if (tbody) tbody.innerHTML = '';
         AP.refreshIcons();
     }
 
@@ -263,6 +306,22 @@
     var cancelDelReview = $('cancelDeleteReview');
     if (cancelDelReview) cancelDelReview.addEventListener('click', function() {
         $('reviewDeleteConfirm').classList.remove('active');
+    });
+
+    // §34 — Event delegation para data-action en card list (XSS-safe)
+    var reviewActions = {
+        editReview: function(id) { editReview(id); },
+        deleteReviewConfirm: function(id) { deleteReviewConfirm(id); }
+    };
+    document.addEventListener('click', function(e) {
+        var btn = AP.closestAction ? AP.closestAction(e) : (e.target && e.target.closest && e.target.closest('[data-action]'));
+        if (!btn) return;
+        var action = btn.getAttribute('data-action');
+        var handler = reviewActions[action];
+        if (handler) {
+            e.preventDefault();
+            handler(btn.getAttribute('data-id'), btn);
+        }
     });
 
     // ========== EXPOSE ==========

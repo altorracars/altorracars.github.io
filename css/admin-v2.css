@@ -623,5 +623,350 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   FIN admin-v2.css — V2-5 fluid sections + perf
+   §34 — CARDS COMPONENTS (replaces .data-table arcaica en
+   Vehículos / Marcas / Reseñas)
+
+   Patrón: HarmonyOS NEXT + Apple macOS Sonoma.
+   Performance: cada .av2-card con contain + content-visibility.
+   Cero !important salvo donde compite con admin.css legacy.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.av2-card-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    padding: 4px 2px;
+    width: 100%;
+}
+
+.av2-card-list--gallery {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.av2-card-list--reviews {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 16px;
+}
+
+.av2-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--av2-bg-island);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border: var(--av2-border-glass);
+    border-radius: var(--av2-radius-card);
+    overflow: hidden;
+    contain: layout style;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+    transition: transform 0.32s var(--av2-spring),
+                box-shadow 0.32s var(--av2-spring),
+                border-color 0.24s var(--av2-spring);
+    will-change: transform;
+}
+
+.av2-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.32),
+        0 0 0 1px rgba(184, 150, 88, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-color: rgba(184, 150, 88, 0.22);
+}
+
+.av2-card:focus-within {
+    box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.28);
+}
+
+/* Thumb / Hero image */
+.av2-card-thumb {
+    aspect-ratio: 4 / 3;
+    width: 100%;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.03);
+    display: block;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.av2-card-thumb-wrap {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+}
+.av2-card-thumb-wrap .av2-card-thumb {
+    aspect-ratio: auto;
+    width: 100%;
+    height: 100%;
+}
+
+.av2-card-thumb--logo {
+    aspect-ratio: 16 / 10;
+    object-fit: contain;
+    padding: 18px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+}
+
+/* Body */
+.av2-card-body {
+    padding: 14px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+}
+
+.av2-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: rgba(255, 255, 255, 0.96);
+    line-height: 1.3;
+    margin: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.av2-card-meta {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.62);
+    letter-spacing: 0.01em;
+}
+
+.av2-card-meta strong { color: rgba(255, 255, 255, 0.85); font-weight: 600; }
+
+.av2-card-price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #d4ad6e;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    margin-top: 2px;
+}
+.av2-card-price-old {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.40);
+    text-decoration: line-through;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.av2-card-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.7rem;
+    color: rgba(184, 150, 88, 0.85);
+    background: rgba(184, 150, 88, 0.10);
+    border: 1px solid rgba(184, 150, 88, 0.22);
+    border-radius: 6px;
+    padding: 2px 7px;
+    display: inline-block;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+.av2-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+/* Status pill (estados de vehiculo) */
+.av2-card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: var(--av2-radius-pill);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+}
+.av2-card-status--disponible { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
+.av2-card-status--reservado  { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
+.av2-card-status--vendido    { color: #f87171; background: rgba(248, 113, 113, 0.12); }
+.av2-card-status--borrador   { color: #9ca3af; background: rgba(156, 163, 163, 0.12); }
+
+.av2-card-badge-featured {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, #d4ad6e, #b89658);
+    color: #1a1310;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-radius: var(--av2-radius-pill);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.40);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.av2-card-badge-featured i { width: 11px !important; height: 11px !important; }
+
+.av2-card-badge-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.74rem;
+    font-weight: 600;
+    border-radius: var(--av2-radius-pill);
+}
+
+/* Stars (reviews) */
+.av2-card-stars {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+}
+.av2-card-stars svg { width: 14px; height: 14px; }
+
+/* Avatar (reviews) */
+.av2-card-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #b89658, #916652);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(184, 150, 88, 0.32);
+}
+
+.av2-card-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+/* Actions footer */
+.av2-card-actions {
+    display: flex;
+    gap: 4px;
+    padding: 10px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.18);
+    flex-wrap: wrap;
+}
+
+.av2-card-actions .v-act,
+.av2-card-actions .btn {
+    flex-shrink: 0;
+}
+
+.av2-card-actions--right {
+    justify-content: flex-end;
+}
+
+/* Reviews / text body */
+.av2-card-quote {
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.78);
+    margin: 6px 0 4px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    font-style: italic;
+}
+
+/* Empty state */
+.av2-card-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 56px 24px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.92rem;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: var(--av2-radius-island);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.av2-card-empty i {
+    width: 40px !important;
+    height: 40px !important;
+    opacity: 0.35;
+    margin-bottom: 10px;
+}
+
+/* Reorder mode (vehiculos): grip handle in card header */
+.av2-card-grip {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: grab;
+}
+.av2-card.av2-card--dragging {
+    opacity: 0.6;
+    transform: scale(0.97);
+    cursor: grabbing;
+}
+
+/* Header de toolbar para card lists (count + paginación inline) */
+.av2-card-list-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    padding: 0 4px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+    .av2-card-list {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .av2-card-list--gallery {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+    .av2-card-thumb { aspect-ratio: 16/10; }
+    .av2-card-actions { padding: 8px 10px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .av2-card,
+    .av2-card:hover {
+        transition: none !important;
+        transform: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-v2.css — V2-5 fluid sections + perf + §34 Cards
    ═══════════════════════════════════════════════════════════════════ */

@@ -138,6 +138,17 @@
     function loadAppointments() {
         if (AP.unsubAppointments) AP.unsubAppointments();
         AP.unsubAppointments = window.db.collection('solicitudes').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
+            // §34 — Section cleanup hook (registra bajo 'crm' porque
+            // appointments fue unificado dentro de sec-crm en §27.3).
+            if (window.AltorraSectionCleanup && !loadAppointments._cleanupRegistered) {
+                loadAppointments._cleanupRegistered = true;
+                var cleanupAppts = function() {
+                    if (AP.unsubAppointments) { try { AP.unsubAppointments(); } catch (e) {} AP.unsubAppointments = null; }
+                    loadAppointments._cleanupRegistered = false;
+                };
+                window.AltorraSectionCleanup.register('crm', cleanupAppts);
+                window.AltorraSectionCleanup.register('appointments', cleanupAppts);
+            }
             AP.appointments = snap.docs.map(function(doc) { return Object.assign({ _docId: doc.id }, doc.data()); });
 
             // MF1.2 — one-shot migration: infer kind + remap estado for legacy docs

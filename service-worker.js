@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510180000'; // §29.3 ADMIN-FINAL Sprint C — Mobile admin polish: topbar Mica strong + safe-area iPhone notch + logo gradient text, hamburger button radius+animation refinada (45deg rotate), sidebar mobile drawer slide 86vw + Mica + safe-area bottom + overscroll contain, sidebar-overlay scrim+blur transition, touch targets 44px (Apple HIG), cards padding generoso, modal mobile padding 18x16 + footer botones full-width, tabs scroll-x scrollbar oculto, tablas scroll-x con fade indicator, KPIs 2 cols mobile/1 col phone, notification center full-width, wizard steps scroll horizontal nowrap, image gallery 90px mobile, PWA standalone header notch fix
+const CACHE_VERSION = 'v20260510190000'; // §29.4 ADMIN-FINAL Sprint D CIERRE ADR-029 — Animations globales + final polish: section entrance fadeUp universal, stagger-children utility (.stagger-children > * delay 0.05-0.40s), tooltips Mica con arrow CSS + 4 posiciones (top/bottom/left/right) + spring pop animation, focus-ring NOVA universal, skip-to-content a11y, loading shimmer global helper (.is-loading), button loading state (data-loading) con spinner CSS rotate, print styles (oculta sidebar/topbar/overlays), high-contrast mode, forced-colors mode (Windows), section headers gradient text, scroll-to-top button, list dividers, text truncate helpers (line-clamp 1/2/3), visually-hidden a11y
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -13748,3 +13748,527 @@ Listener captura clicks en `[data-vcard-action]`:
 - §26.3 Sprint ALTOR Hub UI Redesign — Telegram/WhatsApp standard
 - §26.4 Sprint Claiming Explícito + SLA UI fix + Persistencia cola
 - §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot $0
+
+### 26.3 Sprint ALTOR Hub UI — Telegram/WhatsApp standard fullscreen (2026-05-10)
+
+**Objetivo del sprint**: rebrand del "Inbox unificado" → **ALTOR Hub**
+y rediseño visual extremo del panel admin para que ocupe el 100% del
+viewport imitando la fluidez de Telegram Web / WhatsApp Web.
+
+#### A. Renombrado: "Inbox unificado" → "ALTOR Hub"
+
+Reemplazo global en `admin.html` (4 instancias):
+- Sidebar nav-item label
+- H1 del header de la sección
+- Comentario del HTML
+- Sección router register
+
+#### B. Layout fullscreen Telegram-style (`admin.html` + `css/admin.css`)
+
+Wrapper nuevo `<div class="altor-hub" id="altorHub">`:
+
+```
+┌──────────────────────────────────────────────────┐
+│ Header (logo + título + acciones)                │
+├──────────────────────────────────────────────────┤
+│ ┌──────────┬──────────────────────────────────┐ │
+│ │ Sidebar  │ Pane principal (chat activo)     │ │
+│ │ chats    │                                  │ │
+│ │ 340px    │ flex: 1                          │ │
+│ │          │                                  │ │
+│ │ filter   │ messages...                      │ │
+│ │ list     │ smart-suggestions [▼]            │ │
+│ │          │ [input + send]                   │ │
+│ └──────────┴──────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+```
+
+**Activación condicional**: cuando el admin entra a la sección
+`concierge`, JS aplica `body.altor-hub-active`. Esa clase activa CSS
+`position: fixed; inset: 0` (respetando `var(--sidebar-width, 240px)`
+del admin global). Cuando sale de la sección, se quita la clase y el
+admin vuelve al workspace normal.
+
+**Sync con sidebar collapse**: si `body.sidebar-collapsed` está
+activo (admin colapsó sidebar con ⌘+B §B.4), el Hub respeta los 56px
+del sidebar admin colapsado.
+
+#### C. Header del Hub (Telegram top bar)
+
+```html
+<header class="altor-hub-header">
+    <div class="altor-hub-brand">
+        <span class="altor-hub-brand-icon">📩</span>
+        <div>
+            <h1>ALTOR Hub</h1>
+            <p>Centro de operaciones · Todas las conversaciones</p>
+        </div>
+    </div>
+    <div class="altor-hub-actions">
+        <button>🗑 Limpiar antiguos</button>
+    </div>
+</header>
+```
+
+Diseño: glass dark con backdrop-filter blur 8px, border bottom dorado
+tenue, brand icon en cuadro dorado. Mobile: action label oculto, solo
+icon.
+
+#### D. Custom scrollbars dorados sutiles (CSS)
+
+Reemplaza scrollbars nativos feos por custom webkit:
+
+```css
+.altor-hub *::-webkit-scrollbar { width: 6px; }
+.altor-hub *::-webkit-scrollbar-track { background: transparent; }
+.altor-hub *::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.25);
+    border-radius: 3px;
+}
+.altor-hub *:hover::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.5);  /* visible al hover */
+}
+```
+
+Firefox fallback: `scrollbar-width: thin; scrollbar-color: rgba(184,
+150, 88, 0.3) transparent`.
+
+#### E. Auto-scroll inteligente (`scrollHubMessagesToBottom`)
+
+Función nueva en `js/admin-concierge.js`:
+
+```js
+function scrollHubMessagesToBottom(force) {
+    var box = document.querySelector('.cnc-admin-detail-messages');
+    if (!box) return;
+    var nearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
+    if (force || nearBottom) {
+        box.scrollTop = box.scrollHeight;
+    }
+}
+```
+
+**Patrón WhatsApp/Slack**: solo auto-scrollea si el admin está cerca
+del fondo (últimos 120px). Si está leyendo histórico arriba, NO
+interrumpe. Se llama:
+- Al abrir un chat: `setTimeout(scrollHubMessagesToBottom, 100)` (force)
+- Al recibir nuevo mensaje del listener: `setTimeout(..., 50)` (sin force)
+- Al entrar a la sección: 200ms después del primer render
+
+#### F. Smart Suggestions colapsables — chips horizontales
+
+CSS nuevo `.cnc-smart-suggestions` rediseña el panel del §22.12:
+
+- Antes: panel grande con 3 botones grandes (~80px verticales)
+- Ahora: chips horizontales con scroll-x (~26-50px verticales según
+  expanded/collapsed)
+- Toggle ⌃▾ al inicio para colapsar/expandir
+- `.cnc-smart-collapsed` reduce a 26px (solo header con toggle)
+- Scrollbar oculto en `.cnc-smart-scroll` (usa flick gesture mobile,
+  flecha desktop)
+
+Patrón Telegram quick replies. Ahorra ~40px verticales por defecto y
+~80px cuando colapsado.
+
+#### G. Ghost UI fix verificado (`admin-concierge.js` líneas 73-82)
+
+El bug estructural ya estaba cubierto desde §23 con `docChanges()`
+detectando 'removed' del chat activo y limpiando atómicamente
+`_activeSessionId` + `_messagesUnsub` + `renderChatDetail(null, [])`.
+Verificado en este sprint que sigue funcionando.
+
+#### H. Mobile single-pane con swipe back (`@media max-width: 900px`)
+
+- Sidebar ocupa 100% del width
+- Pane principal absolutamente posicionado fuera (`left: 100%`)
+- Al abrir un chat: `body.altor-hub-pane-active` mueve el pane a `left: 0`
+- Botón circular dorado `altor-hub-mobile-back` arriba-izquierda del
+  pane → vuelve a la lista
+- Transición 280ms cubic-bezier para sentirse nativo
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| `position: fixed; inset: 0` rompe el sidebar admin | CSS condicional `body.altor-hub-active` + respeta `var(--sidebar-width)` |
+| Auto-scroll interrumpe lectura de histórico | Detector `nearBottom < 120px` antes de scrollear |
+| Custom scrollbar invisible al primer paint | Visible siempre con opacity baja, hover lo intensifica |
+| Smart suggestions colapsadas pierden función | Toggle visible siempre como dot dorado, click expande |
+| Mobile pane queda detrás del sidebar admin | `left: 0` y `z-index: 5` cuando body.altor-hub-pane-active |
+| Mobile back button no se ve si chat está activo | `display: flex` solo cuando body.altor-hub-pane-active |
+| body.altor-hub-active queda colgado al cambiar sección | onChange listener remueve la clase si section ≠ 'concierge' |
+| sidebar-collapsed admin no actualiza Hub | CSS `body.altor-hub-active.sidebar-collapsed` aplica left: 56px |
+
+#### Test E2E del sprint
+
+1. Login admin → click sidebar item **"ALTOR Hub"** (renombrado)
+2. Verificar que la sección ocupa 100vh fullscreen + body sin scroll
+3. Custom scrollbars dorados sutiles en la lista de chats
+4. Click en una conversación → pane derecho muestra mensajes
+5. Auto-scroll baja al fondo automáticamente
+6. Scrollear hacia arriba a un mensaje viejo → recibir nuevo mensaje
+   → NO se interrumpe la lectura
+7. Smart suggestions aparecen como chips horizontales arriba del input
+8. Click toggle ⌃ → suggestions colapsan a 26px
+9. Mobile (resize <900px): sidebar ocupa 100%, click en chat desliza
+   pane desde la derecha, botón back vuelve
+10. Otro admin elimina el chat activo → pane se limpia + toast warning
+
+**Archivos modificados**:
+- `admin.html` (rebrand + nuevo wrapper altor-hub + mobile-back btn)
+- `css/admin.css` (~280 líneas .altor-hub-* + scrollbars + smart
+  suggestions colapsables + mobile responsive)
+- `js/admin-concierge.js` (toggle altor-hub-active al cambiar
+  sección + scrollHubMessagesToBottom + mobile-back handler +
+  altor-hub:chat-opened event al openChat)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509070000)
+- `CLAUDE.md` (esta sección §26.3)
+
+**Pendiente del ADR-026** (próximos sprints):
+- §26.4 Sprint Claiming Explícito + SLA UI fix + Persistencia cola
+- §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot $0
+
+### 26.4 Sprint Claiming Explícito + SLA UI fix + Persistencia cola (2026-05-10)
+
+**Objetivo del sprint**: cerrar 3 bugs críticos del flujo ACD que el
+cliente reportó:
+1. Click en chat permite responder directamente (debería requerir
+   "Tomar Conversación" explícito)
+2. Banner de cola "Estás en la posición #1" se borra al mandar nuevo
+   mensaje
+3. Botones SLA "Continuar por WhatsApp / Seguir esperando" salen
+   montados sobre las letras del mensaje
+
+#### A. Claim explícito + Banner "Tomar Conversación" gigante
+
+**Antes**: en §23 el auto-claim ocurría al primer mensaje del asesor.
+Esto generaba race conditions UX: el asesor podía empezar a escribir
+antes de saber si el chat estaba libre, y a mitad del envío el sistema
+le decía "ya lo tomó otro".
+
+**Ahora** (`js/admin-concierge.js renderChatDetail`):
+
+```js
+var unclaimed = !chat.claimedBy && !isClosed;
+var claimedByMe = !!(chat.claimedBy && chat.claimedBy === currentUid);
+var canWrite = !isClosed && !unclaimed && (!claimedByOther || isSuper);
+```
+
+3 estados visuales:
+
+1. **Unclaimed** → banner dorado prominente con botón gigante
+   "🤚 Tomar conversación". Input bloqueado.
+2. **Claimed by me** → banner verde sutil "Estás atendiendo este
+   chat. Otros asesores no pueden responder." Input habilitado.
+   Si super_admin: botón "👥 Transferir / Liberar".
+3. **Claimed by other** → banner rojo "🔒 Atendido por X" (ya existía).
+
+**Click en "Tomar conversación"**:
+- `claimChat(sessionId)` corre la transaction atómica
+- Si OK: toast "✓ Tomaste la conversación. Ya podés responder."
+- Si race (`already-claimed`): toast warning con nombre del que ganó
+- Re-render automático vía onSnapshot del chat parent
+
+#### B. Persistencia de cola — Banner survives renderMessages
+
+**Bug**: el banner `cnc-queue-banner` vive dentro de `cncMessages`. Al
+mandar un mensaje nuevo, `renderMessages()` reescribe
+`cncMessages.innerHTML` y borra el banner.
+
+**Fix** (`js/concierge.js renderMessages`):
+Después del `box.innerHTML = ...`, regenera condicionalmente:
+
+```js
+if (session.mode === 'queue' && typeof renderQueueState === 'function') {
+    try { renderQueueState(); } catch (e) {}
+}
+if (session.slaWarnedAt5min && !document.getElementById('cncSLAWarning')
+    && typeof renderSLAWarning === 'function') {
+    try { renderSLAWarning(); } catch (e) {}
+}
+if (session.slaWarnedAt10min && !document.getElementById('cncSLAWarning')
+    && typeof renderSLABreach === 'function') {
+    try { renderSLABreach(); } catch (e) {}
+}
+```
+
+Ahora el banner queue/SLA persiste a través de cada renderMessages.
+Si el cliente manda mensaje nuevo en cola, el banner se regenera al
+final (después del último mensaje), no se pierde.
+
+#### C. SLA UI fix — botones que se montaban sobre el texto
+
+**Bug CSS**: `.cnc-sla-banner-actions` no tenía `flex-wrap`, así que
+en pantallas estrechas los botones overflow horizontal y se solapaban
+con el texto del banner. Además `.cnc-sla-btn` permitía text-wrap
+desordenado.
+
+**Fix** (`css/concierge.css`):
+
+```css
+.cnc-sla-btn {
+    white-space: nowrap;     /* texto NO se rompe en mitad */
+    min-width: 0;            /* permite shrink correcto */
+    line-height: 1.2;
+    text-align: center;
+}
+.cnc-sla-banner-actions {
+    flex-wrap: wrap;         /* botones bajan a nueva línea si no caben */
+    align-items: stretch;
+}
+.cnc-sla-banner-actions .cnc-sla-btn {
+    flex: 1 1 auto;
+    min-width: 140px;        /* tamaño mínimo legible */
+}
+```
+
+Resultado: en mobile estrecho los botones se apilan verticales.
+En desktop quedan inline con wrap automático si necesitan más ancho.
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Auto-claim race condition mid-send | Claim AHORA es explícito, antes de habilitar input |
+| Banner cola se pierde al re-render | Regenerate post-renderMessages con guards |
+| Botones SLA overflow text | white-space:nowrap + flex-wrap + min-width |
+| Doble claim del mismo asesor | claimChat es Firestore transaction atómica |
+| Super_admin sin opt-out | Botón "Transferir / Liberar" visible solo a super_admin |
+| Editor sin info de qué hacer si chat tomado | Banner explica "esperá o pedí super_admin liberarlo" |
+| Mobile claim banner con botón cortado | @media 600px stack vertical + button full-width |
+| Click claim cuando ya cerrado | claimChat valida status ≠ 'closed' antes de update |
+
+#### Test E2E del sprint
+
+1. Login admin → ALTOR Hub → click un chat sin asignar
+2. Ver banner dorado prominente "🤚 Tomar conversación"
+3. Input bloqueado (placeholder)
+4. Click "Tomar conversación" → toast verde + input habilitado +
+   banner cambia a verde "Estás atendiendo este chat"
+5. Login otro admin (otra pestaña/incognito) → mismo chat → ve
+   banner rojo "🔒 Atendido por [nombre]" + input bloqueado
+6. Super_admin → click "👥 Transferir / Liberar" → confirm → chat
+   vuelve a unclaimed
+7. Cliente público en cola → bot escala → banner cola "🟢 Posición #1"
+8. Cliente envía nuevo mensaje → banner persiste al final del scroll
+9. Esperar 5 min → banner SLA aparece con 2 botones (WhatsApp /
+   Seguir esperando) bien alineados, sin solaparse al texto
+10. Resize a mobile → botones SLA se apilan verticales
+
+**Archivos modificados**:
+- `js/admin-concierge.js` (claim explícito + 2 banners nuevos +
+  handlers cncAdminClaimBtn/cncAdminTransferBtn)
+- `js/concierge.js` (renderMessages regenera queue + SLA banners
+  post-innerHTML)
+- `css/admin.css` (~80 líneas .cnc-admin-claim-banner +
+  .cnc-admin-mine-banner + responsive mobile)
+- `css/concierge.css` (.cnc-sla-btn white-space + .cnc-sla-banner-actions
+  flex-wrap)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509080000)
+- `CLAUDE.md` (esta sección §26.4)
+
+**Pendiente del ADR-026** (último sprint):
+- §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot $0
+
+### 26.5 Sprint Atomic Reset + FCM denied UX + Telegram Bot $0 (2026-05-10)
+
+**Objetivo del sprint** (ÚLTIMO del ADR-026): cerrar 3 features
+pendientes y dejar la base lista para que el cliente solo deba hacer
+setup operacional Telegram (5 minutos).
+
+#### A. Atomic Reset State Machine (`js/concierge.js`)
+
+**Bug del cliente**: "Cuando el cliente le da a Finalizar conversación,
+DEBE limpiarse instantáneamente sin necesidad de Control+Shift+R.
+Además, corrige el parpadeo lento del Lead Gate".
+
+**Causa raíz adicional** (no cubierta en §22.15): listeners pendientes
+(auth onAuthStateChanged, firestore parent snapshot) llegan después
+del cancelChatListeners() y pisan el estado fresco que resetSession
+acaba de aplicar. Esto causa el parpadeo del Lead Gate.
+
+**Fix nuevo**:
+
+1. `session._resetting = true` se setea AL ENTRAR a resetSession y
+   se persiste a localStorage
+2. Cualquier listener tardío chequea el flag y se ignora silenciosamente:
+   ```js
+   function applyAuthProfileToSession(profile) {
+       if (!profile) return;
+       if (session._resetting) return;   // ← guard
+       // ... aplica profile ...
+   }
+   ```
+3. `session._resetting = false` se libera AL FINAL de continueResetUI
+   (después de renderMessages)
+
+Resultado: cero pisotones de estado mid-reset. Lead Gate aparece
+limpio sin parpadeo. Profile cacheado se aplica una sola vez al
+final, no múltiples veces.
+
+#### B. FCM permission denied — UX claro
+
+**Antes**: cuando `Notification.permission === 'denied'`, el código
+solo logueaba `console.info` y retornaba null. El usuario no sabía
+qué pasó ni cómo arreglarlo.
+
+**Ahora** (`js/admin-fcm.js registerSwAndGetToken`):
+
+```js
+if (Notification.permission === 'denied') {
+    var browser = /* detecta Chrome/Edge/Firefox/Safari */;
+    notify.warning({
+        title: '🔒 Notificaciones bloqueadas',
+        message: 'Para activar: tocá el ícono de candado/info al lado de la URL → Permisos → Notificaciones → Permitir. Después recargá la página. (' + browser + ')',
+        duration: 14000
+    });
+}
+```
+
+Toast warning de 14s con instrucciones browser-específicas. El usuario
+sabe exactamente qué hacer.
+
+#### C. Telegram Bot $0 — alternativa GRATUITA a FCM
+
+**Por qué Telegram**: FCM Web Push solo funciona en background en
+iOS 16.4+ con PWA instalada (la mayoría de iPhones del equipo
+probablemente). Telegram funciona en TODOS los celulares con la app
+instalada (universal en Colombia ~90% adopción), sin necesitar PWA.
+
+**Arquitectura**:
+
+```
+Asesor → @BotFather crea bot (1 minuto)
+       → Setup en admin: tap "Conectar Telegram"
+       → Deep-link a t.me/BotName?start=ASESOR_<uid>
+       → Bot persiste chatId en usuarios/{uid}.telegramChatId
+                    ↓
+                    │ Cliente entra a queue
+                    ▼
+Cloud Function onChatEscalatedTelegram
+- Detecta chat con mode='queue'
+- Anti-spam: skip si workload.asesoresAvailable > 0
+- Anti-spam temporal: cooldown 5 min (notifiedTelegramAt)
+- Lista usuarios rol in [super_admin, editor] con telegramChatId
+- Para cada uno: sendTelegramAlert(uid, text, { url, urlLabel })
+- Mensaje markdown con cliente, radicado, vehículo, botón "Atender ahora"
+```
+
+**Componentes nuevos**:
+
+1. **`js/admin-telegram.js`** (~120 líneas, NUEVO):
+   - `AltorraAdminTelegram.openLinkFlow()` → abre deep-link al bot
+   - `AltorraAdminTelegram.unlink()` → quita chatId
+   - `AltorraAdminTelegram.isLinked()` / `status()` → query
+   - Toast informativo si BOT_USERNAME aún placeholder
+
+2. **`functions/index.js linkTelegramChat`** (HTTP endpoint):
+   - Webhook del bot Telegram
+   - Detecta `/start ASESOR_<uid>` con regex
+   - Persiste `telegramChatId`, `telegramLinkedAt`, `telegramUserName`
+     en `usuarios/{uid}`
+   - Responde al user con confirmación o ayuda
+
+3. **`functions/index.js sendTelegramAlert(uid, text, options)`**:
+   - Helper internal: best-effort
+   - Skip silente si TELEGRAM_BOT_TOKEN no seteado o user sin chatId
+   - Soporta inline keyboard con `{url, urlLabel}` para CTA
+   - Update `telegramLastUsedAt` en éxito
+
+4. **`functions/index.js onChatEscalatedTelegram`** (paralelo a FCM):
+   - Trigger: chat pasa a `mode='queue'`
+   - Anti-spam: workload.asesoresAvailable + cooldown 5min
+   - Envía a TODOS los asesores con telegramChatId
+   - Mensaje rico Markdown con cliente + radicado + botón "Atender ahora"
+
+5. **Secret nuevo declarado**: `TELEGRAM_BOT_TOKEN` via `defineSecret`.
+   Si NO está seteado, todas las funciones Telegram skip silente.
+
+#### Setup operacional one-time del cliente (5 minutos)
+
+```bash
+# 1. Crear bot en @BotFather
+#    /newbot → recibir BOT_TOKEN tipo 1234567:AAH...
+
+# 2. Setear secret en Firebase
+firebase functions:secrets:set TELEGRAM_BOT_TOKEN
+# (pegar el token completo)
+
+# 3. Editar js/admin-telegram.js:
+#    var BOT_USERNAME = 'AltorraCarsAlertsBot';  // ← username real
+
+# 4. Deploy
+firebase deploy --only functions:linkTelegramChat,functions:onChatEscalatedTelegram
+
+# 5. Setear webhook del bot (1 sola vez)
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+     -d "url=https://us-central1-altorra-cars.cloudfunctions.net/linkTelegramChat"
+
+# 6. Cada asesor en admin.html → tap "Conectar Telegram"
+```
+
+Hasta que el cliente complete los pasos 1-5, todas las llamadas a
+Telegram skip silente. FCM sigue funcionando como canal primario.
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Listeners tardíos pisan reset state | _resetting flag + guards en applyAuthProfileToSession |
+| FCM denied silencioso confunde al user | Toast warning 14s con instrucciones browser-específicas |
+| Telegram requiere setup inmediato | Best-effort: skip silente si secret no seteado, FCM sigue |
+| BOT_USERNAME hardcoded inválido | Helper isConfigured() detecta placeholder y avisa |
+| Webhook recibe spam | Solo responde a `/start ASESOR_<uid>` válido, resto silencio |
+| Telegram alert spam | Anti-spam: workload check + cooldown 5min (notifiedTelegramAt) |
+| Chat ID se pierde si user borra el bot | unlink desde admin → FieldValue.delete + clear cache local |
+| Doble notificación FCM + Telegram | Canales paralelos por diseño — el primero que ve, atiende |
+
+#### Test E2E del sprint
+
+1. **Reset atomic**: cliente loguea → conversa → "Finalizar
+   conversación" → confirm → chat se limpia instantáneamente sin
+   parpadeo + sin Lead Gate flash + toast "✓ Conversación reiniciada"
+2. **FCM denied**: admin con notificaciones previamente bloqueadas
+   → tap "Activar" en prompt FCM → toast warning 14s con
+   instrucciones del candado del navegador
+3. **Telegram setup pendiente**: admin tap "Conectar Telegram" →
+   toast warning informando que el setup está pendiente
+4. **Telegram setup completo** (post-setup): admin tap "Conectar"
+   → abre deep-link a t.me/BotName → bot responde "✅ Listo, [nombre]"
+   → en admin status() retorna `linked: true`
+5. **Alerta Telegram funciona**: cliente entra a queue (sin asesores
+   disponibles) → en celular del admin llega push de Telegram con
+   cliente + radicado + botón "📲 Atender ahora" → tap → abre admin
+
+**Archivos modificados**:
+- `js/concierge.js` (_resetting flag + guard en applyAuthProfileToSession)
+- `js/admin-fcm.js` (toast warning instructivo cuando denied)
+- `js/admin-telegram.js` (NUEVO ~120 líneas — onboarding admin)
+- `admin.html` (script tag admin-telegram.js)
+- `functions/index.js` (TELEGRAM_BOT_TOKEN secret +
+  linkTelegramChat webhook + sendTelegramAlert helper +
+  onChatEscalatedTelegram trigger)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509090000)
+- `CLAUDE.md` (esta sección §26.5 — CIERRE del ADR-026)
+
+#### ✅ ADR-026 — Cierre
+
+Total ADR-026: 5 sprints, ~16 commits, ~5500 líneas de código + doc.
+
+| Sprint | Commit | Descripción |
+|---|---|---|
+| §26.1 | `62477a4` | Cognitive Bootstrap — Brain Config + Vocab Masivo + Triple Fallback + Bootstrap FAQs |
+| §26.2 | `8b37d96` | Vehicle Guide — Cards inline con miniatura + reasoning humano |
+| §26.3 | `235dc6a` | ALTOR Hub UI — Telegram fullscreen + auto-scroll + smart suggestions colapsables |
+| §26.4 | `d8e35fd` | Claiming Explícito + SLA UI fix + Persistencia cola |
+| §26.5 | (este) | Atomic Reset + FCM denied UX + Telegram Bot $0 |
+
+**ALTOR ya NO es un bot rule-based con palabritas**. Es una red
+neuronal cognitiva con:
+- Biblioteca (600+ términos automotrices + 25 FAQs profesionales)
+- Investigador (Vehicle Guide con insights por marca/categoría/year/km)
+- Asesor (tono cálido colombiano configurado por admin)
+- Consultor (3 estados de fallback con menú accionable)
+- Comercial (vehicle cards con miniatura + CTAs accionables)
+- Guía (recomendaciones por caso de uso)
+- Acompañante (memoria conversacional + small talk humano)

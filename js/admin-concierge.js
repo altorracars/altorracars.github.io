@@ -396,6 +396,8 @@
         if (!chat) return;
 
         renderChatDetail(chat, []);
+        // §26.3 — Notifica al wrapper para activar pane mobile
+        try { window.dispatchEvent(new Event('altor-hub:chat-opened')); } catch (e) {}
 
         // Suscribirse a los mensajes
         _messagesUnsub = window.db.collection('conciergeChats').doc(sessionId)
@@ -407,6 +409,9 @@
                     messages.push(Object.assign({ _id: doc.id }, doc.data()));
                 });
                 renderChatDetail(chat, messages);
+                // §26.3 — Auto-scroll a fondo solo si el admin está
+                // cerca del fondo (no interrumpe lectura de histórico)
+                setTimeout(scrollHubMessagesToBottom, 50);
             }, function () {});
     }
 
@@ -574,10 +579,15 @@
         var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
 
         // §23 FASE 3 — Locks: detectar si el chat fue tomado por OTRO asesor.
-        // Si claimedByOther es true Y no soy super_admin, el input se bloquea.
+        // §26.4 — Claiming Estricto: si el chat NO tiene claimedBy aún,
+        // input bloqueado + se muestra botón gigante "Tomar Conversación".
+        // Solo después de claim explícito el asesor puede responder.
         var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : null;
         var claimedByOther = !!(chat.claimedBy && chat.claimedBy !== currentUid);
-        var canWrite = !isClosed && (!claimedByOther || isSuper);
+        var claimedByMe = !!(chat.claimedBy && chat.claimedBy === currentUid);
+        var unclaimed = !chat.claimedBy && !isClosed;
+        // canWrite ahora requiere que el chat esté claimedByMe o que sea super_admin
+        var canWrite = !isClosed && !unclaimed && (!claimedByOther || isSuper);
         var lockReadonly = claimedByOther && !isSuper;
 
         var msgsHTML = messages.length === 0
@@ -684,6 +694,37 @@
             '</div>' +
             closedBanner +
             claimedBanner +
+            // §26.4 — Banner CLAIM: si el chat está sin tomar, ofrecer
+            // "Tomar Conversación" gigante. Bloquea el input.
+            (unclaimed && AP.isEditorOrAbove && AP.isEditorOrAbove() ?
+                '<div class="cnc-admin-claim-banner">' +
+                    '<div class="cnc-admin-claim-banner-icon"><i data-lucide="user-plus"></i></div>' +
+                    '<div class="cnc-admin-claim-banner-text">' +
+                        '<div class="cnc-admin-claim-banner-title">Conversación sin asignar</div>' +
+                        '<div class="cnc-admin-claim-banner-sub">Tomá esta conversación para responderle al cliente. Otros asesores no podrán escribir mientras vos atendés.</div>' +
+                    '</div>' +
+                    '<button class="alt-btn alt-btn--primary cnc-admin-claim-btn" id="cncAdminClaimBtn" data-session-id="' + escTxt(chat._docId) + '">' +
+                        '<i data-lucide="hand"></i> Tomar conversación' +
+                    '</button>' +
+                '</div>'
+                : ''
+            ) +
+            // §26.4 — Banner MINE: si soy yo el que lo tomó, mostrar
+            // botón "Transferir" para liberarlo (super_admin) o
+            // "Devolver a la cola" (editor).
+            (claimedByMe && !isClosed ?
+                '<div class="cnc-admin-mine-banner">' +
+                    '<i data-lucide="check-circle-2"></i>' +
+                    '<span>Estás atendiendo este chat. Otros asesores no pueden responder.</span>' +
+                    (isSuper ?
+                        '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminTransferBtn" data-session-id="' + escTxt(chat._docId) + '">' +
+                            '<i data-lucide="users"></i> Transferir / Liberar' +
+                        '</button>'
+                        : ''
+                    ) +
+                '</div>'
+                : ''
+            ) +
             '<div class="cnc-admin-detail-messages" id="cncAdminMessages">' + msgsHTML + '</div>' +
             (canWrite ?
                 '<div class="cnc-smart-suggestions" id="cncSmartSuggestions" style="display:none;"></div>' +
@@ -1232,6 +1273,32 @@
             if (_activeSessionId) releaseClaim(_activeSessionId);
             return;
         }
+        // §26.4 — Tomar conversación explícito (claim button gigante)
+        if (e.target && e.target.closest && e.target.closest('#cncAdminClaimBtn')) {
+            var sid = e.target.closest('#cncAdminClaimBtn').getAttribute('data-session-id') || _activeSessionId;
+            if (!sid) return;
+            claimChat(sid).then(function (r) {
+                if (AP.toast) AP.toast('✓ Tomaste la conversación. Ya podés responder.', 'success');
+                // Re-render se hace solo via onSnapshot del chat parent
+            }).catch(function (err) {
+                if (err && err.code === 'already-claimed') {
+                    if (AP.toast) AP.toast(err.claimedByName + ' tomó este chat hace un momento', 'warning');
+                } else if (err && err.code === 'chat-closed') {
+                    if (AP.toast) AP.toast('Este chat ya está cerrado', 'error');
+                } else {
+                    if (AP.toast) AP.toast('No se pudo tomar: ' + (err.message || err.code || 'error'), 'error');
+                }
+            });
+            return;
+        }
+        // §26.4 — Transferir / liberar (super_admin desde botón mine)
+        if (e.target && e.target.closest && e.target.closest('#cncAdminTransferBtn')) {
+            var sid2 = e.target.closest('#cncAdminTransferBtn').getAttribute('data-session-id') || _activeSessionId;
+            if (sid2 && confirm('¿Liberar esta conversación para que otro asesor la tome?')) {
+                releaseClaim(sid2);
+            }
+            return;
+        }
         if (e.target && e.target.closest && e.target.closest('#cncAdminSummarize')) {
             summarizeCurrentChat();
             return;
@@ -1272,11 +1339,49 @@
        ═══════════════════════════════════════════════════════════ */
     if (window.AltorraSections && window.AltorraSections.onChange) {
         window.AltorraSections.onChange(function (section) {
+            // §26.3 — Toggle body.altor-hub-active para activar el
+            // layout fullscreen Telegram-style. La sección concierge
+            // ocupa 100vh con sidebar admin de 56px collapsed.
             if (section === 'concierge') {
+                document.body.classList.add('altor-hub-active');
                 startChatsListener();
+                // Auto-scroll al fondo cuando llegue el primer render
+                setTimeout(scrollHubMessagesToBottom, 200);
+            } else {
+                document.body.classList.remove('altor-hub-active');
+                document.body.classList.remove('altor-hub-pane-active');
             }
         });
     }
+
+    /* §26.3 — Auto-scroll inteligente a las messages del Hub.
+       Solo auto-scrollea si el admin está cerca del fondo (últimos
+       100px). Si está leyendo histórico arriba, NO interrumpe. */
+    function scrollHubMessagesToBottom(force) {
+        var box = document.querySelector('.cnc-admin-detail-messages');
+        if (!box) return;
+        var nearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
+        if (force || nearBottom) {
+            box.scrollTop = box.scrollHeight;
+        }
+    }
+
+    /* §26.3 — Mobile back button: vuelve a la lista desde el detalle */
+    document.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('#altorHubMobileBack')) {
+            document.body.classList.remove('altor-hub-pane-active');
+            _activeSessionId = null;
+            if (_messagesUnsub) { try { _messagesUnsub(); } catch (err) {} _messagesUnsub = null; }
+            renderChatDetail(null, []);
+        }
+    });
+
+    /* §26.3 — Cuando se abre un chat en mobile, activa el pane */
+    var _origOpenChat = window.AltorraAdminConcierge && window.AltorraAdminConcierge.openChat;
+    window.addEventListener('altor-hub:chat-opened', function () {
+        document.body.classList.add('altor-hub-pane-active');
+        setTimeout(scrollHubMessagesToBottom, 100);
+    });
 
     // Auto-arranque: para que el badge de unread funcione globalmente
     var attempts = 0;

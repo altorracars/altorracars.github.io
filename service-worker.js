@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260509090000'; // §26.5 ATOMIC RESET + FCM denied UX + Telegram Bot $0 (cierre ADR-026)
+const CACHE_VERSION = 'v20260509100000'; // §26.6 BOTFIX: cards no propagaban + NER actúa con inventory + ask_human auto-escala + modelo detection
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

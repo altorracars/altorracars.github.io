@@ -14272,3 +14272,108 @@ neuronal cognitiva con:
 - Comercial (vehicle cards con miniatura + CTAs accionables)
 - Guía (recomendaciones por caso de uso)
 - Acompañante (memoria conversacional + small talk humano)
+
+### 26.6 Bot Fix Crítico — 4 bugs frustrantes detectados en producción (2026-05-10)
+
+**Reporte del cliente** (conversación real frustrante):
+- "Tienes algun kia" → bot respondía con frase muerta sin mostrar inventario
+- "Muestrame varios Kia" → "encontré 4 opciones para kia" SIN cards visibles
+- "Renault Twingo" 4 veces seguidas → bot ignoraba el modelo, solo detectaba marca
+- "pasame con un asesor" 3 veces seguidas → bot mostraba "Déjame conectarte" + CTA pero NUNCA escalaba automáticamente
+
+#### RCA — 4 causas raíz independientes
+
+**Bug #1**: `js/concierge.js:328` (branch 7 inventory_query)
+```js
+return { text: formatted.text, cta: formatted.cta };
+// ← olvidó pasar formatted.vehicleCards
+```
+Resultado: branch hacía `formatResponse()` con cards generadas pero el return las DESCARTABA. Por eso cuando decías "muestrame Kia" salía solo el texto sin cards.
+
+**Bug #2**: `js/concierge.js:467-480` (branch 14 NER fallback)
+```js
+return {
+    text: 'Veo que te interesa un ' + bits.join(' ') + '. ¿Quieres ver opciones similares...?',
+    cta: { label: 'Ver inventario', action: 'goto-busqueda' }
+};
+```
+Branch detectaba marca con NER pero respondía con frase genérica + CTA "Ver inventario" — NO buscaba en inventory-search ni mostraba cards. El cliente tenía que hacer click extra para ver opciones.
+
+**Bug #3**: `js/concierge.js:690-698` (pre-check ask_human)
+```js
+if (sentimentNeg || classification.intent === 'frustration' || classification.intent === 'ask_human') {
+    return Promise.resolve({
+        text: '...te entiendo. Déjame conectarte...',
+        cta: { label: 'Hablar con asesor', action: 'escalate' }
+    });
+}
+// ← NUNCA llamaba escalateToLive()
+```
+Branch identificaba ask_human pero solo mostraba CTA. El cliente tenía que clickear "Hablar con asesor" para que escalara. Si insistía 3 veces, el bot repetía la misma frase 3 veces sin escalar.
+
+**Bug #4**: `js/ai/inventory-search.js extractFilters`
+NER `summary.modelo` solo se llena cuando el vehicle matcher reconoce el modelo desde el inventario. "Twingo" no está en lexicon de NER, así que `filters.modelo` quedaba `null` → filtraba solo por marca → mostraba todos los Renault.
+
+#### Fixes aplicados
+
+**Fix #1 — Propagar vehicleCards** (`js/concierge.js:328`):
+```js
+return {
+    text: formatted.text,
+    cta: formatted.cta,
+    vehicleCards: formatted.vehicleCards   // ← NUEVO
+};
+```
+
+**Fix #2 — Branch 14 invoca inventory-search**:
+Reemplazado el texto genérico por: si NER detecta marca/modelo/precio,
+llama a `AltorraInventorySearch.searchFromText()`, propaga
+`vehiclesShown` a `slots.lastVehicleDiscussed` para anáfora futura, y
+retorna las cards inline. Si InventorySearch no cargó (race), fallback
+al texto descriptivo.
+
+**Fix #3 — Auto-escalate en ask_human**:
+```js
+var escalReason = classification.intent === 'ask_human' ? 'ask_human'
+                : classification.intent === 'frustration' ? 'frustration'
+                : 'sentiment_negative';
+if (session.mode === 'bot' && typeof escalateToLive === 'function') {
+    setTimeout(function () { escalateToLive(escalReason); }, 800);
+}
+return Promise.resolve({
+    text: '...te entiendo. Te conecto con un asesor humano de inmediato 🙋‍♂️',
+    source: 'rules-pre-check'
+});
+```
+800ms después del mensaje, escalateToLive hace `mode='queue'` automáticamente. Cliente ve banner de cola SIN tener que clickear nada.
+
+**Fix #4 — Detección de modelo contra inventario real**:
+Después del NER, si `filters.modelo` sigue null, recorrer
+`window.vehicleDB.vehicles` y matchear cada modelo único con regex
+word-boundary contra el texto del cliente. Funciona con cualquier
+modelo que esté en inventario, sin lexicon hardcoded.
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Modelos hardcoded en lexicon (mantenimiento manual) | Usa modelos REALES del inventario actual via vehicleDB |
+| `escalateToLive` se llama múltiples veces si user spamea | Guard `session.mode === 'bot'` antes de escalar |
+| Cards persisten al F5 mostrando autos vendidos | cardData() lee estado actual del vehicle |
+| NER falsa marca por palabra suelta | Regex word boundaries `\b` en model detector |
+| Branch 14 captura todo sin discriminar | Solo si `summary.marca \|\| summary.modelo \|\| summary.precio` |
+| InventorySearch no cargó (race) | Fallback al texto descriptivo viejo, no rompe |
+
+#### Test E2E del fix
+
+1. Cliente: "Tienes algun kia" → bot muestra **N cards reales de Kia**
+2. Cliente: "Muestrame varios Kia" → bot muestra cards (no solo conteo)
+3. Cliente: "Renault Twingo" → bot filtra por marca=Renault, modelo=twingo → muestra solo Twingos disponibles
+4. Cliente: "pasame con un asesor" → bot dice "Te conecto con un asesor humano de inmediato 🙋‍♂️" + 800ms después aparece banner de cola automáticamente. Sin tener que clickear nada.
+
+**Archivos modificados**:
+- `js/concierge.js` (Fix #1 propagar vehicleCards + Fix #2 branch 14
+  invoca inventory-search + Fix #3 auto-escalate ask_human)
+- `js/ai/inventory-search.js` (Fix #4 model detection contra inventario)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509100000)
+- `CLAUDE.md` (esta sección §26.6)

@@ -325,7 +325,11 @@
                             };
                         }
                     }
-                    return { text: formatted.text, cta: formatted.cta };
+                    return {
+                        text: formatted.text,
+                        cta: formatted.cta,
+                        vehicleCards: formatted.vehicleCards   // §26.6 propagar cards inline
+                    };
                 }
             }
             // Sin filtros específicos → respuesta genérica con conteo
@@ -464,12 +468,50 @@
         var faq = findFAQ(userMsg);
         if (faq) return { text: faq.text, cta: faq.cta || null };
 
-        // 14. NER — si menciona marca/modelo/precio sin intent claro
+        // 14. §26.6 — NER detectó marca/modelo/precio Y NO matcheó intent.
+        // ANTES (bug): respondía con texto genérico "veo que te interesa..."
+        // sin actuar. AHORA: invoca AltorraInventorySearch directo y muestra
+        // cards reales con el filtro detectado. Bug que causaba la frustración:
+        // cliente decía "Tienes algun kia" o "Renault Twingo" y el bot
+        // respondía con frase muerta + CTA "Ver inventario" en vez de mostrar
+        // las cards inline.
         if (window.AltorraNER) {
             var ext = window.AltorraNER.extract(userMsg);
-            if (ext.summary && (ext.summary.marca || ext.summary.precio)) {
+            if (ext.summary && (ext.summary.marca || ext.summary.modelo || ext.summary.precio)) {
+                if (window.AltorraInventorySearch && window.vehicleDB && window.vehicleDB.vehicles) {
+                    var nerSearch = window.AltorraInventorySearch.searchFromText(userMsg, { limit: 4 });
+                    var nerHasFilters = nerSearch && nerSearch.filters && Object.keys(nerSearch.filters).some(function (k) {
+                        var v = nerSearch.filters[k];
+                        return v !== null && v !== undefined && (!Array.isArray(v) || v.length > 0);
+                    });
+                    if (nerHasFilters) {
+                        var nerFormatted = window.AltorraInventorySearch.formatResponse(nerSearch, { firstName: firstName });
+                        // Persistir vehículos mostrados en context para anáfora
+                        if (nerFormatted.vehiclesShown && session.context) {
+                            session.context.slots = session.context.slots || {};
+                            session.context.slots.lastVehiclesShown = nerFormatted.vehiclesShown;
+                            session.context.slots.lastInventoryFilters = nerSearch.filters;
+                            if (nerFormatted.vehiclesShown.length === 1) {
+                                var nv0 = nerSearch.vehicles[0];
+                                session.context.slots.lastVehicleDiscussed = {
+                                    id: nv0.id, marca: nv0.marca, modelo: nv0.modelo,
+                                    year: nv0.year, precio: nv0.precioOferta || nv0.precio,
+                                    kilometraje: nv0.kilometraje, categoria: nv0.categoria,
+                                    transmision: nv0.transmision
+                                };
+                            }
+                        }
+                        return {
+                            text: nerFormatted.text,
+                            cta: nerFormatted.cta,
+                            vehicleCards: nerFormatted.vehicleCards
+                        };
+                    }
+                }
+                // Fallback: si InventorySearch no cargó, texto descriptivo
                 var bits = [];
                 if (ext.summary.marca) bits.push(ext.summary.marca);
+                if (ext.summary.modelo) bits.push(ext.summary.modelo);
                 if (ext.summary.year) bits.push('año ' + ext.summary.year);
                 if (ext.summary.precio) bits.push('por ~$' + Math.round(ext.summary.precio / 1000000) + 'M');
                 return {
@@ -689,10 +731,20 @@
         }
         if (sentimentNeg || classification.intent === 'frustration' || classification.intent === 'ask_human') {
             var firstName = getClientFirstName();
+            // §26.6 — Escalado AUTOMÁTICO. Bug previo: solo mostraba CTA y
+            // el cliente tenía que clickear "Hablar con asesor". Si pedía
+            // 3 veces "pasame con un asesor" el bot repetía la misma frase
+            // sin escalar nunca. AHORA: si el chat NO está ya en queue/live,
+            // disparamos escalateToLive(reason) automáticamente tras 800ms.
+            var escalReason = classification.intent === 'ask_human' ? 'ask_human'
+                            : classification.intent === 'frustration' ? 'frustration'
+                            : 'sentiment_negative';
+            if (session.mode === 'bot' && typeof escalateToLive === 'function') {
+                setTimeout(function () { escalateToLive(escalReason); }, 800);
+            }
             return Promise.resolve({
                 text: (firstName ? firstName + ', ' : '') +
-                      'te entiendo. Déjame conectarte con un asesor humano que pueda ayudarte directamente.',
-                cta: { label: 'Hablar con asesor', action: 'escalate' },
+                      'te entiendo. Te conecto con un asesor humano de inmediato 🙋‍♂️',
                 source: 'rules-pre-check'
             });
         }

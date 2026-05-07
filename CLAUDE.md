@@ -19196,3 +19196,150 @@ text-transform: uppercase eliminado (era "ADMINISTRADOR" todo caps).
 - `CLAUDE.md` — esta sección §36.2
 
 **Cache bump**: `v20260510330000`.
+
+---
+
+## 36.3. ADR-036 (continuación) — Subnav contextual + simplificación + perf pass (2026-05-07)
+
+> Tras §36.2 el cliente reportó 4 issues + perf:
+> 1. Config dropdown se ve detrás del buscador (collisión visual)
+> 2. **Cambio de paradigma**: NO submenús — al click en Inventario/Hub/Config
+>    se debe abrir contenido con **pestañas internas** estilo Notion/Vercel
+> 3. Eliminar el buscador del header (ya hay Ctrl+K palette)
+> 4. Eliminar la "A" del logo (solo "ALTORRA CARS / Panel Admin")
+> 5. Admin sigue **lento, no fluido como la web pública**
+
+### 36.3.1 Subnav contextual (NO más dropdowns)
+
+**Antes**: tabs Inventario/Hub/Config con dropdown menus (`.atn-menu`
+position:fixed) que abrían submenús flotantes. Visualmente colisionaban
+con el contenido de la derecha (search trigger).
+
+**Ahora**: tabs simples sin chevron. Al hacer click:
+- `Inventario` → navega a `vehicles` (default sub) + muestra subnav
+- `Hub` → navega a `concierge` + subnav
+- `Config` → navega a `users` + subnav
+
+El **subnav** es una nueva fila sticky entre topnav y main:
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║ ALTORRA CARS · Panel Admin   Inicio·Inventario·CRM·Hub·Agenda...  ║   ← topnav 56px
+║───────────────────────────────────────────────────────────────────║
+║   Vehículos · Marcas · Aliados · Banners · Reseñas               ║   ← subnav 44px
+║───────────────────────────────────────────────────────────────────║
+║                                                                   ║
+║   [Contenido full-width de la sección activa]                    ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+Subnav se muestra **solo** cuando la sección activa pertenece a un grupo
+(`inventario` / `hub` / `config`). Inicio, CRM, Agenda y Reportes no
+muestran subnav.
+
+**Map en `admin-topnav.js`**:
+```js
+SUBNAV_GROUPS = {
+    inventario: [vehicles, brands, dealers, banners, reviews],
+    hub:        [concierge, kb, unmatched],
+    config:     [users, lists, workflows, audit, settings]
+}
+```
+
+**Active tracking**: cuando `AltorraSections.onChange` dispara, el JS
+detecta el grupo de la sección activa y:
+1. Marca el tab principal del grupo como activo (incluso si la sección
+   no es la default)
+2. Re-renderiza el subnav (lazy: solo si cambió de grupo)
+3. Marca el tab interno activo en el subnav con underline dorado
+
+### 36.3.2 Brand sin "A"
+
+`<span class="atn-brand-mark">A</span>` eliminado. Solo queda
+`<span class="atn-brand-text">` con:
+- `<strong>ALTORRA CARS</strong>` (0.92rem, letter-spacing 0.04em)
+- `<small>Panel Admin</small>` (uppercase, color muted)
+
+Recuperamos ~46px horizontales.
+
+### 36.3.3 Search box → icon button
+
+`<button class="atn-search-trigger">` ancho 200px reemplazado por
+`<button class="atn-icon-btn" id="atnSearchTrigger">` 36×36 con icon
+`search` y `data-tooltip="Buscar · Ctrl+K"`. Click sigue invocando
+`AltorraPalette.open()`. Recuperamos ~140px horizontales y respiro.
+
+Total ganado en topnav: **~186px** que ahora respiran entre tabs y
+actions.
+
+### 36.3.4 Perf pass más agresivo
+
+Append a `admin-perf-kill.css`:
+
+```css
+/* Section transitions instant — eliminamos los 180ms de fade */
+.admin-panel .section.active,
+.admin-panel .section.active > * {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* Backdrop-filter más liviano (3-4x menos GPU) */
+.admin-panel .atn-topnav {
+    backdrop-filter: blur(12px) saturate(120%) !important; /* era 24/180% */
+}
+.admin-panel .atn-subnav {
+    backdrop-filter: blur(8px) saturate(110%) !important;
+}
+
+/* Hover sin lift transform en grids (paint cost x N) */
+.admin-panel .av2-card:hover,
+.admin-panel .kpi-card:hover,
+.admin-panel .hero-kpi:hover {
+    transform: none !important;
+}
+
+/* Will-change global cleanup */
+.admin-panel * { will-change: auto; }
+```
+
+JS perf:
+- Sync interval `setInterval` en admin-topnav.js: **2s → 5s**
+- Render subnav idempotente: solo re-construye HTML si cambió de
+  grupo (no en cada section change interno al mismo grupo)
+
+### 36.3.5 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Mantener dropdowns con z-index escalado | Patrón substituido por subnav sticky (sin stacking issues) |
+| Crear admin-v3 / V2-bis | Mismo `admin-topnav.css/.js` extendido |
+| Refactor masivo de sections | Reusamos sec-vehicles, sec-brands, etc. existentes via section router |
+| Lazy-load de modulos JS (riesgo) | Mantenemos eager load — quick wins via CSS perf-kill |
+| `setInterval` muy cortos | Subido a 5s |
+
+### 36.3.6 Test E2E
+
+| # | Test | Resultado esperado |
+|---|---|---|
+| 1 | Click "Inventario" | Navega a Vehículos + subnav muestra 5 tabs (Vehículos·Marcas·Aliados·Banners·Reseñas) |
+| 2 | Subnav: click "Marcas" | Navega a sec-brands, "Marcas" tab activo en subnav, "Inventario" sigue activo en topnav |
+| 3 | Click "CRM" en topnav | Subnav se oculta (CRM no tiene subs en topnav) |
+| 4 | Click "Hub" | Navega a ALTOR Hub + subnav muestra ALTOR Hub·Cerebro AI·Lo que no entendí |
+| 5 | Click "Config" | Navega a Usuarios + subnav 5 tabs |
+| 6 | Click logo "ALTORRA CARS" | NO hace nada (decorativo) |
+| 7 | Click icon search 🔍 | Abre Ctrl+K palette |
+| 8 | Hover topnav | Cero dropdowns/menus flotantes |
+| 9 | Cambio entre secciones | Animation eliminada — transición instantánea |
+| 10 | Mobile <720px | Subnav scroll-x con labels ocultos |
+
+### 36.3.7 Archivos modificados
+
+- `admin.html` — brand sin mark, tabs sin dropdowns, search → icon, `<nav id="atnSubnav">` nuevo
+- `css/admin-topnav.css` — grid 3 rows + subnav styles + brand simple + topnav backdrop ligero
+- `js/admin-topnav.js` — `SUBNAV_GROUPS` map + `renderSubnav()` + `setActiveSection` actualizado + sync interval 2s→5s
+- `css/admin-perf-kill.css` — append §36.3 PERF PASS (animations off + backdrop ligero + hover sin transform + will-change auto)
+- `service-worker.js` + `js/cache-manager.js` — bump v20260510340000
+
+**Cache bump**: `v20260510340000`.

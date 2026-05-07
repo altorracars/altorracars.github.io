@@ -1,0 +1,263 @@
+/**
+ * ALTORRA ADMIN — Performance Killer Layer (§35)
+ * =====================================================
+ * Capa final de PURGA de anti-patterns acumulados en
+ * admin.css + admin-visionary.css + admin-v2.css que
+ * saturaban el browser:
+ *
+ *   - 152 backdrop-filter (78 admin + 60 visionary + 14 v2)
+ *   - 34 animaciones infinite siempre corriendo
+ *   - 46 `transition: all`
+ *   - 1 regla `* { transition: ... }` que aplica a TODO el DOM
+ *   - cursor-follow listeners (pointermove en cada movimiento)
+ *
+ * Filosofía: NO crear admin-v3 ni eliminar archivos viejos
+ * (riesgo de romper layouts validados). En su lugar:
+ *   1. Cargar este archivo ÚLTIMO (gana especificidad)
+ *   2. DESACTIVAR explícitamente lo decorativo no esencial
+ *   3. PRESERVAR funcionalidad real (sidebar, scroll, modales)
+ *
+ * El admin debe sentirse RÁPIDO antes que "premium". Cuando
+ * el cliente confirme fluidez, podemos reintroducir polish
+ * selectivamente y con telemetría.
+ *
+ * NO añade `!important` salvo cuando es estrictamente
+ * necesario para ganar a otro `!important` legacy. Usa
+ * selectores específicos siempre que pueda.
+ *
+ * §35 ADR-035 — 2026-05-07
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   1. KILL — `* { transition: ... }` global (anti-pattern catastrófico)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* admin.css aplica `* { transition: background-color, border-color,
+   color 0.4s ease }` — eso anima TODOS los elementos del DOM en cada
+   cambio de color. Con 1000+ elementos en cualquier sección, cada
+   re-render dispara cientos de animaciones simultáneas → lag visible.
+   La eliminamos quirúrgicamente y la re-aplicamos solo a interactivos. */
+.admin-panel * {
+    transition: none;
+}
+
+/* Re-habilitamos transitions selectivas SOLO en elementos interactivos */
+.admin-panel a,
+.admin-panel button,
+.admin-panel input,
+.admin-panel select,
+.admin-panel textarea,
+.admin-panel .nav-item,
+.admin-panel .av2-card,
+.admin-panel .kpi-card,
+.admin-panel .stat-card,
+.admin-panel .alt-btn,
+.admin-panel .btn,
+.admin-panel .badge,
+.admin-panel .modal-overlay,
+.admin-panel .modal-container {
+    transition: background-color 0.18s ease,
+                border-color 0.18s ease,
+                color 0.18s ease,
+                transform 0.22s ease,
+                box-shadow 0.22s ease,
+                opacity 0.18s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2. KILL — animaciones `infinite` decorativas
+   (mantenemos solo las funcionales: spinner del loader)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Decorativas que NUNCA paran — drenan GPU 24/7. Las apagamos. */
+@keyframes visHeaderBreathe { 0%, 100% { transform: none; } }
+@keyframes visLogoBreathe { 0%, 100% { transform: none; } }
+@keyframes visHeroOrb { 0%, 100% { transform: none; opacity: 0.55; } }
+@keyframes visHeroFloat { 0%, 100% { transform: none; } }
+@keyframes visEmptyOrb { 0%, 100% { transform: none; } }
+@keyframes visSparkle { 0%, 100% { opacity: 0; } }
+@keyframes visSparkleA { 0%, 100% { opacity: 0; transform: none; } }
+@keyframes visSparkleB { 0%, 100% { opacity: 0; transform: none; } }
+@keyframes visSkeletonShine { 0%, 100% { opacity: 1; background-position: 0 0; } }
+@keyframes visBreathe { 0%, 100% { transform: none; } }
+@keyframes novaShimmerLoading { 0%, 100% { background-position: 0 0; } }
+@keyframes novaBadgeUrgentPulse { 0%, 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes novaBellShake { 0%, 100% { transform: none; } }
+@keyframes novaPulse { 0%, 100% { transform: none; opacity: 1; } }
+@keyframes voicePulse { 0%, 100% { transform: none; opacity: 1; } }
+@keyframes dictatePulse { 0%, 100% { transform: none; opacity: 1; } }
+@keyframes shimmer { 0%, 100% { background-position: 0 0; } }
+@keyframes adminRestoringPulse { 0%, 100% { opacity: 0.5; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   3. KILL — backdrop-filter en elementos que scrollean o son grids
+   grandes (cards multiplican el costo por N elementos)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Sustituimos backdrop-filter por background sólido tinted (mismo look
+   visual a 90% del costo, sin hit GPU por elemento). */
+.admin-panel .av2-card,
+.admin-panel .kpi-card,
+.admin-panel .stat-card,
+.admin-panel .reports-kpi-card,
+.admin-panel .workflow-card,
+.admin-panel .pipeline-card,
+.admin-panel .nba-dash-item,
+.admin-panel .review-card,
+.admin-panel .dealer-card,
+.admin-panel .brand-admin-card,
+.admin-panel .insights-card,
+.admin-panel .info-card,
+.admin-panel .form-card,
+.admin-panel .section .card,
+.admin-panel .activity-feed-item,
+.admin-panel .aaf-entry {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: rgba(20, 20, 22, 0.96);
+}
+
+/* Mantenemos backdrop-filter SOLO en surfaces estructurales (sidebar,
+   header, modal overlay) — son pocas y la calidad visual lo justifica. */
+
+/* ═══════════════════════════════════════════════════════════════════
+   4. KILL — TODAS las animaciones con `filter: blur()` que causan
+   el efecto "se desenfoca, intenta enfocar y luego recupera calidad"
+   reportado por el cliente al hacer refresh.
+
+   CULPABLE PRINCIPAL: admin-visionary.css:1019-1025 aplica
+   `animation: visSectionIn` a .section.active CON blur(4px) en el
+   `from`. Cada vez que se carga el admin (refresh) la seccion activa
+   ejecuta esta animation = blur visible al primer paint.
+
+   Override: redefinimos los keyframes SIN blur. Mantenemos el fade
+   de opacity como microinteraccion sutil (sin glitch).
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes visSectionIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes visSectionOut {
+    to { opacity: 0; }
+}
+@keyframes visSectionInVT {
+    from { opacity: 0; }
+}
+@keyframes visSecOut {
+    to { opacity: 0; }
+}
+@keyframes visSecIn {
+    from { opacity: 0; }
+}
+@keyframes visStaggerIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Acortar duracion para que sea casi instantaneo */
+.admin-panel .section.active {
+    animation-duration: 0.18s !important;
+}
+/* Desactivar stagger en hijos (N animations simultaneas) */
+.admin-panel .section.active > * {
+    animation: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5. KILL — admin-restoring blur (causa glitch al refresh)
+   ═══════════════════════════════════════════════════════════════════ */
+
+html.admin-restoring #adminPanel::before {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: none !important;
+    background: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   6. KILL — `transition: all` (anti-pattern §17.2 — 46 instancias
+   en visionary). Sin override total, pero limitamos su efecto.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Donde transition:all genera más jank: cards y botones en grids */
+.admin-panel .av2-card,
+.admin-panel .av2-card *,
+.admin-panel .kpi-card,
+.admin-panel .stat-card,
+.admin-panel .nba-dash-item,
+.admin-panel .pipeline-card,
+.admin-panel .workflow-card,
+.admin-panel .reports-kpi-card,
+.admin-panel .v-act,
+.admin-panel .nav-item {
+    transition-property: background-color, border-color, color, transform, box-shadow, opacity;
+    transition-duration: 0.18s;
+    transition-timing-function: ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7. PERF — content-visibility refuerzo en tabs ocultos
+   ═══════════════════════════════════════════════════════════════════ */
+
+.admin-panel .section:not(.active) {
+    content-visibility: hidden;
+    contain: strict;
+}
+.admin-panel .crm-tabpane:not(.is-active),
+.admin-panel .cal-tabpane:not(.is-active) {
+    content-visibility: hidden;
+    contain: strict;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7.bis — FIX SCROLL bloqueado en .section.active
+   admin.css legacy aplica `overflow: hidden` en .section sin altura
+   explicita, lo que impedia que el contenido genere scroll en <main>.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.admin-panel main .section,
+.admin-panel main .admin-section {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+}
+
+.admin-panel main {
+    /* Garantiza que main sea el unico scroll container vertical */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch; /* iOS momentum */
+    height: 100vh !important;
+    max-height: 100vh !important;
+}
+
+/* admin-content interior tampoco debe limitar scroll */
+.admin-panel main .admin-content,
+.admin-panel main .section-inner {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-width: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   8. PERF — desactivar animations on `prefers-reduced-motion` con
+   override fuerte (algunas legacy ignoraban la media query)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel *,
+    .admin-panel *::before,
+    .admin-panel *::after {
+        animation-duration: 0.001s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0.001s !important;
+        transition-delay: 0s !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-perf-kill.css — §35 ADR-035
+   ═══════════════════════════════════════════════════════════════════ */

@@ -1465,6 +1465,10 @@
         _firestoreParentUnsub = window.db.collection('conciergeChats').doc(session.sessionId)
             .onSnapshot(function (doc) {
                 if (!doc.exists) return;
+                // §26.7 — Guard: ignorar snapshots durante reset.
+                // Sin esto, un snapshot tardío (status='closed' del
+                // markChatClosedInFirestore) puede pisar la sesión nueva.
+                if (session._resetting) return;
                 var d = doc.data();
                 var changed = false;
                 var wasClosed = !!session.closed;
@@ -2152,6 +2156,12 @@
     function cancelChatListeners() {
         if (_firestoreUnsub) { try { _firestoreUnsub(); } catch (e) {} _firestoreUnsub = null; }
         if (_firestoreParentUnsub) { try { _firestoreParentUnsub(); } catch (e) {} _firestoreParentUnsub = null; }
+        // §26.7 — También cancelar workload listener. Sin esto, si el cliente
+        // estaba en queue y resetea, el banner de cola podría regenerarse
+        // tardíamente sobre la sesión nueva.
+        if (_workloadUnsub) { try { _workloadUnsub(); } catch (e) {} _workloadUnsub = null; }
+        // Y el SLA watcher si está activo
+        if (typeof stopSLAWatcher === 'function') { try { stopSLAWatcher(); } catch (e) {} }
     }
 
     /**
@@ -2220,6 +2230,10 @@
 
         // Re-aplicar perfil del auth si user logueado (siempre — auth profile
         // es source of truth para usuarios registrados, no necesita confirm)
+        // §26.7 BUG A FIX — agregar .catch para garantizar que continueResetUI
+        // SIEMPRE se ejecute. Si loadProfileFromAuth() rechazaba, el reset
+        // quedaba incompleto: localStorage borrado pero DOM intacto. Solo
+        // F5 forzaba el cleanup. AHORA: catch llama continueResetUI igual.
         if (typeof loadProfileFromAuth === 'function') {
             loadProfileFromAuth().then(function (profile) {
                 if (profile) {
@@ -2233,6 +2247,9 @@
                     saveSession(session);
                 }
                 continueResetUI();
+            }).catch(function (err) {
+                console.warn('[Concierge] loadProfileFromAuth rejected during reset:', err && err.message);
+                continueResetUI();   // ← garantiza que el DOM se actualice igual
             });
         } else {
             continueResetUI();

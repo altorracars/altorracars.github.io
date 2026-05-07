@@ -749,7 +749,13 @@
                     '<button class="cnc-quick-reply" data-text="Te envío la información del vehículo que te interesa por aquí mismo.">📋 Info vehículo</button>' +
                     '<button class="cnc-quick-reply" data-text="¿Te gustaría agendar una visita para ver el carro? Tenemos disponibilidad esta semana.">📅 Agendar</button>' +
                     '<button class="cnc-quick-reply" data-text="Listo, te paso a WhatsApp para continuar la conversación.">📲 A WhatsApp</button>' +
-                '</div>'
+                    // §27.6 — Plantillas integradas (admin-templates.js).
+                    // Botón que abre dropdown con plantillas del admin con
+                    // variables resueltas {{nombre}}, {{vehiculo}}, etc.
+                    '<button class="cnc-quick-reply cnc-templates-trigger" data-action="open-templates" data-tooltip="Plantillas guardadas">📋 Plantillas</button>' +
+                '</div>' +
+                // Container para el dropdown de plantillas (mounted on demand)
+                '<div class="cnc-templates-dropdown" id="cncTemplatesDropdown" hidden></div>'
                 : ''
             ) +
             '<div class="cnc-admin-detail-input-wrap' +
@@ -1341,6 +1347,23 @@
             cleanupOldChats().catch(function () {});
             return;
         }
+        // §27.6 — Plantillas: abrir dropdown con plantillas del admin
+        if (e.target && e.target.closest && e.target.closest('[data-action="open-templates"]')) {
+            toggleTemplatesDropdown();
+            return;
+        }
+        // §27.6 — Plantillas: aplicar plantilla seleccionada al input
+        var tplItem = e.target.closest && e.target.closest('[data-tpl-text]');
+        if (tplItem) {
+            applyTemplate(tplItem.getAttribute('data-tpl-text'));
+            return;
+        }
+        // Click fuera del dropdown → cerrar
+        var dropdown = $('cncTemplatesDropdown');
+        if (dropdown && !dropdown.hidden && !e.target.closest('.cnc-templates-dropdown')
+            && !e.target.closest('[data-action="open-templates"]')) {
+            dropdown.hidden = true;
+        }
     });
 
     document.addEventListener('keydown', function (e) {
@@ -1459,6 +1482,102 @@
                     return snap.size;
                 });
             });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       §27.6 — TEMPLATES integration in ALTOR Hub
+       Plantillas del admin (config/messageTemplates Firestore via
+       admin-templates.js) accesibles desde el chat detail con botón
+       "📋 Plantillas". Resuelve variables {{nombre}}, {{vehiculo}},
+       {{fecha}}, {{hora}}, {{tipo}} con datos del chat actual.
+       ═══════════════════════════════════════════════════════════ */
+    function toggleTemplatesDropdown() {
+        var dropdown = $('cncTemplatesDropdown');
+        if (!dropdown) return;
+        if (!dropdown.hidden) { dropdown.hidden = true; return; }
+
+        // Cargar plantillas desde AltorraTemplates (admin-templates.js)
+        var templates = (window.AltorraTemplates && typeof window.AltorraTemplates.list === 'function')
+            ? window.AltorraTemplates.list()
+            : (AP.messageTemplates || []);
+
+        if (!templates || templates.length === 0) {
+            dropdown.innerHTML =
+                '<div class="cnc-templates-empty">' +
+                    '<i data-lucide="file-edit" style="width:24px;height:24px;opacity:0.5;"></i>' +
+                    '<p style="margin:8px 0 4px;">Sin plantillas guardadas aún</p>' +
+                    '<p style="font-size:0.75rem;opacity:0.6;margin:0;">Las plantillas del admin aparecerán aquí. Variables soportadas: <code>{{nombre}}</code>, <code>{{vehiculo}}</code>, <code>{{fecha}}</code>, <code>{{hora}}</code>, <code>{{tipo}}</code>.</p>' +
+                '</div>';
+        } else {
+            dropdown.innerHTML = '<div class="cnc-templates-list">' +
+                templates.map(function (t) {
+                    var label = String(t.label || 'Plantilla').replace(/[<>]/g, '');
+                    var text = String(t.text || '').replace(/[<>]/g, '');
+                    var kind = t.kind ? '<span class="cnc-tpl-kind">' + escTxt(t.kind) + '</span>' : '';
+                    return '<button class="cnc-tpl-item" data-tpl-text="' + escTxt(t.text || '') + '">' +
+                        '<div class="cnc-tpl-head">' +
+                            '<span class="cnc-tpl-label">' + escTxt(t.label || 'Plantilla') + '</span>' +
+                            kind +
+                        '</div>' +
+                        '<div class="cnc-tpl-preview">' + escTxt((t.text || '').slice(0, 100)) + ((t.text || '').length > 100 ? '…' : '') + '</div>' +
+                    '</button>';
+                }).join('') +
+            '</div>';
+        }
+        dropdown.hidden = false;
+        if (window.AltorraIcons) window.AltorraIcons.refresh(dropdown);
+    }
+
+    /**
+     * applyTemplate — resuelve variables del template con data del chat
+     * actual y lo coloca en el input. NO envía automáticamente — el
+     * asesor revisa y manda con click.
+     *
+     * Variables soportadas:
+     *   {{nombre}}     → primer nombre del cliente
+     *   {{vehiculo}}   → marca + modelo del vehículo del chat (si hay)
+     *   {{fecha}}      → fecha actual formateada
+     *   {{hora}}       → hora actual formateada
+     *   {{tipo}}       → "cita" / "solicitud" / "lead" según contexto
+     */
+    function applyTemplate(rawText) {
+        if (!rawText) return;
+        var input = $('cncAdminReply');
+        if (!input) return;
+        var chat = _chats.find(function (c) { return c._docId === _activeSessionId; });
+
+        var firstName = '';
+        if (chat) {
+            firstName = (chat.userNombre || '').split(' ')[0] || '';
+        }
+
+        // Vehiculo: si el chat tiene sourceVehicleId, intentar resolver
+        var vehiculo = '';
+        if (chat && chat.sourceVehicleId && AP.vehicles) {
+            var v = AP.vehicles.find(function (x) { return String(x.id) === String(chat.sourceVehicleId); });
+            if (v) vehiculo = (v.marca || '') + ' ' + (v.modelo || '') + ' ' + (v.year || '');
+        }
+
+        var now = new Date();
+        var fecha = now.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+        var hora = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+        var tipo = chat && chat.kind ? chat.kind : '';
+
+        var resolved = String(rawText)
+            .replace(/\{\{\s*nombre\s*\}\}/g, firstName || '[nombre]')
+            .replace(/\{\{\s*vehiculo\s*\}\}/g, vehiculo.trim() || '[vehículo]')
+            .replace(/\{\{\s*fecha\s*\}\}/g, fecha)
+            .replace(/\{\{\s*hora\s*\}\}/g, hora)
+            .replace(/\{\{\s*tipo\s*\}\}/g, tipo || '[tipo]');
+
+        input.value = resolved;
+        input.focus();
+
+        // Cerrar dropdown
+        var dropdown = $('cncTemplatesDropdown');
+        if (dropdown) dropdown.hidden = true;
+
+        if (AP.toast) AP.toast('Plantilla aplicada — revisá y enviá', 'info', 2500);
     }
 
     /* ═══════════════════════════════════════════════════════════

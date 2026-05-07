@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510050000'; // §27.5 Reportes ejecutivos: KPIs hero + Funnel conversión + Forecast lineal + Performance asesores + Anomalías + Export CSV
+const CACHE_VERSION = 'v20260510070000'; // §27.7 HarmonyOS polish: sidebar badges dinámicos con tones + section spring entrance + skeletons shimmer dorado + empty states + ripple micro-interactions + stagger cards (CIERRE ADR-027)
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

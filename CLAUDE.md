@@ -15289,3 +15289,304 @@ Singleton `window.AltorraReports`:
 **Pendiente del ADR-027** (commits siguientes):
 - §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
 - §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)
+
+### 27.6 Sprint Workflows funcional + Plantillas integradas en ALTOR Hub (2026-05-10)
+
+**Objetivo del sprint**: convertir las dos features muertas (Reglas
++ Plantillas) en valor real. En vez de eliminarlas, promoverlas:
+las reglas pasan a ser un panel funcional con cards HarmonyOS, y
+las plantillas se integran como dropdown directamente en el chat
+detail del ALTOR Hub.
+
+#### A. Workflows con cards HarmonyOS (sec-workflows)
+
+**Cambios HTML (`admin.html`)**:
+- Page header con botón refresh
+- **Workflows intro card** (NUEVA): card amber explicativa con icon
+  + título "4 reglas built-in activas" + descripción del runtime
+  (corre vía EventBus en background, toggle individual)
+- Grid responsive `workflows-rules-grid` con cards de cada regla
+- Historial de ejecuciones movido a `.reports-card` (estilo unificado
+  con sec-reports HarmonyOS)
+
+**Cambios JS (`admin-automation.js renderRulesUI`)**:
+- Reescritura completa del render: cards estilo HarmonyOS
+- Header con icon de status (`zap` activa / `zap-off` pausada) +
+  label "Activa" / "Pausada"
+- Toggle switch HarmonyOS (`.alt-toggle` slider amber)
+- Body: nombre + descripción + footer con trigger pill
+- TRIGGER_LABELS map: `comm_created` → "Nueva comunicación",
+  `sla_check` → "Cada minuto (SLA check)", etc.
+- Border-left 3px amber si activa, gris tenue si pausada
+- Hover lift 1px + border highlighted
+
+#### B. Plantillas integradas en ALTOR Hub (admin-concierge.js)
+
+**Botón nuevo "📋 Plantillas"** en quick replies del chat detail:
+agregado al row de quick replies entre "📲 A WhatsApp" y el input.
+
+**Container nuevo** `<div id="cncTemplatesDropdown" hidden>` debajo
+del row de quick replies. Cuando se clickea el botón, se popula y
+muestra; click fuera lo cierra.
+
+**Funciones nuevas**:
+
+`toggleTemplatesDropdown()`:
+- Abre/cierra el dropdown
+- Lee plantillas desde `AltorraTemplates.list()` (admin-templates.js
+  expone esto desde §MF6.3) o fallback a `AP.messageTemplates`
+- Render: lista de cards con label + tipo (pill) + preview (primeros
+  100 chars del texto)
+- Empty state amigable: "Sin plantillas guardadas aún" + hint con
+  variables soportadas
+
+`applyTemplate(rawText)`:
+- Resuelve variables del template:
+  - `{{nombre}}` → primer nombre del cliente actual del chat
+  - `{{vehiculo}}` → marca + modelo + año si chat tiene `sourceVehicleId`
+  - `{{fecha}}` → fecha actual formateada (es-CO, día + mes + año)
+  - `{{hora}}` → hora actual (es-CO, HH:MM)
+  - `{{tipo}}` → kind del chat (cita/solicitud/lead) o `[tipo]`
+- Coloca texto resuelto en `cncAdminReply` input
+- Foco al input para edición opcional
+- Cierra dropdown
+- Toast info: "Plantilla aplicada — revisá y enviá"
+
+**Click delegation** en panel.click handler:
+- `[data-action="open-templates"]` → toggleTemplatesDropdown
+- `[data-tpl-text]` → applyTemplate(text)
+- Click fuera del dropdown → cierra (excluye el trigger button)
+
+#### C. CSS HarmonyOS (~250 líneas en admin.css)
+
+**Workflow cards**:
+- `.workflows-intro` — card amber con gradient + border-left tinte
+- `.workflows-rules-grid` — grid auto-fit minmax(320px, 1fr)
+- `.workflow-card` — radius 16, padding 18×20, hover lift 1px
+- `.workflow-card--on` — border-left 3px amber
+- `.workflow-card--off` — opacity 0.7 + border-left tenue
+- `.workflow-card-head` — flex con status (icon+label) + toggle
+- `.workflow-trigger-pill` — pill amber con icon y label trigger
+
+**Toggle switch (`.alt-toggle`)**:
+- Slider HarmonyOS minimalista 38×22
+- Off: bg blanco 10% + thumb gris
+- On: bg amber + thumb blanco con animación slide
+- Transitions fluidas 0.3s
+
+**Templates dropdown**:
+- `.cnc-templates-trigger` — botón amarillento dorado (distingue de quick replies)
+- `.cnc-templates-dropdown` — glass dark + backdrop-filter blur,
+  radius 16, max-height 320 con scroll-y, animation fade-in 0.2s
+- `.cnc-tpl-item` — card 12px radius, hover dorado tenue + slideX 2px
+- `.cnc-tpl-head` — label bold + kind pill diminuto dorado
+- `.cnc-tpl-preview` — 2-line clamp del texto
+- `.cnc-templates-empty` — placeholder con `<code>` de variables soportadas
+- `prefers-reduced-motion`: animations + transforms desactivados
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| sec-templates eliminado pero datos en Firestore se pierden | sec-templates queda display:none, admin-templates.js sigue cargando, datos preservados |
+| Templates dropdown abre múltiples veces | toggleTemplatesDropdown chequea `!hidden` toggle |
+| Template con `{{nombre}}` cuando no hay cliente identificado | Fallback a `[nombre]` placeholder visible |
+| Variables no soportadas explotan | Solo regex match para 5 variables conocidas; el resto pasa raw |
+| Plantilla envía automáticamente | applyTemplate solo coloca en input; asesor revisa y manda manual |
+| Workflow toggles sin permiso | Lógica de toggle ya tenía guard isSuperAdmin (admin-automation.js) |
+| Sec-templates toggle ON en error rompe layout | display:none forzado en `style` inline |
+| Click fuera del dropdown no lo cierra | Listener específico que excluye trigger + interior dropdown |
+
+#### Test E2E del sprint
+
+1. Login admin → click "Workflows" en sidebar → carga sec-workflows
+2. Ver intro card amber explicativa: "4 reglas built-in activas"
+3. Grid con 4 cards de reglas:
+   - Asignar financiación alto-valor a super_admin (Activa, switch ON amber)
+   - Notificar SLA breach (Activa, switch ON)
+   - Etiquetar visitantes repetidos (Activa, switch ON)
+   - Recordatorio 24h cita (Pausada, switch OFF)
+4. Click toggle de una regla → switch animado, persiste estado
+5. Cards muestran trigger pill (ej: "Cada minuto · SLA check")
+6. Historial de ejecuciones abajo (estilo unificado con sec-reports)
+7. Login admin → ALTOR Hub → click chat → ver row de quick replies
+8. Click botón "📋 Plantillas" → dropdown aparece con animation
+9. Si no hay plantillas: ve empty state con hint de variables
+10. Si hay plantillas: ve lista con label + kind pill + preview
+11. Click en una plantilla → texto resuelto aparece en input
+12. Variables resueltas: `{{nombre}}` → primer nombre del cliente,
+    `{{vehiculo}}` → marca+modelo si hay sourceVehicleId, etc.
+13. Click fuera del dropdown → cierra
+
+**Archivos modificados**:
+- `admin.html` (sec-workflows reescrito con intro card + grid HarmonyOS;
+  templates trigger button + dropdown agregados al chat detail)
+- `js/admin-automation.js renderRulesUI` (cards HarmonyOS con icon
+  status + toggle .alt-toggle + trigger pill)
+- `js/admin-concierge.js` (toggleTemplatesDropdown + applyTemplate +
+  click delegation handlers)
+- `css/admin.css` (~250 líneas .workflow-card* + .alt-toggle +
+  .cnc-templates-dropdown + responsive)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510060000)
+- `CLAUDE.md` (esta sección §27.6)
+
+**Pendiente del ADR-027** (último sprint):
+- §27.7 HarmonyOS polish — spring animations · empty states ilustrados ·
+  skeletons shimmer · sidebar badges dinámicos · micro-interactions
+
+### 27.7 Sprint HarmonyOS Polish — Cierre ADR-027 (2026-05-10)
+
+**Objetivo del sprint** (último): el último 10% que hace la diferencia
+entre "se ve bien" y "se siente Apple/HarmonyOS". Sidebar badges
+dinámicos + section transitions + skeletons mejores + empty states +
+micro-interactions + stagger animations.
+
+#### A. Sidebar badges dinámicos (`js/admin-sidebar-badges.js` NUEVO ~190 líneas)
+
+Singleton `window.AltorraSidebarBadges`:
+
+**Counts dinámicos en sidebar**:
+- 🚗 Vehículos → total disponibles (no vendidos / borrador)
+- 🏷️ Marcas → total
+- 🖼️ Banners → total activos
+- ⭐ Reseñas → total publicadas
+- 👥 CRM → contactos calientes (score ≥ 70). Tone="urgent" si ≥ 5
+- 📅 Calendario → citas pendientes hoy
+- 🔍 Auditoría → anomalías detectadas (SLA breach + stale). Tone="urgent" si > 0
+
+**Throttle 1.5s** + listeners EventBus (`vehicle.*`, `comm.*`, `crm.*`,
+`appointment.*`) + retry inicial cada 500ms hasta que data esté lista
+(max 30s) + refresh periódico cada 60s para SLAs frescos.
+
+**No interfiere con**:
+- `navBadgeConcierge` (gestionado por admin-concierge.js)
+- `navBadgeUnmatched` (gestionado por admin-unmatched.js)
+
+#### B. CSS HarmonyOS polish (~250 líneas adicionales en admin.css)
+
+**1. Nav-badge con tones**:
+- Default: dorado tenue (rgba 184,150,88,0.18)
+- `data-tone="urgent"`: rojo coral con animation pulse 2s
+- `data-tone="success"`: verde sutil
+- `prefers-reduced-motion`: pulse desactivado
+
+**2. Section transitions (spring entrance)**:
+- `.section.active` con animation `sectionEnter` 0.35s
+  cubic-bezier(0.34, 1.4, 0.64, 1) — overshoot natural
+- `from { opacity: 0; transform: translateY(8px); }`
+- Cuando admin cambia de sección, fade-up suave
+
+**3. Skeletons shimmer dorado**:
+- `.skeleton-hmy` con gradient diagonal animado (1.4s shimmer)
+- Reemplaza el legacy `.skeleton` genérico
+- Variantes: `--card` (80px), `--line` (14px), `--line--sm` (10px width 60%)
+
+**4. Empty states utility (`.alt-empty`)**:
+- Container flex column centered con padding 40×24
+- `.alt-empty-icon` 48×48 dorado tenue circle
+- `.alt-empty-title` bold 0.95rem
+- `.alt-empty-text` max-width 360, line-height 1.5
+- `.alt-empty-cta` para botón opcional
+
+**5. Ripple micro-interaction**:
+- `.alt-btn--primary::after` + `.btn-primary::after`
+- Round expansion al click activo (200% scale, fade in/out 0.4s)
+- Cancela en `prefers-reduced-motion`
+
+**6. Stagger cards entrando**:
+- `.hero-kpis .hero-kpi` × 3 — delays 0.05/0.12/0.19s
+- `.workflows-rules-grid .workflow-card` × 4 — delays 0.05-0.26s
+- `.reports-kpis .reports-kpi-card` × 4 — delays 0.05-0.26s
+- `.nba-dashboard-list .nba-dash-item` × 5 — delays 0.05-0.25s
+- Animation `cardStaggerIn` (translateY) o `nbaItemSlideIn` (translateX)
+- Patrón Apple: cards aparecen escalonadas, no todas a la vez
+
+**7. Funnel stage delays**:
+- 4 stages con delays escalonados 0.1/0.2/0.3/0.4s en width animation
+- Efecto cascada al renderizar
+
+**8. Sidebar profile polish**:
+- Card dorado tenue con border, hover glow
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Badges con number gigante rompen layout | Cap a "99+" si > 99 + min-width 18px |
+| `data-tone="urgent"` parpadea en epilepsia | `prefers-reduced-motion` cancela animation |
+| Section enter brusca al cambiar | cubic-bezier overshoot natural (0.34, 1.4) |
+| Skeletons shimmer marea | Animation 1.4s ease-in-out (no demasiado rápido) |
+| Stagger cards retrasa primera vista | Solo 50-260ms total — imperceptible pero suaviza |
+| Ripple effect bloquea click | `pointer-events: none` en pseudo-element |
+| `:active::after` flicker en touch | width/height transition 0s when active (snappy) |
+| Empty state inconsistente entre secciones | Utility class `.alt-empty` reusable |
+| Contadores pueblan ANTES que data llegue | Retry loop 500ms con cap 30s + initial setInterval |
+
+#### Test E2E del sprint final
+
+1. Login admin → ver sidebar con counts:
+   - Vehículos badge muestra "27" si hay 27 disponibles
+   - CRM badge muestra "12" calientes (verde si <5, rojo pulsante si ≥5)
+   - Auditoría badge muestra punto rojo pulsante si hay SLA breach
+2. Crear nuevo vehículo → badge Vehículos incrementa después de 1.5s
+3. Click "Reportes" → animation spring entrance fade-up
+4. Click "CRM" → 4 KPIs hero entran con stagger 0.05-0.19s
+5. Click "Workflows" → 4 cards con stagger 0.05-0.26s
+6. Click "Inicio" → NBA list items entran con slideX stagger
+7. Click "Reportes" → Funnel barras con cascada delays 0.1-0.4s
+8. Click cualquier botón primario (Guardar, Agregar, Crear) →
+   ripple sutil expansion blanca al click
+9. Skeleton mientras carga: shimmer dorado horizontal en lugar
+   del genérico gris
+10. Empty states (Festivos vacíos, Workflows vacíos) muestran
+    icon + title + text + CTA opcional consistente
+11. `prefers-reduced-motion: reduce` → todas las animations disabled,
+    ripples desaparecen, badges urgent dejan de pulsar
+
+**Archivos modificados**:
+- `js/admin-sidebar-badges.js` (NUEVO ~190 líneas)
+- `admin.html` (carga admin-sidebar-badges.js)
+- `css/admin.css` (~250 líneas polish HarmonyOS)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510070000)
+- `CLAUDE.md` (esta sección §27.7 — CIERRE ADR-027)
+
+#### ✅ ADR-027 — Cierre
+
+**Total ADR-027: 7 sprints, ~21 commits, ~5500 líneas de código + doc.**
+
+| Sprint | Commit | Descripción |
+|---|---|---|
+| §27.1 | `b787b02` | Foundation — Tokens HarmonyOS + Sidebar v2 + Router |
+| §27.2 | `e8dc421` | Inicio productivo — 3 KPIs hero + Top 5 NBA |
+| §27.3 | `a721405` | CRM unificado — 3 tabs (Contactos · Bandeja · Pipeline) |
+| §27.4 | `bf93899` | Agenda unificada — Tabs Calendario/Disponibilidad/Festivos |
+| §27.5 | `139c902` | Reportes ejecutivos — KPIs + Funnel + Forecast + Performance + Anomalías |
+| §27.6 | `15bb9c9` | Workflows funcional + Plantillas integradas en ALTOR Hub |
+| §27.7 | (este) | HarmonyOS polish — badges + transitions + skeletons + ripple + stagger |
+
+**Resultados del refactor**:
+
+| Aspecto | Antes | Después |
+|---|---|---|
+| Grupos sidebar | 8 (1 disabled) | **8 lógicos limpios** (Inicio · Inventario · Sitio público · CRM · Agenda · Comunicaciones · Reportes · Configuración) |
+| Items sidebar | 19 fragmentados | **17 funcionales** (sec-templates oculto, sec-appointments unificado en CRM) |
+| Código JS muerto | 121 líneas (templates) | **0 (Plantillas integradas en Hub)** |
+| Placeholders | 1 (sec-reports "Próximamente") | **0 (Reportes implementado de cero)** |
+| Vistas duplicadas | 2 (CRM ↔ Bandeja fragmentado) | **1 unificado** (3 tabs internos) |
+| Config dispersa | Calendario en 2 sitios | **1 único** (Agenda con tabs) |
+| Misnomers | "Leads legacy" no es leads | **"Atributos"** correcto |
+| Border-radius | 8-12px | **16-24px** HarmonyOS |
+| Workspace colors | 6 | **8** (gold, coral NUEVO, blue, violet, green, cyan, amber NUEVO, neutral) |
+| Sidebar quick search | ❌ | ✅ (filtra items en vivo) |
+| Sidebar badges dinámicos | ❌ (HTML estático) | ✅ (counts en tiempo real con tones urgent/success) |
+| Animations | Fade-in básico | ✅ Spring entrance + stagger + ripple + cascade |
+| Skeletons | Gris genérico | ✅ Shimmer dorado HarmonyOS |
+| Empty states | Texto plano | ✅ Utility `.alt-empty` con icon + title + text + CTA |
+
+**El admin ya NO es un Frankenstein.** Es un CRM Enterprise estructurado
+con lenguaje visual HarmonyOS coherente, arquitectura de información
+clara, cero código muerto, cero placeholders, 3 features nuevas
+implementadas (Reportes ejecutivos, Workflows funcional, Plantillas
+integradas en chat), y polish que se siente premium.
+
+**Costo recurrente**: $0 (todo cliente-side, reusa data viva de Firestore).

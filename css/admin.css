@@ -11532,3 +11532,153 @@ dialog::backdrop {
     .alt-onboard-icon { width: 80px !important; height: 80px !important; }
     .alt-onboard-icon [data-lucide] { width: 36px !important; height: 36px !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-028 §28.8 — Theme picker (gold/blue/violet)
+   El admin elige paleta cromática. Override de --brand-primary +
+   --ws-color-* + colores derivados via clase en <html>.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Theme: BLUE corporate ─────────────────────────────────── */
+html.theme-blue {
+    --brand-primary: #3b82f6;
+    --ws-color-gold: #3b82f6;
+    --nova-tint-gold: rgba(59, 130, 246, 0.06);
+    --nova-acrylic-tint-gold: rgba(59, 130, 246, 0.04);
+    --nova-reveal-color: rgba(59, 130, 246, 0.10);
+    --nova-reveal-color-hi: rgba(59, 130, 246, 0.18);
+    --nova-border-gold: 1px solid rgba(59, 130, 246, 0.18);
+    --nova-border-gold-hi: 1px solid rgba(59, 130, 246, 0.32);
+    --nova-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.32);
+    --nova-focus-ring-soft: 0 0 0 3px rgba(59, 130, 246, 0.16);
+}
+html.theme-blue ::selection { background: rgba(59, 130, 246, 0.32); }
+html.theme-blue ::-moz-selection { background: rgba(59, 130, 246, 0.32); }
+
+/* ─── Theme: VIOLET creative ────────────────────────────────── */
+html.theme-violet {
+    --brand-primary: #8b5cf6;
+    --ws-color-gold: #8b5cf6;
+    --nova-tint-gold: rgba(139, 92, 246, 0.06);
+    --nova-acrylic-tint-gold: rgba(139, 92, 246, 0.04);
+    --nova-reveal-color: rgba(139, 92, 246, 0.10);
+    --nova-reveal-color-hi: rgba(139, 92, 246, 0.18);
+    --nova-border-gold: 1px solid rgba(139, 92, 246, 0.18);
+    --nova-border-gold-hi: 1px solid rgba(139, 92, 246, 0.32);
+    --nova-focus-ring: 0 0 0 3px rgba(139, 92, 246, 0.32);
+    --nova-focus-ring-soft: 0 0 0 3px rgba(139, 92, 246, 0.16);
+}
+html.theme-violet ::selection { background: rgba(139, 92, 246, 0.32); }
+html.theme-violet ::-moz-selection { background: rgba(139, 92, 246, 0.32); }
+
+/* Smooth transition al cambiar tema */
+* {
+    transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+}
+html.theme-changing-stop * {
+    transition: none !important;
+}
+
+/* ─── Picker UI ──────────────────────────────────────────── */
+.atp-picker {
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    border-radius: var(--hmy-radius-card-large);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+}
+.atp-picker-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 22px;
+}
+.atp-picker-title {
+    margin: 0 0 6px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+}
+.atp-picker-subtitle {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.65));
+    line-height: 1.5;
+}
+.atp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+}
+
+/* ─── Card de cada theme ───────────────────────────────── */
+.atp-card {
+    position: relative;
+    border-radius: var(--hmy-radius-card-soft);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    padding: 20px 18px 18px;
+    cursor: pointer;
+    transition: all var(--nova-spring-snap);
+    text-align: center;
+    overflow: hidden;
+}
+.atp-card:hover {
+    border-color: var(--brand-primary, #b89658);
+    background: rgba(255, 255, 255, 0.04);
+    transform: translateY(-2px);
+    box-shadow: var(--nova-shadow-elev-2);
+}
+.atp-card.is-active {
+    border-color: var(--brand-primary, #b89658);
+    background: linear-gradient(135deg,
+        var(--nova-tint-gold) 0%,
+        rgba(255, 255, 255, 0.02) 100%);
+    box-shadow: var(--nova-shadow-glow);
+}
+.atp-card.is-active::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+        transparent,
+        var(--brand-primary, #b89658),
+        transparent);
+}
+.atp-swatches {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 14px;
+}
+.atp-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
+}
+.atp-card:hover .atp-swatch:nth-child(2) {
+    transform: scale(1.18);
+    transition: transform var(--nova-spring-snap);
+}
+.atp-card-name {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+    margin-top: 4px;
+}
+.atp-active-badge {
+    margin-top: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--brand-primary, #b89658);
+}
+@media (prefers-reduced-motion: reduce) {
+    .atp-card:hover { transform: none; }
+    .atp-card .atp-swatch { transition: none; }
+    * { transition: none !important; }
+}

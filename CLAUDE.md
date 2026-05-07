@@ -16530,3 +16530,164 @@ clases existentes (`alt-onboard`, `alt-onboard-backdrop`,
 **Spotlight ready-to-use**: cuando se quiera usar el spotlight,
 `admin-onboarding.js` debe añadir `.alt-onboard-spotlight` clase
 al elemento target. El CSS ya hace el resto.
+
+### 28.8 Sprint §28.8 — Theme picker (gold/blue/violet) (2026-05-10)
+
+**Objetivo del sprint** (último de los pendientes futuros del ADR-028):
+permitir al admin elegir entre 3 paletas cromáticas del panel sin
+cambiar identidad de marca pública. Útil para personalización +
+accesibilidad para color-blind users.
+
+#### A. 3 paletas disponibles
+
+| Theme | Primary | Preview swatches |
+|---|---|---|
+| **gold** (default) | `#b89658` | `#d4ad6e`, `#b89658`, `#9a7d44` |
+| **blue** (corporate) | `#3b82f6` | `#60a5fa`, `#3b82f6`, `#1d4ed8` |
+| **violet** (creative/luxury) | `#8b5cf6` | `#a78bfa`, `#8b5cf6`, `#6d28d9` |
+
+#### B. Override de tokens via clase HTML
+
+`html.theme-blue` y `html.theme-violet` overridean:
+- `--brand-primary`
+- `--ws-color-gold` (workspace primario hereda)
+- `--nova-tint-gold` (tinted backgrounds)
+- `--nova-acrylic-tint-gold` (acrylic layer)
+- `--nova-reveal-color/-hi` (reveal hover Fluent)
+- `--nova-border-gold/-hi`
+- `--nova-focus-ring/-soft`
+- `::selection` background
+
+Resultado: TODA la app cambia a la paleta nueva sin tocar HTML.
+El `gold` (default) NO necesita clase — vars base son doradas.
+
+#### C. Pre-paint inline (cero flicker)
+
+En `<head>` de admin.html, antes del primer paint:
+```js
+var t = localStorage.getItem('altorra_admin_theme');
+if (t === 'blue' || t === 'violet') {
+    document.documentElement.classList.add('theme-' + t);
+}
+```
+Resultado: si el admin tiene `blue` persistido, el panel carga
+directamente azul, sin un flash de dorado primero.
+
+#### D. JS module `js/admin-theme-picker.js` (~140 líneas)
+
+Singleton `window.AltorraThemePicker`:
+- `apply(theme)` — aplica + persiste + emit EventBus
+- `get()` — retorna tema actual o default
+- `themes` / `meta` — getters de catálogo
+
+Auto-mount al entrar a `sec-settings`:
+- Busca `#themePicker` o `[data-theme-picker]` y popula
+- Re-mount via `AltorraSections.onChange`
+
+Toast feedback al cambiar: `notify.success({ title: '🎨 Tema aplicado'... })`.
+
+#### E. UI del picker (CSS ~120 líneas)
+
+`.atp-picker`: card grande 24×28 padding, glass border + radius 24.
+`.atp-grid`: grid auto-fit minmax(180px) responsive.
+`.atp-card`: card con border 2px transparent, hover dorado lift,
+active con border-top accent line + glow + linear-gradient bg tint.
+`.atp-swatches`: 3 dots circulares 26px con border + shadow.
+`.atp-active-badge`: pill "✓ Activo" con uppercase letter-spacing.
+
+Hover sobre card: el swatch del medio escala 1.18x (efecto "preview").
+
+#### F. Smooth transitions globales
+
+`* { transition: background-color, border-color, color }` 0.4s
+ease al cambiar tema. `html.theme-changing-stop *` desactiva
+para casos edge.
+
+`prefers-reduced-motion: reduce` cancela todas las transitions.
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Flicker del default gold cuando el admin tiene blue | Pre-paint inline antes de cualquier render JS |
+| Toda la app re-paints al cambiar tema | Smooth transition 0.4s ease compositing GPU |
+| Theme picker en sidebar genera ruido | Solo en sec-settings (decisión deliberada del usuario) |
+| Cambio de tema entre tabs (cross-tab) | localStorage 'storage' event NO está conectado todavía — opcional futuro |
+| Cliente público usa color del admin theme | El tema solo aplica a admin.html (ya separado de páginas públicas via appName §23.10) |
+| Theme blue/violet pierde branding del logo | Logo Altorra (image png) NO depende de theme; sigue siendo dorado |
+| Reduced-motion no respetado en transition global | `* { transition }` también dentro del `prefers-reduced-motion` query |
+| Persistencia falla en private browsing | try/catch + fallback al default |
+| EventBus emit antes que cargue | Guard `if (window.AltorraEventBus)` |
+| applyTheme con tema inválido | Filter contra THEMES array, fallback a default |
+
+#### Test E2E del sprint
+
+1. Login admin → ir a Ajustes (sec-settings)
+2. Ver card "Apariencia del panel" con 3 cards de tema
+3. Cards: Gold (activa default), Blue, Violet
+4. Click "Blue" → toda la app cambia a azul instantáneamente
+   (transition 0.4s smooth)
+5. Toast verde "🎨 Tema aplicado: Azul corporativo"
+6. Card "Blue" ahora con border azul + accent line + active badge
+7. Refrescar la página → carga DIRECTO en azul sin flicker
+8. Click "Violet" → cambia a violeta + toast
+9. Click "Gold" → vuelve al default
+10. Logout y login → tema persiste
+11. Hover sobre card no activa → swatch del medio escala
+12. `prefers-reduced-motion: reduce` → transitions deshabilitadas
+
+**Archivos creados/modificados**:
+- `js/admin-theme-picker.js` (NUEVO ~140 líneas)
+- `css/admin.css` (+150 líneas .atp-* + theme overrides)
+- `admin.html` (pre-paint inline script + script tag + #themePicker container en sec-settings)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510150000)
+- `CLAUDE.md` (esta sección §28.8)
+
+#### ✅ ADR-028 ALTORRA NOVA — CIERRE TOTAL
+
+**8 sprints shippeados, 8 commits, ~3500 líneas CSS+JS+doc**.
+
+| Sprint | Commit | Descripción |
+|---|---|---|
+| §28.1 | `32bd5b0` | Foundation tokens NOVA + mass refactor legacy |
+| §28.2 | `e7af97c` | Auth screens premium (login/2FA/unlock) |
+| §28.3 | `d99822e` | Polish secciones legacy (10 secciones) |
+| §28.4 | `21b247e` | Final polish (Mica/acrylic/view-transitions/shimmer/tooltips/details/dialog) |
+| §28.5 | `093d7ee` | Empty states ilustrados con 10 SVG inline |
+| §28.6 | `76ef1d0` | Skeleton screens realistas mimic per section (7 kinds) |
+| §28.7 | `b6dc503` | Onboarding tour HarmonyOS polish + spotlight target |
+| §28.8 | (este) | Theme picker (gold/blue/violet) con preview live |
+
+**Resultado final del refactor visual completo (ADR-026 + ADR-027 + ADR-028)**:
+
+El admin de Altorra Cars pasó de:
+- Frankenstein con secciones mal ubicadas + código muerto + placeholders
+- Visual pre-HarmonyOS con border-radius 4-12px inconsistente
+- Spinners genéricos
+- Empty states de texto plano
+- Sin onboarding tour
+- Sin theme picker
+
+A:
+- **CRM Enterprise estructurado en 8 grupos lógicos coherentes**
+- **Lenguaje visual fusionado HarmonyOS + Win 11 Fluent + iOS 26 Liquid + Material You**
+- **180+ design tokens organizados** (12 categorías)
+- **Skeletons mimic per section** (perceived perf premium)
+- **Empty states con 10 SVG illustrations** personalizadas
+- **Onboarding tour glassmorphism premium con spotlight**
+- **Theme picker live con 3 paletas** (gold/blue/violet)
+- **Animations: spring + stagger + cascade + ripple + shimmer + pulse + view-transitions**
+- **Auth screens con liquid background + orbs animados + glassmorphism**
+- **Sidebar Mica strong + acrylic nav-item active**
+- **Buttons con ripple + shimmer effect**
+- **Tablas sticky head con Mica + radius outer**
+- **Inputs/checkbox/radio/range/progress 100% custom dorados**
+- **Tooltips Mica + dialog HTML5 polish + details collapsibles**
+- **Text selection del color del theme**
+- **Scrollbars del color del theme sutiles 8px**
+
+**Costo recurrente: $0**. Todo CSS + JS client-side, cero APIs externas.
+
+ADR-028 ALTORRA NOVA cerrado. El admin ya no es un Frankenstein — es
+un producto premium con identidad visual coherente, customizable y
+accesible.

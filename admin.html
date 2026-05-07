@@ -38,6 +38,15 @@
             };
         } catch (e) { /* fail-open: comportamiento clásico */ }
     })();
+    /* §28.8 NOVA — Pre-paint del theme picker (evita flicker dorado→azul/violet) */
+    (function () {
+        try {
+            var t = localStorage.getItem('altorra_admin_theme');
+            if (t === 'blue' || t === 'violet') {
+                document.documentElement.classList.add('theme-' + t);
+            }
+        } catch (e) {}
+    })();
     </script>
     <style>
     /* §23 FASE 7 — pre-paint optimista del shell del admin
@@ -2173,6 +2182,9 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                 <div><h1>Ajustes</h1><p class="page-subtitle">Cuenta, SEO, respaldo y herramientas del sistema</p></div>
             </div>
 
+            <!-- §28.8 NOVA — Theme picker (gold/blue/violet) -->
+            <div id="themePicker"></div>
+
             <!-- §27.2 — SEO Tools (movidos desde Inicio).
                  Más apropiado en Ajustes: regenerar SEO + publicar sitemap son
                  acciones de configuración técnica del super_admin, no info diaria. -->
@@ -2998,6 +3010,8 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-empty-states-autoupgrade.js" defer></script>
 <!-- §28.6 NOVA — Skeleton screens realistas mimic per section -->
 <script src="js/admin-skeletons.js" defer></script>
+<!-- §28.8 NOVA — Theme picker (gold/blue/violet) -->
+<script src="js/admin-theme-picker.js" defer></script>
 <!-- admin-inbox.js eliminado — unificado al Concierge (sec-concierge → ALTOR Hub) -->
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

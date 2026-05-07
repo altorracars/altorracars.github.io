@@ -484,3 +484,69 @@ html.alt-theme-transitioning *::after {
         scroll-behavior: auto !important;
     }
 }
+
+/* ───────────────────────────────────────────────────────────────
+   12. NOVA — Fusión visual ULTIMATE (ADR-028)
+       HarmonyOS + Windows 11 Fluent + iOS 26 Liquid + Material You.
+       Capa por encima de §11 HarmonyOS. Prefijo --nova-*.
+   ─────────────────────────────────────────────────────────────── */
+:root {
+    /* Mica/Acrylic backgrounds (Windows 11) — capas semi-translúcidas
+       con saturación y blur fuerte. Para sidebars, headers y modales. */
+    --nova-mica-bg:           rgba(18, 18, 20, 0.72);
+    --nova-mica-bg-strong:    rgba(15, 15, 17, 0.85);
+    --nova-acrylic-bg:        rgba(28, 28, 30, 0.55);
+    --nova-acrylic-tint-gold: rgba(184, 150, 88, 0.04);
+    --nova-blur-xs:           8px;
+    --nova-blur-sm:           14px;
+    --nova-blur-md:           24px;
+    --nova-blur-lg:           36px;
+    --nova-blur-xl:           48px;
+
+    /* Liquid Glass borders (iOS 26) — bordes con gradiente sutil */
+    --nova-border-glass:      1px solid rgba(255, 255, 255, 0.07);
+    --nova-border-glass-hi:   1px solid rgba(255, 255, 255, 0.12);
+    --nova-border-gold:       1px solid rgba(184, 150, 88, 0.18);
+    --nova-border-gold-hi:    1px solid rgba(184, 150, 88, 0.32);
+
+    /* Reveal hover (Windows 11 Fluent) — radial-gradient que sigue cursor */
+    --nova-reveal-color:      rgba(184, 150, 88, 0.10);
+    --nova-reveal-color-hi:   rgba(184, 150, 88, 0.18);
+
+    /* Tinted backgrounds por workspace (Material You inspired) */
+    --nova-tint-gold:    rgba(184, 150, 88, 0.06);
+    --nova-tint-coral:   rgba(249, 112, 102, 0.06);
+    --nova-tint-blue:    rgba(59, 130, 246, 0.06);
+    --nova-tint-violet:  rgba(139, 92, 246, 0.06);
+    --nova-tint-green:   rgba(16, 185, 129, 0.06);
+    --nova-tint-cyan:    rgba(6, 182, 212, 0.06);
+    --nova-tint-amber:   rgba(245, 158, 11, 0.06);
+
+    /* Spring animations (iOS 26 Liquid feel) */
+    --nova-spring-soft:   0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    --nova-spring-bounce: 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+    --nova-spring-snap:   0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    --nova-spring-flow:   0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Shadow stacks NOVA — múltiples capas (HarmonyOS + Windows + iOS) */
+    --nova-shadow-elev-1: 0 1px 2px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+    --nova-shadow-elev-2: 0 2px 4px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10);
+    --nova-shadow-elev-3: 0 4px 12px rgba(0,0,0,0.12), 0 16px 48px rgba(0,0,0,0.14);
+    --nova-shadow-elev-4: 0 8px 24px rgba(0,0,0,0.16), 0 32px 80px rgba(0,0,0,0.20);
+    --nova-shadow-glow:   0 0 0 1px rgba(184,150,88,0.15), 0 0 24px rgba(184,150,88,0.20);
+
+    /* Density variants (Windows 11) */
+    --nova-density-compact-row:    36px;
+    --nova-density-default-row:    48px;
+    --nova-density-comfortable-row:56px;
+
+    /* Focus rings NOVA (Material You + iOS) — anillos suaves dorados */
+    --nova-focus-ring:        0 0 0 3px rgba(184, 150, 88, 0.32);
+    --nova-focus-ring-soft:   0 0 0 3px rgba(184, 150, 88, 0.16);
+    --nova-focus-ring-coral:  0 0 0 3px rgba(249, 112, 102, 0.32);
+    --nova-focus-ring-error:  0 0 0 3px rgba(239, 68, 68, 0.32);
+
+    /* Scrim (overlays para modales/drawers) — gradient radial dark */
+    --nova-scrim:             radial-gradient(ellipse at center, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.78) 100%);
+    --nova-scrim-light:       rgba(0, 0, 0, 0.45);
+}

@@ -207,36 +207,64 @@
 
         var name = profile.nombre || profile.email || 'Admin';
         var email = profile.email || '';
-        var role = (profile.rol || '').toUpperCase();
+        var rol = profile.rol || '';
+        var cargo = profile.cargo || ''; // §36.1 — campo cargo opcional (override del rol)
         var photo = profile.photoURL || profile.avatarURL || '';
         var initials = (profile.nombre || profile.email || 'A')
             .split(' ').map(function (w) { return w.charAt(0); })
             .join('').substring(0, 2).toUpperCase();
+
+        // Si hay cargo personalizado, mostrarlo. Sino, usar label humano del rol.
+        var displayRole = cargo || roleLabel(rol);
 
         var nameEl = $('atnUserName');
         var roleEl = $('atnUserRole');
         var avatarEl = $('atnUserAvatar');
         var menuName = $('atnUserMenuName');
         var menuEmail = $('atnUserMenuEmail');
+        var menuRole = $('atnUserMenuRole');
+        var menuAvatar = $('atnUserMenuAvatar');
 
         if (nameEl) nameEl.textContent = name;
-        if (roleEl) roleEl.textContent = roleLabel(role);
+        if (roleEl) roleEl.textContent = displayRole;
         if (menuName) menuName.textContent = name;
         if (menuEmail) menuEmail.textContent = email;
+        if (menuRole) menuRole.textContent = displayRole;
+
+        var avatarHTML = photo
+            ? '<img src="' + escapeHTML(photo) + '" alt="" onerror="this.parentNode.textContent=\'' + initials + '\'">'
+            : initials;
         if (avatarEl) {
-            if (photo) {
-                avatarEl.innerHTML = '<img src="' + escapeHTML(photo) + '" alt="" onerror="this.parentNode.innerHTML=\'' + initials + '\'">';
-            } else {
-                avatarEl.textContent = initials;
-            }
+            avatarEl.innerHTML = avatarHTML;
+        }
+        if (menuAvatar) {
+            menuAvatar.innerHTML = avatarHTML;
         }
     }
 
+    /**
+     * §36.1 — Labels humanos del rol (NO "SUPER" truncado).
+     * Empresas grandes (Stripe, Linear, Notion) muestran cargos completos.
+     * El admin puede setear `profile.cargo` custom para override.
+     */
     function roleLabel(rol) {
-        if (rol === 'SUPER_ADMIN') return 'Super';
-        if (rol === 'EDITOR') return 'Editor';
-        if (rol === 'VIEWER') return 'Lectura';
-        return rol || '';
+        var key = String(rol || '').toLowerCase();
+        if (key === 'super_admin') return 'Administrador General';
+        if (key === 'editor')      return 'Editor';
+        if (key === 'viewer')      return 'Lector';
+        if (key === 'admin')       return 'Administrador';
+        return rol ? rol.charAt(0).toUpperCase() + rol.slice(1) : 'Miembro';
+    }
+
+    /* §36.1 — Detect Mac vs PC + actualizar kbd label */
+    function syncKbdLabel() {
+        var kbd = $('atnSearchKbd');
+        if (!kbd) return;
+        var isMac = false;
+        try {
+            isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || '');
+        } catch (e) {}
+        kbd.textContent = isMac ? '⌘K' : 'Ctrl+K';
     }
 
     function escapeHTML(s) {
@@ -277,6 +305,7 @@
     /* ─── Init ─── */
     function init() {
         wireTabs();
+        syncKbdLabel();
         syncUser();
         syncBell();
         syncBadges();

@@ -18936,3 +18936,158 @@ tablas, cards, kanbans. Especialmente notable en CRM Pipeline,
 Vehicles grid, Reports dashboards.
 
 **Cache bump**: `v20260510310000`.
+
+---
+
+## 36.1. ADR-036 (continuación) — Hot fixes feedback + Sección Mi Perfil (2026-05-07)
+
+> Tras shippear §36, el cliente reportó 4 issues:
+> (1) submenús se esconden detrás del contenido del main,
+> (2) "ALTORRA" con la A es clickeable y manda al inicio (debería
+> ser solo logo decorativo + nombre, como en la página pública),
+> (3) "SUPER" como label del rol es feo y truncado — debe mostrar
+> el cargo real del usuario; pidió crear una interfaz de perfil
+> tipo página pública para gestionar foto, cédula (one-time-edit
+> con autorización del super_admin) y datos personales,
+> (4) ⌘K es símbolo Mac — los usuarios usan Windows; usar Ctrl+K,
+> (5) el botón de comando por voz solo se ve en el dashboard.
+
+### 36.1.1 Hot fixes inmediatos
+
+**Z-index dropdowns** (`admin-topnav.css`):
+- `.atn-topnav` z-index `200 → 9990` + `isolation: isolate` (nuevo
+  stacking context)
+- `.atn-menu` y `.atn-user-menu` z-index `250 → 9999`
+- Dropdowns ahora aparecen sobre cualquier contenido del main
+  (cards, tablas, modals).
+
+**Brand decorativo no clickeable** (`admin.html` + `admin-topnav.css`):
+- Cambiado de `<a href="#/dashboard" data-atn-section="dashboard">` a
+  `<div class="atn-brand">` puro
+- Sin `cursor: pointer`, sin hover background, sin navegación
+- Estructura visible: cuadrado dorado "A" + texto "ALTORRA CARS / Panel Admin"
+  (como en la página pública)
+- "Inicio" sigue siendo el botón principal de navegación
+
+**Role labels humanos** (`admin-topnav.js roleLabel()`):
+- `super_admin` → **"Administrador General"** (era "SUPER")
+- `editor` → **"Editor"**
+- `viewer` → **"Lector"**
+- `admin` → **"Administrador"**
+- Si el usuario tiene `profile.cargo` custom → se muestra ese
+  override (ej: "Asesor comercial", "Director de operaciones"),
+  patrón Stripe/Linear/Notion.
+
+**Ctrl+K platform-aware** (`admin-topnav.js syncKbdLabel()`):
+- Detecta `navigator.platform` o `navigator.userAgent`
+- Mac/iOS → muestra `⌘K`
+- Windows/Linux/otros → muestra `Ctrl+K`
+- Se aplica al `<kbd id="atnSearchKbd">` del search trigger
+
+**Voice button persistente** (`admin-voice.js init()`):
+- Antes anclaba al `#activityFeedTrigger` legacy del dashboard hero
+  (escondido al cambiar de sección)
+- Ahora prioriza `#atnVoiceBtnSlot` del topnav (siempre visible)
+- Fallback al legacy si el slot no existe (compat con admin.html viejo)
+- Botón visible y operativo en TODAS las secciones del admin
+
+### 36.1.2 Mi Perfil — sección nueva (`sec-profile`)
+
+Inspirada en perfil.html público + Notion/Linear/Stripe.
+
+**Estructura** (admin.html):
+- Hero card con: avatar grande (96px) editable (click → file picker)
+  + nombre + cargo + email + 2 pills meta (fecha alta + último acceso)
+- Grid de 3 cards:
+  1. **Información personal**: nombre, email (readonly), teléfono +
+     prefijo (CO/US/ES), cargo libre (max 60 chars)
+  2. **Documento de identidad**: tipo (CC/CE/Pasaporte) + número.
+     **LOCK PATTERN** — una vez guardado, queda `readOnly` con icono
+     candado dorado. El usuario debe pulsar "Solicitar cambio al
+     Super Admin" para desbloquearlo.
+  3. **Información de cuenta** (read-only): rol, UID (mono), fecha
+     creación, último acceso, estado 2FA
+- Save bar sticky bottom con estado:
+  - "Sin cambios pendientes" (gris)
+  - "Cambios sin guardar" (dorado, dirty state visual)
+  - Botones Cancelar + Guardar cambios
+  - Mientras guarda: spinner + estado "Guardando…"
+
+**Avatar upload** (`admin-profile.js compressImageToWebp()`):
+- File picker acepta JPG/PNG/WebP, max 5MB
+- Comprime client-side a WebP 400×400 quality 0.85 (Canvas API)
+- Sube a Firebase Storage path `avatars/{uid}.webp` con
+  `cacheControl: public, max-age=86400`
+- URL resultante se persiste en `usuarios/{uid}.photoURL`
+- También sincroniza `user.updateProfile({ photoURL })` para que
+  Firebase Auth refleje el cambio
+- Tras guardar, `AltorraTopNav.syncUser()` actualiza el avatar del
+  topnav inmediatamente
+
+**Cédula one-time-edit (lock pattern)**:
+- Si `profile.cedula` está vacía → input editable + hint
+  "Una vez guardada quedará bloqueada"
+- Si ya tiene valor → input `readOnly` + clase `is-locked` (gris) +
+  botón candado visible + botón "Solicitar cambio al Super Admin"
+- Al solicitar cambio: marca `cedulaChangeRequested: true` +
+  `cedulaChangeRequestedAt: ISO` en Firestore. El Super Admin lo ve
+  en el panel de Usuarios (Phase 2).
+
+**Persistencia** (Firestore `usuarios/{uid}` update):
+- `nombre`, `telefono`, `prefijo`, `cargo` siempre editables
+- `cedula`, `tipoDoc` editables solo si NO estaban seteados
+- `photoURL` se actualiza si se subió un avatar nuevo
+- Reglas de Firestore (existentes desde §4 Optimistic Locking):
+  el usuario puede update SU propio doc con whitelist diff-keys
+  (el patrón self-service del §23.10 Trusted Devices ya lo cubre)
+
+**Acceso desde topnav**:
+- Avatar dropdown del topnav ahora tiene 2 items:
+  - **Mi perfil** (icon `user-circle`) → navega a `sec-profile`
+  - **Cerrar sesión** (color rojo, icon `log-out`)
+- También se accede via deep-link `#/profile`
+
+### 36.1.3 Anti-patterns evitados
+
+| Patrón prohibido | Origen del veto | Cómo lo evitamos |
+|---|---|---|
+| MutationObserver subtree:true | §17.12 | admin-profile.js sin observers — wire on-demand al activar sec-profile |
+| pointermove listeners | §35 | Cero pointermove en admin-profile.js |
+| `transition: all` | §17.2 | Transitions específicas (border-color, background-color, transform) |
+| Animar layout properties | §17.2 | Solo `transform`, `opacity`, `box-shadow` en hover |
+| Cédula en plaintext sin protección | §H.4 (sudo mode) | Lock pattern + flag `cedulaChangeRequested` para auditoría |
+
+### 36.1.4 Archivos modificados
+
+| Archivo | Tipo | Detalle |
+|---|---|---|
+| `admin.html` | Edit | Brand decorativo + voice slot + role 3 líneas + sec-profile completa + script tag admin-profile.js |
+| `css/admin-topnav.css` | Edit | z-index 9999 dropdowns + brand 2 líneas + role label + section profile (~280 líneas append) |
+| `js/admin-topnav.js` | Edit | syncKbdLabel platform-aware + roleLabel humano + sync menu avatar + cargo override |
+| `js/admin-voice.js` | Edit | Anchor primario `#atnVoiceBtnSlot` (topnav slot persistente) |
+| `js/admin-profile.js` | NUEVO | ~340 líneas — load/save profile, avatar compression+upload, cédula lock pattern, request change flow |
+| `js/admin-section-router.js` | Edit | REGISTRY agrega `profile` (hidden, accesible via avatar dropdown) |
+| `service-worker.js` + `js/cache-manager.js` | Edit | Cache bump v20260510320000 |
+| `CLAUDE.md` | Append | Esta sección §36.1 |
+
+### 36.1.5 Test E2E
+
+| # | Test | Resultado esperado |
+|---|---|---|
+| 1 | Hover Inventario en topnav | Dropdown aparece SOBRE el contenido del main (z-index 9999) |
+| 2 | Click logo "ALTORRA CARS" | NO navega — es decorativo (cursor:default) |
+| 3 | Avatar dropdown muestra "Administrador General" | NO "SUPER" truncado |
+| 4 | Search trigger label en Windows | Muestra "Ctrl+K" no "⌘K" |
+| 5 | Search trigger label en Mac | Muestra "⌘K" |
+| 6 | Click micrófono en cualquier sección | Funciona igual (botón visible siempre en topnav) |
+| 7 | Click "Mi perfil" en avatar dropdown | Navega a sec-profile |
+| 8 | Click avatar grande en perfil | Abre file picker |
+| 9 | Subir imagen JPG/PNG | Comprime a WebP, sube a Storage, actualiza Firestore + topnav avatar |
+| 10 | Cédula vacía → escribir + Guardar | Persiste + queda bloqueada con candado |
+| 11 | Cédula bloqueada → click candado | Toast info "Documento bloqueado" |
+| 12 | Click "Solicitar cambio al Super Admin" | Marca flag en Firestore + toast confirmando |
+| 13 | Editar cargo → Guardar | "Asesor comercial" aparece en topnav avatar dropdown |
+| 14 | F5 estando en Mi Perfil | Recarga + se queda en sec-profile (deep-link funciona) |
+| 15 | Mobile <720px | Cards apiladas en 1 col, save bar full-width stacked |
+
+**Cache bump**: `v20260510320000`.

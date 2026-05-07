@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260510310000'; // §36 — Top nav Notion/Vercel reemplaza sidebar 256px
+    const APP_VERSION = '20260510320000'; // §36.1 — fixes feedback + Mi Perfil section
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

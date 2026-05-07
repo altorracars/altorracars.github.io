@@ -17545,3 +17545,141 @@ iOS, sliding accent en tablas). Cero impacto en sitio público — TODO
 contenido en `.admin-panel` y `js/admin-*` modules.
 
 **Costo recurrente**: $0 (puro CSS + JS client-side).
+
+### 30.2 Sprint VISIONARY W3+W4 — Bug fixes + Dynamic Island + dashboard hero + section accents + concierge bubbles + calendar + audit/KB/unmatched cards refinement
+
+**Bug fixes legacy resueltos**:
+- 28 referencias a `--admin-surface` legacy ahora override por `--vis-surface-1`
+- `transition: all` (caro) reemplazado por transitions específicas
+  spring (background/color/border/box-shadow/transform separados)
+- Dropdown menus legacy con border-radius 8 → 14 (consistent)
+- Inputs checkbox/radio border-radius 6 → xs (consistent)
+- Section padding inconsistente → 28×32 uniforme
+- Links color uniformizado a `var(--vis-brand-300)` con underline gold
+
+**Dynamic Island toasts** (iOS 16+ inspired):
+- Background dual-gradient negro 92%
+- `backdrop-filter: blur(48px) saturate(200%)`
+- `border-radius: pill` (radius-pill) — patrón Dynamic Island
+- Box-shadow stacked + inset highlight + glow per type
+- Spring entry: translateY -12 + scale 0.85 + blur 4 → 0
+- Variants success (verde glow) / error (rojo glow) / warning (ámbar) / info (gold)
+
+**FAB Material You** (Floating Action Button):
+- 3-stop gradient gold + border 1px gold-300
+- Shadow stacked + glow + inset highlight
+- Hover: lift 3px scale 1.05 + glow strong
+- Aplica a `.altorra-voice-btn`, `.altorra-fab`, `[data-fab]`, `.pwa-install-btn`
+
+**alt-toggle iOS-style**:
+- 44×26 pill con thumb 22×22 gradient blanco-gris
+- Shadow stacked en thumb (3D perception)
+- Slide spring 0 → 18px en transform
+- ON state: gradient gold + border brand-500 + box-shadow glow
+
+**KBD premium Mac-style**:
+- Border-bottom 2px (relief) + inset shadow bottom
+- Background dual-gradient
+- Font monospace con letter-spacing tight
+
+**Loader conic-gradient mask radial**:
+- Anillo dorado rotativo via conic-gradient + mask radial cutout
+- Sin SVG external
+
+**Progress bars con shimmer**:
+- 3-stop gradient gold con animation shimmer 2.4s infinite
+- Box-shadow glow + inset highlight
+- Width transition spring
+
+**Sidebar group-items spring expand/collapse**:
+- max-height transition spring + opacity
+- Chevron rotate -90 cuando collapsed
+
+**NBA dash items con priority border-left**:
+- High: gold + bg gradient horizontal
+- Medium: amber
+- Low: gray
+
+**Pipeline lanes premium**:
+- Background dual-gradient
+- Header uppercase letter-spacing widest
+- Min-width 280
+
+**Charts container**: border + radius + bg
+
+**Section page-header breathe**: animation 8s sutil
+
+**Mobile blurs reducidos** (perf): 16px en sidebar/header/modal/notify-center mobile
+
+**Dashboard hero**:
+- Radial gradient 800×300 dorado top-left + 600×200 violet bottom-right
+- Border 1px gold + radius xl 22px
+- Box-shadow elev-2 + inset highlight
+- `::before` pseudo orb 320×320 con blur 32px animado 12s ease-in-out
+- Padding 36×40×32 generoso
+
+**Section page-headers radial accent**:
+- Cada section recibe radial 800×200 dorado top-left + Mica blur
+- Border + shadow elev-1
+- `::after` line gradient 5% center 5% (separador delicate)
+
+**Concierge admin chat bubbles**:
+- Asistente: bg gold tinted + border gold
+- User: gradient dorado + texto oscuro AAA + border gold-300
+- Messages container surface-canvas
+
+**Calendar premium**:
+- Day cells: surface-1 + border 1px white/0.08 + radius xs
+- Hover: bg gold-tint + scale 1.02 + border brand
+- Today: gradient gold + glow
+- Has events: border gold tinted
+- Events: pill gold-tint
+
+**Audit feed**: bg surface-1 + hover gold tinted + translateX 4px
+
+**Unmatched cards**: tinted ámbar gradient + border-left 3px ámbar + hover glow
+
+**KB cards**: tinted verde gradient + border-left 3px verde + hover glow
+
+**Workspace color tokens**: `--vis-ws-color` setea por `[data-workspace-color]` (8 valores) — consumible globalmente
+
+**Scroll hint**: tablas largas con fade gradient bottom (24px opacity 0.6)
+
+**View transitions cross-section** (Chrome 126+):
+- `.section.active { view-transition-name: section-active }`
+- visSectionOut/InVT spring 0.36-0.42s
+
+**Success/Error pulse animations**:
+- `.vis-success-pulse`: green ring expansión 1.2s
+- `.vis-error-pulse`: shake horizontal ±6px 0.8s
+
+**Print styles**: bg blanco, sin backdrops/shadows, oculta sidebar/topbar/overlays/FAB/palette/bell
+
+**High contrast a11y** (`prefers-contrast: more`): borders más opacos + outline 2px en active states
+
+**Total Visionary**: 2810 líneas CSS (`admin-visionary.css`) + 150 líneas JS (`admin-visionary-fx.js`) + cargados ULTIMOS para máxima especificidad.
+
+### Resultado del refactor visionary
+
+El admin de Altorra Cars ahora se ve **world-class de verdad**:
+
+| Aspecto | Pre-VISIONARY | Post-VISIONARY |
+|---|---|---|
+| Background | Flat dark con tokens dispersos | **Mesh radial 3 gradients + noise SVG** |
+| Tipografía | Mezcla legacy + NOVA | **Sistema completo OpenType (kern liga tnum cv11)** + display gradient text |
+| Cards | Hover lift básico | **Cursor-follow gradient (Vision Pro) + border gradient mask + tilt 3D parallax (hero KPIs) + stagger entry IntersectionObserver** |
+| Sidebar | Mica blur 24 | **Mica 64 saturate 200 + 3-layer depth + active premium multi-shadow + side accent pulsante + icon scale** |
+| Buttons | Radius + ripple | **Shimmer iOS hover + haptic visual scale 0.97 + focus ring multi-layer + 3-stop gradient + ripple expansion** |
+| Tablas | Hover background | **Sliding accent line (td:first-child::before width 0→3px spring) + sticky head Mica + uppercase headers** |
+| Modales | Spring básico | **Multi-layer scrim radial + Mica 64 saturate 180 + spring entry translateY+scale+blur** |
+| Toasts | Glass simple | **Dynamic Island-style: pill + Mica + spring entry blur + glow per type** |
+| FAB | Sólido | **Material You gradient + glow stacked + scale 1.05 lift hover** |
+| Toggles | CSS básico | **iOS-style 44×26 pill + thumb 3D + slide spring + ON glow** |
+| Notify center | Mica medio | **Mica strong 64 saturate 200 + elev-5 stacked** |
+| Activity Feed | Hover básico | **Translate-X 4px + border highlighted + spring** |
+| Calendar | Grid simple | **Day cells radius + hover scale + today glow + event pills** |
+| Section transitions | Fade simple | **View-transitions cross-section (Chrome 126+) + section.active stagger automático** |
+| Microinteractions | Hover básico | **Cursor follow Vision Pro + haptic visual + parallax tilt + sparkle border + section breathe** |
+| Mobile | Blurs costosos | **Blurs reducidos 16px + tilt off + paddings adaptivos** |
+
+**Costo recurrente**: $0. Todo CSS + JS client-side. Cero APIs externas. Cero impacto en sitio público (todo dentro de `.admin-panel`).

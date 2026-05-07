@@ -1884,3 +1884,926 @@ body:has(.admin-panel) {
 /* ═══════════════════════════════════════════════════════════════════
    FIN VISIONARY Sprint 2 (refinements + components)
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   41. BUG FIXES — legacy specificity overrides
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Fix: --admin-surface (legacy) NO debe usarse — pisa con --vis-surface */
+.admin-panel .stat-card,
+.admin-panel .info-card,
+.admin-panel .form-card,
+.admin-panel [class*="-card"]:not(.alt-card):not(.workflow-card):not(.reports-card):not(.kpi-card):not(.hero-kpi):not(.pipeline-card):not(.nba-dash-item):not(.insights-card):not(.cnc-admin-list-item) {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.01) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+}
+
+/* Fix: transition: all (caro) → solo lo que necesita transition */
+.admin-panel .btn,
+.admin-panel .alt-btn,
+.admin-panel .nav-item,
+.admin-panel button {
+    transition:
+        background var(--vis-d-quick) var(--vis-ease-snap),
+        color var(--vis-d-quick) var(--vis-ease-snap),
+        border-color var(--vis-d-quick) var(--vis-ease-snap),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap),
+        transform var(--vis-d-quick) var(--vis-ease-spring-3);
+}
+
+/* Fix: dropdown menu legacy con border-radius 8 → 14 */
+.admin-panel .dropdown-menu,
+.admin-panel .nav-dropdown,
+.admin-panel .megamenu,
+.admin-panel .context-menu,
+.admin-panel .popover,
+.admin-panel .header-dropdown {
+    background:
+        linear-gradient(180deg,
+            rgba(22, 22, 24, 0.94) 0%,
+            rgba(15, 15, 17, 0.90) 100%);
+    backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-32)) saturate(200%);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-md);
+    box-shadow: var(--vis-elev-4);
+    padding: 6px;
+}
+
+/* Fix: legacy input border-radius 6/8 → 10 */
+.admin-panel input[type="checkbox"]:not(.alt-toggle input),
+.admin-panel input[type="radio"]:not(.alt-toggle input) {
+    border-radius: var(--vis-r-xs) !important;
+}
+
+/* Fix: tabla legacy "tr" sin separación — ahora con borders glass */
+.admin-panel tr {
+    border: 0;
+}
+
+/* Fix: section padding legacy demasiado grande/pequeño */
+.admin-panel #sec-dashboard,
+.admin-panel #sec-vehicles,
+.admin-panel #sec-brands,
+.admin-panel #sec-dealers,
+.admin-panel #sec-banners,
+.admin-panel #sec-reviews,
+.admin-panel #sec-crm,
+.admin-panel #sec-calendar,
+.admin-panel #sec-workflows,
+.admin-panel #sec-kb,
+.admin-panel #sec-unmatched,
+.admin-panel #sec-users,
+.admin-panel #sec-audit,
+.admin-panel #sec-settings,
+.admin-panel #sec-reports {
+    padding: 28px 32px;
+}
+
+/* Fix: links color brand consistent */
+.admin-panel a:not(.btn):not(.alt-btn):not(.nav-item) {
+    color: var(--vis-brand-300);
+    text-decoration: none;
+    transition: color var(--vis-d-quick) var(--vis-ease-snap);
+}
+.admin-panel a:not(.btn):not(.alt-btn):not(.nav-item):hover {
+    color: var(--vis-brand-200);
+    text-decoration: underline;
+    text-decoration-color: rgba(184, 150, 88, 0.40);
+    text-underline-offset: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   42. DYNAMIC ISLAND-STYLE toasts (iOS 16+ inspired)
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-notify-stack,
+#altorraNotifyStack {
+    /* container existente, solo refinements */
+}
+.altorra-notify {
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.92) 0%,
+            rgba(8, 8, 10, 0.88) 100%);
+    backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    -webkit-backdrop-filter: blur(var(--vis-blur-24)) saturate(200%);
+    border: var(--vis-border-3);
+    border-radius: var(--vis-r-pill);
+    box-shadow:
+        var(--vis-elev-4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.30);
+    padding: 14px 22px;
+    color: #ffffff;
+    font-weight: 500;
+    letter-spacing: var(--vis-ls-base);
+    min-width: 280px;
+    max-width: 480px;
+    transform-origin: top center;
+    animation: visToastIn var(--vis-d-medium) var(--vis-ease-spring-2) both;
+}
+@keyframes visToastIn {
+    from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.85);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+.altorra-notify--success {
+    border-color: rgba(16, 185, 129, 0.40);
+    box-shadow:
+        var(--vis-elev-4),
+        0 0 32px rgba(16, 185, 129, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.altorra-notify--error {
+    border-color: rgba(239, 68, 68, 0.45);
+    box-shadow:
+        var(--vis-elev-4),
+        0 0 32px rgba(239, 68, 68, 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.altorra-notify--warning {
+    border-color: rgba(245, 158, 11, 0.40);
+}
+.altorra-notify--info,
+.altorra-notify--default {
+    border-color: rgba(184, 150, 88, 0.35);
+    box-shadow:
+        var(--vis-elev-4),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+@media (prefers-reduced-motion: reduce) {
+    .altorra-notify { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   43. FAB — Floating Action Button Material You
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-voice-btn,
+.altorra-fab,
+[data-fab],
+.pwa-install-btn {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-700) 100%);
+    color: #1a1310;
+    border: 1px solid rgba(212, 173, 110, 0.55);
+    border-radius: var(--vis-r-pill);
+    box-shadow:
+        var(--vis-elev-3),
+        var(--vis-elev-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    transition:
+        transform var(--vis-d-fast) var(--vis-ease-spring-3),
+        box-shadow var(--vis-d-fast) var(--vis-ease-snap);
+}
+.altorra-voice-btn:hover,
+.altorra-fab:hover,
+[data-fab]:hover,
+.pwa-install-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow:
+        var(--vis-elev-4),
+        var(--vis-elev-glow-strong),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   44. SPARKLE on hover — Cards premium effect
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .hero-kpi::after,
+.admin-panel .reports-kpi-card::after,
+.admin-panel .workflow-card::after {
+    /* override de border-gradient anterior con sparkle effect */
+}
+.admin-panel .hero-kpi:hover::after {
+    background:
+        linear-gradient(135deg,
+            rgba(184, 150, 88, 0) 0%,
+            rgba(184, 150, 88, 0.60) 30%,
+            rgba(184, 150, 88, 0.25) 60%,
+            rgba(184, 150, 88, 0) 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   45. ALT-TOGGLE switch refinado (iOS-style)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .alt-toggle {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-pill);
+    width: 44px;
+    height: 26px;
+    padding: 2px;
+    transition: background var(--vis-d-fast) var(--vis-ease-snap);
+    position: relative;
+    cursor: pointer;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.20);
+}
+.admin-panel .alt-toggle::before,
+.admin-panel .alt-toggle .alt-toggle-thumb {
+    content: '';
+    display: block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 100%);
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.30),
+        0 1px 0 rgba(0, 0, 0, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.50);
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
+    transform: translateX(0);
+}
+.admin-panel .alt-toggle.is-on,
+.admin-panel .alt-toggle[aria-checked="true"],
+.admin-panel input:checked + .alt-toggle,
+.admin-panel .alt-toggle:has(input:checked) {
+    background: linear-gradient(135deg,
+        var(--vis-brand-300),
+        var(--vis-brand-600));
+    border-color: var(--vis-brand-500);
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.20),
+        0 0 12px rgba(184, 150, 88, 0.30);
+}
+.admin-panel .alt-toggle.is-on::before,
+.admin-panel .alt-toggle[aria-checked="true"]::before {
+    transform: translateX(18px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   46. KEYBOARD SHORTCUT KBD premium
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    padding: 2px 7px;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-2);
+    border: var(--vis-border-3);
+    border-bottom-width: 2px;
+    border-radius: var(--vis-r-xs);
+    color: rgba(255, 255, 255, 0.85);
+    font-family: var(--vis-font-mono);
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-tight);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.05),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.30);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   47. LOADING SPINNER premium
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .loader,
+.admin-panel .spinner,
+.admin-panel [data-loading]::before {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg,
+        rgba(184, 150, 88, 0) 0%,
+        rgba(184, 150, 88, 0.60) 50%,
+        var(--vis-brand-500) 100%);
+    -webkit-mask: radial-gradient(circle, transparent 50%, #000 51%);
+    mask: radial-gradient(circle, transparent 50%, #000 51%);
+    animation: visSpinnerRotate 1s linear infinite;
+}
+@keyframes visSpinnerRotate {
+    to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .loader,
+    .admin-panel .spinner { animation: none; opacity: 0.5; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   48. PROGRESS BARS premium (used in KPIs / completitud)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .progress-bar,
+.admin-panel progress,
+.admin-panel .progress {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-pill);
+    height: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.20);
+}
+.admin-panel .progress-bar-fill,
+.admin-panel progress::-webkit-progress-value,
+.admin-panel .progress-fill {
+    background: linear-gradient(90deg,
+        var(--vis-brand-300) 0%,
+        var(--vis-brand-500) 50%,
+        var(--vis-brand-300) 100%);
+    background-size: 200% 100%;
+    border-radius: var(--vis-r-pill);
+    box-shadow:
+        0 0 12px rgba(184, 150, 88, 0.40),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    animation: visProgressShimmer 2.4s ease-in-out infinite;
+    transition: width var(--vis-d-medium) var(--vis-ease-spring-3);
+}
+@keyframes visProgressShimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .progress-bar-fill { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   49. SIDEBAR group-items expanded animation
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .nav-group-items {
+    overflow: hidden;
+    transition: max-height var(--vis-d-medium) var(--vis-ease-spring-3),
+                opacity var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .nav-group[aria-expanded="false"] .nav-group-items,
+.admin-panel .nav-group.is-collapsed .nav-group-items {
+    max-height: 0 !important;
+    opacity: 0;
+}
+.admin-panel .nav-group-chevron {
+    transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
+}
+.admin-panel .nav-group[aria-expanded="false"] .nav-group-chevron,
+.admin-panel .nav-group.is-collapsed .nav-group-chevron {
+    transform: rotate(-90deg);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   50. CRM & DASHBOARD specific polish
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* NBA dashboard items premium */
+.admin-panel .nba-dash-item {
+    padding: 16px 18px;
+    border-left: 3px solid transparent;
+}
+.admin-panel .nba-dash-item--high {
+    border-left-color: var(--vis-brand-500);
+    background:
+        linear-gradient(90deg,
+            rgba(184, 150, 88, 0.12) 0%,
+            rgba(184, 150, 88, 0.02) 30%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+}
+.admin-panel .nba-dash-item--medium {
+    border-left-color: rgba(245, 158, 11, 0.65);
+}
+.admin-panel .nba-dash-item--low {
+    border-left-color: rgba(107, 114, 128, 0.45);
+}
+
+/* Pipeline cards lane background */
+.admin-panel .pipeline-lane,
+.admin-panel .crm-pipeline-column {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-canvas);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 14px;
+    min-width: 280px;
+}
+.admin-panel .pipeline-lane-header {
+    font-size: var(--vis-fs-2xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--vis-ls-widest);
+    color: rgba(255, 255, 255, 0.55);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: var(--vis-border-2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   51. CHARTS & DATAVIZ polish
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel canvas {
+    border-radius: var(--vis-r-md);
+}
+.admin-panel .chart-container,
+.admin-panel .chart-wrapper {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    padding: 18px;
+}
+
+/* Reports KPI subtitle */
+.admin-panel .reports-kpi-card .kpi-trend {
+    margin-top: 8px;
+    font-size: var(--vis-fs-xs);
+    font-weight: 600;
+    letter-spacing: var(--vis-ls-base);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.admin-panel .kpi-trend--up { color: #6ee7b7; }
+.admin-panel .kpi-trend--down { color: #fca5a5; }
+.admin-panel .kpi-trend--flat { color: rgba(255, 255, 255, 0.55); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   52. SECTION BREATHE — micro-animation section content
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section.active .page-header {
+    animation: visHeaderBreathe 8s ease-in-out infinite;
+}
+@keyframes visHeaderBreathe {
+    0%, 100% { background-position: 50% 0%; }
+    50% { background-position: 50% 30%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel .section.active .page-header { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   53. RESPONSIVE perfection
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Mobile: reducir blurs costosos */
+    .admin-panel .sidebar,
+    .admin-panel .admin-header,
+    .admin-panel .modal-container,
+    .admin-panel .altorra-notify-center {
+        backdrop-filter: blur(var(--vis-blur-16)) saturate(160%);
+        -webkit-backdrop-filter: blur(var(--vis-blur-16)) saturate(160%);
+    }
+    /* Mobile: cards padding compacto */
+    .admin-panel .kpi-card,
+    .admin-panel .hero-kpi,
+    .admin-panel .reports-kpi-card,
+    .admin-panel .workflow-card,
+    .admin-panel .alt-card {
+        padding: 18px 16px;
+    }
+    /* Mobile: typography reducida */
+    .admin-panel h1,
+    .admin-panel .section-title,
+    .admin-panel .page-header h1 {
+        font-size: var(--vis-fs-xl);
+    }
+    .admin-panel .hero-kpi-value,
+    .admin-panel .reports-kpi-value {
+        font-size: var(--vis-fs-2xl);
+    }
+    /* Mobile: sections padding reducido */
+    .admin-panel .section,
+    .admin-panel #sec-dashboard,
+    .admin-panel #sec-vehicles,
+    .admin-panel #sec-brands,
+    .admin-panel #sec-dealers,
+    .admin-panel #sec-banners,
+    .admin-panel #sec-reviews,
+    .admin-panel #sec-crm,
+    .admin-panel #sec-calendar,
+    .admin-panel #sec-workflows,
+    .admin-panel #sec-kb,
+    .admin-panel #sec-unmatched,
+    .admin-panel #sec-users,
+    .admin-panel #sec-audit,
+    .admin-panel #sec-settings,
+    .admin-panel #sec-reports {
+        padding: 18px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Phone: sin tilt 3D (touch confunde) */
+    .admin-panel .hero-kpi {
+        --vis-tilt-x: 0deg !important;
+        --vis-tilt-y: 0deg !important;
+    }
+    /* Phone: sidebar drawer cubre 92vw */
+    .admin-panel .sidebar {
+        width: min(92vw, 320px) !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   54. PRINT MODE polish
+   ═══════════════════════════════════════════════════════════════════ */
+@media print {
+    .admin-panel {
+        background: white !important;
+        color: black !important;
+    }
+    .admin-panel * {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+    .admin-panel ::before,
+    .admin-panel ::after {
+        display: none !important;
+    }
+    .admin-panel .sidebar,
+    .admin-panel .admin-header,
+    .admin-panel .alt-presence-overlay,
+    .admin-panel .altorra-bell,
+    .admin-panel .altorra-notify-center,
+    .admin-panel [data-fab],
+    .admin-panel .pwa-install-btn,
+    .admin-panel .alt-palette,
+    .admin-panel .activity-feed-panel {
+        display: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   55. HIGH CONTRAST mode (a11y)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-contrast: more) {
+    .admin-panel {
+        --vis-border-2: 1px solid rgba(255, 255, 255, 0.30);
+        --vis-border-3: 1px solid rgba(255, 255, 255, 0.55);
+        --vis-border-4: 1px solid rgba(255, 255, 255, 0.78);
+    }
+    .admin-panel .nav-item.active {
+        outline: 2px solid var(--vis-brand-500);
+        outline-offset: -2px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY Sprint 3 — bug fixes + Dynamic Island + FAB + polish
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   56. SPOTLIGHT EFFECT — search results + onboarding tour
+   ═══════════════════════════════════════════════════════════════════ */
+.vis-spotlight {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    pointer-events: none;
+    background: radial-gradient(
+        circle 280px at var(--vis-spot-x, 50%) var(--vis-spot-y, 50%),
+        transparent 0%,
+        transparent 60%,
+        rgba(0, 0, 0, 0.85) 80%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: opacity var(--vis-d-base) var(--vis-ease-snap);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   57. DASHBOARD HERO refinement — admin entry experience
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel #sec-dashboard .page-header,
+.admin-panel #sec-dashboard > h1:first-child {
+    background:
+        radial-gradient(ellipse 800px 300px at 30% 0%,
+            rgba(184, 150, 88, 0.20) 0%,
+            rgba(184, 150, 88, 0.06) 30%,
+            transparent 70%),
+        radial-gradient(ellipse 600px 200px at 70% 100%,
+            rgba(139, 92, 246, 0.10) 0%,
+            transparent 60%);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-2xl);
+    padding: 36px 40px 32px;
+    margin: 0 0 28px;
+    box-shadow: var(--vis-elev-2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    position: relative;
+    overflow: hidden;
+}
+.admin-panel #sec-dashboard .page-header::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -10%;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle,
+        rgba(184, 150, 88, 0.12) 0%,
+        transparent 70%);
+    filter: blur(32px);
+    pointer-events: none;
+    animation: visHeroFloat 12s ease-in-out infinite;
+}
+@keyframes visHeroFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-30px, 20px) scale(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel #sec-dashboard .page-header::before { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   58. SECTION HEADERS de TODAS las secciones — radial accent
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section .page-header,
+.admin-panel .admin-section .page-header {
+    background:
+        radial-gradient(ellipse 800px 200px at 0% 0%,
+            rgba(184, 150, 88, 0.08) 0%,
+            transparent 60%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-xl);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(var(--vis-blur-12));
+    -webkit-backdrop-filter: blur(var(--vis-blur-12));
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel .section .page-header::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 5%; right: 5%;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--vis-brand-500) 50%,
+        transparent 100%);
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   59. CONCIERGE/HUB chat refinements (admin side)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .cnc-admin-detail-messages,
+.admin-panel .cnc-admin-conversation {
+    background:
+        linear-gradient(180deg,
+            var(--vis-surface-canvas) 0%,
+            rgba(10, 10, 12, 0.95) 100%);
+    border-radius: var(--vis-r-lg);
+    border: var(--vis-border-2);
+    padding: 16px;
+}
+.admin-panel .cnc-admin-msg-bubble,
+.admin-panel .cnc-admin-message {
+    background: var(--vis-surface-2);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 10px 14px;
+    margin: 4px 0;
+    max-width: 80%;
+}
+.admin-panel .cnc-admin-msg-bubble--user {
+    margin-left: auto;
+    background: linear-gradient(135deg,
+        var(--vis-brand-300),
+        var(--vis-brand-600));
+    color: #1a1310;
+    border-color: rgba(212, 173, 110, 0.55);
+}
+.admin-panel .cnc-admin-msg-bubble--bot {
+    background: var(--vis-brand-tint);
+    border-color: var(--vis-border-gold);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   60. CALENDAR refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .cal-day,
+.admin-panel .calendar-day,
+.admin-panel .cal-grid > * {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-sm);
+    padding: 8px;
+    min-height: 80px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .cal-day:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: var(--vis-brand-500);
+    transform: scale(1.02);
+}
+.admin-panel .cal-day--today {
+    background:
+        linear-gradient(135deg,
+            rgba(184, 150, 88, 0.20) 0%,
+            rgba(184, 150, 88, 0.06) 100%);
+    border-color: var(--vis-brand-500);
+    box-shadow: var(--vis-elev-glow);
+}
+.admin-panel .cal-day--has-events {
+    border-color: rgba(184, 150, 88, 0.30);
+}
+.admin-panel .cal-event {
+    background: linear-gradient(135deg,
+        var(--vis-brand-tint-strong),
+        var(--vis-brand-tint));
+    color: var(--vis-brand-200);
+    border-radius: var(--vis-r-xs);
+    padding: 2px 6px;
+    font-size: var(--vis-fs-2xs);
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   61. SETTINGS PAGE refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel #sec-settings .stat-card,
+.admin-panel #sec-settings .info-card,
+.admin-panel #sec-settings > div {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.02) 0%,
+            rgba(255, 255, 255, 0) 100%),
+        var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+    margin-bottom: 18px;
+    box-shadow: var(--vis-elev-1);
+}
+.admin-panel #sec-settings .table-header h3 {
+    font-size: var(--vis-fs-md);
+    font-weight: 650;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: var(--vis-ls-tight);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   62. AUDIT FEED refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel #activityFeed,
+.admin-panel .activity-feed {
+    background: transparent;
+    padding: 0;
+}
+.admin-panel #activityFeed > *,
+.admin-panel .activity-feed-item {
+    background: var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-md);
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel #activityFeed > *:hover,
+.admin-panel .activity-feed-item:hover {
+    background: var(--vis-state-hover-gold);
+    border-color: var(--vis-border-gold-hi);
+    transform: translateX(4px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   63. UNMATCHED FEED refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel #unmatchedList,
+.admin-panel .unmatched-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.admin-panel #unmatchedList > *,
+.admin-panel .unmatched-item {
+    background:
+        linear-gradient(180deg,
+            rgba(245, 158, 11, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: 1px solid rgba(245, 158, 11, 0.20);
+    border-left: 3px solid rgba(245, 158, 11, 0.55);
+    border-radius: var(--vis-r-md);
+    padding: 16px 18px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel #unmatchedList > *:hover {
+    border-color: rgba(245, 158, 11, 0.45);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+    transform: translateX(2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   64. KB CARDS refinements
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .kb-card,
+.admin-panel #kbList > * {
+    background:
+        linear-gradient(180deg,
+            rgba(16, 185, 129, 0.04) 0%,
+            rgba(255, 255, 255, 0.02) 100%),
+        var(--vis-surface-1);
+    border: 1px solid rgba(16, 185, 129, 0.20);
+    border-left: 3px solid rgba(16, 185, 129, 0.55);
+    border-radius: var(--vis-r-md);
+    padding: 16px 18px;
+    transition: all var(--vis-d-fast) var(--vis-ease-snap);
+}
+.admin-panel .kb-card:hover {
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.15);
+    transform: translateX(2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   65. WORKSPACE color tokens — section accent globally
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel [data-workspace-color="gold"]    { --vis-ws-color: var(--vis-brand-500); }
+.admin-panel [data-workspace-color="green"]   { --vis-ws-color: #10b981; }
+.admin-panel [data-workspace-color="blue"]    { --vis-ws-color: #3b82f6; }
+.admin-panel [data-workspace-color="violet"]  { --vis-ws-color: #8b5cf6; }
+.admin-panel [data-workspace-color="cyan"]    { --vis-ws-color: #06b6d4; }
+.admin-panel [data-workspace-color="amber"]   { --vis-ws-color: #f59e0b; }
+.admin-panel [data-workspace-color="coral"]   { --vis-ws-color: #f97066; }
+.admin-panel [data-workspace-color="neutral"] { --vis-ws-color: #94a3b8; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   66. THEME BUMPS — Card accent based on workspace
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel [data-workspace-color] .stat-card::before,
+.admin-panel [data-workspace-color] .kpi-card::before {
+    /* opcional accent en cards de la sección */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   67. SCROLL HINT — fade en bottom de tablas largas
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .table-wrapper,
+.admin-panel .table-container {
+    position: relative;
+}
+.admin-panel .table-wrapper::after,
+.admin-panel .table-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 24px;
+    background: linear-gradient(180deg,
+        transparent 0%,
+        var(--vis-surface-base) 100%);
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   68. SECTION TRANSITION — fluid switching
+   ═══════════════════════════════════════════════════════════════════ */
+@supports (view-transition-name: none) {
+    .admin-panel .section.active {
+        view-transition-name: section-active;
+    }
+    ::view-transition-old(section-active) {
+        animation: visSectionOut 0.36s var(--vis-ease-spring-1);
+    }
+    ::view-transition-new(section-active) {
+        animation: visSectionInVT 0.42s var(--vis-ease-spring-1);
+    }
+}
+@keyframes visSectionOut {
+    to { opacity: 0; transform: translateY(-12px); filter: blur(4px); }
+}
+@keyframes visSectionInVT {
+    from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   69. SUCCESS / ERROR pulse animation (after action)
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .vis-success-pulse {
+    animation: visSuccessPulse 1.2s var(--vis-ease-spring-1);
+}
+@keyframes visSuccessPulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+    50% { box-shadow: 0 0 0 16px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.admin-panel .vis-error-pulse {
+    animation: visErrorPulse 0.8s var(--vis-ease-snap);
+}
+@keyframes visErrorPulse {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN VISIONARY Sprint 4 — dashboard hero + section accents + collab
+   ═══════════════════════════════════════════════════════════════════ */

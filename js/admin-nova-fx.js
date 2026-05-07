@@ -12,6 +12,16 @@
     'use strict';
     if (window.AltorraNovaFx) return;
 
+    // §35 ADR-035 — DESACTIVADO POR PERFORMANCE.
+    // El reveal hover (radial-gradient cursor-following) +
+    // MutationObserver subtree:true generaban repaints en cada
+    // pointermove sobre 11 selectores de cards. Stub API para
+    // que callers no rompan.
+    window.AltorraNovaFx = { enabled: false, rescan: function () {} };
+    return;
+
+    /* eslint-disable */
+    /* CÓDIGO PRESERVADO POR REFERENCIA — NO EJECUTABLE (return arriba) */
     var _reduceMotion = false;
     try {
         _reduceMotion = window.matchMedia &&

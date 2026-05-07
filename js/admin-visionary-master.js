@@ -20,6 +20,26 @@
     'use strict';
     if (window.AltorraVisionaryMaster) return;
 
+    // §35 ADR-035 — DESACTIVADO POR PERFORMANCE.
+    // El módulo entero (ripple + magnetic pull pointermove +
+    // MutationObserver subtree:true + stagger observer) drenaba
+    // GPU 24/7. Reemplazo por stub API para que callers no rompan.
+    window.AltorraVisionaryMaster = {
+        attachRipple: function () {},
+        attachMagnetic: function () {},
+        confetti: function () {},
+        showUndoToast: function (msg) {
+            if (window.notify && window.notify.info) window.notify.info({ message: msg });
+        },
+        shake: function () {},
+        sound: null,
+        showSkeleton: function () {},
+        rescan: function () {}
+    };
+    return;
+
+    /* eslint-disable */
+    /* CÓDIGO PRESERVADO POR REFERENCIA — NO EJECUTABLE (return arriba) */
     var _reduceMotion = false;
     try {
         _reduceMotion = window.matchMedia &&

@@ -96,7 +96,11 @@ body.is-sidebar-collapsed .admin-panel.admin-layout {
     width: 100% !important;
     margin: 0 !important;
     padding: var(--av2-sidebar-margin) 0 var(--av2-sidebar-margin) var(--av2-sidebar-margin) !important;
-    overflow: visible !important;
+    /* §35 FIX scroll bloqueado: el sidebar DEBE scrollear cuando los menus
+       son largos. `overflow: visible` legacy bloqueaba el scroll vertical. */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
     box-shadow: none !important;
     border-right: none !important;
     background: transparent !important;

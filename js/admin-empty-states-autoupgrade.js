@@ -65,14 +65,10 @@
             });
         }
 
-        // MutationObserver suave
-        if (window.MutationObserver) {
-            var mo = new MutationObserver(function () {
-                if (mo._t) clearTimeout(mo._t);
-                mo._t = setTimeout(upgrade, 300);
-            });
-            mo.observe(document.body, { childList: true, subtree: true });
-        }
+        // §35 — MutationObserver subtree:true ELIMINADO (perf).
+        // Los empty states se upgradean en DOMContentLoaded + onChange
+        // de seccion. Esos 2 hooks cubren 99% de casos. Si algun
+        // modulo necesita upgrade manual, llama AltorraEmptyStatesAutoUpgrade.upgrade()
 
         window.AltorraEmptyStatesAutoUpgrade = { upgrade: upgrade };
     }

@@ -147,25 +147,21 @@
        (oculta loginScreen, muestra adminPanel skeleton) */
     html.admin-restoring #loginScreen { display: none !important; }
     html.admin-restoring #adminPanel { display: flex !important; }
-    /* Skeleton dorado mientras Firebase confirma la sesión */
+    /* §35 ADR-035 — Skeleton SIN blur: el preloader av2Preloader
+       (z-index 999999) ya cumple el rol de "esperar a Firebase".
+       El backdrop-filter: blur(2px) + animation pulse causaba el
+       efecto "se desenfoca, intenta enfocar y luego recupera calidad"
+       reportado por el cliente. Reemplazado por background plano
+       sin blur, sin animation. */
     html.admin-restoring #adminPanel::before {
         content: '';
         position: fixed; inset: 0;
-        background: rgba(15, 12, 0, 0.35);
-        backdrop-filter: blur(2px);
+        background: rgba(10, 10, 12, 0.40);
         z-index: 99998;
         pointer-events: none;
-        animation: adminRestoringPulse 1.4s ease-in-out infinite;
     }
     html:not(.admin-restoring) #adminPanel::before { display: none; }
     html.admin-restored #adminPanel::before { display: none; }
-    @keyframes adminRestoringPulse {
-        0%, 100% { opacity: 0.55; }
-        50% { opacity: 0.25; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-        html.admin-restoring #adminPanel::before { animation: none; }
-    }
     </style>
     <!-- G.4 (mega-plan v4) — PWA installable del admin -->
     <link rel="manifest" href="manifest-admin.json">
@@ -198,6 +194,8 @@
     <link rel="stylesheet" href="css/admin-visionary.css">
     <!-- §33 ADR-033 V2 — Layout core (FIX scroll bug + sidebar fija + scrollbars premium) -->
     <link rel="stylesheet" href="css/admin-v2.css">
+    <!-- §35 ADR-035 PERF KILL — capa final que purga anti-patterns acumulados (transition:all global, animaciones infinite, backdrop-filter spam, view-transition blur). DEBE cargarse ULTIMA. -->
+    <link rel="stylesheet" href="css/admin-perf-kill.css">
     <!-- Lucide Icons — professional SVG icon library -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
     <!-- Unified notification system (Phase N1) -->

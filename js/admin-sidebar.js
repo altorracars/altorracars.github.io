@@ -114,21 +114,36 @@
         });
     }
 
-    /** Section change observer — re-expand the active group when navigation happens */
+    /**
+     * Section change observer — re-expand the active group when navigation happens.
+     *
+     * §34 / CLAUDE.md §17.12 — REMOVED MutationObserver con subtree:true.
+     * Ese patrón causó el bug histórico "clicks bloqueados en centro de
+     * botones del header" (RCA STRUCTURAL FIX 2026-05-06): el observer
+     * reemplazaba nodos del DOM mientras el usuario hacía mousedown/mouseup,
+     * cancelando silenciosamente eventos `click`.
+     *
+     * Reemplazado por suscripción al router central via AltorraSections.onChange
+     * (cuando exista) + listener directo a clicks sobre nav-items como fallback.
+     * Cero MutationObserver global.
+     */
     function observeSectionChanges() {
-        // The existing admin code adds .active to nav-items when section changes.
-        // We listen for that via MutationObserver on the sidebar.
-        if (typeof MutationObserver === 'undefined') return;
+        // Path A (preferido): suscribirse al router central
+        if (window.AltorraSections && typeof window.AltorraSections.onChange === 'function') {
+            window.AltorraSections.onChange(function () {
+                expandActiveGroup();
+            });
+            return;
+        }
+        // Path B (fallback): listener delegado en clicks de nav-items
         var sidebar = document.getElementById('adminSidebar');
         if (!sidebar) return;
-        var obs = new MutationObserver(function (mutations) {
-            mutations.forEach(function (m) {
-                if (m.type === 'attributes' && m.attributeName === 'class' && m.target.classList.contains('active')) {
-                    expandActiveGroup();
-                }
-            });
+        sidebar.addEventListener('click', function (e) {
+            var item = e.target && e.target.closest && e.target.closest('.nav-item');
+            if (!item) return;
+            // Defer to next tick so the section router has time to add .active
+            setTimeout(expandActiveGroup, 30);
         });
-        obs.observe(sidebar, { attributes: true, subtree: true, attributeFilter: ['class'] });
     }
 
     /* ═══════════════════════════════════════════════════════════

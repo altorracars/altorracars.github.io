@@ -78,7 +78,25 @@
             'vehiculos por ahi', 'qué hay por ahi', 'que hay por ahi',
             'que ofrecen', 'qué ofrecen', 'ofrecen carros', 'ofrecen autos',
             'queda algo', 'queda algún', 'algun carro', 'algún carro',
-            'tienen algo', 'hay algo'
+            'tienen algo', 'hay algo',
+            // §26.2 — Expansión cognitiva masiva
+            'muestrame autos', 'muéstrame autos', 'muestrame carros', 'muéstrame carros',
+            'muestrame vehiculos', 'muéstrame vehículos',
+            'muestra autos', 'muestra carros', 'muestralos', 'muéstralos',
+            'enseñame autos', 'enseñame carros', 'enseñame', 'enséñame',
+            'qué hay para vender', 'que hay para vender',
+            'qué tienen para mostrar', 'que tienen para mostrar',
+            'pasame inventario', 'pásame inventario', 'pasame el catálogo',
+            'mandame fotos', 'mándame fotos', 'mandame opciones',
+            'compartime opciones', 'comparteme opciones',
+            'dame opciones', 'dame alternativas',
+            'hay algo para mostrarme', 'qué tienen disponible hoy',
+            // Slang corto puro
+            'autos', 'carros', 'vehiculos', 'vehículos',
+            // Necesito ver / interes
+            'necesito un auto', 'necesito un carro', 'busco un auto', 'busco un carro',
+            'estoy buscando', 'estoy mirando', 'estoy viendo', 'andaba buscando',
+            'me interesa un', 'quiero un', 'quiero ver autos', 'quiero ver carros'
         ],
         pricing_query: [
             // Originales

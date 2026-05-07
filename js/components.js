@@ -325,6 +325,20 @@ function loadAuthSystem() {
                     aiFuzzy.defer = true;
                     document.body.appendChild(aiFuzzy);
                 }
+                // §26.2 — Brain Config (lee config admin, comparte tono entre cores)
+                if (!document.querySelector('script[src*="ai/brain-config.js"]')) {
+                    var aiBC = document.createElement('script');
+                    aiBC.src = 'js/ai/brain-config.js';
+                    aiBC.defer = true;
+                    document.body.appendChild(aiBC);
+                }
+                // §26.2 — Vocabulario automotriz colombiano masivo
+                if (!document.querySelector('script[src*="ai/automotive-vocab.js"]')) {
+                    var aiAV = document.createElement('script');
+                    aiAV.src = 'js/ai/automotive-vocab.js';
+                    aiAV.defer = true;
+                    document.body.appendChild(aiAV);
+                }
                 // Cargar AI Engine + NER en paginas publicas (Concierge los usa)
                 if (!document.querySelector('script[src*="ai/engine.js"]')) {
                     var aiEng = document.createElement('script');

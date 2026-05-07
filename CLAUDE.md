@@ -13335,3 +13335,245 @@ recurrente, deployable en una sola sesión de PowerShell con Firebase
 CLI. El proyecto sirve como referencia de cómo construir software de
 calidad enterprise con presupuesto limitado y un equipo pequeño.
 
+
+---
+
+## 26. ALTOR Hub & Expansión Cognitiva — ADR-026 (en curso 2026-05-10)
+
+> Refactor masivo en 7 sprints autorizado bajo ADR-026 (§24 + visión
+> ampliada del cliente). Filosofía: ALTOR no es un bot rule-based con
+> "palabritas" — es una **red neuronal cognitiva** con biblioteca,
+> investigador, asesor, consultor, comercial, guía y acompañante.
+> Cada sprint commitea + documenta inmediatamente en este §26.
+
+### 26.1 Sprint Cognitive Bootstrap — Brain Config + Vocabulario Masivo + Triple Fallback + Seeders (2026-05-10)
+
+**Objetivo del sprint**: dotar al Free Core de TODA la inteligencia
+que el Premium Core (LLM Anthropic) ya tenía vía system prompt. Antes
+de este sprint, aunque el admin escribiera "tono pícaro colombiano"
+en el panel del Cerebro AI, el Free Core lo ignoraba completamente y
+respondía con templates planos. Ahora ambos cores comparten el mismo
+cerebro configurable.
+
+#### A. Brain Config Reader (`js/ai/brain-config.js` — NUEVO ~270 líneas)
+
+Singleton `window.AltorraBrainConfig` que:
+- Listener realtime sobre `knowledgeBase/_brain` (público lee, ya
+  permitido por rules §21.4)
+- **DEFAULTS profesionales** pre-poblados (identidad ALTOR cálido
+  colombiano, contexto Altorra Cars Cartagena con valores+servicios+
+  ubicación+teléfono+horario+instagram, instrucciones extensas y
+  reglas de seguridad). Si el admin nunca tocó nada, el bot ya sale
+  "vivo" con esta config.
+- **Merge deep**: si el admin setea solo algunos campos, los demás
+  se preservan de los defaults. Permite agregar campos nuevos sin
+  romper instalaciones viejas.
+- **API `applyTone(text, hint)`**: adapta cualquier respuesta al tono
+  configurado. Hints: `'greeting' | 'casual' | 'transition' | 'close'`.
+  Inyecta prefixes ("Mirá," / "Dale," / "Hola,"), suffixes
+  ("¿Te sirve?" / "¿Qué te parece?") y emojis cálidos con
+  probabilidades calibradas (no spam).
+- **API `pick(arr)`**: helper de variación aleatoria.
+- **API `onLoad(fn)`**: subscribe a cambios para que módulos
+  reaccionen.
+
+**Patrón Singleton + retry**: si `window.db` no está listo al cargar
+(race con firebase-config.js), reintenta cada 1s hasta 30 veces.
+
+#### B. Vocabulario Automotriz Colombiano (`js/ai/automotive-vocab.js` — NUEVO ~370 líneas)
+
+Diccionario MASIVO con **600+ términos** del mundo automotriz
+colombiano organizados en 17 categorías:
+
+| Categoría | Términos cubiertos |
+|---|---|
+| Tipos vehículo | suv, sedán, hatchback, pickup, coupé, convertible, minivan + slang ('jepeta', 'platón', 'doble cabina', 'cucha', 'fierro') |
+| Transmisión | automática, manual, secuencial + variantes ('AT', 'MT', 'CVT', 'tiptronic', 'sin embrague') |
+| Combustible | gasolina, diesel, híbrido, eléctrico, GLP + variantes ('ACPM', 'gasoil', 'GNV') |
+| Tracción | 4x4, 4x2, AWD, FWD, RWD |
+| Colores | 11 colores con variantes ('plomo', 'champaña', 'cereza', 'navy') |
+| Estado | nuevo, semi-nuevo, usado + 'cero kilómetros', '0km', 'CKM' |
+| Specs técnicas | motor, cilindraje, potencia, torque, consumo + abreviaciones (HP, CC, NM) |
+| Seguridad | airbags, ABS, EBD, ESC, control tracción |
+| Confort | A/C, vidrios eléctricos, dirección, techo solar, cámara, bluetooth, Android Auto |
+| Financiación | crédito, cuotas, prima, plazo, intereses, banco, leasing, abono |
+| Trámites | traspaso, SOAT, técnico-mecánica, peritaje, seguro, garantía |
+| Negociación | rebaja, descuento, contado, "le hago", "negociable", "precio firme" |
+| Transacción | vender, comprar, consignar, avalúo, permuta, "parte de pago" |
+| Uso/estilo vida | familiar, trabajo, ciudad, carretera, off-road |
+| Emociones | gusta, no gusta, duda + slang ('bacano', 'chévere', 'qué chimba') |
+| Saludos | 25+ variantes coloquiales colombianas |
+| Acciones | mostrar, agendar, ubicación, etc. |
+
+**API `expand(text)`**: reemplaza variantes coloquiales por canonical
+para que el intent classifier matchee mejor. "tienes una jepeta
+automática" → "tienes una suv automatica".
+
+**API `recognize(text)`**: devuelve `{categories, terms}` con todo lo
+detectado. Útil para enriquecer respuestas: "veo que mencionaste
+familiar + presupuesto, te recomiendo X".
+
+**API `explain(concept)`**: 14 conceptos clave (peritaje, garantía,
+traspaso, soat, técnico-mecánica, financiación, cuota inicial,
+consignación, avalúo, off-road, eléctrico, híbrido, manual,
+automática) con explicaciones humanas listas para inyectar en
+respuestas del bot.
+
+#### C. Small Talk Patterns Expandidos (`js/ai/small-talk.js`)
+
+12 patterns NUEVOS agregados sobre los 6 originales del §24:
+
+| Pattern | Ejemplos detectados | Tipo respuesta |
+|---|---|---|
+| `casual_probing` | "qué haces", "de qué te las tiras", "cuál es tu negocio", "qué onda" | Presentación profesional con CTA |
+| `affirm_filler` | "todo bien", "súper", "bacano", "chévere", "perfecto" | Avance a próxima acción |
+| `seen_or_not` | "ya lo vi", "no me la has enseñado", "no lo conozco", "no la has mostrado" | Anáfora a `lastVehicleDiscussed` o pide preferencias |
+| `show_inventory_short` | "muéstrame", "ver", "qué tenés", "enseñame", "qué manejan" | Marker `__INVENTORY_QUERY__` → bridge al rule-based |
+| `help_general` | "ayuda", "ayúdame", "no sé qué hacer", "estoy perdido" | Menú de servicios con bullets |
+| `bot_question` | "eres bot", "eres humano", "con quién hablo" | Honest disclosure: "Soy ALTOR..." |
+| `location` | "dónde están", "ubicación", "dirección", "cómo llego" | Cartagena + CTA agendar |
+| `schedule` | "qué horario", "cuándo abren", "atienden hoy" | Lun-Sáb 8AM-6PM |
+| `phone` | "qué número", "teléfono", "WhatsApp" | +57 323 501 6747 + opt escalar |
+| `negotiation_short` | "rebaja", "mínimo", "precio firme", "le hago $X" | Escalate a asesor (no prometer descuentos) |
+| `client_confused` | "no entiendo", "explícame", "qué es eso" | Pide especificar parte confusa |
+| `apology` | "perdón", "disculpa", "sorry" | "Tranqui, no hay nada que disculpar" |
+
+**Integración con AutomotiveVocab.expand()**: cada texto se expande
+ANTES de probar patterns. Esto hace que "qué tenés en inventario"
+(slang) matchee tanto el pattern original como el expandido.
+
+**Integración con BrainConfig.applyTone()**: respuestas de greeting,
+goodbye y thanks pasan por el adaptador de tono → variabilidad
+natural.
+
+#### D. Triple Fallback State Machine (`js/concierge.js`)
+
+Reemplaza el doble fallback del §23 por una máquina de **3 estados
+crecientes**:
+
+| Estado | Bot dice | Comportamiento |
+|---|---|---|
+| 1er fallback (count=1) | "no estoy seguro de haber entendido. ¿Me lo decís de otra forma?" + ejemplos | Variantes random, no robot |
+| 2do fallback (count=2) | "todavía no estoy seguro. Tocá la opción que te sirva:" + **quickReplies** [🚗 Ver autos, 💰 Financiación, 📅 Agendar visita, 👨 Hablar con asesor] | NUNCA repite "no entiendo" — ofrece menú visual |
+| 3er fallback (count≥3) | "mejor te conecto con un asesor humano que te va a entender mejor lo que necesitás 🙋‍♂️" | Auto-escalate a live |
+
+**Garantía**: con esta máquina es **imposible** que el bot diga "no
+entiendo" dos veces seguidas. La 2da vez ofrece menú accionable.
+
+**Reset automático**: cuando el bot da una respuesta exitosa (intent
+≠ 'none' o KB matchea), `resetFallbackCounter()` vuelve count a 0.
+
+**Persistencia**: `botFallbackCount` y `botFallbackAt` se guardan en
+Firestore (`conciergeChats/{sid}`) para sobrevivir a F5. Idempotente.
+
+#### E. Inventory Query Bridge (`js/ai/dual-core.js`)
+
+Cuando small-talk matchea `show_inventory_short` (cliente dice
+"muéstrame autos"), devuelve marker `__INVENTORY_QUERY__`. El
+DualCore detecta el marker y delega al rule-based con texto canonical
+("muéstrame autos disponibles") para que el flujo de inventory_search
+con vehicle cards reales tome el control.
+
+Sin este bridge, el cliente diría "muéstrame autos" y el bot
+respondería con un small-talk genérico tipo "claro, dime qué buscas"
+en vez de mostrar el inventario real.
+
+#### F. Bootstrap del Knowledge Base (`js/admin-kb.js`)
+
+Constante `BOOTSTRAP_FAQS` con **25 FAQs profesionales** de Altorra
+Cars cubriendo:
+
+- 4× ubicación/horario/contacto
+- 3× peritaje/garantía/traspaso
+- 4× financiación (cómo funciona, cuota inicial, plazos, simulación)
+- 3× consignación (cómo funciona, avalúo, parte de pago)
+- 3× procesos (envío otra ciudad, documentos, SOAT/RTM)
+- 3× experiencia (test drive, qué tipos manejan, autos baratos)
+- 5× misceláneos (rebajas, pago, ALTOR identity, agendar, fallas)
+
+Cada FAQ incluye:
+- `question`: pregunta original
+- `answer`: respuesta humana de 2-4 oraciones con emojis y CTAs
+- `keywords[]`: 5-8 variantes coloquiales colombianas
+- `category`, `priority` (70-95 según importancia)
+- `_bootstrapped: true` flag para auditoría
+
+**API `AltorraKB.bootstrapFAQs()`**: solo super_admin. Confirm
+dialog. Idempotente: skip las que ya existen (matching por question
+normalizada). Batch write único.
+
+**API `AltorraKB.restoreBrainDefaults()`**: solo super_admin.
+Restaura identidad/contexto/instrucciones/reglas a los DEFAULTS
+profesionales. **Preserva** `enabled`, `llmProvider`, `llmModel`,
+`llmTemperature`, `maxTokens` (settings de modelo del admin).
+
+**UI**: dos botones nuevos en el footer del Cerebro AI:
+- "Sembrar 25 FAQs base" → `bootstrapFAQs()`
+- "Restaurar config recomendada" → `restoreBrainDefaults()`
+
+#### Carga de scripts
+
+`js/components.js` (página pública) y `admin.html` ahora cargan en
+este orden:
+```
+1. fuzzy.js
+2. brain-config.js   ← NUEVO §26.1
+3. automotive-vocab.js ← NUEVO §26.1
+4. engine.js, ner.js, intent.js, inventory-search.js, faq-ranker.js
+5. small-talk.js (extendido §26.1)
+6. transformers.js, dual-core.js
+```
+
+#### Anti-patterns evitados en este sprint
+
+| Riesgo | Mitigación |
+|---|---|
+| Brain Config llama Firestore antes de que esté listo | Retry interno cada 1s hasta 30 reintentos |
+| Lexicon/vocab se pisa entre cores | Free y Premium leen el MISMO `_brain` doc (singleton) |
+| Triple fallback acumula contadores forever | Reset al primer respuesta exitosa + persistido en Firestore |
+| Small-talk mata flujo de inventario | Marker `__INVENTORY_QUERY__` con bridge al rule-based |
+| Bootstrap duplica FAQs si admin ejecuta 2x | Filtro por question normalizada antes de batch |
+| Restore borra settings LLM del admin | `preserveLLM` extrae enabled/provider/model/temp/tokens y los re-aplica |
+| applyTone aplica modificadores siempre (suena artificial) | Probabilidades calibradas: greeting 40%, transition 30%, casual 35%, close 50%, emoji 25% |
+| Brain DEFAULTS hardcodeados desactualizados | Merge deep: nuevos campos en futuros deploys NO pisan settings vivos del admin |
+| Vocabulary matching crea falsos positivos en mid-word | Word boundary `\b` para palabras simples; `text.split().join()` para frases multi-word |
+
+#### Test E2E del sprint
+
+1. Login admin → Cerebro AI → click **"Sembrar 25 FAQs base"** →
+   confirm → toast "✓ 25 FAQs sembradas"
+2. Click **"Restaurar config recomendada"** → confirm → toast
+   "✓ Cerebro AI restaurado". Identidad/contexto/instrucciones se
+   pueblan con DEFAULTS.
+3. Cliente público → abrir ALTOR → escribir **"hola que mas"** →
+   bot responde con saludo + follow-up natural (variable según tono
+   configurado del admin)
+4. Escribir **"muéstrame autos"** → bot detecta show_inventory_short
+   → bridge → muestra inventario real (no respuesta genérica)
+5. Escribir **"de qué te las tiras"** → bot responde como un
+   profesional con su descripción
+6. Escribir **"todo bien"** → bot avanza con CTA a próxima acción
+7. Escribir **"ya lo vi"** después de discutir un auto → bot detecta
+   anáfora y ofrece otro
+8. Escribir 3 mensajes ininteligibles consecutivos → 1ro: "no
+   estoy seguro" / 2do: menú con quick replies / 3ro: escala a
+   asesor. **Cero "no entiendo" repetido**.
+
+**Archivos modificados**:
+- `js/ai/brain-config.js` (NUEVO ~270 líneas)
+- `js/ai/automotive-vocab.js` (NUEVO ~370 líneas)
+- `js/ai/small-talk.js` (+12 patterns + applyTone integration)
+- `js/ai/intent.js` (+25 keywords inventory_query)
+- `js/ai/dual-core.js` (bridge __INVENTORY_QUERY__)
+- `js/concierge.js` (Triple Fallback State Machine + quickReplies)
+- `js/admin-kb.js` (BOOTSTRAP_FAQS + bootstrapFAQs + restoreBrainDefaults + bindings)
+- `js/components.js` (carga brain-config + automotive-vocab antes de los demás)
+- `admin.html` (scripts nuevos + 2 botones bootstrap)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509050000)
+- `CLAUDE.md` (esta sección §26.1)
+
+**Pendiente del ADR-026** (próximos sprints):
+- §26.2 Sprint Vehicle Guide — Vehicle cards inline con thumbnail + reasoning module humano
+- §26.3 Sprint ALTOR Hub UI Redesign — Telegram/WhatsApp standard fullscreen
+- §26.4 Sprint Claiming Explícito + SLA UI fix
+- §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot

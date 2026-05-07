@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260509040000'; // HOTFIX 2FA v3 (§25.12): dual-app strategy + FCM messaging(app) + onClick API fix
+const CACHE_VERSION = 'v20260509050000'; // §26.1 EXPANSIÓN COGNITIVA: Brain Config + AutomotiveVocab + SmallTalk masivo + Triple Fallback + Bootstrap FAQs
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

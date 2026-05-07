@@ -19091,3 +19091,108 @@ Inspirada en perfil.html público + Notion/Linear/Stripe.
 | 15 | Mobile <720px | Cards apiladas en 1 col, save bar full-width stacked |
 
 **Cache bump**: `v20260510320000`.
+
+---
+
+## 36.2. ADR-036 (continuación) — Dropdowns escapan stacking + layout breathing (2026-05-07)
+
+> Tras §36.1 el cliente reportó que los submenús **siguen detrás del
+> contenido** aunque el z-index era 9999. RCA encontró 2 causas reales
+> que no eran z-index:
+
+### 36.2.1 Causa raíz real (no era z-index)
+
+`.atn-menu` tenía `position: absolute`. Eso significa:
+
+1. El menú está confinado al stacking context del topnav (que tenía
+   `isolation: isolate`). El z-index 9999 era LOCAL al topnav, no global.
+2. El `.admin-panel.admin-layout` tiene `overflow: hidden` para evitar
+   body scroll. **Eso CLIPEA cualquier descendiente absolutamente
+   posicionado que se extienda fuera del bounding box del grid**.
+3. Cuando el menú se abría hacia abajo del topnav, entraba a la zona
+   del `<main>` pero el `overflow:hidden` del grid lo cortaba/ocultaba.
+4. Además, secciones del main pueden crear sus propios stacking
+   contexts (via `transform`, `position:relative`, etc.) que ganan
+   sobre el topnav.
+
+### 36.2.2 Solución de fondo: `position: fixed` + JS positioning
+
+**CSS** (`admin-topnav.css`):
+- `.atn-menu` y `.atn-user-menu` cambiados de `position: absolute` a
+  `position: fixed` con `z-index: 99999`. Los elementos `fixed`
+  escapan TODOS los stacking contexts ancestors Y todo `overflow:hidden`.
+- `.atn-topnav` removido `isolation: isolate` (ya no necesario).
+- z-index del topnav mantenido en 9990 (debajo de los menús fixed).
+
+**JS** (`admin-topnav.js bindMenuPositioning()`):
+- Para cada `.atn-tab-group` con menú: listener `mouseenter` +
+  `focusin` + `click` que computa `tab.getBoundingClientRect()` y
+  setea `menu.style.top` (debajo del topnav) + `menu.style.left`
+  (alineado al tab).
+- `.atn-user-menu` se posiciona alineado a la DERECHA del user chip
+  (alignRight: true).
+- Listener `window resize` re-posiciona el menú abierto si el
+  viewport cambia.
+
+### 36.2.3 Layout polish (breathing room)
+
+El cliente también dijo "se ve todo eso muy junto no es muy estético".
+
+| Elemento | Antes | Ahora |
+|---|---|---|
+| `.atn-bar` gap | 4px | **8px** |
+| `.atn-tabs` gap | 2px | **4px** + padding 6px |
+| `.atn-tab` height | 36px | **38px** |
+| `.atn-tab` padding-x | 12px | **14px** |
+| `.atn-tab` font-size | 0.86rem | **0.88rem** |
+| `.atn-tab` icon↔label gap | 7px | **8px** |
+| `.atn-actions` margin-left | 8px | **10px** |
+| `.atn-search-trigger` height | 34px | **36px** |
+| `.atn-search-trigger` font-size | 0.8rem | **0.82rem** |
+| `.atn-user` gap | 8px | **9px** |
+| `.atn-user` height | 36px | **38px** |
+| `.atn-user-info` max-width | 140px | **160px** |
+| `.atn-user-name` font-size | 0.78rem | **0.8rem** |
+
+**Separadores visuales**: `<span class="atn-divider">` entre el
+search trigger y los iconos, y entre los iconos y el user chip.
+Visual: línea vertical 1px x 22px alpha 10%.
+
+**Role label compactado**: `super_admin` → "Administrador" (era
+"Administrador General"). Más legible en el chip de 160px max-width.
+Si el usuario tiene `profile.cargo` custom, ese override se muestra.
+text-transform: uppercase eliminado (era "ADMINISTRADOR" todo caps).
+
+### 36.2.4 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Aumentar z-index a infinito sin diagnosticar | RCA real encontró que era stacking + clipping, no z-index |
+| Eliminar `overflow: hidden` del grid | Eso podía romper el body scroll. En su lugar, `position: fixed` para los menús específicamente |
+| Crear admin-v3 / nuevos archivos | Mismo archivo `admin-topnav.css/.js` extendido quirúrgicamente |
+| Pointermove listeners en cada tab | Solo `mouseenter` + `focusin` + `click` (3 eventos discretos por tab, no continuos) |
+
+### 36.2.5 Test E2E
+
+| # | Test | Resultado esperado |
+|---|---|---|
+| 1 | Hover Inventario | Dropdown aparece SOBRE las 3 cards Hero KPI |
+| 2 | Hover Hub | Dropdown sobre el welcome card y "próximas acciones" |
+| 3 | Hover Config | Dropdown sobre los atajos personalizados |
+| 4 | Resize ventana con menu abierto | Menu se reposiciona instantáneamente |
+| 5 | Click avatar usuario | Menu user aparece alineado a la derecha del chip |
+| 6 | Tab spacing visual | Más respiro entre tabs (gap 4 + padding 14) |
+| 7 | Avatar role label | "Administrador" no "Administrador General" |
+| 8 | Botón micrófono visible en CRM/Vehículos/Hub/etc | Persiste en todas las secciones |
+| 9 | Separadores visuales | Línea vertical entre search/icons y icons/user |
+| 10 | Brand "ALTORRA CARS" sin click | Decorativo, cursor:default |
+
+### 36.2.6 Archivos modificados
+
+- `css/admin-topnav.css` — menus position:fixed + breathing layout + dividers
+- `js/admin-topnav.js` — bindMenuPositioning() + roleLabel compacto
+- `admin.html` — `<span class="atn-divider">` × 2 entre actions
+- `service-worker.js` + `js/cache-manager.js` — bump v20260510330000
+- `CLAUDE.md` — esta sección §36.2
+
+**Cache bump**: `v20260510330000`.

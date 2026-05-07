@@ -23,6 +23,73 @@
     var topnav = null;
     var _userMenuOpen = false;
 
+    /* §36.2 — POSITION FIXED MENUS
+       Los menús son `position: fixed` (escapan de overflow:hidden y
+       stacking contexts). Necesitamos posicionarlos dinámicamente
+       relativos al tab/chip que los dispara, recalculando en hover,
+       resize y scroll del topnav.
+    */
+    function positionMenu(menu, trigger, opts) {
+        if (!menu || !trigger) return;
+        var rect = trigger.getBoundingClientRect();
+        var alignRight = opts && opts.alignRight;
+        var topnavHeight = topnav ? topnav.getBoundingClientRect().height : 56;
+        // Menu vertical: justo debajo del topnav (no del trigger) para
+        // alineación visual perfecta
+        menu.style.top = Math.round(topnavHeight - 2) + 'px';
+        if (alignRight) {
+            // Alineado a la derecha del trigger (para .atn-user-menu)
+            var right = window.innerWidth - rect.right;
+            menu.style.right = right + 'px';
+            menu.style.left = 'auto';
+        } else {
+            // Alineado a la izquierda del trigger
+            menu.style.left = rect.left + 'px';
+            menu.style.right = 'auto';
+        }
+    }
+
+    function bindMenuPositioning() {
+        if (!topnav) return;
+        // Tab groups con menu (Inventario, Hub, Config)
+        topnav.querySelectorAll('.atn-tab-group').forEach(function (group) {
+            var trigger = group.querySelector('.atn-tab');
+            var menu = group.querySelector('.atn-menu');
+            if (!trigger || !menu) return;
+
+            var update = function () { positionMenu(menu, trigger); };
+            // En hover / focus, posicionar antes de que CSS abra el menu
+            group.addEventListener('mouseenter', update);
+            group.addEventListener('focusin', update);
+            // También al click en el tab principal
+            trigger.addEventListener('click', update);
+        });
+
+        // User menu (alineado a la derecha)
+        var userChip = $('atnUser');
+        var userMenu = userChip ? userChip.querySelector('.atn-user-menu') : null;
+        if (userChip && userMenu) {
+            var updateUser = function () { positionMenu(userMenu, userChip, { alignRight: true }); };
+            userChip.addEventListener('click', updateUser);
+            userChip.addEventListener('focusin', updateUser);
+            userChip.addEventListener('mouseenter', updateUser);
+        }
+
+        // Re-posicionar en resize del viewport
+        window.addEventListener('resize', function () {
+            // Solo si algún menú está visible
+            var openGroup = topnav.querySelector('.atn-tab-group:hover, .atn-tab-group.is-open');
+            if (openGroup) {
+                var t = openGroup.querySelector('.atn-tab');
+                var m = openGroup.querySelector('.atn-menu');
+                positionMenu(m, t);
+            }
+            if (userChip && userChip.getAttribute('aria-expanded') === 'true') {
+                positionMenu(userMenu, userChip, { alignRight: true });
+            }
+        });
+    }
+
     /* ─── Wire click en tabs y menu items ─── */
     function wireTabs() {
         topnav = $('adminTopNav');
@@ -243,13 +310,13 @@
     }
 
     /**
-     * §36.1 — Labels humanos del rol (NO "SUPER" truncado).
-     * Empresas grandes (Stripe, Linear, Notion) muestran cargos completos.
-     * El admin puede setear `profile.cargo` custom para override.
+     * §36.2 — Labels humanos compactos (Stripe/Linear/Notion pattern).
+     * Cuando el usuario seteea `profile.cargo` custom, se muestra ese.
+     * El default es corto y profesional.
      */
     function roleLabel(rol) {
         var key = String(rol || '').toLowerCase();
-        if (key === 'super_admin') return 'Administrador General';
+        if (key === 'super_admin') return 'Administrador';
         if (key === 'editor')      return 'Editor';
         if (key === 'viewer')      return 'Lector';
         if (key === 'admin')       return 'Administrador';
@@ -305,6 +372,7 @@
     /* ─── Init ─── */
     function init() {
         wireTabs();
+        bindMenuPositioning();
         syncKbdLabel();
         syncUser();
         syncBell();

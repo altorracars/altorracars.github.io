@@ -17683,3 +17683,233 @@ El admin de Altorra Cars ahora se ve **world-class de verdad**:
 | Mobile | Blurs costosos | **Blurs reducidos 16px + tilt off + paddings adaptivos** |
 
 **Costo recurrente**: $0. Todo CSS + JS client-side. Cero APIs externas. Cero impacto en sitio público (todo dentro de `.admin-panel`).
+
+---
+
+## 31. ADR-031 VISIONARY DEEP — Bug fixes + Vista Previa rebuild + Performance (2026-05-10)
+
+> Tras feedback del cliente con captura específica:
+> "siento el panel admin lento", "espacio raro entre sidebar y contenido",
+> "modal Vista Previa con galería primitiva y dos scrollbars",
+> "selects con texto blanco sobre blanco ilegibles",
+> "tabla de vehículos igual que antes con mismos botones",
+> "no es el diseño de los mejores SO".
+>
+> Diagnóstico real:
+> - Layout sidebar/main con gap visible (margin/padding extras)
+> - `previewVehicle()` JS: imprime imágenes verticales `<img>` directos
+>   con `max-width:550px` → modal con dos scrollbars feos
+> - `<select>` options con bg blanco default browser que pelea con dark
+> - Performance: `backdrop-filter: blur(64px) saturate(200%)` global +
+>   sin `content-visibility` + sin `contain` = repaints caros al scroll
+> - Tabla vehículos: acciones desorganizadas en columnas
+>
+> ADR-031 ataca CADA bug específico — no más tokens cosméticos.
+
+### 31.1 Sprint VISIONARY DEEP — todo en uno
+
+#### A. Layout grid fix — elimina gap sidebar/contenido
+
+`.admin-panel.admin-layout` ahora con CSS Grid:
+```css
+display: grid;
+grid-template-columns: 256px 1fr;
+grid-template-areas: "sidebar main";
+gap: 0;
+```
+
+Sidebar `grid-area: sidebar` con `position: sticky` + `height: 100vh`.
+Main `grid-area: main` con `margin-left: 0 !important`.
+Mobile: 1 col + sidebar fixed drawer.
+
+Resultado: cero hueco entre la barra dorada vertical y el contenido.
+Sidebar ocupa exactamente 256px (o 64px colapsada).
+
+#### B. Vista Previa modal rediseñada — galería iOS Photos style
+
+**Antes**: `<img>` directos en columna vertical, `max-width: 550px`,
+ficha como `<table>` cruda, 2 scrollbars peleándose.
+
+**Ahora**: layout split 1.4fr / 1fr (galería | ficha) con altura
+fija `calc(85vh - 120px)`:
+
+**Galería (izquierda)**:
+- Imagen principal grande con `object-fit: contain` y border + shadow
+- Thumbnails laterales scrolleables horizontales
+- Click en thumbnail → switchea imagen principal con animation
+- Active thumbnail con border dorado + glow
+- Mobile (<900px): galería arriba, ficha abajo (split vertical)
+
+**Ficha (derecha)**:
+- **Header**: código pill dorado + status badge
+- **Title**: gradient text white-to-gold + marca/modelo
+- **Subtitle**: año · categoría · tipo (uppercase)
+- **Price card**: gradient gold tinted + precio principal grande +
+  precio oferta tachado al lado
+- **Highlights**: 2x2 grid de specs principales (calendar/gauge/cog/fuel
+  con icons Lucide) — patrón Tesla / Apple Music
+- **Ficha técnica**: 2-col grid de spec rows con label uppercase +
+  val bold
+- **Características**: chips dorados pill-radius
+- **Descripción**: párrafo con line-height 1.65
+
+Modal width: `min(1100px, 95vw)` — mucho más generoso que el viejo 550px.
+
+#### C. Selects/options legibility fix CRÍTICO
+
+```css
+.admin-panel select option,
+.admin-panel select optgroup {
+    background: #1a1a1c !important;
+    color: #ffffff !important;
+}
+.admin-panel select {
+    color: #ffffff !important;
+    background-color: var(--vis-surface-2) !important;
+}
+```
+
+**Plus**: arrow icon SVG inline dorado custom (reemplaza el default
+del browser feo) + `appearance: none` cross-browser.
+
+**Firefox específico** (`@-moz-document url-prefix()`): forced colors
+en options.
+
+Resultado: cero "blanco sobre blanco" — todos los selects del admin
+legibles en cualquier browser/OS.
+
+#### D. Performance — content-visibility + contain (CLAUDE.md §15-17)
+
+Aplicado el mismo patrón que se usó para acelerar el sitio público:
+
+**Section nivel**:
+```css
+.section:not(.active) {
+    content-visibility: hidden;
+    contain: strict;
+}
+.section.active {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 800px;
+}
+```
+Browser skip-renderiza secciones inactivas (no calculate layout, no
+paint) → cambio de sección INSTANTÁNEO.
+
+**Cards en grids**:
+```css
+.kpi-card, .reports-kpi-card, .workflow-card,
+.pipeline-card, .nba-dash-item, .review-card,
+.dealer-card, .brand-admin-card {
+    contain: layout style;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 200px;
+}
+```
+Cards off-screen no se renderizan hasta que entran al viewport.
+
+**Tabla rows**:
+```css
+.data-table tbody tr,
+.admin-table tbody tr {
+    contain: layout style;
+}
+```
+
+**Backdrop-filter optimization**: removido de zonas con scroll alto
+(`.nav-item`, `.alt-card`, `.stat-card`) — ahí causaba repaints.
+Solo se mantiene en surfaces estructurales (sidebar, modal, header).
+
+#### E. Acciones de tabla inline organizadas
+
+Antes: 7 botones en columnas (3 arriba, 3 abajo, 1 al final).
+Ahora: row inline 32×32 con separadores verticales `--v-act-sep`:
+
+```
+[👁] [🕐] [⭐]  |  [✏️] [📋]  |  [🤝]  |  [🗑]
+ ver  hist  fav     edit copy    deal     del
+```
+
+`.v-act` 32×32 radius button + hover scale 1.08 + variant `--danger`
+(rojo) y `--gold` (dorado) según acción.
+
+#### F. Vehículo thumb premium en tabla
+
+```css
+.vehicle-thumb {
+    width: 64px; height: 48px;
+    border-radius: var(--vis-r-xs);
+    object-fit: cover;
+    border: glass;
+    box-shadow: elev-1;
+}
+```
+
+#### G. Código pill style
+
+Códigos `ALT-202603-XXXX` ahora aparecen como pills dorados con
+font monospace + border dorado + bg tint:
+```css
+.vehicle-codigo {
+    font-family: var(--vis-font-mono);
+    color: var(--vis-brand-300);
+    background: var(--vis-brand-tint-strong);
+    border: var(--vis-border-gold);
+    border-radius: var(--vis-r-xs);
+    padding: 3px 9px;
+    letter-spacing: var(--vis-ls-wide);
+}
+```
+
+#### H. Inventario toolbar moderno
+
+Header de tabla con:
+- Background gradient gold tinted + Mica
+- Buscador como pill rounded con `min-width: 280px` flex
+- Selects de filtro con chevron SVG dorado custom
+- Botones CSV/Reordenar como pills ghost dorados
+
+#### I. Botón "Agregar Vehículo" header
+
+Premium gradient dorado 3-stop + glow + lift hover scale 1.02.
+
+### Archivos modificados
+
+- `js/admin-vehicles.js` — `previewVehicle()` reescrita completa con
+  galería iOS Photos style + ficha técnica 2-col + highlights 2x2 +
+  click handlers para switch image
+- `css/admin-visionary.css` — +650 líneas DEEP (sections 70-84)
+- `service-worker.js` + `js/cache-manager.js` — bump v20260510230000
+- `CLAUDE.md` — esta sección §31
+
+### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Modal Vista Previa antes ancho 550px | min(1100px, 95vw) — split 1.4fr/1fr |
+| Imágenes verticales con scroll feo | Galería con imagen principal + thumbnails laterales |
+| Ficha como `<table>` cruda | Grid 2-col de specs + highlights cards |
+| Sidebar gap por margin/padding | CSS Grid layout puro `grid-template-areas` |
+| select options bg blanco default | `!important` con `#1a1a1c` + arrow SVG custom |
+| backdrop-filter caro en scroll | Removido de nav-item/alt-card/stat-card |
+| Sin content-visibility en sections | Aplicado a inactivas (cero repaint) |
+| Cards re-renderean off-screen | `content-visibility: auto` + intrinsic-size |
+| Acciones desorganizadas en columnas | Row inline 32×32 con separadores |
+| Códigos como texto plano | Pills monospace dorados |
+
+### Test E2E
+
+1. Abrir admin → ver sidebar y main contiguous (cero gap)
+2. Click vehículo → "Ver" (eye icon) → modal Vista Previa abre con
+   galería grande izquierda + ficha derecha
+3. Click thumbnail lateral → imagen principal cambia con animation
+4. Mobile: galería arriba + ficha abajo
+5. Cambiar de sección (Vehículos → Marcas → CRM) → INSTANTÁNEO
+   (no spin lento)
+6. Abrir cualquier select → opciones legibles (texto blanco / bg dark)
+7. Toolbar tabla vehículos → buscador pill + filtros pills + chevron
+   dorado
+8. Acciones inline en row → 32×32 con hover scale + danger rojo
+9. Mobile responsive → todo se adapta correctamente
+
+**Costo recurrente: $0**. Todo client-side. Cero impacto en sitio público.

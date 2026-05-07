@@ -259,5 +259,68 @@ html.admin-restoring #adminPanel::before {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   FIN admin-perf-kill.css — §35 ADR-035
+   §36.3 PERF PASS — Más fluidez (cliente: "sigue lento")
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Section transitions instantáneas (eliminamos el fade-in remanente
+   que costaba ~180ms de espera percibida en cada navegación) */
+.admin-panel .section.active,
+.admin-panel .section.active > * {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* Page-header sin animations (eliminamos visHeaderBreathe + breathe-like) */
+.admin-panel .page-header,
+.admin-panel .section .page-header,
+.admin-panel .hero-kpi,
+.admin-panel .alt-card,
+.admin-panel .kpi-card {
+    animation: none !important;
+}
+
+/* Backdrop-filter ligero en topnav y subnav (estaba blur(24px) saturate(180%)
+   lo bajamos a 12px saturate(120%) — mismo look glass, 3-4x menos costo GPU) */
+.admin-panel .atn-topnav {
+    backdrop-filter: blur(12px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(120%) !important;
+}
+.admin-panel .atn-subnav {
+    backdrop-filter: blur(8px) saturate(110%) !important;
+    -webkit-backdrop-filter: blur(8px) saturate(110%) !important;
+}
+
+/* User menu y subnav menus: backdrop reducido también */
+.admin-panel .atn-user-menu {
+    backdrop-filter: blur(20px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+}
+
+/* Eliminar shadows pesadas en cards del dashboard (ahorro repaint) */
+.admin-panel .hero-kpi,
+.admin-panel .kpi-card,
+.admin-panel .stat-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Hover sin lift transform (paint cost en grids con N items) */
+.admin-panel .av2-card:hover,
+.admin-panel .kpi-card:hover,
+.admin-panel .hero-kpi:hover,
+.admin-panel .stat-card:hover,
+.admin-panel .reports-kpi-card:hover,
+.admin-panel .nba-dash-item:hover,
+.admin-panel .pipeline-card:hover {
+    transform: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* Will-change global cleanup — algunos modulos aplican will-change:
+   transform a elementos que ya no se animan (memory leak GPU) */
+.admin-panel * {
+    will-change: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-perf-kill.css — §35 ADR-035 + §36.3 PERF PASS
    ═══════════════════════════════════════════════════════════════════ */

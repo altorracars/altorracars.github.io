@@ -46,9 +46,11 @@
 .admin-panel.admin-layout {
     display: grid !important;
     grid-template-columns: 1fr !important;
-    grid-template-rows: var(--atn-h) 1fr !important;
+    /* §36.3 — 3 rows: topnav (56px) + subnav (auto, 0 cuando hidden) + main */
+    grid-template-rows: var(--atn-h) auto 1fr !important;
     grid-template-areas:
         "topnav"
+        "subnav"
         "main" !important;
     height: 100vh !important;
     overflow: hidden !important;
@@ -100,9 +102,10 @@
 .atn-topnav {
     height: var(--atn-h);
     width: 100%;
-    background: var(--atn-bg);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    /* §36.3 — perf: blur reducido 24→16px, saturate 180→140% */
+    background: rgba(13, 13, 15, 0.94);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
     border-bottom: var(--atn-border);
     display: flex;
     align-items: center;
@@ -131,41 +134,27 @@
 /* ═══════════════════════════════════════════════════════════════════
    4. BRAND
    ═══════════════════════════════════════════════════════════════════ */
-/* §36.1 — Brand decorativo SIN navegación (logo + nombre como en sitio público) */
+/* §36.3 — Brand SIN mark (eliminada la "A"). Solo texto, más respiro. */
 .atn-brand {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 4px 10px 4px 4px;
+    padding: 4px 12px 4px 4px;
     color: var(--atn-text-strong);
-    margin-right: 12px;
+    margin-right: 14px;
     flex-shrink: 0;
     user-select: none;
     cursor: default;
 }
 
-.atn-brand-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px; height: 36px;
-    border-radius: 9px;
-    background: linear-gradient(135deg, #d4ad6e, #b89658, #9a7d44);
-    color: #1a1310;
-    font-weight: 800;
-    font-size: 1rem;
-    box-shadow: 0 3px 10px rgba(184, 150, 88, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.20);
-}
-
 .atn-brand-text {
     display: flex;
     flex-direction: column;
-    line-height: 1.05;
+    line-height: 1.1;
 }
 .atn-brand-text strong {
-    font-size: 0.84rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     color: var(--atn-text-strong);
 }
 .atn-brand-text small {
@@ -174,6 +163,7 @@
     color: var(--atn-text-muted);
     letter-spacing: 0.06em;
     text-transform: uppercase;
+    margin-top: 1px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1065,5 +1055,112 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   FIN admin-topnav.css — §36 ADR-036 + §36.1 perfil
+   13. SUBNAV contextual (§36.3) — pestañas internas Inventario/Hub/Config
+   ═══════════════════════════════════════════════════════════════════ */
+.atn-subnav {
+    grid-area: subnav;
+    background: rgba(13, 13, 15, 0.86);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    height: 44px;
+    display: flex;
+    align-items: stretch;
+    z-index: 100;
+}
+.atn-subnav[hidden] {
+    display: none !important;
+}
+.atn-subnav-inner {
+    width: 100%;
+    height: 100%;
+    padding: 0 18px;
+    display: flex;
+    align-items: stretch;
+    box-sizing: border-box;
+}
+.atn-subnav-tabs {
+    display: flex;
+    gap: 2px;
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.atn-subnav-tabs::-webkit-scrollbar { display: none; }
+
+.atn-subnav-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 100%;
+    padding: 0 14px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-family: inherit;
+    transition: color 0.16s ease;
+}
+.atn-subnav-tab i[data-lucide] {
+    width: 15px !important;
+    height: 15px !important;
+    opacity: 0.72;
+}
+.atn-subnav-tab:hover {
+    color: rgba(255, 255, 255, 0.95);
+}
+.atn-subnav-tab:hover i[data-lucide] { opacity: 1; }
+.atn-subnav-tab.is-active {
+    color: var(--atn-gold);
+    font-weight: 600;
+}
+.atn-subnav-tab.is-active i[data-lucide] {
+    opacity: 1;
+    color: var(--atn-gold);
+}
+.atn-subnav-tab.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 12px;
+    right: 12px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--atn-gold) 25%, var(--atn-gold) 75%, transparent 100%);
+    border-radius: 2px 2px 0 0;
+}
+.atn-subnav-tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 5px;
+    background: var(--atn-gold);
+    color: #1a1310;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    margin-left: 2px;
+}
+.atn-subnav-tab-badge:empty { display: none; }
+
+@media (max-width: 720px) {
+    .atn-subnav { height: 40px; }
+    .atn-subnav-inner { padding: 0 10px; }
+    .atn-subnav-tab span:not(.atn-subnav-tab-badge) { display: none; }
+    .atn-subnav-tab i[data-lucide] {
+        width: 17px !important;
+        height: 17px !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-topnav.css — §36 ADR-036 + §36.1 perfil + §36.3 subnav
    ═══════════════════════════════════════════════════════════════════ */

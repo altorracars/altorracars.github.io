@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260510330000'; // §36.2 — dropdowns fixed + layout polish
+    const APP_VERSION = '20260510340000'; // §36.3 — subnav contextual + brand sin mark + search icon + perf pass
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

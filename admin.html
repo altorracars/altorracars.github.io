@@ -337,7 +337,6 @@
     <header class="atn-topnav" id="adminTopNav">
         <div class="atn-bar">
             <div class="atn-brand" aria-label="Altorra Cars Admin">
-                <span class="atn-brand-mark">A</span>
                 <span class="atn-brand-text">
                     <strong>ALTORRA CARS</strong>
                     <small>Panel Admin</small>
@@ -348,72 +347,32 @@
                 <button class="atn-tab" data-atn-section="dashboard" role="tab">
                     <i data-lucide="home"></i><span>Inicio</span>
                 </button>
-
-                <div class="atn-tab-group" data-atn-group="inventario">
-                    <button class="atn-tab atn-tab--has-menu" data-atn-section="vehicles" aria-haspopup="menu" aria-expanded="false">
-                        <i data-lucide="car"></i><span>Inventario</span>
-                        <i data-lucide="chevron-down" class="atn-tab-chev"></i>
-                    </button>
-                    <div class="atn-menu" role="menu">
-                        <button class="atn-menu-item" data-atn-section="vehicles"><i data-lucide="car"></i>Vehículos</button>
-                        <button class="atn-menu-item" data-atn-section="brands"><i data-lucide="tag"></i>Marcas</button>
-                        <button class="atn-menu-item" data-atn-section="dealers"><i data-lucide="handshake"></i>Aliados</button>
-                        <div class="atn-menu-sep"></div>
-                        <button class="atn-menu-item" data-atn-section="banners"><i data-lucide="image"></i>Banners</button>
-                        <button class="atn-menu-item" data-atn-section="reviews"><i data-lucide="star"></i>Reseñas</button>
-                    </div>
-                </div>
-
-                <button class="atn-tab" data-atn-section="crm">
+                <button class="atn-tab" data-atn-section="vehicles" data-atn-group="inventario" role="tab">
+                    <i data-lucide="car"></i><span>Inventario</span>
+                </button>
+                <button class="atn-tab" data-atn-section="crm" role="tab">
                     <i data-lucide="users-round"></i><span>CRM</span>
                     <span class="atn-tab-badge" id="atnBadgeCrm"></span>
                 </button>
-
-                <div class="atn-tab-group" data-atn-group="hub">
-                    <button class="atn-tab atn-tab--has-menu" data-atn-section="concierge" aria-haspopup="menu" aria-expanded="false">
-                        <i data-lucide="messages-square"></i><span>Hub</span>
-                        <span class="atn-tab-badge" id="atnBadgeConcierge"></span>
-                        <i data-lucide="chevron-down" class="atn-tab-chev"></i>
-                    </button>
-                    <div class="atn-menu" role="menu">
-                        <button class="atn-menu-item" data-atn-section="concierge"><i data-lucide="message-square-text"></i>ALTOR Hub</button>
-                        <button class="atn-menu-item" data-atn-section="kb"><i data-lucide="brain"></i>Cerebro AI</button>
-                        <button class="atn-menu-item" data-atn-section="unmatched"><i data-lucide="message-circle-question"></i>Lo que no entendí</button>
-                    </div>
-                </div>
-
-                <button class="atn-tab" data-atn-section="calendar">
+                <button class="atn-tab" data-atn-section="concierge" data-atn-group="hub" role="tab">
+                    <i data-lucide="messages-square"></i><span>Hub</span>
+                    <span class="atn-tab-badge" id="atnBadgeConcierge"></span>
+                </button>
+                <button class="atn-tab" data-atn-section="calendar" role="tab">
                     <i data-lucide="calendar"></i><span>Agenda</span>
                 </button>
-
-                <button class="atn-tab" data-atn-section="reports">
+                <button class="atn-tab" data-atn-section="reports" role="tab">
                     <i data-lucide="bar-chart-3"></i><span>Reportes</span>
                 </button>
-
-                <div class="atn-tab-group" data-atn-group="config">
-                    <button class="atn-tab atn-tab--has-menu" data-atn-section="settings" aria-haspopup="menu" aria-expanded="false">
-                        <i data-lucide="settings"></i><span>Config</span>
-                        <i data-lucide="chevron-down" class="atn-tab-chev"></i>
-                    </button>
-                    <div class="atn-menu" role="menu">
-                        <button class="atn-menu-item" data-atn-section="users"><i data-lucide="users"></i>Usuarios</button>
-                        <button class="atn-menu-item" data-atn-section="lists"><i data-lucide="list-tree"></i>Atributos</button>
-                        <button class="atn-menu-item" data-atn-section="workflows"><i data-lucide="zap"></i>Workflows</button>
-                        <button class="atn-menu-item" data-atn-section="audit"><i data-lucide="scroll-text"></i>Auditoría</button>
-                        <div class="atn-menu-sep"></div>
-                        <button class="atn-menu-item" data-atn-section="settings"><i data-lucide="settings"></i>Ajustes</button>
-                    </div>
-                </div>
+                <button class="atn-tab" data-atn-section="users" data-atn-group="config" role="tab">
+                    <i data-lucide="settings"></i><span>Config</span>
+                </button>
             </nav>
 
             <div class="atn-actions">
-                <button class="atn-search-trigger" id="atnSearchTrigger" aria-label="Buscar">
+                <button class="atn-icon-btn" id="atnSearchTrigger" data-tooltip="Buscar · Ctrl+K" aria-label="Buscar (Ctrl+K)">
                     <i data-lucide="search"></i>
-                    <span>Buscar</span>
-                    <kbd class="atn-kbd" id="atnSearchKbd">Ctrl+K</kbd>
                 </button>
-
-                <span class="atn-divider"></span>
 
                 <a href="/" target="_blank" rel="noopener" class="atn-icon-btn" data-tooltip="Ver sitio público" aria-label="Ver sitio">
                     <i data-lucide="external-link"></i>
@@ -455,6 +414,13 @@
             </div>
         </div>
     </header>
+
+    <!-- §36.3 — SUBNAV contextual (Inventario/Hub/Config muestran tabs internos aquí) -->
+    <nav class="atn-subnav" id="atnSubnav" aria-label="Navegación contextual" hidden>
+        <div class="atn-subnav-inner">
+            <div class="atn-subnav-tabs" id="atnSubnavTabs" role="tablist"></div>
+        </div>
+    </nav>
 
     <!-- SIDEBAR (legacy — oculta en desktop por admin-topnav.css; mantenida para mobile drawer) -->
     <nav class="sidebar" id="adminSidebar">

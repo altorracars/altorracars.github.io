@@ -21,154 +21,195 @@
     function $(id) { return document.getElementById(id); }
 
     var topnav = null;
+    var subnavEl = null;
+    var subnavTabsEl = null;
     var _userMenuOpen = false;
+    var _lastRenderedGroup = null;
 
-    /* §36.2 — POSITION FIXED MENUS
-       Los menús son `position: fixed` (escapan de overflow:hidden y
-       stacking contexts). Necesitamos posicionarlos dinámicamente
-       relativos al tab/chip que los dispara, recalculando en hover,
-       resize y scroll del topnav.
-    */
-    function positionMenu(menu, trigger, opts) {
-        if (!menu || !trigger) return;
-        var rect = trigger.getBoundingClientRect();
-        var alignRight = opts && opts.alignRight;
-        var topnavHeight = topnav ? topnav.getBoundingClientRect().height : 56;
-        // Menu vertical: justo debajo del topnav (no del trigger) para
-        // alineación visual perfecta
-        menu.style.top = Math.round(topnavHeight - 2) + 'px';
-        if (alignRight) {
-            // Alineado a la derecha del trigger (para .atn-user-menu)
-            var right = window.innerWidth - rect.right;
-            menu.style.right = right + 'px';
-            menu.style.left = 'auto';
-        } else {
-            // Alineado a la izquierda del trigger
-            menu.style.left = rect.left + 'px';
-            menu.style.right = 'auto';
+    /* §36.3 — SUBNAV CONFIG (sub-secciones por grupo del top-tab) */
+    var SUBNAV_GROUPS = {
+        inventario: [
+            { section: 'vehicles', label: 'Vehículos', icon: 'car' },
+            { section: 'brands',   label: 'Marcas',    icon: 'tag' },
+            { section: 'dealers',  label: 'Aliados',   icon: 'handshake' },
+            { section: 'banners',  label: 'Banners',   icon: 'image' },
+            { section: 'reviews',  label: 'Reseñas',   icon: 'star' }
+        ],
+        hub: [
+            { section: 'concierge', label: 'ALTOR Hub',         icon: 'message-square-text' },
+            { section: 'kb',        label: 'Cerebro AI',        icon: 'brain' },
+            { section: 'unmatched', label: 'Lo que no entendí', icon: 'message-circle-question' }
+        ],
+        config: [
+            { section: 'users',     label: 'Usuarios',  icon: 'users' },
+            { section: 'lists',     label: 'Atributos', icon: 'list-tree' },
+            { section: 'workflows', label: 'Workflows', icon: 'zap' },
+            { section: 'audit',     label: 'Auditoría', icon: 'scroll-text' },
+            { section: 'settings',  label: 'Ajustes',   icon: 'settings' }
+        ]
+    };
+
+    /* Reverse map — section → which top-tab group le pertenece */
+    var SECTION_TO_GROUP = (function () {
+        var map = {};
+        Object.keys(SUBNAV_GROUPS).forEach(function (group) {
+            SUBNAV_GROUPS[group].forEach(function (item) { map[item.section] = group; });
+        });
+        return map;
+    })();
+
+    /* §36.3 — Render subnav contextual según la sección activa.
+       Si la sección pertenece a un grupo (inventario/hub/config),
+       se muestran las pestañas internas. Sino, subnav se oculta. */
+    function renderSubnav(activeSection) {
+        if (!subnavEl) {
+            subnavEl = $('atnSubnav');
+            subnavTabsEl = $('atnSubnavTabs');
         }
+        if (!subnavEl || !subnavTabsEl) return;
+
+        var group = SECTION_TO_GROUP[activeSection];
+        if (!group || !SUBNAV_GROUPS[group]) {
+            subnavEl.hidden = true;
+            _lastRenderedGroup = null;
+            return;
+        }
+
+        // Solo re-renderizar si cambió de grupo (perf)
+        if (_lastRenderedGroup !== group) {
+            var html = '';
+            SUBNAV_GROUPS[group].forEach(function (item) {
+                html += '<button class="atn-subnav-tab" data-atn-section="' + item.section + '" role="tab">'
+                     +    '<i data-lucide="' + item.icon + '"></i>'
+                     +    '<span>' + item.label + '</span>'
+                     + '</button>';
+            });
+            subnavTabsEl.innerHTML = html;
+            _lastRenderedGroup = group;
+            if (window.AltorraIcons) window.AltorraIcons.refresh(subnavEl);
+        }
+
+        // Marcar activo (cada vez, ya sea grupo nuevo o cambio interno)
+        subnavTabsEl.querySelectorAll('.atn-subnav-tab').forEach(function (btn) {
+            var isActive = btn.getAttribute('data-atn-section') === activeSection;
+            btn.classList.toggle('is-active', isActive);
+            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+        subnavEl.hidden = false;
+
+        // Centrar tab activo en mobile
+        if (window.innerWidth < 720) {
+            var activeBtn = subnavTabsEl.querySelector('.atn-subnav-tab.is-active');
+            if (activeBtn && activeBtn.scrollIntoView) {
+                try {
+                    activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                } catch (e) {}
+            }
+        }
+    }
+
+    /* User menu posicionado dinámicamente alineado a la derecha del chip */
+    function positionUserMenu() {
+        var userChip = $('atnUser');
+        var menu = userChip ? userChip.querySelector('.atn-user-menu') : null;
+        if (!userChip || !menu) return;
+        var rect = userChip.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 6) + 'px';
+        menu.style.right = (window.innerWidth - rect.right) + 'px';
+        menu.style.left = 'auto';
     }
 
     function bindMenuPositioning() {
-        if (!topnav) return;
-        // Tab groups con menu (Inventario, Hub, Config)
-        topnav.querySelectorAll('.atn-tab-group').forEach(function (group) {
-            var trigger = group.querySelector('.atn-tab');
-            var menu = group.querySelector('.atn-menu');
-            if (!trigger || !menu) return;
-
-            var update = function () { positionMenu(menu, trigger); };
-            // En hover / focus, posicionar antes de que CSS abra el menu
-            group.addEventListener('mouseenter', update);
-            group.addEventListener('focusin', update);
-            // También al click en el tab principal
-            trigger.addEventListener('click', update);
-        });
-
-        // User menu (alineado a la derecha)
         var userChip = $('atnUser');
-        var userMenu = userChip ? userChip.querySelector('.atn-user-menu') : null;
-        if (userChip && userMenu) {
-            var updateUser = function () { positionMenu(userMenu, userChip, { alignRight: true }); };
-            userChip.addEventListener('click', updateUser);
-            userChip.addEventListener('focusin', updateUser);
-            userChip.addEventListener('mouseenter', updateUser);
+        if (userChip) {
+            userChip.addEventListener('click', positionUserMenu);
+            userChip.addEventListener('focusin', positionUserMenu);
         }
-
-        // Re-posicionar en resize del viewport
         window.addEventListener('resize', function () {
-            // Solo si algún menú está visible
-            var openGroup = topnav.querySelector('.atn-tab-group:hover, .atn-tab-group.is-open');
-            if (openGroup) {
-                var t = openGroup.querySelector('.atn-tab');
-                var m = openGroup.querySelector('.atn-menu');
-                positionMenu(m, t);
-            }
             if (userChip && userChip.getAttribute('aria-expanded') === 'true') {
-                positionMenu(userMenu, userChip, { alignRight: true });
+                positionUserMenu();
             }
         });
     }
 
-    /* ─── Wire click en tabs y menu items ─── */
-    function wireTabs() {
-        topnav = $('adminTopNav');
-        if (!topnav) return;
-
-        topnav.addEventListener('click', function (e) {
-            // Tab o menu item con data-atn-section
-            var btn = e.target && e.target.closest && e.target.closest('[data-atn-section]');
-            if (btn) {
-                var section = btn.getAttribute('data-atn-section');
-                if (section && window.AltorraSections && window.AltorraSections.go) {
-                    e.preventDefault();
-                    window.AltorraSections.go(section);
-                    // Cerrar menu si estaba abierto
-                    var openGroup = topnav.querySelector('.atn-tab-group.is-open');
-                    if (openGroup) openGroup.classList.remove('is-open');
-                    var userOpen = topnav.querySelector('.atn-user[aria-expanded="true"]');
-                    if (userOpen) {
-                        userOpen.setAttribute('aria-expanded', 'false');
-                        _userMenuOpen = false;
-                    }
-                }
-                return;
-            }
-
-            // Trigger ⌘K palette
-            var searchBtn = e.target && e.target.closest && e.target.closest('#atnSearchTrigger');
-            if (searchBtn) {
+    /* ─── Wire clicks de topnav + subnav ─── */
+    function handleNavClick(e) {
+        // Tab o subnav-tab con data-atn-section
+        var btn = e.target && e.target.closest && e.target.closest('[data-atn-section]');
+        if (btn) {
+            var section = btn.getAttribute('data-atn-section');
+            if (section && window.AltorraSections && window.AltorraSections.go) {
                 e.preventDefault();
-                openPalette();
-                return;
-            }
-
-            // Trigger activity feed
-            var actBtn = e.target && e.target.closest && e.target.closest('#atnActivityTrigger');
-            if (actBtn) {
-                e.preventDefault();
-                triggerActivity();
-                return;
-            }
-
-            // Logout
-            var logoutBtn = e.target && e.target.closest && e.target.closest('#atnLogoutBtn');
-            if (logoutBtn) {
-                e.preventDefault();
-                triggerLogout();
-                return;
-            }
-
-            // User chip click → toggle menu
-            var userChip = e.target && e.target.closest && e.target.closest('#atnUser');
-            if (userChip) {
-                _userMenuOpen = !_userMenuOpen;
-                userChip.setAttribute('aria-expanded', _userMenuOpen ? 'true' : 'false');
-                return;
-            }
-        });
-
-        // Keyboard nav: Esc cierra menus
-        topnav.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                var openGroup = topnav.querySelector('.atn-tab-group.is-open');
-                if (openGroup) openGroup.classList.remove('is-open');
-                var userChip = $('atnUser');
-                if (userChip && userChip.getAttribute('aria-expanded') === 'true') {
-                    userChip.setAttribute('aria-expanded', 'false');
+                window.AltorraSections.go(section);
+                // Cerrar user menu si estaba abierto
+                var userOpen = topnav && topnav.querySelector('.atn-user[aria-expanded="true"]');
+                if (userOpen) {
+                    userOpen.setAttribute('aria-expanded', 'false');
                     _userMenuOpen = false;
                 }
             }
-        });
+            return;
+        }
 
-        // Click fuera del topnav cierra menus
-        document.addEventListener('click', function (e) {
-            if (!topnav) return;
-            if (topnav.contains(e.target)) return;
-            var openGroup = topnav.querySelector('.atn-tab-group.is-open');
-            if (openGroup) openGroup.classList.remove('is-open');
+        // Trigger Ctrl+K palette
+        var searchBtn = e.target && e.target.closest && e.target.closest('#atnSearchTrigger');
+        if (searchBtn) {
+            e.preventDefault();
+            openPalette();
+            return;
+        }
+
+        // Trigger activity feed
+        var actBtn = e.target && e.target.closest && e.target.closest('#atnActivityTrigger');
+        if (actBtn) {
+            e.preventDefault();
+            triggerActivity();
+            return;
+        }
+
+        // Logout
+        var logoutBtn = e.target && e.target.closest && e.target.closest('#atnLogoutBtn');
+        if (logoutBtn) {
+            e.preventDefault();
+            triggerLogout();
+            return;
+        }
+
+        // User chip click → toggle menu
+        var userChip = e.target && e.target.closest && e.target.closest('#atnUser');
+        if (userChip) {
+            _userMenuOpen = !_userMenuOpen;
+            userChip.setAttribute('aria-expanded', _userMenuOpen ? 'true' : 'false');
+            if (_userMenuOpen) positionUserMenu();
+            return;
+        }
+    }
+
+    function wireTabs() {
+        topnav = $('adminTopNav');
+        subnavEl = $('atnSubnav');
+        if (!topnav) return;
+
+        topnav.addEventListener('click', handleNavClick);
+        if (subnavEl) subnavEl.addEventListener('click', handleNavClick);
+
+        // Keyboard: Esc cierra user menu
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
             var userChip = $('atnUser');
             if (userChip && userChip.getAttribute('aria-expanded') === 'true') {
+                userChip.setAttribute('aria-expanded', 'false');
+                _userMenuOpen = false;
+            }
+        });
+
+        // Click fuera del topnav cierra user menu
+        document.addEventListener('click', function (e) {
+            if (!topnav) return;
+            var userChip = $('atnUser');
+            if (!userChip) return;
+            if (userChip.contains(e.target)) return;
+            if (userChip.getAttribute('aria-expanded') === 'true') {
                 userChip.setAttribute('aria-expanded', 'false');
                 _userMenuOpen = false;
             }
@@ -179,38 +220,38 @@
     function setActiveSection(section) {
         if (!topnav) return;
 
-        // Limpiar active de todos
-        topnav.querySelectorAll('[data-atn-section]').forEach(function (el) {
+        // Limpiar active de todos los tabs principales
+        topnav.querySelectorAll('.atn-tab').forEach(function (el) {
             el.classList.remove('is-active');
-        });
-        topnav.querySelectorAll('.atn-tab[aria-selected]').forEach(function (el) {
             el.setAttribute('aria-selected', 'false');
         });
 
-        if (!section) return;
+        if (!section) {
+            renderSubnav(null);
+            return;
+        }
 
-        // Marcar tab/menu-item directo
-        var directMatches = topnav.querySelectorAll('[data-atn-section="' + section + '"]');
-        directMatches.forEach(function (el) {
-            el.classList.add('is-active');
-            if (el.classList.contains('atn-tab')) {
-                el.setAttribute('aria-selected', 'true');
-            }
-        });
+        // §36.3 — Match directo (Inicio/CRM/Agenda/Reportes que NO tienen subs)
+        var direct = topnav.querySelector('.atn-tab[data-atn-section="' + section + '"]');
+        if (direct) {
+            direct.classList.add('is-active');
+            direct.setAttribute('aria-selected', 'true');
+        }
 
-        // Si el match es un menu item, marcar también el tab padre del grupo
-        directMatches.forEach(function (el) {
-            if (el.classList.contains('atn-menu-item')) {
-                var group = el.closest('.atn-tab-group');
-                if (group) {
-                    var groupTab = group.querySelector('.atn-tab');
-                    if (groupTab) {
-                        groupTab.classList.add('is-active');
-                        groupTab.setAttribute('aria-selected', 'true');
-                    }
-                }
+        // §36.3 — Si la sección pertenece a un grupo (inventario/hub/config),
+        // marcamos el TAB GRUPO correspondiente aunque la sección actual no
+        // sea el "default" del grupo.
+        var group = SECTION_TO_GROUP[section];
+        if (group) {
+            var groupTab = topnav.querySelector('.atn-tab[data-atn-group="' + group + '"]');
+            if (groupTab) {
+                groupTab.classList.add('is-active');
+                groupTab.setAttribute('aria-selected', 'true');
             }
-        });
+        }
+
+        // §36.3 — Render contextual subnav (muestra/oculta + marca tab interno)
+        renderSubnav(section);
 
         // Centrar tab activo en scroll-x mobile
         if (window.innerWidth < 900) {
@@ -388,12 +429,13 @@
             if (current) setActiveSection(current);
         }
 
-        // Re-sync bell + badges + user periódicamente (cubre cargas asíncronas)
+        // Re-sync bell + badges + user periódicamente (cubre cargas asíncronas).
+        // §36.3 perf — bajado de 2s a 5s (DOM polling es caro en cada tick).
         var syncInterval = setInterval(function () {
             syncUser();
             syncBell();
             syncBadges();
-        }, 2000);
+        }, 5000);
 
         // Section cleanup hook (de §34)
         if (window.AltorraSectionCleanup && window.AltorraSectionCleanup.register) {

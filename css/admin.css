@@ -11164,3 +11164,162 @@ dialog::backdrop {
     .alt-empty-illustrated-title { font-size: 1rem; }
     .alt-empty-illustrated-text { font-size: 0.85rem; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-028 §28.6 — Skeleton screens realistas (mimic per section)
+   Patrón Facebook/LinkedIn: percepción de carga MÁS RÁPIDA.
+   ═══════════════════════════════════════════════════════════════════ */
+.sk-wrap {
+    width: 100%;
+    animation: skFadeIn 0.25s ease-out;
+}
+@keyframes skFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* ─── BOX base con shimmer dorado ──────────────────────────── */
+.sk-box {
+    background: linear-gradient(110deg,
+        rgba(255, 255, 255, 0.04) 0%,
+        rgba(184, 150, 88, 0.10) 40%,
+        rgba(184, 150, 88, 0.15) 50%,
+        rgba(184, 150, 88, 0.10) 60%,
+        rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    animation: skShimmer 1.6s ease-in-out infinite;
+}
+@keyframes skShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sk-box { animation: none; background-position: 0 0; }
+}
+
+/* ─── GRIDS ─────────────────────────────────────────────────── */
+.sk-grid {
+    display: grid;
+    gap: 18px;
+}
+.sk-grid-cards {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.sk-grid-kpis {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* ─── VEHICLE CARD skeleton ─────────────────────────────────── */
+.sk-vehicle-card {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    overflow: hidden;
+}
+.sk-vehicle-card-body {
+    padding: 14px 16px;
+}
+.sk-vehicle-card-meta {
+    display: flex;
+    gap: 8%;
+}
+
+/* ─── ROWS (vehicle/contact) ────────────────────────────────── */
+.sk-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sk-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    gap: 0;
+}
+.sk-row-body {
+    flex: 1;
+    min-width: 0;
+}
+.sk-row-meta {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* ─── KPI CARDS skeleton ───────────────────────────────────── */
+.sk-kpi-card {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    padding: 22px 24px;
+}
+
+/* ─── CONVERSATIONS skeleton ───────────────────────────────── */
+.sk-conv-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.sk-conv-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.sk-conv-body {
+    flex: 1;
+    min-width: 0;
+}
+.sk-conv-row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ─── CALENDAR MONTH skeleton ──────────────────────────────── */
+.sk-calendar-month {
+    width: 100%;
+}
+.sk-cal-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.sk-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+/* ─── REPORTS DASHBOARD skeleton ──────────────────────────── */
+.sk-reports-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+.sk-rep-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+}
+.sk-rep-kpi {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    padding: 18px;
+}
+.sk-rep-card {
+    border-radius: var(--hmy-radius-card-soft);
+    background: rgba(255, 255, 255, 0.02);
+    border: var(--nova-border-glass);
+    padding: 22px;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+    .sk-grid-cards { grid-template-columns: 1fr; }
+    .sk-cal-grid { gap: 4px; }
+}

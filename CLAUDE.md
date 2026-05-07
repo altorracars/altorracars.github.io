@@ -16335,3 +16335,82 @@ TARGETS = [
 - `admin.html` (2 script tags)
 - `service-worker.js` + `js/cache-manager.js` (bump v20260510120000)
 - `CLAUDE.md` (esta sección §28.5)
+
+### 28.6 Sprint §28.6 — Skeleton screens realistas mimic per section (2026-05-10)
+
+**Objetivo del sprint**: reemplazar spinners genéricos por skeletons
+que imitan la forma EXACTA del contenido final de cada sección.
+Patrón Facebook/LinkedIn/Slack — la percepción de carga es más
+rápida aunque el tiempo real sea el mismo.
+
+#### A. Módulo `js/admin-skeletons.js` (~200 líneas)
+
+API pública `window.AltorraSkeletons`:
+- `AltorraSkeletons.html(kind, count)` → string HTML
+- `AltorraSkeletons.render(container, kind, count)` → render directo
+- `AltorraSkeletons.kinds` → lista de kinds
+
+**7 kinds disponibles**:
+
+| Kind | Mimic de | Estructura |
+|---|---|---|
+| `vehicleCards` | Grid de cards vehículo | Image 160px + body con title 70% + meta 40% + price 30% + 3 metas inline |
+| `vehicleRows` | Tabla vehículos | Thumbnail 60×44 + body 2 lines + status pill 80×22 |
+| `contactRows` | Lista contactos CRM | Avatar 38px circle + body 2 lines + meta pill |
+| `kpiCards` | Grid KPIs (4) | Icon 48×48 + value 60% × 28px + label 50% |
+| `conversationItems` | Lista chats ALTOR Hub | Avatar 40px + name + timestamp + snippet |
+| `calendarMonth` | Vista mes calendario | Header + 7×5 grid de cells 70px |
+| `reportsDashboard` | Dashboard ejecutivo | 4 KPIs + 2 cards (chart 180px + table 120px) |
+
+#### B. CSS shimmer dorado (`css/admin.css` ~140 líneas)
+
+`.sk-box` (caja base de cualquier skeleton):
+- `linear-gradient` 110deg con 5 stops
+- Color base alpha 4% + dos picks dorado alpha 10-15% al centro
+- `background-size: 200% 100%`
+- Animation `skShimmer` 1.6s ease-in-out infinite (background-position)
+- `border-radius: 6px` por default
+
+Containers (`.sk-grid`, `.sk-rows`, `.sk-vehicle-card`,
+`.sk-row`, `.sk-kpi-card`, etc.):
+- Border glass + radius card-soft
+- Background rgba 2% glass tenue
+- Padding consistente
+
+`prefers-reduced-motion`: animation desactivada (background estático).
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Skeletons demasiado fieles confunden con contenido real | Animation shimmer constante deja claro que está cargando |
+| Shimmer marea | 1.6s velocidad cómoda + reduced-motion cancela |
+| Render N skeletons cuando solo se necesita 1 | API explícita `count` parámetro |
+| Tabla mobile colapsa skeletons | `@media (max-width: 600px)` ajusta a 1 columna |
+| Calendar 35 cells genera 35 animations | `background-position` de cada cell se carga lazy |
+| Skeleton aparece después del contenido real | Solo se usa antes de la primera carga; API explícita |
+| Border-radius mismatch con card real | Constants iguales: `--hmy-radius-card-soft` |
+
+#### Test E2E del sprint
+
+1. Consola admin:
+   - `AltorraSkeletons.render('#someContainer', 'vehicleCards', 6)`
+   - Aparece grid 6 cards con shimmer dorado animado
+2. Probar otros kinds:
+   - `AltorraSkeletons.render('#x', 'kpiCards', 4)` → 4 KPI cards
+   - `AltorraSkeletons.render('#x', 'calendarMonth')` → calendar grid
+   - `AltorraSkeletons.render('#x', 'reportsDashboard')` → reports
+3. `prefers-reduced-motion: reduce` activado → shimmer estático
+4. Mobile (<600px): cards en 1 columna
+
+**Archivos creados/modificados**:
+- `js/admin-skeletons.js` (NUEVO ~200 líneas — 7 kinds)
+- `css/admin.css` (+140 líneas .sk-* + shimmer)
+- `admin.html` (script tag admin-skeletons.js)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510130000)
+- `CLAUDE.md` (esta sección §28.6)
+
+**Migración futura opcional**: callsites de spinners legacy
+(`<div class="loader"></div>`) pueden reemplazarse por
+`AltorraSkeletons.render()` para que cada sección tenga skeleton
+acorde. Trabajo de refactor incremental — el módulo está disponible.

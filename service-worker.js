@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510120000'; // §28.5 Empty states ilustrados — 10 SVG illustrations inline (vehicles/contacts/conversations/calendar/reports/search/kb/unmatched/audit/generic) con AltorraEmptyStates API + auto-upgrade legacy empty containers + animation fadeIn spring + responsive mobile
+const CACHE_VERSION = 'v20260510130000'; // §28.6 Skeleton screens realistas mimic per section — AltorraSkeletons.html(kind, count) + 7 kinds (vehicleCards/vehicleRows/contactRows/kpiCards/conversationItems/calendarMonth/reportsDashboard) con shimmer dorado linear-gradient 110deg infinite 1.6s + reduced-motion respeta + responsive mobile + grids auto-fit
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -14069,3 +14069,206 @@ En desktop quedan inline con wrap automático si necesitan más ancho.
 
 **Pendiente del ADR-026** (último sprint):
 - §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot $0
+
+### 26.5 Sprint Atomic Reset + FCM denied UX + Telegram Bot $0 (2026-05-10)
+
+**Objetivo del sprint** (ÚLTIMO del ADR-026): cerrar 3 features
+pendientes y dejar la base lista para que el cliente solo deba hacer
+setup operacional Telegram (5 minutos).
+
+#### A. Atomic Reset State Machine (`js/concierge.js`)
+
+**Bug del cliente**: "Cuando el cliente le da a Finalizar conversación,
+DEBE limpiarse instantáneamente sin necesidad de Control+Shift+R.
+Además, corrige el parpadeo lento del Lead Gate".
+
+**Causa raíz adicional** (no cubierta en §22.15): listeners pendientes
+(auth onAuthStateChanged, firestore parent snapshot) llegan después
+del cancelChatListeners() y pisan el estado fresco que resetSession
+acaba de aplicar. Esto causa el parpadeo del Lead Gate.
+
+**Fix nuevo**:
+
+1. `session._resetting = true` se setea AL ENTRAR a resetSession y
+   se persiste a localStorage
+2. Cualquier listener tardío chequea el flag y se ignora silenciosamente:
+   ```js
+   function applyAuthProfileToSession(profile) {
+       if (!profile) return;
+       if (session._resetting) return;   // ← guard
+       // ... aplica profile ...
+   }
+   ```
+3. `session._resetting = false` se libera AL FINAL de continueResetUI
+   (después de renderMessages)
+
+Resultado: cero pisotones de estado mid-reset. Lead Gate aparece
+limpio sin parpadeo. Profile cacheado se aplica una sola vez al
+final, no múltiples veces.
+
+#### B. FCM permission denied — UX claro
+
+**Antes**: cuando `Notification.permission === 'denied'`, el código
+solo logueaba `console.info` y retornaba null. El usuario no sabía
+qué pasó ni cómo arreglarlo.
+
+**Ahora** (`js/admin-fcm.js registerSwAndGetToken`):
+
+```js
+if (Notification.permission === 'denied') {
+    var browser = /* detecta Chrome/Edge/Firefox/Safari */;
+    notify.warning({
+        title: '🔒 Notificaciones bloqueadas',
+        message: 'Para activar: tocá el ícono de candado/info al lado de la URL → Permisos → Notificaciones → Permitir. Después recargá la página. (' + browser + ')',
+        duration: 14000
+    });
+}
+```
+
+Toast warning de 14s con instrucciones browser-específicas. El usuario
+sabe exactamente qué hacer.
+
+#### C. Telegram Bot $0 — alternativa GRATUITA a FCM
+
+**Por qué Telegram**: FCM Web Push solo funciona en background en
+iOS 16.4+ con PWA instalada (la mayoría de iPhones del equipo
+probablemente). Telegram funciona en TODOS los celulares con la app
+instalada (universal en Colombia ~90% adopción), sin necesitar PWA.
+
+**Arquitectura**:
+
+```
+Asesor → @BotFather crea bot (1 minuto)
+       → Setup en admin: tap "Conectar Telegram"
+       → Deep-link a t.me/BotName?start=ASESOR_<uid>
+       → Bot persiste chatId en usuarios/{uid}.telegramChatId
+                    ↓
+                    │ Cliente entra a queue
+                    ▼
+Cloud Function onChatEscalatedTelegram
+- Detecta chat con mode='queue'
+- Anti-spam: skip si workload.asesoresAvailable > 0
+- Anti-spam temporal: cooldown 5 min (notifiedTelegramAt)
+- Lista usuarios rol in [super_admin, editor] con telegramChatId
+- Para cada uno: sendTelegramAlert(uid, text, { url, urlLabel })
+- Mensaje markdown con cliente, radicado, vehículo, botón "Atender ahora"
+```
+
+**Componentes nuevos**:
+
+1. **`js/admin-telegram.js`** (~120 líneas, NUEVO):
+   - `AltorraAdminTelegram.openLinkFlow()` → abre deep-link al bot
+   - `AltorraAdminTelegram.unlink()` → quita chatId
+   - `AltorraAdminTelegram.isLinked()` / `status()` → query
+   - Toast informativo si BOT_USERNAME aún placeholder
+
+2. **`functions/index.js linkTelegramChat`** (HTTP endpoint):
+   - Webhook del bot Telegram
+   - Detecta `/start ASESOR_<uid>` con regex
+   - Persiste `telegramChatId`, `telegramLinkedAt`, `telegramUserName`
+     en `usuarios/{uid}`
+   - Responde al user con confirmación o ayuda
+
+3. **`functions/index.js sendTelegramAlert(uid, text, options)`**:
+   - Helper internal: best-effort
+   - Skip silente si TELEGRAM_BOT_TOKEN no seteado o user sin chatId
+   - Soporta inline keyboard con `{url, urlLabel}` para CTA
+   - Update `telegramLastUsedAt` en éxito
+
+4. **`functions/index.js onChatEscalatedTelegram`** (paralelo a FCM):
+   - Trigger: chat pasa a `mode='queue'`
+   - Anti-spam: workload.asesoresAvailable + cooldown 5min
+   - Envía a TODOS los asesores con telegramChatId
+   - Mensaje rico Markdown con cliente + radicado + botón "Atender ahora"
+
+5. **Secret nuevo declarado**: `TELEGRAM_BOT_TOKEN` via `defineSecret`.
+   Si NO está seteado, todas las funciones Telegram skip silente.
+
+#### Setup operacional one-time del cliente (5 minutos)
+
+```bash
+# 1. Crear bot en @BotFather
+#    /newbot → recibir BOT_TOKEN tipo 1234567:AAH...
+
+# 2. Setear secret en Firebase
+firebase functions:secrets:set TELEGRAM_BOT_TOKEN
+# (pegar el token completo)
+
+# 3. Editar js/admin-telegram.js:
+#    var BOT_USERNAME = 'AltorraCarsAlertsBot';  // ← username real
+
+# 4. Deploy
+firebase deploy --only functions:linkTelegramChat,functions:onChatEscalatedTelegram
+
+# 5. Setear webhook del bot (1 sola vez)
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+     -d "url=https://us-central1-altorra-cars.cloudfunctions.net/linkTelegramChat"
+
+# 6. Cada asesor en admin.html → tap "Conectar Telegram"
+```
+
+Hasta que el cliente complete los pasos 1-5, todas las llamadas a
+Telegram skip silente. FCM sigue funcionando como canal primario.
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Listeners tardíos pisan reset state | _resetting flag + guards en applyAuthProfileToSession |
+| FCM denied silencioso confunde al user | Toast warning 14s con instrucciones browser-específicas |
+| Telegram requiere setup inmediato | Best-effort: skip silente si secret no seteado, FCM sigue |
+| BOT_USERNAME hardcoded inválido | Helper isConfigured() detecta placeholder y avisa |
+| Webhook recibe spam | Solo responde a `/start ASESOR_<uid>` válido, resto silencio |
+| Telegram alert spam | Anti-spam: workload check + cooldown 5min (notifiedTelegramAt) |
+| Chat ID se pierde si user borra el bot | unlink desde admin → FieldValue.delete + clear cache local |
+| Doble notificación FCM + Telegram | Canales paralelos por diseño — el primero que ve, atiende |
+
+#### Test E2E del sprint
+
+1. **Reset atomic**: cliente loguea → conversa → "Finalizar
+   conversación" → confirm → chat se limpia instantáneamente sin
+   parpadeo + sin Lead Gate flash + toast "✓ Conversación reiniciada"
+2. **FCM denied**: admin con notificaciones previamente bloqueadas
+   → tap "Activar" en prompt FCM → toast warning 14s con
+   instrucciones del candado del navegador
+3. **Telegram setup pendiente**: admin tap "Conectar Telegram" →
+   toast warning informando que el setup está pendiente
+4. **Telegram setup completo** (post-setup): admin tap "Conectar"
+   → abre deep-link a t.me/BotName → bot responde "✅ Listo, [nombre]"
+   → en admin status() retorna `linked: true`
+5. **Alerta Telegram funciona**: cliente entra a queue (sin asesores
+   disponibles) → en celular del admin llega push de Telegram con
+   cliente + radicado + botón "📲 Atender ahora" → tap → abre admin
+
+**Archivos modificados**:
+- `js/concierge.js` (_resetting flag + guard en applyAuthProfileToSession)
+- `js/admin-fcm.js` (toast warning instructivo cuando denied)
+- `js/admin-telegram.js` (NUEVO ~120 líneas — onboarding admin)
+- `admin.html` (script tag admin-telegram.js)
+- `functions/index.js` (TELEGRAM_BOT_TOKEN secret +
+  linkTelegramChat webhook + sendTelegramAlert helper +
+  onChatEscalatedTelegram trigger)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509090000)
+- `CLAUDE.md` (esta sección §26.5 — CIERRE del ADR-026)
+
+#### ✅ ADR-026 — Cierre
+
+Total ADR-026: 5 sprints, ~16 commits, ~5500 líneas de código + doc.
+
+| Sprint | Commit | Descripción |
+|---|---|---|
+| §26.1 | `62477a4` | Cognitive Bootstrap — Brain Config + Vocab Masivo + Triple Fallback + Bootstrap FAQs |
+| §26.2 | `8b37d96` | Vehicle Guide — Cards inline con miniatura + reasoning humano |
+| §26.3 | `235dc6a` | ALTOR Hub UI — Telegram fullscreen + auto-scroll + smart suggestions colapsables |
+| §26.4 | `d8e35fd` | Claiming Explícito + SLA UI fix + Persistencia cola |
+| §26.5 | (este) | Atomic Reset + FCM denied UX + Telegram Bot $0 |
+
+**ALTOR ya NO es un bot rule-based con palabritas**. Es una red
+neuronal cognitiva con:
+- Biblioteca (600+ términos automotrices + 25 FAQs profesionales)
+- Investigador (Vehicle Guide con insights por marca/categoría/year/km)
+- Asesor (tono cálido colombiano configurado por admin)
+- Consultor (3 estados de fallback con menú accionable)
+- Comercial (vehicle cards con miniatura + CTAs accionables)
+- Guía (recomendaciones por caso de uso)
+- Acompañante (memoria conversacional + small talk humano)

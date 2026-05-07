@@ -17,6 +17,12 @@ const githubPat = defineSecret('GITHUB_PAT');
 const emailUser = defineSecret('EMAIL_USER');
 const emailPass = defineSecret('EMAIL_PASS');
 
+// §26.5 — Telegram Bot $0 (alternativa gratuita a FCM Web Push).
+// Setup: crear bot en @BotFather → recibir token → guardarlo:
+//   firebase functions:secrets:set TELEGRAM_BOT_TOKEN
+// Si NO está seteado, las funciones Telegram skip silente (best-effort).
+const telegramBotToken = defineSecret('TELEGRAM_BOT_TOKEN');
+
 // FASE 3 — LLM secret para el Cerebro Altorra AI (ALTOR bot)
 // Set with: firebase functions:secrets:set LLM_API_KEY
 // El provider se lee del doc Firestore knowledgeBase/_brain.llmProvider
@@ -1954,4 +1960,218 @@ exports.proactiveEngagement = onSchedule({
     }
 
     console.log('[proactive] processed=' + processedCount + ' triggered=' + triggeredCount);
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §26.5 — TELEGRAM BOT $0 (alternativa GRATUITA a FCM Web Push)
+   ═══════════════════════════════════════════════════════════════════════
+   Setup operacional one-time:
+     1. @BotFather → /newbot → recibir BOT_TOKEN
+     2. firebase functions:secrets:set TELEGRAM_BOT_TOKEN
+     3. firebase deploy --only functions:linkTelegramChat,functions:onChatEscalatedTelegram
+     4. Setear webhook del bot a la URL de linkTelegramChat:
+        curl -X POST "https://api.telegram.org/bot{TOKEN}/setWebhook" \
+             -d "url=https://us-central1-altorra-cars.cloudfunctions.net/linkTelegramChat"
+
+   Si TELEGRAM_BOT_TOKEN NO está seteado, todo lo de Telegram skip silente.
+   FCM sigue funcionando como canal primario.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const { onRequest } = require('firebase-functions/v2/https');
+
+/**
+ * linkTelegramChat — webhook del bot Telegram. Recibe el update cuando
+ * un asesor hace /start ASESOR_<uid> y persiste el chatId en su perfil.
+ */
+exports.linkTelegramChat = onRequest({
+    cors: false,
+    secrets: [telegramBotToken]
+}, async (req, res) => {
+    if (req.method !== 'POST') {
+        res.status(405).send('POST only');
+        return;
+    }
+    const TOKEN = telegramBotToken.value();
+    if (!TOKEN) {
+        res.status(503).send('Telegram bot not configured');
+        return;
+    }
+    try {
+        const update = req.body || {};
+        const message = update.message;
+        if (!message || !message.text || !message.from) {
+            res.status(200).send('ok');
+            return;
+        }
+        const chatId = message.chat.id;
+        const text = String(message.text).trim();
+
+        // Detectar /start ASESOR_<uid>
+        const m = text.match(/^\/start\s+ASESOR_([A-Za-z0-9]+)/);
+        if (!m) {
+            // No es start con payload — responder ayuda
+            await fetch('https://api.telegram.org/bot' + TOKEN + '/sendMessage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: '👋 Hola! Soy el bot de Altorra Cars.\n\nPara vincular tu cuenta de admin, abrí admin.html → Conectar Telegram.'
+                })
+            });
+            res.status(200).send('ok');
+            return;
+        }
+
+        const uid = m[1];
+        const userRef = db.collection('usuarios').doc(uid);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) {
+            await fetch('https://api.telegram.org/bot' + TOKEN + '/sendMessage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: '❌ Usuario no encontrado. Pedile a un super_admin que verifique tu cuenta.'
+                })
+            });
+            res.status(200).send('ok');
+            return;
+        }
+
+        // Persistir chatId
+        await userRef.update({
+            telegramChatId: chatId,
+            telegramLinkedAt: admin.firestore.FieldValue.serverTimestamp(),
+            telegramUserName: message.from.username || message.from.first_name || 'Asesor'
+        });
+
+        const nombre = userSnap.data().nombre || 'Asesor';
+        await fetch('https://api.telegram.org/bot' + TOKEN + '/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: '✅ ¡Listo, ' + nombre + '! Tu cuenta de Altorra Cars está vinculada.\n\nA partir de ahora recibirás alertas push cuando un cliente esté esperando atención.\n\n_Para desvincular: admin.html → Desvincular Telegram_',
+                parse_mode: 'Markdown'
+            })
+        });
+        res.status(200).send('ok');
+    } catch (err) {
+        console.error('[linkTelegramChat] error:', err);
+        res.status(500).send('error');
+    }
+});
+
+/**
+ * sendTelegramAlert — envía alerta push al asesor por Telegram.
+ * Best-effort: si no hay token o usuario sin chatId, skip silente.
+ */
+async function sendTelegramAlert(uid, text, options) {
+    const TOKEN = telegramBotToken.value();
+    if (!TOKEN) return false;
+    try {
+        const userSnap = await db.collection('usuarios').doc(uid).get();
+        if (!userSnap.exists) return false;
+        const chatId = userSnap.data().telegramChatId;
+        if (!chatId) return false;
+
+        const payload = {
+            chat_id: chatId,
+            text: text,
+            parse_mode: 'Markdown',
+            disable_web_page_preview: true
+        };
+
+        // Inline keyboard si se pasa link
+        if (options && options.url) {
+            payload.reply_markup = {
+                inline_keyboard: [[{
+                    text: options.urlLabel || 'Atender ahora',
+                    url: options.url
+                }]]
+            };
+        }
+
+        const resp = await fetch('https://api.telegram.org/bot' + TOKEN + '/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        // Update lastUsed
+        if (resp.ok) {
+            await db.collection('usuarios').doc(uid).update({
+                telegramLastUsedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        return resp.ok;
+    } catch (err) {
+        console.warn('[sendTelegramAlert] error for ' + uid + ':', err.message);
+        return false;
+    }
+}
+
+/**
+ * onChatEscalatedTelegram — paralelo a onChatEscalated FCM.
+ * Cuando un chat entra a queue, además del FCM dispara Telegram a
+ * todos los asesores con telegramChatId vinculado.
+ */
+exports.onChatEscalatedTelegram = onDocumentUpdated({
+    document: 'conciergeChats/{sessionId}',
+    secrets: [telegramBotToken]
+}, async (event) => {
+    if (!event.data) return;
+    const before = event.data.before.data() || {};
+    const after = event.data.after.data() || {};
+
+    // Trigger: chat pasó a mode='queue' o un nuevo cliente entró a la cola
+    const enteredQueue = before.mode !== 'queue' && after.mode === 'queue';
+    if (!enteredQueue) return;
+
+    // Anti-spam: si workload tiene asesores available + panel activo, skip
+    try {
+        const workloadSnap = await db.doc('system/workload').get();
+        const workload = workloadSnap.exists ? workloadSnap.data() : {};
+        if ((workload.asesoresAvailable || 0) > 0) return;
+    } catch (e) { /* no-op */ }
+
+    // Anti-spam: cooldown 5 min
+    if (after.notifiedTelegramAt) {
+        const last = new Date(after.notifiedTelegramAt).getTime();
+        if (Date.now() - last < 5 * 60 * 1000) return;
+    }
+
+    // Conseguir lista de asesores con Telegram vinculado
+    const usersSnap = await db.collection('usuarios')
+        .where('rol', 'in', ['super_admin', 'editor'])
+        .get();
+
+    const eligible = [];
+    usersSnap.forEach((doc) => {
+        const u = doc.data();
+        if (u.telegramChatId) eligible.push({ uid: doc.id, chatId: u.telegramChatId, nombre: u.nombre });
+    });
+
+    if (eligible.length === 0) return;
+
+    const radicado = after.radicado || event.params.sessionId.slice(-6);
+    const userName = after.userNombre || after.userEmail || 'Cliente';
+    const text = '🚨 *Cliente en cola — Altorra Cars*\n\n' +
+                 '👤 ' + userName + '\n' +
+                 '🎫 Radicado: `' + radicado + '`\n' +
+                 (after.sourceVehicleId ? '🚗 Vehículo: ' + after.sourceVehicleId + '\n' : '') +
+                 '\n_Tomá la conversación cuanto antes._';
+
+    const url = 'https://altorracars.github.io/admin.html#/concierge';
+
+    const promises = eligible.map((u) =>
+        sendTelegramAlert(u.uid, text, { url: url, urlLabel: '📲 Atender ahora' })
+    );
+    await Promise.all(promises);
+
+    // Marcar timestamp anti-spam
+    await event.data.after.ref.update({
+        notifiedTelegramAt: new Date().toISOString()
+    });
+    console.log('[onChatEscalatedTelegram] alertas enviadas a ' + eligible.length + ' asesores');
 });

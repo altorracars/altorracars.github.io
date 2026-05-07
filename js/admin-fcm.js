@@ -82,6 +82,19 @@
         }
         if (Notification.permission === 'denied') {
             console.info('[AdminFCM] Permiso denegado por usuario (no preguntar de nuevo)');
+            // §26.5 — UX claro al usuario denied: instrucciones para
+            // reactivar desde el candado del navegador (browser-specific).
+            if (window.notify && window.notify.warning) {
+                var browser = /Chrome|Edg/.test(navigator.userAgent) ? 'Chrome/Edge'
+                            : /Firefox/.test(navigator.userAgent) ? 'Firefox'
+                            : /Safari/.test(navigator.userAgent) ? 'Safari'
+                            : 'tu navegador';
+                window.notify.warning({
+                    title: '🔒 Notificaciones bloqueadas',
+                    message: 'Para activar: tocá el ícono de candado/info al lado de la URL → Permisos → Notificaciones → Permitir. Después recargá la página. (' + browser + ')',
+                    duration: 14000
+                });
+            }
             return Promise.resolve(null);
         }
 

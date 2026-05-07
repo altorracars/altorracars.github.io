@@ -1798,6 +1798,8 @@
      */
     function applyAuthProfileToSession(profile) {
         if (!profile) return;
+        // §26.5 — Guard: ignorar callbacks tardíos durante reset
+        if (session._resetting) return;
         session.uid = profile.uid;
         session.email = profile.correo;
         session.nombre = (profile.nombre + ' ' + profile.apellido).trim();
@@ -2126,6 +2128,13 @@
         opts = opts || {};
         var preserveProfile = opts.preserveProfile === true;
 
+        // §26.5 — Atomic Reset State Machine.
+        // _resetting=true durante TODA la operación. Listeners pendientes
+        // (firestore, auth onAuthStateChanged) chequean este flag y
+        // se ignoran silenciosamente para prevenir pisotones de estado.
+        session._resetting = true;
+        try { saveSession(session); } catch (e) {}
+
         // Snapshot del profile actual ANTES de tocar la sesión, para poder
         // re-aplicarlo en continueResetUI si preserveProfile=true. Esto cubre
         // el caso anónimo donde el cliente confirmó "estos siguen siendo mis
@@ -2209,6 +2218,13 @@
             applyGateVisibility();         // muestra gate si no logueado
             applyAsesorHeader();           // resetea header a ALTOR
             renderMessages();              // muestra welcome bubble si messages=[]
+
+            // §26.5 — Liberar el flag _resetting AL FINAL del ciclo.
+            // Listeners pendientes que llegaron mid-reset y se ignoraron
+            // por el guard ya no van a causar conflicto porque las refs
+            // (_chatDocCreated, _firestoreParentUnsub) están reseteadas.
+            session._resetting = false;
+            try { saveSession(session); } catch (e) {}
 
             // Toast de confirmación visual al cliente
             var toastEl = document.getElementById('cncResetToast');

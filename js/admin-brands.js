@@ -82,7 +82,21 @@
         }
     }
 
-    // ========== BRANDS TABLE ==========
+    // ========== BRANDS GALLERY (§34 — Cards) ==========
+    // Idempotent — crea #brandsCardList sibling al <table id="brandsTable">
+    function _ensureBrandsCardList() {
+        var list = document.getElementById('brandsCardList');
+        if (list) return list;
+        var tbody = document.getElementById('brandsTableBody');
+        var table = tbody ? tbody.parentNode : null;
+        if (!table || !table.parentNode) return null;
+        list = document.createElement('div');
+        list.id = 'brandsCardList';
+        list.className = 'av2-card-list av2-card-list--gallery';
+        table.parentNode.insertBefore(list, table);
+        return list;
+    }
+
     function renderBrandsTable() {
         // Trigger one-time logo migration on first render
         if (!_migrationDone && AP.brands.length > 0) {
@@ -98,45 +112,57 @@
         var totalBrands = sorted.length;
         if (AP.paginate) sorted = AP.paginate(sorted, 'brands');
 
-        var html = '';
-        sorted.forEach(function(b) {
-            var count = AP.vehicles.filter(function(v) { return v.marca === b.id; }).length;
-            var logoUrl = getBrandLogoUrl(b);
+        // §34 — Render como gallery de cards
+        var cardList = _ensureBrandsCardList();
+        var tableEl = document.getElementById('brandsTable');
+        if (!cardList) {
+            // Fallback ultra-conservador
+            $('brandsTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#8b949e;">No se pudo crear lista de cards</td></tr>';
+            return;
+        }
+        if (tableEl) tableEl.style.display = 'none';
 
-            var actions = '<div class="v-actions">';
-            if (AP.canCreateOrEditInventory()) {
-                actions += '<button class="v-act v-act--success" data-action="editBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Editar"><i data-lucide="pencil"></i></button>';
-            }
-            if (AP.canDeleteInventory()) {
-                actions += '<span class="v-act-sep"></span>';
-                actions += '<button class="v-act v-act--danger" data-action="deleteBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
-            }
-            actions += '</div>';
-            if (!AP.canCreateOrEditInventory() && !AP.canDeleteInventory()) actions = '<span style="color:var(--admin-text-muted);font-size:0.75rem;">Solo lectura</span>';
+        if (sorted.length === 0) {
+            cardList.innerHTML = '<div class="av2-card-empty"><i data-lucide="badge"></i><div>No hay marcas registradas</div></div>';
+        } else {
+            var html = '';
+            sorted.forEach(function(b) {
+                var count = AP.vehicles.filter(function(v) { return v.marca === b.id; }).length;
+                var logoUrl = getBrandLogoUrl(b);
 
-            var imgTag = logoUrl
-                ? '<img class="vehicle-thumb" src="' + AP.escapeHtml(logoUrl) + '" alt="' + AP.escapeHtml(b.nombre) + '" loading="lazy" onerror="this.style.opacity=\'0.3\';this.onerror=null;" style="width:40px;height:40px;object-fit:contain;">'
-                : '<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--admin-border);border-radius:6px;color:var(--admin-text-muted);font-size:0.6rem;">Sin logo</div>';
+                var actions = '';
+                if (AP.canCreateOrEditInventory()) {
+                    actions += '<button class="v-act v-act--success" data-action="editBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Editar"><i data-lucide="pencil"></i></button>';
+                }
+                if (AP.canDeleteInventory()) {
+                    if (AP.canCreateOrEditInventory()) actions += '<span class="v-act-sep"></span>';
+                    actions += '<button class="v-act v-act--danger" data-action="deleteBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
+                }
+                if (!actions) {
+                    actions = '<span style="color:rgba(255,255,255,0.45);font-size:0.74rem;font-style:italic;">Solo lectura</span>';
+                }
 
-            html += '<tr>' +
-                '<td>' + imgTag + '</td>' +
-                '<td><code>' + b.id + '</code></td>' +
-                '<td><strong>' + b.nombre + '</strong></td>' +
-                '<td>' + (b.descripcion || '-') + '</td>' +
-                '<td>' + count + '</td>' +
-                '<td>' + actions + '</td>' +
-            '</tr>';
-        });
+                var logoMarkup = logoUrl
+                    ? '<img class="av2-card-thumb av2-card-thumb--logo" src="' + AP.escapeHtml(logoUrl) + '" alt="' + AP.escapeHtml(b.nombre) + '" loading="lazy" onerror="this.style.opacity=\'0.25\';this.onerror=null;">'
+                    : '<div class="av2-card-thumb av2-card-thumb--logo" style="display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.32);font-size:0.78rem;">Sin logo</div>';
 
-        if (!html) html = '<tr><td colspan="6" style="text-align:center; padding:2rem;">No hay marcas</td></tr>';
-        $('brandsTableBody').innerHTML = html;
+                html += ''
+                    + '<article class="av2-card" data-brand-id="' + AP.escapeHtml(b.id) + '">'
+                    +   logoMarkup
+                    +   '<div class="av2-card-body">'
+                    +     '<h3 class="av2-card-title" style="font-size:0.96rem;">' + AP.escapeHtml(b.nombre) + '</h3>'
+                    +     '<div class="av2-card-meta"><span class="av2-card-code">' + AP.escapeHtml(b.id) + '</span> · <span class="av2-card-badge-count"><i data-lucide="car" style="width:11px;height:11px;"></i>' + count + '</span></div>'
+                    +     (b.descripcion ? '<div class="av2-card-meta" style="font-size:0.78rem;line-height:1.45;">' + AP.escapeHtml(b.descripcion) + '</div>' : '')
+                    +   '</div>'
+                    +   '<div class="av2-card-actions">' + actions + '</div>'
+                    + '</article>';
+            });
+            cardList.innerHTML = html;
+        }
 
-        // Sort indicators
-        document.querySelectorAll('th[data-table="brands"][data-sort]').forEach(function(th) {
-            var col = th.getAttribute('data-sort');
-            var si = th.querySelector('.sort-icon'); if (si) si.remove(); var text = th.textContent.trim();
-            th.innerHTML = text + ' ' + (AP.getSortIndicator ? AP.getSortIndicator('brands', col) : '');
-        });
+        // Limpiar tabla legacy
+        var tbody = $('brandsTableBody');
+        if (tbody) tbody.innerHTML = '';
 
         if (AP.renderPagination) AP.renderPagination('brandsPagination', 'brands', totalBrands);
         AP.refreshIcons();

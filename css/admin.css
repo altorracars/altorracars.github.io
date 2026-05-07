@@ -10074,3 +10074,282 @@ kbd {
 /* ═══════════════════════════════════════════════════════════════════
    FIN ADR-028 NOVA Sprint A
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADR-028 NOVA Sprint B — Auth Screens (login/2FA/unlock)
+   Background liquid-gradient + login-box glassmorphism premium.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Background liquid-gradient con orbs animados ─────────────── */
+.login-container {
+    position: relative;
+    background: radial-gradient(ellipse at 20% 20%, rgba(184, 150, 88, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(184, 150, 88, 0.10) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 70%),
+                #0a0a0c;
+    overflow: hidden;
+    min-height: 100vh;
+}
+
+/* Orbs flotantes detrás del login-box (Liquid iOS feel) */
+.login-container::before,
+.login-container::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+}
+.login-container::before {
+    width: 480px; height: 480px;
+    background: radial-gradient(circle, rgba(184, 150, 88, 0.30) 0%, transparent 70%);
+    top: -100px; left: -100px;
+    animation: novaAuthOrbA 14s ease-in-out infinite;
+}
+.login-container::after {
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.20) 0%, transparent 70%);
+    bottom: -80px; right: -80px;
+    animation: novaAuthOrbB 18s ease-in-out infinite;
+}
+@keyframes novaAuthOrbA {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(60px, 80px) scale(1.15); }
+}
+@keyframes novaAuthOrbB {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-50px, -60px) scale(1.10); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .login-container::before,
+    .login-container::after { animation: none; }
+}
+
+/* ─── Login-box glassmorphism premium ───────────────────────────── */
+.login-box {
+    position: relative;
+    z-index: 1;
+    background: var(--nova-mica-bg-strong) !important;
+    backdrop-filter: blur(var(--nova-blur-xl)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--nova-blur-xl)) saturate(180%);
+    border: var(--nova-border-glass-hi) !important;
+    border-radius: var(--hmy-radius-modal) !important;
+    padding: 2.5rem 2.25rem !important;
+    box-shadow: var(--nova-shadow-elev-4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    max-width: 420px !important;
+    animation: novaAuthBoxIn 0.65s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes novaAuthBoxIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .login-box { animation: none; }
+}
+
+/* ─── Logo del login con efecto premium ────────────────────────── */
+.login-logo {
+    margin-bottom: 2rem !important;
+}
+.login-logo h1 {
+    background: linear-gradient(135deg, #d4ad6e 0%, #b89658 50%, #9a7d44 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 1.75rem !important;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4rem !important;
+}
+.login-logo p {
+    color: rgba(255, 255, 255, 0.55) !important;
+    font-size: 0.875rem !important;
+    letter-spacing: 0.04em;
+}
+
+/* ─── Form group spacing premium ───────────────────────────────── */
+.login-box .form-group {
+    margin-bottom: 1.1rem;
+}
+.login-box .form-label {
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem !important;
+}
+
+/* ─── Form input premium (overrides admin.css legacy) ─────────── */
+.login-box .form-input,
+.login-box input[type="text"],
+.login-box input[type="email"],
+.login-box input[type="password"] {
+    border-radius: var(--hmy-radius-input) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    color: #ffffff !important;
+    padding: 12px 16px !important;
+    font-size: 0.95rem;
+    transition: all var(--nova-spring-snap);
+    width: 100%;
+    box-sizing: border-box;
+}
+.login-box .form-input:hover:not(:focus) {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+.login-box .form-input:focus {
+    outline: none;
+    border-color: var(--brand-primary, #b89658) !important;
+    background: rgba(184, 150, 88, 0.04) !important;
+    box-shadow: var(--nova-focus-ring) !important;
+}
+
+/* ─── Password eye toggle premium ──────────────────────────────── */
+.login-password-wrap { position: relative; }
+.login-eye-btn {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.50) !important;
+    cursor: pointer;
+    padding: 8px !important;
+    border-radius: 8px !important;
+    transition: all var(--nova-spring-snap);
+}
+.login-eye-btn:hover {
+    color: var(--brand-primary, #b89658) !important;
+    background: rgba(184, 150, 88, 0.08) !important;
+}
+
+/* ─── Login button premium (override .btn-primary.btn-block) ──── */
+.login-box .btn-primary.btn-block,
+.login-box #loginBtn,
+.login-box #unlockBtn,
+.login-box #twoFaBtn {
+    width: 100% !important;
+    background: linear-gradient(135deg, #c9a663 0%, #b89658 50%, #9a7d44 100%) !important;
+    border: none !important;
+    color: #1a1a1a !important;
+    font-weight: 700 !important;
+    padding: 13px 18px !important;
+    margin-top: 0.5rem;
+    box-shadow: 0 4px 14px rgba(184, 150, 88, 0.30),
+                inset 0 1px 0 rgba(255, 255, 255, 0.20);
+    transition: all var(--nova-spring-snap);
+}
+.login-box .btn-primary.btn-block:hover:not(:disabled),
+.login-box #loginBtn:hover:not(:disabled),
+.login-box #unlockBtn:hover:not(:disabled),
+.login-box #twoFaBtn:hover:not(:disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 8px 24px rgba(184, 150, 88, 0.40),
+                inset 0 1px 0 rgba(255, 255, 255, 0.30);
+}
+.login-box .btn-primary.btn-block:active:not(:disabled) {
+    transform: translateY(0) !important;
+}
+
+/* ─── Code inputs (2FA / Unlock) — destacar visualmente ─────── */
+#twoFaCode,
+#unlockCode {
+    text-align: center !important;
+    font-size: 1.6rem !important;
+    letter-spacing: 0.6rem !important;
+    font-weight: 700 !important;
+    font-family: var(--font-family-mono, ui-monospace, monospace) !important;
+    color: var(--brand-primary, #b89658) !important;
+    padding: 14px !important;
+}
+
+/* ─── Links del footer (forgot password / resend / cancel) ─── */
+#forgotPasswordLink,
+#twoFaResend,
+#twoFaCancel,
+#unlockResend,
+#unlockCancel {
+    color: var(--brand-primary, #b89658) !important;
+    transition: color var(--nova-spring-snap);
+    font-weight: 500 !important;
+}
+#forgotPasswordLink:hover,
+#twoFaResend:hover,
+#unlockResend:hover {
+    color: #d4ad6e !important;
+}
+#twoFaCancel:hover,
+#unlockCancel:hover {
+    color: rgba(239, 68, 68, 0.85) !important;
+}
+
+/* ─── Error/info messages premium ──────────────────────────── */
+#loginError,
+#twoFaError,
+#unlockError,
+#loginRateLimit {
+    border-radius: 10px;
+    padding: 8px 12px;
+    text-align: center;
+}
+#loginError,
+#twoFaError,
+#unlockError {
+    background: rgba(239, 68, 68, 0.08) !important;
+    border: 1px solid rgba(239, 68, 68, 0.20);
+    animation: novaShake 0.4s ease-out;
+}
+@keyframes novaShake {
+    0%, 100% { transform: translateX(0); }
+    25%      { transform: translateX(-4px); }
+    75%      { transform: translateX(4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    #loginError, #twoFaError, #unlockError { animation: none; }
+}
+#loginRateLimit {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+#forgotPasswordMsg {
+    border-radius: 10px;
+    padding: 8px 12px;
+    text-align: center;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.20);
+    color: rgba(110, 231, 183, 0.95);
+}
+
+/* ─── Trust device checkbox label ──────────────────────────── */
+#twoFaTrustDevice + ,
+#twoFaForm label[for="twoFaTrustDevice"],
+.login-box label:has(input[type="checkbox"]) {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.85rem;
+}
+
+/* ─── Mobile responsive ────────────────────────────────────── */
+@media (max-width: 480px) {
+    .login-box {
+        padding: 2rem 1.5rem !important;
+        max-width: calc(100vw - 2rem) !important;
+        border-radius: 16px !important;
+    }
+    .login-logo h1 { font-size: 1.5rem !important; }
+    .login-container::before {
+        width: 320px; height: 320px;
+        top: -50px; left: -50px;
+    }
+    .login-container::after {
+        width: 280px; height: 280px;
+        bottom: -40px; right: -40px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN ADR-028 NOVA Sprint B
+   ═══════════════════════════════════════════════════════════════════ */

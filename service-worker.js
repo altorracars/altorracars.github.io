@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510080000'; // §28.1 NOVA Sprint A — Foundation tokens NOVA (Mica/Acrylic/Liquid/Reveal) + mass refactor legacy: .btn radius+ripple, .modal-overlay scrim+blur, tablas sticky head + radius outer, inputs focus-ring dorado, checkbox/radio/range/progress custom, dropdown glassmorphism, scrollbars dorados globales, kbd Mac-style, page-headers tinted
+const CACHE_VERSION = 'v20260510090000'; // §28.2 NOVA Sprint B — Auth screens premium (login/2FA/unlock): liquid-gradient bg + orbs animados + login-box glassmorphism + logo gradient text + form inputs focus-ring dorado + login button gradient gold + code inputs (2FA/unlock) monospace destacado + shake error animation + responsive mobile
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

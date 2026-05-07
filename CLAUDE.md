@@ -14511,3 +14511,176 @@ bloquea el JS por varios ms).
   con render empty state)
 - `service-worker.js` + `js/cache-manager.js` (bump v20260509110000)
 - `CLAUDE.md` (esta sección §26.7)
+
+---
+
+## 27. ALTORRA HARMONY CRM — Reestructuración Visual + Arquitectura (en curso 2026-05-10)
+
+> Refactor masivo bajo ADR-027. El admin pasa de un Frankenstein con
+> secciones mal ubicadas, código muerto y placeholders a un CRM
+> Enterprise estructurado en 8 grupos lógicos con lenguaje visual
+> HarmonyOS. Cero código muerto, cero placeholders, 3 features nuevas
+> implementadas (Reportes, Workflows, Plantillas integradas al Hub).
+
+### 27.1 Sprint Foundation — Tokens HarmonyOS + Sidebar v2 + Router (2026-05-10)
+
+**Objetivo del sprint**: establecer las bases visuales y de arquitectura
+de información antes de tocar las secciones. Sidebar reorganizado, router
+con ALIASES para preservar deep-links viejos, tokens HarmonyOS listos
+para el polish posterior.
+
+#### A. Tokens HarmonyOS (`css/tokens.css` extendido)
+
+Categoría 11 nueva con 30+ tokens prefijo `--hmy-*`:
+
+- **Radii suaves**: 16px (cards), 24px (hero/modal), 12px (botones/inputs)
+- **Sombras difuminadas**: 5 niveles (`-soft-xs` a `-soft-xl`) sin sólidos duros
+- **Glow soft**: dorado tenue `0 0 32px rgba(184, 150, 88, 0.18)`
+- **Glassmorphism**: `--hmy-glass-blur: 20px`, bg dark + border tenue
+- **Transiciones fluidas**: 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+- **Spring**: 0.45s cubic-bezier overshoot (0.34, 1.56, 0.64, 1)
+- **Espacios respiran**: padding cards 24px (vs 16-20px anterior)
+- **Workspace colors paleta extendida**: gold, **coral nuevo**, blue,
+  violet, green, **cyan**, **amber**, neutral
+- **Tipografía jerárquica HarmonyOS**: page title 32px tight,
+  body 15px line-height 1.6
+
+Sidebar width también pasa de 240px → **256px** (más espacio para respirar).
+
+#### B. Sidebar v2 con Quick Search
+
+Reescritura completa del bloque `<nav class="sidebar">` en `admin.html`:
+
+- **Quick search inline** arriba del sidebar (`#sidebarSearchInput`):
+  filtra nav-items en vivo al tipear. `Escape` limpia. `Enter` ejecuta
+  el primer item visible. Patrón Notion/Linear.
+- **8 grupos lógicos** (vs 8 anteriores con uno disabled):
+  - Inicio (standalone)
+  - Inventario (Vehículos · Marcas · Aliados)
+  - **Sitio público** (NUEVO — Banners · Reseñas)
+  - CRM (Contactos & Ventas — unificación interna pendiente §27.x)
+  - Agenda (Calendario)
+  - Comunicaciones (ALTOR Hub · Cerebro AI · Lo que no entendí)
+  - Reportes (placeholder con sec-reports preparado)
+  - Configuración (Usuarios · Atributos · **Workflows nuevo** · Auditoría · Ajustes)
+
+- **Workspace colors actualizados** (data-workspace-color):
+  - Banners/Reseñas: gold → **coral** (rosado cálido #f97066)
+  - Cerebro AI/Unmatched: orange → **green** (Comunicaciones)
+  - Bandeja (sec-appointments): green → **blue** (CRM)
+  - Workflows: nuevo **amber** (#f59e0b)
+
+- **CSS HarmonyOS aplicado** (`css/admin.css` ~140 líneas nuevas):
+  - Sidebar con `backdrop-filter: blur(20px)` + tinte dorado glass
+  - Items con `border-radius: 12px` + transition 0.3s suave
+  - Hover items: `transform: translateX(2px)` + tinte dorado tenue
+  - Group headers menos uppercase agresivo (font-weight 500)
+  - Quick search field con focus ring difuminado
+  - Cards con radius 16px + sombras `--hmy-shadow-soft-sm`
+  - Modales con radius 20px + glassmorphism
+  - Botones radius 12px + lift 1px en hover
+  - Inputs radius 12px + focus shadow difuminado en lugar de outline
+  - `prefers-reduced-motion` respetado en TODAS las transiciones
+
+#### C. Router REGISTRY + ALIASES rediseñado (`admin-section-router.js`)
+
+**REGISTRY actualizado** con 18 vistas funcionales en 8 grupos
+(metadata para command palette + deep-linking):
+
+```js
+{
+    dashboard:    { group: null,            ... },
+    vehicles, brands, dealers:              group: 'inventario',
+    banners, reviews:                       group: 'sitio_publico',  // NUEVO
+    crm:                                    group: 'crm',
+    appointments:  { _hidden: true,         group: 'crm' },           // se mostrará en tab interno commit 4
+    calendar:                               group: 'agenda',
+    concierge, kb, unmatched:              group: 'comunicaciones',
+    reports:                                group: 'reportes',         // NUEVO real
+    users, lists, workflows, audit, settings: group: 'configuracion'   // workflows NUEVO
+}
+```
+
+**ALIASES nuevos** (preservan deep-links viejos):
+- `automation` → `workflows` (Reglas promovidas a Configuración)
+- `templates` → `concierge` (Plantillas integradas al Hub commit 6)
+- `reports-disabled` → `reports` (placeholder muerto → real)
+- UX aliases: `contactos`, `pipeline`, `bandeja`, `disponibilidad`
+
+#### D. Secciones HTML reorganizadas
+
+- **`sec-automation` → `sec-workflows`** (renombrado, ID interno
+  `automationRulesList` preservado para compat con admin-automation.js).
+  H1 actualizado: "Workflows · Automatización inteligente".
+- **`sec-templates`** ahora oculto (`display: none`) — datos en
+  Firestore preservados, módulo admin-templates.js sigue cargando.
+  Commit 6 lo elimina definitivamente al integrar plantillas como chips
+  en ALTOR Hub.
+- **`sec-reports` NUEVO** con placeholder structure (commit 6 lo llena
+  con dashboard ejecutivo real: forecast + funnel + performance + anomalías).
+
+#### E. Quick Search del sidebar (`admin-sidebar.js`)
+
+Nueva función `initQuickSearch()`:
+- Listener `input` en `#sidebarSearchInput` filtra nav-items por
+  `textContent` o `data-section` lowercase
+- `body.is-searching` clase oculta nav-group-headers (solo deja items
+  visibles para resultado plano)
+- Items que no matchean: `.nav-item--filtered-out` (display:none)
+- `Escape`: limpia y blur
+- `Enter`: ejecuta click en el primer item visible
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Eliminar sec-templates rompe localStorage/code path | Mantener oculto con display:none + admin-templates.js sigue cargando hasta commit 6 |
+| Renombrar sec-automation rompe admin-automation.js | ID interno `automationRulesList` (que el JS busca) NO cambia |
+| Deep-links viejos (#/automation, #/templates) rompen | ALIASES mapean al destino nuevo en router |
+| Quick search no respeta filtro de admin-section-router | Filtro es puramente CSS — no toca la navegación |
+| Sidebar width 256 vs 240 puede romper layout fixed | Sólo el body.altor-hub-active del Hub usa `var(--layout-sidebar-w-expanded)`, todo se actualiza solo |
+| Workspace color "coral" no existe en CSS legacy | Tokens nuevos `--ws-color-coral` + reglas específicas en admin.css |
+| `prefers-reduced-motion` ignorado | @media query global desactiva TODAS las transiciones nuevas |
+
+#### Test E2E del sprint
+
+1. Login admin → ver sidebar con quick search arriba + 8 grupos nuevos
+2. Tipear "ven" en quick search → solo aparece "Vehículos" + nav-groups ocultos
+3. Tipear "kia" → no resultados (filtra)
+4. Escape → quick search se limpia, sidebar normal
+5. Verificar grupos:
+   - Inicio (standalone)
+   - Inventario: Vehículos · Marcas · Aliados ✓
+   - Sitio público: Banners · Reseñas ✓ (NUEVO)
+   - CRM: Contactos & Ventas ✓
+   - Agenda: Calendario ✓
+   - Comunicaciones: ALTOR Hub · Cerebro AI · Lo que no entendí ✓
+   - Reportes: Dashboard ejecutivo ✓ (placeholder visible)
+   - Configuración: Usuarios · Atributos · Workflows · Auditoría · Ajustes ✓
+6. Click "Workflows" → carga (era Reglas)
+7. Click "Reportes" → muestra placeholder con structure
+8. Deep-link `#/automation` → redirige a `#/workflows` (alias)
+9. Deep-link `#/templates` → redirige a `#/concierge` (alias)
+10. Deep-link `#/reports-disabled` → redirige a `#/reports` (alias)
+11. Visualmente: items del sidebar con border-radius suave 12px,
+    hover con desplazamiento sutil 2px + tinte dorado, transitions 0.3s
+12. Scroll en cualquier sección → cards con radius 16px y sombras difuminadas
+
+**Archivos modificados**:
+- `css/tokens.css` (+30 tokens HarmonyOS, sidebar width 240→256)
+- `css/admin.css` (+140 líneas Foundation HarmonyOS)
+- `admin.html` (sidebar reescrito con 8 grupos + quick search,
+  sec-templates oculto, sec-automation→sec-workflows, sec-reports nuevo,
+  workspace colors actualizados)
+- `js/admin-section-router.js` (REGISTRY rediseñado + ALIASES nuevos)
+- `js/admin-sidebar.js` (initQuickSearch con filter live)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510010000)
+- `CLAUDE.md` (esta sección §27.1)
+
+**Pendiente del ADR-027** (commits siguientes):
+- §27.2 Inicio productivo (KPIs hero + NBA + Insights + Performance equipo)
+- §27.3 CRM unificado con 3 tabs (Contactos · Bandeja · Pipeline)
+- §27.4 Agenda con tabs internos (Mes · Día · Disponibilidad · Festivos)
+- §27.5 Reportes ejecutivos implementados de cero
+- §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
+- §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)

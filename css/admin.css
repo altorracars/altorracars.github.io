@@ -7590,3 +7590,217 @@ body.altor-hub-active.sidebar-collapsed .altor-hub-section {
     .cnc-admin-claim-banner-icon { margin: 0 auto; }
     .cnc-admin-claim-btn { width: 100%; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   §27 ALTORRA HARMONY CRM — Foundation visual HarmonyOS
+   Tokens en css/tokens.css → --hmy-*
+   Filosofía: bordes suaves, sombras difuminadas, transiciones
+   fluidas 0.3s, espacios respiran, glassmorphism sutil.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── SIDEBAR V2 — glass effect + quick search ─── */
+.sidebar {
+    background: var(--hmy-glass-bg-dark, rgba(15, 15, 15, 0.72));
+    backdrop-filter: blur(var(--hmy-glass-blur, 20px));
+    -webkit-backdrop-filter: blur(var(--hmy-glass-blur, 20px));
+    border-right: 1px solid var(--hmy-glass-border, rgba(255, 255, 255, 0.06));
+    width: var(--layout-sidebar-w-expanded, 256px);
+    transition: width var(--hmy-transition-fluid, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+/* Sidebar quick search */
+.sidebar-quicksearch {
+    position: relative;
+    margin: 12px 14px 16px;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--hmy-radius-input, 12px);
+    padding: 8px 12px;
+    transition: all var(--hmy-transition-quick, 0.18s ease);
+}
+.sidebar-quicksearch:focus-within {
+    background: rgba(184, 150, 88, 0.08);
+    border-color: rgba(184, 150, 88, 0.3);
+    box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.12);
+}
+.sidebar-quicksearch-icon {
+    width: 14px;
+    height: 14px;
+    color: rgba(255, 255, 255, 0.45);
+    flex-shrink: 0;
+    margin-right: 8px;
+}
+.sidebar-quicksearch input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: inherit;
+    font-size: 0.82rem;
+    font-family: inherit;
+    min-width: 0;
+}
+.sidebar-quicksearch input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+.sidebar-quicksearch-kbd {
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.55);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    font-family: inherit;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Sidebar items HarmonyOS */
+.sidebar .nav-item {
+    border-radius: var(--hmy-radius-button, 12px) !important;
+    padding: 10px 14px !important;
+    margin: 2px 8px;
+    transition: all var(--hmy-transition-fluid, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+}
+.sidebar .nav-item:hover:not(.active):not(:disabled) {
+    background: rgba(184, 150, 88, 0.08);
+    color: #fff;
+    transform: translateX(2px);
+}
+.sidebar .nav-item.active {
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.18), rgba(184, 150, 88, 0.06));
+    color: #fff;
+    box-shadow: var(--hmy-shadow-soft-sm, 0 2px 12px rgba(0, 0, 0, 0.06));
+    border-left: 3px solid var(--brand-primary, #b89658);
+    padding-left: 11px !important;
+}
+
+/* Sidebar group headers — más sutiles, menos uppercase agresivo */
+.sidebar .nav-group-header {
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    padding: 12px 14px 6px;
+    border-radius: var(--hmy-radius-button, 12px);
+    transition: background var(--hmy-transition-quick, 0.18s ease);
+}
+.sidebar .nav-group-header:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+.sidebar .nav-group-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* Hide _hidden items in sidebar (router meta) */
+.sidebar .nav-item[data-hidden="true"] {
+    display: none;
+}
+
+/* ─── SIDEBAR — sidebar item filter (quick search) ─── */
+.sidebar.is-searching .nav-group-header,
+.sidebar.is-searching .nav-divider,
+.sidebar.is-searching .sidebar-profile {
+    display: none;
+}
+.sidebar.is-searching .nav-group {
+    margin-bottom: 0;
+}
+.sidebar.is-searching .nav-group-items {
+    display: block !important;
+    max-height: none !important;
+}
+.sidebar .nav-item--filtered-out {
+    display: none !important;
+}
+
+/* ─── WORKSPACE COLORS (§27 — paleta extendida) ─── */
+.sidebar .nav-group[data-workspace-color="coral"] .nav-group-icon { color: var(--ws-color-coral, #f97066); }
+.sidebar .nav-group[data-workspace-color="amber"] .nav-group-icon { color: var(--ws-color-amber, #f59e0b); }
+.sidebar .nav-group[data-workspace-color="cyan"] .nav-group-icon { color: var(--ws-color-cyan, #06b6d4); }
+
+/* Workspace accent borders en page-header de cada sección */
+.section[data-workspace-color="coral"] .page-header { border-top-color: var(--ws-color-coral, #f97066); }
+.section[data-workspace-color="amber"] .page-header { border-top-color: var(--ws-color-amber, #f59e0b); }
+.section[data-workspace-color="cyan"] .page-header  { border-top-color: var(--ws-color-cyan, #06b6d4); }
+
+/* ─── CARDS HARMONYOS (radii + shadows) ─── */
+.section .card,
+.dashboard-stat,
+.stat-card,
+.kpi-card,
+.alt-card {
+    border-radius: var(--hmy-radius-card-soft, 16px) !important;
+    box-shadow: var(--hmy-shadow-soft-sm, 0 2px 12px rgba(0, 0, 0, 0.06));
+    transition: box-shadow var(--hmy-transition-fluid, 0.3s ease),
+                transform var(--hmy-transition-fluid, 0.3s ease);
+}
+.section .card:hover,
+.dashboard-stat:hover,
+.stat-card:hover,
+.kpi-card:hover {
+    box-shadow: var(--hmy-shadow-soft-md, 0 4px 24px rgba(0, 0, 0, 0.08));
+    transform: translateY(-1px);
+}
+
+/* Modales con glassmorphism */
+.modal-content,
+.alt-modal {
+    border-radius: var(--hmy-radius-modal, 20px) !important;
+    box-shadow: var(--hmy-shadow-soft-xl, 0 24px 64px rgba(0, 0, 0, 0.12));
+    backdrop-filter: blur(8px);
+}
+
+/* Botones HarmonyOS — más redondeados + transiciones suaves */
+.btn,
+.alt-btn {
+    border-radius: var(--hmy-radius-button, 12px) !important;
+    transition: all var(--hmy-transition-fluid, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+}
+.btn:hover:not(:disabled),
+.alt-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+/* Inputs HarmonyOS */
+.form-input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+input[type="search"],
+input[type="url"],
+textarea,
+select {
+    border-radius: var(--hmy-radius-input, 12px) !important;
+    transition: all var(--hmy-transition-fluid, 0.3s ease);
+}
+.form-input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+    box-shadow: 0 0 0 4px rgba(184, 150, 88, 0.14);
+    outline: none;
+}
+
+/* prefers-reduced-motion respect */
+@media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .sidebar .nav-item,
+    .sidebar .nav-group-header,
+    .sidebar .nav-item:hover,
+    .sidebar-quicksearch,
+    .btn,
+    .alt-btn,
+    .section .card,
+    .form-input {
+        transition: none !important;
+    }
+    .sidebar .nav-item:hover {
+        transform: none !important;
+    }
+}

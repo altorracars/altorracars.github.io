@@ -231,15 +231,23 @@
             </button>
         </div>
 
-        <!-- B.1 (mega-plan v4) — Sidebar reorganizado en 7 grupos collapsables (8º Calendario en bloque D) -->
+        <!-- §27 ALTORRA HARMONY CRM — Sidebar reorganizado en 8 grupos lógicos -->
+        <!-- 18 vistas funcionales · Cero código muerto · Cero placeholders -->
 
-        <!-- 🏠 INICIO (standalone, no group) -->
+        <!-- 🔍 Quick search (filtra items del sidebar en vivo) -->
+        <div class="sidebar-quicksearch" id="sidebarQuickSearch">
+            <i data-lucide="search" class="sidebar-quicksearch-icon"></i>
+            <input type="text" id="sidebarSearchInput" placeholder="Buscar sección…" autocomplete="off">
+            <kbd class="sidebar-quicksearch-kbd">⌘K</kbd>
+        </div>
+
+        <!-- 🏠 INICIO -->
         <button class="nav-item active" data-section="dashboard">
-            <i data-lucide="layout-dashboard"></i>
+            <i data-lucide="home"></i>
             <span>Inicio</span>
         </button>
 
-        <!-- 🚗 INVENTARIO -->
+        <!-- 🚗 INVENTARIO (Vehículos · Marcas · Aliados) -->
         <div class="nav-group" data-group="inventario" data-workspace-color="gold">
             <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-inventario">
                 <i data-lucide="car" class="nav-group-icon"></i>
@@ -258,6 +266,17 @@
                 <button class="nav-item" data-section="dealers">
                     <i data-lucide="handshake"></i><span>Aliados</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- 🌐 SITIO PÚBLICO (NUEVO grupo — Banners/Reseñas extraídos de Inventario) -->
+        <div class="nav-group" data-group="sitio_publico" data-workspace-color="coral">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-sitio">
+                <i data-lucide="globe" class="nav-group-icon"></i>
+                <span class="nav-group-label">Sitio público</span>
+                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
+            </button>
+            <div class="nav-group-items" id="nav-group-sitio">
                 <button class="nav-item" data-section="banners">
                     <i data-lucide="image"></i><span>Banners</span>
                     <span class="nav-badge" id="navBadgeBanners"></span>
@@ -269,29 +288,7 @@
             </div>
         </div>
 
-        <!-- 💬 COMUNICACIONES -->
-        <div class="nav-group" data-group="comunicaciones" data-workspace-color="green">
-            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-comunicaciones">
-                <i data-lucide="messages-square" class="nav-group-icon"></i>
-                <span class="nav-group-label">Comunicaciones</span>
-                <i data-lucide="chevron-down" class="nav-group-chevron"></i>
-            </button>
-            <div class="nav-group-items" id="nav-group-comunicaciones">
-                <button class="nav-item" data-section="appointments">
-                    <i data-lucide="inbox"></i><span>Bandeja</span>
-                    <span class="nav-badge" id="navBadgeAppointments"></span>
-                </button>
-                <button class="nav-item" data-section="concierge">
-                    <i data-lucide="message-square-text"></i><span>ALTOR Hub</span>
-                    <span class="nav-badge" id="navBadgeConcierge"></span>
-                </button>
-                <button class="nav-item" data-section="lists">
-                    <i data-lucide="sparkles"></i><span>Leads (legacy)</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- 👥 CRM -->
+        <!-- 👥 CRM (UNIFICADO — Contactos · Bandeja · Pipeline en una sección con tabs) -->
         <div class="nav-group" data-group="crm" data-workspace-color="blue">
             <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-crm">
                 <i data-lucide="users-round" class="nav-group-icon"></i>
@@ -300,66 +297,64 @@
             </button>
             <div class="nav-group-items" id="nav-group-crm">
                 <button class="nav-item" data-section="crm">
-                    <i data-lucide="users-round"></i><span>Contactos 360°</span>
+                    <i data-lucide="users-round"></i><span>Contactos & Ventas</span>
                     <span class="nav-badge" id="navBadgeCrm"></span>
                 </button>
             </div>
         </div>
 
-        <!-- 📅 CALENDARIO (placeholder — se llena en bloque D) -->
-        <div class="nav-group" data-group="calendario" data-workspace-color="violet">
-            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-calendario">
+        <!-- 📅 AGENDA (Calendario con tabs internos: Mes/Día/Disponibilidad/Festivos) -->
+        <div class="nav-group" data-group="agenda" data-workspace-color="violet">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-agenda">
                 <i data-lucide="calendar" class="nav-group-icon"></i>
-                <span class="nav-group-label">Calendario</span>
+                <span class="nav-group-label">Agenda</span>
                 <i data-lucide="chevron-down" class="nav-group-chevron"></i>
             </button>
-            <div class="nav-group-items" id="nav-group-calendario">
+            <div class="nav-group-items" id="nav-group-agenda">
                 <button class="nav-item" data-section="calendar">
-                    <i data-lucide="calendar-clock"></i><span>Vista calendario</span>
+                    <i data-lucide="calendar"></i><span>Calendario</span>
+                    <span class="nav-badge" id="navBadgeCalendar"></span>
                 </button>
             </div>
         </div>
 
-        <!-- ⚡ AUTOMATIZACIÓN -->
-        <div class="nav-group" data-group="automatizacion" data-workspace-color="orange">
-            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-automatizacion">
-                <i data-lucide="zap" class="nav-group-icon"></i>
-                <span class="nav-group-label">Automatización</span>
+        <!-- 💬 COMUNICACIONES (ALTOR Hub · Cerebro AI · Lo que no entendí) -->
+        <div class="nav-group" data-group="comunicaciones" data-workspace-color="green">
+            <button class="nav-group-header" aria-expanded="true" aria-controls="nav-group-comunicaciones">
+                <i data-lucide="messages-square" class="nav-group-icon"></i>
+                <span class="nav-group-label">Comunicaciones</span>
                 <i data-lucide="chevron-down" class="nav-group-chevron"></i>
             </button>
-            <div class="nav-group-items" id="nav-group-automatizacion">
-                <button class="nav-item" data-section="automation">
-                    <i data-lucide="zap"></i><span>Reglas</span>
-                </button>
-                <button class="nav-item" data-section="templates">
-                    <i data-lucide="file-edit"></i><span>Plantillas</span>
+            <div class="nav-group-items" id="nav-group-comunicaciones">
+                <button class="nav-item" data-section="concierge">
+                    <i data-lucide="message-square-text"></i><span>ALTOR Hub</span>
+                    <span class="nav-badge" id="navBadgeConcierge"></span>
                 </button>
                 <button class="nav-item" data-section="kb">
-                    <i data-lucide="brain"></i><span>Cerebro Altorra AI</span>
+                    <i data-lucide="brain"></i><span>Cerebro AI</span>
                 </button>
                 <button class="nav-item" data-section="unmatched">
                     <i data-lucide="message-circle-question"></i><span>Lo que no entendí</span>
-                    <span id="navBadgeUnmatched" class="alt-badge alt-badge--warning" style="display:none;margin-left:auto;font-size:0.6rem;">0</span>
+                    <span id="navBadgeUnmatched" class="nav-badge"></span>
                 </button>
             </div>
         </div>
 
-        <!-- 📊 REPORTES (placeholder — se llena en bloque O) -->
+        <!-- 📊 REPORTES (NUEVO — implementado de cero, sin placeholders) -->
         <div class="nav-group" data-group="reportes" data-workspace-color="cyan">
             <button class="nav-group-header" aria-expanded="false" aria-controls="nav-group-reportes">
                 <i data-lucide="bar-chart-3" class="nav-group-icon"></i>
                 <span class="nav-group-label">Reportes</span>
-                <span class="alt-badge alt-badge--ai" style="margin-left:auto;font-size:0.6rem;">Pronto</span>
                 <i data-lucide="chevron-down" class="nav-group-chevron"></i>
             </button>
             <div class="nav-group-items" id="nav-group-reportes">
-                <button class="nav-item" data-section="reports-disabled" disabled style="opacity:0.5;cursor:not-allowed;">
+                <button class="nav-item" data-section="reports">
                     <i data-lucide="line-chart"></i><span>Dashboard ejecutivo</span>
                 </button>
             </div>
         </div>
 
-        <!-- ⚙️ CONFIGURACIÓN -->
+        <!-- ⚙️ CONFIGURACIÓN (Usuarios · Atributos · Workflows · Auditoría · Ajustes) -->
         <div class="nav-group" data-group="configuracion" data-workspace-color="neutral">
             <button class="nav-group-header" aria-expanded="false" aria-controls="nav-group-configuracion">
                 <i data-lucide="settings" class="nav-group-icon"></i>
@@ -369,6 +364,12 @@
             <div class="nav-group-items" id="nav-group-configuracion">
                 <button class="nav-item" data-section="users">
                     <i data-lucide="users"></i><span>Usuarios</span>
+                </button>
+                <button class="nav-item" data-section="lists">
+                    <i data-lucide="list-tree"></i><span>Atributos</span>
+                </button>
+                <button class="nav-item" data-section="workflows">
+                    <i data-lucide="zap"></i><span>Workflows</span>
                 </button>
                 <button class="nav-item" data-section="audit">
                     <i data-lucide="scroll-text"></i><span>Auditoría</span>
@@ -741,7 +742,7 @@
 
         <!-- SETTINGS -->
         <!-- APPOINTMENTS / CITAS — renamed to Comunicaciones in MF3.1 -->
-        <div id="sec-appointments" class="section" data-workspace-color="green">
+        <div id="sec-appointments" class="section" data-workspace-color="blue">
             <div class="page-header">
                 <div>
                     <h1>Centro de Comunicaciones</h1>
@@ -958,43 +959,33 @@
             </div>
         </div>
 
-        <!-- ALIADOS Y OPERACIONES -->
-        <!-- MF6.3 — Message templates section -->
-        <div id="sec-templates" class="section" data-workspace-color="orange">
-            <div class="page-header">
-                <div>
-                    <h1>Plantillas de Mensajes</h1>
-                    <p class="page-subtitle">Crea respuestas reutilizables con variables: <code>{{nombre}}</code>, <code>{{vehiculo}}</code>, <code>{{fecha}}</code>, <code>{{hora}}</code>, <code>{{tipo}}</code>.</p>
-                </div>
+        <!-- §27 — sec-templates eliminada del sidebar. Las plantillas se
+             integran como chips en ALTOR Hub (sub-panel "Plantillas rápidas"
+             dentro del chat detail). Datos en config/messageTemplates de
+             Firestore preservados — el commit 6 conecta el render.
+             admin-templates.js sigue cargando para mantener CRUD activo
+             pero NO mostramos su sección suelta. -->
+        <div id="sec-templates" class="section" data-workspace-color="amber" style="display:none;">
+            <!-- Mantenido oculto solo por compat con código que pueda
+                 referenciar #sec-templates. Eliminar definitivamente
+                 en commit 6 cuando integración con Hub esté lista. -->
+            <div class="msg-templates-add" style="display:none;">
+                <input type="text" id="tplNewLabel">
+                <select id="tplNewKind"><option value="general"></option></select>
+                <textarea id="tplNewText"></textarea>
+                <button id="tplAddBtn"></button>
             </div>
-            <div class="msg-templates-add">
-                <h3 style="margin:0 0 10px 0;font-size:1rem;">Nueva plantilla</h3>
-                <div style="display:grid;grid-template-columns:1fr 200px;gap:10px;margin-bottom:10px;">
-                    <input type="text" id="tplNewLabel" class="form-input" placeholder="Etiqueta (ej: Confirmar cita)">
-                    <select id="tplNewKind" class="form-select">
-                        <option value="general">General</option>
-                        <option value="cita">Cita</option>
-                        <option value="solicitud">Solicitud</option>
-                        <option value="lead">Lead</option>
-                    </select>
-                </div>
-                <textarea id="tplNewText" class="form-textarea" rows="3" placeholder="Hola {{nombre}}, tu cita para ver el {{vehiculo}} queda confirmada para el {{fecha}} a las {{hora}}."></textarea>
-                <div style="margin-top:10px;text-align:right;">
-                    <button class="btn btn-primary btn-sm" id="tplAddBtn">Agregar plantilla</button>
-                </div>
-            </div>
-            <h3 style="margin-top:24px;font-size:1rem;">Plantillas guardadas</h3>
-            <div class="msg-templates-list" id="messageTemplatesList">
-                <div class="table-empty">Cargando...</div>
-            </div>
+            <div class="msg-templates-list" id="messageTemplatesList"></div>
         </div>
 
-        <!-- MF6.1 — Automation rules section -->
-        <div id="sec-automation" class="section" data-workspace-color="orange">
+        <!-- §27 — sec-workflows (renombrado de sec-automation).
+             Promovida desde grupo "Automatización" → "Configuración".
+             ID interno automationRulesList preservado para compat con admin-automation.js. -->
+        <div id="sec-workflows" class="section" data-workspace-color="amber">
             <div class="page-header">
                 <div>
-                    <h1>Automatización — Reglas Inteligentes</h1>
-                    <p class="page-subtitle">Reglas que actúan automáticamente sobre nuevas comunicaciones (asignación, alertas, follow-ups).</p>
+                    <h1>Workflows · Automatización inteligente</h1>
+                    <p class="page-subtitle">Reglas que actúan automáticamente sobre nuevas comunicaciones (asignación, alertas, follow-ups SLA, recordatorios). Toggle ON/OFF + log de ejecuciones.</p>
                 </div>
             </div>
             <div class="automation-rules" id="automationRulesList">
@@ -1043,7 +1034,7 @@
 
         <!-- FASE 3 — Cerebro Altorra AI: identidad, contexto, instrucciones,
              FAQs y reglas de seguridad que alimentan al LLM en tiempo real -->
-        <div id="sec-kb" class="section" data-workspace-color="orange">
+        <div id="sec-kb" class="section" data-workspace-color="green">
             <div class="page-header">
                 <div>
                     <h1><i data-lucide="brain"></i> Cerebro Altorra AI</h1>
@@ -1241,7 +1232,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
              revisa y promueve a FAQ con un click. Esto hace que el bot
              "aprenda" sin pagar tokens LLM. Listener realtime sobre
              `unmatchedQueries/` Firestore (filtra seen=false). -->
-        <div id="sec-unmatched" class="section" data-workspace-color="orange">
+        <div id="sec-unmatched" class="section" data-workspace-color="green">
             <div class="page-header">
                 <div>
                     <h1><i data-lucide="message-circle-question"></i> Lo que no entendí</h1>
@@ -1523,7 +1514,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 
         <!-- LISTAS CONFIGURABLES -->
         <!-- ========== RESENAS ========== -->
-        <div id="sec-reviews" class="section" data-workspace-color="gold">
+        <div id="sec-reviews" class="section" data-workspace-color="coral">
             <div class="page-header">
                 <div>
                     <h1>Reseñas de Clientes</h1>
@@ -1675,7 +1666,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
         </div>
 
         <!-- ========== BANNERS ========== -->
-        <div id="sec-banners" class="section" data-workspace-color="gold">
+        <div id="sec-banners" class="section" data-workspace-color="coral">
             <div class="page-header">
                 <div>
                     <h1>Banners y Promociones</h1>
@@ -1839,6 +1830,29 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                     <button class="btn btn-ghost" id="cancelDeleteBanner">Cancelar</button>
                     <button class="btn" id="confirmDeleteBanner" style="background:#ef4444;color:white;">Eliminar</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- §27 ALTORRA HARMONY CRM — sec-reports (NUEVO).
+             Dashboard ejecutivo: Forecast ventas, Funnel, Performance equipo,
+             Anomalías. Implementación completa en commit 6 del refactor §27.
+             Por ahora placeholder con structure para no romper navegación. -->
+        <div id="sec-reports" class="section" data-workspace-color="cyan">
+            <div class="page-header">
+                <div>
+                    <h1>Dashboard ejecutivo</h1>
+                    <p class="page-subtitle">Métricas clave del negocio: ventas, conversión, performance del equipo, anomalías detectadas.</p>
+                </div>
+                <div>
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="reportsRefresh" data-tooltip="Refrescar datos">
+                        <i data-lucide="refresh-cw"></i> Refrescar
+                    </button>
+                </div>
+            </div>
+            <div id="reportsBody" style="padding: 24px; text-align: center; color: var(--text-secondary, #888);">
+                <div style="font-size: 3rem; margin-bottom: 12px;">📊</div>
+                <p style="margin: 0; font-weight: 500;">Reportes ejecutivos cargando...</p>
+                <p style="margin: 8px 0 0; font-size: 0.85rem; opacity: 0.7;">El módulo se implementa en commit 6 del refactor §27 (forecast ventas + funnel conversión + performance equipo + anomalías).</p>
             </div>
         </div>
 

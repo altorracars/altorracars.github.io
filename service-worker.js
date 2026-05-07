@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260509110000'; // §26.7 RESET PARPADEO + ADMIN DELETE: catch missing en resetSession + guard null en renderChatDetail
+const CACHE_VERSION = 'v20260510010000'; // §27.1 ALTORRA HARMONY CRM Foundation: tokens HarmonyOS + sidebar v2 con quick search + router REGISTRY/ALIASES rediseñado + 8 grupos lógicos
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

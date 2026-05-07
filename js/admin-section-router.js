@@ -27,34 +27,76 @@
        Add entries here when renaming. Keys are old, values are new.
        ═══════════════════════════════════════════════════════════ */
     var ALIASES = {
-        // Unificación de bandejas: deep-links viejos a #/inbox redirigen al
-        // Concierge unificado (mismo destino, sin código duplicado).
-        'inbox': 'concierge'
+        // §20.3 — Unificación de bandejas: deep-links viejos a #/inbox
+        // redirigen al Concierge unificado (mismo destino).
+        'inbox': 'concierge',
+        // §27 ALTORRA HARMONY CRM — Reorganización masiva del sidebar:
+        //   • "automation" (Reglas) → promovida a "workflows" en Config
+        //   • "templates" (Plantillas) → integradas como chips en ALTOR Hub
+        //     (deep-links viejos van al Hub para flow ininterrumpido)
+        //   • "reports-disabled" (placeholder) → sec-reports real
+        'automation': 'workflows',
+        'templates': 'concierge',
+        'reports-disabled': 'reports',
+        // Aliases UX para deep-links naturales en español
+        'contactos': 'crm',
+        'pipeline': 'crm',
+        'bandeja': 'crm',
+        'disponibilidad': 'calendar',
+        'workflow': 'workflows'
     };
 
     /* ═══════════════════════════════════════════════════════════
-       SECTION REGISTRY — metadata about each known section
-       Used by command palette (P.4), search, and analytics.
+       SECTION REGISTRY — §27 ALTORRA HARMONY CRM
+       Reorganizado en 8 grupos lógicos, 18 vistas funcionales.
+       Cero código muerto, cero placeholders.
+
+       Grupos:
+         1. (sin grupo)        — Inicio (dashboard productivo)
+         2. inventario         — Vehículos, Marcas, Aliados
+         3. sitio_publico      — Banners, Reseñas
+         4. crm                — CRM unificado (con tabs internos)
+         5. agenda             — Calendario (con tabs internos)
+         6. comunicaciones     — ALTOR Hub, Cerebro AI, Lo que no entendí
+         7. reportes           — Dashboard ejecutivo
+         8. configuracion      — Usuarios, Atributos, Workflows, Auditoría, Ajustes
        ═══════════════════════════════════════════════════════════ */
     var REGISTRY = {
-        dashboard:      { label: 'Inicio',           group: null,           icon: 'layout-dashboard' },
-        vehicles:       { label: 'Vehículos',        group: 'inventario',   icon: 'car' },
-        brands:         { label: 'Marcas',           group: 'inventario',   icon: 'tag' },
-        dealers:        { label: 'Aliados',          group: 'inventario',   icon: 'handshake' },
-        banners:        { label: 'Banners',          group: 'inventario',   icon: 'image' },
-        reviews:        { label: 'Reseñas',          group: 'inventario',   icon: 'star' },
-        appointments:   { label: 'Bandeja',          group: 'comunicaciones', icon: 'inbox' },
-        concierge:      { label: 'Inbox unificado',   group: 'comunicaciones', icon: 'message-square-text' },
-        lists:          { label: 'Leads (legacy)',   group: 'comunicaciones', icon: 'sparkles' },
-        crm:            { label: 'Contactos 360°',   group: 'crm',          icon: 'users-round' },
-        calendar:       { label: 'Calendario',       group: 'calendario',   icon: 'calendar-clock' },
-        automation:     { label: 'Reglas',           group: 'automatizacion', icon: 'zap' },
-        templates:      { label: 'Plantillas',       group: 'automatizacion', icon: 'file-edit' },
-        kb:             { label: 'Cerebro Altorra AI', group: 'automatizacion', icon: 'brain' },
-        unmatched:      { label: 'Lo que no entendí', group: 'automatizacion', icon: 'message-circle-question' },
-        users:          { label: 'Usuarios',         group: 'configuracion',icon: 'users' },
-        audit:          { label: 'Auditoría',        group: 'configuracion',icon: 'scroll-text' },
-        settings:       { label: 'Ajustes',          group: 'configuracion',icon: 'settings' }
+        // Inicio
+        dashboard:      { label: 'Inicio',           group: null,            icon: 'home' },
+
+        // Inventario
+        vehicles:       { label: 'Vehículos',        group: 'inventario',    icon: 'car' },
+        brands:         { label: 'Marcas',           group: 'inventario',    icon: 'tag' },
+        dealers:        { label: 'Aliados',          group: 'inventario',    icon: 'handshake' },
+
+        // Sitio público (NUEVO grupo — Banners/Reseñas extraídos de Inventario)
+        banners:        { label: 'Banners',          group: 'sitio_publico', icon: 'image' },
+        reviews:        { label: 'Reseñas',          group: 'sitio_publico', icon: 'star' },
+
+        // CRM (UNIFICADO — Contactos + Bandeja + Pipeline en una sección con tabs)
+        crm:            { label: 'CRM',              group: 'crm',           icon: 'users-round' },
+        appointments:   { label: 'Bandeja',          group: 'crm',           icon: 'inbox', _hidden: true },
+        // appointments queda como _hidden=true para no mostrarse en sidebar pero
+        // mantener el ID para deep-links + módulo admin-appointments.js que lo usa
+
+        // Agenda (con tabs internos: Mes / Día / Disponibilidad / Festivos)
+        calendar:       { label: 'Calendario',       group: 'agenda',        icon: 'calendar' },
+
+        // Comunicaciones
+        concierge:      { label: 'ALTOR Hub',        group: 'comunicaciones', icon: 'message-square-text' },
+        kb:             { label: 'Cerebro AI',       group: 'comunicaciones', icon: 'brain' },
+        unmatched:      { label: 'Lo que no entendí', group: 'comunicaciones', icon: 'message-circle-question' },
+
+        // Reportes (NUEVO — implementado de cero)
+        reports:        { label: 'Dashboard ejecutivo', group: 'reportes',   icon: 'bar-chart-3' },
+
+        // Configuración
+        users:          { label: 'Usuarios',         group: 'configuracion', icon: 'users' },
+        lists:          { label: 'Atributos',        group: 'configuracion', icon: 'list-tree' },
+        workflows:      { label: 'Workflows',        group: 'configuracion', icon: 'zap' },
+        audit:          { label: 'Auditoría',        group: 'configuracion', icon: 'scroll-text' },
+        settings:       { label: 'Ajustes',          group: 'configuracion', icon: 'settings' }
     };
 
     var listeners = [];

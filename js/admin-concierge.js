@@ -396,6 +396,8 @@
         if (!chat) return;
 
         renderChatDetail(chat, []);
+        // §26.3 — Notifica al wrapper para activar pane mobile
+        try { window.dispatchEvent(new Event('altor-hub:chat-opened')); } catch (e) {}
 
         // Suscribirse a los mensajes
         _messagesUnsub = window.db.collection('conciergeChats').doc(sessionId)
@@ -407,6 +409,9 @@
                     messages.push(Object.assign({ _id: doc.id }, doc.data()));
                 });
                 renderChatDetail(chat, messages);
+                // §26.3 — Auto-scroll a fondo solo si el admin está
+                // cerca del fondo (no interrumpe lectura de histórico)
+                setTimeout(scrollHubMessagesToBottom, 50);
             }, function () {});
     }
 
@@ -1272,11 +1277,49 @@
        ═══════════════════════════════════════════════════════════ */
     if (window.AltorraSections && window.AltorraSections.onChange) {
         window.AltorraSections.onChange(function (section) {
+            // §26.3 — Toggle body.altor-hub-active para activar el
+            // layout fullscreen Telegram-style. La sección concierge
+            // ocupa 100vh con sidebar admin de 56px collapsed.
             if (section === 'concierge') {
+                document.body.classList.add('altor-hub-active');
                 startChatsListener();
+                // Auto-scroll al fondo cuando llegue el primer render
+                setTimeout(scrollHubMessagesToBottom, 200);
+            } else {
+                document.body.classList.remove('altor-hub-active');
+                document.body.classList.remove('altor-hub-pane-active');
             }
         });
     }
+
+    /* §26.3 — Auto-scroll inteligente a las messages del Hub.
+       Solo auto-scrollea si el admin está cerca del fondo (últimos
+       100px). Si está leyendo histórico arriba, NO interrumpe. */
+    function scrollHubMessagesToBottom(force) {
+        var box = document.querySelector('.cnc-admin-detail-messages');
+        if (!box) return;
+        var nearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
+        if (force || nearBottom) {
+            box.scrollTop = box.scrollHeight;
+        }
+    }
+
+    /* §26.3 — Mobile back button: vuelve a la lista desde el detalle */
+    document.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('#altorHubMobileBack')) {
+            document.body.classList.remove('altor-hub-pane-active');
+            _activeSessionId = null;
+            if (_messagesUnsub) { try { _messagesUnsub(); } catch (err) {} _messagesUnsub = null; }
+            renderChatDetail(null, []);
+        }
+    });
+
+    /* §26.3 — Cuando se abre un chat en mobile, activa el pane */
+    var _origOpenChat = window.AltorraAdminConcierge && window.AltorraAdminConcierge.openChat;
+    window.addEventListener('altor-hub:chat-opened', function () {
+        document.body.classList.add('altor-hub-pane-active');
+        setTimeout(scrollHubMessagesToBottom, 100);
+    });
 
     // Auto-arranque: para que el badge de unread funcione globalmente
     var attempts = 0;

@@ -282,7 +282,7 @@
                     <span class="nav-badge" id="navBadgeAppointments"></span>
                 </button>
                 <button class="nav-item" data-section="concierge">
-                    <i data-lucide="message-square-text"></i><span>Inbox unificado</span>
+                    <i data-lucide="message-square-text"></i><span>ALTOR Hub</span>
                     <span class="nav-badge" id="navBadgeConcierge"></span>
                 </button>
                 <button class="nav-item" data-section="lists">
@@ -1274,40 +1274,57 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
             </div>
         </div>
 
-        <!-- U.10+U.11 (mega-plan v4) — Inbox unificado: TODA conversación de cliente
+        <!-- U.10+U.11 (mega-plan v4) — ALTOR Hub: TODA conversación de cliente
              (bot escalado + chats por vehículo) llega aquí. Reemplaza el sec-inbox
              legacy eliminado en la unificación de bandejas. -->
-        <div id="sec-concierge" class="section" data-workspace-color="green">
-            <div class="page-header">
-                <div>
-                    <h1>Inbox unificado</h1>
-                    <p class="page-subtitle">Todas las conversaciones de clientes en un solo lugar: chats del Concierge, escaladas a asesor y consultas por vehículo. Responde y mantén el contexto.</p>
-                </div>
-                <div>
-                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncCleanupOldBtn"
-                            data-secure-action data-secure-reason="Eliminar chats resueltos hace 14+ días"
-                            data-tooltip="Eliminar chats resueltos antiguos (>14 días)">
-                        <i data-lucide="trash-2"></i> Limpiar antiguos
+        <div id="sec-concierge" class="section altor-hub-section" data-workspace-color="green">
+            <!-- §26.3 — ALTOR Hub fullscreen wrapper. Activado con
+                 body.altor-hub-active cuando el admin entra a esta sección.
+                 Layout 100vh tipo Telegram/WhatsApp Web sin scroll de body. -->
+            <div class="altor-hub" id="altorHub">
+                <header class="altor-hub-header">
+                    <div class="altor-hub-title-block">
+                        <div class="altor-hub-brand">
+                            <span class="altor-hub-brand-icon">
+                                <i data-lucide="message-square-text"></i>
+                            </span>
+                            <div>
+                                <h1>ALTOR Hub</h1>
+                                <p class="altor-hub-subtitle">Centro de operaciones · Todas las conversaciones</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="altor-hub-actions">
+                        <button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncCleanupOldBtn"
+                                data-secure-action data-secure-reason="Eliminar chats resueltos hace 14+ días"
+                                data-tooltip="Eliminar chats resueltos antiguos (>14 días)">
+                            <i data-lucide="trash-2"></i>
+                            <span class="altor-hub-action-label">Limpiar antiguos</span>
+                        </button>
+                    </div>
+                </header>
+                <div class="altor-hub-body">
+                    <aside class="altor-hub-sidebar" id="altorHubSidebar">
+                        <div class="cnc-admin-filter-bar" id="conciergeFilterBar"></div>
+                        <div class="cnc-admin-list altor-hub-list" id="conciergeChatList">
+                            <div class="cnc-admin-empty">Cargando…</div>
+                        </div>
+                    </aside>
+                    <!-- Botón móvil: volver a la lista desde el detalle -->
+                    <button class="altor-hub-mobile-back" id="altorHubMobileBack" aria-label="Volver a la lista">
+                        <i data-lucide="arrow-left"></i>
                     </button>
+                    <main class="altor-hub-pane cnc-admin-detail" id="conciergeChatDetail">
+                        <div class="cnc-admin-detail-empty altor-hub-pane-empty">
+                            <i data-lucide="message-circle" style="width:48px;height:48px;opacity:0.3;"></i>
+                            <p>Seleccioná una conversación para responder</p>
+                        </div>
+                    </main>
                 </div>
-            </div>
-            <div class="cnc-admin-layout">
-                <aside class="cnc-admin-list-wrap">
-                    <div class="cnc-admin-filter-bar" id="conciergeFilterBar"></div>
-                    <div class="cnc-admin-list" id="conciergeChatList">
-                        <div class="cnc-admin-empty">Cargando…</div>
-                    </div>
-                </aside>
-                <main class="cnc-admin-detail" id="conciergeChatDetail">
-                    <div class="cnc-admin-detail-empty">
-                        <i data-lucide="message-circle" style="width:48px;height:48px;opacity:0.3;"></i>
-                        <p>Selecciona una conversación para responder</p>
-                    </div>
-                </main>
             </div>
         </div>
 
-        <!-- MF4.7 sec-inbox ELIMINADA — todo flujo unificado al sec-concierge (Inbox unificado).
+        <!-- MF4.7 sec-inbox ELIMINADA — todo flujo unificado al sec-concierge (ALTOR Hub).
              vehicle-thread.js + admin-inbox.js eliminados. mensajes/ Firestore deprecated. -->
 
         <!-- MF4.1 — CRM section -->
@@ -2694,7 +2711,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-fcm.js" defer></script>
 <script src="js/admin-color-extract.js" defer></script>
 <script src="js/admin-performance.js" defer></script>
-<!-- admin-inbox.js eliminado — unificado al Concierge (sec-concierge → Inbox unificado) -->
+<!-- admin-inbox.js eliminado — unificado al Concierge (sec-concierge → ALTOR Hub) -->
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>
 <script src="js/admin-templates.js" defer></script>

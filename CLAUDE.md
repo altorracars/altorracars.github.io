@@ -13748,3 +13748,182 @@ Listener captura clicks en `[data-vcard-action]`:
 - §26.3 Sprint ALTOR Hub UI Redesign — Telegram/WhatsApp standard
 - §26.4 Sprint Claiming Explícito + SLA UI fix + Persistencia cola
 - §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot $0
+
+### 26.3 Sprint ALTOR Hub UI — Telegram/WhatsApp standard fullscreen (2026-05-10)
+
+**Objetivo del sprint**: rebrand del "Inbox unificado" → **ALTOR Hub**
+y rediseño visual extremo del panel admin para que ocupe el 100% del
+viewport imitando la fluidez de Telegram Web / WhatsApp Web.
+
+#### A. Renombrado: "Inbox unificado" → "ALTOR Hub"
+
+Reemplazo global en `admin.html` (4 instancias):
+- Sidebar nav-item label
+- H1 del header de la sección
+- Comentario del HTML
+- Sección router register
+
+#### B. Layout fullscreen Telegram-style (`admin.html` + `css/admin.css`)
+
+Wrapper nuevo `<div class="altor-hub" id="altorHub">`:
+
+```
+┌──────────────────────────────────────────────────┐
+│ Header (logo + título + acciones)                │
+├──────────────────────────────────────────────────┤
+│ ┌──────────┬──────────────────────────────────┐ │
+│ │ Sidebar  │ Pane principal (chat activo)     │ │
+│ │ chats    │                                  │ │
+│ │ 340px    │ flex: 1                          │ │
+│ │          │                                  │ │
+│ │ filter   │ messages...                      │ │
+│ │ list     │ smart-suggestions [▼]            │ │
+│ │          │ [input + send]                   │ │
+│ └──────────┴──────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+```
+
+**Activación condicional**: cuando el admin entra a la sección
+`concierge`, JS aplica `body.altor-hub-active`. Esa clase activa CSS
+`position: fixed; inset: 0` (respetando `var(--sidebar-width, 240px)`
+del admin global). Cuando sale de la sección, se quita la clase y el
+admin vuelve al workspace normal.
+
+**Sync con sidebar collapse**: si `body.sidebar-collapsed` está
+activo (admin colapsó sidebar con ⌘+B §B.4), el Hub respeta los 56px
+del sidebar admin colapsado.
+
+#### C. Header del Hub (Telegram top bar)
+
+```html
+<header class="altor-hub-header">
+    <div class="altor-hub-brand">
+        <span class="altor-hub-brand-icon">📩</span>
+        <div>
+            <h1>ALTOR Hub</h1>
+            <p>Centro de operaciones · Todas las conversaciones</p>
+        </div>
+    </div>
+    <div class="altor-hub-actions">
+        <button>🗑 Limpiar antiguos</button>
+    </div>
+</header>
+```
+
+Diseño: glass dark con backdrop-filter blur 8px, border bottom dorado
+tenue, brand icon en cuadro dorado. Mobile: action label oculto, solo
+icon.
+
+#### D. Custom scrollbars dorados sutiles (CSS)
+
+Reemplaza scrollbars nativos feos por custom webkit:
+
+```css
+.altor-hub *::-webkit-scrollbar { width: 6px; }
+.altor-hub *::-webkit-scrollbar-track { background: transparent; }
+.altor-hub *::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.25);
+    border-radius: 3px;
+}
+.altor-hub *:hover::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.5);  /* visible al hover */
+}
+```
+
+Firefox fallback: `scrollbar-width: thin; scrollbar-color: rgba(184,
+150, 88, 0.3) transparent`.
+
+#### E. Auto-scroll inteligente (`scrollHubMessagesToBottom`)
+
+Función nueva en `js/admin-concierge.js`:
+
+```js
+function scrollHubMessagesToBottom(force) {
+    var box = document.querySelector('.cnc-admin-detail-messages');
+    if (!box) return;
+    var nearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
+    if (force || nearBottom) {
+        box.scrollTop = box.scrollHeight;
+    }
+}
+```
+
+**Patrón WhatsApp/Slack**: solo auto-scrollea si el admin está cerca
+del fondo (últimos 120px). Si está leyendo histórico arriba, NO
+interrumpe. Se llama:
+- Al abrir un chat: `setTimeout(scrollHubMessagesToBottom, 100)` (force)
+- Al recibir nuevo mensaje del listener: `setTimeout(..., 50)` (sin force)
+- Al entrar a la sección: 200ms después del primer render
+
+#### F. Smart Suggestions colapsables — chips horizontales
+
+CSS nuevo `.cnc-smart-suggestions` rediseña el panel del §22.12:
+
+- Antes: panel grande con 3 botones grandes (~80px verticales)
+- Ahora: chips horizontales con scroll-x (~26-50px verticales según
+  expanded/collapsed)
+- Toggle ⌃▾ al inicio para colapsar/expandir
+- `.cnc-smart-collapsed` reduce a 26px (solo header con toggle)
+- Scrollbar oculto en `.cnc-smart-scroll` (usa flick gesture mobile,
+  flecha desktop)
+
+Patrón Telegram quick replies. Ahorra ~40px verticales por defecto y
+~80px cuando colapsado.
+
+#### G. Ghost UI fix verificado (`admin-concierge.js` líneas 73-82)
+
+El bug estructural ya estaba cubierto desde §23 con `docChanges()`
+detectando 'removed' del chat activo y limpiando atómicamente
+`_activeSessionId` + `_messagesUnsub` + `renderChatDetail(null, [])`.
+Verificado en este sprint que sigue funcionando.
+
+#### H. Mobile single-pane con swipe back (`@media max-width: 900px`)
+
+- Sidebar ocupa 100% del width
+- Pane principal absolutamente posicionado fuera (`left: 100%`)
+- Al abrir un chat: `body.altor-hub-pane-active` mueve el pane a `left: 0`
+- Botón circular dorado `altor-hub-mobile-back` arriba-izquierda del
+  pane → vuelve a la lista
+- Transición 280ms cubic-bezier para sentirse nativo
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| `position: fixed; inset: 0` rompe el sidebar admin | CSS condicional `body.altor-hub-active` + respeta `var(--sidebar-width)` |
+| Auto-scroll interrumpe lectura de histórico | Detector `nearBottom < 120px` antes de scrollear |
+| Custom scrollbar invisible al primer paint | Visible siempre con opacity baja, hover lo intensifica |
+| Smart suggestions colapsadas pierden función | Toggle visible siempre como dot dorado, click expande |
+| Mobile pane queda detrás del sidebar admin | `left: 0` y `z-index: 5` cuando body.altor-hub-pane-active |
+| Mobile back button no se ve si chat está activo | `display: flex` solo cuando body.altor-hub-pane-active |
+| body.altor-hub-active queda colgado al cambiar sección | onChange listener remueve la clase si section ≠ 'concierge' |
+| sidebar-collapsed admin no actualiza Hub | CSS `body.altor-hub-active.sidebar-collapsed` aplica left: 56px |
+
+#### Test E2E del sprint
+
+1. Login admin → click sidebar item **"ALTOR Hub"** (renombrado)
+2. Verificar que la sección ocupa 100vh fullscreen + body sin scroll
+3. Custom scrollbars dorados sutiles en la lista de chats
+4. Click en una conversación → pane derecho muestra mensajes
+5. Auto-scroll baja al fondo automáticamente
+6. Scrollear hacia arriba a un mensaje viejo → recibir nuevo mensaje
+   → NO se interrumpe la lectura
+7. Smart suggestions aparecen como chips horizontales arriba del input
+8. Click toggle ⌃ → suggestions colapsan a 26px
+9. Mobile (resize <900px): sidebar ocupa 100%, click en chat desliza
+   pane desde la derecha, botón back vuelve
+10. Otro admin elimina el chat activo → pane se limpia + toast warning
+
+**Archivos modificados**:
+- `admin.html` (rebrand + nuevo wrapper altor-hub + mobile-back btn)
+- `css/admin.css` (~280 líneas .altor-hub-* + scrollbars + smart
+  suggestions colapsables + mobile responsive)
+- `js/admin-concierge.js` (toggle altor-hub-active al cambiar
+  sección + scrollHubMessagesToBottom + mobile-back handler +
+  altor-hub:chat-opened event al openChat)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260509070000)
+- `CLAUDE.md` (esta sección §26.3)
+
+**Pendiente del ADR-026** (próximos sprints):
+- §26.4 Sprint Claiming Explícito + SLA UI fix + Persistencia cola
+- §26.5 Sprint Reset Atomic + FCM denied + Telegram Bot $0

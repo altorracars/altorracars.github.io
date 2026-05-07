@@ -7212,3 +7212,301 @@ body.sidebar-collapsed .sidebar-collapse-btn i {
     cursor: not-allowed !important;
     background: rgba(255, 255, 255, 0.02) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   §26.3 — ALTOR HUB (Telegram/WhatsApp Web standard)
+   Activado con body.altor-hub-active. Layout 100vh fullscreen
+   con sidebar de chats + pane principal + opcional detail pane.
+   Custom webkit scrollbars dorados sutiles. Auto-scroll al fondo
+   en cada mensaje nuevo (manejado en JS).
+   ═══════════════════════════════════════════════════════════════ */
+body.altor-hub-active {
+    overflow: hidden; /* el body NO scrollea en modo Hub */
+}
+body.altor-hub-active .header,
+body.altor-hub-active .topbar,
+body.altor-hub-active .page-content > .section:not(.altor-hub-section) {
+    /* No tocamos el header del admin — el Hub vive dentro del workspace
+       respetando el sidebar global del admin. */
+}
+
+.altor-hub-section {
+    /* Cuando body.altor-hub-active está aplicado, esta sección llena el
+       área de contenido completa. Cancela el padding por defecto. */
+}
+body.altor-hub-active .altor-hub-section {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width, 240px);
+    right: 0;
+    bottom: 0;
+    padding: 0;
+    margin: 0;
+    z-index: 50;
+    background: var(--bg-base, #0a0a0a);
+    display: block;
+}
+body.altor-hub-active.sidebar-collapsed .altor-hub-section {
+    left: 56px; /* sidebar collapsed width */
+}
+
+.altor-hub {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--bg-base, #0a0a0a);
+    overflow: hidden;
+}
+
+/* Header del Hub — estilo Telegram top bar */
+.altor-hub-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: linear-gradient(180deg, rgba(20, 20, 20, 0.96), rgba(15, 15, 15, 0.92));
+    border-bottom: 1px solid rgba(184, 150, 88, 0.18);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+}
+.altor-hub-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.altor-hub-brand-icon {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(184, 150, 88, 0.25), rgba(184, 150, 88, 0.1));
+    border: 1px solid rgba(184, 150, 88, 0.4);
+    border-radius: 10px;
+    color: #b89658;
+}
+.altor-hub-brand h1 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #fff;
+    line-height: 1.1;
+}
+.altor-hub-subtitle {
+    margin: 2px 0 0;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+.altor-hub-actions {
+    display: flex;
+    gap: 8px;
+}
+@media (max-width: 600px) {
+    .altor-hub-action-label { display: none; }
+    .altor-hub-actions .alt-btn { padding: 6px 8px; }
+}
+
+/* Body — flex layout sidebar + pane */
+.altor-hub-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Sidebar de chats */
+.altor-hub-sidebar {
+    flex-shrink: 0;
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(15, 15, 15, 0.72);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+.altor-hub-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+/* Pane principal del chat activo */
+.altor-hub-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-base, #0a0a0a);
+    position: relative;
+}
+.altor-hub-pane-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.4);
+    gap: 12px;
+    padding: 40px;
+    text-align: center;
+}
+
+/* Botón mobile-back (visible solo en mobile cuando hay chat activo) */
+.altor-hub-mobile-back {
+    display: none;
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 20;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(184, 150, 88, 0.15);
+    border: 1px solid rgba(184, 150, 88, 0.4);
+    color: #b89658;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.altor-hub-mobile-back:hover {
+    background: rgba(184, 150, 88, 0.25);
+}
+
+/* ═══ Custom Webkit Scrollbars — dorados sutiles tipo Telegram ═══ */
+.altor-hub-list::-webkit-scrollbar,
+.cnc-admin-detail-messages::-webkit-scrollbar,
+.altor-hub *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.altor-hub-list::-webkit-scrollbar-track,
+.cnc-admin-detail-messages::-webkit-scrollbar-track,
+.altor-hub *::-webkit-scrollbar-track {
+    background: transparent;
+}
+.altor-hub-list::-webkit-scrollbar-thumb,
+.cnc-admin-detail-messages::-webkit-scrollbar-thumb,
+.altor-hub *::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.25);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+.altor-hub-list:hover::-webkit-scrollbar-thumb,
+.cnc-admin-detail-messages:hover::-webkit-scrollbar-thumb,
+.altor-hub *:hover::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.5);
+}
+/* Firefox */
+.altor-hub-list,
+.cnc-admin-detail-messages,
+.altor-hub *[data-scrollable] {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(184, 150, 88, 0.3) transparent;
+}
+
+/* ═══ Smart Suggestions colapsables — chips horizontales ═══
+   Reemplaza el panel grande del §22.12. Render compacto encima
+   del input, scroll horizontal para ahorrar espacio vertical. */
+.cnc-smart-suggestions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: linear-gradient(180deg, rgba(184, 150, 88, 0.05), rgba(184, 150, 88, 0.02));
+    border-top: 1px solid rgba(184, 150, 88, 0.15);
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+.cnc-smart-suggestions.cnc-smart-collapsed {
+    max-height: 26px;
+    padding: 2px 10px;
+}
+.cnc-smart-toggle {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid rgba(184, 150, 88, 0.3);
+    color: #b89658;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    transition: transform 0.3s ease;
+}
+.cnc-smart-toggle:hover { background: rgba(184, 150, 88, 0.1); }
+.cnc-smart-collapsed .cnc-smart-toggle { transform: rotate(180deg); }
+.cnc-smart-scroll {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+.cnc-smart-scroll::-webkit-scrollbar { display: none; }
+.cnc-smart-scroll { scrollbar-width: none; }
+.cnc-smart-chip {
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(184, 150, 88, 0.25);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 5px 12px;
+    border-radius: 14px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+.cnc-smart-chip:hover {
+    background: rgba(184, 150, 88, 0.15);
+    border-color: rgba(184, 150, 88, 0.5);
+    color: #fff;
+}
+.cnc-smart-chip-tag {
+    font-size: 0.6rem;
+    margin-right: 4px;
+    opacity: 0.7;
+}
+
+/* ═══ Mobile responsive — single pane con swipe back ═══ */
+@media (max-width: 900px) {
+    body.altor-hub-active .altor-hub-section {
+        left: 0; /* en mobile el sidebar admin no ocupa espacio */
+    }
+    .altor-hub-sidebar {
+        width: 100%;
+    }
+    .altor-hub-pane {
+        position: absolute;
+        top: 0;
+        left: 100%;
+        right: 0;
+        bottom: 0;
+        transition: left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        z-index: 5;
+    }
+    body.altor-hub-pane-active .altor-hub-pane {
+        left: 0;
+    }
+    body.altor-hub-pane-active .altor-hub-mobile-back {
+        display: flex;
+    }
+}
+
+/* prefers-reduced-motion: desactiva transiciones */
+@media (prefers-reduced-motion: reduce) {
+    .altor-hub-pane,
+    .cnc-smart-suggestions,
+    .cnc-smart-toggle,
+    .cnc-smart-chip {
+        transition: none !important;
+    }
+}

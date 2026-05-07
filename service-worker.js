@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260509060000'; // §26.2 VEHICLE GUIDE: cards inline con miniatura + reasoning humano + nextSteps CTAs
+const CACHE_VERSION = 'v20260509070000'; // §26.3 ALTOR HUB UI: Telegram-style fullscreen + custom scrollbars + auto-scroll + smart suggestions colapsables + mobile single-pane
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

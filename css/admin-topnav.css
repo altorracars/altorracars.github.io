@@ -57,8 +57,10 @@
 .admin-panel .atn-topnav {
     grid-area: topnav;
     position: relative;
-    z-index: 9990;            /* §36.1 — alto para que dropdowns no queden tapados */
-    isolation: isolate;       /* nuevo stacking context propio */
+    z-index: 9990;
+    /* §36.2 — RESTAURADO: NO usar isolation:isolate (atrapaba menús
+       dentro del stacking context del topnav). Sin esto, los menús
+       con position:fixed pueden apilarse sobre todo el contenido. */
 }
 
 .admin-panel main,
@@ -112,9 +114,18 @@
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 0 16px;
+    gap: 8px;                   /* §36.2 — más respiro entre secciones */
+    padding: 0 18px;
     box-sizing: border-box;
+}
+
+/* §36.2 — separadores verticales sutiles entre grupos del topnav */
+.atn-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.10);
+    margin: 0 4px;
+    flex-shrink: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -171,13 +182,14 @@
 .atn-tabs {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;                   /* §36.2 — respiro entre tabs */
     flex: 1;
     height: 100%;
     overflow-x: auto;
     overflow-y: visible;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    padding: 0 6px;             /* respiro lateral del grupo */
 }
 .atn-tabs::-webkit-scrollbar { display: none; }
 
@@ -192,13 +204,13 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    height: 36px;
-    padding: 0 12px;
+    gap: 8px;                   /* §36.2 — más espacio icono↔label */
+    height: 38px;
+    padding: 0 14px;            /* §36.2 — más padding interno */
     background: transparent;
     border: none;
     color: var(--atn-text);
-    font-size: 0.86rem;
+    font-size: 0.88rem;
     font-weight: 500;
     letter-spacing: -0.005em;
     border-radius: var(--atn-radius);
@@ -277,8 +289,11 @@
    6. DROPDOWNS — hover/click submenu por grupo
    ═══════════════════════════════════════════════════════════════════ */
 .atn-menu {
-    position: absolute;
-    top: calc(100% - 6px);
+    /* §36.2 — POSITION FIXED para escapar de overflow:hidden del grid
+       y de cualquier stacking context de main. JS posiciona top/left
+       via inline style on hover/open. */
+    position: fixed;
+    top: 0;
     left: 0;
     min-width: 240px;
     padding: 6px;
@@ -295,7 +310,7 @@
     transition: opacity var(--atn-d) var(--atn-spring),
                 transform var(--atn-d) var(--atn-spring),
                 visibility 0s linear var(--atn-d);
-    z-index: 9999;            /* §36.1 — sobre cualquier contenido del main */
+    z-index: 99999;           /* §36.2 — sobre TODO contenido del main */
 }
 
 .atn-tab-group:hover .atn-menu,
@@ -363,26 +378,26 @@
 .atn-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     flex-shrink: 0;
-    margin-left: 8px;
+    margin-left: 10px;
 }
 
 .atn-search-trigger {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    height: 34px;
-    padding: 0 10px 0 10px;
+    gap: 10px;
+    height: 36px;
+    padding: 0 12px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--atn-radius);
     color: var(--atn-text-muted);
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     cursor: pointer;
     font-family: inherit;
     transition: background-color var(--atn-d), border-color var(--atn-d), color var(--atn-d);
-    min-width: 200px;
+    min-width: 180px;
     text-align: left;
 }
 .atn-search-trigger i[data-lucide] {
@@ -446,15 +461,15 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    height: 36px;
-    padding: 2px 10px 2px 4px;
+    gap: 9px;
+    height: 38px;
+    padding: 2px 11px 2px 4px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--atn-radius);
     cursor: pointer;
     transition: background-color var(--atn-d), border-color var(--atn-d);
-    margin-left: 4px;
+    margin-left: 8px;
 }
 .atn-user:hover {
     background: var(--atn-gold-soft);
@@ -486,23 +501,28 @@
 .atn-user-info {
     display: flex;
     flex-direction: column;
-    line-height: 1.1;
+    line-height: 1.15;
     min-width: 0;
-    max-width: 140px;
+    max-width: 160px;
 }
 .atn-user-name {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: var(--atn-text-strong);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.2;
 }
 .atn-user-role {
-    font-size: 0.65rem;
+    font-size: 0.66rem;
     color: var(--atn-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+    margin-top: 1px;
 }
 
 .atn-user-chev {
@@ -513,8 +533,9 @@
 }
 
 .atn-user-menu {
-    position: absolute;
-    top: calc(100% + 6px);
+    /* §36.2 — POSITION FIXED igual que .atn-menu */
+    position: fixed;
+    top: 0;
     right: 0;
     min-width: 280px;
     padding: 6px;
@@ -531,7 +552,7 @@
     transition: opacity var(--atn-d) var(--atn-spring),
                 transform var(--atn-d) var(--atn-spring),
                 visibility 0s linear var(--atn-d);
-    z-index: 9999;            /* §36.1 — sobre el contenido */
+    z-index: 99999;
 }
 .atn-user[aria-expanded="true"] .atn-user-menu,
 .atn-user:focus-within .atn-user-menu {

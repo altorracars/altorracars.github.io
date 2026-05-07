@@ -1,0 +1,627 @@
+/**
+ * ALTORRA ADMIN V2 — Layout core (Sprint V2-1)
+ * =====================================================
+ * Capa final que ANCLA el layout para que NUNCA scrollee el body.
+ * Solo el <main> scrollea. Sidebar fija 100vh siempre visible.
+ *
+ * Estándar: Apple macOS Sonoma + HarmonyOS NEXT
+ *
+ * Carga ÚLTIMA en <head> para ganar especificidad sobre todas las
+ * capas anteriores (admin.css legacy + NOVA + Visionary).
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   1. VARIABLES V2
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+    --av2-sidebar-w-expanded:  268px;
+    --av2-sidebar-w-collapsed: 76px;
+    --av2-sidebar-w:           var(--av2-sidebar-w-expanded);
+    --av2-sidebar-margin:      14px;
+    --av2-radius-island:       20px;
+    --av2-radius-card:         16px;
+    --av2-radius-pill:         999px;
+    --av2-blur-island:         48px;
+    --av2-saturate-island:     200%;
+
+    --av2-spring:  cubic-bezier(0.22, 1, 0.36, 1);
+    --av2-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --av2-d-quick:  180ms;
+    --av2-d-fast:   240ms;
+    --av2-d-base:   360ms;
+
+    --av2-bg-base:        #0a0a0c;
+    --av2-bg-island:      rgba(20, 20, 22, 0.72);
+    --av2-bg-island-2:    rgba(15, 15, 17, 0.68);
+    --av2-border-glass:   1px solid rgba(255, 255, 255, 0.08);
+    --av2-border-glow:    1px solid rgba(184, 150, 88, 0.30);
+    --av2-shadow-island:
+        0 8px 32px rgba(0, 0, 0, 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2. ROOT — body NO scrollea (FIX scroll bug)
+   ═══════════════════════════════════════════════════════════════════ */
+html, body {
+    height: 100% !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+body {
+    background: var(--av2-bg-base);
+    /* Mesh gradient sutil */
+    background-image:
+        radial-gradient(ellipse 1200px 800px at 10% 0%,
+            rgba(184, 150, 88, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 900px 600px at 90% 100%,
+            rgba(139, 92, 246, 0.04) 0%, transparent 60%);
+    background-attachment: fixed;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3. ADMIN LAYOUT — Grid inquebrantable
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel.admin-layout {
+    display: grid !important;
+    grid-template-columns: var(--av2-sidebar-w) 1fr !important;
+    grid-template-rows: 100vh !important;
+    grid-template-areas: "sidebar main" !important;
+    height: 100vh !important;
+    width: 100vw !important;
+    overflow: hidden !important;
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    /* Smooth transition al colapsar */
+    transition: grid-template-columns var(--av2-d-base) var(--av2-spring);
+}
+
+.admin-panel.admin-layout.is-sidebar-collapsed,
+body.is-sidebar-collapsed .admin-panel.admin-layout {
+    --av2-sidebar-w: var(--av2-sidebar-w-collapsed) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   4. SIDEBAR — siempre visible, jamás desaparece
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    grid-area: sidebar !important;
+    position: relative !important;
+    /* Sticky no necesario porque el contenedor padre ya es 100vh */
+    height: 100vh !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: var(--av2-sidebar-margin) 0 var(--av2-sidebar-margin) var(--av2-sidebar-margin) !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border-right: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transition: padding var(--av2-d-base) var(--av2-spring);
+    z-index: 100;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-panel.is-sidebar-collapsed .sidebar,
+body.is-sidebar-collapsed .sidebar {
+    padding: var(--av2-sidebar-margin) 8px var(--av2-sidebar-margin) 8px !important;
+}
+
+/* La sidebar viejita ya tiene contenido — lo envolvemos visualmente
+   en una "isla" via ::before y ::after o aplicando estilos al primer
+   hijo que sea container */
+.admin-panel .sidebar > .sidebar-logo {
+    margin: 0 !important;
+}
+
+/* Crear la "isla" usando un wrapper interior virtual via background
+   en el .sidebar mismo */
+.admin-panel .sidebar::before {
+    content: '';
+    position: absolute;
+    top: var(--av2-sidebar-margin);
+    left: var(--av2-sidebar-margin);
+    right: 0;
+    bottom: var(--av2-sidebar-margin);
+    background:
+        linear-gradient(180deg,
+            var(--av2-bg-island) 0%,
+            var(--av2-bg-island-2) 100%);
+    backdrop-filter: blur(var(--av2-blur-island)) saturate(var(--av2-saturate-island));
+    -webkit-backdrop-filter: blur(var(--av2-blur-island)) saturate(var(--av2-saturate-island));
+    border: var(--av2-border-glass);
+    border-radius: var(--av2-radius-island);
+    box-shadow: var(--av2-shadow-island);
+    pointer-events: none;
+    z-index: -1;
+    transition: border-radius var(--av2-d-base) var(--av2-spring);
+}
+
+/* Sidebar contenido por encima del ::before */
+.admin-panel .sidebar > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Padding interior del contenido (después del wrapper visual) */
+.admin-panel .sidebar {
+    padding-top: calc(var(--av2-sidebar-margin) + 14px) !important;
+    padding-bottom: calc(var(--av2-sidebar-margin) + 14px) !important;
+    padding-left: calc(var(--av2-sidebar-margin) + 14px) !important;
+    padding-right: 14px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+.admin-panel.is-sidebar-collapsed .sidebar,
+body.is-sidebar-collapsed .sidebar {
+    padding-left: calc(8px + 8px) !important;
+    padding-right: 8px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5. MAIN — único elemento que scrollea
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .admin-main,
+.admin-panel #adminMain,
+.admin-panel .admin-content,
+.admin-panel main {
+    grid-area: main !important;
+    height: 100vh !important;
+    width: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    scroll-behavior: smooth;
+    box-sizing: border-box;
+    /* Performance — el navegador puede saltar render off-screen */
+    contain: layout style;
+}
+
+/* Si NO existe un elemento main wrapper (solo .section), envolver
+   las sections en grid-area main via fallback */
+.admin-panel > .section,
+.admin-panel > .admin-section,
+.admin-panel.admin-layout > .section,
+.admin-panel.admin-layout > .admin-section {
+    grid-area: main;
+}
+
+/* Cuando hay múltiples sections como children directos del grid,
+   apilarlas dentro del grid-area main */
+.admin-panel.admin-layout > .section:not(:first-of-type),
+.admin-panel.admin-layout > .admin-section:not(:first-of-type) {
+    grid-area: main;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   6. SECTIONS — fluid layout SIN max-width limitante
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .section,
+.admin-panel .admin-section {
+    padding: clamp(20px, 2vw, 36px) clamp(20px, 2.6vw, 48px) !important;
+    max-width: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* En monitores 4K+ centrar ligeramente el contenido para legibilidad */
+.admin-panel .section > .section-inner,
+.admin-panel .section > .av2-section-inner {
+    max-width: 1680px;
+    margin: 0 auto;
+}
+
+/* Section padding override agresivo sobre legacy */
+.admin-panel #sec-dashboard,
+.admin-panel #sec-vehicles,
+.admin-panel #sec-brands,
+.admin-panel #sec-dealers,
+.admin-panel #sec-banners,
+.admin-panel #sec-reviews,
+.admin-panel #sec-crm,
+.admin-panel #sec-appointments,
+.admin-panel #sec-calendar,
+.admin-panel #sec-workflows,
+.admin-panel #sec-templates,
+.admin-panel #sec-kb,
+.admin-panel #sec-unmatched,
+.admin-panel #sec-concierge,
+.admin-panel #sec-users,
+.admin-panel #sec-audit,
+.admin-panel #sec-settings,
+.admin-panel #sec-reports,
+.admin-panel #sec-lists {
+    padding: clamp(20px, 2vw, 36px) clamp(20px, 2.6vw, 48px) !important;
+    max-width: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+}
+
+/* Eliminar el wrapper .admin-content max-width legacy */
+.admin-panel .admin-content {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7. SCROLLBARS premium — invisible by default, visible on hover
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.admin-panel ::-webkit-scrollbar-track {
+    background: transparent;
+}
+.admin-panel ::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.18s ease;
+}
+.admin-panel:hover ::-webkit-scrollbar-thumb,
+.admin-panel *:hover > ::-webkit-scrollbar-thumb,
+.admin-panel *:focus-within > ::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.35);
+    background-clip: padding-box;
+}
+.admin-panel ::-webkit-scrollbar-thumb:hover {
+    background: rgba(184, 150, 88, 0.65);
+    background-clip: padding-box;
+}
+.admin-panel ::-webkit-scrollbar-corner {
+    background: transparent;
+}
+/* Firefox — thin transparent → gold on hover */
+.admin-panel * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+.admin-panel:hover *,
+.admin-panel *:hover {
+    scrollbar-color: rgba(184, 150, 88, 0.35) transparent;
+}
+
+/* HTML/body root scrollbar también invisible */
+html, body {
+    scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   8. MOBILE drawer — sidebar slide-in
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .admin-panel.admin-layout {
+        grid-template-columns: 1fr !important;
+        grid-template-areas: "main" !important;
+    }
+
+    .admin-panel .sidebar,
+    .admin-panel #adminSidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        width: min(290px, 86vw) !important;
+        z-index: 9999;
+        transform: translateX(-100%);
+        transition: transform var(--av2-d-base) var(--av2-spring);
+        padding: var(--av2-sidebar-margin) 0 var(--av2-sidebar-margin) var(--av2-sidebar-margin) !important;
+        overflow-y: auto;
+        overflow-x: hidden;
+        box-shadow: 32px 0 64px rgba(0, 0, 0, 0.55);
+    }
+    .admin-panel.is-sidebar-open .sidebar,
+    body.is-sidebar-open .sidebar,
+    body.sidebar-open .sidebar,
+    .admin-panel .sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    .admin-panel .sidebar::before {
+        top: var(--av2-sidebar-margin);
+        right: var(--av2-sidebar-margin);
+        bottom: var(--av2-sidebar-margin);
+        left: 0;
+    }
+
+    /* Backdrop scrim cuando sidebar abierto */
+    body.is-sidebar-open::before,
+    body.sidebar-open::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(4px);
+        z-index: 9998;
+        animation: av2ScrimIn 0.24s ease-out;
+    }
+    @keyframes av2ScrimIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    .admin-panel .section,
+    .admin-panel .admin-section {
+        padding: 16px !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9. ANIMATION cuando sidebar colapsa — labels fade
+   ═══════════════════════════════════════════════════════════════════ */
+.admin-panel .sidebar .nav-item,
+.admin-panel .sidebar .nav-group-header,
+.admin-panel .sidebar-quicksearch {
+    transition:
+        background var(--av2-d-quick) var(--av2-spring),
+        color var(--av2-d-quick) var(--av2-spring),
+        padding var(--av2-d-fast) var(--av2-spring),
+        opacity var(--av2-d-fast) var(--av2-spring);
+}
+
+.admin-panel.is-sidebar-collapsed .nav-item span,
+.admin-panel.is-sidebar-collapsed .nav-group-label,
+.admin-panel.is-sidebar-collapsed .sidebar-quicksearch input,
+.admin-panel.is-sidebar-collapsed .sidebar-quicksearch-kbd,
+.admin-panel.is-sidebar-collapsed .nav-badge,
+.admin-panel.is-sidebar-collapsed .nav-group-chevron,
+.admin-panel.is-sidebar-collapsed .sidebar-logo h2,
+.admin-panel.is-sidebar-collapsed .sidebar-logo small,
+body.is-sidebar-collapsed .nav-item span,
+body.is-sidebar-collapsed .nav-group-label,
+body.is-sidebar-collapsed .sidebar-quicksearch input,
+body.is-sidebar-collapsed .sidebar-quicksearch-kbd,
+body.is-sidebar-collapsed .nav-badge,
+body.is-sidebar-collapsed .nav-group-chevron,
+body.is-sidebar-collapsed .sidebar-logo h2,
+body.is-sidebar-collapsed .sidebar-logo small {
+    opacity: 0;
+    width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap;
+    pointer-events: none;
+}
+.admin-panel.is-sidebar-collapsed .nav-item,
+body.is-sidebar-collapsed .nav-item {
+    justify-content: center !important;
+    padding: 10px 8px !important;
+    gap: 0 !important;
+}
+.admin-panel.is-sidebar-collapsed .sidebar-quicksearch,
+body.is-sidebar-collapsed .sidebar-quicksearch {
+    padding: 10px !important;
+    justify-content: center !important;
+}
+.admin-panel.is-sidebar-collapsed .sidebar-logo,
+body.is-sidebar-collapsed .sidebar-logo {
+    padding-bottom: 8px !important;
+    text-align: center;
+}
+.admin-panel.is-sidebar-collapsed .nav-group-header,
+body.is-sidebar-collapsed .nav-group-header {
+    padding: 8px 0 4px !important;
+    justify-content: center !important;
+}
+.admin-panel.is-sidebar-collapsed .nav-group-icon,
+body.is-sidebar-collapsed .nav-group-icon {
+    margin: 0 auto;
+}
+
+/* En collapsed, mostrar tooltip al hover de cada nav-item */
+.admin-panel.is-sidebar-collapsed .nav-item[data-section]:hover::after,
+body.is-sidebar-collapsed .nav-item[data-section]:hover::after {
+    content: attr(data-tooltip-text);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(20, 20, 22, 0.95);
+    backdrop-filter: blur(16px);
+    color: rgba(255, 255, 255, 0.95);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 100;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   10. PURGE — Override de propiedades legacy peligrosas
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Eliminar overflow-y: scroll del body que causaba el bug */
+body {
+    overflow-y: hidden !important;
+}
+
+/* Eliminar transitions: all que son caras */
+.admin-panel *:not(.alt-toggle):not(.alt-toggle *) {
+    /* No usamos universal selector aquí porque rompería transitions
+       específicas. Solo gateamos casos peligrosos puntualmente. */
+}
+
+/* prefers-reduced-motion — desactiva todas las animaciones de V2 */
+@media (prefers-reduced-motion: reduce) {
+    .admin-panel *,
+    .admin-panel *::before,
+    .admin-panel *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-v2.css — Layout V2 Sprint V2-1
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   V2-5 — Fluid sections final + Purga inline styles common patterns
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Override de inline styles MUY comunes en HTML legacy ─── */
+.admin-panel [style*="max-width: 1280px"],
+.admin-panel [style*="max-width: 1200px"],
+.admin-panel [style*="max-width:1280px"],
+.admin-panel [style*="max-width:1200px"] {
+    max-width: 100% !important;
+}
+.admin-panel [style*="margin: 0 auto"]:not(.section-inner):not(.av2-section-inner),
+.admin-panel [style*="margin:0 auto"]:not(.section-inner):not(.av2-section-inner) {
+    margin: 0 !important;
+}
+
+/* ─── Section header padding fluid ─── */
+.admin-panel .section .page-header,
+.admin-panel .admin-section .page-header {
+    padding: clamp(20px, 2vw, 32px) clamp(20px, 2.4vw, 40px) clamp(16px, 1.6vw, 24px) !important;
+    margin-bottom: clamp(16px, 1.6vw, 24px) !important;
+    box-sizing: border-box;
+}
+
+/* ─── Tabla containers full width ─── */
+.admin-panel .table-container,
+.admin-panel .table-wrapper,
+.admin-panel .data-table,
+.admin-panel #vehiclesTable,
+.admin-panel #brandsTable,
+.admin-panel #usersTable {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* ─── Grid layout responsive en tarjetas ─── */
+.admin-panel .stats-grid,
+.admin-panel .kpis-grid,
+.admin-panel .reports-kpis,
+.admin-panel .hero-kpis,
+.admin-panel .cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)) !important;
+    gap: clamp(12px, 1vw, 18px) !important;
+    max-width: none !important;
+    width: 100% !important;
+}
+
+/* ─── Topbar refinement (si existe) ─── */
+.admin-panel .admin-header,
+.admin-panel .av2-topbar {
+    grid-area: main;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background:
+        linear-gradient(180deg,
+            rgba(20, 20, 22, 0.85) 0%,
+            rgba(15, 15, 17, 0.78) 100%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Sidebar collapse btn refinado ─── */
+.admin-panel .sidebar-collapse-btn {
+    position: absolute !important;
+    top: 22px !important;
+    right: 18px !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    color: rgba(255, 255, 255, 0.62) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer;
+    transition: all 0.18s var(--av2-spring) !important;
+    z-index: 10;
+}
+.admin-panel .sidebar-collapse-btn:hover {
+    background: rgba(184, 150, 88, 0.12) !important;
+    border-color: rgba(184, 150, 88, 0.40) !important;
+    color: #d4ad6e !important;
+}
+.admin-panel.is-sidebar-collapsed .sidebar-collapse-btn,
+body.is-sidebar-collapsed .sidebar-collapse-btn {
+    right: 50% !important;
+    transform: translateX(50%) !important;
+}
+
+/* ─── Mobile topbar (cuando hay) ─── */
+@media (max-width: 768px) {
+    .admin-panel .mobile-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background:
+            linear-gradient(180deg,
+                rgba(20, 20, 22, 0.92) 0%,
+                rgba(15, 15, 17, 0.85) 100%);
+        backdrop-filter: blur(28px) saturate(200%);
+        -webkit-backdrop-filter: blur(28px) saturate(200%);
+        border-bottom: 1px solid rgba(184, 150, 88, 0.20);
+        padding: 12px 16px;
+    }
+}
+
+/* ─── PERFORMANCE: contain en sections inactivas ─── */
+.admin-panel .section:not(.active),
+.admin-panel .admin-section:not(.active) {
+    content-visibility: hidden !important;
+    contain: strict !important;
+}
+.admin-panel .section.active,
+.admin-panel .admin-section.active {
+    content-visibility: auto !important;
+    contain: layout style !important;
+    contain-intrinsic-size: auto 600px !important;
+}
+
+/* ─── Cards content-visibility ─── */
+.admin-panel .kpi-card,
+.admin-panel .stat-card,
+.admin-panel .reports-kpi-card,
+.admin-panel .workflow-card,
+.admin-panel .pipeline-card,
+.admin-panel .nba-dash-item {
+    contain: layout style !important;
+    content-visibility: auto !important;
+    contain-intrinsic-size: auto 200px !important;
+}
+
+/* ─── Tabla rows con contain ─── */
+.admin-panel #vehiclesTable tbody tr,
+.admin-panel #brandsTable tbody tr,
+.admin-panel #usersTable tbody tr,
+.admin-panel .data-table tbody tr,
+.admin-panel .admin-table tbody tr {
+    contain: layout style !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-v2.css — V2-5 fluid sections + perf
+   ═══════════════════════════════════════════════════════════════════ */

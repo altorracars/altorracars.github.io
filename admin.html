@@ -1922,22 +1922,117 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
              Dashboard ejecutivo: Forecast ventas, Funnel, Performance equipo,
              Anomalías. Implementación completa en commit 6 del refactor §27.
              Por ahora placeholder con structure para no romper navegación. -->
+        <!-- §27.5 — REPORTES ejecutivos (NUEVO, implementado de cero).
+             Dashboard del mes con: KPIs ejecutivos · Funnel de conversión ·
+             Forecast de ventas (regresión lineal) · Performance asesores ·
+             Anomalías detectadas. Datos reactivos desde AP.appointments,
+             AP.vehicles, AltorraCRM. Modulares independientes del Inicio. -->
         <div id="sec-reports" class="section" data-workspace-color="cyan">
             <div class="page-header">
                 <div>
                     <h1>Dashboard ejecutivo</h1>
-                    <p class="page-subtitle">Métricas clave del negocio: ventas, conversión, performance del equipo, anomalías detectadas.</p>
+                    <p class="page-subtitle">Métricas clave del negocio · ventas · conversión · equipo · anomalías</p>
                 </div>
-                <div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <select id="reportsRange" class="form-select form-select--compact" style="min-width:160px;">
+                        <option value="month" selected>Último mes</option>
+                        <option value="quarter">Último trimestre</option>
+                        <option value="year">Último año</option>
+                    </select>
                     <button class="alt-btn alt-btn--ghost alt-btn--sm" id="reportsRefresh" data-tooltip="Refrescar datos">
                         <i data-lucide="refresh-cw"></i> Refrescar
                     </button>
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="reportsExportCSV" data-tooltip="Exportar a CSV">
+                        <i data-lucide="download"></i> CSV
+                    </button>
                 </div>
             </div>
-            <div id="reportsBody" style="padding: 24px; text-align: center; color: var(--text-secondary, #888);">
-                <div style="font-size: 3rem; margin-bottom: 12px;">📊</div>
-                <p style="margin: 0; font-weight: 500;">Reportes ejecutivos cargando...</p>
-                <p style="margin: 8px 0 0; font-size: 0.85rem; opacity: 0.7;">El módulo se implementa en commit 6 del refactor §27 (forecast ventas + funnel conversión + performance equipo + anomalías).</p>
+
+            <!-- KPIs ejecutivos del rango -->
+            <div class="reports-kpis" id="reportsKpis">
+                <div class="reports-kpi-card">
+                    <div class="reports-kpi-icon" style="background:rgba(16,185,129,0.12);color:#10b981;">
+                        <i data-lucide="trending-up"></i>
+                    </div>
+                    <div class="reports-kpi-body">
+                        <div class="reports-kpi-label">Ventas del periodo</div>
+                        <div class="reports-kpi-value" id="rkVentas">—</div>
+                        <div class="reports-kpi-sub" id="rkVentasSub"></div>
+                    </div>
+                </div>
+                <div class="reports-kpi-card">
+                    <div class="reports-kpi-icon" style="background:rgba(59,130,246,0.12);color:#3b82f6;">
+                        <i data-lucide="target"></i>
+                    </div>
+                    <div class="reports-kpi-body">
+                        <div class="reports-kpi-label">Tasa de conversión</div>
+                        <div class="reports-kpi-value" id="rkConversion">—</div>
+                        <div class="reports-kpi-sub" id="rkConversionSub">Leads → ventas</div>
+                    </div>
+                </div>
+                <div class="reports-kpi-card">
+                    <div class="reports-kpi-icon" style="background:rgba(184,150,88,0.18);color:#b89658;">
+                        <i data-lucide="dollar-sign"></i>
+                    </div>
+                    <div class="reports-kpi-body">
+                        <div class="reports-kpi-label">Ticket promedio</div>
+                        <div class="reports-kpi-value" id="rkTicket">—</div>
+                        <div class="reports-kpi-sub" id="rkTicketSub">Por venta</div>
+                    </div>
+                </div>
+                <div class="reports-kpi-card">
+                    <div class="reports-kpi-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">
+                        <i data-lucide="clock"></i>
+                    </div>
+                    <div class="reports-kpi-body">
+                        <div class="reports-kpi-label">Tiempo de respuesta</div>
+                        <div class="reports-kpi-value" id="rkResponseTime">—</div>
+                        <div class="reports-kpi-sub" id="rkResponseTimeSub">Promedio</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Funnel de conversión -->
+            <div class="reports-card">
+                <div class="reports-card-head">
+                    <h3><i data-lucide="filter"></i> Funnel de conversión</h3>
+                    <span class="reports-card-hint" id="reportsFunnelHint">—</span>
+                </div>
+                <div id="reportsFunnel" class="reports-funnel">
+                    <div class="pred-empty">Calculando funnel…</div>
+                </div>
+            </div>
+
+            <!-- Forecast de ventas con regresión lineal + R² -->
+            <div class="reports-card">
+                <div class="reports-card-head">
+                    <h3><i data-lucide="line-chart"></i> Forecast de ventas</h3>
+                    <span class="reports-card-hint" id="reportsForecastHint">Próximo mes</span>
+                </div>
+                <div id="reportsForecast" class="reports-forecast">
+                    <div class="pred-empty">Computando forecast…</div>
+                </div>
+            </div>
+
+            <!-- Performance del equipo (top asesores) -->
+            <div class="reports-card">
+                <div class="reports-card-head">
+                    <h3><i data-lucide="users"></i> Performance del equipo</h3>
+                    <span class="reports-card-hint">Top asesores del periodo</span>
+                </div>
+                <div id="reportsPerformance" class="reports-performance">
+                    <div class="pred-empty">Calculando ranking…</div>
+                </div>
+            </div>
+
+            <!-- Anomalías + insights del periodo -->
+            <div class="reports-card">
+                <div class="reports-card-head">
+                    <h3><i data-lucide="alert-triangle"></i> Anomalías y patrones detectados</h3>
+                </div>
+                <div id="reportsAnomalies" class="reports-anomalies">
+                    <div class="pred-empty">Analizando patrones…</div>
+                </div>
             </div>
         </div>
 
@@ -2876,6 +2971,8 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-pipeline.js" defer></script>
 <!-- §27.4 Agenda unificada — tabs Calendario / Disponibilidad / Festivos -->
 <script src="js/admin-calendar-tabs.js" defer></script>
+<!-- §27.5 Reportes ejecutivos — KPIs + Funnel + Forecast + Performance + Anomalías -->
+<script src="js/admin-reports.js" defer></script>
 <!-- admin-inbox.js eliminado — unificado al Concierge (sec-concierge → ALTOR Hub) -->
 <script src="js/admin-automation.js" defer></script>
 <script src="js/admin-followups.js" defer></script>

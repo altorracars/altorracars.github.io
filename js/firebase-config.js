@@ -109,6 +109,29 @@
             } catch (e) {
                 app = firebase.initializeApp(FIREBASE_CONFIG, APP_NAME);
             }
+
+            // §25.12 — DUAL-APP STRATEGY (default + namespaced)
+            // ──────────────────────────────────────────────────────────
+            // Firebase Compat SDK v11 tiene paths internos en
+            // RecaptchaVerifier, signInWithPhoneNumber, firebase.messaging
+            // y otros que IGNORAN el `app` pasado por parámetro y caen a
+            // `firebase.app()` (default). Sin default app inicializada,
+            // crashean con `[DEFAULT] has been created`.
+            //
+            // Solución: inicializar TAMBIÉN la default con la misma
+            // config. NO afecta el aislamiento de auth admin/web
+            // porque Firebase Auth diferencia storage keys por appName:
+            //   firebase:authUser:<apiKey>:[DEFAULT]
+            //   firebase:authUser:<apiKey>:altorra-admin
+            //   firebase:authUser:<apiKey>:altorra-public
+            // window.auth sigue apuntando al namespaced — la default
+            // solo existe para que SDK internals no fallen.
+            try {
+                firebase.app('[DEFAULT]');
+            } catch (e) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+            }
+
             var db = firebase.firestore(app);
             var auth = firebase.auth(app);
 

@@ -506,15 +506,23 @@
     // not complete, leaving the invisible widget in a broken state.
     function createRecaptchaVerifier(containerId) {
         cleanRecaptchaContainer(containerId);
-        // §25.11 fix — el 3er argumento de RecaptchaVerifier en Firebase
+        // §25.12 — Safe Initialization Guard.
+        // Garantiza que firebase está inicializado ANTES de instanciar
+        // RecaptchaVerifier. Si por alguna race condition extrema este
+        // call llegara antes de que firebase-config.js complete, falla
+        // explícitamente con un mensaje accionable en vez de un error
+        // críptico del SDK interno.
+        if (!window.firebase || !window.firebase.apps || window.firebase.apps.length === 0) {
+            throw new Error('Firebase no está inicializado en este scope. Revisá el orden de carga de scripts (firebase-config.js debe terminar antes de invocar 2FA).');
+        }
+        if (!window.firebaseApp) {
+            throw new Error('window.firebaseApp no expuesto. firebase-config.js no terminó de inicializar.');
+        }
+        // §25.11/§25.12 — el 3er argumento de RecaptchaVerifier en Firebase
         // Compat v11 espera `firebase.app.App`, NO `firebase.auth.Auth`.
-        // El hotfix anterior (§25, commit fe6055d) pasó `window.auth`
-        // (Auth instance) por error. Resultado: el SDK intentaba leer
-        // `app.options.apiKey` sobre un Auth → undefined → la request al
-        // Identity Toolkit se enviaba con `apiKey=undefined` → backend
-        // respondía `auth/invalid-api-key` → SMS nunca se enviaba.
-        // El argumento correcto es `window.firebaseApp` (App namespaced
-        // 'altorra-admin' expuesta por firebase-config.js).
+        // Pasamos window.firebaseApp (la app namespaced 'altorra-admin').
+        // Además, §25.12 init la default app como alias para que SDK
+        // internals que usan firebase.app() (sin args) no fallen.
         var verifier = new firebase.auth.RecaptchaVerifier(containerId, {
             size: 'invisible',
             callback: function() { /* solved */ },

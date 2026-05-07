@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510170000'; // §29.2 ADMIN-FINAL Sprint B — Components que faltaban: pagination buttons radius+gold active, presence overlay Mica + avatares hover scale, command palette ⌘+K Mica strong + items selected accent line, comments threaded refinados con --reply border-left dorado, activity feed entries hover dorado, global search results Mica blur, KPI tiles hover lift+glow, bulk actions bar pill Mica con animation novaBulkBarIn spring, kanban columns con scroll-snap + cards drag handle, notification center Mica strong, bell button shake animation on unread + hover rotate
+const CACHE_VERSION = 'v20260510180000'; // §29.3 ADMIN-FINAL Sprint C — Mobile admin polish: topbar Mica strong + safe-area iPhone notch + logo gradient text, hamburger button radius+animation refinada (45deg rotate), sidebar mobile drawer slide 86vw + Mica + safe-area bottom + overscroll contain, sidebar-overlay scrim+blur transition, touch targets 44px (Apple HIG), cards padding generoso, modal mobile padding 18x16 + footer botones full-width, tabs scroll-x scrollbar oculto, tablas scroll-x con fade indicator, KPIs 2 cols mobile/1 col phone, notification center full-width, wizard steps scroll horizontal nowrap, image gallery 90px mobile, PWA standalone header notch fix
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

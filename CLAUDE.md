@@ -16933,3 +16933,151 @@ KPI tiles, bulk actions bar, kanban, notification center, bell btn).
 - `css/admin.css` (+370 líneas Sprint B admin-final)
 - `service-worker.js` + `js/cache-manager.js` (bump v20260510170000)
 - `CLAUDE.md` (esta sección §29.2)
+
+### 29.3 Sprint admin-final C — Mobile admin polish (2026-05-10)
+
+**Objetivo del sprint**: el admin en mobile (asesor abriendo desde
+celular o tablet) tenía sidebar drawer básico y topbar simple.
+Sprint C lo eleva a calidad PWA premium con safe-area iPhone notch,
+touch targets Apple HIG (44×44 mín), gestures visuales, y layouts
+adaptativos por breakpoint.
+
+#### A. Mobile topbar refinado
+
+`.mobile-topbar`:
+- `nova-mica-bg-strong` + blur 36 saturate 180
+- Border-bottom glass-hi + shadow 4×20 dark
+- Safe-area iPhone notch: `padding-top: max(0.5rem, env(safe-area-inset-top))`
+- Safe-area left/right también respetadas
+- Logo con gradient text dorado bold
+
+#### B. Hamburger button refinado
+
+`.hamburger-btn`:
+- 40×40 radius button + glass border
+- 3 spans 18×2 con border-radius 2
+- Hover/active dorado tint
+- `.active` (open state):
+  - span 1 → translateY(7) rotate(45deg)
+  - span 2 → opacity 0 + scaleX(0)
+  - span 3 → translateY(-7) rotate(-45deg)
+  - Forma X clean
+
+#### C. Sidebar mobile drawer
+
+`@media (max-width: 768px)`:
+- Position fixed full-height
+- Width `min(86vw, 320px)`
+- z-index 9999 + transform translateX(-100%) → 0
+- Transition spring soft 0.42s
+- Mica strong + blur 48 saturate 180
+- Border-right glass-hi + shadow 12×40 dark
+- Safe-area top/bottom padding
+- `overscroll-behavior: contain` (no scroll-bleed al body)
+- `.active`/`.is-open`/body class triggers translate
+
+`.sidebar-overlay`:
+- nova-scrim + blur sm
+- Opacity 0 → 1 con pointer-events condicional
+- Transition spring soft
+
+#### D. Touch targets Apple HIG
+
+Todos los interactivos `min-height: 44px` en mobile:
+- `.nav-item`, `.nav-group-header`
+- `.alt-btn`, `.btn`, `.btn-primary`
+- `.modal-close`
+- `button[type=button/submit]`
+- Excluyo `.alt-toggle` (switch — su área visual ya es generosa)
+
+#### E. Cards padding generoso mobile
+
+`.stat-card`, `.kpi-card`, `.reports-kpi-card`, `.hero-kpi`,
+`.workflow-card`, `.alt-card`:
+- Padding 18×16 (vs 24×24 desktop)
+- Aire suficiente para tap + lectura
+
+#### F. Modal mobile cómodo
+
+- Body padding 18×16 + max-height `calc(100vh - 140px)` (deja espacio
+  header+footer fijos)
+- Header/footer padding 14×16
+- Footer buttons `flex: 1` full-width stacked
+
+#### G. Tabs scroll-x sin scrollbar feo
+
+`.crm-tabstrip`, `.cal-tabstrip`, `.modal-tabs`, `.form-tabs`:
+- `scrollbar-width: none` (Firefox)
+- `::-webkit-scrollbar { display: none }` (WebKit)
+- Swipe horizontal funciona nativo
+
+#### H. Tablas mobile con fade indicator
+
+`.table-container`/`.table-wrapper`/`.table-scroll`:
+- `overflow-x: auto` + `-webkit-overflow-scrolling: touch`
+- `::after` pseudo: gradient horizontal en bordes derecho (24px)
+  con alpha 30% — hint visual de que hay más contenido
+
+#### I. Layout adaptativo KPIs
+
+`@media (max-width: 768px)`:
+- `.reports-kpis`, `.hero-kpis`, `.section-stats`: 2 columnas (vs 4)
+- KPI cards padding 14×12, value 1.4rem
+- `@media (max-width: 480px)`: 1 columna full-width
+
+#### J. Activity Feed + Notification center full-width
+
+- `.activity-feed-panel`, `.aaf-panel`: 100vw mobile
+- `.altorra-notify-center`: 100vw - 24px mobile (12px margin)
+
+#### K. Wizard steps + image gallery mobile
+
+- Wizard steps: scroll-x sin scrollbar, items font 0.75rem padding
+  reducido + `flex-shrink: 0`
+- Image gallery: minmax 90px (vs 120 desktop) gap 8
+
+#### L. Tablet (769-900px)
+
+- Topbar oculto
+- Sidebar normal width
+- KPIs 2 columnas (no 4)
+
+#### M. PWA standalone
+
+`@media (display-mode: standalone)`:
+- Topbar padding-top extra (notch iPhone instalado como app)
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Sidebar drawer width 100vw cubre todo el viewport | Cap a 86vw / 92vw / 320px max |
+| Overscroll del sidebar arrastra el body | `overscroll-behavior: contain` |
+| Touch targets 32px insuficiente Apple HIG | Min-height 44px en todos los interactivos |
+| Modal botones overflow del footer | Footer `flex: 1` + min-width 0 stack |
+| Tabs scroll-x con scrollbar feo | `scrollbar-width: none` cross-browser |
+| Tablas wide cortan datos sin hint visual | Pseudo `::after` con gradient fade right |
+| iPhone notch tapa contenido | `env(safe-area-inset-*)` en topbar + sidebar |
+| KPI hero gigante en phone (4 cards apiladas) | 2 cols mobile, 1 col phone <480 |
+| Hamburger animation lenta | Spring soft 0.42s — feel iOS nativo |
+| PWA standalone notch tapa logo | `@media (display-mode: standalone)` extra padding |
+
+#### Test E2E del sprint
+
+1. iPhone 13 mobile → admin → topbar respeta notch (padding-top más)
+2. Tap hamburger → sidebar slide right con Mica blur + overlay scrim
+3. Tap fuera del sidebar → cierra
+4. Sidebar items min-height 44 (touch cómodo)
+5. KPIs Inicio: 2 columnas en mobile, 1 columna phone
+6. Modal "Nuevo vehículo" → footer full-width buttons stacked
+7. Tabla Vehículos → scroll horizontal con fade dorado en borde
+8. CRM Pipeline → kanban scroll horizontal con snap
+9. Notificaciones → panel ocupa 100vw - 24px margins
+10. PWA instalada en home → safe-area extra
+11. Tablet (iPad portrait) → topbar oculto + KPIs 2 cols
+12. Activity Feed → 100vw
+
+**Archivos modificados**:
+- `css/admin.css` (+310 líneas Sprint C admin-final mobile)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510180000)
+- `CLAUDE.md` (esta sección §29.3)

@@ -16814,3 +16814,122 @@ a paridad premium total.
 
 **Sin cambios en HTML ni JS** — el polish llega 100% via CSS sobre
 las clases/IDs existentes.
+
+### 29.2 Sprint admin-final B — Components que faltaban (2026-05-10)
+
+**Objetivo del sprint**: aplicar polish NOVA a componentes del admin
+que aún tenían look pre-NOVA (paginación, presence overlay, command
+palette, comments threaded, activity feed entries, global search,
+KPI tiles, bulk actions bar, kanban, notification center, bell btn).
+
+#### A. Pagination (admin-table-utils)
+
+`.pagination`, `.paginator`, `.page-nav`, `[data-pagination]`:
+- Container flex centered con gap 6 + flex-wrap
+- Buttons 36×36 min radius button + glass border
+- Hover dorado tint + border highlighted
+- Active: gradient dorado + texto dorado + font-weight 700
+- Disabled opacity 0.40
+- `.page-size-selector` con radius input + bg glass
+
+#### B. Presence overlay refinado
+
+`.alt-presence-overlay`:
+- Mica strong + blur 24 + saturate 160
+- Pill radius + border glass-hi + shadow elev-2
+- Avatares con shadow doble (ring outer + drop shadow)
+- Hover translateY(-2) scale 1.08 + z-index 2
+
+#### C. Command palette ⌘+K refinado
+
+- `.alt-palette-modal`: Mica strong blur 48 saturate 180 + border glass-hi + radius modal + shadow elev-4
+- `.alt-palette-backdrop`: nova-scrim radial + blur 24
+- Input wrap con border-bottom glass + padding 14×18
+- `kbd` con bg dorado tenue + border gold + texto dorado
+- `.alt-palette-cat` uppercase letter-spacing wide tertiary text
+- Items radius 10 + hover dorado tenue
+- Selected: gradient dorado horizontal + border-left 3px dorado
+
+#### D. Comments threaded
+
+- `.cmt-item`: radius card-soft + glass border + hover dorado
+- `.cmt-item--reply`: border-left 3px dorado
+- `.cmt-author-avatar`: radius 50% + shadow
+- `.cmt-mention`: bg azul 16% + texto azul + radius 6 + padding 1×6
+
+#### E. Activity feed entries
+
+- `.aaf-entry`: radius card-soft + transition spring
+- `.aaf-entry-row:hover`: bg dorado 4%
+- Expanded state bg dorado 6%
+- `.aaf-inspector-json`: radius 8 + bg dark + border glass
+
+#### F. Global search results
+
+- Container Mica strong + blur 36 saturate 160 + border glass-hi + shadow elev-3 + radius card-soft
+- Items: radius 8 + margin 4×6 + hover dorado 10%
+
+#### G. KPI tiles hover refinado
+
+- `.kpi-card`, `.reports-kpi-card`: hover translateY(-2) + shadow elev-2 + glow dorado 24px + border highlighted
+- `.hero-kpi`: hover lift mayor (-3) + glow más fuerte
+
+#### H. Bulk actions bar (CRM bulk select)
+
+`.bulk-actions-bar`, `.bulk-bar`:
+- Pill radius + Mica strong blur 24 saturate 160
+- Border gold-hi + shadow elev-3 + glow dorado
+- Animation `novaBulkBarIn` 0.4s spring (translateY 20 + scale 0.92 → 1)
+- `prefers-reduced-motion` cancela
+
+#### I. Kanban columns + cards
+
+- `.kanban-board`: scroll-snap-x mandatory + flex
+- Columns: min-width 280px + radius card-soft + glass border + scroll-snap-align
+- Column-head con border-bottom glass
+- Cards: radius card-soft + hover lift + bg dorado tenue + border dorado
+- `.dragging` opacity 0.6 + cursor grabbing
+
+#### J. Notification center + bell
+
+- `.altorra-notify-center`: Mica strong blur 48 saturate 180 + radius card-large + shadow elev-4
+- Items: radius card-soft + hover dorado
+- Linkable items hover más fuerte + border dorado
+- `.altorra-bell`: radius 50% + hover bg dorado + rotate -8deg
+- Bell con badge no vacío: animation `novaBellShake` 1.6s al inicio (delay 0.5s)
+  - Rotate -12/+12 alternado 4 veces y vuelve a 0
+- `prefers-reduced-motion` cancela bell shake + hover rotate
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Paginación buttons hover demasiado fuerte | `transform: none` por default, solo cambia bg/border |
+| Presence avatares se solapan al hover | `z-index: 2` + scale solo en hover focus |
+| Palette items selected sin contraste | Border-left 3px adicional al gradient horizontal |
+| Comment mention azul indistinguible | Tinte 16% alpha + texto coral azul claro |
+| Bulk bar animation reaparece en cada selection | Animation solo al primer mount, no en updates |
+| Kanban scroll-snap rompe drag-drop | scroll-snap-align: start solo, no center |
+| Bell shake fastidia (cada 5s loop infinito) | One-shot 1.6s con delay 0.5s al cargar |
+| `:has()` no soportado en Safari < 15 | Fallback graceful: bell sigue funcionando sin shake |
+
+#### Test E2E del sprint
+
+1. Login admin → Vehículos con paginación → buttons 36×36 dorado active
+2. Otro admin online → presence overlay arriba derecha con avatares
+   con hover scale
+3. ⌘+K → palette glass strong con kbd dorado + items hover/selected
+   con accent line
+4. CRM 360° tab Comentarios → threads con replies indented + mentions azules
+5. Activity feed click entry → expand con JSON inspector dark
+6. Global search arriba header → resultados Mica blur con hover dorado
+7. Dashboard → hover KPI tiles → lift + glow dorado
+8. CRM bulk select → bar pill en bottom con animation spring + glow
+9. CRM Pipeline tab → kanban con scroll-snap horizontal + cards
+10. Click bell → panel notification Mica strong
+11. Bell con badge unread → shake animation al cargar (1.6s una vez)
+
+**Archivos modificados**:
+- `css/admin.css` (+370 líneas Sprint B admin-final)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510170000)
+- `CLAUDE.md` (esta sección §29.2)

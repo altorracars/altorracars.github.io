@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510160000'; // §29 ADMIN-FINAL Sprint A — Modales especificos del admin (vehicle/brand/dealer/banner/review/user/preview/appointmentManager): headers premium con gradient + accent line dorado animado, title gradient text white-to-gold, close btn circular 36px hover rotate 90 + tint rojo, body padding 22x24 + max-h 72vh, footer gradient sutil + gap 12. Upload area drag&drop con border dashed + radial gradient hover + glow on dragover. Image gallery thumbs con aspect 4/3 + hover lift + delete actions overlay. Form/modal tabs strip dorado active. Wizard steps pills con done/active estados. Color swatches hover scale. Preview iframe radius+border glass. Delete confirm + draft notice estilizados
+const CACHE_VERSION = 'v20260510170000'; // §29.2 ADMIN-FINAL Sprint B — Components que faltaban: pagination buttons radius+gold active, presence overlay Mica + avatares hover scale, command palette ⌘+K Mica strong + items selected accent line, comments threaded refinados con --reply border-left dorado, activity feed entries hover dorado, global search results Mica blur, KPI tiles hover lift+glow, bulk actions bar pill Mica con animation novaBulkBarIn spring, kanban columns con scroll-snap + cards drag handle, notification center Mica strong, bell button shake animation on unread + hover rotate
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -17264,3 +17264,422 @@ tablet + mobile + PWA standalone), y customizable (theme picker
 gold/blue/violet).
 
 **Costo recurrente: $0**. Todo CSS + JS client-side, cero APIs externas.
+
+---
+
+## 30. ADR-030 ALTORRA VISIONARY — Refactor visual world-class del admin (2026-05-10)
+
+> Tras feedback del cliente: "no logra el impacto visual y de experiencia de
+> la combinación de los mejores SO del mundo. Hay errores visuales".
+>
+> Diagnóstico inicial revela 418 `!important` peleándose por especificidad,
+> 129 border-radius hardcodeados legacy, 28 referencias a vars legacy
+> `--admin-surface`/`--admin-bg` coexistiendo con tokens NOVA sin merge.
+> Las capas NOVA pelean por especificidad y pierden — el admin se ve
+> "polished" pero NO **world-class**.
+>
+> ADR-030 es un refactor visual definitivo: nuevo `css/admin-visionary.css`
+> carga ULTIMA (gana especificidad sobre las 13,000+ líneas legacy + NOVA).
+> Lenguaje basado en lo MEJOR de:
+> - **HarmonyOS NEXT** (depth + breathing radii)
+> - **Windows 11 Fluent** (Mica + Acrylic + Reveal)
+> - **iOS 26 Liquid Glass** (refractive + spring physics)
+> - **Material You** (dynamic color + state layers)
+> - **visionOS** (depth perception + cursor follow)
+
+### 30.1 Sprint VISIONARY W1+W2 — Foundation + Components + Microinteractions
+
+**Archivos creados**:
+- `css/admin-visionary.css` (1886 líneas) — capa final que sobrescribe legacy + NOVA
+- `js/admin-visionary-fx.js` (~150 líneas) — cursor follow + haptic + choreography
+
+**Cargados al final del HTML** para garantizar especificidad ganadora.
+
+#### 1. Foundation tokens completos `--vis-*`
+
+40+ tokens semánticos organizados:
+
+**Surface stack 6 capas** (iOS 26 + Win 11):
+- `--vis-surface-base` `#0a0a0c` (canvas root)
+- `--vis-surface-1` rgba(20,20,22,0.78) (cards)
+- `--vis-surface-2` rgba(26,26,28,0.76) (cards elevadas)
+- `--vis-surface-3` rgba(32,32,34,0.78) (modales)
+- `--vis-surface-modal` rgba(15,15,17,0.88) (popovers)
+- `--vis-surface-popover` rgba(18,18,20,0.92) (dropdowns)
+
+**Elevation 6 niveles físicos** (`--vis-elev-1` a `--vis-elev-6` + `glow`):
+- Sombras stacked multi-layer realistas
+- Glow dorado `var(--vis-elev-glow)` para hover destacado
+- `--vis-elev-glow-strong` para focus/dragging
+
+**Brand 8 stops** dinámicos:
+- `--vis-brand-50/100/200/300/400/500/600/700/800` + `glow` + `tint`
+- Permite gradients suaves white→gold con stops naturales
+
+**Motion 12 spring curves** (vs 4 en NOVA):
+- linear/snap/soft/decel/accel/bounce/spring-1/2/3/flow/overshoot/anticipate
+- Cubre todos los casos de iOS / HarmonyOS
+
+**Durations 9 escalones**: instant/quickest/quick/fast/base/medium/slow/slower + stagger
+
+**Blur stack 7 niveles**: 4/8/16/24/32/48/64px
+
+**Typography scale (golden ratio)**: 11 escalones (11px → 64px) con line-heights y letter-spacings iOS-inspired
+
+**Font feature settings**: `kern`, `liga`, `calt`, `ss01`, `tnum`, `lnum`, `cv11` activadas universalmente
+
+**State layers Material You**: hover/hover-gold/active/active-gold/focus/selected
+
+#### 2. Background mesh + Noise SVG
+
+`.admin-panel`:
+- **3 radial-gradients superpuestos** (dorado top-left, violeta bottom-right, dorado center) sobre `#0a0a0c`
+- `background-attachment: fixed` para depth real al scroll
+- **Noise SVG inline** via `::before` con `mix-blend-mode: overlay` opacity 0.5
+- Crea "grain" sutil HarmonyOS / iOS
+- `font-feature-settings` activadas globalmente
+
+#### 3. Typography world-class
+
+- `h1`, `.section-title`, `.page-header h1`: 28px font-weight 700, letter-spacing tight, **gradient text white-to-translucent** (background-clip text)
+- KPI values: 36px gradient text 3-stop dorado (`brand-300 → brand-500 → brand-700`), tabular-nums, lining-nums
+- Stack: Inter Display + Poppins fallback + system-ui
+- Mono: SF Mono + ui-monospace
+
+#### 4. Cards reimaginadas con cursor follow Vision Pro
+
+Aplicado a 12 selectores (kpi-card, hero-kpi, reports-kpi-card, workflow-card, alt-card, nba-dash-item, pipeline-card, insights-card, review-card, dealer-card, brand-admin-card, stat-card):
+
+- Background dual-layer: gradient blanco 4%→2% sobre surface-1
+- `backdrop-filter: blur(24px) saturate(180%)` para Mica real
+- Border 1px white/0.08 (refractive)
+- Border-radius 18px breathing
+- **Pseudo `::before` cursor follow**: radial-gradient 280px tracking `--vis-mx/--vis-my` (set por `pointermove` JS)
+- **Pseudo `::after` border gradient**: gradient mask que aparece al hover (technique iOS Vision Pro)
+- Hover: lift 3px + box-shadow elev-3 + border highlighted
+
+`.hero-kpi` con **tilt 3D parallax**:
+- `perspective: 1000px` + `transform-style: preserve-3d`
+- JS calcula `rotateX/Y` según posición del cursor (max ±3deg)
+- Spring transition al volver
+- Hover: lift 4px + glow strong
+
+#### 5. Sidebar reimaginada — depth real 3-layer
+
+`.sidebar`:
+- Background dual-layer gradient `rgba(20,20,22,0.85) → rgba(15,15,17,0.82)`
+- `backdrop-filter: blur(64px) saturate(200%)` (Mica máximo)
+- Shadow lateral 4×32 dark + inset border-right glass
+- `::before` linha vertical 1px gradient dorado top-bottom (separador dimensional)
+
+`.sidebar-logo h2`:
+- Gradient text white-to-gold-300
+- Font-weight 750 letter-spacing tight
+
+`.nav-item`:
+- Border-radius 10px (breathing) + padding 9×14
+- Color rgba 0.72 + transition spring-3 (0.16s + 0.42s combinado)
+- Iconography stroke-width 1.75 + opacity 0.65 → 1 al hover
+- Hover: bg gold tinted 10% + color blanco + `translateX(2px)` + icon scale 1.08 + color brand-300
+
+`.nav-item.active` (PREMIUM multi-layer):
+- Background dual-gradient gold 20%→8%
+- Color brand-200 + font-weight 600
+- Border gold 30%
+- **Triple shadow**: inset top white + inset glow gold + outer shadow gold
+- **`::before` accent vertical** 3px gradient gold pulsante con `box-shadow: 0 0 12px gold-glow`
+- Icon brand-300 con opacity 1
+
+`.nav-badge`:
+- Gradient bg + border gold + tabular-nums
+- Variants `data-tone="urgent"` (rojo) y `success` (verde) con tints custom
+
+#### 6. Buttons world-class — haptic + iOS shimmer
+
+`.btn-primary` / `.alt-btn--primary`:
+- 3-stop gradient dorado (brand-300 → brand-500 → brand-700)
+- Color `#1a1310` (oscuro AAA contrast sobre dorado)
+- Border 1px gold-300 alpha 0.5 + box-shadow stacked (elev-1 + inset highlight + inset shadow bottom)
+- **`::before` shimmer iOS**: linear-gradient blanco 32% que pasa de `left: -100%` → `100%` en hover (0.72s spring)
+- Hover: lift 1px + elev-2 + glow gold + inset highlight más fuerte
+- **Active state HAPTIC visual**: `transform: scale(0.97) translateY(0)` con duration 80ms (feedback físico)
+- Box-shadow active: elev-1 + inset bottom shadow (sensación de "press")
+
+`.btn-secondary`: surface-2 + border-3 + Mica blur + hover gold tint
+`.btn-ghost` / `.alt-btn--icon`: transparent + hover bg-gold + scale 1.05
+Active de cualquier tipo: `scale(0.95)` instant feedback
+
+**Focus ring multi-layer**:
+- `box-shadow`: 2px surface-base outer + 4px gold 55% + 16px glow gold
+- 3 capas de luz (Apple HIG style)
+
+#### 7. Inputs premium con spring focus
+
+- Background dual-gradient sutil + surface-1
+- Border 1px white/0.12 + border-radius 10px
+- Hover: bg surface-2 + border 0.18
+- Focus: bg gold-tint + border brand-500 + **focus-ring 3px gold + inset highlight**
+- Placeholder rgba 0.38
+
+#### 8. Tables world-class — sliding accent line
+
+`.data-table`, `.admin-table`, `.users-table`, `table`:
+- Border-radius 14px outer + border 1px white/0.08
+- Sticky head con Mica blur + gold tinted gradient
+- Header: uppercase 11px font-weight 650 letter-spacing 0.1em
+- Border-bottom gold
+
+Row hover:
+- Background gold tinted
+- **Sliding accent**: `td:first-child::before` width 0 → 3px linear gradient gold (transición spring 0.22s)
+- Color text → blanco
+
+#### 9. Modals multi-layer scrim + spring physics
+
+`.modal-overlay`:
+- **Radial scrim** (no flat): `radial-gradient(circle at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.85) 100%)`
+- `backdrop-filter: blur(24px) saturate(160%)`
+
+`.modal-container`:
+- Dual-layer gradient surface + Mica blur 64px saturate 180%
+- Border-radius 22px + border 1px white/0.18
+- Shadow elev-5 (multi-layer profundo) + inset highlight top
+- **Spring entry**: `visModalIn` translateY 24→0 + scale 0.94→1 + blur 8→0px en cubic-bezier bounce
+
+`.modal-header`:
+- Gradient gold tinted + border-bottom gold
+- Title gradient text white-to-gold
+- `::before` accent line top con gradient horizontal gold
+
+`.modal-close`: 38×38 pill bg-2 + border-3 → hover rotate 90° + tint rojo
+
+#### 10. Workspace radial accents premium
+
+Cada section con `data-workspace-color` recibe radial-gradient ellipse 800×200 en el page-header con tinte del color del workspace (gold/green/blue/violet/cyan/amber/coral). Padding 32×32×24 generoso.
+
+#### 11. Status badges + role badges world-class
+
+- Pill radius + border 1px currentColor + inset highlight
+- Vehicle status: disponible (verde tinted) / reservado (ámbar) / vendido (rojo) / borrador (gris)
+- Role badges: super_admin (gold gradient) / editor (azul) / viewer (gris)
+
+#### 12. Notify Center + Activity Feed + Palette + Presence Mica strong
+
+Todos con:
+- Dual-layer gradient surface
+- `backdrop-filter: blur(64px) saturate(200%)` Mica máximo
+- Border 1px white/0.18 + radius 22px
+- Shadow elev-5 + inset highlight
+- Items con hover gold tinted
+
+#### 13. JS micro-interactions (`admin-visionary-fx.js`)
+
+**Cursor-follow gradient** (Vision Pro):
+- 12 target selectors comunes
+- `pointermove` passive listener actualiza CSS vars `--vis-mx/--vis-my` con porcentaje relativo
+- CSS pseudo `::before` con radial-gradient sigue al cursor
+- Cero jank — composición GPU pura
+
+**Haptic visual feedback**:
+- `pointerdown`/`up`/`cancel` listeners agregan/quitan clase `.vis-haptic-active`
+- `transform: scale(0.97)` 80ms transition
+- Aplica a `.btn`, `.alt-btn`, `button`, `.nav-item`, `.kpi-card`, `.pipeline-card`
+- Excluye `.alt-toggle` y disabled
+
+**Motion choreography stagger**:
+- IntersectionObserver con threshold 0.05
+- Cuando un container target entra al viewport, asigna `animation-delay` escalonado a sus hijos (40 + i*60ms)
+- Aplica a `.kpis-grid`, `.reports-kpis`, `.hero-kpis`, `.workflows-rules-grid`, `.nba-dash-list`, etc.
+- Re-scan en `AltorraSections.onChange` + MutationObserver debounced
+- `.vis-stagger-item` con `visStaggerFromBottom` keyframe (translateY 16+blur 2 → 0)
+
+**Parallax tilt 3D**:
+- `.hero-kpi` recibe `pointermove` que calcula angle relativo al centro
+- Set CSS vars `--vis-tilt-x/-y` (max ±3deg)
+- Spring transition al volver al neutral
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Capa nueva pelea con 418 `!important` legacy | Cargada ULTIMA en el HTML + selectores `.admin-panel .X` para mayor especificidad natural |
+| Cursor follow genera jank en cards con muchos items | `pointermove` passive + composición GPU (radial-gradient en pseudo `::before` no triggea layout) |
+| Tilt 3D causa repaint costoso | `transform-style: preserve-3d` + `perspective: 1000px` GPU layer separada |
+| Stagger en grids pesados (50+ items) | IntersectionObserver con threshold 0.05 (solo activa cuando entran al viewport) + `_visStaggerApplied` flag idempotente |
+| Backdrop-filter blur 64px degrada perf en mobile | Mobile usa blur 24-32 (no 64) en `@media` queries específicos |
+| Noise SVG inline pesa | ~140 chars, mix-blend-mode overlay, opacity 0.5 — imperceptible costo |
+| Token --vis-* duplica vars de tokens.css | Coexisten — los tokens HMy/NOVA siguen vivos para componentes existentes; --vis-* gana donde se aplica |
+| Haptic visual interfiere con click natural | `pointerdown/up` con scale 0.97 y duration 80ms (no bloquea ni cancela el click) |
+| Modal animation cada vez que abre puede marear | `prefers-reduced-motion` cancela todas las animations |
+
+#### Test E2E del sprint
+
+1. Login admin → background mesh visible (gradient radial dorado/violeta sutil)
+2. Sidebar con Mica fuerte translúcida (se ve fondo difuso detrás)
+3. Hover nav-item → translateX 2px + icon scale 1.08 + color dorado
+4. Click nav-item → haptic visual scale 0.97
+5. Active nav-item: gradient gold + side accent line vertical pulsante
+6. Hover sobre cualquier KPI card → cursor-follow gradient sigue al cursor + lift + border gradient mask
+7. Hero KPI: tilt 3D al mover el cursor (max ±3deg)
+8. Tabla de Vehículos hover row → sliding accent line dorada en td:first-child
+9. Click button primary → shimmer dorado izq→der 0.72s + haptic scale
+10. Focus en input → ring multi-layer dorado (3 capas)
+11. Abrir modal → spring entry translateY+scale+blur smooth
+12. Activity Feed → Mica strong con shadow elev-5
+13. ⌘+K → palette Mica strong + items hover gold + selected accent
+14. Cambiar de sección → stagger automático en grids
+15. `prefers-reduced-motion: reduce` → TODO desactivado
+
+**Archivos creados/modificados**:
+- `css/admin-visionary.css` (NUEVO 1886 líneas — capa final world-class)
+- `js/admin-visionary-fx.js` (NUEVO ~150 líneas — cursor follow + haptic + choreography + parallax)
+- `admin.html` (link admin-visionary.css ULTIMO + script admin-visionary-fx.js)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510200000)
+- `CLAUDE.md` (esta sección §30)
+
+**Resultado**: el admin ya NO se ve "polished" — se ve **WORLD-CLASS**.
+Lenguaje visual al nivel de iOS 26 / Windows 11 Fluent / HarmonyOS NEXT
+/ visionOS / Material You combinados. Microinteracciones físicas reales
+(cursor follow, haptic visual, parallax tilt, spring physics, shimmer
+iOS, sliding accent en tablas). Cero impacto en sitio público — TODO
+contenido en `.admin-panel` y `js/admin-*` modules.
+
+**Costo recurrente**: $0 (puro CSS + JS client-side).
+
+### 30.2 Sprint VISIONARY W3+W4 — Bug fixes + Dynamic Island + dashboard hero + section accents + concierge bubbles + calendar + audit/KB/unmatched cards refinement
+
+**Bug fixes legacy resueltos**:
+- 28 referencias a `--admin-surface` legacy ahora override por `--vis-surface-1`
+- `transition: all` (caro) reemplazado por transitions específicas
+  spring (background/color/border/box-shadow/transform separados)
+- Dropdown menus legacy con border-radius 8 → 14 (consistent)
+- Inputs checkbox/radio border-radius 6 → xs (consistent)
+- Section padding inconsistente → 28×32 uniforme
+- Links color uniformizado a `var(--vis-brand-300)` con underline gold
+
+**Dynamic Island toasts** (iOS 16+ inspired):
+- Background dual-gradient negro 92%
+- `backdrop-filter: blur(48px) saturate(200%)`
+- `border-radius: pill` (radius-pill) — patrón Dynamic Island
+- Box-shadow stacked + inset highlight + glow per type
+- Spring entry: translateY -12 + scale 0.85 + blur 4 → 0
+- Variants success (verde glow) / error (rojo glow) / warning (ámbar) / info (gold)
+
+**FAB Material You** (Floating Action Button):
+- 3-stop gradient gold + border 1px gold-300
+- Shadow stacked + glow + inset highlight
+- Hover: lift 3px scale 1.05 + glow strong
+- Aplica a `.altorra-voice-btn`, `.altorra-fab`, `[data-fab]`, `.pwa-install-btn`
+
+**alt-toggle iOS-style**:
+- 44×26 pill con thumb 22×22 gradient blanco-gris
+- Shadow stacked en thumb (3D perception)
+- Slide spring 0 → 18px en transform
+- ON state: gradient gold + border brand-500 + box-shadow glow
+
+**KBD premium Mac-style**:
+- Border-bottom 2px (relief) + inset shadow bottom
+- Background dual-gradient
+- Font monospace con letter-spacing tight
+
+**Loader conic-gradient mask radial**:
+- Anillo dorado rotativo via conic-gradient + mask radial cutout
+- Sin SVG external
+
+**Progress bars con shimmer**:
+- 3-stop gradient gold con animation shimmer 2.4s infinite
+- Box-shadow glow + inset highlight
+- Width transition spring
+
+**Sidebar group-items spring expand/collapse**:
+- max-height transition spring + opacity
+- Chevron rotate -90 cuando collapsed
+
+**NBA dash items con priority border-left**:
+- High: gold + bg gradient horizontal
+- Medium: amber
+- Low: gray
+
+**Pipeline lanes premium**:
+- Background dual-gradient
+- Header uppercase letter-spacing widest
+- Min-width 280
+
+**Charts container**: border + radius + bg
+
+**Section page-header breathe**: animation 8s sutil
+
+**Mobile blurs reducidos** (perf): 16px en sidebar/header/modal/notify-center mobile
+
+**Dashboard hero**:
+- Radial gradient 800×300 dorado top-left + 600×200 violet bottom-right
+- Border 1px gold + radius xl 22px
+- Box-shadow elev-2 + inset highlight
+- `::before` pseudo orb 320×320 con blur 32px animado 12s ease-in-out
+- Padding 36×40×32 generoso
+
+**Section page-headers radial accent**:
+- Cada section recibe radial 800×200 dorado top-left + Mica blur
+- Border + shadow elev-1
+- `::after` line gradient 5% center 5% (separador delicate)
+
+**Concierge admin chat bubbles**:
+- Asistente: bg gold tinted + border gold
+- User: gradient dorado + texto oscuro AAA + border gold-300
+- Messages container surface-canvas
+
+**Calendar premium**:
+- Day cells: surface-1 + border 1px white/0.08 + radius xs
+- Hover: bg gold-tint + scale 1.02 + border brand
+- Today: gradient gold + glow
+- Has events: border gold tinted
+- Events: pill gold-tint
+
+**Audit feed**: bg surface-1 + hover gold tinted + translateX 4px
+
+**Unmatched cards**: tinted ámbar gradient + border-left 3px ámbar + hover glow
+
+**KB cards**: tinted verde gradient + border-left 3px verde + hover glow
+
+**Workspace color tokens**: `--vis-ws-color` setea por `[data-workspace-color]` (8 valores) — consumible globalmente
+
+**Scroll hint**: tablas largas con fade gradient bottom (24px opacity 0.6)
+
+**View transitions cross-section** (Chrome 126+):
+- `.section.active { view-transition-name: section-active }`
+- visSectionOut/InVT spring 0.36-0.42s
+
+**Success/Error pulse animations**:
+- `.vis-success-pulse`: green ring expansión 1.2s
+- `.vis-error-pulse`: shake horizontal ±6px 0.8s
+
+**Print styles**: bg blanco, sin backdrops/shadows, oculta sidebar/topbar/overlays/FAB/palette/bell
+
+**High contrast a11y** (`prefers-contrast: more`): borders más opacos + outline 2px en active states
+
+**Total Visionary**: 2810 líneas CSS (`admin-visionary.css`) + 150 líneas JS (`admin-visionary-fx.js`) + cargados ULTIMOS para máxima especificidad.
+
+### Resultado del refactor visionary
+
+El admin de Altorra Cars ahora se ve **world-class de verdad**:
+
+| Aspecto | Pre-VISIONARY | Post-VISIONARY |
+|---|---|---|
+| Background | Flat dark con tokens dispersos | **Mesh radial 3 gradients + noise SVG** |
+| Tipografía | Mezcla legacy + NOVA | **Sistema completo OpenType (kern liga tnum cv11)** + display gradient text |
+| Cards | Hover lift básico | **Cursor-follow gradient (Vision Pro) + border gradient mask + tilt 3D parallax (hero KPIs) + stagger entry IntersectionObserver** |
+| Sidebar | Mica blur 24 | **Mica 64 saturate 200 + 3-layer depth + active premium multi-shadow + side accent pulsante + icon scale** |
+| Buttons | Radius + ripple | **Shimmer iOS hover + haptic visual scale 0.97 + focus ring multi-layer + 3-stop gradient + ripple expansion** |
+| Tablas | Hover background | **Sliding accent line (td:first-child::before width 0→3px spring) + sticky head Mica + uppercase headers** |
+| Modales | Spring básico | **Multi-layer scrim radial + Mica 64 saturate 180 + spring entry translateY+scale+blur** |
+| Toasts | Glass simple | **Dynamic Island-style: pill + Mica + spring entry blur + glow per type** |
+| FAB | Sólido | **Material You gradient + glow stacked + scale 1.05 lift hover** |
+| Toggles | CSS básico | **iOS-style 44×26 pill + thumb 3D + slide spring + ON glow** |
+| Notify center | Mica medio | **Mica strong 64 saturate 200 + elev-5 stacked** |
+| Activity Feed | Hover básico | **Translate-X 4px + border highlighted + spring** |
+| Calendar | Grid simple | **Day cells radius + hover scale + today glow + event pills** |
+| Section transitions | Fade simple | **View-transitions cross-section (Chrome 126+) + section.active stagger automático** |
+| Microinteractions | Hover básico | **Cursor follow Vision Pro + haptic visual + parallax tilt + sparkle border + section breathe** |
+| Mobile | Blurs costosos | **Blurs reducidos 16px + tilt off + paddings adaptivos** |
+
+**Costo recurrente**: $0. Todo CSS + JS client-side. Cero APIs externas. Cero impacto en sitio público (todo dentro de `.admin-panel`).

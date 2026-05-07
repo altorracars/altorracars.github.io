@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260510050000'; // §27.5 Reportes ejecutivos: KPIs hero + Funnel conversión + Forecast lineal + Performance asesores + Anomalías + Export CSV
+const CACHE_VERSION = 'v20260510060000'; // §27.6 Workflows funcional + Plantillas en Hub: cards HarmonyOS de reglas + integración admin-templates en chat detail con resolve variables
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

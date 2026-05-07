@@ -15289,3 +15289,147 @@ Singleton `window.AltorraReports`:
 **Pendiente del ADR-027** (commits siguientes):
 - §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
 - §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)
+
+### 27.6 Sprint Workflows funcional + Plantillas integradas en ALTOR Hub (2026-05-10)
+
+**Objetivo del sprint**: convertir las dos features muertas (Reglas
++ Plantillas) en valor real. En vez de eliminarlas, promoverlas:
+las reglas pasan a ser un panel funcional con cards HarmonyOS, y
+las plantillas se integran como dropdown directamente en el chat
+detail del ALTOR Hub.
+
+#### A. Workflows con cards HarmonyOS (sec-workflows)
+
+**Cambios HTML (`admin.html`)**:
+- Page header con botón refresh
+- **Workflows intro card** (NUEVA): card amber explicativa con icon
+  + título "4 reglas built-in activas" + descripción del runtime
+  (corre vía EventBus en background, toggle individual)
+- Grid responsive `workflows-rules-grid` con cards de cada regla
+- Historial de ejecuciones movido a `.reports-card` (estilo unificado
+  con sec-reports HarmonyOS)
+
+**Cambios JS (`admin-automation.js renderRulesUI`)**:
+- Reescritura completa del render: cards estilo HarmonyOS
+- Header con icon de status (`zap` activa / `zap-off` pausada) +
+  label "Activa" / "Pausada"
+- Toggle switch HarmonyOS (`.alt-toggle` slider amber)
+- Body: nombre + descripción + footer con trigger pill
+- TRIGGER_LABELS map: `comm_created` → "Nueva comunicación",
+  `sla_check` → "Cada minuto (SLA check)", etc.
+- Border-left 3px amber si activa, gris tenue si pausada
+- Hover lift 1px + border highlighted
+
+#### B. Plantillas integradas en ALTOR Hub (admin-concierge.js)
+
+**Botón nuevo "📋 Plantillas"** en quick replies del chat detail:
+agregado al row de quick replies entre "📲 A WhatsApp" y el input.
+
+**Container nuevo** `<div id="cncTemplatesDropdown" hidden>` debajo
+del row de quick replies. Cuando se clickea el botón, se popula y
+muestra; click fuera lo cierra.
+
+**Funciones nuevas**:
+
+`toggleTemplatesDropdown()`:
+- Abre/cierra el dropdown
+- Lee plantillas desde `AltorraTemplates.list()` (admin-templates.js
+  expone esto desde §MF6.3) o fallback a `AP.messageTemplates`
+- Render: lista de cards con label + tipo (pill) + preview (primeros
+  100 chars del texto)
+- Empty state amigable: "Sin plantillas guardadas aún" + hint con
+  variables soportadas
+
+`applyTemplate(rawText)`:
+- Resuelve variables del template:
+  - `{{nombre}}` → primer nombre del cliente actual del chat
+  - `{{vehiculo}}` → marca + modelo + año si chat tiene `sourceVehicleId`
+  - `{{fecha}}` → fecha actual formateada (es-CO, día + mes + año)
+  - `{{hora}}` → hora actual (es-CO, HH:MM)
+  - `{{tipo}}` → kind del chat (cita/solicitud/lead) o `[tipo]`
+- Coloca texto resuelto en `cncAdminReply` input
+- Foco al input para edición opcional
+- Cierra dropdown
+- Toast info: "Plantilla aplicada — revisá y enviá"
+
+**Click delegation** en panel.click handler:
+- `[data-action="open-templates"]` → toggleTemplatesDropdown
+- `[data-tpl-text]` → applyTemplate(text)
+- Click fuera del dropdown → cierra (excluye el trigger button)
+
+#### C. CSS HarmonyOS (~250 líneas en admin.css)
+
+**Workflow cards**:
+- `.workflows-intro` — card amber con gradient + border-left tinte
+- `.workflows-rules-grid` — grid auto-fit minmax(320px, 1fr)
+- `.workflow-card` — radius 16, padding 18×20, hover lift 1px
+- `.workflow-card--on` — border-left 3px amber
+- `.workflow-card--off` — opacity 0.7 + border-left tenue
+- `.workflow-card-head` — flex con status (icon+label) + toggle
+- `.workflow-trigger-pill` — pill amber con icon y label trigger
+
+**Toggle switch (`.alt-toggle`)**:
+- Slider HarmonyOS minimalista 38×22
+- Off: bg blanco 10% + thumb gris
+- On: bg amber + thumb blanco con animación slide
+- Transitions fluidas 0.3s
+
+**Templates dropdown**:
+- `.cnc-templates-trigger` — botón amarillento dorado (distingue de quick replies)
+- `.cnc-templates-dropdown` — glass dark + backdrop-filter blur,
+  radius 16, max-height 320 con scroll-y, animation fade-in 0.2s
+- `.cnc-tpl-item` — card 12px radius, hover dorado tenue + slideX 2px
+- `.cnc-tpl-head` — label bold + kind pill diminuto dorado
+- `.cnc-tpl-preview` — 2-line clamp del texto
+- `.cnc-templates-empty` — placeholder con `<code>` de variables soportadas
+- `prefers-reduced-motion`: animations + transforms desactivados
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| sec-templates eliminado pero datos en Firestore se pierden | sec-templates queda display:none, admin-templates.js sigue cargando, datos preservados |
+| Templates dropdown abre múltiples veces | toggleTemplatesDropdown chequea `!hidden` toggle |
+| Template con `{{nombre}}` cuando no hay cliente identificado | Fallback a `[nombre]` placeholder visible |
+| Variables no soportadas explotan | Solo regex match para 5 variables conocidas; el resto pasa raw |
+| Plantilla envía automáticamente | applyTemplate solo coloca en input; asesor revisa y manda manual |
+| Workflow toggles sin permiso | Lógica de toggle ya tenía guard isSuperAdmin (admin-automation.js) |
+| Sec-templates toggle ON en error rompe layout | display:none forzado en `style` inline |
+| Click fuera del dropdown no lo cierra | Listener específico que excluye trigger + interior dropdown |
+
+#### Test E2E del sprint
+
+1. Login admin → click "Workflows" en sidebar → carga sec-workflows
+2. Ver intro card amber explicativa: "4 reglas built-in activas"
+3. Grid con 4 cards de reglas:
+   - Asignar financiación alto-valor a super_admin (Activa, switch ON amber)
+   - Notificar SLA breach (Activa, switch ON)
+   - Etiquetar visitantes repetidos (Activa, switch ON)
+   - Recordatorio 24h cita (Pausada, switch OFF)
+4. Click toggle de una regla → switch animado, persiste estado
+5. Cards muestran trigger pill (ej: "Cada minuto · SLA check")
+6. Historial de ejecuciones abajo (estilo unificado con sec-reports)
+7. Login admin → ALTOR Hub → click chat → ver row de quick replies
+8. Click botón "📋 Plantillas" → dropdown aparece con animation
+9. Si no hay plantillas: ve empty state con hint de variables
+10. Si hay plantillas: ve lista con label + kind pill + preview
+11. Click en una plantilla → texto resuelto aparece en input
+12. Variables resueltas: `{{nombre}}` → primer nombre del cliente,
+    `{{vehiculo}}` → marca+modelo si hay sourceVehicleId, etc.
+13. Click fuera del dropdown → cierra
+
+**Archivos modificados**:
+- `admin.html` (sec-workflows reescrito con intro card + grid HarmonyOS;
+  templates trigger button + dropdown agregados al chat detail)
+- `js/admin-automation.js renderRulesUI` (cards HarmonyOS con icon
+  status + toggle .alt-toggle + trigger pill)
+- `js/admin-concierge.js` (toggleTemplatesDropdown + applyTemplate +
+  click delegation handlers)
+- `css/admin.css` (~250 líneas .workflow-card* + .alt-toggle +
+  .cnc-templates-dropdown + responsive)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510060000)
+- `CLAUDE.md` (esta sección §27.6)
+
+**Pendiente del ADR-027** (último sprint):
+- §27.7 HarmonyOS polish — spring animations · empty states ilustrados ·
+  skeletons shimmer · sidebar badges dinámicos · micro-interactions

@@ -253,24 +253,43 @@
         }, 60 * 1000);
     }
 
-    // ─── Admin UI: render rule list ──────────────────────────────
+    // ─── Admin UI: render rule list (§27.6 — HarmonyOS cards) ──────
     function renderRulesUI() {
         var container = document.getElementById('automationRulesList');
         if (!container) return;
+        var TRIGGER_LABELS = {
+            'comm_created': 'Nueva comunicación',
+            'sla_check': 'Cada minuto (SLA check)',
+            'comm_status_change': 'Cambio de estado',
+            'appointment_created': 'Nueva cita',
+            'appointment_status_change': 'Estado de cita'
+        };
         container.innerHTML = BUILT_IN_RULES.map(function (r) {
             var on = isRuleEnabled(r.id);
-            return '<div class="automation-rule">' +
-                '<div class="automation-rule-info">' +
-                    '<div class="automation-rule-name">' + r.name + '</div>' +
-                    '<div class="automation-rule-desc">' + r.description + '</div>' +
-                    '<div class="automation-rule-trigger">Disparador: <strong>' + r.trigger + '</strong></div>' +
+            var triggerLabel = TRIGGER_LABELS[r.trigger] || r.trigger;
+            return '<div class="workflow-card ' + (on ? 'workflow-card--on' : 'workflow-card--off') + '" data-rule-id="' + r.id + '">' +
+                '<div class="workflow-card-head">' +
+                    '<div class="workflow-card-status">' +
+                        '<i data-lucide="' + (on ? 'zap' : 'zap-off') + '" class="workflow-status-icon"></i>' +
+                        '<span class="workflow-status-label">' + (on ? 'Activa' : 'Pausada') + '</span>' +
+                    '</div>' +
+                    '<label class="alt-toggle workflow-toggle" title="Activar/Desactivar regla">' +
+                        '<input type="checkbox" data-rule-id="' + r.id + '"' + (on ? ' checked' : '') + '>' +
+                        '<span class="alt-toggle-slider"></span>' +
+                    '</label>' +
                 '</div>' +
-                '<label class="automation-toggle">' +
-                    '<input type="checkbox" data-rule-id="' + r.id + '"' + (on ? ' checked' : '') + '>' +
-                    '<span class="automation-slider"></span>' +
-                '</label>' +
+                '<div class="workflow-card-body">' +
+                    '<div class="workflow-card-name">' + r.name + '</div>' +
+                    '<div class="workflow-card-desc">' + r.description + '</div>' +
+                '</div>' +
+                '<div class="workflow-card-foot">' +
+                    '<span class="workflow-trigger-pill">' +
+                        '<i data-lucide="zap" style="width:12px;height:12px;"></i> ' + triggerLabel +
+                    '</span>' +
+                '</div>' +
             '</div>';
         }).join('');
+        if (window.AltorraIcons) window.AltorraIcons.refresh(container);
     }
 
     // ─── K.3: Execution history viewer ──────────────────────────

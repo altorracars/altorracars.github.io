@@ -695,22 +695,38 @@
             <div class="page-header">
                 <div>
                     <h1>Workflows · Automatización inteligente</h1>
-                    <p class="page-subtitle">Reglas que actúan automáticamente sobre nuevas comunicaciones (asignación, alertas, follow-ups SLA, recordatorios). Toggle ON/OFF + log de ejecuciones.</p>
+                    <p class="page-subtitle">Reglas que actúan automáticamente sobre comunicaciones, citas, SLAs y follow-ups. El runtime corre vía EventBus en background — toggle ON/OFF aquí.</p>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button class="alt-btn alt-btn--ghost alt-btn--sm" id="workflowsRefresh" data-tooltip="Refrescar">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
                 </div>
             </div>
-            <div class="automation-rules" id="automationRulesList">
-                <div class="table-empty">Cargando reglas...</div>
+
+            <!-- §27.6 — Card explicativa HarmonyOS -->
+            <div class="workflows-intro">
+                <div class="workflows-intro-icon"><i data-lucide="zap"></i></div>
+                <div class="workflows-intro-body">
+                    <h3>4 reglas built-in activas</h3>
+                    <p>El sistema tiene 4 workflows que reaccionan automáticamente a eventos del CRM. Las más críticas (auto-routing de financiación alto-valor + SLA breach notify) corren constantemente. Podés desactivar una regla individualmente sin afectar al resto.</p>
+                </div>
             </div>
-            <!-- K.3 — Execution history -->
-            <div class="automation-history-card" style="margin-top:24px;">
-                <div class="automation-history-head">
-                    <h3 style="margin:0;font-size:1rem;">Historial de ejecuciones</h3>
+
+            <div class="automation-rules workflows-rules-grid" id="automationRulesList">
+                <div class="pred-empty">Cargando reglas...</div>
+            </div>
+
+            <!-- K.3 — Execution history mejorada -->
+            <div class="reports-card" style="margin-top:24px;">
+                <div class="reports-card-head">
+                    <h3><i data-lucide="history"></i> Historial de ejecuciones</h3>
                     <button class="alt-btn alt-btn--ghost alt-btn--sm" id="automationHistoryRefresh" data-tooltip="Refrescar">
                         <i data-lucide="refresh-cw"></i>
                     </button>
                 </div>
                 <div class="automation-history-list" id="automationHistoryList">
-                    <div class="table-empty">Sin ejecuciones aún.</div>
+                    <div class="pred-empty">Sin ejecuciones aún.</div>
                 </div>
             </div>
         </div>

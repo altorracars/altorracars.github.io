@@ -19443,3 +19443,278 @@ y es semánticamente apropiado para "Sembrar/agregar inicial").
 - `CLAUDE.md` — esta sección §36.4
 
 **Cache bump**: `v20260510350000`.
+
+---
+
+## 37. PROTOCOLO IAP — Impact Analysis Previo (DOCTRINA PERMANENTE)
+
+> **Origen**: tras §35 → §36.4, el cliente identificó que TODA modificación
+> del agente debe estimar de antemano qué archivos/código se afectan, qué
+> se preserva, qué se vuelve basura y qué requiere limpieza. Esto previene
+> bugs latentes que aparecieron en esta sesión (ver §37.5 — Casos reales
+> de esta sesión).
+>
+> **Esta sección es DOCTRINA PERMANENTE.** Aplica a CADA commit que el
+> agente proponga, sin excepción. Es complementaria a §19 (RCA Mode) y
+> §17 (Reglas Operativas Performance).
+
+### 37.1 Por qué este protocolo existe
+
+En las últimas sesiones aparecieron patrones recurrentes de error
+**evitables con análisis de impacto previo**:
+
+| Patrón | Ejemplo real (§) | Costo |
+|---|---|---|
+| Eliminar HTML sin actualizar JS que lo referencia | §27.2 borró stats; admin-sync.js seguía escribiendo a `$('statTotal').textContent` → 2 errores rojos en cada page load durante 8 commits | 5+ sesiones de console-noise |
+| Cambiar selector CSS sin verificar HTML | §33 escribió `.admin-panel main` pero el HTML tenía `id="adminPanel"` (no class) → todos los CSS de scroll **NUNCA APLICARON** durante 5 commits | 3 sesiones de "scroll roto" |
+| Reintroducir antipatrón ya documentado | `MutationObserver subtree:true` en admin-sidebar.js (§17.12 lo prohibió tras RCA del bug "clicks bloqueados centro botones") | Riesgo regresión |
+| Dejar código muerto tras refactor | `admin-sidebar.js` quedó vivo con quick-search + collapse aunque la sidebar está `display:none` por §36 | Bundle peso + confusión |
+| No detectar que Lucide rejecta un icon name | `seedling` en admin.html generó ~30 warnings cascada cada page load | Console noise |
+| Agregar dependencia a stacking context sin medir | `isolation: isolate` en topnav (§36.1) atrapó dropdowns dentro del topnav → invisibles | 2 commits de fix |
+
+**Causa raíz común**: hacer cambios sin recorrer el grafo de dependencias
+del archivo/elemento tocado.
+
+### 37.2 Template obligatorio del Impact Analysis (IAP)
+
+Antes de aplicar CUALQUIER cambio, el agente entrega un análisis con
+estas **5 secciones**:
+
+#### Sección A — Archivos a modificar
+Lista exacta. Por cada archivo: **qué se cambia + por qué**. Línea aproximada
+si aplica.
+
+| Archivo | Cambio | Razón |
+|---|---|---|
+| `js/admin-sync.js:424-432` | Guards `if (el)` en updateStats() | IDs eliminados en §27.2 |
+| `admin.html:1258` | `seedling` → `package-plus` | Lucide v0.468 no tiene seedling |
+
+#### Sección B — Archivos que quedan INTACTOS (afirmación)
+Lista de archivos relacionados pero que NO se tocan, con justificación
+de por qué no es necesario tocarlos. **Esta sección previene daño
+colateral oculto** — al mencionarlos explícitamente se evidencia que
+fueron considerados.
+
+#### Sección C — Código muerto a eliminar (BASURA)
+Código que se vuelve obsoleto con el cambio. Si NO lo eliminamos en
+este commit, marcamos como **DEUDA TÉCNICA pendiente** con justificación.
+
+Ejemplo:
+- "admin-sidebar.js queda con código muerto tras §36 (sidebar oculta).
+  NO se elimina ahora porque mobile drawer sigue usándolo. Marcado
+  como DEUDA para cuando hagamos mobile redesign en §38+."
+
+#### Sección D — Código a LIMPIAR/refactor
+Partes confusas, duplicadas o que se vuelven inconsistentes con el cambio.
+
+Ejemplo:
+- "admin.css legacy aplica `overflow: hidden` en .section sin altura.
+  Override quirúrgico en admin-perf-kill.css. Refactor real en deuda."
+
+#### Sección E — Riesgos + plan de rollback
+Qué puede romperse. Cómo se revierte si algo falla.
+
+| Riesgo | Mitigación | Rollback |
+|---|---|---|
+| Guards `if (el)` esconden bug futuro real | Comentario explica el contexto histórico | git revert del commit |
+| Heartbeat con uid puede crashear si auth.uid es undefined | Check anterior `!window.auth.currentUser` ya cubre | git revert |
+
+### 37.3 Checklist de validación post-cambio
+
+ANTES de hacer git commit, el agente verifica:
+
+- [ ] **Sintaxis JS válida**: `node -c` en cada archivo modificado
+- [ ] **Sin orfandad**: si eliminé/renombré X, ningún caller quedó roto
+  - Comando: `grep -rn "nombreEliminado" js/ css/ *.html`
+- [ ] **Cache bump**: `service-worker.js CACHE_VERSION` y
+  `js/cache-manager.js APP_VERSION` actualizados con timestamp nuevo
+- [ ] **Selectores CSS válidos**: si agregué `.foo .bar`, confirmé que
+  ambas clases existen en el HTML
+  - Comando: `grep -n 'class="[^"]*foo' admin.html`
+- [ ] **Anti-patterns evitados**: cruce con §17, §17.12, §19, §35
+  - No `MutationObserver subtree:true`
+  - No `transition: all`
+  - No `* { transition }` global
+  - No animar `width/height/top/left`
+  - No `backdrop-filter` en grids/cards de N items
+  - No `pointermove` listeners para cosmética
+  - No `onclick="..."` inline con datos de usuario (XSS)
+- [ ] **CLAUDE.md documentado**: nueva sección con causa raíz, fix,
+  archivos modificados, test E2E
+- [ ] **Lecciones aprendidas extraídas**: si el bug fue por un patrón
+  no documentado, agregarlo a §17 o crear nueva regla
+
+### 37.4 Cuándo aplicar el protocolo
+
+**SIEMPRE** que el agente proponga código nuevo o modificación. Sin
+excepción. Incluso para cambios "triviales" — porque la mayoría de
+los bugs de esta sesión se introdujeron en cambios "triviales" que no
+recorrieron el grafo de dependencias.
+
+**Excepción única**: typo fixes literales (un solo carácter, mismo
+significado) que no cambian comportamiento.
+
+### 37.5 Casos reales de esta sesión (lecciones aprendidas)
+
+#### Caso 1: §27.2 dashboard rediseño → bug latente 8 commits
+
+**Lo que hice**: rediseñé el Inicio productivo eliminando del HTML
+los 7 stats genéricos (`statTotal`, `statNuevos`, etc.).
+
+**Lo que NO hice**: buscar quién escribía a esos IDs:
+```
+grep -rn "statTotal\|statNuevos" js/
+```
+
+**Consecuencia**: `admin-sync.js updateStats()` siguió escribiendo a
+`$('statTotal').textContent` → null → TypeError en CADA snapshot de
+Firestore (vehículos + marcas + appointments). Bug latente durante
+§28-§36.4.
+
+**Lección aplicable a doctrina**:
+> Cuando elimines un `<div id="X">`, ANTES de commit, ejecutar
+> `grep -rn "'X'\\|\"X\"\\|getElementById.X" js/ admin.html` y
+> arreglar/eliminar todos los callers.
+
+#### Caso 2: §33 selector inválido durante 5 commits
+
+**Lo que hice**: en admin-v2.css escribí reglas con selector
+`.admin-panel main { overflow-y: auto }`. Asumí que `<div id="adminPanel">`
+también tendría class.
+
+**Lo que NO hice**: leer el HTML real para confirmar que la clase existía:
+```
+grep -n "class=\"admin-panel" admin.html  →  0 results
+```
+
+**Consecuencia**: las reglas CSS de scroll/grid/sidebar **nunca aplicaron**
+durante §33 → §35.1. El usuario reportó "scroll bloqueado" repetidamente.
+
+**Lección aplicable a doctrina**:
+> Cuando una regla CSS usa selector compuesto `.foo .bar`, ejecutar
+> `grep -n 'class="[^"]*foo' admin.html` para confirmar que `.foo`
+> existe como CLASE (no solo como ID). Documentar también el origen
+> del selector (qué CSS lo usa).
+
+#### Caso 3: §36.1 stacking context atrapó dropdowns
+
+**Lo que hice**: agregué `isolation: isolate` al topnav para que el
+z-index 9999 de los menús ganara.
+
+**Lo que NO hice**: pensar en qué OTRAS reglas establecen el stacking
+context. `overflow: hidden` en el grid container también clipea
+descendientes absolute-positioned.
+
+**Consecuencia**: dropdowns invisibles. 2 commits adicionales para
+revertir + cambiar a `position: fixed`.
+
+**Lección aplicable a doctrina**:
+> Antes de aplicar `isolation: isolate`, `transform: translateZ(0)`,
+> `will-change`, `filter`, `mask`, `clip-path` o `overflow: hidden`
+> en un ancestro de elementos absolute-positioned: validar que el
+> popover/menu no necesite escapar del bounding box. Si necesita
+> escapar → usar `position: fixed` con JS positioning (no absolute
+> con z-index alto).
+
+#### Caso 4: §17.12 regresión MutationObserver
+
+**Lo que pasó**: en una sesión previa, agregué un `MutationObserver`
+con `subtree: true` en admin-sidebar.js para reaccionar a cambios de
+clase. CLAUDE.md §17.12 documenta que ese patrón causó el bug
+histórico "clicks bloqueados en centro de botones".
+
+**Lo que NO hice**: cruzar con §17.12 antes de agregarlo.
+
+**Consecuencia**: regresión latente reintroducida en §33-§34.
+
+**Lección aplicable a doctrina**:
+> Antes de agregar `MutationObserver`, `pointermove`, `transition: all`,
+> `backdrop-filter` masivo, o cualquier patrón que CLAUDE.md §17/§17.12/
+> §19/§35 prohíbe explícitamente: cruzar con esas secciones.
+> Si necesito hacer lo prohibido → documentar **por qué este caso es
+> distinto** y obtener autorización explícita del usuario.
+
+#### Caso 5: §36.4 lucide icon name no validado
+
+**Lo que hice**: usé `<i data-lucide="seedling">` para el botón
+"Sembrar FAQs".
+
+**Lo que NO hice**: validar que el icon name existe en Lucide v0.468.
+
+**Consecuencia**: ~30 warnings cascada cada page load × N módulos que
+hacen refreshIcons().
+
+**Lección aplicable a doctrina**:
+> Cuando agregue un `<i data-lucide="X">`, validar que X existe en
+> v0.468 antes de commit. Lista de íconos válidos:
+> https://lucide.dev/icons/ (filtrar por v0.468 o anterior).
+> Si tengo dudas, usar nombres canónicos del registry de §T.7
+> (`AltorraIcons.canonical`).
+
+### 37.6 Ejemplo de IAP aplicado
+
+Para que quede claro cómo se ve un IAP cuando el agente lo entrega
+ANTES de commitear, este es el patrón:
+
+```markdown
+## IAP — Cambio: arreglar scroll bloqueado en sidebar
+
+### A — Archivos a modificar
+| Archivo | Cambio | Razón |
+|---|---|---|
+| css/admin-v2.css:99 | `overflow: visible` → `overflow-y: auto` | Sidebar bloqueaba scroll vertical interno cuando había muchos menús |
+| css/admin-perf-kill.css | append `.admin-panel main .section { overflow: visible }` | admin.css legacy ponía overflow:hidden sin altura → main no scrolleaba |
+
+### B — Archivos INTACTOS (afirmación)
+- `admin.html` — el HTML estructural funciona, no requiere cambios
+- `js/admin-v2-bootstrap.js` — anti-FOUC sigue funcional
+- `js/admin-sidebar.js` — el quick search + collapse no se afectan
+
+### C — Código muerto a eliminar
+Ninguno en este commit.
+
+### D — Código a limpiar
+- `admin.css` legacy con `.section { overflow: hidden }` sin altura
+  queda overrideado por perf-kill. **DEUDA**: refactor real cuando
+  hagamos cleanup masivo de admin.css legacy.
+
+### E — Riesgos
+| Riesgo | Mitigación | Rollback |
+|---|---|---|
+| Si admin.css tiene otra regla con `overflow: hidden` en `.section.active` que NO override mi perf-kill | Validé con grep, no hay otra | git revert |
+| Body scroll accidental en mobile | body sigue con `overflow: hidden` global de admin-v2.css | git revert |
+
+### Checklist post-cambio
+- [x] node -c en archivos modificados
+- [x] grep `overflow: visible` para confirmar no hay regla que pelee
+- [x] Cache bump aplicado
+- [x] CLAUDE.md §35.X documentación
+- [x] Cero MutationObserver, pointermove, transition:all
+```
+
+### 37.7 Excepciones del protocolo
+
+El agente puede SALTARSE el IAP únicamente si:
+
+1. El usuario solicita explícitamente "skip IAP" o "saltate el análisis"
+2. El cambio es 100% reversible y no afecta producción (ej: cambiar
+   un comentario)
+3. Es typo fix literal sin cambio semántico
+
+En esos casos, mencionar explícitamente "[IAP skipped]" en el commit.
+
+### 37.8 Aplicación retroactiva (auto-mejora del agente)
+
+A partir de §37 en adelante, el agente DEBE:
+
+1. Antes de cualquier commit propuesto, redactar el IAP de las 5 secciones
+2. Esperar autorización del usuario si el commit toca área crítica
+3. Validar el checklist post-cambio antes de `git commit`
+4. Documentar en CLAUDE.md con la sección numerada apropiada
+
+**Cuándo el agente puede commitear sin autorización explícita**:
+- Cuando el usuario ya autorizó un plan que incluye múltiples commits
+  ("ejecutalo", "procede", "OK avancemos")
+- Pero igual debe entregar el IAP ANTES de cada commit ese plan
+
+**Cache bump**: `v20260510360000`.

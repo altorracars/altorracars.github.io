@@ -171,7 +171,8 @@
                 return true;
             case 'new':
                 if (cmd.target === 'vehicle') {
-                    var btn = document.querySelector('[data-action="quickNewVehicle"], #addVehicleBtn');
+                    // §27.2 — selector primario #btnAddVehicle (sec-vehicles header).
+                    var btn = document.querySelector('#btnAddVehicle, [data-action="quickNewVehicle"]');
                     if (btn) { btn.click(); AP.toast('Creando nuevo vehículo'); return true; }
                 }
                 if (cmd.target === 'kb') {

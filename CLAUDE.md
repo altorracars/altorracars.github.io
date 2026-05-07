@@ -14684,3 +14684,174 @@ Nueva función `initQuickSearch()`:
 - §27.5 Reportes ejecutivos implementados de cero
 - §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
 - §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)
+
+### 27.2 Sprint Inicio productivo — 3 KPIs hero + Top 5 NBA (2026-05-10)
+
+**Objetivo del sprint**: transformar el Inicio de pantalla decorativa
+con atajos genéricos + gráficas estáticas en una **herramienta de
+productividad real**. El asesor entra al admin en la mañana y debe
+saber al primer vistazo: cuántos leads hay, qué citas hoy, qué tareas
+urgentes pendientes y qué acciones priorizar.
+
+#### A. Eliminado del Inicio (código muerto + mal ubicado)
+
+- **8 stats genéricos** (Total Vehículos, Nuevos, Usados, Ofertas,
+  Destacados, Marcas, Vendidos, Solicitudes Pendientes): info de
+  inventario que NO ayuda al day-to-day. Eliminados completos del HTML.
+  Los IDs (`statTotal`, etc) que admin-sync.js poblaba ahora retornan
+  null en getElementById — fallo silencioso, cero impacto.
+- **4 atajos quick-actions** (Nuevo vehículo / Marcas / Solicitudes /
+  Aliados): navegación inútil, ya está el sidebar. Eliminado el HTML.
+  Los handlers en admin-auth.js (`quickNewVehicle`, `quickGoTo`)
+  quedan vivos por compat pero no se ejecutan. `admin-palette.js` y
+  `admin-voice.js` actualizados para usar `#btnAddVehicle` (selector
+  primario que SÍ existe en sec-vehicles).
+- **4 gráficas estáticas** (donutType, chartCategories, donutStatus,
+  chartActivity): no aportaban valor proactivo. Eliminadas del HTML.
+  Las funciones en `admin-phase5.js` siguen vivas pero `getElementById`
+  retorna null y returnen sin renderizar — cero overhead.
+- **Activity Recent widget** con botones "Seleccionar / Eliminar
+  todo / Eliminar seleccionados": **MIGRADO a sec-audit** donde
+  pertenece. admin-activity.js sigue funcionando con los mismos IDs
+  (btnSelectActivity / btnClearAllActivity / btnDeleteSelectedActivity /
+  activityFeed / activitySelectActions / activityCount).
+- **SEO Tools** (Generar sitemap + Regenerar SEO + GitHub Token):
+  **MIGRADO a sec-settings**. Es config técnica del super_admin, no
+  info diaria. Los IDs (btnGenerateSitemap, btnRegenerateSeo,
+  ghTokenSection, ghTokenInput, etc.) intactos para admin-operations.js.
+
+**Total eliminado/migrado**: ~213 líneas HTML del sec-dashboard (era
+caótico, ahora es enfocado).
+
+#### B. NUEVO Inicio productivo (en orden de prioridad visual)
+
+1. **Page header** — welcome + global search + activity trigger + bell
+
+2. **Hero KPIs** (3 grandes, ocupan ancho total):
+   - 🟦 **Leads de hoy** (azul, click → CRM)
+     - Cuenta solicitudes/citas/leads creados últimas 24h
+     - Tendencia: vs ayer (↑↓ + diff con color verde/rojo/neutral)
+   - 🟪 **Citas de hoy** (violeta, click → Calendar)
+     - Filtro: kind=cita || requiereCita=true Y fecha=hoy Y estado activo
+   - 🟧 **Tareas pendientes** (ámbar, click → CRM)
+     - SLAs vencidos (slaDeadline < ahora, status pendiente)
+     - Solicitudes pendientes >24h sin respuesta
+     - Chats sin claim (mode=queue, claimedBy=null)
+     - Card cambia a coral si > 0 (indicador visual de urgencia)
+
+3. **Próximas acciones recomendadas (NBA Top 5)**:
+   - Recorre TODOS los contactos del CRM, computa NBA con
+     `AltorraNBA.suggest()` (bloque J.8), selecciona top 5 globales
+     por priority, muestra como tarjetas con avatar + nombre + razón
+     humana + CTA "Ver contacto" o acción específica
+   - Border-left color por priority: critical (coral 90+) / high
+     (ámbar 75+) / medium (azul 60+) / low (gris)
+   - Click en CTA → abre CRM 360° del contacto (commit §27.3 lo cablea
+     completo cuando CRM unificado esté listo)
+   - Empty state amigable si no hay acciones urgentes: "Todo bajo
+     control. Sin acciones urgentes en este momento."
+
+4. **KPIs del mes** (existing — bloque O.1)
+5. **Performance del equipo** (existing — bloque O.3)
+6. **Insights del día** (existing — bloque R)
+7. **Lo que el sistema notó** (existing — bloque O.6)
+8. **Sesiones activas** (preservado — info crítica super_admin)
+
+#### C. Módulos JS nuevos
+
+**`js/admin-hero-kpis.js`** (~210 líneas):
+- Singleton `window.AltorraHeroKPIs`
+- `computeKPIs()` recorre AP.appointments + workload + chats sin claim
+- `render()` actualiza los 3 cards con valores + tendencia
+- `scheduleRender()` con throttle 2s para no recomputar en cada delta
+- Listener EventBus: `comm.*`, `appointment.*`, `vehicle.*` → re-render
+- Listener AltorraSections.onChange → re-render al entrar a `dashboard`
+- Setinterval 60s para refrescar SLAs vencidos sin necesidad de evento
+- Click handlers: navegación a sección relevante por KPI
+
+**`js/admin-nba-dashboard.js`** (~190 líneas):
+- Singleton `window.AltorraNBADashboard`
+- `getContacts()` reusa `AltorraCRM.getContacts()` o reconstruye desde AP.appointments
+- `computeTopActions()`: para cada contacto llama `AltorraNBA.suggest({limit:1})`,
+  filtra priority ≥ 50, sort global desc, take top 5
+- `render()` produce tarjetas accionables con rank + avatar + nombre +
+  priority pill + razón + CTA
+- Click CTA → `AltorraSections.go('crm')` + `AltorraCRM.openContactDetail()` si disponible
+- Throttle 3s en scheduleRender + listener EventBus
+
+#### D. CSS HarmonyOS para los nuevos componentes (`css/admin.css` ~190 líneas)
+
+- `.hero-kpis`: grid 3 columnas, gap 20px (mobile: 1 columna)
+- `.hero-kpi`: card 24px padding, radius 24px, hover lift 2px,
+  border-top accent 3px, sombra `--hmy-shadow-soft-md`
+- `.hero-kpi-icon`: 56×56px con tinte color del KPI
+- `.hero-kpi-value`: 2.5rem font-size, font-weight 700, letter-spacing tight
+- `.hero-kpi-trend-pill`: pill redondeado con color por sign (verde
+  up / coral down / neutral / warn)
+- `.hero-kpi--urgent`: variante coral cuando tareas pendientes > 0
+- `.nba-dash-list/item`: border-radius 16px, hover translateX +
+  border-left por priority
+- `.nba-dash-rank`: dot dorado 24×24 con número
+- `.nba-dash-avatar`: gradient dorado 40×40 con iniciales
+- `.nba-dash-pri-pill`: pill diminuto color por priority
+- `prefers-reduced-motion`: desactiva transforms en hover
+
+#### Anti-patterns evitados
+
+| Riesgo | Mitigación |
+|---|---|
+| Eliminar 8 stats deja admin-sync.js fallando | getElementById null, fallo silencioso esperado |
+| admin-phase5.js renderDonut* fallan | Cero impacto: containers no existen, return temprano |
+| `quickNewVehicle` referenciado en voice/palette rompe | Selector primario `#btnAddVehicle` que SÍ existe |
+| NBA recomputa en cada delta de Firestore | Throttle 3s + listener específico (no genérico) |
+| Hero KPIs sin tendencia para "tareas" (no hay serie temporal) | Pill especial "Todo al día ✓" / "Requiere atención" |
+| AltorraNBA.suggest() llamado sin contactos | Empty state amigable + skip si AP.appointments vacío |
+| Activity widget movido a Auditoría rompe IDs | IDs preservados literalmente — admin-activity.js intacto |
+| SEO Tools movido a Settings rompe admin-operations.js | btnGenerateSitemap/btnRegenerateSeo/ghTokenSection IDs preservados |
+| Hero KPI redundante con KPIs del mes (debajo) | Hero = HOY (24h), KPIs mes = vista 30d. Niveles temporales distintos |
+
+#### Test E2E del sprint
+
+1. Login admin → entrar a Inicio
+2. Ver header simple (welcome + search + bell + activity btn)
+3. **3 KPIs Hero** grandes con icons + valores + tendencia pill:
+   - Leads de hoy: número actual + "↑ +3 vs ayer" (verde) o "↓ -1 vs ayer" (coral)
+   - Citas de hoy: idem
+   - Tareas pendientes: número + pill ámbar "Requiere atención" o verde "Todo al día ✓"
+4. Click en Hero KPI "Leads" → navega a sec-crm
+5. Click en Hero KPI "Citas" → navega a sec-calendar
+6. Click en Hero KPI "Tareas" → navega a sec-crm
+7. **Top 5 NBA** debajo: tarjetas con rank/avatar/nombre/razón/CTA
+8. Click "Ver contacto" en una tarjeta → abre CRM (en commit §27.3 abrirá detalle directo)
+9. Empty state si no hay NBA: "Todo bajo control. Sin acciones urgentes."
+10. Verificar que NO aparecen:
+    - Atajos "Nuevo vehículo / Marcas / Solicitudes / Aliados"
+    - Grilla de 8 stats genéricos
+    - Charts donutType/chartCategories/etc
+    - Widget "Actividad Reciente" (movido a Auditoría)
+    - SEO Tools (movido a Ajustes)
+11. Ir a sec-audit → ver Activity Reciente con botones Seleccionar /
+    Eliminar todo / Eliminar seleccionados (movidos correctamente)
+12. Ir a sec-settings → ver SEO Tools (Publicar sitemap / Regenerar
+    SEO / GitHub Token) movidos correctamente
+13. Mobile (<900px): Hero KPIs apilados verticales, NBA cards full-width
+14. Tendencia auto-refresh: esperar 60s en sec-dashboard → tareas
+    pendientes con SLA recién vencido aparecen sin recargar página
+
+**Archivos modificados**:
+- `admin.html` (sec-dashboard reescrito; Activity migrado a sec-audit;
+  SEO Tools migrado a sec-settings; scripts hero-kpis + nba-dashboard cargados)
+- `js/admin-hero-kpis.js` (NUEVO ~210 líneas)
+- `js/admin-nba-dashboard.js` (NUEVO ~190 líneas)
+- `js/admin-palette.js` (selector primario #btnAddVehicle)
+- `js/admin-voice.js` (selector primario #btnAddVehicle)
+- `css/admin.css` (~190 líneas .hero-kpis + .nba-dash + responsive)
+- `service-worker.js` + `js/cache-manager.js` (bump v20260510020000)
+- `CLAUDE.md` (esta sección §27.2)
+
+**Pendiente del ADR-027** (commits siguientes):
+- §27.3 CRM unificado con 3 tabs (Contactos · Bandeja · Pipeline)
+- §27.4 Agenda con tabs internos (Mes · Día · Disponibilidad · Festivos)
+- §27.5 Reportes ejecutivos implementados de cero
+- §27.6 Workflows funcional + Plantillas integradas al ALTOR Hub
+- §27.7 HarmonyOS polish (spring animations + empty states + skeletons + sidebar badges dinámicos)

@@ -67,7 +67,10 @@
                 icon: 'car',
                 keywords: ['nuevo', 'agregar', 'añadir', 'auto', 'carro'],
                 action: function () {
-                    var btn = document.querySelector('[data-action="quickNewVehicle"], #addVehicleBtn');
+                    // §27.2 — selector primario #btnAddVehicle (sec-vehicles header).
+                    // El atajo del Inicio quickNewVehicle se eliminó pero queda como
+                    // fallback por si alguien lo agrega de nuevo.
+                    var btn = document.querySelector('#btnAddVehicle, [data-action="quickNewVehicle"]');
                     if (btn) btn.click();
                     else if (window.AltorraSections) window.AltorraSections.go('vehicles');
                 }

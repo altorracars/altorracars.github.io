@@ -22998,3 +22998,169 @@ firebase deploy --only functions:setupTelegramWebhook,functions:getTelegramWebho
 (Las 5 funciones — las 2 nuevas + las 3 existentes con cambios de §50/§51).
 
 **Cache bump**: `v20260511160000`.
+
+---
+
+## 53. ADR-053 — onChatEscalatedTelegram desplegada en southamerica-east1 con IAM roto (2026-05-08)
+
+> Cliente reportó tras §52 que tras configurar el webhook + vincular
+> Telegram (✓ Conectado · @tlgrm025), al escalar un chat el push
+> NUNCA llegaba. Logs de `linkTelegramChat` solo mostraban admin
+> events sin invocaciones. Cliente compartió logs de
+> `onChatEscalatedTelegram` con el síntoma definitivo.
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 53.1 Causa raíz — Eventarc rechazado por Cloud Run con 401
+
+Logs reales de `onChatEscalatedTelegram` (compartidos por el cliente):
+
+```
+2026-05-08T08:09:06.977684Z W onchatescalatedtelegram:
+The request was not authenticated. Either allow unauthenticated
+invocations or set the proper Authorization header. Empty
+Authorization header value.
+```
+
+Y en otro log de admin events:
+```
+"resourceLocation":{"currentLocations":["southamerica-east1"]}
+```
+
+**Diagnóstico**:
+- Cuando se desplegó por primera vez `onChatEscalatedTelegram` (§26.5),
+  Firebase auto-detectó la región del trigger Firestore como
+  `southamerica-east1` (donde vive la base por proximidad). Las otras
+  3 funciones Telegram (linkTelegramChat, setupTelegramWebhook,
+  getTelegramWebhookStatus) se desplegaron en `us-central1` (default).
+- Cloud Functions v2 corren sobre Cloud Run. Por default, los
+  servicios de Cloud Run son **privados** (require auth). Eventarc
+  (servicio que entrega los eventos de Firestore al trigger) necesita
+  permisos `roles/run.invoker` para invocar la función.
+- En `us-central1`, Firebase auto-aplica esos IAM bindings durante el
+  deploy (camino feliz). En `southamerica-east1`, los bindings de
+  Eventarc → Cloud Run **no se configuraron correctamente** durante
+  el deploy inicial — bug conocido reportado por la comunidad.
+- Resultado: Firestore detecta cambio de `mode='bot' → 'queue'`,
+  Eventarc emite el evento, llama al endpoint de Cloud Run de
+  `onchatescalatedtelegram(southamerica-east1)`, Cloud Run responde
+  **401 Unauthorized** porque no hay Authorization header válido,
+  Eventarc reintenta unas veces y abandona, **el handler JS NUNCA
+  CORRE**.
+
+Por eso no había logs de `console.log` ni de `console.warn` —
+el código nunca se ejecutaba.
+
+### 53.2 Solución de fondo — pin región us-central1
+
+En vez de pelear con IAM bindings en `southamerica-east1`, **pinear
+la función a `us-central1`** explícitamente (donde Firebase aplica
+los bindings sin issues conocidos) y unificar con las otras 3
+funciones Telegram.
+
+**Cambio en `functions/index.js`**:
+
+```js
+exports.onChatEscalatedTelegram = onDocumentUpdated({
+    document: 'conciergeChats/{sessionId}',
+    region: 'us-central1',          // ← §53 pin explícito
+    secrets: [telegramBotToken]
+}, async (event) => { ... });
+```
+
+### 53.3 Bonus: dead code unificado
+
+El código tenía 2 bloques `if (eligible.length === 0)` consecutivos:
+1. El primero hacía `return;` inmediato sin loggear ni marcar timestamp.
+2. El segundo (dead code) tenía `console.warn` + persistencia de
+   `notifiedTelegramAt + telegramSkipReason`, pero NUNCA se ejecutaba
+   porque el primer `return` cortaba el flujo.
+
+Resultado: cuando no había usuarios elegibles, no se loggeaba
+diagnóstico y no se persistía `telegramSkipReason='no_eligible_users'`.
+
+**Fix**: unificar en un solo bloque que loggea + persiste + retorna.
+También agregué `console.log('[onChatEscalatedTelegram] N asesores
+elegibles. Enviando alertas...')` post-filtrado para visibilidad de
+ejecución exitosa.
+
+### 53.4 Pasos operacionales (cliente debe ejecutar)
+
+**1) Borrar la función vieja en `southamerica-east1`** (la rota):
+```bash
+firebase functions:delete onChatEscalatedTelegram --region=southamerica-east1
+```
+Confirmar con `Y`. Esto destruye la function v2 con IAM roto.
+
+**2) Redeployar a `us-central1`** (versión nueva con `region: 'us-central1'`):
+```bash
+firebase deploy --only functions:onChatEscalatedTelegram
+```
+Firebase detecta el `region` explícito y crea la función en la región
+correcta con IAM bindings completos.
+
+**3) Verificar logs nuevos** post-deploy con un test E2E:
+- Sitio público → Concierge → "Hablar con asesor" (chat NUEVO, no
+  el ya en queue del test anterior — recordar §B del mensaje previo)
+- Esperar ~5-15s
+- Telegram debería llegar al asesor con icon 🚨, radicado, botón
+  "📲 Atender ahora"
+- Si no llega:
+  ```bash
+  firebase functions:log --only onChatEscalatedTelegram --lines 30
+  ```
+  Ya no debería decir "request was not authenticated" — debería
+  decir `[onChatEscalatedTelegram] N asesores elegibles. Enviando
+  alertas...` o el warning de "NO HAY asesores con telegramChatId".
+
+### 53.5 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Tocar IAM bindings manualmente con `gcloud run services add-iam-policy-binding` | Más simple: redeploy en us-central1 donde Firebase los aplica solo |
+| Mantener regiones distintas entre las 4 funciones Telegram | Unificadas en us-central1 — reduce latencia entre helpers (sendTelegramAlert ↔ getWebhookStatus) y simplifica diagnóstico |
+| Hacer la función pública (allUsers + allow-unauthenticated) | Riesgo de spam — cualquiera podría invocar el endpoint y triggear sendMessage. Mejor: trigger interno via Eventarc auth correcto |
+| Dead code silencioso | Unificado: ahora siempre loggea + marca timestamp + retorna |
+
+### 53.6 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | `firebase functions:delete onChatEscalatedTelegram --region=southamerica-east1` | Confirma deleción de función vieja |
+| 2 | `firebase deploy --only functions:onChatEscalatedTelegram` | Despliega en us-central1 (visible en log final) |
+| 3 | Sitio público (incógnita) → Concierge → "Hablar con asesor" | Chat pasa a mode=queue |
+| 4 | Telegram del asesor recibe push <30s | Mensaje 🚨 con cliente + radicado + botón |
+| 5 | `firebase functions:log --only onChatEscalatedTelegram --lines 20` | Logs muestran `N asesores elegibles. Enviando alertas...` y `N/N alertas enviadas` |
+| 6 | NO hay errores `request was not authenticated` | Eventarc → Cloud Run autenticación OK |
+| 7 | Test sin asesores vinculados | Logs muestran warning "NO HAY asesores con telegramChatId vinculado..." y persiste `telegramSkipReason: 'no_eligible_users'` en el chat |
+
+### 53.7 Doctrina aplicada
+
+§19 RCA: causa raíz real era IAM/Eventarc, no código. Lo confirmé
+con logs (`request was not authenticated`). Solución: sidestep del
+problema cambiando región, en vez de pelear con permisos.
+
+§37 IAP: análisis previo de archivos a modificar (1) e intactos
+(todo lo demás del flujo Telegram).
+
+§17 (Performance): cero MutationObserver, cero pointermove. Solo
+cambio de config de deploy + logging adicional.
+
+### 53.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `functions/index.js onChatEscalatedTelegram` | `region: 'us-central1'` explícito + dead code unificado + `console.log` de éxito |
+| `service-worker.js` | CACHE_VERSION → v20260511180000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511180000 |
+| `CLAUDE.md` | Esta sección §53 |
+
+### 53.9 Archivos INTACTOS
+
+- `firestore.rules` — sin tocar
+- `database.rules.json` — sin tocar
+- Las otras 3 funciones Telegram (linkTelegramChat,
+  setupTelegramWebhook, getTelegramWebhookStatus) — sin tocar (ya en
+  us-central1 funcional)
+
+**Cache bump**: `v20260511180000`.

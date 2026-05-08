@@ -2115,8 +2115,15 @@ async function sendTelegramAlert(uid, text, options) {
  * Cuando un chat entra a queue, además del FCM dispara Telegram a
  * todos los asesores con telegramChatId vinculado.
  */
+// §53 (2026-05-08) — Pin region us-central1 explícitamente.
+// Estaba en southamerica-east1 (auto-detectada por trigger location)
+// y Eventarc rechazaba con 401 unauthorized debido a IAM bindings
+// incompletos. us-central1 unifica con las otras 3 funciones Telegram.
+// REQUIERE borrar la función vieja antes del redeploy:
+//   firebase functions:delete onChatEscalatedTelegram --region=southamerica-east1
 exports.onChatEscalatedTelegram = onDocumentUpdated({
     document: 'conciergeChats/{sessionId}',
+    region: 'us-central1',
     secrets: [telegramBotToken]
 }, async (event) => {
     if (!event.data) return;
@@ -2150,9 +2157,8 @@ exports.onChatEscalatedTelegram = onDocumentUpdated({
         if (u.telegramChatId) eligible.push({ uid: doc.id, chatId: u.telegramChatId, nombre: u.nombre });
     });
 
-    if (eligible.length === 0) return;
-
-    // §51 — logging extra para diagnóstico cuando no se envía
+    // §53 fix: unificar dead code. Antes había 2 ifs (eligible.length === 0)
+    // y el primero hacía return inmediato sin logging ni marcado de timestamp.
     if (eligible.length === 0) {
         console.warn('[onChatEscalatedTelegram] ⚠ NO HAY asesores con telegramChatId vinculado.\n' +
             'Razones posibles:\n' +
@@ -2169,6 +2175,9 @@ exports.onChatEscalatedTelegram = onDocumentUpdated({
         });
         return;
     }
+
+    // §53 — logging de diagnóstico para confirmar que el handler entró
+    console.log('[onChatEscalatedTelegram] ' + eligible.length + ' asesores elegibles. Enviando alertas...');
 
     const radicado = after.radicado || event.params.sessionId.slice(-6);
     const userName = after.userNombre || after.userEmail || 'Cliente';

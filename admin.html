@@ -8,6 +8,27 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
 
+    <!-- §47.5 — Fallback CSS inline MÍNIMO para que aunque ningún CSS
+         externo cargue (mobile con red lenta + cache borrado), el body
+         tenga fondo dark + texto legible en lugar de blanco con texto
+         crudo. Cliente reportó que al borrar cache aparece la página
+         como texto plano sin estilos. -->
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0c;
+            color: #e5e5e5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                         'Inter', 'Poppins', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+        }
+        body { font-size: 0.95rem; line-height: 1.5; }
+        a { color: #d4ad6e; }
+    </style>
+
     <!-- §33 V2-2 ANTI-FOUC — visibility gate + preloader masking
          Previene el "TV glitch" al refrescar. Body invisible hasta que
          CSS+fonts pinten completos. -->

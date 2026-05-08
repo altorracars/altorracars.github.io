@@ -22145,3 +22145,140 @@ cero modificación a archivos no involucrados.
   Es protección anti-abuso, no un bug.
 
 **Cache bump**: `v20260511110000`.
+
+---
+
+## 47.5. ADR-047.5 — Fallback CSS inline anti-pantalla-blanca + cómo desbloquear Firebase rate limit (2026-05-08)
+
+> Cliente reportó tras §47.quat con captura mobile:
+>
+> 1. Al borrar cache aparece pantalla con texto crudo "Panel Admin |
+>    ALTORRA CARS / Lo que el sistema notó / Knowledge Base vacía /
+>    Ir al KB" sin ningún estilo CSS.
+> 2. "Demasiados intentos de envío de SMS. Firebase ha bloqueado
+>    temporalmente los envíos" — el cliente quiere saber cómo
+>    quitar el bloqueo para poder seguir testeando.
+>
+> Aplicado bajo doctrina IAP §37 + RCA §19.
+
+### 47.5.1 Causa raíz Issue 1 — Bootstrap timeout demasiado agresivo
+
+`admin-v2-bootstrap.js` tiene una safety-net `setTimeout(reveal, 4500)`.
+La idea era: si `window.load` nunca dispara (recursos colgados), revelar
+el body de todas formas para no dejar al usuario en pantalla negra.
+
+Pero en mobile con red lenta + cache borrado:
+
+1. Browser carga `admin.html` desde la red (sin SW cache).
+2. Inline `<script>` setea `html.av2-loading` → CSS oculta el body.
+3. Browser empieza a descargar 7 archivos CSS externos (tokens.css,
+   components.css, animations.css, admin.css, toast-notifications.css,
+   admin-visionary.css, admin-v2.css, admin-perf-kill.css, admin-topnav.css).
+4. En LTE intermitente, descargar 9 CSS puede tardar **>4.5s**.
+5. Bootstrap safety net dispara → revela body con clase `av2-ready` →
+   pero los CSS externos aún no llegaron.
+6. Body se vuelve visible con estilos default del browser (h1, h2, p
+   con tipografía Times New Roman, fondo blanco).
+
+**Resultado**: el cliente ve "Panel Admin | ALTORRA CARS" como h1 plano,
+"Lo que el sistema notó" como h3, "Knowledge Base vacía" como p, etc.
+**Sin nada del dark theme dorado de Altorra**.
+
+### 47.5.2 Solución Issue 1 — 2 fixes complementarios
+
+**Fix #1**: CSS inline mínimo en `<head>` de `admin.html` con dark theme + tipografía system:
+
+```html
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        background: #0a0a0c;
+        color: #e5e5e5;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                     'Inter', 'Poppins', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        min-height: 100vh;
+    }
+    body { font-size: 0.95rem; line-height: 1.5; }
+    a { color: #d4ad6e; }
+</style>
+```
+
+Este `<style>` se aplica ANTES que los `<link rel="stylesheet">`
+externos. Aunque ningún CSS externo cargue:
+- Body tiene fondo dark `#0a0a0c` (NO blanco)
+- Texto color claro `#e5e5e5` (NO negro Times)
+- Tipografía system clean (NO Times New Roman)
+- Links dorados Altorra
+
+**Fix #2**: Aumentar `TIMEOUT_MS` del bootstrap de 4500ms → 8000ms.
+Con 8s, casi todos los mobile devices con LTE inestable terminan de
+descargar los CSS antes del safety net. Si aún así se dispara, el
+fallback inline de Fix #1 garantiza una experiencia decente.
+
+### 47.5.3 Issue 2 — Cómo quitar el rate limit de Firebase
+
+`auth/too-many-requests` de Firebase Phone Provider es protección
+anti-abuso. El bloqueo es **por número de teléfono**, no por usuario.
+Firebase Console NO tiene UI para limpiarlo manualmente.
+
+**Opciones para el cliente**:
+
+| # | Opción | Tiempo | Esfuerzo |
+|---|---|---|---|
+| 1 | **Esperar** que el rate limit expire | 15-60 min auto | Cero |
+| 2 | **Desactivar 2FA temporalmente** del usuario afectado | Inmediato | Bajo |
+| 3 | **Cambiar el número de teléfono** del 2FA en el perfil | Inmediato | Medio |
+| 4 | Eliminar y re-crear el usuario en Firebase | Inmediato | Alto (regen 2FA) |
+
+**Recomendación**: opción **2** para testear sin pasar 2FA cada vez:
+
+1. Loguear como super_admin (en otro browser/dispositivo si el actual está bloqueado).
+2. Ir a sec-users (Configuración → Usuarios).
+3. Editar el editor afectado.
+4. Toggle OFF `habilitado2FA`.
+5. Guardar.
+6. El editor ahora puede loguear con solo email + password (sin SMS).
+7. Una vez probado todo, volver a activar 2FA cuando el rate limit expire.
+
+**Para el caso del super_admin que se bloqueó él mismo**:
+
+Si el super_admin único quedó bloqueado de su propio 2FA:
+- Esperar que expire (la única opción si no hay otro super_admin)
+- O temporalmente cambiar `habilitado2FA: false` directo en
+  Firestore Console → `usuarios/{uid}` → editar campo
+
+### 47.5.4 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Mobile borrar cache + recargar admin | Fondo dark + tipografía system, NO blanco con texto crudo. Ver preloader Altorra |
+| 2 | Si CSS externos cargan en <8s | Reveal normal con todo el theme aplicado |
+| 3 | Si CSS tardan >8s (red muy mala) | Body se revela con fallback inline (dark + system font), suficientemente legible |
+| 4 | Desactivar 2FA del editor en sec-users | Editor puede loguear sin SMS |
+| 5 | Esperar 30 min y reactivar 2FA | Rate limit expirado, flow normal de SMS |
+
+### 47.5.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `admin.html` head | `<style>` inline con dark theme fallback (background, color, font-family, links dorados) |
+| `js/admin-v2-bootstrap.js` | TIMEOUT_MS 4500 → 8000 |
+| `service-worker.js` | CACHE_VERSION → v20260511120000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511120000 |
+| `CLAUDE.md` | Esta sección §47.5 |
+
+### 47.5.6 Doctrina aplicada
+
+§19 RCA: identifiqué que el bootstrap revelaba el body antes de que
+los CSS terminaran de cargar en mobile. NO agregué más capas; añadí
+fallback CSS y aumenté el timeout.
+
+§37 IAP: 5 secciones documentadas previo al cambio.
+
+§17 (Reglas Performance): cero `transition: all`, cero `MutationObserver`,
+cero `pointermove`. Solo CSS inline + un timeout JS modificado.
+
+**Cache bump**: `v20260511120000`.

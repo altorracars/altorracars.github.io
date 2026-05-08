@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511110000'; // §47.quat — Hot fix hamburger: sidebar legacy `display:none !important` SIN media query bloqueaba el drawer mobile + specificity para vencer .hamburger-btn legacy de admin.css:12788
+    const APP_VERSION = '20260511120000'; // §47.5 — Fallback CSS inline en <head> + bootstrap timeout 4.5s→8s para evitar pantalla blanca con texto crudo en mobile post-borrar-cache
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

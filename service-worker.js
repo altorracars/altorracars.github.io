@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260511110000'; // §47.quat — 2 hot fixes RCA estricto §19: (1) HAMBURGER NO FUNCIONABA porque admin-topnav.css:81-84 tenía .sidebar { display:none !important } SIN media query — ocultaba la sidebar legacy SIEMPRE incluso en mobile (donde admin-v2.css la usa como drawer con transform). Click hamburger ponía body.is-sidebar-open pero la sidebar nunca renderizaba. Fix: envolver en @media (min-width:769px) para que solo aplique desktop. (2) Botón hamburger se mostraba en desktop también porque admin.css:12788 tiene .hamburger-btn { display:inline-flex !important } legacy. Fix: subir specificity de mi regla a .admin-panel .atn-topnav .atn-hamburger + !important para vencer la legacy. // §47.ter — z-index, cargo, multi-store trust.
+const CACHE_VERSION = 'v20260511120000'; // §47.5 — Fix pantalla blanca con texto crudo al borrar cache mobile: (1) CSS inline mínimo en <head> de admin.html (background:#0a0a0c color:#e5e5e5 font-family:system) para que aunque ningún CSS externo cargue (red lenta + cache borrado), el body NO quede blanco con texto sin estilo. Cliente reportó esto al borrar cache en mobile. (2) Bootstrap timeout 4500ms → 8000ms en admin-v2-bootstrap.js para dar más tiempo a CSS cargar en mobile con LTE intermitente. // §47.quat — hamburger fix.
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

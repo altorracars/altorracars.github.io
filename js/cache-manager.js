@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511120000'; // §47.5 — Fallback CSS inline en <head> + bootstrap timeout 4.5s→8s para evitar pantalla blanca con texto crudo en mobile post-borrar-cache
+    const APP_VERSION = '20260511130000'; // §48 — Sistema de recuperación de cuenta: 10 backup codes (Web Crypto SHA-256) + 3 preguntas seguridad + auto-redirect cuando Firebase rate-limit + setup en perfil
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

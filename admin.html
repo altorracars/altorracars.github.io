@@ -338,6 +338,98 @@
             </div>
         </form>
         <div id="recaptcha-container"></div>
+        <!-- §48 — Recovery link visible cuando SMS bloqueado o el user
+             no tiene acceso al telefono. Click → recoveryScreen. -->
+        <div style="text-align:center;margin-top:1rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.06);">
+            <a href="#" id="twoFaRecoveryLink" style="color:var(--admin-text-muted);font-size:0.78rem;text-decoration:none;">
+                ¿No puedes recibir el SMS? Usar método alternativo
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- §48 RECOVERY SCREEN — fallback al 2FA SMS cuando Firebase rate-limit
+     bloquea o el usuario no tiene acceso al teléfono.
+     Múltiples capas: backup codes + preguntas de seguridad. -->
+<div id="recoveryScreen" class="login-container" style="display:none;">
+    <div class="login-box">
+        <div class="login-logo">
+            <h1>ALTORRA CARS</h1>
+            <p>Recuperación de cuenta</p>
+        </div>
+
+        <!-- Selección de método -->
+        <div id="recoveryMethodSelect" style="display:none;">
+            <p style="text-align:center;font-size:0.85rem;color:var(--admin-text-muted);margin-bottom:1.25rem;">
+                El SMS está temporalmente bloqueado. Usá un método alternativo:
+            </p>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                <button class="btn btn-secondary btn-block" id="btnRecoveryUseBackup" style="text-align:left;padding:0.85rem 1rem;">
+                    <i data-lucide="key" width="18" height="18" style="margin-right:0.5rem;vertical-align:middle;"></i>
+                    Código de respaldo
+                    <small style="display:block;color:var(--admin-text-muted);font-size:0.72rem;margin-top:0.25rem;font-weight:400;">
+                        Si guardaste códigos al activar 2FA
+                    </small>
+                </button>
+                <button class="btn btn-secondary btn-block" id="btnRecoveryUseQuestions" style="text-align:left;padding:0.85rem 1rem;">
+                    <i data-lucide="help-circle" width="18" height="18" style="margin-right:0.5rem;vertical-align:middle;"></i>
+                    Preguntas de seguridad
+                    <small style="display:block;color:var(--admin-text-muted);font-size:0.72rem;margin-top:0.25rem;font-weight:400;">
+                        Responder 2 de 3 preguntas correctamente
+                    </small>
+                </button>
+            </div>
+            <div style="text-align:center;margin-top:1.25rem;">
+                <a href="#" id="btnRecoveryBack" style="color:var(--admin-text-muted);font-size:0.8rem;text-decoration:none;">← Volver al SMS</a>
+            </div>
+        </div>
+
+        <!-- Form: Backup code -->
+        <div id="recoveryBackupForm" style="display:none;">
+            <p style="text-align:center;font-size:0.85rem;color:var(--admin-text-muted);margin-bottom:1rem;">
+                Ingresá uno de tus códigos de respaldo (8 caracteres).
+                Cada código funciona <strong>una sola vez</strong>.
+            </p>
+            <form id="recoveryBackupFormEl" autocomplete="off">
+                <div class="form-group">
+                    <label class="form-label" for="recoveryBackupCode">Código de respaldo</label>
+                    <input type="text" id="recoveryBackupCode" class="form-input" required maxlength="9" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" style="text-align:center;font-size:1.2rem;letter-spacing:0.2rem;text-transform:uppercase;">
+                </div>
+                <div id="recoveryBackupError" style="color:var(--admin-danger);font-size:0.8rem;margin-bottom:0.75rem;display:none;text-align:center;"></div>
+                <button type="submit" class="btn btn-primary btn-block" id="recoveryBackupBtn">Verificar código</button>
+            </form>
+            <div style="text-align:center;margin-top:0.75rem;">
+                <a href="#" class="recovery-back-method" style="color:var(--admin-text-muted);font-size:0.8rem;text-decoration:none;">← Otro método</a>
+            </div>
+        </div>
+
+        <!-- Form: Security questions -->
+        <div id="recoveryQuestionsForm" style="display:none;">
+            <p style="text-align:center;font-size:0.85rem;color:var(--admin-text-muted);margin-bottom:1rem;">
+                Respondé al menos 2 de 3 preguntas correctamente.
+            </p>
+            <form id="recoveryQuestionsFormEl" autocomplete="off">
+                <div id="recoveryQuestionsList"></div>
+                <div id="recoveryQuestionsError" style="color:var(--admin-danger);font-size:0.8rem;margin-bottom:0.75rem;display:none;text-align:center;"></div>
+                <button type="submit" class="btn btn-primary btn-block" id="recoveryQuestionsBtn">Verificar respuestas</button>
+            </form>
+            <div style="text-align:center;margin-top:0.75rem;">
+                <a href="#" class="recovery-back-method" style="color:var(--admin-text-muted);font-size:0.8rem;text-decoration:none;">← Otro método</a>
+            </div>
+        </div>
+
+        <!-- Sin recovery configurado -->
+        <div id="recoveryNotConfigured" style="display:none;text-align:center;">
+            <i data-lucide="shield-alert" width="48" height="48" style="color:var(--admin-warning,#d4a64f);margin-bottom:0.75rem;"></i>
+            <p style="font-size:0.9rem;color:var(--admin-text);margin-bottom:0.5rem;">
+                Tu cuenta no tiene métodos de recuperación configurados.
+            </p>
+            <p style="font-size:0.78rem;color:var(--admin-text-muted);margin-bottom:1.25rem;">
+                Esperá que el rate limit de Firebase expire (15-60 min)
+                y configurá métodos de recuperación desde tu perfil.
+            </p>
+            <a href="#" id="btnRecoveryBackToSMS" style="color:var(--admin-accent,#58a6ff);font-size:0.85rem;text-decoration:none;">← Volver al SMS</a>
+        </div>
     </div>
 </div>
 
@@ -2638,6 +2730,106 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                         </div>
                     </section>
 
+                    <!-- §48 — RECUPERACIÓN DE CUENTA (Backup codes + Security questions) -->
+                    <section class="profile-card" id="profileRecoveryCard">
+                        <header class="profile-card-head">
+                            <h3>Recuperación de cuenta</h3>
+                            <span class="profile-card-hint">
+                                Si Firebase bloquea el SMS o no tenés acceso al teléfono,
+                                estos métodos te permiten recuperar acceso al panel.
+                            </span>
+                        </header>
+                        <div class="profile-card-body">
+
+                            <!-- BACKUP CODES -->
+                            <div class="profile-recovery-row">
+                                <div class="profile-recovery-info">
+                                    <div class="profile-recovery-icon" style="background:linear-gradient(135deg,#b89658,#9a7d44);">
+                                        <i data-lucide="key"></i>
+                                    </div>
+                                    <div>
+                                        <div class="profile-recovery-name">Códigos de respaldo</div>
+                                        <div class="profile-recovery-status" id="profileBackupStatus">Sin generar</div>
+                                    </div>
+                                </div>
+                                <div class="profile-recovery-actions">
+                                    <button type="button" class="btn btn-primary btn-sm" id="profileBackupGenerate">
+                                        <i data-lucide="refresh-cw"></i> Generar códigos
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="profile-field-hint" style="margin-top:6px;">
+                                <i data-lucide="info"></i>
+                                10 códigos de un solo uso. Guardalos en un lugar seguro
+                                — solo se muestran <strong>una vez</strong>.
+                            </p>
+
+                            <!-- Backup codes display (oculto hasta generar) -->
+                            <div id="profileBackupCodesDisplay" style="display:none;margin-top:14px;padding:14px;border:1px solid rgba(184,150,88,0.3);border-radius:8px;background:rgba(184,150,88,0.05);">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                                    <i data-lucide="alert-triangle" style="color:var(--admin-warning,#d4a64f);width:18px;height:18px;"></i>
+                                    <strong style="color:var(--admin-warning,#d4a64f);font-size:0.9rem;">Guardá estos códigos AHORA</strong>
+                                </div>
+                                <p style="font-size:0.8rem;color:var(--admin-text-muted);margin:0 0 12px;">
+                                    Esta es la única vez que los verás. Imprimí, copiá o guardá en un password manager.
+                                </p>
+                                <div id="profileBackupCodesList" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-family:'Courier New',monospace;font-size:0.95rem;font-weight:600;letter-spacing:0.05em;color:var(--admin-text);"></div>
+                                <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                                    <button type="button" class="btn btn-ghost btn-sm" id="profileBackupCopy">
+                                        <i data-lucide="copy"></i> Copiar
+                                    </button>
+                                    <button type="button" class="btn btn-ghost btn-sm" id="profileBackupPrint">
+                                        <i data-lucide="printer"></i> Imprimir
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-sm" id="profileBackupDone" style="margin-left:auto;">
+                                        <i data-lucide="check"></i> Ya los guardé
+                                    </button>
+                                </div>
+                            </div>
+
+                            <hr style="border:0;border-top:1px solid rgba(255,255,255,0.06);margin:18px 0;">
+
+                            <!-- SECURITY QUESTIONS -->
+                            <div class="profile-recovery-row">
+                                <div class="profile-recovery-info">
+                                    <div class="profile-recovery-icon" style="background:linear-gradient(135deg,#7c5cff,#5a3fd1);">
+                                        <i data-lucide="help-circle"></i>
+                                    </div>
+                                    <div>
+                                        <div class="profile-recovery-name">Preguntas de seguridad</div>
+                                        <div class="profile-recovery-status" id="profileQuestionsStatus">Sin configurar</div>
+                                    </div>
+                                </div>
+                                <div class="profile-recovery-actions">
+                                    <button type="button" class="btn btn-primary btn-sm" id="profileQuestionsConfig">
+                                        <i data-lucide="settings-2"></i> Configurar
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="profile-field-hint" style="margin-top:6px;">
+                                <i data-lucide="info"></i>
+                                3 preguntas — necesitás responder al menos 2 correctamente.
+                                Las respuestas se almacenan hasheadas (nadie puede verlas, ni siquiera Altorra).
+                            </p>
+
+                            <!-- Form de configuración de preguntas (oculto hasta click Configurar) -->
+                            <div id="profileQuestionsForm" style="display:none;margin-top:14px;padding:14px;border:1px solid rgba(124,92,255,0.3);border-radius:8px;background:rgba(124,92,255,0.04);">
+                                <p style="font-size:0.82rem;color:var(--admin-text);margin:0 0 12px;">
+                                    Elegí 3 preguntas distintas y respondelas. Las respuestas son
+                                    case-insensitive y se ignoran espacios al inicio/final.
+                                </p>
+                                <div id="profileQuestionsFields" style="display:flex;flex-direction:column;gap:12px;"></div>
+                                <div id="profileQuestionsErr" style="color:var(--admin-danger);font-size:0.8rem;margin-top:8px;display:none;"></div>
+                                <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
+                                    <button type="button" class="btn btn-ghost btn-sm" id="profileQuestionsCancel">Cancelar</button>
+                                    <button type="button" class="btn btn-primary btn-sm" id="profileQuestionsSave">
+                                        <i data-lucide="save"></i> Guardar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- §40 — INTEGRACIONES (Telegram + futuras) -->
                     <section class="profile-card" id="profileIntegrationsCard">
                         <header class="profile-card-head">
@@ -3358,6 +3550,9 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-activity-feed.js" defer></script>
 <script src="js/admin-state.js" defer></script>
 <script src="js/admin-table-utils.js" defer></script>
+<!-- §48 — Recovery system (backup codes + security questions) carga ANTES
+     de admin-auth.js para que esté disponible al manejar 2FA bloqueado. -->
+<script src="js/admin-recovery.js" defer></script>
 <script src="js/admin-auth.js" defer></script>
 <script src="js/admin-sync.js" defer></script>
 <script src="js/admin-activity.js" defer></script>

@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260511120000'; // §47.5 — Fix pantalla blanca con texto crudo al borrar cache mobile: (1) CSS inline mínimo en <head> de admin.html (background:#0a0a0c color:#e5e5e5 font-family:system) para que aunque ningún CSS externo cargue (red lenta + cache borrado), el body NO quede blanco con texto sin estilo. Cliente reportó esto al borrar cache en mobile. (2) Bootstrap timeout 4500ms → 8000ms en admin-v2-bootstrap.js para dar más tiempo a CSS cargar en mobile con LTE intermitente. // §47.quat — hamburger fix.
+const CACHE_VERSION = 'v20260511130000'; // §48 — Sistema de recuperación de cuenta multi-capa estilo Apple/Amazon: (1) Backup codes — 10 códigos de un solo uso formato XXXX-XXXX, generación crypto-random, hasheados SHA-256 server-side via Web Crypto API. Cada código funciona 1 vez (marca usedAt). (2) Preguntas de seguridad — 3 preguntas configurables (lista de 12 predefinidas: apodo infancia, ciudad, mascota, etc.), respuestas con SHA-256 + salt random por pregunta, normalizadas case-insensitive + sin acentos + trim. Login requiere 2/3 correctas. (3) Auto-redirect a recoveryScreen cuando Firebase devuelve auth/too-many-requests al enviar SMS. (4) Setup en sec-profile con: generar/regenerar backup codes (mostrados UNA vez con copy/print), configurar 3 preguntas, dropdowns. (5) firestore.rules whitelist amplía: backupCodes, backupCodesGeneratedAt, securityQuestions, securityQuestionsUpdatedAt. // §47.5 — Fallback CSS inline.
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

@@ -23595,3 +23595,200 @@ firebase deploy --only functions:onChatEscalatedTelegram
 
 **Cache bump**: `v20260511210000`.
 
+---
+
+## 57. ADR-057 — Refactor del flow de finalización del chat (Concierge cliente) (2026-05-08)
+
+> Cliente reportó que el flow actual de "Finalizar conversación" tenía
+> 4 problemas serios:
+>
+> 1. Texto del confirm dialog incoherente — al clickar "Finalizar" decía
+>    "Antes de empezar de nuevo, ¿estos siguen siendo tus datos?". Esa
+>    pregunta corresponde a iniciar nuevo, no finalizar.
+> 2. No es en tiempo real — la ventana del chat queda igual hasta refresh
+>    forzado.
+> 3. Inicia otra conversación inmediatamente — el cliente NO lo pidió.
+> 4. Falta opción de descargar la conversación.
+>
+> El cliente pidió: "al finalizar el chat por parte del usuario debe
+> automáticamente aparecer un mensaje que diga Chat finalizado un boton
+> de accion que descargue la conversacion en pdf por si el usuario
+> quiere y otro que diga cerrar chat, al cerrarse el chat con el boton
+> de accion o en la x luego de haber finalizado la conversacion todo
+> lo que estaba en esa ventana de chat debe borrarse instantaneamente".
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 57.1 Causa raíz del flow incoherente
+
+`handleClientResetSession` original tenía 3 caminos según el estado
+del cliente (anonymous con datos, logueado, anonymous sin datos). El
+caso A (anonymous con datos) preguntaba al cliente si sus datos
+seguían vigentes ANTES de "empezar de nuevo". Esa pregunta NO tiene
+sentido al **finalizar** — solo tendría sentido al iniciar uno nuevo.
+
+Además, los 3 caminos terminaban llamando `resetSession({ ... })`
+que destruye la sesión actual y crea una NUEVA inmediatamente con
+welcome bubble fresco. El cliente NUNCA pidió iniciar otro chat.
+
+### 57.2 Solución de fondo — flow desacoplado
+
+**Antes** (incoherente):
+```
+Finalizar → confirm "¿siguen siendo tus datos?" → resetSession()
+         → sesión nueva + welcome bubble inmediato
+```
+
+**Ahora** (coherente):
+```
+Finalizar → confirm "¿Finalizar esta conversación?" simple
+         → markSessionFinalized()
+         → status='closed' + closedReason='client_finalized' en Firestore
+         → applyClosedState() renderiza pantalla "Chat finalizado"
+            con 2 botones: [Descargar conversación] [Cerrar chat]
+         → cliente decide qué hacer:
+            - Click "Descargar" → window.print con HTML formateado
+              (user elige "Save as PDF" en print dialog)
+            - Click "Cerrar chat" o X → finalCloseAndCleanup():
+                · cancela listeners
+                · limpia DOM (mensajes + closed block + banners)
+                · resetea localStorage
+                · crea sesión limpia silenciosa (nuevo sessionId,
+                  sin re-render de welcome)
+                · cierra panel
+            - Próxima apertura del panel = welcome bubble nuevo
+```
+
+### 57.3 Implementación
+
+**Funciones nuevas** (en `js/concierge.js`):
+
+`markSessionFinalized()`:
+- Cancela listeners
+- `markChatClosedInFirestore('client_finalized')` (con reason)
+- Setea `session.closed = true` + `session.closedReason = 'client_finalized'`
+- Llama `applyClosedState()` que ahora renderiza UI nueva
+
+`downloadConversationPDF()`:
+- Crea documento HTML standalone con:
+  - Header dorado con título + radicado + fecha
+  - Card de cliente (nombre, email, teléfono)
+  - Mensajes formateados por tipo (user/bot/asesor/system)
+  - Footer con disclaimer
+- `window.open()` + `document.write()` + autoejecuta `window.print()`
+  con setTimeout 400ms (espera a que cargue)
+- Usuario elige "Save as PDF" en el print dialog del browser
+- **Cero libraries externas** (cumple §17.7 cero APIs externas)
+
+`finalCloseAndCleanup()`:
+- Cancela listeners (defense-in-depth)
+- Limpia localStorage (`STORAGE_KEY`)
+- Reset refs internas (`_chatDocCreated`, `_lastSyncedMsgIds`, etc.)
+- Limpia DOM completamente (messages, closedBlock, queueBanner,
+  slaWarning, dropdown, resetToast)
+- Carga sesión limpia (nuevo sessionId)
+- Cierra panel
+- **NO** llama `resetSession` (que re-renderizaría welcome)
+
+`closeOrFinalize()`:
+- Wrapper de close. Si `session.closed && closedReason='client_finalized'`,
+  llama `finalCloseAndCleanup`. Si no, llama `close` normal.
+- Bindeado a la X del header en lugar de `close` directo.
+
+**Funciones modificadas**:
+
+`handleClientResetSession()`:
+- Eliminados los 3 caminos. Texto coherente único:
+  "¿Finalizar esta conversación?\n\nUna vez finalizada, no podrás
+  retomarla.\nTendrás la opción de descargar el historial antes de
+  cerrar el chat."
+- Llama `markSessionFinalized()` en vez de `resetSession()`.
+
+`markChatClosedInFirestore(reason)`:
+- Acepta `reason` parameter (default 'client_finalized')
+- Persiste también `closedReason` y `closedByRole` en Firestore
+  (se alinea con §23.5 schema enterprise)
+
+`applyClosedState()`:
+- Detecta `session.closedReason === 'client_finalized'` → render UI
+  nueva con 2 botones [Descargar][Cerrar].
+- Si `closedReason !== 'client_finalized'` (ej. admin cerró el chat) →
+  render UI legacy con botón "Iniciar nueva conversación".
+- `data-variant="client"|"admin"` en el block para diferenciar y
+  re-renderizar si cambia el reason.
+
+### 57.4 CSS nuevo
+
+`.cnc-closed-actions` — flex column con gap, 2 botones full-width.
+`.cnc-closed-action` — base button con icon + label.
+`.cnc-closed-action--secondary` — botón "Descargar" (glass tenue + hover dorado).
+`.cnc-closed-action--primary` — botón "Cerrar chat" (gradient dorado AAA contrast).
+`prefers-reduced-motion` respetado.
+
+### 57.5 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Preguntar datos al finalizar | Eliminado el caso A. Confirm simple coherente con la acción |
+| `resetSession` automático | Reemplazado por `markSessionFinalized` que solo marca + renderiza UI |
+| Iniciar nueva conversación sin que el cliente lo pida | El cliente decide cuándo cerrar (botón o X). Solo entonces se prepara la próxima sesión limpia |
+| Library externa para PDF (jsPDF, etc.) | window.print + HTML formatado. Cero KB extra de bundle |
+| Persist sin closedReason (solo `closedBy: 'client'`) | Ahora también `closedReason: 'client_finalized'` + `closedByRole` (alineado con §23.5 schema) |
+| Reusar `close()` para X cuando estado finalizado | `closeOrFinalize` wrapper detecta el estado y elige acción correcta |
+
+### 57.6 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente abre Concierge, conversa, click ⋮ → "Finalizar conversación" | Confirm dialog: "¿Finalizar esta conversación? Una vez finalizada no podrás retomarla. Tendrás la opción de descargar el historial antes de cerrar." |
+| 2 | Acepta el confirm | INMEDIATAMENTE: chat queda con pantalla "Chat finalizado" + 2 botones (sin reset, sin welcome bubble nuevo) |
+| 3 | Mensajes anteriores siguen visibles arriba | Sí, el cliente puede revisarlos antes de descargar |
+| 4 | Click "Descargar conversación" | Se abre nueva pestaña con HTML formateado + dispara print dialog. User selecciona "Save as PDF" |
+| 5 | PDF generado | Incluye: header dorado, datos del cliente, todos los mensajes con timestamps + remitente, radicado, fecha de descarga |
+| 6 | Click "Cerrar chat" o X | Panel se cierra Y todos los mensajes/banners desaparecen del DOM |
+| 7 | Vuelve a abrir el panel | Welcome bubble del bot fresco (sesión nueva, mismo o nuevo sessionId) |
+| 8 | Verificar Firestore conciergeChats/{prevSessionId} | status='closed', closedReason='client_finalized', closedByRole='client' |
+| 9 | Admin del Hub abre el chat finalizado | Ve el banner de cierre con motivo "client_finalized" + radicado |
+| 10 | Refresh forzado en mitad del flow (después de "Finalizar") | Sesión persiste con session.closed=true → applyClosedState renderiza pantalla "Chat finalizado" automático (no se pierde estado) |
+
+### 57.7 Doctrina aplicada
+
+§19 RCA: identifiqué el origen real del confirm incoherente (caso A
+del flow original que preguntaba por datos en lugar de confirmar
+finalización). NO parché el texto, refactoricé el flow entero.
+
+§37 IAP: análisis previo identificó:
+- Funciones a modificar: handleClientResetSession, markChatClosedInFirestore, applyClosedState
+- Funciones nuevas: markSessionFinalized, downloadConversationPDF, finalCloseAndCleanup, closeOrFinalize
+- Bindings a actualizar: X del header (close → closeOrFinalize)
+- CSS nuevo: 2 variantes de botón en `.cnc-closed-actions`
+
+§17 (Performance): cero MutationObserver, cero pointermove. Solo
+event delegation existente. Print HTML usa `window.print()` nativo
+sin libs externas.
+
+§17.7 (cero APIs externas para PDF): usado `window.print()` + HTML
+con CSS `@media print` y `@page { margin: 1cm }`. El usuario elige
+"Save as PDF" en el dialog del browser.
+
+### 57.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/concierge.js` | `handleClientResetSession` simplificado + 3 funciones nuevas (`markSessionFinalized`, `downloadConversationPDF`, `finalCloseAndCleanup`, `closeOrFinalize`) + `markChatClosedInFirestore` acepta reason + `applyClosedState` detecta variant |
+| `css/concierge.css` | `.cnc-closed-actions` + `.cnc-closed-action--secondary/--primary` con prefers-reduced-motion |
+| `service-worker.js` | CACHE_VERSION → v20260511220000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511220000 |
+| `CLAUDE.md` | Esta sección §57 |
+
+### 57.9 Archivos INTACTOS (afirmación)
+
+- `js/admin-concierge.js` — sin tocar (admin sigue viendo el chat
+  finalizado con la lógica existente que detecta `status='closed'`)
+- `firestore.rules` — sin tocar (las rules de §23.8 ya cubren
+  `closedReason` y `closedByRole` como campos opcionales)
+- `functions/index.js` — sin tocar (Telegram push, summarize, etc.
+  no se afectan)
+
+**Cache bump**: `v20260511220000`.
+

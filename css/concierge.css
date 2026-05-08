@@ -1105,6 +1105,67 @@
     font-weight: 700;
 }
 
+/* ─── §57 — Cliente finaliza chat: 2 botones (Descargar + Cerrar) ── */
+.cnc-closed-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 100%;
+    margin-top: 6px;
+}
+.cnc-closed-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+.cnc-closed-action [data-lucide] {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+.cnc-closed-action--secondary {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+.cnc-closed-action--secondary:hover {
+    background: rgba(212, 182, 122, 0.12);
+    border-color: rgba(212, 182, 122, 0.35);
+    color: #d4b67a;
+}
+.cnc-closed-action--primary {
+    background: linear-gradient(135deg, #d4b67a 0%, #b89658 100%);
+    color: #1a1310;
+    border-color: rgba(212, 182, 122, 0.6);
+    box-shadow: 0 2px 8px rgba(184, 150, 88, 0.25);
+}
+.cnc-closed-action--primary:hover {
+    background: linear-gradient(135deg, #e2c388 0%, #c4a062 100%);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.35);
+}
+.cnc-closed-action:active {
+    transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+    .cnc-closed-action,
+    .cnc-closed-action:active {
+        transition: none;
+        transform: none;
+    }
+}
+
 /* ─── §23 FASE 2 — Queue + SLA banners (cliente) ─────────────── */
 .cnc-queue-banner {
     margin: 12px 0;

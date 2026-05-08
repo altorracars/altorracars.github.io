@@ -19718,3 +19718,143 @@ A partir de §37 en adelante, el agente DEBE:
 - Pero igual debe entregar el IAP ANTES de cada commit ese plan
 
 **Cache bump**: `v20260510360000`.
+
+---
+
+## 38. ADR-038 — Subnav DENTRO del main + Fix Mi Perfil + Plan completo perfil (2026-05-08)
+
+> **Cliente reportó**: (1) "no encuentro la pestaña de marcas, banners"
+> — el subnav de §36.3 estaba en el grid global pero el cliente quería
+> tabs **dentro de cada sección como pestañas propias**. (2) "click en
+> Mi perfil no hace nada" — bug latente desde §36.1 en el router.
+>
+> **Aplicado bajo doctrina IAP (§37)**.
+
+### 38.1 Causa raíz subnav "no encontrado"
+
+El subnav DE §36.3 estaba implementado y funcional, pero vivía en el
+grid global como tercera fila entre topnav y main:
+
+```
+grid-template-rows: var(--atn-h) auto 1fr;   /* topnav | subnav | main */
+```
+
+El cliente quiere las tabs **integradas al contenido**, no como una
+barra flotante separada del topnav. Solución elegante: mover
+`<nav id="atnSubnav">` a estar DENTRO de `<main>` como primer hijo,
+con `position: sticky; top: 0` para que quede pegado arriba del scroll.
+
+**Resultado visual**:
+- Cuando entra a Vehículos/Marcas/Aliados/Banners/Reseñas → en el TOP
+  del scroll del main aparece el tab strip integrado
+- Al scrollear, el tab strip permanece sticky (siempre visible)
+- Cuando navega a Inicio/CRM/Agenda/Reportes → subnav `hidden`
+
+**Cambios CSS clave**:
+```css
+.admin-panel.admin-layout {
+    grid-template-rows: var(--atn-h) 1fr;   /* solo topnav + main */
+}
+.atn-subnav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: 48px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    border-bottom: 1px solid rgba(184,150,88,0.20);
+}
+```
+
+### 38.2 Causa raíz "Mi Perfil click → nada"
+
+`admin-section-router.js:131` `go(section)` buscaba un nav-item legacy
+en sidebar para hacer click programático:
+
+```js
+var btn = document.querySelector('.nav-item[data-section="' + section + '"]');
+if (!btn) return false;   // ← profile NO tiene nav-item, retorna silencioso
+btn.click();
+```
+
+Como `profile` está marcado `_hidden: true` en REGISTRY, no aparece
+en sidebar → `btn` es null → return false silenciosamente. Mi Perfil
+fue **inalcanzable desde §36.1**.
+
+**Fix**: refactor `go()` con 2 paths:
+
+- **Path A** (compat): si nav-item existe, click programático (preserva
+  admin-sidebar.js listeners)
+- **Path B** (nuevo): si REGISTRY tiene la sección pero no nav-item,
+  activación directa (`document.getElementById('sec-X')` + toggle
+  `.active` class + update hash + `notifyChange`)
+
+Esto desbloquea CUALQUIER sección `_hidden: true` (profile,
+appointments alias, futuros).
+
+### 38.3 Plan completo del perfil de admin (futuro)
+
+**Estado actual** (post §36.1 + §38):
+- ✅ HTML completo con avatar editable + 3 cards (info personal,
+  documento, cuenta read-only) + save bar sticky
+- ✅ `admin-profile.js` con compresión WebP + upload Storage + cédula
+  lock pattern + dirty state detection
+- ✅ Activación funcional via avatar dropdown → "Mi perfil"
+
+**Mejoras propuestas para v2** (no implementadas en §38, son deuda):
+
+| Feature | Prioridad | Complejidad |
+|---|---|---|
+| Validación cédula colombiana inline (8-10 dígitos, dígito verificador) | Alta | Baja |
+| Modal de crop circular antes de upload (preview con canvas) | Media | Media |
+| Sección "Sesiones activas" con opción de cerrar remotamente | Alta | Media |
+| Sección "Dispositivos confiados" con revocar individual | Alta | Baja (datos ya existen en `usuarios.trustedDevices`) |
+| Cambio de contraseña con re-auth + password strength meter | Alta | Media |
+| Activar/desactivar 2FA con flujo SMS (admin-auth ya tiene la lógica) | Alta | Baja |
+| Histórico de actividad propia (últimas 20 operaciones desde auditLog filtered by uid) | Media | Baja |
+| Idioma + zona horaria preferida (default es-CO/America/Bogota) | Baja | Baja |
+| Notificaciones de admin (turnos, alertas) — toggle por canal | Media | Media |
+| Exportar mis datos (GDPR-style) | Baja | Media |
+
+**Aprobación del Super Admin para cambio de cédula** (lock pattern):
+- Usuario solicita cambio → `cedulaChangeRequested: true` + timestamp
+- Super Admin ve la solicitud en sec-users (badge naranja "Cédula
+  pendiente de aprobación")
+- Super Admin revisa + aprueba → setea `cedulaChangeApproved: true`
+- Cliente vuelve a sec-profile → cédula se desbloquea hasta el
+  próximo save
+- Audit log registra el cambio
+
+### 38.4 Archivos modificados
+
+| Archivo | Tipo | Cambio |
+|---|---|---|
+| `admin.html` | edit | Movido `<nav id="atnSubnav">` de root del admin-panel a primer hijo de `<main>` |
+| `css/admin-topnav.css` | edit | grid-template-rows: 2 filas en lugar de 3. `.atn-subnav` cambió de `grid-area` a `position: sticky; top: 0` |
+| `js/admin-section-router.js` | edit | `go()` refactor con Path A (nav-item legacy) + Path B (activación directa para `_hidden:true`) |
+| `service-worker.js` + `js/cache-manager.js` | edit | bump v20260510370000 |
+| `CLAUDE.md` | append | Esta sección §38 |
+
+### 38.5 IAP — checklist post-cambio
+
+- [x] `node -c` en admin-section-router.js, admin-topnav.js, admin-profile.js
+- [x] grep de selectores: `class="atn-subnav"` solo en HTML correcto
+- [x] grep `data-section="profile"` confirma que NO está en sidebar legacy
+- [x] Cache bump aplicado v20260510370000
+- [x] Sin reintroducir MutationObserver subtree:true / pointermove / transition:all
+- [x] Sin onclick inline con datos
+- [x] CLAUDE.md §38 documentado con plan v2 del perfil
+
+### 38.6 Test E2E
+
+| # | Test | Resultado esperado |
+|---|---|---|
+| 1 | Click "Inventario" en topnav | Sec-vehicles activo, subnav aparece DENTRO del scroll del main con 5 tabs (Vehículos / Marcas / Aliados / Banners / Reseñas) |
+| 2 | Click "Marcas" en subnav | Sec-brands activo, subnav permanece visible con "Marcas" marcado |
+| 3 | Scrollear contenido de marcas | Subnav permanece sticky-top del scroll |
+| 4 | Click "Inicio" | Sec-dashboard, subnav se oculta (`hidden`) |
+| 5 | Click avatar topnav → "Mi perfil" | Sec-profile se activa, formulario carga con datos del usuario |
+| 6 | URL bar muestra `#/profile` | Sí (hash actualizado por el router) |
+| 7 | F5 en `#/profile` | Recarga + queda en sec-profile (router restaura del hash) |
+| 8 | Subir foto en perfil → guardar | Avatar comprimido a WebP, sube a Storage, actualiza topnav inmediato |
+
+**Cache bump**: `v20260510370000`.

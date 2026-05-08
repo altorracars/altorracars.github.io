@@ -127,18 +127,48 @@
         section = resolve(section);
         if (!section) return false;
 
-        // Find the nav-item button and trigger its click
+        // §38 — PATH A: si existe nav-item legacy en sidebar, click programático
+        // (mantiene compat con admin-sidebar.js que escucha clicks en .nav-item)
         var btn = document.querySelector('.nav-item[data-section="' + section + '"]');
-        if (!btn) {
-            console.warn('[Sections] Unknown section:', section);
-            return false;
+        if (btn && !btn.disabled) {
+            btn.click();
+            return true;
         }
-        if (btn.disabled) {
-            console.warn('[Sections] Section disabled:', section);
-            return false;
+
+        // §38 — PATH B: secciones registradas con _hidden:true (profile, appointments)
+        // NO tienen nav-item en sidebar legacy. Activación directa:
+        //   1. Verificar que existe sec-X en HTML
+        //   2. Quitar .active de todas las .section, ponerlo en sec-X
+        //   3. Notificar listeners (notifyChange)
+        // Esto desbloquea Mi Perfil (sec-profile) que estaba inalcanzable.
+        if (REGISTRY[section]) {
+            var target = document.getElementById('sec-' + section);
+            if (!target) {
+                console.warn('[Sections] sec-' + section + ' no existe en el DOM');
+                return false;
+            }
+            // Desactivar todas las secciones
+            document.querySelectorAll('.section.active').forEach(function (el) {
+                el.classList.remove('active');
+            });
+            // Activar la nueva
+            target.classList.add('active');
+            // Update URL hash + listeners
+            var prev = _currentSection;
+            _currentSection = section;
+            try {
+                if (!_hashUpdating) {
+                    _hashUpdating = true;
+                    window.location.hash = '#/' + section;
+                    setTimeout(function () { _hashUpdating = false; }, 100);
+                }
+            } catch (e) {}
+            notifyChange(section, prev);
+            return true;
         }
-        btn.click();
-        return true;
+
+        console.warn('[Sections] Unknown section:', section);
+        return false;
     }
 
     function onChange(fn) {

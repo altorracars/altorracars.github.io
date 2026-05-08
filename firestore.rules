@@ -145,7 +145,12 @@ service cloud.firestore {
                     'cedulaChangeRequested', 'cedulaChangeRequestedAt',
                     // Telegram bot link (§39/§40)
                     'telegramChatId', 'telegramLinkedAt',
-                    'telegramUserName', 'telegramLastUsedAt'
+                    'telegramUserName', 'telegramLastUsedAt',
+                    // §48 — Recovery system: backup codes + security questions
+                    // Hashes SHA-256 (no plaintext). User puede generar/regenerar
+                    // sus propios códigos y configurar sus preguntas.
+                    'backupCodes', 'backupCodesGeneratedAt',
+                    'securityQuestions', 'securityQuestionsUpdatedAt'
                 ])
             // §43 — Cédula one-time-edit: si se está modificando 'cedula',
             // el valor anterior DEBE estar vacío. Cambios posteriores se

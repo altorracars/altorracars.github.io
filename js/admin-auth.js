@@ -721,6 +721,16 @@
         }).catch(function(err) {
             var errMsg = formatSMSError(err);
             show2FAStatus('twoFa', errMsg, 'error');
+            // §48 — Si Firebase rate-limit bloqueó SMS, ofrecer auto-redirect
+            // a recovery tras 1.5s. El user puede ver el error y luego se
+            // redirige (o lo cancela manualmente).
+            if (err && err.code === 'auth/too-many-requests') {
+                setTimeout(function () {
+                    if ($('twoFaScreen').style.display === 'flex' && AP.showRecoveryScreen) {
+                        AP.showRecoveryScreen();
+                    }
+                }, 2500);
+            }
         });
     }
 
@@ -851,6 +861,14 @@
                 twoFaResend.style.opacity = '';
                 twoFaResend.textContent = 'Reenviar codigo';
                 show2FAStatus('twoFa', formatSMSError(err), 'error');
+                // §48 — Si rate-limit, redirigir a recovery tras 2.5s
+                if (err && err.code === 'auth/too-many-requests') {
+                    setTimeout(function () {
+                        if ($('twoFaScreen').style.display === 'flex' && AP.showRecoveryScreen) {
+                            AP.showRecoveryScreen();
+                        }
+                    }, 2500);
+                }
             });
         });
     }
@@ -2221,6 +2239,324 @@
     document.querySelectorAll('[required]').forEach(function(el) {
         el.setAttribute('aria-required', 'true');
     });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // §48 RECOVERY SYSTEM — Backup codes + Security questions
+    // Cuando Firebase rate-limit bloquea SMS o el usuario no tiene
+    // acceso al teléfono, ofrece métodos alternativos de verificación.
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Detecta si un error es Firebase rate-limit de SMS (mostrar recovery).
+     */
+    function isSMSRateLimitError(err) {
+        if (!err) return false;
+        var code = err.code || '';
+        var msg = (err.message || '').toLowerCase();
+        return code === 'auth/too-many-requests'
+            || msg.indexOf('too-many-requests') !== -1
+            || msg.indexOf('too many requests') !== -1
+            || msg.indexOf('blocked') !== -1
+            || msg.indexOf('bloqueado') !== -1;
+    }
+
+    function showRecoveryScreen() {
+        // Hide otras pantallas
+        $('twoFaScreen').style.display = 'none';
+        $('loginScreen').style.display = 'none';
+        $('adminPanel').style.display = 'none';
+        var rs = $('recoveryScreen');
+        if (!rs) return;
+        rs.style.display = 'flex';
+
+        // Reset all method panels
+        $('recoveryMethodSelect').style.display = 'block';
+        $('recoveryBackupForm').style.display = 'none';
+        $('recoveryQuestionsForm').style.display = 'none';
+        $('recoveryNotConfigured').style.display = 'none';
+
+        // Verificar si el usuario tiene métodos configurados
+        var profile = AP.currentUserProfile;
+        if (!profile) {
+            // Profile aún no cargado — mostrar selector igualmente
+            return;
+        }
+        var hasBackup = profile.backupCodes && profile.backupCodes.length > 0
+                        && AltorraRecovery.countAvailableBackupCodes(profile.backupCodes) > 0;
+        var hasQuestions = profile.securityQuestions && profile.securityQuestions.length >= AltorraRecovery.SECURITY_QUESTION_COUNT;
+
+        var btnBackup = $('btnRecoveryUseBackup');
+        var btnQuestions = $('btnRecoveryUseQuestions');
+        if (btnBackup) {
+            btnBackup.disabled = !hasBackup;
+            btnBackup.style.opacity = hasBackup ? '' : '0.45';
+            btnBackup.style.cursor = hasBackup ? 'pointer' : 'not-allowed';
+        }
+        if (btnQuestions) {
+            btnQuestions.disabled = !hasQuestions;
+            btnQuestions.style.opacity = hasQuestions ? '' : '0.45';
+            btnQuestions.style.cursor = hasQuestions ? 'pointer' : 'not-allowed';
+        }
+        if (!hasBackup && !hasQuestions) {
+            $('recoveryMethodSelect').style.display = 'none';
+            $('recoveryNotConfigured').style.display = 'block';
+        }
+
+        if (window.AltorraIcons && window.AltorraIcons.refresh) {
+            window.AltorraIcons.refresh(rs);
+        }
+    }
+
+    function hideRecoveryScreen() {
+        var rs = $('recoveryScreen');
+        if (rs) rs.style.display = 'none';
+        // Limpiar inputs
+        var bc = $('recoveryBackupCode');
+        if (bc) bc.value = '';
+        var be = $('recoveryBackupError');
+        if (be) be.style.display = 'none';
+        var qe = $('recoveryQuestionsError');
+        if (qe) qe.style.display = 'none';
+    }
+
+    function showBackupForm() {
+        $('recoveryMethodSelect').style.display = 'none';
+        $('recoveryBackupForm').style.display = 'block';
+        $('recoveryBackupCode').focus();
+    }
+
+    function showQuestionsForm() {
+        var profile = AP.currentUserProfile;
+        if (!profile || !profile.securityQuestions) return;
+        $('recoveryMethodSelect').style.display = 'none';
+        $('recoveryQuestionsForm').style.display = 'block';
+
+        // Renderizar las 3 preguntas
+        var listEl = $('recoveryQuestionsList');
+        if (!listEl) return;
+        listEl.innerHTML = profile.securityQuestions.map(function (q, idx) {
+            var question = window.AltorraRecovery.getQuestionById(q.questionId);
+            var label = question ? question.text : (q.customText || 'Pregunta personalizada');
+            return '<div class="form-group" style="margin-bottom:0.85rem;">' +
+                '<label class="form-label" for="recoveryAns_' + idx + '" style="font-size:0.82rem;">' +
+                AP.escapeHtml(label) +
+                '</label>' +
+                '<input type="text" id="recoveryAns_' + idx + '" class="form-input" autocomplete="off" required data-question-id="' + AP.escapeHtml(q.questionId) + '">' +
+            '</div>';
+        }).join('');
+
+        var firstInput = listEl.querySelector('input');
+        if (firstInput) firstInput.focus();
+    }
+
+    function backToMethodSelect() {
+        $('recoveryBackupForm').style.display = 'none';
+        $('recoveryQuestionsForm').style.display = 'none';
+        $('recoveryNotConfigured').style.display = 'none';
+        $('recoveryMethodSelect').style.display = 'block';
+    }
+
+    /**
+     * Handler de éxito de recovery: marca _2faVerified, hide screen,
+     * delegate al loadUserProfile flow normal.
+     */
+    function onRecoverySuccess(method) {
+        _2faVerified = true;
+        _2faCodeAttempts = 0;
+        var pendingUser = _2faPendingUser || window.auth.currentUser;
+        hideRecoveryScreen();
+        hide2FAScreen();
+        // Audit log: registrar que se usó método alternativo
+        try {
+            if (AP.writeAuditLog && pendingUser) {
+                AP.writeAuditLog('recovery_login', 'sesion', pendingUser.email + ' (vía ' + method + ')');
+            }
+        } catch (e) {}
+        loadUserProfile(pendingUser);
+    }
+
+    // Wire up: link "no recibí SMS" en pantalla 2FA
+    var twoFaRecoveryLink = $('twoFaRecoveryLink');
+    if (twoFaRecoveryLink) {
+        twoFaRecoveryLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            showRecoveryScreen();
+        });
+    }
+
+    // Wire up: botones de selección de método
+    var btnRecoveryUseBackup = $('btnRecoveryUseBackup');
+    if (btnRecoveryUseBackup) {
+        btnRecoveryUseBackup.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (this.disabled) return;
+            showBackupForm();
+        });
+    }
+    var btnRecoveryUseQuestions = $('btnRecoveryUseQuestions');
+    if (btnRecoveryUseQuestions) {
+        btnRecoveryUseQuestions.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (this.disabled) return;
+            showQuestionsForm();
+        });
+    }
+    var btnRecoveryBack = $('btnRecoveryBack');
+    if (btnRecoveryBack) {
+        btnRecoveryBack.addEventListener('click', function (e) {
+            e.preventDefault();
+            hideRecoveryScreen();
+            // Volver a 2FA screen si tenemos pending user
+            if (_2faPendingUser) {
+                $('twoFaScreen').style.display = 'flex';
+            } else {
+                $('loginScreen').style.display = 'flex';
+            }
+        });
+    }
+    var btnRecoveryBackToSMS = $('btnRecoveryBackToSMS');
+    if (btnRecoveryBackToSMS) {
+        btnRecoveryBackToSMS.addEventListener('click', function (e) {
+            e.preventDefault();
+            hideRecoveryScreen();
+            if (_2faPendingUser) {
+                $('twoFaScreen').style.display = 'flex';
+            } else {
+                $('loginScreen').style.display = 'flex';
+            }
+        });
+    }
+
+    // "← Otro método" links (genérico para ambos forms)
+    document.addEventListener('click', function (e) {
+        var target = e.target;
+        if (target && target.classList && target.classList.contains('recovery-back-method')) {
+            e.preventDefault();
+            backToMethodSelect();
+        }
+    });
+
+    // Handler: backup code submit
+    var recoveryBackupFormEl = $('recoveryBackupFormEl');
+    if (recoveryBackupFormEl) {
+        recoveryBackupFormEl.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var input = $('recoveryBackupCode').value;
+            var btn = $('recoveryBackupBtn');
+            var errEl = $('recoveryBackupError');
+            errEl.style.display = 'none';
+
+            var profile = AP.currentUserProfile;
+            if (!profile || !profile.backupCodes) {
+                errEl.textContent = 'No tenés códigos de respaldo configurados.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Verificando...';
+
+            window.AltorraRecovery.verifyBackupCode(input, profile.backupCodes).then(function (idx) {
+                if (idx < 0) {
+                    btn.disabled = false;
+                    btn.textContent = 'Verificar código';
+                    errEl.textContent = 'Código incorrecto o ya usado.';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                // Marcar el código como usado
+                var pendingUser = _2faPendingUser || window.auth.currentUser;
+                if (!pendingUser) {
+                    btn.disabled = false;
+                    btn.textContent = 'Verificar código';
+                    errEl.textContent = 'Sesión perdida. Reintenta el login.';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                var updated = profile.backupCodes.slice();
+                updated[idx] = Object.assign({}, updated[idx], { usedAt: new Date().toISOString() });
+
+                window.db.collection('usuarios').doc(pendingUser.uid).update({
+                    backupCodes: updated
+                }).then(function () {
+                    profile.backupCodes = updated; // sync local
+                    onRecoverySuccess('backup_code');
+                }).catch(function (err) {
+                    // Si Firestore falla por permission-denied (rules), igual permitir
+                    // login (el código fue verificado client-side correctamente).
+                    console.warn('[Recovery] No se pudo marcar código como usado en server:', err && err.message);
+                    onRecoverySuccess('backup_code_local');
+                });
+            }).catch(function (err) {
+                btn.disabled = false;
+                btn.textContent = 'Verificar código';
+                errEl.textContent = 'Error al verificar: ' + (err.message || 'desconocido');
+                errEl.style.display = 'block';
+            });
+        });
+    }
+
+    // Handler: security questions submit
+    var recoveryQuestionsFormEl = $('recoveryQuestionsFormEl');
+    if (recoveryQuestionsFormEl) {
+        recoveryQuestionsFormEl.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var btn = $('recoveryQuestionsBtn');
+            var errEl = $('recoveryQuestionsError');
+            errEl.style.display = 'none';
+
+            var profile = AP.currentUserProfile;
+            if (!profile || !profile.securityQuestions) {
+                errEl.textContent = 'No tenés preguntas de seguridad configuradas.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            // Recolectar respuestas
+            var inputs = $('recoveryQuestionsList').querySelectorAll('input[data-question-id]');
+            var answers = [];
+            for (var i = 0; i < inputs.length; i++) {
+                var v = inputs[i].value.trim();
+                if (!v) {
+                    errEl.textContent = 'Respondé las 3 preguntas (al menos 2 deben ser correctas).';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                answers.push({
+                    questionId: inputs[i].getAttribute('data-question-id'),
+                    value: v
+                });
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Verificando...';
+
+            window.AltorraRecovery.verifyAnswerSet(answers, profile.securityQuestions).then(function (correctCount) {
+                if (!window.AltorraRecovery.meetsThreshold(correctCount)) {
+                    btn.disabled = false;
+                    btn.textContent = 'Verificar respuestas';
+                    errEl.textContent = 'Solo ' + correctCount + ' respuesta' + (correctCount === 1 ? '' : 's') +
+                        ' correcta' + (correctCount === 1 ? '' : 's') + '. Necesitás al menos ' +
+                        window.AltorraRecovery.REQUIRED_CORRECT_ANSWERS + '.';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                onRecoverySuccess('security_questions');
+            }).catch(function (err) {
+                btn.disabled = false;
+                btn.textContent = 'Verificar respuestas';
+                errEl.textContent = 'Error al verificar: ' + (err.message || 'desconocido');
+                errEl.style.display = 'block';
+            });
+        });
+    }
+
+    // Auto-redirect a recovery cuando send2FACode falla con rate-limit
+    // Esto se ejecuta desde el .catch() de send2FACode en show2FAScreen.
+    // Exponemos helpers para que admin-auth.js los pueda llamar.
+    AP.showRecoveryScreen = showRecoveryScreen;
+    AP.hideRecoveryScreen = hideRecoveryScreen;
+    AP.isSMSRateLimitError = isSMSRateLimitError;
 
     // Arrancar auth (rate limit UI se actualiza per-email al hacer submit)
     initAuth();

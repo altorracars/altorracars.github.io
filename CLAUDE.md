@@ -22282,3 +22282,231 @@ fallback CSS y aumenté el timeout.
 cero `pointermove`. Solo CSS inline + un timeout JS modificado.
 
 **Cache bump**: `v20260511120000`.
+
+---
+
+## 48. ADR-048 — Sistema de recuperación de cuenta (backup codes + preguntas) (2026-05-08)
+
+> Cliente reportó que al ser bloqueado por Firebase rate limit se quedó
+> sin acceso al panel sin forma alguna de recuperarlo. Pidió implementar
+> "un sistema de seguridad avanzado como Apple/Amazon — preguntas de
+> seguridad como fallback al SMS, respuestas guardadas en Firebase
+> hasheadas".
+>
+> Aplicado bajo doctrina IAP §37 + RCA §19.
+
+### 48.1 Diseño
+
+**3 capas de fallback al 2FA SMS** (cualquiera funciona = entras):
+
+1. **Backup Codes** (estilo GitHub/Google Authenticator):
+   - 10 códigos de un solo uso, formato `XXXX-XXXX` (8 chars del alfabeto
+     `23456789ABCDEFGHJKMNPQRSTUVWXYZ` — sin 0/O/1/I/L para evitar
+     confusión visual).
+   - Generación crypto-random via `crypto.getRandomValues`.
+   - Hasheados con SHA-256 (Web Crypto API) antes de persistir en
+     Firestore. **Server NUNCA ve los códigos en plaintext**.
+   - Cada uno funciona 1 sola vez (marca `usedAt: ISO_timestamp`).
+   - Mostrados al usuario UNA vez al generar — debe copiar/imprimir.
+
+2. **Preguntas de seguridad** (estilo banking):
+   - 12 preguntas predefinidas (apodo infancia, ciudad nacimiento,
+     primera mascota, etc.) — usuario elige 3 distintas.
+   - Respuestas hasheadas con SHA-256 + salt random por pregunta
+     (16 bytes random por entry).
+   - Normalización antes de hash: trim + lowercase + sin acentos
+     (NFD + remove diacritics) + collapse whitespace. "Café" / "cafe"
+     / "  CAFE  " todas → mismo hash.
+   - Login: pide responder las 3, pero **2/3 correctas son suficientes**
+     (resilencia a typos / fallos de memoria menor).
+
+3. **Trust device existente** (ya implementado §47.ter — multi-store
+   localStorage + cookie).
+
+### 48.2 Schema Firestore extension `usuarios/{uid}`
+
+```js
+{
+    backupCodes: [
+        { hash: 'sha256_hex_64chars', usedAt: null },  // null = disponible
+        { hash: '...', usedAt: '2026-05-08T...' },     // usado
+        // ... 10 entries ...
+    ],
+    backupCodesGeneratedAt: ISO_timestamp,
+
+    securityQuestions: [
+        { questionId: 'q_apodo', salt: 'hex_32', hash: 'sha256_hex_64' },
+        { questionId: 'q_ciudad', salt: '...', hash: '...' },
+        { questionId: 'q_mascota', salt: '...', hash: '...' }
+    ],
+    securityQuestionsUpdatedAt: ISO_timestamp
+}
+```
+
+**Reglas Firestore** (§43 whitelist diff-keys ampliada):
+```
+allow update: ... hasOnly([..., 'backupCodes', 'backupCodesGeneratedAt',
+                                'securityQuestions', 'securityQuestionsUpdatedAt']);
+```
+
+### 48.3 Crypto — 100% client-side
+
+Todas las operaciones de hash usan `Web Crypto API` (`crypto.subtle.digest`
++ `crypto.getRandomValues`) en el browser. El server (Firestore) **solo
+guarda hashes**. Si alguien lee Firestore, NO obtiene códigos ni
+respuestas en plaintext.
+
+```js
+// Backup code:
+hashBackupCode(code) → SHA-256(normalize(code))   // normalize: upper + sin guion
+
+// Security answer:
+hashAnswer(answer) → { salt: random16bytes, hash: SHA-256(salt + normalize(answer)) }
+verifyAnswer(input, salt, expectedHash) → SHA-256(salt + normalize(input)) === expectedHash
+```
+
+Salt random previene rainbow tables. Cada usuario con misma respuesta
+("Cartagena") tendrá hashes distintos.
+
+### 48.4 Flow de login
+
+**Cuando todo funciona**:
+1. Email + password → `signInWithEmailAndPassword`
+2. `loadProfile` → `continueAfterBlockCheck`
+3. Si 2FA habilitado + device NO trusted → `show2FAScreen`
+4. `send2FACode(phone)` → SMS llega → user ingresa código → entra
+
+**Cuando Firebase rate-limit bloquea SMS** (`auth/too-many-requests`):
+1. `send2FACode(phone).catch(err)` detecta el código de error
+2. Muestra mensaje en pantalla 2FA + auto-redirect a `recoveryScreen` tras 2.5s
+3. User elige método:
+   - **Backup code**: input 8 chars → `verifyBackupCode(input, profile.backupCodes)`
+     → si match: marca `usedAt`, persiste, login
+   - **Preguntas**: 3 inputs → `verifyAnswerSet(answers, profile.securityQuestions)`
+     → si correctCount ≥ 2: login
+
+**Si user NO tiene métodos configurados**: pantalla con icon warning +
+mensaje claro "Esperá 15-60 min y configurá métodos desde tu perfil".
+
+### 48.5 Setup en `sec-profile`
+
+Nueva sección "Recuperación de cuenta" con 2 cards:
+
+**Backup Codes**:
+- Status: "Sin generar" o "X de 10 disponibles"
+- Botón "Generar códigos" (o "Regenerar")
+- Al generar: muestra los 10 códigos UNA vez con:
+  - Botón "Copiar" (clipboard)
+  - Botón "Imprimir" (popup window estilizado)
+  - Botón "Ya los guardé" (oculta el display)
+- Confirm dialog antes de regenerar (invalida los anteriores)
+
+**Preguntas de seguridad**:
+- Status: "Sin configurar" o "Configuradas (3/3)"
+- Botón "Configurar" / "Reconfigurar"
+- Form: 3 dropdowns (con preguntas predefinidas) + 3 inputs de respuesta
+- Validaciones: las 3 preguntas deben ser distintas, respuestas ≥2 chars
+- Save: hashea client-side + persiste
+
+### 48.6 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Guardar respuestas en plaintext en Firestore | SHA-256 + salt antes de persistir. Server NUNCA conoce plaintext |
+| Backup codes en plaintext en Firestore | Hash SHA-256. Una vez generados, ni el server los conoce |
+| Cloud Function para verificar | TODO client-side via Web Crypto API. Cero deploy adicional |
+| Compromiso si attacker lee Firestore | Hashes son inútiles sin las palabras originales (rainbow tables mitigadas por salt) |
+| 1 sola pregunta correcta = login | Threshold 2/3 da resilencia a typos sin debilitar seguridad demasiado |
+| Backup codes reutilizables | `usedAt` marca + filtra. Cada código 1 sola vez |
+| Lista de preguntas hardcoded sin opción custom | 12 preguntas predefinidas cubren la mayoría de casos. Custom queda como deuda futura |
+| User olvida códigos al regenerar | Confirm dialog explícito + warning visual |
+| Plaintext copy en clipboard sin warning | Display muestra "Esta es la única vez que los verás" + botón "Ya los guardé" antes de ocultar |
+
+### 48.7 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Loguear OK → ir a Mi perfil → ver "Recuperación de cuenta" | Card visible con 2 sub-secciones |
+| 2 | Click "Generar códigos" | Dialog aparece con 10 códigos en grid 2x2, formato XXXX-XXXX |
+| 3 | Click "Copiar" | Códigos al clipboard, toast confirma |
+| 4 | Click "Imprimir" | Popup window con códigos formateados, dispara print |
+| 5 | Status cambia a "10 de 10 disponibles" | Confirma persistencia |
+| 6 | Click "Configurar preguntas" → seleccionar 3 distintas + responder + Guardar | Persiste hashes en Firestore |
+| 7 | Status cambia a "Configuradas (3/3)" | OK |
+| 8 | Logout → loguear → 2FA pide SMS bloqueado | Tras 2.5s redirect a recoveryScreen |
+| 9 | Click "Código de respaldo" → ingresar 1 de los 10 | Verifica + marca usedAt + login OK |
+| 10 | Re-login → click "no recibí SMS" → "Código de respaldo" | NO acepta el código ya usado |
+| 11 | Re-login → "Preguntas de seguridad" | Muestra las 3 preguntas |
+| 12 | Responder 2/3 correctas (1 incorrecta) | Login OK |
+| 13 | Responder 1/3 correcta | Error "necesitás al menos 2" |
+| 14 | Sin métodos configurados + SMS bloqueado | Pantalla "Sin recovery configurado" |
+| 15 | Editor con rules pendientes | Toast error "rules pendientes de deploy" al guardar |
+
+### 48.8 Doctrina aplicada
+
+§19 RCA: causa raíz del cliente fue "no hay recuperación si SMS bloquea".
+Solución de fondo: implementar capas independientes que no dependan
+de Firebase Phone Provider.
+
+§37 IAP: plan completo de 3 capas + crypto + schema entregado antes
+de implementar.
+
+§17 (Performance): cero MutationObserver, cero transition:all, cero
+pointermove. Web Crypto API es nativa del browser.
+
+§17.1 (Seguridad): respuestas y códigos NUNCA en plaintext server-side.
+Salt random por entry. Whitelist Firestore evita escalación a otros
+campos sensibles (rol, bloqueado, email).
+
+### 48.9 Archivos creados/modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-recovery.js` | NUEVO ~280 líneas — Web Crypto helpers, generateBackupCodes, hashBackupCode, verifyBackupCode, hashAnswer, verifyAnswer, verifyAnswerSet, AVAILABLE_QUESTIONS, normalize utils |
+| `admin.html` head | `<script src="js/admin-recovery.js" defer>` antes de admin-auth.js |
+| `admin.html` 2FA screen | Link "no recibí SMS" → recoveryScreen |
+| `admin.html` recoveryScreen | NUEVA — selector de método + form backup + form preguntas + estado "no configurado" |
+| `admin.html` sec-profile | Nueva card "Recuperación de cuenta" con UI de generar codes + configurar preguntas |
+| `js/admin-auth.js` (final del IIFE) | ~250 líneas — handlers recovery: showRecoveryScreen, hideRecoveryScreen, isSMSRateLimitError, onRecoverySuccess + form handlers backup/questions |
+| `js/admin-auth.js show2FAScreen` | Auto-redirect a recovery cuando send2FACode falla con too-many-requests |
+| `js/admin-auth.js twoFaResend` | Mismo redirect cuando resend falla |
+| `js/admin-profile.js` (extension) | ~280 líneas — refreshRecoveryUI, generateAndShowBackupCodes, copyBackupCodes, printBackupCodes, showQuestionsConfigForm, saveSecurityQuestions, bindRecoveryHandlers |
+| `firestore.rules` | Whitelist diff-keys: backupCodes, backupCodesGeneratedAt, securityQuestions, securityQuestionsUpdatedAt |
+| `css/admin-topnav.css` | Estilos `.profile-recovery-row` (mismo lenguaje que `.profile-integration-row`) |
+| `service-worker.js` | CACHE_VERSION → v20260511130000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511130000 |
+| `CLAUDE.md` | Esta sección §48 |
+
+### 48.10 Deploy manual requerido
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+Sin este deploy, el editor verá toast warning "rules pendientes" al
+guardar backup codes o preguntas. El super_admin igual puede guardar
+(la rule `isSuperAdmin()` siempre permite update).
+
+### 48.11 Cómo usar en el caso actual del cliente
+
+1. **Ahora mismo** (Firebase rate-limit bloqueado, no podés entrar):
+   - Editar directo en Firestore Console:
+     `https://console.firebase.google.com/project/altorra-cars/firestore/data/~2Fusuarios`
+   - Buscar tu doc → editar `habilitado2FA: false` → guardar
+   - Login normal sin SMS
+
+2. **Una vez dentro**:
+   - Ir a Mi perfil → Recuperación de cuenta
+   - Click "Generar códigos" → guardar los 10 códigos en lugar seguro
+   - Click "Configurar preguntas" → elegir 3 + responder
+
+3. **Reactivar 2FA** (cuando rate-limit expire ~30 min):
+   - Editor: Mi perfil → activar 2FA otra vez
+   - O super_admin: editar el user
+
+4. **Próxima vez que Firebase bloquee SMS**:
+   - 2FA screen aparece → SMS no llega → tras 2.5s auto-redirect a recovery
+   - O click "no recibí SMS" manualmente
+   - Elegir backup code o preguntas → entrás
+
+**Cache bump**: `v20260511130000`.

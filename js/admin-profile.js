@@ -513,9 +513,323 @@
         init();
     }
 
+    /* ═══════════════════════════════════════════════════════════════
+       §48 RECOVERY SETUP — Backup codes + Security questions
+       ═══════════════════════════════════════════════════════════════ */
+
+    function refreshRecoveryUI() {
+        var profile = (window.AP && window.AP.currentUserProfile) || null;
+        if (!profile) return;
+        var R = window.AltorraRecovery;
+        if (!R) return;
+
+        // Backup codes status
+        var backupStatus = document.getElementById('profileBackupStatus');
+        var backupBtn = document.getElementById('profileBackupGenerate');
+        if (backupStatus) {
+            var available = R.countAvailableBackupCodes(profile.backupCodes);
+            var total = (profile.backupCodes && profile.backupCodes.length) || 0;
+            if (total === 0) {
+                backupStatus.textContent = 'Sin generar';
+                if (backupBtn) backupBtn.innerHTML = '<i data-lucide="refresh-cw"></i> Generar códigos';
+            } else {
+                backupStatus.textContent = available + ' de ' + total + ' disponibles';
+                if (backupBtn) backupBtn.innerHTML = '<i data-lucide="refresh-cw"></i> Regenerar códigos';
+            }
+        }
+
+        // Security questions status
+        var qStatus = document.getElementById('profileQuestionsStatus');
+        var qBtn = document.getElementById('profileQuestionsConfig');
+        if (qStatus) {
+            var hasQ = profile.securityQuestions && profile.securityQuestions.length >= R.SECURITY_QUESTION_COUNT;
+            qStatus.textContent = hasQ ? 'Configuradas (' + profile.securityQuestions.length + '/' + R.SECURITY_QUESTION_COUNT + ')' : 'Sin configurar';
+            if (qBtn) qBtn.innerHTML = '<i data-lucide="settings-2"></i> ' + (hasQ ? 'Reconfigurar' : 'Configurar');
+        }
+
+        if (window.AltorraIcons && window.AltorraIcons.refresh) {
+            var card = document.getElementById('profileRecoveryCard');
+            if (card) window.AltorraIcons.refresh(card);
+        }
+    }
+
+    function generateAndShowBackupCodes() {
+        var R = window.AltorraRecovery;
+        var user = window.auth && window.auth.currentUser;
+        if (!R || !user) return;
+        var profile = window.AP && window.AP.currentUserProfile;
+        var hasExisting = profile && profile.backupCodes && profile.backupCodes.length > 0;
+        if (hasExisting) {
+            var ok = confirm('Esto INVALIDARÁ tus códigos actuales y generará 10 nuevos. ¿Continuar?');
+            if (!ok) return;
+        }
+
+        var codes = R.generateBackupCodes();
+        // Mostrar al user PRIMERO (antes de persistir, así si falla guardado igual los vio)
+        var listEl = document.getElementById('profileBackupCodesList');
+        var displayEl = document.getElementById('profileBackupCodesDisplay');
+        if (listEl && displayEl) {
+            listEl.innerHTML = codes.map(function (c) {
+                return '<div style="padding:8px 10px;background:rgba(0,0,0,0.25);border-radius:4px;text-align:center;">' + c + '</div>';
+            }).join('');
+            displayEl.style.display = 'block';
+            displayEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Persistir hashes
+        R.hashAllBackupCodes(codes).then(function (entries) {
+            return window.db.collection('usuarios').doc(user.uid).update({
+                backupCodes: entries,
+                backupCodesGeneratedAt: new Date().toISOString()
+            });
+        }).then(function () {
+            // Guardar copia plaintext en memoria SOLO para el botón "Copiar"
+            displayEl.dataset.codes = codes.join('\n');
+            // Sync local profile
+            if (profile) {
+                profile.backupCodesGeneratedAt = new Date().toISOString();
+            }
+            if (window.notify && window.notify.success) {
+                window.notify.success({
+                    title: 'Códigos generados',
+                    message: 'Guardalos en lugar seguro — solo se muestran una vez.'
+                });
+            }
+        }).catch(function (err) {
+            console.error('[Profile] Error guardando backup codes:', err);
+            if (window.AP && window.AP.toast) {
+                window.AP.toast('Error guardando códigos: ' + (err.message || 'desconocido') +
+                    '. Pedí firebase deploy --only firestore:rules.', 'error');
+            }
+        });
+    }
+
+    function copyBackupCodes() {
+        var displayEl = document.getElementById('profileBackupCodesDisplay');
+        if (!displayEl || !displayEl.dataset.codes) return;
+        var text = displayEl.dataset.codes;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+                if (window.AP && window.AP.toast) window.AP.toast('Códigos copiados al portapapeles', 'success');
+            }).catch(function () { fallbackCopy(text); });
+        } else {
+            fallbackCopy(text);
+        }
+    }
+
+    function fallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+        if (window.AP && window.AP.toast) window.AP.toast('Códigos copiados', 'success');
+    }
+
+    function printBackupCodes() {
+        var displayEl = document.getElementById('profileBackupCodesDisplay');
+        if (!displayEl || !displayEl.dataset.codes) return;
+        var codes = displayEl.dataset.codes.split('\n');
+        var user = window.AP && window.AP.currentUserProfile;
+        var name = user && user.nombre ? user.nombre : '';
+        var email = user && user.email ? user.email : '';
+        var date = new Date().toLocaleDateString('es-CO');
+        var w = window.open('', '_blank', 'width=600,height=700');
+        if (!w) return;
+        w.document.write(
+            '<!DOCTYPE html><html><head><title>ALTORRA CARS - Codigos de respaldo</title>' +
+            '<style>body{font-family:system-ui,sans-serif;padding:40px;max-width:600px;margin:0 auto;}h1{color:#b89658;margin:0 0 5px}h2{color:#666;font-weight:400;font-size:1rem;margin-top:0}.codes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:20px 0;font-family:Courier,monospace;font-size:1.1rem;}.code{padding:10px;border:1px solid #ccc;text-align:center;border-radius:4px}.warn{background:#fff3cd;padding:14px;border-radius:6px;margin-top:20px;font-size:0.9rem;}</style>' +
+            '</head><body>' +
+            '<h1>ALTORRA CARS - Codigos de Recuperacion</h1>' +
+            '<h2>' + name + ' - ' + email + ' - Generados el ' + date + '</h2>' +
+            '<div class="codes">' + codes.map(function (c) { return '<div class="code">' + c + '</div>'; }).join('') + '</div>' +
+            '<div class="warn"><strong>Guarda esta hoja en un lugar seguro.</strong> Cada codigo funciona una sola vez. Si Firebase bloquea el SMS, podes ingresar al panel admin con uno de estos codigos.</div>' +
+            '</body></html>'
+        );
+        w.document.close();
+        setTimeout(function () { w.print(); }, 500);
+    }
+
+    function hideBackupCodesDisplay() {
+        var displayEl = document.getElementById('profileBackupCodesDisplay');
+        if (displayEl) {
+            displayEl.style.display = 'none';
+            delete displayEl.dataset.codes;
+        }
+        refreshRecoveryUI();
+    }
+
+    function showQuestionsConfigForm() {
+        var R = window.AltorraRecovery;
+        if (!R) return;
+        var formEl = document.getElementById('profileQuestionsForm');
+        var fieldsEl = document.getElementById('profileQuestionsFields');
+        if (!formEl || !fieldsEl) return;
+        formEl.style.display = 'block';
+        formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        var profile = window.AP && window.AP.currentUserProfile;
+        var existing = (profile && profile.securityQuestions) || [];
+        var html = '';
+        for (var i = 0; i < R.SECURITY_QUESTION_COUNT; i++) {
+            var current = existing[i] && existing[i].questionId;
+            var optionsHtml = R.AVAILABLE_QUESTIONS.map(function (q) {
+                var sel = (q.id === current) ? ' selected' : '';
+                return '<option value="' + q.id + '"' + sel + '>' + q.text + '</option>';
+            }).join('');
+            html +=
+                '<div class="form-group" data-q-idx="' + i + '">' +
+                    '<label class="form-label" style="font-size:0.78rem;color:var(--admin-text-muted);">Pregunta ' + (i + 1) + '</label>' +
+                    '<select class="form-input profile-q-select" style="margin-bottom:6px;font-size:0.85rem;">' +
+                        '<option value="">— Seleccioná una pregunta —</option>' +
+                        optionsHtml +
+                    '</select>' +
+                    '<input type="text" class="form-input profile-q-answer" placeholder="Tu respuesta" autocomplete="off" style="font-size:0.85rem;">' +
+                '</div>';
+        }
+        fieldsEl.innerHTML = html;
+        if (window.AltorraIcons && window.AltorraIcons.refresh) {
+            window.AltorraIcons.refresh(formEl);
+        }
+    }
+
+    function saveSecurityQuestions() {
+        var R = window.AltorraRecovery;
+        var user = window.auth && window.auth.currentUser;
+        if (!R || !user) return;
+        var fieldsEl = document.getElementById('profileQuestionsFields');
+        var errEl = document.getElementById('profileQuestionsErr');
+        var saveBtn = document.getElementById('profileQuestionsSave');
+        if (!fieldsEl || !errEl) return;
+
+        errEl.style.display = 'none';
+        var groups = fieldsEl.querySelectorAll('[data-q-idx]');
+        var entries = [];
+        var seenIds = {};
+        for (var i = 0; i < groups.length; i++) {
+            var sel = groups[i].querySelector('.profile-q-select');
+            var ans = groups[i].querySelector('.profile-q-answer');
+            var qid = sel ? sel.value : '';
+            var aval = ans ? ans.value.trim() : '';
+            if (!qid) {
+                errEl.textContent = 'Pregunta ' + (i + 1) + ': elegí una pregunta del listado.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (!aval || aval.length < 2) {
+                errEl.textContent = 'Pregunta ' + (i + 1) + ': la respuesta debe tener al menos 2 caracteres.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (seenIds[qid]) {
+                errEl.textContent = 'Las 3 preguntas deben ser distintas.';
+                errEl.style.display = 'block';
+                return;
+            }
+            seenIds[qid] = true;
+            entries.push({ questionId: qid, answer: aval });
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i data-lucide="loader-2"></i> Guardando...';
+
+        var hashPromises = entries.map(function (e) {
+            return R.hashAnswer(e.answer).then(function (h) {
+                return { questionId: e.questionId, salt: h.salt, hash: h.hash };
+            });
+        });
+
+        Promise.all(hashPromises).then(function (storedEntries) {
+            return window.db.collection('usuarios').doc(user.uid).update({
+                securityQuestions: storedEntries,
+                securityQuestionsUpdatedAt: new Date().toISOString()
+            }).then(function () {
+                // Sync local con los hashes recién guardados (NO con plaintext)
+                var profile = window.AP && window.AP.currentUserProfile;
+                if (profile) {
+                    profile.securityQuestions = storedEntries;
+                    profile.securityQuestionsUpdatedAt = new Date().toISOString();
+                }
+            });
+        }).then(function () {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i data-lucide="save"></i> Guardar';
+            document.getElementById('profileQuestionsForm').style.display = 'none';
+            if (window.notify && window.notify.success) {
+                window.notify.success({
+                    title: 'Preguntas guardadas',
+                    message: 'Si Firebase bloquea SMS, podrás recuperar acceso respondiendo 2 de 3.'
+                });
+            }
+            refreshRecoveryUI();
+        }).catch(function (err) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i data-lucide="save"></i> Guardar';
+            errEl.textContent = 'Error al guardar: ' + (err.message || 'desconocido') +
+                (err.code === 'permission-denied' ? ' (firestore.rules pendientes de deploy)' : '');
+            errEl.style.display = 'block';
+            console.error('[Profile] Error guardando preguntas:', err);
+        });
+    }
+
+    function bindRecoveryHandlers() {
+        var btnGen = document.getElementById('profileBackupGenerate');
+        if (btnGen && !btnGen._wired) {
+            btnGen._wired = true;
+            btnGen.addEventListener('click', generateAndShowBackupCodes);
+        }
+        var btnCopy = document.getElementById('profileBackupCopy');
+        if (btnCopy && !btnCopy._wired) {
+            btnCopy._wired = true;
+            btnCopy.addEventListener('click', copyBackupCodes);
+        }
+        var btnPrint = document.getElementById('profileBackupPrint');
+        if (btnPrint && !btnPrint._wired) {
+            btnPrint._wired = true;
+            btnPrint.addEventListener('click', printBackupCodes);
+        }
+        var btnDone = document.getElementById('profileBackupDone');
+        if (btnDone && !btnDone._wired) {
+            btnDone._wired = true;
+            btnDone.addEventListener('click', hideBackupCodesDisplay);
+        }
+        var btnQConfig = document.getElementById('profileQuestionsConfig');
+        if (btnQConfig && !btnQConfig._wired) {
+            btnQConfig._wired = true;
+            btnQConfig.addEventListener('click', showQuestionsConfigForm);
+        }
+        var btnQCancel = document.getElementById('profileQuestionsCancel');
+        if (btnQCancel && !btnQCancel._wired) {
+            btnQCancel._wired = true;
+            btnQCancel.addEventListener('click', function () {
+                document.getElementById('profileQuestionsForm').style.display = 'none';
+            });
+        }
+        var btnQSave = document.getElementById('profileQuestionsSave');
+        if (btnQSave && !btnQSave._wired) {
+            btnQSave._wired = true;
+            btnQSave.addEventListener('click', saveSecurityQuestions);
+        }
+    }
+
+    if (window.AltorraSections && window.AltorraSections.onChange) {
+        window.AltorraSections.onChange(function (section) {
+            if (section === 'profile') {
+                setTimeout(function () {
+                    bindRecoveryHandlers();
+                    refreshRecoveryUI();
+                }, 100);
+            }
+        });
+    }
+
     /* ─── Public API ─── */
     window.AltorraAdminProfile = {
         load: loadProfile,
-        save: saveProfile
+        save: saveProfile,
+        refreshRecoveryUI: refreshRecoveryUI
     };
 })();

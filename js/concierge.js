@@ -2826,6 +2826,15 @@
         ensureUI();
         var panel = document.getElementById('altorra-concierge');
         if (!panel) return;
+        // §57.quat — limpiar inline styles forzados de finalCloseAndCleanup.
+        // Bug 3: si el cliente cerró el chat (forced inline opacity:0,
+        // transform scale(0.06)) y vuelve a clickear el FAB ANTES del
+        // setTimeout 350ms que los restaura, los inline styles siguen
+        // activos y el panel NO se ve aunque .cnc-open esté aplicada.
+        panel.style.transition = '';
+        panel.style.opacity = '';
+        panel.style.transform = '';
+        panel.style.pointerEvents = '';
         panel.setAttribute('aria-hidden', 'false');
         panel.classList.add('cnc-open');
         _isOpen = true;

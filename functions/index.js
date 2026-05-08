@@ -2115,24 +2115,59 @@ async function sendTelegramAlert(uid, text, options) {
  * Cuando un chat entra a queue, además del FCM dispara Telegram a
  * todos los asesores con telegramChatId vinculado.
  */
-// §53 (2026-05-08) — Pin region us-central1 explícitamente.
-// Estaba en southamerica-east1 (auto-detectada por trigger location)
-// y Eventarc rechazaba con 401 unauthorized debido a IAM bindings
-// incompletos. us-central1 unifica con las otras 3 funciones Telegram.
-// REQUIERE borrar la función vieja antes del redeploy:
-//   firebase functions:delete onChatEscalatedTelegram --region=southamerica-east1
-exports.onChatEscalatedTelegram = onDocumentUpdated({
+// §54 (2026-05-08) — 3 fixes coordinados sobre §53:
+//
+// 1. onDocumentUpdated → onDocumentWritten: captura también CREATE.
+//    Si el chat nace directo con mode='queue' (caso real de §47.bis-§52),
+//    el trigger onUpdate NO se disparaba. onWrite cubre create+update.
+//
+// 2. Sin pin de región: deja que Firebase auto-detect la región del
+//    trigger Firestore (southamerica-east1, donde vive la base). Evita
+//    el cross-region Eventarc → us-central1 que causaba IAM 401.
+//
+// 3. console.log VERBOSO al inicio (antes de cualquier return guard)
+//    para confirmar invocación. Si los logs no aparecen, sabemos que
+//    el código nuevo no está corriendo (deploy stale).
+exports.onChatEscalatedTelegram = onDocumentWritten({
     document: 'conciergeChats/{sessionId}',
-    region: 'us-central1',
     secrets: [telegramBotToken]
 }, async (event) => {
-    if (!event.data) return;
-    const before = event.data.before.data() || {};
-    const after = event.data.after.data() || {};
+    // §54 — log inmediato sin guards. Si no aparece, deploy stale o
+    // función no se invoca. Si aparece, podemos ver before/after y
+    // diagnosticar de raíz por qué no se envía el push.
+    const sessionId = event.params.sessionId;
+    console.log('[onChatEscalatedTelegram] §54 INVOKED — sessionId:', sessionId);
 
-    // Trigger: chat pasó a mode='queue' o un nuevo cliente entró a la cola
-    const enteredQueue = before.mode !== 'queue' && after.mode === 'queue';
-    if (!enteredQueue) return;
+    if (!event.data) {
+        console.warn('[onChatEscalatedTelegram] event.data is null. Skip.');
+        return;
+    }
+
+    const before = event.data.before && event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after && event.data.after.exists ? event.data.after.data() : null;
+
+    // §54 — log estado de mode para diagnóstico
+    const beforeMode = before ? before.mode : '(no-before)';
+    const afterMode = after ? after.mode : '(deleted)';
+    console.log('[onChatEscalatedTelegram] mode transition:', beforeMode, '→', afterMode);
+
+    // Si el doc se eliminó, skip
+    if (!after) {
+        console.log('[onChatEscalatedTelegram] Doc deleted. Skip.');
+        return;
+    }
+
+    // §54 — Trigger condition AMPLIADO:
+    //   - CREATE con mode='queue' (chat nuevo nacido en queue)
+    //   - UPDATE bot/live/null → queue
+    const wasNotInQueue = !before || before.mode !== 'queue';
+    const nowInQueue = after.mode === 'queue';
+    const enteredQueue = wasNotInQueue && nowInQueue;
+    if (!enteredQueue) {
+        console.log('[onChatEscalatedTelegram] Not entering queue. Skip.');
+        return;
+    }
+    console.log('[onChatEscalatedTelegram] ✓ Chat entered queue. Processing alert...');
 
     // §50 — Eliminado filtro por asesoresAvailable.
     // Cliente pidió: "Cada vez que una persona solicite hablar con un asesor

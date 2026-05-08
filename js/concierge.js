@@ -1710,7 +1710,10 @@
         }
 
         // Wire UI
-        panel.querySelector('.cnc-close').addEventListener('click', close);
+        // §57 — La X usa closeOrFinalize para que cuando la sesión está
+        // marcada como client_finalized, limpie todo (DOM + sesión nueva)
+        // en vez de solo ocultar el panel.
+        panel.querySelector('.cnc-close').addEventListener('click', closeOrFinalize);
 
         // BUG #1 FIX — Header dropdown menu (⋮) con "Finalizar conversación"
         var menuBtn = document.getElementById('cncHeaderMenuBtn');
@@ -2022,10 +2025,22 @@
             if (quickActions) quickActions.style.display = 'none';
             if (inp) {
                 inp.disabled = true;
-                inp.placeholder = 'Conversación cerrada';
+                inp.placeholder = 'Conversación finalizada';
             }
             if (sendBtn) sendBtn.disabled = true;
             if (inputWrap) inputWrap.style.display = 'none';
+
+            // §57 — Si el bloque ya existe y NO matchea el closedReason actual,
+            // lo borramos para re-renderizarlo con la UI correcta.
+            var isClientFinalized = session.closedReason === 'client_finalized';
+            if (closedBlock) {
+                var prevVariant = closedBlock.getAttribute('data-variant');
+                var newVariant = isClientFinalized ? 'client' : 'admin';
+                if (prevVariant !== newVariant) {
+                    closedBlock.remove();
+                    closedBlock = null;
+                }
+            }
 
             // Inyectar bloque de cierre con CTA
             // §23 FASE 5 — el bloque incluye el radicado del chat finalizado
@@ -2035,23 +2050,53 @@
                 closedBlock = document.createElement('div');
                 closedBlock.id = 'cncClosedBlock';
                 closedBlock.className = 'cnc-closed-block';
-                closedBlock.innerHTML =
-                    '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
-                    '<div class="cnc-closed-title">Esta conversación ha finalizado</div>' +
-                    '<div class="cnc-closed-sub">Iniciá una nueva cuando quieras hablar con nosotros otra vez.</div>' +
-                    (radicadoTxt
-                        ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
-                        : '') +
-                    '<button class="cnc-closed-cta" id="cncResetSessionBtn">' +
-                        '<i data-lucide="refresh-cw"></i> Iniciar nueva conversación' +
-                    '</button>';
+                closedBlock.setAttribute('data-variant', isClientFinalized ? 'client' : 'admin');
+
+                if (isClientFinalized) {
+                    // §57 — UI nueva: cliente finalizó. Botones Descargar + Cerrar.
+                    closedBlock.innerHTML =
+                        '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
+                        '<div class="cnc-closed-title">Chat finalizado</div>' +
+                        '<div class="cnc-closed-sub">Gracias por escribirnos. Si querés volver a hablarnos, podrás iniciar una nueva conversación cuando quieras.</div>' +
+                        (radicadoTxt
+                            ? '<div class="cnc-closed-radicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
+                            : '') +
+                        '<div class="cnc-closed-actions">' +
+                            '<button class="cnc-closed-action cnc-closed-action--secondary" id="cncDownloadBtn" type="button">' +
+                                '<i data-lucide="download"></i><span>Descargar conversación</span>' +
+                            '</button>' +
+                            '<button class="cnc-closed-action cnc-closed-action--primary" id="cncFinalCloseBtn" type="button">' +
+                                '<i data-lucide="x"></i><span>Cerrar chat</span>' +
+                            '</button>' +
+                        '</div>';
+                } else {
+                    // UI legacy (admin cerró el chat) — botón "Iniciar nueva"
+                    closedBlock.innerHTML =
+                        '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
+                        '<div class="cnc-closed-title">Esta conversación ha finalizado</div>' +
+                        '<div class="cnc-closed-sub">Iniciá una nueva cuando quieras hablar con nosotros otra vez.</div>' +
+                        (radicadoTxt
+                            ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
+                            : '') +
+                        '<button class="cnc-closed-cta" id="cncResetSessionBtn">' +
+                            '<i data-lucide="refresh-cw"></i> Iniciar nueva conversación' +
+                        '</button>';
+                }
                 var panel = document.getElementById('altorra-concierge');
                 if (panel) panel.appendChild(closedBlock);
                 if (window.AltorraIcons && window.AltorraIcons.refresh) {
                     window.AltorraIcons.refresh(closedBlock);
                 }
-                var resetBtn = document.getElementById('cncResetSessionBtn');
-                if (resetBtn) resetBtn.addEventListener('click', resetSession);
+                // Wire handlers según variant
+                if (isClientFinalized) {
+                    var dlBtn = document.getElementById('cncDownloadBtn');
+                    if (dlBtn) dlBtn.addEventListener('click', downloadConversationPDF);
+                    var fcBtn = document.getElementById('cncFinalCloseBtn');
+                    if (fcBtn) fcBtn.addEventListener('click', finalCloseAndCleanup);
+                } else {
+                    var resetBtn = document.getElementById('cncResetSessionBtn');
+                    if (resetBtn) resetBtn.addEventListener('click', resetSession);
+                }
             } else {
                 // Re-render del radicado por si cambió tras un reload
                 var radEl = document.getElementById('cncClosedRadicado');
@@ -2086,67 +2131,201 @@
      * handleClientResetSession — UX flow cuando el cliente clickea
      * "Finalizar conversación" en el menú ⋮ del header.
      *
-     * Tres caminos según el estado del cliente:
-     *
-     * A) ANÓNIMO con profile previo (lead-gate completado antes):
-     *    Le preguntamos si sus datos siguen siendo correctos:
-     *      - Sí → preservar profile, solo limpiar mensajes/listeners
-     *        (no vuelve a pedir el gate)
-     *      - No → reset completo, vuelve a aparecer el gate vacío
-     *
-     * B) LOGUEADO (profile viene del auth):
-     *    Reset completo. loadProfileFromAuth() re-aplica el profile
-     *    automáticamente (no le preguntamos porque su info viene del
-     *    perfil que él mismo gestiona en /perfil.html).
-     *
-     * C) ANÓNIMO sin profile (primera vez):
-     *    Reset normal con confirm genérico.
-     *
-     * En todos los casos cancelamos listeners ANTES de escribir
-     * status:'closed' a Firestore. Esto evita el race condition donde
-     * el listener parent recibía el snapshot del cierre y disparaba
-     * applyClosedState() pisando nuestro reset local.
+     * §57 (2026-05-08) — Refactor del flow:
+     *   1. Confirm coherente: "¿Finalizar esta conversación?"
+     *   2. Marca status='closed' en Firestore (con closedReason='client_finalized')
+     *   3. NO crea sesión nueva. Renderiza pantalla "Chat finalizado"
+     *      con 2 botones: Descargar conversación + Cerrar chat
+     *   4. El cliente decide cuándo cerrar definitivamente. Al cerrar
+     *      (X o botón), `finalCloseAndCleanup` limpia DOM + crea sesión
+     *      limpia silenciosa + cierra panel. Próxima apertura = welcome
+     *      del bot fresco (sesión nueva, sin reset automático).
      */
     function handleClientResetSession() {
-        var isAnonymous = !window.auth || !window.auth.currentUser ||
-                          window.auth.currentUser.isAnonymous;
-        var hasGuestProfile = isAnonymous && session.profile &&
-                              (session.profile.nombre || session.profile.correo);
-
-        // CASO A: anónimo con datos previos → confirmar si siguen vigentes
-        if (hasGuestProfile) {
-            var p = session.profile;
-            var fullName = (p.nombre + (p.apellido ? ' ' + p.apellido : '')).trim() ||
-                           session.nombre || 'sin nombre';
-            var phone = p.celular || session.telefono || 'sin teléfono';
-            var email = p.correo || session.email || 'sin correo';
-            var msg =
-                'Antes de empezar de nuevo, ¿estos siguen siendo tus datos?\n\n' +
-                '👤  ' + fullName + '\n' +
-                '📱  ' + phone + '\n' +
-                '📧  ' + email + '\n\n' +
-                '✅  Aceptar = Sí, son correctos (continuar)\n' +
-                '✏️  Cancelar = No, quiero actualizarlos';
-            var keepData = confirm(msg);
-            // Cancelar listeners ANTES de cualquier Firestore write
-            cancelChatListeners();
-            // Marcar status:closed en Firestore (best-effort, no bloquea)
-            markChatClosedInFirestore();
-            if (keepData) {
-                resetSession({ preserveProfile: true });
-            } else {
-                resetSession({ preserveProfile: false });
-            }
+        if (!confirm('¿Finalizar esta conversación?\n\nUna vez finalizada, no podrás retomarla.\nTendrás la opción de descargar el historial antes de cerrar el chat.')) {
             return;
         }
+        markSessionFinalized();
+    }
 
-        // CASO B/C: confirm genérico
-        if (!confirm('¿Finalizar esta conversación?\n\nSe va a limpiar el chat actual y vas a empezar uno nuevo. Los mensajes anteriores quedan guardados de tu lado, pero no podrás continuarlos.')) {
-            return;
-        }
+    /**
+     * §57 — Marca la sesión como finalizada por el cliente.
+     * NO crea sesión nueva. Renderiza pantalla "Chat finalizado" con
+     * acciones (descargar + cerrar). El cliente decide cuándo cerrar.
+     */
+    function markSessionFinalized() {
         cancelChatListeners();
-        markChatClosedInFirestore();
-        resetSession({ preserveProfile: false });
+        markChatClosedInFirestore('client_finalized');
+        session.closed = true;
+        session.closedReason = 'client_finalized';
+        try { saveSession(session); } catch (e) {}
+        // Cerrar dropdown ⋮ si estaba abierto
+        var dropdown = document.getElementById('cncHeaderDropdown');
+        if (dropdown) dropdown.setAttribute('hidden', '');
+        var menuBtn = document.getElementById('cncHeaderMenuBtn');
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+        // Re-render con UI de finalización
+        applyClosedState();
+    }
+
+    /**
+     * §57 — Descarga la conversación como HTML printable (PDF via "Save as PDF"
+     * del browser print dialog). Usa window.open para crear un documento
+     * standalone, lo styliza print-friendly, y dispara window.print().
+     * El usuario elige "Save as PDF" como destination.
+     *
+     * Sin libraries externas (cumple §17.7 cero APIs externas).
+     */
+    function downloadConversationPDF() {
+        try {
+            var win = window.open('', '_blank', 'width=900,height=700');
+            if (!win) {
+                if (window.notify && window.notify.warning) {
+                    window.notify.warning({
+                        title: 'No se pudo abrir la ventana de descarga',
+                        message: 'Habilitá popups en este navegador para descargar la conversación.',
+                        duration: 8000
+                    });
+                } else {
+                    alert('Habilitá popups para descargar la conversación.');
+                }
+                return;
+            }
+            var radicadoTxt = session.radicado ? session.radicado : '—';
+            var dateNow = new Date().toLocaleString('es-CO', {
+                day: '2-digit', month: 'long', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            var clientName = (session.profile && session.profile.nombre)
+                ? (session.profile.nombre + (session.profile.apellido ? ' ' + session.profile.apellido : ''))
+                : (session.nombre || '—');
+            var clientEmail = (session.profile && session.profile.correo) || session.email || '—';
+            var clientPhone = (session.profile && session.profile.celular) || session.telefono || '—';
+
+            function escapeHtml(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
+            function whoLabel(m) {
+                if (m.from === 'user') return clientName !== '—' ? clientName : 'Cliente';
+                if (m.from === 'asesor') return m.asesorNombre || 'Asesor';
+                if (m.from === 'system') return 'Sistema';
+                return 'ALTOR (Asistente Virtual IA)';
+            }
+            var msgsHtml = (session.messages || []).map(function (m) {
+                var ts = m.timestamp ? new Date(m.timestamp).toLocaleString('es-CO', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                }) : '';
+                return '<div class="msg msg--' + escapeHtml(m.from || 'bot') + '">' +
+                          '<div class="msg-meta">' +
+                            '<strong>' + escapeHtml(whoLabel(m)) + '</strong>' +
+                            (ts ? '<span class="msg-ts">' + escapeHtml(ts) + '</span>' : '') +
+                          '</div>' +
+                          '<div class="msg-text">' + escapeHtml(m.text || '') + '</div>' +
+                       '</div>';
+            }).join('');
+
+            var html = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">' +
+                '<title>Conversación ALTOR — Altorra Cars (' + escapeHtml(radicadoTxt) + ')</title>' +
+                '<style>' +
+                '*{box-sizing:border-box}' +
+                'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff;color:#111;padding:36px;max-width:820px;margin:0 auto;line-height:1.55}' +
+                'header{border-bottom:2px solid #b89658;padding-bottom:14px;margin-bottom:26px}' +
+                'h1{color:#b89658;margin:0 0 6px;font-size:1.6em}' +
+                'header .sub{color:#555;font-size:0.92em}' +
+                '.client-card{background:#f9f5ec;border-left:3px solid #b89658;padding:14px 18px;border-radius:6px;margin-bottom:24px}' +
+                '.client-card .row{display:flex;gap:8px;margin:3px 0;font-size:0.92em}' +
+                '.client-card .row b{min-width:90px;color:#555}' +
+                '.msg{margin-bottom:14px;padding:10px 14px;border-radius:8px;page-break-inside:avoid}' +
+                '.msg--user{background:#fff7e0;border-left:3px solid #b89658}' +
+                '.msg--bot{background:#f5f5f5;border-left:3px solid #999}' +
+                '.msg--asesor{background:#e8f5e8;border-left:3px solid #4caf50}' +
+                '.msg--system{background:#fafafa;font-style:italic;color:#666;text-align:center;font-size:0.86em;border:1px dashed #ccc}' +
+                '.msg-meta{font-size:0.78em;color:#666;margin-bottom:5px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}' +
+                '.msg-meta strong{color:#222;font-weight:600}' +
+                '.msg-text{white-space:pre-wrap;word-break:break-word}' +
+                'footer{margin-top:30px;padding-top:14px;border-top:1px solid #ddd;font-size:0.82em;color:#777;text-align:center}' +
+                '@media print{body{padding:18px}@page{margin:1cm}}' +
+                '</style></head><body>' +
+                '<header>' +
+                  '<h1>Conversación ALTOR — Altorra Cars</h1>' +
+                  '<div class="sub">Radicado: <strong>' + escapeHtml(radicadoTxt) + '</strong> · Generado: ' + escapeHtml(dateNow) + '</div>' +
+                '</header>' +
+                '<div class="client-card">' +
+                  '<div class="row"><b>Cliente:</b> ' + escapeHtml(clientName) + '</div>' +
+                  '<div class="row"><b>Correo:</b> ' + escapeHtml(clientEmail) + '</div>' +
+                  '<div class="row"><b>Teléfono:</b> ' + escapeHtml(clientPhone) + '</div>' +
+                '</div>' +
+                '<div class="messages">' + (msgsHtml || '<p style="color:#999"><em>Sin mensajes en esta conversación.</em></p>') + '</div>' +
+                '<footer>Este documento es una transcripción automática de tu conversación con ALTOR — Asistente Virtual IA de Altorra Cars.</footer>' +
+                '<script>window.onload=function(){setTimeout(function(){window.print();},400);};</script>' +
+                '</body></html>';
+
+            win.document.open();
+            win.document.write(html);
+            win.document.close();
+        } catch (err) {
+            console.error('[Concierge] downloadConversationPDF failed:', err);
+            if (window.notify && window.notify.error) {
+                window.notify.error({
+                    title: 'Error al generar la descarga',
+                    message: err.message || 'Intentá de nuevo más tarde.'
+                });
+            }
+        }
+    }
+
+    /**
+     * §57 — Cierre definitivo del chat finalizado.
+     * Llamado por: botón "Cerrar chat" del cncClosedBlock, X del header
+     * (cuando session.closed=true), o tecla Esc.
+     *
+     * Acciones:
+     *   1. Cancela todos los listeners
+     *   2. Limpia DOM completamente (mensajes, closed block, banners)
+     *   3. Resetea localStorage de la sesión
+     *   4. Crea sesión limpia silenciosa (nuevo sessionId, sin re-render
+     *      automático del welcome)
+     *   5. Cierra el panel
+     *
+     * Próxima apertura del panel = welcome bubble del bot fresco.
+     * No se ejecuta resetSession automático.
+     */
+    function finalCloseAndCleanup() {
+        cancelChatListeners();
+
+        // Limpiar localStorage
+        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+
+        // Reset refs internas
+        _chatDocCreated = false;
+        _lastSyncedMsgIds = {};
+        _leadCreated = false;
+        _asesorJoinedAnnounced = false;
+
+        // Limpiar DOM: mensajes + closed block + dropdowns + cualquier banner
+        var msgsBox = document.getElementById('cncMessages');
+        if (msgsBox) msgsBox.innerHTML = '';
+        var closedBlock = document.getElementById('cncClosedBlock');
+        if (closedBlock) closedBlock.remove();
+        var queueBanner = document.getElementById('cncQueueBanner');
+        if (queueBanner) queueBanner.remove();
+        var slaWarning = document.getElementById('cncSLAWarning');
+        if (slaWarning) slaWarning.remove();
+        var dropdown = document.getElementById('cncHeaderDropdown');
+        if (dropdown) dropdown.setAttribute('hidden', '');
+        var menuBtn = document.getElementById('cncHeaderMenuBtn');
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+        var resetToast = document.getElementById('cncResetToast');
+        if (resetToast) resetToast.classList.remove('cnc-reset-toast--show');
+
+        // Cargar sesión limpia (nuevo sessionId, sin _resetting flag)
+        session = loadSession();
+
+        // Cerrar el panel visualmente. Próxima apertura: welcome fresco.
+        close();
     }
 
     /**
@@ -2169,13 +2348,17 @@
     /**
      * Marca el chat como cerrado en Firestore (best-effort).
      * Si falla por red o permisos, no bloquea el reset local.
+     * §57 — Acepta `reason` para diferenciar 'client_finalized' (UX nueva)
+     * de otros futuros (ej. 'idle_timeout').
      */
-    function markChatClosedInFirestore() {
+    function markChatClosedInFirestore(reason) {
         if (!_chatDocCreated || !session.sessionId || !window.db) return;
         window.db.collection('conciergeChats').doc(session.sessionId).set({
             status: 'closed',
             closedAt: new Date().toISOString(),
             closedBy: 'client',
+            closedReason: reason || 'client_finalized',
+            closedByRole: 'client',
             lastMessage: '✓ Cliente finalizó la conversación',
             lastMessageAt: new Date().toISOString()
         }, { merge: true }).catch(function (err) {
@@ -2621,7 +2804,21 @@
         _isOpen = false;
     }
 
-    function toggle() { _isOpen ? close() : open(); }
+    /**
+     * §57 — Wrapper de cierre: si la sesión está marcada como finalizada
+     * por el cliente, hace finalCloseAndCleanup (limpia todo + sesión
+     * nueva). Si no, hace close normal (oculta panel sin tocar estado).
+     * Llamado por: X del header, tecla Esc.
+     */
+    function closeOrFinalize() {
+        if (session && session.closed && session.closedReason === 'client_finalized') {
+            finalCloseAndCleanup();
+        } else {
+            close();
+        }
+    }
+
+    function toggle() { _isOpen ? closeOrFinalize() : open(); }
 
     /* ═══════════════════════════════════════════════════════════
        AUTH HOOK + U.18 Identity Merge — vincular conversaciones

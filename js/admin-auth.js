@@ -328,6 +328,42 @@
         return null;
     }
 
+    /**
+     * §52 — Stable fingerprint del browser. Más conservador que getDeviceId()
+     * porque NO incluye canvas/WebGL (que pueden variar entre versiones de
+     * iOS/Safari/Chrome). Usa solo:
+     *  - userAgent (recortado a 200 chars)
+     *  - platform
+     *  - language
+     *  - screen.width × height × pixelRatio
+     *  - timezone offset
+     *  - hardwareConcurrency
+     *
+     * Estos componentes NO cambian al borrar cache, actualizar minor del
+     * browser, o cambiar zoom. Solo cambian al cambiar de dispositivo.
+     */
+    function getStableFingerprint() {
+        try {
+            var components = [
+                (navigator.userAgent || '').slice(0, 200),
+                navigator.platform || 'na',
+                navigator.language || 'na',
+                screen.width + 'x' + screen.height,
+                window.devicePixelRatio || 1,
+                new Date().getTimezoneOffset(),
+                navigator.hardwareConcurrency || 'na',
+                navigator.maxTouchPoints || 0
+            ];
+            var str = components.join('|');
+            var h1 = 0, h2 = 0;
+            for (var i = 0; i < str.length; i++) {
+                h1 = ((h1 << 5) - h1) + str.charCodeAt(i); h1 |= 0;
+                h2 = ((h2 << 7) + h2) ^ str.charCodeAt(i); h2 |= 0;
+            }
+            return 'sfp_' + Math.abs(h1).toString(36) + Math.abs(h2).toString(36);
+        } catch (e) { return ''; }
+    }
+
     function isDeviceTrusted(uid, trustedDevices) {
         try {
             var stored = readStoredTrust(uid);
@@ -340,51 +376,76 @@
                 if (match) return true;
             }
 
-            // Path C (§50) — Mobile cache wipe recovery vía fingerprint.
+            // Path C (§50/§52) — Mobile cache wipe recovery vía fingerprint.
             //
-            // Cliente reportó: en mobile (Safari iOS), al "Borrar historial
-            // y datos del sitio" se limpia localStorage + cookies +
-            // IndexedDB → token local desaparece → 2FA re-pedido. En PC esto
-            // NO pasa porque "Vaciar caché" no toca storage.
+            // Cliente reportó (§50, §52): en mobile (Safari iOS, Chrome iOS),
+            // al "Borrar historial y datos del sitio" se limpia localStorage
+            // + cookies + IndexedDB → token local desaparece → 2FA re-pedido.
+            // En PC esto NO pasa porque "Vaciar caché" no toca storage.
             //
-            // Solución: si NO hay token local PERO el server tiene un device
-            // con el mismo deviceId fingerprint (screen + WebGL + canvas +
-            // locale) Y dentro del TTL (30 días), asumir que es ESTE
-            // dispositivo y RE-EMITIR un token nuevo. El user pasa 2FA UNA
-            // vez al activar trust; tras eso, mientras el browser+device no
-            // cambien, no debería volver a pedir 2FA aunque limpien cache.
+            // §52 — usar DOS fingerprints:
+            //   1. deviceId (canvas + WebGL + screen + locale) — estricto
+            //   2. stableFingerprint (UA + platform + screen + tz) — más estable
             //
-            // Seguridad: el deviceId es deterministic — dos browsers/devices
-            // distintos producen IDs distintos. crypto.getRandomValues no se
-            // usa porque debe ser repetible, pero los componentes (canvas
-            // hash, WebGL renderer, screen res) son únicos por dispositivo
-            // físico + browser. Combinado con que el user YA pasó email +
-            // password, es razonable.
+            // El primero puede variar si el browser actualiza (canvas/WebGL
+            // implementaciones cambian). El segundo es más conservador y
+            // sobrevive updates menores. Probamos ambos en orden.
             if (!stored && trustedDevices && trustedDevices.length) {
-                var fingerprint = (typeof getDeviceId === 'function') ? getDeviceId() : '';
-                if (fingerprint) {
-                    var matchByFp = trustedDevices.find(function(d) {
-                        return d.deviceId === fingerprint && d.expiresAt > Date.now();
+                var deviceId = (typeof getDeviceId === 'function') ? getDeviceId() : '';
+                var stableFp = getStableFingerprint();
+                var nowTs = Date.now();
+
+                var matchEntry = null;
+                var matchedBy = '';
+
+                // Intento 1: deviceId match (más fuerte)
+                if (deviceId) {
+                    matchEntry = trustedDevices.find(function(d) {
+                        return d.deviceId === deviceId && d.expiresAt > nowTs;
                     });
-                    if (matchByFp) {
-                        console.info('[2FA] Re-emit token: matched server fingerprint deviceId=' + fingerprint.slice(0, 16));
-                        // Re-emitir token nuevo al storage local (no al server,
-                        // el server ya tiene el device entry; solo refrescamos
-                        // local para que el próximo refresh use Path A normal)
+                    if (matchEntry) matchedBy = 'deviceId';
+                }
+
+                // Intento 2: stableFingerprint match (fallback más robusto)
+                if (!matchEntry && stableFp) {
+                    matchEntry = trustedDevices.find(function(d) {
+                        return d.stableFingerprint === stableFp && d.expiresAt > nowTs;
+                    });
+                    if (matchEntry) matchedBy = 'stableFingerprint';
+                }
+
+                // Intento 3: userAgent + screen match (último recurso)
+                if (!matchEntry) {
+                    var currentUA = (navigator.userAgent || '').slice(0, 200);
+                    var currentScreen = screen.width + 'x' + screen.height;
+                    matchEntry = trustedDevices.find(function(d) {
+                        return d.userAgent === currentUA &&
+                               d.screenSize === currentScreen &&
+                               d.expiresAt > nowTs;
+                    });
+                    if (matchEntry) matchedBy = 'ua+screen';
+                }
+
+                if (matchEntry) {
+                    console.info('[2FA] ✓ Re-emit token: matched server entry by ' + matchedBy +
+                        ' (mobile cache wipe recovery)');
+                    // Re-emitir al storage local con el token del server
+                    try {
+                        localStorage.setItem(getTrustKey(uid), JSON.stringify({
+                            token: matchEntry.token,
+                            expires: matchEntry.expiresAt
+                        }));
+                    } catch (e) {}
+                    setTrustCookie(uid, matchEntry.token, matchEntry.expiresAt);
+                    // Update lastUsed + agregar deviceId/stableFp si faltaban
+                    // (migración inline para entries viejos)
+                    if (window.db && window.auth && window.auth.currentUser) {
                         try {
-                            var newToken = matchByFp.token;
-                            localStorage.setItem(getTrustKey(uid), JSON.stringify({
-                                token: newToken,
-                                expires: matchByFp.expiresAt
-                            }));
+                            backfillDeviceFingerprints(uid, matchEntry.token, deviceId, stableFp);
+                            updateDeviceLastUsed(uid);
                         } catch (e) {}
-                        setTrustCookie(uid, matchByFp.token, matchByFp.expiresAt);
-                        // Update lastUsed en server (best-effort, async)
-                        if (window.db && window.auth && window.auth.currentUser) {
-                            try { updateDeviceLastUsed(uid); } catch (e) {}
-                        }
-                        return true;
                     }
+                    return true;
                 }
             }
 
@@ -392,9 +453,6 @@
             // de deploy. Si el server NO tiene el array (porque saveDeviceTrust
             // falló por permission-denied) PERO el storage tiene un token
             // creado en este browser dentro del TTL (30 días), aceptar el trust.
-            //
-            // Razonamiento: el token de storage solo se crea tras pasar 2FA
-            // exitosamente — es prueba de autenticación reciente.
             if (stored && (!trustedDevices || trustedDevices.length === 0)) {
                 console.warn('[2FA] Trust fallback: storage token válido pero server vacío. ' +
                     'Probablemente firestore.rules §43 sin desplegar. Pedí al super_admin: ' +
@@ -403,6 +461,35 @@
             }
             return false;
         } catch (e) { return false; }
+    }
+
+    /**
+     * §52 — Migración inline: backfill deviceId + stableFingerprint en entries
+     * que no los tienen. Ocurre cuando un device entry viejo (pre-§50) no
+     * tiene esos campos pero matcheamos por userAgent. Best-effort, async.
+     */
+    function backfillDeviceFingerprints(uid, token, deviceId, stableFp) {
+        if (!window.db || !uid || !token) return;
+        return window.db.collection('usuarios').doc(uid).get().then(function(doc) {
+            if (!doc.exists) return;
+            var devices = (doc.data().trustedDevices || []).slice();
+            var changed = false;
+            for (var i = 0; i < devices.length; i++) {
+                if (devices[i].token === token) {
+                    if (deviceId && !devices[i].deviceId) {
+                        devices[i].deviceId = deviceId;
+                        changed = true;
+                    }
+                    if (stableFp && !devices[i].stableFingerprint) {
+                        devices[i].stableFingerprint = stableFp;
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) {
+                return window.db.collection('usuarios').doc(uid).update({ trustedDevices: devices });
+            }
+        }).catch(function() { /* best-effort */ });
     }
 
     function saveDeviceTrust(uid) {
@@ -431,10 +518,16 @@
 
         // Fetch location then save to Firestore
         return fetchLocationInfo().then(function(loc) {
+            // §52 — fingerprint estable adicional (más resistente a updates de browser)
+            var stableFp = getStableFingerprint();
+            var screenSize = screen.width + 'x' + screen.height;
+
             var deviceEntry = {
                 token: token,
-                deviceId: deviceId,            // §50 — fingerprint para re-emit post cache wipe
-                userAgent: device.userAgent,   // §50 — para fallback comparison si deviceId no matchea
+                deviceId: deviceId,                  // §50 — fingerprint estricto (canvas+WebGL)
+                stableFingerprint: stableFp,         // §52 — fingerprint estable (UA+screen+tz)
+                userAgent: device.userAgent,         // §50 — fallback comparison
+                screenSize: screenSize,              // §52 — para match por UA+screen como último recurso
                 browser: device.browser,
                 os: device.os,
                 city: loc.city,
@@ -451,6 +544,16 @@
                 var existing = (doc.exists && doc.data().trustedDevices) || [];
                 // Remove expired devices while we're at it
                 var active = existing.filter(function(d) { return d.expiresAt > now; });
+                // §52 — Dedup: si ya existe entry para ESTE mismo browser/device
+                // (matchea por deviceId, stableFingerprint o ua+screen),
+                // remover el anterior antes de agregar el nuevo. Evita
+                // acumulación de entries duplicados al re-pasar 2FA.
+                active = active.filter(function(d) {
+                    var sameDeviceId = deviceId && d.deviceId === deviceId;
+                    var sameStable = stableFp && d.stableFingerprint === stableFp;
+                    var sameUaScreen = d.userAgent === device.userAgent && d.screenSize === screenSize;
+                    return !(sameDeviceId || sameStable || sameUaScreen);
+                });
                 active.push(deviceEntry);
                 return window.db.collection('usuarios').doc(uid).update({ trustedDevices: active }).then(function() {
                     // F3 — security event: new trusted device added

@@ -77,10 +77,13 @@
             });
         }
 
+        console.log('[AdminConcierge] §57.quat startChatsListener() init — listener attached');
         _chatsUnsub = window.db.collection('conciergeChats')
             .orderBy('lastMessageAt', 'desc')
             .limit(100)
             .onSnapshot(function (snap) {
+                // §57.quat diagnóstico realtime: log de cada snapshot recibido
+                console.log('[AdminConcierge] §57.quat snapshot received — docs:', snap.size, 'changes:', snap.docChanges().length);
                 // BUG #3 FIX — Detectar removed events ANTES de reconstruir _chats.
                 // Si el chat actualmente abierto en el panel derecho fue eliminado
                 // por OTRO admin (en otra tab/dispositivo), tenemos que limpiar
@@ -863,6 +866,36 @@
                 });
                 return { success: true, claimedByName: currentName };
             });
+        }).then(function (result) {
+            // §57.quat — Bug 2 fix: agregar mensaje system para que el
+            // CLIENTE vea inmediatamente "✓ X tomó la conversación".
+            // Antes: claim solo updateaba el doc parent. El listener
+            // parent del cliente quitaba banners de queue pero NO mostraba
+            // ningún signo de que un asesor lo tomó. UX confuso.
+            //
+            // Ahora: agregar a subcollection messages con systemType
+            // 'asesor_joined'. El listener cliente _firestoreUnsub procesa
+            // mensajes system con texto correspondiente.
+            try {
+                var nowIso = new Date().toISOString();
+                window.db.collection('conciergeChats').doc(sessionId)
+                    .collection('messages').add({
+                        from: 'system',
+                        systemType: 'asesor_joined',
+                        text: '✓ ' + currentName + ' tomó esta conversación. En breve te atenderá.',
+                        timestamp: nowIso,
+                        asesorNombre: currentName,
+                        asesorUid: currentUid
+                    }).catch(function (err) {
+                        console.warn('[claimChat] system message err:', err.message);
+                    });
+                // Update parent lastMessage para que la lista admin se ordene
+                window.db.collection('conciergeChats').doc(sessionId).update({
+                    lastMessage: '✓ ' + currentName + ' tomó la conversación',
+                    lastMessageAt: nowIso
+                }).catch(function () {});
+            } catch (e) { /* best-effort */ }
+            return result;
         });
     }
 
@@ -1418,6 +1451,16 @@
             // ocupa 100vh con sidebar admin de 56px collapsed.
             if (section === 'concierge') {
                 document.body.classList.add('altor-hub-active');
+                // §57.quat — FORZAR fresh listener al entrar a concierge.
+                // Bug 1+4 fix: si por algún motivo (network drop, race con
+                // section cleanup) el listener quedó en estado raro, lo
+                // re-iniciamos. Esto garantiza que SIEMPRE haya un listener
+                // activo al entrar.
+                if (_chatsUnsub) {
+                    try { _chatsUnsub(); } catch (e) {}
+                    _chatsUnsub = null;
+                    console.log('[AdminConcierge] §57.quat re-init: previous listener cancelled');
+                }
                 startChatsListener();
                 // Auto-scroll al fondo cuando llegue el primer render
                 setTimeout(scrollHubMessagesToBottom, 200);

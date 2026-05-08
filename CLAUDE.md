@@ -24111,3 +24111,169 @@ Solo se actualiza cuando llega snapshot de `_messagesUnsub`.
 
 **Cache bump**: `v20260511240000`.
 
+---
+
+## 57.quat ADR-057.quat — 4 bugs tiempo real ALTOR Hub coordinados (2026-05-08)
+
+> Cliente reportó 4 bugs concretos tras §57.ter:
+> 1. Admin no ve nueva conversación en tiempo real (solo tras refresh)
+> 2. Cliente NO ve "asesor tomó la conversación" cuando admin clama
+>    el chat (ni siquiera con refresh)
+> 3. Cliente cierra chat → vuelve a clickear el FAB → panel NO se abre
+>    (necesita refresh para que abra)
+> 4. Cliente finaliza chat → admin NO lo ve cerrado en tiempo real
+>    (solo tras refresh)
+>
+> Aplicado bajo IAP §37 + RCA §19 con audit profundo del flow
+> bidireccional cliente ↔ admin.
+
+### 57.quat.1 Bug 3 — Cliente: panel no se reabre después de cerrar
+
+**Causa raíz** (encontrada al releer §57.ter):
+
+`finalCloseAndCleanup()` aplica inline styles forzados:
+```js
+panel.style.opacity = '0';
+panel.style.transform = 'scale(0.06) translate(40px, 40px)';
+panel.style.pointerEvents = 'none';
+panel.style.transition = 'none';
+```
+
+Después de 350ms, un `setTimeout` los limpia para que el próximo
+`open()` anime correctamente.
+
+**PERO** si el cliente clickea el FAB ANTES del setTimeout 350ms:
+- `open()` corre y aplica `.cnc-open`
+- Los inline styles AÚN están activos
+- Inline styles ganan especificidad sobre la clase
+- El panel NO se ve aunque `.cnc-open` esté aplicada
+
+**Fix**: limpiar los inline styles AL INICIO de `open()`:
+
+```js
+function open() {
+    var panel = document.getElementById('altorra-concierge');
+    panel.style.transition = '';
+    panel.style.opacity = '';
+    panel.style.transform = '';
+    panel.style.pointerEvents = '';
+    panel.classList.add('cnc-open');
+    // ...
+}
+```
+
+Garantiza que el panel se abre correctamente sin importar si el
+setTimeout del finalCloseAndCleanup completó o no.
+
+### 57.quat.2 Bug 2 — Cliente NO ve "asesor tomó la conversación"
+
+**Causa raíz**: `claimChat()` (admin) solo updateaba el doc parent
+con `claimedBy`, `mode='live'`, `assignedTo`, etc. El listener
+parent del cliente (`_firestoreParentUnsub`) detectaba el cambio
+de `mode` y quitaba banners de queue, PERO el cliente no recibía
+ningún mensaje visible que indicara que un asesor lo tomó.
+
+**Fix**: en `claimChat()`, después del transaction exitoso, agregar
+un mensaje system a la subcollection messages:
+
+```js
+window.db.collection('conciergeChats').doc(sessionId)
+    .collection('messages').add({
+        from: 'system',
+        systemType: 'asesor_joined',
+        text: '✓ ' + currentName + ' tomó esta conversación. En breve te atenderá.',
+        timestamp: nowIso,
+        asesorNombre: currentName,
+        asesorUid: currentUid
+    });
+```
+
+El listener cliente `_firestoreUnsub` ya procesa mensajes system
+con `systemType` (línea 1374-1401). El nuevo `systemType:
+'asesor_joined'` aparece como mensaje en el chat del cliente
+en tiempo real.
+
+### 57.quat.3 Bugs 1 y 4 — Tiempo real admin (chat nuevo + cierre cliente)
+
+**Causa raíz hipotética**: el listener `_chatsUnsub` puede quedar
+en estado raro si:
+- Network drop temporal
+- Race con section cleanup hook §34
+- Error silencioso del onSnapshot que no nuló `_chatsUnsub`
+
+**Fix doble**:
+
+1. **Force fresh listener al entrar a sec-concierge**: en lugar de
+   confiar en el guard `if (_chatsUnsub) return`, cuando el admin
+   entra a la sección, cancelar el listener viejo y crear uno
+   fresco:
+
+   ```js
+   if (section === 'concierge') {
+       if (_chatsUnsub) {
+           try { _chatsUnsub(); } catch (e) {}
+           _chatsUnsub = null;
+       }
+       startChatsListener();
+   }
+   ```
+
+2. **Logs de diagnóstico**: si los bugs persisten, los logs en
+   consola exponen exactamente qué está pasando:
+
+   ```js
+   console.log('[AdminConcierge] §57.quat startChatsListener() init');
+   console.log('[AdminConcierge] §57.quat snapshot received — docs:',
+               snap.size, 'changes:', snap.docChanges().length);
+   ```
+
+   Si los logs aparecen pero la UI no se actualiza → bug está en
+   render/closure (cubierto por §57.ter cache `_activeMessages`).
+   Si los logs NO aparecen → listener no está funcionando.
+
+### 57.quat.4 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Confiar en setTimeout para limpiar inline styles | open() limpia inline styles SIEMPRE al entrar, no depende del timeout |
+| Claim sin mensaje al cliente | Agregar mensaje system en subcollection garantiza visibilidad cliente |
+| Skip si _chatsUnsub != null | Force fresh al entrar a sec-concierge cubre estados raros del listener |
+| No log diagnóstico | Logs strategic permiten diagnosticar de raíz si vuelven a aparecer bugs |
+
+### 57.quat.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente cierra chat (Cerrar chat botón) | Panel se cierra ✅ |
+| 2 | Cliente clickea FAB inmediato (sin esperar 350ms) | Panel se ABRE correctamente con welcome del bot ✅ |
+| 3 | Admin tiene Hub abierto, cliente nuevo crea chat | Chat aparece en lista lateral admin EN TIEMPO REAL ✅ |
+| 4 | Admin clama el chat (Tomar conversación) | Cliente ve mensaje "✓ X tomó esta conversación. En breve te atenderá" ✅ |
+| 5 | Cliente finaliza chat | Admin ve banner closed en detail panel + lista lateral actualiza ✅ |
+| 6 | DevTools console (admin) | `[AdminConcierge] §57.quat snapshot received` cada vez que cambia algún chat |
+
+### 57.quat.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/concierge.js open()` | Limpia inline styles forzados antes de aplicar .cnc-open |
+| `js/admin-concierge.js claimChat()` | Agrega mensaje system 'asesor_joined' tras transaction exitoso |
+| `js/admin-concierge.js startChatsListener()` | Console.log de init + snapshot recibido |
+| `js/admin-concierge.js section onChange` | Force fresh listener al entrar a sec-concierge |
+| `service-worker.js` | CACHE_VERSION → v20260511250000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511250000 |
+| `CLAUDE.md` | Esta sección §57.quat |
+
+### 57.quat.7 Doctrina aplicada
+
+§19 RCA: cada bug diagnosticado por separado con causa raíz real:
+- Bug 3: race con setTimeout de finalCloseAndCleanup
+- Bug 2: claim sin mensaje system al cliente
+- Bug 1+4: posible race del listener con section cleanup
+
+§37 IAP: análisis previo coordinado de los 4 bugs antes del commit.
+
+§17.12 anti-MutationObserver: cero observers nuevos. Solo limpieza
+de inline styles + escritura adicional a Firestore.
+
+**Cache bump**: `v20260511250000`.
+

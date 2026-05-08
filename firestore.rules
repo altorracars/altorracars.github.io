@@ -95,23 +95,40 @@ service cloud.firestore {
       // Super admin gestiona todo el doc del usuario (alta, baja, rol, bloqueado, etc.)
       allow create, delete: if isSuperAdmin();
 
-      // §23 FASE 7 — Self-service diff-keys.
-      // El propio usuario (admin/editor) puede actualizar SOLO su lista
-      // de dispositivos de confianza, su flag 2FA propio, su teléfono 2FA,
-      // su timestamp de último acceso, y sus tokens FCM (Sprint 8).
+      // §23 FASE 7 + §43 ADR-043 — Self-service diff-keys.
+      // El propio usuario (super_admin/editor/viewer) puede actualizar SOLO
+      // un set whitelisted de campos de SU propio doc:
       //
-      // Esto SOLUCIONA el bug "trusted devices no funcionan para editors":
-      // antes solo super_admin podía escribir, así que saveDeviceTrust()
-      // fallaba silenciosamente con permission-denied y el editor recibía
-      // el prompt 2FA en cada refresh.
+      //   Trusted devices + 2FA (§23 FASE 7):
+      //     - trustedDevices (array de dispositivos)
+      //     - habilitado2FA (toggle propio)
+      //     - telefono2FA, prefijo2FA
+      //     - ultimoAcceso, lastLoginAt
+      //     - fcmTokens (Sprint 8)
+      //
+      //   Perfil personal (§43 — sec-profile):
+      //     - nombre, telefono, prefijo, cargo
+      //     - photoURL (avatar Firebase Storage)
+      //     - tipoDoc (CC/CE/Pasaporte — editable)
+      //     - cedula (one-time-edit ENFORCED por la sub-condición abajo)
+      //     - cedulaChangeRequested, cedulaChangeRequestedAt (flag de solicitud)
+      //
+      //   Telegram bot link (§39/§40):
+      //     - telegramChatId, telegramLinkedAt, telegramUserName, telegramLastUsedAt
       //
       // GARANTÍAS DE SEGURIDAD (campos PROHIBIDOS para self-update):
-      //   - rol: editor NO puede escalar a super_admin
+      //   - rol: editor/viewer NO pueden escalar a super_admin
       //   - email: cambios sensibles solo super_admin
-      //   - nombre: idem
       //   - bloqueado: editor NO puede auto-desbloquearse
       //   - estado: idem
-      //   - habilitado2FA puede editarse por self (toggle propio)
+      //   - creadoEn / creadoPor: inmutables tras la creación
+      //
+      // CÉDULA ONE-TIME-EDIT (§43): la cédula es identidad legal del usuario.
+      // Una vez seteada, NO se puede cambiar libremente. Patrón cliente:
+      // admin-profile.js bloquea el campo con un candado tras el primer save.
+      // Patrón server: la sub-condición de abajo permite escribir 'cedula'
+      // SOLO si el valor anterior estaba vacío. Para cambios posteriores
+      // el usuario debe solicitar al super_admin via cedulaChangeRequested.
       //
       // Patrón: diff().affectedKeys().hasOnly([whitelist]) garantiza
       // que la lista de campos modificados es subconjunto del array.
@@ -119,14 +136,25 @@ service cloud.firestore {
         || (request.auth.uid == userId &&
             request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly([
-                    'trustedDevices',     // self-management de dispositivos
-                    'ultimoAcceso',       // timestamp last login
-                    'lastLoginAt',        // alias legacy
-                    'habilitado2FA',      // toggle propio del 2FA
-                    'telefono2FA',        // self-update del teléfono 2FA
-                    'prefijo2FA',         // self-update prefijo país
-                    'fcmTokens'           // tokens FCM Web Push (Sprint 8)
-                ]));
+                    // Trusted devices + 2FA (§23)
+                    'trustedDevices', 'ultimoAcceso', 'lastLoginAt',
+                    'habilitado2FA', 'telefono2FA', 'prefijo2FA', 'fcmTokens',
+                    // Perfil personal (§43)
+                    'nombre', 'telefono', 'prefijo', 'cargo', 'photoURL',
+                    'tipoDoc', 'cedula',
+                    'cedulaChangeRequested', 'cedulaChangeRequestedAt',
+                    // Telegram bot link (§39/§40)
+                    'telegramChatId', 'telegramLinkedAt',
+                    'telegramUserName', 'telegramLastUsedAt'
+                ])
+            // §43 — Cédula one-time-edit: si se está modificando 'cedula',
+            // el valor anterior DEBE estar vacío. Cambios posteriores se
+            // bloquean del lado del servidor (defensa-en-profundidad
+            // independiente del lock visual del cliente).
+            && (
+                !request.resource.data.diff(resource.data).affectedKeys().hasAny(['cedula'])
+                || resource.data.get('cedula', '') == ''
+            ));
 
       // ========== USER DRAFTS (subcollection) ==========
       match /drafts/{draftId} {

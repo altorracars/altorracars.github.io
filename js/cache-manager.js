@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511030000'; // §42 — Tabs por grupo replicando patrón CRM (admin-group-tabs.js)
+    const APP_VERSION = '20260511040000'; // §43 — RBAC grupos topnav + perfil self-service (firestore.rules diff-keys ampliada)
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

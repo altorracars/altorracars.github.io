@@ -20292,3 +20292,264 @@ Transitions específicas (background-color, color) con duración 0.18s.
   Refactor futuro: consolidar en un solo módulo.
 
 **Cache bump**: `v20260511030000`.
+
+---
+
+## 43. ADR-043 — RBAC en grupos del topnav + perfil self-service (2026-05-08)
+
+> Cliente reportó tras §42 que los editores tenían 2 issues serios:
+>
+> 1. "Resulta que los editores al dar click en config por ejemplo le
+>    aparece que no tiene permisos, seguramente porque redirge
+>    inmediatamente a la primera pestaña que es de usuarios... ellos
+>    al entrar a config debrian poder ver la pestaña de ajustes".
+> 2. "Cuando los usuarios que no son super admin le dan click a su
+>    perfil no les permite guardar su informacion dice que no tienen
+>    permiso revisa y corrige porque cada uno debe tener derecho a
+>    actualizar su informacion".
+>
+> Aplicado bajo doctrina IAP §37 + RCA §19.
+
+### 43.1 Causa raíz #1 — Permisos editor en grupo Config
+
+El tab "Config" del topnav tenía `data-atn-section="users"` como
+default. Cuando el editor hacía click, `AltorraSections.go('users')`
+disparaba el handler legacy en `admin-auth.js:1927-1946` que verifica:
+
+```js
+if (section === 'users' && !AP.canManageUsers()) {
+    AP.toast('No tienes permisos para acceder a esta seccion', 'error');
+    return;
+}
+```
+
+`canManageUsers()` retorna `super_admin only` → editor recibía toast
+error y NO se activaba ninguna sección. **Resultado**: el editor
+quedaba viendo la sección anterior (ej: dashboard) creyendo que
+"Config" no funciona.
+
+Pero el RBAC matrix en `admin-state.js:272-313` confirma que el
+editor SÍ puede ver:
+- `lists` (Atributos): `canViewLists` true para editor
+- `audit` (Auditoría): `canViewActivity` true para todos
+- `workflows`: sin guard explícito (visible)
+- `settings`: sin guard explícito en handler (visible)
+
+Solo `users` (Usuarios) está restringido a super_admin.
+
+### 43.2 Causa raíz #2 — Editor no puede guardar perfil
+
+`admin-profile.js saveProfile()` (líneas 304-309) escribe:
+```js
+var updates = {
+    nombre: snap.nombre,
+    telefono: snap.telefono,
+    prefijo: snap.prefijo,
+    cargo: snap.cargo,
+    cedula?, tipoDoc?, photoURL?
+};
+db.collection('usuarios').doc(user.uid).update(updates);
+```
+
+Pero `firestore.rules match /usuarios/{userId}` solo permitía
+self-update con whitelist diff-keys de:
+`['trustedDevices', 'ultimoAcceso', 'lastLoginAt', 'habilitado2FA',
+'telefono2FA', 'prefijo2FA', 'fcmTokens']`
+
+NINGUNO de los campos que admin-profile.js escribe estaba en la
+whitelist → `permission-denied`. La regla solo cubría trusted
+devices (§23 FASE 7), no los campos del perfil añadido en §36.1.
+
+### 43.3 Fix #1 — RBAC en grupos del topnav
+
+#### A. Schema extendido en GROUPS (`js/admin-group-tabs.js`)
+
+Cada sub-sección puede declarar `permission` con el nombre del
+helper RBAC en `window.AP.<key>` o `window.AP.RBAC.<key>`:
+
+```js
+config: {
+    color: 'neutral',
+    sections: [
+        // Usuarios SOLO super_admin (canManageUsers)
+        { id: 'users',     label: 'Usuarios',  icon: 'users', permission: 'canManageUsers' },
+        { id: 'lists',     label: 'Atributos', icon: 'list-tree' },  // todos
+        { id: 'workflows', label: 'Workflows', icon: 'zap' },         // todos
+        { id: 'audit',     label: 'Auditoría', icon: 'scroll-text' },  // todos
+        { id: 'settings',  label: 'Ajustes',   icon: 'settings' }     // todos
+    ]
+}
+```
+
+Si una sub-sección NO declara `permission`, es visible para todos.
+
+#### B. Helper `canSee(section)` y `firstAllowedSection(groupKey)`
+
+```js
+function canSee(section) {
+    if (!section || !section.permission) return true;
+    var AP = window.AP;
+    if (!AP) return true; // AP aún no cargado — permitir por default
+    var key = section.permission;
+    if (typeof AP[key] === 'function') return !!AP[key]();
+    if (AP.RBAC && typeof AP.RBAC[key] === 'function') return !!AP.RBAC[key]();
+    return true;
+}
+
+function firstAllowedSection(groupKey) {
+    var g = GROUPS[groupKey];
+    if (!g) return null;
+    for (var i = 0; i < g.sections.length; i++) {
+        if (canSee(g.sections[i])) return g.sections[i].id;
+    }
+    return null;
+}
+```
+
+#### C. `buildTabstripHTML` filtra tabs visibles
+
+Tabs que el rol no puede ver simplemente NO se renderizan en el HTML.
+Editor con sec-config activo verá: `[Atributos · Workflows · Auditoría · Ajustes]` (sin "Usuarios").
+
+#### D. `handleNavClick` en admin-topnav.js redirige
+
+Cuando se clickea un tab grupo, si la sección default está bloqueada
+para el rol actual, se navega a `firstAllowedSection(group)`:
+
+```js
+if (group && window.AltorraGroupTabs && typeof window.AltorraGroupTabs.canSee === 'function') {
+    var sectionMeta = ...;
+    if (defaultMeta && !window.AltorraGroupTabs.canSee(defaultMeta)) {
+        var allowed = window.AltorraGroupTabs.firstAllowedSection(group);
+        if (allowed) section = allowed;
+    }
+}
+```
+
+Editor click "Config" → ve que `users` está bloqueado → redirige a
+`lists` (primera permitida) → admin-auth.js handler activa lists sin
+error.
+
+#### E. Re-render cuando AP carga post-login
+
+`preInjectAll()` corre al DOMContentLoaded (AP=null en ese momento),
+así que las tabs iniciales NO tienen filtro RBAC. Al login, AP carga
+y `AltorraSections.onChange` dispara `setActiveSection(...)`.
+
+Track del rol en `_lastRoleSeen`:
+
+```js
+window.AltorraSections.onChange(function (section) {
+    var currentRole = (window.AP && window.AP.currentUserRole) || null;
+    if (currentRole !== _lastRoleSeen) {
+        preInjectAll(); // re-render TODAS las tabs con filtro RBAC actualizado
+    } else {
+        applyToSection(section);
+    }
+});
+```
+
+`applyToSection` también detecta cuando `visibleCount` (nuevo) ≠
+`currentCount` (HTML actual) y reemplaza el HTML completo.
+
+### 43.4 Fix #2 — Whitelist diff-keys ampliada para perfil
+
+Whitelist nueva en `firestore.rules`:
+
+```
+hasOnly([
+    // Trusted devices + 2FA (§23 FASE 7)
+    'trustedDevices', 'ultimoAcceso', 'lastLoginAt',
+    'habilitado2FA', 'telefono2FA', 'prefijo2FA', 'fcmTokens',
+    // Perfil personal (§43 — sec-profile)
+    'nombre', 'telefono', 'prefijo', 'cargo', 'photoURL',
+    'tipoDoc', 'cedula',
+    'cedulaChangeRequested', 'cedulaChangeRequestedAt',
+    // Telegram bot link (§39/§40)
+    'telegramChatId', 'telegramLinkedAt',
+    'telegramUserName', 'telegramLastUsedAt'
+])
+```
+
+**GARANTÍAS DE SEGURIDAD MANTENIDAS** (campos PROHIBIDOS para self-update):
+- `rol`: editor/viewer NO pueden escalar a super_admin
+- `email`: cambios sensibles solo super_admin
+- `bloqueado`: editor NO puede auto-desbloquearse
+- `estado`: idem
+- `creadoEn` / `creadoPor`: inmutables tras la creación
+
+**Cédula one-time-edit enforced server-side**:
+
+```
+&& (
+    !request.resource.data.diff(resource.data).affectedKeys().hasAny(['cedula'])
+    || resource.data.get('cedula', '') == ''
+)
+```
+
+Si se está modificando 'cedula', el valor anterior DEBE estar vacío.
+Cambios posteriores se bloquean del lado del servidor (defensa-en-
+profundidad independiente del lock visual del cliente). El usuario
+debe usar `cedulaChangeRequested: true` para pedir al super_admin que
+desbloquee la edición.
+
+### 43.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Login como **editor** → Ctrl+Shift+R | Cache v20260511040000 invalida |
+| 2 | Editor click "Config" en topnav | Activa sec-lists (primera permitida), tabstrip muestra `[Atributos · Workflows · Auditoría · Ajustes]` SIN Usuarios |
+| 3 | Editor click "Atributos" en tabstrip | sec-lists, "Atributos" activo, sin error |
+| 4 | Editor click "Ajustes" en tabstrip | sec-settings, "Ajustes" activo |
+| 5 | Editor avatar dropdown → "Mi perfil" | sec-profile carga con datos |
+| 6 | Editor edita nombre/telefono/cargo + Save | Toast "✓ Perfil actualizado" — Firestore actualizado |
+| 7 | Editor sube avatar nuevo | photoURL se actualiza, topnav refresca |
+| 8 | Editor llena cédula vacía + Save | Cédula se persiste y queda locked |
+| 9 | Editor intenta cambiar cédula ya guardada | Cliente: candado bloquea input. Server: rule rechaza si por algún medio bypass UI |
+| 10 | Editor solicita cambio de cédula | `cedulaChangeRequested: true` se persiste, super_admin lo ve |
+| 11 | Editor intenta escribir `rol: 'super_admin'` desde DevTools | Rule rechaza con permission-denied (rol NO en whitelist) |
+| 12 | Login como **super_admin** | Sigue viendo "Usuarios" en tabstrip de Config |
+| 13 | super_admin puede editar TODOS los campos del usuario (rol, bloqueado, etc.) | Sí (rule no aplica whitelist a isSuperAdmin) |
+| 14 | Login como **viewer** | Tabstrip de Config sin "Usuarios" (igual que editor) |
+
+### 43.6 Doctrina aplicada
+
+§19 RCA estricto: 2 problemas independientes con causas distintas.
+Cada uno diagnosticado por separado con lectura del código y mapeo
+del flujo de datos.
+
+§37 IAP: 5 secciones de análisis previo entregadas. Riesgos
+documentados (especialmente cédula one-time-edit en server-side).
+
+§17.12 + §35: cero MutationObserver subtree:true, cero pointermove.
+El re-render usa onChange listener existente.
+
+### 43.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-group-tabs.js` | +50 líneas: GROUPS con `permission` field, `canSee()`, `firstAllowedSection()`, filter en `buildTabstripHTML`, re-render en onChange si rol cambió |
+| `js/admin-topnav.js handleNavClick` | +18 líneas: detecta tab grupo + redirige a firstAllowedSection si default bloqueado |
+| `firestore.rules match /usuarios/{userId}` | Whitelist diff-keys ampliada (12 campos nuevos) + sub-condición cédula one-time-edit |
+| `service-worker.js` | CACHE_VERSION → v20260511040000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511040000 |
+| `CLAUDE.md` | Esta sección §43 |
+
+### 43.8 Archivos INTACTOS (afirmación)
+
+- `js/admin-section-router.js` — fix §41 sigue válido
+- `js/admin-auth.js` — handler legacy `users` toast queda como segunda capa de seguridad (defense in depth)
+- `js/admin-profile.js` — escribe correctamente, el bug era del rule
+- `js/admin-state.js` — RBAC matrix ya estaba bien
+
+### 43.9 Deploy manual requerido
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+Sin esto, el editor seguirá recibiendo `permission-denied` al guardar
+perfil. Las reglas frontend (filtros de tabs) sí se invalidan con el
+cache bump del SW.
+
+**Cache bump**: `v20260511040000`.

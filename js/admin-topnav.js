@@ -100,6 +100,30 @@
         var btn = e.target && e.target.closest && e.target.closest('[data-atn-section]');
         if (btn) {
             var section = btn.getAttribute('data-atn-section');
+            var group = btn.getAttribute('data-atn-group');
+
+            // §43 — Si el tab pertenece a un GRUPO (data-atn-group definido en el
+            // tab del topnav, ej: Inventario / Hub / Config) Y la sección default
+            // del grupo NO es accesible para el rol actual (ej: editor click "Config"
+            // que tiene "users" como default → bloqueado), redirigir a la PRIMERA
+            // sub-sección permitida del grupo.
+            //
+            // Esto resuelve: "editores le aparece que no tiene permisos al dar
+            // click en config porque redirige a la primera pestaña que es de
+            // usuarios". Ahora editor click "Config" → va a "lists" (primera
+            // permitida) y ve el tabstrip filtrado sin "Usuarios".
+            if (group && window.AltorraGroupTabs && typeof window.AltorraGroupTabs.canSee === 'function') {
+                var sectionMeta = (window.AltorraGroupTabs.groups[group] || {}).sections || [];
+                var defaultMeta = null;
+                for (var i = 0; i < sectionMeta.length; i++) {
+                    if (sectionMeta[i].id === section) { defaultMeta = sectionMeta[i]; break; }
+                }
+                if (defaultMeta && !window.AltorraGroupTabs.canSee(defaultMeta)) {
+                    var allowed = window.AltorraGroupTabs.firstAllowedSection(group);
+                    if (allowed) section = allowed;
+                }
+            }
+
             if (section && window.AltorraSections && window.AltorraSections.go) {
                 e.preventDefault();
                 window.AltorraSections.go(section);

@@ -2534,45 +2534,10 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                 </div>
             </div>
 
-            <div class="stat-card card-narrow">
-                <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;">
-                    <i data-lucide="lock" width="18" height="18" style="color:var(--admin-gold);"></i>
-                    Cambiar Contraseña
-                </h3>
-                <form id="changePasswordForm">
-                    <div class="form-group">
-                        <label class="form-label">Nueva contrasena</label>
-                        <input type="password" id="newPassword" class="form-input" required minlength="8" placeholder="Minimo 8 caracteres">
-                        <div id="passwordStrengthContainer" style="display:none;">
-                            <div class="password-strength-bar" id="passwordStrengthBar">
-                                <div class="password-strength-fill"></div>
-                            </div>
-                            <div class="password-strength-label" id="passwordStrengthLabel"></div>
-                        </div>
-                        <ul class="password-rules" id="passwordRules" style="display:none;">
-                            <li data-rule="length"><span class="rule-icon">○</span> Minimo 8 caracteres</li>
-                            <li data-rule="upper"><span class="rule-icon">○</span> Al menos una mayuscula</li>
-                            <li data-rule="lower"><span class="rule-icon">○</span> Al menos una minuscula</li>
-                            <li data-rule="number"><span class="rule-icon">○</span> Al menos un numero</li>
-                            <li data-rule="special"><span class="rule-icon">○</span> Al menos un caracter especial</li>
-                        </ul>
-                    </div>
-                    <button type="submit" class="btn btn-primary" id="btnChangePassword">Actualizar Contrasena</button>
-                </form>
-            </div>
-
-            <!-- TRUSTED DEVICES / ACTIVE SESSIONS -->
-            <div class="stat-card card-narrow mt-lg" id="trustedDevicesCard">
-                <h3 style="margin-bottom: 0.5rem; display:flex; align-items:center; gap:0.5rem;">
-                    <i data-lucide="monitor" width="18" height="18" style="color:var(--admin-gold);"></i>
-                    Dispositivos de Confianza
-                </h3>
-                <p class="admin-hint" style="margin-bottom:0.75rem;">Estos dispositivos pueden acceder sin verificacion SMS durante 30 dias. Si no reconoces alguno, revocalo de inmediato.</p>
-                <div id="trustedDevicesList" style="margin-bottom:0.75rem;">
-                    <div style="text-align:center;color:var(--admin-text-muted);padding:1rem;font-size:0.85rem;">Cargando...</div>
-                </div>
-                <button class="btn btn-danger btn-sm" id="btnRevokeAllDevices" style="display:none;">Revocar todos los dispositivos</button>
-            </div>
+            <!-- §49 — Cambiar Contraseña + Dispositivos de Confianza
+                 movidos a sec-profile (Mi Perfil → Seguridad).
+                 Ajustes ahora solo contiene: Theme picker, SEO Tools,
+                 Respaldo de Datos. -->
 
             <!-- BACKUP & RESTORE -->
             <div class="stat-card card-narrow mt-lg">
@@ -2727,6 +2692,104 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                                 <span class="profile-info-label"><i data-lucide="shield"></i> 2FA</span>
                                 <span class="profile-info-value" id="profileInfo2FA">—</span>
                             </div>
+                        </div>
+                    </section>
+
+                    <!-- §49 — SEGURIDAD (movido desde Ajustes + 2FA toggle nuevo) -->
+                    <section class="profile-card" id="profileSecurityCard">
+                        <header class="profile-card-head">
+                            <h3>Seguridad</h3>
+                            <span class="profile-card-hint">
+                                Gestioná tu contraseña y la verificación en 2 pasos (2FA).
+                            </span>
+                        </header>
+                        <div class="profile-card-body">
+
+                            <!-- 2FA toggle (nuevo §49) -->
+                            <div class="profile-recovery-row">
+                                <div class="profile-recovery-info">
+                                    <div class="profile-recovery-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a);">
+                                        <i data-lucide="shield-check"></i>
+                                    </div>
+                                    <div>
+                                        <div class="profile-recovery-name">Verificación en 2 pasos (2FA)</div>
+                                        <div class="profile-recovery-status" id="profile2FAStatus">Cargando…</div>
+                                    </div>
+                                </div>
+                                <div class="profile-recovery-actions">
+                                    <button type="button" class="btn btn-primary btn-sm" id="profile2FAManage">
+                                        <i data-lucide="settings-2"></i> Gestionar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 2FA config form (oculto hasta click "Gestionar") -->
+                            <div id="profile2FAForm" style="display:none;margin-top:14px;padding:14px;border:1px solid rgba(34,197,94,0.3);border-radius:8px;background:rgba(34,197,94,0.04);">
+                                <div id="profile2FAFormBody"></div>
+                                <div id="profile2FAErr" style="color:var(--admin-danger);font-size:0.8rem;margin-top:8px;display:none;"></div>
+                                <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
+                                    <button type="button" class="btn btn-ghost btn-sm" id="profile2FACancel">Cancelar</button>
+                                    <button type="button" class="btn btn-primary btn-sm" id="profile2FASave">
+                                        <i data-lucide="save"></i> Guardar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <hr style="border:0;border-top:1px solid rgba(255,255,255,0.06);margin:18px 0;">
+
+                            <!-- CAMBIAR CONTRASEÑA (movido desde Ajustes — IDs preservados) -->
+                            <div class="profile-recovery-row" style="align-items:flex-start;">
+                                <div class="profile-recovery-info">
+                                    <div class="profile-recovery-icon" style="background:linear-gradient(135deg,#b89658,#9a7d44);">
+                                        <i data-lucide="lock"></i>
+                                    </div>
+                                    <div>
+                                        <div class="profile-recovery-name">Contraseña</div>
+                                        <div class="profile-recovery-status">Mínimo 8 caracteres + mayús + minús + número + especial</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <form id="changePasswordForm" style="margin-top:10px;">
+                                <div class="form-group">
+                                    <label class="form-label">Nueva contraseña</label>
+                                    <input type="password" id="newPassword" class="form-input" required minlength="8" placeholder="Mínimo 8 caracteres">
+                                    <div id="passwordStrengthContainer" style="display:none;">
+                                        <div class="password-strength-bar" id="passwordStrengthBar">
+                                            <div class="password-strength-fill"></div>
+                                        </div>
+                                        <div class="password-strength-label" id="passwordStrengthLabel"></div>
+                                    </div>
+                                    <ul class="password-rules" id="passwordRules" style="display:none;">
+                                        <li data-rule="length"><span class="rule-icon">○</span> Mínimo 8 caracteres</li>
+                                        <li data-rule="upper"><span class="rule-icon">○</span> Al menos una mayúscula</li>
+                                        <li data-rule="lower"><span class="rule-icon">○</span> Al menos una minúscula</li>
+                                        <li data-rule="number"><span class="rule-icon">○</span> Al menos un número</li>
+                                        <li data-rule="special"><span class="rule-icon">○</span> Al menos un carácter especial</li>
+                                    </ul>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm" id="btnChangePassword">
+                                    <i data-lucide="key-round"></i> Actualizar contraseña
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+
+                    <!-- §49 — DISPOSITIVOS DE CONFIANZA (movido desde Ajustes — IDs preservados) -->
+                    <section class="profile-card" id="trustedDevicesCard">
+                        <header class="profile-card-head">
+                            <h3>Dispositivos de confianza</h3>
+                            <span class="profile-card-hint">
+                                Estos dispositivos pueden acceder sin verificación SMS durante 30 días.
+                                Si no reconocés alguno, revocalo de inmediato.
+                            </span>
+                        </header>
+                        <div class="profile-card-body">
+                            <div id="trustedDevicesList" style="margin-bottom:0.75rem;">
+                                <div style="text-align:center;color:var(--admin-text-muted);padding:1rem;font-size:0.85rem;">Cargando...</div>
+                            </div>
+                            <button class="btn btn-danger btn-sm" id="btnRevokeAllDevices" style="display:none;">
+                                <i data-lucide="trash-2"></i> Revocar todos los dispositivos
+                            </button>
                         </div>
                     </section>
 

@@ -1299,8 +1299,11 @@
         $('loginScreen').style.display = 'none';
         $('adminPanel').style.display = 'flex';
 
-        // §23 FASE 7 — Auth hint para pre-paint del próximo F5/cold reload.
+        // §23 FASE 7 + §44 — Auth hint para pre-paint del próximo F5/cold reload.
         // TTL de 8 horas (mismo que la sesión absoluta del admin).
+        // Incluye photoURL + cargo para que admin-topnav.js sincronice el chip
+        // de usuario INMEDIATAMENTE al primer paint (antes de que onAuthStateChanged
+        // y loadProfileViaREST resuelvan ~200-500ms después).
         // Cuando expire, el inline script del <head> lo limpia y vuelve al
         // flujo normal (loginScreen visible).
         try {
@@ -1309,6 +1312,8 @@
                 email: user.email,
                 rol: AP.currentUserRole,
                 nombre: AP.currentUserProfile ? AP.currentUserProfile.nombre : '',
+                photoURL: AP.currentUserProfile ? (AP.currentUserProfile.photoURL || AP.currentUserProfile.avatarURL || '') : '',
+                cargo: AP.currentUserProfile ? (AP.currentUserProfile.cargo || '') : '',
                 expiresAt: Date.now() + 8 * 60 * 60 * 1000
             }));
         } catch (e) {}

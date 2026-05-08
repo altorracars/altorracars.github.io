@@ -295,8 +295,33 @@
     }
 
     /* ─── Sync user chip con AP.currentUserProfile ─── */
+    /**
+     * §44 — syncUser hidrata el chip de usuario del topnav.
+     *
+     * FAST-PATH (post F5 con sesión vigente): si AP.currentUserProfile
+     * todavía NO está cargado pero existe el pre-paint hint
+     * `window.__ALTORRA_ADMIN_RESTORING__`, usamos ese como fallback
+     * optimista. Cuando AP cargue ~200-500ms después, syncUser correrá
+     * de nuevo y los datos reales sobrescribirán el optimista.
+     *
+     * Resuelve el bug "Ctrl+Shift+R muestra avatar/nombre vacíos hasta
+     * que AP carga". Ahora muestra inmediatamente desde el cache.
+     */
     function syncUser() {
         var profile = (window.AP && window.AP.currentUserProfile) || null;
+        var hint = window.__ALTORRA_ADMIN_RESTORING__ || null;
+
+        // Fallback al pre-paint hint si AP aún no cargó
+        if (!profile && hint) {
+            profile = {
+                nombre: hint.nombre || '',
+                email: hint.email || '',
+                rol: hint.rol || '',
+                cargo: hint.cargo || '',
+                photoURL: hint.photoURL || '',
+                _isHint: true // flag para diagnóstico
+            };
+        }
         if (!profile) return;
 
         var name = profile.nombre || profile.email || 'Admin';
@@ -415,8 +440,31 @@
             if (current) setActiveSection(current);
         }
 
-        // Re-sync bell + badges + user periódicamente (cubre cargas asíncronas).
-        // §36.3 perf — bajado de 2s a 5s (DOM polling es caro en cada tick).
+        // §44 — FAST-POLL inicial: durante los primeros 6s post-init,
+        // chequeamos cada 250ms si AP.currentUserProfile ya cargó. Apenas
+        // detectamos que cargó (real, no del hint), corremos una sync
+        // final con los datos reales y cancelamos el fast-poll. Después
+        // entra el polling normal de 5s para mantener bell/badges al día.
+        //
+        // Esto resuelve el bug "Ctrl+Shift+R deja el avatar/nombre vacío
+        // 5+ segundos hasta que el primer tick del polling de 5s corre".
+        // Ahora la transición pre-paint (hint) → real es <500ms típico.
+        var fastPollTicks = 0;
+        var fastPollInterval = setInterval(function () {
+            fastPollTicks++;
+            var hasRealProfile = !!(window.AP && window.AP.currentUserProfile);
+            // Hidratar bell/badges/user en cada tick (rápido, idempotente)
+            syncUser();
+            syncBell();
+            syncBadges();
+            // Si AP cargó O ya pasaron 24 ticks (6s), detener fast-poll
+            if (hasRealProfile || fastPollTicks >= 24) {
+                clearInterval(fastPollInterval);
+            }
+        }, 250);
+
+        // Polling normal cada 5s para bell/badges (el avatar ya quedó sync
+        // en el fast-poll). Cubre actualizaciones que ocurran después.
         var syncInterval = setInterval(function () {
             syncUser();
             syncBell();

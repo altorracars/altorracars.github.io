@@ -2,7 +2,7 @@
 // Version 2.0.0 - Modern Caching Strategy
 // Strategy: Network First for HTML, Stale-While-Revalidate for assets
 
-const CACHE_VERSION = 'v20260511040000'; // §43 — RBAC en grupos del topnav + perfil self-service. FIX 2 problemas: (1) editor click 'Config' iba a 'users' bloqueado → toast error. FIX: handleNavClick redirige a firstAllowedSection. admin-group-tabs.js filtra tabs por permission key + re-render automático cuando AP carga post-login. (2) editor no podía guardar perfil → permission-denied. FIX: firestore.rules whitelist diff-keys ampliada con campos del perfil (nombre/telefono/prefijo/cargo/photoURL/tipoDoc/cedula/cedulaChangeRequested/telegram*) manteniendo PROHIBIDOS rol/email/bloqueado/estado. Cédula one-time-edit enforced server-side. REQUIERE: firebase deploy --only firestore:rules
+const CACHE_VERSION = 'v20260511050000'; // §44 — Pre-paint optimista del topnav user chip + fast-poll. FIX: Ctrl+Shift+R dejaba avatar/nombre/email vacios hasta que AP.currentUserProfile cargaba (200-500ms del REST call). syncUser() ahora hace fallback a window.__ALTORRA_ADMIN_RESTORING__ (pre-paint hint del inline script en head) cuando AP no esta listo. Auth-hint extendido en showAdmin con photoURL + cargo. Inline script pre-paint pasa esos campos a __ALTORRA_ADMIN_RESTORING__. Init agrega fast-poll de 250ms x 24 ticks (6s max) que se autocancela al detectar AP cargado. Resultado: avatar/nombre/email aparecen INMEDIATAMENTE al primer paint en F5 con sesion vigente, transicion a datos reales <500ms tipico. Polling normal de 5s sigue activo para bell/badges. // §43 RBAC grupos topnav.
 const CACHE_NAME = `altorra-cars-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `altorra-runtime-${CACHE_VERSION}`;
 

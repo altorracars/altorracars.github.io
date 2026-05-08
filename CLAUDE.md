@@ -20553,3 +20553,170 @@ perfil. Las reglas frontend (filtros de tabs) sí se invalidan con el
 cache bump del SW.
 
 **Cache bump**: `v20260511040000`.
+
+---
+
+## 44. ADR-044 — Pre-paint optimista del topnav user chip + fast-poll (2026-05-08)
+
+> Cliente reportó tras §43: "Cuando se da Ctrl+Shift+R, en la captura
+> aparece la foto de perfil [vacía] y no sale información de quién está
+> logueado sino hasta cierto tiempo después. Hay mucha demora en la
+> carga de información, así pasa con la carga de toda la página".
+>
+> Aplicado bajo doctrina IAP §37.
+
+### 44.1 Causa raíz
+
+El flujo actual de carga del admin tras Ctrl+Shift+R:
+
+1. `T=0` — HTML parse + inline script pre-paint en `<head>` lee
+   `localStorage.altorra_admin_auth_hint` y setea
+   `<html class="admin-restoring">` + `window.__ALTORRA_ADMIN_RESTORING__`
+2. `T=+50ms` — CSS muestra adminPanel skeleton (loginScreen oculto)
+3. `T=+100-200ms` — defer scripts cargan: admin-section-router.js
+   → admin-topnav.js
+4. `T=+150ms` — admin-topnav.js init() corre → `syncUser()` lee
+   `window.AP.currentUserProfile` → **null** porque admin-auth.js aún
+   no resolvió onAuthStateChanged → **chip queda vacío**
+5. `T=+200-500ms` — Firebase Auth resuelve onAuthStateChanged → REST
+   call a `usuarios/{uid}` → AP.currentUserProfile populado
+6. `T=+5000ms` — primer tick del polling de 5s → `syncUser()` corre
+   → finalmente popula avatar/nombre/email
+
+**Resultado**: el usuario ve el chip vacío durante 5+ segundos en
+algunos casos. La info estaba en `localStorage.altorra_admin_auth_hint`
+pero `syncUser` solo leía `window.AP`, no el hint.
+
+### 44.2 Fix #1 — Auth-hint extendido con photoURL + cargo
+
+`admin-auth.js showAdmin` línea ~1306-1315:
+
+```js
+localStorage.setItem('altorra_admin_auth_hint', JSON.stringify({
+    uid: user.uid,
+    email: user.email,
+    rol: AP.currentUserRole,
+    nombre: AP.currentUserProfile.nombre,
+    photoURL: AP.currentUserProfile.photoURL || AP.currentUserProfile.avatarURL || '',  // ← NUEVO
+    cargo: AP.currentUserProfile.cargo || '',                                              // ← NUEVO
+    expiresAt: Date.now() + 8 * 60 * 60 * 1000
+}));
+```
+
+`admin.html` inline script pre-paint extiende el hint a
+`__ALTORRA_ADMIN_RESTORING__`:
+
+```js
+window.__ALTORRA_ADMIN_RESTORING__ = {
+    uid, rol, nombre, email,
+    photoURL: snap.photoURL || '',   // ← NUEVO
+    cargo: snap.cargo || '',          // ← NUEVO
+    section: lastSection
+};
+```
+
+### 44.3 Fix #2 — `syncUser` con fallback al hint
+
+`js/admin-topnav.js syncUser()` extendido:
+
+```js
+function syncUser() {
+    var profile = (window.AP && window.AP.currentUserProfile) || null;
+    var hint = window.__ALTORRA_ADMIN_RESTORING__ || null;
+
+    // Fallback al pre-paint hint si AP aún no cargó
+    if (!profile && hint) {
+        profile = {
+            nombre: hint.nombre || '',
+            email: hint.email || '',
+            rol: hint.rol || '',
+            cargo: hint.cargo || '',
+            photoURL: hint.photoURL || '',
+            _isHint: true // diagnóstico
+        };
+    }
+    if (!profile) return;
+    // ... resto del render normal ...
+}
+```
+
+Ahora el avatar/nombre/email se hidratan del hint INMEDIATAMENTE al
+primer paint (sub-50ms), antes que admin-auth.js resuelva el REST
+call. Cuando AP carga, `syncUser` corre de nuevo y los datos reales
+sobrescriben el optimista (típicamente <500ms).
+
+### 44.4 Fix #3 — Fast-poll inicial 250ms × 24 ticks
+
+`init()` agrega un fast-poll que se autocancela cuando AP carga:
+
+```js
+var fastPollTicks = 0;
+var fastPollInterval = setInterval(function () {
+    fastPollTicks++;
+    var hasRealProfile = !!(window.AP && window.AP.currentUserProfile);
+    syncUser();
+    syncBell();
+    syncBadges();
+    if (hasRealProfile || fastPollTicks >= 24) {
+        clearInterval(fastPollInterval); // 24 × 250ms = 6s max
+    }
+}, 250);
+```
+
+Garantiza que la transición hint → datos reales ocurre en <500ms
+típico (no a los 5s del polling normal).
+
+### 44.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Login fresco, hace cualquier cosa, Ctrl+Shift+R | Cache v20260511050000 invalida; avatar/nombre/email visibles INMEDIATAMENTE al primer paint |
+| 2 | Navegar dentro del admin (sin F5) | Sin cambio (AP ya está cargado, hint no se usa) |
+| 3 | Cambiar foto en perfil + F5 | Tras showAdmin se reescribe hint con photoURL nueva → próxima recarga muestra foto nueva inmediato |
+| 4 | Logout + login con OTRO usuario + F5 | Hint nuevo del nuevo user (showAdmin lo sobreescribe) |
+| 5 | Hint expirado (>8h sesión) | Inline script lo limpia, comportamiento clásico (loginScreen visible) |
+| 6 | DevTools console | `window.__ALTORRA_ADMIN_RESTORING__` muestra el snap completo |
+| 7 | DevTools sources → admin-topnav.js → break en syncUser | profile._isHint = true en primeros ticks; profile._isHint undefined cuando AP cargue |
+
+### 44.6 Doctrina aplicada
+
+§17: cero MutationObserver subtree:true, cero pointermove,
+transitions específicas. Fast-poll es un setInterval de 250ms que se
+autocancela en máximo 6s — no es polling perpetuo.
+
+§19 RCA estricto: identificada la cadena causal (HTML parse →
+inline pre-paint → defer scripts → AP load → primer poll de 5s).
+Causa raíz: gap entre primer paint y AP load. Fix: cubrir ese gap
+con el hint.
+
+§37 IAP: 5 secciones de análisis previo entregadas.
+
+### 44.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-auth.js showAdmin` | +2 campos en auth-hint (photoURL + cargo) |
+| `admin.html` inline pre-paint | +2 campos en `__ALTORRA_ADMIN_RESTORING__` |
+| `js/admin-topnav.js syncUser` | Fallback al hint si AP no cargado (+15 líneas) |
+| `js/admin-topnav.js init` | Fast-poll de 250ms × 24 ticks (+18 líneas) |
+| `service-worker.js` | CACHE_VERSION → v20260511050000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511050000 |
+| `CLAUDE.md` | Esta sección §44 |
+
+### 44.8 Archivos INTACTOS
+
+- `js/admin-section-router.js` — sin tocar
+- `js/admin-group-tabs.js` — sin tocar
+- `js/admin-profile.js` — sin tocar
+- `firestore.rules` — sin tocar (deploy manual ya hecho en §43)
+
+### 44.9 Notas
+
+El fix solo cubre el chip de usuario del topnav. Otras zonas que
+"tardan" (KPIs hero del dashboard, listas de vehículos, CRM cards)
+dependen de listeners onSnapshot de Firestore que requieren su
+propio round-trip. Si el cliente reporta lentitud específica en
+otras secciones, se evaluará caso por caso (cache local de últimos
+datos vistos, skeleton states más visibles, etc.).
+
+**Cache bump**: `v20260511050000`.

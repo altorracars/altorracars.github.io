@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511140000'; // §49 — Unificación seguridad personal en Mi Perfil: cambiar password + dispositivos confianza + 2FA toggle (movidos desde Ajustes + 2FA toggle nuevo)
+    const APP_VERSION = '20260511150000'; // §50 — Mobile cache wipe recovery via deviceId fingerprint + Telegram/FCM desde minuto 0 + banner "1 a 10 min"
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

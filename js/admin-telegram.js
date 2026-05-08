@@ -41,7 +41,8 @@
     // §26.5 — Username del bot creado en BotFather. Cambiá esto al
     // username real cuando crees el bot. Mientras esté como placeholder,
     // el flujo informa al admin que el setup está pendiente.
-    var BOT_USERNAME = 'AltorraCarsAlertsBot'; // ⚠️ cambiar al real post-setup
+    // §39 (2026-05-08) — Bot Telegram CONFIGURADO. Username real desde BotFather.
+    var BOT_USERNAME = 'AltorraCarsbot';
 
     function isConfigured() {
         return BOT_USERNAME && BOT_USERNAME !== 'AltorraCarsAlertsBot';

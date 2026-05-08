@@ -82,8 +82,12 @@
             .orderBy('lastMessageAt', 'desc')
             .limit(100)
             .onSnapshot(function (snap) {
-                // §57.quat diagnóstico realtime: log de cada snapshot recibido
-                console.log('[AdminConcierge] §57.quat snapshot received — docs:', snap.size, 'changes:', snap.docChanges().length);
+                // §57.6 diagnóstico realtime: log detallado de cada snapshot
+                var changes = snap.docChanges();
+                console.log('[AdminConcierge] §57.6 snapshot — docs:', snap.size, 'changes:', changes.length);
+                changes.forEach(function (chg) {
+                    console.log('[AdminConcierge] §57.6 change type:', chg.type, 'docId:', chg.doc.id, 'mode:', chg.doc.data().mode, 'status:', chg.doc.data().status);
+                });
                 // BUG #3 FIX — Detectar removed events ANTES de reconstruir _chats.
                 // Si el chat actualmente abierto en el panel derecho fue eliminado
                 // por OTRO admin (en otra tab/dispositivo), tenemos que limpiar

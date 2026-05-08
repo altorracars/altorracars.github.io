@@ -6,13 +6,19 @@
  * completó al menos 1 paint antes del fade-in.
  *
  * Resultado: cero "TV glitch" al refrescar.
+ *
+ * §47.5 — Timeout aumentado de 4.5s a 8s. En mobile con red lenta
+ * (LTE intermitente, post borrar-cache), 4.5s era insuficiente para
+ * descargar todos los CSS, y el safety net revelaba el body sin
+ * estilos cargados (texto crudo). Combinado con el fallback CSS
+ * inline en admin.html `<head>`, el peor caso ya no es página blanca.
  */
 (function () {
     'use strict';
     if (window._av2Bootstrap) return;
     window._av2Bootstrap = true;
 
-    var TIMEOUT_MS = 4500; // safety net — si window.load nunca dispara
+    var TIMEOUT_MS = 8000; // §47.5 — 4500 → 8000 para mobile con red lenta
 
     function reveal() {
         if (!document.documentElement.classList.contains('av2-loading')) return;

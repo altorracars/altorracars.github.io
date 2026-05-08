@@ -415,13 +415,6 @@
         </div>
     </header>
 
-    <!-- §36.3 — SUBNAV contextual (Inventario/Hub/Config muestran tabs internos aquí) -->
-    <nav class="atn-subnav" id="atnSubnav" aria-label="Navegación contextual" hidden>
-        <div class="atn-subnav-inner">
-            <div class="atn-subnav-tabs" id="atnSubnavTabs" role="tablist"></div>
-        </div>
-    </nav>
-
     <!-- SIDEBAR (legacy — oculta en desktop por admin-topnav.css; mantenida para mobile drawer) -->
     <nav class="sidebar" id="adminSidebar">
         <div class="sidebar-logo">
@@ -604,6 +597,14 @@
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
+
+        <!-- §38 — SUBNAV contextual DENTRO del main (sticky-top del scroll;
+             tabs internas de cada grupo: Inventario/Hub/Config) -->
+        <nav class="atn-subnav" id="atnSubnav" aria-label="Navegación contextual" hidden>
+            <div class="atn-subnav-inner">
+                <div class="atn-subnav-tabs" id="atnSubnavTabs" role="tablist"></div>
+            </div>
+        </nav>
 
         <!-- DASHBOARD -->
         <div id="sec-dashboard" class="section active">

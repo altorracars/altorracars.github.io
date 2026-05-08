@@ -1431,7 +1431,11 @@ select:focus-visible {
     position: fixed;
     top: 80px;
     right: 24px;
-    z-index: 9985;
+    /* §47.ter — z-index 9995 para que la isla pueda moverse POR ENCIMA del
+       topnav (9990) cuando el usuario quiera ubicarla en una zona vacía.
+       Antes era 9985 → siempre quedaba debajo del topnav y el drag a esa
+       zona no funcionaba visualmente. */
+    z-index: 9995;
     user-select: none;
     -webkit-user-select: none;
     touch-action: none;        /* prevenir scroll mientras drag */

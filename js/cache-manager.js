@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511090000'; // §47.bis — Isla drag mobile fix (.--positioned class) + overflow horizontal fix (1 col <600px, 2 cols tablet)
+    const APP_VERSION = '20260511100000'; // §47.ter — Isla z-index 9995 + cargo en lugar de rol + hamburger mobile + welcome responsive + multi-store trust (cookie+localStorage)
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

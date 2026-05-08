@@ -578,5 +578,114 @@ html.admin-restoring #adminPanel::before {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   FIN admin-perf-kill.css — §35 ADR-035 + §36.3 PERF PASS + §42 ADR-042 + §47 MOBILE
+   §47.ter — Mobile menu hamburguesa + welcome card responsive
+   ───────────────────────────────────────────────────────────────────
+   1. Hamburguesa visible solo <768px en topnav (animación X al abrir)
+   2. Tabs ocultos <768px (van en la sidebar drawer)
+   3. Brand text reducido para ahorrar espacio
+   4. Welcome card y page-headers con padding/font-size apropiados
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Hamburguesa del topnav ─── */
+.admin-panel .atn-hamburger {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.18s ease, border-color 0.18s ease;
+    position: relative;
+}
+.admin-panel .atn-hamburger span {
+    display: block;
+    position: absolute;
+    left: 50%;
+    width: 18px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 2px;
+    transform: translateX(-50%);
+    transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1),
+                top 0.18s ease,
+                opacity 0.14s ease;
+}
+.admin-panel .atn-hamburger span:nth-child(1) { top: 12px; }
+.admin-panel .atn-hamburger span:nth-child(2) { top: 19px; }
+.admin-panel .atn-hamburger span:nth-child(3) { top: 26px; }
+.admin-panel .atn-hamburger:hover {
+    background: rgba(184, 150, 88, 0.10);
+    border-color: rgba(184, 150, 88, 0.30);
+}
+.admin-panel .atn-hamburger.active span:nth-child(1) {
+    top: 19px; transform: translateX(-50%) rotate(45deg);
+}
+.admin-panel .atn-hamburger.active span:nth-child(2) {
+    opacity: 0;
+}
+.admin-panel .atn-hamburger.active span:nth-child(3) {
+    top: 19px; transform: translateX(-50%) rotate(-45deg);
+}
+
+/* ─── Mobile <768px — mostrar hamburger + ocultar tabs ─── */
+@media (max-width: 768px) {
+    .admin-panel .atn-hamburger {
+        display: flex !important;
+    }
+    /* Ocultar tabs (van a la sidebar drawer accesible via hamburguesa) */
+    .admin-panel .atn-tabs {
+        display: none !important;
+    }
+    /* Brand más compacto */
+    .admin-panel .atn-brand {
+        flex: 1;
+        min-width: 0;
+    }
+    .admin-panel .atn-brand-text strong {
+        font-size: 0.92rem;
+    }
+    .admin-panel .atn-brand-text small {
+        font-size: 0.62rem;
+    }
+}
+
+/* ─── Welcome card responsive (Buenas noches, Daniel) ─── */
+@media (max-width: 600px) {
+    /* dashboardWelcome es <h1> dentro de .page-header del sec-dashboard */
+    .admin-panel #sec-dashboard .page-header {
+        padding: 16px 14px !important;
+    }
+    .admin-panel #sec-dashboard .page-header h1,
+    .admin-panel #dashboardWelcome {
+        font-size: 1.5rem !important;
+        line-height: 1.25 !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        margin: 0 !important;
+        padding-right: 8px !important;
+    }
+    .admin-panel #sec-dashboard .page-header .page-subtitle,
+    .admin-panel #adminEmail {
+        font-size: 0.78rem !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        line-height: 1.4 !important;
+        margin-top: 6px !important;
+    }
+}
+@media (max-width: 380px) {
+    /* iPhone SE / pantallas muy estrechas */
+    .admin-panel #sec-dashboard .page-header h1,
+    .admin-panel #dashboardWelcome {
+        font-size: 1.3rem !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-perf-kill.css — §35 + §36.3 + §42 + §47 MOBILE + §47.ter
    ═══════════════════════════════════════════════════════════════════ */

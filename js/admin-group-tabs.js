@@ -25,16 +25,27 @@
     'use strict';
     if (window.AltorraGroupTabs) return;
 
-    /* ─── Definición de grupos ─── */
+    /* ─── Definición de grupos ───
+       Cada sub-sección puede tener un campo `permission` con el nombre
+       del helper RBAC en window.AP que decide si el rol actual puede
+       VER esa sección. Si NO se define `permission`, la sección es
+       visible para todos los roles. (§43 ADR-043)
+
+       Helpers RBAC disponibles en js/admin-state.js (líneas 78-86 + 274-313):
+         AP.isSuperAdmin / AP.isEditor / AP.isViewer / AP.isEditorOrAbove
+         AP.canManageUsers / AP.canCreateOrEditInventory / AP.canDeleteInventory
+         AP.RBAC.canViewUsers / canViewDealers / canViewLists / canViewBanners
+                .canViewReviews / canViewActivity / canManageUsers / etc.
+    */
     var GROUPS = {
         inventario: {
             color: 'gold',
             sections: [
-                { id: 'vehicles', label: 'Vehículos', icon: 'car' },
-                { id: 'brands',   label: 'Marcas',    icon: 'tag' },
-                { id: 'dealers',  label: 'Aliados',   icon: 'handshake' },
-                { id: 'banners',  label: 'Banners',   icon: 'image' },
-                { id: 'reviews',  label: 'Reseñas',   icon: 'star' }
+                { id: 'vehicles', label: 'Vehículos', icon: 'car' },        // todos
+                { id: 'brands',   label: 'Marcas',    icon: 'tag' },        // todos
+                { id: 'dealers',  label: 'Aliados',   icon: 'handshake' },  // editor+
+                { id: 'banners',  label: 'Banners',   icon: 'image' },      // editor+
+                { id: 'reviews',  label: 'Reseñas',   icon: 'star' }        // editor+
             ]
         },
         hub: {
@@ -48,11 +59,12 @@
         config: {
             color: 'neutral',
             sections: [
-                { id: 'users',     label: 'Usuarios',  icon: 'users' },
-                { id: 'lists',     label: 'Atributos', icon: 'list-tree' },
-                { id: 'workflows', label: 'Workflows', icon: 'zap' },
-                { id: 'audit',     label: 'Auditoría', icon: 'scroll-text' },
-                { id: 'settings',  label: 'Ajustes',   icon: 'settings' }
+                // Usuarios SOLO visible para super_admin (canManageUsers)
+                { id: 'users',     label: 'Usuarios',  icon: 'users',       permission: 'canManageUsers' },
+                { id: 'lists',     label: 'Atributos', icon: 'list-tree' }, // todos
+                { id: 'workflows', label: 'Workflows', icon: 'zap' },        // todos
+                { id: 'audit',     label: 'Auditoría', icon: 'scroll-text' },// todos (canViewActivity = true)
+                { id: 'settings',  label: 'Ajustes',   icon: 'settings' }    // todos
             ]
         }
     };
@@ -78,11 +90,44 @@
         });
     }
 
+    /* §43 — RBAC: el rol actual puede VER esta sección? Si la sub-sección
+       NO declara `permission`, retornamos true (visible para todos). Si
+       declara una clave, buscamos el helper en AP.<key> o AP.RBAC.<key>.
+       Defensivo: si AP no está cargado todavía, retornamos true (la
+       sección se ocultará/mostrará al re-render cuando AP esté listo). */
+    function canSee(section) {
+        if (!section || !section.permission) return true;
+        var AP = window.AP;
+        if (!AP) return true; // AP aún no cargado — permitir por default
+        var key = section.permission;
+        if (typeof AP[key] === 'function') return !!AP[key]();
+        if (AP.RBAC && typeof AP.RBAC[key] === 'function') return !!AP.RBAC[key]();
+        return true; // helper no encontrado → no bloquear
+    }
+
+    /* §43 — Devuelve el ID de la PRIMERA sub-sección permitida del grupo
+       para el rol actual. Usado por admin-topnav.js cuando se clickea un
+       tab grupo: en lugar de ir al default (que puede estar bloqueado),
+       redirigir a la primera permitida. Retorna null si NINGUNA es
+       accesible (raro — el tab grupo nunca debería verse en ese caso). */
+    function firstAllowedSection(groupKey) {
+        var g = GROUPS[groupKey];
+        if (!g) return null;
+        for (var i = 0; i < g.sections.length; i++) {
+            if (canSee(g.sections[i])) return g.sections[i].id;
+        }
+        return null;
+    }
+
     /* ─── Build tabstrip HTML ─── */
     function buildTabstripHTML(group, activeSectionId) {
+        // §43 — Filtrar las sub-secciones según permisos del rol actual.
+        // Si una tab no es accesible, NO se renderiza (no aparece en la UI).
+        var visibleSections = group.sections.filter(canSee);
+
         var html = '<div class="section-tabstrip" data-group-color="'
                  + escapeHtml(group.color) + '" role="tablist">';
-        group.sections.forEach(function (s) {
+        visibleSections.forEach(function (s) {
             var isActive = s.id === activeSectionId;
             html += '<button class="section-tab' + (isActive ? ' is-active' : '') + '" '
                   + 'type="button" '
@@ -105,16 +150,27 @@
         var sectionEl = document.getElementById('sec-' + sectionId);
         if (!sectionEl) return;
 
-        // Idempotencia: si ya existe un tabstrip de este grupo, solo actualizar active
+        // §43 — Calculamos las tabs visibles según permisos del rol actual.
+        // Si AP cargó después de la pre-inyección, el conteo puede haber
+        // cambiado (ej: editor login → ya no debe ver "Usuarios").
+        var visibleCount = group.sections.filter(canSee).length;
+
+        // Idempotencia: si ya existe un tabstrip de este grupo Y el conteo
+        // de tabs visibles coincide con lo que tiene actualmente, solo
+        // actualizamos is-active. Si difiere, reemplazamos HTML completo.
         var existing = sectionEl.querySelector(':scope > .section-tabstrip');
         if (existing && existing.getAttribute('data-group-color') === group.color) {
-            existing.querySelectorAll('.section-tab').forEach(function (btn) {
-                var sid = btn.getAttribute('data-section-tab');
-                var on = sid === sectionId;
-                btn.classList.toggle('is-active', on);
-                btn.setAttribute('aria-selected', on ? 'true' : 'false');
-            });
-            return;
+            var currentCount = existing.querySelectorAll('.section-tab').length;
+            if (currentCount === visibleCount) {
+                existing.querySelectorAll('.section-tab').forEach(function (btn) {
+                    var sid = btn.getAttribute('data-section-tab');
+                    var on = sid === sectionId;
+                    btn.classList.toggle('is-active', on);
+                    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+                });
+                return;
+            }
+            // Conteo difiere → reemplazar HTML completo abajo
         }
 
         // Si había un tabstrip de OTRO grupo (raro, pero posible si la sección
@@ -132,10 +188,17 @@
         }
     }
 
+    /* §43 — Track del rol activo. Cuando login resuelve y AP.currentUserRole
+       cambia (de null → 'editor', etc.), corremos preInjectAll() de nuevo
+       para que los tabstrips se reconstruyan con el filtro RBAC correcto. */
+    var _lastRoleSeen = null;
+
     /* ─── Pre-inyectar tabstrips en TODAS las secciones de grupos ───
        Para que cuando el usuario navegue, ya estén listas.
-       Idempotente: si ya existen, sólo actualiza active. */
+       Idempotente: si ya existen Y el conteo coincide, sólo actualiza
+       is-active. Si el rol cambió y el conteo difiere, se reemplaza HTML. */
     function preInjectAll() {
+        _lastRoleSeen = (window.AP && window.AP.currentUserRole) || null;
         Object.keys(GROUPS).forEach(function (gKey) {
             GROUPS[gKey].sections.forEach(function (s) {
                 applyToSection(s.id);
@@ -169,7 +232,16 @@
         // Suscribir a cambios de sección para actualizar el active state
         if (window.AltorraSections && typeof window.AltorraSections.onChange === 'function') {
             window.AltorraSections.onChange(function (section) {
-                applyToSection(section);
+                // §43 — Si el rol del usuario cambió desde el último onChange
+                // (típicamente login: null → 'super_admin'/'editor'/'viewer'),
+                // re-aplicar a TODOS los grupos para que el filtro RBAC se
+                // ajuste a las nuevas tabs visibles.
+                var currentRole = (window.AP && window.AP.currentUserRole) || null;
+                if (currentRole !== _lastRoleSeen) {
+                    preInjectAll();
+                } else {
+                    applyToSection(section);
+                }
             });
         }
     }
@@ -180,10 +252,13 @@
         init();
     }
 
-    /* ─── Public API (para debugging) ─── */
+    /* ─── Public API ─── */
     window.AltorraGroupTabs = {
         groups: GROUPS,
         applyToSection: applyToSection,
-        preInjectAll: preInjectAll
+        preInjectAll: preInjectAll,
+        // §43 — Helpers RBAC consumidos por admin-topnav.js handleNavClick
+        firstAllowedSection: firstAllowedSection,
+        canSee: canSee
     };
 })();

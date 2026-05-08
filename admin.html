@@ -123,11 +123,15 @@
             var lastSection = window.location.hash.replace(/^#\/?/, '') ||
                               localStorage.getItem('altorra_admin_last_section') ||
                               'dashboard';
+            // §44 — Incluimos photoURL + cargo para que el topnav los hidrate
+            // ANTES de que admin-auth.js resuelva el REST call de Firestore.
             window.__ALTORRA_ADMIN_RESTORING__ = {
                 uid: snap.uid,
                 rol: snap.rol,
                 nombre: snap.nombre,
                 email: snap.email,
+                photoURL: snap.photoURL || '',
+                cargo: snap.cargo || '',
                 section: lastSection
             };
         } catch (e) { /* fail-open: comportamiento clásico */ }

@@ -20926,3 +20926,282 @@ Sin esto, el warning `permission_denied` en `/presence/...` seguirá
 apareciendo en consola (cosmético, no bloquea funcionalidad).
 
 **Cache bump**: `v20260511060000`.
+
+---
+
+## 46. ADR-046 — Dynamic Island admins activos + drag-to-reposition + Hub padding fix (2026-05-08)
+
+> Cliente reportó tras §45, con captura de Inicio:
+>
+> 1. RTDB `permission_denied /presence/...` warning STILL appears in
+>    console (`firebase deploy --only database` aún no ejecutado).
+> 2. **Isla dinámica de "ADMINS ACTIVOS"**:
+>    - "No se ve muy bien y no es como la de los iphone, ademas estorba"
+>    - "Los usuarios conectados a veces estan conectados y no los detecta
+>      la isla no aparecen o a veces aparecen y de la nada se quitan"
+>    - Mismo problema en "Sesiones activas" del Inicio
+>    - "Me gustaria que esa isla dinamica se pudiese mover a un lugar que
+>      uno desea al dejar el click mantenido"
+>    - Auto-save de posición elegida
+>    - Posición inicial en lugar no obstructivo
+> 3. **ALTOR Hub padding bug**:
+>    - "El ALTOR Hub no esta ocupando todo el panding, esta hacia abajo
+>      cortado y no aparece todo"
+>    - "Necesitamos idear un plan para mejorar la interfaz... muy basica,
+>      poco profesional, no se parece nada a whatsapp y telegram juntos"
+>
+> §46 cierra issues 2 (parcial — feature redesign) y 3 (parcial — solo
+> padding bug). El redesign WhatsApp/Telegram-style del Hub queda
+> documentado como deuda para §47. Aplicado bajo doctrina IAP §37.
+
+### 46.1 Causa raíz Issue 2 — Detección inestable + UI pobre
+
+**Bugs en detección** (`js/admin-presence-ui.js` original §M.1 +
+`js/admin-auth.js loadActiveSessions`):
+
+| Causa | Síntoma observado |
+|---|---|
+| Heartbeat cada 2min + threshold stale 5min | Si tab queda en background brevemente, heartbeat se demora → admin desaparece "fantasma" tras 5min aunque siga conectado |
+| Dedup por `seen[uid]` simple sin contar tabs | Admin con múltiples tabs aparece UNA vez sin saber cuántas pestañas tiene abiertas |
+| Filter pasivo sin auto-refresh de "tiempo relativo" | "Hace 3 min" se queda congelado mientras la isla está abierta |
+| Posición fija `bottom:24px right:84px` | Choca con Voice FAB + Bell + contenido scrolleable. Cliente pidió drag-to-reposition |
+| Render rectangular plano | "No es Dynamic Island estilo iPhone" — UX disonante |
+
+### 46.2 Solución Issue 2 — Pill iPhone-style + drag + thresholds extendidos
+
+**Cambios en `js/admin-auth.js`**:
+
+```js
+// Antes:
+var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
+var PRESENCE_STALE_MS = 5 * 60 * 1000;
+
+// Ahora:
+var PRESENCE_HEARTBEAT_MS = 1 * 60 * 1000;   // más frecuente
+var PRESENCE_STALE_MS = 10 * 60 * 1000;       // más generoso
+```
+
+Con heartbeat de 1min, requerimos **10 intervalos consecutivos perdidos**
+antes de marcar como stale. Esto resuelve el "fantasma" sin sacrificar
+la limpieza de sesiones realmente cerradas (`onDisconnect.remove()` sigue
+limpiando inmediatamente al cerrar tab).
+
+**Reescritura completa `js/admin-presence-ui.js`** (~440 líneas):
+
+UI tipo Dynamic Island iPhone:
+
+- **Pill colapsado** (default): glass dark con avatares apilados (max 3)
+  + dot verde indicador + contador numérico tabular-nums + grip icon
+  Lucide. Border-radius 999px (pill perfecto). Backdrop-filter
+  `blur(28px) saturate(180%)`.
+- **Vista expandida** al click: detail dropdown con header (título +
+  cerrar X) + lista scrolleable de admins con avatar 34px + nombre +
+  rol + sección + tiempo relativo + badge "aquí" verde pulsante para
+  los que están en MI sección. Footer con hint de drag.
+- **Animación spring** cubic-bezier(0.34, 1.4, 0.64, 1) en open/close.
+
+**Drag-to-reposition con Pointer Events**:
+
+```js
+pill.addEventListener('pointerdown', function (e) {
+    _dragState = { startX, startY, origX, origY, moved: false };
+    pill.setPointerCapture(e.pointerId);
+});
+pill.addEventListener('pointermove', function (e) {
+    if (!_dragState) return;
+    var dx = e.clientX - _dragState.startX;
+    var dy = e.clientY - _dragState.startY;
+    if (!_dragState.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+    _dragState.moved = true;
+    var newX = clamp(_dragState.origX + dx, 8, window.innerWidth - w - 8);
+    var newY = clamp(_dragState.origY + dy, 8, window.innerHeight - h - 8);
+    island.style.left = newX + 'px';
+    island.style.top = newY + 'px';
+});
+pill.addEventListener('pointerup', function () {
+    if (_dragState.moved) {
+        savePosition({ x: island.offsetLeft, y: island.offsetTop });
+    }
+});
+```
+
+- **Threshold 4px** distingue click vs drag (evita expand accidental)
+- **Pointer Events** soportan touch + mouse + pen (cross-device)
+- **Clamp** dentro del viewport (no se puede arrastrar fuera)
+- **Auto-save** en `localStorage.altorra_dynisland_pos` como `{x, y}`
+- **Resize listener** re-clampa la posición si el viewport cambia
+
+**Posición default**: `top: 80px right: 24px`. Justo debajo del topnav
+(56px) sin chocar con bell/voice FAB. Mobile `bottom: 90px` para
+no chocar con FAB.
+
+**Detección mejorada** — dedup por uid con tabs counter, currentSection
+más reciente, setInterval 30s para refrescar tiempos relativos.
+
+**Public API extendida**: `expand`, `collapse`, `resetPosition` (útil
+si el user pierde la isla offscreen).
+
+### 46.3 Causa raíz Issue 3 — Hub padding cortado
+
+`css/admin.css:7237` (regla `body.altor-hub-active .altor-hub-section`):
+
+```css
+body.altor-hub-active .altor-hub-section {
+    position: fixed;
+    top: 0;                                /* ← tapado por topnav §36 */
+    left: var(--sidebar-width, 240px);     /* ← sidebar lateral ya no existe */
+    right: 0;
+    bottom: 0;
+    display: block;
+}
+body.altor-hub-active.sidebar-collapsed .altor-hub-section {
+    left: 56px;   /* ← clase sidebar-collapsed obsoleta */
+}
+```
+
+Tras §36 el topnav (56px arriba) reemplazó la sidebar lateral. La regla
+del Hub seguía con valores legacy:
+- `top: 0` → header del Hub queda detrás del topnav (cortado arriba)
+- `left: var(--sidebar-width, 240px)` → como `--sidebar-width` ya no
+  está definido, usa fallback 240px → Hub corre 240px hacia derecha
+- `display: block` impedía que `.section-tabstrip` (inyectado por §42)
+  + `.altor-hub` coexistieran correctamente
+
+### 46.4 Solución Issue 3 — Layout flex column con topnav awareness
+
+```css
+body.altor-hub-active .altor-hub-section {
+    position: fixed;
+    top: var(--atn-h, 56px);   /* respeta topnav */
+    left: 0;                    /* sin sidebar lateral */
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    background: var(--bg-base, #0a0a0a);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+body.altor-hub-active .altor-hub-section > .section-tabstrip {
+    flex-shrink: 0;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(184, 150, 88, 0.18);
+}
+body.altor-hub-active .altor-hub-section > .altor-hub {
+    flex: 1;
+    height: auto;     /* override 100vh hardcoded en .altor-hub */
+    min-height: 0;
+}
+```
+
+Resultado:
+- **Tabstrip §42** (Hub group: ALTOR Hub · Cerebro AI · Lo que no entendí)
+  queda arriba como sub-bar del Hub
+- **`.altor-hub`** (header + body con sidebar de chats + pane principal)
+  ocupa el resto con `flex: 1`
+- **Cero corte arriba** — top:var(--atn-h) deja espacio al topnav
+- **Cero corte derecho** — left:0 ocupa todo el ancho
+
+El redesign profundo estilo WhatsApp/Telegram (search avanzada, bubbles
+iOS Messages, detail pane derecho, plantillas inline, adjuntos) queda
+documentado como deuda para §47.
+
+### 46.5 Anti-patterns evitados
+
+| Patrón prohibido | Origen | Cómo lo evitamos |
+|---|---|---|
+| `MutationObserver subtree:true` | §17.12 | Cero MO. Listener único en `presence` RTDB ref |
+| `transition: all` | §17.2 | Transitions específicas (transform, opacity, box-shadow) |
+| Animar layout properties | §17.2 | Solo `transform`, `opacity` en hover/drag |
+| `pointermove` listeners persistentes globales | §35 | Solo durante drag activo (pointerdown → pointerup), `setPointerCapture` para no perder tracking |
+| `onclick="..."` inline con datos | §7 (XSS) | Listeners JS con event delegation |
+| Storage corrupto explota | §17.4 | `try/catch` en read/write de localStorage |
+
+### 46.6 Test E2E
+
+| # | Test | Resultado esperado |
+|---|---|---|
+| 1 | Ctrl+Shift+R en admin (cache v20260511070000 invalida) | Isla dinámica aparece arriba-derecha (no obstructiva) |
+| 2 | Solo yo logueado | Isla oculta (`empty` con opacity 0) |
+| 3 | Otro admin loguea en otra ventana/dispositivo | Isla aparece con dot verde + 1 avatar + "1" |
+| 4 | Click sobre el pill | Vista detalle se expande con animation spring |
+| 5 | Click X de detail / Esc / fuera | Cierra |
+| 6 | Mantén click sobre el pill + arrastra | Isla se mueve siguiendo cursor |
+| 7 | Suelta el click | Posición se persiste en localStorage |
+| 8 | F5 página | Isla aparece en posición elegida |
+| 9 | Resize ventana mucho más chica | Isla se re-posiciona dentro del viewport |
+| 10 | Otro admin en MI sección | Avatar pulsante verde + badge "aquí" en row |
+| 11 | Otro admin con 2 tabs abiertas | Aparece 1 vez con badge "×2" |
+| 12 | Esperar 60s con detail abierto | Tiempos relativos refrescados |
+| 13 | Otro admin cierra browser | Desaparece de la isla en <10s (onDisconnect) |
+| 14 | Otro admin tab background 5min | Permanece en isla (10min stale tolerante) |
+| 15 | Click "ALTOR Hub" | Section ocupa toda el área (top topnav, left 0, right 0, bottom 0) |
+| 16 | Header del Hub completo visible | "ALTOR Hub · Centro de operaciones" no cortado por topnav |
+| 17 | Mobile <720px | Isla en bottom:90px right:12px (no choca con FAB) |
+| 18 | DevTools Console: `AltorraPresenceUI.resetPosition()` | Vuelve a posición default top:80px right:24px |
+| 19 | `prefers-reduced-motion: reduce` | Animations desactivadas |
+
+### 46.7 Doctrina aplicada
+
+§19 RCA estricto: 3 issues con causas distintas:
+- Issue 1: deploy gap (rules locales OK, no desplegadas)
+- Issue 2: thresholds + UI poor (no era un bug puntual, era diseño)
+- Issue 3: regla CSS del §M.1 quedó obsoleta tras §36 topnav
+
+§37 IAP: 5 secciones de análisis previo entregadas.
+
+§17.12: cero MutationObserver subtree:true. El presence listener es
+un único `ref.on('value', ...)` específico.
+
+### 46.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-auth.js` | PRESENCE_HEARTBEAT_MS 2min→1min, PRESENCE_STALE_MS 5min→10min |
+| `js/admin-presence-ui.js` | Reescritura completa (~440 líneas): pill iPhone-style + detail dropdown + drag-to-reposition con Pointer Events + auto-save localStorage + threshold 10min + dedup por uid con tabs counter + auto-refresh tiempos relativos |
+| `css/admin.css:1422-1762` | Estilos nuevos `.alt-presence-island`, `.alt-presence-pill`, `.alt-presence-detail`, `.alt-presence-row`, drag states, mobile responsive, prefers-reduced-motion |
+| `css/admin.css:12446-12465` | Reglas legacy NOVA `.alt-presence-overlay` con `!important` ELIMINADAS (pisaban estilos nuevos) |
+| `css/admin.css:7237-7265` | Hub `body.altor-hub-active .altor-hub-section`: top var(--atn-h), left 0, flex column, tabstrip arriba, .altor-hub flex:1 |
+| `service-worker.js` | CACHE_VERSION → v20260511070000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511070000 |
+| `CLAUDE.md` | Esta sección §46 |
+
+### 46.9 Archivos INTACTOS (afirmación)
+
+- `database.rules.json` — sin tocar (correcto, requiere deploy manual)
+- `firestore.rules` — sin tocar
+- `js/admin-section-router.js` — sin tocar
+- `admin.html` — sin tocar (estructura del sec-concierge intacta)
+- `js/concierge.js`, `js/admin-concierge.js` — sin tocar (lógica del Hub)
+
+### 46.10 Deploy manual requerido (Issue 1 pendiente)
+
+```bash
+firebase deploy --only database
+```
+
+Sin esto, el warning `permission_denied` en `/presence/...` seguirá
+apareciendo en consola (cosmético, no bloquea funcionalidad). El
+`.catch()` del heartbeat en admin-auth.js ya silencia el error en
+código.
+
+### 46.11 Deuda técnica documentada
+
+**§47 Próximo sprint — ALTOR Hub redesign WhatsApp/Telegram-style**:
+
+El cliente pidió "una plataforma poderosa que se parezca a whatsapp y
+telegram juntos". El padding bug del Hub está resuelto en §46, pero el
+redesign profesional queda pendiente. Plan para próxima sesión:
+
+| Componente | Inspiración |
+|---|---|
+| Sidebar de chats | WhatsApp Web — search bar arriba, filter chips (Todos/No leídos/Asesor/Bot), cards con avatar grande + última hora + unread badge + status pill (online/typing/offline) |
+| Card chat detail | Telegram — header con avatar grande del cliente + nombre + status + acciones (call/info/menu) |
+| Messages bubbles | iOS Messages — bubbles con tail, color dorado para asesor, gris para cliente, timestamps relativos, read receipts |
+| Input | WhatsApp + Telegram — emoji picker, adjuntos (foto, vehículo card, cotización PDF), audio recording, plantillas inline (slash commands `/saludo`, `/info-vehiculo`, `/agendar`) |
+| Detail pane derecho colapsable | Slack — info del cliente (nombre, tel, email, ciudad), vehículo de interés (con thumbnail), historial de compras, notas internas del asesor |
+| Estética | HarmonyOS — glassmorphism, radius 16-24, animaciones spring, transiciones suaves cross-fade |
+
+Estimado: ~1500-2000 líneas CSS+JS+HTML. Sprint dedicado.
+
+**Cache bump**: `v20260511070000`.

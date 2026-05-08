@@ -1390,7 +1390,12 @@
 
     // ========== F12.7: RTDB PRESENCE (ACTIVE SESSIONS) ==========
     // Heartbeat interval: update lastSeen every 2 minutes so stale detection works
-    var PRESENCE_HEARTBEAT_MS = 2 * 60 * 1000;
+    // §46 — Heartbeat 1min (antes 2min) — actualiza lastSeen más frecuente
+    // para reducir falsos positivos de "stale" cuando el tab queda en background
+    // brevemente. Combinado con PRESENCE_STALE_MS extendido a 10min, los admins
+    // conectados ya NO desaparecen fantasma de la isla dinámica ni del listado
+    // "Sesiones activas".
+    var PRESENCE_HEARTBEAT_MS = 1 * 60 * 1000;
 
     // Flag to prevent set() calls after stopPresence() has been called.
     // Handles race conditions where .info/connected fires after listener removal.
@@ -1616,9 +1621,13 @@
         }
     }
 
-    // Max age for a session to be considered "active" (5 minutes).
-    // Safety net for sessions whose onDisconnect didn't fire cleanly.
-    var PRESENCE_STALE_MS = 5 * 60 * 1000;
+    // Max age for a session to be considered "active" (10 minutes).
+    // §46 — Extendido de 5min → 10min: con heartbeat de 1min, requerimos 10
+    // intervalos consecutivos perdidos antes de marcar sesión como stale.
+    // Esto resuelve el bug donde admins en tab background brevemente
+    // desaparecían "fantasma" del listado y la isla dinámica.
+    // onDisconnect.remove() sigue limpiando inmediatamente al cerrar tab.
+    var PRESENCE_STALE_MS = 10 * 60 * 1000;
 
     function loadActiveSessions() {
         if (!window.rtdb) {

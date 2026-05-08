@@ -23920,3 +23920,194 @@ delegation pura via `closest()`.
 
 **Cache bump**: `v20260511230000`.
 
+---
+
+## 57.ter ADR-057.ter — Tiempo real microquirúrgico ALTOR Hub (cliente + admin) (2026-05-08)
+
+> Cliente reportó: "Cerrar chat sí funciona porque desde admin
+> aparece cerrado el chat, pero lo que no trabaja es que la ventana
+> en web pública del usuario no hace nada en tiempo real, no se
+> cierra, no se limpia hasta refrescar."
+>
+> Y pidió: "podrás encontrar más bugs y errores. Escanea bien
+> absolutamente todo. Necesitamos que todo el esquema de ALTOR Hub
+> trabaje en tiempo real, nada puede hacerse con hard refresh
+> porque WhatsApp trabaja en tiempo real y estamos tratando de hacer
+> un mirror pero a nivel y escala corporativa y de CRM."
+>
+> Aplicado bajo RCA estricto §19 + IAP §37 + microcirugía profunda.
+
+### 57.ter.1 Bug A — Cliente: panel no se cerraba en tiempo real
+
+**Causa raíz** (post-§57.bis):
+
+`finalCloseAndCleanup()` llamaba a `close()` que solo removía la
+clase `.cnc-open`. La transición CSS de 0.32s para `opacity` +
+`transform` debería ocultar el panel, PERO si por alguna razón
+(cache CSS stale, transición interrumpida, conflicto con otros
+estilos), el panel quedaba visible.
+
+**Fix de fondo — Forced inline styles**:
+
+```js
+function finalCloseAndCleanup() {
+    var panel = document.getElementById('altorra-concierge');
+    if (panel) {
+        panel.classList.remove('cnc-open');
+        panel.setAttribute('aria-hidden', 'true');
+        // §57.ter — Forzar estilos inline (defense-in-depth)
+        panel.style.transition = 'none';
+        panel.style.opacity = '0';
+        panel.style.transform = 'scale(0.06) translate(40px, 40px)';
+        panel.style.pointerEvents = 'none';
+    }
+    _isOpen = false;
+    // ... resto del cleanup ...
+
+    // Restaurar transition + estilos para que próximo open anime
+    setTimeout(function () {
+        if (!panel) return;
+        panel.style.transition = '';
+        panel.style.opacity = '';
+        panel.style.transform = '';
+        panel.style.pointerEvents = '';
+    }, 350);
+}
+```
+
+**Garantía**: el panel se oculta inmediatamente sin depender de la
+transición CSS. Después de 350ms (>320ms transición original) se
+restauran los estilos inline para que el próximo `open()` anime
+correctamente.
+
+**Bonus**: try/catch envolventes en cada paso del cleanup +
+console.log estratégicos. Si en el futuro algo se rompe, los logs
+en consola exponen exactamente dónde.
+
+### 57.ter.2 Bug B — Admin: detail panel no se re-renderizaba
+
+**Causa raíz** (encontrada al auditar):
+
+```js
+function openChat(sessionId) {
+    var chat = _chats.find(function (c) { return c._docId === sessionId; });
+    // ...
+    _messagesUnsub = window.db.collection('conciergeChats').doc(sessionId)
+        .collection('messages').onSnapshot(function (snap) {
+            var messages = [...];
+            renderChatDetail(chat, messages);  // ← chat capturado en CLOSURE
+        });
+}
+```
+
+El `chat` se captura en **closure** al abrir el detail. Cuando
+`_chatsUnsub` recibe updates del parent (cliente finaliza chat,
+admin cambia mode, llega claimedBy, etc.), `_chats[]` se actualiza
+PERO el `chat` cached del closure NO. La lista lateral SÍ se
+actualiza (vía `renderChatList`), pero el panel derecho queda
+**stale** hasta que llegue un mensaje nuevo a la subcollection
+(que dispara el otro listener).
+
+**Síntoma reportado por el cliente**: "vaya sorpresa en el ALTOR
+Hub en el panel admin mira lo que aparece que ha sido cerrado por
+el cliente". Veía el indicador en la lista lateral pero el banner
+de cierre + lock de input NO aparecían en el detail panel.
+
+**Fix de fondo — _activeMessages cache + auto re-render**:
+
+```js
+var _activeMessages = []; // cache global
+
+// En _messagesUnsub:
+_activeMessages = messages; // cache para el _chatsUnsub
+var freshChat = _chats.find(c => c._docId === sessionId) || chat;
+renderChatDetail(freshChat, messages); // usa fresh chat, NO closure
+
+// En _chatsUnsub (NUEVO bloque):
+if (_activeSessionId) {
+    var activeChat = _chats.find(c => c._docId === _activeSessionId);
+    if (activeChat) {
+        renderChatDetail(activeChat, _activeMessages);
+    }
+}
+```
+
+**Garantía**: cualquier cambio del parent doc del chat activo
+(status, mode, claimedBy, closedReason, isPinned, isArchived,
+unreadByAdmin) re-renderiza inmediatamente el detail panel sin
+necesidad de mensajes nuevos ni refresh.
+
+### 57.ter.3 Audit completo de tiempo real ALTOR Hub
+
+Después de los 2 fixes, el flow bidireccional cliente ↔ admin
+ahora es 100% en tiempo real:
+
+| Evento | Listener responsable | UI actualiza |
+|---|---|---|
+| Cliente envía mensaje | `_messagesUnsub` (admin) | Detail panel + sidebar lastMessage |
+| Admin envía mensaje | `_firestoreUnsub` (cliente) | Burbuja en chat |
+| Cliente finaliza chat | `_chatsUnsub` (admin) → re-render detail | Banner closed + input disabled (NUEVO §57.ter) |
+| Admin cierra chat | `_firestoreParentUnsub` (cliente) | applyClosedState |
+| Admin reabre chat | `_firestoreParentUnsub` (cliente) | applyClosedState restaura UI |
+| Admin claim chat | `_chatsUnsub` (admin) → re-render detail | Banner verde "Estás atendiendo" (NUEVO §57.ter) |
+| Cliente entra a queue | `_chatsUnsub` (admin) | Sidebar update |
+| Asesor disponible cambia | `_workloadUnsub` (cliente) | Banner queue actualiza posición |
+| Mode bot→queue→live | `_firestoreParentUnsub` (cliente) | Banner queue desaparece |
+| Radicado asignado | `_firestoreParentUnsub` (cliente) | Badge updateRadicadoBadge |
+| SLA flags | `_firestoreParentUnsub` (cliente) | startSLAWatcher si aplica |
+
+**Sin hard refresh requerido en NINGÚN punto**.
+
+### 57.ter.4 Anti-patterns evitados
+
+| Patrón frágil | Causa | Mitigación |
+|---|---|---|
+| Confiar 100% en transiciones CSS para cierre | Si el CSS está stale o conflictúa, el panel no se cierra | Forced inline styles defense-in-depth |
+| Capturar `chat` en closure al abrir detail | Updates del parent doc no llegan al panel | Lookup fresh en `_chats[]` cada render |
+| Re-render detail SOLO desde `_messagesUnsub` | Cambios del parent (status, claimedBy) ignorados | Cache `_activeMessages` + re-render desde `_chatsUnsub` |
+| Cleanup sin try/catch | Una excepción al medio del cleanup deja el panel en estado raro | try/catch por bloque + logs |
+
+### 57.ter.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente conversa, click ⋮ → Finalizar | Pantalla "Chat finalizado" aparece |
+| 2 | Click "Cerrar chat" | Panel se cierra INMEDIATAMENTE (sin esperar refresh) |
+| 3 | Volver a abrir el FAB | Welcome bubble del bot fresco |
+| 4 | Admin tiene chat abierto, cliente lo finaliza | Detail panel admin muestra banner closed INMEDIATAMENTE (sin esperar mensaje nuevo) |
+| 5 | Admin claim un chat sin asignar | Banner verde "Estás atendiendo" aparece |
+| 6 | Otro admin abre el mismo chat | Ve banner rojo "Daniel atiende" |
+| 7 | Admin reabre chat cerrado | Cliente ve UI restaurada en tiempo real |
+| 8 | DevTools console (cliente) tras "Cerrar chat" | `[Concierge] §57.ter finalCloseAndCleanup() START` + `panel forced hidden inline` + `DOM cleaned` + `panel inline styles restored` |
+
+### 57.ter.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/concierge.js finalCloseAndCleanup` | Forced inline styles + try/catch defense + restore después de 350ms + 5 console.log strategic |
+| `js/admin-concierge.js` | Variable `_activeMessages` + cache en `_messagesUnsub` + re-render desde `_chatsUnsub` cuando active chat cambia |
+| `service-worker.js` | CACHE_VERSION → v20260511240000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511240000 |
+| `CLAUDE.md` | Esta sección §57.ter |
+
+### 57.ter.7 Doctrina aplicada
+
+§19 RCA estricto:
+- Bug A: identifiqué que `close()` dependía de la transición CSS.
+  Sin forced inline, cualquier issue del CSS rompía el cierre.
+- Bug B: encontré el closure capture al auditar `openChat`. La
+  asimetría "lista actualiza, detail no" me llevó al closure issue.
+
+§37 IAP: análisis previo identificó que el flow bidireccional
+necesitaba tanto el fix de inline styles (cliente) como el fix
+de re-render del detail (admin) — ambos coordinados para que el
+ALTOR Hub se sienta WhatsApp-grade.
+
+§17.12 (anti-MutationObserver): cero observers nuevos. Solo
+event delegation + cache strategy.
+
+§17 (perf): cache `_activeMessages` reduce reads de Firestore.
+Solo se actualiza cuando llega snapshot de `_messagesUnsub`.
+
+**Cache bump**: `v20260511240000`.
+

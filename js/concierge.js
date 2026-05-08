@@ -2294,8 +2294,27 @@
      * No se ejecuta resetSession automático.
      */
     function finalCloseAndCleanup() {
-        console.log('[Concierge] finalCloseAndCleanup() invoked');
-        cancelChatListeners();
+        console.log('[Concierge] §57.ter finalCloseAndCleanup() START');
+        var panel = document.getElementById('altorra-concierge');
+
+        // §57.ter — CIERRE FORZADO INMEDIATO antes de cualquier cleanup.
+        // Si el cleanup falla por alguna razón, al menos el panel está
+        // oculto visualmente. Después restauramos los estilos inline
+        // para que el próximo open() pueda animar correctamente.
+        if (panel) {
+            // Quitar la clase open
+            panel.classList.remove('cnc-open');
+            panel.setAttribute('aria-hidden', 'true');
+            // Forzar estilos inline (defense-in-depth contra CSS overrides)
+            panel.style.transition = 'none';
+            panel.style.opacity = '0';
+            panel.style.transform = 'scale(0.06) translate(40px, 40px)';
+            panel.style.pointerEvents = 'none';
+            console.log('[Concierge] panel forced hidden inline');
+        }
+        _isOpen = false;
+
+        try { cancelChatListeners(); } catch (e) { console.warn('[Concierge] cancelChatListeners err:', e); }
 
         // Limpiar localStorage
         try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
@@ -2307,26 +2326,41 @@
         _asesorJoinedAnnounced = false;
 
         // Limpiar DOM: mensajes + closed block + dropdowns + cualquier banner
-        var msgsBox = document.getElementById('cncMessages');
-        if (msgsBox) msgsBox.innerHTML = '';
-        var closedBlock = document.getElementById('cncClosedBlock');
-        if (closedBlock) closedBlock.remove();
-        var queueBanner = document.getElementById('cncQueueBanner');
-        if (queueBanner) queueBanner.remove();
-        var slaWarning = document.getElementById('cncSLAWarning');
-        if (slaWarning) slaWarning.remove();
-        var dropdown = document.getElementById('cncHeaderDropdown');
-        if (dropdown) dropdown.setAttribute('hidden', '');
-        var menuBtn = document.getElementById('cncHeaderMenuBtn');
-        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
-        var resetToast = document.getElementById('cncResetToast');
-        if (resetToast) resetToast.classList.remove('cnc-reset-toast--show');
+        try {
+            var msgsBox = document.getElementById('cncMessages');
+            if (msgsBox) msgsBox.innerHTML = '';
+            var closedBlock = document.getElementById('cncClosedBlock');
+            if (closedBlock) closedBlock.remove();
+            var queueBanner = document.getElementById('cncQueueBanner');
+            if (queueBanner) queueBanner.remove();
+            var slaWarning = document.getElementById('cncSLAWarning');
+            if (slaWarning) slaWarning.remove();
+            var slaBreach = document.getElementById('cncSLABreach');
+            if (slaBreach) slaBreach.remove();
+            var dropdown = document.getElementById('cncHeaderDropdown');
+            if (dropdown) dropdown.setAttribute('hidden', '');
+            var menuBtn = document.getElementById('cncHeaderMenuBtn');
+            if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+            var resetToast = document.getElementById('cncResetToast');
+            if (resetToast) resetToast.classList.remove('cnc-reset-toast--show');
+            console.log('[Concierge] DOM cleaned');
+        } catch (e) {
+            console.warn('[Concierge] DOM cleanup err:', e);
+        }
 
         // Cargar sesión limpia (nuevo sessionId, sin _resetting flag)
-        session = loadSession();
+        try { session = loadSession(); } catch (e) { console.warn('[Concierge] loadSession err:', e); }
 
-        // Cerrar el panel visualmente. Próxima apertura: welcome fresco.
-        close();
+        // Restaurar transition + estilos para que próximo open anime
+        // correctamente. 350ms es > la transición CSS (320ms).
+        setTimeout(function () {
+            if (!panel) return;
+            panel.style.transition = '';
+            panel.style.opacity = '';
+            panel.style.transform = '';
+            panel.style.pointerEvents = '';
+            console.log('[Concierge] panel inline styles restored, ready for next open');
+        }, 350);
     }
 
     /**

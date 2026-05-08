@@ -23470,3 +23470,128 @@ re-emite el código.)
 
 **Cache bump**: `v20260511200000`.
 
+---
+
+## 56. ADR-056 — Fix definitivo radicado push Telegram: trigger natural en vez de polling (2026-05-08)
+
+> Tras §55 el polling 6×500ms (max 3s) seguía siendo insuficiente.
+> Test en producción: Concierge mostró `REQ-202605-0015` pero Telegram
+> push llegó con `znte84` (slice del sessionId, fallback del polling
+> caducado). El fix de fondo: NO usar timeout, usar el sistema de
+> triggers Firestore para que el handler espere naturalmente.
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 56.1 Causa raíz definitiva
+
+`onConciergeChatCreated` (que asigna el radicado canónico via
+counter atómico Firestore) puede tardar **>3s** en algunos casos:
+
+- Cold start de la función (lazy initialization)
+- Carga del proyecto en region southamerica-east1
+- Latencia de la transacción Firestore
+
+El polling §55 timeouteaba en 3s y caía al fallback `sessionId.slice(-6)`,
+generando radicados desincronizados (`znte84` en push vs `REQ-202605-0015`
+en Concierge).
+
+### 56.2 Solución de fondo — re-trigger natural
+
+Cambio fundamental en la condición del handler:
+
+**Antes (§54-55)**:
+```js
+const enteredQueue = wasNotInQueue && nowInQueue;
+if (!enteredQueue) return;
+// ... polling con timeout para esperar radicado ...
+```
+
+**Ahora (§56)**:
+```js
+if (!nowInQueue) return;                    // skip si no en queue
+if (after.notifiedTelegramAt) return;       // anti-duplicate
+if (!after.radicado) return;                // ← KEY: skip + esperar
+// → enviar push con radicado garantizado
+```
+
+**Cómo funciona el re-trigger natural**:
+
+1. Cliente crea chat con `mode='queue'` directo. Trigger fires.
+   - `nowInQueue = true` ✓
+   - `notifiedTelegramAt = undefined` ✓
+   - `radicado = undefined` ❌ → **skip + return**
+2. `onConciergeChatCreated` (separadamente) corre su transacción
+   atómica, asigna `radicado: REQ-202605-0015`, escribe al doc.
+3. Esa escritura **dispara el trigger onWrite de nuevo** automáticamente.
+   - `nowInQueue = true` ✓
+   - `notifiedTelegramAt = undefined` ✓
+   - `radicado = "REQ-202605-0015"` ✓ → **enviar push**
+4. Después de enviar, `notifiedTelegramAt` se setea. Cualquier futuro
+   update del doc dispara trigger pero el guard #2 evita duplicate.
+
+Esto **elimina la race condition** sin necesidad de timeouts. Si
+`onConciergeChatCreated` tarda 30s, el push se envía a los 30s con
+el radicado correcto. Cero falsos fallbacks.
+
+### 56.3 Cambios técnicos
+
+1. **Eliminado polling §55** (6×500ms loop con re-fetch del doc).
+2. **Eliminado fallback `sessionId.slice(-6)`** — el chequeo `!after.radicado`
+   garantiza que si llegamos al envío, `after.radicado` existe.
+3. **Eliminado cooldown 5min duplicado** — el guard `notifiedTelegramAt`
+   ahora se hace ANTES de cualquier query, así nunca se duplica.
+4. **Cambiado de "entered queue" (transición) a "is in queue"** (estado).
+   Permite re-procesamiento natural cuando el doc se actualiza con
+   campos como `radicado`.
+
+### 56.4 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Polling con timeout para esperar valor que llega async | El sistema de triggers Firestore ya provee re-trigger natural. Mejor confiar en él que pelearle |
+| Fallback de identificadores cuando el primary no llegó a tiempo | Si no hay radicado canónico → no enviamos. Mejor que enviar con info incorrecta (`znte84`) |
+| Multiples checks `notifiedTelegramAt` (cooldown 5min vs single-shot) | Unificado: single-shot. Cada chat solo se notifica UNA vez en su vida |
+| Lógica "entered queue" (depende de transición) cuando podemos usar "is in queue" (idempotente) | Idempotencia simplifica todo. Re-procesar un chat ya en queue es safe gracias al guard `notifiedTelegramAt` |
+
+### 56.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `functions/index.js onChatEscalatedTelegram` | Refactor de trigger condition: `nowInQueue + !notifiedTelegramAt + radicado` (3 guards). Eliminado polling §55 + fallback slice + cooldown duplicado |
+| `service-worker.js` | CACHE_VERSION → v20260511210000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511210000 |
+| `CLAUDE.md` | Esta sección §56 |
+
+### 56.6 Deploy manual requerido
+
+```bash
+firebase deploy --only functions:onChatEscalatedTelegram
+```
+
+### 56.7 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente nuevo escala → chat nace con mode='queue' sin radicado | Push NO sale inmediatamente. Logs muestran "Pending radicado canónico. Skip" |
+| 2 | onConciergeChatCreated asigna radicado | Trigger se re-dispara automáticamente |
+| 3 | Push llega con radicado canónico `REQ-202605-XXXX` | ✅ Match con el del Concierge |
+| 4 | Doc se actualiza después (e.g. asesor responde) | Push NO se duplica. Logs: "Already notified at [timestamp]. Skip" |
+
+### 56.8 Logs esperados
+
+```
+[onChatEscalatedTelegram] §54 INVOKED — sessionId: cnc_abc123
+[onChatEscalatedTelegram] mode transition: (no-before) → queue
+[onChatEscalatedTelegram] Pending radicado canónico. Skip (will retrigger when assigned).
+
+# (~500ms-2s después, onConciergeChatCreated asigna radicado, doc update dispara trigger)
+
+[onChatEscalatedTelegram] §54 INVOKED — sessionId: cnc_abc123
+[onChatEscalatedTelegram] mode transition: queue → queue
+[onChatEscalatedTelegram] ✓ Chat in queue with radicado: REQ-202605-0016. Processing alert...
+[onChatEscalatedTelegram] N asesores elegibles. Enviando alertas...
+[onChatEscalatedTelegram] N/N alertas enviadas
+```
+
+**Cache bump**: `v20260511210000`.
+

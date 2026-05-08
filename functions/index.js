@@ -2160,29 +2160,46 @@ exports.onChatEscalatedTelegram = onDocumentWritten({
         return;
     }
 
-    // §54 — Trigger condition AMPLIADO:
-    //   - CREATE con mode='queue' (chat nuevo nacido en queue)
-    //   - UPDATE bot/live/null → queue
-    const wasNotInQueue = !before || before.mode !== 'queue';
+    // §56 — Trigger condition REFACTORIZADO:
+    // En vez de "entered queue" (transición), usar "está en queue Y
+    // tiene radicado canónico Y no se notificó aún". Esto resuelve la
+    // race condition con onConciergeChatCreated:
+    //   - Chat nace con mode='queue' SIN radicado: skip (no notificar
+    //     con sessionId-slice). Espera al siguiente trigger fire.
+    //   - onConciergeChatCreated asigna radicado: doc update dispara
+    //     trigger de nuevo, ahora hasRadicado=true, push se envía con
+    //     radicado canónico REQ-YYYYMM-XXXX.
+    //   - notifiedTelegramAt flag previene duplicados en futuros updates.
     const nowInQueue = after.mode === 'queue';
-    const enteredQueue = wasNotInQueue && nowInQueue;
-    if (!enteredQueue) {
-        console.log('[onChatEscalatedTelegram] Not entering queue. Skip.');
+
+    if (!nowInQueue) {
+        console.log('[onChatEscalatedTelegram] Not in queue. Skip.');
         return;
     }
-    console.log('[onChatEscalatedTelegram] ✓ Chat entered queue. Processing alert...');
+
+    // Anti-duplicate: si ya enviamos alerta para este chat, skip
+    if (after.notifiedTelegramAt) {
+        console.log('[onChatEscalatedTelegram] Already notified at', after.notifiedTelegramAt, '. Skip.');
+        return;
+    }
+
+    // §56 — Esperar al radicado canónico. Si no existe aún,
+    // onConciergeChatCreated lo asignará en breve y el trigger
+    // se re-disparará con el doc actualizado.
+    if (!after.radicado) {
+        console.log('[onChatEscalatedTelegram] Pending radicado canónico. Skip (will retrigger when assigned).');
+        return;
+    }
+    console.log('[onChatEscalatedTelegram] ✓ Chat in queue with radicado:', after.radicado, '. Processing alert...');
 
     // §50 — Eliminado filtro por asesoresAvailable.
     // Cliente pidió: "Cada vez que una persona solicite hablar con un asesor
     // si o si debe notificarse por telegram también independientemente si
     // está conectado o no hay asesores online — todo debe ser desde el
-    // minuto cero". Solo conservamos cooldown anti-duplicado.
-
-    // Anti-spam: cooldown 5 min
-    if (after.notifiedTelegramAt) {
-        const last = new Date(after.notifiedTelegramAt).getTime();
-        if (Date.now() - last < 5 * 60 * 1000) return;
-    }
+    // minuto cero".
+    // §56 — El check `notifiedTelegramAt` ya se hizo arriba (anti-duplicate),
+    // no necesitamos cooldown adicional aquí. Cada chat solo se notifica
+    // una vez en su vida (single-shot).
 
     // Conseguir lista de asesores con Telegram vinculado
     const usersSnap = await db.collection('usuarios')
@@ -2217,28 +2234,9 @@ exports.onChatEscalatedTelegram = onDocumentWritten({
     // §53 — logging de diagnóstico para confirmar que el handler entró
     console.log('[onChatEscalatedTelegram] ' + eligible.length + ' asesores elegibles. Enviando alertas...');
 
-    // §55 — Race condition fix: esperar a que onConciergeChatCreated
-    // asigne el radicado canónico (REQ-YYYYMM-XXXX) antes de enviar el
-    // push. Si el chat nace en mode='queue' directo, ambos triggers se
-    // disparan near-simultáneo y onChatEscalatedTelegram puede ganar
-    // la carrera leyendo radicado=undefined.
-    let radicado = after.radicado;
-    if (!radicado) {
-        console.log('[onChatEscalatedTelegram] radicado pendiente. Polling onConciergeChatCreated...');
-        for (let i = 0; i < 6; i++) {
-            await new Promise(r => setTimeout(r, 500));
-            const fresh = await event.data.after.ref.get();
-            if (fresh.exists && fresh.data().radicado) {
-                radicado = fresh.data().radicado;
-                console.log('[onChatEscalatedTelegram] ✓ radicado obtenido:', radicado, '(intento', i + 1, '/6)');
-                break;
-            }
-        }
-        if (!radicado) {
-            radicado = event.params.sessionId.slice(-6);
-            console.warn('[onChatEscalatedTelegram] ⚠ radicado fallback usado tras 3s timeout. sessionId:', sessionId);
-        }
-    }
+    // §56 — Radicado garantizado: ya validamos arriba que after.radicado
+    // existe. No más polling, no más fallback al sessionId-slice.
+    const radicado = after.radicado;
     const userName = after.userNombre || after.userEmail || 'Cliente';
     const text = '🚨 *Cliente en cola — Altorra Cars*\n\n' +
                  '👤 ' + userName + '\n' +

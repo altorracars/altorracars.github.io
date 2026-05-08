@@ -1736,9 +1736,14 @@ exports.recalculateWorkloadScheduled = onSchedule({
 // enviamos una notificación push a los celulares de TODOS los editores y
 // super_admins que tengan fcmTokens registrados.
 //
-// Anti-spam: skip si workload.asesoresAvailable > 0 (alguien con panel
-// abierto puede atender sin necesitar push). Skip si notifiedTelegramAt
-// (legacy field name reused) está en últimos 5 min.
+// §50 — Eliminado el filtro por asesoresAvailable. Cliente pidió que cada
+// vez que un cliente solicite asesor SIEMPRE se notifique desde el
+// minuto 0, independientemente de si hay asesores online o no. El asesor
+// con panel abierto recibe el push igual (es solo un toast adicional —
+// no bloquea su flow).
+//
+// Mantenemos cooldown 5 min por chat para evitar duplicados si el chat
+// vuelve a queue mode (escalación múltiple en una misma sesión).
 //
 // Auto-pruning: si FCM retorna error de token inválido
 // (messaging/registration-token-not-registered o invalid-argument),
@@ -1757,15 +1762,9 @@ exports.onChatEscalated = onDocumentUpdated({
     const becameQueue = before.mode !== 'queue' && after.mode === 'queue';
     if (!becameQueue) return;
 
-    // Anti-spam: si hay asesores libres con panel abierto, no necesitan push
-    try {
-        const wlSnap = await db.doc('system/workload').get();
-        const wl = wlSnap.exists ? wlSnap.data() : null;
-        if (wl && wl.asesoresAvailable > 0) {
-            console.log('[onChatEscalated] skip push: hay asesores available con panel abierto');
-            return;
-        }
-    } catch (e) { /* fail-open: enviar push igual */ }
+    // §50 — Eliminado filtro por asesoresAvailable.
+    // Cliente pidió notificación desde minuto 0 SIEMPRE.
+    // Solo conservamos cooldown anti-duplicado (5 min por chat).
 
     // Anti-spam temporal: 1 push por chat cada 5 min
     if (after.notifiedFcmAt) {
@@ -2128,12 +2127,11 @@ exports.onChatEscalatedTelegram = onDocumentUpdated({
     const enteredQueue = before.mode !== 'queue' && after.mode === 'queue';
     if (!enteredQueue) return;
 
-    // Anti-spam: si workload tiene asesores available + panel activo, skip
-    try {
-        const workloadSnap = await db.doc('system/workload').get();
-        const workload = workloadSnap.exists ? workloadSnap.data() : {};
-        if ((workload.asesoresAvailable || 0) > 0) return;
-    } catch (e) { /* no-op */ }
+    // §50 — Eliminado filtro por asesoresAvailable.
+    // Cliente pidió: "Cada vez que una persona solicite hablar con un asesor
+    // si o si debe notificarse por telegram también independientemente si
+    // está conectado o no hay asesores online — todo debe ser desde el
+    // minuto cero". Solo conservamos cooldown anti-duplicado.
 
     // Anti-spam: cooldown 5 min
     if (after.notifiedTelegramAt) {

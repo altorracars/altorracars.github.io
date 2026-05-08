@@ -1167,16 +1167,18 @@
             : 0;
 
         var stateMsg, stateClass;
+        // §50 — Cliente pidió: "indicar al usuario que el tiempo de respuesta
+        // es de 1 a 10 minutos". Telegram + FCM se envían DESDE el minuto 0
+        // (sin filtro de asesoresAvailable), por eso el rango bajo es 1 min.
         if (w.asesoresAvailable > 0) {
             stateMsg = '🟢 Estás en la posición #' + Math.max(1, w.queueLength || 1) +
-                       '. Un asesor te atenderá en un momento.';
+                       '. Un asesor te atenderá entre 1 y 10 minutos.';
             stateClass = 'cnc-queue-banner--available';
         } else if (w.asesoresOnline > 0) {
-            var estMin = Math.ceil(((w.queueLength || 1) * 5) / w.asesoresOnline);
-            stateMsg = '🟡 Nuestros asesores están atendiendo a otros clientes. Tiempo estimado: ' + estMin + ' min.';
+            stateMsg = '🟡 Nuestros asesores están atendiendo a otros clientes. Tiempo estimado: 1 a 10 minutos.';
             stateClass = 'cnc-queue-banner--saturated';
         } else {
-            stateMsg = '🔵 Nuestros asesores no están disponibles en este instante. Tiempo estimado de respuesta: 5 a 10 minutos.';
+            stateMsg = '🔵 Te conectamos con un asesor humano. Tiempo estimado de respuesta: 1 a 10 minutos.';
             stateClass = 'cnc-queue-banner--offline';
         }
 

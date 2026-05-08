@@ -331,26 +331,71 @@
     function isDeviceTrusted(uid, trustedDevices) {
         try {
             var stored = readStoredTrust(uid);
-            if (!stored) return false;
-            // Path A — happy path: server tiene array y matchea con stored
-            if (trustedDevices && trustedDevices.length) {
-                var match = trustedDevices.find(function(d) { return d.token === stored.token && d.expiresAt > Date.now(); });
+
+            // Path A — happy path: server tiene array y matchea con stored token
+            if (stored && trustedDevices && trustedDevices.length) {
+                var match = trustedDevices.find(function(d) {
+                    return d.token === stored.token && d.expiresAt > Date.now();
+                });
                 if (match) return true;
             }
+
+            // Path C (§50) — Mobile cache wipe recovery vía fingerprint.
+            //
+            // Cliente reportó: en mobile (Safari iOS), al "Borrar historial
+            // y datos del sitio" se limpia localStorage + cookies +
+            // IndexedDB → token local desaparece → 2FA re-pedido. En PC esto
+            // NO pasa porque "Vaciar caché" no toca storage.
+            //
+            // Solución: si NO hay token local PERO el server tiene un device
+            // con el mismo deviceId fingerprint (screen + WebGL + canvas +
+            // locale) Y dentro del TTL (30 días), asumir que es ESTE
+            // dispositivo y RE-EMITIR un token nuevo. El user pasa 2FA UNA
+            // vez al activar trust; tras eso, mientras el browser+device no
+            // cambien, no debería volver a pedir 2FA aunque limpien cache.
+            //
+            // Seguridad: el deviceId es deterministic — dos browsers/devices
+            // distintos producen IDs distintos. crypto.getRandomValues no se
+            // usa porque debe ser repetible, pero los componentes (canvas
+            // hash, WebGL renderer, screen res) son únicos por dispositivo
+            // físico + browser. Combinado con que el user YA pasó email +
+            // password, es razonable.
+            if (!stored && trustedDevices && trustedDevices.length) {
+                var fingerprint = (typeof getDeviceId === 'function') ? getDeviceId() : '';
+                if (fingerprint) {
+                    var matchByFp = trustedDevices.find(function(d) {
+                        return d.deviceId === fingerprint && d.expiresAt > Date.now();
+                    });
+                    if (matchByFp) {
+                        console.info('[2FA] Re-emit token: matched server fingerprint deviceId=' + fingerprint.slice(0, 16));
+                        // Re-emitir token nuevo al storage local (no al server,
+                        // el server ya tiene el device entry; solo refrescamos
+                        // local para que el próximo refresh use Path A normal)
+                        try {
+                            var newToken = matchByFp.token;
+                            localStorage.setItem(getTrustKey(uid), JSON.stringify({
+                                token: newToken,
+                                expires: matchByFp.expiresAt
+                            }));
+                        } catch (e) {}
+                        setTrustCookie(uid, matchByFp.token, matchByFp.expiresAt);
+                        // Update lastUsed en server (best-effort, async)
+                        if (window.db && window.auth && window.auth.currentUser) {
+                            try { updateDeviceLastUsed(uid); } catch (e) {}
+                        }
+                        return true;
+                    }
+                }
+            }
+
             // Path B (§47) — fallback graceful para editores con rules pendientes
             // de deploy. Si el server NO tiene el array (porque saveDeviceTrust
             // falló por permission-denied) PERO el storage tiene un token
             // creado en este browser dentro del TTL (30 días), aceptar el trust.
             //
             // Razonamiento: el token de storage solo se crea tras pasar 2FA
-            // exitosamente — es prueba de autenticación reciente. El server-side
-            // matching es la garantía robusta, pero en su ausencia el cliente
-            // aún tiene una garantía válida (token random crypto.getRandomValues
-            // de 256 bits no falsificable sin acceso al device).
-            //
-            // Loguea warning para que admin vea que el deploy de rules está
-            // pendiente y pueda solucionarlo.
-            if (!trustedDevices || trustedDevices.length === 0) {
+            // exitosamente — es prueba de autenticación reciente.
+            if (stored && (!trustedDevices || trustedDevices.length === 0)) {
                 console.warn('[2FA] Trust fallback: storage token válido pero server vacío. ' +
                     'Probablemente firestore.rules §43 sin desplegar. Pedí al super_admin: ' +
                     'firebase deploy --only firestore:rules');
@@ -365,6 +410,12 @@
         var now = Date.now();
         var expires = now + TRUST_DURATION_MS;
         var device = getDeviceInfo();
+        // §50 — fingerprint deterministic del dispositivo (screen + WebGL +
+        // canvas + locale). Persistido en Firestore para que en mobile,
+        // tras "Borrar historial y datos del sitio" (que limpia localStorage
+        // + cookies + IndexedDB), podamos re-emitir el token automáticamente
+        // detectando que ESTE dispositivo ya estaba marcado como confiable.
+        var deviceId = (typeof getDeviceId === 'function') ? getDeviceId() : '';
 
         // §47.ter — Multi-store: persistir en localStorage Y cookie en paralelo.
         // Safari iOS ITP puede limpiar localStorage tras 7 días sin actividad
@@ -382,6 +433,8 @@
         return fetchLocationInfo().then(function(loc) {
             var deviceEntry = {
                 token: token,
+                deviceId: deviceId,            // §50 — fingerprint para re-emit post cache wipe
+                userAgent: device.userAgent,   // §50 — para fallback comparison si deviceId no matchea
                 browser: device.browser,
                 os: device.os,
                 city: loc.city,

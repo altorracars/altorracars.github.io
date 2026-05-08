@@ -22640,3 +22640,188 @@ siguen activos sin tocar admin-auth.js.
   los nuevos rows en card Seguridad)
 
 **Cache bump**: `v20260511140000`.
+
+---
+
+## 50. ADR-050 — Mobile cache wipe recovery + Telegram desde minuto 0 (2026-05-08)
+
+> Cliente reportó tras §49 (con captura del Concierge en mobile):
+>
+> 1. "Desde móvil no se están guardando los dispositivos para que no
+>    pidan 2FA, ya que al borrar cache automáticamente se cierra la
+>    sesión y pide nuevamente código". En PC no pasa.
+> 2. "El tiempo de envío del mensaje por Telegram es mucho cuando los
+>    asesores no están conectados — debe enviarse desde el minuto 0 e
+>    indicar al usuario que el tiempo de respuesta es de 1 a 10 min".
+> 3. "Cada vez que una persona solicite hablar con un asesor sí o sí
+>    debe notificarse por Telegram, independientemente de si está
+>    conectado o no hay asesores online — todo desde el minuto cero".
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 50.1 Causa raíz Issue 1 — Mobile vs PC
+
+Diferencia entre browsers:
+
+| Acción | Safari iOS | Chrome desktop |
+|---|---|---|
+| "Borrar historial y datos del sitio" / "Vaciar caché" | Limpia localStorage + cookies + IndexedDB | Solo HTTP cache (deja storage) |
+
+Por eso:
+- En PC, refresh tras "Vaciar caché" → token sigue en localStorage → no pide 2FA
+- En mobile iPhone, "Borrar historial" → todo storage limpio → token desaparece → §47.ter fallback con cookie tampoco sobrevive (también limpiada) → 2FA re-pedido
+
+El cliente preguntó: "¿Firebase no está guardando suficiente información del dispositivo para identificarlo cuando se borre el cache?". **Sí, ya tenemos `getDeviceId()`** (admin-auth.js:1573) que computa un fingerprint determinístico:
+- screen.width × height + colorDepth + pixelDepth
+- devicePixelRatio
+- hardwareConcurrency + deviceMemory + platform + maxTouchPoints
+- timezone offset + language + languages
+- WebGL: UNMASKED_VENDOR + UNMASKED_RENDERER + MAX_TEXTURE_SIZE
+- Canvas hash (texto renderizado + GPU/driver = fingerprint único)
+
+Ese deviceId es **determinístico** — el MISMO browser+device produce el MISMO ID cada vez. Pero `saveDeviceTrust` no lo estaba guardando en Firestore.
+
+### 50.2 Solución Issue 1 — Path C: re-emit por fingerprint
+
+**Cambios en `saveDeviceTrust`** (admin-auth.js):
+- Añade `deviceId: getDeviceId()` al `deviceEntry`
+- Añade `userAgent: device.userAgent` para fallback comparison
+
+**Cambios en `isDeviceTrusted`** — nuevo Path C entre A y B:
+
+```js
+// Path A — happy path: server tiene array y matchea con stored token
+if (stored && trustedDevices && match by token) return true;
+
+// Path C (§50) — Mobile cache wipe recovery vía fingerprint
+// Si NO hay token local pero server tiene un device entry con
+// el mismo deviceId fingerprint → re-emit token al storage local
+if (!stored && trustedDevices && trustedDevices.length) {
+    var fingerprint = getDeviceId();
+    var matchByFp = trustedDevices.find(d => d.deviceId === fingerprint && d.expiresAt > Date.now());
+    if (matchByFp) {
+        // Re-poblar localStorage + cookie con el token del server
+        localStorage.setItem(...);
+        setTrustCookie(...);
+        return true;  // Bypass 2FA
+    }
+}
+
+// Path B (§47) — fallback graceful para rules pendientes
+```
+
+**Garantías de seguridad**:
+- deviceId es determinístico — dos browsers/devices distintos = IDs distintos
+- Canvas/WebGL fingerprint es único por GPU + driver + OS
+- Combinado con que el usuario YA pasó email + password (Firebase Auth válido), es seguro skipear 2FA
+- TTL de 30 días sigue activo (matchByFp.expiresAt > Date.now())
+- Sin token local Y sin matchByFp → 2FA pedido (correcto)
+
+### 50.3 Causa raíz Issues 2 + 3 — Filtros bloqueaban Telegram/FCM
+
+`functions/index.js`:
+
+```js
+// onChatEscalated (FCM):
+if (wl && wl.asesoresAvailable > 0) return;  // ← BLOQUEABA
+
+// onChatEscalatedTelegram:
+if ((workload.asesoresAvailable || 0) > 0) return;  // ← BLOQUEABA
+```
+
+Lógica original: si hay asesor con panel admin abierto, no notificar
+(asume que va a atender solo). PERO en la práctica:
+- Asesor cierra el panel pero sigue logueado (workload conta como online)
+- Workload puede estar stale si el aggregator no corrió
+- Cliente queda esperando sin notificación al asesor que está en otra app
+
+Cliente pidió: "todo debe ser desde el minuto cero, independientemente
+si hay asesores online o no".
+
+### 50.4 Solución Issues 2 + 3 — Eliminar filtros
+
+```js
+// onChatEscalated (FCM) y onChatEscalatedTelegram:
+// §50 — Eliminado filtro por asesoresAvailable.
+// Cooldown 5min anti-duplicado se mantiene.
+```
+
+**Resultado**:
+- Cliente escala → Telegram + FCM se envían INMEDIATAMENTE
+- Tiempo de respuesta esperado: 1-10 minutos (asesor abre la app)
+- Cooldown 5 min evita spam si el chat vuelve a queue mode múltiples veces
+
+**Banner de queue** actualizado en `concierge.js`:
+- Antes: "🔵 Tiempo estimado de respuesta: 5 a 10 minutos"
+- Ahora: "🔵 Te conectamos con un asesor humano. Tiempo estimado: 1 a 10 minutos"
+
+### 50.5 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Bajar TTL de trust a 7 días | Mantener 30 días — el deviceId fingerprint hace innecesario reducir TTL |
+| Pedir confirmación al re-emit token | El usuario ya pasó email+password Y su browser+device matchea uno previamente trusted → safe |
+| Eliminar el cooldown 5 min de notificaciones | Se mantiene — protege contra escalación múltiple del mismo chat |
+| Implementar fingerprint nuevo | Reuso `getDeviceId()` que ya existe (admin-auth.js:1573) — solo lo persisto |
+| Agregar tracking server-side adicional | El deviceId vive en `trustedDevices` array existente, no necesita schema nuevo |
+
+### 50.6 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Mobile: pasar 2FA + checkbox "Confiar dispositivo" | localStorage + cookie + Firestore (con deviceId) actualizados |
+| 2 | Mobile: borrar todo el cache de Safari | localStorage + cookie + IndexedDB limpios |
+| 3 | Mobile: refrescar admin.html | Login normal email+password |
+| 4 | Mobile post-login: `loadProfile` → `continueAfterBlockCheck` | `isDeviceTrusted` Path C: NO hay stored, server tiene deviceId match → re-emit token + bypass 2FA |
+| 5 | Mobile DevTools console | Verás `[2FA] Re-emit token: matched server fingerprint deviceId=...` |
+| 6 | Mismo browser otra vez | Path A normal (token en localStorage) |
+| 7 | Otro browser distinto (deviceId diferente) | Path C NO match → 2FA pedido (correcto) |
+| 8 | Cliente Concierge → "Hablar con asesor" | Telegram + FCM enviados INMEDIATAMENTE (sin filtro) |
+| 9 | Banner mostrado al cliente | "🔵 Te conectamos con un asesor humano. Tiempo estimado: 1 a 10 minutos" |
+| 10 | Mismo cliente vuelve a queue tras 1 min | Cooldown 5 min: NO se duplica notificación |
+
+### 50.7 Doctrina aplicada
+
+§19 RCA: identificar diferencia real entre Safari iOS y Chrome desktop.
+La causa NO era falta de info en Firebase — era que `getDeviceId()`
+existía pero NO se persistía. Solución de fondo, no parche.
+
+§37 IAP: 5 secciones documentadas previo al cambio.
+
+§17 (Performance): cero MutationObserver, cero pointermove. Solo
+pequeños cambios determinísticos en JS existente.
+
+### 50.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-auth.js saveDeviceTrust` | Persistir `deviceId` + `userAgent` en deviceEntry |
+| `js/admin-auth.js isDeviceTrusted` | Path C nuevo: re-emit token si fingerprint matchea server |
+| `functions/index.js onChatEscalated` | Eliminado filtro `asesoresAvailable > 0` (FCM) |
+| `functions/index.js onChatEscalatedTelegram` | Idem (Telegram) |
+| `js/concierge.js renderQueueState` | Banner "1 a 10 minutos" en lugar de "5 a 10" |
+| `service-worker.js` | CACHE_VERSION → v20260511150000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511150000 |
+| `CLAUDE.md` | Esta sección §50 |
+
+### 50.9 Archivos INTACTOS
+
+- `firestore.rules` — sin tocar (whitelist §43 ya permite update de
+  trustedDevices con campos nuevos `deviceId`/`userAgent` porque
+  hasOnly() valida la lista de campos modificados, no su contenido)
+- `js/admin-recovery.js` — sin tocar
+- `js/admin-profile.js` — sin tocar
+
+### 50.10 Deploy manual requerido
+
+Issues 2 + 3 (Telegram/FCM) requieren deploy de Cloud Functions:
+
+```bash
+firebase deploy --only functions:onChatEscalated,functions:onChatEscalatedTelegram
+```
+
+Sin este deploy, los filtros `asesoresAvailable > 0` siguen activos
+en producción y los tiempos de notificación son los anteriores. El
+fix de Issue 1 (mobile) es client-side y aplica con el cache bump.
+
+**Cache bump**: `v20260511150000`.

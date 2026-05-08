@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511010000'; // §40 — UI Telegram + force refresh subnav
+    const APP_VERSION = '20260511020000'; // §41 — FIX subnav invisible (notifyChange en PATH A)
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

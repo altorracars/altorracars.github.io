@@ -94,28 +94,42 @@
             }
         });
 
-        // 6. Mobile: handler para hamburger
-        var hamburger = document.getElementById('hamburgerBtn') ||
-                        document.querySelector('.hamburger-btn') ||
-                        document.querySelector('[data-action="toggle-sidebar"]');
-        if (hamburger) {
+        // 6. Mobile: handler para hamburger.
+        // §47.ter — bindear a TODOS los .hamburger-btn (hay 2: el legacy
+        // mobile-topbar y el nuevo #atnHamburger del topnav). Antes solo
+        // tomaba el primero con querySelector → el nuevo no tenía listener.
+        var hamburgers = document.querySelectorAll(
+            '#hamburgerBtn, #atnHamburger, .hamburger-btn, [data-action="toggle-sidebar"]'
+        );
+        hamburgers.forEach(function (hamburger) {
             hamburger.addEventListener('click', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
+                var willOpen = !document.body.classList.contains('is-sidebar-open');
                 document.body.classList.toggle('is-sidebar-open');
+                hamburger.setAttribute('aria-expanded', String(willOpen));
+                hamburger.classList.toggle('active', willOpen);
             });
-        }
+        });
 
         // 7. Mobile: cerrar sidebar al click fuera (en el scrim)
         document.body.addEventListener('click', function (e) {
             if (!document.body.classList.contains('is-sidebar-open')) return;
             if (window.innerWidth > 768) return;
-            // Si el click NO fue dentro del sidebar ni en el hamburger
+            // Si el click NO fue dentro del sidebar ni en NINGÚN hamburger
             var sidebar = document.querySelector('.sidebar') ||
                           document.querySelector('#adminSidebar');
             if (sidebar && sidebar.contains(e.target)) return;
-            if (hamburger && hamburger.contains(e.target)) return;
+            // Chequear cualquier hamburger (puede haber varios)
+            for (var i = 0; i < hamburgers.length; i++) {
+                if (hamburgers[i].contains(e.target)) return;
+            }
             // Cerrar con click en cualquier otro lugar
             document.body.classList.remove('is-sidebar-open');
+            hamburgers.forEach(function (h) {
+                h.setAttribute('aria-expanded', 'false');
+                h.classList.remove('active');
+            });
         });
 
         // 8. Mobile: cerrar sidebar al click en nav-item

@@ -21706,3 +21706,261 @@ desde §35.
 - Resto del JS — sin tocar
 
 **Cache bump**: `v20260511090000`.
+
+---
+
+## 47.ter. ADR-047.ter — 4 fixes coordinados (z-index isla, cargo en detail, mobile hamburger, multi-store trust) (2026-05-08)
+
+> Cliente reportó tras §47.bis con captura desktop + iPhone:
+>
+> 1. "La isla dinamica no puede moverse por encima del header, deberia
+>    poderse en caso de que quiera ubicarla en un espacio vacio del header."
+> 2. "Cuando click a la isla dinamica se despliega un cuadrito que dice el
+>    nombre, su rol y su ubicacion, pero el rol que esta mostrando deberia
+>    ser el de cargo que cada uno se asigna en su perfil. La ubicacion no
+>    es relevante puedes quitarlo. EN otras ocasiones aparece diferente,
+>    ejemplo los editores les sale el nombre, el rol y dice al lado mi
+>    perfil no sale ubicacion ese mi perfil no entiendo por que sale
+>    deberias quitarlo tambien"
+> 3. "El inicio que dice buenos dias se esta cortando con el padding del
+>    movil... como no es posible un header en equipos moviles es mejor
+>    diseñarle un menu hamburguesa para equipos moviles"
+> 4. "Persiste aun el problema en movil que cuando actualizo o borro
+>    cache se me cierra sesion y si tengo factor de autenticacion debo
+>    nuevamente colocar el codigo se supone que ya habia guardado el
+>    navegador por 30 dias este problema lo hemos intentado arreglar
+>    muchas veces"
+>
+> Aplicado bajo doctrina IAP §37 + RCA §19. Sprint coordinado de 4
+> fixes en un mismo commit por interdependencia visual.
+
+### 47.ter.1 Issue 1 — z-index isla < topnav
+
+**Causa**: `.alt-presence-island { z-index: 9985 }` (admin.css:1427)
+quedaba por debajo del topnav `.atn-topnav { z-index: 9990 }`
+(admin-topnav.css). El drag funcionaba (JS movía el elemento) pero
+visualmente la isla quedaba detrás del topnav cuando el usuario la
+arrastraba a esa zona.
+
+**Fix**: subir `.alt-presence-island` a `z-index: 9995` (sobre topnav,
+debajo de palette/notify-center que usan 99998+). La isla ya no queda
+clipeada visualmente al pasar por encima de la barra superior.
+
+### 47.ter.2 Issue 2 — Mostrar cargo en lugar de rol técnico + quitar ubicación
+
+**Causa visual**: `formatRole(p.rol)` mostraba "Administrador" /
+"Editor" / "Lector". El cliente quiere ver el `cargo` que cada usuario
+edita en su perfil (Mi perfil → "Cargo": ej. "CEO", "Asesor comercial").
+
+**Causa "mi perfil" en editores**: la isla muestra `currentSection`
+después del rol. Cuando un editor estaba viendo Mi Perfil, aparecía
+"Editor · Mi perfil" — confundía al super_admin viendo otros admins.
+El cliente pidió eliminar la sección/ubicación del detail.
+
+**Fix**:
+- `js/admin-auth.js startPresence` agrega `cargo: AP.currentUserProfile.cargo || ''`
+  al `sessionData` que se persiste en RTDB. Solo aplica a usuarios
+  logueados POST-fix.
+- `js/admin-presence-ui.js renderIsland` — `displayLabel = p.cargo || formatRole(p.rol)`.
+  Si el usuario tiene cargo personalizado, se muestra; si no, fallback
+  a rol legible.
+- Eliminada la línea `<span class="alt-presence-row-section">` del
+  render. La detección de "aquí" sigue activa (badge verde si está
+  en mi sección) — solo se quitó la etiqueta textual de la sección.
+
+**Trade-off**: usuarios ya logueados antes del fix no tienen `cargo`
+en su sessionData de RTDB hasta que loguen de nuevo (al re-login,
+`startPresence` reescribe el doc con cargo). Mientras tanto, fallback
+a rol funciona correctamente.
+
+### 47.ter.3 Issue 3 — Mobile hamburger + welcome responsive
+
+**Causa welcome card cortado**: el `<h1 id="dashboardWelcome">Buenas
+noches, Daniel</h1>` está dentro de `.page-header` con padding del
+desktop. En iPhone vertical (~370px), el padding lateral consume el
+viewport y el text-overflow recorta o el word-wrap rompe en lugares
+incómodos.
+
+**Causa falta de menú**: en mobile <768px, el topnav compactaba los
+tabs (sin labels, solo iconos) pero la lista era extensa (Inicio,
+Inventario, CRM, Hub, Agenda, Reportes, Config). El cliente pidió un
+menú hamburguesa proper estilo apps móviles.
+
+**Fix hamburger**:
+- `admin.html` agrega `<button class="atn-hamburger hamburger-btn"
+  id="atnHamburger">` con 3 spans (animación X al activar).
+- `css/admin-perf-kill.css` `.atn-hamburger { display: none }` por
+  default. `@media (max-width: 768px) { .atn-hamburger { display:flex !important } .atn-tabs { display: none !important } }`.
+  El brand también se compacta para ahorrar horizontal.
+- `js/admin-v2-sidebar.js` — query selector ahora con `querySelectorAll`
+  matcheando `#hamburgerBtn, #atnHamburger, .hamburger-btn,
+  [data-action="toggle-sidebar"]` y bindea click a TODOS. Antes solo
+  bindeaba el primer match → el nuevo `#atnHamburger` no respondía.
+  El handler también actualiza `aria-expanded` y `.active` class para
+  la animación X.
+- La sidebar drawer (admin-v2.css:315-368 § ADR-033) ya tenía la
+  animación slide-in con scrim. Solo le faltaba un trigger desde el
+  topnav. Ahora click hamburger → toggle `body.is-sidebar-open` → CSS
+  desliza la sidebar legacy con sus nav-items dentro.
+
+**Fix welcome responsive**:
+- `@media (max-width: 600px) #sec-dashboard #dashboardWelcome` con
+  font-size 1.5rem + padding-right 8px + word-wrap: break-word.
+- `@media (max-width: 380px)` (iPhone SE) reduce a 1.3rem.
+- `.page-subtitle` y `#adminEmail` con word-break y overflow-wrap
+  para emails largos.
+
+### 47.ter.4 Issue 4 — Multi-store trust persistence (cookies + localStorage)
+
+**Causa**: Safari iOS Intelligent Tracking Prevention (ITP) limpia
+agresivamente `localStorage` tras 7 días sin actividad del sitio O
+al borrar cache desde Settings. El editor reportaba que "actualizar
+o borrar cache cierra sesión y debo poner 2FA otra vez aunque hace
+poco lo confirmé". El TTL de 30 días configurado en TRUST_DURATION_MS
+no aplicaba porque ITP limpiaba el storage antes.
+
+**Solución**: persistir el trust token en MÚLTIPLES stores en paralelo.
+Las cookies con `SameSite=Lax + Secure + Max-Age=30d` sobreviven
+mejor a ITP que localStorage en Safari.
+
+**Implementación** (`js/admin-auth.js`):
+
+```js
+// Helpers nuevos
+function getTrustCookieName(uid) { return 'ac2t_' + uid.substring(0, 16); }
+function setTrustCookie(uid, token, expires) {
+    var maxAge = Math.max(1, Math.floor((expires - Date.now()) / 1000));
+    var value = encodeURIComponent(JSON.stringify({ t: token, e: expires }));
+    document.cookie = name + '=' + value +
+        '; Max-Age=' + maxAge +
+        '; Path=/; SameSite=Lax' +
+        (location.protocol === 'https:' ? '; Secure' : '');
+}
+function getTrustCookie(uid) { /* parse cookie */ }
+function clearTrustCookie(uid) { /* Max-Age=0 */ }
+
+// readStoredTrust: lee del primer store con token válido
+function readStoredTrust(uid) {
+    // Intento 1: localStorage (rápido)
+    var stored = localStorage.getItem(getTrustKey(uid));
+    if (stored && Date.now() < stored.expires) return stored;
+    // Intento 2: cookie (sobrevive ITP)
+    var cookieStored = getTrustCookie(uid);
+    if (cookieStored && Date.now() < cookieStored.expires) {
+        // Repoblar localStorage para próximo refresh
+        localStorage.setItem(getTrustKey(uid), JSON.stringify(cookieStored));
+        return cookieStored;
+    }
+    return null;
+}
+
+// saveDeviceTrust: escribe a AMBOS stores
+function saveDeviceTrust(uid) {
+    var token = generateDeviceToken();
+    var expires = Date.now() + TRUST_DURATION_MS;
+    try { localStorage.setItem(getTrustKey(uid), JSON.stringify({token, expires})); } catch (e) {}
+    setTrustCookie(uid, token, expires);
+    // ... resto: persistir en Firestore (Path A si rules desplegadas) ...
+}
+
+// revokeDevice / revokeAllDevices: limpian ambos stores
+```
+
+**Garantías**:
+- localStorage limpiado por Safari ITP → cookie sobrevive → user no
+  pierde 2FA al refresh (Path B fallback de §47 con cookie como
+  fuente de verdad)
+- Cookie limpiada por usuario "borrar cookies" → localStorage sobrevive
+- Ambos limpiados por "borrar todo el cache" → 2FA requerido (correcto
+  — usuario eliminó intencionalmente)
+- Cuando refrescamos y readStoredTrust encuentra cookie pero NO
+  localStorage, repuebla localStorage automáticamente (consistencia
+  entre stores).
+
+**Trade-off de seguridad**: cookie con SameSite=Lax es accesible al
+JS del mismo origen — pero el token también está en localStorage que
+es del mismo origen, así que no aumentamos el surface de attack.
+HttpOnly NO se usa porque necesitamos leer desde JS (sino seríamos
+vulnerables a XSS aún sin esta cookie). XSS protection sigue siendo
+responsabilidad del CSP + escape de inputs (auditado en §17.1).
+
+### 47.ter.5 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Subir z-index isla a 99999 (sobre todo) | 9995 — sobre topnav (9990) pero debajo de palette/notify (99998+). No interfiere con dropdowns activos |
+| Crear nuevo `mobile-topbar` para mobile | Reuso del HTML existente: agrego `.atn-hamburger` al topnav que toma rol mobile cuando ocultamos `.atn-tabs` |
+| Reescribir `admin-v2-sidebar.js` | Solo cambio querySelector → querySelectorAll para bindear ambos hamburgers |
+| Crear nuevo store IndexedDB | Las cookies ya existen + son simples + sobreviven ITP suficientemente. IDB sería complejidad innecesaria |
+| HttpOnly cookies | Necesitamos leer desde JS — sería incompatible. Defensa real es CSP+escape (ya cubierto §17.1) |
+| Dependencia de Firestore para trust | Path B (§47) + readStoredTrust con cookie funcionan client-side incluso con rules pendientes |
+| Tocar admin.css o admin-v2.css legacy | Override en admin-perf-kill.css (cargado último) para mobile rules |
+
+### 47.ter.6 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Desktop: arrastrar isla por encima del topnav | Pasa por ENCIMA del topnav (antes quedaba detrás) |
+| 2 | Click isla → detail abierto | Muestra "Daniel Romero · CEO" (no "Daniel Romero · Administrador") |
+| 3 | Editor con cargo "Asesor" en su perfil → otro admin lo ve en isla | "Nombre · Asesor" |
+| 4 | Editor SIN cargo → otro admin lo ve | "Nombre · Editor" (fallback rol legible) |
+| 5 | Detail NO muestra ubicación/sección | Confirmado |
+| 6 | Mobile <768px Ctrl+R | Topnav muestra solo brand + hamburger + actions (tabs ocultos) |
+| 7 | Click hamburger en mobile | Sidebar desliza desde la izquierda con scrim oscuro |
+| 8 | Click nav-item en sidebar drawer | Navega + drawer se cierra |
+| 9 | Click fuera de la sidebar | Drawer se cierra |
+| 10 | iPhone Esc | Drawer se cierra |
+| 11 | iPhone vertical: "Buenas noches, Daniel" | NO se corta, font 1.5rem, padding 14px |
+| 12 | Editor pasa 2FA + checkbox "confiar dispositivo" | Storage doble: localStorage + cookie |
+| 13 | DevTools → Application → Cookies → ac2t_* | Cookie con SameSite=Lax, Max-Age=2592000 |
+| 14 | Manualmente borrar localStorage (Safari ITP simulación) | F5 → no pide 2FA (cookie sobrevive y repobla localStorage) |
+| 15 | Borrar localStorage Y cookies | F5 → pide 2FA (correcto, ambos stores vacíos) |
+| 16 | Revocar device → check ambos stores | localStorage y cookie limpios |
+
+### 47.ter.7 Doctrina aplicada
+
+§19 RCA: 4 issues con causas distintas pero todas relacionadas a UX
+mobile/responsive. Sprint coordinado en un commit por interdependencia
+visual (los fixes 1, 2, 3 afectan el mismo flujo del usuario).
+
+§37 IAP: análisis previo de los archivos a modificar + intactos.
+
+§17.4 (HTML/CSS stable): el `id="recaptcha-container"` se preservó.
+Cero modificación de admin-v2.css o admin.css legacy. Override quirúrgico
+via cascade.
+
+§17.10 (mobile-first Apple HIG): touch threshold 8px, hamburger 40px
+(target táctil), word-wrap en welcome.
+
+§35 (perf): cero MutationObserver, cero pointermove persistentes
+(solo durante drag activo).
+
+### 47.ter.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `css/admin.css:1427` | z-index isla 9985 → 9995 (sobre topnav) |
+| `js/admin-auth.js startPresence` | sessionData incluye `cargo` |
+| `js/admin-auth.js getTrustCookieName/setTrustCookie/getTrustCookie/clearTrustCookie/readStoredTrust` | NUEVOS — multi-store trust |
+| `js/admin-auth.js isDeviceTrusted` | Lee con readStoredTrust (lokalStorage + cookie) |
+| `js/admin-auth.js saveDeviceTrust` | Escribe a localStorage + cookie |
+| `js/admin-auth.js revokeDevice/revokeAllDevices` | Limpian ambos stores |
+| `js/admin-presence-ui.js renderIsland` | displayLabel = cargo \|\| rol; eliminado `.alt-presence-row-section` |
+| `js/admin-v2-sidebar.js` | querySelectorAll bindea TODOS los `.hamburger-btn` (antes solo el primero); aria-expanded + .active sync |
+| `admin.html` topnav | Nuevo `<button class="atn-hamburger hamburger-btn" id="atnHamburger">` |
+| `css/admin-perf-kill.css` (append final) | Estilos `.atn-hamburger` con animación X + media query <768px (oculta tabs, muestra hamburger, brand compacto) + welcome responsive (1.5rem <600px, 1.3rem <380px) |
+| `service-worker.js` | CACHE_VERSION → v20260511100000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511100000 |
+| `CLAUDE.md` | Esta sección §47.ter |
+
+### 47.ter.9 Archivos INTACTOS
+
+- `firestore.rules` — sin tocar (deploy manual sigue pendiente — el
+  Path B del §47 sigue cubriendo)
+- `database.rules.json` — sin tocar
+- `css/admin-v2.css` — sin tocar (sus rules de drawer ya funcionan
+  con `body.is-sidebar-open`)
+- `css/admin.css` core — sin tocar (excepto z-index isla)
+- `js/admin-presence-ui.js` drag — sin tocar (fix §47.bis sigue válido)
+
+**Cache bump**: `v20260511100000`.

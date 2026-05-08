@@ -340,6 +340,13 @@
     <!-- §36 ADR-036 — TOP NAV (Notion/Vercel/Linear pattern, replaces sidebar) -->
     <header class="atn-topnav" id="adminTopNav">
         <div class="atn-bar">
+            <!-- §47.ter — Hamburger visible solo en mobile (<768px). Abre la
+                 sidebar legacy como drawer (admin-v2-sidebar.js maneja el
+                 toggle de body.is-sidebar-open). Misma clase .hamburger-btn
+                 para reusar la lógica existente. -->
+            <button class="atn-hamburger hamburger-btn" id="atnHamburger" aria-label="Abrir menú" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
             <div class="atn-brand" aria-label="Altorra Cars Admin">
                 <span class="atn-brand-text">
                     <strong>ALTORRA CARS</strong>

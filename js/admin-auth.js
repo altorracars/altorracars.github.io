@@ -246,25 +246,103 @@
         return 'ac_2fa_trust_' + uid;
     }
 
+    // §47.ter — Multi-store trust persistence para sobrevivir Safari iOS ITP.
+    //
+    // Safari iOS Intelligent Tracking Prevention puede limpiar localStorage
+    // tras 7 días sin interacción del sitio O al borrar cache. Esto causa
+    // que editores reporten "actualizo y se cierra sesión, debo poner 2FA
+    // otra vez aunque acabo de pasarlo".
+    //
+    // Solución: persistir el trust token en MÚLTIPLES stores en paralelo:
+    //   1. localStorage (rápido, primario, pero ITP lo limpia más agresivo)
+    //   2. Cookie con SameSite=Lax + Secure + Max-Age=30d (sobrevive ITP mejor)
+    //
+    // isDeviceTrusted lee de AMBOS — cualquiera con token válido = trust.
+    // saveDeviceTrust escribe a AMBOS. Si Safari limpia uno, el otro persiste.
+    function getTrustCookieName(uid) {
+        return 'ac2t_' + uid.substring(0, 16);   // máx 32 chars total para safety
+    }
+    function setTrustCookie(uid, token, expires) {
+        try {
+            var name = getTrustCookieName(uid);
+            var maxAge = Math.max(1, Math.floor((expires - Date.now()) / 1000));
+            var value = encodeURIComponent(JSON.stringify({ t: token, e: expires }));
+            // SameSite=Lax permite cookie en navegación normal; Secure exige HTTPS.
+            // Path=/ aplica al dominio entero. No HttpOnly porque necesitamos
+            // leer desde JS (no es accesible cross-site igual gracias a SameSite).
+            document.cookie = name + '=' + value +
+                '; Max-Age=' + maxAge +
+                '; Path=/; SameSite=Lax' +
+                (location.protocol === 'https:' ? '; Secure' : '');
+        } catch (e) { /* ignore */ }
+    }
+    function getTrustCookie(uid) {
+        try {
+            var name = getTrustCookieName(uid);
+            var match = document.cookie.match(
+                new RegExp('(?:^|;\\s*)' + name + '=([^;]*)')
+            );
+            if (!match) return null;
+            var parsed = JSON.parse(decodeURIComponent(match[1]));
+            if (parsed && parsed.t && parsed.e) {
+                return { token: parsed.t, expires: parsed.e };
+            }
+        } catch (e) {}
+        return null;
+    }
+    function clearTrustCookie(uid) {
+        try {
+            document.cookie = getTrustCookieName(uid) + '=; Max-Age=0; Path=/';
+        } catch (e) {}
+    }
+
+    // Lee el trust desde el primer store que tenga un token válido.
+    // Orden: localStorage primero (rápido), cookie como fallback (más resiliente).
+    function readStoredTrust(uid) {
+        // Intento 1: localStorage
+        try {
+            var raw = localStorage.getItem(getTrustKey(uid));
+            if (raw) {
+                var stored = JSON.parse(raw);
+                if (stored && stored.token && stored.expires && Date.now() < stored.expires) {
+                    return stored;
+                }
+                // Si está expirado, limpiar
+                if (stored && stored.expires && Date.now() >= stored.expires) {
+                    localStorage.removeItem(getTrustKey(uid));
+                }
+            }
+        } catch (e) {}
+        // Intento 2: cookie (sobrevive Safari iOS ITP mejor que localStorage)
+        var cookieStored = getTrustCookie(uid);
+        if (cookieStored && Date.now() < cookieStored.expires) {
+            // Repoblar localStorage para próximo refresh (consistencia)
+            try {
+                localStorage.setItem(getTrustKey(uid), JSON.stringify({
+                    token: cookieStored.token,
+                    expires: cookieStored.expires
+                }));
+            } catch (e) {}
+            return cookieStored;
+        }
+        return null;
+    }
+
     function isDeviceTrusted(uid, trustedDevices) {
         try {
-            var stored = JSON.parse(localStorage.getItem(getTrustKey(uid)));
-            if (!stored || !stored.token || !stored.expires) return false;
-            if (Date.now() > stored.expires) {
-                localStorage.removeItem(getTrustKey(uid));
-                return false;
-            }
-            // Path A — happy path: server tiene array y matchea con localStorage
+            var stored = readStoredTrust(uid);
+            if (!stored) return false;
+            // Path A — happy path: server tiene array y matchea con stored
             if (trustedDevices && trustedDevices.length) {
                 var match = trustedDevices.find(function(d) { return d.token === stored.token && d.expiresAt > Date.now(); });
                 if (match) return true;
             }
             // Path B (§47) — fallback graceful para editores con rules pendientes
             // de deploy. Si el server NO tiene el array (porque saveDeviceTrust
-            // falló por permission-denied) PERO el localStorage tiene un token
+            // falló por permission-denied) PERO el storage tiene un token
             // creado en este browser dentro del TTL (30 días), aceptar el trust.
             //
-            // Razonamiento: el token de localStorage solo se crea tras pasar 2FA
+            // Razonamiento: el token de storage solo se crea tras pasar 2FA
             // exitosamente — es prueba de autenticación reciente. El server-side
             // matching es la garantía robusta, pero en su ausencia el cliente
             // aún tiene una garantía válida (token random crypto.getRandomValues
@@ -273,7 +351,7 @@
             // Loguea warning para que admin vea que el deploy de rules está
             // pendiente y pueda solucionarlo.
             if (!trustedDevices || trustedDevices.length === 0) {
-                console.warn('[2FA] Trust fallback: localStorage token válido pero server vacío. ' +
+                console.warn('[2FA] Trust fallback: storage token válido pero server vacío. ' +
                     'Probablemente firestore.rules §43 sin desplegar. Pedí al super_admin: ' +
                     'firebase deploy --only firestore:rules');
                 return true;
@@ -288,11 +366,17 @@
         var expires = now + TRUST_DURATION_MS;
         var device = getDeviceInfo();
 
-        // Save to localStorage
-        localStorage.setItem(getTrustKey(uid), JSON.stringify({
-            token: token,
-            expires: expires
-        }));
+        // §47.ter — Multi-store: persistir en localStorage Y cookie en paralelo.
+        // Safari iOS ITP puede limpiar localStorage tras 7 días sin actividad
+        // o al borrar cache; las cookies con SameSite=Lax + Max-Age=30d
+        // sobreviven mejor. isDeviceTrusted lee de ambos stores.
+        try {
+            localStorage.setItem(getTrustKey(uid), JSON.stringify({
+                token: token,
+                expires: expires
+            }));
+        } catch (e) { /* localStorage puede estar deshabilitado */ }
+        setTrustCookie(uid, token, expires);
 
         // Fetch location then save to Firestore
         return fetchLocationInfo().then(function(loc) {
@@ -368,17 +452,27 @@
             var devices = (doc.data().trustedDevices || []).filter(function(d) { return d.token !== token; });
             return window.db.collection('usuarios').doc(uid).update({ trustedDevices: devices });
         }).then(function() {
-            // If we revoked our own device, clear localStorage
+            // §47.ter — Si revocamos NUESTRO propio device, limpiar localStorage
+            // Y cookie (multi-store debe limpiarse simétrico).
             try {
                 var stored = JSON.parse(localStorage.getItem(getTrustKey(uid)));
-                if (stored && stored.token === token) localStorage.removeItem(getTrustKey(uid));
+                if (stored && stored.token === token) {
+                    localStorage.removeItem(getTrustKey(uid));
+                    clearTrustCookie(uid);
+                }
             } catch (e) { /* ignore */ }
+            var cookieStored = getTrustCookie(uid);
+            if (cookieStored && cookieStored.token === token) {
+                clearTrustCookie(uid);
+            }
         });
     }
 
     function revokeAllDevices(uid) {
         return window.db.collection('usuarios').doc(uid).update({ trustedDevices: [] }).then(function() {
-            localStorage.removeItem(getTrustKey(uid));
+            // §47.ter — limpiar AMBOS stores
+            try { localStorage.removeItem(getTrustKey(uid)); } catch (e) {}
+            clearTrustCookie(uid);
         });
     }
 
@@ -1592,6 +1686,10 @@
                 email: user.email,
                 nombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0],
                 rol: AP.currentUserRole || 'viewer',
+                // §47.ter — cargo personalizado del perfil para mostrarse en
+                // la isla dinámica (ej: "CEO", "Asesor comercial") en lugar
+                // del rol técnico (super_admin/editor/viewer).
+                cargo: (AP.currentUserProfile && AP.currentUserProfile.cargo) || '',
                 browser: dev.browser,
                 os: dev.os,
                 city: loc.city || '',

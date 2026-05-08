@@ -214,8 +214,11 @@
         detailListEl.innerHTML = _allOthers.map(function (p) {
             var name = p.nombre || p.email || '?';
             var initials = getInitials(name);
-            var rolLabel = formatRole(p.rol);
-            var sectionLabel = formatSection(p.currentSection);
+            // §47.ter — Mostrar CARGO personalizado del perfil (ej: "CEO",
+            // "Asesor comercial") en lugar del rol técnico. Si no hay cargo,
+            // fallback a rol con label legible. Ubicación (sección) eliminada
+            // del detail por solicitud del cliente — no es info relevante.
+            var displayLabel = (p.cargo && String(p.cargo).trim()) || formatRole(p.rol);
             var inMine = _currentSection && p.currentSection === _currentSection;
             var lastSeenAgo = p.lastSeen ? formatTimeAgo(p.lastSeen) : '';
             var tabsBadge = p.tabs > 1 ? ' <span class="alt-presence-tabs-badge" title="' + p.tabs + ' pestañas abiertas">×' + p.tabs + '</span>' : '';
@@ -224,9 +227,7 @@
                 '<div class="alt-presence-row-info">' +
                     '<div class="alt-presence-row-name">' + escTxt(name) + tabsBadge + '</div>' +
                     '<div class="alt-presence-row-meta">' +
-                        '<span class="alt-presence-row-rol">' + escTxt(rolLabel) + '</span>' +
-                        ' · ' +
-                        '<span class="alt-presence-row-section">' + escTxt(sectionLabel) + '</span>' +
+                        '<span class="alt-presence-row-rol">' + escTxt(displayLabel) + '</span>' +
                     '</div>' +
                     (lastSeenAgo ? '<div class="alt-presence-row-time">' + escTxt(lastSeenAgo) + '</div>' : '') +
                 '</div>' +

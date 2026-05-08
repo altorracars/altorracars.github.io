@@ -775,6 +775,201 @@
         });
     }
 
+    /* ═══════════════════════════════════════════════════════════════
+       §49 SECURITY CARD — 2FA toggle + cambiar phone
+       (cambio de password sigue manejado por admin-auth.js handler
+        del form #changePasswordForm; solo movimos el HTML aquí.)
+       ═══════════════════════════════════════════════════════════════ */
+
+    function maskPhone(phone) {
+        if (!phone) return '';
+        var s = String(phone);
+        if (s.length <= 4) return s;
+        return s.slice(0, -4).replace(/./g, '*') + s.slice(-4);
+    }
+
+    function refresh2FAStatus() {
+        var profile = (window.AP && window.AP.currentUserProfile) || null;
+        var statusEl = document.getElementById('profile2FAStatus');
+        var btnEl = document.getElementById('profile2FAManage');
+        if (!profile || !statusEl) return;
+        if (profile.habilitado2FA && profile.telefono2FA) {
+            var prefix = profile.prefijo2FA || '+57';
+            statusEl.innerHTML = 'Activo · <strong style="color:#4ade80;">' +
+                prefix + ' ' + maskPhone(profile.telefono2FA) + '</strong>';
+            if (btnEl) btnEl.innerHTML = '<i data-lucide="settings-2"></i> Gestionar';
+        } else {
+            statusEl.innerHTML = '<span style="color:rgba(255,255,255,0.55);">Desactivado</span>';
+            if (btnEl) btnEl.innerHTML = '<i data-lucide="shield-plus"></i> Activar 2FA';
+        }
+        if (window.AltorraIcons && window.AltorraIcons.refresh) {
+            var card = document.getElementById('profileSecurityCard');
+            if (card) window.AltorraIcons.refresh(card);
+        }
+    }
+
+    function show2FAForm() {
+        var profile = (window.AP && window.AP.currentUserProfile) || {};
+        var formEl = document.getElementById('profile2FAForm');
+        var bodyEl = document.getElementById('profile2FAFormBody');
+        if (!formEl || !bodyEl) return;
+        formEl.style.display = 'block';
+        formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        var isActive = !!(profile.habilitado2FA && profile.telefono2FA);
+        var prefix = profile.prefijo2FA || '+57';
+        var phone = profile.telefono2FA || '';
+
+        bodyEl.innerHTML =
+            '<div style="margin-bottom:14px;">' +
+                '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;">' +
+                    '<input type="checkbox" id="profile2FAEnabled"' + (isActive ? ' checked' : '') + ' style="width:18px;height:18px;flex-shrink:0;">' +
+                    '<span><strong>Activar 2FA</strong> — protege tu cuenta con un código SMS al iniciar sesión.</span>' +
+                '</label>' +
+            '</div>' +
+            '<div id="profile2FAPhoneFields" style="' + (isActive ? '' : 'opacity:0.5;pointer-events:none;') + '">' +
+                '<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">' +
+                    '<div class="form-group" style="margin:0;flex:0 0 100px;">' +
+                        '<label class="form-label" style="font-size:0.78rem;">Prefijo</label>' +
+                        '<select id="profile2FAPrefix" class="form-input" style="font-size:0.85rem;">' +
+                            '<option value="+57"' + (prefix === '+57' ? ' selected' : '') + '>+57 CO</option>' +
+                            '<option value="+1"'  + (prefix === '+1'  ? ' selected' : '') + '>+1 US</option>' +
+                            '<option value="+34"' + (prefix === '+34' ? ' selected' : '') + '>+34 ES</option>' +
+                            '<option value="+52"' + (prefix === '+52' ? ' selected' : '') + '>+52 MX</option>' +
+                            '<option value="+54"' + (prefix === '+54' ? ' selected' : '') + '>+54 AR</option>' +
+                            '<option value="+56"' + (prefix === '+56' ? ' selected' : '') + '>+56 CL</option>' +
+                            '<option value="+51"' + (prefix === '+51' ? ' selected' : '') + '>+51 PE</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="form-group" style="margin:0;flex:1;min-width:180px;">' +
+                        '<label class="form-label" style="font-size:0.78rem;">Número de celular</label>' +
+                        '<input type="tel" id="profile2FAPhone" class="form-input" placeholder="3001234567" value="' + (phone || '') + '" style="font-size:0.9rem;" autocomplete="tel-national">' +
+                    '</div>' +
+                '</div>' +
+                '<p class="profile-field-hint" style="margin-top:8px;">' +
+                    '<i data-lucide="info"></i>' +
+                    ' Verificá que el número funcione antes de guardar. La próxima vez que inicies sesión recibirás un SMS de prueba.' +
+                '</p>' +
+            '</div>';
+
+        // Toggle phone fields enabled/disabled cuando se prende/apaga el checkbox
+        var checkbox = document.getElementById('profile2FAEnabled');
+        var phoneFields = document.getElementById('profile2FAPhoneFields');
+        if (checkbox && phoneFields) {
+            checkbox.addEventListener('change', function () {
+                if (this.checked) {
+                    phoneFields.style.opacity = '';
+                    phoneFields.style.pointerEvents = '';
+                } else {
+                    phoneFields.style.opacity = '0.5';
+                    phoneFields.style.pointerEvents = 'none';
+                }
+            });
+        }
+
+        if (window.AltorraIcons && window.AltorraIcons.refresh) {
+            window.AltorraIcons.refresh(formEl);
+        }
+    }
+
+    function save2FA() {
+        var user = window.auth && window.auth.currentUser;
+        if (!user) return;
+        var checkbox = document.getElementById('profile2FAEnabled');
+        var prefixEl = document.getElementById('profile2FAPrefix');
+        var phoneEl = document.getElementById('profile2FAPhone');
+        var errEl = document.getElementById('profile2FAErr');
+        var saveBtn = document.getElementById('profile2FASave');
+        if (!checkbox || !errEl || !saveBtn) return;
+
+        errEl.style.display = 'none';
+        var enable = checkbox.checked;
+        var prefix = (prefixEl && prefixEl.value) || '+57';
+        var phone = (phoneEl && phoneEl.value || '').trim().replace(/\D/g, '');
+
+        if (enable) {
+            if (phone.length < 7 || phone.length > 12) {
+                errEl.textContent = 'El número de celular debe tener entre 7 y 12 dígitos.';
+                errEl.style.display = 'block';
+                return;
+            }
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i data-lucide="loader-2"></i> Guardando...';
+
+        var updates = {
+            habilitado2FA: enable
+        };
+        if (enable) {
+            updates.telefono2FA = phone;
+            updates.prefijo2FA = prefix;
+        }
+        // Si desactiva, NO borramos telefono2FA por si quiere reactivar después.
+        // Solo el flag habilitado2FA determina si se pide al login.
+
+        window.db.collection('usuarios').doc(user.uid).update(updates).then(function () {
+            // Sync local
+            var profile = window.AP && window.AP.currentUserProfile;
+            if (profile) {
+                profile.habilitado2FA = enable;
+                if (enable) {
+                    profile.telefono2FA = phone;
+                    profile.prefijo2FA = prefix;
+                }
+            }
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i data-lucide="save"></i> Guardar';
+            document.getElementById('profile2FAForm').style.display = 'none';
+            refresh2FAStatus();
+            if (window.notify && window.notify.success) {
+                window.notify.success({
+                    title: enable ? '2FA activado' : '2FA desactivado',
+                    message: enable
+                        ? 'Recibirás un SMS la próxima vez que inicies sesión desde un dispositivo nuevo.'
+                        : 'Tu cuenta ahora se protege solo con contraseña + dispositivos de confianza.'
+                });
+            }
+        }).catch(function (err) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i data-lucide="save"></i> Guardar';
+            errEl.textContent = 'Error al guardar: ' + (err.message || 'desconocido') +
+                (err.code === 'permission-denied' ? ' (firestore.rules pendientes de deploy)' : '');
+            errEl.style.display = 'block';
+            console.error('[Profile] Error guardando 2FA:', err);
+        });
+    }
+
+    function bindSecurityHandlers() {
+        var btnManage = document.getElementById('profile2FAManage');
+        if (btnManage && !btnManage._wired) {
+            btnManage._wired = true;
+            btnManage.addEventListener('click', show2FAForm);
+        }
+        var btnCancel = document.getElementById('profile2FACancel');
+        if (btnCancel && !btnCancel._wired) {
+            btnCancel._wired = true;
+            btnCancel.addEventListener('click', function () {
+                document.getElementById('profile2FAForm').style.display = 'none';
+            });
+        }
+        var btnSave = document.getElementById('profile2FASave');
+        if (btnSave && !btnSave._wired) {
+            btnSave._wired = true;
+            btnSave.addEventListener('click', save2FA);
+        }
+    }
+
+    // Refresh trusted devices list al entrar a perfil
+    // (la función AP.renderTrustedDevices vive en admin-auth.js y opera
+    // sobre los IDs #trustedDevicesList + #btnRevokeAllDevices que
+    // ahora están en sec-profile en lugar de sec-settings).
+    function refreshTrustedDevicesUI() {
+        if (window.AP && typeof window.AP.renderTrustedDevices === 'function') {
+            try { window.AP.renderTrustedDevices(); } catch (e) {}
+        }
+    }
+
     function bindRecoveryHandlers() {
         var btnGen = document.getElementById('profileBackupGenerate');
         if (btnGen && !btnGen._wired) {
@@ -819,8 +1014,11 @@
         window.AltorraSections.onChange(function (section) {
             if (section === 'profile') {
                 setTimeout(function () {
+                    bindSecurityHandlers();
                     bindRecoveryHandlers();
+                    refresh2FAStatus();
                     refreshRecoveryUI();
+                    refreshTrustedDevicesUI();
                 }, 100);
             }
         });

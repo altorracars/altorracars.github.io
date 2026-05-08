@@ -22510,3 +22510,133 @@ guardar backup codes o preguntas. El super_admin igual puede guardar
    - Elegir backup code o preguntas → entrás
 
 **Cache bump**: `v20260511130000`.
+
+---
+
+## 49. ADR-049 — Unificación seguridad personal en Mi Perfil + 2FA toggle (2026-05-08)
+
+> Cliente reportó tras §48: "Cuando hicimos la migracion a la nueva
+> plataforma se nos quito la opcion de activar o desactivar 2FA desde
+> ajustes" + "Todo lo que sea recuperar contraseña y dispositivos de
+> confianza debe estar en perfil no en ajustes, los ajustes es para
+> otras cosas, por favor unifica".
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 49.1 Diagnóstico — Qué había en cada sección
+
+**sec-settings (Ajustes) — antes**:
+1. Theme picker (gold/blue/violet) ✓ queda
+2. SEO Tools (regenerar páginas + sitemap) ✓ queda
+3. **Cambiar Contraseña** ❌ debe ir a Perfil
+4. **Dispositivos de Confianza** ❌ debe ir a Perfil
+5. Respaldo de Datos JSON ✓ queda
+
+**sec-profile (Mi Perfil) — antes**:
+1. Información personal (nombre, teléfono, prefijo, cargo)
+2. Documento de identidad (cédula con lock)
+3. Información de cuenta (read-only)
+4. Recuperación de cuenta (§48)
+5. Integraciones (Telegram)
+
+**Lo que faltaba** (perdido en migración a topnav §36):
+- Toggle 2FA on/off + UI para cambiar el teléfono guardado.
+
+### 49.2 Solución — Refactor + nuevo card Seguridad
+
+**Movido de sec-settings → sec-profile** (HTML completo, IDs intactos):
+- `#changePasswordForm` con todos sus inputs (`#newPassword`, password rules, etc.)
+- `#trustedDevicesCard` con `#trustedDevicesList` + `#btnRevokeAllDevices`
+
+Como los IDs se preservaron, los handlers existentes en `admin-auth.js`
+(`renderTrustedDevices`, `revokeDevice`, change password handler) siguen
+funcionando sin cambio.
+
+**Agregado NUEVO en sec-profile** — card "Seguridad" con 2FA toggle:
+- Status visual: "Activo · *********6747" (verde) o "Desactivado" (gris)
+- Botón "Gestionar" expande form con:
+  - Checkbox "Activar 2FA"
+  - Prefijo (dropdown 7 países: +57 CO, +1 US, +34 ES, +52 MX, +54 AR, +56 CL, +51 PE)
+  - Número de celular (input `tel`, autocomplete `tel-national`)
+  - Validación 7-12 dígitos
+- Save persiste `habilitado2FA` + `telefono2FA` + `prefijo2FA` en Firestore
+- Hint: "verificá que el número funciona, próximo login te pedirá SMS de prueba"
+- Respeta whitelist diff-keys §43 (esos campos ya estaban permitidos)
+
+### 49.3 Nuevo orden de Mi Perfil
+
+1. Información personal
+2. Documento de identidad
+3. **Seguridad** (NUEVA — 2FA toggle + cambio password)
+4. **Dispositivos de Confianza** (movida desde Ajustes)
+5. Recuperación de cuenta (§48)
+6. Información de cuenta (read-only)
+7. Integraciones (Telegram)
+
+### 49.4 sec-settings ahora simplificado
+
+Solo queda lo que es **configuración del SISTEMA** (no del usuario):
+1. Theme picker (apariencia visual)
+2. SEO Tools (regenerar páginas + GitHub token)
+3. Respaldo de Datos JSON (export/import)
+
+### 49.5 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Renombrar IDs al mover HTML | IDs preservados (`#changePasswordForm`, `#trustedDevicesList`, etc.) — handlers existentes siguen funcionando sin tocar admin-auth.js |
+| Duplicar lógica de change password | Reusamos el handler existente que ya estaba en admin-auth.js bindeado a `#changePasswordForm` |
+| Crear nuevo módulo para 2FA toggle | Extendemos `js/admin-profile.js` (mismo patrón que las otras cards de perfil) |
+| Borrar `telefono2FA` al desactivar 2FA | Conservar el número por si quiere reactivar después; solo flag `habilitado2FA: false` controla |
+| No validar phone | Regex `\D` strip + length 7-12 |
+| Activación 2FA sin confirmar phone funciona | Hint claro "próximo login te pedirá SMS de prueba" — Firebase Auth Phone Provider ya confirma al login real |
+
+### 49.6 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Ir a Ajustes | Solo: Theme picker + SEO Tools + Respaldo JSON. Sin Cambiar Contraseña ni Dispositivos |
+| 2 | Ir a Mi Perfil | Aparece nueva card "Seguridad" con 2FA toggle + form de password |
+| 3 | Status 2FA: si está activo | "Activo · *********6747" verde |
+| 4 | Click "Gestionar" 2FA | Form expandible con checkbox + prefijo + número |
+| 5 | Toggle OFF + Guardar | habilitado2FA: false en Firestore. Próximo login NO pide SMS |
+| 6 | Toggle ON + cambiar número + Guardar | Nuevo telefono2FA + prefijo2FA persisten |
+| 7 | Próximo login | Recibe SMS al nuevo número (Firebase Auth Phone Provider verifica) |
+| 8 | Cambiar contraseña | Form funciona (handler existente en admin-auth.js) |
+| 9 | Sección Dispositivos en Perfil | Lista los devices, botón revocar funciona |
+| 10 | Revocar todos | trustedDevices: [] + cookie/localStorage limpios |
+
+### 49.7 Doctrina aplicada
+
+§19 RCA: identificar exactamente qué se perdió en migración (2FA toggle)
+y qué estaba mal ubicado (password + devices). Cero código nuevo para
+funcionalidad existente — solo movimos HTML.
+
+§37 IAP: análisis previo de ambas secciones + plan claro antes de
+modificar.
+
+§17.4 (HTML stable): IDs preservados al mover. Handlers existentes
+siguen activos sin tocar admin-auth.js.
+
+### 49.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `admin.html` | Eliminar de sec-settings: bloques Cambiar Contraseña + Dispositivos de Confianza (~50 líneas). Agregar a sec-profile (antes de "Recuperación"): card Seguridad con 2FA toggle + form password movido + card Dispositivos de Confianza movida |
+| `js/admin-profile.js` | +200 líneas: refresh2FAStatus, show2FAForm, save2FA, bindSecurityHandlers, refreshTrustedDevicesUI. Wire en onChange listener |
+| `service-worker.js` | CACHE_VERSION → v20260511140000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511140000 |
+| `CLAUDE.md` | Esta sección §49 |
+
+### 49.9 Archivos INTACTOS (afirmación)
+
+- `js/admin-auth.js` — sin tocar. `renderTrustedDevices`, `revokeDevice`,
+  `revokeAllDevices`, `saveDeviceTrust`, change password handler siguen
+  bindeados a los IDs originales (que ahora viven en sec-profile)
+- `firestore.rules` — sin tocar (whitelist §43 ya incluye habilitado2FA,
+  telefono2FA, prefijo2FA, trustedDevices, ultimoAcceso)
+- `js/admin-recovery.js` — sin tocar (§48 sigue OK)
+- `css/admin.css` — sin tocar (estilos `.profile-recovery-row` ya cubren
+  los nuevos rows en card Seguridad)
+
+**Cache bump**: `v20260511140000`.

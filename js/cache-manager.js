@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511130000'; // §48 — Sistema de recuperación de cuenta: 10 backup codes (Web Crypto SHA-256) + 3 preguntas seguridad + auto-redirect cuando Firebase rate-limit + setup en perfil
+    const APP_VERSION = '20260511140000'; // §49 — Unificación seguridad personal en Mi Perfil: cambiar password + dispositivos confianza + 2FA toggle (movidos desde Ajustes + 2FA toggle nuevo)
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

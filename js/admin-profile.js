@@ -147,6 +147,9 @@
         updateSaveBar();
 
         if (window.AltorraIcons) window.AltorraIcons.refresh($('sec-profile'));
+
+        // §40 — Sync estado Telegram (vinculado/no)
+        try { syncTelegramStatus(); } catch (e) {}
     }
 
     function renderAvatar(url) {
@@ -412,6 +415,49 @@
                 message: 'Para modificar tu cédula necesitás autorización del Super Admin. Tocá "Solicitar cambio".'
             });
         });
+
+        // §40 — Telegram integration buttons
+        var telegramConnect = $('profileTelegramConnect');
+        var telegramDisconnect = $('profileTelegramDisconnect');
+        if (telegramConnect) {
+            telegramConnect.addEventListener('click', function () {
+                if (window.AltorraAdminTelegram && window.AltorraAdminTelegram.openLinkFlow) {
+                    window.AltorraAdminTelegram.openLinkFlow();
+                } else if (window.notify) {
+                    window.notify.error({ title: 'Telegram no disponible', message: 'El módulo no se cargó correctamente.' });
+                }
+            });
+        }
+        if (telegramDisconnect) {
+            telegramDisconnect.addEventListener('click', function () {
+                if (!confirm('¿Desconectar Telegram? Dejarás de recibir notificaciones de leads urgentes.')) return;
+                if (window.AltorraAdminTelegram && window.AltorraAdminTelegram.unlink) {
+                    window.AltorraAdminTelegram.unlink();
+                    setTimeout(syncTelegramStatus, 500);
+                }
+            });
+        }
+    }
+
+    /* §40 — Sync visual del estado Telegram */
+    function syncTelegramStatus() {
+        var status = $('profileTelegramStatus');
+        var connectBtn = $('profileTelegramConnect');
+        var disconnectBtn = $('profileTelegramDisconnect');
+        if (!status) return;
+
+        var profile = (window.AP && window.AP.currentUserProfile) || {};
+        var linked = !!profile.telegramChatId;
+
+        if (linked) {
+            status.innerHTML = '<span style="color:#4ade80;">✓ Conectado</span> · ' + (profile.telegramUserName ? '@' + escapeHTML(profile.telegramUserName) : 'Notificaciones activas');
+            if (connectBtn) connectBtn.style.display = 'none';
+            if (disconnectBtn) disconnectBtn.style.display = 'inline-flex';
+        } else {
+            status.textContent = 'Sin conectar';
+            if (connectBtn) connectBtn.style.display = 'inline-flex';
+            if (disconnectBtn) disconnectBtn.style.display = 'none';
+        }
     }
 
     function init() {

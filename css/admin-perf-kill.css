@@ -420,5 +420,163 @@ html.admin-restoring #adminPanel::before {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   FIN admin-perf-kill.css — §35 ADR-035 + §36.3 PERF PASS + §42 ADR-042
+   §47 MOBILE/TABLET RESPONSIVE FIX
+   ───────────────────────────────────────────────────────────────────
+   Cliente reportó (captura iPhone): la interfaz NO está optimizada
+   para móviles/tablets. Cards "Citas" cortadas, overflow horizontal,
+   contenido fuera del viewport.
+
+   Causa raíz: admin-v2.css:524 con !important fuerza
+   `repeat(auto-fit, minmax(min(220px, 100%), 1fr))` que NO colapsa
+   a 1 columna en viewports estrechos (~370px). admin.css:8226 dice
+   `1fr` en <900px pero pierde por specificity contra el !important.
+
+   Solución: cargado ÚLTIMO en cascade, este archivo override con
+   selectores .admin-panel para vencer la specificity.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Anti-overflow GLOBAL para mobile/tablet ─── */
+@media (max-width: 900px) {
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
+    .admin-panel.admin-layout,
+    .admin-panel main,
+    .admin-panel .admin-main {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+    .admin-panel main > .section,
+    .admin-panel .section.active {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* ─── Mobile (<= 600px): TODOS los grids a 1 columna ─── */
+@media (max-width: 600px) {
+    .admin-panel .hero-kpis,
+    .admin-panel .reports-kpis,
+    .admin-panel .stats-grid,
+    .admin-panel .kpis-grid,
+    .admin-panel .cards-grid,
+    .admin-panel #sec-dashboard .hero-kpis,
+    .admin-panel #sec-dashboard .stats-grid,
+    .admin-panel #sec-dashboard .kpis-grid,
+    .admin-panel #sec-dashboard .kpi-cards,
+    .admin-panel .nba-dash-list,
+    .admin-panel .pred-grid,
+    .admin-panel .insights-grid,
+    .admin-panel .av2-card-list,
+    .admin-panel .workflows-rules-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+    /* Cards: padding cómodo + min-width 0 para evitar overflow del contenido */
+    .admin-panel .hero-kpi,
+    .admin-panel .stat-card,
+    .admin-panel .kpi-card,
+    .admin-panel .reports-kpi-card,
+    .admin-panel .workflow-card,
+    .admin-panel .pipeline-card,
+    .admin-panel .nba-dash-item,
+    .admin-panel .av2-card {
+        padding: 16px !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    /* Reduce KPI value font para que quepa */
+    .admin-panel .hero-kpi-value,
+    .admin-panel .kpi-value,
+    .admin-panel .reports-kpi-value {
+        font-size: 1.6rem !important;
+    }
+    /* Section padding fluid mobile */
+    .admin-panel main > .section,
+    .admin-panel .section.active {
+        padding: 14px 12px !important;
+    }
+    .admin-panel .section .page-header,
+    .admin-panel .admin-section .page-header {
+        padding: 16px 12px !important;
+    }
+    /* Page header titles más compactos */
+    .admin-panel .section .page-header h1,
+    .admin-panel .admin-section .page-header h1 {
+        font-size: 1.25rem !important;
+        line-height: 1.2 !important;
+    }
+    /* Modales full-width en mobile */
+    .admin-panel .modal-overlay .modal-container,
+    .admin-panel .modal-overlay .modal-content {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        margin: 12px !important;
+    }
+}
+
+/* ─── Tablet (601px - 900px): grids a 2 columnas ─── */
+@media (min-width: 601px) and (max-width: 900px) {
+    .admin-panel .hero-kpis,
+    .admin-panel .reports-kpis,
+    .admin-panel .stats-grid,
+    .admin-panel .kpis-grid,
+    .admin-panel #sec-dashboard .hero-kpis,
+    .admin-panel #sec-dashboard .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 14px !important;
+    }
+    .admin-panel main > .section,
+    .admin-panel .section.active {
+        padding: 18px 16px !important;
+    }
+}
+
+/* ─── Tablas con scroll-x interno (no del body) ─── */
+@media (max-width: 900px) {
+    .admin-panel .table-container,
+    .admin-panel .table-wrapper,
+    .admin-panel .table-scroll {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        max-width: 100% !important;
+    }
+    .admin-panel .data-table,
+    .admin-panel .admin-table,
+    .admin-panel #vehiclesTable,
+    .admin-panel #brandsTable,
+    .admin-panel #usersTable {
+        min-width: 600px;  /* Permite scroll-x interno sin colapsar columnas */
+    }
+    /* Reduce padding en cells de tabla mobile */
+    .admin-panel .data-table th,
+    .admin-panel .data-table td,
+    .admin-panel .admin-table th,
+    .admin-panel .admin-table td {
+        padding: 8px 10px !important;
+        font-size: 0.82rem !important;
+    }
+}
+
+/* ─── Topnav mobile: compactar más ─── */
+@media (max-width: 480px) {
+    .admin-panel .atn-bar {
+        padding: 0 8px !important;
+    }
+    .admin-panel .atn-tab {
+        padding: 0 7px !important;
+    }
+    .admin-panel .atn-actions {
+        gap: 3px !important;
+    }
+    .admin-panel .atn-divider {
+        display: none !important;  /* Ahorra espacio horizontal */
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-perf-kill.css — §35 ADR-035 + §36.3 PERF PASS + §42 ADR-042 + §47 MOBILE
    ═══════════════════════════════════════════════════════════════════ */

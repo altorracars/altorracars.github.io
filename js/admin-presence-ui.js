@@ -311,6 +311,13 @@
             // Solo botón principal
             if (e.button !== undefined && e.button !== 0) return;
 
+            // §47 fix mobile — agregar clase --positioned ANTES del primer
+            // pointermove para que el media query mobile (que aplica
+            // bottom/right con !important) NO sobrescriba el style.left/top
+            // que vamos a setear durante el drag. Si NO se agrega esta clase,
+            // visualmente la isla NO se mueve en mobile aunque el handler corra.
+            island.classList.add('alt-presence-island--positioned');
+
             _dragState = {
                 startX: e.clientX,
                 startY: e.clientY,
@@ -327,8 +334,11 @@
             if (!_dragState || _dragState.pointerId !== e.pointerId) return;
             var dx = e.clientX - _dragState.startX;
             var dy = e.clientY - _dragState.startY;
-            // Threshold 4px para distinguir click de drag
-            if (!_dragState.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+            // §47 fix mobile — threshold mayor en touch (8px) que en mouse
+            // (4px). pointerType==='touch' en eventos táctiles. Con threshold
+            // 4px en touch, micro-movimientos del dedo confunden tap con drag.
+            var threshold = (e.pointerType === 'touch' || e.pointerType === 'pen') ? 8 : 4;
+            if (!_dragState.moved && Math.abs(dx) + Math.abs(dy) < threshold) return;
             _dragState.moved = true;
 
             var newX = clamp(_dragState.origX + dx, 8, window.innerWidth - island.offsetWidth - 8);
@@ -432,6 +442,10 @@
             island.style.top = safeY + 'px';
             island.style.right = 'auto';
             island.style.bottom = 'auto';
+            // §47 fix mobile drag: agregar clase --positioned para que el
+            // media query (max-width: 720px) NO sobrescriba con !important
+            // los valores left/top que ahora setea el usuario.
+            island.classList.add('alt-presence-island--positioned');
         }
         // Si no hay stored, el CSS aplica top: 80px right: 24px (default no-obstructivo)
     }
@@ -460,6 +474,9 @@
             island.style.top = '';
             island.style.right = '';
             island.style.bottom = '';
+            // §47 — quitar la clase para que el media query mobile vuelva
+            // a aplicar la posición default (bottom:90px right:12px).
+            island.classList.remove('alt-presence-island--positioned');
         }
     }
 

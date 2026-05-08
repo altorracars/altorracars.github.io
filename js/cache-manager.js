@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511080000'; // §47 — 2FA mobile fixes: reCAPTCHA replaceChild + isDeviceTrusted fallback + saveDeviceTrust toast warning
+    const APP_VERSION = '20260511090000'; // §47.bis — Isla drag mobile fix (.--positioned class) + overflow horizontal fix (1 col <600px, 2 cols tablet)
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

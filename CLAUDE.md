@@ -21451,3 +21451,258 @@ Path B (localStorage) pero con un toast warning que persiste hasta el
 deploy.
 
 **Cache bump**: `v20260511080000`.
+
+---
+
+## 47.bis. Mobile/tablet responsive + isla draggable mobile (2026-05-08)
+
+> Cliente reportó tras §47 con captura de iPhone Safari:
+>
+> 1. "La interfaz no esta optimizada para equipos moviles y tablets de
+>    todos los sistemas operativos, pantallas y exploradores"
+>    → Cards "Citas" cortadas a la derecha. Overflow horizontal del
+>    contenido. KPIs en 2 columnas cuando deberían ser 1 columna en
+>    mobile estrecho (<600px iPhone vertical).
+> 2. "La isla dinamica no es movil en equipos moviles y tablets en pc
+>    si, dejo touch presionado y arrastro y no se mueve corrige"
+>    → drag-to-reposition del §46 funciona en desktop pero NO en mobile.
+>
+> Aplicado bajo doctrina IAP §37 + RCA §19.
+
+### 47.bis.1 Causa raíz Issue 2 — !important del media query gana
+
+`css/admin.css:1748` (regla mobile que añadió §46):
+
+```css
+@media (max-width: 720px) {
+    #alt-presence-overlay,
+    .alt-presence-island {
+        top: auto !important;
+        bottom: 90px !important;
+        right: 12px !important;
+        left: auto !important;
+    }
+}
+```
+
+El JS del drag setea `island.style.left = X; island.style.top = Y;`
+durante el pointermove. Pero por specificity de cascade CSS, el
+**inline style PIERDE contra !important**. Resultado: en mobile, el
+JS corre OK pero visualmente la isla NO se mueve nunca. El handler
+de pointerup llama `savePosition` con `island.offsetLeft` (que sigue
+siendo el del CSS) → la posición persistida es la default → loop
+inútil.
+
+### 47.bis.2 Solución Issue 2 — Class gate `--positioned`
+
+**JS** (`js/admin-presence-ui.js`):
+
+1. `applyStoredPosition`: tras setear style.left/top, agregar clase
+   `alt-presence-island--positioned`.
+2. `pointerdown` handler: agregar la clase ANTES del primer
+   pointermove. Esto asegura que el `style.left/top` que setea el
+   handler ya NO compite contra el !important del media query.
+3. `resetPosition`: remover la clase para que la default mobile
+   vuelva a aplicar.
+
+**CSS** (`css/admin.css:1747`):
+
+```css
+@media (max-width: 720px) {
+    #alt-presence-overlay:not(.alt-presence-island--positioned),
+    .alt-presence-island:not(.alt-presence-island--positioned) {
+        top: auto !important;
+        bottom: 90px !important;
+        right: 12px !important;
+        left: auto !important;
+    }
+}
+```
+
+El selector `:not(--positioned)` hace que la regla solo aplique
+cuando la isla NO ha sido posicionada por el usuario. Si tiene
+`--positioned`, el inline style del JS gana sin competencia.
+
+**Bonus mobile UX**: threshold para distinguir click vs drag aumentado
+a **8px en touch/pen** (vs 4px en mouse). Touch tiene jitter natural
+del dedo que el mouse no tiene.
+
+### 47.bis.3 Causa raíz Issue 1 — `auto-fit` no colapsa a 1 col
+
+`admin-v2.css:524` con `!important`:
+
+```css
+.admin-panel .hero-kpis {
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)) !important;
+}
+```
+
+Teóricamente `min(220px, 100%)` debería evaluar a 100% cuando el
+container es <220px. Pero en la práctica:
+- Container ~370px (iPhone vertical)
+- `100%` = 370px > 220px → `min(220, 370)` = 220
+- `auto-fit` cabe `floor(370 / (220 + gap))` = 1 columna debería
+- PERO si hay overflow horizontal del padre (algún elemento sobresale),
+  el container del grid es percibido como más ancho → caben 2 cols
+  con la segunda fuera del viewport visible.
+
+Resultado: KPIs aparecen 2 cols con la segunda card cortada
+visualmente. La regla mobile en `admin.css:8226` dice `1fr` para
+<900px pero PIERDE specificity contra el !important de v2.
+
+### 47.bis.4 Solución Issue 1 — Append final perf-kill con specificity
+
+`css/admin-perf-kill.css` (cargado **último** en el HTML, gana cascade
+contra todas las hojas anteriores):
+
+**Anti-overflow GLOBAL** mobile/tablet:
+```css
+@media (max-width: 900px) {
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
+    .admin-panel.admin-layout,
+    .admin-panel main,
+    .admin-panel .admin-main { max-width: 100vw !important; overflow-x: hidden !important; }
+    .admin-panel main > .section, .admin-panel .section.active {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+}
+```
+
+**Mobile <=600px (iPhone vertical / Android pequeño)**: TODOS los
+grids del admin a **1 columna**:
+```css
+@media (max-width: 600px) {
+    .admin-panel .hero-kpis,
+    .admin-panel .reports-kpis,
+    .admin-panel .stats-grid,
+    .admin-panel .kpis-grid,
+    .admin-panel .cards-grid,
+    .admin-panel #sec-dashboard .hero-kpis,
+    .admin-panel .nba-dash-list,
+    .admin-panel .pred-grid,
+    .admin-panel .insights-grid,
+    .admin-panel .av2-card-list,
+    .admin-panel .workflows-rules-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+    /* Cards padding cómodo + min-width 0 para evitar overflow del contenido */
+    .admin-panel .hero-kpi, /* etc. */ {
+        padding: 16px !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    /* KPI value font reducido para que quepa */
+    .admin-panel .hero-kpi-value, /* etc. */ { font-size: 1.6rem !important; }
+    /* Section padding fluid */
+    .admin-panel main > .section { padding: 14px 12px !important; }
+    /* Page header titles compactos */
+    .admin-panel .section .page-header h1 { font-size: 1.25rem !important; line-height: 1.2 !important; }
+    /* Modales full-width */
+    .admin-panel .modal-overlay .modal-container {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        margin: 12px !important;
+    }
+}
+```
+
+**Tablet (601-900px)**: grids a **2 columnas**:
+```css
+@media (min-width: 601px) and (max-width: 900px) {
+    .admin-panel .hero-kpis, /* etc. */ {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 14px !important;
+    }
+}
+```
+
+**Tablas con scroll-x interno** (no del body):
+```css
+@media (max-width: 900px) {
+    .admin-panel .table-container, .admin-panel .table-wrapper {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        max-width: 100% !important;
+    }
+    .admin-panel .data-table, .admin-panel .admin-table { min-width: 600px; }
+    .admin-panel .data-table th, .admin-panel .data-table td { padding: 8px 10px !important; font-size: 0.82rem !important; }
+}
+```
+
+**Topnav <=480px**: compactado al mínimo (gap 3px, padding 7px,
+divisores ocultos para ahorrar horizontal).
+
+### 47.bis.5 Anti-patterns evitados
+
+| Patrón | Origen | Cómo lo evitamos |
+|---|---|---|
+| Tocar admin-v2.css o admin.css legacy | §17.4 (HTML stable) + riesgo regresión | Append a admin-perf-kill.css que carga ÚLTIMO; gana cascade sin tocar archivos validados |
+| Eliminar `!important` de admin-v2.css | §19 RCA | Esos `!important` resuelven OTROS issues. Yo gano por specificity + load order, no por escalada |
+| `viewport=device-width, initial-scale=1.0` ya está en admin.html — no tocar | §17.4 | OK (no toco) |
+| Drag mobile con `mousemove` en lugar de Pointer Events | §17.3 | Ya usaba pointermove §46. Solo agregué la clase `--positioned` |
+| Threshold único 4px para mouse y touch | §17.10 (mobile-first Apple HIG) | Touch necesita 8px (jitter del dedo), mouse 4px |
+| Mobile fix solo en una pantalla específica | §17.10 | Cobertura completa: 480px, 600px, 720px, 900px breakpoints |
+
+### 47.bis.6 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | iPhone Safari Ctrl+R, ir a Inicio | Hero KPIs (Leads/Citas/Tareas) en **1 columna** vertical, no cortadas |
+| 2 | Cualquier sección en mobile | NO hay scroll horizontal del body; el contenido se adapta al viewport |
+| 3 | Mantener touch sobre la isla dinámica + arrastrar | **Se mueve** siguiendo el dedo (antes no) |
+| 4 | Soltar touch tras drag | Posición se persiste en localStorage |
+| 5 | Refrescar página en mobile | Isla aparece en posición elegida, no en default mobile |
+| 6 | Touch micro-movimiento sin drag intencional | NO se mueve (threshold 8px en touch evita jitter) |
+| 7 | Tablet iPad portrait (~768px) | KPIs en **2 columnas**, no 1 ni 3 |
+| 8 | Tablet iPad landscape (~1024px) | Comportamiento desktop normal (3 cols) |
+| 9 | Modal en iPhone | Ocupa casi todo el viewport (calc(100vw - 24px)) |
+| 10 | Tabla de Vehículos en mobile | Scroll horizontal INTERNO de la tabla, no del body |
+| 11 | Topnav iPhone <480px | Compactado al máximo, sin overflow |
+| 12 | DevTools console post-cambio | Cero errores nuevos |
+
+### 47.bis.7 Doctrina aplicada
+
+§19 RCA: 2 issues con causas distintas pero relacionadas (ambos por
+specificity de `!important` que ganaba sobre lo correcto).
+
+§37 IAP: análisis previo de los archivos a modificar + intactos +
+riesgos.
+
+§17.4 (HTML/CSS stable): cero modificación de admin-v2.css o admin.css
+core. Override quirúrgico via cascade.
+
+§17.10 (mobile-first Apple HIG): touch threshold 8px (vs 4px mouse),
+breakpoints 480/600/720/900, padding mínimo 12-14px en mobile.
+
+§35 (perf): cero MutationObserver, cero pointermove persistentes
+(solo durante drag activo), `contain: layout style` ya está aplicado
+desde §35.
+
+### 47.bis.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-presence-ui.js` | applyStoredPosition + pointerdown + resetPosition manejan clase `--positioned` para que JS gane sobre media query mobile. Threshold 8px en touch/pen, 4px en mouse |
+| `css/admin.css:1748` | Media query mobile ahora `:not(.alt-presence-island--positioned)` — solo aplica si la isla NO ha sido posicionada por el usuario |
+| `css/admin-perf-kill.css` (append final) | ~125 líneas: anti-overflow global, mobile <=600px 1 col + cards padding cómodo + KPI font reducido + section padding fluid + modales full-width, tablet 601-900px 2 cols, tablas scroll-x interno, topnav <=480px compactado |
+| `service-worker.js` | CACHE_VERSION → v20260511090000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511090000 |
+| `CLAUDE.md` | Esta sección §47.bis |
+
+### 47.bis.9 Archivos INTACTOS
+
+- `firestore.rules` — sin tocar
+- `database.rules.json` — sin tocar
+- `admin.html` — sin tocar (viewport meta ya OK)
+- `css/admin-v2.css` — sin tocar (sus `!important` se vencen por load order)
+- `css/admin.css` core — sin tocar (excepto la regla específica del media query mobile)
+- Resto del JS — sin tocar
+
+**Cache bump**: `v20260511090000`.

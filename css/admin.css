@@ -1745,9 +1745,14 @@ select:focus-visible {
 }
 
 /* === Mobile === */
+/* §47 fix mobile drag — solo aplicar la posición default si la isla NO ha sido
+   posicionada por el usuario (clase --positioned se agrega en JS al hacer drag
+   o al restaurar posición persistida desde localStorage). Sin esto, el
+   !important del media query siempre ganaba sobre el style.left/top que setea
+   el JS, haciendo que la isla NUNCA se moviera visualmente en mobile. */
 @media (max-width: 720px) {
-    #alt-presence-overlay,
-    .alt-presence-island {
+    #alt-presence-overlay:not(.alt-presence-island--positioned),
+    .alt-presence-island:not(.alt-presence-island--positioned) {
         top: auto !important;
         bottom: 90px !important;
         right: 12px !important;

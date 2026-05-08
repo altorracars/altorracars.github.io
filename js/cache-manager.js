@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260508001441'; // §38 — subnav dentro main + fix Mi Perfil router
+    const APP_VERSION = '20260510380000'; // §39 — Telegram bot AltorraCarsbot configurado
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

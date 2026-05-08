@@ -214,8 +214,8 @@
     <div class="av2-preloader-spinner"></div>
 </div>
 
-<!-- P.3 — Skip to content link para keyboard users (WCAG AAA) -->
-<a href="#sec-dashboard" class="skip-to-content">Saltar al contenido</a>
+<!-- §45 — "Saltar al contenido" (P.3 a11y AAA) eliminado por solicitud
+     del cliente. El CSS .skip-to-content queda en admin.css inerte. -->
 
 <!-- AUTH LOADING SCREEN (visible por defecto hasta que Firebase resuelva el estado) -->
 <div id="authLoadingScreen" class="auth-loading-screen">
@@ -3379,8 +3379,12 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-reminders.js" defer></script>
 <script src="js/admin-sidebar-adaptive.js" defer></script>
 <script src="js/admin-native-notifications.js" defer></script>
-<!-- §23 FASE 4 — FCM Web Push para alertas en celular del asesor -->
-<script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-messaging-compat.js" defer></script>
+<!-- §23 FASE 4 — FCM Web Push para alertas en celular del asesor.
+     §45 — firebase-messaging-compat.js se carga DINÁMICAMENTE desde
+     admin-fcm.js cuando window.firebaseReady resuelve. Antes se cargaba
+     como <script defer> estático y crasheaba con "Cannot read properties
+     of undefined (reading 'INTERNAL')" porque se ejecutaba antes que
+     firebase-app-compat.js (que firebase-config.js carga via loadScript). -->
 <script src="js/admin-fcm.js" defer></script>
 <script src="js/admin-telegram.js" defer></script>
 <script src="js/admin-color-extract.js" defer></script>

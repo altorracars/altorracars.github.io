@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511050000'; // §44 — Pre-paint optimista del topnav user chip + fast-poll (Ctrl+Shift+R hidrata avatar/nombre/email instantly)
+    const APP_VERSION = '20260511060000'; // §45 — 4 fixes: skip-to-content removido, FCM dynamic load, profile defensive helpers, RTDB rules deploy pendiente
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

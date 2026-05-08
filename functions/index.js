@@ -2152,6 +2152,24 @@ exports.onChatEscalatedTelegram = onDocumentUpdated({
 
     if (eligible.length === 0) return;
 
+    // §51 — logging extra para diagnóstico cuando no se envía
+    if (eligible.length === 0) {
+        console.warn('[onChatEscalatedTelegram] ⚠ NO HAY asesores con telegramChatId vinculado.\n' +
+            'Razones posibles:\n' +
+            '  1. Webhook del bot NO configurado → bot no responde a /start\n' +
+            '     Fix: invocar setupTelegramWebhook() desde admin.\n' +
+            '  2. Asesores aún no vincularon su Telegram desde Mi Perfil\n' +
+            '     Fix: cada asesor debe hacer click "Conectar Telegram"\n' +
+            '  3. TELEGRAM_BOT_TOKEN secret no seteado\n' +
+            '     Fix: firebase functions:secrets:set TELEGRAM_BOT_TOKEN');
+        // Marcar timestamp igual para no re-disparar inmediatamente
+        await event.data.after.ref.update({
+            notifiedTelegramAt: new Date().toISOString(),
+            telegramSkipReason: 'no_eligible_users'
+        });
+        return;
+    }
+
     const radicado = after.radicado || event.params.sessionId.slice(-6);
     const userName = after.userNombre || after.userEmail || 'Cliente';
     const text = '🚨 *Cliente en cola — Altorra Cars*\n\n' +
@@ -2165,11 +2183,107 @@ exports.onChatEscalatedTelegram = onDocumentUpdated({
     const promises = eligible.map((u) =>
         sendTelegramAlert(u.uid, text, { url: url, urlLabel: '📲 Atender ahora' })
     );
-    await Promise.all(promises);
+    const results = await Promise.all(promises);
+    const okCount = results.filter(r => r === true).length;
 
     // Marcar timestamp anti-spam
     await event.data.after.ref.update({
-        notifiedTelegramAt: new Date().toISOString()
+        notifiedTelegramAt: new Date().toISOString(),
+        telegramAlertsCount: admin.firestore.FieldValue.increment(okCount)
     });
-    console.log('[onChatEscalatedTelegram] alertas enviadas a ' + eligible.length + ' asesores');
+    console.log('[onChatEscalatedTelegram] ' + okCount + '/' + eligible.length + ' alertas enviadas');
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// §51 — setupTelegramWebhook (callable)
+// Configura el webhook del bot de Telegram apuntando a la URL de
+// linkTelegramChat. Antes el cliente debía correr un curl manual.
+// Ahora es 1 click desde el admin.
+// ═══════════════════════════════════════════════════════════════════
+exports.setupTelegramWebhook = onCall({
+    region: 'us-central1',
+    secrets: [telegramBotToken]
+}, async (req) => {
+    if (!req.auth) {
+        throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+    }
+    const callerSnap = await db.collection('usuarios').doc(req.auth.uid).get();
+    if (!callerSnap.exists || callerSnap.data().rol !== 'super_admin') {
+        throw new HttpsError('permission-denied', 'Solo Super Admin puede configurar el webhook de Telegram.');
+    }
+    const TOKEN = telegramBotToken.value();
+    if (!TOKEN) {
+        throw new HttpsError('failed-precondition',
+            'TELEGRAM_BOT_TOKEN secret no configurado. ' +
+            'Correr: firebase functions:secrets:set TELEGRAM_BOT_TOKEN'
+        );
+    }
+    // URL pública de linkTelegramChat
+    const webhookUrl = 'https://us-central1-altorra-cars.cloudfunctions.net/linkTelegramChat';
+    try {
+        const resp = await fetch('https://api.telegram.org/bot' + TOKEN + '/setWebhook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: webhookUrl,
+                allowed_updates: ['message']
+            })
+        });
+        const data = await resp.json();
+        if (!data.ok) {
+            throw new HttpsError('internal', 'Telegram API error: ' + (data.description || 'unknown'));
+        }
+        console.log('[setupTelegramWebhook] ✓ Webhook configurado a', webhookUrl);
+        return {
+            success: true,
+            webhookUrl: webhookUrl,
+            description: data.description
+        };
+    } catch (err) {
+        if (err instanceof HttpsError) throw err;
+        throw new HttpsError('internal', 'Error: ' + err.message);
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// §51 — getTelegramWebhookStatus (callable)
+// Devuelve el estado actual del webhook: URL configurada,
+// last_error si hay, etc. Útil para diagnóstico desde admin.
+// ═══════════════════════════════════════════════════════════════════
+exports.getTelegramWebhookStatus = onCall({
+    region: 'us-central1',
+    secrets: [telegramBotToken]
+}, async (req) => {
+    if (!req.auth) {
+        throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+    }
+    const callerSnap = await db.collection('usuarios').doc(req.auth.uid).get();
+    if (!callerSnap.exists || callerSnap.data().rol !== 'super_admin') {
+        throw new HttpsError('permission-denied', 'Solo Super Admin.');
+    }
+    const TOKEN = telegramBotToken.value();
+    if (!TOKEN) {
+        return { configured: false, reason: 'TELEGRAM_BOT_TOKEN secret no configurado' };
+    }
+    try {
+        const resp = await fetch('https://api.telegram.org/bot' + TOKEN + '/getWebhookInfo');
+        const data = await resp.json();
+        if (!data.ok) {
+            return { configured: false, reason: data.description || 'Error consultando webhook' };
+        }
+        const info = data.result;
+        const expectedUrl = 'https://us-central1-altorra-cars.cloudfunctions.net/linkTelegramChat';
+        return {
+            configured: !!info.url,
+            url: info.url || '',
+            isExpected: info.url === expectedUrl,
+            expectedUrl: expectedUrl,
+            pendingUpdateCount: info.pending_update_count || 0,
+            lastErrorDate: info.last_error_date || null,
+            lastErrorMessage: info.last_error_message || null,
+            maxConnections: info.max_connections || null
+        };
+    } catch (err) {
+        return { configured: false, reason: 'Error: ' + err.message };
+    }
 });

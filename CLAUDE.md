@@ -22825,3 +22825,176 @@ en producción y los tiempos de notificación son los anteriores. El
 fix de Issue 1 (mobile) es client-side y aplica con el cache bump.
 
 **Cache bump**: `v20260511150000`.
+
+---
+
+## 51. ADR-051 — Bot Telegram no enviaba alertas: webhook no configurado (2026-05-08)
+
+> Cliente reportó con captura de Telegram + Concierge:
+>
+> 1. El asesor envió `/start` al bot ALTORRA CARS ALERTS → **el bot no respondió nada**
+> 2. El cliente solicitó "Hablar con asesor" → quedó en queue → bot Telegram NUNCA notificó
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 51.1 Causa raíz
+
+El bot del cliente está creado en BotFather, el `TELEGRAM_BOT_TOKEN`
+está seteado, pero el **WEBHOOK del bot NO está configurado**.
+
+Telegram bots tienen 2 modos de operación:
+- **Polling**: el bot consulta a Telegram. Solo funciona si tu código corre 24/7.
+- **Webhook**: Telegram envía POST a una URL cuando llega un mensaje. Funciona con Cloud Functions.
+
+Sin webhook configurado:
+1. Asesor envía `/start` al bot → Telegram lo recibe pero NO sabe a dónde enviarlo
+2. Bot no responde porque nuestra Cloud Function `linkTelegramChat` nunca se invoca
+3. `usuarios/{uid}.telegramChatId` nunca se persiste
+4. Cuando un cliente escala chat → `onChatEscalatedTelegram` corre, pero
+   `eligible.length === 0` (nadie tiene `telegramChatId`) → return silencioso
+5. **Cliente queda esperando, cero notificación a nadie**
+
+El fix manual era un curl que el cliente nunca ejecutó:
+```bash
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+     -d "url=https://us-central1-altorra-cars.cloudfunctions.net/linkTelegramChat"
+```
+
+### 51.2 Solución — Setup webhook con un click
+
+**Cloud Functions nuevas** (`functions/index.js`):
+
+1. **`setupTelegramWebhook`** (callable, super_admin only):
+   - Lee `TELEGRAM_BOT_TOKEN` del secrets
+   - POST a `https://api.telegram.org/bot<TOKEN>/setWebhook` con la URL
+     de `linkTelegramChat`
+   - Devuelve `{success, webhookUrl, description}`
+
+2. **`getTelegramWebhookStatus`** (callable, super_admin only):
+   - GET `https://api.telegram.org/bot<TOKEN>/getWebhookInfo`
+   - Devuelve estado: `{configured, url, isExpected, pendingUpdateCount, lastErrorMessage}`
+   - Útil para diagnóstico
+
+**UI en Mi Perfil → Integraciones** (visible solo super_admin):
+- Status visual del webhook: "✓ Activo" / "✗ NO configurado" / "⚠ URL incorrecta"
+- Botón "Configurar webhook" → invoca callable, espera respuesta, refresh status
+- Botón "Verificar" → re-chequea estado on-demand
+- Auto-check al entrar a Mi Perfil (best-effort)
+- Hint claro explicando que sin webhook, los asesores no pueden vincular Telegram
+
+**API expuesta** en `js/admin-telegram.js`:
+```js
+AltorraAdminTelegram.setupWebhook()       // configura
+AltorraAdminTelegram.getWebhookStatus()    // diagnóstico
+```
+
+### 51.3 Logging mejorado en `onChatEscalatedTelegram`
+
+Cuando `eligible.length === 0` (nadie con telegramChatId):
+
+```
+[onChatEscalatedTelegram] ⚠ NO HAY asesores con telegramChatId vinculado.
+Razones posibles:
+  1. Webhook del bot NO configurado → bot no responde a /start
+     Fix: invocar setupTelegramWebhook() desde admin.
+  2. Asesores aún no vincularon su Telegram desde Mi Perfil
+     Fix: cada asesor debe hacer click "Conectar Telegram"
+  3. TELEGRAM_BOT_TOKEN secret no seteado
+     Fix: firebase functions:secrets:set TELEGRAM_BOT_TOKEN
+```
+
+También persiste `telegramSkipReason: 'no_eligible_users'` en el doc del chat
+y `telegramAlertsCount` (incrementado por cada send exitoso) para auditar.
+
+### 51.4 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Setup webhook manual desde CLI | Callable function con 1 click desde admin |
+| Confiar que el cliente leyó el README | Botón visible + auto-check + hint claro |
+| Skip silencioso en `onChatEscalatedTelegram` | Logging detallado con 3 razones posibles + persistencia en doc |
+| Permitir cualquier user setear webhook | RBAC: super_admin only en ambas callables |
+| Hard-code URL del webhook | Variable derivada del project ID (linkTelegramChat URL) |
+
+### 51.5 Pasos para que el cliente lo active AHORA
+
+1. Asegurar que las Cloud Functions estén deployadas:
+   ```bash
+   firebase deploy --only functions:setupTelegramWebhook,functions:getTelegramWebhookStatus,functions:onChatEscalatedTelegram,functions:linkTelegramChat
+   ```
+
+2. Login admin → **Mi Perfil → Integraciones** (scroll abajo).
+
+3. Si tiene rol super_admin, verá nueva sección "Webhook del bot".
+   - Status inicial: "✗ NO configurado"
+   - Click **"Configurar webhook"** → confirmar
+   - Espera 1-2s → toast verde "✓ Webhook configurado"
+   - Status cambia a "✓ Activo"
+
+4. Cada asesor (incluyendo super_admin):
+   - Mi Perfil → Integraciones → "Conectar Telegram"
+   - Abre el bot en Telegram → tap "INICIAR" o envía `/start`
+   - Bot responde "✅ ¡Listo, [nombre]! Tu cuenta está vinculada"
+   - Status en admin cambia a "✓ Conectado"
+
+5. Test E2E:
+   - Cliente público → Concierge → "Hablar con asesor"
+   - **Telegram debe llegar al asesor en <30s** con cliente + radicado + botón "📲 Atender ahora"
+   - Si NO llega → revisar logs de `onChatEscalatedTelegram` en Firebase Console
+
+### 51.6 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | super_admin → Perfil → Integraciones | Ve sección "Webhook del bot" con status "✗ NO configurado" |
+| 2 | Click "Configurar webhook" → confirm | Toast "✓ Webhook configurado". Status cambia a "✓ Activo" |
+| 3 | Click "Verificar" | Re-chequea, muestra detalles (URL, pending updates, último error) |
+| 4 | Editor → Perfil → Integraciones | NO ve la sección Webhook (solo "Conectar Telegram") |
+| 5 | Asesor (cualquiera): "Conectar Telegram" → /start en bot | Bot responde con check verde |
+| 6 | Cliente: "Hablar con asesor" | Telegram llega en <30s con texto markdown + botón |
+| 7 | Sin webhook: cliente escala | Logs en Cloud Functions muestran las 3 razones posibles |
+| 8 | Sin TELEGRAM_BOT_TOKEN: setupWebhook | HttpsError "TELEGRAM_BOT_TOKEN secret no configurado" |
+| 9 | Editor invoca setupWebhook desde DevTools | HttpsError "permission-denied" |
+
+### 51.7 Doctrina aplicada
+
+§19 RCA estricto: identifiqué la causa real (webhook no configurado)
+en lugar de asumir que era código defectuoso. El ciclo Telegram tiene
+3 partes — bot creation, secret config, webhook setup — y solo la
+tercera estaba pendiente.
+
+§37 IAP: 5 secciones documentadas previo al cambio. Identifiqué
+explícitamente que NO era el código de envío que estaba mal.
+
+§17 (Performance): cero MutationObserver, cero pointermove. Sólo
+2 callable functions + UI condicional super_admin.
+
+### 51.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `functions/index.js` | + 2 callable functions (setupTelegramWebhook, getTelegramWebhookStatus). Logging mejorado en onChatEscalatedTelegram. telegramSkipReason + telegramAlertsCount persistidos |
+| `js/admin-telegram.js` | + setupWebhook(), getWebhookStatus() en public API |
+| `admin.html` | + sección "Webhook del bot" en card Integraciones (oculta excepto super_admin via JS) |
+| `js/admin-profile.js` | + bindWebhookHandlers, checkWebhookStatus. Auto-mostrar card al super_admin en syncTelegramStatus |
+| `service-worker.js` | CACHE_VERSION → v20260511160000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511160000 |
+| `CLAUDE.md` | Esta sección §51 |
+
+### 51.9 Archivos INTACTOS
+
+- `firestore.rules` — sin tocar (no hace falta deploy adicional;
+  los cambios de §50 ya cubrían `telegramChatId/telegramLinkedAt/
+  telegramUserName/telegramLastUsedAt` en whitelist)
+- `js/concierge.js` — sin tocar
+- `js/admin-auth.js` — sin tocar
+
+### 51.10 Deploy manual requerido
+
+```bash
+firebase deploy --only functions:setupTelegramWebhook,functions:getTelegramWebhookStatus,functions:onChatEscalatedTelegram,functions:linkTelegramChat,functions:onChatEscalated
+```
+
+(Las 5 funciones — las 2 nuevas + las 3 existentes con cambios de §50/§51).
+
+**Cache bump**: `v20260511160000`.

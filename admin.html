@@ -2924,6 +2924,37 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                                 <i data-lucide="info"></i>
                                 Cuando un cliente solicita asesor en vivo, recibirás un push en tu Telegram con cliente + ticket.
                             </p>
+
+                            <!-- §51 — Webhook setup (super_admin only). Sin webhook configurado,
+                                 el bot no responde a /start y NADIE puede vincular su Telegram.
+                                 Eso explica los reportes de "el bot no envía alertas". -->
+                            <div id="profileTelegramWebhookCard" style="display:none;margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);">
+                                <div class="profile-integration-row" style="margin-bottom:6px;">
+                                    <div class="profile-integration-info">
+                                        <div class="profile-integration-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+                                            <i data-lucide="webhook" style="width:20px;height:20px;color:white;"></i>
+                                        </div>
+                                        <div>
+                                            <div class="profile-integration-name">Webhook del bot (Super Admin)</div>
+                                            <div class="profile-integration-status" id="profileWebhookStatus">Comprobando...</div>
+                                        </div>
+                                    </div>
+                                    <div class="profile-integration-actions">
+                                        <button type="button" class="btn btn-ghost btn-sm" id="profileWebhookCheck" data-tooltip="Comprobar estado del webhook">
+                                            <i data-lucide="refresh-cw"></i> Verificar
+                                        </button>
+                                        <button type="button" class="btn btn-primary btn-sm" id="profileWebhookSetup">
+                                            <i data-lucide="zap"></i> Configurar webhook
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="profile-field-hint" style="margin-top:6px;">
+                                    <i data-lucide="alert-triangle" style="color:var(--admin-warning,#d4a64f);"></i>
+                                    <strong>Importante:</strong> sin webhook configurado, el bot NO responde a /start
+                                    de los asesores → nadie puede vincular su Telegram → no se reciben alertas.
+                                    Click "Configurar webhook" UNA vez (después del primer deploy).
+                                </p>
+                            </div>
                         </div>
                     </section>
                 </div>

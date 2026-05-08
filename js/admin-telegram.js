@@ -113,6 +113,49 @@
         });
     }
 
+    /**
+     * §51 — setupWebhook: configura el webhook del bot via Cloud Function
+     * (super_admin only). Sin esto, el bot no responde a /start y nadie
+     * puede vincular su Telegram → onChatEscalatedTelegram nunca tiene
+     * destinatarios.
+     */
+    function setupWebhook() {
+        if (!window.functions || !window.firebase) {
+            if (AP.toast) AP.toast('Firebase Functions no cargado', 'error');
+            return Promise.reject(new Error('functions not loaded'));
+        }
+        var fn = window.functions.httpsCallable('setupTelegramWebhook');
+        return fn().then(function (result) {
+            var data = (result && result.data) || {};
+            if (data.success) {
+                if (AP.toast) AP.toast(
+                    '✓ Webhook configurado. Ahora el bot responde a /start y los asesores pueden vincular Telegram.',
+                    'success', 8000
+                );
+            } else {
+                if (AP.toast) AP.toast('Error inesperado: respuesta sin success', 'error');
+            }
+            return data;
+        }).catch(function (err) {
+            var msg = (err && err.message) || 'Error desconocido';
+            if (AP.toast) AP.toast('Error: ' + msg, 'error', 10000);
+            console.error('[Telegram] setupWebhook error:', err);
+            throw err;
+        });
+    }
+
+    /**
+     * §51 — getWebhookStatus: devuelve el estado actual del webhook.
+     * Útil para diagnóstico antes de configurar.
+     */
+    function getWebhookStatus() {
+        if (!window.functions) {
+            return Promise.reject(new Error('functions not loaded'));
+        }
+        var fn = window.functions.httpsCallable('getTelegramWebhookStatus');
+        return fn().then(function (result) { return (result && result.data) || {}; });
+    }
+
     /* ─── Public API ────────────────────────────────────────────── */
     window.AltorraAdminTelegram = {
         openLinkFlow: openLinkFlow,
@@ -120,6 +163,8 @@
         isLinked: isLinked,
         isConfigured: isConfigured,
         status: status,
+        setupWebhook: setupWebhook,           // §51 — super_admin only
+        getWebhookStatus: getWebhookStatus,   // §51 — diagnóstico
         BOT_USERNAME: BOT_USERNAME
     };
 })();

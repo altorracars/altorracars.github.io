@@ -2078,7 +2078,10 @@ async function sendTelegramAlert(uid, text, options) {
             chat_id: chatId,
             text: text,
             parse_mode: 'Markdown',
-            disable_web_page_preview: true
+            disable_web_page_preview: true,
+            // §55 — Garantizar push con sonido (no silent push).
+            // Default Telegram ya es false, lo explicitamos para defense.
+            disable_notification: false
         };
 
         // Inline keyboard si se pasa link
@@ -2214,7 +2217,28 @@ exports.onChatEscalatedTelegram = onDocumentWritten({
     // §53 — logging de diagnóstico para confirmar que el handler entró
     console.log('[onChatEscalatedTelegram] ' + eligible.length + ' asesores elegibles. Enviando alertas...');
 
-    const radicado = after.radicado || event.params.sessionId.slice(-6);
+    // §55 — Race condition fix: esperar a que onConciergeChatCreated
+    // asigne el radicado canónico (REQ-YYYYMM-XXXX) antes de enviar el
+    // push. Si el chat nace en mode='queue' directo, ambos triggers se
+    // disparan near-simultáneo y onChatEscalatedTelegram puede ganar
+    // la carrera leyendo radicado=undefined.
+    let radicado = after.radicado;
+    if (!radicado) {
+        console.log('[onChatEscalatedTelegram] radicado pendiente. Polling onConciergeChatCreated...');
+        for (let i = 0; i < 6; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            const fresh = await event.data.after.ref.get();
+            if (fresh.exists && fresh.data().radicado) {
+                radicado = fresh.data().radicado;
+                console.log('[onChatEscalatedTelegram] ✓ radicado obtenido:', radicado, '(intento', i + 1, '/6)');
+                break;
+            }
+        }
+        if (!radicado) {
+            radicado = event.params.sessionId.slice(-6);
+            console.warn('[onChatEscalatedTelegram] ⚠ radicado fallback usado tras 3s timeout. sessionId:', sessionId);
+        }
+    }
     const userName = after.userNombre || after.userEmail || 'Cliente';
     const text = '🚨 *Cliente en cola — Altorra Cars*\n\n' +
                  '👤 ' + userName + '\n' +

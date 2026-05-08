@@ -23164,3 +23164,169 @@ cambio de config de deploy + logging adicional.
   us-central1 funcional)
 
 **Cache bump**: `v20260511180000`.
+
+---
+
+## 54. ADR-054 — onChatEscalatedTelegram: trigger onWrite + logs verbosos + sin pin region (2026-05-08)
+
+> Tras §53 (pin us-central1) el push de Telegram seguía sin llegar
+> aunque la función estuvo invocándose (logs `I onchatescalatedtelegram:`
+> existían pero VACÍOS). Diagnóstico de §53 sólo cubría parte del
+> problema. §54 agrega 3 fixes coordinados.
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 54.1 Síntoma post-§53
+
+Cliente hizo nuevo escalado en incógnita. Banner mostró "Estás en la
+posición #3". Logs de Cloud Functions:
+
+```
+2026-05-08T08:43:45.315977Z I onchatescalatedtelegram:
+2026-05-08T08:43:48.629735Z I onchatescalatedtelegram:
+2026-05-08T08:49:05.286750Z I onchatescalatedtelegram:
+```
+
+3 invocaciones en timestamps que coinciden con escalados, **PERO los
+logs vienen vacíos** — sin `[onChatEscalatedTelegram] N asesores
+elegibles. Enviando alertas...` ni el warning equivalente.
+
+Eso significa: el handler arrancó pero **retornó ANTES de cualquier
+console.log/warn nuestro**.
+
+### 54.2 Causa raíz (3 problemas independientes)
+
+**1) Trigger `onUpdate` no captura `create` con mode='queue' inicial**
+
+El cliente Concierge puede crear un chat directamente con
+`mode: 'queue'` en algunos flujos (cuando ya tenía intención clara
+de hablar con asesor desde el primer mensaje). Si nace en queue,
+NO hay transición `bot → queue`, entonces el trigger `onDocumentUpdated`
+con `before.mode !== 'queue' && after.mode === 'queue'` retorna sin
+loggear.
+
+**2) Pin de región us-central1 NO resolvió cross-region IAM**
+
+§53 pineó la función a us-central1, pero el trigger Eventarc sigue
+viviendo en `southamerica-east1` (donde está la base Firestore).
+Eventarc → Cloud Run cross-region requiere IAM bindings extra que
+Firebase no aplica completamente. Las otras funciones (onChatEscalated,
+onConciergeChatCreated, etc.) tienen el mismo setup y funcionan, pero
+ese setup tiene retries y silent failures que ocultan el problema.
+
+Mejor estrategia: dejar que Firebase auto-detect la región del trigger
+(southamerica-east1) y poner el compute ahí también. Same-region
+Eventarc → Cloud Run no tiene problemas IAM.
+
+**3) Logs no estaban al inicio del handler**
+
+Mis console.log del §53 estaban DESPUÉS del guard `if (!enteredQueue)
+return;`. Si el handler retornaba en el guard, no se loggeaba nada.
+Por eso los `I` logs aparecían vacíos — la función arrancó (Cloud Run
+auto-genera el `I` con nombre de función al iniciar), pero retornó
+sin output propio.
+
+### 54.3 Solución de fondo (3 cambios coordinados)
+
+```js
+// 1) Trigger ampliado: captura CREATE + UPDATE + DELETE
+exports.onChatEscalatedTelegram = onDocumentWritten({
+    document: 'conciergeChats/{sessionId}',
+    secrets: [telegramBotToken]
+    // 2) Sin región → Firebase auto-detect southamerica-east1
+}, async (event) => {
+    // 3) Log inmediato ANTES de cualquier guard
+    console.log('[onChatEscalatedTelegram] §54 INVOKED — sessionId:', sessionId);
+
+    if (!event.data) {
+        console.warn('[onChatEscalatedTelegram] event.data is null. Skip.');
+        return;
+    }
+
+    const before = event.data.before && event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after && event.data.after.exists ? event.data.after.data() : null;
+
+    console.log('[onChatEscalatedTelegram] mode transition:', beforeMode, '→', afterMode);
+
+    if (!after) {
+        console.log('[onChatEscalatedTelegram] Doc deleted. Skip.');
+        return;
+    }
+
+    // Trigger ampliado: CREATE en queue O UPDATE bot/null → queue
+    const wasNotInQueue = !before || before.mode !== 'queue';
+    const nowInQueue = after.mode === 'queue';
+    const enteredQueue = wasNotInQueue && nowInQueue;
+    if (!enteredQueue) {
+        console.log('[onChatEscalatedTelegram] Not entering queue. Skip.');
+        return;
+    }
+    console.log('[onChatEscalatedTelegram] ✓ Chat entered queue. Processing alert...');
+    // ... resto del handler ...
+});
+```
+
+### 54.4 Pasos operacionales (cliente debe ejecutar)
+
+**1) Borrar la función actual en us-central1** (la del §53 que está
+desconectada del trigger southamerica-east1):
+```bash
+firebase functions:delete onChatEscalatedTelegram --region=us-central1 --force
+```
+Si pide confirmación, `Y`.
+
+**2) Redeployar** (Firebase auto-detecta southamerica-east1 por el
+trigger Firestore):
+```bash
+firebase deploy --only functions:onChatEscalatedTelegram
+```
+
+**3) Test E2E**:
+- Cerrar todas las incógnitas anteriores.
+- Abrir incógnita NUEVA → Concierge → "Hablar con asesor".
+- Esperar ~10s.
+- Push debería llegar.
+- Si no:
+  ```bash
+  firebase functions:log --only onChatEscalatedTelegram --lines 50
+  ```
+  Ahora SÍ se ven los logs nuevos:
+  - `[onChatEscalatedTelegram] §54 INVOKED — sessionId: ...`
+  - `[onChatEscalatedTelegram] mode transition: bot → queue`
+  - `[onChatEscalatedTelegram] ✓ Chat entered queue. Processing alert...`
+  - `[onChatEscalatedTelegram] N asesores elegibles. Enviando alertas...`
+  - `[onChatEscalatedTelegram] N/N alertas enviadas`
+
+### 54.5 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Mantener pin us-central1 sin diagnóstico real | §19 RCA — diagnostiqué que el problema era trigger condition, no región |
+| Cambiar a `onDocumentCreated` (perdería UPDATE) | `onDocumentWritten` cubre ambos casos sin perder cobertura |
+| Logs solo después de guards | Log AL INICIO sin condiciones — diagnóstico siempre disponible |
+| Asumir que `eligible.length === 0` era el problema | Logs vacíos prueban que ni siquiera llegamos al check de eligible |
+
+### 54.6 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Borrar + redeploy | Función ahora en southamerica-east1 same-region |
+| 2 | Cliente escala (chat existente bot→queue) | Push llega + logs muestran transition |
+| 3 | Cliente nuevo nace en queue | Push llega + logs muestran "(no-before) → queue" |
+| 4 | Logs muestran §54 INVOKED al inicio | Confirma código nuevo activo |
+
+### 54.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `functions/index.js onChatEscalatedTelegram` | onDocumentUpdated→onDocumentWritten + sin region + logs verbosos al inicio + handle CREATE en queue |
+| `service-worker.js` | CACHE_VERSION → v20260511190000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511190000 |
+| `CLAUDE.md` | Esta sección §54 |
+
+### 54.8 Archivos INTACTOS
+
+- Resto de funciones Telegram — sin tocar
+- `firestore.rules` — sin tocar
+
+**Cache bump**: `v20260511190000`.

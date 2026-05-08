@@ -129,9 +129,25 @@
 
         // §38 — PATH A: si existe nav-item legacy en sidebar, click programático
         // (mantiene compat con admin-sidebar.js que escucha clicks en .nav-item)
+        // §41 — IMPORTANTE: el handler legacy en admin-auth.js:1927-1946 activa la
+        // sección DOM-direct pero NO llama a notifyChange. Sin notifyChange, los
+        // subscribers (admin-topnav setActiveSection → renderSubnav) NUNCA corren.
+        // Por eso el subnav contextual (Inventario/Hub/Config) quedaba invisible.
+        // FIX: tras click() legacy, setear _currentSection + hash + notifyChange
+        // manualmente para que el sistema entero quede en sync.
         var btn = document.querySelector('.nav-item[data-section="' + section + '"]');
         if (btn && !btn.disabled) {
+            var prevA = _currentSection;
             btn.click();
+            _currentSection = section;
+            try {
+                if (!_hashUpdating) {
+                    _hashUpdating = true;
+                    window.location.hash = '#/' + section;
+                    setTimeout(function () { _hashUpdating = false; }, 100);
+                }
+            } catch (e) {}
+            notifyChange(section, prevA);
             return true;
         }
 

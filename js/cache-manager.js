@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511150000'; // §50 — Mobile cache wipe recovery via deviceId fingerprint + Telegram/FCM desde minuto 0 + banner "1 a 10 min"
+    const APP_VERSION = '20260511160000'; // §51 — Telegram bot no enviaba: webhook NO configurado. Cloud Function setupTelegramWebhook callable + botón en perfil + diagnóstico
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

@@ -485,6 +485,84 @@
             if (connectBtn) connectBtn.style.display = 'inline-flex';
             if (disconnectBtn) disconnectBtn.style.display = 'none';
         }
+
+        // §51 — Webhook section: visible solo super_admin
+        var webhookCard = $('profileTelegramWebhookCard');
+        if (webhookCard) {
+            var isSuperAdmin = profile.rol === 'super_admin';
+            webhookCard.style.display = isSuperAdmin ? '' : 'none';
+            if (isSuperAdmin) {
+                bindWebhookHandlers();
+                // Auto-check status al cargar perfil (best-effort, callable falla
+                // silenciosamente si secret no seteado o functions no desplegadas).
+                checkWebhookStatus();
+            }
+        }
+    }
+
+    /* §51 — Telegram webhook setup (super_admin only) */
+    function bindWebhookHandlers() {
+        var setupBtn = $('profileWebhookSetup');
+        var checkBtn = $('profileWebhookCheck');
+        if (setupBtn && !setupBtn._wired) {
+            setupBtn._wired = true;
+            setupBtn.addEventListener('click', function () {
+                if (!confirm('Configurar el webhook del bot Telegram apuntando a Cloud Functions. ¿Proceder?\n\nEsto se hace UNA vez por instalación. Sin webhook el bot no responde a /start.')) return;
+                setupBtn.disabled = true;
+                setupBtn.innerHTML = '<i data-lucide="loader-2"></i> Configurando...';
+                if (window.AltorraAdminTelegram && window.AltorraAdminTelegram.setupWebhook) {
+                    window.AltorraAdminTelegram.setupWebhook().then(function () {
+                        setupBtn.disabled = false;
+                        setupBtn.innerHTML = '<i data-lucide="zap"></i> Configurar webhook';
+                        checkWebhookStatus();
+                    }).catch(function () {
+                        setupBtn.disabled = false;
+                        setupBtn.innerHTML = '<i data-lucide="zap"></i> Configurar webhook';
+                    });
+                }
+            });
+        }
+        if (checkBtn && !checkBtn._wired) {
+            checkBtn._wired = true;
+            checkBtn.addEventListener('click', function () {
+                checkBtn.disabled = true;
+                checkBtn.innerHTML = '<i data-lucide="loader-2"></i>';
+                checkWebhookStatus().finally(function () {
+                    checkBtn.disabled = false;
+                    checkBtn.innerHTML = '<i data-lucide="refresh-cw"></i> Verificar';
+                });
+            });
+        }
+    }
+
+    function checkWebhookStatus() {
+        var statusEl = $('profileWebhookStatus');
+        if (!statusEl) return Promise.resolve();
+        if (!window.AltorraAdminTelegram || !window.AltorraAdminTelegram.getWebhookStatus) {
+            statusEl.textContent = 'Módulo Telegram no cargado';
+            return Promise.resolve();
+        }
+        statusEl.innerHTML = '<span style="color:rgba(255,255,255,0.55);">Comprobando…</span>';
+        return window.AltorraAdminTelegram.getWebhookStatus().then(function (info) {
+            if (!info.configured) {
+                statusEl.innerHTML = '<span style="color:#ef4444;">✗ NO configurado</span>' +
+                    (info.reason ? ' · <small style="color:rgba(255,255,255,0.55);">' + escapeHTML(info.reason) + '</small>' : '');
+            } else if (info.isExpected) {
+                var pending = info.pendingUpdateCount || 0;
+                var msg = '<span style="color:#4ade80;">✓ Activo</span>';
+                if (pending > 0) msg += ' · <small style="color:#f59e0b;">' + pending + ' updates pending</small>';
+                if (info.lastErrorMessage) {
+                    msg += ' · <small style="color:#ef4444;">Último error: ' + escapeHTML(info.lastErrorMessage) + '</small>';
+                }
+                statusEl.innerHTML = msg;
+            } else {
+                statusEl.innerHTML = '<span style="color:#f59e0b;">⚠ URL incorrecta</span>' +
+                    ' · <small style="color:rgba(255,255,255,0.55);">' + escapeHTML(info.url) + '</small>';
+            }
+        }).catch(function (err) {
+            var msg = (err && err.message) || 'Error';
+            statusEl.innerHTML = '<span style="color:#ef4444;">✗ Error: ' + escapeHTML(msg) + '</span>';
+        });
     }
 
     function init() {

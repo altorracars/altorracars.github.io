@@ -58,54 +58,16 @@
         return map;
     })();
 
-    /* §36.3 — Render subnav contextual según la sección activa.
-       Si la sección pertenece a un grupo (inventario/hub/config),
-       se muestran las pestañas internas. Sino, subnav se oculta. */
+    /* §42 — DEPRECATED. El subnav contextual flotante fue reemplazado
+       por tabs internos inyectados por js/admin-group-tabs.js DENTRO
+       de cada sección, replicando el patrón visual de .crm-tabstrip.
+       Esta función queda como no-op por compat. SECTION_TO_GROUP y
+       SUBNAV_GROUPS arriba se mantienen porque setActiveSection los
+       usa para marcar el tab grupo activo en el topnav (NO para
+       renderizar subnav, eso ahora lo hace admin-group-tabs.js).
+       El elemento <nav id="atnSubnav"> ya no existe en el HTML. */
     function renderSubnav(activeSection) {
-        if (!subnavEl) {
-            subnavEl = $('atnSubnav');
-            subnavTabsEl = $('atnSubnavTabs');
-        }
-        if (!subnavEl || !subnavTabsEl) return;
-
-        var group = SECTION_TO_GROUP[activeSection];
-        if (!group || !SUBNAV_GROUPS[group]) {
-            subnavEl.hidden = true;
-            _lastRenderedGroup = null;
-            return;
-        }
-
-        // Solo re-renderizar si cambió de grupo (perf)
-        if (_lastRenderedGroup !== group) {
-            var html = '';
-            SUBNAV_GROUPS[group].forEach(function (item) {
-                html += '<button class="atn-subnav-tab" data-atn-section="' + item.section + '" role="tab">'
-                     +    '<i data-lucide="' + item.icon + '"></i>'
-                     +    '<span>' + item.label + '</span>'
-                     + '</button>';
-            });
-            subnavTabsEl.innerHTML = html;
-            _lastRenderedGroup = group;
-            if (window.AltorraIcons) window.AltorraIcons.refresh(subnavEl);
-        }
-
-        // Marcar activo (cada vez, ya sea grupo nuevo o cambio interno)
-        subnavTabsEl.querySelectorAll('.atn-subnav-tab').forEach(function (btn) {
-            var isActive = btn.getAttribute('data-atn-section') === activeSection;
-            btn.classList.toggle('is-active', isActive);
-            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        });
-        subnavEl.hidden = false;
-
-        // Centrar tab activo en mobile
-        if (window.innerWidth < 720) {
-            var activeBtn = subnavTabsEl.querySelector('.atn-subnav-tab.is-active');
-            if (activeBtn && activeBtn.scrollIntoView) {
-                try {
-                    activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                } catch (e) {}
-            }
-        }
+        // No-op intencional. Subnav legacy eliminado en §42.
     }
 
     /* User menu posicionado dinámicamente alineado a la derecha del chip */

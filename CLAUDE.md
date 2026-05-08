@@ -20111,3 +20111,184 @@ cleanup masivo de admin-auth.js en una sesión dedicada.
 | 14 | DevTools console | Cero errores rojos, cero warnings nuevos |
 
 **Cache bump**: `v20260511020000`.
+
+---
+
+## 42. ADR-042 — Tabs por grupo replicando patrón CRM (Inventario/Hub/Config) (2026-05-08)
+
+> Cliente reportó tras §41 mostrando capturas de Vehículos y CRM:
+> "Siguen sin aparecer los subnavs como ves en la captura. Deberias
+> tratarlo como esta en CRM, si te das cuenta el CRM si tiene
+> subnavs que son contactos y ventas, bandeja y pipeline asi
+> deberia ser con todos los que tienen subnavs".
+>
+> El usuario pide consistencia visual: **el patrón CRM tabs internos
+> es el correcto**, no un nav flotante separado. Aplicado bajo
+> doctrina IAP §37.
+
+### 42.1 Cambio de paradigma
+
+**Antes** (§36.3 → §41): un `<nav id="atnSubnav">` flotante en
+`<main>` con `position: sticky; top: 0`. Múltiples bugs:
+- Stacking contexts atrapaban el nav
+- §41 fix de notifyChange ayudó pero el cliente sigue sin verlo en su browser (cache stale o porque PR aún no merged a main)
+- Estilo distinto al patrón CRM → inconsistencia visual
+
+**Ahora** (§42): inyección runtime de un `.section-tabstrip` al
+INICIO de cada sección activa que pertenezca a un grupo. Estilo
+**idéntico** al `.crm-tabstrip` que ya existe en sec-crm. Visualmente
+los usuarios verán tabs internas consistentes en CRM, Inventario,
+Hub y Config.
+
+### 42.2 Implementación
+
+#### A. `js/admin-group-tabs.js` (NUEVO ~180 líneas)
+
+API pública `window.AltorraGroupTabs`:
+```js
+{
+    groups: GROUPS,                 // metadata (debug)
+    applyToSection(sectionId),      // forzar inyección/update en una sección
+    preInjectAll()                  // forzar pre-inyección en todas
+}
+```
+
+GROUPS map (3 grupos, 13 secciones):
+
+| Grupo | Color | Secciones |
+|---|---|---|
+| inventario | gold | vehicles, brands, dealers, banners, reviews |
+| hub | green | concierge, kb, unmatched |
+| config | neutral | users, lists, workflows, audit, settings |
+
+Lógica:
+1. Al init, **pre-inyecta** el tabstrip en TODAS las 13 secciones
+2. Suscribe a `AltorraSections.onChange` → al activar una sección,
+   actualiza el `is-active` del tab correspondiente
+3. Click delegado en `[data-section-tab]` → `AltorraSections.go(X)`
+4. Idempotencia: si la sección ya tiene tabstrip del grupo correcto,
+   solo actualiza el `is-active`, no re-inyecta
+
+#### B. CSS en `admin-perf-kill.css` (~80 líneas append)
+
+`.section-tabstrip` y `.section-tab` con estilo IDÉNTICO al
+`.crm-tabstrip`/`.crm-tab` existente (verificado en `admin.css:8073-8137`):
+- Tabs como pills con `border-radius: 12px 12px 0 0`
+- Active state: bg tinted (alpha 10%) + color del workspace + accent line 2px abajo
+- Hover non-active: bg blanco 4% + color blanco 85%
+- Mobile <720px: ocultar labels, solo iconos
+
+Override por `data-group-color`:
+- `gold` (default) — dorado `#d4ad6e` / accent `#b89658`
+- `green` — verde `#4ade80`
+- `neutral` — blanco/gris
+
+#### C. Eliminado del HTML
+
+`<nav class="atn-subnav" id="atnSubnav">` removido de admin.html
+(líneas 601-607). Comentario explicativo del reemplazo en su lugar.
+
+#### D. Modificado `js/admin-topnav.js`
+
+`renderSubnav()` convertido en no-op (8 líneas vs 50). `SUBNAV_GROUPS`
+y `SECTION_TO_GROUP` se mantienen porque `setActiveSection` los usa
+para marcar el tab GRUPO del TOPNAV como activo (Inventario/Hub/Config).
+
+`wireTabs()` ya tenía guard `if (subnavEl)` → si no existe el elemento,
+no se registra listener. Sin cambios.
+
+### 42.3 Flujo end-to-end
+
+1. Page load → `admin-section-router.js` init → `admin-topnav.js` init
+   → `admin-group-tabs.js` init
+2. `admin-group-tabs.preInjectAll()` inyecta tabstrip en las 13 secciones
+3. Usuario click "Inventario" en topnav
+4. `AltorraSections.go('vehicles')` (PATH A → notifyChange §41)
+5. `setActiveSection` en admin-topnav.js marca tab "Inventario" activo
+6. Subscriber de admin-group-tabs.js actualiza `is-active` en
+   `.section-tab[data-section-tab="vehicles"]` dentro de sec-vehicles
+7. sec-vehicles aparece visualmente con tabstrip arriba mostrando:
+   `[● Vehículos · Marcas · Aliados · Banners · Reseñas]`
+8. Click en tab "Marcas" → `AltorraSections.go('brands')` → repite
+
+### 42.4 Pre-inyección — por qué importante
+
+Si solo inyectáramos cuando la sección se activa, habría flicker al
+primer paint de cada sección. La pre-inyección al init garantiza que
+las tabs ya estén renderizadas antes de que el usuario navegue. Costo:
+mínimo (13 inserciones de ~200 chars c/u + 1 `lucide.createIcons()`).
+
+### 42.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Ctrl+Shift+R en admin (forzar invalidación cache) | SW v20260511030000 activa, JS nuevo carga |
+| 2 | Click "Inventario" en topnav → sec-vehicles | Aparece tabstrip arriba: `[Vehículos · Marcas · Aliados · Banners · Reseñas]` con "Vehículos" activo dorado |
+| 3 | Click tab "Marcas" en tabstrip | sec-brands activo, "Marcas" marcado dorado, "Vehículos" desmarcado |
+| 4 | Click tab "Aliados" | sec-dealers, "Aliados" activo |
+| 5 | Click "Hub" en topnav | sec-concierge + tabstrip verde con `[ALTOR Hub · Cerebro AI · Lo que no entendí]` |
+| 6 | Click "Cerebro AI" en tabstrip | sec-kb, "Cerebro AI" activo verde |
+| 7 | Click "Config" en topnav | sec-users + tabstrip neutral con `[Usuarios · Atributos · Workflows · Auditoría · Ajustes]` |
+| 8 | Click "Auditoría" en tabstrip | sec-audit, "Auditoría" activo blanco |
+| 9 | Click "Inicio" en topnav | sec-dashboard SIN tabstrip arriba (no es grupo) |
+| 10 | Click "CRM" en topnav | sec-crm con TABS CRM PROPIOS [Contactos & Ventas · Bandeja · Pipeline] (estilo idéntico) |
+| 11 | Click "Agenda" en topnav | sec-calendar con TABS calendar propios [Mes · Día · Disponibilidad · Festivos] (estilo idéntico) |
+| 12 | Click "Reportes" en topnav | sec-reports SIN tabstrip arriba |
+| 13 | F5 estando en sec-brands (`#/brands`) | Vuelve a sec-brands con tab "Marcas" activo en tabstrip |
+| 14 | Mobile <720px en sec-vehicles | Tabstrip muestra solo iconos sin labels |
+| 15 | DevTools console | Cero errores rojos, cero warnings nuevos |
+| 16 | DevTools `AltorraGroupTabs.applyToSection('brands')` | Re-inyecta o actualiza tabstrip en sec-brands |
+
+### 42.6 Doctrina aplicada
+
+§17.12: cero MutationObserver subtree:true. Solo listener de click
+delegado en `document` (filtra por `data-section-tab`).
+
+§35: cero pointermove, transition:all, backdrop-filter en cards.
+Transitions específicas (background-color, color) con duración 0.18s.
+
+§19 RCA estricto:
+1. Escaneo: confirmé que `.crm-tabstrip` es el patrón que el usuario
+   quiere replicar (cliente lo dijo explícitamente)
+2. Validación: leí el CSS exacto de `.crm-tab` para replicarlo fiel
+3. Reporte: IAP §37 con 5 secciones entregado antes del cambio
+4. Solución: nuevo módulo + CSS + cleanup, no parche al subnav viejo
+
+§37 IAP:
+- Archivos modificados: 5 (1 nuevo, 4 ediciones)
+- Archivos intactos: 8+ (admin-section-router, admin-auth, etc.)
+- Código muerto: SUBNAV_GROUPS sigue (usado en setActiveSection),
+  CSS `.atn-subnav*` queda como deuda (no usado pero tampoco daña)
+- Riesgos identificados + mitigaciones documentadas
+
+### 42.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-group-tabs.js` | NUEVO ~180 líneas (GROUPS map + injection runtime + click delegation) |
+| `css/admin-perf-kill.css` | +90 líneas `.section-tabstrip` + `.section-tab` + variantes por color |
+| `admin.html:601-607` | Eliminado `<nav id="atnSubnav">`. Comentario explicativo en su lugar |
+| `admin.html:3320` | Carga de `js/admin-group-tabs.js` tras admin-topnav.js |
+| `js/admin-topnav.js:61-109` | `renderSubnav()` reducido de 50 líneas a 8 (no-op) |
+| `service-worker.js` | CACHE_VERSION → v20260511030000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511030000 |
+| `CLAUDE.md` | Esta sección §42 |
+
+### 42.8 Archivos INTACTOS (afirmación)
+
+- `js/admin-section-router.js` — fix §41 (notifyChange en PATH A) sigue válido
+- `js/admin-auth.js` — handler legacy sin tocar
+- `js/admin-sidebar.js` — sin tocar
+- `js/admin-crm-tabs.js` — sigue manejando los tabs internos REALES de sec-crm
+- `js/admin-cal-tabs.js` — idem para sec-calendar
+- `css/admin-topnav.css` — sin tocar (estilos de `.atn-subnav` quedan sin uso pero no rompen nada)
+
+### 42.9 Deuda técnica documentada
+
+- CSS `.atn-subnav*` en `admin-topnav.css` (líneas ~1062-1162) ya no
+  se usa. Eliminar en futura sesión de cleanup masivo de CSS legacy.
+- `SUBNAV_GROUPS` y `SECTION_TO_GROUP` en `admin-topnav.js` están
+  duplicados con `GROUPS`/`SECTION_TO_GROUP` en `admin-group-tabs.js`.
+  Refactor futuro: consolidar en un solo módulo.
+
+**Cache bump**: `v20260511030000`.

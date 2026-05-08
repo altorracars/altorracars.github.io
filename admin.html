@@ -598,13 +598,9 @@
     <!-- MAIN CONTENT -->
     <main class="main-content">
 
-        <!-- §38 — SUBNAV contextual DENTRO del main (sticky-top del scroll;
-             tabs internas de cada grupo: Inventario/Hub/Config) -->
-        <nav class="atn-subnav" id="atnSubnav" aria-label="Navegación contextual" hidden>
-            <div class="atn-subnav-inner">
-                <div class="atn-subnav-tabs" id="atnSubnavTabs" role="tablist"></div>
-            </div>
-        </nav>
+        <!-- §42 — Subnav legacy eliminado. Las tabs por grupo ahora se
+             inyectan DENTRO de cada sección via js/admin-group-tabs.js
+             (replica del patrón .crm-tabstrip de CRM para consistencia). -->
 
         <!-- DASHBOARD -->
         <div id="sec-dashboard" class="section active">
@@ -3320,6 +3316,11 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-section-router.js" defer></script>
 <!-- §36 ADR-036 — Top Nav (debe cargar tras section-router para suscribirse) -->
 <script src="js/admin-topnav.js" defer></script>
+<!-- §42 ADR-042 — Group Tabs: inyecta tabstrip DENTRO de cada sección activa
+     que pertenece a un grupo (Inventario/Hub/Config). Replica visual del
+     patrón .crm-tabstrip de CRM para consistencia de UX. Carga tras
+     admin-section-router.js para suscribirse a section changes. -->
+<script src="js/admin-group-tabs.js" defer></script>
 <!-- §36.1 — Mi Perfil (avatar upload + cargo + cédula one-time-edit) -->
 <script src="js/admin-profile.js" defer></script>
 <script src="js/admin-activity-feed.js" defer></script>

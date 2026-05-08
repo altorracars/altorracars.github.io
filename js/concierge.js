@@ -2054,6 +2054,12 @@
 
                 if (isClientFinalized) {
                     // §57 — UI nueva: cliente finalizó. Botones Descargar + Cerrar.
+                    // §57.bis — usar data-action para que el handler delegado en
+                    // panel.click (línea ~1766) funcione independientemente de
+                    // cuántas veces se re-renderice este block. Sin esto,
+                    // applyClosedState invocado 2 veces (una de markSessionFinalized
+                    // y otra del listener parent Firestore) podía dejar los
+                    // listeners directos sin handlers vinculados.
                     closedBlock.innerHTML =
                         '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
                         '<div class="cnc-closed-title">Chat finalizado</div>' +
@@ -2062,10 +2068,10 @@
                             ? '<div class="cnc-closed-radicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
                             : '') +
                         '<div class="cnc-closed-actions">' +
-                            '<button class="cnc-closed-action cnc-closed-action--secondary" id="cncDownloadBtn" type="button">' +
+                            '<button class="cnc-closed-action cnc-closed-action--secondary" id="cncDownloadBtn" type="button" data-action="download-conversation">' +
                                 '<i data-lucide="download"></i><span>Descargar conversación</span>' +
                             '</button>' +
-                            '<button class="cnc-closed-action cnc-closed-action--primary" id="cncFinalCloseBtn" type="button">' +
+                            '<button class="cnc-closed-action cnc-closed-action--primary" id="cncFinalCloseBtn" type="button" data-action="final-close">' +
                                 '<i data-lucide="x"></i><span>Cerrar chat</span>' +
                             '</button>' +
                         '</div>';
@@ -2078,7 +2084,7 @@
                         (radicadoTxt
                             ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
                             : '') +
-                        '<button class="cnc-closed-cta" id="cncResetSessionBtn">' +
+                        '<button class="cnc-closed-cta" id="cncResetSessionBtn" data-action="reset-session-from-closed">' +
                             '<i data-lucide="refresh-cw"></i> Iniciar nueva conversación' +
                         '</button>';
                 }
@@ -2087,16 +2093,10 @@
                 if (window.AltorraIcons && window.AltorraIcons.refresh) {
                     window.AltorraIcons.refresh(closedBlock);
                 }
-                // Wire handlers según variant
-                if (isClientFinalized) {
-                    var dlBtn = document.getElementById('cncDownloadBtn');
-                    if (dlBtn) dlBtn.addEventListener('click', downloadConversationPDF);
-                    var fcBtn = document.getElementById('cncFinalCloseBtn');
-                    if (fcBtn) fcBtn.addEventListener('click', finalCloseAndCleanup);
-                } else {
-                    var resetBtn = document.getElementById('cncResetSessionBtn');
-                    if (resetBtn) resetBtn.addEventListener('click', resetSession);
-                }
+                // §57.bis — handlers via data-action delegation (panel.click).
+                // No bindeamos addEventListener directo aquí: los re-renders
+                // del block hacían perder los listeners. Toda acción del
+                // closed-block pasa por handleAction() ahora.
             } else {
                 // Re-render del radicado por si cambió tras un reload
                 var radEl = document.getElementById('cncClosedRadicado');
@@ -2294,6 +2294,7 @@
      * No se ejecuta resetSession automático.
      */
     function finalCloseAndCleanup() {
+        console.log('[Concierge] finalCloseAndCleanup() invoked');
         cancelChatListeners();
 
         // Limpiar localStorage
@@ -2536,6 +2537,23 @@
             case 'open-modal-financiacion':
                 close();
                 if (window.openModal) window.openModal('financiacionModal');
+                break;
+            // §57.bis — botones del cnc-closed-block (cliente finalizó chat).
+            // Migrado de addEventListener directo a data-action delegation
+            // para que sobrevivan re-renders del block.
+            case 'download-conversation':
+                console.log('[Concierge] download-conversation action triggered');
+                downloadConversationPDF();
+                break;
+            case 'final-close':
+                console.log('[Concierge] final-close action triggered');
+                finalCloseAndCleanup();
+                break;
+            case 'reset-session-from-closed':
+                // Botón "Iniciar nueva conversación" del block legacy
+                // (cuando el admin cerró el chat, no el cliente)
+                console.log('[Concierge] reset-session-from-closed action triggered');
+                resetSession();
                 break;
         }
     }

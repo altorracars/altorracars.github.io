@@ -23792,3 +23792,131 @@ con CSS `@media print` y `@page { margin: 1cm }`. El usuario elige
 
 **Cache bump**: `v20260511220000`.
 
+---
+
+## 57.bis ADR-057.bis — Fix botón "Cerrar chat" no respondía (event delegation) (2026-05-08)
+
+> Cliente reportó tras §57: la pantalla "Chat finalizado" aparece OK,
+> el botón "Descargar conversación" funciona, PERO el botón "Cerrar
+> chat" NO hace nada al click. Al refresh forzado, recién entonces
+> el panel se limpia.
+>
+> Aplicado bajo RCA estricto §19.
+
+### 57.bis.1 Causa raíz
+
+`applyClosedState()` se invoca DOS VECES después de `markSessionFinalized()`:
+
+1. **Primera invocación** desde `markSessionFinalized` directamente
+   → crea `cncClosedBlock` con `addEventListener('click')` directo
+   sobre `cncFinalCloseBtn` apuntando a `finalCloseAndCleanup`.
+2. **Segunda invocación** desde el listener parent de Firestore
+   (`_firestoreParentUnsub`) que aunque se canceló en
+   `cancelChatListeners()`, recibió el snapshot del cierre antes
+   de que `cancelChatListeners()` corriera (race condition entre
+   `markChatClosedInFirestore` async y el listener activo).
+
+En la segunda invocación:
+- `closedBlock` ya existe en el DOM
+- Mi check `data-variant` lo elimina y re-crea (porque entró por
+  otro path)
+- O entra al `else` (línea 2100) que NO bindea listeners de nuevo
+
+Resultado: los listeners directos del primer render se pierden o
+quedan apuntando a un nodo eliminado. El botón "Cerrar chat"
+visualmente funciona (cambia hover) pero el click no dispara nada.
+
+El botón "Descargar" sí funcionaba porque su listener se bindeaba
+al mismo nodo y posiblemente sobrevivió a ese ciclo (aleatorio).
+
+### 57.bis.2 Solución de fondo — Event Delegation
+
+Migrar `addEventListener('click')` directo de los botones a
+**delegation desde `panel`** usando el mismo patrón que ya existe
+para `[data-action]` (línea 1788).
+
+**Ventaja crítica**: el listener vive en el `panel` (que NO se
+re-crea). Sin importar cuántas veces el `closedBlock` interno se
+re-renderice, el handler delegado siempre captura el click via
+`e.target.closest('[data-action]')`.
+
+**Cambios**:
+
+```html
+<!-- ANTES (frágil) -->
+<button id="cncDownloadBtn">...</button>
+<button id="cncFinalCloseBtn">...</button>
+
+// + addEventListener directo (se perdía con re-renders)
+```
+
+```html
+<!-- AHORA (robusto) -->
+<button id="cncDownloadBtn" data-action="download-conversation">...</button>
+<button id="cncFinalCloseBtn" data-action="final-close">...</button>
+
+// Sin addEventListener directo. Listener delegado en panel.click
+// despacha por data-action.
+```
+
+3 nuevos cases en `handleAction()`:
+- `download-conversation` → `downloadConversationPDF()`
+- `final-close` → `finalCloseAndCleanup()`
+- `reset-session-from-closed` → `resetSession()` (botón legacy admin)
+
+Cada uno con `console.log` al inicio para diagnóstico futuro.
+
+### 57.bis.3 Logs adicionales
+
+`finalCloseAndCleanup()` ahora tiene
+`console.log('[Concierge] finalCloseAndCleanup() invoked')` al
+inicio. Si en el futuro el botón vuelve a no responder, el log
+en consola confirma si se invoca o no.
+
+### 57.bis.4 Anti-patterns evitados (lección aprendida)
+
+| Patrón frágil | Causa raíz | Mitigación |
+|---|---|---|
+| `addEventListener` directo en elementos que pueden re-renderizar | Si el elemento se elimina/re-crea, el listener desaparece | Event delegation en padre estable |
+| Confiar en que `cancelChatListeners()` pre-write evita race | El listener Firestore puede tener snapshot pendiente que se procesa después del cancel | Listeners delegados que no dependen del estado del cancel |
+| Bindear handlers SOLO en el branch `if (!closedBlock)` | El branch `else` (block ya existe) no rebindea | Delegation funciona en todos los branches sin código extra |
+
+### 57.bis.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente conversa, click ⋮ → Finalizar conversación | Pantalla "Chat finalizado" con 2 botones |
+| 2 | Click "Descargar conversación" | Sigue funcionando (delegation lo captura igual) |
+| 3 | Click "Cerrar chat" | DOM se limpia INMEDIATAMENTE + panel cierra |
+| 4 | Click X del header (estando en estado finalizado) | Idem (closeOrFinalize llama a finalCloseAndCleanup) |
+| 5 | DevTools console | `[Concierge] final-close action triggered` + `[Concierge] finalCloseAndCleanup() invoked` |
+| 6 | Volver a abrir el panel | Welcome bubble del bot fresco |
+
+### 57.bis.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/concierge.js applyClosedState` | Botones del closed-block usan `data-action` en lugar de IDs únicos. Eliminados addEventListener directos |
+| `js/concierge.js handleAction` | 3 cases nuevos: download-conversation, final-close, reset-session-from-closed (con console.log) |
+| `js/concierge.js finalCloseAndCleanup` | console.log al inicio para diagnóstico futuro |
+| `service-worker.js` | CACHE_VERSION → v20260511230000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511230000 |
+| `CLAUDE.md` | Esta sección §57.bis |
+
+### 57.bis.7 Doctrina aplicada
+
+§19 RCA estricto: identifiqué que los 2 botones tenían el mismo
+wiring pero solo uno respondía. La asimetría confirmó que NO era
+un problema de código de la función sino del binding. Investigué
+re-renders posibles (applyClosedState llamado 2 veces) y migré a
+event delegation que sobrevive a cualquier re-render.
+
+§37 IAP: análisis previo identificó que la solución de fondo era
+event delegation, NO agregar try/catch o más logs sin tocar el
+mecanismo de binding.
+
+§17.12 (anti-MutationObserver): cero observers nuevos. Solo
+delegation pura via `closest()`.
+
+**Cache bump**: `v20260511230000`.
+

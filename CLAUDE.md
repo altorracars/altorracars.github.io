@@ -24277,3 +24277,159 @@ de inline styles + escritura adicional a Firestore.
 
 **Cache bump**: `v20260511250000`.
 
+---
+
+## 57.quint ADR-057.quint — Helper unificado cleanSessionAndRender (2026-05-08)
+
+> Cliente reportó tras §57.quat dos bugs específicos en el flow
+> de cierre/reset del Concierge:
+>
+> 1. **Bug A** (cliente "Cerrar chat"): cierra panel → reabre FAB →
+>    aparece la **vieja conversación**, no se limpia.
+> 2. **Bug B** (admin cierra → cliente "Iniciar nueva conversación"):
+>    click no hace nada visible, queda en pantalla "Esta conversación
+>    ha finalizado" hasta refresh forzado.
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 57.quint.1 Causa raíz común
+
+**Existían 2 implementaciones divergentes** de cleanup de sesión:
+
+- `finalCloseAndCleanup()` (cliente click "Cerrar chat"): cerraba
+  panel + cleanup parcial. **NO** llamaba `renderMessages()` ni
+  `applyClosedState()`. Confiaba en que `open()` se ejecutara después
+  para re-renderizar.
+
+- `resetSession()` (cliente click "Iniciar nueva conversación" tras
+  admin close): cleanup + render via `continueResetUI()` con orden
+  específico, pero llamaba `loadSession()` que podía retornar estado
+  residual si `localStorage.removeItem` fallaba silenciosamente.
+
+Ambos tenían sutiles diferencias que producían estados inconsistentes:
+
+- **Bug A**: `finalCloseAndCleanup` no renderizaba welcome → al
+  reabrir, `open()` llamaba `renderMessages` con `session.messages`
+  cached en memoria del closure si `loadSession` falló.
+- **Bug B**: `resetSession` con `continueResetUI` async vía promise
+  podía no completar si `loadProfileFromAuth` rechazaba antes de la
+  fix §26.7 BUG A.
+
+### 57.quint.2 Solución de fondo — Helper unificado
+
+**Extraer la lógica de cleanup a UNA función única** `cleanSessionAndRender()`
+que garantiza:
+
+```js
+function cleanSessionAndRender() {
+    // 1. Cancelar listeners ANTES de cualquier write
+    cancelChatListeners();
+
+    // 2. Limpiar localStorage CON VERIFICACIÓN (no silenciar fail)
+    localStorage.removeItem(STORAGE_KEY);
+    if (localStorage.getItem(STORAGE_KEY)) {
+        // Forzar otra vez si por algún motivo no se eliminó
+        localStorage.removeItem(STORAGE_KEY);
+    }
+
+    // 3. Reset refs internas
+    _chatDocCreated = false;
+    _lastSyncedMsgIds = {};
+    _leadCreated = false;
+    _asesorJoinedAnnounced = false;
+
+    // 4. Crear sesión limpia EXPLÍCITAMENTE (no via loadSession
+    //    que podría leer estado residual del localStorage)
+    session = {
+        sessionId: 'cnc_' + new ID,
+        mode: 'bot',
+        messages: [],
+        closed: false,
+        closedReason: null,
+        // ... resto de campos default ...
+    };
+    saveSession(session);
+
+    // 5. Limpiar DOM completo (msgs, closedBlock, queue banner, SLA, etc.)
+
+    // 6. Re-render UI states (orden: closed → gate → header → mensajes)
+    applyClosedState();      // session.closed=false → restaura input
+    applyGateVisibility();    // gate según session.gateCompleted
+    applyAsesorHeader();      // header reset a ALTOR
+    renderMessages();         // welcome bubble (session.messages=[])
+}
+```
+
+**Ambos flows ahora reusan este helper**:
+
+- `finalCloseAndCleanup()`: forced inline styles para cerrar panel +
+  `cleanSessionAndRender()` + setTimeout restore inline styles.
+- `resetSession(opts)`: snapshot preserved profile (caso anónimo) +
+  `cleanSessionAndRender()` + re-aplicar profile auth/preserved +
+  `showResetToast()`.
+
+### 57.quint.3 Fixes específicos por bug
+
+**Bug A — Sesión nueva explícita garantizada**:
+
+Antes:
+```js
+session = loadSession();  // podía leer estado residual si removeItem falló
+```
+
+Ahora:
+```js
+session = { sessionId: 'cnc_' + new, messages: [], closed: false, ... };
+saveSession(session);  // garantiza nueva en localStorage
+```
+
+**Bug B — render del welcome inmediato**:
+
+Antes el `resetSession` esperaba a `loadProfileFromAuth().then()`
+para llamar `continueResetUI()` que rendereaba el welcome. Si la
+promise se demoraba o rechazaba, el render se posponía.
+
+Ahora `cleanSessionAndRender()` se ejecuta **sincrónicamente**
+ANTES de la promise. El welcome se renderiza inmediatamente. Si
+luego llega el profile del auth, solo se re-aplica `applyGateVisibility()`
+para mostrar/ocultar el gate según el profile.
+
+### 57.quint.4 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| 2 implementaciones divergentes de cleanup | Helper unificado `cleanSessionAndRender()` |
+| `loadSession()` puede leer estado residual | Crear sesión limpia EXPLÍCITAMENTE con object literal |
+| Render dependiente de promise async | Render sincronicamente ANTES del profile load |
+| `localStorage.removeItem` failure silenciado | Verificación explícita + retry si no se eliminó |
+
+### 57.quint.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente conversa → ⋮ Finalizar → Cerrar chat → reabre FAB | **Welcome bubble del bot fresco** (no la conversación vieja) ✅ |
+| 2 | Admin cierra el chat → cliente ve "Esta conversación ha finalizado" → click "Iniciar nueva conversación" | **Welcome bubble fresco INMEDIATO** (sin refresh) ✅ |
+| 3 | DevTools console (cliente, al reset) | `[Concierge] §57.quint clean session created: cnc_xyz` + `UI re-rendered with welcome bubble` |
+
+### 57.quint.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/concierge.js` | Nueva función `cleanSessionAndRender()`. `finalCloseAndCleanup()` simplificada usa el helper. `resetSession()` simplificada usa el helper. `showResetToast()` extraída del antiguo `continueResetUI`. Eliminado todo el código duplicado de cleanup. |
+| `service-worker.js` | CACHE_VERSION → v20260511260000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511260000 |
+| `CLAUDE.md` | Esta sección §57.quint |
+
+### 57.quint.7 Doctrina aplicada
+
+§19 RCA: identifiqué que la causa raíz era código duplicado divergente.
+La solución no era patch local sino unificación.
+
+§37 IAP: análisis previo detectó que ambos bugs tenían el mismo
+problema subyacente.
+
+§17 (Performance): cero MutationObserver, cero pointermove. Solo
+refactor de funciones existentes.
+
+**Cache bump**: `v20260511260000`.
+

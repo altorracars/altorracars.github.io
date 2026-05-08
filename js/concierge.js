@@ -2293,39 +2293,64 @@
      * Próxima apertura del panel = welcome bubble del bot fresco.
      * No se ejecuta resetSession automático.
      */
-    function finalCloseAndCleanup() {
-        console.log('[Concierge] §57.ter finalCloseAndCleanup() START');
-        var panel = document.getElementById('altorra-concierge');
-
-        // §57.ter — CIERRE FORZADO INMEDIATO antes de cualquier cleanup.
-        // Si el cleanup falla por alguna razón, al menos el panel está
-        // oculto visualmente. Después restauramos los estilos inline
-        // para que el próximo open() pueda animar correctamente.
-        if (panel) {
-            // Quitar la clase open
-            panel.classList.remove('cnc-open');
-            panel.setAttribute('aria-hidden', 'true');
-            // Forzar estilos inline (defense-in-depth contra CSS overrides)
-            panel.style.transition = 'none';
-            panel.style.opacity = '0';
-            panel.style.transform = 'scale(0.06) translate(40px, 40px)';
-            panel.style.pointerEvents = 'none';
-            console.log('[Concierge] panel forced hidden inline');
-        }
-        _isOpen = false;
-
+    /**
+     * §57.quint — Helper unificado de limpieza + render del welcome.
+     * Garantiza que la sesión queda 100% limpia con DOM listo para
+     * mostrar el welcome bubble. Usado por:
+     *   - finalCloseAndCleanup (cliente "Cerrar chat") — adicional cierra panel
+     *   - resetSession (cliente "Iniciar nueva conversación" tras admin close)
+     *
+     * Antes existían 2 implementaciones divergentes que producían estados
+     * inconsistentes:
+     *   Bug 1: finalCloseAndCleanup → reabrir FAB → veía conversación vieja
+     *   Bug 2: resetSession → click "Iniciar nueva" → no iniciaba (necesitaba refresh)
+     *
+     * Ahora ambos flows usan ESTE helper para garantizar limpieza atómica.
+     */
+    function cleanSessionAndRender() {
+        // 1. Cancelar listeners ANTES de cualquier write
         try { cancelChatListeners(); } catch (e) { console.warn('[Concierge] cancelChatListeners err:', e); }
 
-        // Limpiar localStorage
+        // 2. Limpiar localStorage CON VERIFICACIÓN
         try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        var verifyStorage = null;
+        try { verifyStorage = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+        if (verifyStorage) {
+            console.warn('[Concierge] localStorage NOT cleared on first try, forcing');
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        }
 
-        // Reset refs internas
+        // 3. Reset refs internas
         _chatDocCreated = false;
         _lastSyncedMsgIds = {};
         _leadCreated = false;
         _asesorJoinedAnnounced = false;
 
-        // Limpiar DOM: mensajes + closed block + dropdowns + cualquier banner
+        // 4. Crear sesión limpia EXPLÍCITAMENTE (no via loadSession que podría
+        //    leer estado residual del localStorage si el removeItem falla).
+        session = {
+            sessionId: 'cnc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+            mode: 'bot',
+            messages: [],
+            createdAt: Date.now(),
+            uid: null,
+            email: null,
+            nombre: null,
+            telefono: null,
+            gateCompleted: false,
+            profile: null,
+            context: { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 },
+            activeAsesor: null,
+            closed: false,
+            closedReason: null,
+            level: 0,
+            sourcePage: window.location.pathname,
+            sourceVehicleId: window.PRERENDERED_VEHICLE_ID || null
+        };
+        try { saveSession(session); } catch (e) {}
+        console.log('[Concierge] §57.quint clean session created:', session.sessionId);
+
+        // 5. Limpiar DOM completo
         try {
             var msgsBox = document.getElementById('cncMessages');
             if (msgsBox) msgsBox.innerHTML = '';
@@ -2343,13 +2368,41 @@
             if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
             var resetToast = document.getElementById('cncResetToast');
             if (resetToast) resetToast.classList.remove('cnc-reset-toast--show');
-            console.log('[Concierge] DOM cleaned');
         } catch (e) {
             console.warn('[Concierge] DOM cleanup err:', e);
         }
 
-        // Cargar sesión limpia (nuevo sessionId, sin _resetting flag)
-        try { session = loadSession(); } catch (e) { console.warn('[Concierge] loadSession err:', e); }
+        // 6. Re-render UI states (orden matters: closed → gate → header → mensajes)
+        try {
+            applyClosedState();      // session.closed=false → restaura input
+            applyGateVisibility();    // muestra/oculta gate según session.gateCompleted
+            applyAsesorHeader();      // resetea header a ALTOR
+            renderMessages();         // welcome bubble (session.messages=[])
+            console.log('[Concierge] §57.quint UI re-rendered with welcome bubble');
+        } catch (e) {
+            console.warn('[Concierge] UI render err:', e);
+        }
+    }
+
+    function finalCloseAndCleanup() {
+        console.log('[Concierge] §57.quint finalCloseAndCleanup() START');
+        var panel = document.getElementById('altorra-concierge');
+
+        // CIERRE FORZADO INMEDIATO antes del cleanup.
+        if (panel) {
+            panel.classList.remove('cnc-open');
+            panel.setAttribute('aria-hidden', 'true');
+            // Forzar estilos inline (defense-in-depth contra CSS overrides)
+            panel.style.transition = 'none';
+            panel.style.opacity = '0';
+            panel.style.transform = 'scale(0.06) translate(40px, 40px)';
+            panel.style.pointerEvents = 'none';
+            console.log('[Concierge] panel forced hidden inline');
+        }
+        _isOpen = false;
+
+        // Limpieza unificada (sesión nueva + DOM limpio + welcome render)
+        cleanSessionAndRender();
 
         // Restaurar transition + estilos para que próximo open anime
         // correctamente. 350ms es > la transición CSS (320ms).
@@ -2409,18 +2462,9 @@
     function resetSession(opts) {
         opts = opts || {};
         var preserveProfile = opts.preserveProfile === true;
+        console.log('[Concierge] §57.quint resetSession() called, preserveProfile:', preserveProfile);
 
-        // §26.5 — Atomic Reset State Machine.
-        // _resetting=true durante TODA la operación. Listeners pendientes
-        // (firestore, auth onAuthStateChanged) chequean este flag y
-        // se ignoran silenciosamente para prevenir pisotones de estado.
-        session._resetting = true;
-        try { saveSession(session); } catch (e) {}
-
-        // Snapshot del profile actual ANTES de tocar la sesión, para poder
-        // re-aplicarlo en continueResetUI si preserveProfile=true. Esto cubre
-        // el caso anónimo donde el cliente confirmó "estos siguen siendo mis
-        // datos" en el confirm de handleClientResetSession.
+        // Snapshot del profile actual ANTES del cleanup (caso anónimo "datos OK")
         var preserved = preserveProfile ? {
             profile: session.profile,
             gateCompleted: !!session.gateCompleted,
@@ -2431,29 +2475,10 @@
             level: session.level || 0
         } : null;
 
-        // Cerrar listeners activos (defense-in-depth: handleClientResetSession
-        // ya los canceló, pero si resetSession se invoca desde otro path
-        // — ej. cnc-closed-block CTA "Iniciar nueva" — los cancelamos acá)
-        cancelChatListeners();
+        // §57.quint — Limpieza unificada (sesión nueva + DOM limpio + welcome render)
+        cleanSessionAndRender();
 
-        // Limpiar localStorage
-        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-
-        // Reset refs
-        _chatDocCreated = false;
-        _lastSyncedMsgIds = {};
-        _leadCreated = false;
-        _asesorJoinedAnnounced = false;
-
-        // Reload sesión limpia (genera nuevo sessionId)
-        session = loadSession();
-
-        // Re-aplicar perfil del auth si user logueado (siempre — auth profile
-        // es source of truth para usuarios registrados, no necesita confirm)
-        // §26.7 BUG A FIX — agregar .catch para garantizar que continueResetUI
-        // SIEMPRE se ejecute. Si loadProfileFromAuth() rechazaba, el reset
-        // quedaba incompleto: localStorage borrado pero DOM intacto. Solo
-        // F5 forzaba el cleanup. AHORA: catch llama continueResetUI igual.
+        // Re-aplicar perfil del auth si user logueado (auth profile es source of truth)
         if (typeof loadProfileFromAuth === 'function') {
             loadProfileFromAuth().then(function (profile) {
                 if (profile) {
@@ -2465,74 +2490,53 @@
                     session.telefono = profile.celular;
                     session.level = Math.max(session.level || 0, 2);
                     saveSession(session);
+                    // Re-aplicar UI states tras profile load
+                    applyGateVisibility();
                 }
-                continueResetUI();
             }).catch(function (err) {
                 console.warn('[Concierge] loadProfileFromAuth rejected during reset:', err && err.message);
-                continueResetUI();   // ← garantiza que el DOM se actualice igual
             });
-        } else {
-            continueResetUI();
         }
 
-        function continueResetUI() {
-            // Si el caller pidió preservar el profile (caso anónimo "datos OK"),
-            // restauramos los campos guardados PERO solo si auth no aportó
-            // un profile más fresco (caller logueado).
-            if (preserved && !session.profile) {
-                session.profile = preserved.profile;
-                session.gateCompleted = preserved.gateCompleted;
-                session.uid = preserved.uid;
-                session.nombre = preserved.nombre;
-                session.email = preserved.email;
-                session.telefono = preserved.telefono;
-                session.level = preserved.level;
-                saveSession(session);
-            }
-
-            // Cleanup defensivo del DOM: bloque "conversation closed" + dropdown ⋮
-            var closedBlock = document.getElementById('cncClosedBlock');
-            if (closedBlock) closedBlock.remove();
-            var dropdown = document.getElementById('cncHeaderDropdown');
-            if (dropdown) dropdown.setAttribute('hidden', '');
-            var menuBtn = document.getElementById('cncHeaderMenuBtn');
-            if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
-
-            // Limpiar mensajes del DOM antes de re-renderizar
-            var msgsBox = document.getElementById('cncMessages');
-            if (msgsBox) msgsBox.innerHTML = '';
-
-            // Aplicar UI states (orden: closed → gate → header → mensajes)
-            applyClosedState();           // restaura input/quickActions
-            applyGateVisibility();         // muestra gate si no logueado
-            applyAsesorHeader();           // resetea header a ALTOR
-            renderMessages();              // muestra welcome bubble si messages=[]
-
-            // §26.5 — Liberar el flag _resetting AL FINAL del ciclo.
-            // Listeners pendientes que llegaron mid-reset y se ignoraron
-            // por el guard ya no van a causar conflicto porque las refs
-            // (_chatDocCreated, _firestoreParentUnsub) están reseteadas.
-            session._resetting = false;
+        // Si el caller pidió preservar profile (caso anónimo "datos OK"),
+        // restauramos los campos. Auth (si lo hay) sobrescribirá después.
+        if (preserved && preserved.profile) {
+            session.profile = preserved.profile;
+            session.gateCompleted = preserved.gateCompleted;
+            session.uid = preserved.uid;
+            session.nombre = preserved.nombre;
+            session.email = preserved.email;
+            session.telefono = preserved.telefono;
+            session.level = preserved.level;
             try { saveSession(session); } catch (e) {}
-
-            // Toast de confirmación visual al cliente
-            var toastEl = document.getElementById('cncResetToast');
-            if (!toastEl) {
-                toastEl = document.createElement('div');
-                toastEl.id = 'cncResetToast';
-                toastEl.className = 'cnc-reset-toast';
-                toastEl.textContent = '✓ Conversación reiniciada';
-                var panel = document.getElementById('altorra-concierge');
-                if (panel) panel.appendChild(toastEl);
-            }
-            toastEl.classList.remove('cnc-reset-toast--show');
-            // Force reflow + add class para animar
-            void toastEl.offsetWidth;
-            toastEl.classList.add('cnc-reset-toast--show');
-            setTimeout(function () {
-                if (toastEl) toastEl.classList.remove('cnc-reset-toast--show');
-            }, 2200);
+            applyGateVisibility();
         }
+
+        // Toast de confirmación visual al cliente
+        showResetToast();
+    }
+
+    /**
+     * §57.quint — Toast de confirmación visual cuando se reinicia la sesión.
+     * Extraído del antiguo continueResetUI para reuso.
+     */
+    function showResetToast() {
+        var toastEl = document.getElementById('cncResetToast');
+        if (!toastEl) {
+            toastEl = document.createElement('div');
+            toastEl.id = 'cncResetToast';
+            toastEl.className = 'cnc-reset-toast';
+            toastEl.textContent = '✓ Conversación reiniciada';
+            var panel = document.getElementById('altorra-concierge');
+            if (panel) panel.appendChild(toastEl);
+        }
+        toastEl.classList.remove('cnc-reset-toast--show');
+        // Force reflow + add class para animar
+        void toastEl.offsetWidth;
+        toastEl.classList.add('cnc-reset-toast--show');
+        setTimeout(function () {
+            if (toastEl) toastEl.classList.remove('cnc-reset-toast--show');
+        }, 2200);
     }
 
     function getAsesorInitials(name) {

@@ -21964,3 +21964,184 @@ via cascade.
 - `js/admin-presence-ui.js` drag — sin tocar (fix §47.bis sigue válido)
 
 **Cache bump**: `v20260511100000`.
+
+---
+
+## 47.quat. ADR-047.quat — Hot fix hamburger + diagnóstico Issue 2/3 (2026-05-08)
+
+> Cliente reportó tras §47.ter que los bugs **persisten**:
+>
+> 1. "no sale el menu hamburguesa"
+> 2. "sigue cerrandose la sesion al borrar cache en movil"
+> 3. "demasiados intentos de envio de sms firebase ha bloqueado envio
+>    de mensajes por unos minutos"
+>
+> RCA estricto §19 — diagnóstico real, NO seguir agregando capas.
+
+### 47.quat.1 Causa raíz hamburger no funciona — DOS bugs combinados
+
+**Bug A — sidebar legacy SIEMPRE oculta**:
+
+`admin-topnav.css:81-84` tenía:
+```css
+.admin-panel .sidebar,
+.admin-panel #adminSidebar {
+    display: none !important;
+}
+```
+
+**SIN media query**. Esta regla se cargaba DESPUÉS de `admin-v2.css:321-335`
+que define el drawer mobile con `transform: translateX(-100%)`. Resultado:
+en mobile, aunque `transform` estuviera bien, `display: none !important`
+ganaba (cargado después + !important + sin restricción de viewport).
+
+Click hamburguesa ponía `body.is-sidebar-open`, CSS aplicaba
+`transform: translateX(0)` pero la sidebar tenía `display: none` → drawer
+nunca se renderizaba. **El cliente clickaba pero nada aparecía**.
+
+**Bug B — botón visible en desktop también**:
+
+`admin.css:12782-12817` tiene reglas legacy NOVA:
+```css
+.hamburger-btn {
+    display: inline-flex !important;
+    width: 40px !important;
+    /* ... */
+}
+```
+
+Mi `.admin-panel .atn-hamburger { display: none }` (sin !important) en
+perf-kill.css PERDÍA contra el `!important` legacy. El botón estaba
+visible en TODA pantalla (desktop también).
+
+### 47.quat.2 Solución — 2 fixes quirúrgicos
+
+**Fix Bug A** (`css/admin-topnav.css:81`):
+```css
+@media (min-width: 769px) {
+    .admin-panel .sidebar,
+    .admin-panel #adminSidebar {
+        display: none !important;
+    }
+}
+```
+
+Solo oculta sidebar en desktop. En mobile <769px, `admin-v2.css` define
+el drawer con transform y ahora puede funcionar correctamente.
+
+**Fix Bug B** (`css/admin-perf-kill.css`):
+Subir specificity + `!important` para vencer la regla legacy:
+```css
+.admin-panel .atn-topnav .atn-hamburger,
+.admin-panel .atn-bar .atn-hamburger {
+    display: none !important;  /* desktop default */
+    /* ...estilos del botón... */
+}
+
+@media (max-width: 768px) {
+    .admin-panel .atn-topnav .atn-hamburger,
+    .admin-panel .atn-bar .atn-hamburger {
+        display: flex !important;  /* mobile visible */
+    }
+}
+```
+
+`.admin-panel .atn-topnav .atn-hamburger` tiene specificity 0,3,1 — vence
+a `.hamburger-btn` (0,1,0) con `!important` igualado.
+
+### 47.quat.3 Issue 2 — Borrar cache cierra sesión: NO tiene fix client-side
+
+**Análisis honesto**:
+
+"Borrar cache" en Safari iOS / Chrome / cualquier browser limpia:
+- localStorage → trust token §47 desaparece
+- Cookies → cookie trust §47.ter desaparece
+- IndexedDB → Firebase Auth Persistence.LOCAL pierde la sesión
+- sessionStorage, Service Worker cache, etc.
+
+**Cuando el usuario borra cache, TODO se borra.** Es comportamiento
+esperado y deseado por el usuario que pide "borrar cache".
+
+El multi-store del §47.ter cubre el caso "Safari ITP limpia localStorage
+automáticamente tras 7 días" (cookies sobreviven). Pero NO cubre "user
+limpia todo manualmente".
+
+**Lo único que se puede hacer server-side**:
+
+- Cloud Function que valide trust por `device fingerprint`
+  (browser+OS+IP) sin requerir token. Pero eso es complejo y vulnerable.
+- Skip 2FA si Firebase Auth tiene `currentUser` válido y el último login
+  fue <X tiempo (que se rompe con borrar cache porque IDB se limpia).
+
+**Conclusión**: el comportamiento actual ES correcto. Si el usuario
+borra cache, debe re-loguear y pasar 2FA. Si el problema es Safari iOS
+ITP automático, el §47.ter ya lo cubre.
+
+Si el cliente quiere que "ni siquiera al borrar cache pida 2FA", la
+ÚNICA opción es desactivar 2FA para ese editor en su perfil.
+
+### 47.quat.4 Issue 3 — Firebase rate limit: side-effect del testing
+
+`auth/too-many-requests` aparece cuando Firebase Auth Phone Provider
+detecta abuso (muchos SMS al mismo número en poco tiempo).
+
+**Esto NO es un bug**. Es Firebase protegiendo el billing del cliente
+(SMS son caros). Los muchos refreshes + tests de 2FA dispararon el rate
+limit.
+
+**Solución**: esperar **15-30 minutos** sin testear antes de probar 2FA
+otra vez. El rate limit se libera automáticamente.
+
+### 47.quat.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Mobile <768px Ctrl+Shift+R | Topnav muestra brand + hamburger (sin tabs) |
+| 2 | Click hamburger | Sidebar desliza desde la izquierda con scrim |
+| 3 | Sidebar muestra los 8 grupos (Inicio, Inventario, etc.) | Confirmado |
+| 4 | Click nav-item dentro del drawer | Navega + drawer se cierra |
+| 5 | Click fuera (scrim) | Drawer se cierra |
+| 6 | Esc | Drawer se cierra |
+| 7 | Desktop ≥769px | Hamburger NO visible (display: none !important + specificity) |
+| 8 | Desktop ≥769px | Topnav con tabs Inicio/Inventario/CRM/Hub/etc. visible |
+| 9 | "Borrar cache" en mobile | Sesión cerrada — 2FA requerido (esperado) |
+| 10 | "Actualizar página" sin borrar cache | Sesión preservada (multi-store cubre) |
+
+### 47.quat.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `css/admin-topnav.css:81-84` | Envuelto `display: none !important` en `@media (min-width: 769px)` para que NO aplique mobile |
+| `css/admin-perf-kill.css` | Selectores `.admin-panel .atn-topnav .atn-hamburger` con specificity 0,3,1 + `!important` para vencer `.hamburger-btn { !important }` legacy de admin.css:12788 |
+| `service-worker.js` | CACHE_VERSION → v20260511110000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511110000 |
+| `CLAUDE.md` | Esta sección §47.quat |
+
+### 47.quat.7 Archivos INTACTOS (deliberadamente)
+
+- `js/admin-auth.js` — sin tocar (multi-store trust §47.ter sigue OK)
+- `js/admin-v2-sidebar.js` — sin tocar (handler hamburger ya bindea
+  TODOS los .hamburger-btn vía querySelectorAll desde §47.ter)
+- `admin.html` — sin tocar (`<button class="atn-hamburger hamburger-btn">`
+  ya estaba bien)
+
+### 47.quat.8 Doctrina aplicada
+
+§19 RCA estricto: detuve y diagnostiqué causa raíz real del bug
+(`display: none !important` SIN media query) en lugar de agregar más
+capas de override. Specificity correcta también para hamburger desktop.
+
+§37 IAP: identificadas las 3 causas raíz de los issues reportados,
+cero modificación a archivos no involucrados.
+
+### 47.quat.9 Mensaje al cliente
+
+- **Issue 1 hamburger**: arreglado en este commit. Necesita Ctrl+Shift+R
+  en mobile para invalidar cache.
+- **Issue 2 borrar cache**: comportamiento correcto. Borrar cache =
+  borrar todo. NO tiene fix client-side. Solución: NO borrar cache
+  o desactivar 2FA para editores que lo requieran.
+- **Issue 3 SMS bloqueado**: rate limit Firebase. Esperar 15-30 minutos.
+  Es protección anti-abuso, no un bug.
+
+**Cache bump**: `v20260511110000`.

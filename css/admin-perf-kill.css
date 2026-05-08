@@ -587,8 +587,12 @@ html.admin-restoring #adminPanel::before {
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ─── Hamburguesa del topnav ─── */
-.admin-panel .atn-hamburger {
-    display: none;
+/* §47.quat — Specificity + !important para vencer admin.css:12788 que tiene
+   `.hamburger-btn { display: inline-flex !important }` legacy. Sin esto, el
+   hamburger se muestra en TODA pantalla (incluso desktop). */
+.admin-panel .atn-topnav .atn-hamburger,
+.admin-panel .atn-bar .atn-hamburger {
+    display: none !important;
     align-items: center;
     justify-content: center;
     width: 40px;
@@ -634,7 +638,8 @@ html.admin-restoring #adminPanel::before {
 
 /* ─── Mobile <768px — mostrar hamburger + ocultar tabs ─── */
 @media (max-width: 768px) {
-    .admin-panel .atn-hamburger {
+    .admin-panel .atn-topnav .atn-hamburger,
+    .admin-panel .atn-bar .atn-hamburger {
         display: flex !important;
     }
     /* Ocultar tabs (van a la sidebar drawer accesible via hamburguesa) */

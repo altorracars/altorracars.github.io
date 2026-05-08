@@ -77,10 +77,16 @@
     -webkit-overflow-scrolling: touch;
 }
 
-/* Hide sidebar tradicional en desktop — solo visible mobile drawer */
-.admin-panel .sidebar,
-.admin-panel #adminSidebar {
-    display: none !important;
+/* Hide sidebar tradicional en desktop — solo visible mobile drawer.
+   §47.quat fix — antes esto era SIN media query, lo que ocultaba la
+   sidebar incluso en mobile (donde admin-v2.css la usa como drawer
+   con transform translateX). Ahora el display:none aplica SOLO en
+   desktop (>=769px), permitiendo que el drawer mobile funcione. */
+@media (min-width: 769px) {
+    .admin-panel .sidebar,
+    .admin-panel #adminSidebar {
+        display: none !important;
+    }
 }
 
 /* Mobile topbar legacy — ocultar en desktop (top nav ocupa su rol) */

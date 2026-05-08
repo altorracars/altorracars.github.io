@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511100000'; // §47.ter — Isla z-index 9995 + cargo en lugar de rol + hamburger mobile + welcome responsive + multi-store trust (cookie+localStorage)
+    const APP_VERSION = '20260511110000'; // §47.quat — Hot fix hamburger: sidebar legacy `display:none !important` SIN media query bloqueaba el drawer mobile + specificity para vencer .hamburger-btn legacy de admin.css:12788
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

@@ -2609,6 +2609,40 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                             </div>
                         </div>
                     </section>
+
+                    <!-- §40 — INTEGRACIONES (Telegram + futuras) -->
+                    <section class="profile-card" id="profileIntegrationsCard">
+                        <header class="profile-card-head">
+                            <h3>Integraciones</h3>
+                            <span class="profile-card-hint">Conectá servicios externos para recibir notificaciones</span>
+                        </header>
+                        <div class="profile-card-body">
+                            <!-- TELEGRAM -->
+                            <div class="profile-integration-row" id="profileTelegramRow">
+                                <div class="profile-integration-info">
+                                    <div class="profile-integration-icon" style="background:linear-gradient(135deg,#229ED9,#0088CC);">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+                                    </div>
+                                    <div>
+                                        <div class="profile-integration-name">Telegram</div>
+                                        <div class="profile-integration-status" id="profileTelegramStatus">Sin conectar</div>
+                                    </div>
+                                </div>
+                                <div class="profile-integration-actions">
+                                    <button type="button" class="btn btn-primary btn-sm" id="profileTelegramConnect">
+                                        <i data-lucide="link"></i> Conectar Telegram
+                                    </button>
+                                    <button type="button" class="btn btn-ghost btn-sm" id="profileTelegramDisconnect" style="display:none;">
+                                        <i data-lucide="unlink"></i> Desconectar
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="profile-field-hint" style="margin-top:6px;">
+                                <i data-lucide="info"></i>
+                                Cuando un cliente solicita asesor en vivo, recibirás un push en tu Telegram con cliente + ticket.
+                            </p>
+                        </div>
+                    </section>
                 </div>
 
                 <!-- Save bar sticky -->

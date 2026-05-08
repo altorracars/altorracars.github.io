@@ -19858,3 +19858,79 @@ appointments alias, futuros).
 | 8 | Subir foto en perfil → guardar | Avatar comprimido a WebP, sube a Storage, actualiza topnav inmediato |
 
 **Cache bump**: `v20260510370000`.
+
+---
+
+## 40. ADR-040 — Bug latente Telegram UI + cache invalidation subnav (2026-05-11)
+
+> Cliente reportó: (1) submenús de Inventario/Hub/Config no aparecen,
+> (2) botón "Conectar Telegram" no existe en el admin.
+>
+> Aplicado bajo doctrina IAP (§37).
+
+### 40.1 Diagnóstico
+
+**Issue 1 — Subnav**: el HTML (`<nav id="atnSubnav">`) existe en
+`admin.html:603`, el JS `renderSubnav()` está OK, los `data-atn-group`
+están en los tabs del topnav. Causa real: **cache stale del navegador**
+— el cliente ve la versión vieja sin el subnav. Fix: forzar bump de
+cache version para invalidar SW + IndexedDB + localStorage.
+
+**Issue 2 — Botón Telegram**: el módulo `admin-telegram.js` se creó
+en §26.5 con la API `openLinkFlow()`, `unlink()`, `status()`. Pero
+**el botón visual NUNCA se agregó al admin** — quedó como TODO
+implícito en CLAUDE.md ("admin → su perfil → botón Conectar Telegram"
+nunca se materializó). Bug latente desde §26.5.
+
+### 40.2 Fix UI Telegram
+
+**Card "Integraciones"** agregada al final de sec-profile, después de
+"Información de cuenta":
+
+```html
+<section class="profile-card" id="profileIntegrationsCard">
+    <header><h3>Integraciones</h3></header>
+    <div class="profile-integration-row" id="profileTelegramRow">
+        <icon Telegram> | Telegram | "Sin conectar" | [Conectar Telegram]
+    </div>
+</section>
+```
+
+**JS wire** en `admin-profile.js`:
+- `profileTelegramConnect.click` → `AltorraAdminTelegram.openLinkFlow()` →
+  abre `t.me/AltorraCarsbot?start=ASESOR_<uid>` en nueva tab
+- `profileTelegramDisconnect.click` → confirm + `unlink()` (borra
+  `telegramChatId` de Firestore) + sync visual
+- `syncTelegramStatus()` corre al cargar perfil: si `profile.telegramChatId`
+  existe → muestra "✓ Conectado" + botón Desconectar; si no → "Sin conectar" +
+  botón Conectar
+
+### 40.3 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `admin.html` | Card "Integraciones" en sec-profile (+38 líneas) |
+| `js/admin-profile.js` | Wire botones Telegram + `syncTelegramStatus()` (+45 líneas) |
+| `css/admin-topnav.css` | Estilos `.profile-integration-*` (+45 líneas) |
+| `service-worker.js` + `js/cache-manager.js` | bump v20260511010000 |
+| `CLAUDE.md` | Esta sección §40 |
+
+### 40.4 Archivos INTACTOS
+
+- `js/admin-telegram.js` — API ya expuesta desde §26.5
+- `js/admin-topnav.js` — subnav OK, era cache
+- `functions/index.js` — Cloud Functions deployadas en §39
+- `firestore.rules` — sin tocar
+
+### 40.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Ctrl+Shift+R en admin | Cache invalida, subnav aparece al entrar a Inventario/Hub/Config |
+| 2 | Click "Inventario" en topnav | Vehículos activo + subnav abajo del topnav con [Vehículos·Marcas·Aliados·Banners·Reseñas] |
+| 3 | Avatar dropdown → "Mi perfil" | Carga sec-profile con card "Integraciones" visible |
+| 4 | Click "Conectar Telegram" | Abre `t.me/AltorraCarsbot?start=ASESOR_<uid>` en nueva tab |
+| 5 | En Telegram tap START | Bot responde + Firestore `usuarios/{uid}.telegramChatId` se setea |
+| 6 | Volver al admin → refresh perfil | Status cambia a "✓ Conectado" + botón Desconectar visible |
+
+**Cache bump**: `v20260511010000`.

@@ -2077,6 +2077,11 @@
                         '</div>';
                 } else {
                     // UI legacy (admin cerró el chat) — botón "Iniciar nueva"
+                    // §57.6 — UI legacy (admin cerró el chat) ahora también
+                    // ofrece "Descargar conversación". Cliente pidió: "Cuando
+                    // el asesor finaliza la conversacion no solo debe aparecer
+                    // el boton de nuevo chat sino tambien lo de guardar la
+                    // conversacion".
                     closedBlock.innerHTML =
                         '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
                         '<div class="cnc-closed-title">Esta conversación ha finalizado</div>' +
@@ -2084,9 +2089,14 @@
                         (radicadoTxt
                             ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
                             : '') +
-                        '<button class="cnc-closed-cta" id="cncResetSessionBtn" data-action="reset-session-from-closed">' +
-                            '<i data-lucide="refresh-cw"></i> Iniciar nueva conversación' +
-                        '</button>';
+                        '<div class="cnc-closed-actions">' +
+                            '<button class="cnc-closed-action cnc-closed-action--secondary" id="cncDownloadBtn" type="button" data-action="download-conversation">' +
+                                '<i data-lucide="download"></i><span>Descargar conversación</span>' +
+                            '</button>' +
+                            '<button class="cnc-closed-action cnc-closed-action--primary" id="cncResetSessionBtn" type="button" data-action="reset-session-from-closed">' +
+                                '<i data-lucide="refresh-cw"></i><span>Iniciar nueva conversación</span>' +
+                            '</button>' +
+                        '</div>';
                 }
                 var panel = document.getElementById('altorra-concierge');
                 if (panel) panel.appendChild(closedBlock);
@@ -2308,6 +2318,18 @@
      * Ahora ambos flows usan ESTE helper para garantizar limpieza atómica.
      */
     function cleanSessionAndRender() {
+        // §57.6 — Setear _resetting=true ANTES de cancelar listeners.
+        // Esto garantiza que cualquier snapshot tardío del listener parent
+        // que llegue mid-reset (status='closed' del Firestore que aún
+        // está propagándose) sea ignorado por el guard `if (session._resetting) return`
+        // (líneas 1473 y 1545 del listener parent).
+        // Sin esto, snapshots tardíos pisaban session.closed=true sobre la
+        // sesión nueva y re-creaban el closedBlock.
+        if (session) {
+            session._resetting = true;
+            try { saveSession(session); } catch (e) {}
+        }
+
         // 1. Cancelar listeners ANTES de cualquier write
         try { cancelChatListeners(); } catch (e) { console.warn('[Concierge] cancelChatListeners err:', e); }
 
@@ -2328,6 +2350,7 @@
 
         // 4. Crear sesión limpia EXPLÍCITAMENTE (no via loadSession que podría
         //    leer estado residual del localStorage si el removeItem falla).
+        // §57.6 — Mantener _resetting=true durante render. Se libera AL FINAL.
         session = {
             sessionId: 'cnc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
             mode: 'bot',
@@ -2345,10 +2368,11 @@
             closedReason: null,
             level: 0,
             sourcePage: window.location.pathname,
-            sourceVehicleId: window.PRERENDERED_VEHICLE_ID || null
+            sourceVehicleId: window.PRERENDERED_VEHICLE_ID || null,
+            _resetting: true  // §57.6 — flag protector contra snapshots tardíos
         };
         try { saveSession(session); } catch (e) {}
-        console.log('[Concierge] §57.quint clean session created:', session.sessionId);
+        console.log('[Concierge] §57.6 clean session created:', session.sessionId);
 
         // 5. Limpiar DOM completo
         try {
@@ -2378,10 +2402,19 @@
             applyGateVisibility();    // muestra/oculta gate según session.gateCompleted
             applyAsesorHeader();      // resetea header a ALTOR
             renderMessages();         // welcome bubble (session.messages=[])
-            console.log('[Concierge] §57.quint UI re-rendered with welcome bubble');
+            console.log('[Concierge] §57.6 UI re-rendered with welcome bubble');
         } catch (e) {
             console.warn('[Concierge] UI render err:', e);
         }
+
+        // 7. §57.6 — Liberar flag _resetting tras un short delay para
+        //    cubrir snapshots tardíos en queue del event loop.
+        setTimeout(function () {
+            if (session) {
+                session._resetting = false;
+                try { saveSession(session); } catch (e) {}
+            }
+        }, 500);
     }
 
     function finalCloseAndCleanup() {

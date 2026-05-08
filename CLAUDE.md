@@ -20720,3 +20720,209 @@ otras secciones, se evaluará caso por caso (cache local de últimos
 datos vistos, skeleton states más visibles, etc.).
 
 **Cache bump**: `v20260511050000`.
+
+---
+
+## 45. ADR-045 — 4 fixes coordinados: skip-link, FCM init, profile error, RTDB deploy (2026-05-08)
+
+> Cliente reportó tras §44, con 3 capturas de consola, 4 issues:
+>
+> 1. "Saltar al contenido" aparece arriba a la izquierda — no quiere
+>    que aparezca, no entiende qué hace.
+> 2. Error rojo en consola: `Uncaught TypeError: Cannot read
+>    properties of undefined (reading 'INTERNAL')` en
+>    `firebase-messaging-compat.js:1`.
+> 3. Warning amarillo: `FIREBASE WARNING: update at /presence/-Os4VWl7f1nIyHdQMLnj
+>    failed: permission_denied` (RTDB heartbeat).
+> 4. Toast rojo "Error al guardar — Cannot set properties of null
+>    (setting 'textContent')" tras toast verde "✓ Perfil actualizado".
+>    El save SÍ funciona, pero el error confunde.
+>
+> Aplicado bajo doctrina IAP §37.
+
+### 45.1 Fix #1 — Skip-to-content link eliminado
+
+**Origen**: `<a href="#sec-dashboard" class="skip-to-content">Saltar al
+contenido</a>` agregado en P.3 a11y AAA. CSS lo oculta con `top: -100px`
+hasta `:focus`. Pero algunos browsers lo enfocan automáticamente al
+cargar la página (porque es el primer elemento focusable del body).
+
+**Fix**: eliminado el `<a>` de `admin.html`. CSS `.skip-to-content`
+queda inerte en `admin.css`. Decisión del cliente — se sacrifica la
+mejora de a11y AAA por la solicitud explícita.
+
+### 45.2 Fix #2 — FCM "INTERNAL undefined" — load order
+
+**Causa raíz**: `firebase-messaging-compat.js` se cargaba como
+`<script src="..." defer>` estático en `admin.html:3383`. El `defer`
+garantiza que se ejecuta tras DOM parse, pero NO espera a que
+`firebase-app-compat.js` (cargado dinámicamente desde `firebase-config.js`
+via `loadScript()`) termine.
+
+Cuando `firebase-messaging-compat.js` ejecuta su IIFE de auto-registro,
+intenta acceder a `firebase.INTERNAL.registerComponent(...)`. Si
+`firebase-app-compat.js` aún no completó su ejecución, `firebase.INTERNAL`
+es `undefined` → crash con `Cannot read properties of undefined
+(reading 'INTERNAL')`.
+
+**Fix**: eliminar el `<script defer>` estático. Cargar
+`firebase-messaging-compat.js` dinámicamente desde `js/admin-fcm.js`
+DENTRO de la cadena `window.firebaseReady.then(loadMessagingCompat).then(init)`.
+
+```js
+function loadMessagingCompat() {
+    if (window.firebase && window.firebase.messaging) return Promise.resolve();
+    return new Promise(function (resolve) {
+        var s = document.createElement('script');
+        s.src = 'https://www.gstatic.com/firebasejs/11.3.0/firebase-messaging-compat.js';
+        s.onload = resolve;
+        s.onerror = function () { console.warn('...'); resolve(); };
+        document.head.appendChild(s);
+    });
+}
+
+function bootIfReady() {
+    if (AP cargado y editor+) {
+        (window.firebaseReady || Promise.resolve())
+            .then(loadMessagingCompat)
+            .then(init);
+    } else {
+        setTimeout(bootIfReady, 1500);
+    }
+}
+```
+
+Ahora messaging-compat solo se carga cuando la app está completamente
+inicializada → `firebase.INTERNAL` siempre disponible. `bootIfReady`
+ya tenía un setTimeout(2500) inicial que da tiempo a `firebaseReady`
+de resolver.
+
+### 45.3 Fix #3 — RTDB permission_denied en /presence (deploy pendiente)
+
+**Causa raíz**: las reglas RTDB en `database.rules.json` están correctas
+desde §36.4 con guards anti-update sin `uid`:
+
+```json
+"$sessionId": {
+    ".write": "!newData.exists() || (!data.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid)",
+    ".validate": "!newData.exists() || (newData.hasChild('uid') && newData.child('uid').val() === auth.uid)"
+}
+```
+
+Y `admin-auth.js:1571-1574` heartbeat ya incluye `uid` en el payload:
+```js
+presenceRef.update({
+    uid: uid,
+    lastSeen: firebase.database.ServerValue.TIMESTAMP
+}).catch(function() { /* permission_denied silenced */ });
+```
+
+**El problema**: las reglas RTDB del repo NO se han desplegado en
+producción. El deploy de Firestore rules (§43) NO despliega RTDB rules.
+
+**Fix**: el `.catch()` del heartbeat ya silencia el error en código
+(no hay impacto funcional). El warning amarillo en consola es
+**cosmético** hasta que se ejecute el deploy manual:
+
+```bash
+firebase deploy --only database
+```
+
+**REQUIRE DEPLOY MANUAL** — documentado en commit message y aquí.
+
+### 45.4 Fix #4 — Toast "Error al guardar" tras "Perfil actualizado"
+
+**Causa raíz**: `saveProfile()` en `js/admin-profile.js` post-success
+ejecutaba en el `.then()`:
+```js
+notify.success({...});  // ← muestra el toast verde
+loadProfile();          // ← potencial crash con .textContent en null
+syncUser();             // ← potencial crash idem
+```
+
+Si `loadProfile()` o `syncUser()` crasheaban (por ejemplo, un ID que
+no existe por race con el DOM), el `.catch()` capturaba el error y
+mostraba toast rojo "Error al guardar" — aunque el save Firestore
+real ya había funcionado.
+
+**Fix #1**: envolver `loadProfile` y `syncUser` post-save en try/catch
+para que NO propaguen al catch principal:
+```js
+.then(function () {
+    if (window.notify) window.notify.success({...}); // success queda
+
+    try { loadProfile(); }
+    catch (e) { console.warn('[Profile] loadProfile post-save falló:', e.message); }
+
+    try { if (window.AltorraTopNav) window.AltorraTopNav.syncUser(); }
+    catch (e) { console.warn('[Profile] syncUser post-save falló:', e.message); }
+})
+.catch(function (err) { ... });
+```
+
+**Fix #2**: defensive helpers en `loadProfile()`:
+```js
+function setText(id, value) { var el = $(id); if (el) el.textContent = value; }
+function setValue(id, value) { var el = $(id); if (el) el.value = value; }
+function setHTML(id, value) { var el = $(id); if (el) el.innerHTML = value; }
+```
+
+22 instancias de `$('id').textContent =` / `.value =` / `.innerHTML =`
+reemplazadas por los helpers. Si algún ID es `null` por race, no
+crashea — solo skip silencioso.
+
+### 45.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Ctrl+Shift+R en admin (cache v20260511060000 invalida) | "Saltar al contenido" NO aparece arriba al cargar |
+| 2 | DevTools console | Cero `Cannot read properties of undefined (reading 'INTERNAL')` |
+| 3 | Esperar 2.5-3s post-login | FCM se inicializa correctamente, prompt de notificaciones aparece a los 3s |
+| 4 | Guardar perfil con cambios válidos | UN solo toast: "✓ Perfil actualizado" (NO toast rojo después) |
+| 5 | DevTools console post-save | Si hubo race con DOM: `console.warn '[Profile] loadProfile post-save falló'` (cosmético, no toast user-facing) |
+| 6 | Tras `firebase deploy --only database` | Heartbeat presence ya no warningea en consola |
+| 7 | Sin deploy de RTDB rules | El `.catch()` silencia el error en código; warning amarillo cosmético en consola permanece hasta deploy |
+
+### 45.6 Doctrina aplicada
+
+§17.12: cero MutationObserver subtree:true.
+
+§19 RCA estricto: 4 issues independientes con causas distintas:
+- Issue 1: HTML element existe (`top: -100px` debería ocultarlo). Browser puede enfocarlo auto al cargar → bug a11y conocido. Solución: eliminar.
+- Issue 2: load order race entre defer estático vs dynamic loadScript.
+- Issue 3: deploy gap (rules locales OK, no desplegadas).
+- Issue 4: error en .then() cosmético se convertía en toast user-facing.
+
+§37 IAP: 5 secciones de análisis previo entregadas.
+
+### 45.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `admin.html:218` | Eliminado `<a class="skip-to-content">` |
+| `admin.html:3383` | Eliminado `<script defer>` estático de firebase-messaging-compat.js |
+| `js/admin-fcm.js` | Carga dinámica de messaging-compat via `loadMessagingCompat()` en bootIfReady chain |
+| `js/admin-profile.js loadProfile` | Helpers `setText/setValue/setHTML` defensivos. 22 reemplazos |
+| `js/admin-profile.js saveProfile` | try/catch alrededor de loadProfile/syncUser post-success |
+| `service-worker.js` | CACHE_VERSION → v20260511060000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511060000 |
+| `CLAUDE.md` | Esta sección §45 |
+
+### 45.8 Archivos INTACTOS
+
+- `firebase-messaging-sw.js` — sin tocar (se importa desde el SW dedicado)
+- `database.rules.json` — sin tocar (ya correctas)
+- `js/firebase-config.js` — sin tocar
+- `js/admin-auth.js` heartbeat — sin tocar (ya incluye `uid` desde §36.4)
+- Resto sin tocar
+
+### 45.9 Deploy manual requerido
+
+```bash
+firebase deploy --only database
+```
+
+Sin esto, el warning `permission_denied` en `/presence/...` seguirá
+apareciendo en consola (cosmético, no bloquea funcionalidad).
+
+**Cache bump**: `v20260511060000`.

@@ -247,10 +247,36 @@
         VAPID_PUBLIC_KEY_SET: !!VAPID_PUBLIC_KEY
     };
 
-    // Auto-init cuando el admin está autenticado y AP cargado
+    // §45 — Cargar firebase-messaging-compat DINÁMICAMENTE solo cuando
+    // firebase-app esté listo. Antes se cargaba como <script defer>
+    // estático y crasheaba con "Cannot read properties of undefined
+    // (reading 'INTERNAL')" porque firebase-app-compat.js todavía no
+    // estaba ejecutado al momento que messaging-compat.js intenta
+    // auto-registrarse contra el SDK.
+    function loadMessagingCompat() {
+        if (window.firebase && window.firebase.messaging) return Promise.resolve();
+        return new Promise(function (resolve) {
+            var s = document.createElement('script');
+            s.src = 'https://www.gstatic.com/firebasejs/11.3.0/firebase-messaging-compat.js';
+            s.onload = function () { resolve(); };
+            s.onerror = function () {
+                console.warn('[AdminFCM] No se pudo cargar firebase-messaging-compat');
+                resolve(); // resolve igual para no bloquear init; isSupported() filtra
+            };
+            document.head.appendChild(s);
+        });
+    }
+
+    // Auto-init cuando firebase-app está listo + admin autenticado + AP cargado
     function bootIfReady() {
         if (window.AP && AP.currentUserProfile && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
-            init();
+            // Cargar messaging-compat de forma diferida ANTES de init
+            (window.firebaseReady || Promise.resolve())
+                .then(loadMessagingCompat)
+                .then(init)
+                .catch(function (err) {
+                    console.warn('[AdminFCM] init falló:', err && err.message);
+                });
         } else {
             setTimeout(bootIfReady, 1500);
         }

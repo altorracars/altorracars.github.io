@@ -56,6 +56,24 @@
     }
 
     /* ─── Carga del perfil desde AP.currentUserProfile ─── */
+    /* §45 — Helpers defensivos: setText/setValue/setHTML evitan crash si
+       algún ID no se encuentra (race con DOM, sección no renderizada, etc.).
+       Antes loadProfile crasheaba con "Cannot set properties of null
+       (setting 'textContent')" cuando se llamaba post-save y algún
+       elemento era null. */
+    function setText(id, value) {
+        var el = $(id);
+        if (el) el.textContent = value;
+    }
+    function setValue(id, value) {
+        var el = $(id);
+        if (el) el.value = value;
+    }
+    function setHTML(id, value) {
+        var el = $(id);
+        if (el) el.innerHTML = value;
+    }
+
     function loadProfile() {
         var profile = (window.AP && window.AP.currentUserProfile) || null;
         if (!profile) return;
@@ -78,26 +96,26 @@
         var initials = (nombre || email || 'A')
             .split(' ').map(function (w) { return w.charAt(0); })
             .join('').substring(0, 2).toUpperCase();
-        $('profileAvatarInitials').textContent = initials;
+        setText('profileAvatarInitials', initials);
         if (avatarURL) {
             renderAvatar(avatarURL);
         } else {
             renderAvatarInitials(initials);
         }
-        $('profileHeroName').textContent = nombre || '(Sin nombre)';
-        $('profileHeroEmail').textContent = email;
-        $('profileHeroRole').textContent = cargo || roleLabel(rol);
-        $('profileHeroJoined').textContent = creadoEn ? '📅 Desde ' + formatDate(creadoEn) : '';
-        $('profileHeroLastAccess').textContent = ultimoAcceso ? '⚡ Última conexión ' + formatRelative(ultimoAcceso) : '';
+        setText('profileHeroName', nombre || '(Sin nombre)');
+        setText('profileHeroEmail', email);
+        setText('profileHeroRole', cargo || roleLabel(rol));
+        setText('profileHeroJoined', creadoEn ? '📅 Desde ' + formatDate(creadoEn) : '');
+        setText('profileHeroLastAccess', ultimoAcceso ? '⚡ Última conexión ' + formatRelative(ultimoAcceso) : '');
 
         // Form fields
-        $('profileNombre').value = nombre;
-        $('profileEmail').value = email;
-        $('profileTelefono').value = telefono;
-        $('profilePrefijo').value = prefijo;
-        $('profileCargo').value = cargo;
-        $('profileTipoDoc').value = tipoDoc;
-        $('profileCedula').value = cedula;
+        setValue('profileNombre', nombre);
+        setValue('profileEmail', email);
+        setValue('profileTelefono', telefono);
+        setValue('profilePrefijo', prefijo);
+        setValue('profileCargo', cargo);
+        setValue('profileTipoDoc', tipoDoc);
+        setValue('profileCedula', cedula);
 
         // Cédula lock pattern
         var cedulaInput = $('profileCedula');
@@ -123,14 +141,15 @@
             hint.textContent = 'Ingresá tu número y guardá. Una vez guardado quedará bloqueado.';
         }
 
-        // Read-only info
-        $('profileInfoRol').textContent = roleLabel(rol);
-        $('profileInfoUid').textContent = uid;
-        $('profileInfoCreated').textContent = creadoEn ? formatDate(creadoEn) : '—';
-        $('profileInfoLastAccess').textContent = ultimoAcceso ? formatDate(ultimoAcceso) + ' · ' + formatRelative(ultimoAcceso) : '—';
-        $('profileInfo2FA').innerHTML = has2FA
+        // Read-only info (defensive — usar helpers para evitar crash si
+        // algún ID falta por race con DOM)
+        setText('profileInfoRol', roleLabel(rol));
+        setText('profileInfoUid', uid);
+        setText('profileInfoCreated', creadoEn ? formatDate(creadoEn) : '—');
+        setText('profileInfoLastAccess', ultimoAcceso ? formatDate(ultimoAcceso) + ' · ' + formatRelative(ultimoAcceso) : '—');
+        setHTML('profileInfo2FA', has2FA
             ? '<span style="color:#4ade80;">✓ Habilitado</span>'
-            : '<span style="color:rgba(255,255,255,0.55);">No habilitado</span>';
+            : '<span style="color:rgba(255,255,255,0.55);">No habilitado</span>');
 
         // Snapshot estado inicial para detectar dirty
         _initialState = {
@@ -343,13 +362,21 @@
                 _avatarPendingFile = null;
                 _avatarPendingDataUrl = null;
                 if (window.notify) window.notify.success({ title: '✓ Perfil actualizado', message: 'Tus cambios se guardaron correctamente.' });
-                // Re-load + sync topnav
-                loadProfile();
-                if (window.AltorraTopNav && window.AltorraTopNav.syncUser) window.AltorraTopNav.syncUser();
+
+                // §45 — Re-load + sync topnav envueltos en try/catch para que
+                // un error cosmético (ej: ID no encontrado por race) NO dispare
+                // el toast "Error al guardar" después del success. El save real
+                // ya completó; estos son refresh visuales secundarios.
+                try { loadProfile(); }
+                catch (e) { console.warn('[Profile] loadProfile post-save falló:', e && e.message); }
+
+                try {
+                    if (window.AltorraTopNav && window.AltorraTopNav.syncUser) window.AltorraTopNav.syncUser();
+                } catch (e) { console.warn('[Profile] syncUser post-save falló:', e && e.message); }
             })
             .catch(function (err) {
                 _saving = false;
-                updateSaveBar();
+                try { updateSaveBar(); } catch (e) {}
                 if (window.notify) window.notify.error({ title: 'Error al guardar', message: err && err.message || 'Intentá de nuevo' });
             });
     }

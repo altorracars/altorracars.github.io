@@ -23,6 +23,12 @@
     var _activeSessionId = null;
     var _chatsUnsub = null;
     var _messagesUnsub = null;
+    // §57.ter — cache de los mensajes del chat actualmente abierto.
+    // Se actualiza desde el listener _messagesUnsub. Se usa para re-renderizar
+    // el detail panel cuando _chatsUnsub detecta cambios del parent
+    // (status, mode, claimedBy, etc.) sin perder los mensajes que ya
+    // teníamos visibles.
+    var _activeMessages = [];
 
     function $(id) { return document.getElementById(id); }
     function escTxt(s) {
@@ -101,6 +107,19 @@
                 renderChatList();
                 renderFilterBar();
                 updateNavBadge();
+
+                // §57.ter — Real-time fix: re-render del detail panel
+                // cuando el active chat cambia (status, mode, claimedBy,
+                // closedReason, etc). SIN esto, el panel derecho quedaba
+                // stale hasta que llegara un mensaje nuevo. Bug visible
+                // cuando el cliente finaliza el chat: lista lateral se
+                // actualizaba pero el detail seguía mostrando "active".
+                if (_activeSessionId) {
+                    var activeChat = _chats.find(function (c) { return c._docId === _activeSessionId; });
+                    if (activeChat) {
+                        renderChatDetail(activeChat, _activeMessages);
+                    }
+                }
             }, function (err) {
                 if (window.auth && !window.auth.currentUser) return;
                 console.warn('[AdminConcierge] listener error:', err.message);
@@ -392,6 +411,7 @@
        ═══════════════════════════════════════════════════════════ */
     function openChat(sessionId) {
         _activeSessionId = sessionId;
+        _activeMessages = []; // §57.ter — reset al abrir chat nuevo
         renderChatList();
 
         // Marcar leído
@@ -419,7 +439,11 @@
                 snap.forEach(function (doc) {
                     messages.push(Object.assign({ _id: doc.id }, doc.data()));
                 });
-                renderChatDetail(chat, messages);
+                _activeMessages = messages; // §57.ter — cache para re-renders del _chatsUnsub
+                // §57.ter — usar SIEMPRE el chat más fresco de _chats[]
+                // en vez del closure cached (que está stale tras updates).
+                var freshChat = _chats.find(function (c) { return c._docId === sessionId; }) || chat;
+                renderChatDetail(freshChat, messages);
                 // §26.3 — Auto-scroll a fondo solo si el admin está
                 // cerca del fondo (no interrumpe lectura de histórico)
                 setTimeout(scrollHubMessagesToBottom, 50);

@@ -2054,6 +2054,12 @@
 
                 if (isClientFinalized) {
                     // §57 — UI nueva: cliente finalizó. Botones Descargar + Cerrar.
+                    // §57.bis — usar data-action para que el handler delegado en
+                    // panel.click (línea ~1766) funcione independientemente de
+                    // cuántas veces se re-renderice este block. Sin esto,
+                    // applyClosedState invocado 2 veces (una de markSessionFinalized
+                    // y otra del listener parent Firestore) podía dejar los
+                    // listeners directos sin handlers vinculados.
                     closedBlock.innerHTML =
                         '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
                         '<div class="cnc-closed-title">Chat finalizado</div>' +
@@ -2062,10 +2068,10 @@
                             ? '<div class="cnc-closed-radicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
                             : '') +
                         '<div class="cnc-closed-actions">' +
-                            '<button class="cnc-closed-action cnc-closed-action--secondary" id="cncDownloadBtn" type="button">' +
+                            '<button class="cnc-closed-action cnc-closed-action--secondary" id="cncDownloadBtn" type="button" data-action="download-conversation">' +
                                 '<i data-lucide="download"></i><span>Descargar conversación</span>' +
                             '</button>' +
-                            '<button class="cnc-closed-action cnc-closed-action--primary" id="cncFinalCloseBtn" type="button">' +
+                            '<button class="cnc-closed-action cnc-closed-action--primary" id="cncFinalCloseBtn" type="button" data-action="final-close">' +
                                 '<i data-lucide="x"></i><span>Cerrar chat</span>' +
                             '</button>' +
                         '</div>';
@@ -2078,7 +2084,7 @@
                         (radicadoTxt
                             ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
                             : '') +
-                        '<button class="cnc-closed-cta" id="cncResetSessionBtn">' +
+                        '<button class="cnc-closed-cta" id="cncResetSessionBtn" data-action="reset-session-from-closed">' +
                             '<i data-lucide="refresh-cw"></i> Iniciar nueva conversación' +
                         '</button>';
                 }
@@ -2087,16 +2093,10 @@
                 if (window.AltorraIcons && window.AltorraIcons.refresh) {
                     window.AltorraIcons.refresh(closedBlock);
                 }
-                // Wire handlers según variant
-                if (isClientFinalized) {
-                    var dlBtn = document.getElementById('cncDownloadBtn');
-                    if (dlBtn) dlBtn.addEventListener('click', downloadConversationPDF);
-                    var fcBtn = document.getElementById('cncFinalCloseBtn');
-                    if (fcBtn) fcBtn.addEventListener('click', finalCloseAndCleanup);
-                } else {
-                    var resetBtn = document.getElementById('cncResetSessionBtn');
-                    if (resetBtn) resetBtn.addEventListener('click', resetSession);
-                }
+                // §57.bis — handlers via data-action delegation (panel.click).
+                // No bindeamos addEventListener directo aquí: los re-renders
+                // del block hacían perder los listeners. Toda acción del
+                // closed-block pasa por handleAction() ahora.
             } else {
                 // Re-render del radicado por si cambió tras un reload
                 var radEl = document.getElementById('cncClosedRadicado');
@@ -2294,7 +2294,27 @@
      * No se ejecuta resetSession automático.
      */
     function finalCloseAndCleanup() {
-        cancelChatListeners();
+        console.log('[Concierge] §57.ter finalCloseAndCleanup() START');
+        var panel = document.getElementById('altorra-concierge');
+
+        // §57.ter — CIERRE FORZADO INMEDIATO antes de cualquier cleanup.
+        // Si el cleanup falla por alguna razón, al menos el panel está
+        // oculto visualmente. Después restauramos los estilos inline
+        // para que el próximo open() pueda animar correctamente.
+        if (panel) {
+            // Quitar la clase open
+            panel.classList.remove('cnc-open');
+            panel.setAttribute('aria-hidden', 'true');
+            // Forzar estilos inline (defense-in-depth contra CSS overrides)
+            panel.style.transition = 'none';
+            panel.style.opacity = '0';
+            panel.style.transform = 'scale(0.06) translate(40px, 40px)';
+            panel.style.pointerEvents = 'none';
+            console.log('[Concierge] panel forced hidden inline');
+        }
+        _isOpen = false;
+
+        try { cancelChatListeners(); } catch (e) { console.warn('[Concierge] cancelChatListeners err:', e); }
 
         // Limpiar localStorage
         try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
@@ -2306,26 +2326,41 @@
         _asesorJoinedAnnounced = false;
 
         // Limpiar DOM: mensajes + closed block + dropdowns + cualquier banner
-        var msgsBox = document.getElementById('cncMessages');
-        if (msgsBox) msgsBox.innerHTML = '';
-        var closedBlock = document.getElementById('cncClosedBlock');
-        if (closedBlock) closedBlock.remove();
-        var queueBanner = document.getElementById('cncQueueBanner');
-        if (queueBanner) queueBanner.remove();
-        var slaWarning = document.getElementById('cncSLAWarning');
-        if (slaWarning) slaWarning.remove();
-        var dropdown = document.getElementById('cncHeaderDropdown');
-        if (dropdown) dropdown.setAttribute('hidden', '');
-        var menuBtn = document.getElementById('cncHeaderMenuBtn');
-        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
-        var resetToast = document.getElementById('cncResetToast');
-        if (resetToast) resetToast.classList.remove('cnc-reset-toast--show');
+        try {
+            var msgsBox = document.getElementById('cncMessages');
+            if (msgsBox) msgsBox.innerHTML = '';
+            var closedBlock = document.getElementById('cncClosedBlock');
+            if (closedBlock) closedBlock.remove();
+            var queueBanner = document.getElementById('cncQueueBanner');
+            if (queueBanner) queueBanner.remove();
+            var slaWarning = document.getElementById('cncSLAWarning');
+            if (slaWarning) slaWarning.remove();
+            var slaBreach = document.getElementById('cncSLABreach');
+            if (slaBreach) slaBreach.remove();
+            var dropdown = document.getElementById('cncHeaderDropdown');
+            if (dropdown) dropdown.setAttribute('hidden', '');
+            var menuBtn = document.getElementById('cncHeaderMenuBtn');
+            if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+            var resetToast = document.getElementById('cncResetToast');
+            if (resetToast) resetToast.classList.remove('cnc-reset-toast--show');
+            console.log('[Concierge] DOM cleaned');
+        } catch (e) {
+            console.warn('[Concierge] DOM cleanup err:', e);
+        }
 
         // Cargar sesión limpia (nuevo sessionId, sin _resetting flag)
-        session = loadSession();
+        try { session = loadSession(); } catch (e) { console.warn('[Concierge] loadSession err:', e); }
 
-        // Cerrar el panel visualmente. Próxima apertura: welcome fresco.
-        close();
+        // Restaurar transition + estilos para que próximo open anime
+        // correctamente. 350ms es > la transición CSS (320ms).
+        setTimeout(function () {
+            if (!panel) return;
+            panel.style.transition = '';
+            panel.style.opacity = '';
+            panel.style.transform = '';
+            panel.style.pointerEvents = '';
+            console.log('[Concierge] panel inline styles restored, ready for next open');
+        }, 350);
     }
 
     /**
@@ -2536,6 +2571,23 @@
             case 'open-modal-financiacion':
                 close();
                 if (window.openModal) window.openModal('financiacionModal');
+                break;
+            // §57.bis — botones del cnc-closed-block (cliente finalizó chat).
+            // Migrado de addEventListener directo a data-action delegation
+            // para que sobrevivan re-renders del block.
+            case 'download-conversation':
+                console.log('[Concierge] download-conversation action triggered');
+                downloadConversationPDF();
+                break;
+            case 'final-close':
+                console.log('[Concierge] final-close action triggered');
+                finalCloseAndCleanup();
+                break;
+            case 'reset-session-from-closed':
+                // Botón "Iniciar nueva conversación" del block legacy
+                // (cuando el admin cerró el chat, no el cliente)
+                console.log('[Concierge] reset-session-from-closed action triggered');
+                resetSession();
                 break;
         }
     }

@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511160000'; // §51 — Telegram bot no enviaba: webhook NO configurado. Cloud Function setupTelegramWebhook callable + botón en perfil + diagnóstico
+    const APP_VERSION = '20260511170000'; // §52 — 3 fixes: trust mobile con stableFingerprint + dedup + 3-stage Path C + SLA banner column mobile + hamburger safe-area iPhone
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

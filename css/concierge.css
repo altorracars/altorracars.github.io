@@ -1136,10 +1136,15 @@
     color: #b8d0f4;
 }
 
+/* §52 — Layout default: column en TODO mobile (<700px) y la mayoría
+   de paneles desktop estrechos (panel del Concierge ≈ 380px). Antes era
+   row con min-width 140px en botones que forzaba el text container a
+   shrinkear hasta 0 → cada palabra rompía a línea separada vertical.
+   Solo desktop ancho (≥700px) usa row. */
 .cnc-sla-banner {
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    flex-direction: column;
+    gap: 10px;
     margin: 12px 0;
     padding: 14px 16px;
     border-radius: 12px;
@@ -1159,44 +1164,55 @@
 .cnc-sla-banner-icon {
     font-size: 1.4rem;
     flex-shrink: 0;
+    /* §52 — En layout column, el icon sigue alineado al inicio. */
+    align-self: flex-start;
 }
 .cnc-sla-banner-text {
     flex: 1;
     min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 .cnc-sla-banner-actions {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    margin-top: 10px;
-}
-@media (min-width: 480px) {
-    .cnc-sla-banner-actions { flex-direction: row; }
+    margin-top: 4px;
+    width: 100%;
 }
 .cnc-sla-btn {
-    padding: 9px 14px;
+    padding: 10px 14px;
     border-radius: 10px;
     font-size: 0.84rem;
     font-weight: 600;
     cursor: pointer;
     border: none;
     transition: transform 0.15s ease, background 0.15s ease;
-    /* §26.4 — fix: prevenir overflow + texto que se monta sobre botones.
-       white-space:nowrap + min-width 0 garantiza render limpio en cualquier ancho */
-    white-space: nowrap;
-    min-width: 0;
     line-height: 1.2;
     text-align: center;
+    white-space: normal;       /* §52 — permitir wrap si el texto no cabe */
+    width: 100%;
 }
-/* §26.4 — fix layout actions container: flex-wrap garantiza que
-   los botones bajen a nueva línea si no caben. Antes se solapaban. */
-.cnc-sla-banner-actions {
-    flex-wrap: wrap;
-    align-items: stretch;
-}
-.cnc-sla-banner-actions .cnc-sla-btn {
-    flex: 1 1 auto;
-    min-width: 140px;
+
+/* §52 — Desktop ancho: row layout con icon + text + actions en columnas */
+@media (min-width: 700px) {
+    .cnc-sla-banner {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .cnc-sla-banner-actions {
+        flex-direction: row;
+        gap: 8px;
+        margin-top: 0;
+        flex-shrink: 0;
+        width: auto;
+    }
+    .cnc-sla-btn {
+        width: auto;
+        white-space: nowrap;
+        min-width: 0;
+    }
 }
 .cnc-sla-btn--wa {
     background: linear-gradient(135deg, #25d366, #128c7e);

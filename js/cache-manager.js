@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511070000'; // §46 — Dynamic Island redesign + drag-to-reposition + thresholds presence 1min/10min + Hub padding fix topnav
+    const APP_VERSION = '20260511080000'; // §47 — 2FA mobile fixes: reCAPTCHA replaceChild + isDeviceTrusted fallback + saveDeviceTrust toast warning
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

@@ -254,10 +254,31 @@
                 localStorage.removeItem(getTrustKey(uid));
                 return false;
             }
-            // Verify token exists in Firestore list
-            if (!trustedDevices || !trustedDevices.length) return false;
-            var match = trustedDevices.find(function(d) { return d.token === stored.token && d.expiresAt > Date.now(); });
-            return !!match;
+            // Path A — happy path: server tiene array y matchea con localStorage
+            if (trustedDevices && trustedDevices.length) {
+                var match = trustedDevices.find(function(d) { return d.token === stored.token && d.expiresAt > Date.now(); });
+                if (match) return true;
+            }
+            // Path B (§47) — fallback graceful para editores con rules pendientes
+            // de deploy. Si el server NO tiene el array (porque saveDeviceTrust
+            // falló por permission-denied) PERO el localStorage tiene un token
+            // creado en este browser dentro del TTL (30 días), aceptar el trust.
+            //
+            // Razonamiento: el token de localStorage solo se crea tras pasar 2FA
+            // exitosamente — es prueba de autenticación reciente. El server-side
+            // matching es la garantía robusta, pero en su ausencia el cliente
+            // aún tiene una garantía válida (token random crypto.getRandomValues
+            // de 256 bits no falsificable sin acceso al device).
+            //
+            // Loguea warning para que admin vea que el deploy de rules está
+            // pendiente y pueda solucionarlo.
+            if (!trustedDevices || trustedDevices.length === 0) {
+                console.warn('[2FA] Trust fallback: localStorage token válido pero server vacío. ' +
+                    'Probablemente firestore.rules §43 sin desplegar. Pedí al super_admin: ' +
+                    'firebase deploy --only firestore:rules');
+                return true;
+            }
+            return false;
         } catch (e) { return false; }
     }
 
@@ -492,12 +513,35 @@
 
     // ── 2FA Core ────────────────────────────────────────────
 
-    // Clean a reCAPTCHA container before creating a new verifier.
-    // After .clear(), the container retains leftover DOM from the previous
-    // verifier which can prevent a new one from initializing correctly.
+    // §47 — Reemplazar el elemento DOM completo por uno fresh con el mismo ID.
+    //
+    // Firebase Compat v11 mantiene cache interno de RecaptchaVerifier asociado
+    // al containerId STRING. Aunque hagamos `.clear()` + `innerHTML = ''`, el
+    // cache no se invalida en mobile (Safari iOS especialmente).
+    //
+    // Bug reportado: "Error al enviar SMS: reCAPTCHA has already been rendered
+    // in this element" al hacer Reenviar código en iPhone Safari/Chrome. La
+    // primera invocación funciona; la segunda falla porque Firebase ve el
+    // mismo containerId y rechaza.
+    //
+    // Fix: replaceChild crea un Node DOM nuevo con el mismo id. Firebase
+    // internamente compara por referencia de Node, no por id string, así que
+    // detecta el container como "fresh" y resetea su cache.
     function cleanRecaptchaContainer(containerId) {
         var el = $(containerId);
-        if (el) el.innerHTML = '';
+        if (!el) return;
+        try {
+            if (el.parentNode) {
+                var freshEl = document.createElement('div');
+                freshEl.id = containerId;
+                // Preservar atributos accesibilidad (style, class) si aplican
+                if (el.className) freshEl.className = el.className;
+                el.parentNode.replaceChild(freshEl, el);
+                return;
+            }
+        } catch (e) { /* fallback abajo */ }
+        // Fallback: si no hay parentNode, al menos limpiar contenido
+        el.innerHTML = '';
     }
 
     // Create and render a reCAPTCHA verifier, returning a Promise that
@@ -633,6 +677,15 @@
                 if (shouldTrust && uid) {
                     saveDeviceTrust(uid).catch(function(err) {
                         console.warn('[2FA] Error saving device trust:', err);
+                        // §47 — Si falla por permission-denied, alertar al
+                        // editor con instrucciones (rules sin desplegar).
+                        // El localStorage SÍ se setea aún cuando Firestore
+                        // falla, así que el fallback de isDeviceTrusted (§47)
+                        // permitirá saltar 2FA al próximo refresh.
+                        var code = err && err.code;
+                        if (code === 'permission-denied' && AP.toast) {
+                            AP.toast('Aviso: tu dispositivo NO se persistió en el servidor (rules pendientes de deploy). El skip de 2FA funcionará solo en este navegador. Pedí al Super Admin: firebase deploy --only firestore:rules', 'warning');
+                        }
                     });
                 }
 

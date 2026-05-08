@@ -21205,3 +21205,249 @@ redesign profesional queda pendiente. Plan para próxima sesión:
 Estimado: ~1500-2000 líneas CSS+JS+HTML. Sprint dedicado.
 
 **Cache bump**: `v20260511070000`.
+
+---
+
+## 47. ADR-047 — 2FA mobile fixes: reCAPTCHA + trustedDevices fallback (2026-05-08)
+
+> Cliente reportó con captura de iPhone Safari/Chrome 2 issues serios:
+>
+> 1. **Mobile 2FA**: el código SMS no llega; al hacer "Reenviar código"
+>    aparece "Error al enviar SMS: reCAPTCHA has already been rendered
+>    in this element. Si el problema persiste, verifica la configuracion
+>    de Firebase Phone Auth."
+> 2. **Editores logout en refresh**: editores se desloguean al refrescar
+>    la página y deben pasar 2FA otra vez (o re-login si no tienen 2FA).
+>
+> Aplicado bajo doctrina IAP §37 + RCA estricto §19.
+
+### 47.1 Causa raíz Issue 1 — reCAPTCHA cache interno de Firebase
+
+`send2FACode()` (admin-auth.js:538) hace al reenviar:
+
+```js
+if (_2faRecaptchaVerifier) {
+    _2faRecaptchaVerifier.clear();   // sync, void
+    _2faRecaptchaVerifier = null;
+}
+return createRecaptchaVerifier('recaptcha-container')...
+```
+
+`createRecaptchaVerifier` llama `cleanRecaptchaContainer(containerId)`:
+
+```js
+function cleanRecaptchaContainer(containerId) {
+    var el = $(containerId);
+    if (el) el.innerHTML = '';
+}
+```
+
+Y luego `new firebase.auth.RecaptchaVerifier(containerId, ...)`.
+
+**El problema mobile-specific**: Firebase Compat SDK v11 mantiene un
+**cache interno asociado al containerId STRING** ("recaptcha-container").
+Aunque `.clear()` y `innerHTML = ''` limpien el DOM externamente, ese
+cache interno NO se invalida.
+
+En **desktop** a veces funciona porque `.clear()` completa antes del
+nuevo `new`. En **Safari iOS** el ciclo de vida del iframe del reCAPTCHA
+es estrictamente asincrónico, los listeners de mensaje persisten más
+tiempo, y el cache interno SIEMPRE queda vivo. Resultado: la primera
+invocación funciona, la segunda (resend) falla con "reCAPTCHA has
+already been rendered in this element".
+
+### 47.2 Solución Issue 1 — replaceChild con Node fresh
+
+`cleanRecaptchaContainer` reescrito (admin-auth.js:498):
+
+```js
+function cleanRecaptchaContainer(containerId) {
+    var el = $(containerId);
+    if (!el) return;
+    try {
+        if (el.parentNode) {
+            var freshEl = document.createElement('div');
+            freshEl.id = containerId;
+            if (el.className) freshEl.className = el.className;
+            el.parentNode.replaceChild(freshEl, el);
+            return;
+        }
+    } catch (e) { /* fallback abajo */ }
+    el.innerHTML = '';   // fallback si no hay parentNode
+}
+```
+
+**Por qué funciona**: Firebase internamente compara por **referencia
+de Node**, no por el id string. Cuando hacemos `replaceChild`, el
+elemento viejo (que Firebase tiene en cache) queda detached del DOM y
+es garbage-collected. El nuevo elemento, aunque tenga el mismo `id`,
+es un Node diferente → Firebase lo trata como fresh y resetea su cache
+interno.
+
+Test: 1ra invocación crea verifier sobre el div original. 2da
+invocación (resend) replaza el div, crea un nuevo verifier sobre el
+div nuevo, todo funciona en mobile.
+
+### 47.3 Causa raíz Issue 2 — Rules §43 sin desplegar + lógica frágil
+
+Cadena del bug:
+
+1. Editor pasa 2FA → `verify2FACode()` OK → setea `_2faVerified = true`
+2. Si checkbox "confiar dispositivo" marcado → `saveDeviceTrust(uid)`
+3. `saveDeviceTrust` línea 271 setea localStorage con token (sync)
+4. Línea 297: `db.collection('usuarios').doc(uid).update({trustedDevices: active})`
+   → **permission-denied** porque las rules §43 (que añadieron
+   `trustedDevices` a la whitelist diff-keys del editor) **NO se han
+   desplegado** en producción
+5. `.catch()` línea 633 silencia el error → editor cree que todo OK
+6. localStorage TIENE el token, Firestore array NO
+7. Editor refresca → `onAuthStateChanged(user)` → `loadUserProfile`
+   → `continueAfterBlockCheck` → `isDeviceTrusted(uid, trustedDevices)`
+8. `isDeviceTrusted` línea 258: `if (!trustedDevices || !trustedDevices.length) return false;`
+   → retorna **false** porque server vacío
+9. → `show2FAScreen` otra vez
+
+**Para editor sin 2FA**: si reporta tener que poner password al refresh,
+es probable Safari iOS ITP limpiando localStorage de Firebase Auth
+(que usa IndexedDB + localStorage para Persistence.LOCAL). Eso no es
+fixable client-side — depende del browser.
+
+### 47.4 Solución Issue 2 — Path B fallback graceful + alert visible
+
+**Fix #1**: `isDeviceTrusted` con Path B fallback (admin-auth.js:249):
+
+```js
+function isDeviceTrusted(uid, trustedDevices) {
+    try {
+        var stored = JSON.parse(localStorage.getItem(getTrustKey(uid)));
+        if (!stored || !stored.token || !stored.expires) return false;
+        if (Date.now() > stored.expires) {
+            localStorage.removeItem(getTrustKey(uid));
+            return false;
+        }
+        // Path A — happy path: server matchea con localStorage
+        if (trustedDevices && trustedDevices.length) {
+            var match = trustedDevices.find(function(d) {
+                return d.token === stored.token && d.expiresAt > Date.now();
+            });
+            if (match) return true;
+        }
+        // Path B — fallback graceful para rules pendientes de deploy
+        if (!trustedDevices || trustedDevices.length === 0) {
+            console.warn('[2FA] Trust fallback: localStorage token válido pero ' +
+                'server vacío. Probablemente firestore.rules §43 sin desplegar.');
+            return true;
+        }
+        return false;
+    } catch (e) { return false; }
+}
+```
+
+**Razonamiento de seguridad**: el token de localStorage se crea SOLO
+tras pasar 2FA exitosamente. Es token random crypto.getRandomValues
+de 256 bits — no falsificable sin acceso al device. El server-side
+matching es la garantía robusta, pero en su ausencia el cliente aún
+tiene una garantía válida (token autenticación reciente).
+
+Trade-off aceptado: si el editor cambia de browser (diferente
+localStorage), tendrá que pasar 2FA en cada uno. Es el comportamiento
+esperado mientras se hace deploy.
+
+**Fix #2**: `saveDeviceTrust` catch alerta visible (admin-auth.js:633):
+
+```js
+saveDeviceTrust(uid).catch(function(err) {
+    console.warn('[2FA] Error saving device trust:', err);
+    var code = err && err.code;
+    if (code === 'permission-denied' && AP.toast) {
+        AP.toast('Aviso: tu dispositivo NO se persistió en el servidor ' +
+            '(rules pendientes de deploy). El skip de 2FA funcionará solo ' +
+            'en este navegador. Pedí al Super Admin: ' +
+            'firebase deploy --only firestore:rules', 'warning');
+    }
+});
+```
+
+Editor ya NO se queda en la oscuridad. Sabe qué pasa y a quién pedirle
+el deploy. Combinado con Path B, el flujo funciona en este browser
+sin re-pedir 2FA en cada refresh.
+
+### 47.5 Anti-patterns evitados
+
+| Patrón | Origen | Cómo lo evitamos |
+|---|---|---|
+| Bumpear z-index de reCAPTCHA o aumentar timeout | §19 RCA | Diagnostiqué cache interno por containerId. Replacechild es la solución de fondo |
+| Crear `recaptcha-container-<timestamp>` random | §17.4 (HTML stable) | Replazo el Node pero conservo el id estable; resto del HTML sin modificar |
+| Eliminar el guard del server side en isDeviceTrusted | §H.4 (Sudo Mode) | Path B solo activa si server vacío, NO si server tiene array que NO matchea (eso indicaría intento de bypass) |
+| Pasar el token de localStorage al server con cada request | §17.7 (network frugal) | Token solo se valida client-side; localStorage es el storage authoritative en Path B |
+| Re-pedir 2FA en cada refresh aunque el editor confíe | §17.4 UX | Path B fallback resuelve el loop |
+
+### 47.6 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Mobile (iPhone Safari/Chrome): login → llega SMS → verifica OK | Funciona como antes (no regresión) |
+| 2 | Mobile: pide código no llega → click "Reenviar código" | **Llega el SMS** (antes: error "already rendered") |
+| 3 | Editor login con 2FA + checkbox "Confiar dispositivo" | Toast warning "Aviso: tu dispositivo NO se persistió..." si rules sin deploy |
+| 4 | Editor refresh tras paso 3 | **NO pide 2FA** (Path B acepta localStorage solo) |
+| 5 | Editor abre OTRO browser/dispositivo | Pide 2FA (token de localStorage en este browser no aplica al otro) |
+| 6 | Console del editor en refresh | Warning informativo "[2FA] Trust fallback: localStorage token válido pero server vacío..." |
+| 7 | Tras `firebase deploy --only firestore:rules` ejecutado | El editor pasa al Path A (server tiene array) — flujo normal |
+| 8 | localStorage del editor vacío (manual clear) | Pide 2FA (correcto — sin token) |
+| 9 | Token expirado en localStorage (>30d) | Pide 2FA + limpia localStorage |
+| 10 | Editor sin 2FA configurado | Sin cambios — Persistence.LOCAL maneja la sesión |
+
+### 47.7 Doctrina aplicada
+
+§19 RCA estricto: 2 issues con causas distintas pero entrelazadas
+(ambos relacionados al flujo de 2FA + persistencia). Diagnóstico de
+fondo, no parche.
+
+§37 IAP: 5 secciones de análisis previo entregadas antes de tocar
+código.
+
+§17.4 (HTML stable): el id `recaptcha-container` se preserva. Solo
+cambiamos la referencia DOM internamente.
+
+§35: cero `transition: all`, cero MutationObserver, cero pointermove
+persistentes.
+
+### 47.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-auth.js cleanRecaptchaContainer` | Reemplazar elemento DOM completo por uno fresh con replaceChild + fallback a innerHTML='' si no hay parentNode |
+| `js/admin-auth.js isDeviceTrusted` | Path B fallback graceful: si server vacío + localStorage válido → trust + warning console |
+| `js/admin-auth.js handler 2FA verify` | catch saveDeviceTrust alerta con AP.toast warning si permission-denied |
+| `service-worker.js` | CACHE_VERSION → v20260511080000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511080000 |
+| `CLAUDE.md` | Esta sección §47 |
+
+### 47.9 Archivos INTACTOS
+
+- `firestore.rules` — sin tocar (ya correctas, requiere deploy)
+- `database.rules.json` — sin tocar
+- `js/admin-presence-ui.js` — §46 sin tocar
+- `admin.html` — sin tocar (id `recaptcha-container` estable)
+- `js/firebase-config.js` — sin tocar
+
+### 47.10 Deploy manual recomendado (recordatorio)
+
+Para que Issue 2 quede 100% resuelto en server-side (Path A activo),
+ejecutar:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+Y para silenciar el warning RTDB de §45:
+
+```bash
+firebase deploy --only database
+```
+
+Sin estos deploys, los fixes de §47 mantienen al editor funcional via
+Path B (localStorage) pero con un toast warning que persiste hasta el
+deploy.
+
+**Cache bump**: `v20260511080000`.

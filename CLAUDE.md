@@ -26876,3 +26876,441 @@ igual cuando NO hay rechazo del server.
 
 ---
 
+## 61. RBAC Dinámico — Plan Maestro de Roles y Permisos Personalizados (2026-05-09)
+
+> Mega-plan paralelo al §59 (cirugía ALTOR Hub). El cliente identificó
+> que el sistema actual (3 roles fijos: `super_admin`, `editor`,
+> `viewer`) es demasiado rígido y no permite asignar permisos
+> granulares por usuario. Pidió: "que se pueda crear un rol con
+> permisos por checkbox, donde cada checkbox activa o desactiva una
+> función específica". Y "que el admin en gestión de usuarios vea en
+> tiempo real los roles disponibles para asignarlos".
+>
+> Este plan reemplaza al RBAC hardcoded por un sistema dinámico
+> inspirado en cómo lo hacen las grandes empresas (Stripe, Linear,
+> GitHub Enterprise, Notion, Slack, AWS IAM). Resultado esperado:
+> super_admin puede crear roles personalizados (ej: "Asesor Senior",
+> "Manager Inventario", "Solo Reportes") con permisos específicos.
+
+### 61.1 Causa raíz del límite actual
+
+| Aspecto | Estado actual | Limitación |
+|---|---|---|
+| Roles | 3 hardcoded (`super_admin`, `editor`, `viewer`) en `js/admin-state.js` | NO se pueden crear más sin cambiar código |
+| Permisos | Implícitos en helpers `canManageUsers()`, `canCreateOrEditInventory()`, etc. | NO hay control granular per-usuario |
+| Rules Firestore | Llaman directamente a `isSuperAdmin()` o `isEditorOrAbove()` | NO conocen permisos específicos |
+| Asignación | UI gestión usuarios usa dropdown con 3 opciones | NO sincroniza con nada dinámico |
+| Bug del cliente | Editor no puede agregar preguntas de seguridad | Causa: rules deployadas obsoletas (NO falta en repo, falta deploy) |
+
+**70 permisos implícitos hoy en código** (estimado por audit):
+- 55 callsites de `AP.isSuperAdmin()`
+- 32 de `AP.isEditorOrAbove()`
+- 13 de `AP.canManageUsers()`
+- 19 de `AP.canCreateOrEditInventory()`
+- 9 de `AP.canDeleteInventory()`
+- 13 de `AP.RBAC.canX` granulares
+- 39 de `isEditorOrAbove()` en `firestore.rules`
+- 38 de `isSuperAdmin()` en `firestore.rules`
+
+Total: ~218 puntos de chequeo que deben migrar al sistema dinámico.
+
+### 61.2 Investigación industry-standard
+
+| Sistema | Patrón | Aplicable a Altorra |
+|---|---|---|
+| **Stripe Roles & Permissions** | 4 system roles + custom roles que combinan ~25 "permission groups" | ✅ Adoptar el concepto de "permission groups" para UI + atomic permissions backend |
+| **Linear Custom Roles** (Plus) | 30+ atomic permissions, naming `<resource>:<action>` | ✅ Adoptar naming convention |
+| **GitHub Enterprise Custom Repository Roles** | Inherit from base role + add additional permissions | ⚠ Inheritance es complejo; lo dejamos para v2 |
+| **Notion Permissions** | Workspace + page-level (sharing model) | ❌ NO aplica — somos workspace-único |
+| **Slack** | 5 system roles + User Groups (sin permisos) | ❌ User Groups solo son tags |
+| **AWS IAM** | JSON policies con Effect/Action/Resource/Condition | ❌ Demasiado complejo para nuestro stack |
+| **Notion Workspace Settings** | `Members + Settings` lista miembros con role dropdown sync | ✅ Adoptar UX |
+
+**Patrón consolidado a adoptar (estilo Stripe + Linear)**:
+- **Permissions atómicas**: naming `<resource>.<action>` (`vehicles.create`, `crm.delete`, `users.manage`).
+- **Roles**: sets de permissions con nombre + descripción.
+- **System roles**: 3 preservados (`system_super_admin`, `system_editor`, `system_viewer`) — no editables, mapean exactamente lo que tenían los 3 hardcoded.
+- **Custom roles**: cualquier número, creables por super_admin con UI de checkboxes.
+- **Permissions assignados a usuario**: vía role (1 user → 1 role) + denormalización del array de permissions en su doc para perf.
+- **Real-time sync**: `onSnapshot` en `roles/` → cuando admin edita un rol, todos los users con ese rol heredan cambio (vía Cloud Function que rehidrata `usuarios/{uid}.permissions`).
+
+### 61.3 Schema canónico
+
+#### `permissions/` (read-only, sembrado en R1)
+
+```
+permissions/{permId}                   // ej: permId = "vehicles.create"
+{
+  id: "vehicles.create",
+  name: "Crear vehículos",             // label en español
+  description: "Permite agregar nuevos autos al inventario",
+  category: "Inventario",               // agrupa en UI
+  critical: false,                      // si true, requiere doble confirm al asignar
+  resource: "vehicles",
+  action: "create",
+  affects: ["sec-vehicles", "modal-create-vehicle"],   // referencia para audit
+  createdAt: ISO_string
+}
+```
+
+#### `roles/{roleId}` (CRUD por super_admin desde nueva sec-roles)
+
+```
+roles/{roleId}                         // ej: roleId = "manager_ventas"
+{
+  id: "manager_ventas",
+  name: "Manager de Ventas",
+  description: "Asesores con permisos de inventario y CRM",
+  permissions: ["vehicles.create", "vehicles.edit", "crm.read", "crm.assign", ...],
+  isSystem: false,                     // true = no editable (system_super_admin etc.)
+  isDefault: false,                    // true = role por default al crear nuevo user
+  color: "#b89658",                    // tag color en UI
+  icon: "users-round",                 // Lucide icon
+  userCount: 0,                        // cached count, actualizado por Cloud Function
+  createdAt, createdBy, createdByName,
+  updatedAt, updatedBy, updatedByName,
+  _version: 1                          // optimistic locking
+}
+```
+
+#### `usuarios/{uid}` (extendido)
+
+```
+usuarios/{uid}
+{
+  // ─── Campos existentes (preservados) ───
+  uid, email, nombre, telefono, prefijo, cargo,
+  habilitado2FA, telefono2FA, prefijo2FA,
+  trustedDevices, ultimoAcceso,
+  cedula, tipoDoc, photoURL, ...
+
+  // ─── Campos NUEVOS para RBAC dinámico ───
+  roleId: "manager_ventas",            // referencia al role asignado
+  roleName: "Manager de Ventas",       // denormalizado para UI rápida
+  permissions: [                       // DENORMALIZADO desde role.permissions
+    "vehicles.create",
+    "vehicles.edit",
+    "crm.read",
+    "crm.assign"
+  ],
+  permissionsUpdatedAt: ISO_string,    // cuándo se sincronizó por última vez
+  permissionsOverrides: {              // OPCIONAL — overrides per-usuario (rare)
+    granted: ["reports.export"],       // permisos extra (no incluidos en role)
+    revoked: ["vehicles.delete"]       // permisos quitados (incluidos en role pero negados)
+  },
+
+  // ─── Campos legacy (preservados durante migración) ───
+  rol: "editor",                       // se mantiene para retrocompat hasta migración 100%
+  roleMigratedAt: ISO_string           // marker de migración aplicada
+}
+```
+
+#### Cloud Functions necesarias
+
+```
+exports.onRoleUpdated         // Trigger: roles/{id} onUpdate
+                              // Acción: rehidratar usuarios/{uid}.permissions de TODOS los users con ese role
+
+exports.onUserRoleAssigned    // Trigger: usuarios/{uid} onUpdate (campo roleId cambió)
+                              // Acción: setear permissions denormalizadas + permissionsUpdatedAt
+
+exports.recalculateRoleUserCount  // Schedule cada 5 min
+                                  // Acción: count users por roleId, actualizar roles/{id}.userCount
+
+exports.seedSystemRoles      // Callable, super_admin only
+                              // Acción: crear los 3 system roles + ~70 permissions canónicos
+
+exports.migrateLegacyUsers   // Callable, super_admin only
+                              // Acción: para cada user con .rol pero sin .roleId, mapear a system_X
+```
+
+### 61.4 Lista canónica de permisos (~70 atomic)
+
+Agrupados en 8 categorías que matchean los workspaces del topnav:
+
+#### 🚗 Inventario (12)
+- `vehicles.read`, `vehicles.create`, `vehicles.edit`, `vehicles.delete`, `vehicles.import`, `vehicles.export`
+- `brands.read`, `brands.create`, `brands.edit`, `brands.delete`
+- `dealers.read`, `dealers.create`, `dealers.edit`, `dealers.delete`
+
+#### 🌐 Sitio público (8)
+- `banners.read`, `banners.create`, `banners.edit`, `banners.delete`
+- `reviews.read`, `reviews.create`, `reviews.edit`, `reviews.delete`, `reviews.publish`
+
+#### 👥 CRM (6)
+- `crm.read`, `crm.create`, `crm.edit`, `crm.delete`, `crm.assign`, `crm.export`
+
+#### 💬 Comunicaciones (12)
+- `appointments.read`, `appointments.create`, `appointments.edit`, `appointments.delete`
+- `concierge.read`, `concierge.respond`, `concierge.claim`, `concierge.transfer`, `concierge.close`, `concierge.reopen`, `concierge.delete`, `concierge.summarize`
+
+#### 🧠 Cerebro AI (8)
+- `kb.read`, `kb.create`, `kb.edit`, `kb.delete`, `kb.bootstrap`
+- `unmatched.read`, `unmatched.promote`, `unmatched.delete`
+
+#### 📅 Calendario (6)
+- `calendar.read`, `calendar.create`, `calendar.edit`, `calendar.delete`, `calendar.config`, `calendar.holidays`
+
+#### 📊 Reportes (2)
+- `reports.view`, `reports.export`
+
+#### ⚙️ Configuración (16)
+- `users.read`, `users.create`, `users.edit`, `users.delete`, `users.unlock`
+- `roles.read`, `roles.create`, `roles.edit`, `roles.delete`           // NUEVOS
+- `audit.read`, `audit.export`, `audit.delete`
+- `workflows.read`, `workflows.create`, `workflows.edit`, `workflows.delete`
+- `templates.read`, `templates.create`, `templates.edit`, `templates.delete`
+- `settings.theme`, `settings.seo`, `settings.backup`
+
+#### Special (1)
+- `*` (wildcard) — solo asignable a `system_super_admin`
+
+**Total**: ~71 permissions atómicos agrupados en 8 categorías.
+
+#### Mapeo legacy a system roles
+
+| Legacy role | System role | Permissions |
+|---|---|---|
+| `super_admin` | `system_super_admin` | `["*"]` (wildcard) |
+| `editor` | `system_editor` | inventario.create+edit, brands.create+edit, banners.create+edit, reviews.create+edit, crm.read+edit+assign, appointments.*, concierge.*, kb.*, unmatched.read+promote, calendar.*, reports.view, audit.read, workflows.read, templates.* |
+| `viewer` | `system_viewer` | solo `*.read` (~30 permisos) |
+
+### 61.5 Sprints ejecutables R1-R8
+
+> Cada sprint = 1 commit + 1 sub-sección §61.X. IAP §37 obligatorio.
+> Cache version bump cada sprint. Tests E2E manuales.
+
+#### **Sprint R1 — Foundation: schema + seed + helpers** (2 días)
+
+Objetivo: poner la infraestructura base sin romper nada existente.
+
+Cambios:
+1. Crear `permissions/` collection con seeder Cloud Function `seedSystemRoles`.
+2. Crear `roles/` collection con 3 system roles (`system_super_admin`, `system_editor`, `system_viewer`).
+3. Frontend helper `AP.hasPermission(permId)` que lee `AP.currentUserPermissions[]` (set en login).
+4. Co-existencia con helpers legacy: `AP.isSuperAdmin()` etc siguen funcionando, ahora delegan a `hasPermission('*')` o `hasPermission('users.manage')` etc.
+5. NO se ejecuta migración de usuarios todavía. NO se cambian rules todavía. NO se cambian callsites todavía.
+
+Cache: `v20260513010000`. Telemetría `[RBAC] §61.R1 ...`.
+
+#### **Sprint R2 — UI sec-roles: CRUD de roles** (3 días)
+
+Objetivo: pantalla de gestión de roles para super_admin.
+
+Cambios:
+1. Nueva sec-roles en grupo Configuración (icono `shield-check`).
+2. Lista de roles con count de usuarios + system badge.
+3. Modal de crear/editar rol con:
+   - Nombre + descripción + color + icon picker
+   - Checkboxes agrupados por categoría (8 grupos)
+   - Validación: NO permitir editar system roles (excepto `system_super_admin` que es read-only completo).
+4. Botón "Eliminar" solo en custom roles + confirm + bloqueo si hay users asignados.
+5. Permissions matrix UI estilo Linear/Stripe: tabla con checkboxes.
+6. Lista de roles en tiempo real con `onSnapshot`.
+
+Cache: `v20260513020000`. Telemetría `[RBAC] §61.R2 ...`.
+
+#### **Sprint R3 — UI sec-users: dropdown roles dinámico** (1 día)
+
+Objetivo: integrar roles dinámicos en gestión de usuarios.
+
+Cambios:
+1. Modal "Crear/Editar usuario" reemplaza dropdown hardcoded por select dinámico que lee `roles/` con `onSnapshot`.
+2. Cuando admin asigna un role a user, escribe `roleId`, `roleName`, `permissions[]` denormalizado.
+3. Tabla de usuarios muestra el `roleName` del usuario (no el legacy `rol`).
+4. Filtros por role en sec-users.
+5. Acción masiva "Asignar rol a varios users" (super_admin).
+
+Cache: `v20260513030000`. Telemetría `[RBAC] §61.R3 ...`.
+
+#### **Sprint R4 — Migración legacy users** (1 día)
+
+Objetivo: migrar todos los users existentes a usar `roleId` sin perder el campo legacy `rol`.
+
+Cambios:
+1. Cloud Function `migrateLegacyUsers` (callable super_admin):
+   - Para cada doc `usuarios/{uid}` con `rol` pero sin `roleId`:
+     - Si `rol === 'super_admin'` → `roleId = 'system_super_admin'`, permissions = `["*"]`
+     - Si `rol === 'editor'` → `roleId = 'system_editor'`, permissions = lista mapeada
+     - Si `rol === 'viewer'` → `roleId = 'system_viewer'`, permissions = lista mapeada
+   - Setear `roleMigratedAt` y mantener `rol` legacy intacto.
+   - Idempotente: skip si ya migró.
+2. UI super_admin: botón "Ejecutar migración" en sec-roles con preview + confirm.
+3. Toast con resumen: "X usuarios migrados, Y ya estaban migrados".
+
+Cache: `v20260513040000`. Telemetría `[RBAC] §61.R4 ...`.
+
+#### **Sprint R5 — Frontend guards refactor** (2-3 días)
+
+Objetivo: reemplazar TODOS los `AP.isSuperAdmin()` / `AP.isEditorOrAbove()` / `AP.canX()` por `AP.hasPermission(perm)`.
+
+Cambios:
+1. Build de mapa "legacy → permission":
+   ```
+   AP.isEditorOrAbove() → AP.hasPermission('vehicles.edit') (depende del contexto)
+   AP.canManageUsers() → AP.hasPermission('users.manage')
+   ...
+   ```
+2. Refactor archivo por archivo (admin-vehicles.js, admin-crm.js, admin-concierge.js, etc).
+3. Mantener helpers legacy funcionando como fallback durante el sprint, pero marcar como `@deprecated`.
+4. Eventualmente (R8) eliminarlos por completo.
+5. Total estimado: ~218 callsites a refactorizar.
+
+Cache: `v20260513050000`. Telemetría `[RBAC] §61.R5 ...`.
+
+#### **Sprint R6 — Firestore Rules refactor** (1-2 días)
+
+Objetivo: reglas dinámicas con función `hasPermission(perm)` server-side.
+
+Cambios:
+1. Agregar helper a `firestore.rules`:
+   ```
+   function hasPermission(perm) {
+     return request.auth != null
+       && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+       && (
+         '*' in get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.permissions
+         || perm in get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.permissions
+       );
+   }
+   ```
+2. Reemplazar `isEditorOrAbove()` y `isSuperAdmin()` por `hasPermission('vehicles.edit')` etc en cada match block.
+3. Mantener helpers legacy en rules como fallback (si user no tiene permissions[] todavía).
+4. **Deploy manual obligatorio**: `firebase deploy --only firestore:rules`.
+
+Cache: `v20260513060000`. Telemetría server-side: nada (Rules no permiten console.log).
+
+#### **Sprint R7 — Audit log + real-time sync** (1 día)
+
+Objetivo: garantizar trazabilidad y sync en tiempo real.
+
+Cambios:
+1. Cloud Function `onRoleUpdated` que rehidrata `permissions[]` denormalizado en TODOS los users con ese role.
+2. Cloud Function `onUserRoleAssigned` que setea permissions al asignar role a user.
+3. Cloud Function `recalculateRoleUserCount` (schedule 5 min).
+4. Audit log entries:
+   - `role.created`, `role.edited`, `role.deleted`
+   - `user.role-assigned`, `user.permissions-overridden`
+5. UI sec-roles muestra "actualizado por X hace Y minutos" + click para ver historial.
+
+Cache: `v20260513070000`. Telemetría `[RBAC] §61.R7 ...`.
+
+#### **Sprint R8 — Polish + cleanup + tests** (1-2 días)
+
+Objetivo: cierre del bloque RBAC.
+
+Cambios:
+1. Eliminar helpers legacy `isSuperAdmin()`, `isEditorOrAbove()`, etc del frontend.
+2. Eliminar campo legacy `rol` de `usuarios/` (todos los users ya migraron).
+3. Eliminar funciones `isSuperAdmin()` / `isEditorOrAbove()` de `firestore.rules` (todas las callsites usan `hasPermission()`).
+4. Tests E2E completos: 30+ escenarios cubriendo cada permission group.
+5. Documentación final + changelog.
+
+Cache: `v20260513080000`.
+
+### 61.6 Dependencias y orden óptimo
+
+```
+R1 (Foundation)
+  ↓
+R2 (UI Roles)
+  ↓
+R3 (UI Users dropdown)
+  ↓
+R4 (Migración) ← deploy manual de Cloud Functions
+  ↓
+R5 (Frontend refactor) — puede correr en paralelo con R6
+  ↓
+R6 (Rules refactor) ← deploy manual obligatorio
+  ↓
+R7 (Audit + real-time)
+  ↓
+R8 (Cleanup)
+```
+
+**Ventana crítica**: entre R5 y R6 hay un período donde el frontend usa `hasPermission()` pero las rules siguen usando `isEditorOrAbove()`. Eso es OK — el lado restrictivo siempre gana. Si user tiene `permissions: []` por algún motivo, el frontend lo bloquea pero las rules aún permiten (fallback). Solo se rompe si las rules ya migraron pero los usuarios no.
+
+→ R6 debe ejecutarse SOLO después de R4 (migración completa).
+
+### 61.7 Riesgos + plan de mitigación
+
+| # | Riesgo | Probabilidad | Impacto | Mitigación |
+|---|---|---|---|---|
+| 1 | Cliente no ejecuta `firebase deploy` tras R6 | 🔴 Alta | Crítico (rules viejas no permiten) | Detector cliente-side post-R6: si rules son viejas, mostrar banner urgente al super_admin con botón "Ejecutar deploy" (instrucciones) |
+| 2 | Migration R4 falla en algún user | 🟡 Media | Alto | Idempotente + transactional + rollback con `roleMigratedAt` flag |
+| 3 | Sync real-time R7 retrasa permissions denormalizados | 🟡 Media | Medio | Frontend lee directamente de `roles/{roleId}.permissions` como fallback |
+| 4 | Usuario con role eliminado queda sin permissions | 🟡 Media | Medio | Cloud Function bloquea delete de role si tiene users asignados |
+| 5 | Permission `*` mal entendido | 🟢 Baja | Crítico | Solo asignable a `system_super_admin`; rules check explícito |
+| 6 | Doble lectura en hasPermission server-side | 🟢 Baja | Perf | Cache de Rules: cada eval máximo 10 reads. Si pesa, denormalizar `permissions[]` directamente en `usuarios/{uid}` (ya está en schema) |
+| 7 | UI checkbox grid con 71 permisos abruma | 🟢 Baja | UX | Agrupar por 8 categorías + buscador + "Seleccionar todos en categoría X" |
+| 8 | Refactor R5 introduce regresiones | 🟡 Media | Medio | Sprint R5 archivo por archivo + tests E2E parciales |
+
+### 61.8 Quick fix urgente (independiente del plan completo)
+
+**Bug actual**: editor no puede agregar preguntas de seguridad.
+
+**Causa raíz**: `firestore.rules` del repo SÍ permite (whitelist incluye `securityQuestions` desde §48). Pero las rules **deployadas** en producción son anteriores a §48.
+
+**Fix**: super_admin ejecuta UNA VEZ:
+```bash
+firebase deploy --only firestore:rules
+```
+
+Con esto se arreglan EN UNO:
+- Editor puede agregar preguntas de seguridad
+- Editor puede tomar conversaciones (claim §23)
+- Editor puede self-update otros campos del whitelist
+
+**Este fix no requiere ningún sprint del plan §61**. Es independiente y puede ejecutarse YA.
+
+### 61.9 Cronograma sugerido (estimado total ~12 días)
+
+| Sprint | Días | Acumulado | Bloqueante para |
+|---|---|---|---|
+| R1 Foundation | 2 | 2 | R2-R8 |
+| R2 UI Roles | 3 | 5 | R3 |
+| R3 UI Users | 1 | 6 | R4 |
+| R4 Migration | 1 | 7 | R5, R6 |
+| R5 Frontend refactor | 2-3 | 9-10 | R8 |
+| R6 Rules refactor | 1-2 | 10-12 | R8 |
+| R7 Audit + sync | 1 | 11-13 | R8 |
+| R8 Cleanup | 1-2 | 12-15 | — |
+
+**Quick fix preguntas seguridad**: 5 minutos del super_admin (deploy CLI).
+
+### 61.10 Anti-patterns a evitar
+
+| Anti-pattern | Por qué evitar | Solución |
+|---|---|---|
+| Permission strings con tipos (booleans, números) | Frágil, no documentable | Strings canónicos `<resource>.<action>` |
+| Inheritance entre roles | Complejidad explosiva (cycle detection) | 1 user → 1 role plano (sin inheritance en MVP) |
+| Permissions overrides per-usuario complejo (granted+revoked simultáneo) | Difícil de razonar, abusable | Override solo en casos edge documentados |
+| Hardcoded list of permissions en frontend | Out-of-sync con backend | Sembrar en `permissions/` collection + leer dinámico |
+| Eliminar legacy `rol` field antes de migrar todos los users | Rompe accesos | Co-existencia durante todos los sprints; eliminación SOLO en R8 |
+| Cambiar rules de Firestore sin deploy explícito | Bug "rules en producción != rules en repo" (es lo que pasó hoy) | Cloud Function detector que loguea diff entre rules deployadas y esperadas |
+| Sin audit log de cambios de role | Imposible debug "¿quién cambió mi rol?" | R7 agrega audit log obligatorio |
+| Permission `*` (wildcard) sin restricción de quién la asigna | Escalación de privilegios | Solo asignable a `system_super_admin`, rule check explícito |
+| Sync via polling (cada 30s) en lugar de listener | Costo Firestore + latencia | `onSnapshot` en `roles/` (1 listener cubre todos los roles) |
+
+### 61.11 Compromiso del plan
+
+Este plan es **independiente del Sprint S2** (cirugía Hub). Pueden ejecutarse en paralelo o secuencialmente:
+
+- **Opción A**: Ejecutar Sprint S2 primero (1 día), luego empezar §61 R1 (12-15 días).
+- **Opción B**: Ejecutar §61 quick fix urgente (5 min deploy del cliente) + Sprint S2 (1 día) + §61 R1-R8 (12-15 días).
+- **Opción C**: Saltar Sprint S2 temporalmente y arrancar §61 R1 directamente (si el cliente prioriza el RBAC dinámico).
+
+**Recomendación**: Opción B. El quick fix del deploy resuelve los bugs visibles AHORA. Sprint S2 cierra cirugía Hub. §61 RBAC puede arrancar después con tiempo de planning.
+
+### 61.12 Estado del plan
+
+📝 **Documentado** (este documento, §61.1 a §61.12).
+⏸ **Pendiente de autorización** del cliente para arrancar:
+   - Quick fix preguntas seguridad: ¿deploy YA?
+   - Sprint S2 cirugía cliente: ¿arranco?
+   - §61 R1-R8 RBAC: ¿después de S2?
+
+---
+
+---
+

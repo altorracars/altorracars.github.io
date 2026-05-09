@@ -1490,3 +1490,118 @@
         height: 140px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   §60.2 — Estados visuales canónicos de mensajes Concierge cliente
+   (Sprint S2 cirugía, patrón WhatsApp/Linear/Intercom).
+
+   Cuatro estados local-only (no Firestore) — solo aplica a mensajes
+   del usuario (cnc-user-bubble) que requirieron sync a Firestore:
+
+     pending → ⏱ icon gris claro + opacity 0.7
+     sent    → ✓ gris (1 check) — confirmado en server
+     read    → ✓✓ azul (#34B7F1) — leído por asesor (S4 read receipts)
+     failed  → border rojo + botón Reintentar inline + shake animation
+
+   Sólo se animan opacity/transform/color/box-shadow (compositor-only,
+   doctrina §17.2). Respeta prefers-reduced-motion (§35).
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cnc-msg.cnc-msg-pending {
+    opacity: 0.7;
+}
+
+.cnc-msg.cnc-msg-sent {
+    opacity: 1;
+}
+
+.cnc-msg.cnc-msg-failed {
+    border: 1px solid #ef4444;
+    border-radius: 16px;
+    opacity: 1;
+}
+
+.cnc-msg-status {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1;
+    transition: color 150ms ease-out, transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cnc-msg-status[data-state="pending"] {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.cnc-msg-status[data-state="sent"] {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.cnc-msg-status[data-state="read"] {
+    color: #34B7F1;
+}
+
+/* En user-bubble el texto es oscuro (sobre dorado), así que el icon
+   también debe ser oscuro para contraste. */
+.cnc-user-bubble .cnc-msg-status[data-state="pending"] {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.cnc-user-bubble .cnc-msg-status[data-state="sent"] {
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.cnc-user-bubble .cnc-msg-status[data-state="read"] {
+    color: #1d4ed8;  /* azul más oscuro sobre fondo dorado */
+}
+
+.cnc-msg-retry {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: background-color 150ms ease-out, color 150ms ease-out, transform 100ms ease-out;
+}
+
+.cnc-msg-retry:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fecaca;
+}
+
+.cnc-msg-retry:active {
+    transform: scale(0.96);
+}
+
+@keyframes cncFailedShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+.cnc-msg-failed {
+    animation: cncFailedShake 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cnc-msg.cnc-msg-pending,
+    .cnc-msg.cnc-msg-sent,
+    .cnc-msg.cnc-msg-failed,
+    .cnc-msg-status,
+    .cnc-msg-retry {
+        transition: none !important;
+    }
+    .cnc-msg-failed {
+        animation: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §60.2 — Optimistic UI states (Sprint S2 cliente)
+   ═══════════════════════════════════════════════════════════════════ */
+

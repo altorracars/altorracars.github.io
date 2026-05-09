@@ -66,18 +66,21 @@
         if (_chatsUnsub || !window.db) return;
         if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
 
-        // §34 — Section cleanup hook: cancela listeners de chats + messages
-        // al cambiar de seccion (concierge → otra). Previene leaks acumulados.
+        // §57.7 — CRÍTICO: solo cancelar _messagesUnsub al cambiar de sección.
+        // El listener _chatsUnsub debe quedar SIEMPRE activo cuando admin
+        // logueado (badge global del Hub + chats nuevos en tiempo real).
+        // ANTES (§34): cancelaba ambos → si cliente escalaba mientras admin
+        // estaba en otra sección, al volver el listener se re-iniciaba pero
+        // había timing/race que hacía perder eventos. Solo refresh resolvía.
         if (window.AltorraSectionCleanup && !startChatsListener._cleanupRegistered) {
             startChatsListener._cleanupRegistered = true;
             window.AltorraSectionCleanup.register('concierge', function() {
-                if (_chatsUnsub) { try { _chatsUnsub(); } catch (e) {} _chatsUnsub = null; }
+                // §57.7 — solo _messagesUnsub. _chatsUnsub queda activo.
                 if (_messagesUnsub) { try { _messagesUnsub(); } catch (e) {} _messagesUnsub = null; }
-                startChatsListener._cleanupRegistered = false;
             });
         }
 
-        console.log('[AdminConcierge] §57.quat startChatsListener() init — listener attached');
+        console.log('[AdminConcierge] §57.7 startChatsListener init — global listener (no auto-cancel on section change)');
         _chatsUnsub = window.db.collection('conciergeChats')
             .orderBy('lastMessageAt', 'desc')
             .limit(100)
@@ -1455,17 +1458,14 @@
             // ocupa 100vh con sidebar admin de 56px collapsed.
             if (section === 'concierge') {
                 document.body.classList.add('altor-hub-active');
-                // §57.quat — FORZAR fresh listener al entrar a concierge.
-                // Bug 1+4 fix: si por algún motivo (network drop, race con
-                // section cleanup) el listener quedó en estado raro, lo
-                // re-iniciamos. Esto garantiza que SIEMPRE haya un listener
-                // activo al entrar.
-                if (_chatsUnsub) {
-                    try { _chatsUnsub(); } catch (e) {}
-                    _chatsUnsub = null;
-                    console.log('[AdminConcierge] §57.quat re-init: previous listener cancelled');
+                // §57.7 — el listener ya queda activo globalmente (no se
+                // cancela al cambiar de sección). Solo asegurar que existe
+                // por si el admin entra DIRECTO a sec-concierge sin pasar
+                // por el auto-arranque (ej. deep-link).
+                if (!_chatsUnsub) {
+                    console.log('[AdminConcierge] §57.7 listener ausente al entrar a sec-concierge, iniciando');
+                    startChatsListener();
                 }
-                startChatsListener();
                 // Auto-scroll al fondo cuando llegue el primer render
                 setTimeout(scrollHubMessagesToBottom, 200);
             } else {
@@ -1474,6 +1474,21 @@
             }
         });
     }
+
+    /**
+     * §57.7 — Heartbeat cada 30s.
+     * Si el listener cae silenciosamente (network drop, error no propagado,
+     * tab inactivo throttled), lo re-iniciamos automáticamente. Garantiza
+     * que el admin SIEMPRE recibe chats nuevos en tiempo real sin necesidad
+     * de refresh manual.
+     */
+    setInterval(function () {
+        if (!window.auth || !window.auth.currentUser) return;
+        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+        if (_chatsUnsub) return; // listener activo, todo OK
+        console.warn('[AdminConcierge] §57.7 heartbeat: listener detected as null, restarting');
+        startChatsListener();
+    }, 30000);
 
     /* §26.3 — Auto-scroll inteligente a las messages del Hub.
        Solo auto-scrollea si el admin está cerca del fondo (últimos

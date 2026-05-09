@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260511270000'; // §57.6 — _resetting flag + Descargar en admin close + diag — fix unificado cleanSessionAndRender helper — 4 bugs tiempo real coordinados — finalCloseAndCleanup robusto + admin realtime detail re-render — fix botón Cerrar chat no respondía — refactor flow finalización chat cliente — fix definitivo radicado push Telegram — race condition radicado fix + disable_notification explícito — onChatEscalatedTelegram con onDocumentWritten + sin pin region + logs verbosos diagnostic
+    const APP_VERSION = '20260509024856'; // §57.6 — _resetting flag + Descargar en admin close + diag — fix unificado cleanSessionAndRender helper — 4 bugs tiempo real coordinados — finalCloseAndCleanup robusto + admin realtime detail re-render — fix botón Cerrar chat no respondía — refactor flow finalización chat cliente — fix definitivo radicado push Telegram — race condition radicado fix + disable_notification explícito — onChatEscalatedTelegram con onDocumentWritten + sin pin region + logs verbosos diagnostic
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';

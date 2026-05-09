@@ -963,6 +963,53 @@
         var currentName = (AP.currentUserProfile && AP.currentUserProfile.nombre) || 'Asesor';
         var nowIso = new Date().toISOString();
 
+        // §60.1.1 — PRE-CHECK SERVER (antes del optimistic UI)
+        //
+        // Causa: el listener _chatsUnsub puede tener un snapshot stale
+        // (latencia 0.5-2s vs Firestore real). Si Yesit click "Tomar"
+        // mientras su lista local muestra "sin asignar" pero el server
+        // tiene claimedBy=otroUid, el flow optimistic mostraría
+        // "Estás atendiendo" → 1s después rollback con error técnico.
+        //
+        // Solución: leer doc directo del SERVER ANTES de mutar UI. Si
+        // server dice "ya tomado" o "no tenés permisos", abortamos
+        // localmente con código semántico (`already-claimed`) y mensaje
+        // amigable. Cero UI flash falso.
+        //
+        // NOTA: si esto falla con permission-denied (rules en producción
+        // desactualizadas o rol incorrecto del editor), el caller mostrará
+        // un mensaje claro indicando las posibles causas.
+        return ref.get({ source: 'server' }).then(function (snap) {
+            if (!snap.exists) {
+                console.warn('[AdminConcierge] §60.1.1 pre-check claim: chat not found', sessionId);
+                return Promise.reject({ code: 'chat-not-found' });
+            }
+            var serverData = snap.data();
+            console.log('[AdminConcierge] §60.1.1 pre-check claim', {
+                sid: sessionId,
+                serverClaimedBy: serverData.claimedBy || null,
+                serverStatus: serverData.status,
+                myUid: currentUid
+            });
+            if (serverData.status === 'closed') {
+                return Promise.reject({ code: 'chat-closed' });
+            }
+            if (serverData.claimedBy && serverData.claimedBy !== currentUid) {
+                // Ya tomado por OTRO. NO hacemos optimistic UI ni transaction.
+                return Promise.reject({
+                    code: 'already-claimed',
+                    claimedByName: serverData.claimedByName || 'Otro asesor',
+                    claimedByUid: serverData.claimedBy
+                });
+            }
+            // OK: chat libre o ya tomado por mí. Sigue el flow optimistic + transaction.
+            return _claimChatTransactional(sessionId, ref, currentUid, currentName, nowIso);
+        });
+    }
+
+    // §60.1.1 — Helper extraído para el flow optimistic + Firestore TX.
+    // Solo se llama tras pasar el pre-check del server.
+    function _claimChatTransactional(sessionId, ref, currentUid, currentName, nowIso) {
         // §60.1 — OPTIMISTIC: snapshot + update local + render INSTANT
         var chat = _chats.find(function (c) { return c._docId === sessionId; });
         var snapshot = null;
@@ -1114,9 +1161,20 @@
         if (needsClaim) {
             claimChat(_activeSessionId).then(sendNow).catch(function (err) {
                 if (err && err.code === 'already-claimed') {
-                    if (AP.toast) AP.toast('Daniel u otro asesor tomó este chat hace un momento. ' + (err.claimedByName || ''), 'warning');
+                    if (AP.toast) AP.toast((err.claimedByName || 'Otro asesor') + ' tomó este chat hace un momento. Refrescá para ver el estado actual.', 'warning');
                 } else if (err && err.code === 'chat-closed') {
                     if (AP.toast) AP.toast('Este chat ya está cerrado', 'error');
+                } else if (err && err.code === 'chat-not-found') {
+                    if (AP.toast) AP.toast('No encontramos este chat en el servidor. Refrescá la lista.', 'error');
+                } else if (err && (err.code === 'permission-denied' || (err.message && err.message.indexOf('Missing or insufficient permissions') >= 0))) {
+                    // §60.1.1 — Permission-denied del servidor. Causas posibles:
+                    // (1) Reglas de Firestore desactualizadas en producción
+                    //     → super_admin debe ejecutar `firebase deploy --only firestore:rules`
+                    // (2) El editor no tiene rol 'editor' o 'super_admin' en su doc usuarios/
+                    //     → super_admin debe verificar en Firebase Console el rol del usuario
+                    // (3) Otro asesor tomó el chat justo antes (race ms)
+                    console.error('[AdminConcierge] §60.1.1 permission-denied al enviar', { sid: _activeSessionId, err: err });
+                    if (AP.toast) AP.toast('No tenés permisos para tomar este chat. Posibles causas: (1) reglas de Firebase desactualizadas, (2) tu rol no está bien configurado. Contactá al admin.', 'error', 9000);
                 } else {
                     if (AP.toast) AP.toast('No se pudo enviar: ' + (err.message || err.code || 'error'), 'error');
                 }
@@ -1803,9 +1861,20 @@
                 // Re-render se hace solo via onSnapshot del chat parent
             }).catch(function (err) {
                 if (err && err.code === 'already-claimed') {
-                    if (AP.toast) AP.toast(err.claimedByName + ' tomó este chat hace un momento', 'warning');
+                    if (AP.toast) AP.toast((err.claimedByName || 'Otro asesor') + ' tomó este chat hace un momento. Refrescá para ver el estado actual.', 'warning');
                 } else if (err && err.code === 'chat-closed') {
                     if (AP.toast) AP.toast('Este chat ya está cerrado', 'error');
+                } else if (err && err.code === 'chat-not-found') {
+                    if (AP.toast) AP.toast('No encontramos este chat en el servidor. Refrescá la lista.', 'error');
+                } else if (err && (err.code === 'permission-denied' || (err.message && err.message.indexOf('Missing or insufficient permissions') >= 0))) {
+                    // §60.1.1 — Permission-denied del servidor. Causas posibles:
+                    // (1) Reglas de Firestore desactualizadas en producción
+                    //     → super_admin debe ejecutar `firebase deploy --only firestore:rules`
+                    // (2) El editor no tiene rol 'editor' o 'super_admin' en su doc usuarios/
+                    //     → super_admin debe verificar en Firebase Console el rol del usuario
+                    // (3) Otro asesor tomó el chat justo antes (race ms)
+                    console.error('[AdminConcierge] §60.1.1 permission-denied al tomar chat', { sid: sid, err: err });
+                    if (AP.toast) AP.toast('No tenés permisos para tomar este chat. Posibles causas: (1) reglas de Firebase desactualizadas, (2) tu rol no está bien configurado. Contactá al admin.', 'error', 9000);
                 } else {
                     if (AP.toast) AP.toast('No se pudo tomar: ' + (err.message || err.code || 'error'), 'error');
                 }

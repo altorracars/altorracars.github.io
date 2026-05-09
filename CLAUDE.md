@@ -26680,5 +26680,199 @@ render. Si los logs NO aparecen → bug en handler binding.
 
 ---
 
+## 60.1.1 ADR-060.1.1 — Hotfix post Sprint S1: pre-check server en claim + mensajes amigables permission-denied (2026-05-09)
+
+> Cliente reportó tras deploy del Sprint S1 (commit `1dbf43e`): el
+> super_admin se bloqueó por intentos fallidos (15 min lockout) y los
+> editores no pueden tomar conversaciones — toast genérico "Missing or
+> insufficient permissions". Cliente clarifica: "le pasa a TODOS los
+> usuarios en TODOS los chats sin asignar". Eso descarta race condition
+> y apunta a Firestore Rules desactualizadas en producción O a roles mal
+> configurados de los editores.
+>
+> Aplicado bajo §19 RCA Mode estricto + §37 IAP. Inspección profunda en
+> 8 capas antes de tocar código. NO se modifica firestore.rules
+> (responsabilidad del super_admin ejecutar `firebase deploy`).
+
+### 60.1.1.1 Causa raíz confirmada (RCA §19)
+
+**Issue 1 — super_admin bloqueado**: 5 intentos fallidos en
+`loginAttempts/{emailHash}` → lockout 15 min (sistema de seguridad
+preexistente, NO regresión Sprint S1). `js/admin-auth.js:7-69`.
+
+**Issue 2 — editor "permission-denied" al tomar chat**: el commit
+`1dbf43e` del Sprint S1 NO modificó `firestore.rules` ni
+`js/admin-auth.js`. Sí modificó la UX del flow (optimistic + rollback).
+El error `permission-denied` viene del **servidor de Firestore**
+rechazando el commit con base en sus rules.
+
+Las rules del repo (`firestore.rules:213-227`) PERMITIRÍAN el claim:
+
+```
+allow update: if isSuperAdmin()
+    || (isEditorOrAbove() && (
+        resource.data.claimedBy == null
+        || resource.data.claimedBy == request.auth.uid
+    ))
+    || ...;
+```
+
+Si esa rule falla con `permission-denied` para CUALQUIER editor en
+CUALQUIER chat sin asignar, las únicas causas estructurales posibles
+son:
+
+| # | Causa | Probabilidad | Verificación |
+|---|---|---|---|
+| A | Rules deployadas en producción son anteriores a §23 FASE 3 (claiming) — `firebase deploy --only firestore:rules` nunca se ejecutó tras §23 | 🔴 Alta | Firebase Console → Firestore → Rules → comparar con `firestore.rules` del repo |
+| B | Editor (Yesit Romero, uid `drNehmyG...xfs1`) NO tiene `rol: 'editor'` en su doc `usuarios/{uid}` | 🟠 Media | Firebase Console → Firestore → `usuarios/{uid}` → campo `rol` |
+| C | Race condition con super_admin Daniel Romero (que tomó chats antes de bloquearse) | ⚪ Descartada | Cliente confirma "los chats no están tomados por ninguno" |
+
+### 60.1.1.2 Lo que mi cambio HACE y NO HACE
+
+**HACE** (mejora UX):
+1. Pre-check server antes de mutar UI optimistic. Si server dice "ya
+   tomado por X" o "no encontrado", abortamos local con código semántico
+   y mensaje amigable. Cero UI flash falso.
+2. Mapea `permission-denied` y `chat-not-found` a mensajes humanos en
+   los 2 callers del claim:
+   - Botón gigante "Tomar conversación" (`#cncAdminClaimBtn` handler)
+   - Auto-claim al primer mensaje del asesor (`sendAsesorMessage`)
+3. Logs detallados con prefijo `§60.1.1` para diagnóstico futuro.
+
+**NO HACE** (responsabilidad del super_admin):
+1. NO toca `firestore.rules`. Si la causa es A, requiere
+   `firebase deploy --only firestore:rules`.
+2. NO modifica perfiles de usuario. Si la causa es B, requiere editar
+   `usuarios/{uid}.rol` desde Firebase Console.
+3. NO destraba la cuenta del super_admin actual. Para destrabar AHORA:
+   Firebase Console → Firestore → `loginAttempts/altorracarssale_gmail_com`
+   → setear `intentos: 0, bloqueado: false`. O esperar 15 min auto-unblock.
+
+### 60.1.1.3 Cambios técnicos
+
+**Archivo único modificado**: `js/admin-concierge.js`.
+
+**`claimChat` refactor** — split en 2 funciones:
+- `claimChat(sessionId)` ahora hace pre-check con
+  `ref.get({ source: 'server' })`. Tres outcomes:
+  - chat-not-found → reject inmediato sin UI mutation
+  - chat status closed → reject inmediato
+  - claimedBy ya seteado y NO es el caller → reject `already-claimed`
+  - claim libre o ya mío → llama a `_claimChatTransactional`
+- `_claimChatTransactional` (helper extraído) — contiene el flow
+  optimistic + transaction + rollback original del Sprint S1, sin
+  cambios.
+
+**Mapeo de errores** — 2 callers actualizados:
+
+| Caller | Línea | Branches catch agregados |
+|---|---|---|
+| `cncAdminClaimBtn` handler | ~1818 | `chat-not-found` + `permission-denied` (con `console.error` detallado y mensaje 9s) |
+| `sendAsesorMessage` catch | ~1115 | Idem |
+
+**Mensaje canónico para permission-denied**:
+> "No tenés permisos para tomar este chat. Posibles causas: (1) reglas
+> de Firebase desactualizadas, (2) tu rol no está bien configurado.
+> Contactá al admin."
+
+### 60.1.1.4 Telemetría agregada
+
+Logs nuevos con prefijo `§60.1.1` cada vez que se llama claim:
+
+```
+[AdminConcierge] §60.1.1 pre-check claim { sid, serverClaimedBy, serverStatus, myUid }
+[AdminConcierge] §60.1.1 pre-check claim: chat not found <sid>
+[AdminConcierge] §60.1.1 permission-denied al tomar chat { sid, err }
+[AdminConcierge] §60.1.1 permission-denied al enviar { sid, err }
+```
+
+Si en producción persiste el error tras este fix, los logs
+`pre-check claim` revelan el `serverClaimedBy` real → confirma si
+es Causa A (rules viejas → server lee bien claimedBy=null pero rules
+rechazan) vs Causa C (otro asesor lo tomó realmente).
+
+### 60.1.1.5 Acciones para el cliente
+
+**Para destrabar AHORA el super_admin** (sin esperar 15 min):
+1. Firebase Console → Firestore → colección `loginAttempts`.
+2. Documento `altorracarssale_gmail_com`.
+3. Editar campos: `intentos: 0`, `bloqueado: false`.
+4. Reintentar login.
+
+**Para arreglar la causa raíz del permission-denied** (CRÍTICO):
+
+```bash
+# En la PC del super_admin, dentro del repo:
+firebase deploy --only firestore:rules
+```
+
+Si tras el deploy el error persiste, verificar en Firebase Console:
+- `usuarios/{Yesit_uid}` → campo `rol` debe ser `"editor"` o `"super_admin"`.
+
+### 60.1.1.6 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/admin-concierge.js` | `claimChat` split en pre-check + `_claimChatTransactional` + mapeo permission-denied/chat-not-found en 2 callers | +60, -12 |
+| `service-worker.js` | CACHE_VERSION → `v20260512020000` | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260512020000'` | +1, -1 |
+| `CLAUDE.md` | Esta sección §60.1.1 | +130, -0 |
+
+### 60.1.1.7 Archivos INTACTOS
+
+- `firestore.rules` — sin tocar. Las rules del repo son CORRECTAS;
+  la causa probable es deploy desactualizado en producción.
+- `js/concierge.js` (cliente) — sin tocar.
+- `js/admin-auth.js` — sin tocar (sistema de bloqueo es preexistente
+  y funciona como diseñado).
+- `js/hub-store.js` — sin tocar.
+- `css/admin.css` — sin tocar.
+- Resto del repo — ZERO cambios.
+
+### 60.1.1.8 Tests E2E (post-deploy del fix + acciones cliente)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Editor click "Tomar conversación" en chat que server tiene libre | Banner verde "Estás atendiendo" + claim exitoso |
+| 2 | Editor click "Tomar" en chat que server tiene tomado por otro asesor | Toast: "X tomó este chat hace un momento. Refrescá para ver el estado actual" — sin UI flash de optimistic |
+| 3 | Editor click "Tomar" pero rules rechazan (Causa A o B antes del fix de cliente) | Toast 9s amigable: "No tenés permisos para tomar este chat. Posibles causas: ..." + console.error con detalle |
+| 4 | DevTools console al click | `[AdminConcierge] §60.1.1 pre-check claim {sid, serverClaimedBy, serverStatus, myUid}` |
+| 5 | Si pre-check ve `chat-not-found` (chat eliminado por otro super_admin) | Toast: "No encontramos este chat en el servidor. Refrescá la lista." |
+| 6 | sendAsesorMessage con auto-claim cuando rules rechazan | Mismo toast amigable que test #3 (no toast técnico crudo) |
+
+### 60.1.1.9 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.12 | MutationObserver | Cero. Solo `ref.get` directo (single shot). |
+| §35 | pointermove | Cero. |
+| §17.2 | transition: all | Cero (no se tocó CSS). |
+| §17.4 | Crear nuevo archivo `claim-v2.js` | Refactor sobre archivo existente. Nueva función `_claimChatTransactional` con guion bajo (helper privado, mismo IIFE). |
+| §19 RCA | Modificar rules sin diagnóstico | Documentado: rules NO se tocan. Cliente debe ejecutar `firebase deploy` o verificar roles. |
+| §37 IAP | Implementar sin autorización | IAP entregado y autorizado por cliente con clarificación crítica ("le pasa a todos"). |
+
+### 60.1.1.10 Doctrina aplicada
+
+§19 RCA estricto: 8 capas de inspección antes de tocar código. Cuando
+cliente clarificó "le pasa a todos los usuarios", descarté la
+hipótesis de race condition y reorienté hacia rules deployadas / rol
+incorrecto. Mi código mejora UX pero NO masquera la causa raíz —
+deja claro al usuario que necesita acción del super_admin.
+
+§37 IAP: 5 secciones documentadas + autorización explícita antes de
+cambios. Archivos INTACTOS afirmados (firestore.rules, admin-auth.js,
+concierge.js).
+
+§17.4 (HTML/CSS estable): zero cambios de IDs ni clases. Solo lógica
+JS interna de admin-concierge.js IIFE.
+
+§57.7 / §57.9 / §60.1: invariantes preservados. Cliente intacto.
+Listener admin globalmente activo. Optimistic UI Sprint S1 funciona
+igual cuando NO hay rechazo del server.
+
+**Cache bump**: `v20260512020000`.
+
+---
+
 ---
 

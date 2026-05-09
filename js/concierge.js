@@ -2053,35 +2053,43 @@
                 closedBlock.setAttribute('data-variant', isClientFinalized ? 'client' : 'admin');
 
                 if (isClientFinalized) {
-                    // §57 — UI nueva: cliente finalizó. Botones Descargar + Cerrar.
+                    // §57 — UI nueva: cliente finalizó.
                     // §57.bis — usar data-action para que el handler delegado en
                     // panel.click (línea ~1766) funcione independientemente de
-                    // cuántas veces se re-renderice este block. Sin esto,
-                    // applyClosedState invocado 2 veces (una de markSessionFinalized
-                    // y otra del listener parent Firestore) podía dejar los
-                    // listeners directos sin handlers vinculados.
+                    // cuántas veces se re-renderice este block.
+                    // §57.8 — 3 botones (patrón WhatsApp/Telegram/Intercom):
+                    //   Descargar conversación: PDF del historial
+                    //   Iniciar nueva conversación: limpia ahora, mantiene panel abierto
+                    //   Cerrar chat: cierra panel + limpia (próxima apertura = nuevo)
+                    // §57.8 — id="cncClosedRadicado" agregado para evitar
+                    // que applyClosedState llamado 2x cree DOS divs de radicado
+                    // (bug visual reportado por cliente en captura §57.7).
                     closedBlock.innerHTML =
                         '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
                         '<div class="cnc-closed-title">Chat finalizado</div>' +
                         '<div class="cnc-closed-sub">Gracias por escribirnos. Si querés volver a hablarnos, podrás iniciar una nueva conversación cuando quieras.</div>' +
                         (radicadoTxt
-                            ? '<div class="cnc-closed-radicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
+                            ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
                             : '') +
                         '<div class="cnc-closed-actions">' +
                             '<button class="cnc-closed-action cnc-closed-action--secondary" id="cncDownloadBtn" type="button" data-action="download-conversation">' +
                                 '<i data-lucide="download"></i><span>Descargar conversación</span>' +
                             '</button>' +
-                            '<button class="cnc-closed-action cnc-closed-action--primary" id="cncFinalCloseBtn" type="button" data-action="final-close">' +
+                            '<button class="cnc-closed-action cnc-closed-action--primary" id="cncResetFromFinalizedBtn" type="button" data-action="reset-from-finalized">' +
+                                '<i data-lucide="refresh-cw"></i><span>Iniciar nueva conversación</span>' +
+                            '</button>' +
+                            '<button class="cnc-closed-action cnc-closed-action--ghost" id="cncFinalCloseBtn" type="button" data-action="final-close">' +
                                 '<i data-lucide="x"></i><span>Cerrar chat</span>' +
                             '</button>' +
                         '</div>';
                 } else {
-                    // UI legacy (admin cerró el chat) — botón "Iniciar nueva"
-                    // §57.6 — UI legacy (admin cerró el chat) ahora también
-                    // ofrece "Descargar conversación". Cliente pidió: "Cuando
-                    // el asesor finaliza la conversacion no solo debe aparecer
-                    // el boton de nuevo chat sino tambien lo de guardar la
-                    // conversacion".
+                    // UI legacy (admin cerró el chat).
+                    // §57.6 — agregado "Descargar conversación".
+                    // §57.8 — 3 botones (Descargar + Iniciar nueva + Cerrar)
+                    // alineados con la UI client_finalized para consistencia
+                    // de patrón. Cliente puede cerrar el panel después de
+                    // ver el mensaje de cierre del asesor sin tener que
+                    // empezar nueva conversación de inmediato.
                     closedBlock.innerHTML =
                         '<div class="cnc-closed-icon"><i data-lucide="check-circle-2"></i></div>' +
                         '<div class="cnc-closed-title">Esta conversación ha finalizado</div>' +
@@ -2095,6 +2103,9 @@
                             '</button>' +
                             '<button class="cnc-closed-action cnc-closed-action--primary" id="cncResetSessionBtn" type="button" data-action="reset-session-from-closed">' +
                                 '<i data-lucide="refresh-cw"></i><span>Iniciar nueva conversación</span>' +
+                            '</button>' +
+                            '<button class="cnc-closed-action cnc-closed-action--ghost" id="cncFinalCloseBtn" type="button" data-action="final-close">' +
+                                '<i data-lucide="x"></i><span>Cerrar chat</span>' +
                             '</button>' +
                         '</div>';
                 }
@@ -2626,6 +2637,16 @@
                 console.log('[Concierge] reset-session-from-closed action triggered');
                 resetSession();
                 break;
+            case 'reset-from-finalized':
+                // §57.8 — Botón "Iniciar nueva conversación" cuando el
+                // cliente finalizó el chat. A diferencia de "Cerrar chat"
+                // (final-close que cierra el panel), este RESETEA la
+                // conversación al instante MANTENIENDO el panel abierto.
+                // Patrón Intercom/Drift: el cliente decide si cerrar o
+                // arrancar fresco sin perder el panel.
+                console.log('[Concierge] §57.8 reset-from-finalized action triggered');
+                cleanSessionAndRender();
+                break;
         }
     }
 
@@ -2877,6 +2898,19 @@
         _isOpen = true;
         // Ocultar el CTA bubble al abrir el panel
         hideCtaBubble();
+        // §57.8 — Defense-in-depth para bug "Cerrar chat → reabrir → conversación
+        // vieja". Si por algún edge case el cliente cerró el chat (closedReason
+        // 'client_finalized') y un listener tardío o cache stale re-popula
+        // session.messages, al reabrir forzamos limpia + welcome. Solo se
+        // aplica para client_finalized (NO para admin close, porque ese caso
+        // legítimamente debe seguir mostrando "Esta conversación ha finalizado"
+        // con sus botones). Cero costo si la sesión ya está limpia: cleanSessionAndRender
+        // es idempotente (si messages=[] ya, solo re-renderiza welcome).
+        if (session && session.closed === true && session.closedReason === 'client_finalized') {
+            console.log('[Concierge] §57.8 reopen tras client_finalized: forzando limpieza defensiva');
+            cleanSessionAndRender();
+            return;
+        }
         renderMessages();
         // Aplicar estado de cierre si la sesión está marcada como closed
         applyClosedState();

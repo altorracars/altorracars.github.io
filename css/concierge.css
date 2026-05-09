@@ -1105,11 +1105,16 @@
     font-weight: 700;
 }
 
-/* ─── §57 — Cliente finaliza chat: 2 botones (Descargar + Cerrar) ── */
+/* ─── §57 / §57.8 — Cliente finaliza chat: 3 botones ──────────────
+   Patrón Intercom/Drift/WhatsApp:
+     Descargar conversación (secondary)
+     Iniciar nueva conversación (primary, CTA principal)
+     Cerrar chat (ghost, opción menos prominente)
+*/
 .cnc-closed-actions {
     display: flex;
     flex-direction: column;
-    gap: 9px;
+    gap: 8px;
     width: 100%;
     margin-top: 6px;
 }
@@ -1154,6 +1159,18 @@
 .cnc-closed-action--primary:hover {
     background: linear-gradient(135deg, #e2c388 0%, #c4a062 100%);
     box-shadow: 0 4px 12px rgba(184, 150, 88, 0.35);
+}
+/* §57.8 — Ghost variant para "Cerrar chat" (opción menos prominente
+   que "Iniciar nueva conversación", patrón Intercom). */
+.cnc-closed-action--ghost {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.62);
+    border-color: rgba(255, 255, 255, 0.10);
+}
+.cnc-closed-action--ghost:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.20);
 }
 .cnc-closed-action:active {
     transform: scale(0.97);

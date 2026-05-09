@@ -24715,3 +24715,38 @@ debounce/batching interno.
 
 **Cache bump**: `v20260511280000`.
 
+### 57.7.9 Validación en producción ✅ (2026-05-08)
+
+Cliente confirmó tras el deploy + Ctrl+Shift+R: "Ahora sí funciona,
+se demora un poquitín casi 2 segundos pero ya aparece en tiempo real".
+
+Captura compartida muestra:
+- Cliente en incógnita escala a "Hablar con asesor"
+- ALTOR Hub admin recibe notificación push de Telegram simultáneamente
+- Lista lateral del Hub ya muestra el nuevo chat con badge "hace 9s"
+- Push iOS Telegram en bottom-right con cliente + radicado
+
+Latencia observada: **~1.5-2s** desde escalado del cliente hasta
+aparición en el Hub admin. Esa latencia es la suma de:
+
+| Tramo | Tiempo aproximado |
+|---|---|
+| Cliente: write a Firestore (`mode='queue'`) | ~200-400ms |
+| Eventarc: Firestore → Cloud Function | ~300-600ms |
+| Firestore: snapshot.update event al listener admin | ~200-500ms |
+| Admin browser: render de la card en lista lateral | ~50-100ms |
+| **Total observado por cliente** | **~1.5-2s** |
+
+Para WhatsApp-grade (<500ms), pendiente como deuda futura:
+- **Cliente write más rápido**: pre-warm de la conexión Firestore
+  via `db.enableNetwork()` al cargar el Concierge
+- **Optimistic UI en admin**: mostrar skeleton card antes del snapshot
+  via Firebase Cloud Messaging push también al admin (no solo
+  Telegram)
+- **Reducir batching de Firestore**: configurar `experimentalAutoDetectLongPolling`
+  para evitar fallback a long-polling en networks con WebSocket bloqueado
+
+Estas optimizaciones se evaluarán cuando el cliente lo solicite. Por
+ahora 2s es aceptable para un MVP de SaaS CRM. WhatsApp Web también
+tiene latencias similares en redes celulares.
+

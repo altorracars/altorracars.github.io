@@ -25777,3 +25777,667 @@ con el cliente. NO arrancar implementación sin aprobación del diagram.
 
 ---
 
+## 59. ALTOR HUB — CIRUGÍA TÉCNICA EJECUTABLE (Plan §59) (2026-05-08)
+
+> **Misión**: Cirujano Tecnológico actuando bajo autorización total
+> del cliente para transformar ALTOR Hub de "obra negra" a sistema
+> de comunicación enterprise. Diagnóstico forense + plan de cirugía
+> microquirúrgica + tecnologías específicas.
+>
+> **Restricción crítica**: modelo gratis. Todo en Firebase free tier
+> (Firestore real-time + RTDB presence + Cloud Functions limitadas
+> + FCM Web Push). Cero servicios pagos adicionales (no Pusher, no
+> Ably, no Twilio, no APIs externas).
+>
+> Este plan reemplaza al §58 (que era estratégico). §59 es **ejecutable
+> con código específico**.
+
+### 59.1 DIAGNÓSTICO FORENSE — Causa raíz del problema de tiempo real
+
+Auditoría línea por línea reveló:
+
+#### 59.1.1 Asimetría Optimistic UI cliente vs admin
+
+**Cliente (`js/concierge.js:793`) — SÍ optimistic**:
+```js
+function addMessage(from, text, opts) {
+    var msg = {from, text, timestamp: Date.now(), _synced: false};
+    session.messages.push(msg);     // ← state update INSTANT
+    saveSession(session);            // ← localStorage INSTANT
+    renderMessages();                // ← DOM update INSTANT
+    // ↓ Sync background, NO bloquea UI
+    if (_chatDocCreated) syncMessageToFirestore(msg);
+}
+```
+
+El cliente opera correctamente: ve su mensaje INSTANTE.
+
+**Admin (`js/admin-concierge.js:972`) — NO optimistic**:
+```js
+function _sendAsesorMessageInternal(input, text) {
+    input.value = '';                                  // limpia input
+    var msg = {from: 'asesor', text, ...};
+    window.db.collection('conciergeChats')             // ↓ ESPERA AL SERVER
+        .doc(_activeSessionId)
+        .collection('messages').add(msg);
+    // El mensaje aparece SOLO cuando el onSnapshot listener
+    // recibe el documento (500ms-2s después).
+}
+```
+
+El asesor:
+1. Escribe → input se limpia ✓
+2. Espera 500ms-2s ⏳
+3. Ve su mensaje aparecer (después del onSnapshot)
+
+**Esto es el bug #1 de "obra negra"**.
+
+#### 59.1.2 Botones de acción admin que esperan al server
+
+| Función | Línea | Acción | Latencia percibida |
+|---|---|---|---|
+| `claimChat` | 838 | Firestore transaction | 500ms-2s |
+| `togglePin` | 264 | `.set({isPinned}, merge)` | 200ms-1s |
+| `toggleArchive` | 278 | `.set({isArchived}, merge)` | 200ms-1s |
+| `markUnread` | 299 | `.set({forceUnreadByAdmin}, merge)` | 200ms-1s |
+| `closeChat` | 994 | 2 escrituras paralelas | 500ms-2s |
+| `reopenChat` | 1039 | 2 escrituras paralelas | 500ms-2s |
+| `hardDeleteChat` | 315 | Batch delete | 1-3s |
+
+Cada uno tiene el mismo patrón anti-optimistic: click → escribe a Firestore → espera al snapshot.
+
+#### 59.1.3 Botones cliente que también esperan
+
+| Acción | Función | Latencia |
+|---|---|---|
+| `escalateToLive` | 1038 | 1-2s |
+| `markSessionFinalized` | 2183 | 500ms-1s |
+| `download-conversation` | (inline) | bloquea hasta print() |
+
+#### 59.1.4 Latencia ya documentada
+
+Del §57.7.9: cliente cliente confirmó **~1.5-2s** desde escalado hasta aparición en Hub admin. Eso es la suma:
+- Cliente write a Firestore: 200-400ms
+- Eventarc trigger Cloud Function: 300-600ms
+- Firestore snapshot al listener: 200-500ms
+- Render de la card en Hub: 50-100ms
+
+Para conversación bidireccional en vivo, esa latencia se SIENTE como obra negra. WhatsApp Web está en <300ms p50.
+
+#### 59.1.5 Issues complementarios identificados
+
+1. **Doble persistencia ambigua**: localStorage (cliente) + Firestore (admin) sin source of truth claro. Race conditions cuando Firestore trae state que no coincide con localStorage.
+2. **Cero typing indicators**: ni cliente ni admin saben cuándo el otro está escribiendo.
+3. **Cero read receipts**: no hay ✓ enviado vs ✓✓ visto.
+4. **Cero status pendiente**: cuando un mensaje se envía pero aún no confirmó, no hay feedback visual.
+5. **Estado del botón sin feedback**: click "Tomar conversación" → 1s de "nada" → cambio brusco. Falta loading state intermedio.
+6. **3,265 líneas en concierge.js** sin tests, sin TypeScript, hard de mantener.
+
+---
+
+### 59.2 ARQUITECTURA OBJETIVO (post-cirugía)
+
+#### 59.2.1 Principios rectores
+
+1. **UI nunca espera al server**. Toda acción de usuario actualiza la UI INSTANT (≤16ms next paint), Firestore es eventual consistency con sync silenciosa en background.
+2. **Single source of truth = Firestore**. localStorage es solo cache para UX (sessionId persiste, pero el state real lo tiene Firestore).
+3. **Reducer pattern**: una sola función pura `applyState(currentState, event) → newState`. Predictible y testeable.
+4. **Real-time bidireccional**: typing indicators + read receipts + presence en vivo.
+5. **Operaciones reversibles**: si Firestore rechaza, rollback con undo toast.
+6. **Performance budget estricto**: cero blocking IO en main thread, todo async no-bloqueante.
+7. **Cero código muerto**: cada Edit elimina lo viejo si hay reemplazo.
+
+#### 59.2.2 Stack final (gratis, sin cambios de proveedor)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    CLIENTE                                  │
+│  • Vanilla JS (mantiene IIFE actual, NO React/Vue)          │
+│  • Optimistic UI store (custom reducer, ~100 líneas)        │
+│  • Firestore SDK Compat v11 (ya tenemos)                    │
+│  • RTDB para presence (ya tenemos)                          │
+│  • FCM Web Push (ya tenemos)                                │
+│  • IndexedDB para cache histórico (browser native)          │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           │ WebChannel (Firestore real-time)
+                           │ + WebSocket (RTDB presence)
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    BACKEND (Firebase)                       │
+│  • Firestore: source of truth de chats                      │
+│  • RTDB: presence + typing indicators                       │
+│  • Cloud Functions (12 actuales, no más)                    │
+│  • Storage (avatars admin)                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Tecnologías específicas para tiempo real**:
+- **Firestore onSnapshot con `includeMetadataChanges: true`** → permite distinguir entre escritura local pendiente y confirmada (clave para Optimistic UI).
+- **RTDB para presence + typing**: 1 update cada 3s no consume free tier.
+- **Cloud Functions con `region: 'southamerica-east1'`** mismo region que Firestore base = menos latencia cross-region.
+
+#### 59.2.3 Modelo de estado del chat (canonical)
+
+```
+ESTADOS DEL CHAT (mode):
+  bot       — Conversando con el bot LLM
+  queue     — Cliente solicitó asesor humano, espera
+  live      — Asesor activo en la conversación
+  wa_handed_over — Migrado a WhatsApp
+
+STATUS:
+  active    — Conversación abierta
+  closed    — Conversación cerrada (admin o cliente)
+
+MESSAGE FROM:
+  user      — Cliente
+  bot       — IA (LLM o rule-based)
+  asesor    — Humano admin
+  system    — Mensajes auto-generados (joins, leaves, closes)
+
+OPTIMISTIC STATUS (LOCAL ONLY, NO en Firestore):
+  pending   — Enviado pero no confirmado por server
+  sent      — Confirmado en Firestore
+  read      — Leído por el otro lado
+  failed    — Error al enviar (con botón retry)
+```
+
+#### 59.2.4 Reducer canonical (Sprint S1)
+
+```js
+// Una sola función pura. Cero side effects.
+function reduceChat(state, event) {
+    switch (event.type) {
+        case 'MESSAGE_SENT_LOCAL':
+            return {
+                ...state,
+                messages: [...state.messages, {...event.msg, _status: 'pending'}]
+            };
+        case 'MESSAGE_CONFIRMED':
+            return {
+                ...state,
+                messages: state.messages.map(m =>
+                    m.localId === event.localId ? {...m, _status: 'sent', firestoreId: event.id} : m
+                )
+            };
+        case 'MESSAGE_FAILED':
+            return {
+                ...state,
+                messages: state.messages.map(m =>
+                    m.localId === event.localId ? {...m, _status: 'failed', error: event.error} : m
+                )
+            };
+        case 'TYPING_RECEIVED':
+            return {...state, otherTyping: event.typing};
+        case 'CHAT_CLAIMED':
+            return {...state, claimedBy: event.uid, claimedByName: event.name, mode: 'live'};
+        case 'CHAT_CLOSED':
+            return {...state, status: 'closed', closedReason: event.reason, closedAt: event.ts};
+        // ... más eventos
+    }
+}
+```
+
+---
+
+### 59.3 PLAN DE CIRUGÍA — 7 sprints microquirúrgicos
+
+> Cada sprint produce 1 commit + 1 sub-sección en CLAUDE.md (§59.4 a
+> §59.10). Tests E2E + telemetría + cero regresiones obligatorios.
+
+#### Sprint S1 — Optimistic UI universal del admin (PRIORIDAD MÁXIMA)
+
+**Foco**: eliminar la latencia percibida en TODOS los botones del Hub admin.
+
+**Cambios técnicos**:
+
+1. **`_sendAsesorMessageInternal` (admin-concierge.js:972)**:
+   ```js
+   function _sendAsesorMessageInternal(input, text) {
+       input.value = '';
+       var localId = 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+       var msg = {
+           localId: localId,
+           from: 'asesor',
+           text: text,
+           timestamp: new Date().toISOString(),
+           asesorUid: window.auth.currentUser.uid,
+           asesorNombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || '—',
+           asesorPhotoURL: (AP.currentUserProfile && AP.currentUserProfile.photoURL) || null,
+           _status: 'pending'   // ← OPTIMISTIC FLAG
+       };
+
+       // 1) Optimistic UI: agregar al cache + render INSTANT
+       _activeMessages.push(msg);
+       renderChatDetail(_chats.find(c => c._docId === _activeSessionId), _activeMessages);
+
+       // 2) Firestore en background
+       window.db.collection('conciergeChats').doc(_activeSessionId)
+           .collection('messages').add(msg)
+           .then(function (ref) {
+               // Confirmado: marcar _status='sent' + reemplazar localId con firestoreId
+               var idx = _activeMessages.findIndex(m => m.localId === localId);
+               if (idx >= 0) {
+                   _activeMessages[idx]._status = 'sent';
+                   _activeMessages[idx].firestoreId = ref.id;
+                   renderChatDetail(_chats.find(c => c._docId === _activeSessionId), _activeMessages);
+               }
+           })
+           .catch(function (err) {
+               // Failed: marcar _status='failed' + ofrecer retry
+               var idx = _activeMessages.findIndex(m => m.localId === localId);
+               if (idx >= 0) {
+                   _activeMessages[idx]._status = 'failed';
+                   _activeMessages[idx].error = err.message;
+                   renderChatDetail(_chats.find(c => c._docId === _activeSessionId), _activeMessages);
+               }
+               AP.toast('Error al enviar. Click en el mensaje para reintentar.', 'error');
+           });
+
+       // 3) Update parent doc (lastMessage) — también optimistic
+       var chat = _chats.find(c => c._docId === _activeSessionId);
+       if (chat) {
+           chat.lastMessage = text.slice(0, 80);
+           chat.lastMessageAt = new Date().toISOString();
+           renderChatList();
+       }
+       window.db.collection('conciergeChats').doc(_activeSessionId).set({
+           lastMessage: text.slice(0, 80),
+           lastMessageAt: new Date().toISOString(),
+           unreadByUser: window.firebase.firestore.FieldValue.increment(1)
+       }, { merge: true }).catch(function () {});
+   }
+   ```
+
+2. **`renderChatDetail` debe distinguir status del mensaje**:
+   - `_status: 'pending'` → bubble con opacity 0.7 + ✓ gris (1 check)
+   - `_status: 'sent'` → bubble normal + ✓ gris (1 check)
+   - `_status: 'read'` → bubble normal + ✓✓ azul (2 checks)
+   - `_status: 'failed'` → bubble border rojo + ⚠️ + tooltip "Click para reintentar"
+
+3. **`claimChat` optimistic**:
+   - Click → INSTANT actualizar `_chats[i].claimedBy` local + re-render
+   - Banner verde "Estás atendiendo" aparece INSTANT
+   - Transaction Firestore en background
+   - Si falla → rollback + toast "Otro asesor lo tomó"
+
+4. **`togglePin`, `toggleArchive`, `markUnread`** — mismo patrón optimistic:
+   - Update local _chats[] INSTANT
+   - Re-render lista lateral
+   - Firestore update en background
+   - Rollback si falla
+
+5. **`closeChat` y `reopenChat`** — mismo patrón:
+   - Local update + re-render INSTANT
+   - Firestore en background
+
+**Tests E2E del sprint**:
+- [ ] Click "Tomar conversación" → banner verde aparece <16ms
+- [ ] Escribir mensaje + Enter → bubble aparece INSTANT con ✓ pending
+- [ ] Esperar 500ms → ✓ pending → ✓ sent
+- [ ] Cliente lee → ✓ sent → ✓✓ read
+- [ ] Click pin → estrella INSTANT, sin flicker
+- [ ] Network drop mid-send → bubble queda en 'failed' + retry button
+- [ ] Click retry → reintenta, recupera
+
+**Líneas estimadas**: +200, -100 (refactor del send + nuevos status renders)
+
+#### Sprint S2 — Optimistic UI universal del cliente
+
+**Foco**: extender el patrón al lado del cliente (concierge.js).
+
+**Cambios**:
+
+1. **`addMessage` ya es optimistic** pero falta el status visual:
+   - Agregar `_status: 'pending' → 'sent'` al schema de mensaje
+   - Renderizar ✓ vs ✓✓ en bubble del usuario
+   - syncMessageToFirestore confirma status
+
+2. **`escalateToLive`**: queue banner aparece INSTANT, transaction en background.
+
+3. **`markSessionFinalized`**: pantalla "Chat finalizado" aparece INSTANT, Firestore set en background.
+
+4. **Botones del closed-block** (Descargar / Iniciar nueva / Cerrar): cleanSessionAndRender debe ser síncrono (ya lo es, refinar con telemetría).
+
+**Líneas estimadas**: +120, -50
+
+#### Sprint S3 — Typing Indicators bidireccionales (RTDB)
+
+**Foco**: cliente sabe cuando asesor escribe, asesor sabe cuando cliente escribe.
+
+**Tecnología elegida**: **RTDB** (no Firestore) porque:
+- Updates de typing son ALTÍSIMA frecuencia (cada keystroke con throttle)
+- RTDB no cobra por read/write individual (solo bandwidth)
+- onDisconnect cleanup nativo
+
+**Schema RTDB**:
+```
+/typing/{sessionId}/
+    user: {typing: bool, ts: timestamp}
+    asesor_<uid>: {name, typing: bool, ts: timestamp}
+```
+
+**Lógica**:
+```js
+// Cliente escribe → marca typing
+input.addEventListener('input', throttle(function () {
+    rtdb.ref('/typing/' + sessionId + '/user').set({
+        typing: true,
+        ts: Date.now()
+    });
+    rtdb.ref('/typing/' + sessionId + '/user').onDisconnect().remove();
+}, 1000));
+
+// Cliente para de escribir 3s → marca no-typing
+input.addEventListener('input', debounce(function () {
+    rtdb.ref('/typing/' + sessionId + '/user').set({typing: false});
+}, 3000));
+
+// Admin escucha
+rtdb.ref('/typing/' + sessionId + '/user').on('value', function (snap) {
+    var data = snap.val();
+    if (data && data.typing && (Date.now() - data.ts) < 5000) {
+        showTypingIndicator(); // 3 dots animados
+    } else {
+        hideTypingIndicator();
+    }
+});
+```
+
+**UI**:
+- 3 dots animados estilo iMessage en bubble del que NO está escribiendo
+- Aparece <100ms desde el primer keystroke
+- Desaparece 3s después del último keystroke o al enviar
+
+**Líneas estimadas**: +180, -0
+
+#### Sprint S4 — Read Receipts (Firestore)
+
+**Foco**: ✓ enviado vs ✓✓ visto.
+
+**Schema Firestore** en `conciergeChats/{sid}`:
+```
+lastReadByUser: ISO_timestamp
+lastReadByAdmin: ISO_timestamp
+```
+
+**Lógica**:
+```js
+// Admin abre chat → marcar leído
+function openChat(sessionId) {
+    db.collection('conciergeChats').doc(sessionId)
+        .update({lastReadByAdmin: new Date().toISOString()})
+        .catch(function () {});
+    // ... resto del flow
+}
+
+// Cliente con panel abierto → cada 10s marcar leído
+setInterval(function () {
+    if (_isOpen && _chatDocCreated) {
+        db.collection('conciergeChats').doc(session.sessionId)
+            .update({lastReadByUser: new Date().toISOString()})
+            .catch(function () {});
+    }
+}, 10000);
+
+// Render bubble:
+// Si message.timestamp < lastReadByOther → ✓✓ azul
+// Si message.timestamp >= lastReadByOther → ✓ gris
+```
+
+**Líneas estimadas**: +90, -0
+
+#### Sprint S5 — Presence avanzada (online/away/offline)
+
+**Foco**: cliente sabe si asesor está online en tiempo real.
+
+**Tecnología**: RTDB con `.info/connected` + `onDisconnect()` (ya tenemos infraestructura).
+
+**Schema** (extender el existente `/presence/{sessionId}`):
+```
+{
+    uid, email, nombre, rol,
+    online: true,
+    status: 'available' | 'busy' | 'away',
+    activeChats: int,
+    lastActivity: timestamp
+}
+```
+
+**Cliente lee**:
+```js
+rtdb.ref('/presence').orderByChild('online').equalTo(true).on('value', function (snap) {
+    var asesoresOnline = [];
+    snap.forEach(function (child) {
+        var data = child.val();
+        if (data.rol === 'editor' || data.rol === 'super_admin') {
+            asesoresOnline.push(data);
+        }
+    });
+    updateAvailabilityIndicator(asesoresOnline.length);
+});
+```
+
+**UI cliente**:
+- Header del widget: "🟢 Asesores disponibles" o "🟡 Te respondemos en breve"
+- Banner queue mejorado con "X asesores online"
+
+**Líneas estimadas**: +150, -50 (refactor de admin-presence-ui.js que ya existe)
+
+#### Sprint S6 — Rediseño visual del Hub admin
+
+**Foco**: dejar de verse "obra negra".
+
+**Reglas**:
+- Mantener layout fullscreen Telegram-style del §26.3 (ya está bien)
+- Mejorar bubbles, spacing, typography
+- Agregar skeleton loaders
+- Empty states ilustrados
+- Animations spring para todos los state changes
+- Cero `transition: all` (doctrina §17.2)
+
+**Cambios visuales específicos**:
+
+| Elemento | Antes | Después |
+|---|---|---|
+| Bubble asesor | bg sólido sin animación | gradient + shadow + slide-up animation |
+| Bubble cliente | gris plano | gradient gris suave + bordes redondeados 18px |
+| Typing indicator | inexistente | 3 dots animados estilo iMessage |
+| Status messages | texto plano centrado | pill verde con icono + animation |
+| Avatar del cliente | iniciales solamente | iniciales + dot online (verde si conectado) |
+| Lista lateral | items planos | hover lift + active state dorado |
+| Header chat | minimal | radicado pill + status + actions toolbar |
+| Composer | textarea simple | rich editor con preview + plantillas dropdown |
+| Banners | rectángulos sólidos | glass-morphism con border-left color |
+
+**Tipografía consolidada**:
+```css
+--cnc-font-body: 'Inter', system-ui, -apple-system, sans-serif;
+--cnc-font-size-body: 14px;
+--cnc-font-size-caption: 12px;
+--cnc-line-height: 1.5;
+--cnc-letter-spacing-body: -0.01em;
+```
+
+**Paleta de bubbles**:
+```css
+--cnc-bubble-asesor-bg: linear-gradient(135deg, #d4ad6e, #b89658);
+--cnc-bubble-user-bg: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));
+--cnc-bubble-bot-bg: rgba(184, 150, 88, 0.10);
+--cnc-bubble-system-bg: rgba(74, 222, 128, 0.10);
+```
+
+**Animations**:
+```css
+@keyframes cncBubbleIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.cnc-detail-msg {
+    animation: cncBubbleIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+```
+
+**Líneas estimadas CSS**: +400, -150
+
+#### Sprint S7 — Rediseño visual del cliente (concierge widget)
+
+**Foco**: widget premium nivel Intercom/Drift.
+
+**Cambios específicos**:
+
+1. **FAB**: ya está bien (108×108 ALTOR.png con halo). Refinar timing del CTA bubble.
+
+2. **Panel apertura**:
+   - Animation spring overshoot (ya tenemos con `--vis-spring-bounce`)
+   - Skeleton loader mientras Firestore conecta (300ms max)
+
+3. **Header**:
+   - Avatar del bot/asesor + nombre + status pill (online/typing)
+   - Botón ⋮ con menú: Finalizar, Descargar, Volver al inicio
+
+4. **Welcome message inteligente**:
+   - Si en página de vehículo: "Veo que estás viendo el [Marca Modelo]. ¿Tenés preguntas sobre este auto?"
+   - Si returning user: "¡Bienvenido de vuelta, [Nombre]!"
+   - Si nuevo: greeting estándar
+
+5. **Vehicle cards inline** (ya tenemos §26.2): refinar carousel horizontal si hay 3+ autos.
+
+6. **Lead Capture Gate progresivo**:
+   - NO forzar gate al primer mensaje
+   - Pedir email solo cuando cliente hace pregunta de cotización/visita
+   - Pedir cédula solo si avanza a financiación/peritaje
+
+7. **Quick replies inteligentes** post-respuesta del bot:
+   - Bot: "Tenemos 12 SUVs disponibles" → quick replies: "Solo Toyota", "Bajo $50M", "Ver todas"
+
+8. **Composer**:
+   - Auto-grow textarea
+   - Send button habilitado solo si hay texto
+   - Ícono "Adjuntar" (futuro) — placeholder para sprint posterior
+
+**Líneas estimadas**: +250, -80
+
+---
+
+### 59.4 ELIMINACIÓN DE CÓDIGO MUERTO
+
+Audit identificó código que sobra post-cirugía:
+
+| Archivo | Líneas | Razón |
+|---|---|---|
+| `js/concierge.js` `closeOrFinalize` | 12 | Reemplazado por reducer pattern (S1) |
+| `js/concierge.js` `_resetting` flag | 30+ | Innecesario con reducer + listener guard |
+| `js/concierge.js` setTimeout 350ms restore inline styles | 10 | Patrón obsoleto post-S6 |
+| `js/admin-concierge.js` heartbeat 30s | 10 | onSnapshot reconnect nativo de Firestore lo cubre |
+| `css/concierge.css` `.cnc-closed-cta` legacy | 20 | No se usa, reemplazado por `.cnc-closed-action` |
+| `css/concierge.css` 6 keyframes infinite no usados | 80 | Confirmado con audit |
+| `js/concierge.js` `FAQ_LIBRARY` hardcoded | 50 | Reemplazado por `knowledgeBase/_brain` desde §21 |
+
+**Total a eliminar**: ~200-250 líneas de código muerto post-cirugía completa.
+
+**Regla**: cada sprint que reemplace funcionalidad debe ELIMINAR la versión vieja en el mismo commit. Cero "// DEPRECATED — borrar después".
+
+---
+
+### 59.5 PRIORIZACIÓN Y CRONOGRAMA
+
+| Sprint | Foco | Días | Prioridad | Impacto cliente |
+|---|---|---|---|---|
+| **S1** | Optimistic UI admin | 1.5 | 🔴 CRÍTICA | Botones responden INSTANT |
+| **S2** | Optimistic UI cliente | 1 | 🔴 CRÍTICA | Mensajes aparecen INSTANT |
+| **S3** | Typing indicators | 1.5 | 🟠 Alta | Sensación "vivo" tipo WhatsApp |
+| **S4** | Read receipts | 1 | 🟠 Alta | ✓ vs ✓✓ visual feedback |
+| **S5** | Presence avanzada | 1.5 | 🟡 Media | Cliente sabe si asesores online |
+| **S6** | Rediseño Hub admin | 3 | 🟠 Alta | UI premium nivel Intercom |
+| **S7** | Rediseño widget cliente | 2 | 🟠 Alta | UX premium nivel Intercom |
+
+**Total**: ~11.5 días / 7 commits documentados.
+
+**Quick wins primer commit (S1)**: 4-6 horas de trabajo, impacto INMEDIATO en la sensación del Hub. Esto es lo que el cliente más necesita.
+
+---
+
+### 59.6 REGLA ESTRICTA DE NO-REGRESIÓN
+
+Cada sprint debe pasar checklist obligatorio antes del push:
+
+- [ ] Tests E2E manuales en CLAUDE.md sub-sección
+- [ ] Cero `console.error` nuevos en producción
+- [ ] Cache version bumped si hay cambio de comportamiento
+- [ ] Documento de migración si cambia schema
+- [ ] Archivo viejo eliminado si fue reemplazado (cero código muerto)
+- [ ] CLAUDE.md sub-sección con causa raíz + fix + archivos modificados
+- [ ] Cruce con doctrinas §17 (perf), §19 (RCA), §35 (anti-MutationObserver), §37 (IAP)
+- [ ] Commit con mensaje detallado siguiendo el patrón de §52-§57.9
+
+**Si cualquier item del checklist falla → no se merguea**.
+
+---
+
+### 59.7 STACK TÉCNICO ESPECÍFICO POR FUNCIONALIDAD
+
+| Funcionalidad | Tecnología | Costo | Razón |
+|---|---|---|---|
+| Mensajes real-time | Firestore onSnapshot | $0 (free tier) | Ya tenemos, p50 <500ms |
+| Typing indicators | RTDB con throttle 1s | $0 (free tier bandwidth) | Más eficiente que Firestore para alta frecuencia |
+| Read receipts | Firestore field update | $0 | 1 write cada 10s, despreciable |
+| Presence asesor | RTDB `/presence` con onDisconnect | $0 | Ya tenemos, robusto |
+| Push notifications | FCM Web Push | $0 (ilimitado) | Ya tenemos |
+| Telegram alerts | Telegram Bot API | $0 (sin límite) | Ya tenemos |
+| LLM | Anthropic Claude Haiku 4.5 | ~$2-5/mes | Ya tenemos, ya optimizado §21.10 |
+| Storage | Firebase Storage | $0 (1GB free) | Avatars admin |
+| Cloud Functions | Free tier 2M invocations/mes | $0 | Ya tenemos 12 funciones |
+| Analytics | Firebase Analytics | $0 (ilimitado) | Métricas custom |
+
+**Costo recurrente total post-cirugía**: $2-5/mes (solo LLM Anthropic, todo lo demás $0).
+
+---
+
+### 59.8 ROADMAP FUTURO (post-§65)
+
+Estos NO entran en este Mega-Plan pero quedan documentados para referencia:
+
+- Internal notes (notas privadas de asesores) — 1 sprint
+- Transferencia de chat entre asesores — 1 sprint
+- Bulk actions (cerrar varios chats, asignar varios) — 1 sprint
+- Auto-routing por skill / availability — 2 sprints
+- CSAT survey post-cierre con NPS — 1 sprint
+- Dashboard de KPIs (resolution rate, response time, CSAT) — 2 sprints
+- A/B testing framework — 2 sprints
+- Continuous learning del LLM — ongoing
+- Mobile app standalone (PWA install) — ya tenemos infraestructura, refinar
+- Multi-language (en/es) — 1 sprint
+
+---
+
+### 59.9 PRÓXIMOS PASOS INMEDIATOS
+
+1. **Hoy mismo**: Commit este Mega-Plan §59 (este documento).
+2. **Próximo commit**: Sprint S1 — Optimistic UI admin (4-6 horas, impacto inmediato).
+3. **Después de S1**: Validación del cliente. Si lo siente "vivo", continuar S2-S7 secuencialmente.
+4. **Investigación industry-standard**: agente en background sigue corriendo. Cuando termine, integro insights en sub-secciones específicas de cada sprint.
+
+---
+
+### 59.10 COMPROMISO DEL CIRUJANO
+
+Cada commit posterior a este Mega-Plan §59 debe:
+
+1. Estar amparado por una sub-sección §59.X que documente: causa raíz, fix, archivos, tests E2E, anti-patterns evitados.
+2. NO introducir deuda técnica nueva.
+3. ELIMINAR código muerto del sprint anterior si hay.
+4. Mantener performance budget: bundle JS del Concierge max 4,080 líneas.
+5. Cero MutationObserver subtree:true. Cero pointermove persistentes. Cero `transition: all`.
+6. Cache version bumped + APP_VERSION sync.
+7. Commit message con detalle nivel §52-§57.9 (no genéricos).
+
+Bajo este contrato, el cliente puede confiar en que la cirugía no romperá lo que ya funciona y elevará el sistema sin gastar más allá de los $2-5/mes que ya consume.
+
+**Cache bump del Mega-Plan §59**: NO requiere bump (es solo documentación).
+
+---
+
+---
+

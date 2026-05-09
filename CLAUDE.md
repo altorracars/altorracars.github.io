@@ -24433,3 +24433,285 @@ refactor de funciones existentes.
 
 **Cache bump**: `v20260511260000`.
 
+---
+
+## 57.6 ADR-057.6 — 3 bugs coordinados: snapshot tardío race + descargar admin close + diag (2026-05-08)
+
+> Cliente reportó tras §57.quint:
+>
+> 1. Cliente escala → chat NO aparece en admin Hub hasta refresh.
+> 2. Admin cierra → cliente click "Iniciar nueva conversación" NO
+>    funciona, sigue en pantalla "Esta conversación ha finalizado"
+>    hasta refresh.
+> 3. Cuando admin cierra, debe aparecer también botón Descargar
+>    (no solo "Iniciar nueva").
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 57.6.1 Bug 2 — Snapshot tardío pisaba sesión nueva
+
+**Causa raíz**:
+
+`cleanSessionAndRender()` (§57.quint) cancelaba listeners y creaba
+sesión nueva. PERO un snapshot del listener parent que ya estaba
+en el event loop queue podía ejecutarse DESPUÉS del cancel y
+disparar el callback con `session._resetting === undefined`.
+
+El callback veía `status='closed'` en Firestore y seteaba
+`session.closed = true` sobre la sesión nueva, llamando
+`applyClosedState()` que re-creaba el closedBlock. Por eso el
+cliente seguía viendo la pantalla "Esta conversación ha finalizado"
+tras click "Iniciar nueva".
+
+**Fix**: setear `session._resetting = true` ANTES de cancelar
+listeners. El listener parent ya tiene guard
+`if (session._resetting) return` (línea 1473) que ignora snapshots
+tardíos.
+
+```js
+function cleanSessionAndRender() {
+    if (session) {
+        session._resetting = true;  // ← marca protección INMEDIATA
+        saveSession(session);
+    }
+    cancelChatListeners();
+    // ... cleanup ...
+    session = { ..., _resetting: true };  // mantener flag durante render inicial
+    // ... render ...
+    setTimeout(function () {
+        session._resetting = false;  // liberar tras 500ms
+        saveSession(session);
+    }, 500);
+}
+```
+
+500ms cubre cualquier snapshot tardío en queue del event loop.
+
+### 57.6.2 Bug 3 — Admin cierre con botón Descargar también
+
+Cliente pidió: "Cuando el asesor finaliza la conversación no solo
+debe aparecer el botón de nueva chat sino también lo de guardar
+la conversación".
+
+UI legacy del closed-block (admin cerró) ahora ofrece DOS botones
+en lugar de uno:
+
+```
+[Descargar conversación] [Iniciar nueva conversación]
+```
+
+Reusa la misma estructura visual de la UI `client_finalized`:
+- `.cnc-closed-actions` con `.cnc-closed-action--secondary`
+  + `.cnc-closed-action--primary`
+- `data-action="download-conversation"` → `downloadConversationPDF()`
+- `data-action="reset-session-from-closed"` → `resetSession()`
+
+### 57.6.3 Bug 1 — Diagnóstico detallado del listener admin
+
+Cliente reportó que cuando escala, el chat NO aparece en admin Hub
+hasta refresh. Listener admin tiene log de snapshots, pero agregué
+log detallado de cada change con `type/docId/mode/status`:
+
+```js
+console.log('[AdminConcierge] §57.6 change type:', chg.type,
+    'docId:', chg.doc.id, 'mode:', chg.doc.data().mode,
+    'status:', chg.doc.data().status);
+```
+
+Si el cliente reporta de nuevo (lo hizo, ver §57.7), los logs dirían
+exactamente:
+- Si el listener recibe el snapshot 'added' del nuevo chat
+- Si el listener no recibe (problema de listener inactivo)
+- Si el snapshot llega pero no triggea render
+
+### 57.6.4 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/concierge.js cleanSessionAndRender` | `_resetting=true` antes de cancelChatListeners + nueva sesión también con flag + setTimeout 500ms libera flag |
+| `js/concierge.js applyClosedState` | UI legacy admin-close con 2 botones (Descargar + Iniciar nueva) reusando estructura visual `.cnc-closed-actions` |
+| `js/admin-concierge.js startChatsListener` | Logs detallados de cada `docChange` (type/docId/mode/status) |
+| `service-worker.js` | CACHE_VERSION → v20260511270000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511270000 |
+
+**Cache bump**: `v20260511270000`.
+
+---
+
+## 57.7 ADR-057.7 — Listener admin globalmente activo + heartbeat self-healing (2026-05-08)
+
+> Cliente reportó tras §57.6 con diagnóstico explícito:
+> "Aun con problemas como se ve en la imagen, el usuario quiere
+> hablar con un asesor y al asesor no se le ve reflejado el mensaje
+> inmediatamente en la bandeja, nisiquiera si se espera mucho tiempo,
+> solo pasa cuando hacemos un refresh. Primero solucionemos este
+> problema enfoquemonos en este".
+>
+> Bug crítico: cliente escala chat → admin con Hub abierto NO ve el
+> chat nuevo en la bandeja hasta hard refresh. Ni siquiera con espera
+> larga. RCA estricto §19 — diagnóstico de fondo, NO parche.
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 57.7.1 Causa raíz
+
+Audit profundo del flow del listener:
+
+1. Admin login → `auth.js showAdmin` carga admin-concierge.js
+2. `init()` corre `startChatsListener()` → crea `_chatsUnsub`
+3. Cleanup hook §34 registró callback en `AltorraSectionCleanup`:
+   ```js
+   AltorraSectionCleanup.register('concierge', function() {
+       if (_chatsUnsub) { _chatsUnsub(); _chatsUnsub = null; }
+       if (_messagesUnsub) { _messagesUnsub(); _messagesUnsub = null; }
+   });
+   ```
+4. **Cuando admin sale de sec-concierge** (ej. va a Inicio o Vehículos),
+   `AltorraSections.onChange` dispara cleanup → `_chatsUnsub` se
+   cancela → **listener muere**.
+5. Si cliente escala chat MIENTRAS admin está fuera de sec-concierge,
+   el evento Firestore se emite pero NO hay listener escuchando.
+6. Cuando admin vuelve a sec-concierge, el handler `if (section ===
+   'concierge')` chequea `if (!_chatsUnsub) startChatsListener()` y
+   re-crea el listener. PERO Firestore solo emite snapshots futuros
+   desde el momento del subscribe — el evento del chat nuevo ya pasó.
+7. Resultado: chat existe en Firestore, pero el listener no lo vio
+   "added" → no aparece en `_chats[]` → no se renderiza en lista
+   lateral. Solo refresh fuerza un fetch completo.
+
+### 57.7.2 Solución de fondo — Listener globalmente activo
+
+**Cambio fundamental**: el listener `_chatsUnsub` debe quedar
+**SIEMPRE activo** mientras admin esté logueado (editor+),
+independientemente de la sección que esté viendo. Solo
+`_messagesUnsub` (suscripción al chat específico abierto en el
+detail panel) cancela al cambiar de sección.
+
+**Cambios en `js/admin-concierge.js`**:
+
+```js
+function startChatsListener() {
+    if (_chatsUnsub || !window.db) return;
+    if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+
+    // §57.7 — CRÍTICO: solo cancelar _messagesUnsub al cambiar de sección.
+    // El listener _chatsUnsub debe quedar SIEMPRE activo (badge global
+    // del Hub + chats nuevos en tiempo real).
+    if (window.AltorraSectionCleanup && !startChatsListener._cleanupRegistered) {
+        startChatsListener._cleanupRegistered = true;
+        window.AltorraSectionCleanup.register('concierge', function() {
+            // §57.7 — solo _messagesUnsub. _chatsUnsub queda activo.
+            if (_messagesUnsub) {
+                try { _messagesUnsub(); } catch (e) {}
+                _messagesUnsub = null;
+            }
+        });
+    }
+    // ... resto del listener ...
+}
+```
+
+**Section onChange simplificado**:
+
+```js
+window.AltorraSections.onChange(function (section) {
+    if (section === 'concierge') {
+        document.body.classList.add('altor-hub-active');
+        // §57.7 — el listener queda activo globalmente. Solo
+        // asegurar que existe por si el admin entra DIRECTO sin
+        // pasar por el auto-arranque (deep-link).
+        if (!_chatsUnsub) {
+            startChatsListener();
+        }
+    } else {
+        document.body.classList.remove('altor-hub-active');
+    }
+});
+```
+
+### 57.7.3 Heartbeat self-healing 30s
+
+Defense-in-depth: si por alguna razón rara el listener muere
+silenciosamente (network drop, tab inactivo throttled por el
+browser, error no propagado), un setInterval cada 30s detecta y
+reinicia automáticamente:
+
+```js
+setInterval(function () {
+    if (!window.auth || !window.auth.currentUser) return;
+    if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+    if (_chatsUnsub) return; // listener activo, todo OK
+    console.warn('[AdminConcierge] §57.7 heartbeat: listener detected as null, restarting');
+    startChatsListener();
+}, 30000);
+```
+
+**Garantías**:
+- Si listener muere por cualquier causa → max 30s de delay antes
+  de re-iniciar
+- Solo reinicia si es necesario (`_chatsUnsub === null`) — no spam
+- Solo si admin sigue autenticado y tiene rol editor+
+- Console.warn deja audit trail si pasa
+
+### 57.7.4 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Confiar en cleanup hook §34 sin pensar en consecuencias | El hook era correcto para perf (no acumular listeners), pero específicamente PARA `_chatsUnsub` causaba el bug. Solo `_messagesUnsub` (chat específico abierto) tiene sentido cancelar — es leak real si no se cancela. `_chatsUnsub` (lista global del Hub) DEBE estar siempre activo |
+| Force fresh listener al entrar a sec-concierge (§57.quat) | Resolvía PARTE del problema (cuando admin entra), no cuando admin estaba fuera durante el evento. Ahora innecesario porque el listener nunca muere |
+| Polling con setInterval frecuente para chequear updates | onSnapshot real-time es la solución correcta. Heartbeat solo es fallback para casos raros (no replacement) |
+| Eliminar el cleanup hook por completo | Mantener cleanup de `_messagesUnsub` (necesario para no acumular listeners por chat). Solo se removió `_chatsUnsub` del cleanup |
+| Crear varias capas de re-fetch en caso de fallo | Heartbeat single-purpose: solo re-iniciar si null. Listener Firestore con onSnapshot ya tiene auto-reconnect interno |
+
+### 57.7.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Admin login → Inicio → cliente escala chat | Sin sec-concierge abierto, listener activo recibe snapshot 'added' |
+| 2 | Admin click "ALTOR Hub" | Chat aparece INMEDIATAMENTE en lista lateral (sin refresh) |
+| 3 | Admin pasa entre secciones múltiples sin volver a Hub por 5+ min | Listener sigue activo (verificar `_chatsUnsub !== null` en DevTools) |
+| 4 | DevTools console al login | `[AdminConcierge] §57.7 startChatsListener init — global listener` |
+| 5 | DevTools console cada vez que llega snapshot | `[AdminConcierge] §57.6 snapshot — docs: N changes: M` + diagnostic detallado por change |
+| 6 | Si listener muere por bug raro | `[AdminConcierge] §57.7 heartbeat: listener detected as null, restarting` (max 30s) |
+| 7 | Logout admin | Listener cleanup completo (auth.js stopRealtimeSync) |
+
+### 57.7.6 Doctrina aplicada
+
+§19 RCA estricto: cliente dijo "Hemos hecho muchos commit de este
+caso y aun sin solucion" — me hizo aplicar RCA real en lugar de
+patches. Identifiqué que el cleanup hook era el culpable, no
+problemas de Firestore o timing.
+
+§37 IAP: análisis previo identificó que la solución requería:
+- Quitar `_chatsUnsub` del cleanup callback
+- Simplificar section onChange handler
+- Agregar heartbeat como defense-in-depth
+
+§17 (Performance): cero MutationObserver, cero pointermove. Solo
+1 setInterval de 30s con guard simple. Listener Firestore ya tiene
+debounce/batching interno.
+
+§17.4 (HTML/CSS stable): cero cambios de HTML o CSS. Solo JS.
+
+### 57.7.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-concierge.js startChatsListener` | Removido `_chatsUnsub` del cleanup hook callback. Solo `_messagesUnsub` cancela on section change. Log diagnóstico al init |
+| `js/admin-concierge.js section onChange` | Simplificado: si `!_chatsUnsub` → start. No más force-fresh-listener (ya no necesario) |
+| `js/admin-concierge.js` | Heartbeat `setInterval` 30s self-healing — restart listener si null |
+| `service-worker.js` | CACHE_VERSION → v20260511280000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511280000 |
+| `CLAUDE.md` | Esta sección §57.7 |
+
+### 57.7.8 Archivos INTACTOS (afirmación)
+
+- `js/concierge.js` — sin tocar (cliente sigue OK desde §57.6)
+- `firestore.rules` — sin tocar
+- `functions/index.js` — sin tocar
+- `js/admin-v2-core.js` `AltorraSectionCleanup` — sin tocar (sigue
+  funcionando para otros módulos que sí necesitan cancelar al cambiar
+  de sección, ej: admin-vehicles drafts)
+
+**Cache bump**: `v20260511280000`.
+

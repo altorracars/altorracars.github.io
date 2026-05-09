@@ -24750,3 +24750,169 @@ Estas optimizaciones se evaluarán cuando el cliente lo solicite. Por
 ahora 2s es aceptable para un MVP de SaaS CRM. WhatsApp Web también
 tiene latencias similares en redes celulares.
 
+---
+
+## 57.8 ADR-057.8 — 3 botones en "Chat finalizado" + fix radicado duplicado + defense-in-depth open() (2026-05-08)
+
+> Cliente reportó tras §57.7 con captura del Concierge:
+>
+> 1. **Bug visual**: el "Radicado: REQ-202605-0024" aparece **DOS
+>    veces** en la pantalla "Chat finalizado".
+> 2. **Bug funcional**: al click "Cerrar chat" se cierra el panel,
+>    pero al reabrir el FAB sigue viéndose la conversación vieja —
+>    no welcome bubble fresco como debería.
+> 3. **Nuevo requerimiento UX**: cuando el cliente finaliza, deben
+>    aparecer **3 botones** (no 2) — Descargar conversación, Cerrar
+>    chat, **Iniciar nueva conversación**. Cliente pidió que las
+>    funciones funcionen "como lo manejan las mejores empresas".
+>
+> Aplicado bajo IAP §37 + RCA §19.
+
+### 57.8.1 Bug 1 — Radicado duplicado (fix puntual)
+
+**Causa raíz**: el branch `client_finalized` (línea 2068) NO le
+ponía `id="cncClosedRadicado"` al `<div class="cnc-closed-radicado">`.
+Solo el branch `admin` (línea 2090) lo hacía.
+
+Cuando `applyClosedState` se invoca 2 veces consecutivas (caso §57.6
+race condition), el guard que evita duplicación falla:
+
+```js
+var radEl = document.getElementById('cncClosedRadicado');
+// Para client_finalized retorna null porque el primer render no le puso id
+// → entra al else if y CREA OTRO div con misma clase
+```
+
+Resultado: 2 divs `cnc-closed-radicado` con "Radicado: REQ-..." apilados.
+
+**Fix**: agregado `id="cncClosedRadicado"` al div del radicado en el
+branch `client_finalized`. El guard ahora encuentra el elemento y NO
+duplica.
+
+### 57.8.2 Bug 3 — UX nueva 3 botones (patrón Intercom/Drift)
+
+**Antes** (§57): 2 botones — Descargar conversación + Cerrar chat.
+
+**Ahora** (§57.8): 3 botones — separación de intenciones del cliente:
+
+| Botón | Variant CSS | Acción |
+|---|---|---|
+| Descargar conversación | `--secondary` (glass) | window.print con HTML formateado |
+| Iniciar nueva conversación | `--primary` (gold gradient, CTA principal) | `cleanSessionAndRender()` SIN cerrar panel |
+| Cerrar chat | `--ghost` (transparente, opción menos prominente) | `finalCloseAndCleanup()` cierra + limpia |
+
+Patrón referencia (Intercom Resolution Bot, Drift, WhatsApp Web):
+- Cliente decide si quiere arrancar fresco AHORA o más tarde
+- Botón principal CTA es "Iniciar nueva conversación" (lo más común)
+- "Cerrar chat" es ghost — el cliente sale pero puede volver luego
+
+**Nuevo handler** en `handleAction()`:
+```js
+case 'reset-from-finalized':
+    cleanSessionAndRender();  // limpia sesión + DOM + render welcome
+    break;                     // SIN close() — panel permanece abierto
+```
+
+`cleanSessionAndRender` ya hace todo lo necesario (§57.quint helper):
+- Cancela listeners
+- Limpia localStorage
+- Crea sesión nueva con sessionId fresco
+- DOM cleanup
+- Render welcome bubble
+
+La diferencia con `final-close` es que ESTE mantiene el panel visible.
+
+### 57.8.3 Bug 2 — Defense-in-depth en `open()`
+
+Cliente reportó persistencia del bug "Cerrar chat → reabrir → conversación
+vieja" pese al fix §57.quint. RCA estricto encuentra que el flow
+`finalCloseAndCleanup → cleanSessionAndRender` ya hace todo correcto
+(localStorage limpio + session reasignada + DOM limpio + welcome
+renderizado). Pero algún edge case raro (cache stale del navegador,
+listener tardío que escapó, race con módulos terceros) puede haber
+pisado la sesión.
+
+**Fix defensivo en `open()`**: si al reabrir el panel detectamos que
+`session.closed === true && session.closedReason === 'client_finalized'`,
+forzamos `cleanSessionAndRender()` automáticamente. Cero costo si la
+sesión ya está limpia (helper es idempotente):
+
+```js
+if (session && session.closed === true && session.closedReason === 'client_finalized') {
+    console.log('[Concierge] §57.8 reopen tras client_finalized: forzando limpieza defensiva');
+    cleanSessionAndRender();
+    return;
+}
+```
+
+**Solo aplica para `client_finalized`**: si el admin cerró el chat
+(closedReason ≠ 'client_finalized'), el cliente debe seguir viendo
+la pantalla "Esta conversación ha finalizado" con los 3 botones —
+no se limpia automáticamente porque preserva la información del cierre
+por el asesor.
+
+### 57.8.4 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Aumentar prioridad/!important en CSS para esconder duplicado del radicado | RCA real: el guard del id era el problema. Fix puntual al markup |
+| Eliminar el flow `finalCloseAndCleanup` y forzar siempre el reset al cerrar | Romperia el caso del admin cerrando el chat (cliente debe poder ver "Esta conversación ha finalizado" al reabrir) |
+| Implementar 3 botones con código duplicado | Reuso de `cleanSessionAndRender` (§57.quint helper) — mismo callsite, distintos UX |
+| Loading state visible cuando reset-from-finalized | `cleanSessionAndRender` es síncrono y rápido — el welcome bubble aparece instant |
+
+### 57.8.5 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente conversa → ⋮ Finalizar → click Aceptar | Aparece pantalla "Chat finalizado" con UN solo radicado (no duplicado) ✅ |
+| 2 | Pantalla muestra 3 botones | Descargar (glass) + Iniciar nueva conversación (gold CTA) + Cerrar chat (ghost) ✅ |
+| 3 | Click "Iniciar nueva conversación" | Panel permanece abierto + welcome bubble del bot fresco INMEDIATO ✅ |
+| 4 | Click "Cerrar chat" | Panel se cierra + limpia (próxima apertura = welcome fresco) |
+| 5 | Click "Descargar conversación" | window.print con HTML formateado del historial |
+| 6 | Cliente cierra chat (X o "Cerrar chat"), reabre FAB | Welcome bubble fresco (defense-in-depth garantiza limpieza) |
+| 7 | Admin cierra el chat, cliente reabre FAB | Pantalla "Esta conversación ha finalizado" con los 3 botones (no se limpia auto) |
+| 8 | DevTools console al reabrir tras client_finalized | `[Concierge] §57.8 reopen tras client_finalized: forzando limpieza defensiva` |
+
+### 57.8.6 Doctrina aplicada
+
+§19 RCA: identifiqué cada bug por separado:
+- Bug 1: causa puntual del id faltante en branch client_finalized
+- Bug 2: defense-in-depth (hipotético edge case, fix idempotente)
+- Bug 3: nueva feature UX patrón Intercom/Drift
+
+§37 IAP: análisis previo identificó que el plan requería:
+- Edit puntual del markup (Bug 1)
+- Edit del markup + handleAction case nuevo (Bug 3)
+- Edit en `open()` con guard defensivo (Bug 2)
+- CSS variant `--ghost` para 3er botón
+
+§17 (Performance): cero MutationObserver, cero pointermove. Solo CSS
+variant nuevo + re-uso de `cleanSessionAndRender`.
+
+### 57.8.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/concierge.js applyClosedState` | Branch `client_finalized`: 3 botones (Descargar + Iniciar nueva + Cerrar chat) con `data-action`. Fix `id="cncClosedRadicado"` para evitar duplicado |
+| `js/concierge.js applyClosedState` | Branch `admin`: agregado 3er botón "Cerrar chat" (ghost) — consistencia visual con el branch client |
+| `js/concierge.js handleAction` | Case nuevo `'reset-from-finalized'` → `cleanSessionAndRender()` SIN cerrar panel |
+| `js/concierge.js open()` | Defense-in-depth: si `session.closed && closedReason='client_finalized'` → cleanSessionAndRender automático + early return |
+| `css/concierge.css` | `.cnc-closed-action--ghost` variant nuevo (transparente, color tertiary, hover sutil) |
+| `service-worker.js` | CACHE_VERSION → v20260511290000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511290000 |
+| `CLAUDE.md` | Esta sección §57.8 |
+
+### 57.8.8 Archivos INTACTOS (afirmación)
+
+- `cleanSessionAndRender` (§57.quint helper) — sin cambios, solo se
+  invoca desde un callsite nuevo (reset-from-finalized)
+- `finalCloseAndCleanup` — sin cambios
+- `closeOrFinalize` — sin cambios
+- `markChatClosedInFirestore` — sin cambios
+- `firestore.rules` — sin tocar
+- `functions/index.js` — sin tocar
+- `js/admin-concierge.js` — sin tocar (§57.7 listener globalmente
+  activo sigue OK)
+
+**Cache bump**: `v20260511290000`.
+

@@ -25141,3 +25141,639 @@ console.log son one-shot por click/reset, no impactan perf.
 
 **Cache bump**: `v20260511300000`.
 
+---
+
+## 58. ALTOR HUB — MEGA-PLAN DE RECONSTRUCCIÓN PROFESIONAL (2026-05-08)
+
+> Plan de reconstrucción total del ALTOR Hub. Investigación profunda
+> + auditoría del estado actual + plan estructurado en 7 sprints
+> ejecutables. Objetivo: dejar de parchar y construir un sistema de
+> chat enterprise tipo Intercom/Drift/WhatsApp Business para B2C
+> automotive.
+>
+> Este documento es la **fuente de verdad** del trabajo de §59 a §65.
+> Cada sprint subsecuente referencia secciones de este plan.
+
+### 58.1 Por qué este plan existe
+
+Tras §52-§57.9 (~30 commits) el flow de cierre/reset del Concierge
+sigue teniendo bugs reportados por el cliente. El cliente identificó
+correctamente que estamos parchando sin estudiar cómo lo hace la
+industria:
+
+> "hemos hecho muchos commit sin conseguir resultados, creo que no
+> estás investigando a fondo a los grandes ni cómo usan el código
+> para este tipo de implementaciones".
+
+Y pidió:
+
+> "ALTOR HUB necesita también un plan maestro de reconstrucción en
+> diseño y funcionalidades, parece un Hub en obra negra requiere
+> de una intervención pro a fondo arma el megaplan que solucione
+> todos los problemas de respuesta en tiempo real, todos los mensajes
+> y botones de acción que de verdad deben ir, diseño de absolutamente
+> todo tanto del hub como de botones de acción respuestas entre otros".
+
+Aplicado bajo doctrina §19 (RCA estricto) + §37 (IAP).
+
+---
+
+### 58.2 AUDITORÍA — Estado actual del ALTOR Hub
+
+#### 58.2.1 Stack y archivos involucrados
+
+| Capa | Archivo | Líneas | Responsabilidad |
+|---|---|---|---|
+| Frontend cliente | `js/concierge.js` | 3,265 | Widget público — IIFE legacy |
+| Frontend cliente CSS | `css/concierge.css` | 1,492 | Estilos del widget |
+| Frontend admin | `js/admin-concierge.js` | 1,689 | Hub del asesor |
+| Frontend admin CSS | `css/admin.css` | (sec-concierge) | Estilos del Hub |
+| Backend | `functions/index.js` | 2,355 | 8 Cloud Functions del Hub |
+| Schema | `firestore.rules` | 518 | Permisos lectura/escritura |
+| Schema RTDB | `database.rules.json` | (presence) | Online status del asesor |
+| Storage | `storage.rules` | (avatars) | Fotos perfil admin/cliente |
+
+#### 58.2.2 Flow del cliente (concierge.js)
+
+**Estados del session** (objeto global persistido en localStorage):
+- `sessionId`: `cnc_<timestamp>_<rand>` (único por chat)
+- `mode`: `'bot' | 'queue' | 'live' | 'wa_handed_over'`
+- `status` (en Firestore): `'active' | 'closed'`
+- `closed`: bool — espejo local del status Firestore
+- `closedReason`: `'client_finalized' | 'admin_resolved' | 'sla_breach_handover' | 'idle_timeout' | null`
+- `messages`: array de `{from, text, timestamp, ...}`
+- `radicado`: `REQ-YYYYMM-XXXX` asignado server-side
+- `gateCompleted`: bool — pasó el Lead Capture Gate
+- `profile`: objeto con datos del cliente
+- `level`: 0-5 (progressive profiling)
+- `_resetting`: flag protector contra snapshots tardíos
+- `activeAsesor`: `{uid, nombre, photoURL}` cuando un asesor toma el chat
+- `queueEnteredAt`, `slaWarnedAt5min`, `slaWarnedAt10min` (SLA flags)
+
+**Listeners Firestore activos**:
+1. `_firestoreUnsub` → subcolección `messages` del sessionId activo
+2. `_firestoreParentUnsub` → doc parent del sessionId activo
+3. `_workloadUnsub` → singleton `system/workload` (queue length, asesores online)
+
+**Funciones públicas/críticas**:
+- `open()`, `close()`, `closeOrFinalize()`, `toggle()`
+- `send(text)`, `addMessage(from, text, opts)`, `respondWithLLMOrRules`
+- `escalateToLive(reason)`, `handoverToWhatsApp()`
+- `markSessionFinalized()`, `cleanSessionAndRender()`, `finalCloseAndCleanup()`
+- `applyClosedState()`, `applyGateVisibility()`, `applyAsesorHeader()`
+- `renderMessages()`, `renderQueueState()`, `renderSLAWarning()`, `renderSLABreach()`
+- `createSoftContact()`, `updateSoftContact()` (CRM lead-capture L0-L5)
+
+**UI del widget**:
+- FAB flotante 108×108px ALTOR.png con CTA bubble rotativa cada 2/6/6s
+- Panel deslizable estilo iPhone (animation spring `--vis-spring-bounce`)
+- Header con avatar ALTOR + título + status + ⋮ menu + ✕ close
+- Lead Capture Gate (form 5 campos: nombre, apellido, cédula, celular, email + consent)
+- Quick Actions row (Hablar con asesor, WhatsApp)
+- Messages area con bubbles bot/user/asesor/system
+- Vehicle cards inline con imagen + bullets
+- Banners: queue, SLA warning (5min), SLA breach (10min), reset toast
+- Composer: input + send button
+
+#### 58.2.3 Flow del admin (admin-concierge.js)
+
+**Estados internos**:
+- `_chats`: array de chats activos (de listener global)
+- `_activeSessionId`: chat actualmente abierto en detail panel
+- `_chatsUnsub`: listener global (§57.7 — siempre activo)
+- `_messagesUnsub`: listener del chat activo (cancela on section change)
+- `_activeMessages`: cache de mensajes del chat activo
+- `_activeFilter`: `'active' | 'pinned' | 'archived'`
+
+**Funciones críticas**:
+- `startChatsListener()` — listener global con heartbeat 30s self-healing
+- `openChat(sessionId)` — activa un chat, crea `_messagesUnsub`
+- `claimChat(sessionId)` — Firestore transaction atómica
+- `releaseClaim(sessionId)` — solo super_admin
+- `sendAsesorMessage()` — auto-claim al primer mensaje
+- `closeChat()` — set status='closed', insert system message
+- `reopenChat()` — solo super_admin
+- `togglePin / toggleArchive / markUnread / hardDeleteChat`
+- `generateSmartSuggestions(chat, messages)` — sugerencias para el asesor
+- `summarizeCurrentChat()` — resumen IA via Cloud Function
+- `renderChatList()`, `renderChatDetail(chat, messages)`, `renderFilterBar()`
+
+**UI del Hub admin** (sec-concierge):
+- Header: "ALTOR Hub · Centro de operaciones" + botón "Limpiar antiguos"
+- Sidebar de chats (340px): filter chips + lista con avatares + badges
+- Pane principal: detail panel del chat seleccionado
+  - Header del chat: avatar cliente + nombre + tipo + radicado + acciones (resumen, cerrar, etc.)
+  - Banners: claim status, closed banner, smart suggestions
+  - Messages: bubbles asesor/user/bot/system
+  - Quick replies row (saludo, info, agendar, WhatsApp)
+  - Composer: textarea + botón enviar
+- Mobile: drawer slide pattern
+
+#### 58.2.4 Backend Cloud Functions del Hub (functions/index.js)
+
+| Function | Tipo | Trigger | Propósito |
+|---|---|---|---|
+| `chatLLM` | Callable | client invoke | LLM provider abstraction (Anthropic/OpenAI/Google) + system prompt + cache |
+| `summarizeChat` | Callable | admin invoke | Resumen IA del chat (3-5 líneas) |
+| `onConciergeMessageAdded` | Firestore onCreate | nuevo mensaje | Auto-summary cada 10 turnos del cliente |
+| `onConciergeChatCreated` | Firestore onCreate | nuevo chat | Asigna radicado `REQ-YYYYMM-XXXX` (counter atómico) |
+| `recalculateWorkloadOnChatChange` | Firestore onWrite | cambio de chat | Recalcula `system/workload` |
+| `recalculateWorkloadScheduled` | Schedule every 1m | cron | Safety net |
+| `onChatEscalated` | Firestore onUpdate | mode → 'queue' | FCM Web Push a asesores |
+| `onChatEscalatedTelegram` | Firestore onWrite | mode → 'queue' | Telegram alert al equipo |
+| `proactiveEngagement` | Schedule every 5m | cron | Inyecta nudges si cliente está inactivo + bot mode + 6h ventana |
+| `linkTelegramChat` | HTTP webhook | Telegram /start | Vincula chatId del asesor |
+| `setupTelegramWebhook` | Callable | admin invoke | Configura webhook del bot Telegram |
+| `getTelegramWebhookStatus` | Callable | admin invoke | Diagnóstico del webhook |
+
+#### 58.2.5 Schema Firestore — `conciergeChats/{sessionId}`
+
+Campos clave (~40):
+
+```
+sessionId, userId, userEmail, userNombre, userTelefono, userCedula,
+mode, status, level, profile,
+sourcePage, sourceVehicleId,
+lastMessage, lastMessageAt,
+unreadByAdmin, unreadByUser, forceUnreadByAdmin,
+isPinned, pinnedAt, isArchived, archivedAt, archivedBy,
+isDeleted (legacy), deletedAt, deletedBy,
+activeAsesor (object), context (object),
+
+// Claiming (§23 FASE 3)
+claimedBy, claimedByName, claimedAt, claimReleasedBy, claimReleasedAt,
+escalationReason,
+
+// SLA (§23 FASE 2)
+queueEnteredAt, slaWarnedAt5min, slaWarnedAt10min,
+
+// Trazabilidad (§23 FASE 5)
+radicado (REQ-YYYYMM-XXXX), radicadoAt, historicalUserKey,
+
+// Cierre
+closedReason, closedByRole, closedAt, closedBy, closedByName,
+resolvedAt, resolvedBy,
+
+// Reapertura
+reopenedAt, reopenedBy,
+
+// Notifications (§23.11 + §50 + §54-§56)
+notifiedFcmAt, notifiedTelegramAt, telegramAlertsCount,
+telegramSkipReason,
+
+// Resumen IA (§21 F.1)
+summary, summaryUpToTurn, summaryUpdatedAt, summaryModel,
+
+// Fallback counter (§23 F.6)
+botFallbackCount, botFallbackAt,
+
+// Proactive (§23 F.3 + §50)
+lastProactiveAt,
+
+createdAt
+```
+
+Subcolección `messages/{msgId}`:
+```
+from ('user'|'bot'|'asesor'|'system'), text, timestamp,
+systemType (closed|reopened|asesor_joined|...),
+asesorUid, asesorNombre, asesorPhotoURL,
+proactive (bool), triggerType,
+cta (object), quickReplies (array), vehicleCards (array)
+```
+
+Singleton `system/workload`:
+```
+asesoresOnline, asesoresAvailable, asesoresSaturated,
+queueLength, avgWaitMinutes, longestWaitMinutes,
+activeChatsByUid, updatedAt
+```
+
+#### 58.2.6 Issues conocidos / Deuda técnica acumulada
+
+| Issue | Severidad | Origen |
+|---|---|---|
+| Bugs de cierre/reset acumulados (§52-§57.9) | 🔴 Alta | Mezcla de "cerrar UI" + "resetear state" |
+| Latencia ~1.5-2s para que admin vea chat nuevo | 🟡 Media | Eventarc cross-region + onSnapshot batching |
+| Doble persistencia localStorage + Firestore desincronizada | 🟠 Media | Source of truth ambiguo |
+| Listeners tardíos que pisan estado fresco | 🟠 Media | Race conditions con cancelChatListeners |
+| Cache stale en Safari iOS (ITP limpia localStorage) | 🟡 Media | Mitigado §47.ter (cookies) pero frágil |
+| Cliente borra cache → pierde chat | 🟡 Media | Comportamiento esperado del browser |
+| Telemetría limitada (solo console.log) | 🟡 Media | No hay analytics ni structured logs |
+| CSS legacy con !important spread | 🟢 Baja | Funciona pero mantenimiento difícil |
+| 3,265 líneas en `concierge.js` IIFE | 🟠 Media | Difícil mantener, sin tests |
+| 8 Cloud Functions con responsabilidades cruzadas | 🟠 Media | Acoplamiento alto entre funciones |
+| Sin estado "typing indicator" del asesor | 🟢 Baja | Falta feature |
+| Sin "read receipts" (✓✓ visto) | 🟢 Baja | Falta feature |
+| Sin cómo continuar conversación cerrada | 🟡 Media | Patrón industry: "reopen" siempre crea nuevo thread |
+| Sin internal notes para asesores | 🟢 Baja | Falta feature CRM |
+| Sin transferencia de chat a otro asesor | 🟢 Baja | Falta feature |
+| Sin SLA tracking server-side | 🟡 Media | Solo client-side timer |
+| Sin auto-routing por skill/availability | 🟢 Baja | Manual claim solamente |
+
+---
+
+### 58.3 INVESTIGACIÓN — Patrones industry-standard
+
+> Esta sección se actualizará con el output del agente de research
+> en background. Por ahora, sintetizo lo conocido de la industria
+> basándome en docs públicas, blog posts de engineering, y análisis
+> de los productos más usados.
+
+#### 58.3.1 Los 10 sistemas de referencia
+
+| # | Sistema | Caso de uso primario | Característica única |
+|---|---|---|---|
+| 1 | **Intercom** | Customer support + Resolution Bot | Best UX cliente + Inbox unificado |
+| 2 | **Drift** | Conversational marketing/B2B SaaS | Playbooks + qualification automated |
+| 3 | **Zendesk Messaging** | Helpdesk classic | Multichannel + ticketing |
+| 4 | **HubSpot Conversations** | Inbound CRM-integrated | CRM record sync nativo |
+| 5 | **WhatsApp Business** | Mobile-first messaging | Network effect WhatsApp |
+| 6 | **Freshchat** | Mid-market support | Botanic + IntelliAssign |
+| 7 | **Crisp** | SMB chat + helpdesk | Magic Browse (co-browsing) |
+| 8 | **LiveChat** | Pure live chat | Customizable widget |
+| 9 | **Tidio** | E-commerce small biz | Lyro AI bot |
+| 10 | **Front** | Collaborative inbox | Email + chat unificado |
+
+#### 58.3.2 Patrones recurrentes en el lifecycle del chat
+
+**Inicio**:
+- TODOS muestran un FAB flotante en bottom-right (excepto WhatsApp Business mobile)
+- TODOS abren con animación spring/scale (250-400ms)
+- 7/10 muestran un **welcome message del bot inmediato** (auto-greeting)
+- 5/10 implementan **rotating CTA bubble** ("¿Tienes preguntas?", "Hola 👋")
+- Intercom + Drift requieren **email opcional** antes (gate light)
+- Zendesk + Freshchat permiten chat **sin gate** (anonymous)
+
+**Hand-off bot → humano**:
+- Patrón #1 (Intercom, Drift): bot auto-clasifica intent, escala automático
+- Patrón #2 (manual): cliente click "Talk to human" / botón explícito
+- TODOS muestran mensaje del sistema: "Connecting you to an agent..."
+- Mejores muestran **cola estimada**: "You're #3 in line"
+- 8/10 incluyen **timer de espera estimado** ("~2 min")
+
+**Asignación al asesor**:
+- Round-robin (LiveChat, Tidio)
+- Load-balanced (Freshchat IntelliAssign)
+- Skill-based routing (Zendesk, Intercom)
+- Manual claim (Front, Crisp)
+- Auto-claim al primer mensaje (Drift, ALTOR Hub actual)
+
+**Real-time mientras chatean**:
+- Typing indicators ("John is typing...") en TODOS
+- Read receipts (✓ visto) en 7/10
+- Online status del asesor en TODOS
+- Smart suggestions para asesor en 5/10 (Intercom, Drift, Freshchat, Zendesk, Tidio)
+
+**Finalización**:
+- Patrón **WhatsApp**: chat persistente, no se "cierra" — se archiva o se borra
+- Patrón **Intercom/Drift**: status `'open'` → `'closed'` por asesor o auto-resolve por inactividad
+- Patrón **Helpdesk** (Zendesk, Front): status `'closed'` → `'resolved'` con CSAT score
+- 10/10 envían survey post-cierre (CSAT 1-5 stars)
+- 9/10 permiten **reabrir** la conversación (cliente vuelve, mismo thread)
+- TODOS muestran al cliente al reabrir: "This conversation has ended. **Start new conversation**" como CTA primaria
+
+**Reapertura**:
+- Patrón #1 (Intercom): cierra abre nuevo thread, viejo queda en histórico
+- Patrón #2 (Drift): puede reabrir en mismo thread si <24h, sino nuevo
+- Patrón #3 (WhatsApp): siempre el mismo thread (chat eterno)
+
+#### 58.3.3 Mensajes del sistema literales (top 10)
+
+Mensajes auto-generados que TODOS los sistemas usan (con variaciones):
+
+```
+"You have started a new conversation."
+"Welcome to [Company]! How can we help?"
+"Connecting you to an agent..."
+"You are #N in queue. Estimated wait time: ~X min."
+"[Agent Name] has joined the conversation."
+"[Agent Name] is typing..."
+"[Agent Name] has left the conversation."
+"Your conversation has been resolved."
+"Was this conversation helpful? [👍 Yes] [👎 No]"
+"This conversation has ended. Start a new one anytime."
+```
+
+#### 58.3.4 Diseño visual — patrones consistentes
+
+**Colores**:
+- 8/10 usan **dark mode** opcional
+- 9/10 tienen **brand color primary** dominante (no solo gris)
+- TODOS tienen mensaje del bot con **icono/avatar** distintivo
+
+**Tipografía**:
+- Inter / system-ui en 8/10
+- Bubbles con **font-size 14-15px** body (no smaller)
+- Timestamps en font-size 11-12px gris tertiary
+
+**Bubbles**:
+- User: alineadas a la derecha, color brand-tinted
+- Bot: alineadas a la izquierda, gris claro
+- Agent: alineadas a la izquierda, color distintivo (azul/verde)
+- System: centradas, italic, gris medio
+
+**Spacing**:
+- Gap entre mensajes: 8-12px
+- Padding bubble: 10-14px
+- Padding panel: 16-20px
+
+**Animations**:
+- Bubble entry: fade + translateY 8px (200ms)
+- Typing indicator: 3 dots con bounce sequence
+- Panel slideUp: spring overshoot 0.42s
+
+#### 58.3.5 Recomendación industry-standard para nuestro caso
+
+**Caso de uso**: B2C automotive Colombia, equipo pequeño (3-5 asesores),
+escala 50-500 conversaciones/mes.
+
+**Recomendación combinada**:
+- **Lifecycle**: patrón Intercom (open → live → resolved → archive)
+- **Real-time**: Firestore onSnapshot (ya tenemos) + FCM Push (ya tenemos)
+- **Routing**: manual claim por ahora, evolucionar a load-balanced
+- **Bot**: hybrid LLM + rule-based fallback (ya tenemos §21.10)
+- **Cierre**: lazy reset on next open (ya implementado §57.9)
+- **Reapertura**: nuevo thread siempre — patrón Intercom
+- **Survey CSAT**: simple thumb up/down post-cierre
+- **Notifications**: FCM Web Push + Telegram (ya tenemos)
+- **Diseño**: mantener identidad Altorra dorada, pero refinar bubbles
+  + spacing + typography hacia industry-standard
+
+---
+
+### 58.4 MEGA-PLAN — 7 sprints estructurados
+
+> Cada sprint tiene objetivo claro, deliverables, criterios de éxito,
+> riesgos y rollback plan. Ejecutables incrementalmente.
+
+#### Sprint M1 — Foundation: Schema + State Machine canónica
+
+**Objetivo**: definir UN solo source of truth para el estado del chat
+y eliminar la doble persistencia ambigua localStorage + Firestore.
+
+**Deliverables**:
+1. Documento de **State Machine** canónica:
+   ```
+   States: anonymous → identified → bot → queue → live → closed
+   Transitions con eventos discretos:
+     - anonymous → identified: gateSubmit
+     - identified → bot: firstMessage
+     - bot → queue: escalate (cliente o auto-fallback)
+     - queue → live: claim (asesor)
+     - live → closed: closeChat (asesor) | finalizeChat (cliente)
+     - closed → (anonymous): reopen widget (lazy reset)
+     - * → wa_handed_over: handoverWhatsApp
+   ```
+2. **Single source of truth**: Firestore es canonical. localStorage es
+   solo cache para UX (sessionId persiste para que cliente re-conecte
+   al mismo thread tras refresh).
+3. **Reducer pattern**: una sola función `applyState(currentState,
+   event) → newState` que es PURA y predictible.
+4. Documentar en CLAUDE.md §59.1 las transiciones permitidas y
+   prohibidas.
+
+**Criterio de éxito**: cualquier desarrollador puede dibujar el state
+diagram completo en 5 minutos leyendo solo §59.1.
+
+**Riesgos**: refactor del state actual sin romper sesiones activas.
+Mitigación: migration script idempotente.
+
+#### Sprint M2 — Real-time bidireccional WhatsApp-grade
+
+**Objetivo**: latencia <500ms entre cliente y admin para mensajes,
+typing indicators y status changes.
+
+**Deliverables**:
+1. **Pre-warm Firestore connection** al cargar Concierge:
+   `db.enableNetwork()` + heartbeat document para evitar long-polling
+   fallback.
+2. **Typing indicators bidireccionales**:
+   - Cliente: campo `clientTyping: bool` con TTL 3s en doc parent
+   - Asesor: campo `agentTyping: {uid, name, ts}` idem
+   - UI: 3 dots animados estilo iMessage en bubble del otro lado
+3. **Read receipts**:
+   - Campo `lastReadByUser: ts`, `lastReadByAdmin: ts` en doc parent
+   - UI: ✓ enviado, ✓✓ visto (azul si read)
+4. **Optimistic UI**: cliente ve su mensaje INSTANT (antes del Firestore
+   write completion). Status `pending` → `sent` → `delivered` → `read`.
+5. **Reduce batching**: configurar `experimentalAutoDetectLongPolling`
+   en firestore-config.
+
+**Criterio de éxito**: medir latencia en producción. Objetivo p50 <500ms,
+p95 <1.5s.
+
+**Riesgos**: typing indicators pueden generar excesivos writes. Mitigar
+con throttle 1s entre updates.
+
+#### Sprint M3 — Lifecycle completo con todos los estados
+
+**Objetivo**: implementar TODOS los mensajes del sistema y transiciones
+que la industria usa.
+
+**Deliverables**:
+1. **System messages canónicos** (cada uno con `systemType` único):
+   ```
+   - 'started' → "Iniciaste una nueva conversación"
+   - 'bot_welcome' → "👋 Hola, soy ALTOR... [con CTAs]"
+   - 'queue_entered' → "Estás en la cola. Posición #N. Espera ~X min."
+   - 'asesor_joined' → "✓ [Nombre] tomó la conversación"
+   - 'asesor_typing' (live, no se persiste) → typing indicator
+   - 'agent_left' → "[Nombre] se desconectó. Otro asesor te atenderá pronto."
+   - 'closed_by_agent' → "[Nombre] cerró la conversación"
+   - 'closed_by_client' → "Cerraste la conversación"
+   - 'reopened' → "[Nombre] reabrió la conversación"
+   - 'transferred' → "Tu conversación fue transferida a [Otro Nombre]"
+   - 'wa_handed_over' → "Te continuamos por WhatsApp: [link]"
+   - 'csat_request' → "¿Cómo fue tu experiencia? [👍] [👎]"
+   ```
+2. **CSAT post-cierre**: 1-5 stars o thumbs up/down. Persiste en
+   `conciergeChats/{sid}.csat = {score, comment, timestamp}`.
+3. **Reopen flow**:
+   - Patrón Intercom: cada apertura tras cierre = NUEVO thread
+   - Old thread sigue en historial admin (CRM 360°)
+   - Cliente puede ver "Tus conversaciones anteriores" si está logueado
+4. **Auto-resolve por inactividad**: si chat está en mode='live' sin
+   actividad por 24h, cron auto-cierra con `closedReason: 'idle_timeout'`.
+
+**Criterio de éxito**: matrix de tests E2E con todas las transiciones
++ todos los systemTypes verificados.
+
+#### Sprint M4 — Admin Hub UX profesional
+
+**Objetivo**: dejar de ver el Hub como "obra negra" — refinar visual
+y feature parity con Intercom Inbox.
+
+**Deliverables**:
+1. **Lista lateral mejorada**:
+   - Search inline (filter por nombre, email, radicado, mensaje)
+   - Sort options (lastMessageAt, queueEnteredAt, priority)
+   - Visual indicators: 🟢 online, 🟡 typing, 🔴 SLA breach, 📌 pinned
+   - Infinite scroll con paginación 50 chats
+2. **Header del chat detail**:
+   - Avatar grande (44px) cliente
+   - Nombre + email + teléfono (click → CRM 360°)
+   - Pills: radicado, mode, status, lastSeen
+   - Action toolbar: Resumir IA, Asignar a otro, Cerrar, ⋮ Más
+3. **Composer pro**:
+   - Plantillas inline (click → llena el input editable)
+   - Variables `{{nombre}}`, `{{vehiculo}}`, `{{fecha}}` auto-resueltas
+   - Snippets/atajos (`/saludo`, `/info`, `/agendar`)
+   - Adjuntos: imagen, vehículo card, cotización PDF
+   - Internal notes (toggle "Visible al cliente: NO")
+4. **Detail pane derecho colapsable** (Slack-style):
+   - Info del cliente (perfil completo)
+   - Vehículo de interés (con thumbnail + link)
+   - Historial de chats anteriores
+   - Notas internas del asesor
+   - Tags / etiquetas
+5. **Layout fullscreen Telegram-style** mejorado (ya existe — refinar).
+
+**Criterio de éxito**: asesor responde 50% más rápido vs estado actual.
+Medir con tracking interno.
+
+#### Sprint M5 — Cliente UX premium
+
+**Objetivo**: widget cliente al nivel de Intercom Messenger en UX.
+
+**Deliverables**:
+1. **Onboarding cinematográfico**:
+   - FAB pulse + glow al primer page load
+   - CTA bubble rotativa con timing perfecto (ya existe — refinar timing)
+   - Open animation spring overshoot
+2. **Welcome message personalizado**:
+   - Si cliente logueado: "¡Hola [Nombre]! ¿Buscas algo en particular?"
+   - Si en página de vehículo: "Veo que estás viendo [Marca Modelo]. ¿Tenés preguntas?"
+   - Si returning user: "¡Bienvenido de vuelta! Tu última consulta fue sobre..."
+3. **Progressive profiling** sin Lead Gate forzoso:
+   - Permitir chatear sin gate (anonymous level 0)
+   - Pedir email solo cuando cliente quiere "que te avisemos" o "guardar info"
+   - Pedir cédula solo si avanza a peritaje/financiación
+4. **Quick replies inteligentes**:
+   - Después de cada respuesta del bot, ofrecer 2-3 follow-up options
+   - Ejemplo: bot dice "Tenemos 5 SUVs disponibles" → quick replies
+     "Ver todas", "Solo Toyota", "Bajo $50M"
+5. **Messages rich**:
+   - Vehicle cards con imagen + bullets + CTA "Ver ficha"
+   - Carousel horizontal si hay 3+ vehículos
+   - Quote requests (cotización PDF)
+   - Calendar slots para agendar visita
+6. **Skeleton loading** mientras conecta a Firestore (perceived perf).
+
+**Criterio de éxito**: tiempo medio del cliente en chat (mensajes
+intercambiados) sube 30%. Cliente no abandona en welcome.
+
+#### Sprint M6 — Notifications + Engagement
+
+**Objetivo**: cero conversaciones perdidas. Asesor SIEMPRE se entera.
+
+**Deliverables**:
+1. **FCM Web Push** (ya existe §23.11) — refinar:
+   - Sound notification distintivo
+   - Click → abre admin.html#concierge directo al chat
+   - Badge counter en bell icon del topnav
+2. **Telegram alerts** (ya existe §54-§56) — refinar:
+   - Alert también si SLA breach >5min sin respuesta
+   - Inline buttons "✓ Atender" / "👥 Reasignar"
+3. **Email digest diario** para super_admin:
+   - Resumen 24h: N conversaciones, N cerradas, N abandonadas, CSAT promedio
+4. **Proactive engagement** (ya existe §F.3) — refinar:
+   - Trigger por scroll/exit-intent (cliente está saliendo)
+   - Nudge contextual basado en página actual
+   - A/B test de mensajes
+5. **Re-engagement**:
+   - Cliente abandonó queue >5min sin responder asesor → email "Sigue
+     queriendo hablar con nosotros?"
+
+**Criterio de éxito**: queue abandonment rate <10%.
+
+#### Sprint M7 — Analytics + Continuous Improvement
+
+**Objetivo**: dejar de adivinar — medir todo.
+
+**Deliverables**:
+1. **Métricas server-side** (Cloud Function scheduled):
+   - Conversations/day, Resolution rate, Avg response time
+   - CSAT score promedio, NPS (si aplicable)
+   - Queue abandonment rate, SLA compliance %
+   - Top intents, top FAQs missed
+2. **Dashboard en admin** (sec-reports nuevo tab "Concierge"):
+   - Charts: conversations over time, response times distribution
+   - Top performing asesores, top vehicles asked about
+   - Funnel: visitor → chat → live → closed → CSAT
+3. **A/B testing framework**:
+   - Variant A vs B del welcome message
+   - Variant del CTA bubble copy
+   - Variant del Lead Gate (forzoso vs opcional)
+4. **User feedback loop**:
+   - "¿Qué te gustaría que el bot supiera?" — sugerencias del cliente
+   - Auto-tag al admin cuando un cliente reporta algo
+5. **Continuous learning del LLM**:
+   - Mensajes "no entendí" → admin promueve a FAQ (ya existe §22)
+   - Refinar system prompt mensual basado en data
+
+**Criterio de éxito**: equipo tiene visibilidad clara de KPIs y puede
+optimizar basándose en data, no en intuición.
+
+---
+
+### 58.5 Cronograma sugerido
+
+| Sprint | Duración | Prioridad | Cuándo |
+|---|---|---|---|
+| M1 Foundation State Machine | 1 día | 🔴 Crítica | Inmediato |
+| M2 Real-time WhatsApp-grade | 2 días | 🟠 Alta | Después de M1 |
+| M3 Lifecycle completo | 2 días | 🟠 Alta | Después de M2 |
+| M4 Admin Hub UX | 3 días | 🟡 Media | Después de M3 |
+| M5 Cliente UX premium | 3 días | 🟡 Media | Después de M4 |
+| M6 Notifications | 1 día | 🟢 Mejora | Cuando todo lo demás esté |
+| M7 Analytics | 2 días | 🟢 Mejora | Final |
+
+**Total**: ~14 días de trabajo focalizado. ~30-40 commits documentados.
+
+### 58.6 Restricciones y reglas operativas
+
+1. **NO crear `concierge-v2.js`**. Todos los cambios sobre los archivos
+   existentes. Doctrina §17.4 + §19 prohíbe el patrón "v1→v5 sin
+   diagnóstico".
+2. **NO eliminar features sin reemplazo**. Cada feature actual (ya sea
+   bug o feature) debe tener un sucesor documentado.
+3. **Migration scripts** para CADA cambio de schema. Idempotentes.
+4. **Telemetría agregada** en cada cambio de comportamiento. Si un
+   cambio falla en producción, los logs deben identificar dónde.
+5. **Cada sprint = 1 PR**. No mezclar varios sprints en un commit.
+6. **CLAUDE.md como bitácora**: cada sprint documenta su sección
+   (§59 a §65) con causa raíz, fix, archivos, tests E2E.
+7. **Cero pointermove listeners persistentes**. Doctrina §35.
+8. **Cero MutationObserver subtree:true**. Doctrina §17.12.
+9. **Cero `transition: all`**. Solo properties específicas. §17.2.
+10. **Performance budget**: bundle JS del Concierge no puede crecer
+    más de 25% sobre el actual (3,265 líneas → max 4,080).
+
+### 58.7 Criterios de "done" del Mega-Plan completo
+
+Al cerrar §65 (último sprint), el cliente debe poder afirmar:
+
+✅ Cero bugs de cierre/reset reportados en últimas 2 semanas
+✅ Cliente puede chatear en mobile + desktop sin diferencias
+✅ Asesor recibe TODA conversación (cero pérdida)
+✅ Latencia p50 <500ms en mensajes
+✅ Sistema escala a 500 chats/mes sin degradar
+✅ Visual del Hub al nivel Intercom/Drift
+✅ KPIs medibles y visibles en dashboard
+✅ Documentación completa en CLAUDE.md
+✅ Cero deuda técnica nueva introducida
+
+---
+
+### 58.8 Próximo paso inmediato
+
+Iniciar **Sprint M1 Foundation State Machine** documentado en §59.
+
+Antes de tocar código, redactar el state diagram canónico y revisarlo
+con el cliente. NO arrancar implementación sin aprobación del diagram.
+
+**Cache bump del Mega-Plan**: NO requiere bump (es solo documentación).
+
+---
+

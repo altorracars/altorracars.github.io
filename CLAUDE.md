@@ -24916,3 +24916,228 @@ variant nuevo + re-uso de `cleanSessionAndRender`.
 
 **Cache bump**: `v20260511290000`.
 
+---
+
+## 57.9 ADR-057.9 — Refactor industry-standard "lazy reset on next open" (2026-05-08)
+
+> Cliente reportó frustración con captura tras §57.8:
+>
+> "Siguen habiendo bugs en este proceso al dar en cerrar chat solo se
+> cierra la ventana pero si se le da al bot abre la ventana con el
+> mismo contenido que tenía, si se le da a iniciar nueva conversación
+> no pasa absolutamente nada, todo pasa al dar control shift R, hay
+> un problema grande y hemos hecho muchos commit sin conseguir
+> resultados, creo que no estás investigando a fondo a los grandes
+> ni cómo usan el código para este tipo de implementaciones".
+>
+> Aplicado bajo **RCA estricto §19** + **IAP §37**. Investigación a
+> fondo de cómo lo hace la industria.
+
+### 57.9.1 Investigación industry-standard
+
+Cómo lo hacen los grandes:
+
+**Intercom Resolution Bot**:
+- Conversation state vive en backend (single source of truth)
+- Cliente cierra messenger → solo oculta UI, NO toca state
+- Cliente abre messenger → consulta backend → si conversation activa,
+  muestra. Si cerrada, muestra welcome de nueva conversación
+- "Lazy reset on next open"
+
+**Drift**:
+- Idéntico patrón
+- "End conversation" cierra en backend
+- Próxima apertura: bot welcome fresco
+
+**WhatsApp Web**:
+- Conversación es persistente (no aplica el flow finalize/reopen)
+- "Empty chat" solo limpia UI, mantiene conversation
+- "Delete chat" elimina conversation completa
+
+**Common pattern**: el messenger NO mezcla "cerrar UI" con "resetear
+state". Las dos responsabilidades son SEPARADAS. Cierre = ocultar
+panel. Reset = limpiar state. Cuando se reabre el messenger tras un
+cierre, **detecta** si hay state cerrado y aplica reset entonces.
+
+### 57.9.2 Causa raíz del bug actual
+
+**Mi código pre-§57.9 mezclaba responsabilidades**:
+
+```js
+function finalCloseAndCleanup() {
+    // Cerrar panel
+    panel.classList.remove('cnc-open');
+    panel.style.opacity = '0';
+    // Y AL MISMO TIEMPO limpiar todo:
+    cleanSessionAndRender();  // session=nueva + DOM=limpio + render=welcome
+}
+```
+
+Eso generaba race conditions complejas:
+- `cleanSessionAndRender` invocaba `applyClosedState`, `renderMessages`,
+  `applyGateVisibility`, `applyAsesorHeader` — sobre un panel que estaba
+  CERRÁNDOSE simultáneamente
+- Los inline styles forzados (`opacity:0`, `transform:scale(0.06)`)
+  podían interferir con el render
+- Listeners tardíos del Firestore podían pisar la sesión nueva
+  durante el periodo de "transición de cierre"
+
+Resultado: en algunos navegadores/timings, el cleanup quedaba a la
+mitad. La sesión nueva tenía `closed: false` pero los mensajes viejos
+persistían en `session.messages` por interferencia con renders
+intermedios.
+
+### 57.9.3 Solución de fondo — Industry-standard
+
+**Separación radical de responsabilidades**:
+
+```js
+// Cerrar chat → SOLO cierra el panel
+function finalCloseAndCleanup() {
+    panel.classList.remove('cnc-open');
+    panel.style.opacity = '0';
+    // NADA MÁS. session permanece con closed=true.
+}
+
+// Iniciar nueva conversación → SOLO resetea state
+case 'reset-from-finalized':
+    cleanSessionAndRender();  // SIN cerrar panel
+    break;
+
+// Próxima apertura → detecta closed=true y resetea automáticamente
+function open() {
+    panel.classList.add('cnc-open');
+    if (session.closed === true) {
+        cleanSessionAndRender();  // lazy reset
+        return;
+    }
+    renderMessages();
+    applyClosedState();
+}
+```
+
+**Garantías**:
+1. `finalCloseAndCleanup` ya no toca `session`. Cero race conditions.
+2. `open()` es el ÚNICO lugar donde se decide si limpiar al abrir.
+   Sin importar lo que haya pasado antes (cierre, listener tardío,
+   cache stale, etc.), si el state final muestra `closed=true`, se
+   limpia.
+3. `cleanSessionAndRender` se invoca en contextos limpios: panel ya
+   está visible (open), o panel permanece visible (reset-from-finalized).
+   Nunca en un panel que está cerrándose simultáneamente.
+
+### 57.9.4 Cambio de scope: cualquier closedReason
+
+§57.8 limitaba el auto-reset a `closedReason === 'client_finalized'`.
+La razón era preservar la pantalla "Esta conversación ha finalizado"
+cuando el admin cerraba el chat. Pero esa lógica:
+1. Mantenía complejidad innecesaria
+2. Permitía que un closedReason inesperado (ej: 'admin_resolved')
+   bloqueara el reset
+3. Iba en contra del patrón industry-standard
+
+Ahora: **cualquier `session.closed === true` dispara reset al abrir**.
+
+¿Y la info del cierre por admin? Sigue visible **EN VIVO** mientras
+el cliente tiene el panel abierto (via listener parent que detecta
+`status='closed'` en Firestore y aplica `closedState`). Si el cliente
+cierra el panel y vuelve, ve welcome del bot — patrón Intercom/Drift.
+
+### 57.9.5 Telemetría agregada
+
+5 puntos clave del flow ahora tienen `console.log` con prefijo
+`§57.9` para diagnosticar si persisten bugs:
+
+```
+[Concierge] §57.9 panel.click → data-action=X target=Y
+[Concierge] §57.9 cleanSessionAndRender() START — pre-state: closed=...
+[Concierge] §57.9 cleanSessionAndRender() COMPLETE — _resetting flag released
+[Concierge] §57.9 open() — session.closed=... messages.length=...
+[Concierge] §57.9 reopen tras chat cerrado: auto cleanSessionAndRender()
+[Concierge] §57.9 finalCloseAndCleanup() — solo cierra panel (lazy reset)
+```
+
+Si el cliente reproduce un bug, copiar console output identifica
+exactamente dónde se rompe el flow.
+
+### 57.9.6 Anti-patterns evitados
+
+| Patrón | Evitado |
+|---|---|
+| Mezclar "cerrar UI" + "resetear state" en una función | Separación radical: finalCloseAndCleanup solo cierra, cleanSessionAndRender solo resetea |
+| Limitar auto-reset a un closedReason específico | Cualquier `closed=true` dispara reset al abrir |
+| Confiar en setTimeout para liberar flags durante transiciones | open() es el contrato canónico — ahí se decide |
+| Forzar inline styles para "hacer el panel desaparezca" sin diagnosticar | Se mantienen porque cubren un edge case real (CSS legacy override) pero ya no se mezclan con cleanup |
+| Agregar más capas de complejidad sin diagnosticar | RCA real: investigué cómo lo hacen Intercom/Drift/WhatsApp y simplifiqué |
+
+### 57.9.7 Flow esperado post-§57.9
+
+**Caso 1: Cliente "Finalizar conversación" → "Cerrar chat" → reabre FAB**:
+1. Click "Finalizar" → confirm → `markSessionFinalized()` → `session.closed=true, closedReason='client_finalized'`
+2. `applyClosedState` renderiza pantalla "Chat finalizado" con 3 botones
+3. Click "Cerrar chat" → `finalCloseAndCleanup()` → panel se cierra. `session.closed` permanece `true`
+4. Click FAB → `open()` detecta `session.closed=true` → `cleanSessionAndRender()` → welcome bubble fresco ✅
+
+**Caso 2: Cliente "Iniciar nueva conversación"**:
+1. Click "Iniciar nueva conversación" → `handleAction('reset-from-finalized')` → `cleanSessionAndRender()`
+2. Panel permanece abierto + welcome bubble fresco INMEDIATO ✅
+
+**Caso 3: Admin cierra chat mientras cliente lo tiene abierto**:
+1. Admin click "Cerrar chat" → `closeChat()` server-side → Firestore `status='closed', closedReason='admin_resolved'`
+2. Cliente: listener parent recibe snapshot → `session.closed=true` → `applyClosedState` rendereo "Esta conversación ha finalizado" + 3 botones
+3. Cliente ve mensaje de cierre EN VIVO ✅
+4. Cliente click X o "Cerrar chat" → panel se cierra (lazy state)
+5. Cliente reabre FAB → auto-reset → welcome fresco ✅
+
+### 57.9.8 Test E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente conversa → ⋮ Finalizar → "Cerrar chat" → reabre FAB | Welcome bubble fresco INMEDIATO ✅ |
+| 2 | Cliente conversa → ⋮ Finalizar → "Iniciar nueva conversación" | Panel permanece abierto + welcome fresco ✅ |
+| 3 | Admin cierra chat → cliente reabre FAB | Welcome fresco (no pantalla de cierre persistente) |
+| 4 | DevTools console al click cualquier botón | Logs `§57.9 panel.click → data-action=X target=Y` |
+| 5 | DevTools console al reabrir post-cierre | `§57.9 open() — closed=true` + `auto cleanSessionAndRender()` |
+| 6 | DevTools console al cleanSessionAndRender | `START → pre-state: closed=true messages=N` y luego `COMPLETE → closed=false messages=0` |
+
+### 57.9.9 Doctrina aplicada
+
+§19 **RCA estricto**: el cliente tenía toda la razón — yo estaba
+parchando sin investigar a fondo. Esta vez:
+- Pasé a investigación industry-standard (cómo lo hacen Intercom/Drift)
+- Identifiqué que el problema fundamental era arquitectural (mezcla
+  de responsabilidades en finalCloseAndCleanup)
+- Solución no fue otro parche, fue un refactor del patrón completo
+
+§37 **IAP**: análisis previo identificó que la simplificación
+arquitectural eliminaría TODOS los bugs reportados sin agregar más
+complejidad.
+
+§17 (Performance): cero MutationObserver, cero pointermove. Los
+console.log son one-shot por click/reset, no impactan perf.
+
+§17.4 (HTML stable): cero cambios HTML. Solo refactor JS interno.
+
+### 57.9.10 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/concierge.js open()` | Refactor: si `session.closed === true` (cualquier reason) → `cleanSessionAndRender()` automático + return. Patrón "lazy reset on next open" |
+| `js/concierge.js finalCloseAndCleanup()` | Simplificado: SOLO cierra panel. Eliminado el `cleanSessionAndRender` interno. Comentario detallado explica el patrón |
+| `js/concierge.js panel.addEventListener('click')` | Telemetría: log de `data-action` ejecutado + target |
+| `js/concierge.js cleanSessionAndRender()` | Telemetría: log de START y COMPLETE con state pre/post |
+| `service-worker.js` | CACHE_VERSION → v20260511300000 |
+| `js/cache-manager.js` | APP_VERSION → v20260511300000 |
+| `CLAUDE.md` | Esta sección §57.9 |
+
+### 57.9.11 Archivos INTACTOS
+
+- `js/concierge.js cleanSessionAndRender` — sin cambios funcionales (solo logs)
+- `js/concierge.js applyClosedState` — sin tocar
+- `js/concierge.js handleAction cases` — sin tocar
+- `css/concierge.css` — sin tocar
+- `firestore.rules` — sin tocar
+- `js/admin-concierge.js` — sin tocar
+
+**Cache bump**: `v20260511300000`.
+

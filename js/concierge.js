@@ -1787,7 +1787,13 @@
             }
             var btn = e.target.closest('[data-action]');
             if (!btn) return;
-            handleAction(btn.getAttribute('data-action'));
+            // §57.9 — diagnóstico: log de cada data-action ejecutado.
+            // Si los botones del closed-block no respondieran, el log
+            // identifica si es problema de delegation, click target,
+            // o lógica del handler.
+            var actionName = btn.getAttribute('data-action');
+            console.log('[Concierge] §57.9 panel.click → data-action=' + actionName + ' target=' + (e.target.tagName || ''));
+            handleAction(actionName);
         });
 
         // Lead Capture Gate form handler
@@ -2329,6 +2335,7 @@
      * Ahora ambos flows usan ESTE helper para garantizar limpieza atómica.
      */
     function cleanSessionAndRender() {
+        console.log('[Concierge] §57.9 cleanSessionAndRender() START — pre-state: closed=' + (session && session.closed) + ' messages=' + (session && session.messages ? session.messages.length : 0));
         // §57.6 — Setear _resetting=true ANTES de cancelar listeners.
         // Esto garantiza que cualquier snapshot tardío del listener parent
         // que llegue mid-reset (status='closed' del Firestore que aún
@@ -2424,15 +2431,33 @@
             if (session) {
                 session._resetting = false;
                 try { saveSession(session); } catch (e) {}
+                console.log('[Concierge] §57.9 cleanSessionAndRender() COMPLETE — _resetting flag released. session.closed=' + session.closed + ' messages=' + (session.messages ? session.messages.length : 0));
             }
         }, 500);
     }
 
+    /**
+     * §57.9 — Refactor industry-standard: "Cerrar chat" SOLO cierra
+     * el panel. NO limpia la sesión. La limpieza ocurre AUTOMÁTICAMENTE
+     * en la próxima apertura del panel (open() detecta session.closed=true
+     * y dispara cleanSessionAndRender). Patrón "lazy reset on next open"
+     * usado por Intercom Resolution Bot, Drift, WhatsApp Business.
+     *
+     * Antes (§57-§57.8): finalCloseAndCleanup hacía cleanSessionAndRender
+     * inmediatamente, mezclando "cerrar UI" con "resetear estado". Esto
+     * generaba race conditions con listeners tardíos y bugs reportados:
+     *   - "Cerrar chat" → reabrir = sigue conversación vieja
+     *   - "Iniciar nueva conversación" no hacía nada visible
+     *
+     * Ahora: separamos las responsabilidades:
+     *   - finalCloseAndCleanup → solo cierra panel
+     *   - open() → si session.closed=true, lazy clean
+     *   - cleanSessionAndRender → invocado solo cuando es necesario
+     */
     function finalCloseAndCleanup() {
-        console.log('[Concierge] §57.quint finalCloseAndCleanup() START');
+        console.log('[Concierge] §57.9 finalCloseAndCleanup() — solo cierra panel (lazy reset on next open)');
         var panel = document.getElementById('altorra-concierge');
 
-        // CIERRE FORZADO INMEDIATO antes del cleanup.
         if (panel) {
             panel.classList.remove('cnc-open');
             panel.setAttribute('aria-hidden', 'true');
@@ -2441,22 +2466,21 @@
             panel.style.opacity = '0';
             panel.style.transform = 'scale(0.06) translate(40px, 40px)';
             panel.style.pointerEvents = 'none';
-            console.log('[Concierge] panel forced hidden inline');
         }
         _isOpen = false;
 
-        // Limpieza unificada (sesión nueva + DOM limpio + welcome render)
-        cleanSessionAndRender();
+        // §57.9 — NO hacemos cleanSessionAndRender aquí. La sesión
+        // permanece marcada como closed=true. La próxima apertura
+        // del FAB la detectará y limpiará automáticamente.
 
         // Restaurar transition + estilos para que próximo open anime
-        // correctamente. 350ms es > la transición CSS (320ms).
+        // correctamente. 350ms > transición CSS (320ms).
         setTimeout(function () {
             if (!panel) return;
             panel.style.transition = '';
             panel.style.opacity = '';
             panel.style.transform = '';
             panel.style.pointerEvents = '';
-            console.log('[Concierge] panel inline styles restored, ready for next open');
         }, 350);
     }
 
@@ -2885,10 +2909,6 @@
         var panel = document.getElementById('altorra-concierge');
         if (!panel) return;
         // §57.quat — limpiar inline styles forzados de finalCloseAndCleanup.
-        // Bug 3: si el cliente cerró el chat (forced inline opacity:0,
-        // transform scale(0.06)) y vuelve a clickear el FAB ANTES del
-        // setTimeout 350ms que los restaura, los inline styles siguen
-        // activos y el panel NO se ve aunque .cnc-open esté aplicada.
         panel.style.transition = '';
         panel.style.opacity = '';
         panel.style.transform = '';
@@ -2896,21 +2916,30 @@
         panel.setAttribute('aria-hidden', 'false');
         panel.classList.add('cnc-open');
         _isOpen = true;
-        // Ocultar el CTA bubble al abrir el panel
         hideCtaBubble();
-        // §57.8 — Defense-in-depth para bug "Cerrar chat → reabrir → conversación
-        // vieja". Si por algún edge case el cliente cerró el chat (closedReason
-        // 'client_finalized') y un listener tardío o cache stale re-popula
-        // session.messages, al reabrir forzamos limpia + welcome. Solo se
-        // aplica para client_finalized (NO para admin close, porque ese caso
-        // legítimamente debe seguir mostrando "Esta conversación ha finalizado"
-        // con sus botones). Cero costo si la sesión ya está limpia: cleanSessionAndRender
-        // es idempotente (si messages=[] ya, solo re-renderiza welcome).
-        if (session && session.closed === true && session.closedReason === 'client_finalized') {
-            console.log('[Concierge] §57.8 reopen tras client_finalized: forzando limpieza defensiva');
+
+        // §57.9 — INDUSTRY-STANDARD: cada apertura tras una conversación
+        // cerrada arranca FRESCA. Patrón Intercom Resolution Bot, Drift,
+        // WhatsApp Business: el messenger NO persiste pantallas de cierre
+        // entre aperturas. La info del cierre se ve EN VIVO mientras el
+        // cliente tiene el panel abierto (via listener parent que aplica
+        // closedState). Si cierra el panel y vuelve, ve welcome del bot
+        // como cualquier nueva conversación. Aplica para AMBOS reasons:
+        // client_finalized Y admin (cualquier cierre).
+        console.log('[Concierge] §57.9 open() — session.closed=' + (session && session.closed) +
+                    ' closedReason=' + (session && session.closedReason) +
+                    ' messages.length=' + (session && session.messages ? session.messages.length : 0));
+        if (session && session.closed === true) {
+            console.log('[Concierge] §57.9 reopen tras chat cerrado: auto cleanSessionAndRender()');
             cleanSessionAndRender();
+            // Re-focus input tras el reset
+            setTimeout(function () {
+                var input = document.getElementById('cncInput');
+                if (input) input.focus();
+            }, 250);
             return;
         }
+
         renderMessages();
         // Aplicar estado de cierre si la sesión está marcada como closed
         applyClosedState();

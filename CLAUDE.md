@@ -26439,5 +26439,246 @@ Bajo este contrato, el cliente puede confiar en que la cirugía no romperá lo q
 
 ---
 
+## 60.1 ADR-060.1 — Sprint S1 cirugía ALTOR Hub: Optimistic UI universal del admin (2026-05-09)
+
+> Primer sprint operativo del Mega-Plan §59 (cirugía técnica del ALTOR Hub).
+> Foco exclusivo: eliminar la latencia percibida en TODOS los botones del
+> Hub admin. Lo que el cliente reportó como "los botones no responden
+> inmediatamente, los mensajes tardan en aparecer" se debía a que 7
+> funciones del admin escribían a Firestore y esperaban 500ms-2s al
+> snapshot antes de actualizar la UI.
+>
+> Este sprint adopta el patrón industry-standard de Linear/Intercom/Drift:
+> **UI nunca espera al server**. Cada acción del usuario actualiza la UI
+> INSTANT (≤16ms next paint) y Firestore corre en background con rollback
+> explícito si falla.
+>
+> Aplicado bajo doctrina §17 (perf), §17.12 (anti-MutationObserver),
+> §19 (RCA Mode), §35 (anti-patterns), §37 (IAP), §57.7-57.9
+> (lazy reset + listeners globales).
+
+### 60.1.1 Causa raíz (RCA estricto §19)
+
+**Asimetría documentada en plan §59 (sección 3.2)**:
+
+Cliente (`js/concierge.js:793` — `addMessage`):
+```js
+session.messages.push(msg);     // ← state update INSTANT
+saveSession(session);            // ← localStorage INSTANT
+renderMessages();                // ← DOM update INSTANT
+syncMessageToFirestore(msg);     // ← background, NO bloquea UI
+```
+✅ Cliente operativo: ve su mensaje INSTANT.
+
+Admin (`js/admin-concierge.js:972` — `_sendAsesorMessageInternal` original):
+```js
+input.value = '';
+window.db.collection('conciergeChats').doc(_activeSessionId)
+    .collection('messages').add(msg);
+// El mensaje aparece SOLO cuando el onSnapshot listener
+// recibe el documento (500ms-2s después).
+```
+❌ Admin roto: input se limpia, pasan 500ms-2s, recién aparece el bubble.
+
+**Otros 6 botones afectados** (mismo patrón anti-optimistic):
+
+| Función | Línea | Acción Firestore | Latencia |
+|---|---|---|---|
+| `claimChat` | 838 | `runTransaction` | 500ms-2s |
+| `togglePin` | 264 | `.set({isPinned}, merge)` | 200ms-1s |
+| `toggleArchive` | 278 | `.set({isArchived}, merge)` | 200ms-1s |
+| `markUnread` | 299 | `.set({forceUnreadByAdmin}, merge)` | 200ms-1s |
+| `closeChat` | 994 | 2 escrituras paralelas | 500ms-2s |
+| `reopenChat` | 1039 | 2 escrituras paralelas | 500ms-2s |
+
+### 60.1.2 Solución estructural — HubStore + 7 refactors coordinados
+
+**Patrón canónico aplicado a las 7 funciones**:
+
+```
+1. Snapshot del estado previo del chat/mensaje
+2. Mutación local INSTANT (HubStore + _activeMessages + chat object)
+3. Render INSTANT (renderChatList + renderChatDetail)
+4. Firestore en background (Promise sin await)
+5. .then() → confirma estado: pending → sent + render
+6. .catch() → ROLLBACK al snapshot + render + toast error
+```
+
+**Estados visuales canónicos WhatsApp** (4 + 1 retry):
+
+| Estado | Visual | Trigger |
+|---|---|---|
+| `pending` | ⏱ icon gris claro + opacity 0.7 | addMessageOptimistic |
+| `sent` | ✓ gris (1 check) | confirmMessage post-Firestore |
+| `read` | ✓✓ azul (#34B7F1) | (S4 read receipts agregará trigger) |
+| `failed` | border rojo + botón Reintentar | rollbackMessage |
+| `synced` | sin icon | mensajes del listener Firestore |
+
+**HubStore (Object Pool estilo Linear)** — `js/hub-store.js`:
+- `_chats: Map<sid, chat>` — metadata por sessionId
+- `_messages: Map<sid, msg[]>` — arrays de mensajes con `_status` y `_tempId`
+- `_pending: Map<tempId, {action, sid, msg}>` — queue de mutations no confirmadas
+- `_listeners: Set<fn>` — observers para re-render externo
+- API: `addMessageOptimistic`, `confirmMessage`, `rollbackMessage`,
+  `getPendingMessage`, `removeMessageByTempId`, `subscribe`, `_debug`
+
+**Co-existencia con `_activeMessages`**: durante S1 ambos cache funcionan
+en paralelo (HubStore y `_activeMessages` array de admin-concierge.js).
+Cada mutación los actualiza en sync. Migración total a HubStore en S2.
+Esto reduce el blast radius del refactor — si HubStore tiene bug,
+`_activeMessages` sigue funcionando con render directo.
+
+### 60.1.3 Botón "Reintentar" para mensajes failed
+
+Click en `[data-action="retry-msg"]`:
+1. Lee `data-temp-id` del botón
+2. Busca el msg failed en `_activeMessages`
+3. `removeMessageByTempId` en HubStore + splice del array local
+4. Re-llena el input con el texto original
+5. Llama `sendAsesorMessage()` que reusa el flow normal (auto-claim si aplica)
+
+Patrón usado por WhatsApp Web / Telegram: error visible + acción
+recuperación inline. NO modal de error. NO toast genérico. El usuario
+ve exactamente qué mensaje falló y puede reintentarlo con un click.
+
+### 60.1.4 Telemetría agregada
+
+Cada función refactorizada loggea con prefijo `§60.1` para diagnóstico
+post-deploy:
+
+```
+[HubStore] §60.1 ready
+[HubStore] §60.1 addMessageOptimistic { sid, tempId }
+[HubStore] §60.1 confirmMessage { tempId, firestoreId }
+[HubStore] §60.1 rollbackMessage { tempId, error }
+[AdminConcierge] §60.1 sendMessage optimistic START { sid, tempId }
+[AdminConcierge] §60.1 sendMessage confirmed { tempId, firestoreId }
+[AdminConcierge] §60.1 sendMessage failed { tempId, error }
+[AdminConcierge] §60.1 claimChat optimistic START { sid }
+[AdminConcierge] §60.1 claimChat confirmed { sid }
+[AdminConcierge] §60.1 claimChat rollback { error }
+[AdminConcierge] §60.1 togglePin optimistic { sid, newVal }
+[AdminConcierge] §60.1 togglePin rollback { error }
+[AdminConcierge] §60.1 toggleArchive optimistic { sid, newVal }
+[AdminConcierge] §60.1 toggleArchive rollback { error }
+[AdminConcierge] §60.1 markUnread optimistic { sid }
+[AdminConcierge] §60.1 markUnread rollback { error }
+[AdminConcierge] §60.1 closeChat optimistic START { sid }
+[AdminConcierge] §60.1 closeChat confirmed { sid }
+[AdminConcierge] §60.1 closeChat rollback { error }
+[AdminConcierge] §60.1 reopenChat optimistic START { sid }
+[AdminConcierge] §60.1 reopenChat confirmed { sid }
+[AdminConcierge] §60.1 reopenChat rollback { error }
+[AdminConcierge] §60.1 retry-msg action { tempId }
+```
+
+Si en producción los logs aparecen pero la UI no responde → bug en
+render. Si los logs NO aparecen → bug en handler binding.
+
+### 60.1.5 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/hub-store.js` | NUEVO — Object Pool in-memory + API optimistic | +198, -0 |
+| `admin.html` | Carga `<script src="js/hub-store.js" defer>` antes de admin-concierge.js | +2, -0 |
+| `js/admin-concierge.js togglePin` | Snapshot + optimistic + rollback | +20, -10 |
+| `js/admin-concierge.js toggleArchive` | Snapshot + optimistic + rollback (incluye reabrir detail si rollback de chat activo) | +35, -20 |
+| `js/admin-concierge.js markUnread` | Snapshot + optimistic + rollback | +25, -10 |
+| `js/admin-concierge.js claimChat` | Snapshot + optimistic + rollback en race condition | +60, -10 |
+| `js/admin-concierge.js _sendAsesorMessageInternal` | tempId + HubStore + estados visuales + rollback + parent doc optimistic | +85, -15 |
+| `js/admin-concierge.js closeChat` | Snapshot + optimistic + system msg pending + rollback completo | +60, -25 |
+| `js/admin-concierge.js reopenChat` | Mismo patrón que closeChat | +50, -10 |
+| `js/admin-concierge.js renderChatDetail` | Estados visuales `_status` para mensajes asesor + system | +50, -15 |
+| `js/admin-concierge.js panel.click` | Handler `data-action="retry-msg"` con reuso de sendAsesorMessage | +25, -0 |
+| `css/admin.css` (append §60.1) | `.cnc-msg-pending`, `.cnc-msg-synced`, `.cnc-msg-failed`, `.cnc-msg-status[data-state]`, `.cnc-msg-retry`, `cncShake` keyframe + `prefers-reduced-motion` | +95, -0 |
+| `service-worker.js` | CACHE_VERSION → `v20260512010000` | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260512010000'` | +1, -1 |
+| `CLAUDE.md` | Esta sección §60.1 | +220, -0 |
+
+**Total**: ~927 líneas agregadas, ~117 eliminadas.
+
+### 60.1.6 Archivos INTACTOS (afirmación explícita)
+
+- `js/concierge.js` (cliente público) — ZERO cambios. Sprint S2 lo cubre con el mismo patrón.
+- `firestore.rules` — sin cambios de schema (campos `_status`/`_tempId` son local-only, NO se persisten).
+- `database.rules.json` — sin tocar (typing indicators son S3).
+- `functions/index.js` — ZERO cambios.
+- `css/concierge.css` — sin tocar (S2/S6 lo modifican).
+- Resto del repo — ZERO cambios.
+
+### 60.1.7 Tests E2E manuales (validación cliente post-push)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Asesor click "Tomar conversación" | Banner verde "Estás atendiendo este chat" aparece <16ms (sin esperar al server) |
+| 2 | Si race condition (otro asesor lo tomó antes) | Rollback al snapshot + toast "X tomó este chat hace un momento" |
+| 3 | Asesor escribe mensaje + Enter | Bubble aparece INSTANT con icon ⏱ pending + opacity 0.7 |
+| 4 | Esperar 500ms-2s | Icon ⏱ → ✓ sent (transición spring sutil) |
+| 5 | Cliente abre el chat (cuando Sprint S4 ship read receipts) | ✓ → ✓✓ azul (#34B7F1) |
+| 6 | Asesor click pin en menú | Estrella aparece INSTANT en lista, sin flicker |
+| 7 | Asesor click archive | Chat sale de la lista INSTANT (si era activo, panel se limpia) |
+| 8 | Asesor click cerrar chat → confirm | Banner "✓ Conversación cerrada" + status pill aparecen INSTANT |
+| 9 | Network drop mid-send (DevTools throttle offline) | Bubble pasa a `failed` con border rojo + botón "Reintentar" |
+| 10 | Click "Reintentar" en mensaje failed | Re-envía con auto-claim si aplica, recupera estado pending → sent |
+| 11 | DevTools console al enviar | `[HubStore] §60.1 addMessageOptimistic` + `[AdminConcierge] §60.1 sendMessage optimistic START` |
+| 12 | DevTools console al confirmar | `[HubStore] §60.1 confirmMessage` + `sendMessage confirmed` |
+| 13 | `prefers-reduced-motion: reduce` | Animaciones `.cnc-msg-shake` desactivadas, transitions a 0 |
+| 14 | Mobile: enviar 5 mensajes rápido | Todos aparecen INSTANT, ninguno se pierde, todos confirman a sent |
+
+### 60.1.8 Anti-patterns evitados (cruce con doctrinas)
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo `transition: opacity, transform, color, background-color` (compositor-only) |
+| §17.12 | `MutationObserver subtree:true` | HubStore notifica vía `_listeners` Set explícito. Cero MO global |
+| §35 | `pointermove` persistente | Cero pointermove. Solo click delegation event-by-event |
+| §17.10 | Mobile sin reduced-motion | Bloque `@media (prefers-reduced-motion: reduce)` con `transition:none` y `animation:none` |
+| §57.7 | Listener admin que muere | Sin cambios — `_chatsUnsub` sigue globalmente activo + heartbeat 30s |
+| §57.9 | Mezclar UI close con state reset | Cliente intacto. Patrón "lazy reset on next open" se mantiene |
+| §17.4 | Renombrar IDs DOM | IDs preservados literalmente (`cncAdminReply`, `cncAdminSend`, `cncAdminClaimBtn`, etc.) |
+| §17.7 | Crear archivo `concierge-v2.js` | NUEVO archivo solo para HubStore (`js/hub-store.js`). Cero refactor con sufijo "v2" |
+
+### 60.1.9 Riesgos + plan de rollback
+
+| Riesgo | Mitigación interna | Rollback |
+|---|---|---|
+| HubStore conflict con `_activeMessages` | Co-existen sincronizados; HubStore es nuevo, `_activeMessages` mantiene contrato existente | `git revert <commit>` |
+| Optimistic msg duplicado por listener Firestore | Dedup por `_tempId` matching pendiente cuando snapshot llega con doc nuevo | `git revert` |
+| Race entre claim local y Firestore reject | Snapshot guardado ANTES del update local; rollback automático con toast | `git revert` |
+| `renderChatDetail` re-render rompe estado | Tests E2E manuales cubren los 4 estados | `git revert` |
+| CSS shake causa motion sickness | `prefers-reduced-motion` cancela animation | `git revert` |
+| Listener `_messagesUnsub` recibe el msg confirmado y lo duplica | `_lastSyncedMsgIds` Set existente (§57.ter) lo previene; HubStore extiende con `_tempId` | `git revert` |
+| `window.HubStore` no existe en page load | `<script defer>` garantiza orden + guard `if (window.HubStore)` defensive | `git revert` |
+| Telemetría console.log spam | Logs específicos a operaciones críticas, NO en cada keystroke | Patch sin revert |
+
+### 60.1.10 Deuda técnica documentada
+
+- **`_activeMessages` cache** (admin-concierge.js): co-existe con HubStore
+  durante S1. Migración total al store en S2 — eliminará ~30 líneas.
+- **Heartbeat 30s del `_chatsUnsub`** (§57.7): identificado como
+  deuda en plan §59 sección 8. `onSnapshot` reconnect nativo de
+  Firestore lo cubre, pero eliminar requiere validación manual del
+  cliente. Marcado para S2.
+- **`closeOrFinalize`** (concierge.js, S2): reemplazable por reducer
+  pattern post-S2.
+
+### 60.1.11 Doctrina aplicada
+
+§19 RCA estricto: causa raíz era patrón asimétrico cliente-vs-admin documentado en §57.7.9 (latencia ~1.5-2s en Hub admin). NO parche local — refactor completo de los 7 botones con patrón unificado.
+
+§37 IAP: 5 secciones documentadas previo al cambio. Riesgos identificados con plan de rollback. Tests E2E listados.
+
+§17 (Performance): cero MutationObserver, cero pointermove persistente, cero `transition: all`. Solo `transform`/`opacity`/`color`/`box-shadow` en CSS.
+
+§17.12 (anti-MutationObserver): HubStore notifica vía `_listeners` Set explícito. Listeners se suscriben/desuscriben con `subscribe()` que devuelve `unsub` cleanup.
+
+§17.4 (HTML/CSS estable): ZERO cambios de IDs/clases existentes. Adición de `data-temp-id` y nuevas clases `.cnc-msg-*` que no colisionan con legacy.
+
+§57.7 / §57.9: cliente intacto. Lazy reset on next open + listener admin globalmente activo siguen funcionando idénticos.
+
+**Cache bump**: `v20260512010000`.
+
+---
+
 ---
 

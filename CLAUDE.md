@@ -26439,5 +26439,440 @@ Bajo este contrato, el cliente puede confiar en que la cirugía no romperá lo q
 
 ---
 
+## 60.1 ADR-060.1 — Sprint S1 cirugía ALTOR Hub: Optimistic UI universal del admin (2026-05-09)
+
+> Primer sprint operativo del Mega-Plan §59 (cirugía técnica del ALTOR Hub).
+> Foco exclusivo: eliminar la latencia percibida en TODOS los botones del
+> Hub admin. Lo que el cliente reportó como "los botones no responden
+> inmediatamente, los mensajes tardan en aparecer" se debía a que 7
+> funciones del admin escribían a Firestore y esperaban 500ms-2s al
+> snapshot antes de actualizar la UI.
+>
+> Este sprint adopta el patrón industry-standard de Linear/Intercom/Drift:
+> **UI nunca espera al server**. Cada acción del usuario actualiza la UI
+> INSTANT (≤16ms next paint) y Firestore corre en background con rollback
+> explícito si falla.
+>
+> Aplicado bajo doctrina §17 (perf), §17.12 (anti-MutationObserver),
+> §19 (RCA Mode), §35 (anti-patterns), §37 (IAP), §57.7-57.9
+> (lazy reset + listeners globales).
+
+### 60.1.1 Causa raíz (RCA estricto §19)
+
+**Asimetría documentada en plan §59 (sección 3.2)**:
+
+Cliente (`js/concierge.js:793` — `addMessage`):
+```js
+session.messages.push(msg);     // ← state update INSTANT
+saveSession(session);            // ← localStorage INSTANT
+renderMessages();                // ← DOM update INSTANT
+syncMessageToFirestore(msg);     // ← background, NO bloquea UI
+```
+✅ Cliente operativo: ve su mensaje INSTANT.
+
+Admin (`js/admin-concierge.js:972` — `_sendAsesorMessageInternal` original):
+```js
+input.value = '';
+window.db.collection('conciergeChats').doc(_activeSessionId)
+    .collection('messages').add(msg);
+// El mensaje aparece SOLO cuando el onSnapshot listener
+// recibe el documento (500ms-2s después).
+```
+❌ Admin roto: input se limpia, pasan 500ms-2s, recién aparece el bubble.
+
+**Otros 6 botones afectados** (mismo patrón anti-optimistic):
+
+| Función | Línea | Acción Firestore | Latencia |
+|---|---|---|---|
+| `claimChat` | 838 | `runTransaction` | 500ms-2s |
+| `togglePin` | 264 | `.set({isPinned}, merge)` | 200ms-1s |
+| `toggleArchive` | 278 | `.set({isArchived}, merge)` | 200ms-1s |
+| `markUnread` | 299 | `.set({forceUnreadByAdmin}, merge)` | 200ms-1s |
+| `closeChat` | 994 | 2 escrituras paralelas | 500ms-2s |
+| `reopenChat` | 1039 | 2 escrituras paralelas | 500ms-2s |
+
+### 60.1.2 Solución estructural — HubStore + 7 refactors coordinados
+
+**Patrón canónico aplicado a las 7 funciones**:
+
+```
+1. Snapshot del estado previo del chat/mensaje
+2. Mutación local INSTANT (HubStore + _activeMessages + chat object)
+3. Render INSTANT (renderChatList + renderChatDetail)
+4. Firestore en background (Promise sin await)
+5. .then() → confirma estado: pending → sent + render
+6. .catch() → ROLLBACK al snapshot + render + toast error
+```
+
+**Estados visuales canónicos WhatsApp** (4 + 1 retry):
+
+| Estado | Visual | Trigger |
+|---|---|---|
+| `pending` | ⏱ icon gris claro + opacity 0.7 | addMessageOptimistic |
+| `sent` | ✓ gris (1 check) | confirmMessage post-Firestore |
+| `read` | ✓✓ azul (#34B7F1) | (S4 read receipts agregará trigger) |
+| `failed` | border rojo + botón Reintentar | rollbackMessage |
+| `synced` | sin icon | mensajes del listener Firestore |
+
+**HubStore (Object Pool estilo Linear)** — `js/hub-store.js`:
+- `_chats: Map<sid, chat>` — metadata por sessionId
+- `_messages: Map<sid, msg[]>` — arrays de mensajes con `_status` y `_tempId`
+- `_pending: Map<tempId, {action, sid, msg}>` — queue de mutations no confirmadas
+- `_listeners: Set<fn>` — observers para re-render externo
+- API: `addMessageOptimistic`, `confirmMessage`, `rollbackMessage`,
+  `getPendingMessage`, `removeMessageByTempId`, `subscribe`, `_debug`
+
+**Co-existencia con `_activeMessages`**: durante S1 ambos cache funcionan
+en paralelo (HubStore y `_activeMessages` array de admin-concierge.js).
+Cada mutación los actualiza en sync. Migración total a HubStore en S2.
+Esto reduce el blast radius del refactor — si HubStore tiene bug,
+`_activeMessages` sigue funcionando con render directo.
+
+### 60.1.3 Botón "Reintentar" para mensajes failed
+
+Click en `[data-action="retry-msg"]`:
+1. Lee `data-temp-id` del botón
+2. Busca el msg failed en `_activeMessages`
+3. `removeMessageByTempId` en HubStore + splice del array local
+4. Re-llena el input con el texto original
+5. Llama `sendAsesorMessage()` que reusa el flow normal (auto-claim si aplica)
+
+Patrón usado por WhatsApp Web / Telegram: error visible + acción
+recuperación inline. NO modal de error. NO toast genérico. El usuario
+ve exactamente qué mensaje falló y puede reintentarlo con un click.
+
+### 60.1.4 Telemetría agregada
+
+Cada función refactorizada loggea con prefijo `§60.1` para diagnóstico
+post-deploy:
+
+```
+[HubStore] §60.1 ready
+[HubStore] §60.1 addMessageOptimistic { sid, tempId }
+[HubStore] §60.1 confirmMessage { tempId, firestoreId }
+[HubStore] §60.1 rollbackMessage { tempId, error }
+[AdminConcierge] §60.1 sendMessage optimistic START { sid, tempId }
+[AdminConcierge] §60.1 sendMessage confirmed { tempId, firestoreId }
+[AdminConcierge] §60.1 sendMessage failed { tempId, error }
+[AdminConcierge] §60.1 claimChat optimistic START { sid }
+[AdminConcierge] §60.1 claimChat confirmed { sid }
+[AdminConcierge] §60.1 claimChat rollback { error }
+[AdminConcierge] §60.1 togglePin optimistic { sid, newVal }
+[AdminConcierge] §60.1 togglePin rollback { error }
+[AdminConcierge] §60.1 toggleArchive optimistic { sid, newVal }
+[AdminConcierge] §60.1 toggleArchive rollback { error }
+[AdminConcierge] §60.1 markUnread optimistic { sid }
+[AdminConcierge] §60.1 markUnread rollback { error }
+[AdminConcierge] §60.1 closeChat optimistic START { sid }
+[AdminConcierge] §60.1 closeChat confirmed { sid }
+[AdminConcierge] §60.1 closeChat rollback { error }
+[AdminConcierge] §60.1 reopenChat optimistic START { sid }
+[AdminConcierge] §60.1 reopenChat confirmed { sid }
+[AdminConcierge] §60.1 reopenChat rollback { error }
+[AdminConcierge] §60.1 retry-msg action { tempId }
+```
+
+Si en producción los logs aparecen pero la UI no responde → bug en
+render. Si los logs NO aparecen → bug en handler binding.
+
+### 60.1.5 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/hub-store.js` | NUEVO — Object Pool in-memory + API optimistic | +198, -0 |
+| `admin.html` | Carga `<script src="js/hub-store.js" defer>` antes de admin-concierge.js | +2, -0 |
+| `js/admin-concierge.js togglePin` | Snapshot + optimistic + rollback | +20, -10 |
+| `js/admin-concierge.js toggleArchive` | Snapshot + optimistic + rollback (incluye reabrir detail si rollback de chat activo) | +35, -20 |
+| `js/admin-concierge.js markUnread` | Snapshot + optimistic + rollback | +25, -10 |
+| `js/admin-concierge.js claimChat` | Snapshot + optimistic + rollback en race condition | +60, -10 |
+| `js/admin-concierge.js _sendAsesorMessageInternal` | tempId + HubStore + estados visuales + rollback + parent doc optimistic | +85, -15 |
+| `js/admin-concierge.js closeChat` | Snapshot + optimistic + system msg pending + rollback completo | +60, -25 |
+| `js/admin-concierge.js reopenChat` | Mismo patrón que closeChat | +50, -10 |
+| `js/admin-concierge.js renderChatDetail` | Estados visuales `_status` para mensajes asesor + system | +50, -15 |
+| `js/admin-concierge.js panel.click` | Handler `data-action="retry-msg"` con reuso de sendAsesorMessage | +25, -0 |
+| `css/admin.css` (append §60.1) | `.cnc-msg-pending`, `.cnc-msg-synced`, `.cnc-msg-failed`, `.cnc-msg-status[data-state]`, `.cnc-msg-retry`, `cncShake` keyframe + `prefers-reduced-motion` | +95, -0 |
+| `service-worker.js` | CACHE_VERSION → `v20260512010000` | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260512010000'` | +1, -1 |
+| `CLAUDE.md` | Esta sección §60.1 | +220, -0 |
+
+**Total**: ~927 líneas agregadas, ~117 eliminadas.
+
+### 60.1.6 Archivos INTACTOS (afirmación explícita)
+
+- `js/concierge.js` (cliente público) — ZERO cambios. Sprint S2 lo cubre con el mismo patrón.
+- `firestore.rules` — sin cambios de schema (campos `_status`/`_tempId` son local-only, NO se persisten).
+- `database.rules.json` — sin tocar (typing indicators son S3).
+- `functions/index.js` — ZERO cambios.
+- `css/concierge.css` — sin tocar (S2/S6 lo modifican).
+- Resto del repo — ZERO cambios.
+
+### 60.1.7 Tests E2E manuales (validación cliente post-push)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Asesor click "Tomar conversación" | Banner verde "Estás atendiendo este chat" aparece <16ms (sin esperar al server) |
+| 2 | Si race condition (otro asesor lo tomó antes) | Rollback al snapshot + toast "X tomó este chat hace un momento" |
+| 3 | Asesor escribe mensaje + Enter | Bubble aparece INSTANT con icon ⏱ pending + opacity 0.7 |
+| 4 | Esperar 500ms-2s | Icon ⏱ → ✓ sent (transición spring sutil) |
+| 5 | Cliente abre el chat (cuando Sprint S4 ship read receipts) | ✓ → ✓✓ azul (#34B7F1) |
+| 6 | Asesor click pin en menú | Estrella aparece INSTANT en lista, sin flicker |
+| 7 | Asesor click archive | Chat sale de la lista INSTANT (si era activo, panel se limpia) |
+| 8 | Asesor click cerrar chat → confirm | Banner "✓ Conversación cerrada" + status pill aparecen INSTANT |
+| 9 | Network drop mid-send (DevTools throttle offline) | Bubble pasa a `failed` con border rojo + botón "Reintentar" |
+| 10 | Click "Reintentar" en mensaje failed | Re-envía con auto-claim si aplica, recupera estado pending → sent |
+| 11 | DevTools console al enviar | `[HubStore] §60.1 addMessageOptimistic` + `[AdminConcierge] §60.1 sendMessage optimistic START` |
+| 12 | DevTools console al confirmar | `[HubStore] §60.1 confirmMessage` + `sendMessage confirmed` |
+| 13 | `prefers-reduced-motion: reduce` | Animaciones `.cnc-msg-shake` desactivadas, transitions a 0 |
+| 14 | Mobile: enviar 5 mensajes rápido | Todos aparecen INSTANT, ninguno se pierde, todos confirman a sent |
+
+### 60.1.8 Anti-patterns evitados (cruce con doctrinas)
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo `transition: opacity, transform, color, background-color` (compositor-only) |
+| §17.12 | `MutationObserver subtree:true` | HubStore notifica vía `_listeners` Set explícito. Cero MO global |
+| §35 | `pointermove` persistente | Cero pointermove. Solo click delegation event-by-event |
+| §17.10 | Mobile sin reduced-motion | Bloque `@media (prefers-reduced-motion: reduce)` con `transition:none` y `animation:none` |
+| §57.7 | Listener admin que muere | Sin cambios — `_chatsUnsub` sigue globalmente activo + heartbeat 30s |
+| §57.9 | Mezclar UI close con state reset | Cliente intacto. Patrón "lazy reset on next open" se mantiene |
+| §17.4 | Renombrar IDs DOM | IDs preservados literalmente (`cncAdminReply`, `cncAdminSend`, `cncAdminClaimBtn`, etc.) |
+| §17.7 | Crear archivo `concierge-v2.js` | NUEVO archivo solo para HubStore (`js/hub-store.js`). Cero refactor con sufijo "v2" |
+
+### 60.1.9 Riesgos + plan de rollback
+
+| Riesgo | Mitigación interna | Rollback |
+|---|---|---|
+| HubStore conflict con `_activeMessages` | Co-existen sincronizados; HubStore es nuevo, `_activeMessages` mantiene contrato existente | `git revert <commit>` |
+| Optimistic msg duplicado por listener Firestore | Dedup por `_tempId` matching pendiente cuando snapshot llega con doc nuevo | `git revert` |
+| Race entre claim local y Firestore reject | Snapshot guardado ANTES del update local; rollback automático con toast | `git revert` |
+| `renderChatDetail` re-render rompe estado | Tests E2E manuales cubren los 4 estados | `git revert` |
+| CSS shake causa motion sickness | `prefers-reduced-motion` cancela animation | `git revert` |
+| Listener `_messagesUnsub` recibe el msg confirmado y lo duplica | `_lastSyncedMsgIds` Set existente (§57.ter) lo previene; HubStore extiende con `_tempId` | `git revert` |
+| `window.HubStore` no existe en page load | `<script defer>` garantiza orden + guard `if (window.HubStore)` defensive | `git revert` |
+| Telemetría console.log spam | Logs específicos a operaciones críticas, NO en cada keystroke | Patch sin revert |
+
+### 60.1.10 Deuda técnica documentada
+
+- **`_activeMessages` cache** (admin-concierge.js): co-existe con HubStore
+  durante S1. Migración total al store en S2 — eliminará ~30 líneas.
+- **Heartbeat 30s del `_chatsUnsub`** (§57.7): identificado como
+  deuda en plan §59 sección 8. `onSnapshot` reconnect nativo de
+  Firestore lo cubre, pero eliminar requiere validación manual del
+  cliente. Marcado para S2.
+- **`closeOrFinalize`** (concierge.js, S2): reemplazable por reducer
+  pattern post-S2.
+
+### 60.1.11 Doctrina aplicada
+
+§19 RCA estricto: causa raíz era patrón asimétrico cliente-vs-admin documentado en §57.7.9 (latencia ~1.5-2s en Hub admin). NO parche local — refactor completo de los 7 botones con patrón unificado.
+
+§37 IAP: 5 secciones documentadas previo al cambio. Riesgos identificados con plan de rollback. Tests E2E listados.
+
+§17 (Performance): cero MutationObserver, cero pointermove persistente, cero `transition: all`. Solo `transform`/`opacity`/`color`/`box-shadow` en CSS.
+
+§17.12 (anti-MutationObserver): HubStore notifica vía `_listeners` Set explícito. Listeners se suscriben/desuscriben con `subscribe()` que devuelve `unsub` cleanup.
+
+§17.4 (HTML/CSS estable): ZERO cambios de IDs/clases existentes. Adición de `data-temp-id` y nuevas clases `.cnc-msg-*` que no colisionan con legacy.
+
+§57.7 / §57.9: cliente intacto. Lazy reset on next open + listener admin globalmente activo siguen funcionando idénticos.
+
+**Cache bump**: `v20260512010000`.
+
+---
+
+## 60.1.1 ADR-060.1.1 — Hotfix post Sprint S1: pre-check server en claim + mensajes amigables permission-denied (2026-05-09)
+
+> Cliente reportó tras deploy del Sprint S1 (commit `1dbf43e`): el
+> super_admin se bloqueó por intentos fallidos (15 min lockout) y los
+> editores no pueden tomar conversaciones — toast genérico "Missing or
+> insufficient permissions". Cliente clarifica: "le pasa a TODOS los
+> usuarios en TODOS los chats sin asignar". Eso descarta race condition
+> y apunta a Firestore Rules desactualizadas en producción O a roles mal
+> configurados de los editores.
+>
+> Aplicado bajo §19 RCA Mode estricto + §37 IAP. Inspección profunda en
+> 8 capas antes de tocar código. NO se modifica firestore.rules
+> (responsabilidad del super_admin ejecutar `firebase deploy`).
+
+### 60.1.1.1 Causa raíz confirmada (RCA §19)
+
+**Issue 1 — super_admin bloqueado**: 5 intentos fallidos en
+`loginAttempts/{emailHash}` → lockout 15 min (sistema de seguridad
+preexistente, NO regresión Sprint S1). `js/admin-auth.js:7-69`.
+
+**Issue 2 — editor "permission-denied" al tomar chat**: el commit
+`1dbf43e` del Sprint S1 NO modificó `firestore.rules` ni
+`js/admin-auth.js`. Sí modificó la UX del flow (optimistic + rollback).
+El error `permission-denied` viene del **servidor de Firestore**
+rechazando el commit con base en sus rules.
+
+Las rules del repo (`firestore.rules:213-227`) PERMITIRÍAN el claim:
+
+```
+allow update: if isSuperAdmin()
+    || (isEditorOrAbove() && (
+        resource.data.claimedBy == null
+        || resource.data.claimedBy == request.auth.uid
+    ))
+    || ...;
+```
+
+Si esa rule falla con `permission-denied` para CUALQUIER editor en
+CUALQUIER chat sin asignar, las únicas causas estructurales posibles
+son:
+
+| # | Causa | Probabilidad | Verificación |
+|---|---|---|---|
+| A | Rules deployadas en producción son anteriores a §23 FASE 3 (claiming) — `firebase deploy --only firestore:rules` nunca se ejecutó tras §23 | 🔴 Alta | Firebase Console → Firestore → Rules → comparar con `firestore.rules` del repo |
+| B | Editor (Yesit Romero, uid `drNehmyG...xfs1`) NO tiene `rol: 'editor'` en su doc `usuarios/{uid}` | 🟠 Media | Firebase Console → Firestore → `usuarios/{uid}` → campo `rol` |
+| C | Race condition con super_admin Daniel Romero (que tomó chats antes de bloquearse) | ⚪ Descartada | Cliente confirma "los chats no están tomados por ninguno" |
+
+### 60.1.1.2 Lo que mi cambio HACE y NO HACE
+
+**HACE** (mejora UX):
+1. Pre-check server antes de mutar UI optimistic. Si server dice "ya
+   tomado por X" o "no encontrado", abortamos local con código semántico
+   y mensaje amigable. Cero UI flash falso.
+2. Mapea `permission-denied` y `chat-not-found` a mensajes humanos en
+   los 2 callers del claim:
+   - Botón gigante "Tomar conversación" (`#cncAdminClaimBtn` handler)
+   - Auto-claim al primer mensaje del asesor (`sendAsesorMessage`)
+3. Logs detallados con prefijo `§60.1.1` para diagnóstico futuro.
+
+**NO HACE** (responsabilidad del super_admin):
+1. NO toca `firestore.rules`. Si la causa es A, requiere
+   `firebase deploy --only firestore:rules`.
+2. NO modifica perfiles de usuario. Si la causa es B, requiere editar
+   `usuarios/{uid}.rol` desde Firebase Console.
+3. NO destraba la cuenta del super_admin actual. Para destrabar AHORA:
+   Firebase Console → Firestore → `loginAttempts/altorracarssale_gmail_com`
+   → setear `intentos: 0, bloqueado: false`. O esperar 15 min auto-unblock.
+
+### 60.1.1.3 Cambios técnicos
+
+**Archivo único modificado**: `js/admin-concierge.js`.
+
+**`claimChat` refactor** — split en 2 funciones:
+- `claimChat(sessionId)` ahora hace pre-check con
+  `ref.get({ source: 'server' })`. Tres outcomes:
+  - chat-not-found → reject inmediato sin UI mutation
+  - chat status closed → reject inmediato
+  - claimedBy ya seteado y NO es el caller → reject `already-claimed`
+  - claim libre o ya mío → llama a `_claimChatTransactional`
+- `_claimChatTransactional` (helper extraído) — contiene el flow
+  optimistic + transaction + rollback original del Sprint S1, sin
+  cambios.
+
+**Mapeo de errores** — 2 callers actualizados:
+
+| Caller | Línea | Branches catch agregados |
+|---|---|---|
+| `cncAdminClaimBtn` handler | ~1818 | `chat-not-found` + `permission-denied` (con `console.error` detallado y mensaje 9s) |
+| `sendAsesorMessage` catch | ~1115 | Idem |
+
+**Mensaje canónico para permission-denied**:
+> "No tenés permisos para tomar este chat. Posibles causas: (1) reglas
+> de Firebase desactualizadas, (2) tu rol no está bien configurado.
+> Contactá al admin."
+
+### 60.1.1.4 Telemetría agregada
+
+Logs nuevos con prefijo `§60.1.1` cada vez que se llama claim:
+
+```
+[AdminConcierge] §60.1.1 pre-check claim { sid, serverClaimedBy, serverStatus, myUid }
+[AdminConcierge] §60.1.1 pre-check claim: chat not found <sid>
+[AdminConcierge] §60.1.1 permission-denied al tomar chat { sid, err }
+[AdminConcierge] §60.1.1 permission-denied al enviar { sid, err }
+```
+
+Si en producción persiste el error tras este fix, los logs
+`pre-check claim` revelan el `serverClaimedBy` real → confirma si
+es Causa A (rules viejas → server lee bien claimedBy=null pero rules
+rechazan) vs Causa C (otro asesor lo tomó realmente).
+
+### 60.1.1.5 Acciones para el cliente
+
+**Para destrabar AHORA el super_admin** (sin esperar 15 min):
+1. Firebase Console → Firestore → colección `loginAttempts`.
+2. Documento `altorracarssale_gmail_com`.
+3. Editar campos: `intentos: 0`, `bloqueado: false`.
+4. Reintentar login.
+
+**Para arreglar la causa raíz del permission-denied** (CRÍTICO):
+
+```bash
+# En la PC del super_admin, dentro del repo:
+firebase deploy --only firestore:rules
+```
+
+Si tras el deploy el error persiste, verificar en Firebase Console:
+- `usuarios/{Yesit_uid}` → campo `rol` debe ser `"editor"` o `"super_admin"`.
+
+### 60.1.1.6 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/admin-concierge.js` | `claimChat` split en pre-check + `_claimChatTransactional` + mapeo permission-denied/chat-not-found en 2 callers | +60, -12 |
+| `service-worker.js` | CACHE_VERSION → `v20260512020000` | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260512020000'` | +1, -1 |
+| `CLAUDE.md` | Esta sección §60.1.1 | +130, -0 |
+
+### 60.1.1.7 Archivos INTACTOS
+
+- `firestore.rules` — sin tocar. Las rules del repo son CORRECTAS;
+  la causa probable es deploy desactualizado en producción.
+- `js/concierge.js` (cliente) — sin tocar.
+- `js/admin-auth.js` — sin tocar (sistema de bloqueo es preexistente
+  y funciona como diseñado).
+- `js/hub-store.js` — sin tocar.
+- `css/admin.css` — sin tocar.
+- Resto del repo — ZERO cambios.
+
+### 60.1.1.8 Tests E2E (post-deploy del fix + acciones cliente)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Editor click "Tomar conversación" en chat que server tiene libre | Banner verde "Estás atendiendo" + claim exitoso |
+| 2 | Editor click "Tomar" en chat que server tiene tomado por otro asesor | Toast: "X tomó este chat hace un momento. Refrescá para ver el estado actual" — sin UI flash de optimistic |
+| 3 | Editor click "Tomar" pero rules rechazan (Causa A o B antes del fix de cliente) | Toast 9s amigable: "No tenés permisos para tomar este chat. Posibles causas: ..." + console.error con detalle |
+| 4 | DevTools console al click | `[AdminConcierge] §60.1.1 pre-check claim {sid, serverClaimedBy, serverStatus, myUid}` |
+| 5 | Si pre-check ve `chat-not-found` (chat eliminado por otro super_admin) | Toast: "No encontramos este chat en el servidor. Refrescá la lista." |
+| 6 | sendAsesorMessage con auto-claim cuando rules rechazan | Mismo toast amigable que test #3 (no toast técnico crudo) |
+
+### 60.1.1.9 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.12 | MutationObserver | Cero. Solo `ref.get` directo (single shot). |
+| §35 | pointermove | Cero. |
+| §17.2 | transition: all | Cero (no se tocó CSS). |
+| §17.4 | Crear nuevo archivo `claim-v2.js` | Refactor sobre archivo existente. Nueva función `_claimChatTransactional` con guion bajo (helper privado, mismo IIFE). |
+| §19 RCA | Modificar rules sin diagnóstico | Documentado: rules NO se tocan. Cliente debe ejecutar `firebase deploy` o verificar roles. |
+| §37 IAP | Implementar sin autorización | IAP entregado y autorizado por cliente con clarificación crítica ("le pasa a todos"). |
+
+### 60.1.1.10 Doctrina aplicada
+
+§19 RCA estricto: 8 capas de inspección antes de tocar código. Cuando
+cliente clarificó "le pasa a todos los usuarios", descarté la
+hipótesis de race condition y reorienté hacia rules deployadas / rol
+incorrecto. Mi código mejora UX pero NO masquera la causa raíz —
+deja claro al usuario que necesita acción del super_admin.
+
+§37 IAP: 5 secciones documentadas + autorización explícita antes de
+cambios. Archivos INTACTOS afirmados (firestore.rules, admin-auth.js,
+concierge.js).
+
+§17.4 (HTML/CSS estable): zero cambios de IDs ni clases. Solo lógica
+JS interna de admin-concierge.js IIFE.
+
+§57.7 / §57.9 / §60.1: invariantes preservados. Cliente intacto.
+Listener admin globalmente activo. Optimistic UI Sprint S1 funciona
+igual cuando NO hay rechazo del server.
+
+**Cache bump**: `v20260512020000`.
+
+---
+
 ---
 

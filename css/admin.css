@@ -13443,3 +13443,102 @@ html.theme-changing-stop * {
 /* ═══════════════════════════════════════════════════════════════════
    FIN ADMIN-FINAL Sprint D — CIERRE TOTAL ADR-029
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §60.1 — Estados visuales canónicos de mensajes ALTOR Hub
+   (Sprint S1 cirugía, patrón WhatsApp/Linear/Intercom).
+
+   Cuatro estados local-only (no Firestore):
+     pending → ⏱ icon gris claro + opacity 0.7
+     sent    → ✓ gris (1 check)
+     read    → ✓✓ azul (#34B7F1)
+     failed  → border rojo + botón Reintentar + shake animation
+
+   Solo se animan transform/opacity/color/box-shadow (compositor-only,
+   doctrina §17.2). Respeta prefers-reduced-motion (doctrina §35).
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cnc-detail-msg.cnc-msg-pending {
+    opacity: 0.7;
+}
+
+.cnc-detail-msg.cnc-msg-synced {
+    opacity: 1;
+}
+
+.cnc-detail-msg.cnc-msg-failed {
+    border: 1px solid var(--status-danger, #ef4444);
+    border-radius: var(--vis-r-md, 12px);
+    opacity: 1;
+    padding: 4px;
+}
+
+.cnc-msg-status {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.78rem;
+    color: var(--text-tertiary, rgba(255, 255, 255, 0.5));
+    line-height: 1;
+    transition: color 150ms ease-out, transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cnc-msg-status[data-state="pending"] {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.cnc-msg-status[data-state="sent"] {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.cnc-msg-status[data-state="read"] {
+    color: #34B7F1;
+}
+
+.cnc-msg-retry {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: background-color 150ms ease-out, color 150ms ease-out, transform 100ms ease-out;
+}
+
+.cnc-msg-retry:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fecaca;
+}
+
+.cnc-msg-retry:active {
+    transform: scale(0.96);
+}
+
+@keyframes cncShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+.cnc-msg-shake {
+    animation: cncShake 500ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cnc-detail-msg.cnc-msg-pending,
+    .cnc-detail-msg.cnc-msg-synced,
+    .cnc-detail-msg.cnc-msg-failed,
+    .cnc-msg-status,
+    .cnc-msg-retry {
+        transition: none !important;
+    }
+    .cnc-msg-shake {
+        animation: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §60.1 — Optimistic UI states (Sprint S1)
+   ═══════════════════════════════════════════════════════════════════ */

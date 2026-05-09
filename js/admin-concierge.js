@@ -261,48 +261,119 @@
     /* ═══════════════════════════════════════════════════════════
        ACCIONES POR CHAT — pin, archive, mark unread, delete
        ═══════════════════════════════════════════════════════════ */
+    // §60.1 — Optimistic UI: snapshot del estado previo, update local
+    // INSTANT + render, Firestore en background, rollback en error.
+    // Patrón Linear/Intercom: UI nunca espera al server.
     function togglePin(sessionId) {
         var chat = _chats.find(function (c) { return c._docId === sessionId; });
         if (!chat) return;
         var newVal = !chat.isPinned;
+        var nowIso = new Date().toISOString();
+        var snapshot = { isPinned: chat.isPinned, pinnedAt: chat.pinnedAt };
+
+        // Optimistic — UI cambia ANTES del round-trip
+        chat.isPinned = newVal;
+        chat.pinnedAt = newVal ? nowIso : null;
+        renderChatList();
+        console.log('[AdminConcierge] §60.1 togglePin optimistic', { sid: sessionId, newVal: newVal });
+
+        // Firestore en background
         window.db.collection('conciergeChats').doc(sessionId).set({
             isPinned: newVal,
-            pinnedAt: newVal ? new Date().toISOString() : null
+            pinnedAt: chat.pinnedAt
         }, { merge: true }).then(function () {
             if (AP.toast) AP.toast(newVal ? 'Chat fijado' : 'Chat desfijado', 'success');
         }).catch(function (err) {
+            // Rollback al snapshot previo
+            chat.isPinned = snapshot.isPinned;
+            chat.pinnedAt = snapshot.pinnedAt;
+            renderChatList();
+            console.warn('[AdminConcierge] §60.1 togglePin rollback', err && err.message);
             if (AP.toast) AP.toast('No se pudo actualizar: ' + err.message, 'error');
         });
     }
 
+    // §60.1 — Optimistic UI: si el chat archivado era el activo,
+    // cerramos detail INSTANT (sale de la lista) y revertimos en
+    // error. Si rollback dispara después del cierre, re-render
+    // restaura la card. Patrón Front/Intercom: archive con undo.
     function toggleArchive(sessionId) {
         var chat = _chats.find(function (c) { return c._docId === sessionId; });
         if (!chat) return;
         var newVal = !chat.isArchived;
+        var nowIso = new Date().toISOString();
         var uid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : null;
+        var snapshot = {
+            isArchived: chat.isArchived,
+            archivedAt: chat.archivedAt,
+            archivedBy: chat.archivedBy
+        };
+        var wasActive = _activeSessionId === sessionId;
+
+        // Optimistic
+        chat.isArchived = newVal;
+        chat.archivedAt = newVal ? nowIso : null;
+        chat.archivedBy = newVal ? uid : null;
+        renderChatList();
+        if (newVal && wasActive) {
+            _activeSessionId = null;
+            renderChatDetail(null, []);
+        }
+        console.log('[AdminConcierge] §60.1 toggleArchive optimistic', { sid: sessionId, newVal: newVal });
+
         window.db.collection('conciergeChats').doc(sessionId).set({
             isArchived: newVal,
-            archivedAt: newVal ? new Date().toISOString() : null,
-            archivedBy: newVal ? uid : null
+            archivedAt: chat.archivedAt,
+            archivedBy: chat.archivedBy
         }, { merge: true }).then(function () {
             if (AP.toast) AP.toast(newVal ? 'Chat archivado' : 'Chat desarchivado', 'success');
-            // Si el chat archivado era el activo, cerrar detail
-            if (newVal && _activeSessionId === sessionId) {
-                _activeSessionId = null;
-                renderChatDetail(null, []);
-            }
         }).catch(function (err) {
+            // Rollback completo
+            chat.isArchived = snapshot.isArchived;
+            chat.archivedAt = snapshot.archivedAt;
+            chat.archivedBy = snapshot.archivedBy;
+            renderChatList();
+            // Si lo habíamos cerrado optimistically y falló, lo
+            // re-abrimos para que el usuario no quede confundido.
+            if (newVal && wasActive) {
+                _activeSessionId = sessionId;
+                renderChatDetail(chat, _activeMessages);
+            }
+            console.warn('[AdminConcierge] §60.1 toggleArchive rollback', err && err.message);
             if (AP.toast) AP.toast('No se pudo actualizar: ' + err.message, 'error');
         });
     }
 
+    // §60.1 — Optimistic UI: badge unread aparece INSTANT en la lista.
+    // El campo forceUnreadByAdmin solo afecta visualización admin
+    // (el cliente no lo ve), así que rollback silencioso es seguro.
     function markUnread(sessionId) {
+        var chat = _chats.find(function (c) { return c._docId === sessionId; });
+        var snapshot = chat ? {
+            forceUnreadByAdmin: chat.forceUnreadByAdmin,
+            unreadByAdmin: chat.unreadByAdmin
+        } : null;
+
+        // Optimistic
+        if (chat) {
+            chat.forceUnreadByAdmin = true;
+            chat.unreadByAdmin = Math.max(1, chat.unreadByAdmin || 0);
+            renderChatList();
+        }
+        console.log('[AdminConcierge] §60.1 markUnread optimistic', { sid: sessionId });
+
         window.db.collection('conciergeChats').doc(sessionId).set({
             forceUnreadByAdmin: true,
             unreadByAdmin: 1
         }, { merge: true }).then(function () {
             if (AP.toast) AP.toast('Marcado como no leído', 'success');
         }).catch(function (err) {
+            if (chat && snapshot) {
+                chat.forceUnreadByAdmin = snapshot.forceUnreadByAdmin;
+                chat.unreadByAdmin = snapshot.unreadByAdmin;
+                renderChatList();
+            }
+            console.warn('[AdminConcierge] §60.1 markUnread rollback', err && err.message);
             if (AP.toast) AP.toast('No se pudo actualizar: ' + err.message, 'error');
         });
     }
@@ -651,19 +722,56 @@
         var canWrite = !isClosed && !unclaimed && (!claimedByOther || isSuper);
         var lockReadonly = claimedByOther && !isSuper;
 
+        // §60.1 — Estados visuales canónicos (WhatsApp pattern):
+        //   pending → ⏱ icon gris claro + opacity 0.7
+        //   sent    → ✓ gris (1 check)
+        //   read    → ✓✓ azul (#34B7F1) (2 checks)
+        //   failed  → border rojo + botón Reintentar (data-action="retry-msg")
+        // Solo se aplica a mensajes 'asesor' (los del cliente y bot
+        // se rigen por el listener Firestore directo).
         var msgsHTML = messages.length === 0
             ? '<div class="cnc-admin-detail-empty">Sin mensajes en esta conversación.</div>'
             : messages.map(function (m) {
                 if (m.from === 'system') {
-                    return '<div class="cnc-detail-msg cnc-detail-system">' +
+                    var sysExtraCls = '';
+                    if (m._status === 'pending') sysExtraCls = ' cnc-msg-pending';
+                    else if (m._status === 'failed') sysExtraCls = ' cnc-msg-failed';
+                    return '<div class="cnc-detail-msg cnc-detail-system' + sysExtraCls + '"' +
+                            (m._tempId ? ' data-temp-id="' + escTxt(m._tempId) + '"' : '') + '>' +
                         '<div class="cnc-detail-system-bubble">' + escTxt(m.text) + '</div>' +
                         '<div class="cnc-detail-time">' + escTxt(timeAgo(m.timestamp)) + '</div>' +
                     '</div>';
                 }
                 var bubbleClass = m.from === 'user' ? 'cnc-detail-user' :
                                   m.from === 'asesor' ? 'cnc-detail-asesor' : 'cnc-detail-bot';
-                return '<div class="cnc-detail-msg ' + bubbleClass + '">' +
-                    '<div class="cnc-detail-bubble">' + escTxt(m.text) + '</div>' +
+
+                // §60.1 — Estados visuales para mensajes del asesor
+                var statusClass = '';
+                var statusIcon = '';
+                if (m.from === 'asesor') {
+                    if (m._status === 'pending') {
+                        statusClass = ' cnc-msg-pending';
+                        statusIcon = '<span class="cnc-msg-status" data-state="pending" aria-label="Enviando">⏱</span>';
+                    } else if (m._status === 'sent') {
+                        statusClass = ' cnc-msg-synced';
+                        statusIcon = '<span class="cnc-msg-status" data-state="sent" aria-label="Enviado">✓</span>';
+                    } else if (m._status === 'read') {
+                        statusClass = ' cnc-msg-synced';
+                        statusIcon = '<span class="cnc-msg-status" data-state="read" aria-label="Leído">✓✓</span>';
+                    } else if (m._status === 'failed') {
+                        statusClass = ' cnc-msg-failed';
+                        statusIcon = '<button class="cnc-msg-retry" type="button"' +
+                            ' data-action="retry-msg"' +
+                            ' data-temp-id="' + escTxt(m._tempId || '') + '"' +
+                            ' aria-label="Reintentar envío">Reintentar</button>';
+                    } else {
+                        // Mensaje del listener Firestore (sin _status local)
+                        statusClass = ' cnc-msg-synced';
+                    }
+                }
+                var tempIdAttr = m._tempId ? ' data-temp-id="' + escTxt(m._tempId) + '"' : '';
+                return '<div class="cnc-detail-msg ' + bubbleClass + statusClass + '"' + tempIdAttr + '>' +
+                    '<div class="cnc-detail-bubble">' + escTxt(m.text) + statusIcon + '</div>' +
                     '<div class="cnc-detail-time">' + escTxt(timeAgo(m.timestamp)) + '</div>' +
                 '</div>';
             }).join('');
@@ -835,6 +943,14 @@
      * Returns: Promise que resuelve {success:true, claimedByName} o
      * rejecta con {code:'already-claimed', claimedByName} | {code:'closed'}
      */
+    // §60.1 — Optimistic UI: banner "Estás atendiendo este chat"
+    // aparece INSTANT al click. La transaction Firestore corre en
+    // background. Si race con otro asesor (already-claimed), rollback
+    // automático al snapshot previo + toast "X tomó este chat".
+    //
+    // Trade-off: durante 200-2000ms el asesor cree que tomó el chat.
+    // Es el patrón industry-standard (Intercom/Drift/Front): UI
+    // optimista con rollback explícito si el server rechaza.
     function claimChat(sessionId) {
         if (!window.db || !window.auth || !window.auth.currentUser) {
             return Promise.reject(new Error('not-authenticated'));
@@ -845,6 +961,79 @@
         var ref = window.db.collection('conciergeChats').doc(sessionId);
         var currentUid = window.auth.currentUser.uid;
         var currentName = (AP.currentUserProfile && AP.currentUserProfile.nombre) || 'Asesor';
+        var nowIso = new Date().toISOString();
+
+        // §60.1.1 — PRE-CHECK SERVER (antes del optimistic UI)
+        //
+        // Causa: el listener _chatsUnsub puede tener un snapshot stale
+        // (latencia 0.5-2s vs Firestore real). Si Yesit click "Tomar"
+        // mientras su lista local muestra "sin asignar" pero el server
+        // tiene claimedBy=otroUid, el flow optimistic mostraría
+        // "Estás atendiendo" → 1s después rollback con error técnico.
+        //
+        // Solución: leer doc directo del SERVER ANTES de mutar UI. Si
+        // server dice "ya tomado" o "no tenés permisos", abortamos
+        // localmente con código semántico (`already-claimed`) y mensaje
+        // amigable. Cero UI flash falso.
+        //
+        // NOTA: si esto falla con permission-denied (rules en producción
+        // desactualizadas o rol incorrecto del editor), el caller mostrará
+        // un mensaje claro indicando las posibles causas.
+        return ref.get({ source: 'server' }).then(function (snap) {
+            if (!snap.exists) {
+                console.warn('[AdminConcierge] §60.1.1 pre-check claim: chat not found', sessionId);
+                return Promise.reject({ code: 'chat-not-found' });
+            }
+            var serverData = snap.data();
+            console.log('[AdminConcierge] §60.1.1 pre-check claim', {
+                sid: sessionId,
+                serverClaimedBy: serverData.claimedBy || null,
+                serverStatus: serverData.status,
+                myUid: currentUid
+            });
+            if (serverData.status === 'closed') {
+                return Promise.reject({ code: 'chat-closed' });
+            }
+            if (serverData.claimedBy && serverData.claimedBy !== currentUid) {
+                // Ya tomado por OTRO. NO hacemos optimistic UI ni transaction.
+                return Promise.reject({
+                    code: 'already-claimed',
+                    claimedByName: serverData.claimedByName || 'Otro asesor',
+                    claimedByUid: serverData.claimedBy
+                });
+            }
+            // OK: chat libre o ya tomado por mí. Sigue el flow optimistic + transaction.
+            return _claimChatTransactional(sessionId, ref, currentUid, currentName, nowIso);
+        });
+    }
+
+    // §60.1.1 — Helper extraído para el flow optimistic + Firestore TX.
+    // Solo se llama tras pasar el pre-check del server.
+    function _claimChatTransactional(sessionId, ref, currentUid, currentName, nowIso) {
+        // §60.1 — OPTIMISTIC: snapshot + update local + render INSTANT
+        var chat = _chats.find(function (c) { return c._docId === sessionId; });
+        var snapshot = null;
+        if (chat) {
+            snapshot = {
+                claimedBy: chat.claimedBy,
+                claimedByName: chat.claimedByName,
+                claimedAt: chat.claimedAt,
+                mode: chat.mode,
+                assignedTo: chat.assignedTo,
+                assignedToName: chat.assignedToName
+            };
+            chat.claimedBy = currentUid;
+            chat.claimedByName = currentName;
+            chat.claimedAt = nowIso;
+            chat.mode = 'live';
+            chat.assignedTo = currentUid;
+            chat.assignedToName = currentName;
+            renderChatList();
+            if (_activeSessionId === sessionId) {
+                renderChatDetail(chat, _activeMessages);
+            }
+            console.log('[AdminConcierge] §60.1 claimChat optimistic START', { sid: sessionId });
+        }
 
         return window.db.runTransaction(function (tx) {
             return tx.get(ref).then(function (snap) {
@@ -865,7 +1054,7 @@
                 tx.update(ref, {
                     claimedBy: currentUid,
                     claimedByName: currentName,
-                    claimedAt: new Date().toISOString(),
+                    claimedAt: nowIso,
                     mode: 'live',
                     // Compat con CRM legacy que usa assignedTo
                     assignedTo: currentUid,
@@ -876,15 +1065,11 @@
         }).then(function (result) {
             // §57.quat — Bug 2 fix: agregar mensaje system para que el
             // CLIENTE vea inmediatamente "✓ X tomó la conversación".
-            // Antes: claim solo updateaba el doc parent. El listener
-            // parent del cliente quitaba banners de queue pero NO mostraba
-            // ningún signo de que un asesor lo tomó. UX confuso.
-            //
-            // Ahora: agregar a subcollection messages con systemType
-            // 'asesor_joined'. El listener cliente _firestoreUnsub procesa
-            // mensajes system con texto correspondiente.
+            // §60.1 — Best-effort, sin Optimistic UI sobre system messages
+            // del cliente (no aparece en _activeMessages del admin hasta
+            // que el listener Firestore lo entrega). El cliente lo ve
+            // vía su propio listener.
             try {
-                var nowIso = new Date().toISOString();
                 window.db.collection('conciergeChats').doc(sessionId)
                     .collection('messages').add({
                         from: 'system',
@@ -902,7 +1087,27 @@
                     lastMessageAt: nowIso
                 }).catch(function () {});
             } catch (e) { /* best-effort */ }
+            console.log('[AdminConcierge] §60.1 claimChat confirmed', { sid: sessionId });
             return result;
+        }).catch(function (err) {
+            // §60.1 — ROLLBACK optimistic en error
+            if (snapshot && chat) {
+                chat.claimedBy = snapshot.claimedBy;
+                chat.claimedByName = snapshot.claimedByName;
+                chat.claimedAt = snapshot.claimedAt;
+                chat.mode = snapshot.mode;
+                chat.assignedTo = snapshot.assignedTo;
+                chat.assignedToName = snapshot.assignedToName;
+                renderChatList();
+                if (_activeSessionId === sessionId) {
+                    renderChatDetail(chat, _activeMessages);
+                }
+            }
+            console.warn('[AdminConcierge] §60.1 claimChat rollback', err && (err.code || err.message));
+            // Toast solo si NO fue el caller quien lo va a manejar.
+            // El sendAsesorMessage ya muestra toasts custom para race.
+            // claimChat lanza el error para que el caller decida.
+            return Promise.reject(err);
         });
     }
 
@@ -956,9 +1161,20 @@
         if (needsClaim) {
             claimChat(_activeSessionId).then(sendNow).catch(function (err) {
                 if (err && err.code === 'already-claimed') {
-                    if (AP.toast) AP.toast('Daniel u otro asesor tomó este chat hace un momento. ' + (err.claimedByName || ''), 'warning');
+                    if (AP.toast) AP.toast((err.claimedByName || 'Otro asesor') + ' tomó este chat hace un momento. Refrescá para ver el estado actual.', 'warning');
                 } else if (err && err.code === 'chat-closed') {
                     if (AP.toast) AP.toast('Este chat ya está cerrado', 'error');
+                } else if (err && err.code === 'chat-not-found') {
+                    if (AP.toast) AP.toast('No encontramos este chat en el servidor. Refrescá la lista.', 'error');
+                } else if (err && (err.code === 'permission-denied' || (err.message && err.message.indexOf('Missing or insufficient permissions') >= 0))) {
+                    // §60.1.1 — Permission-denied del servidor. Causas posibles:
+                    // (1) Reglas de Firestore desactualizadas en producción
+                    //     → super_admin debe ejecutar `firebase deploy --only firestore:rules`
+                    // (2) El editor no tiene rol 'editor' o 'super_admin' en su doc usuarios/
+                    //     → super_admin debe verificar en Firebase Console el rol del usuario
+                    // (3) Otro asesor tomó el chat justo antes (race ms)
+                    console.error('[AdminConcierge] §60.1.1 permission-denied al enviar', { sid: _activeSessionId, err: err });
+                    if (AP.toast) AP.toast('No tenés permisos para tomar este chat. Posibles causas: (1) reglas de Firebase desactualizadas, (2) tu rol no está bien configurado. Contactá al admin.', 'error', 9000);
                 } else {
                     if (AP.toast) AP.toast('No se pudo enviar: ' + (err.message || err.code || 'error'), 'error');
                 }
@@ -969,28 +1185,126 @@
         sendNow();
     }
 
+    // §60.1 — Optimistic UI universal: el bubble del asesor aparece
+    // INSTANT con _status='pending' (icon ⏱ gris). El round-trip a
+    // Firestore corre en background. Cuando confirma, _status='sent'
+    // (✓ gris). Si falla, _status='failed' (border rojo + retry button).
+    //
+    // Patrón WhatsApp/Linear/Intercom: la UI es la fuente de verdad
+    // visual mientras el server valida. Fallar con feedback claro >
+    // hacer esperar al usuario.
+    //
+    // Co-existencia: HubStore.addMessageOptimistic + _activeMessages
+    // local mantienen la misma lista en sync. _activeMessages se
+    // mantiene durante S1 para compat con renderChatDetail. Migración
+    // a 100% HubStore en S2.
     function _sendAsesorMessageInternal(input, text) {
         input.value = '';
+
+        var sid = _activeSessionId;
+        if (!sid || !window.db) return;
+
+        var asesorUid = window.auth.currentUser.uid;
+        var asesorNombre = (AP.currentUserProfile && AP.currentUserProfile.nombre)
+            || window.auth.currentUser.email;
+        var asesorPhotoURL = (AP.currentUserProfile && AP.currentUserProfile.photoURL) || null;
+        var nowIso = new Date().toISOString();
+
         var msg = {
             from: 'asesor',
             text: text,
-            timestamp: new Date().toISOString(),
-            asesorUid: window.auth.currentUser.uid,
-            asesorNombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || window.auth.currentUser.email,
-            asesorPhotoURL: (AP.currentUserProfile && AP.currentUserProfile.photoURL) || null
+            timestamp: nowIso,
+            asesorUid: asesorUid,
+            asesorNombre: asesorNombre,
+            asesorPhotoURL: asesorPhotoURL
         };
-        window.db.collection('conciergeChats').doc(_activeSessionId)
+
+        // §60.1 — OPTIMISTIC: HubStore + _activeMessages + render INSTANT
+        var tempId = window.HubStore
+            ? window.HubStore.addMessageOptimistic(sid, msg)
+            : ('tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
+        var optimisticMsg = Object.assign({ _tempId: tempId, _status: 'pending' }, msg);
+        _activeMessages.push(optimisticMsg);
+
+        var chat = _chats.find(function (c) { return c._docId === sid; });
+        renderChatDetail(chat, _activeMessages);
+        console.log('[AdminConcierge] §60.1 sendMessage optimistic START', {
+            sid: sid, tempId: tempId
+        });
+
+        // Optimistic update del parent (lastMessage + lastMessageAt)
+        // para que la lista lateral re-ordene INSTANT.
+        if (chat) {
+            chat.lastMessage = text.slice(0, 80);
+            chat.lastMessageAt = nowIso;
+            renderChatList();
+        }
+
+        // §60.1 — Firestore subcollection en background
+        window.db.collection('conciergeChats').doc(sid)
             .collection('messages').add(msg)
-            .catch(function (err) { AP.toast('Error al enviar: ' + err.message, 'error'); });
-        // Update parent doc lastMessage + unread cliente
-        window.db.collection('conciergeChats').doc(_activeSessionId).set({
+            .then(function (ref) {
+                if (window.HubStore) {
+                    window.HubStore.confirmMessage(tempId, Object.assign({
+                        _docId: ref.id,
+                        _sid: sid
+                    }, msg));
+                }
+                var idx = _activeMessages.findIndex(function (m) {
+                    return m._tempId === tempId;
+                });
+                if (idx >= 0) {
+                    _activeMessages[idx]._status = 'sent';
+                    _activeMessages[idx].firestoreId = ref.id;
+                    // Solo re-render si el chat sigue activo (evita
+                    // pisar otra vista si el admin navegó).
+                    if (_activeSessionId === sid) {
+                        renderChatDetail(_chats.find(function (c) {
+                            return c._docId === sid;
+                        }), _activeMessages);
+                    }
+                }
+                console.log('[AdminConcierge] §60.1 sendMessage confirmed', {
+                    tempId: tempId, firestoreId: ref.id
+                });
+            })
+            .catch(function (err) {
+                if (window.HubStore) {
+                    window.HubStore.rollbackMessage(tempId, err && err.message);
+                }
+                var idx = _activeMessages.findIndex(function (m) {
+                    return m._tempId === tempId;
+                });
+                if (idx >= 0) {
+                    _activeMessages[idx]._status = 'failed';
+                    _activeMessages[idx]._error = err && err.message;
+                    if (_activeSessionId === sid) {
+                        renderChatDetail(_chats.find(function (c) {
+                            return c._docId === sid;
+                        }), _activeMessages);
+                    }
+                }
+                console.warn('[AdminConcierge] §60.1 sendMessage failed', {
+                    tempId: tempId, error: err && err.message
+                });
+                if (AP.toast) {
+                    AP.toast('Error al enviar. Tocá "Reintentar" en el mensaje.', 'error');
+                }
+            });
+
+        // Update parent doc lastMessage + unread cliente — también background
+        window.db.collection('conciergeChats').doc(sid).set({
             lastMessage: text.slice(0, 80),
-            lastMessageAt: new Date().toISOString(),
+            lastMessageAt: nowIso,
             unreadByUser: window.firebase && window.firebase.firestore ?
                 window.firebase.firestore.FieldValue.increment(1) : 1
         }, { merge: true }).catch(function () {});
     }
 
+    // §60.1 — Optimistic UI: banner "Conversación cerrada" aparece
+    // INSTANT en el detail panel + system message pending en la lista
+    // de mensajes. Las 2 escrituras Firestore (parent doc + system msg)
+    // corren en background. Si fallan, rollback completo.
     function closeChat() {
         if (!_activeSessionId || !window.db) return;
         if (!confirm('¿Cerrar esta conversación?\n\nEl cliente verá un aviso de cierre y sólo podrá iniciar una conversación nueva. Los mensajes se conservan.')) return;
@@ -999,7 +1313,51 @@
         var asesorUid = window.auth.currentUser.uid;
         var nowIso = new Date().toISOString();
 
-        // 1. Marcar el doc parent como cerrado
+        // §60.1 — OPTIMISTIC: snapshot + update local + render INSTANT
+        var chat = _chats.find(function (c) { return c._docId === sid; });
+        var snapshot = null;
+        if (chat) {
+            snapshot = {
+                status: chat.status,
+                closedAt: chat.closedAt,
+                closedBy: chat.closedBy,
+                closedByName: chat.closedByName,
+                resolvedAt: chat.resolvedAt,
+                resolvedBy: chat.resolvedBy,
+                lastMessage: chat.lastMessage,
+                lastMessageAt: chat.lastMessageAt
+            };
+            chat.status = 'closed';
+            chat.closedAt = nowIso;
+            chat.closedBy = asesorUid;
+            chat.closedByName = asesorNombre;
+            chat.resolvedAt = nowIso;
+            chat.resolvedBy = asesorUid;
+            chat.lastMessage = '✓ Conversación cerrada por ' + asesorNombre;
+            chat.lastMessageAt = nowIso;
+            renderChatList();
+            renderChatDetail(chat, _activeMessages);
+        }
+
+        // Mensaje system optimistic — bubble aparece INSTANT
+        var systemMsg = {
+            from: 'system',
+            systemType: 'closed',
+            text: '✓ ' + asesorNombre + ' cerró esta conversación. Iniciá una nueva cuando quieras.',
+            timestamp: nowIso,
+            asesorNombre: asesorNombre,
+            asesorUid: asesorUid
+        };
+        var tempId = window.HubStore
+            ? window.HubStore.addMessageOptimistic(sid, systemMsg)
+            : null;
+        if (tempId) {
+            _activeMessages.push(Object.assign({ _tempId: tempId, _status: 'pending' }, systemMsg));
+            renderChatDetail(chat, _activeMessages);
+        }
+        console.log('[AdminConcierge] §60.1 closeChat optimistic START', { sid: sid });
+
+        // 1. Marcar el doc parent como cerrado (Firestore background)
         var p1 = window.db.collection('conciergeChats').doc(sid).set({
             status: 'closed',
             closedAt: nowIso,
@@ -1016,18 +1374,48 @@
         // 2. Insertar mensaje system "✓ Conversación cerrada por X"
         // El cliente lo recibirá vía onSnapshot y aplicará applyClosedState()
         var p2 = window.db.collection('conciergeChats').doc(sid)
-            .collection('messages').add({
-                from: 'system',
-                systemType: 'closed',
-                text: '✓ ' + asesorNombre + ' cerró esta conversación. Iniciá una nueva cuando quieras.',
-                timestamp: nowIso,
-                asesorNombre: asesorNombre,
-                asesorUid: asesorUid
-            });
+            .collection('messages').add(systemMsg);
 
-        Promise.all([p1, p2]).then(function () {
+        Promise.all([p1, p2]).then(function (results) {
+            var ref = results[1];
+            if (window.HubStore && tempId) {
+                window.HubStore.confirmMessage(tempId, Object.assign({
+                    _docId: ref.id,
+                    _sid: sid
+                }, systemMsg));
+            }
+            var idx = _activeMessages.findIndex(function (m) { return m._tempId === tempId; });
+            if (idx >= 0) {
+                _activeMessages[idx]._status = 'sent';
+                _activeMessages[idx].firestoreId = ref.id;
+                if (_activeSessionId === sid) {
+                    renderChatDetail(chat, _activeMessages);
+                }
+            }
+            console.log('[AdminConcierge] §60.1 closeChat confirmed', { sid: sid });
             AP.toast('Conversación cerrada');
         }).catch(function (err) {
+            // §60.1 — ROLLBACK
+            if (snapshot && chat) {
+                Object.assign(chat, snapshot);
+                renderChatList();
+                if (_activeSessionId === sid) {
+                    renderChatDetail(chat, _activeMessages);
+                }
+            }
+            if (window.HubStore && tempId) {
+                window.HubStore.rollbackMessage(tempId, err && err.message);
+                // El system message no es retry-able (es UX cosmético):
+                // mejor removerlo del array para que no quede un msg
+                // failed huérfano confundiendo al asesor.
+                window.HubStore.removeMessageByTempId(tempId);
+            }
+            var idxFail = _activeMessages.findIndex(function (m) { return m._tempId === tempId; });
+            if (idxFail >= 0) _activeMessages.splice(idxFail, 1);
+            if (_activeSessionId === sid) {
+                renderChatDetail(chat, _activeMessages);
+            }
+            console.warn('[AdminConcierge] §60.1 closeChat rollback', err && err.message);
             AP.toast('Error al cerrar: ' + err.message, 'error');
         });
     }
@@ -1035,6 +1423,10 @@
     /**
      * Reabre un chat cerrado: limpia status, agrega mensaje system y
      * permite al cliente continuar la conversación.
+     *
+     * §60.1 — Optimistic UI: banner cerrado desaparece INSTANT del
+     * detail panel + system msg pending. Rollback completo si Firestore
+     * rechaza.
      */
     function reopenChat() {
         if (!_activeSessionId || !window.db) return;
@@ -1043,6 +1435,43 @@
         var asesorNombre = (AP.currentUserProfile && AP.currentUserProfile.nombre) || 'Un asesor';
         var asesorUid = window.auth.currentUser.uid;
         var nowIso = new Date().toISOString();
+
+        // §60.1 — OPTIMISTIC: snapshot + update local + render INSTANT
+        var chat = _chats.find(function (c) { return c._docId === sid; });
+        var snapshot = null;
+        if (chat) {
+            snapshot = {
+                status: chat.status,
+                reopenedAt: chat.reopenedAt,
+                reopenedBy: chat.reopenedBy,
+                lastMessage: chat.lastMessage,
+                lastMessageAt: chat.lastMessageAt
+            };
+            chat.status = 'active';
+            chat.reopenedAt = nowIso;
+            chat.reopenedBy = asesorUid;
+            chat.lastMessage = '↻ Conversación reabierta por ' + asesorNombre;
+            chat.lastMessageAt = nowIso;
+            renderChatList();
+            renderChatDetail(chat, _activeMessages);
+        }
+
+        var systemMsg = {
+            from: 'system',
+            systemType: 'reopened',
+            text: '↻ ' + asesorNombre + ' reabrió la conversación. Podés seguir escribiendo.',
+            timestamp: nowIso,
+            asesorNombre: asesorNombre,
+            asesorUid: asesorUid
+        };
+        var tempId = window.HubStore
+            ? window.HubStore.addMessageOptimistic(sid, systemMsg)
+            : null;
+        if (tempId) {
+            _activeMessages.push(Object.assign({ _tempId: tempId, _status: 'pending' }, systemMsg));
+            renderChatDetail(chat, _activeMessages);
+        }
+        console.log('[AdminConcierge] §60.1 reopenChat optimistic START', { sid: sid });
 
         var p1 = window.db.collection('conciergeChats').doc(sid).set({
             status: 'active',
@@ -1053,18 +1482,45 @@
         }, { merge: true });
 
         var p2 = window.db.collection('conciergeChats').doc(sid)
-            .collection('messages').add({
-                from: 'system',
-                systemType: 'reopened',
-                text: '↻ ' + asesorNombre + ' reabrió la conversación. Podés seguir escribiendo.',
-                timestamp: nowIso,
-                asesorNombre: asesorNombre,
-                asesorUid: asesorUid
-            });
+            .collection('messages').add(systemMsg);
 
-        Promise.all([p1, p2]).then(function () {
+        Promise.all([p1, p2]).then(function (results) {
+            var ref = results[1];
+            if (window.HubStore && tempId) {
+                window.HubStore.confirmMessage(tempId, Object.assign({
+                    _docId: ref.id,
+                    _sid: sid
+                }, systemMsg));
+            }
+            var idx = _activeMessages.findIndex(function (m) { return m._tempId === tempId; });
+            if (idx >= 0) {
+                _activeMessages[idx]._status = 'sent';
+                _activeMessages[idx].firestoreId = ref.id;
+                if (_activeSessionId === sid) {
+                    renderChatDetail(chat, _activeMessages);
+                }
+            }
+            console.log('[AdminConcierge] §60.1 reopenChat confirmed', { sid: sid });
             AP.toast('Conversación reabierta');
         }).catch(function (err) {
+            // §60.1 — ROLLBACK
+            if (snapshot && chat) {
+                Object.assign(chat, snapshot);
+                renderChatList();
+                if (_activeSessionId === sid) {
+                    renderChatDetail(chat, _activeMessages);
+                }
+            }
+            if (window.HubStore && tempId) {
+                window.HubStore.rollbackMessage(tempId, err && err.message);
+                window.HubStore.removeMessageByTempId(tempId);
+            }
+            var idxFail = _activeMessages.findIndex(function (m) { return m._tempId === tempId; });
+            if (idxFail >= 0) _activeMessages.splice(idxFail, 1);
+            if (_activeSessionId === sid) {
+                renderChatDetail(chat, _activeMessages);
+            }
+            console.warn('[AdminConcierge] §60.1 reopenChat rollback', err && err.message);
             AP.toast('Error al reabrir: ' + err.message, 'error');
         });
     }
@@ -1357,6 +1813,32 @@
             sendAsesorMessage();
             return;
         }
+        // §60.1 — Reintentar envío de mensaje failed (Optimistic UI)
+        var retryBtn = e.target && e.target.closest && e.target.closest('[data-action="retry-msg"]');
+        if (retryBtn) {
+            var failedTempId = retryBtn.getAttribute('data-temp-id');
+            if (!failedTempId) return;
+            console.log('[AdminConcierge] §60.1 retry-msg action', { tempId: failedTempId });
+            // Buscar el mensaje failed en _activeMessages
+            var failedIdx = _activeMessages.findIndex(function (m) {
+                return m._tempId === failedTempId && m._status === 'failed';
+            });
+            if (failedIdx < 0) return;
+            var failedMsg = _activeMessages[failedIdx];
+            var retryText = failedMsg.text;
+            // Remove la entry failed (UI + HubStore) — el reenvío crea una nueva pending
+            _activeMessages.splice(failedIdx, 1);
+            if (window.HubStore) window.HubStore.removeMessageByTempId(failedTempId);
+            var chatRetry = _chats.find(function (c) { return c._docId === _activeSessionId; });
+            renderChatDetail(chatRetry, _activeMessages);
+            // Reusar el flow normal de send (con auto-claim si aplica)
+            var input = $('cncAdminReply');
+            if (input) {
+                input.value = retryText;
+                sendAsesorMessage();
+            }
+            return;
+        }
         if (e.target && e.target.closest && e.target.closest('#cncAdminCloseChat')) {
             closeChat();
             return;
@@ -1379,9 +1861,20 @@
                 // Re-render se hace solo via onSnapshot del chat parent
             }).catch(function (err) {
                 if (err && err.code === 'already-claimed') {
-                    if (AP.toast) AP.toast(err.claimedByName + ' tomó este chat hace un momento', 'warning');
+                    if (AP.toast) AP.toast((err.claimedByName || 'Otro asesor') + ' tomó este chat hace un momento. Refrescá para ver el estado actual.', 'warning');
                 } else if (err && err.code === 'chat-closed') {
                     if (AP.toast) AP.toast('Este chat ya está cerrado', 'error');
+                } else if (err && err.code === 'chat-not-found') {
+                    if (AP.toast) AP.toast('No encontramos este chat en el servidor. Refrescá la lista.', 'error');
+                } else if (err && (err.code === 'permission-denied' || (err.message && err.message.indexOf('Missing or insufficient permissions') >= 0))) {
+                    // §60.1.1 — Permission-denied del servidor. Causas posibles:
+                    // (1) Reglas de Firestore desactualizadas en producción
+                    //     → super_admin debe ejecutar `firebase deploy --only firestore:rules`
+                    // (2) El editor no tiene rol 'editor' o 'super_admin' en su doc usuarios/
+                    //     → super_admin debe verificar en Firebase Console el rol del usuario
+                    // (3) Otro asesor tomó el chat justo antes (race ms)
+                    console.error('[AdminConcierge] §60.1.1 permission-denied al tomar chat', { sid: sid, err: err });
+                    if (AP.toast) AP.toast('No tenés permisos para tomar este chat. Posibles causas: (1) reglas de Firebase desactualizadas, (2) tu rol no está bien configurado. Contactá al admin.', 'error', 9000);
                 } else {
                     if (AP.toast) AP.toast('No se pudo tomar: ' + (err.message || err.code || 'error'), 'error');
                 }

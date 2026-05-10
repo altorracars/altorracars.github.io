@@ -35,6 +35,9 @@
             // Saludos formales
             'hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches',
             'saludos', 'hi', 'hey', 'hello',
+            // §81 — agregadas variantes coloquiales sueltas que faltaban
+            'ey', 'epa', 'ola', 'oye',
+            'hola altor', 'altor', 'hola bot', 'hi altor',
             // Coloquiales colombianos
             'que tal', 'qué tal', 'que hubo', 'qué hubo', 'qubo', 'qhubo',
             'que onda', 'qué onda', 'que mas', 'qué más',
@@ -65,6 +68,14 @@
             'me muestras inventario', 'catalogo', 'catálogo',
             'inventario', 'que hay disponible', 'que disponible',
             'que tienes', 'me muestras los autos',
+            // §81 — variantes "tienes por ahi" que faltaban
+            'que tienes por ahi', 'qué tienes por ahí',
+            'que tenes por ahi', 'qué tenés por ahí',
+            'que manejas por ahi', 'qué manejas por ahí',
+            'que vendes por ahi', 'qué vendes por ahí',
+            'tenes algo', 'tenés algo', 'tienes algun', 'tienes algún',
+            'me ofreces', 'que me ofreces', 'qué me ofreces',
+            'que me ensenas', 'qué me enseñas',
             // §24 FASE 1 — keywords colombianos coloquiales
             'tienen carros', 'tienen autos', 'tienen vehiculos', 'tienen disponible',
             'manejan carros', 'manejan autos', 'venden carros', 'venden autos',
@@ -183,7 +194,37 @@
             // §24 FASE 1
             'esto es horrible', 'que pereza', 'qué pereza', 'no sirves',
             'esto es una basura', 'no me ayudas', 'no me entiendes',
-            'estas repitiendo lo mismo', 'siempre lo mismo'
+            'estas repitiendo lo mismo', 'siempre lo mismo',
+            // §81 — frases reales reportadas por cliente
+            'no entiendes', 'no entendes', 'no estas entendiendo', 'no estás entendiendo',
+            'no captas', 'no me cazas', 'no entiendes o que', 'no entendes o que',
+            'que pasa con tu ia', 'qué pasa con tu ia',
+            'que onda con tu ia', 'qué onda con tu ia',
+            'tu ia esta mal', 'tu ia está mal', 'estas medio bobo', 'estás medio bobo',
+            'estas perdido', 'estás perdido', 'no me captas',
+            'no estas captando', 'no estás captando'
+        ],
+        // §81 — NUEVO intent request_help (debe prevalecer sobre confirmation
+        // y goodbye cuando el cliente menciona "dudas"/"preguntas"/"asesoría").
+        // Sin este intent, "si tengo dudas" caía en goodbye via stemming/fuzzy
+        // de "tengo que irme" → bot decía "Hasta pronto" inapropiadamente.
+        request_help: [
+            'tengo dudas', 'tengo una duda', 'tengo unas dudas',
+            'tengo preguntas', 'tengo una pregunta', 'tengo unas preguntas',
+            'si tengo dudas', 'sí tengo dudas', 'si tengo preguntas',
+            'tengo varias dudas', 'tengo otra duda', 'tengo otra pregunta',
+            'necesito ayuda', 'necesito una ayuda', 'me ayudas con',
+            'me pueden ayudar', 'me podes ayudar', 'me podés ayudar',
+            'me puedes ayudar', 'puedes ayudarme', 'pueden ayudarme',
+            'necesito asesoria', 'necesito asesoría', 'necesito asesor',
+            'necesito una asesoria', 'necesito una asesoría',
+            'asesoria', 'asesoría', 'tengo consultas', 'tengo una consulta',
+            'consulta', 'tengo dudas sobre', 'tengo preguntas sobre',
+            'me orientas', 'me orientás', 'me orientan',
+            'necesito orientacion', 'necesito orientación',
+            'tengo inquietudes', 'tengo una inquietud',
+            'no se que escoger', 'no sé qué escoger',
+            'no se cual', 'no sé cuál'
         ],
         ask_human: [
             'asesor', 'persona real', 'humano', 'ayuda real', 'no eres humano',

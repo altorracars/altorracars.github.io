@@ -14142,3 +14142,58 @@ html.theme-changing-stop * {
 /* ═══════════════════════════════════════════════════════════════════
    FIN §61.R2 — Sec-Roles UI
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §61.R3 — Sec-Users RBAC dynamic dropdown integration
+   ═══════════════════════════════════════════════════════════════════
+   Estilos para el filter de role en sec-users + form-select compacto
+   ═══════════════════════════════════════════════════════════════════ */
+
+.users-role-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin: 12px 0 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    flex-wrap: wrap;
+}
+
+.users-role-filter-label {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.65);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.form-select--sm {
+    padding: 6px 28px 6px 10px;
+    font-size: 0.85rem;
+    height: auto;
+    min-width: 200px;
+    flex-shrink: 0;
+}
+
+/* Hint del modal user role dropdown */
+.form-hint {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+    .users-role-filter-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .form-select--sm {
+        min-width: 0;
+        width: 100%;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §61.R3 — Sec-Users RBAC dynamic dropdown
+   ═══════════════════════════════════════════════════════════════════ */

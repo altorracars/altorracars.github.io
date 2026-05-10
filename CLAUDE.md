@@ -28353,5 +28353,264 @@ dropdown), R4 (migración usuarios), R5 (refactor callsites), R6
 
 ---
 
+## 65. ADR-065 — Sprint §61.R3 RBAC UI: dropdown dinámico de roles en sec-users (2026-05-10)
+
+> Tercer sprint del Plan §61. Reemplaza el dropdown hardcoded de 3
+> opciones (`super_admin`/`editor`/`viewer`) en el modal de usuarios
+> por un select dinámico que lee `roles/` con onSnapshot real-time.
+> Al guardar, además del callable legacy, escribe `roleId/roleName/
+> permissions[]` denormalizado en el doc del user. Cero deploys
+> nuevos requeridos (todo client-side).
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §35 (anti-patterns), §37 (IAP),
+> §61 Plan Maestro RBAC.
+
+### 65.1 Por qué este sprint existe
+
+Tras §63 (R1 Foundation) y §64 (R2 UI sec-roles CRUD) el super_admin
+puede crear roles personalizados, pero `sec-users` (Crear/Editar
+usuario) seguía teniendo un dropdown estático con 3 opciones legacy.
+El cliente reportaba que **al crear un user, no podía asignarle un
+role custom** — la opción no aparecía. R3 cierra ese gap.
+
+### 65.2 Causa raíz (lo que estaba mal)
+
+`admin.html:3416` tenía hardcoded:
+```html
+<select id="uRol" class="form-select" required>
+    <option value="editor">Editor</option>
+    <option value="viewer">Viewer</option>
+    <option value="super_admin">Super Admin</option>
+</select>
+```
+
+Y `js/admin-users.js:166` leía solo ese campo: `var rol = $('uRol').value;`.
+
+Resultado: aunque R2 te permitía crear "Asesor Senior" en `roles/`,
+nunca aparecía en el dropdown de creación de users. Sec-users
+quedaba desconectado del catálogo dinámico.
+
+### 65.3 Solución estructural — 3 piezas coordinadas
+
+#### A. `admin.html` — dropdown dinámico (HTML)
+
+Reemplazo del `<select id="uRol">` estático por:
+```html
+<select id="uRoleId" class="form-select" required data-role-dynamic="true">
+    <option value="">Cargando roles...</option>
+</select>
+<small class="form-hint">El rol determina los permisos del usuario.
+    Podés crear roles personalizados desde Configuración → Roles.</small>
+<input type="hidden" id="uRol" value="editor">
+```
+
+**Patrón híbrido**:
+- `uRoleId` es el dropdown VISIBLE (poblado dinámicamente por JS)
+- `uRol` queda como `<input type="hidden">` que se sincroniza
+  automáticamente al elegir un role (mantiene retrocompat con el
+  callable `updateUserRoleV2`/`createManagedUserV2` que esperan
+  `super_admin`/`editor`/`viewer`)
+
+Cero modificación al backend.
+
+#### B. `js/admin-users.js` — lógica RBAC dinámica (~150 líneas nuevas)
+
+**State nuevo**:
+- `_rolesCache` — array de roles desde `roles/` (live)
+- `_rolesUnsub` — listener cleanup
+- `_rolesFilter` — filtro activo en la tabla (roleId o `'__legacy__'`)
+
+**Listener real-time** (`startRolesListener`):
+- `onSnapshot` a `roles/` ordenado client-side (system primero, luego
+  alfabético)
+- Re-popula dropdown si modal abierto
+- Re-renderiza filtro y tabla
+
+**`mapRoleToLegacy(role)`** — heurística para inferir campo `rol`
+legacy desde un role doc:
+- `permissions` contiene `'*'` → `'super_admin'`
+- `id === 'system_super_admin'` → `'super_admin'`
+- `id === 'system_editor'` → `'editor'`
+- `id === 'system_viewer'` → `'viewer'`
+- Custom role: si TODOS sus permissions son read-only → `'viewer'`,
+  sino → `'editor'`
+
+**`populateRolesDropdown(selectedRoleId)`**:
+- Construye `<optgroup>` Sistema + Personalizados
+- Si no hay roles sembrados → mensaje informativo
+- Default: `system_editor` (o el role marcado `isDefault: true`)
+- Llama `syncLegacyRolFromDropdown()` para sincronizar el hidden
+
+**`syncLegacyRolFromDropdown()`**:
+- Lee `uRoleId.value` → busca el role en cache → infiere `rol` legacy
+- Setea `uRol.value` (hidden)
+- Listener `change` en el dropdown lo invoca automáticamente
+
+**Filter container** (`renderRolesFilter` + `ensureRolesFilterContainer`):
+- Inyecta `<div id="usersRoleFilterContainer">` sobre la tabla si no
+  existe (idempotente)
+- Render `<select>` con todos los roles + opción "Sin rol asignado
+  (legacy)" para detectar users pre-migración
+- Filter cambia → re-render tabla
+
+**Render tabla actualizado**:
+- Si user tiene `roleId + roleName` → muestra `roleName` real con
+  badge de color custom (`background: roleColor20`, `color: roleColor`)
+- Sino → fallback al label legacy + tag `·legacy` pequeño
+- Filtro por `roleId` aplicado pre-sort
+
+**Save logic actualizado**:
+- Lee `roleId` del dropdown
+- Busca `roleData` en cache
+- Valida que `roleId` esté seleccionado
+- Construye `rbacData = { roleId, roleName, permissions[], permissionsUpdatedAt }`
+- Llama callable existente (`updateUserRoleV2` o `createManagedUserV2`)
+  con `rol` legacy mapeado
+- En el `.then()`: escribe `db.collection('usuarios').doc(uid).update(rbacData)`
+- Si el write extra falla, NO bloquea el flujo principal (best-effort
+  con warning en console)
+
+**Init lifecycle**:
+- `initR3()` arranca listener + ensureRolesFilterContainer
+- Polling cada 250ms si AP/db no listos
+- Listener globalmente activo (NO se cancela on section change —
+  el dropdown puede invocarse desde modal abierto desde cualquier sección)
+
+**API expuesta** (`AP.usersR3`): `rolesCache()`, `mapRoleToLegacy`,
+`startRolesListener`, `stopRolesListener`, `populateRolesDropdown`
+para debug y otros módulos.
+
+#### C. `css/admin.css` — estilos del filter (~50 líneas)
+
+- `.users-role-filter-container` — flex con bg sutil, border tenue,
+  border-radius 10px, padding cómodo
+- `.users-role-filter-label` — label estándar
+- `.form-select--sm` — variante compacta del select (padding/font reducidos)
+- `.form-hint` — texto pequeño gris para hints contextuales
+- `@media (max-width: 600px)` — colapsa a stack vertical full-width
+
+### 65.4 Telemetría agregada
+
+Logs prefijo `§61.R3`:
+```
+[AdminUsers] §61.R3 roles cache: N
+[AdminUsers] §61.R3 RBAC denorm write failed (no crítico): permission-denied
+```
+
+### 65.5 Tests E2E (validación post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Login super_admin → Configuración → Usuarios | Tabla muestra users con roleName real (sistema sembrado en R2). Users legacy sin roleId muestran tag "·legacy" |
+| 2 | Click "Crear Usuario" | Modal abre con dropdown `uRoleId` poblado: optgroup "Roles del sistema" (3) + "Roles personalizados" (los que hayas creado en R2). Default: "Editor" (system_editor) |
+| 3 | Llenar nombre + email + password + seleccionar role custom → Crear | User creado. Toast OK. Tabla refresca y muestra el roleName custom con badge color del role |
+| 4 | Verificar Firestore `usuarios/{uid}` | Doc tiene: `rol`, `roleId`, `roleName`, `permissions[]` (denormalizado), `permissionsUpdatedAt` |
+| 5 | Editar el user creado → cambiar role a otro custom | Update OK. Toast. Permissions[] re-sincronizado |
+| 6 | Crear role custom con `*` permission en sec-roles | Volver a sec-users → al crear new user con ese role → `rol` legacy se setea automáticamente a `super_admin` |
+| 7 | Crear role custom solo con `*.read` → asignar | `rol` legacy se setea a `viewer` |
+| 8 | Crear role custom con permissions mixtos sin `*` | `rol` legacy se setea a `editor` (default seguro) |
+| 9 | Filtro por role en tabla | Selecciona "Asesor Senior" → tabla solo muestra users con ese roleId |
+| 10 | Filtro "Sin rol asignado (legacy)" | Tabla muestra solo users que NO tienen `roleId` (pre-migración) |
+| 11 | Si Firestore tiene 0 roles | Dropdown muestra "Sin roles configurados — sembrá desde Configuración → Roles" |
+| 12 | Real-time: super_admin crea nuevo role en otra tab | Dropdown del modal abierto en esta tab refresca con el nuevo role |
+| 13 | Editor intenta editar user | Toast "No tienes permisos" (sec-users requiere `canManageUsers` = super_admin only) |
+| 14 | Mobile (<600px) | Filter container colapsa vertical, dropdown full-width |
+
+### 65.6 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo transitions específicas en filter container |
+| §17.4 | Renombrar IDs existentes | `uRol` se conserva como hidden (cero impacto en callable backend). `uRoleId` es nuevo. Filter container nuevo |
+| §17.12 | `MutationObserver subtree:true` | Cero MO. `populateRolesDropdown` se invoca desde callbacks discretos (open modal, snapshot, change) |
+| §35 | `pointermove` persistente | Cero pointermove. Solo `change` event en dropdown |
+| §37 IAP | Implementar sin autorización | Cliente autorizó "Arranca R3 mientras voy validando R2" |
+| §17.7 | Crear archivo `admin-users-v2.js` | Refactor sobre archivo existente. Solo extensiones aditivas con prefijo `§61.R3` |
+| §61 Plan | Saltarse fases | R3 estricto: NO migra users existentes (R4), NO refactoriza callsites legacy (R5), NO modifica rules (R6), NO agrega Cloud Function de denormalización (R7 — eso queda como TODO automático futuro). Solo client-side patch |
+
+### 65.7 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Escritura denormalizada falla (rules rechazan) | 🟢 Baja | Catch silencioso con warning. Flujo principal continúa (callable lo creó/updateó). Permite degradación graceful si rules de §43 no incluyen `roleId/roleName/permissions/permissionsUpdatedAt` (whitelist diff-keys) | git revert |
+| 2 | Whitelist de §43 no incluye los campos nuevos | 🟡 Media | super_admin tiene permission update sin restricción de whitelist; editores no pueden editar otros users desde sec-users (no es su flujo). Si reglas pre-§43 desplegadas, el catch silencioso protege | Cliente debe ejecutar `firebase deploy --only firestore:rules` (ya pendiente desde §60.1.1) |
+| 3 | mapRoleToLegacy retorna valor inválido para role muy custom | 🟢 Baja | Default 'editor' como caso seguro. Callable `updateUserRoleV2` valida que rol esté en `['super_admin', 'editor', 'viewer']` server-side y rechaza si no | git revert |
+| 4 | Listener consume reads excesivos | 🟢 Baja | Limit no necesario porque `roles/` es muy pequeño (3-20 docs). Throttle natural por MAX_ROLES en R2 |  |
+| 5 | populateRolesDropdown corre antes que cache cargue | 🟡 Media | Si cache vacío, muestra mensaje informativo. Listener actualiza dropdown cuando snapshot llega | natural |
+| 6 | User legacy sin roleId NO ve role en dropdown al editar | 🟢 Baja | `editUser()` mapea `u.rol → roleId` via `AltorraRBACCatalog.legacyMapping` antes de poblar | git revert |
+| 7 | Cliente edita user con role borrado | 🟢 Baja | Dropdown re-popula desde cache live. Si el role ya no existe, queda sin selección y validación frontend pide elegir uno | natural |
+
+### 65.8 Acciones operativas del super_admin (post-merge)
+
+NINGUNA NUEVA. Si las rules de §43 ya están desplegadas (whitelist
+incluye campos del perfil), R3 funciona. Si no, las escrituras
+denormalizadas fallan con permission-denied **silencioso** (warning
+en console, NO bloquea el flow principal).
+
+Recordatorio del deploy pendiente desde §60.1.1:
+```bash
+firebase deploy --only firestore:rules
+```
+
+### 65.9 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/admin-users.js` | +150 líneas: listener `_rolesUnsub`, `_rolesCache`, `mapRoleToLegacy`, `populateRolesDropdown`, `syncLegacyRolFromDropdown`, `renderRolesFilter`, `ensureRolesFilterContainer`, init lifecycle. Modificado: render tabla con `roleName` real + filtro, `editUser` popula dropdown con roleId mapeado, `saveUser` con escritura denormalizada | +160, -10 |
+| `admin.html` | Reemplazo `<select id="uRol">` estático por `<select id="uRoleId">` dinámico + hint + `<input type="hidden" id="uRol">` para retrocompat | +1, -1 |
+| `css/admin.css` | `.users-role-filter-container`, `.form-select--sm`, `.form-hint`, responsive 600px | +50 |
+| `service-worker.js` | CACHE_VERSION → `v20260513030000` | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260513030000'` | +1, -1 |
+| `CLAUDE.md` | Esta sección §65 | +200 |
+
+**Total**: ~410 líneas agregadas, ~12 eliminadas.
+
+### 65.10 Archivos INTACTOS (afirmación)
+
+- `js/rbac-catalog.js` (R1) — solo lo lee
+- `js/admin-state.js` (R1) — sin tocar
+- `js/admin-auth.js` (R1) — sin tocar
+- `js/admin-roles.js` (R2) — sin tocar
+- `firestore.rules` — sin tocar (R6 hace refactor backend)
+- `functions/index.js` — sin tocar (R7 agrega `onUserRoleAssigned`)
+- 154 callsites legacy de RBAC — sin tocar
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+
+### 65.11 Próximo sprint del plan §61
+
+**R4 — Migración legacy users** (1 día):
+- Cloud Function `migrateLegacyUsers` (callable super_admin)
+- Para cada user con `rol` pero sin `roleId`:
+  - Mapea legacy → `roleId` via `AltorraRBACCatalog.legacyMapping`
+  - Setea `roleId/roleName/permissions[]/permissionsUpdatedAt`
+  - Marca `roleMigratedAt: ISO`
+- Idempotente (skip si ya migró)
+- UI super_admin: botón "Ejecutar migración" en sec-roles con preview + confirm
+- Toast con summary: "X usuarios migrados, Y ya migrados"
+
+### 65.12 Doctrina aplicada
+
+§19 RCA estricto: causa raíz era dropdown estático en HTML +
+desconexión con `roles/` collection. NO bug de runtime — falta de
+feature documentada. R3 es el complemento natural de R2.
+
+§37 IAP: 5 secciones documentadas previo al cambio.
+
+§17 (Performance): cero MutationObserver, cero pointermove,
+transitions específicas. Listener `onSnapshot` cancelado on logout
+(cleanup en `auth.onAuthStateChanged(null)`).
+
+§17.4 (HTML/CSS estable): conservado el `id="uRol"` como hidden
+input para retrocompat con callable backend. Dropdown nuevo con id
+`uRoleId` no colisiona.
+
+§61 Plan Maestro: R3 estricto, cero overflow a R4 (migración),
+R5 (refactor callsites), R6 (rules), R7 (Cloud Function denormalización).
+
+**Cache bump**: `v20260513030000`.
+
+---
+
 ---
 

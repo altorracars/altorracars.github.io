@@ -31,7 +31,9 @@
 
         // ========== RBAC STATE ==========
         currentUserProfile: null,
-        currentUserRole: null,
+        currentUserRole: null,                  // legacy field, kept for retrocompat (R8 lo elimina)
+        currentUserPermissions: [],             // §61.R1 — permissions atómicas del user actual
+        currentUserRoleId: null,                // §61.R1 — id del role asignado (system_X o custom)
         INACTIVITY_TIMEOUT_MS: 30 * 60 * 1000,   // 30 minutos sin actividad → cerrar sesión
         INACTIVITY_WARNING_MS: 28 * 60 * 1000,   // aviso 2 minutos antes del cierre
         SESSION_MAX_MS:         8 * 60 * 60 * 1000, // 8 horas máximas por sesión absoluta
@@ -75,13 +77,55 @@
         _deletingUser: false,
 
         // ========== RBAC CHECKS ==========
-        isSuperAdmin: function() { return AP.currentUserRole === 'super_admin'; },
-        isEditor: function() { return AP.currentUserRole === 'editor'; },
-        isViewer: function() { return AP.currentUserRole === 'viewer'; },
-        canManageUsers: function() { return AP.isSuperAdmin(); },
-        canCreateOrEditInventory: function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canDeleteInventory: function() { return AP.isSuperAdmin(); },
-        isEditorOrAbove: function() { return AP.isSuperAdmin() || AP.isEditor(); },
+        // §61.R1 — Helpers legacy preservados (signatura idéntica para 154 callsites).
+        // Internamente prefieren AP.currentUserPermissions[]. Si está vacío,
+        // caen al chequeo de AP.currentUserRole (legacy fallback).
+        // R8 los eliminará cuando todos los callsites usen hasPermission() directo.
+
+        /**
+         * Chequea si el user tiene un permission específico.
+         * Retorna true si el array contiene el wildcard '*' (super_admin)
+         * o el permId exacto.
+         */
+        hasPermission: function(permId) {
+            var perms = AP.currentUserPermissions;
+            if (!Array.isArray(perms) || perms.length === 0) return false;
+            if (perms.indexOf('*') !== -1) return true;
+            return perms.indexOf(permId) !== -1;
+        },
+
+        isSuperAdmin: function() {
+            // Source of truth: wildcard permission '*'.
+            // Fallback legacy: currentUserRole === 'super_admin'.
+            if (AP.currentUserPermissions && AP.currentUserPermissions.length > 0) {
+                return AP.currentUserPermissions.indexOf('*') !== -1;
+            }
+            return AP.currentUserRole === 'super_admin';
+        },
+        isEditor: function() {
+            // Source of truth: roleId === 'system_editor'.
+            // Fallback legacy: currentUserRole === 'editor'.
+            if (AP.currentUserRoleId) return AP.currentUserRoleId === 'system_editor';
+            return AP.currentUserRole === 'editor';
+        },
+        isViewer: function() {
+            if (AP.currentUserRoleId) return AP.currentUserRoleId === 'system_viewer';
+            return AP.currentUserRole === 'viewer';
+        },
+        canManageUsers: function() { return AP.hasPermission('users.create') || AP.hasPermission('users.edit') || AP.hasPermission('*') || AP.isSuperAdmin(); },
+        canCreateOrEditInventory: function() { return AP.hasPermission('vehicles.create') || AP.hasPermission('vehicles.edit') || AP.hasPermission('*') || AP.isSuperAdmin() || AP.isEditor(); },
+        canDeleteInventory: function() { return AP.hasPermission('vehicles.delete') || AP.hasPermission('*') || AP.isSuperAdmin(); },
+        isEditorOrAbove: function() {
+            // True para super_admin OR editor. Custom roles con permissions de inventario también pasan.
+            if (AP.currentUserPermissions && AP.currentUserPermissions.length > 0) {
+                if (AP.currentUserPermissions.indexOf('*') !== -1) return true;
+                // Check si tiene permission de "edit" en cualquier resource principal (vehicles/concierge/crm)
+                if (AP.currentUserPermissions.indexOf('vehicles.edit') !== -1) return true;
+                if (AP.currentUserPermissions.indexOf('concierge.respond') !== -1) return true;
+                if (AP.currentUserPermissions.indexOf('crm.edit') !== -1) return true;
+            }
+            return AP.currentUserRole === 'super_admin' || AP.currentUserRole === 'editor';
+        },
 
         // ========== HELPERS ==========
         $: function(id) { return document.getElementById(id); },
@@ -270,46 +314,59 @@
     };
 
     // ========== GRANULAR RBAC MATRIX ==========
+    // §61.R1 — Cada helper delega a AP.hasPermission(permId) si hay permissions[].
+    // Si no hay (legacy users pre-migración), cae al chequeo de role legacy.
+    // Signatura externa idéntica → cero impacto en los 154 callsites.
+
+    function _check(permId, legacyFallback) {
+        // Prefer dynamic permissions
+        if (AP.currentUserPermissions && AP.currentUserPermissions.length > 0) {
+            return AP.hasPermission(permId);
+        }
+        // Legacy fallback
+        return !!legacyFallback();
+    }
+
     AP.RBAC = {
-        // Users: super_admin only
-        canViewUsers:         function() { return AP.isSuperAdmin(); },
-        canManageUsers:       function() { return AP.isSuperAdmin(); },
-        // Vehicles: editor+ create/edit, super_admin delete
-        canViewVehicles:      function() { return true; },
-        canCreateVehicle:     function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canEditVehicle:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canDeleteVehicle:     function() { return AP.isSuperAdmin(); },
-        // Brands: editor+ create/edit, super_admin delete
-        canViewBrands:        function() { return true; },
-        canCreateBrand:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canEditBrand:         function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canDeleteBrand:       function() { return AP.isSuperAdmin(); },
-        // Appointments: editor+ manage, super_admin delete
-        canViewAppointments:  function() { return true; },
-        canManageAppointment: function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canDeleteAppointment: function() { return AP.isSuperAdmin(); },
-        // Dealers: super_admin full, editor view only
-        canViewDealers:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canManageDealers:     function() { return AP.isSuperAdmin(); },
-        // Lists: super_admin edit, editor view
-        canViewLists:         function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canEditLists:         function() { return AP.isSuperAdmin(); },
+        // Users
+        canViewUsers:         function() { return _check('users.read',   function() { return AP.isSuperAdmin(); }); },
+        canManageUsers:       function() { return _check('users.create', function() { return AP.isSuperAdmin(); }); },
+        // Vehicles
+        canViewVehicles:      function() { return _check('vehicles.read',   function() { return true; }); },
+        canCreateVehicle:     function() { return _check('vehicles.create', function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canEditVehicle:       function() { return _check('vehicles.edit',   function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canDeleteVehicle:     function() { return _check('vehicles.delete', function() { return AP.isSuperAdmin(); }); },
+        // Brands
+        canViewBrands:        function() { return _check('brands.read',   function() { return true; }); },
+        canCreateBrand:       function() { return _check('brands.create', function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canEditBrand:         function() { return _check('brands.edit',   function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canDeleteBrand:       function() { return _check('brands.delete', function() { return AP.isSuperAdmin(); }); },
+        // Appointments
+        canViewAppointments:  function() { return _check('appointments.read',   function() { return true; }); },
+        canManageAppointment: function() { return _check('appointments.edit',   function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canDeleteAppointment: function() { return _check('appointments.delete', function() { return AP.isSuperAdmin(); }); },
+        // Dealers
+        canViewDealers:       function() { return _check('dealers.read',   function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canManageDealers:     function() { return _check('dealers.edit',   function() { return AP.isSuperAdmin(); }); },
+        // Lists (atributos)
+        canViewLists:         function() { return _check('crm.read', function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canEditLists:         function() { return _check('crm.edit', function() { return AP.isSuperAdmin(); }); },
         // Settings & Backup
-        canExportBackup:      function() { return AP.isSuperAdmin(); },
-        canImportBackup:      function() { return AP.isSuperAdmin(); },
+        canExportBackup:      function() { return _check('settings.backup', function() { return AP.isSuperAdmin(); }); },
+        canImportBackup:      function() { return _check('settings.backup', function() { return AP.isSuperAdmin(); }); },
         // Activity log
-        canViewActivity:      function() { return true; },
-        canDeleteActivity:    function() { return AP.isSuperAdmin(); },
-        // Banners: super_admin full, editor can create/edit
-        canViewBanners:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canCreateBanner:      function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canEditBanner:        function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canDeleteBanner:      function() { return AP.isSuperAdmin(); },
-        // Reviews: editor+ create/edit, super_admin delete
-        canViewReviews:       function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canCreateReview:      function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canEditReview:        function() { return AP.isSuperAdmin() || AP.isEditor(); },
-        canDeleteReview:      function() { return AP.isSuperAdmin(); }
+        canViewActivity:      function() { return _check('audit.read',   function() { return true; }); },
+        canDeleteActivity:    function() { return _check('audit.delete', function() { return AP.isSuperAdmin(); }); },
+        // Banners
+        canViewBanners:       function() { return _check('banners.read',   function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canCreateBanner:      function() { return _check('banners.create', function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canEditBanner:        function() { return _check('banners.edit',   function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canDeleteBanner:      function() { return _check('banners.delete', function() { return AP.isSuperAdmin(); }); },
+        // Reviews
+        canViewReviews:       function() { return _check('reviews.read',   function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canCreateReview:      function() { return _check('reviews.create', function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canEditReview:        function() { return _check('reviews.edit',   function() { return AP.isSuperAdmin() || AP.isEditor(); }); },
+        canDeleteReview:      function() { return _check('reviews.delete', function() { return AP.isSuperAdmin(); }); }
     };
 
     // ========== F2.4: CONNECTIVITY INDICATOR ==========

@@ -27549,5 +27549,525 @@ los usa) ni al patrón "lazy reset on next open" (intacto en
 
 ---
 
+## 62. ESTADO ACTUAL DEL PROYECTO — Guía de Continuidad Cross-Window (2026-05-10)
+
+> **Propósito**: este documento permite a un Claude en otra ventana
+> retomar el proyecto sin perder contexto. Resume QUÉ está hecho, QUÉ
+> está pendiente, y QUÉ acciones requiere del cliente. Última
+> actualización: 2026-05-10 tras el merge de PR #649 (Sprint S2).
+
+### 62.1 Resumen ejecutivo en 1 minuto
+
+**Proyecto**: Altorra Cars (compraventa autos Cartagena Colombia) —
+sitio público + admin panel + bot ALTOR Hub estilo WhatsApp/Intercom.
+
+**Estado**: ALTOR Hub está en **Fase 2 de cirugía técnica del
+Mega-Plan §59**. Sprints S1 (admin) y S2 (cliente) ✅ completados y
+mergeados a main. Plan §61 RBAC dinámico documentado pero NO ejecutado.
+
+**Cache version actual en main**: `v20260510001247` (auto-bumped por
+GitHub Actions tras merge).
+
+**Branch de trabajo activa**: `claude/altor-hub-sprint-s1-wWNlV`
+(sincronizada con main tras pull).
+
+**Pendiente CRÍTICO del cliente** (5 minutos en su PC):
+```bash
+firebase deploy --only firestore:rules
+```
+Esto resuelve 2 bugs visibles en producción:
+- Editor no puede agregar preguntas de seguridad (§48)
+- Editor no puede tomar conversaciones (§23 claim)
+
+### 62.2 Sprints completados en esta sesión (2026-05-09 → 2026-05-10)
+
+| Sprint | Commit | Sección CLAUDE.md | Estado | Detalle |
+|---|---|---|---|---|
+| S1 admin | `1dbf43e` | §60.1 | ✅ Mergeado | Optimistic UI 7 botones del Hub admin (claim, send, pin, archive, markUnread, close, reopen) + estados visuales WhatsApp + retry inline |
+| Hotfix permisos | `67eb52f` | §60.1.1 | ✅ Mergeado | Pre-check server en claimChat + mensajes amigables permission-denied |
+| Plan RBAC | `771ed7e` | §61 | ✅ Doc mergeada | Plan completo R1-R8 documentado (NO implementado) |
+| S2 cliente | `198b29a` | §60.2 | ✅ Mergeado | Optimistic UI cliente concierge.js con `_status` semántico + retry |
+
+**Validación post-merge**:
+- PR #649 cerrado y mergeado por usuario el 2026-05-10 00:12 UTC
+- Main actualmente en commit `f382bd6` (auto-generate vehicles)
+- Branch local `claude/altor-hub-sprint-s1-wWNlV` actualizada con main
+
+### 62.3 Mega-Plan §59 — Cirugía ALTOR Hub: estado de los 7 sprints
+
+| Sprint | Foco | Estado | Cuándo |
+|---|---|---|---|
+| ✅ S1 | Optimistic UI admin (7 botones) | Mergeado | §60.1 |
+| ✅ S2 | Optimistic UI cliente | Mergeado | §60.2 |
+| ⏸ S3 | Typing indicators bidireccionales (RTDB) | Pendiente | Próximo sprint del Hub |
+| ⏸ S4 | Read receipts (✓ vs ✓✓) | Pendiente | Después de S3 |
+| ⏸ S5 | Presence avanzada (online/away/offline) | Pendiente | Después de S4 |
+| ⏸ S6 | Rediseño visual Hub admin | Pendiente | Después de S5 |
+| ⏸ S7 | Rediseño visual cliente widget | Pendiente | Después de S6 |
+
+**Tiempo estimado restante S3-S7**: ~10 días de trabajo focalizado.
+
+### 62.4 Plan §61 — RBAC dinámico: estado de los 8 sprints
+
+| Sprint | Foco | Estado |
+|---|---|---|
+| ⏸ R1 | Foundation (schema permissions + roles + helpers) | Pendiente — PRÓXIMO recomendado |
+| ⏸ R2 | UI sec-roles CRUD (super_admin) | Pendiente |
+| ⏸ R3 | UI sec-users dropdown dinámico | Pendiente |
+| ⏸ R4 | Migración legacy users a `roleId` | Pendiente |
+| ⏸ R5 | Frontend guards refactor (~218 callsites) | Pendiente |
+| ⏸ R6 | Firestore Rules refactor a `hasPermission()` | Pendiente |
+| ⏸ R7 | Audit log + real-time sync | Pendiente |
+| ⏸ R8 | Cleanup + tests | Pendiente |
+
+**Tiempo estimado total §61**: ~12-15 días.
+
+**Schema canónico ya documentado en §61.3**:
+- `permissions/{permId}` — atomic permissions read-only
+- `roles/{roleId}` — sets de permissions con CRUD
+- `usuarios/{uid}` extendido con `roleId` + `roleName` + `permissions[]`
+
+**71 atomic permissions documentadas en §61.4** agrupadas en 8 categorías:
+Inventario, Sitio público, CRM, Comunicaciones, Cerebro AI,
+Calendario, Reportes, Configuración.
+
+### 62.5 Acciones pendientes DEL CLIENTE (no del agente)
+
+#### 🔴 CRÍTICA — Resuelve 2 bugs visibles AHORA
+
+**Acción**: ejecutar UNA vez en su PC:
+```bash
+cd /ruta/a/altorracars.github.io
+firebase deploy --only firestore:rules
+```
+
+**Resuelve simultáneamente**:
+- Editor agrega preguntas de seguridad (whitelist §48)
+- Editor toma conversaciones del Hub (claim §23 FASE 3)
+- Cualquier editor self-update de campos del whitelist
+
+**Por qué urgente**: las rules en el repo SON correctas, pero las
+desplegadas en producción son anteriores a §48. Sin este deploy,
+ningún fix de código del agente puede resolver el bug.
+
+#### 🟡 SI super_admin sigue bloqueado por intentos fallidos
+
+**Acción**: Firebase Console → Firestore →
+`loginAttempts/altorracarssale_gmail_com` → editar:
+- `intentos: 0`
+- `bloqueado: false`
+
+O esperar 15 min auto-unblock.
+
+### 62.6 Cómo continuar en otra ventana de Claude
+
+Si el contexto de esta ventana se agota, en una ventana nueva ejecutar:
+
+1. **Leer este documento §62 completo** + secciones referenciadas
+   (§59, §60.1, §60.1.1, §60.2, §61).
+
+2. **Verificar estado actual del repo**:
+   ```bash
+   git log --oneline -5 origin/main
+   git branch --show-current
+   git status
+   ```
+
+3. **Sincronizar con main si es necesario**:
+   ```bash
+   git fetch origin main
+   git merge origin/main --no-edit
+   ```
+
+4. **Decidir próximo sprint** según lo que diga el cliente:
+   - Si dice "RBAC" o "roles" → arrancar **§61 R1** (Foundation)
+   - Si dice "typing" o "tiempo real bidireccional" → arrancar **§59 S3**
+   - Si dice "rediseño visual" → arrancar **§59 S6** o **S7**
+   - Si dice "bug X" → aplicar §19 RCA Mode
+
+5. **Antes de cualquier commit**: redactar IAP §37 (5 secciones)
+   y obtener autorización del cliente.
+
+### 62.7 Archivos clave del Hub (referencia rápida)
+
+| Archivo | Líneas | Última mod | Propósito |
+|---|---|---|---|
+| `js/concierge.js` | ~3,300 | §60.2 | Widget cliente público IIFE |
+| `js/admin-concierge.js` | ~1,750 | §60.1.1 | Hub del asesor |
+| `js/hub-store.js` | 199 | §60.1 (NUEVO) | Object Pool optimistic state |
+| `css/concierge.css` | ~1,600 | §60.2 | Estilos widget cliente |
+| `css/admin.css` | (sec-concierge) | §60.1 | Estilos Hub admin |
+| `firestore.rules` | 518 | §48 | Permisos lectura/escritura (DEPLOY PENDIENTE) |
+| `functions/index.js` | 2,355 | §56 | 12 Cloud Functions del Hub |
+
+### 62.8 Doctrinas críticas a respetar SIEMPRE
+
+1. **§17.2** — Nunca `transition: all` ni `* { transition }`. Solo
+   transitions específicas en propiedades compositor-only.
+2. **§17.4** — HTML/CSS estable. Cero renombrar IDs/clases existentes.
+3. **§17.12** — Cero `MutationObserver subtree:true` global (RCA del
+   bug histórico clicks bloqueados centro botones).
+4. **§19** — RCA Mode estricto cuando hay bug recurrente: 5 fases
+   con STOP obligatorio antes de implementar.
+5. **§35** — Cero `pointermove` listeners persistentes globales.
+6. **§37** — IAP (Impact Analysis Previo) obligatorio antes de
+   cada commit: 5 secciones (archivos a modificar, intactos, código
+   muerto, refactor, riesgos+rollback).
+7. **§57.7** — Listener admin `_chatsUnsub` SIEMPRE activo
+   globalmente. Solo `_messagesUnsub` se cancela on section change.
+8. **§57.9** — Patrón "lazy reset on next open" del cliente. NO
+   mezclar "cerrar UI" con "resetear state".
+
+### 62.9 Recomendación próximo paso
+
+**Opción A** (Recomendada): Arrancar **§61 R1 (RBAC Foundation)**
+en paralelo a que el cliente ejecute `firebase deploy --only firestore:rules`.
+
+R1 es 2 días de trabajo, NO requiere deploy adicional, y establece
+las bases para los 7 sprints restantes del RBAC. Mientras el agente
+trabaja en R1, el cliente puede ejecutar el deploy de rules y
+desbloquear los bugs visibles.
+
+**Opción B**: Arrancar **§59 S3 (Typing Indicators)** para continuar
+la cirugía del Hub.
+
+**Opción C**: Esperar input del cliente sobre prioridad.
+
+### 62.10 Costo recurrente actual
+
+**$2-5 USD/mes** total:
+- LLM Anthropic Claude Haiku 4.5: ~$2-5/mes (ya optimizado §21.10
+  con prompt caching + inventory cap 10 + rate limit 30)
+- Todo lo demás: $0 (Firebase free tier — Firestore + RTDB +
+  Cloud Functions + FCM + Storage)
+
+Sin servicios externos pagos. Cero dependencias de Pusher/Ably/Twilio.
+
+---
+
+## 63. ADR-063 — Sprint §61.R1 RBAC Foundation: catálogo + helpers + seeder (2026-05-10)
+
+> Primer sprint del Plan §61 RBAC dinámico. Establece la
+> infraestructura base sin romper nada existente: catálogo canónico
+> de permissions atómicas, hidratación de `AP.currentUserPermissions`
+> con fallback legacy, Cloud Function seeder idempotente, rules para
+> las nuevas colecciones. **Cero impacto en producción** si el
+> super_admin NO ejecuta `seedSystemRoles`.
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §19 (RCA Mode), §35 (anti-patterns),
+> §37 (IAP), §61 (Plan Maestro RBAC).
+
+### 63.1 Por qué este sprint existe
+
+El cliente pidió en §61.0 un sistema dinámico de roles donde el
+super_admin pueda crear roles personalizados con checkboxes de
+permisos. El sistema actual tiene 3 roles hardcoded
+(`super_admin`/`editor`/`viewer`) en 154 callsites del frontend +
+38 callsites en `firestore.rules`.
+
+Migrar todo de golpe es alto riesgo (218 puntos de chequeo). R1
+adopta el **patrón de migración con co-existencia** estilo
+GitHub/Linear: nueva infraestructura paralela, helpers legacy
+delegan internamente, sin romper nada. R5+R6 hacen el refactor
+masivo después.
+
+### 63.2 Causa raíz del límite actual (cruce con §61.1)
+
+| Aspecto | Estado | Limitación |
+|---|---|---|
+| Roles | 3 hardcoded en `js/admin-state.js:78-84` | Imposible crear más sin código |
+| Permisos | Implícitos en `isSuperAdmin()`, `isEditorOrAbove()` | Cero granularidad |
+| Asignación | Dropdown de 3 opciones en sec-users | No puede reflejar dinámico |
+| Bug Editor (§48 + §60.1.1) | Rules deployadas anteriores a §48 | Sin deploy, ningún fix de código resuelve |
+
+### 63.3 Solución estructural — 4 piezas coordinadas
+
+#### A. `js/rbac-catalog.js` (NUEVO ~280 líneas)
+
+Single source of truth del catálogo. Expone `window.AltorraRBACCatalog`:
+- **`permissions`**: array de 71 atomic permissions con `{id, name,
+  description, category, resource, action, critical?}`. Naming
+  `<resource>.<action>` estilo Linear/Stripe.
+- **`systemRoles`**: 3 roles inmutables:
+  - `system_super_admin` → `permissions: ['*']` (wildcard)
+  - `system_editor` → 38 permissions específicas (CRUD inventario,
+    CRM, Hub, calendario, reports.view, audit.read)
+  - `system_viewer` → 17 permissions read-only
+- **`legacyMapping`**: `super_admin → system_super_admin`,
+  `editor → system_editor`, `viewer → system_viewer`
+- **Helpers**: `getRoleById()`, `getPermissionById()`,
+  `getPermissionsByCategory()` (agrupado en 8 categorías),
+  `mapLegacyRoleToPermissions(rol)` para fallback.
+
+#### B. `js/admin-state.js` (refactor co-existencia)
+
+**Nuevo state**:
+- `AP.currentUserPermissions = []` — array de permission IDs del user
+- `AP.currentUserRoleId = null` — `system_X` o custom role id
+
+**Nuevo helper**:
+```js
+AP.hasPermission(permId) {
+    if (perms.indexOf('*') !== -1) return true;
+    return perms.indexOf(permId) !== -1;
+}
+```
+
+**Refactor de helpers legacy** (signatura externa idéntica):
+- `AP.isSuperAdmin()`: prefiere check de wildcard `*` en
+  `currentUserPermissions`. Fallback a `currentUserRole === 'super_admin'`.
+- `AP.isEditor()`: prefiere `currentUserRoleId === 'system_editor'`.
+  Fallback legacy.
+- `AP.isEditorOrAbove()`: chequea wildcard, o permissions clave
+  (`vehicles.edit`, `concierge.respond`, `crm.edit`). Fallback legacy.
+- `AP.canManageUsers()`, `canCreateOrEditInventory()`, etc.: cada uno
+  prueba la permission canónica y cae al check legacy.
+- `AP.RBAC.*` (38 helpers): refactor con helper interno `_check(permId,
+  legacyFn)` que prefiere permissions y cae a legacy.
+
+**Garantía crítica**: cero callsite del admin (154 totales) requiere
+modificación. Tests E2E: `AP.isSuperAdmin()` debe retornar `true` para
+super_admin antes y después del refactor.
+
+#### C. `js/admin-auth.js` (hidratación de permissions)
+
+En `loadProfileViaREST` `.then()` callback (línea ~1461), después de
+setear `currentUserProfile + currentUserRole`:
+
+```js
+var profilePerms = AP.currentUserProfile.permissions;
+if (Array.isArray(profilePerms) && profilePerms.length > 0) {
+    // Path A: usuario YA migrado, lee permissions denormalizadas del doc
+    AP.currentUserPermissions = profilePerms.slice();
+    AP.currentUserRoleId = AP.currentUserProfile.roleId || null;
+} else if (window.AltorraRBACCatalog && AP.currentUserRole) {
+    // Path B (LEGACY FALLBACK): usuario pre-migración, mapear desde rol
+    AP.currentUserPermissions = window.AltorraRBACCatalog.mapLegacyRoleToPermissions(AP.currentUserRole);
+    AP.currentUserRoleId = window.AltorraRBACCatalog.legacyMapping[AP.currentUserRole] || null;
+} else {
+    // Path C: sin contexto suficiente. Helpers legacy seguirán funcionando vía currentUserRole.
+    AP.currentUserPermissions = [];
+    AP.currentUserRoleId = null;
+}
+```
+
+**Cleanup en logout**: 2 callsites (`onAuthStateChanged(null)` y
+`silentSignOutNonAdmin`) limpian `currentUserPermissions = []` +
+`currentUserRoleId = null`.
+
+#### D. `functions/index.js` (Cloud Function `seedSystemRoles`)
+
+Nueva callable super_admin-only. Idempotente. Siembra:
+1. Colección `permissions/{permId}` con 71 docs (skip si existen).
+2. Colección `roles/{roleId}` con 3 system roles (skip si existen).
+
+Cada doc incluye `_catalogVersion: '1.0.0'` para tracking de drift
+futuro. Batch writes con cap 500 (Firestore limit).
+
+**Catálogo embedded en backend** (sin importar el archivo del
+frontend): el JS del catálogo se duplica en functions/index.js
+constantes `RBAC_PERMISSIONS` y `RBAC_SYSTEM_ROLES`. Esta duplicación
+es deliberada (separación frontend/backend) — R7 agrega helper que
+detecta drift entre fuentes.
+
+#### E. `firestore.rules` (rules nuevas para 2 colecciones)
+
+```
+match /permissions/{permId} {
+    allow read: if isEditorOrAbove();   // frontend lee para UI
+    allow write: if false;              // server-only via Cloud Function
+}
+
+match /roles/{roleId} {
+    allow read: if isEditorOrAbove();   // frontend lee para dropdown
+    allow create: if isSuperAdmin();
+    allow update: if isSuperAdmin();
+    allow delete: if isSuperAdmin();
+}
+```
+
+NO se modifican rules existentes. R6 hará el refactor masivo a
+`hasPermission()` server-side.
+
+#### F. `admin.html` — orden de carga de scripts
+
+`rbac-catalog.js` debe cargar **ANTES** de `admin-state.js` para que
+`window.AltorraRBACCatalog` esté disponible cuando `admin-auth.js`
+hidrata permissions:
+
+```html
+<script src="js/admin-activity-feed.js" defer></script>
+<!-- §61.R1 RBAC Foundation -->
+<script src="js/rbac-catalog.js" defer></script>
+<script src="js/admin-state.js" defer></script>
+```
+
+### 63.4 Telemetría agregada
+
+Logs con prefijo `§61.R1` para diagnóstico:
+
+```
+[RBAC] §61.R1 catalog ready { totalPermissions: 71, totalSystemRoles: 3, categories: 8 }
+[RBAC] §61.R1 legacy fallback for role: editor → 38 permissions
+```
+
+Si `seedSystemRoles` se ejecuta:
+```
+{ success: true, version: '1.0.0',
+  permissions: { created: 71, skipped: 0, total: 71 },
+  roles: { created: 3, skipped: 0, total: 3 } }
+```
+
+Re-ejecutar (idempotente):
+```
+{ success: true, version: '1.0.0',
+  permissions: { created: 0, skipped: 71, total: 71 },
+  roles: { created: 0, skipped: 3, total: 3 } }
+```
+
+### 63.5 Tests E2E (validación post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Login como super_admin actual (legacy `rol: 'super_admin'`) | DevTools console: `[RBAC] §61.R1 legacy fallback for role: super_admin → 1 permissions` (`['*']`). UI funciona idéntica. |
+| 2 | Login como editor actual (legacy `rol: 'editor'`) | DevTools: `legacy fallback for role: editor → 38 permissions`. Editor sigue viendo lo que veía antes. |
+| 3 | Login como viewer actual | DevTools: `legacy fallback for role: viewer → 17 permissions`. Solo lectura. |
+| 4 | DevTools: `AP.hasPermission('vehicles.edit')` para editor | `true` |
+| 5 | DevTools: `AP.hasPermission('users.create')` para editor | `false` (editor NO tiene este permission) |
+| 6 | DevTools: `AP.hasPermission('vehicles.edit')` para super_admin | `true` (wildcard `*`) |
+| 7 | DevTools: `AP.isSuperAdmin()` para super_admin | `true` (mismo resultado pre y post §63) |
+| 8 | DevTools: `AP.isEditorOrAbove()` para editor | `true` |
+| 9 | DevTools: `AP.RBAC.canCreateVehicle()` para editor | `true` (delegación interna funciona) |
+| 10 | super_admin invoca `seedSystemRoles` callable (R2 ship UI; por ahora vía DevTools): `firebase.functions().httpsCallable('seedSystemRoles')()` | `{ success: true, permissions: { created: 71 }, roles: { created: 3 } }` |
+| 11 | Re-invocar `seedSystemRoles` | Idempotente: `{ created: 0, skipped: 71 + 3 }` |
+| 12 | Firestore Console → `permissions/` | 71 docs visibles con id `<resource>.<action>` |
+| 13 | Firestore Console → `roles/` | 3 docs (system_super_admin, system_editor, system_viewer) |
+| 14 | Editor lee `roles/` desde DevTools | `firebase.firestore().collection('roles').get()` retorna los 3 docs (rule `isEditorOrAbove` permite read) |
+| 15 | Editor intenta escribir a `roles/` | Permission denied (rule `create/update/delete` requiere `isSuperAdmin()`) |
+| 16 | Editor intenta escribir a `permissions/` | Permission denied (rule `write: if false` — server-only) |
+
+### 63.6 Anti-patterns evitados (cruce con doctrinas)
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Cero CSS modificado |
+| §17.4 | Renombrar IDs/clases | Cero cambios HTML/CSS legacy. Solo agregado de `<script>` tag |
+| §17.12 | `MutationObserver subtree:true` | Cero MO. RBAC catalog es estático, helpers son síncronos |
+| §35 | `pointermove` persistente | Cero pointermove |
+| §17.7 | Crear archivo `admin-state-v2.js` | Refactor sobre `admin-state.js` existente. Solo NUEVO archivo: `rbac-catalog.js` (data + helpers, no replacement) |
+| §19 RCA | Cambiar rules sin diagnóstico | NO se tocan rules existentes. Solo se agregan rules para 2 colecciones nuevas |
+| §37 IAP | Implementar sin autorización | Cliente autorizó "ok arranca" + "arranca con la recomendada" |
+| §61 Plan | Saltarse fases del plan | R1 estricto: cero migración de usuarios, cero refactor de callsites, cero modificación de rules existentes. Solo infraestructura |
+
+### 63.7 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | `rbac-catalog.js` no carga (404, parse error) | 🟢 Baja | `window.AltorraRBACCatalog` undefined → fallback legacy en admin-auth.js → helpers legacy siguen usando `currentUserRole` | `git revert` |
+| 2 | Refactor de helpers legacy rompe algún callsite específico | 🟡 Media | Tests E2E #1-#9 cubren casos críticos. Helpers mantienen signatura idéntica + fallback completo | `git revert` |
+| 3 | Editor invoca `seedSystemRoles` por error | 🟢 Baja | `verifySuperAdmin()` rechaza con `permission-denied` | N/A (no se ejecuta) |
+| 4 | `seedSystemRoles` falla mid-batch | 🟢 Baja | Idempotente: re-ejecutar omite docs ya creados | reintentar |
+| 5 | Rules nuevas (`permissions/`, `roles/`) no desplegadas | 🟡 Media | Frontend de R1 NO lee estas colecciones aún. Sin impacto hasta R2 | deploy when R2 ship |
+| 6 | Doc `roles/system_super_admin` borrado por accidente | 🟢 Baja | Cero callsites de R1 leen este doc. R3 agrega rule de protección | manual recreate |
+| 7 | Carga de `rbac-catalog.js` antes de admin-state.js falla por race | 🟢 Baja | `defer` garantiza orden de ejecución según orden HTML | git revert |
+
+### 63.8 Acciones operativas del super_admin (post-merge)
+
+**OBLIGATORIA** (ya pendiente desde §60.1.1, sigue urgente):
+```bash
+firebase deploy --only firestore:rules
+```
+Esto activa:
+- Rules para `permissions/` y `roles/` (nuevas en §63)
+- Rules de `securityQuestions` (§48 — pendiente desde hace tiempo)
+- Rules de claim §23 (también pendiente)
+
+**OPCIONAL** (R2 lo hará desde UI; por ahora vía DevTools):
+```bash
+firebase deploy --only functions:seedSystemRoles
+```
+Luego en consola admin (DevTools):
+```js
+firebase.functions().httpsCallable('seedSystemRoles')()
+  .then(r => console.log(r.data));
+```
+Resultado esperado: `{ success: true, permissions: { created: 71 }, roles: { created: 3 } }`.
+
+**SIN estos deploys**: el sistema sigue funcionando idéntico
+(legacy fallback). Las collections `permissions/` y `roles/` quedan
+vacías, pero como ningún callsite de R1 las lee, no hay impacto.
+R2 las hace necesarias.
+
+### 63.9 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/rbac-catalog.js` | **NUEVO** — catálogo canónico 71 permissions + 3 system roles + mapeo legacy + helpers | +280 |
+| `js/admin-state.js` | `currentUserPermissions[]` + `currentUserRoleId` + `hasPermission()` + refactor de 8 helpers legacy + 38 helpers AP.RBAC con `_check()` | +90, -40 |
+| `js/admin-auth.js` | Hidratación de `currentUserPermissions` en loadProfileViaREST + cleanup en 2 spots de logout | +25, -3 |
+| `functions/index.js` | **NUEVO**: constantes `RBAC_PERMISSIONS` (71) + `RBAC_SYSTEM_ROLES` (3) + Cloud Function `seedSystemRoles` callable super_admin idempotente | +200 |
+| `firestore.rules` | NUEVO: `match /permissions/{id}` (read editor+, write false) + `match /roles/{id}` (read editor+, write super_admin) | +20 |
+| `admin.html` | `<script src="js/rbac-catalog.js" defer>` ANTES de admin-state.js | +4 |
+| `service-worker.js` | CACHE_VERSION → `v20260513010000` | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260513010000'` | +1, -1 |
+| `CLAUDE.md` | Esta sección §63 | +250 |
+
+**Total**: ~870 agregadas, ~45 eliminadas.
+
+### 63.10 Archivos INTACTOS (afirmación explícita)
+
+- `js/concierge.js` (cliente público) — ZERO cambios
+- `js/admin-concierge.js` — ZERO cambios
+- `js/hub-store.js` — ZERO cambios
+- Todos los archivos `js/admin-*.js` (excepto state/auth) — ZERO cambios
+- Rules existentes (vehiculos, usuarios, conciergeChats, todas las
+  demás) — ZERO cambios
+- Cloud Functions existentes (excepto la nueva seedSystemRoles) — ZERO cambios
+- CSS, HTML del cliente público — ZERO cambios
+
+**154 callsites de `AP.isSuperAdmin()`, `AP.isEditorOrAbove()`,
+`AP.canX()`, `AP.RBAC.canX()` siguen funcionando idénticos.** R5
+hace el refactor masivo cuando todos los users estén migrados.
+
+### 63.11 Próximo sprint del plan §61
+
+**R2 — UI sec-roles CRUD** (3 días):
+- Nueva sec-roles en grupo Configuración (icono `shield-check`)
+- Lista de roles con count de usuarios + system badge
+- Modal de crear/editar rol con checkboxes agrupados por categoría
+- Permissions matrix UI estilo Linear/Stripe
+- Delete con guard si hay users asignados
+- Botón "Sembrar roles del sistema" que invoca `seedSystemRoles`
+  (reemplaza el flow DevTools de R1)
+- `onSnapshot` real-time para que múltiples admins vean cambios
+
+**Pre-requisito de R2**: super_admin ejecuta los 2 deploys de §63.8.
+
+### 63.12 Doctrina aplicada
+
+§19 RCA estricto: NO había bug específico que arreglar. R1 es parte
+planificada del Plan §61 documentado en §61.5.
+
+§37 IAP: 5 secciones documentadas en sección §63 antes/durante el
+commit. Riesgos identificados con plan de rollback.
+
+§17 (Performance): cero MutationObserver, cero pointermove
+persistente, cero `transition: all`. Solo data + helpers síncronos.
+
+§17.4 (HTML/CSS estable): ZERO cambios de IDs/clases existentes. Una
+sola adición de `<script>` tag con comentario explicativo.
+
+§17.12 (anti-MutationObserver): cero MO global. RBAC catalog es
+data estática evaluada al cargar.
+
+§61 Plan Maestro: R1 ejecutado al pie de la letra de la
+especificación de §61.5. Cero overflow al territorio de R2 (UI),
+R4 (migración usuarios) o R5 (refactor callsites).
+
+**Cache bump**: `v20260513010000`.
+
+---
+
 ---
 

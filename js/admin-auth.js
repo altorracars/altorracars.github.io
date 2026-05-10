@@ -1483,6 +1483,33 @@
                     AP.currentUserRoleId = null;
                 }
 
+                // §69 R7 — Guard "Sin rol asignado".
+                // Si el user NO tiene permissions[] válidas Y NO es super_admin
+                // legacy (rol == 'super_admin' único auto-mapeo del §69), bloquear
+                // login con mensaje claro. Casos cubiertos:
+                //   - User existente con rol='editor' sin permissions[] denormalizado
+                //     (era editor legacy, §69 ya no auto-mapea editor a permissions)
+                //   - User existente con rol='viewer' sin permissions[] denormalizado
+                //   - User nuevo sin rol asignado todavía
+                //   - User con permissions[] = [] (vacío explícito por reasignación
+                //     de role borrado)
+                //
+                // Excepción: super_admin legacy (rol='super_admin') siempre pasa
+                // porque AltorraRBACCatalog.mapLegacyRoleToPermissions retorna ['*']
+                // → AP.currentUserPermissions queda con ['*'] y este guard NO se activa.
+                var hasValidPerms = Array.isArray(AP.currentUserPermissions)
+                    && AP.currentUserPermissions.length > 0;
+                var isSuperLegacy = AP.currentUserRole === 'super_admin';
+                if (!hasValidPerms && !isSuperLegacy) {
+                    if (window.console && window.console.warn) {
+                        console.warn('[RBAC] §69 R7 — Sin rol asignado:', authUser.email, 'rol legacy:', AP.currentUserRole);
+                    }
+                    showAccessDenied(authUser.email, authUser.uid,
+                        'No tienes roles asignados.\n\nContacta con un administrador para que te asigne un rol y puedas acceder al panel.\n\n' +
+                        'Si eres administrador y crees que esto es un error, verifica que tu cuenta tenga permissions[] o rol legacy super_admin.');
+                    return;
+                }
+
                 // T.4 (mega-plan v4) — sync theme preference from Firestore
                 if (window.AltorraTheme && window.AltorraTheme.syncFromUser) {
                     window.AltorraTheme.syncFromUser(AP.currentUserProfile);

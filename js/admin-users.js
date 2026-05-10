@@ -74,19 +74,39 @@
         var sel = $('uRoleId');
         if (!sel) return;
         if (_rolesCache.length === 0) {
-            // Catálogo no sembrado todavía. Mostrar fallback con system roles del catálogo
+            // Catálogo no sembrado todavía. Mostrar fallback.
             sel.innerHTML = '<option value="">Sin roles configurados — sembrá desde Configuración → Roles</option>';
             return;
         }
         var html = '';
-        // Sistema primero, luego custom
-        var systems = _rolesCache.filter(function(r) { return r.isSystem; });
-        var customs = _rolesCache.filter(function(r) { return !r.isSystem; });
-        if (systems.length) {
+        // §69 R7 — Solo CEO (system_super_admin) aparece como system role.
+        // system_editor y system_viewer legacy se filtran del dropdown
+        // (no se ofrecen como opciones para nuevos users). Sin embargo,
+        // si el user que estoy editando ya tiene roleId='system_editor'
+        // o 'system_viewer', la opción legacy SÍ aparece para que
+        // selectedRoleId siga matcheando (sino el dropdown queda
+        // sin selección y validación falla).
+        var ceo = _rolesCache.find(function(r) { return r._docId === 'system_super_admin'; });
+        var legacyOptions = [];
+        if (selectedRoleId === 'system_editor' || selectedRoleId === 'system_viewer') {
+            var legacy = _rolesCache.find(function(r) { return r._docId === selectedRoleId; });
+            if (legacy) legacyOptions.push(legacy);
+        }
+        var customs = _rolesCache.filter(function(r) {
+            return !r.isSystem &&
+                r._docId !== 'system_super_admin' &&
+                r._docId !== 'system_editor' &&
+                r._docId !== 'system_viewer';
+        });
+
+        if (ceo || legacyOptions.length) {
             html += '<optgroup label="Roles del sistema">';
-            for (var i = 0; i < systems.length; i++) {
-                var r = systems[i];
-                html += '<option value="' + AP.escapeHtml(r._docId) + '">' + AP.escapeHtml(r.name || r._docId) + '</option>';
+            if (ceo) {
+                html += '<option value="' + AP.escapeHtml(ceo._docId) + '">' + AP.escapeHtml(ceo.name || 'CEO') + '</option>';
+            }
+            for (var lg = 0; lg < legacyOptions.length; lg++) {
+                var lo = legacyOptions[lg];
+                html += '<option value="' + AP.escapeHtml(lo._docId) + '">' + AP.escapeHtml(lo.name || lo._docId) + ' (legacy)</option>';
             }
             html += '</optgroup>';
         }
@@ -98,14 +118,18 @@
             }
             html += '</optgroup>';
         }
+        // Mensaje si no hay opciones reales (solo legacy del user actual)
+        if (!ceo && !customs.length) {
+            html = '<option value="">Sin roles disponibles — el CEO debe crear roles personalizados desde Configuración → Roles</option>' + html;
+        }
         sel.innerHTML = html;
         if (selectedRoleId) {
             sel.value = selectedRoleId;
         } else {
-            // Default: system_editor si existe
-            var defaultRole = _rolesCache.find(function(r) { return r.isDefault; }) ||
-                              _rolesCache.find(function(r) { return r._docId === 'system_editor'; }) ||
-                              _rolesCache[0];
+            // Default: primer custom role (no asignar CEO automáticamente)
+            var defaultRole = _rolesCache.find(function(r) { return r.isDefault && !r.isSystem; }) ||
+                              customs[0] ||
+                              ceo; // fallback a CEO solo si no hay customs
             if (defaultRole) sel.value = defaultRole._docId;
         }
         // Sync hidden uRol legacy

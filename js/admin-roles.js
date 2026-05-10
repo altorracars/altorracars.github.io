@@ -118,14 +118,24 @@
                     snap.forEach(function (doc) {
                         var data = doc.data() || {};
                         data._docId = doc.id;
+                        // §69 R7 — Filtrar system roles legacy (system_editor,
+                        // system_viewer) y system_super_admin (CEO) de la
+                        // lista visible. CEO es inmutable e invisible. Editor
+                        // y Viewer legacy quedan en Firestore para no romper
+                        // users existentes (R4 migration), pero no se muestran
+                        // como opciones para crear nuevos.
+                        if (doc.id === 'system_super_admin'
+                            || doc.id === 'system_editor'
+                            || doc.id === 'system_viewer') {
+                            return; // skip — no agregar a la lista visible
+                        }
                         _state.roles.push(data);
                     });
-                    // Ordenamos client-side: system roles primero, luego alfabético
+                    // Ordenamiento alfabético (system roles ya filtrados)
                     _state.roles.sort(function (a, b) {
-                        if (a.isSystem !== b.isSystem) return a.isSystem ? -1 : 1;
                         return (a.name || '').localeCompare(b.name || '');
                     });
-                    console.log('[AdminRoles] §61.R2 snapshot — roles:', _state.roles.length);
+                    console.log('[AdminRoles] §69 R7 snapshot — visibles:', _state.roles.length, '(CEO + system legacy filtrados)');
                     render();
                 }, function (err) {
                     // Errores esperados (cross-tab logout, permissions denied al sign out)
@@ -327,6 +337,16 @@
             toast('Solo super_admin puede editar roles', 'error');
             return;
         }
+        // §69 R7 — System roles (CEO + legacy editor/viewer) son
+        // inmodificables. No se debería poder llegar aquí porque la
+        // lista los filtra, pero defense-in-depth: bloquear apertura
+        // del modal si por alguna razón se invoca con un system roleId.
+        if (roleId === 'system_super_admin'
+            || roleId === 'system_editor'
+            || roleId === 'system_viewer') {
+            console.warn('[AdminRoles] §69 R7 — Intento de abrir modal en system role bloqueado:', roleId);
+            return;
+        }
         var role = _state.roles.find(function (r) { return r._docId === roleId; });
         if (!role) {
             toast('Rol no encontrado', 'error');
@@ -399,9 +419,11 @@
             '</div>' +
             '</div>' +
 
-            (isSystem
-                ? '<p class="roles-modal-note"><i data-lucide="info"></i> Los permisos de los roles del sistema no son editables. Para personalizar, creá un rol nuevo.</p>'
-                : '') +
+            // §69 R7 — Banner "Los permisos de los roles del sistema no
+            // son editables..." eliminado. Como CEO + editor/viewer legacy
+            // están filtrados de la lista visible, este modal SIEMPRE se
+            // abre en modo create o edit de custom role. El banner ya no
+            // aplica.
 
             '<div class="roles-perms-matrix">';
 

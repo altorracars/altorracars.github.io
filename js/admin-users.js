@@ -267,14 +267,30 @@
 
             var twoFaBadge = u.habilitado2FA ? ' <span class="badge badge-destacado" style="font-size:0.65rem;" title="2FA activo">2FA</span>' : '';
 
+            // §70 R7.1 — Detectar CEO via 3 vías (defense-in-depth):
+            //   1. roleId === 'system_super_admin' (R4 migrated)
+            //   2. rol === 'super_admin' legacy (pre-R4)
+            //   3. permissions contiene wildcard '*' (custom role con todo)
+            var isCEO = u.roleId === 'system_super_admin' ||
+                        u.rol === 'super_admin' ||
+                        (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+
             var actionsHtml = '<div class="v-actions">';
-            actionsHtml += '<button class="v-act v-act--success" data-action="editUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Editar"><i data-lucide="pencil"></i></button>';
-            if (isBlocked && !isSelf) {
-                actionsHtml += '<button class="v-act v-act--warning" data-action="unlockUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Desbloquear"><i data-lucide="lock-open"></i></button>';
-            }
-            if (!isSelf) {
-                actionsHtml += '<span class="v-act-sep"></span>';
-                actionsHtml += '<button class="v-act v-act--danger" data-action="deleteUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
+            if (isCEO) {
+                // §70 R7.1 — CEO no editable desde sec-users.
+                // Solo se gestiona desde Mi Perfil. Cero botones de acción
+                // (edit/delete) — solo un indicador visual de lock.
+                actionsHtml += '<span class="v-act v-act--locked" title="El CEO solo se gestiona desde Mi Perfil. Su rol no es modificable.">' +
+                               '<i data-lucide="lock"></i></span>';
+            } else {
+                actionsHtml += '<button class="v-act v-act--success" data-action="editUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Editar"><i data-lucide="pencil"></i></button>';
+                if (isBlocked && !isSelf) {
+                    actionsHtml += '<button class="v-act v-act--warning" data-action="unlockUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Desbloquear"><i data-lucide="lock-open"></i></button>';
+                }
+                if (!isSelf) {
+                    actionsHtml += '<span class="v-act-sep"></span>';
+                    actionsHtml += '<button class="v-act v-act--danger" data-action="deleteUser" data-id="' + AP.escapeHtml(u._docId) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
+                }
             }
             actionsHtml += '</div>';
 
@@ -361,6 +377,16 @@
         if (!AP.canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
         var u = AP.users.find(function(x) { return x._docId === uid; });
         if (!u) return;
+        // §70 R7.1 — Defense-in-depth: el CEO no se edita desde sec-users.
+        // Solo desde Mi Perfil. Aunque en el render filtramos el botón
+        // Editar, este guard previene invocación programática.
+        var isCEO = u.roleId === 'system_super_admin' ||
+                    u.rol === 'super_admin' ||
+                    (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+        if (isCEO) {
+            AP.toast('El CEO solo se edita desde Mi Perfil', 'info');
+            return;
+        }
 
         $('userModalTitle').textContent = 'Editar Usuario';
         $('uOriginalUid').value = uid;
@@ -513,6 +539,20 @@
         if (uid === currentUid) {
             AP.toast('No puedes eliminar tu propia cuenta', 'error');
             return;
+        }
+
+        // §70 R7.1 — Defense-in-depth: el CEO no se elimina desde sec-users.
+        // Aunque en el render filtramos el botón Eliminar, este guard
+        // previene invocación programática (DevTools, scripts maliciosos).
+        var u = AP.users.find(function(x) { return x._docId === uid; });
+        if (u) {
+            var isCEO = u.roleId === 'system_super_admin' ||
+                        u.rol === 'super_admin' ||
+                        (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+            if (isCEO) {
+                AP.toast('El CEO no se puede eliminar', 'error');
+                return;
+            }
         }
 
         if (!window.functions) {

@@ -2317,7 +2317,14 @@
     document.querySelectorAll('.nav-item[data-section]').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var section = this.getAttribute('data-section');
-            if (section === 'users' && !AP.canManageUsers()) {
+            // §70 R7.1 — Guard defensive durante carga inicial.
+            // Si el perfil aún no está hidratado (race condition con refresh),
+            // permitir el click sin chequear permisos. El render de la sección
+            // y las rules backend harán su propio guard real.
+            // Esto evita el toast "No tienes permisos" falso al refrescar
+            // como CEO antes que loadProfileViaREST complete.
+            var profileReady = !!(AP.currentUserProfile);
+            if (section === 'users' && profileReady && !AP.canManageUsers()) {
                 AP.toast('No tienes permisos para acceder a esta seccion', 'error');
                 return;
             }

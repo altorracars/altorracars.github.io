@@ -4907,6 +4907,20 @@ input[type="checkbox"] { transition: all 0.15s ease; }
     border-color: rgba(248, 81, 73, 0.25);
 }
 
+/* §70 R7.1 — CEO row indicator (lock icon en lugar de Editar/Eliminar).
+   No es interactivo: tooltip explica que el CEO se gestiona desde Mi Perfil. */
+.v-act--locked {
+    color: var(--admin-gold, #b89658);
+    background: rgba(184, 150, 88, 0.08);
+    border-color: rgba(184, 150, 88, 0.20);
+    cursor: help;
+    opacity: 0.85;
+}
+.v-act--locked:hover {
+    background: rgba(184, 150, 88, 0.14);
+    opacity: 1;
+}
+
 /* Sold operation button (text + icon, special style) */
 .v-act--operation {
     width: auto;

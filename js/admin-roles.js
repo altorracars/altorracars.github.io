@@ -31,7 +31,11 @@
         currentMode: null,  // 'create' | 'edit' | null
         userCounts: null,   // { roleId: count } cached, refrescado on-demand
         lastListenerError: null,
-        _modalOpen: false
+        _modalOpen: false,
+        // §73.3 — Flag que evita el flicker entre defaults y data real
+        // del Firestore. Se setea a true en el primer snap callback.
+        // Antes de eso, render() muestra solo el header sin empty state.
+        firstSnapshotReceived: false
     };
 
     var MAX_ROLES = 100;
@@ -114,6 +118,7 @@
                 .limit(MAX_ROLES)
                 .onSnapshot(function (snap) {
                     _state.lastListenerError = null;
+                    _state.firstSnapshotReceived = true; // §73.3 — eliminamos flicker
                     _state.roles = [];
                     // §72 R7.2 — Track si CEO (system_super_admin) existe en
                     // Firestore. Si existe, el empty state debe ofrecer
@@ -307,34 +312,52 @@
             return;
         }
 
-        // §72 R7.2 — Empty state inteligente.
-        // Caso A: NO hay system roles ni custom → primera vez, sembrar
-        // Caso B: CEO existe pero NO hay custom → cliente debe crear el primero
+        // §73.3 — Loading state inicial mientras llega el primer snapshot
+        // del listener Firestore. Evita el flicker que el cliente reportó:
+        // antes el primer render usaba defaults (_state.ceoExists=false) y
+        // mostraba "Inicializar sistema" durante 50-200ms hasta que llegaba
+        // el snapshot real con ceoExists=true. Ahora durante ese gap solo
+        // se muestra el header (sin empty state confuso).
+        if (!_state.firstSnapshotReceived) {
+            root.innerHTML = renderRolesHeader();
+            refreshIcons(root);
+            return;
+        }
+
+        // §73.3 — Empty state UNIFICADO. Antes había 2 casos:
+        //   Caso A (ceoExists=false): "Inicializar el sistema de roles"
+        //                              + botón "Inicializar sistema"
+        //   Caso B (ceoExists=true):  "Creá tu primer rol personalizado"
+        //                              + botón "Crear nuevo rol"
+        // El Caso A fue ELIMINADO porque su botón "Inicializar sistema"
+        // era duplicado del botón "Resembrar sistema" del header (que
+        // siempre está visible). Si el sistema NO está sembrado, el
+        // texto del empty state ahora dirige al cliente a usar
+        // "Resembrar sistema" del header — UNA sola fuente de verdad.
         // §73.1 hotfix — render header SIEMPRE para que las acciones admin
         // (Limpiar legacy, Migrar legacy, Resembrar, Nuevo rol) estén siempre visibles
         if (!_state.roles || _state.roles.length === 0) {
-            var emptyHtml;
+            var emptyTitle, emptyText, emptyActions;
             if (_state.ceoExists) {
-                // Caso B: CEO existe, falta crear customs
-                emptyHtml = '<div class="roles-empty">' +
-                    '<div class="roles-empty-icon"><i data-lucide="shield-plus"></i></div>' +
-                    '<h3 class="roles-empty-title">Creá tu primer rol personalizado</h3>' +
-                    '<p class="roles-empty-text">El rol CEO está activo (vos). Ahora podés crear roles para asesores, lectores o cualquier perfil que necesites, con los permisos que vos elijas por checkbox.</p>' +
-                    '<div class="roles-empty-actions">' +
+                // CEO sembrado, falta crear customs (caso normal post-cleanup)
+                emptyTitle = 'Creá tu primer rol personalizado';
+                emptyText = 'El rol CEO está activo (vos). Ahora podés crear roles para asesores, lectores o cualquier perfil que necesites, con los permisos que vos elijas por checkbox.';
+                emptyActions = '<div class="roles-empty-actions">' +
                     '<button class="alt-btn alt-btn--primary" data-action="create-role">' +
                     '<i data-lucide="plus"></i> Crear nuevo rol</button>' +
-                    '</div></div>';
+                    '</div>';
             } else {
-                // Caso A: primera vez, hay que sembrar
-                emptyHtml = '<div class="roles-empty">' +
-                    '<div class="roles-empty-icon"><i data-lucide="shield-check"></i></div>' +
-                    '<h3 class="roles-empty-title">Inicializar el sistema de roles</h3>' +
-                    '<p class="roles-empty-text">Para arrancar, sembrá el rol del sistema (CEO). Después podés crear roles personalizados con los permisos que necesites.</p>' +
-                    '<div class="roles-empty-actions">' +
-                    '<button class="alt-btn alt-btn--primary" data-action="seed-system-roles">' +
-                    '<i data-lucide="zap"></i> Inicializar sistema</button>' +
-                    '</div></div>';
+                // Caso edge: CEO no sembrado. Dirigir al header.
+                emptyTitle = 'Sistema sin inicializar';
+                emptyText = 'El sistema aún no tiene rol CEO sembrado. Usá el botón "Resembrar sistema" del header arriba para inicializar el catálogo + el rol CEO. Después podés crear roles personalizados.';
+                emptyActions = ''; // sin botón duplicado del header
             }
+            var emptyHtml = '<div class="roles-empty">' +
+                '<div class="roles-empty-icon"><i data-lucide="shield-plus"></i></div>' +
+                '<h3 class="roles-empty-title">' + emptyTitle + '</h3>' +
+                '<p class="roles-empty-text">' + emptyText + '</p>' +
+                emptyActions +
+                '</div>';
             // §73.1 — Header con acciones admin SIEMPRE visible (incluso sin customs)
             root.innerHTML = renderRolesHeader() + emptyHtml;
             refreshIcons(root);

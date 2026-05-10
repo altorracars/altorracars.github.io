@@ -31960,3 +31960,110 @@ previa (carga v20260513170000).
 **Cache bump**: `v20260513170000`.
 
 ---
+
+## 73.4 ADR-073.4 — Auto-hide "Resembrar sistema" cuando CEO ya está sembrado (2026-05-10)
+
+> Cliente preguntó tras §73.3: "Migrar a legacy y resembrar sistema
+> aun es necesario?".
+>
+> Análisis:
+> - **Migrar legacy** ya está auto-oculto desde §73.2 (no aplica para
+>   sistemas limpios). Reaparece solo si detecta users con rol legacy
+>   sin roleId.
+> - **Resembrar sistema** seguía siendo siempre visible aunque solo
+>   tiene 2 casos de uso reales:
+>   1. Inicialización primera vez cuando CEO no está sembrado
+>   2. Update del catálogo canónico de permissions (caso futuro)
+>
+> En flujo normal post-cleanup con CEO sembrado, no es necesario.
+> Aplico el mismo patrón auto-hide: visible solo si caso edge.
+>
+> Aplicado bajo §17 (perf), §17.4 (HTML/CSS estable), §17.12, §35,
+> §37 (IAP), §61 Plan Maestro RBAC.
+
+### 73.4.1 Solución
+
+`renderRolesHeader()` con flag adicional `showSeedSystem`:
+
+```js
+var showSeedSystem = _state.firstSnapshotReceived && !_state.ceoExists;
+
+if (showCleanupLegacy) { ... }
+if (showMigrateLegacy) { ... }
+if (showSeedSystem) {
+    html += '<button data-action="seed-system-roles">' +
+        '<i data-lucide="refresh-cw"></i> Resembrar sistema</button>';
+}
+// Solo "Nuevo rol" siempre visible
+html += '<button data-action="create-role">Nuevo rol</button>';
+```
+
+**Comportamiento**:
+- Sistema sembrado (caso normal del cliente) → solo "Nuevo rol" visible
+- CEO no sembrado (caso edge) → "Resembrar sistema" + "Nuevo rol"
+- Casos legacy detectados → botones legacy aparecen automáticamente
+
+`refreshHeaderIfLegacyChanged()` extendido con flag `seedSystem`
+para detectar cambio de visibilidad y re-render in-place:
+
+```js
+var _lastRenderedHeaderState = { cleanup: null, migrate: null, seedSystem: null };
+function refreshHeaderIfLegacyChanged() {
+    var currentSeedSystem = _state.firstSnapshotReceived && !_state.ceoExists;
+    if (... && _lastRenderedHeaderState.seedSystem === currentSeedSystem) {
+        return;
+    }
+    _lastRenderedHeaderState.seedSystem = currentSeedSystem;
+    // re-render in-place
+}
+```
+
+### 73.4.2 Cómo re-sembrar manualmente si se necesita en el futuro
+
+Si yo (Claude) en una versión futura agrego nuevos permissions al
+catálogo canónico (`js/rbac-catalog.js + functions/index.js`), el
+cliente tendrá que ejecutar manualmente desde DevTools console del
+admin:
+
+```js
+window.AltorraAdminRoles.seedSystemRoles();
+```
+
+Esto invoca la Cloud Function `seedSystemRoles` que es idempotente:
+- Crea permissions que faltan
+- Actualiza CEO si su `permissions[]` cambió
+- Skip docs ya canónicos
+
+**Alternativa visible**: si el catálogo cambió y queremos UI más
+amigable, podemos agregar en una versión futura un detector de drift
+que compare `permissions/` count en Firestore vs catálogo client-side
+y muestre el botón "Resembrar sistema" automáticamente. Por ahora,
+el caso de update de catálogo es raro y manual está OK.
+
+### 73.4.3 Tests E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260513180000) | Cache nueva carga |
+| 2 | Cliente con CEO sembrado entra a sec-roles | Header muestra solo "Nuevo rol" (cero botones legacy + cero "Resembrar sistema") |
+| 3 | Caso edge: borrar manualmente `roles/system_super_admin` desde Firestore Console | Snapshot llega con `ceoExists=false` → header se re-renderiza con "Resembrar sistema" visible |
+| 4 | Click "Resembrar sistema" (cuando aparece) | Sigue funcionando, siembra catálogo + CEO |
+| 5 | DevTools console: `window.AltorraAdminRoles.seedSystemRoles()` | Funciona — utility manual disponible siempre |
+
+### 73.4.4 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-roles.js` | renderRolesHeader: nuevo flag `showSeedSystem = firstSnapshotReceived && !ceoExists`. Botón "Resembrar sistema" condicionado. refreshHeaderIfLegacyChanged extiende `_lastRenderedHeaderState` con `seedSystem` flag |
+| `service-worker.js` | CACHE_VERSION → `v20260513180000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513180000'` |
+| `CLAUDE.md` | Esta sección §73.4 |
+
+### 73.4.5 Acciones operativas
+
+NINGUNA NUEVA. Solo Ctrl+Shift+R en admin para invalidar cache previa
+(carga v20260513180000).
+
+**Cache bump**: `v20260513180000`.
+
+---

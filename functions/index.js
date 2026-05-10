@@ -2530,36 +2530,104 @@ exports.seedSystemRoles = onCall(callableOptionsV2, async (request) => {
             await batch1.commit();
         }
 
-        // 2) Sembrar roles/ (idempotente)
+        // 2) Sembrar/actualizar roles/ (idempotente con UPDATE de canonical fields)
+        // §70 R7.1 — Si el doc existe, hacer UPDATE merge de los campos
+        // canonical (name, description, color, icon, permissions). Esto cubre
+        // el caso del cliente que ya tiene roles/system_super_admin sembrado
+        // con label antiguo "Super Administrador" y necesita el nuevo "CEO".
+        // Solo se actualiza si difiere algún campo canonical.
         const rolesSnapshot = await db.collection('roles').get();
-        const existingRoles = new Set();
-        rolesSnapshot.forEach(doc => existingRoles.add(doc.id));
+        const existingRolesData = {};
+        rolesSnapshot.forEach(doc => { existingRolesData[doc.id] = doc.data(); });
 
+        result.roles.updated = 0;
         const batch2 = db.batch();
         let batch2Count = 0;
         for (const role of RBAC_SYSTEM_ROLES) {
-            if (existingRoles.has(role.id)) {
-                result.roles.skipped++;
-                continue;
-            }
             const docRef = db.collection('roles').doc(role.id);
-            batch2.set(docRef, {
-                ...role,
-                userCount: 0,
-                createdAt: new Date().toISOString(),
-                createdBy: request.auth.uid,
-                createdByName: 'System',
-                updatedAt: new Date().toISOString(),
-                updatedBy: request.auth.uid,
-                updatedByName: 'System',
-                _version: 1,
-                _catalogVersion: RBAC_CATALOG_VERSION
-            });
-            batch2Count++;
-            result.roles.created++;
+            const existing = existingRolesData[role.id];
+            if (existing) {
+                // §70 — verificar drift y UPDATE canonical fields si difieren
+                const needsUpdate =
+                    existing.name !== role.name ||
+                    existing.description !== role.description ||
+                    existing.color !== role.color ||
+                    existing.icon !== role.icon ||
+                    JSON.stringify(existing.permissions || []) !== JSON.stringify(role.permissions);
+                if (needsUpdate) {
+                    batch2.set(docRef, {
+                        name: role.name,
+                        description: role.description,
+                        color: role.color,
+                        icon: role.icon,
+                        permissions: role.permissions,
+                        isSystem: true,
+                        updatedAt: new Date().toISOString(),
+                        updatedBy: request.auth.uid,
+                        updatedByName: 'System (resync §70)',
+                        _catalogVersion: RBAC_CATALOG_VERSION,
+                        _resyncedAt: new Date().toISOString()
+                    }, { merge: true });
+                    batch2Count++;
+                    result.roles.updated++;
+                } else {
+                    result.roles.skipped++;
+                }
+            } else {
+                batch2.set(docRef, {
+                    ...role,
+                    userCount: 0,
+                    createdAt: new Date().toISOString(),
+                    createdBy: request.auth.uid,
+                    createdByName: 'System',
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: request.auth.uid,
+                    updatedByName: 'System',
+                    _version: 1,
+                    _catalogVersion: RBAC_CATALOG_VERSION
+                });
+                batch2Count++;
+                result.roles.created++;
+            }
         }
         if (batch2Count > 0) {
             await batch2.commit();
+        }
+
+        // 3) §70 R7.1 — Re-sync denormalización de usuarios con roleId
+        //    apuntando a un system role actualizado. Esto cubre el caso
+        //    del CEO en sec-users que mostraba "Super Administrador" en
+        //    lugar de "CEO" porque usuarios/{uid}.roleName quedó stale.
+        result.users = { resynced: 0 };
+        for (const role of RBAC_SYSTEM_ROLES) {
+            try {
+                const usersSnap = await db.collection('usuarios')
+                    .where('roleId', '==', role.id)
+                    .get();
+                if (usersSnap.empty) continue;
+                const userBatch = db.batch();
+                let resyncCount = 0;
+                usersSnap.forEach(uDoc => {
+                    const u = uDoc.data();
+                    const nameDrift = u.roleName !== role.name;
+                    const permsDrift = JSON.stringify(u.permissions || []) !== JSON.stringify(role.permissions);
+                    if (nameDrift || permsDrift) {
+                        userBatch.update(uDoc.ref, {
+                            roleName: role.name,
+                            permissions: role.permissions,
+                            permissionsUpdatedAt: new Date().toISOString(),
+                            _resyncedAt: new Date().toISOString()
+                        });
+                        resyncCount++;
+                    }
+                });
+                if (resyncCount > 0) {
+                    await userBatch.commit();
+                    result.users.resynced += resyncCount;
+                }
+            } catch (resyncErr) {
+                console.warn('[seedSystemRoles] §70 resync de usuarios para role', role.id, 'falló:', resyncErr.message);
+            }
         }
 
         return result;

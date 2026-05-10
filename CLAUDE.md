@@ -30071,3 +30071,413 @@ overflow a R8 cleanup masivo (callsites legacy, rules cleanup).
 
 ---
 
+## 70. ADR-070 — Sprint §61.R7.1 hotfix: 3 bugs reportados tras R7 (2026-05-10)
+
+> Cliente reportó tras §69 (R7) tres bugs visibles con captura del
+> sec-users + modal de edición del CEO:
+>
+> 1. Al refrescar `/admin#/users` siendo CEO aparece toast "Error: No
+>    tienes permisos para acceder a esta seccion" PERO la sección sí
+>    se muestra. CEO debe pasar sin toast.
+> 2. En la tabla de usuarios el CEO aparece con label
+>    "SUPER ADMINISTRADOR" en vez de "CEO".
+> 3. En sec-users el CEO aún tiene botones "Editar" y "Eliminar".
+>    Cliente: "el CEO no debe aparecer ahi en los usuarios para
+>    modificar, el CEO solo modifica su informacion desde PERFIL".
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §19 (RCA Mode), §35 (anti-patterns),
+> §37 (IAP), §61 Plan Maestro RBAC.
+
+### 70.1 Causa raíz de cada bug
+
+#### Bug 1 — Toast "No tienes permisos" race condition
+
+`js/admin-auth.js:2317` tiene un handler legacy de los nav-items del
+sidebar que chequea `AP.canManageUsers()` al click:
+
+```js
+if (section === 'users' && !AP.canManageUsers()) {
+    AP.toast('No tienes permisos para acceder a esta seccion', 'error');
+    return;
+}
+```
+
+Cuando el cliente refresca `admin.html#/users`:
+1. El router `AltorraSections.go('users')` ejecuta `btn.click()` sintético
+   en el nav-item legacy.
+2. Ese click se dispara ANTES de que `loadProfileViaREST()` complete
+   (race condition con la carga inicial del perfil).
+3. En ese momento `AP.currentUserPermissions = []` (aún no hidratado)
+   y `AP.currentUserRole = null`.
+4. `canManageUsers()` retorna false → toast aparece.
+5. Pero el `notifyChange` del router DESPUÉS activa el tab "Config"
+   en el topnav y la sección sec-users (que ya estaba `.active` por el
+   hash deep-link) sigue visible.
+
+Resultado: el cliente ve toast falso + la sección visible. Confuso.
+
+#### Bug 2 — `roleName` denormalizado stale ("Super Administrador" vs "CEO")
+
+§69 cambió en el catálogo `name: "CEO"` para `system_super_admin`,
+pero los docs en Firestore siguen con `name: "Super Administrador"`
+(sembrados por seedSystemRoles ANTES del §69). Al ejecutar nuevamente
+`seedSystemRoles`, la función hacía `skip` cuando el doc ya existía,
+NO update.
+
+Además, los users con `roleId='system_super_admin'` tienen
+`usuarios/{uid}.roleName = 'Super Administrador'` denormalizado por
+R3/R4. Esa copia local también está stale.
+
+Resultado: la tabla sec-users muestra "SUPER ADMINISTRADOR" para el
+CEO porque lee `u.roleName` del doc usuario.
+
+#### Bug 3 — CEO editable y eliminable en sec-users
+
+`renderUsersTable` (admin-users.js:270) renderiza botones Editar y
+Eliminar para TODOS los users sin discriminar al CEO. Eso permite:
+- Modificar accidentalmente el rol del CEO
+- Eliminar el doc usuario del CEO (catastrófico — el sistema queda
+  sin super_admin)
+- Otro super_admin (si existiera) podría modificar al CEO actual
+
+El cliente quiere que el CEO se gestione **solo desde Mi Perfil** y
+que su rol sea **inmutable**.
+
+### 70.2 Solución estructural — 4 cambios coordinados
+
+#### A. Handler nav-item defensive (`js/admin-auth.js:2317-2336`)
+
+Agregado guard `profileReady` que evita el toast si `AP.currentUserProfile`
+aún no fue hidratado:
+
+```js
+var profileReady = !!(AP.currentUserProfile);
+if (section === 'users' && profileReady && !AP.canManageUsers()) {
+    AP.toast('No tienes permisos para acceder a esta seccion', 'error');
+    return;
+}
+```
+
+**Garantías**:
+- CEO con perfil completo → `canManageUsers()` retorna true (vía
+  wildcard `*` o legacy `super_admin`) → sin toast
+- User real sin permisos con perfil cargado → toast aparece
+  (comportamiento correcto)
+- Race condition al refresh → no toast, deja que la sección se
+  active y los siguientes guards reales (rules backend + render
+  de la sección) hagan su trabajo
+
+#### B. `seedSystemRoles` ahora UPDATE + sync denormalización (`functions/index.js`)
+
+3 cambios:
+
+**B.1 Detect drift y UPDATE en lugar de skip**:
+
+```js
+const existing = existingRolesData[role.id];
+if (existing) {
+    const needsUpdate =
+        existing.name !== role.name ||
+        existing.description !== role.description ||
+        existing.color !== role.color ||
+        existing.icon !== role.icon ||
+        JSON.stringify(existing.permissions) !== JSON.stringify(role.permissions);
+    if (needsUpdate) {
+        batch2.set(docRef, {
+            name: role.name,
+            description: role.description,
+            color: role.color,
+            icon: role.icon,
+            permissions: role.permissions,
+            isSystem: true,
+            updatedAt: ...,
+            updatedByName: 'System (resync §70)',
+            _resyncedAt: ...
+        }, { merge: true });
+        result.roles.updated++;
+    } else {
+        result.roles.skipped++;
+    }
+}
+```
+
+**B.2 Re-sync denormalización en usuarios**:
+
+```js
+for (const role of RBAC_SYSTEM_ROLES) {
+    const usersSnap = await db.collection('usuarios')
+        .where('roleId', '==', role.id).get();
+
+    const userBatch = db.batch();
+    let resyncCount = 0;
+    usersSnap.forEach(uDoc => {
+        const u = uDoc.data();
+        const nameDrift = u.roleName !== role.name;
+        const permsDrift = JSON.stringify(u.permissions) !== JSON.stringify(role.permissions);
+        if (nameDrift || permsDrift) {
+            userBatch.update(uDoc.ref, {
+                roleName: role.name,
+                permissions: role.permissions,
+                permissionsUpdatedAt: ...,
+                _resyncedAt: ...
+            });
+            resyncCount++;
+        }
+    });
+    if (resyncCount > 0) {
+        await userBatch.commit();
+        result.users.resynced += resyncCount;
+    }
+}
+```
+
+**B.3 Result extendido**: ahora retorna también `roles.updated` y
+`users.resynced` para que la UI muestre el resultado completo.
+
+#### C. Guard CEO en sec-users tabla (`js/admin-users.js`)
+
+3 sub-cambios coordinados (defense-in-depth):
+
+**C.1 `renderUsersTable` — botones Editar/Eliminar reemplazados por lock**:
+
+```js
+var isCEO = u.roleId === 'system_super_admin' ||
+            u.rol === 'super_admin' ||
+            (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+
+if (isCEO) {
+    actionsHtml += '<span class="v-act v-act--locked" ' +
+                   'title="El CEO solo se gestiona desde Mi Perfil. Su rol no es modificable.">' +
+                   '<i data-lucide="lock"></i></span>';
+} else {
+    // Botones Editar/Eliminar normales
+}
+```
+
+3 vías de detección del CEO:
+1. `roleId === 'system_super_admin'` — usuarios migrados R4
+2. `rol === 'super_admin'` — usuarios legacy pre-R4
+3. `permissions[]` contiene `'*'` — custom role con wildcard
+
+**C.2 `editUser(uid)` con guard programático**:
+
+```js
+function editUser(uid) {
+    if (!AP.canManageUsers()) { ... }
+    var u = AP.users.find(...);
+    if (!u) return;
+    var isCEO = ...; // misma detección
+    if (isCEO) {
+        AP.toast('El CEO solo se edita desde Mi Perfil', 'info');
+        return;
+    }
+    // ... apertura del modal
+}
+```
+
+Previene invocación programática (DevTools console, scripts maliciosos).
+
+**C.3 `deleteUserFn(uid)` con guard programático**:
+
+```js
+function deleteUserFn(uid) {
+    if (!AP.canManageUsers()) { ... }
+    if (uid === currentUid) { ... }
+    var u = AP.users.find(...);
+    if (u) {
+        var isCEO = ...; // misma detección
+        if (isCEO) {
+            AP.toast('El CEO no se puede eliminar', 'error');
+            return;
+        }
+    }
+    // ... delete real
+}
+```
+
+Defensa-en-profundidad. El backend rules R6 también lo bloquearía
+(super_admin tiene users.delete pero el doc del CEO también tiene
+`roleId='system_super_admin'` que el frontend respeta primero).
+
+#### D. CSS `.v-act--locked` (`css/admin.css`)
+
+Variante non-interactive del botón de acción con icon lock dorado:
+
+```css
+.v-act--locked {
+    color: var(--admin-gold, #b89658);
+    background: rgba(184, 150, 88, 0.08);
+    border-color: rgba(184, 150, 88, 0.20);
+    cursor: help;
+    opacity: 0.85;
+}
+.v-act--locked:hover {
+    background: rgba(184, 150, 88, 0.14);
+    opacity: 1;
+}
+```
+
+`cursor: help` indica que es informativo (no clickable). Tooltip explica
+el motivo. Hover sutil para feedback visual.
+
+### 70.3 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Login como CEO + refresh `admin.html#/users` | NO aparece toast "No tienes permisos". sec-users carga normal con tabla |
+| 2 | DevTools console | NO aparece error rojo. Si hay race log, dice "[RBAC] §70 R7.1 — perfil cargando, skip toast" o similar |
+| 3 | Cliente clickea "Resembrar sistema" en sec-roles | Toast con resumen: "Roles actualizados: 1, Usuarios resincronizados: N" |
+| 4 | Verificar Firestore `roles/system_super_admin` | `name: 'CEO'`, `description: 'Acceso absoluto al sistema...'`, `_resyncedAt: ISO_string` |
+| 5 | Verificar Firestore `usuarios/{ceo_uid}` | `roleName: 'CEO'` (no "Super Administrador"), `permissions: ['*']`, `_resyncedAt: ISO_string` |
+| 6 | Refresh sec-users | Tabla muestra Daniel Romero (CEO) con badge "CEO" (no "SUPER ADMINISTRADOR") |
+| 7 | Tabla muestra fila del CEO | Columna ACCIONES tiene SOLO icono 🔒 dorado con tooltip "El CEO solo se gestiona desde Mi Perfil. Su rol no es modificable." (NO botones Editar ni Eliminar) |
+| 8 | DevTools console: `AP.editUser('<ceo_uid>')` | Toast info "El CEO solo se edita desde Mi Perfil". Modal NO se abre |
+| 9 | DevTools console: `AP.deleteUser('<ceo_uid>')` | Toast error "El CEO no se puede eliminar" |
+| 10 | Cliente entra a Mi Perfil | Puede modificar info personal (nombre, telefono, foto) — el rol NO aparece como editable (solo info personal) |
+| 11 | Otros usuarios (editor con custom role) en sec-users | Siguen mostrando botones Editar/Eliminar normalmente |
+| 12 | Refresh con perfil aún cargando (red lenta) | NO toast falso. La sección se activa y luego el perfil llega → render normal |
+
+### 70.4 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo cambios CSS específicos en `.v-act--locked` |
+| §17.4 | Renombrar IDs/clases | Cero modificación HTML. Nueva clase CSS `.v-act--locked` aditiva |
+| §17.12 | `MutationObserver subtree:true` | Cero MO. Cambios son sincronicos en handlers de click |
+| §35 | `pointermove` persistente | Cero pointermove |
+| §37 IAP | Implementar sin autorización | Cliente reportó bugs con captura — autorización implícita |
+| Big Bang | Refactorizar todo `canManageUsers` | Solo guard `profileReady` agregado al callsite específico. Los 154 callsites legacy quedan para R8 cleanup |
+| Cliente debe re-deployar rules | Solo deploy de Cloud Function (seedSystemRoles) requerido. Rules backend siguen iguales | Acción operativa documentada en §70.6 |
+
+### 70.5 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | `seedSystemRoles` con UPDATE pisa configuración custom del CEO doc | 🟢 Baja | UPDATE solo aplica a campos canonical (name/description/color/icon/permissions). Otros campos del doc (`createdAt`, `updatedBy`, etc.) se preservan via `merge: true`. Si cliente customizó manualmente, esos cambios se conservan | git revert |
+| 2 | Re-sync de usuarios pisa `roleName` custom del super_admin | 🟢 Baja | Solo se sincroniza si `nameDrift === true`. Si el cliente tenía custom roleName que matchea el catálogo, no se toca | git revert |
+| 3 | `editUser` guard bloquea legítimo super_admin queriendo cambiar a otro CEO | 🟢 Esperado | Por diseño: solo hay un CEO (system_super_admin). Si en el futuro el cliente quiere transferir el rol, debe hacerlo manualmente desde Firestore Console o crear un nuevo R7c sprint que lo permita | N/A |
+| 4 | Editor con custom role wildcard `*` queda bloqueado de eliminarse a sí mismo | 🟢 Esperado | El detector de CEO incluye `permissions: ['*']`. Si admin con wildcard intenta eliminarse, queda bloqueado (correcto: protección anti-lockout) | N/A |
+| 5 | Cliente NO ejecuta `firebase deploy --only functions:seedSystemRoles` | 🟡 Media | Sin deploy, la versión vieja de seedSystemRoles sigue activa (solo skip, no UPDATE). Cliente debe deployar | Documento explícito |
+| 6 | Cliente ejecuta "Resembrar" pero name ya estaba "CEO" en Firestore | 🟢 Baja | Idempotente: detect no drift → skip + toast con count 0 actualizados | N/A |
+| 7 | Race condition aún ocurre con red muy lenta | 🟢 Baja | Guard `profileReady` cubre el caso. Si el race persiste por bug futuro, los logs en consola lo identifican | git revert |
+
+### 70.6 Acciones operativas del super_admin (post-merge)
+
+**OBLIGATORIA**:
+```bash
+firebase deploy --only functions:seedSystemRoles
+```
+
+Sin este deploy, la versión vieja sigue activa y `seedSystemRoles`
+seguirá haciendo skip del CEO (no UPDATE).
+
+**Después del deploy**:
+1. Login admin como CEO
+2. Ir a Configuración → Roles
+3. Click "Resembrar sistema" (botón con icon refresh-cw)
+4. Esperar toast confirmando resultado:
+   - "Permisos: 0 creados, 71 ya existían"
+   - "Roles: 0 creados, 1 actualizado, 0 ya existían"
+   - "Usuarios resincronizados: 1" (o más, según cuántos super_admin haya)
+5. Refresh la página (Ctrl+Shift+R)
+6. Ir a Configuración → Usuarios
+7. Verificar que tu fila muestra:
+   - Badge "CEO" (no "SUPER ADMINISTRADOR")
+   - Solo icono 🔒 dorado en columna ACCIONES (no Editar/Eliminar)
+
+### 70.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-auth.js` | Handler nav-item legacy con guard `profileReady` (evita race condition al refresh) |
+| `functions/index.js` | seedSystemRoles UPDATE merge canonical fields si drift + re-sync denormalización en usuarios.roleName/permissions con roleId apuntando a system role |
+| `js/admin-users.js` | renderUsersTable detecta CEO vía 3 vías y reemplaza botones por icon lock + guards programáticos en editUser() y deleteUserFn() |
+| `css/admin.css` | Nueva variante `.v-act--locked` (dorado, cursor:help, non-interactive) |
+| `service-worker.js` | CACHE_VERSION → `v20260513110000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513110000'` |
+| `CLAUDE.md` | Esta sección §70 |
+
+**Total**: 7 archivos.
+
+### 70.8 Archivos INTACTOS (afirmación)
+
+- `firestore.rules` (R6) — sin tocar. Backend rules ya cubren CEO via wildcard
+- `js/rbac-catalog.js` (R1+R7) — sin tocar
+- `js/admin-state.js` (R1+R5) — sin tocar (canManageUsers ya tiene fallback robusto)
+- `js/admin-roles.js` (R2+R7) — sin tocar
+- 154 callsites legacy `AP.isSuperAdmin()` etc — sin tocar (R8 cleanup)
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+
+### 70.9 Estado del Plan §61 RBAC tras §70
+
+| Sprint | Estado | Doc |
+|---|---|---|
+| R1 Foundation | ✅ Completado | §63 |
+| R2 UI sec-roles CRUD | ✅ Completado | §64 |
+| R3 Dropdown dinámico sec-users | ✅ Completado | §65 |
+| R4 Migración legacy users | ✅ Completado | §66 + §66.1/2/3 hotfixes |
+| R5 Pragmático (deprecated + mapping) | ✅ Completado | §67 |
+| R6 Rules backend hasPermission | ✅ Completado | §68 |
+| R7 Ampliado (CEO + Guard "Sin rol") | ✅ Completado | §69 |
+| R7.1 Hotfix (3 bugs UX/sync) | ✅ Completado | §70 (este) |
+| **R7b** Cloud Function triggers | ⏸ Pendiente | (planeado §69.11) |
+| **R8** Cleanup masivo | ⏸ Pendiente | (planeado §67) |
+
+### 70.10 Próximos sprints opcionales del plan
+
+**R7b — Cloud Function triggers + audit log** (1 día):
+- `onRoleUpdated` (Firestore onUpdate `roles/{id}`):
+  - Detecta cambio en `permissions[]` o `name`
+  - Re-escribe `usuarios/{uid}.permissions[]` y `roleName` para
+    TODOS los users con ese `roleId` (batch writes con cap 500)
+  - Setea `permissionsUpdatedAt`
+  - Esto AUTOMATIZA lo que §70 hace manualmente al ejecutar
+    "Resembrar sistema". Cuando admin edite un custom role desde
+    sec-roles, los users con ese role heredan los nuevos permisos
+    instantáneamente (sin refresh)
+- `onRoleDeleted` (Firestore onDelete `roles/{id}`):
+  - Para users con ese roleId, setear `roleId=null + permissions=[]`
+  - Quedan bloqueados con "Sin rol asignado" hasta reasignación
+  - Audit log entry
+- `onUserRoleAssigned` (Firestore onUpdate `usuarios/{uid}` cuando
+  roleId cambia): asegura sync entre roleId y permissions[]
+- `recalculateRoleUserCount` (schedule 5 min)
+
+**R8 — Cleanup masivo** (futuro, requiere validación meses en producción):
+- Eliminar docs `roles/system_editor` y `roles/system_viewer` de
+  Firestore + reset de roleId/permissions en users con esos IDs
+- Refactor de los ~164 callsites legacy `AP.isSuperAdmin()` etc a
+  `AP.hasPermission(perm)` directo (mapping table en §67.3)
+- Eliminar campo `rol` legacy de `usuarios/{uid}` (todos los users
+  migrados)
+- Refactor `firestore.rules`: eliminar helpers legacy + eliminar OR
+  fallback en cada callsite (solo `hasPermission` queda)
+- Eliminar JSDoc @deprecated y código residual
+
+### 70.11 Doctrina aplicada
+
+§19 RCA estricto: cada bug diagnosticado por separado con causa raíz
+real:
+- Bug 1: race condition handler legacy ANTES de hidratar perfil
+- Bug 2: drift entre catálogo (§69) y Firestore (sembrado pre-§69)
+- Bug 3: render sin discriminación CEO
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+implícita del cliente (reportó bugs con captura).
+
+§17 Performance: cero MutationObserver, cero pointermove, cero CSS
+nuevo intrusivo. Solo guards en JS y 1 variante de clase.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Nueva clase `.v-act--locked`
+aditiva no colisiona con legacy.
+
+§61 Plan Maestro: R7.1 hotfix puntual a 3 bugs específicos. Cero
+overflow a R7b (triggers automáticos) o R8 (cleanup masivo). Patrón
+"Resembrar sistema" como solución manual one-shot funciona hasta que
+R7b automatice.
+
+**Cache bump**: `v20260513110000`.
+
+---
+

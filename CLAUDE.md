@@ -30808,3 +30808,280 @@ los 4 triggers automáticos planeados originalmente.
 
 ---
 
+## 72. ADR-072 — Sprint §61.R7.2 hotfix UX: 3 bugs sec-users + sec-roles tras §71 (2026-05-10)
+
+> Cliente reportó tras §71 (R7b) tres bugs visibles con captura de
+> sec-users + sec-roles + dropdown filter:
+>
+> 1. CEO aparece como "SUPER ADMINISTRADOR" en sec-users tabla
+>    (esperado: "CEO"). Otros usuarios aparecen como "EDITOR" en lugar
+>    de "Sin asignar".
+> 2. sec-roles muestra "Aún no hay roles configurados" + botón
+>    "Sembrar roles del sistema" — pero el cliente ya tiene CEO
+>    sembrado (los otros system roles fueron eliminados en §69). El
+>    mensaje confunde porque el cliente esperaba ver "Crear nuevo rol"
+>    (CEO ya existe).
+> 3. Filter dropdown de sec-users muestra "Editor / Lector / Super
+>    Administrador / Sin rol asignado (legacy)" — los system roles
+>    eliminados aparecen aunque admin-roles UI los oculta. Inconsistencia
+>    entre dropdown del modal (filtrado §69) y filter dropdown (no
+>    filtrado). El label "(legacy)" confunde al cliente.
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §19 (RCA Mode), §35 (anti-patterns),
+> §37 (IAP), §61 Plan Maestro RBAC.
+
+### 72.1 Causa raíz de cada bug
+
+#### Bug 1 — CEO label "SUPER ADMINISTRADOR" stale
+
+`js/admin-users.js renderUsersTable` línea 247-261 muestra `u.roleName`
+denormalizado del doc usuario en Firestore. Ese campo está stale del
+§69 ("Super Administrador") porque:
+- `seedSystemRoles` actualizado en §70 hace UPDATE del role doc + sync
+  de denormalización
+- PERO requiere `firebase deploy --only functions:seedSystemRoles` +
+  cliente clickear "Resembrar sistema"
+- Si el cliente no ejecutó esos pasos, el doc Firestore sigue con
+  "Super Administrador" + `usuarios/{uid}.roleName` también stale
+
+Misma causa para los otros usuarios: muestran "EDITOR" porque
+`u.roleName === 'Editor'` denormalizado del §69 (system_editor antes
+de eliminarse del catálogo).
+
+#### Bug 2 — Empty state sec-roles confuso
+
+`js/admin-roles.js render()` línea 210 chequea
+`if (_state.roles.length === 0)` y muestra siempre "Sembrar roles del
+sistema" + lista de los 3 roles legacy.
+
+Pero `_state.roles` filtra system_super_admin/editor/viewer (§69).
+Entonces si el cliente tiene CEO sembrado + 0 customs, ve el empty
+state como si no hubiera nada — pero el CEO SÍ existe en Firestore.
+
+Mensaje "Sembrá los 3 roles del sistema (Super Admin, Editor, Lector)"
+es contradictorio con §69 (que solo deja CEO).
+
+#### Bug 3 — Filter dropdown sec-users con system roles legacy
+
+`js/admin-users.js renderRolesFilter` línea 152 itera todo
+`_rolesCache` sin filtrar. `_rolesCache` se popula con el listener
+de `roles/` en `js/admin-users.js:30-58` que NO filtra system roles
+(porque populateRolesDropdown del §69 sí lo hace por separado).
+
+Resultado: filter dropdown muestra "Editor / Lector / Super
+Administrador / Sin rol asignado (legacy)". Inconsistencia con el
+dropdown del modal Crear/Editar usuario (que sí filtra desde §69).
+
+Plus: el label "(legacy)" en "Sin rol asignado" confunde al cliente
+("no entiendo qué es legacy y por qué sale ahí entre paréntesis").
+
+### 72.2 Solución estructural — 3 fixes coordinados client-side
+
+#### A. Display "CEO" hardcoded en frontend (`js/admin-users.js`)
+
+**Bug 1 fix**: en `renderUsersTable`, detectar CEO via 3 vías y mostrar
+"CEO" hardcoded ignorando `u.roleName` stale:
+
+```js
+var isCEORow = u.roleId === 'system_super_admin' ||
+               u.rol === 'super_admin' ||
+               (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+
+if (isCEORow) {
+    rolLabel = 'CEO';                      // ← HARDCODED
+    roleColor = '#b89658';
+    rolClass = 'badge-destacado';
+} else if (u.roleId && u.roleName) {
+    rolLabel = u.roleName;                  // custom role o legacy editor/viewer
+    // ... resto igual
+}
+```
+
+**Beneficio**: la UI es correcta independientemente del estado del
+seeder backend. El cliente no necesita ejecutar deploy ni "Resembrar"
+para que el CEO se muestre como "CEO".
+
+**Plus en `populateRolesDropdown`**: CEO ELIMINADO del dropdown de
+creación de usuarios. El cliente confirmó "el CEO es el DIOS del
+sistema, no se puede crear, modificar, ni eliminar". Solo aparece en
+el dropdown si `selectedRoleId === 'system_super_admin'` (defensivo,
+ya bloqueado por §70 guard pero por consistencia).
+
+#### B. Empty state inteligente sec-roles (`js/admin-roles.js`)
+
+**Bug 2 fix**: snapshot callback ahora trackea `_state.ceoExists`:
+
+```js
+.onSnapshot(function (snap) {
+    _state.roles = [];
+    _state.ceoExists = false;        // §72 — track CEO presence
+    snap.forEach(function (doc) {
+        if (doc.id === 'system_super_admin') {
+            _state.ceoExists = true;
+            return; // skip (no agregar a lista visible)
+        }
+        if (doc.id === 'system_editor' || doc.id === 'system_viewer') {
+            return; // skip system legacy
+        }
+        _state.roles.push(...);
+    });
+    render();
+});
+```
+
+`render()` con 2 casos de empty state:
+
+**Caso A** — `ceoExists === false` (primera vez, sistema sin sembrar):
+```
+Inicializar el sistema de roles
+Para arrancar, sembrá el rol del sistema (CEO). Después podés crear
+roles personalizados con los permisos que necesites.
+[Inicializar sistema]
+```
+
+**Caso B** — `ceoExists === true && customs.length === 0`:
+```
+Creá tu primer rol personalizado
+El rol CEO está activo (vos). Ahora podés crear roles para asesores,
+lectores o cualquier perfil que necesites, con los permisos que vos
+elijas por checkbox.
+[Crear nuevo rol]
+```
+
+#### C. Filter sec-users limpiar legacy (`js/admin-users.js`)
+
+**Bug 3 fix**: `renderRolesFilter` ahora filtra system roles y limpia
+label "(legacy)":
+
+```js
+// CEO siempre visible (uno solo)
+var ceo = _rolesCache.find(function(r) { return r._docId === 'system_super_admin'; });
+if (ceo) {
+    var ceoSel = (ceo._docId === _rolesFilter) ? ' selected' : '';
+    html += '<option value="' + AP.escapeHtml(ceo._docId) + '"' + ceoSel + '>CEO</option>';
+}
+
+// Custom roles + skip system legacy
+for (var i = 0; i < _rolesCache.length; i++) {
+    var r = _rolesCache[i];
+    if (r._docId === 'system_super_admin' ||
+        r._docId === 'system_editor' ||
+        r._docId === 'system_viewer') continue;
+    // ... agregar custom role
+}
+
+// Sin rol asignado (sin "legacy")
+html += '<option value="__legacy__">Sin rol asignado</option>';
+```
+
+### 72.3 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (Ctrl+Shift+R) | Cache nueva carga (v20260513130000) |
+| 2 | Login CEO → sec-users tabla | Daniel Romero muestra badge "CEO" (NO "SUPER ADMINISTRADOR") |
+| 3 | Otros usuarios en tabla | Muestran su `roleName` real (ej. "Asesor" si tienen custom role) o "Editor"/"Viewer" si tienen system_editor/system_viewer denormalizado |
+| 4 | Filter dropdown de sec-users | "Todos los roles", "CEO", custom roles, "Sin rol asignado" — NO aparecen Editor/Lector/Super Administrador como opciones |
+| 5 | Clickear "Sin rol asignado" en filter | Muestra solo users con `roleId=null` |
+| 6 | Click "Crear Usuario" → dropdown ROL | Optgroup "Roles personalizados" con customs. NO aparece CEO ni Editor/Viewer legacy |
+| 7 | Si NO hay custom roles | Dropdown muestra "Sin roles disponibles — primero creá un rol personalizado desde Configuración → Roles" |
+| 8 | sec-roles con 0 customs (caso normal post-§69) | Empty state: "Creá tu primer rol personalizado — El rol CEO está activo (vos)..." + botón "Crear nuevo rol" |
+| 9 | sec-roles con CEO eliminado de Firestore (edge case) | Empty state: "Inicializar el sistema de roles" + botón "Inicializar sistema" |
+| 10 | Crear un custom role | Empty state desaparece, aparece grid con la card del role recién creado |
+| 11 | Editar al CEO desde sec-users | Sigue bloqueado con icono 🔒 (§70 guard) |
+| 12 | Verificar Firestore `usuarios/{ceo_uid}` | `roleName` puede seguir como "Super Administrador" (stale) — la UI ya no depende de eso |
+
+### 72.4 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | Cero modificaciones HTML. Solo lógica JS interna |
+| §17.12 anti-MO | MutationObserver subtree:true | Cero MO. Solo onSnapshot Firestore con re-render imperativo |
+| §35 | pointermove persistente | Cero pointermove |
+| §37 IAP | Implementar sin autorización | Cliente reportó bugs con captura — autorización implícita |
+| Big Bang | Forzar deploy backend | Fix client-side puro elimina dependencia de re-deploy. Cliente solo Ctrl+Shift+R |
+| §61 Plan | Saltarse fases | R7.2 hotfix puntual a 3 bugs UX. Cero overflow a R8 (cleanup masivo) |
+| Hardcode UI vs source of truth | "CEO" hardcoded oculta drift en Firestore | El drift sigue existiendo (roleName en Firestore es stale) PERO no afecta UX. R7b triggers (§71) lo arreglan automático en próximo edit del role |
+
+### 72.5 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Detección CEO falsa positiva (user no-CEO con `permissions: ['*']`) | 🟢 Baja | Es comportamiento correcto — si tiene wildcard, ES CEO efectivo. Si el cliente quiere prevenir esto, NO debe asignar `*` permission a custom roles |
+| 2 | Filter dropdown queda sin opciones si no hay customs | 🟢 Esperado | Mensaje claro "Sin roles disponibles" con CTA al sec-roles |
+| 3 | Cliente espera ver "Editor" como opción legacy | 🟢 Baja | Si el user actual tiene `roleId='system_editor'`, el dropdown del modal SÍ lo muestra (con label "(legacy)" para retrocompat — §69) |
+| 4 | Empty state Caso B muestra "CEO está activo (vos)" pero el viewer no es CEO | 🟢 Baja | renderEmpty inicial chequea `if (!isSuperAdmin())` → muestra "Solo el super_admin puede gestionar roles". Caso B solo se renderiza si user es super_admin |
+| 5 | Dropdown del modal con nuevo user sin role default | 🟡 Media | Si hay 0 customs, el `value=""` se preserva y submit falla con "rol requerido". Mensaje informa qué hacer |
+
+### 72.6 Acciones operativas del super_admin (post-merge)
+
+**NO requiere deploy backend**.
+
+Acción única:
+1. **Ctrl+Shift+R** en admin.html para invalidar cache previa
+
+Validación:
+1. sec-users → tu fila muestra "CEO" (no "SUPER ADMINISTRADOR")
+2. Filter dropdown → solo "Todos los roles", "CEO", customs, "Sin rol asignado"
+3. sec-roles → si 0 customs, muestra "Creá tu primer rol personalizado"
+
+### 72.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-users.js` | renderUsersTable: detección CEO 3 vías + label hardcoded "CEO". populateRolesDropdown: CEO eliminado del dropdown excepto si selectedRoleId='system_super_admin'. renderRolesFilter: limpiar editor/viewer/super_admin del filter, label "Sin rol asignado" sin "(legacy)" |
+| `js/admin-roles.js` | snapshot callback trackea `_state.ceoExists`. render() empty state inteligente con 2 casos (ceoExists=false → Inicializar; ceoExists=true → Crear primer rol custom) |
+| `service-worker.js` | CACHE_VERSION → `v20260513130000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513130000'` |
+| `CLAUDE.md` | Esta sección §72 |
+
+**Total**: 5 archivos.
+
+### 72.8 Archivos INTACTOS (afirmación)
+
+- `firestore.rules` — sin tocar
+- `functions/index.js` — sin tocar (R7b triggers ya hacen el sync
+  automático en próximos edits de roles)
+- `js/rbac-catalog.js` — sin tocar
+- `js/admin-state.js`, `js/admin-auth.js` — sin tocar
+- `admin.html` — sin tocar
+- `css/admin.css` — sin tocar
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+
+### 72.9 Estado del Plan §61 RBAC tras §72
+
+| Sprint | Estado | Doc |
+|---|---|---|
+| R1-R7 | ✅ Completados | §63-§69 |
+| R7.1 hotfix | ✅ | §70 |
+| R7b Triggers automáticos | ✅ | §71 |
+| **R7.2 hotfix UX 3 bugs** | ✅ | §72 (este) |
+| ⏸ R8 Cleanup masivo | Opcional | (planeado §67) |
+
+### 72.10 Doctrina aplicada
+
+§19 RCA estricto: cada bug diagnosticado por separado:
+- Bug 1: dependencia frontend de denormalización stale → desacoplar
+  con label hardcoded
+- Bug 2: empty state asume "vacío total" sin distinguir "vacío
+  customs pero CEO existe" → 2 casos
+- Bug 3: dropdowns de filter y modal con lógica de filter
+  inconsistente → unificar
+
+§37 IAP: análisis previo con cliente vía captura. 4 archivos
+modificados client-side, cero deploy backend.
+
+§17 Performance: cero MutationObserver, cero pointermove. Render
+imperativo desde onSnapshot.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Solo lógica JS interna.
+
+§61 Plan Maestro: R7.2 hotfix puntual. Cero overflow a R8 (cleanup
+masivo de docs system_editor/system_viewer + refactor 164 callsites
+legacy).
+
+**Cache bump**: `v20260513130000`.
+
+---
+

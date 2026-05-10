@@ -115,6 +115,10 @@
                 .onSnapshot(function (snap) {
                     _state.lastListenerError = null;
                     _state.roles = [];
+                    // §72 R7.2 — Track si CEO (system_super_admin) existe en
+                    // Firestore. Si existe, el empty state debe ofrecer
+                    // "Crear primer rol custom" (no "Sembrar sistema").
+                    _state.ceoExists = false;
                     snap.forEach(function (doc) {
                         var data = doc.data() || {};
                         data._docId = doc.id;
@@ -124,8 +128,11 @@
                         // y Viewer legacy quedan en Firestore para no romper
                         // users existentes (R4 migration), pero no se muestran
                         // como opciones para crear nuevos.
-                        if (doc.id === 'system_super_admin'
-                            || doc.id === 'system_editor'
+                        if (doc.id === 'system_super_admin') {
+                            _state.ceoExists = true;
+                            return; // skip — no agregar a la lista visible
+                        }
+                        if (doc.id === 'system_editor'
                             || doc.id === 'system_viewer') {
                             return; // skip — no agregar a la lista visible
                         }
@@ -135,7 +142,7 @@
                     _state.roles.sort(function (a, b) {
                         return (a.name || '').localeCompare(b.name || '');
                     });
-                    console.log('[AdminRoles] §69 R7 snapshot — visibles:', _state.roles.length, '(CEO + system legacy filtrados)');
+                    console.log('[AdminRoles] §72 R7.2 snapshot — visibles:', _state.roles.length, '| CEO existe:', _state.ceoExists);
                     render();
                 }, function (err) {
                     // Errores esperados (cross-tab logout, permissions denied al sign out)
@@ -206,16 +213,31 @@
             return;
         }
 
-        // Si no hay roles, mostrar empty state con botón seed
+        // §72 R7.2 — Empty state inteligente.
+        // Caso A: NO hay system roles ni custom → primera vez, sembrar
+        // Caso B: CEO existe pero NO hay custom → cliente debe crear el primero
         if (!_state.roles || _state.roles.length === 0) {
-            root.innerHTML = '<div class="roles-empty">' +
-                '<div class="roles-empty-icon"><i data-lucide="shield-check"></i></div>' +
-                '<h3 class="roles-empty-title">Aún no hay roles configurados</h3>' +
-                '<p class="roles-empty-text">Sembrá los 3 roles del sistema (Super Admin, Editor, Lector) para arrancar. Después podés crear roles personalizados con los permisos que quieras.</p>' +
-                '<div class="roles-empty-actions">' +
-                '<button class="alt-btn alt-btn--primary" data-action="seed-system-roles">' +
-                '<i data-lucide="zap"></i> Sembrar roles del sistema</button>' +
-                '</div></div>';
+            if (_state.ceoExists) {
+                // Caso B: CEO existe, falta crear customs
+                root.innerHTML = '<div class="roles-empty">' +
+                    '<div class="roles-empty-icon"><i data-lucide="shield-plus"></i></div>' +
+                    '<h3 class="roles-empty-title">Creá tu primer rol personalizado</h3>' +
+                    '<p class="roles-empty-text">El rol CEO está activo (vos). Ahora podés crear roles para asesores, lectores o cualquier perfil que necesites, con los permisos que vos elijas por checkbox.</p>' +
+                    '<div class="roles-empty-actions">' +
+                    '<button class="alt-btn alt-btn--primary" data-action="create-role">' +
+                    '<i data-lucide="plus"></i> Crear nuevo rol</button>' +
+                    '</div></div>';
+            } else {
+                // Caso A: primera vez, hay que sembrar
+                root.innerHTML = '<div class="roles-empty">' +
+                    '<div class="roles-empty-icon"><i data-lucide="shield-check"></i></div>' +
+                    '<h3 class="roles-empty-title">Inicializar el sistema de roles</h3>' +
+                    '<p class="roles-empty-text">Para arrancar, sembrá el rol del sistema (CEO). Después podés crear roles personalizados con los permisos que necesites.</p>' +
+                    '<div class="roles-empty-actions">' +
+                    '<button class="alt-btn alt-btn--primary" data-action="seed-system-roles">' +
+                    '<i data-lucide="zap"></i> Inicializar sistema</button>' +
+                    '</div></div>';
+            }
             refreshIcons(root);
             return;
         }

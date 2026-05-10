@@ -2613,3 +2613,148 @@ exports.seedSystemRoles = onCall(callableOptionsV2, async (request) => {
             { code: err.code || 'unknown', originalMessage: err.message || String(err) });
     }
 });
+
+// ============================================================
+// §61.R4 — MIGRATE LEGACY USERS (RBAC Migration)
+// ============================================================
+// Callable super_admin-only que migra todos los usuarios pre-RBAC
+// (con campo `rol` legacy pero sin `roleId/permissions[]`) al
+// sistema dinámico de R1+R2.
+//
+// Por cada doc usuarios/{uid} con `rol` pero sin `roleId`:
+//   - super_admin → roleId: system_super_admin, permissions: ['*']
+//   - editor → roleId: system_editor, permissions: [38 items]
+//   - viewer → roleId: system_viewer, permissions: [17 items]
+//
+// Setea: roleId, roleName, permissions[], permissionsUpdatedAt,
+//        roleMigratedAt (marker de migración).
+// Preserva: rol legacy (retrocompat).
+//
+// Idempotente: skip si ya tiene roleId + permissions (re-ejecutar
+// es seguro, solo migra los pendientes).
+//
+// Soporta dryRun:true para preview sin escribir nada (UI lo usa
+// para mostrar plan al super_admin antes de confirmar).
+// ============================================================
+
+exports.migrateLegacyUsers = onCall(callableOptionsV2, async (request) => {
+    await verifySuperAdmin(request.auth);
+
+    const dryRun = !!(request.data && request.data.dryRun);
+
+    // 1) Validar que system roles existan en Firestore
+    const sysRoleIds = ['system_super_admin', 'system_editor', 'system_viewer'];
+    const sysRolesData = {};
+
+    for (const id of sysRoleIds) {
+        const snap = await db.collection('roles').doc(id).get();
+        if (!snap.exists) {
+            throw new HttpsError('failed-precondition',
+                'Roles del sistema no sembrados en Firestore. Ejecutá primero "Sembrar roles del sistema" desde sec-roles (o seedSystemRoles callable). Falta: ' + id);
+        }
+        sysRolesData[id] = snap.data();
+    }
+
+    const LEGACY_MAP = {
+        'super_admin': 'system_super_admin',
+        'editor': 'system_editor',
+        'viewer': 'system_viewer'
+    };
+
+    // 2) Recorrer todos los usuarios y armar plan
+    const usersSnap = await db.collection('usuarios').get();
+    const result = {
+        success: true,
+        dryRun: dryRun,
+        version: '1.0.0',
+        total: usersSnap.size,
+        migrated: 0,
+        alreadyMigrated: 0,
+        skipped: 0,
+        skippedDetails: [],
+        plan: [],
+        timestamp: new Date().toISOString()
+    };
+
+    const nowIso = new Date().toISOString();
+    let batch = db.batch();
+    let batchOps = 0;
+    const batches = [];
+
+    usersSnap.forEach((doc) => {
+        const data = doc.data() || {};
+
+        // Ya migrado: tiene roleId Y permissions[]
+        if (data.roleId && Array.isArray(data.permissions)) {
+            result.alreadyMigrated++;
+            return;
+        }
+
+        // Sin rol legacy: skip silencioso (perfil incompleto)
+        if (!data.rol) {
+            result.skipped++;
+            result.skippedDetails.push({
+                uid: doc.id,
+                email: data.email || null,
+                reason: 'sin_rol_legacy'
+            });
+            return;
+        }
+
+        // Rol legacy desconocido (no es super_admin/editor/viewer)
+        const targetRoleId = LEGACY_MAP[data.rol];
+        if (!targetRoleId) {
+            result.skipped++;
+            result.skippedDetails.push({
+                uid: doc.id,
+                email: data.email || null,
+                reason: 'rol_desconocido',
+                rol: data.rol
+            });
+            return;
+        }
+
+        // Datos a aplicar
+        const targetRole = sysRolesData[targetRoleId];
+        const updates = {
+            roleId: targetRoleId,
+            roleName: targetRole.name,
+            permissions: Array.isArray(targetRole.permissions) ? targetRole.permissions.slice() : [],
+            permissionsUpdatedAt: nowIso,
+            roleMigratedAt: nowIso,
+            roleMigratedBy: request.auth.uid
+        };
+
+        result.migrated++;
+        result.plan.push({
+            uid: doc.id,
+            email: data.email || null,
+            nombre: data.nombre || null,
+            currentRol: data.rol,
+            targetRoleId: targetRoleId,
+            targetRoleName: targetRole.name,
+            permsCount: updates.permissions.length
+        });
+
+        // Si dryRun, no escribimos nada
+        if (!dryRun) {
+            batch.update(doc.ref, updates);
+            batchOps++;
+            if (batchOps === 500) {
+                batches.push(batch);
+                batch = db.batch();
+                batchOps = 0;
+            }
+        }
+    });
+
+    // 3) Commit batches (solo si no es dryRun)
+    if (!dryRun && batchOps > 0) batches.push(batch);
+    if (!dryRun && batches.length > 0) {
+        for (const b of batches) {
+            await b.commit();
+        }
+    }
+
+    return result;
+});

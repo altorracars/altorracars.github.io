@@ -14197,3 +14197,195 @@ html.theme-changing-stop * {
 /* ═══════════════════════════════════════════════════════════════════
    FIN §61.R3 — Sec-Users RBAC dynamic dropdown
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §61.R4 — Migration Modal (legacy users)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.migration-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.migration-stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+}
+.migration-stat-card--total { border-left-color: #94a3b8; }
+.migration-stat-card--ready { border-left-color: #b89658; background: rgba(184, 150, 88, 0.06); }
+.migration-stat-card--done  { border-left-color: #4ade80; background: rgba(74, 222, 128, 0.05); }
+.migration-stat-card--skip  { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
+
+.migration-stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 4px;
+}
+.migration-stat-label {
+    font-size: 0.74rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.migration-success-banner {
+    background: rgba(74, 222, 128, 0.08);
+    border: 1px solid rgba(74, 222, 128, 0.25);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: #86efac;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.migration-success-banner svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.migration-intro {
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.55;
+    margin-bottom: 16px;
+}
+.migration-intro code {
+    background: rgba(184, 150, 88, 0.12);
+    color: #d4ad6e;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-family: 'SF Mono', Consolas, monospace;
+}
+
+.migration-plan-table {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 360px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+}
+.migration-plan-table::-webkit-scrollbar {
+    width: 6px;
+}
+.migration-plan-table::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.18);
+    border-radius: 3px;
+}
+.migration-plan-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+.migration-plan-table thead {
+    position: sticky;
+    top: 0;
+    background: rgba(20, 22, 26, 0.96);
+    backdrop-filter: blur(8px);
+    z-index: 1;
+}
+.migration-plan-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.72rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.migration-plan-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.85);
+}
+.migration-plan-table tr:last-child td {
+    border-bottom: none;
+}
+.migration-plan-table tr:hover td {
+    background: rgba(184, 150, 88, 0.05);
+}
+.migration-plan-table code {
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.migration-skipped-section {
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px solid rgba(245, 158, 11, 0.22);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
+}
+.migration-skipped-section summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #fcd34d;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    user-select: none;
+}
+.migration-skipped-section summary::-webkit-details-marker { display: none; }
+.migration-skipped-section summary svg {
+    width: 14px;
+    height: 14px;
+}
+.migration-skipped-section[open] summary {
+    margin-bottom: 8px;
+}
+.migration-skipped-list {
+    margin: 0;
+    padding-left: 20px;
+    list-style: disc;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.82rem;
+}
+.migration-skipped-list li {
+    margin: 4px 0;
+}
+.migration-skipped-list code {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: 0.78rem;
+}
+
+@media (max-width: 768px) {
+    .migration-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .migration-stat-value {
+        font-size: 1.5rem;
+    }
+    .migration-plan-table {
+        font-size: 0.76rem;
+    }
+    .migration-plan-table th,
+    .migration-plan-table td {
+        padding: 7px 8px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §61.R4 — Migration Modal
+   ═══════════════════════════════════════════════════════════════════ */

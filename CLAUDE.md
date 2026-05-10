@@ -28969,5 +28969,113 @@ navegador con **Ctrl+Shift+R**.
 
 ---
 
+## 66.2 ADR-066.2 — Hotfix R2: eliminar orderBy compuesto del listener (2026-05-10)
+
+> Cliente reportó tras ejecutar migración R4 con éxito que en
+> consola persistía un error rojo:
+>
+> ```
+> [AdminRoles] §61.R2 listener error: FirebaseError:
+>   The query requires an index. You can create it here:
+>   https://console.firebase.google.com/v1/r/project/altorra-cars/...
+> ```
+>
+> El error es cosmético (la UI funciona porque mi código tenía un
+> fallback `startListenerSimple`), pero el ruido en consola
+> confunde al cliente y oculta otros warnings legítimos. Lo
+> resuelvo de fondo.
+
+### 66.2.1 Causa raíz
+
+`js/admin-roles.js startListener()` (R2) usaba:
+
+```js
+window.db.collection('roles')
+    .orderBy('isSystem', 'desc')
+    .orderBy('name', 'asc')
+    .limit(MAX_ROLES)
+    .onSnapshot(...)
+```
+
+Firestore requiere un **índice compuesto** cuando combinas dos
+`orderBy` en la misma query. Sin ese índice, el primer snapshot
+falla con `failed-precondition` y el SDK loguea el error rojo
+ANTES de que mi catch handler lo intercepte.
+
+Mi código tenía un fallback `startListenerSimple` que se activaba
+en el catch y ordenaba client-side, así que la UI funcionaba. Pero
+el error rojo en consola se mantenía permanente (cada page load).
+
+### 66.2.2 Opciones de fix evaluadas
+
+| Opción | Costo | Trade-offs |
+|---|---|---|
+| A: Crear índice compuesto en `firestore.indexes.json` | 1 deploy adicional del cliente | Índice forever, +1 archivo de schema versionado, error desaparece |
+| B: Eliminar el orderBy compuesto, ordenar client-side | Cero deploys | Roles es chica (<20 docs), ordenar es trivial. Más limpio |
+
+Opción B elegida porque:
+- La colección `roles/` raramente excede 20 docs (3 system + algunos custom)
+- Ordenamiento client-side es O(n log n) trivial
+- Cero deploys del cliente (R4 ya pidió uno, no acumular)
+- Elimina el dead code `startListenerSimple` que era fallback
+
+### 66.2.3 Fix aplicado
+
+`js/admin-roles.js`:
+- Reemplazado `startListener()` con versión simple (sin orderBy compuesto, solo `.limit(MAX_ROLES)`)
+- Ordenamiento movido al callback del snapshot:
+  ```js
+  _state.roles.sort(function (a, b) {
+      if (a.isSystem !== b.isSystem) return a.isSystem ? -1 : 1;
+      return (a.name || '').localeCompare(b.name || '');
+  });
+  ```
+- Eliminado `startListenerSimple` (~30 líneas) porque ya no se usa
+- Catch handler simplificado (eliminado branch `failed-precondition`)
+
+### 66.2.4 Tests E2E post-fix
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (Ctrl+Shift+R) | Cache nueva carga |
+| 2 | Navegar a Configuración → Roles | Lista de 3 roles aparece (Super Admin, Editor, Lector) ordenada |
+| 3 | DevTools console post-load | NO aparece error rojo "The query requires an index" |
+| 4 | Solo aparece log info | `[AdminRoles] §61.R2 snapshot — roles: 3` |
+| 5 | Crear nuevo rol custom | Aparece en lista en posición correcta (alfabética bajo system roles) |
+
+### 66.2.5 Lección aprendida
+
+Cuando una colección es **chica** (<100 docs) y **acotada** (sabés
+que nunca crece masivamente), ordenar client-side es preferible a
+crear índices compuestos en Firestore:
+- Cero deploys adicionales
+- Cero overhead de mantenimiento del schema
+- Cero costo de storage del índice
+- Cero error rojos en consola
+
+Si la colección crece >1000 docs y necesitás paginación con
+`orderBy + limit + startAfter`, AHÍ SÍ vale la pena el índice
+compuesto. Para `roles/`, no es el caso.
+
+### 66.2.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-roles.js` | Listener consolidado (simple + sort client-side). Eliminadas ~30 líneas de `startListenerSimple` dead code |
+| `service-worker.js` | CACHE_VERSION → `v20260513060000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513060000'` |
+| `CLAUDE.md` | Esta sección §66.2 |
+
+**Total**: ~30 líneas eliminadas, 5 modificadas.
+
+### 66.2.7 Sin deploys nuevos
+
+NINGÚN deploy nuevo requerido. Solo Ctrl+Shift+R para invalidar
+cache previa.
+
+**Cache bump**: `v20260513060000`.
+
+---
+
 ---
 

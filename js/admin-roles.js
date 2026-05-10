@@ -84,6 +84,10 @@
     // Listener Firestore real-time
     // ════════════════════════════════════════════════════════════════
 
+    // §61.R2 + §66.2 hotfix — Listener simple sin orderBy compuesto.
+    // La colección `roles/` es chica (<20 docs en práctica), así que
+    // ordenar client-side es trivial y NO requiere índice compuesto
+    // de Firestore (que sería un deploy adicional + ruido en consola).
     function startListener() {
         if (_state.unsub) return; // ya activo
         if (!window.db) {
@@ -94,8 +98,6 @@
 
         try {
             _state.unsub = window.db.collection('roles')
-                .orderBy('isSystem', 'desc')   // system roles primero
-                .orderBy('name', 'asc')
                 .limit(MAX_ROLES)
                 .onSnapshot(function (snap) {
                     _state.lastListenerError = null;
@@ -104,6 +106,11 @@
                         var data = doc.data() || {};
                         data._docId = doc.id;
                         _state.roles.push(data);
+                    });
+                    // Ordenamos client-side: system roles primero, luego alfabético
+                    _state.roles.sort(function (a, b) {
+                        if (a.isSystem !== b.isSystem) return a.isSystem ? -1 : 1;
+                        return (a.name || '').localeCompare(b.name || '');
                     });
                     console.log('[AdminRoles] §61.R2 snapshot — roles:', _state.roles.length);
                     render();
@@ -114,45 +121,12 @@
                     console.error('[AdminRoles] §61.R2 listener error:', err);
                     if (err.code === 'permission-denied') {
                         renderEmpty('No tenés permisos para ver los roles. Solo super_admin puede acceder a esta sección.');
-                    } else if (err.code === 'failed-precondition') {
-                        // Index missing — aceptable para colección pequeña sin orderBy compuesto
-                        // Reintentamos con ordenamiento simple
-                        if (_state.unsub) { try { _state.unsub(); } catch (e) {} _state.unsub = null; }
-                        startListenerSimple();
                     } else {
                         renderEmpty('Error al cargar roles: ' + (err.message || err.code || 'desconocido'));
                     }
                 });
         } catch (e) {
             console.error('[AdminRoles] §61.R2 startListener throw:', e);
-        }
-    }
-
-    function startListenerSimple() {
-        // Fallback sin orderBy compuesto (evita necesitar índice)
-        if (_state.unsub) return;
-        if (!window.db) return;
-        try {
-            _state.unsub = window.db.collection('roles')
-                .limit(MAX_ROLES)
-                .onSnapshot(function (snap) {
-                    _state.lastListenerError = null;
-                    _state.roles = [];
-                    snap.forEach(function (doc) {
-                        var data = doc.data() || {};
-                        data._docId = doc.id;
-                        _state.roles.push(data);
-                    });
-                    // Ordenamos client-side
-                    _state.roles.sort(function (a, b) {
-                        if (a.isSystem !== b.isSystem) return a.isSystem ? -1 : 1;
-                        return (a.name || '').localeCompare(b.name || '');
-                    });
-                    console.log('[AdminRoles] §61.R2 snapshot (simple) — roles:', _state.roles.length);
-                    render();
-                });
-        } catch (e) {
-            console.error('[AdminRoles] §61.R2 startListenerSimple throw:', e);
         }
     }
 

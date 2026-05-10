@@ -70,12 +70,17 @@
     }
 
     // §61.R3 — Popular dropdown #uRoleId con roles disponibles
+    // §73 R8 — texto corto en option vacía + disable botón Guardar cuando
+    // no hay roles disponibles. Esto evita el error del browser
+    // "Selecciona un elemento de la lista" al intentar guardar con select
+    // requerido vacío.
     function populateRolesDropdown(selectedRoleId) {
         var sel = $('uRoleId');
         if (!sel) return;
         if (_rolesCache.length === 0) {
-            // Catálogo no sembrado todavía. Mostrar fallback.
-            sel.innerHTML = '<option value="">Sin roles configurados — sembrá desde Configuración → Roles</option>';
+            // Catálogo no sembrado todavía. Mostrar fallback corto.
+            sel.innerHTML = '<option value="">— Sin roles configurados —</option>';
+            updateSaveButtonState();
             return;
         }
         var html = '';
@@ -121,9 +126,10 @@
             html += '</optgroup>';
         }
 
-        // Mensaje si no hay roles personalizados creados aún
+        // §73 R8 — Mensaje corto si no hay roles personalizados creados aún.
+        // El botón Guardar quedará disabled con hint claro (ver updateSaveButtonState).
         if (!customs.length && !includeCEOForEdit) {
-            html = '<option value="">Sin roles disponibles — primero creá un rol personalizado desde Configuración → Roles</option>';
+            html = '<option value="">— Sin roles disponibles —</option>';
         }
 
         sel.innerHTML = html;
@@ -137,6 +143,45 @@
         }
         // Sync hidden uRol legacy
         syncLegacyRolFromDropdown();
+        // §73 R8 — Update Guardar button state según disponibilidad de roles
+        updateSaveButtonState();
+    }
+
+    // §73 R8 — Disable botón Guardar cuando no hay roles disponibles + hint visible.
+    // Esto evita el error del browser "Selecciona un elemento de la lista" al
+    // intentar guardar un user sin role válido (que dejaría al user huérfano
+    // bloqueado del login por el guard de §69).
+    function updateSaveButtonState() {
+        var sel = $('uRoleId');
+        var saveBtn = $('saveUser');
+        if (!sel || !saveBtn) return;
+        var hasValidOption = false;
+        for (var i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value && sel.options[i].value.trim() !== '') {
+                hasValidOption = true;
+                break;
+            }
+        }
+        // Buscar/crear hint container
+        var hintEl = document.getElementById('saveUserHint');
+        if (!hintEl) {
+            hintEl = document.createElement('small');
+            hintEl.id = 'saveUserHint';
+            hintEl.style.cssText = 'display:block;margin-top:8px;color:rgba(248,81,73,0.85);font-size:0.78rem;line-height:1.4;';
+            if (saveBtn.parentNode) {
+                saveBtn.parentNode.insertBefore(hintEl, saveBtn.nextSibling);
+            }
+        }
+        if (!hasValidOption) {
+            saveBtn.disabled = true;
+            saveBtn.title = 'Primero creá un rol personalizado en Configuración → Roles';
+            hintEl.textContent = 'Primero creá un rol en Configuración → Roles';
+            hintEl.style.display = 'block';
+        } else {
+            saveBtn.disabled = false;
+            saveBtn.title = '';
+            hintEl.style.display = 'none';
+        }
     }
 
     function syncLegacyRolFromDropdown() {
@@ -244,11 +289,16 @@
     function _renderUsersTableWithBlocks(blockMap) {
         var sorted = AP.users.slice();
 
-        // §61.R3 — Aplicar filtro por roleId si está activo
+        // §61.R3 + §73 R8 — Aplicar filtro por roleId si está activo.
+        // "__legacy__" ahora incluye TODOS los huérfanos: sin roleId,
+        // o con roleId apuntando a system_editor/system_viewer (legacy
+        // que ya no existe en el catálogo).
         if (_rolesFilter) {
             sorted = sorted.filter(function(u) {
                 if (_rolesFilter === '__legacy__') {
-                    return !u.roleId;
+                    return !u.roleId ||
+                           u.roleId === 'system_editor' ||
+                           u.roleId === 'system_viewer';
                 }
                 return u.roleId === _rolesFilter;
             });
@@ -273,24 +323,40 @@
                            (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
 
             // §61.R3 — Mostrar roleName real si existe, fallback a label legacy
+            // §73 R8 — Detectar usuarios huérfanos (sin role válido) y mostrar
+            // "Sin asignar" en gris neutral. Esto cubre 3 casos:
+            //   1. roleId apunta a system_editor o system_viewer (legacy del §69
+            //      que ya NO existen en el catálogo dinámico ni deberían existir
+            //      en Firestore tras R8 cleanup)
+            //   2. roleId === null (orphan tras eliminar role custom)
+            //   3. Sin roleId pero con rol legacy 'editor'/'viewer' (sin migrar)
+            var isOrphanRow = u.roleId === 'system_editor' ||
+                              u.roleId === 'system_viewer' ||
+                              (!u.roleId && (u.rol === 'editor' || u.rol === 'viewer'));
+
             var rolLabel, rolClass, roleColor;
             if (isCEORow) {
                 // §72 — CEO siempre se muestra como "CEO" (no depende del backend)
                 rolLabel = 'CEO';
                 roleColor = '#b89658';
                 rolClass = 'badge-destacado';
+            } else if (isOrphanRow) {
+                // §73 R8 — User legacy o huérfano se muestra como "Sin asignar"
+                // en gris neutral. El CEO debe asignarle un custom role real.
+                rolLabel = 'Sin asignar';
+                roleColor = '#9ca3af';
+                rolClass = 'badge-warning';
             } else if (u.roleId && u.roleName) {
-                // User migrado a sistema dinámico (custom role o legacy editor/viewer)
+                // User con custom role válido
                 rolLabel = u.roleName;
-                // Buscar el role en cache para obtener su color
                 var roleDoc = _rolesCache.find(function(r) { return r._docId === u.roleId; });
                 roleColor = roleDoc && roleDoc.color ? roleDoc.color : '#b89658';
-                rolClass = u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
+                rolClass = 'badge-nuevo';
             } else {
-                // Legacy fallback total (sin roleId, solo rol)
-                rolLabel = u.rol === 'editor' ? 'Editor' : 'Viewer';
-                rolClass = u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
-                roleColor = null;
+                // Sin rol asignado en absoluto
+                rolLabel = 'Sin asignar';
+                roleColor = '#9ca3af';
+                rolClass = 'badge-warning';
             }
             // Check both usuarios.bloqueado AND loginAttempts
             var isBlocked = !!u.bloqueado || !!(u.email && blockMap[u.email.toLowerCase()]);
@@ -329,12 +395,14 @@
 
             // §61.R3 — Badge con color custom del role si aplica
             var rolBadgeStyle = roleColor ? ' style="background:' + roleColor + '20;color:' + roleColor + ';border:1px solid ' + roleColor + '40;"' : '';
-            var migratedTag = u.roleId ? '' : ' <small title="Sin rol asignado en el sistema dinámico (legacy)" style="color:rgba(255,255,255,0.4);font-size:0.7rem;margin-left:4px;">·legacy</small>';
+            // §73 R8 — Eliminado el tag "·legacy" que confundía. Ahora la
+            // columna ROL muestra "Sin asignar" para usuarios huérfanos
+            // (sin tag adicional). El CEO debe asignar un role custom real.
 
             html += '<tr' + (isBlocked ? ' style="opacity:0.7;background:rgba(248,81,73,0.05);"' : '') + '>' +
                 '<td><strong>' + (u.nombre || '-') + '</strong>' + (isSelf ? ' <small style="color:var(--admin-gold);">(tu)</small>' : '') + twoFaBadge + '</td>' +
                 '<td>' + (u.email || '-') + '</td>' +
-                '<td><span class="badge ' + rolClass + '"' + rolBadgeStyle + '>' + AP.escapeHtml(rolLabel) + '</span>' + migratedTag + '</td>' +
+                '<td><span class="badge ' + rolClass + '"' + rolBadgeStyle + '>' + AP.escapeHtml(rolLabel) + '</span></td>' +
                 '<td><span class="badge ' + estadoClass + '">' + estadoLabel + '</span></td>' +
                 '<td>' + actionsHtml + '</td>' +
             '</tr>';

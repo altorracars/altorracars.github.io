@@ -1297,6 +1297,8 @@
                         } else {
                             AP.currentUserProfile = null;
                             AP.currentUserRole = null;
+                            AP.currentUserPermissions = []; // §61.R1
+                            AP.currentUserRoleId = null;    // §61.R1
                             _2faVerified = false;
                             clearSessionStart();
                             stopInactivityTracking();
@@ -1461,6 +1463,26 @@
                 AP.currentUserProfile = result.data;
                 AP.currentUserProfile._docId = authUser.uid;
                 AP.currentUserRole = AP.currentUserProfile.rol;
+
+                // §61.R1 — Hidratación de permissions atómicas
+                // Source of truth: AP.currentUserProfile.permissions[] denormalizado
+                // Fallback (legacy users pre-migración): mapear desde currentUserRole via catálogo
+                var profilePerms = AP.currentUserProfile.permissions;
+                if (Array.isArray(profilePerms) && profilePerms.length > 0) {
+                    AP.currentUserPermissions = profilePerms.slice();
+                    AP.currentUserRoleId = AP.currentUserProfile.roleId || null;
+                } else if (window.AltorraRBACCatalog && AP.currentUserRole) {
+                    AP.currentUserPermissions = window.AltorraRBACCatalog.mapLegacyRoleToPermissions(AP.currentUserRole);
+                    AP.currentUserRoleId = window.AltorraRBACCatalog.legacyMapping[AP.currentUserRole] || null;
+                    if (window.console && window.console.info) {
+                        console.info('[RBAC] §61.R1 legacy fallback for role:', AP.currentUserRole, '→', AP.currentUserPermissions.length, 'permissions');
+                    }
+                } else {
+                    // Ultimo fallback: array vacío. Los helpers legacy seguirán funcionando vía currentUserRole.
+                    AP.currentUserPermissions = [];
+                    AP.currentUserRoleId = null;
+                }
+
                 // T.4 (mega-plan v4) — sync theme preference from Firestore
                 if (window.AltorraTheme && window.AltorraTheme.syncFromUser) {
                     window.AltorraTheme.syncFromUser(AP.currentUserProfile);
@@ -1569,6 +1591,8 @@
         _explicitLogin = false;
         AP.currentUserProfile = null;
         AP.currentUserRole = null;
+        AP.currentUserPermissions = []; // §61.R1
+        AP.currentUserRoleId = null;    // §61.R1
         stopInactivityTracking();
         stopPresence();
         clearSessionStart();

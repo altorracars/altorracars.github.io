@@ -510,6 +510,29 @@ service cloud.firestore {
       allow write: if isEditorOrAbove() || !exists(/databases/$(database)/documents/system/$(docId));
     }
 
+    // ========== §61.R1 RBAC — PERMISSIONS CATALOG (read-only) ==========
+    // Catálogo canónico de permissions atómicas. Sembrado por Cloud
+    // Function seedSystemRoles. Lectura para cualquier auth admin
+    // (frontend lee para popular UI de selector de permisos).
+    // Escritura SOLO por Cloud Function (Admin SDK bypassa rules).
+    match /permissions/{permId} {
+      allow read: if isEditorOrAbove();
+      allow write: if false; // Server-only via Cloud Function
+    }
+
+    // ========== §61.R1 RBAC — ROLES (system + custom) ==========
+    // 3 system roles inmutables (system_super_admin, system_editor,
+    // system_viewer) + custom roles creados por super_admin (R2 ship).
+    // Lectura para cualquier auth admin (UI dropdown de asignación).
+    // Escritura solo super_admin. System roles tienen flag isSystem
+    // que el frontend respeta como guard adicional (R2).
+    match /roles/{roleId} {
+      allow read: if isEditorOrAbove();
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;

@@ -3642,6 +3642,10 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <!-- §36.1 — Mi Perfil (avatar upload + cargo + cédula one-time-edit) -->
 <script src="js/admin-profile.js" defer></script>
 <script src="js/admin-activity-feed.js" defer></script>
+<!-- §61.R1 RBAC Foundation — catálogo canónico ANTES de admin-state.js
+     para que window.AltorraRBACCatalog esté disponible en hidratación de
+     permissions (admin-auth.js loadProfileViaREST). -->
+<script src="js/rbac-catalog.js" defer></script>
 <script src="js/admin-state.js" defer></script>
 <script src="js/admin-table-utils.js" defer></script>
 <!-- §48 — Recovery system (backup codes + security questions) carga ANTES

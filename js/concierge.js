@@ -104,6 +104,56 @@
                 if (typeof s.profile === 'undefined') s.profile = null;
                 if (typeof s.closed === 'undefined') s.closed = false;
 
+                /* §80 STALENESS GUARD — abandono de queue/live por >4h
+                   ──────────────────────────────────────────────────
+                   Si el cliente quedó en mode='queue' o 'live' por más
+                   de 4 horas sin actividad, consideramos abandono y
+                   reseteamos a bot con welcome fresh.
+
+                   Sin este guard, el cliente que abandonó hace 1266 min
+                   ve al reabrir:
+                   - Banner "Estás en cola" inmediato
+                   - Mensajes system "te conectamos con asesor" stale
+                   - SLA timer "Esperando hace 1266 min" (falso)
+                   Sin espacio para que el bot dé welcome.
+
+                   Preserva profile/uid/email/nombre/telefono (lead
+                   capture data sigue válido para la nueva sesión).
+                   Reset: mode/messages/queueEnteredAt/SLA/activeAsesor
+                   + nuevo sessionId (chat doc nuevo en Firestore). */
+                var STALE_HOURS = 4;
+                var STALE_MS = STALE_HOURS * 60 * 60 * 1000;
+                var nowMs = Date.now();
+                var inActiveMode = (s.mode === 'queue' || s.mode === 'live');
+                if (inActiveMode) {
+                    var lastTs = 0;
+                    if (s.queueEnteredAt) {
+                        var qts = new Date(s.queueEnteredAt).getTime();
+                        if (!isNaN(qts)) lastTs = Math.max(lastTs, qts);
+                    }
+                    if (s.messages && s.messages.length > 0) {
+                        var lastMsg = s.messages[s.messages.length - 1];
+                        if (lastMsg && lastMsg.timestamp) {
+                            var mts = new Date(lastMsg.timestamp).getTime();
+                            if (!isNaN(mts)) lastTs = Math.max(lastTs, mts);
+                        }
+                    }
+                    if (lastTs > 0 && (nowMs - lastTs) > STALE_MS) {
+                        var elapsedH = Math.round((nowMs - lastTs) / (60 * 60 * 1000));
+                        console.log('[Concierge] §80 stale ' + s.mode + ' session detected (' + elapsedH + 'h ago). Reset to bot with welcome fresh.');
+                        s.mode = 'bot';
+                        s.queueEnteredAt = null;
+                        s.slaWarnedAt5min = false;
+                        s.slaWarnedAt10min = false;
+                        s.activeAsesor = null;
+                        s.messages = [];
+                        s.context = { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 };
+                        // Nuevo sessionId → chat doc fresh en Firestore
+                        s.sessionId = 'cnc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+                        s.createdAt = Date.now();
+                    }
+                }
+
                 // FASE 1.C — Purga de fuga de contexto (vehicle bleed):
                 // Si la página actual NO es página de vehículo, eliminar
                 // sourceVehicleId residual de visitas previas. Esto evita

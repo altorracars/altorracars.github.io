@@ -1600,13 +1600,18 @@ const SATURATION_THRESHOLD = 3;  // chats simultáneos máx por asesor "availabl
 
 async function _computeWorkload() {
     // 1. Lee asesores online de RTDB presence
+    // §77 Sprint S5 — Distinguir 'online' vs 'away':
+    //   - asesoresOnline: uid con AL MENOS UNA session status='online' (o sin status, retrocompat)
+    //   - asesoresAway: uid SIN session online PERO con session status='away'
+    //   - Ambos sets son disjuntos (away se descarta si hay alguna online del mismo uid)
     let asesoresOnline = [];
+    let asesoresAway = [];
     try {
         const rtdb = admin.database();
         const snap = await rtdb.ref('/presence').orderByChild('online').equalTo(true).once('value');
         const data = snap.val() || {};
-        // Dedup por uid (un mismo asesor puede tener múltiples sessions)
-        const uidsSet = new Set();
+        // Bucket por uid con bandera de "tiene online activo"
+        const uidStatusMap = {}; // {uid: 'online'|'away'} — last write wins por sesión
         Object.keys(data).forEach((sessionId) => {
             const entry = data[sessionId];
             if (entry && entry.uid) {
@@ -1614,11 +1619,22 @@ async function _computeWorkload() {
                 const lastSeen = entry.lastSeen || 0;
                 const fiveMinAgo = Date.now() - 5 * 60 * 1000;
                 if (lastSeen > fiveMinAgo) {
-                    uidsSet.add(entry.uid);
+                    // §77 — status field NUEVO. Sin status → asume 'online' (retrocompat)
+                    const sessionStatus = entry.status === 'away' ? 'away' : 'online';
+                    if (sessionStatus === 'online') {
+                        // online gana siempre (uno online basta)
+                        uidStatusMap[entry.uid] = 'online';
+                    } else if (!uidStatusMap[entry.uid]) {
+                        // away solo si no tenemos ya una online registrada
+                        uidStatusMap[entry.uid] = 'away';
+                    }
                 }
             }
         });
-        asesoresOnline = Array.from(uidsSet);
+        Object.keys(uidStatusMap).forEach((uid) => {
+            if (uidStatusMap[uid] === 'online') asesoresOnline.push(uid);
+            else if (uidStatusMap[uid] === 'away') asesoresAway.push(uid);
+        });
     } catch (err) {
         console.warn('[recalculateWorkload] RTDB read failed:', err.message);
     }
@@ -1667,7 +1683,7 @@ async function _computeWorkload() {
         console.warn('[recalculateWorkload] Firestore read failed:', err.message);
     }
 
-    // 3. Categorize asesores online
+    // 3. Categorize asesores online (away NO cuenta como available)
     let asesoresAvailable = 0;
     let asesoresSaturated = 0;
     asesoresOnline.forEach((uid) => {
@@ -1684,6 +1700,10 @@ async function _computeWorkload() {
         asesoresOnline: asesoresOnline.length,
         asesoresAvailable: asesoresAvailable,
         asesoresSaturated: asesoresSaturated,
+        // §77 Sprint S5 — count de asesores away (logueados pero idle/tab oculto).
+        // Cuentan como "no available" para queue, pero el cliente puede ver que
+        // hay asesores cerca (vs offline total).
+        asesoresAway: asesoresAway.length,
         queueLength: queueLength,
         avgWaitMinutes: Math.round(avgWaitMinutes * 10) / 10,
         longestWaitMinutes: Math.round(longestWaitMinutes * 10) / 10,

@@ -308,6 +308,11 @@
                 // §76 Sprint S4 — parar el ticker de read receipts (si
                 // admin sale de sec-concierge, no hay chat visible).
                 try { stopAdminReadReceiptInterval(); } catch (e) {}
+                // §77 Sprint S5 — limpiar currentChatId del presence
+                // (admin ya no está viendo ningún chat).
+                if (typeof AP.setPresenceCurrentChat === 'function') {
+                    try { AP.setPresenceCurrentChat(null); } catch (e) {}
+                }
             });
         }
 
@@ -333,6 +338,10 @@
                         try { stopAdminTypingListener(); } catch (e) {}
                         // §76 Sprint S4 — read receipt interval también
                         try { stopAdminReadReceiptInterval(); } catch (e) {}
+                        // §77 Sprint S5 — limpiar currentChatId del presence
+                        if (typeof AP.setPresenceCurrentChat === 'function') {
+                            try { AP.setPresenceCurrentChat(null); } catch (e) {}
+                        }
                         _activeSessionId = null;
                         if (_messagesUnsub) {
                             try { _messagesUnsub(); } catch (e) {}
@@ -765,6 +774,13 @@
             markAdminRead(sessionId);
             startAdminReadReceiptInterval();
         } catch (e) {}
+
+        // §77 Sprint S5 — registrar el chat actualmente abierto en presence
+        // para que otros admins lo vean en la Dynamic Island ("X atendiendo
+        // este chat"). Idempotente. Cleanup en chat removed + section cleanup.
+        if (typeof AP.setPresenceCurrentChat === 'function') {
+            try { AP.setPresenceCurrentChat(sessionId); } catch (e) {}
+        }
 
         // Suscribirse a los mensajes
         _messagesUnsub = window.db.collection('conciergeChats').doc(sessionId)

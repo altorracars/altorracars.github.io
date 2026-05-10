@@ -33169,3 +33169,360 @@ S5 NO requiere deploy de Firestore rules. Sí requiere extender `database.rules.
 **Cache bump**: `v20260514020000`.
 
 ---
+
+## 77. ADR-077 — Sprint §59 S5: Presence avanzada (online/away/offline) (2026-05-10)
+
+> Quinto sprint del Mega-Plan §59 ALTOR Hub. El cliente público ve en
+> el header del Concierge si hay asesores disponibles ANTES de escalar
+> (🟢 disponible / 🟢 online / 🟡 away / ⚫ offline). Admin Hub registra
+> qué chat tiene abierto cada asesor en presence (currentChatId) para
+> futuras features (handoff entre asesores, "X está atendiendo este
+> chat"). Idle detection client-side: visibility hidden → away inmediato,
+> 5min sin actividad con tab visible → away.
+>
+> Extiende el sistema de presencia existente (§6.5) sin romperlo.
+> Schema RTDB `/presence/{pushKey}` ahora incluye `status` (online/
+> away/offline) + `currentChatId`. Mantenemos `online: true` legacy
+> por retrocompat con readers viejos (Dynamic Island §F.3, aggregator
+> workload §23.3).
+>
+> Cliente NO lee `/presence` directamente. Usa Firestore `system/workload`
+> singleton (privacy-safe, solo contadores agregados). Aggregator
+> ahora distingue `asesoresOnline` vs `asesoresAway`.
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §35 (anti-pointermove), §37 (IAP),
+> §57.7 (listener admin globalmente activo), §59 Mega-Plan ALTOR Hub.
+
+### 77.1 Hallazgo durante el IAP
+
+Audit pre-implementación detectó que el sistema de presencia ya
+existe desde §6.5 con schema `/presence/{sessionId}` (un nodo por
+device/tab, no por uid). Plan §74.2 sugería `/presence/{uid}/{sessionId}`
+(2 niveles) que habría requerido migración + romper readers existentes
+(Dynamic Island §F.3, aggregator §23.3, Sesiones Activas §6.5).
+
+**Decisión arquitectónica**: extender el schema existente con campos
+nuevos, NO migrar a estructura nueva. Cero rotura de readers existentes.
+
+### 77.2 Schema RTDB extendido
+
+**Antes** (§6.5):
+```
+/presence/{pushKey}
+    uid, deviceId, email, nombre, rol, cargo, browser, os,
+    city, region, country, ip, lastSeen, online: true
+```
+
+**Después** (§77, agregados):
+```
+/presence/{pushKey}
+    ... (legacy fields preservados)
+    status: 'online' | 'away' | 'offline'   ← NUEVO
+    currentChatId: string | null             ← NUEVO
+    online: true                             ← legacy (retrocompat)
+```
+
+**Rules sin modificar**: la rule existente permite cualquier campo
+mientras `data.uid === auth.uid`. Cero modificación de
+`database.rules.json`. Cero deploy de RTDB rules.
+
+### 77.3 Solución estructural — admin (`js/admin-auth.js`)
+
+**Variables y constantes (después de PRESENCE_HEARTBEAT_MS)**:
+
+- `IDLE_THRESHOLD_MS = 5 * 60 * 1000` — 5 min sin actividad → away
+- `IDLE_CHECK_INTERVAL_MS = 60 * 1000` — chequeo cada 1 min
+- `_presenceStatus = 'online'` — status actual del admin
+- `_presenceLastActivity = Date.now()` — timestamp última actividad
+- `_presenceCurrentChatId = null` — chat activo en sec-concierge
+- `_presenceIdleCheckInterval` — interval ID
+- `_presenceListenersBound` — flag idempotente
+- 4 handlers cacheados: `_presenceActivityHandler`, `_presenceVisibilityHandler`, `_presenceFocusHandler`, `_presenceBlurHandler`
+
+**Funciones**:
+
+- `setPresenceStatus(newStatus)`: throttle interno (idempotente —
+  solo escribe si cambia). Update con `uid` + `status` + `lastSeen`
+  para satisfacer rules `.validate`.
+- `markPresenceActivity()`: updates `_presenceLastActivity`. Si
+  status era 'away' → vuelve a 'online'.
+- `checkPresenceIdle()`: si tab visible Y elapsed > 5min → 'away'.
+  Skip si tab oculto (ya está 'away' por visibilitychange).
+- `bindPresenceActivityListeners()`: idempotente con flag. Bindea
+  4 listeners (visibilitychange, focus, blur, click+keydown con
+  capture=true). Inicia setInterval 60s.
+- `unbindPresenceActivityListeners()`: removeEventListener + clearInterval.
+- `setPresenceCurrentChat(sessionId)`: expuesto en `AP.setPresenceCurrentChat`
+  para que admin-concierge.js lo invoque.
+
+**Hooks en flow existente**:
+
+- **`startPresence(user)`**: tras agregar `beforeunload` listener,
+  invoca `bindPresenceActivityListeners()`.
+- **`sessionData` en `connectedRef.on('value', ...)`**: agregados
+  campos `status` y `currentChatId`. `online: true` preservado.
+- **`stopPresence()`**: `unbindPresenceActivityListeners()` + reset
+  state (`_presenceStatus = 'online'`, etc.).
+
+### 77.4 Solución estructural — admin Hub (`js/admin-concierge.js`)
+
+3 hooks invocando `AP.setPresenceCurrentChat`:
+
+- **`openChat(sessionId)`**: tras `markAdminRead(sessionId)`, invoca
+  `setPresenceCurrentChat(sessionId)`. Si admin cambia chat A→B,
+  setPresenceCurrentChat detecta diff y escribe nuevo. Throttle interno.
+- **`AltorraSectionCleanup.register('concierge', ...)`**: tras `stopAdminReadReceiptInterval`,
+  invoca `setPresenceCurrentChat(null)` (admin salió de sec-concierge).
+- **`_chatsUnsub.docChanges() removed event`**: si era el chat activo,
+  `setPresenceCurrentChat(null)` antes de `_activeSessionId = null`.
+
+### 77.5 Solución estructural — cliente (`js/concierge.js`)
+
+**Helper nuevo `updateAvailabilityStatus()`**:
+
+Lee `_workloadCache` (ya cargado por `ensureWorkloadListener`).
+Cuatro estados visuales según contadores:
+
+| Condición | Visual | Mensaje |
+|---|---|---|
+| `asesoresAvailable >= 1` | 🟢 verde con glow | "Asesores disponibles · respondemos al instante" |
+| `asesoresOnline >= 1` (saturados) | 🟢 verde con glow | "Asesores online · respondemos pronto" |
+| `asesoresAway >= 1` | 🟡 ámbar | "Te respondemos en breve" |
+| `0` | ⚫ gris | "Fuera de horario · te contactamos pronto" |
+
+**Preserva** mensajes existentes: si `session.mode === 'live'` o
+`session.mode === 'wa_handed_over'` o `session.activeAsesor` existe,
+NO sobreescribe `cncStatus` (esos flujos tienen su propio mensaje).
+
+Render idempotente: solo update si `statusEl.innerHTML !== nuevo`.
+
+**Hooks en flow existente**:
+
+- **`ensureWorkloadListener` callback**: tras procesar queue state,
+  invoca `updateAvailabilityStatus()`. Cualquier cambio en workload
+  re-renderiza el header.
+- **`open()`**: invoca `ensureWorkloadListener()` + `updateAvailabilityStatus()`
+  antes del focus input. Cliente ve status del equipo desde la primera
+  apertura del panel (no solo cuando entra a queue).
+
+**Privacy**: cliente NO lee `/presence` RTDB directamente (eso expondría
+email/IP/deviceId). Solo lee Firestore `system/workload` que tiene
+contadores agregados.
+
+### 77.6 Solución estructural — Cloud Function (`functions/index.js`)
+
+**`_computeWorkload`** extendido:
+
+```js
+let asesoresOnline = [];
+let asesoresAway = [];
+const uidStatusMap = {}; // {uid: 'online'|'away'} — last write wins
+
+Object.keys(data).forEach((sessionId) => {
+    const entry = data[sessionId];
+    if (entry && entry.uid && lastSeen > fiveMinAgo) {
+        const sessionStatus = entry.status === 'away' ? 'away' : 'online';
+        if (sessionStatus === 'online') {
+            uidStatusMap[entry.uid] = 'online'; // online gana siempre
+        } else if (!uidStatusMap[entry.uid]) {
+            uidStatusMap[entry.uid] = 'away'; // away solo si no hay online
+        }
+    }
+});
+
+// Sets disjuntos
+Object.keys(uidStatusMap).forEach((uid) => {
+    if (uidStatusMap[uid] === 'online') asesoresOnline.push(uid);
+    else if (uidStatusMap[uid] === 'away') asesoresAway.push(uid);
+});
+```
+
+**Lógica `online` > `away`**: si un mismo uid tiene 1 session 'online'
++ 1 session 'away' (ej. desktop activo + mobile en background), el uid
+cuenta como `online` (basta una sesión activa para considerarlo
+disponible). Los `asesoresAway` son SOLO uids sin ninguna session
+'online' pero con al menos una 'away'.
+
+**Workload schema extendido**:
+
+```js
+{
+    asesoresOnline: int,
+    asesoresAvailable: int,    // online no saturados
+    asesoresSaturated: int,    // online con 3+ chats
+    asesoresAway: int,         // ← NUEVO
+    queueLength, avgWaitMinutes, longestWaitMinutes, ...
+}
+```
+
+**Retrocompat**: sessions sin `status` field (admins pre-§77) se tratan
+como 'online' por default.
+
+### 77.7 Solución estructural — CSS (`css/concierge.css`)
+
+`.cnc-status` flex con gap 6px + dot 8x8 circular + label.
+
+`.cnc-status-dot` variantes:
+- `--online`: bg `#22c55e` verde semáforo + box-shadow glow
+- `--away`: bg `#f59e0b` ámbar + box-shadow más sutil
+- `--offline`: bg `#6b7280` gris neutral, sin glow
+
+Transitions específicas: `background-color`, `box-shadow` (NO `all`).
+
+`@media (prefers-reduced-motion: reduce)`: `transition: none`.
+
+### 77.8 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (Ctrl+Shift+R) | Cache `v20260514030000` carga |
+| 2 | Admin login, abre admin.html | `/presence/{pushKey}.status === 'online'` en RTDB |
+| 3 | Admin cambia a otra tab del browser | `status === 'away'` en <1s (visibilitychange handler) |
+| 4 | Admin vuelve a la tab del admin | `status === 'online'` |
+| 5 | Admin deja la tab visible 5 min sin click ni keydown | `status === 'away'` (idle check) |
+| 6 | Admin clickea cualquier botón | `status === 'online'` |
+| 7 | Admin abre un chat en sec-concierge | `currentChatId === sessionId` |
+| 8 | Admin cambia a otro chat | `currentChatId === nuevoSessionId` |
+| 9 | Admin sale de sec-concierge | `currentChatId === null` |
+| 10 | Cliente público abre Concierge sin asesores online | Header muestra ⚫ "Fuera de horario · te contactamos pronto" |
+| 11 | 1 asesor admin abre admin.html | Cliente ve 🟢 "Asesores disponibles · respondemos al instante" en <2s |
+| 12 | Asesor cambia a otra tab por 1 min | Cliente sigue viendo 🟢 "Asesores disponibles" (sigue online) |
+| 13 | Asesor deja tab oculta 6 min | Cliente ve 🟡 "Te respondemos en breve" (status changed to away, aggregator schedule corre cada 1 min) |
+| 14 | Asesor vuelve a la tab | Cliente vuelve a 🟢 |
+| 15 | Asesor con 3 chats activos | Cliente ve 🟢 "Asesores online · respondemos pronto" (online pero saturated) |
+| 16 | DevTools console del cliente | Sin errores. Listener `system/workload` activo |
+| 17 | DevTools Network filter "presence" | Updates RTDB solo en eventos discretos (visibility/focus) + heartbeat 1min. Cero spam |
+| 18 | `prefers-reduced-motion: reduce` | Transitions del dot indicator desactivadas |
+
+### 77.9 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo `transition: background-color, box-shadow` específicas |
+| §17.4 | Renombrar IDs/clases | `cncStatus` ID preservado (cliente). Helpers nuevos puros. CSS aditivo |
+| §17.12 | `MutationObserver subtree:true` | Cero MO. Solo eventos discretos + setInterval 60s con guards |
+| §35 | `pointermove`/`mousemove` persistente | **Crítico**: solo `click` + `keydown` discretos (eventos individuales) + `visibilitychange` + `focus`/`blur`. Cero pointermove. setInterval 60s evalúa idle |
+| §37 IAP | Implementar sin autorización | Cliente autorizó "continua" (autorización amplia plan §59) |
+| §57.7 | Listener admin que muere | `_chatsUnsub` admin global intacto. Presence listeners son globales para todo el admin (no per-section) |
+| §17.7 | Crear archivo nuevo | Cero archivos nuevos. Refactor sobre archivos existentes (admin-auth, admin-concierge, concierge, functions, css) |
+| Privacy | Cliente lee `/presence` RTDB directo y ve email/IP de asesores | Cliente lee `system/workload` Firestore (solo contadores agregados, privacy-safe) |
+| Schema break | `/presence/{uid}/{sessionId}` rompe readers existentes | Schema actual `/presence/{pushKey}` preservado. Solo se agregan campos `status` y `currentChatId` |
+| Aggregator break | `online: true` removido rompe readers que filtran por ese campo | `online: true` legacy preservado en sessionData. Aggregator usa `online=true` AND opcionalmente filtra por `status` |
+
+### 77.10 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Cliente NO ejecuta deploy backend | 🔴 Alta | El campo `asesoresAway` ya tiene fallback a `0` en `updateAvailabilityStatus()`. Sin deploy, el cliente sigue funcionando con 3 estados (online/saturated/offline) en lugar de 4. Cero ruptura. | git revert |
+| 2 | Idle 5min muy agresivo | 🟢 Baja | Constante `IDLE_THRESHOLD_MS` exportable. Si feedback dice 5min es corto, ajustar a 10min | Patch puntual |
+| 3 | setInterval huérfano post-logout | 🟢 Baja | `unbindPresenceActivityListeners` cancela en `stopPresence` | git revert |
+| 4 | click+keydown listener con capture=true rompe handlers de la app | 🟢 Baja | `markPresenceActivity` no llama preventDefault ni stopPropagation. Solo lee `_presenceLastActivity`. Captura permite recibir antes de stopProp de otros handlers, pero no interrumpe el flow | N/A |
+| 5 | visibilitychange dispara durante print/screenshot del admin | 🟢 Baja | Status pasa a 'away' brevemente, vuelve a 'online' al terminar. Aceptable |
+| 6 | Cliente cierra panel y los listeners siguen activos | 🟢 Baja | `_workloadUnsub` ya tenía cleanup en `cancelChatListeners()`. Sin cambios |
+| 7 | Aggregator no detecta status='away' (sessions pre-§77 sin field) | 🟢 Esperado | Default a 'online' → comportamiento legacy. Tras admin Ctrl+Shift+R, sessionData incluye status |
+| 8 | currentChatId persiste si admin se desconecta abruptamente | 🟢 Baja | onDisconnect.remove() del nodo entero limpia todo. Heartbeat de 1min refresca lastSeen Y mantiene status/currentChatId si el admin sigue activo |
+| 9 | Race entre setPresenceStatus y heartbeat | 🟢 Baja | Ambos usan `update()` (merge). Last-write-wins. Heartbeat solo escribe `uid` + `lastSeen`, no toca `status` |
+| 10 | Cliente con muchas pestañas del Concierge | 🟢 Baja | Cada tab tiene su propio `_workloadUnsub`. Firestore deduplica reads internamente |
+
+### 77.11 Acciones operativas del super_admin (post-merge)
+
+**OBLIGATORIA**:
+```bash
+firebase deploy --only functions:recalculateWorkloadOnChatChange,functions:recalculateWorkloadScheduled
+```
+
+Esto activa la nueva lógica de `_computeWorkload` con `asesoresAway`
+count. Sin deploy, el campo `asesoresAway` queda en `undefined` →
+cliente lo trata como `0` y solo distingue 3 estados (online/online
+saturated/offline). Idle del admin ya funciona sin necesidad del
+deploy (es client-side).
+
+**Validación**:
+1. Ctrl+Shift+R en cliente público y admin (cache `v20260514030000`)
+2. 2 sesiones simultáneas (admin desktop + cliente):
+   - Admin abre admin.html → cliente ve 🟢 "Asesores disponibles" en
+     header del Concierge
+   - Admin cambia a otra tab del browser → cliente ve 🟡 "Te
+     respondemos en breve" en <2s (post deploy del aggregator) o
+     sigue 🟢 si aggregator no desplegó (online retrocompat)
+   - Admin vuelve a la tab admin → cliente ve 🟢 nuevamente
+3. DevTools admin console: `firebase.database().ref('/presence').once('value').then(s => console.log(s.val()))` muestra entries con `status` y `currentChatId` campos nuevos
+
+### 77.12 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/admin-auth.js` | +166 líneas: variables idle/status + 6 funciones helper (`setPresenceStatus`, `markPresenceActivity`, `checkPresenceIdle`, `bindPresenceActivityListeners`, `unbindPresenceActivityListeners`, `setPresenceCurrentChat`). Modificado: sessionData incluye `status` + `currentChatId`. Hooks `bindPresenceActivityListeners` en startPresence + `unbindPresenceActivityListeners` + reset en stopPresence | +166, -3 |
+| `js/admin-concierge.js` | +16 líneas: 3 hooks invocando `AP.setPresenceCurrentChat` (openChat, AltorraSectionCleanup, chat removed event) | +16, 0 |
+| `js/concierge.js` | +66 líneas: helper `updateAvailabilityStatus()` + extensión de `_workloadUnsub` callback + hook en `open()` (`ensureWorkloadListener` + `updateAvailabilityStatus`) | +66, -1 |
+| `functions/index.js` | +30 líneas: `_computeWorkload` distingue online vs away con uidStatusMap + workload schema agrega `asesoresAway` count | +30, -10 |
+| `css/concierge.css` | +54 líneas: `.cnc-status` flex + `.cnc-status-dot--online/away/offline` con colores semáforo + `prefers-reduced-motion` | +54, 0 |
+| `service-worker.js` | CACHE_VERSION → `v20260514030000` con descripción §77 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260514030000'` con descripción §77 | +1, -1 |
+| `CLAUDE.md` | Esta sección §77 | +320, 0 |
+
+**Total**: ~654 líneas agregadas, ~16 modificadas. Cero archivos nuevos. `database.rules.json` INTACTO.
+
+### 77.13 Archivos INTACTOS (afirmación explícita)
+
+- `database.rules.json` — sin tocar. Rules existentes permiten cualquier campo si `data.uid === auth.uid`. Cero deploy de RTDB rules.
+- `firestore.rules` — sin tocar. Cliente lee `system/workload` con permisos existentes.
+- `js/hub-store.js` — sin tocar.
+- `js/firebase-config.js` — sin tocar. RTDB ya cargado.
+- `js/admin-presence-ui.js` (Dynamic Island §F.3) — sin tocar. Sigue leyendo del schema legacy + automáticamente verá los nuevos campos `status` y `currentChatId` si quiere extenderse en futuro sprint.
+- `js/rbac-catalog.js`, `admin-state.js`, `admin-roles.js`, `admin-users.js` — ZERO.
+- `admin.html` — ZERO.
+- Bot LLM typing (§75 cncTypingIndicator) — ZERO.
+- Read receipts S4 §76 — ZERO impacto.
+- Sitio público (todo lo no Concierge) — ZERO.
+
+### 77.14 Estado del Mega-Plan §59 ALTOR Hub tras §77
+
+| Sprint | Foco | Estado |
+|---|---|---|
+| ✅ S1 | Optimistic UI admin (7 botones) | §60.1 |
+| ✅ S2 | Optimistic UI cliente | §60.2 |
+| ✅ S3 | Typing indicators bidireccionales (RTDB) | §75 |
+| ✅ S4 | Read receipts (✓ vs ✓✓) | §76 |
+| ✅ **S5** | **Presence avanzada (online/away/offline)** | **§77 (este)** |
+| ⏸ S6 | Rediseño visual Hub admin | Próximo |
+| ⏸ S7 | Rediseño visual cliente widget | Después de S6 |
+
+**5/7 sprints completados**. Tiempo estimado restante S6+S7: ~5 días.
+
+### 77.15 Próximo sprint del Mega-Plan §59
+
+**S6 — Rediseño visual Hub admin** (3 días):
+- Refinamiento del look-and-feel del ALTOR Hub admin (sec-concierge)
+- Burbujas estilo iMessage con border-radius asimétricos
+- Smooth scrolling con scroll-snap
+- Skeleton loading states durante el primer fetch
+- Empty state ilustrado con SVG inline
+- Sidebar con avatar más grande + last message snippet
+- Detail panel con header sticky con info del cliente
+
+S6 es 100% UX/visual. Cero cambios de schema o lógica. Trabajo de
+CSS + algunos templates HTML del Hub admin.
+
+### 77.16 Doctrina aplicada
+
+§19 RCA: NO había bug. Sprint planificado en §74.2 del Mega-Plan §59. IAP previo detectó que el sistema de presencia ya existía desde §6.5 con schema diferente al propuesto en §74. Decisión de extender en lugar de migrar evita rotura de readers existentes (Dynamic Island, aggregator, Sesiones Activas).
+
+§37 IAP: análisis previo entregado en este commit + autorización amplia del cliente ("continua" para el plan §59).
+
+§17 Performance: cero MutationObserver, cero pointermove persistente. Solo eventos discretos (visibilitychange/focus/blur/click/keydown) + setInterval 60s para evaluar idle. Cliente lee Firestore singleton (1 listener total).
+
+§17.4 HTML/CSS estable: cero IDs/clases existentes renombrados. `cncStatus` reusado con `innerHTML` para integrar dot+label. Helpers nuevos son funciones puras dentro de los IIFEs.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+§35 anti-pointermove: **crítico para S5**. Idle detection usa `click` + `keydown` discretos (no continuos como mousemove). Eventos individuales por usuario, no streams de pointermove.
+
+§57.7 listener admin globalmente activo: `_chatsUnsub` del Hub sigue intacto. Presence listeners son globales para todo el admin, no per-section.
+
+§59 Mega-Plan ALTOR Hub: S5 cierre estricto con ajuste IAP-detectado (extender schema en lugar de migrar). Cero overflow a S6 (rediseño visual).
+
+**Cache bump**: `v20260514030000`.
+
+---

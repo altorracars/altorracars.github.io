@@ -1773,6 +1773,156 @@
     // Handles race conditions where .info/connected fires after listener removal.
     var _presenceActive = false;
 
+    /* ═══════════════════════════════════════════════════════════
+       §77 Sprint S5 — Presence avanzada (online/away/offline)
+       ───────────────────────────────────────────────────────────
+       Schema /presence/{pushKey} extendido con:
+         - status: 'online' | 'away' | 'offline'  (NUEVO)
+         - currentChatId: string | null            (NUEVO)
+         - online: true                            (legacy, retrocompat)
+
+       Detección de idle:
+         - document.visibilityState='hidden' → 'away' inmediato
+         - 5 min sin click/keydown con tab visible → 'away'
+         - Vuelve actividad / visibilidad → 'online'
+
+       Doctrina §35: cero pointermove persistente. Solo discrete
+       events (visibilitychange/focus/blur/click/keydown).
+       Doctrina §17.12: cero MutationObserver. Solo setInterval.
+       ═══════════════════════════════════════════════════════════ */
+    var IDLE_THRESHOLD_MS = 5 * 60 * 1000;   // 5 min sin actividad → away
+    var IDLE_CHECK_INTERVAL_MS = 60 * 1000;  // chequeo cada 1 min
+    var _presenceStatus = 'online';
+    var _presenceLastActivity = Date.now();
+    var _presenceCurrentChatId = null;
+    var _presenceIdleCheckInterval = null;
+    var _presenceListenersBound = false;
+    var _presenceActivityHandler = null;
+    var _presenceVisibilityHandler = null;
+    var _presenceFocusHandler = null;
+    var _presenceBlurHandler = null;
+
+    function setPresenceStatus(newStatus) {
+        if (!_presenceActive || !AP._presenceRef) return;
+        if (_presenceStatus === newStatus) return;
+        _presenceStatus = newStatus;
+        var uid = window.auth && window.auth.currentUser
+            ? window.auth.currentUser.uid : null;
+        if (!uid) return;
+        try {
+            AP._presenceRef.update({
+                uid: uid, // satisface .validate
+                status: newStatus,
+                lastSeen: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function () { /* silenced */ });
+        } catch (e) {}
+    }
+
+    function markPresenceActivity() {
+        _presenceLastActivity = Date.now();
+        if (_presenceStatus === 'away') {
+            // Volver a online si veníamos de away por idle/visibility
+            setPresenceStatus('online');
+        }
+    }
+
+    function checkPresenceIdle() {
+        if (!_presenceActive) return;
+        // Si tab oculto, ya está 'away' por visibilitychange handler.
+        // Solo evaluamos idle dentro de tab visible.
+        if (document.hidden) return;
+        var elapsed = Date.now() - _presenceLastActivity;
+        if (elapsed >= IDLE_THRESHOLD_MS && _presenceStatus !== 'away') {
+            setPresenceStatus('away');
+        }
+    }
+
+    function bindPresenceActivityListeners() {
+        if (_presenceListenersBound) return;
+        _presenceListenersBound = true;
+
+        _presenceActivityHandler = function () {
+            // Throttle implícito: markPresenceActivity solo ejecuta
+            // setPresenceStatus si difiere del actual (idempotente cheap).
+            markPresenceActivity();
+        };
+        _presenceVisibilityHandler = function () {
+            if (document.hidden) {
+                setPresenceStatus('away');
+            } else {
+                markPresenceActivity();
+            }
+        };
+        _presenceFocusHandler = function () { markPresenceActivity(); };
+        _presenceBlurHandler = function () {
+            // Window blur → tab perdió foco. Solo marcar 'away' si tab
+            // también está oculto (algunos browsers disparan blur sin
+            // visibilitychange). El check del setInterval cubre el resto.
+            if (document.hidden) setPresenceStatus('away');
+        };
+
+        // §35 — eventos discretos, no pointermove. Capture=true para
+        // recibir eventos antes de stopPropagation de otros handlers.
+        document.addEventListener('click', _presenceActivityHandler, true);
+        document.addEventListener('keydown', _presenceActivityHandler, true);
+        document.addEventListener('visibilitychange', _presenceVisibilityHandler);
+        window.addEventListener('focus', _presenceFocusHandler);
+        window.addEventListener('blur', _presenceBlurHandler);
+
+        _presenceIdleCheckInterval = setInterval(checkPresenceIdle, IDLE_CHECK_INTERVAL_MS);
+    }
+
+    function unbindPresenceActivityListeners() {
+        if (!_presenceListenersBound) return;
+        _presenceListenersBound = false;
+        if (_presenceActivityHandler) {
+            document.removeEventListener('click', _presenceActivityHandler, true);
+            document.removeEventListener('keydown', _presenceActivityHandler, true);
+        }
+        if (_presenceVisibilityHandler) {
+            document.removeEventListener('visibilitychange', _presenceVisibilityHandler);
+        }
+        if (_presenceFocusHandler) {
+            window.removeEventListener('focus', _presenceFocusHandler);
+        }
+        if (_presenceBlurHandler) {
+            window.removeEventListener('blur', _presenceBlurHandler);
+        }
+        if (_presenceIdleCheckInterval) {
+            clearInterval(_presenceIdleCheckInterval);
+            _presenceIdleCheckInterval = null;
+        }
+        _presenceActivityHandler = null;
+        _presenceVisibilityHandler = null;
+        _presenceFocusHandler = null;
+        _presenceBlurHandler = null;
+    }
+
+    /**
+     * §77 — Permite al admin Hub registrar qué chat tiene abierto
+     * para que el resto del equipo lo vea en la Dynamic Island.
+     * Llamar con null al cerrar el chat / salir de sec-concierge.
+     */
+    function setPresenceCurrentChat(sessionId) {
+        if (!_presenceActive || !AP._presenceRef) return;
+        var newChatId = sessionId || null;
+        if (_presenceCurrentChatId === newChatId) return;
+        _presenceCurrentChatId = newChatId;
+        var uid = window.auth && window.auth.currentUser
+            ? window.auth.currentUser.uid : null;
+        if (!uid) return;
+        try {
+            AP._presenceRef.update({
+                uid: uid,
+                currentChatId: newChatId,
+                lastSeen: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function () {});
+        } catch (e) {}
+    }
+
+    // Expose to other modules (admin-concierge.js consume setPresenceCurrentChat)
+    AP.setPresenceCurrentChat = setPresenceCurrentChat;
+
     // Hardware-based device fingerprint — survives cache clear, no storage needed.
     // Combines immutable hardware/browser properties + GPU + canvas rendering
     // into a deterministic hash. Practically impossible for two different
@@ -1922,7 +2072,13 @@
                 country: loc.country || '',
                 ip: loc.ip || '',
                 lastSeen: firebase.database.ServerValue.TIMESTAMP,
-                online: true
+                online: true,
+                // §77 Sprint S5 — status semántico (online/away/offline).
+                // Mantenemos `online: true` por retrocompat con readers viejos
+                // (Dynamic Island, aggregator workload). Nuevo status permite
+                // al cliente diferenciar 🟢 disponible vs 🟡 away en el header.
+                status: _presenceStatus,
+                currentChatId: _presenceCurrentChatId
             };
             // Write session data first, THEN register onDisconnect.
             // onDisconnect requires the node to exist for rules to pass.
@@ -1963,6 +2119,9 @@
             }
         };
         window.addEventListener('beforeunload', AP._presenceBeforeUnload);
+
+        // §77 Sprint S5 — bind activity/idle listeners (idempotente)
+        try { bindPresenceActivityListeners(); } catch (e) {}
     }
 
     function stopPresence() {
@@ -1995,6 +2154,11 @@
             AP._presenceRef.remove().catch(function() {});
             AP._presenceRef = null;
         }
+        // §77 Sprint S5 — unbind activity/idle listeners + reset state
+        try { unbindPresenceActivityListeners(); } catch (e) {}
+        _presenceStatus = 'online';
+        _presenceLastActivity = Date.now();
+        _presenceCurrentChatId = null;
     }
 
     // Max age for a session to be considered "active" (10 minutes).

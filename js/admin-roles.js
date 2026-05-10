@@ -431,10 +431,13 @@
         html += '</div></section>' +
             '</div>' +    // body
             '<footer class="roles-modal-footer">' +
-            '<button class="alt-btn alt-btn--ghost" data-action="close-modal">Cancelar</button>' +
+            // §66.3 hotfix — system roles solo necesitan UN botón "Cerrar"
+            // (read-only, no hay nada que cancelar). Custom roles tienen
+            // Cancelar + Guardar como flow CRUD estándar.
             (isSystem
                 ? '<button class="alt-btn alt-btn--primary" data-action="close-modal">Cerrar</button>'
-                : '<button class="alt-btn alt-btn--primary" data-action="save-role"><i data-lucide="save"></i> Guardar</button>') +
+                : '<button class="alt-btn alt-btn--ghost" data-action="close-modal">Cancelar</button>' +
+                  '<button class="alt-btn alt-btn--primary" data-action="save-role"><i data-lucide="save"></i> Guardar</button>') +
             '</footer>' +
             '</div>' + // .roles-modal
             '</div>'; // .roles-modal-backdrop

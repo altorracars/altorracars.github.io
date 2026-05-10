@@ -28069,5 +28069,289 @@ R4 (migración usuarios) o R5 (refactor callsites).
 
 ---
 
+## 64. ADR-064 — Sprint §61.R2 RBAC UI: sec-roles CRUD con permissions matrix (2026-05-10)
+
+> Segundo sprint del Plan §61. Da al super_admin la pantalla visual
+> para gestionar los roles dinámicos creados en R1 (foundation).
+> Reemplaza el flow `DevTools.httpsCallable('seedSystemRoles')()` por
+> un botón en la UI. Implementa la pantalla de "checkboxes por
+> categoría" que el cliente pidió en §61.0.
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §35 (anti-patterns), §37 (IAP),
+> §61 Plan Maestro RBAC.
+
+### 64.1 Por qué este sprint existe
+
+Tras §63 (R1 Foundation) las colecciones `permissions/` y `roles/`
+existen en Firestore con su catálogo canónico sembrado, pero el
+super_admin no tiene UI para inspeccionarlas, editarlas, ni crear
+roles personalizados. R2 cierra ese gap con una pantalla CRUD
+completa estilo Linear/Stripe.
+
+### 64.2 Solución estructural — 4 piezas coordinadas
+
+#### A. `js/admin-roles.js` (NUEVO ~700 líneas)
+
+Singleton `window.AltorraAdminRoles` con:
+
+**State interno**:
+- `_state.roles` — cache de roles desde Firestore
+- `_state.unsub` — listener `onSnapshot` (cleanup en section change)
+- `_state.userCounts` — `{roleId: count}` cached, refrescado
+  on-demand al renderizar
+- `_state.currentMode` — `'create' | 'edit' | null`
+
+**Listener real-time** (`startListener`):
+- Query `roles/` `orderBy('isSystem', 'desc'), orderBy('name', 'asc')`
+- Limit 100
+- Fallback `startListenerSimple` si falta índice compuesto
+  (Firestore lanza `failed-precondition`) — ordena client-side
+- Error handler para `permission-denied` (mensaje claro al user)
+
+**`refreshUserCounts()`**: query a `usuarios/` agrupando por
+`roleId`. Si user no tiene `roleId` (legacy), mapea desde `rol`
+via `AltorraRBACCatalog.legacyMapping`. Cached para no re-query
+en cada render.
+
+**Render lista** (`render()`):
+- Empty state si no hay roles → CTA "Sembrar roles del sistema"
+- Header con count + botones "Resembrar sistema" + "Nuevo rol"
+- Grid `auto-fill minmax(320px, 1fr)` de role cards
+- Cada card: icon + name + system/default badges + description
+  + count permisos + count usuarios + acciones (Editar/Eliminar)
+
+**Modal crear/editar** (`renderModal`):
+- Sección "Información del rol": nombre, color picker (hex + visual),
+  descripción
+- Sección "Permisos" con permissions matrix:
+  - 8 categorías agrupadas (Inventario, Sitio público, CRM,
+    Comunicaciones, Cerebro AI, Calendario, Reportes, Configuración)
+  - Cada categoría: header con master checkbox + count `X/Y`
+  - Lista de permissions con checkbox + name + ID monospace
+  - Critical permissions marcados con icono triangle warn ámbar
+- Footer: Cancelar + Guardar
+- System roles: input/textarea readonly + checkboxes disabled +
+  banner explicativo "no editables, creá uno nuevo"
+
+**Permissions matrix logic**:
+- `getSelectedPermissions()` → array de IDs marcados
+- `updatePermsCount()` re-calcula count por categoría +
+  estado `indeterminate` del master checkbox cuando hay selección
+  parcial (estilo macOS Finder)
+- `toggleCategory(cat, checked)` → marca/desmarca todos los
+  permisos de la categoría
+
+**Save logic** (`saveRole`):
+- Validaciones: name min 3 chars, color hex válido, al menos 1
+  permission, name único (frontend pre-check)
+- Genera `id` slug si es create (`custom_<slug>_<base36>`)
+- Persiste con `createdAt/createdBy/updatedAt/updatedBy/_version`
+- Manejo de `permission-denied` → mensaje recordando deploy de rules
+
+**Delete logic** (`deleteRole`):
+- Pre-check `refreshUserCounts()` → si role tiene users asignados,
+  alert + abort (user debe reasignar primero desde sec-users)
+- System roles bloqueados (frontend + backend rule)
+- Confirm dialog antes de delete
+- `permission-denied` → toast con explicación
+
+**Seed system roles** (`seedSystemRoles`):
+- Invoca `window.functions.httpsCallable('seedSystemRoles')`
+- Estado de loading (spinner + disabled)
+- Toast con summary del resultado
+- Idempotente — re-ejecutable sin riesgo
+
+**Event delegation** (`bindEvents`):
+- Single document-level click listener filtrado por `[data-action]`
+  + scope check (sec-roles o rolesModal)
+- Single change listener para checkboxes + color picker sync
+- Esc cierra modal
+- Click backdrop cierra modal
+- Idempotente con `_bound` flag
+
+**Lifecycle**:
+- Auto-init via `tryInit()` polling cada 250ms hasta que
+  `window.AP && window.AltorraRBACCatalog` estén listos
+- Listener arranca al entrar a sec-roles, se cancela al salir
+  (via `AltorraSections.onChange`)
+- Si entra a sec-roles sin ser super_admin, render empty state
+  "Solo super_admin puede gestionar roles"
+
+#### B. `admin.html` (HTML estructura)
+
+3 cambios:
+- Nav-item nuevo en grupo Configuración (después de "Usuarios"):
+  `<button class="nav-item" data-section="roles">
+   <i data-lucide="shield-check"></i><span>Roles</span></button>`
+- Sección `<div id="sec-roles">` con `data-workspace-color="neutral"`
+  + page-header + container vacío que el JS popula
+- Script tag `<script src="js/admin-roles.js" defer>` después
+  de admin-users.js
+
+#### C. `js/admin-section-router.js` + `js/admin-group-tabs.js`
+
+- Router REGISTRY: `roles: { label: 'Roles', group: 'configuracion', icon: 'shield-check' }`
+- Group tabs config: entrada con `permission: 'canManageUsers'`
+  → solo super_admin la ve en el subnav del workspace Configuración
+  (filtro de visibilidad client-side; rules backend lo enforce)
+
+#### D. `css/admin.css` (~600 líneas append)
+
+Estilos coordinados:
+- `.roles-container`, `.roles-header`, `.roles-grid` (responsive)
+- `.role-card` con border-left coloreado por `--role-color`,
+  hover lift sutil, badges system/default
+- `.roles-empty` con icon + título + texto + CTAs
+- `.roles-modal-backdrop`, `.roles-modal` con glassmorphism +
+  spring animation
+- `.roles-perms-matrix` grid responsive 2-col desktop / 1-col mobile
+- `.roles-perms-category` con header coloreado dorado tenue +
+  master checkbox con `indeterminate` style
+- `.roles-perm-row` con hover sutil + variante `--critical`
+  para permissions con flag `critical: true`
+- `.roles-modal-footer` sticky bottom
+- `@media (max-width: 768px)` colapsa a 1 columna
+- `@media (prefers-reduced-motion: reduce)` desactiva animations
+
+### 64.3 Telemetría agregada
+
+Logs prefijo `§61.R2`:
+
+```
+[AdminRoles] §61.R2 init complete
+[AdminRoles] §61.R2 snapshot — roles: N
+[AdminRoles] §61.R2 saveRole CREATE: custom_xyz
+[AdminRoles] §61.R2 saveRole EDIT: custom_xyz
+[AdminRoles] §61.R2 deleteRole: custom_xyz
+[AdminRoles] §61.R2 seedSystemRoles invoked
+[AdminRoles] §61.R2 seedSystemRoles result: { ... }
+```
+
+### 64.4 Tests E2E (validación post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Login super_admin → click "Configuración" en topnav → click "Roles" en subnav | Carga sec-roles con 3 cards (Super Administrador, Editor, Lector) |
+| 2 | Cards muestran badges correctos | Super Admin: gold "Sistema", Editor: blue "Sistema" + "Default", Viewer: gray "Sistema" |
+| 3 | Click "Editar" en Super Administrador | Modal abre en modo readonly (inputs readonly, checkboxes disabled, banner azul "no editable") |
+| 4 | Click "Editar" en Editor | Idem (system role) |
+| 5 | Click "Nuevo rol" | Modal abre vacío con todos los checkboxes deselected |
+| 6 | Llenar nombre "Asesor Senior" + descripción + marcar 5 permisos de Inventario | Counter "5 de 71 seleccionados" actualiza live, master checkbox de Inventario en estado indeterminate |
+| 7 | Click checkbox master de Inventario | Marca todos los 14 permisos de la categoría (count "14/14") |
+| 8 | Click Guardar | Toast "Rol Asesor Senior creado correctamente". Card aparece en grid en tiempo real (onSnapshot) |
+| 9 | Editar el role recién creado, cambiar permissions | Update OK, badge "actualizado" si quisiéramos (no implementado en R2) |
+| 10 | Click "Eliminar" en role custom (sin users asignados) | Confirm + delete OK |
+| 11 | Asignar user al role custom (R3 lo hace; por ahora manual en Firestore Console) → click "Eliminar" | Alert "tiene N usuarios asignados, primero reasignalos desde Usuarios" + abort |
+| 12 | Login como editor (no super_admin) | NO ve item "Roles" en sidebar (filter `permission: 'canManageUsers'` lo oculta) |
+| 13 | Editor intenta deep-link `#/roles` | Sec-roles carga con empty state "Solo super_admin puede gestionar roles" |
+| 14 | Validaciones frontend: nombre vacío | Toast error "El nombre debe tener al menos 3 caracteres" + focus al campo |
+| 15 | Validaciones: 0 permisos | Toast "Seleccioná al menos un permiso" + abort |
+| 16 | Validaciones: nombre duplicado | Toast "Ya existe un rol con ese nombre" |
+| 17 | Empty state si Firestore tiene 0 roles (pre-seed) | Card central con icono shield-check + CTA "Sembrar roles del sistema" |
+| 18 | Click CTA seed → confirm → invoca callable | Loading spinner + toast con summary `{ created: 71, skipped: 0, ... }` |
+| 19 | Esc dentro del modal | Cierra |
+| 20 | Click fuera del modal (backdrop) | Cierra |
+| 21 | Mobile (<768px) | Grid 1 col, modal full-height, permissions matrix 1 col |
+| 22 | `prefers-reduced-motion: reduce` | Animations desactivadas |
+
+### 64.5 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo `background-color`, `border-color`, `transform` específicas |
+| §17.4 | Renombrar IDs/clases existentes | Cero modificaciones a IDs legacy. Solo nuevos: `sec-roles`, `rolesContainer`, `rolesModal`, etc. |
+| §17.12 | `MutationObserver subtree:true` | Cero MO. Listener real-time es `onSnapshot` Firestore. Re-render imperativo |
+| §35 | `pointermove` persistente | Cero pointermove. Solo click + change discretos |
+| §37 IAP | Implementar sin autorización | Cliente autorizó "arranca con R2" |
+| §57.7 | Listener que muere on section change | `_state.unsub` se cancela explícitamente al SALIR de sec-roles. Solo re-arranca al entrar de nuevo. Diferente del _chatsUnsub global del Hub (esta sección NO necesita listener fuera de sí misma) |
+| §61 | Saltarse fases del plan | R2 NO toca callsites legacy de RBAC, NO migra usuarios, NO modifica rules de collections existentes. Solo UI consume el catálogo R1 |
+
+### 64.6 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Editor borra rol custom con users asignados (rompe acceso) | 🟢 Baja | `refreshUserCounts` pre-delete con guard + alert. Backend rules permitirían el delete (solo isSuperAdmin lo hace), pero pre-check en UI lo bloquea como UX |
+| 2 | super_admin borra `system_super_admin` por accidente | 🟢 Baja | `isSystem: true` flag → frontend bloquea botón delete. R6 hará rule backend explícita |
+| 3 | Modal con 71 checkboxes lento en mobile | 🟢 Baja | Render simple, sin animations en mobile (`prefers-reduced-motion`). max-height 280px en categorías con scroll-y |
+| 4 | Listener Firestore consume reads excesivos | 🟢 Baja | Limit 100. Listener solo activo en sec-roles. Cancelado on section change |
+| 5 | seedSystemRoles falla (rate limit, red) | 🟢 Baja | Idempotente. Botón se reactiva en `finally`. User puede reintentar |
+| 6 | Color hex con caracteres no-ASCII | 🟢 Baja | Regex `/^#[0-9A-Fa-f]{6}$/` valida antes de save |
+| 7 | name colliding con role legacy | 🟢 Baja | `nameTaken` check pre-create |
+| 8 | Editor abre sec-roles via deep-link directo | 🟢 Baja | render check `isSuperAdmin()` muestra empty state. Listener no arranca |
+
+### 64.7 Acciones operativas del super_admin (post-merge)
+
+NINGUNA nueva. R1 ya requirió:
+- `firebase deploy --only firestore:rules` (rules para `roles/` y `permissions/`)
+- `firebase deploy --only functions:seedSystemRoles` (callable)
+- Invocar `seedSystemRoles` (UI de R2 lo facilita ahora)
+
+R2 solo agrega UI sobre la infraestructura existente. Cero deploys nuevos.
+
+### 64.8 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/admin-roles.js` | NUEVO — CRUD + listener + modal + permissions matrix + seed flow | +700 |
+| `admin.html` | Nav-item Roles + sec-roles HTML + script tag | +25 |
+| `css/admin.css` | Estilos roles (grid + cards + modal + permissions matrix + responsive) | +600 |
+| `js/admin-section-router.js` | REGISTRY: `roles` en grupo configuracion | +1 |
+| `js/admin-group-tabs.js` | Config group: entrada `roles` con `permission: 'canManageUsers'` | +2 |
+| `service-worker.js` | CACHE_VERSION → `v20260513020000` | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260513020000'` | +1, -1 |
+| `CLAUDE.md` | Esta sección §64 | +210 |
+
+**Total**: ~1540 agregadas.
+
+### 64.9 Archivos INTACTOS (afirmación explícita)
+
+- `js/rbac-catalog.js` (R1 lo creó; R2 solo lo lee)
+- `js/admin-state.js` (R1 lo extendió; R2 solo usa `AP.isSuperAdmin()`)
+- `js/admin-auth.js` (R1 lo extendió; sin tocar)
+- `firestore.rules` (R1 agregó las rules; R2 las usa via writes desde admin-roles.js)
+- `functions/index.js` (R1 agregó `seedSystemRoles`; R2 invoca el callable)
+- 154 callsites legacy de `AP.isSuperAdmin()`, `AP.RBAC.canX()` — sin tocar
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO cambios
+- Resto de archivos del admin — ZERO cambios
+
+### 64.10 Próximo sprint del plan §61
+
+**R3 — UI sec-users dropdown dinámico** (1 día):
+- En sec-users (Crear/Editar usuario), reemplazar dropdown
+  hardcoded de 3 opciones (`super_admin/editor/viewer`) por
+  `<select>` que lee `roles/` con `onSnapshot`
+- Al asignar rol a user, escribir `roleId`, `roleName`,
+  `permissions[]` denormalizado (Cloud Function `onUserRoleAssigned`
+  lo hará en R7; por ahora client-side)
+- Tabla de usuarios muestra `roleName` (no `rol` legacy)
+- Filtros por role en sec-users
+- Acción masiva "Asignar rol a varios users"
+
+### 64.11 Doctrina aplicada
+
+§19 RCA estricto: NO había bug previo. Sprint planificado en §61.5.
+
+§37 IAP: 5 secciones documentadas previo al cambio. Riesgos +
+rollback identificados.
+
+§17 Performance: cero MutationObserver, cero pointermove
+persistente, cero `transition: all`. Listener `onSnapshot` cancelado
+on section change.
+
+§17.4 HTML/CSS estable: cero cambios IDs/clases existentes. Solo
+nuevos elementos con prefijos `roles-*` que no colisionan con legacy.
+
+§17.12 anti-MutationObserver: cero MO global. Re-render imperativo
+desde `onSnapshot` callback.
+
+§61 Plan Maestro: R2 estricto, cero overflow a R3 (sec-users
+dropdown), R4 (migración usuarios), R5 (refactor callsites), R6
+(rules refactor backend).
+
+**Cache bump**: `v20260513020000`.
+
+---
+
 ---
 

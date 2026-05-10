@@ -684,6 +684,10 @@
                 <button class="nav-item" data-section="users">
                     <i data-lucide="users"></i><span>Usuarios</span>
                 </button>
+                <!-- §61.R2 RBAC — Roles CRUD (super_admin only) -->
+                <button class="nav-item" data-section="roles">
+                    <i data-lucide="shield-check"></i><span>Roles</span>
+                </button>
                 <button class="nav-item" data-section="lists">
                     <i data-lucide="list-tree"></i><span>Atributos</span>
                 </button>
@@ -2067,6 +2071,23 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                 <div class="modal-footer" style="display:flex;gap:0.75rem;justify-content:center;padding:1rem 1.5rem;border-top:1px solid var(--admin-border,#30363d);">
                     <button class="btn btn-ghost" id="cancelDeleteReview">Cancelar</button>
                     <button class="btn" id="confirmDeleteReview" style="background:#ef4444;color:white;">Eliminar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- §61.R2 RBAC — Roles CRUD (super_admin only) -->
+        <div id="sec-roles" class="section" data-workspace-color="neutral">
+            <div class="page-header">
+                <div>
+                    <h1><i data-lucide="shield-check"></i> Roles y Permisos</h1>
+                    <p class="page-subtitle">Creá roles personalizados con permisos granulares por checkbox. Cada usuario hereda los permisos de su rol asignado.</p>
+                </div>
+            </div>
+            <div id="rolesContainer" class="roles-container">
+                <!-- Render dinámico desde js/admin-roles.js -->
+                <div class="roles-empty">
+                    <div class="roles-empty-icon"><i data-lucide="loader-2" class="roles-spinner"></i></div>
+                    <h3 class="roles-empty-title">Cargando roles...</h3>
                 </div>
             </div>
         </div>
@@ -3674,6 +3695,8 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin-vehicles.js" defer></script>
 <script src="js/admin-brands.js" defer></script>
 <script src="js/admin-users.js" defer></script>
+<!-- §61.R2 RBAC — UI sec-roles CRUD -->
+<script src="js/admin-roles.js" defer></script>
 <script src="js/admin-appointments.js" defer></script>
 <script src="js/admin-crm.js" defer></script>
 <script src="js/admin-predictive.js" defer></script>

@@ -116,87 +116,49 @@
         { id: 'settings.backup', name: 'Backup/Restore', description: 'Exportar/importar respaldo de datos', category: 'Configuración', resource: 'settings', action: 'backup', critical: true }
     ];
 
-    // ========== SYSTEM ROLES (3 inmutables) ==========
+    // ========== SYSTEM ROLES (1 inmutable — §69 R7) ==========
+    //
+    // §69 R7 — Reducido a UN solo system role: CEO (id system_super_admin
+    // por retrocompat con migración R4 + rules backend del R6). Editor y
+    // Viewer eliminados del catálogo. El cliente crea custom roles según
+    // necesidad. CEO es el único user que puede TODO (wildcard '*') y es
+    // imposible de modificar/editar/eliminar por otros usuarios.
+    //
+    // Decisión arquitectónica: el ID interno se mantiene como
+    // 'system_super_admin' (NO renombrado a 'system_ceo') para preservar:
+    //   1. Migración R4 ya ejecutada (users con roleId='system_super_admin')
+    //   2. firestore.rules R6 que referencian conceptualmente al wildcard
+    //   3. Cero docs huérfanos en Firestore
+    //
+    // Solo cambia el LABEL visible: name='CEO'.
 
     var SYSTEM_ROLES = [
         {
             id: 'system_super_admin',
-            name: 'Super Administrador',
-            description: 'Acceso total al sistema. No editable.',
+            name: 'CEO',
+            description: 'Acceso absoluto al sistema. No se puede modificar, editar ni eliminar.',
             isSystem: true,
             isDefault: false,
             color: '#b89658',
             icon: 'crown',
             permissions: ['*']
-        },
-        {
-            id: 'system_editor',
-            name: 'Editor',
-            description: 'Asesor con permisos de inventario, CRM, citas y comunicaciones. No puede gestionar usuarios ni roles.',
-            isSystem: true,
-            isDefault: true,
-            color: '#3b82f6',
-            icon: 'pencil',
-            permissions: [
-                // Inventario (CRUD excepto delete)
-                'vehicles.read', 'vehicles.create', 'vehicles.edit', 'vehicles.export',
-                'brands.read', 'brands.create', 'brands.edit',
-                'dealers.read',
-                // Sitio público
-                'banners.read', 'banners.create', 'banners.edit',
-                'reviews.read', 'reviews.create', 'reviews.edit',
-                // CRM
-                'crm.read', 'crm.create', 'crm.edit', 'crm.assign',
-                // Comunicaciones (full)
-                'appointments.read', 'appointments.create', 'appointments.edit',
-                'concierge.read', 'concierge.respond', 'concierge.claim',
-                'concierge.close', 'concierge.reopen', 'concierge.summarize',
-                // Cerebro AI
-                'kb.read', 'kb.create', 'kb.edit',
-                'unmatched.read', 'unmatched.promote',
-                // Calendario
-                'calendar.read', 'calendar.create', 'calendar.edit',
-                // Reportes
-                'reports.view',
-                // Audit (read-only)
-                'audit.read',
-                // Workflows + templates (read)
-                'workflows.read',
-                'templates.read', 'templates.create', 'templates.edit',
-                // Settings (theme only)
-                'settings.theme'
-            ]
-        },
-        {
-            id: 'system_viewer',
-            name: 'Lector',
-            description: 'Acceso de solo lectura a todo el sistema.',
-            isSystem: true,
-            isDefault: false,
-            color: '#6b7280',
-            icon: 'eye',
-            permissions: [
-                'vehicles.read', 'brands.read', 'dealers.read',
-                'banners.read', 'reviews.read',
-                'crm.read',
-                'appointments.read', 'concierge.read',
-                'kb.read', 'unmatched.read',
-                'calendar.read',
-                'reports.view',
-                'audit.read',
-                'workflows.read', 'templates.read',
-                'settings.theme'
-            ]
         }
+        // §69 R7 — Editor y Viewer ELIMINADOS del catálogo.
+        // Si el cliente quiere roles específicos para asesores/lectores,
+        // los crea como custom roles desde sec-roles UI con los permisos
+        // exactos que necesite.
     ];
 
     // ========== LEGACY ROLE → PERMISSIONS MAPPING ==========
-    // Para usuarios pre-migración que tienen .rol pero no .permissions
+    // §69 R7 — Solo super_admin se mapea a CEO. Editor y viewer legacy
+    // ya NO se auto-mapean. Users con rol='editor' o rol='viewer' que
+    // NO tengan permissions[] denormalizado quedarán bloqueados al login
+    // con pantalla "No tienes roles asignados". El super_admin debe
+    // asignarles un custom role manualmente desde sec-users.
 
     var LEGACY_TO_ROLE_ID = {
-        'super_admin': 'system_super_admin',
-        'editor':      'system_editor',
-        'viewer':      'system_viewer'
+        'super_admin': 'system_super_admin'
+        // 'editor' y 'viewer' eliminados — no hay auto-mapeo
     };
 
     function getRoleById(roleId) {

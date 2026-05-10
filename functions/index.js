@@ -2468,66 +2468,22 @@ const RBAC_PERMISSIONS = [
     { id: 'settings.backup',  name: 'Backup/Restore',            description: 'Exportar/importar respaldo de datos',       category: 'Configuración', resource: 'settings',  action: 'backup', critical: true }
 ];
 
+// §69 R7 — Reducido a UN solo system role: CEO. Editor + Viewer
+// eliminados del seeder. Si docs roles/system_editor o roles/system_viewer
+// ya existen en Firestore (sembrados por seedSystemRoles antes de §69),
+// se mantienen intactos. seedSystemRoles ya NO los re-siembra.
 const RBAC_SYSTEM_ROLES = [
     {
         id: 'system_super_admin',
-        name: 'Super Administrador',
-        description: 'Acceso total al sistema. No editable.',
+        name: 'CEO',
+        description: 'Acceso absoluto al sistema. No se puede modificar, editar ni eliminar.',
         isSystem: true,
         isDefault: false,
         color: '#b89658',
         icon: 'crown',
         permissions: ['*']
-    },
-    {
-        id: 'system_editor',
-        name: 'Editor',
-        description: 'Asesor con permisos de inventario, CRM, citas y comunicaciones. No puede gestionar usuarios ni roles.',
-        isSystem: true,
-        isDefault: true,
-        color: '#3b82f6',
-        icon: 'pencil',
-        permissions: [
-            'vehicles.read', 'vehicles.create', 'vehicles.edit', 'vehicles.export',
-            'brands.read', 'brands.create', 'brands.edit',
-            'dealers.read',
-            'banners.read', 'banners.create', 'banners.edit',
-            'reviews.read', 'reviews.create', 'reviews.edit',
-            'crm.read', 'crm.create', 'crm.edit', 'crm.assign',
-            'appointments.read', 'appointments.create', 'appointments.edit',
-            'concierge.read', 'concierge.respond', 'concierge.claim',
-            'concierge.close', 'concierge.reopen', 'concierge.summarize',
-            'kb.read', 'kb.create', 'kb.edit',
-            'unmatched.read', 'unmatched.promote',
-            'calendar.read', 'calendar.create', 'calendar.edit',
-            'reports.view',
-            'audit.read',
-            'workflows.read',
-            'templates.read', 'templates.create', 'templates.edit',
-            'settings.theme'
-        ]
-    },
-    {
-        id: 'system_viewer',
-        name: 'Lector',
-        description: 'Acceso de solo lectura a todo el sistema.',
-        isSystem: true,
-        isDefault: false,
-        color: '#6b7280',
-        icon: 'eye',
-        permissions: [
-            'vehicles.read', 'brands.read', 'dealers.read',
-            'banners.read', 'reviews.read',
-            'crm.read',
-            'appointments.read', 'concierge.read',
-            'kb.read', 'unmatched.read',
-            'calendar.read',
-            'reports.view',
-            'audit.read',
-            'workflows.read', 'templates.read',
-            'settings.theme'
-        ]
     }
+    // §69 R7 — Editor y Viewer ELIMINADOS del seeder.
 ];
 
 exports.seedSystemRoles = onCall(callableOptionsV2, async (request) => {
@@ -2642,23 +2598,32 @@ exports.migrateLegacyUsers = onCall(callableOptionsV2, async (request) => {
 
     const dryRun = !!(request.data && request.data.dryRun);
 
-    // 1) Validar que system roles existan en Firestore
-    const sysRoleIds = ['system_super_admin', 'system_editor', 'system_viewer'];
+    // §69 R7 — Solo super_admin se mapea automáticamente a CEO.
+    // Editor y viewer legacy quedan SIN mapeo: el super_admin debe
+    // crear custom roles desde sec-roles y asignarlos manualmente.
+    // 1) Validar que CEO (system_super_admin) exista en Firestore.
     const sysRolesData = {};
-
-    for (const id of sysRoleIds) {
-        const snap = await db.collection('roles').doc(id).get();
-        if (!snap.exists) {
-            throw new HttpsError('failed-precondition',
-                'Roles del sistema no sembrados en Firestore. Ejecutá primero "Sembrar roles del sistema" desde sec-roles (o seedSystemRoles callable). Falta: ' + id);
-        }
-        sysRolesData[id] = snap.data();
+    const ceoSnap = await db.collection('roles').doc('system_super_admin').get();
+    if (!ceoSnap.exists) {
+        throw new HttpsError('failed-precondition',
+            'Rol CEO (system_super_admin) no sembrado en Firestore. Ejecutá primero "Sembrar roles del sistema" desde sec-roles.');
     }
+    sysRolesData['system_super_admin'] = ceoSnap.data();
+
+    // §69 R7 — Editor y viewer legacy NO se auto-mapean a system_X.
+    // Si docs roles/system_editor o roles/system_viewer existen
+    // (de seedSystemRoles previos), los leemos para mantener migración
+    // de users que ya tenían roleId='system_editor'/'system_viewer'.
+    const legacyEditorSnap = await db.collection('roles').doc('system_editor').get();
+    if (legacyEditorSnap.exists) sysRolesData['system_editor'] = legacyEditorSnap.data();
+    const legacyViewerSnap = await db.collection('roles').doc('system_viewer').get();
+    if (legacyViewerSnap.exists) sysRolesData['system_viewer'] = legacyViewerSnap.data();
 
     const LEGACY_MAP = {
-        'super_admin': 'system_super_admin',
-        'editor': 'system_editor',
-        'viewer': 'system_viewer'
+        'super_admin': 'system_super_admin'
+        // §69 R7 — 'editor' y 'viewer' eliminados del auto-mapeo.
+        // Users con esos rol legacy quedan "sin rol asignado" hasta
+        // que el CEO los reasigne manualmente.
     };
 
     // 2) Recorrer todos los usuarios y armar plan

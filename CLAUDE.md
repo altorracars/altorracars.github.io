@@ -29734,3 +29734,340 @@ patrón OR fallback.
 
 ---
 
+## 69. ADR-069 — Sprint §61.R7 RBAC: Simplificación a 1 system role (CEO) + Guard "Sin rol asignado" (2026-05-10)
+
+> Sprint R7 con scope ampliado por solicitud del cliente. Reduce los
+> 3 system roles legacy (super_admin, editor, viewer) a UN solo
+> "CEO" (id interno `system_super_admin` preservado para retrocompat
+> R4+R6). Editor y Viewer eliminados del catálogo + del seeder. CEO
+> es totalmente invisible e inmodificable en sec-roles UI. Bloqueo
+> de login para users sin rol asignado con pantalla "No tienes roles
+> asignados, contacta con un administrador".
+>
+> Cliente reportó (con captura del modal "Ver rol del sistema" del
+> Lector + sec-users con 3 cards informativas):
+>
+> 1. "En la pestaña de usuarios aun aparecen los informativos: Super
+>    Admin / Editor / Viewer. No es necesario porque ya quien crea el
+>    usuario sabe los roles que se le asignen."
+> 2. "Eliminar el rol editar y el rol viewer por completo. Dejar solo
+>    el CEO. Ese CEO viene del sistema, no se puede modificar, editar
+>    ni eliminar por otro usuario sino que es el usuario que todo lo
+>    puede. No es necesario que tenga una ventana donde se vean sus
+>    roles, ese usuario simplemente puede hacer absolutamente todo."
+> 3. "Los usuarios sin roles simplemente quedan sin asignar, cuando
+>    ingresen verán una ventana 'No tienes roles asignados, contacta
+>    con un administrador'."
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §35 (anti-patterns), §37 (IAP),
+> §61 Plan Maestro RBAC.
+
+### 69.1 Por qué este sprint existe
+
+Tras §63-§68 (R1-R6) el sistema RBAC dinámico funciona end-to-end:
+- 71+ atomic permissions sembradas
+- 3 system roles + custom roles
+- Migración legacy (R4)
+- Frontend con AP.hasPermission (R1)
+- Backend rules con hasPermission server-side (R6)
+
+Pero el cliente identificó 3 cosas que sobran/faltan en el UX:
+- Las cards informativas en sec-users son redundantes con el dropdown
+  dinámico de R3
+- 3 system roles confunden — el cliente quiere control total: solo
+  él (CEO) tiene wildcard, todos los demás roles deben ser
+  customs creados por él según necesidad
+- Users sin rol nunca deberían poder entrar al panel (gap de
+  seguridad/UX en versiones previas)
+
+R7 cierra estos 3 gaps en un solo sprint coordinado.
+
+### 69.2 Decisión arquitectónica clave
+
+**ID interno preservado**: `system_super_admin` NO se renombra a
+`system_ceo`. Solo cambia el `name` visible a "CEO" + descripción.
+
+Razones:
+1. **Migración R4 ya ejecutada**: users tienen `roleId: 'system_super_admin'`
+   denormalizado. Renombrar el ID rompería todos esos users.
+2. **firestore.rules R6 referencia conceptualmente al wildcard `*`**:
+   no hardcodea el ID, pero el schema mental es "system_super_admin
+   = CEO con `*`".
+3. **Cero docs huérfanos en Firestore**: cliente puede seguir teniendo
+   migración consistente sin scripts de cleanup.
+4. **Reversible**: si en el futuro quieren agregar más system roles
+   o renombrar, el cambio es solo de UI (label).
+
+### 69.3 Solución estructural — 6 cambios coordinados
+
+#### A. `admin.html` — eliminadas 3 cards informativas en sec-users
+
+Bloque `<div class="roles-info">` con cards "Super Admin / Editor /
+Viewer" eliminado. Reemplazado por comentario explicativo. Cero CSS
+modificado.
+
+#### B. `js/rbac-catalog.js` — system roles reducidos a 1
+
+```js
+var SYSTEM_ROLES = [
+    {
+        id: 'system_super_admin',
+        name: 'CEO',                  // ← era "Super Administrador"
+        description: 'Acceso absoluto al sistema. No se puede modificar, editar ni eliminar.',
+        // ... resto igual ...
+        permissions: ['*']
+    }
+    // §69 R7 — Editor y Viewer ELIMINADOS del catálogo.
+];
+
+var LEGACY_TO_ROLE_ID = {
+    'super_admin': 'system_super_admin'
+    // §69 R7 — 'editor' y 'viewer' eliminados — no hay auto-mapeo
+};
+```
+
+`mapLegacyRoleToPermissions('editor')` ahora retorna `[]` (igual
+para 'viewer'). Esto activa el guard de §69.3.E para users con
+`rol: 'editor'` legacy SIN `permissions[]` denormalizado.
+
+#### C. `functions/index.js seedSystemRoles` — solo siembra CEO
+
+`RBAC_SYSTEM_ROLES` reducido a 1 entry. `migrateLegacyUsers`
+actualizado: solo CEO es prerequisito obligatorio. Editor + Viewer
+legacy se cargan opcionalmente si docs existen para retrocompat de
+migraciones previas. `LEGACY_MAP` server-side reducido a
+`{super_admin: system_super_admin}`.
+
+**Nota**: si docs `roles/system_editor` o `roles/system_viewer` ya
+existen en Firestore (sembrados antes del §69), se mantienen
+intactos. seedSystemRoles ya NO los re-siembra. R8 cleanup futuro
+los eliminará explícitamente.
+
+#### D. `js/admin-roles.js` — CEO + editor/viewer filtrados de UI
+
+```js
+.onSnapshot(function (snap) {
+    snap.forEach(function (doc) {
+        // §69 R7 — Filtrar system_super_admin (CEO) y legacy editor/viewer
+        if (doc.id === 'system_super_admin'
+            || doc.id === 'system_editor'
+            || doc.id === 'system_viewer') {
+            return; // skip
+        }
+        _state.roles.push(data);
+    });
+    // ...
+});
+```
+
+`openEditModal(roleId)` con guard defense-in-depth: si por alguna
+razón se invoca con un system role ID, el modal NO se abre.
+
+`renderModal()` simplificado: banner "Los permisos de los roles del
+sistema no son editables. Para personalizar, creá un rol nuevo."
+ELIMINADO. Como CEO + system roles legacy nunca abren el modal,
+el banner ya no aplica. Modal siempre opera en modo create o edit
+de custom role.
+
+#### E. `js/admin-users.js` — dropdown filtra editor/viewer
+
+`populateRolesDropdown(selectedRoleId)`:
+- CEO (system_super_admin) **sí aparece** como system role para
+  asignar nuevos super_admin si el cliente lo decide
+- Editor/Viewer legacy **filtrados** del dropdown (no se ofrecen
+  como opciones para nuevos users)
+- **Excepción retrocompat**: si el user que estoy editando ya tiene
+  `roleId: 'system_editor'` o `'system_viewer'`, esa opción aparece
+  marcada "(legacy)" para que selectedRoleId siga matcheando
+  (sino el dropdown queda sin selección y validación falla)
+- Default: primer custom role disponible (no auto-asignar CEO)
+- Si no hay custom roles ni CEO disponible, mensaje explícito
+  "Sin roles disponibles — el CEO debe crear roles personalizados
+  desde Configuración → Roles"
+
+#### F. `js/admin-auth.js` — Guard "Sin rol asignado"
+
+Insertado después de la hidratación de `currentUserPermissions`
+en `loadProfileViaREST.then()`:
+
+```js
+var hasValidPerms = Array.isArray(AP.currentUserPermissions)
+    && AP.currentUserPermissions.length > 0;
+var isSuperLegacy = AP.currentUserRole === 'super_admin';
+if (!hasValidPerms && !isSuperLegacy) {
+    showAccessDenied(authUser.email, authUser.uid,
+        'No tienes roles asignados.\n\n' +
+        'Contacta con un administrador para que te asigne un rol y puedas acceder al panel.\n\n' +
+        'Si eres administrador y crees que esto es un error, verifica que tu cuenta tenga permissions[] o rol legacy super_admin.');
+    return;
+}
+```
+
+**Casos cubiertos**:
+- ✅ User existente con `rol='editor'` sin `permissions[]` denormalizado
+  (era editor legacy, §69 ya no auto-mapea editor a permissions)
+- ✅ User existente con `rol='viewer'` sin `permissions[]`
+- ✅ User nuevo sin rol asignado
+- ✅ User con `permissions: []` vacío explícito (por reasignación
+  de role borrado)
+
+**Excepción**: super_admin legacy (`rol === 'super_admin'`) **siempre
+pasa** porque `mapLegacyRoleToPermissions` retorna `['*']` →
+`AP.currentUserPermissions` queda con `['*']` → guard NO se activa.
+
+### 69.4 Migración de users legacy con `rol: 'editor'` o `'viewer'`
+
+Los users existentes con esos `rol` legacy (que NO migraron via R4
+o cuyo `roleId` apunta a `system_editor`/`system_viewer`) tienen 3
+escenarios:
+
+| Caso | Comportamiento post-§69 | Acción del CEO |
+|---|---|---|
+| Tiene `permissions[]` denormalizado válido (R4 ejecutado) | Sigue funcionando con esos permissions denormalizados | Opcional reasignar a custom role para limpieza futura R8 |
+| Solo tiene `rol: 'editor'` sin `permissions[]` | Bloqueado al login con "Sin rol asignado" | Crear custom role + asignar via sec-users |
+| Es super_admin legacy | Sin cambio (auto-mapea a CEO con `['*']`) | N/A |
+
+### 69.5 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | sec-users carga | NO aparecen las 3 cards informativas (Super Admin/Editor/Viewer). Solo header + tabla |
+| 2 | sec-roles carga (CEO logueado) | Lista muestra SOLO custom roles. CEO + editor/viewer legacy filtrados. Si no hay customs, "0 roles" |
+| 3 | DevTools: invocar `AltorraAdminRoles.openEditModal('system_super_admin')` directo | Modal NO se abre. Console warning "Intento de abrir modal en system role bloqueado" |
+| 4 | Crear custom role con permissions específicos | OK, aparece en lista |
+| 5 | Editar custom role → modal NO muestra banner "Los permisos de los roles del sistema..." | OK |
+| 6 | sec-users → Crear usuario → dropdown roles | Optgroup "Roles del sistema" con CEO + Optgroup "Roles personalizados" con customs. Editor/Viewer NO aparecen |
+| 7 | Editar usuario existente con `roleId='system_editor'` | Dropdown muestra opción "Editor (legacy)" para preservar selección |
+| 8 | Login user con `rol='editor'` sin `permissions[]` | Pantalla "No tienes roles asignados, contacta con un administrador" |
+| 9 | Login super_admin (CEO) | Sin cambios — entra normal con wildcard `['*']` |
+| 10 | Login user con `permissions[]` denormalizado válido (R4) | Entra normal |
+| 11 | Login user con `permissions: []` vacío | Bloqueado con pantalla "Sin rol asignado" |
+| 12 | Re-ejecutar `seedSystemRoles` | Solo siembra/skip CEO. Editor/Viewer ya no se siembran (pero docs existentes en Firestore no se borran) |
+| 13 | Re-ejecutar `migrateLegacyUsers` (preview) | Solo super_admin se mapea automáticamente. Editor/Viewer aparecen como "rol_desconocido" en skipped |
+| 14 | super_admin actual (CEO) sigue siendo CEO en su perfil | OK, badge "CEO" en sec-users |
+
+### 69.6 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | Solo eliminé el bloque `roles-info` con comentario. Cero IDs renombrados. CSS legacy `.role-card` puede mantenerse o eliminarse en R8 |
+| §17.12 anti-MO | MutationObserver subtree:true | Cero MO. Listener real-time es onSnapshot Firestore con re-render imperativo |
+| §17 Performance | `transition: all` | Cero CSS modificado |
+| §35 | pointermove persistente | Cero pointermove |
+| §37 IAP | Implementar sin autorización | IAP entregado y autorizado por cliente con 3 cambios específicos |
+| Big Bang | Renombrar `system_super_admin` → `system_ceo` | ID interno preservado. Solo cambia label visible. Cero rotura R4+R6 |
+| §61 Plan | Saltarse fases | R7 ampliado: incluye los 3 cambios del cliente PERO NO ejecuta los Cloud Function triggers originales del plan §61.5 R7 (onRoleUpdated, onUserRoleAssigned, recalculateRoleUserCount). Esos quedan para R7b o R8 |
+
+### 69.7 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Editor/Viewer legacy con `permissions[]` denormalizado siguen funcionando porque hasPermission server-side los honra | 🟢 Esperado | Es el comportamiento correcto. Si el CEO quiere bloquearlos, debe reasignarles a custom roles desde sec-users. R8 limpiará los docs huérfanos | N/A |
+| 2 | Cliente recrea el deploy y `seedSystemRoles` borra editor/viewer | 🟢 Baja | Mi código ya NO los siembra, pero TAMPOCO los borra. Idempotencia respeta docs existentes | Manual: re-sembrar desde Firestore Console si se necesita |
+| 3 | Editor existente queda bloqueado al login sin saber por qué | 🟡 Media | Mensaje claro "No tienes roles asignados, contacta con un administrador" | CEO crea custom role + asigna desde sec-users |
+| 4 | Usuario CEO actual pierde acceso porque cambió label pero no permissions | 🟢 Nula | ID interno conservado. Permissions `['*']` intactas. Solo label cambia | N/A |
+| 5 | Custom role borrado deja users sin permissions[] válido | 🟡 Media | Guard del §69 los bloquea con mensaje. CEO debe reasignar | Reasignar manualmente |
+| 6 | Migración R4 fue al `system_editor`/`system_viewer` y ahora esos usuarios no pueden re-asignarse fácil | 🟢 Baja | sec-users dropdown muestra opción "Editor (legacy)" para preservar selección al editar | Cliente edita user y selecciona custom role |
+
+### 69.8 Acciones operativas del super_admin (post-merge)
+
+**OBLIGATORIA** (para que las nuevas versiones tomen efecto en producción):
+```bash
+firebase deploy --only functions:seedSystemRoles,functions:migrateLegacyUsers
+```
+
+**Opcional** (si quieres limpieza completa):
+1. **Eliminar docs `roles/system_editor` y `roles/system_viewer`** desde
+   Firebase Console (manual). Esto hace que los users con esos roleIds
+   queden con dropdown sin selección al editar (la opción "(legacy)" ya no
+   aparece). Próxima edición fuerza al CEO a reasignar a custom role.
+2. **Reset de roleId en users con `system_editor`/`system_viewer`** vía
+   sec-users dropdown: editar cada user, asignar custom role nuevo.
+
+**NO se requiere** redeployar `firestore.rules` (R6 sigue válido, solo
+hace OR fallback con permissions[] denormalizado que no se ve afectado).
+
+### 69.9 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `admin.html` | Eliminado bloque `<div class="roles-info">` con 3 cards informativas en sec-users (Super Admin/Editor/Viewer) |
+| `js/rbac-catalog.js` | SYSTEM_ROLES reducido a 1 (CEO). Editor + Viewer eliminados. LEGACY_TO_ROLE_ID solo super_admin → system_super_admin |
+| `functions/index.js` | RBAC_SYSTEM_ROLES reducido a 1 (CEO). migrateLegacyUsers: CEO único prerequisito, editor/viewer opt-in si docs existen, LEGACY_MAP solo super_admin |
+| `js/admin-roles.js` | Filtro snap callback excluye system_super_admin/system_editor/system_viewer. openEditModal con guard defense-in-depth. Banner "Los permisos de los roles del sistema..." eliminado del modal |
+| `js/admin-users.js` | populateRolesDropdown filtra editor/viewer (excepto si user actual los tiene como roleId, marcados "(legacy)"). Default ya no system_editor sino primer custom role |
+| `js/admin-auth.js` | Guard "Sin rol asignado" post-loadProfileViaREST: bloquea login si no hay permissions[] válidas Y no es super_admin legacy |
+| `service-worker.js` | CACHE_VERSION → `v20260513100000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513100000'` |
+| `CLAUDE.md` | Esta sección §69 (~250 líneas) |
+
+**Total**: 9 archivos modificados.
+
+### 69.10 Archivos INTACTOS (afirmación)
+
+- `firestore.rules` (R6) — sin tocar. Las rules con OR fallback siguen
+  válidas (hasPermission con permissions[] denormalizado funciona igual)
+- `js/admin-state.js` (R1+R5) — sin tocar
+- `js/hub-store.js` — ZERO
+- `js/concierge.js`, `js/admin-concierge.js` — ZERO
+- 154 callsites legacy de `AP.isSuperAdmin()` etc — sin tocar (R8 cleanup futuro)
+
+### 69.11 Próximo sprint del plan §61
+
+**R7b — Cloud Function triggers + audit log** (1 día, opt-in si CEO lo quiere):
+- `onRoleUpdated` (Firestore onUpdate `roles/{id}`):
+  - Detecta cambio en `permissions[]`
+  - Re-escribe `usuarios/{uid}.permissions[]` para TODOS los users con
+    ese `roleId` (batch writes con cap 500)
+  - Setea `permissionsUpdatedAt`
+- `onRoleDeleted` (Firestore onDelete `roles/{id}`):
+  - Para users que aún tenían ese roleId, los reasigna a... hmm, ahora
+    no hay system_editor para fallback. Mejor: setear roleId=null +
+    permissions=[] → user queda bloqueado con "Sin rol asignado" hasta
+    que CEO reasigne
+  - Loggea audit log
+- `onUserRoleAssigned` (Firestore onUpdate `usuarios/{uid}` cuando roleId
+  cambia): asegura sync entre roleId y permissions[]
+- `recalculateRoleUserCount` (schedule 5 min)
+- Audit log entries
+
+R7b cierra el ciclo: cuando CEO edita un custom role, los users con
+ese role automáticamente heredan los permissions actualizados.
+
+**R8 — Cleanup masivo** (futuro):
+- Eliminar docs `roles/system_editor` y `roles/system_viewer` de Firestore
+  + reset de roleId/permissions en users con esos IDs
+- Refactor de los ~164 callsites legacy `AP.isSuperAdmin()` etc a
+  `AP.hasPermission(perm)` directo (mapping table en §67.3)
+- Eliminar campo `rol` legacy de `usuarios/{uid}` (todos los users
+  migrados)
+- Refactor `firestore.rules`: eliminar helpers legacy + eliminar OR
+  fallback en cada callsite (solo `hasPermission` queda)
+- Eliminar JSDoc @deprecated y código residual
+
+### 69.12 Doctrina aplicada
+
+§19 RCA estricto: causa raíz era 3 gaps de UX/seguridad identificados
+por el cliente con captura de pantalla:
+- Cards informativas redundantes con dropdown dinámico R3
+- 3 system roles que el cliente no necesita (solo quiere CEO + customs)
+- Users sin rol que pueden entrar al panel sin permisos efectivos
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita ("continua, pero necesit que a este R7 añadamos cosas").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`, cero CSS nuevo.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Solo eliminación de
+bloque `roles-info` con comentario explicativo.
+
+§61 Plan Maestro: R7 ampliado con scope del cliente. Cloud Function
+triggers originales del plan §61.5 R7 quedan para R7b o R8. Cero
+overflow a R8 cleanup masivo (callsites legacy, rules cleanup).
+
+**Cache bump**: `v20260513100000`.
+
+---
+

@@ -29077,5 +29077,119 @@ cache previa.
 
 ---
 
+## 66.3 ADR-066.3 — Hotfix UX: botón duplicado en modal "Ver" de roles del sistema (2026-05-10)
+
+> Cliente reportó tras validación de R4: cuando hace click "Ver" en
+> un role del sistema (Super Admin, Editor, Lector), el modal abre
+> en modo read-only y muestra DOS botones en el footer:
+> "Cancelar" + "Cerrar". Ambos hacen lo mismo (`data-action="close-modal"`),
+> son visualmente confusos.
+
+### 66.3.1 Causa raíz
+
+`js/admin-roles.js renderModal` línea 433 tenía:
+```js
+'<footer class="roles-modal-footer">' +
+'<button class="alt-btn--ghost" data-action="close-modal">Cancelar</button>' +
+(isSystem
+    ? '<button class="alt-btn--primary" data-action="close-modal">Cerrar</button>'
+    : '<button class="alt-btn--primary" data-action="save-role">Guardar</button>') +
+'</footer>'
+```
+
+Para custom roles (editables) el flow estándar es Cancelar + Guardar.
+Para system roles (read-only) el flow correcto es UN solo Cerrar —
+no hay nada que cancelar porque no se está editando nada. Mi código
+mostraba ambos botones haciendo lo mismo.
+
+### 66.3.2 Fix aplicado
+
+Reordenado el ternario:
+```js
+(isSystem
+    ? '<button class="alt-btn--primary" data-action="close-modal">Cerrar</button>'
+    : '<button class="alt-btn--ghost" data-action="close-modal">Cancelar</button>' +
+      '<button class="alt-btn--primary" data-action="save-role">Guardar</button>')
+```
+
+System roles → 1 botón "Cerrar" (primary).
+Custom roles → 2 botones "Cancelar" (ghost) + "Guardar" (primary).
+
+### 66.3.3 Aclaración sobre Edit/Delete + auto-sync (cliente preguntó)
+
+El cliente preguntó si Edit/Delete de roles + sync automático con
+Firebase están contemplados. Respuesta:
+
+**✅ YA implementado en R2** (sec-roles UI):
+- Edit role custom: botón "Editar" → modal con datos cargados →
+  guardar persiste con `db.collection('roles').doc(id).set(updates,
+  {merge:true})`. Sync onSnapshot real-time → otros super_admins
+  ven cambios inmediatamente.
+- Delete role custom: botón "Eliminar" → guard pre-delete (cuenta
+  users asignados, bloquea si hay) → confirm → `.delete()` → desaparece
+  de Firestore + del listener inmediato. Cero basura.
+- System roles: read-only por design (`isSystem: true` flag bloquea
+  edit/delete tanto en frontend como backend rules).
+
+**⚠️ PENDIENTE en R7** (auto-propagación):
+
+Los `permissions[]` viven denormalizados en cada doc `usuarios/{uid}`
+(copia local del momento de asignación). Si el super_admin edita
+un role custom y le agrega/quita permissions, los users existentes
+con ese role NO reciben el cambio automáticamente.
+
+R7 (planificado en §61.5) cierra este gap con 2 Cloud Function triggers:
+- `onRoleUpdated` (Firestore onUpdate en `roles/{id}`):
+  - Detecta cambio en `permissions[]`
+  - Re-escribe `usuarios/{uid}.permissions[]` para TODOS los users
+    con ese `roleId` (batch writes con cap 500)
+  - Setea `permissionsUpdatedAt` para audit
+- `onRoleDeleted` (Firestore onDelete en `roles/{id}`):
+  - Detecta delete de un role custom
+  - Para users que aún tenían ese `roleId`, los reasigna a
+    `system_editor` por seguridad
+  - Loggea audit log
+
+Mientras tanto en R2 (workaround manual): si editás un role, podés
+ir a sec-users → editar cada user con ese role → re-asignar el
+mismo role. Eso re-escribe permissions[] con el snapshot actualizado.
+
+### 66.3.4 Sobre re-ejecutar "Migrar legacy" o "Resembrar sistema"
+
+Cliente preguntó si hace falta volver a ejecutarlos. Respuesta: **NO**,
+ambos son idempotentes:
+
+- **Migrar legacy**: re-ejecutar muestra modal "0 a migrar / N ya
+  migrados". El botón "Ejecutar" desaparece (solo queda "Cerrar").
+- **Resembrar sistema**: toast `Permisos: 0 creados, 71 ya existían.
+  Roles: 0 creados, 3 ya existían`.
+
+Casos donde SÍ se necesitan a futuro:
+- **Migrar legacy**: si se crean usuarios manualmente desde Firebase
+  Console (saltando sec-users), nacerían sin `roleId`. La migración
+  los normaliza.
+- **Resembrar sistema**: si en una versión futura agregamos nuevos
+  permissions al catálogo (ej. para un módulo nuevo), el cliente
+  ejecuta esto para sincronizar Firestore con la nueva versión.
+
+### 66.3.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-roles.js` | renderModal footer: ternario reordenado para que system roles muestren UN solo botón "Cerrar" |
+| `service-worker.js` | CACHE_VERSION → `v20260513070000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513070000'` |
+| `CLAUDE.md` | Esta sección §66.3 + clarificación sobre R2/R7 + idempotencia |
+
+**Total**: ~10 líneas modificadas.
+
+### 66.3.6 Sin deploys nuevos
+
+NINGÚN deploy nuevo. Solo Ctrl+Shift+R para invalidar cache.
+
+**Cache bump**: `v20260513070000`.
+
+---
+
 ---
 

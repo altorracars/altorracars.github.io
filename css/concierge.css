@@ -1780,26 +1780,15 @@
    Alinea visual del cliente con el del admin Hub (§78 S6).
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ─── A. Onboarding initial pulse del FAB ─────────────────────────
-   Anillo expansivo 3 veces al primer page load (sin loop infinito).
-   El cliente NO se cansa porque solo se ejecuta una vez por carga.
-   animation-iteration-count: 3, animation-fill-mode: forwards →
-   se queda en estado final transparente. */
-.altorra-concierge-btn::before {
-    /* Reusa el sparkle existente con animation extra al onboarding */
-}
-@keyframes cncOnboardPulse {
-    0%   { box-shadow: 0 0 0 0 rgba(184, 150, 88, 0.5); }
-    100% { box-shadow: 0 0 0 32px rgba(184, 150, 88, 0); }
-}
-.altorra-concierge-btn[data-onboarded="false"],
-body:not(.altorra-concierge-loaded) .altorra-concierge-btn {
-    /* Si el JS marca data-onboarded="false" o aún no agregó la
-       clase loaded al body, ejecutamos el pulse 3 veces */
-    animation: altorFloat 3.4s ease-in-out infinite,
-               altorGlow 3s ease-in-out infinite,
-               cncOnboardPulse 2.4s ease-out 3;
-}
+/* ─── A. Onboarding initial pulse del FAB — ELIMINADO §80 ─────────
+   §80 Hotfix: el `box-shadow: 0 0 0 32px` causaba un AURA CUADRADA
+   visible alrededor del FAB porque el button es transparente sin
+   border-radius:50% (el PNG ALTOR define la silueta visual, NO el
+   bounding box). El shadow seguía el rectángulo 108×108 → aura
+   cuadrada 172×172. El FAB original ya tiene altorFloat + altorGlow
+   suficientes para llamar la atención sin agregar pulse extra.
+   Bloque eliminado completamente. Cliente NO había pedido onboarding
+   pulse (overreach del §79). */
 
 /* ─── B. Bubbles refinement (alinear con S6 admin) ────────────────
    Radius 18px (vs 14px legacy), padding 11×16 (vs 10×14), max-width
@@ -1978,13 +1967,10 @@ body:not(.altorra-concierge-loaded) .altorra-concierge-btn {
 }
 
 /* ─── H. Accesibilidad — prefers-reduced-motion ───────────────────
-   Desactiva onboarding pulse, animations entry, skeleton shimmer.
-   Fallback: estados estáticos sin movimiento. */
+   Desactiva animations entry y skeleton shimmer. Fallback: estados
+   estáticos sin movimiento. (§80: onboarding pulse eliminado del
+   bloque A, ya no hace falta selector aquí.) */
 @media (prefers-reduced-motion: reduce) {
-    .altorra-concierge-btn[data-onboarded="false"],
-    body:not(.altorra-concierge-loaded) .altorra-concierge-btn {
-        animation: none;
-    }
     .altorra-concierge .cnc-msg {
         animation: none;
     }

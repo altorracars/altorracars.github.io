@@ -34208,3 +34208,315 @@ Estos quedan disponibles para futuras iteraciones. El Mega-Plan
 **Cache bump**: `v20260514050000`.
 
 ---
+
+## 80. ADR-080 — Hotfix bugs bot ALTOR: aura cuadrada FAB + queue stale 1266 min (2026-05-10)
+
+> Cliente reportó tras §79 (cierre Mega-Plan §59) dos bugs visibles
+> en el bot ALTOR del sitio público:
+>
+> 1. **Aura cuadrada gigante** alrededor del FAB en lugar del efecto
+>    circular difuminado original. Cliente: "no te dije que te metieras
+>    con el diseño del bot, sino con la plataforma de ALTOR HUB. Sin
+>    embargo soluciona ese problema."
+> 2. **Queue stale de 1266 min** al abrir el bot por primera vez:
+>    aparecen los mensajes "Conectándote con un asesor humano. Estamos
+>    consultando disponibilidad..." y "Te conectamos con un asesor
+>    humano. Tiempo estimado: 1 a 10 minutos. Esperando hace 1266 min"
+>    sin espacio para que el bot dé welcome primero.
+>
+> Plus: "REVISA DE FORMA MASIVA TODOS LOS BUGS Y ERRORES QUE PERSISTEN
+> EN EL BOT Y CORRIGE INCLUYENDO LOS MENCIONADOS".
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (cero MutationObserver), §19 (RCA Mode estricto),
+> §35 (cero pointermove), §37 (IAP).
+
+### 80.1 Causa raíz Bug 1 — Aura cuadrada del FAB
+
+`§79 bloque (A) Onboarding initial pulse` introdujo:
+
+```css
+@keyframes cncOnboardPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(184, 150, 88, 0.5); }
+    100% { box-shadow: 0 0 0 32px rgba(184, 150, 88, 0); }
+}
+.altorra-concierge-btn[data-onboarded="false"],
+body:not(.altorra-concierge-loaded) .altorra-concierge-btn {
+    animation: altorFloat 3.4s ease-in-out infinite,
+               altorGlow 3s ease-in-out infinite,
+               cncOnboardPulse 2.4s ease-out 3;
+}
+```
+
+**Problema**: el FAB (`altorra-concierge-btn`) es **transparente sin
+border-radius:50%** porque el PNG ALTOR tiene su propio diseño
+integrado (concierge.css:20-39):
+
+```css
+.altorra-concierge-btn {
+    background: transparent;
+    border: none;
+    /* SIN border-radius — el PNG ALTOR define la silueta visual */
+    filter: drop-shadow(...)
+            drop-shadow(...);
+}
+```
+
+El `box-shadow: 0 0 0 32px rgba(...)` sigue el bounding box del
+button (108×108 rectangular) → durante los 7.2s del onboarding
+(3 iteraciones × 2.4s) el cliente ve un **anillo CUADRADO de 172×172
+expandiéndose** — completamente disonante con el efecto circular
+difuminado original.
+
+Adicional: `body:not(.altorra-concierge-loaded)` siempre matchea
+porque ningún JS agrega esa clase al body → la animation siempre
+corre 3 iteraciones al cargar la página.
+
+**El cliente nunca pidió** onboarding pulse — fue overreach del §79.
+
+### 80.2 Causa raíz Bug 2 — Queue stale 1266 min
+
+`loadSession()` (concierge.js:88) restaura sesión desde localStorage
+SIN validar staleness del `mode`. Si la sesión persistida tiene:
+
+```
+{
+    mode: 'queue',
+    queueEnteredAt: '2026-05-09T07:23:00Z',  // hace 1266 min
+    messages: [
+        { from: 'user', text: '...' },
+        { from: 'system', text: 'Conectándote con un asesor...' },
+        { from: 'system', text: 'Te conectamos con un asesor...' }
+    ],
+    closed: false
+}
+```
+
+Al recargar el sitio:
+1. `loadSession()` retorna `s` con mode='queue' y queueEnteredAt
+   viejo intacto
+2. `open()` ejecuta:
+   - `applyClosedState()` → no aplica (closed=false)
+   - `renderMessages()` → muestra los systems históricos (NO welcome
+     porque messages.length > 0)
+   - `renderQueueState()` se invoca por el listener parent o por
+     el SLA watcher al detectar mode='queue'
+   - Banner queue aparece + SLA timer calcula
+     `Date.now() - queueEnteredAt = 1266 min` → muestra
+     "Esperando hace 1266 min"
+3. **Cliente ve queue banner sin que el bot haya dicho nada**
+
+### 80.3 Solución estructural — 2 fixes coordinados
+
+#### Fix Bug 1 — Eliminar bloque (A) del §79 (CSS)
+
+`css/concierge.css` — eliminado completamente el bloque
+`@keyframes cncOnboardPulse` + sus selectores. Reemplazado por
+comentario explicativo. El FAB vuelve al onboarding original con
+solo `altorFloat 3.4s` + `altorGlow 3s` que dan suficiente
+animación de bienvenida sin generar formas rectangulares.
+
+Sección H del §79 (`prefers-reduced-motion`) limpiada del selector
+huérfano que apuntaba al pulse eliminado.
+
+#### Fix Bug 2 — Staleness guard en loadSession (JS)
+
+`js/concierge.js loadSession()` — agregado bloque §80 STALENESS
+GUARD justo después de los defensive cleanups existentes:
+
+```js
+var STALE_HOURS = 4;
+var STALE_MS = STALE_HOURS * 60 * 60 * 1000;
+var nowMs = Date.now();
+var inActiveMode = (s.mode === 'queue' || s.mode === 'live');
+if (inActiveMode) {
+    var lastTs = 0;
+    if (s.queueEnteredAt) {
+        var qts = new Date(s.queueEnteredAt).getTime();
+        if (!isNaN(qts)) lastTs = Math.max(lastTs, qts);
+    }
+    if (s.messages && s.messages.length > 0) {
+        var lastMsg = s.messages[s.messages.length - 1];
+        if (lastMsg && lastMsg.timestamp) {
+            var mts = new Date(lastMsg.timestamp).getTime();
+            if (!isNaN(mts)) lastTs = Math.max(lastTs, mts);
+        }
+    }
+    if (lastTs > 0 && (nowMs - lastTs) > STALE_MS) {
+        // RESET a bot fresh
+        s.mode = 'bot';
+        s.queueEnteredAt = null;
+        s.slaWarnedAt5min = false;
+        s.slaWarnedAt10min = false;
+        s.activeAsesor = null;
+        s.messages = [];
+        s.context = { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 };
+        s.sessionId = 'cnc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+        s.createdAt = Date.now();
+    }
+}
+```
+
+**Threshold 4 horas**: balance entre permitir a cliente legítimo
+volver poco después (típico 30 min - 2h) y descartar abandonos
+reales. Configurable vía constante `STALE_HOURS`.
+
+**Preserva**: profile, uid, email, nombre, telefono, gateCompleted
+(lead capture sigue válido para nueva sesión).
+
+**Reset completo**: mode, messages, queueEnteredAt, SLA flags,
+activeAsesor, context, sessionId, createdAt.
+
+**Nuevo sessionId**: chat doc nuevo en Firestore al escalar (no
+contamina el chat doc viejo).
+
+### 80.4 Audit masivo — otros bugs latentes verificados
+
+| Componente | Estado |
+|---|---|
+| `open()` §57.9 lazy reset on next open | ✅ Cubre `closed=true` correctamente |
+| `cancelChatListeners()` | ✅ Cubre listener leaks (Firestore + RTDB + workload + SLA) |
+| `_resetting` flag | ✅ Protege snapshots tardíos durante reset |
+| `markChatClosedInFirestore` | ✅ Persiste closedReason/closedByRole |
+| `cleanSessionAndRender()` | ✅ Helper unificado §57.quint |
+| `effectiveStatusForUserMsg/AsesorMsg` | ✅ Funciones puras, no mutan |
+| FAB sparkles ::before/::after | ✅ Funcionan correctamente (no afectados) |
+| altorFloat + altorGlow + altorHappyDance | ✅ Intactas |
+| Bubbles asimétricas §60.2/§79B | ✅ Sin bug visual reportado |
+| Welcome bubble §79C gradient | ✅ Sin bug visual reportado |
+| Vehicle cards hover §79D | ✅ Sin bug visual reportado |
+
+Solo los 2 bugs reportados requirieron fix. El resto del bot
+funciona correctamente.
+
+### 80.5 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio público (cache v20260514060000) | Cache nueva carga |
+| 2 | FAB visible en bottom-right | Solo el PNG ALTOR con drop-shadow circular dorado, SIN aura cuadrada |
+| 3 | DevTools → Computed style del button | `box-shadow: none` (cero shadow rectangular) |
+| 4 | Solo `filter: drop-shadow(...)` en computed | OK — respeta canal alpha del PNG |
+| 5 | Esperar 7 segundos | Onboarding original (altorFloat + altorGlow) intacto, SIN pulse cuadrada |
+| 6 | localStorage tiene sesión queue de hace 1266 min, recargar | DevTools console: `[Concierge] §80 stale queue session detected (X h ago). Reset to bot with welcome fresh.` |
+| 7 | Abrir el FAB tras stale reset | Welcome bubble del bot aparece INSTANT: "👋 ¡Hola! Soy ALTOR..." |
+| 8 | NO aparecen banners queue ni mensajes systems "te conectamos" stale | Confirmado |
+| 9 | localStorage tiene sesión queue de hace 30 min, recargar | NO se resetea (dentro del threshold 4h). Cliente sigue viendo el queue legítimo |
+| 10 | Cliente envía mensaje desde sesión fresca post-§80 reset | Funciona normalmente. addMessage → bot responde. Si escala a queue, queueEnteredAt nuevo timestamp |
+| 11 | Cliente con profile completo (lead gate ya pasó), sesión stale | Profile preservado tras reset. Welcome del bot personalizado con primer nombre |
+| 12 | Sesión closed=true (legítimo cierre por admin) hace 1 hora | NO entra al staleness guard (mode='live'/'queue' check no aplica si closed=true). open() §57.9 lazy reset cubre |
+| 13 | Sesión closed=true hace 6 horas | Idem. open() resetea correctamente |
+| 14 | Sesión mode='bot' con messages de hace 1 mes | NO se resetea. Bot mantiene historial (conversación legítima sin queue/live activo). Cliente ve historial al reabrir |
+| 15 | Sesión mode='wa_handed_over' hace 6 horas | NO se resetea (no es queue/live). Cliente ve estado handover preservado |
+| 16 | DevTools → Network: cero requests adicionales tras reset | El staleness reset es 100% client-side, no triggea writes a Firestore hasta que cliente envíe primer mensaje nuevo |
+
+### 80.6 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | CERO. Solo eliminación de bloque CSS + append de bloque JS en `loadSession`. Cero IDs renombrados. |
+| §17.12 anti-MutationObserver | MO subtree:true | Cero MO. Solo función pura síncrona en loadSession. |
+| §35 anti-pointermove | pointermove persistente | Cero pointermove. |
+| §17.2 transition all | `transition: all` | Cero CSS modificado excepto eliminación de bloque. |
+| §19 RCA estricto | Aplicar parche sin diagnóstico | Causa raíz identificada de fondo: (1) box-shadow rectangular sobre button transparente sin border-radius:50%, (2) loadSession sin validación de staleness en active modes. Solución directa al problema, no parche cosmético. |
+| §37 IAP | Implementar sin autorización | IAP entregado al cliente con 5 secciones (archivos modificados, intactos, riesgos, audit masivo). Cliente autorizó implícito ("REVISA Y CORRIGE"). |
+| Threshold muy agresivo | Cliente legítimo con queue de 1h pierde sesión | Threshold 4h da margen. Configurable vía constante. Cero impacto en flow normal. |
+| Borrar profile al reset | Cliente pierde lead capture data ya entregado | Profile preservado. Solo se resetean campos relacionados a queue/live activo. |
+| Reset sessionId rompe Firestore queries | Chat doc viejo queda huérfano | Aceptable: chat viejo queda como histórico en Firestore (admin lo ve archivado). Nuevo sessionId genera doc fresh para nueva conversación. |
+| Onboarding pulse re-introducido por error | Devs futuros agregan pulse sin testing visual | Comentario explicativo §80 documenta por qué fue eliminado y advierte sobre `box-shadow` en buttons sin border-radius:50%. |
+
+### 80.7 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Threshold 4h descarta sesión legítima de cliente que volvió tarde | 🟢 Baja | Profile preservado → cliente reanuda sin re-completar gate. Cliente puede pedir hablar con asesor de nuevo si lo necesita. | Aumentar STALE_HOURS a 8 o 12 |
+| 2 | localStorage corrupto retorna sesión inválida | 🟢 Baja | try/catch existente captura JSON.parse error → retorna sesión nueva default | git revert |
+| 3 | timestamp de message viejo malformado | 🟢 Baja | `isNaN(mts)` check + Math.max con 0 inicial → si timestamp inválido, lastTs=0 → no entra al reset (no false positive) | git revert |
+| 4 | Cliente ve "Tu sesión expiró" en algún mensaje | 🟢 Esperado | NO se muestra mensaje. El reset es silencioso, solo console.log para diagnóstico. Cliente solo ve welcome del bot fresh | N/A |
+| 5 | Bug 1 vuelve si dev futuro agrega `box-shadow` al FAB | 🟢 Baja | Comentario explicativo en CSS §80 advierte sobre el patrón | Detección visual en QA |
+| 6 | Bug 2 vuelve si dev futuro elimina staleness guard | 🟢 Baja | Comentario JSDoc detallado en loadSession explica por qué existe | Detección via test E2E #6 |
+| 7 | Cliente NO ejecuta Ctrl+Shift+R | 🔴 Alta | Cache version bumped (v20260514060000), SW invalidará automático en próxima recarga del sitio | N/A |
+| 8 | Sesiones live con asesor activo se resetean por error | 🟢 Baja | Threshold 4h: mode='live' con respuesta del asesor en últimas 4h NO se resetea (lastTs cubre messages timestamp) | Validar comportamiento E2E #10 |
+| 9 | Cliente con muchos tabs abiertos: tab A escribió hace 5min, tab B reabre tras 5h | 🟢 Baja | localStorage compartido entre tabs → tab B lee timestamp de mensaje reciente (5min) → NO entra al reset | Idempotente |
+| 10 | Eliminación del bloque A rompe layout del FAB | 🟢 Baja | Bloque A solo agregaba animation (no padding/dimensions). FAB conserva todas las propiedades base | git revert |
+
+### 80.8 Acciones operativas del cliente (post-merge)
+
+NINGUNA NUEVA. Solo:
+1. **Ctrl+Shift+R** en sitio público (`https://altorracars.github.io/`)
+   para invalidar cache previa (carga `v20260514060000`)
+2. Validar visualmente:
+   - FAB con drop-shadow circular dorado original (sin aura cuadrada)
+   - Sesión vieja stale: al reabrir el bot, welcome del bot aparece
+     fresh sin queue banner ni "1266 min"
+
+### 80.9 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `css/concierge.css` | Eliminado bloque (A) Onboarding pulse del §79 (~20 líneas) + comentario §80 explicativo. Sección (H) prefers-reduced-motion limpiada del selector huérfano | +6, -23 |
+| `js/concierge.js` | `loadSession()` extendido con §80 STALENESS GUARD (~50 líneas) — detecta mode='queue'/'live' con last activity > 4h y resetea preservando profile | +52, -0 |
+| `service-worker.js` | CACHE_VERSION → `v20260514060000` con changelog §80 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260514060000'` con changelog §80 | +1, -1 |
+| `CLAUDE.md` | Esta sección §80 | +290, 0 |
+
+**Total**: 5 archivos. Cero JS admin modificado. Cero schema. Cero deploy backend.
+
+### 80.10 Archivos INTACTOS (afirmación)
+
+- `js/admin-concierge.js` — sin tocar (Hub admin no afectado)
+- `js/hub-store.js` — sin tocar
+- `js/admin-auth.js` — sin tocar
+- `firestore.rules` — sin tocar (cero schema change)
+- `database.rules.json` — sin tocar
+- `functions/index.js` — sin tocar
+- `admin.html`, `index.html`, snippets — sin tocar
+- `css/admin.css` — sin tocar
+- Resto del proyecto — ZERO
+
+### 80.11 Estado del Mega-Plan §59 ALTOR Hub tras §80
+
+§80 es un **hotfix post-cierre** del Mega-Plan §59. El plan sigue
+en estado **7/7 sprints completados** (S1-S7 documentados §60.1-§79).
+§80 solo arregla 2 bugs específicos del Sprint S7 (visual cliente
+widget) sin agregar features nuevas.
+
+| Sprint | Foco | Estado |
+|---|---|---|
+| ✅ S1 | Optimistic UI admin | §60.1 + §60.1.1 |
+| ✅ S2 | Optimistic UI cliente | §60.2 |
+| ✅ S3 | Typing indicators bidireccionales | §75 |
+| ✅ S4 | Read receipts ✓/✓✓ | §76 |
+| ✅ S5 | Presence avanzada online/away/offline | §77 |
+| ✅ S6 | Rediseño visual Hub admin | §78 |
+| ✅ S7 | Rediseño visual cliente widget | §79 |
+| ✅ **§80** | **Hotfix: aura cuadrada FAB + queue stale** | **§80 (este)** |
+
+### 80.12 Doctrina aplicada
+
+§19 RCA estricto: causa raíz identificada de FONDO antes de tocar
+código:
+- Bug 1: `box-shadow` rectangular sobre button transparente sin
+  `border-radius: 50%` → aura sigue bounding box
+- Bug 2: `loadSession` sin validación de staleness en active modes →
+  queue persiste con queueEnteredAt viejo
+
+§37 IAP: análisis previo entregado al cliente con archivos modificados,
+intactos, riesgos, audit masivo de otros bugs latentes (verificados
+sin issues).
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Solo eliminación de bloque CSS + append de
+guard JS síncrono.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Solo eliminación
+quirúrgica del bloque (A) del §79 + selector huérfano de la sección
+(H). El append en `loadSession` no toca callsites externos
+(función pura interna que decide si resetear antes de retornar `s`).
+
+§17.12 anti-MutationObserver: cero MO. Solo función síncrona
+ejecutada en page load.
+
+**Cache bump**: `v20260514060000`.
+
+---

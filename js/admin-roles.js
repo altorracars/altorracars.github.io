@@ -239,22 +239,28 @@
     // (refreshUserCounts). Si los flags de visibilidad cambiaron desde
     // el último render del header, reemplazar el HTML del header in-place
     // sin tocar el grid. Si no cambiaron, no-op (cero costo).
-    var _lastRenderedHeaderState = { cleanup: null, migrate: null };
+    // §73.4 — También trackea `seedSystem` flag para detectar si el botón
+    // "Resembrar sistema" cambió visibilidad (cuando ceoExists pasa de
+    // false a true tras un seed manual, o vice versa).
+    var _lastRenderedHeaderState = { cleanup: null, migrate: null, seedSystem: null };
     function refreshHeaderIfLegacyChanged() {
         var currentCleanup = !!(_state.hasLegacyDocs || _state.hasLegacyUsersWithSystemRoleId);
         var currentMigrate = !!_state.hasLegacyUsersWithoutRoleId;
+        var currentSeedSystem = _state.firstSnapshotReceived && !_state.ceoExists;
         if (_lastRenderedHeaderState.cleanup === currentCleanup
-            && _lastRenderedHeaderState.migrate === currentMigrate) {
+            && _lastRenderedHeaderState.migrate === currentMigrate
+            && _lastRenderedHeaderState.seedSystem === currentSeedSystem) {
             return; // sin cambios, no re-render
         }
         _lastRenderedHeaderState.cleanup = currentCleanup;
         _lastRenderedHeaderState.migrate = currentMigrate;
+        _lastRenderedHeaderState.seedSystem = currentSeedSystem;
         var oldHeader = document.querySelector('#rolesContainer .roles-header');
         if (!oldHeader) return; // header no presente (renderEmpty u otra cosa)
         oldHeader.outerHTML = renderRolesHeader();
         var newHeader = document.querySelector('#rolesContainer .roles-header');
         if (newHeader) refreshIcons(newHeader);
-        console.log('[AdminRoles] §73.2 header re-rendered: cleanup=' + currentCleanup + ' migrate=' + currentMigrate);
+        console.log('[AdminRoles] §73.4 header re-rendered: cleanup=' + currentCleanup + ' migrate=' + currentMigrate + ' seedSystem=' + currentSeedSystem);
     }
 
     // §73.1 hotfix — header de acciones SIEMPRE visible para super_admin.
@@ -265,8 +271,12 @@
     //     huérfano apuntando a esos system roles)
     //   - "Migrar legacy": visible si hasLegacyUsersWithoutRoleId (users
     //     con campo `rol` legacy pero sin roleId, susceptibles de R4)
-    //   - "Resembrar sistema": SIEMPRE visible (utility de mantenimiento
-    //     para futuras actualizaciones del catálogo canónico)
+    //   - "Resembrar sistema" (§73.4): visible SOLO si ceoExists=false
+    //     (caso edge: CEO no sembrado). Antes era siempre visible pero
+    //     en flujo normal del cliente no es necesario. Si en el futuro
+    //     se actualiza el catálogo canónico (agregar nuevos permissions),
+    //     se invocará desde DevTools console:
+    //         window.AltorraAdminRoles.seedSystemRoles()
     //   - "Nuevo rol": SIEMPRE visible (CTA principal)
     function renderRolesHeader() {
         var rolesCount = (_state.roles && _state.roles.length) || 0;
@@ -277,6 +287,11 @@
         // hasta que el detector confirme. Re-render tras la detección.
         var showCleanupLegacy = !!(_state.hasLegacyDocs || _state.hasLegacyUsersWithSystemRoleId);
         var showMigrateLegacy = !!_state.hasLegacyUsersWithoutRoleId;
+        // §73.4 — "Resembrar sistema" auto-hide. Solo visible si CEO no
+        // sembrado (caso edge inicial o post-borrado manual de Firestore).
+        // Durante loading inicial (firstSnapshotReceived=false), también
+        // se oculta para evitar flicker.
+        var showSeedSystem = _state.firstSnapshotReceived && !_state.ceoExists;
 
         var html = '<div class="roles-header">' +
             '<div class="roles-header-stats">' +
@@ -292,10 +307,12 @@
             html += '<button class="alt-btn alt-btn--ghost" data-action="migrate-legacy" title="Migra usuarios pre-existentes (legacy) al sistema dinámico de roles. Idempotente — re-ejecutable sin riesgo.">' +
                 '<i data-lucide="users-round"></i> Migrar legacy</button>';
         }
-        // Resembrar sistema y Nuevo rol siempre visibles
-        html += '<button class="alt-btn alt-btn--ghost" data-action="seed-system-roles" title="Re-ejecutar seedSystemRoles (idempotente — solo agrega los que falten). Útil cuando se actualice el catálogo canónico de permisos en el futuro.">' +
-            '<i data-lucide="refresh-cw"></i> Resembrar sistema</button>' +
-            '<button class="alt-btn alt-btn--primary" data-action="create-role">' +
+        if (showSeedSystem) {
+            html += '<button class="alt-btn alt-btn--ghost" data-action="seed-system-roles" title="Inicializa el catálogo de permisos + el rol CEO en Firestore. Idempotente.">' +
+                '<i data-lucide="refresh-cw"></i> Resembrar sistema</button>';
+        }
+        // Solo "Nuevo rol" siempre visible (CTA principal)
+        html += '<button class="alt-btn alt-btn--primary" data-action="create-role">' +
             '<i data-lucide="plus"></i> Nuevo rol</button>' +
             '</div></div>';
 

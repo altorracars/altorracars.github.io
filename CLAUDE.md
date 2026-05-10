@@ -32892,3 +32892,280 @@ S4 NO requiere deploy de RTDB (usa Firestore). Sí requiere `firebase deploy --o
 **Cache bump**: `v20260514010000`.
 
 ---
+
+## 76. ADR-076 — Sprint §59 S4: Read Receipts (✓ enviado vs ✓✓ leído) (2026-05-10)
+
+> Cuarto sprint del Mega-Plan §59 ALTOR Hub. Bubbles del cliente y
+> del asesor pasan de ✓ gris (enviado) a ✓✓ azul (leído por el otro
+> lado) cuando este abre el panel/chat. Patrón WhatsApp/Messenger.
+> Latencia visual <2s desde que el receptor abre, gracias a Firestore
+> onSnapshot real-time + throttle 5s en escrituras.
+>
+> CSS ya existía completo desde §60.2 (cliente) y §60.1 (admin).
+> Sprint §76 es puramente JS wiring — agregar marcadores de lectura
+> en Firestore + lectura del campo del otro lado + helpers puros que
+> promueven `_status='sent'` → `'read'` efectivo en el render.
+>
+> Cero deploy backend requerido. Las rules de §68 R6 sobre
+> `conciergeChats/{sid}` ya permiten update tanto por cliente
+> (`resource.data.userId == request.auth.uid || == null`) como por
+> admin (`isEditorOrAbove` o `hasPermission('concierge.*')` con claim).
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §35 (anti-patterns), §37 (IAP),
+> §57.7 (listener admin globalmente activo), §57.9 (lazy reset on
+> next open), §59 Mega-Plan ALTOR Hub.
+
+### 76.1 Hallazgo durante el IAP
+
+Audit pre-implementación detectó que el CSS ya tenía estilos
+`.cnc-msg-status[data-state="read"]` con color `#34B7F1` (azul
+estándar WhatsApp). Cliente además tenía variante `#1d4ed8` para
+cuando el bubble es el dorado del usuario (contraste oscuro sobre
+fondo claro). Y los switch en `renderMessages`/`renderChatDetail`
+ya tenían el branch `m._status === 'read'` desde §60.1/§60.2.
+
+**Lo que faltaba era solo el wiring de timestamps de lectura**.
+Sprint §76 cierra ese gap sin tocar HTML ni CSS.
+
+### 76.2 Schema Firestore
+
+Campos nuevos en `conciergeChats/{sessionId}` (extiende los existentes):
+
+| Campo | Tipo | Quién lo escribe |
+|---|---|---|
+| `lastReadByUser` | ISO timestamp string | Cliente al abrir panel + cada 10s + al recibir mensaje del asesor (solo si panel abierto) |
+| `lastReadByAdmin` | ISO timestamp string | Admin al abrir chat + cada 10s + al recibir mensaje del cliente |
+
+**Garantía sin modificación de rules**: §68 R6 dejó las rules de
+`conciergeChats/{sid}` allow update con OR fallback que ya cubren:
+
+```
+allow update: if isSuperAdmin()
+    || (isEditorOrAbove() && claim libre o propio)
+    || (hasPermission('concierge.claim'/'transfer'/'close'/'reopen') ...)
+    || (request.auth != null && (
+        resource.data.userId == request.auth.uid
+        || resource.data.userId == null
+    ));
+```
+
+El branch 4 cubre al cliente (su `userId` matchea el `auth.uid` o es null).
+El branch 1-3 cubre al admin con cualquier permission válido.
+Cero modificación de rules. Cero deploy backend.
+
+### 76.3 Solución estructural — cliente (`js/concierge.js`)
+
+**Variables y helpers (después del bloque §75 typing)**:
+
+- `_lastReadByUserSentAt` — timestamp ms del último write para throttle
+- `_readReceiptInterval` — interval ID
+- Constantes: `READ_RECEIPT_THROTTLE_MS=5000`, `READ_RECEIPT_TICK_MS=10000`
+
+**Funciones**:
+
+- `markUserRead()`: setea `lastReadByUser` con throttle 5s.
+  Guards: `_chatDocCreated`, `window.db`, `session.sessionId`.
+  Catch silencioso para `permission_denied` (no rompe chat).
+- `startReadReceiptInterval()` / `stopReadReceiptInterval()`:
+  setInterval cada 10s que invoca `markUserRead()` solo si `_isOpen`.
+  Idempotente.
+- `effectiveStatusForUserMsg(m)`: **función pura**, no muta el msg.
+  Si `m._status === 'sent'` Y `session.lastReadByAdmin >= m.timestamp`
+  → retorna `'read'`. Sino retorna el `_status` original.
+
+**Hooks en flow existente**:
+
+- **`open()` línea 3083**: `markUserRead()` + `startReadReceiptInterval()`
+  al final (panel está abierto, el cliente está viendo todo).
+- **`close()` línea 3290**: `stopReadReceiptInterval()` (panel cerrado,
+  no consumir Firestore writes).
+- **`cancelChatListeners()` línea 2604**: `stopReadReceiptInterval()`
+  (cleanup completo cuando se cancela toda la chain).
+- **`_firestoreUnsub` callback línea 1727 (mensaje del asesor)**:
+  `if (_isOpen) markUserRead()` cuando llega un mensaje nuevo del
+  asesor. Throttle 5s del helper previene spam.
+- **`_firestoreParentUnsub` callback línea 1715 (parent doc)**:
+  extendido para leer `d.lastReadByAdmin` → guardar en `session.lastReadByAdmin`
+  + `renderMessages()` para que los bubbles user con `_status='sent'` se
+  promuevan a `'read'` efectivo.
+- **`renderMessages` línea 3085**: usa `effectiveStatusForUserMsg(m)`
+  en lugar de `m._status` directo en el switch.
+
+### 76.4 Solución estructural — admin (`js/admin-concierge.js`)
+
+**Variables y helpers (después del bloque §75 typing admin)**:
+
+- `_lastReadByAdminSentAt` — timestamp ms throttle
+- `_lastReadByAdminSidSent` — sessionId del último write (track per session)
+- `_adminReadReceiptInterval` — interval ID
+- Constantes: `ADMIN_READ_RECEIPT_THROTTLE_MS=5000`, `ADMIN_READ_RECEIPT_TICK_MS=10000`
+
+**Funciones**:
+
+- `markAdminRead(sessionId)`: setea `lastReadByAdmin` con throttle 5s
+  POR sessionId (si admin cambia rápido entre chats, cada uno tiene
+  su propio tracking implícito). Catch silencioso.
+- `startAdminReadReceiptInterval()` / `stopAdminReadReceiptInterval()`:
+  setInterval cada 10s invoca `markAdminRead(_activeSessionId)`.
+- `effectiveStatusForAsesorMsg(m, chat)`: pura. Promueve `'sent'` →
+  `'read'` si `chat.lastReadByUser >= m.timestamp`.
+
+**Hooks en flow existente**:
+
+- **`openChat(sessionId)` línea 503 (después del start typing listener)**:
+  `markAdminRead(sessionId)` + `startAdminReadReceiptInterval()`.
+- **`AltorraSectionCleanup.register('concierge', ...)` línea 80**:
+  cancela `stopAdminReadReceiptInterval()` al salir de sec-concierge.
+- **Removed event en `_chatsUnsub.docChanges()` línea 263**:
+  `stopAdminReadReceiptInterval()` cuando el chat activo es eliminado.
+- **`_messagesUnsub.onSnapshot` callback línea 778**: si `sessionId === _activeSessionId`
+  Y hay algún mensaje `from === 'user'`, invoca `markAdminRead(sessionId)`.
+  Throttle 5s deduplica.
+- **`renderChatDetail` línea 1024 (switch del bubble asesor)**: usa
+  `effectiveStatusForAsesorMsg(m, chat)` en lugar de `m._status` directo.
+
+**Manejo del caso "msg sin _status local"**: post-confirm Firestore
+los mensajes vienen del listener `_messagesUnsub` y NO tienen `_status`
+local (es del optimistic UI §60.1). El switch antes caía al `else`
+con `cnc-msg-synced` SIN icon. Ahora `baseStatus = m._status || 'sent'`
+y luego `effectiveStatusForAsesorMsg` promueve a `'read'` si aplica.
+
+### 76.5 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh ambos (Ctrl+Shift+R) | Cache `v20260514020000` carga |
+| 2 | Cliente envía mensaje, panel admin cerrado | Cliente ve ⏱ → ✓ gris (sent) en <2s |
+| 3 | Admin abre el chat (con _activeSessionId nuevo) | Cliente ve ✓ → ✓✓ azul (`#1d4ed8` sobre dorado) en <2s |
+| 4 | Asesor envía mensaje al cliente, panel cliente cerrado | Asesor ve ⏱ → ✓ gris (sent) |
+| 5 | Cliente abre el panel | Asesor ve ✓ → ✓✓ azul (`#34B7F1`) en <2s |
+| 6 | Cliente con panel abierto envía 5 mensajes en 3s | Admin (chat abierto) marca todos como ✓✓ rapidamente. Throttle 5s en el setter del admin reduce writes |
+| 7 | Admin sale de sec-concierge → vuelve | Cleanup hook cancela interval. Al volver y abrir chat, interval se reinicia |
+| 8 | Cliente cierra panel mid-conversación | `stopReadReceiptInterval` cancela ticker. lastReadByUser queda en Firestore con el último timestamp marcado |
+| 9 | Cliente reabre panel a los 5 min | `markUserRead()` actualiza inmediato. Bubbles del asesor se promueven a ✓✓ |
+| 10 | Chat sin lastReadByUser/lastReadByAdmin (pre-§76) | Bubbles quedan en ✓ sent hasta que alguien marque. Comportamiento gracefully degradado |
+| 11 | Permission denied (chat ajeno) | Catch silencioso, no rompe chat |
+| 12 | DevTools Network filter "lastRead" | Max ~6 writes/min/lado en peor caso (throttle 5s + tick 10s) |
+| 13 | Admin abre 3 chats distintos seguidos | Cada uno recibe su markAdminRead. Throttle es por sessionId, no global |
+| 14 | `prefers-reduced-motion: reduce` | Sin impacto (CSS read receipts no usa animations) |
+
+### 76.6 Anti-patterns evitados (cruce con doctrinas)
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Cero CSS modificado en §76. Estilos read receipts ya existían en §60.1/§60.2 con transitions específicas |
+| §17.4 | Renombrar IDs/clases | Cero. Helpers nuevos son funciones puras dentro de los IIFEs existentes |
+| §17.12 | `MutationObserver subtree:true` | Cero MO. Solo writes puntuales al doc parent + setInterval 10s con guards |
+| §35 | `pointermove` persistente | Cero |
+| §37 IAP | Implementar sin autorización | IAP §37 entregado y autorizado por cliente con "continua" (autorización amplia para el plan §59 ya conocido) |
+| §57.7 | Listener admin que muere | Read receipts complementan al `_chatsUnsub` global (§57.7 sigue intacto). El interval admin es PER sec-concierge activo (cancelado al salir vía AltorraSectionCleanup) |
+| §57.9 | Mezclar UI close con state reset | `close()` solo cancela el interval (no resetea state). Patrón "lazy reset on next open" intacto |
+| §17.7 | Crear archivo nuevo | Cero archivos nuevos. Refactor sobre archivos existentes |
+| Mutation accidental | Mutar `m._status` directamente al promover a 'read' | Función pura `effectiveStatusForUserMsg`/`effectiveStatusForAsesorMsg` retorna nuevo valor, NO muta el array |
+| Race con listener parent | Cliente escribe `lastReadByAdmin` y crea loop | Cliente NO escribe `lastReadByAdmin` (solo lo LEE). Admin NO escribe `lastReadByUser`. Cero loop posible |
+
+### 76.7 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | setInterval 10s huérfano post-cierre | 🟢 Baja | Cleanup en `close`/`cancelChatListeners` (cliente) + `AltorraSectionCleanup`/`openChat`/`removed event` (admin) | git revert |
+| 2 | Throttle 5s muy agresivo | 🟢 Baja | Constante exportable. Si feedback indica, ajustar a 3s | Patch puntual |
+| 3 | Permission denied al escribir | 🟢 Baja | Catch silencioso. Indicador queda en ✓ sent (no se promueve a ✓✓). Chat sigue funcionando | N/A |
+| 4 | Race con listener parent | 🟢 Baja | Cliente NO escribe `lastReadByAdmin`, admin NO escribe `lastReadByUser`. Cero loop | N/A |
+| 5 | Chats pre-§76 sin campos lastRead | 🟢 Baja | Tratamos como `null` → bubbles quedan en ✓ sent hasta que alguien marque. Gracefully degradado | N/A |
+| 6 | Funciones puras `effective*` retornan undefined | 🟢 Baja | Default explícito a `'sent'` si no hay `_status` o falta campo lastReadBy | N/A |
+| 7 | Cliente con muchas pestañas abiertas | 🟢 Baja | Cada tab tiene su propio `_chatDocCreated` por sessionId distinto en localStorage. Cero conflicto | N/A |
+| 8 | Throttle por sessionId (admin) hace que cambios rápidos NO marquen | 🟢 Esperado | Si admin cambia chat A→B→A en 1s, A se marca en openChat A, B en openChat B, A solo si pasaron >5s. Acceptable: protege contra spam |
+| 9 | Optimistic msg confirma antes de markRead llegue al server | 🟢 Baja | renderChatDetail usa `effectiveStatusForAsesorMsg` que opera sobre `chat.lastReadByUser` (campo del doc parent leído por _chatsUnsub). Sin race |
+| 10 | Cliente reciba lastReadByAdmin para mensaje que aún no envió | 🟢 Imposible | Comparación `msg.timestamp <= readTs`. Si cliente aún no envió, no hay msg que comparar |
+
+### 76.8 Acciones operativas del super_admin (post-merge)
+
+**NINGUNA NUEVA**. Las rules `conciergeChats/{sid}` allow update de
+§68 R6 ya cubren tanto cliente como admin para los campos
+`lastReadByUser`/`lastReadByAdmin`. Cero deploy backend.
+
+**Acción del cliente final**:
+1. Ctrl+Shift+R en cliente público (sitio público) y en admin
+   (`admin.html`) para invalidar cache previa (carga `v20260514020000`)
+2. Validación E2E con 2 sesiones simultáneas (cliente real + admin Hub
+   abierto):
+   - Cliente envía mensaje, admin con sec-concierge cerrado → ✓ sent
+   - Admin abre el chat → cliente ve ✓✓ azul en sus mensajes en <2s
+   - Asesor envía mensaje, panel cliente cerrado → ✓ sent
+   - Cliente abre el panel → asesor ve ✓✓ azul en sus mensajes en <2s
+
+### 76.9 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/concierge.js` | +60 líneas: variables read receipt + 4 funciones helper (`markUserRead`, `startReadReceiptInterval`, `stopReadReceiptInterval`, `effectiveStatusForUserMsg`). Modificado: `_firestoreParentUnsub` extendido para leer `lastReadByAdmin` + `_firestoreUnsub` callback marca read al recibir mensaje del asesor + `open()`/`close()`/`cancelChatListeners()` hooks + `renderMessages()` usa effectiveStatus | +60, -8 |
+| `js/admin-concierge.js` | +70 líneas: variables read receipt + 4 funciones helper (`markAdminRead`, `startAdminReadReceiptInterval`, `stopAdminReadReceiptInterval`, `effectiveStatusForAsesorMsg`). Modificado: `openChat` hook + cleanup hook + chat removed event + `_messagesUnsub` callback marca read al recibir mensaje del cliente + `renderChatDetail` switch usa effectiveStatus con fallback `_status||'sent'` para mensajes post-confirm sin status local | +70, -23 |
+| `service-worker.js` | CACHE_VERSION → `v20260514020000` con descripción §76 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260514020000'` con descripción §76 | +1, -1 |
+| `CLAUDE.md` | Esta sección §76 | +180, 0 |
+
+**Total**: ~312 líneas agregadas, ~33 modificadas. Cero archivos nuevos. Cero CSS modificado. Bundle JS Concierge: 3512 → 3580 líneas; admin-concierge: 2367 → 2435 líneas (dentro budget §59 max 4080).
+
+### 76.10 Archivos INTACTOS (afirmación explícita)
+
+- `firestore.rules` (R6 §68) — sin tocar. Rules ya cubren update tanto por cliente (`auth.uid == userId || userId == null`) como por admin (`isEditorOrAbove` + permission claim).
+- `database.rules.json` (S3 §75) — sin tocar. S4 usa Firestore, no RTDB.
+- `css/concierge.css` — sin tocar. Estilos `.cnc-msg-status[data-state="read"]` con `#34B7F1` y variante `#1d4ed8` sobre user-bubble dorado ya existían desde §60.2.
+- `css/admin.css` — sin tocar. Estilos `.cnc-msg-status[data-state="read"]` con `#34B7F1` ya existían desde §60.1.
+- `js/hub-store.js` (S1) — sin tocar.
+- `js/firebase-config.js` — sin tocar.
+- `functions/index.js` — sin tocar. Cero Cloud Function nueva.
+- `js/rbac-catalog.js`, `js/admin-state.js`, `js/admin-auth.js`, `js/admin-roles.js`, `js/admin-users.js` — ZERO.
+- `admin.html` — ZERO.
+- Bot LLM typing (§75 cncTypingIndicator INTACTO) — ZERO.
+- Sitio público (todo lo no Concierge) — ZERO.
+
+### 76.11 Estado del Mega-Plan §59 ALTOR Hub tras §76
+
+| Sprint | Foco | Estado |
+|---|---|---|
+| ✅ S1 | Optimistic UI admin (7 botones) | §60.1 |
+| ✅ S2 | Optimistic UI cliente | §60.2 |
+| ✅ S3 | Typing indicators bidireccionales (RTDB) | §75 |
+| ✅ **S4** | **Read receipts (✓ enviado vs ✓✓ leído)** | **§76 (este)** |
+| ⏸ S5 | Presence avanzada (online/away/offline) | Próximo |
+| ⏸ S6 | Rediseño visual Hub admin | Después de S5 |
+| ⏸ S7 | Rediseño visual cliente widget | Después de S6 |
+
+**4/7 sprints completados**. Tiempo estimado restante S5-S7: ~7 días.
+
+### 76.12 Próximo sprint del Mega-Plan §59
+
+**S5 — Presence avanzada (online/away/offline)** (1.5 días):
+- Schema RTDB extendido en `/presence/{uid}/{sessionId}`: `status: 'online'|'away'|'offline'`, `lastActivity: timestamp`, `device: string`, `currentChatId?: string`
+- Cliente: track `pageVisibilityState` + `mousemove`/`keydown` con throttle para detectar `away` (5min idle) vs `online`
+- Admin: igual con tracking de qué chat tiene abierto en sec-concierge
+- Cliente ve status del asesor en el header del chat: 🟢 online / 🟡 away / ⚫ offline
+- Admin Hub muestra presencia de otros admins activos (presence overlay §M.1 ya tenemos en §F.3 — extender)
+- Auto-cleanup con `onDisconnect()` nativo
+
+S5 NO requiere deploy de Firestore rules. Sí requiere extender `database.rules.json` con schema nuevo `/presence/{uid}/{sessionId}` y deploy `firebase deploy --only database`.
+
+### 76.13 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Sprint planificado en §74.2 del Mega-Plan §59. IAP previo detectó que CSS+switch ya existían desde §60.1/§60.2 — solo faltaba wiring de timestamps de lectura.
+
+§37 IAP: 5 secciones documentadas + autorización amplia del cliente ("continua").
+
+§17 Performance: cero MutationObserver, cero pointermove persistente, cero `transition: all`. Throttle 5s + tick 10s en escrituras Firestore = max ~12 writes/min en peor caso (con throttle deduplicando).
+
+§17.4 HTML/CSS estable: cero IDs/clases existentes renombrados. Cero CSS modificado. Helpers nuevos son funciones puras dentro de los IIFEs.
+
+§17.12 anti-MutationObserver: cero MO global. Solo writes Firestore puntuales con throttle + setInterval con guards.
+
+§57.7 listener admin globalmente activo: `_chatsUnsub` del Hub sigue intacto. Los read receipts admin son complementarios PER chat activo (cancelado al salir de sec-concierge).
+
+§57.9 lazy reset on next open: read receipts no tocan `close()` ni `finalCloseAndCleanup()`. Cleanup automático via `cancelChatListeners()` cuando aplica. Cliente puede reabrir y los marcadores re-sincronizan.
+
+§59 Mega-Plan ALTOR Hub: S4 cierre estricto al pie del plan §74.2 (sección "S4 — Read receipts"). Cero overflow a S5 (presence), S6/S7 (rediseño visual).
+
+**Cache bump**: `v20260514020000`.
+
+---

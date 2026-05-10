@@ -82,16 +82,17 @@
         // §69 R7 — Solo CEO (system_super_admin) aparece como system role.
         // system_editor y system_viewer legacy se filtran del dropdown
         // (no se ofrecen como opciones para nuevos users). Sin embargo,
-        // si el user que estoy editando ya tiene roleId='system_editor'
-        // o 'system_viewer', la opción legacy SÍ aparece para que
-        // selectedRoleId siga matcheando (sino el dropdown queda
-        // sin selección y validación falla).
-        var ceo = _rolesCache.find(function(r) { return r._docId === 'system_super_admin'; });
-        var legacyOptions = [];
-        if (selectedRoleId === 'system_editor' || selectedRoleId === 'system_viewer') {
-            var legacy = _rolesCache.find(function(r) { return r._docId === selectedRoleId; });
-            if (legacy) legacyOptions.push(legacy);
-        }
+        // §72 R7.2 — CEO ELIMINADO del dropdown de creación.
+        // El cliente confirmó: "el CEO es el DIOS del sistema, no se
+        // puede crear, modificar, ni eliminar". Solo existe UN CEO
+        // (el actual super_admin). El dropdown de Crear/Editar usuario
+        // NO ofrece CEO como opción para asignar a otros usuarios.
+        //
+        // Excepción retrocompat: si el user que estoy editando YA tiene
+        // roleId='system_super_admin' (el CEO actual), la opción CEO
+        // aparece para preservar selectedRoleId match. Pero §70 ya
+        // bloquea editar al CEO desde sec-users con guard, así que esta
+        // rama es defensiva.
         var customs = _rolesCache.filter(function(r) {
             return !r.isSystem &&
                 r._docId !== 'system_super_admin' &&
@@ -99,17 +100,18 @@
                 r._docId !== 'system_viewer';
         });
 
-        if (ceo || legacyOptions.length) {
-            html += '<optgroup label="Roles del sistema">';
-            if (ceo) {
-                html += '<option value="' + AP.escapeHtml(ceo._docId) + '">' + AP.escapeHtml(ceo.name || 'CEO') + '</option>';
+        // Caso especial: si selectedRoleId es CEO (defensive, debería
+        // estar bloqueado por §70 guard), permitir mostrarlo
+        var includeCEOForEdit = selectedRoleId === 'system_super_admin';
+        if (includeCEOForEdit) {
+            var ceoRole = _rolesCache.find(function(r) { return r._docId === 'system_super_admin'; });
+            if (ceoRole) {
+                html += '<optgroup label="Rol del sistema">';
+                html += '<option value="' + AP.escapeHtml(ceoRole._docId) + '">CEO</option>';
+                html += '</optgroup>';
             }
-            for (var lg = 0; lg < legacyOptions.length; lg++) {
-                var lo = legacyOptions[lg];
-                html += '<option value="' + AP.escapeHtml(lo._docId) + '">' + AP.escapeHtml(lo.name || lo._docId) + ' (legacy)</option>';
-            }
-            html += '</optgroup>';
         }
+
         if (customs.length) {
             html += '<optgroup label="Roles personalizados">';
             for (var j = 0; j < customs.length; j++) {
@@ -118,18 +120,19 @@
             }
             html += '</optgroup>';
         }
-        // Mensaje si no hay opciones reales (solo legacy del user actual)
-        if (!ceo && !customs.length) {
-            html = '<option value="">Sin roles disponibles — el CEO debe crear roles personalizados desde Configuración → Roles</option>' + html;
+
+        // Mensaje si no hay roles personalizados creados aún
+        if (!customs.length && !includeCEOForEdit) {
+            html = '<option value="">Sin roles disponibles — primero creá un rol personalizado desde Configuración → Roles</option>';
         }
+
         sel.innerHTML = html;
         if (selectedRoleId) {
             sel.value = selectedRoleId;
         } else {
-            // Default: primer custom role (no asignar CEO automáticamente)
+            // Default: primer custom role marcado como default, o el primero disponible
             var defaultRole = _rolesCache.find(function(r) { return r.isDefault && !r.isSystem; }) ||
-                              customs[0] ||
-                              ceo; // fallback a CEO solo si no hay customs
+                              customs[0];
             if (defaultRole) sel.value = defaultRole._docId;
         }
         // Sync hidden uRol legacy
@@ -157,13 +160,29 @@
         var html = '<label class="users-role-filter-label" for="usersRoleFilter">Filtrar por rol:</label>' +
             '<select id="usersRoleFilter" class="form-select form-select--sm">' +
             '<option value="">Todos los roles</option>';
+
+        // §72 R7.2 — Filter dropdown alineado con populateRolesDropdown:
+        //   1. CEO siempre visible (uno solo en el sistema)
+        //   2. Editor/Viewer system roles legacy ELIMINADOS del filtro
+        //      (no se ofrecen como filtros para crear nuevos users)
+        //   3. Custom roles visibles
+        //   4. "Sin rol asignado" para usuarios huérfanos (sin label confuso)
+        var ceo = _rolesCache.find(function(r) { return r._docId === 'system_super_admin'; });
+        if (ceo) {
+            var ceoSel = (ceo._docId === _rolesFilter) ? ' selected' : '';
+            html += '<option value="' + AP.escapeHtml(ceo._docId) + '"' + ceoSel + '>CEO</option>';
+        }
         for (var i = 0; i < _rolesCache.length; i++) {
             var r = _rolesCache[i];
-            var sel = (r._docId === _rolesFilter) ? ' selected' : '';
-            html += '<option value="' + AP.escapeHtml(r._docId) + '"' + sel + '>' + AP.escapeHtml(r.name || r._docId) + '</option>';
+            // Skip CEO (ya agregado) + system roles legacy (editor/viewer)
+            if (r._docId === 'system_super_admin' ||
+                r._docId === 'system_editor' ||
+                r._docId === 'system_viewer') continue;
+            var selFlag = (r._docId === _rolesFilter) ? ' selected' : '';
+            html += '<option value="' + AP.escapeHtml(r._docId) + '"' + selFlag + '>' + AP.escapeHtml(r.name || r._docId) + '</option>';
         }
-        // Legacy users sin roleId
-        html += '<option value="__legacy__"' + (_rolesFilter === '__legacy__' ? ' selected' : '') + '>Sin rol asignado (legacy)</option>';
+        // Usuarios sin rol asignado (huérfanos por roleId borrado o nuevos sin asignar)
+        html += '<option value="__legacy__"' + (_rolesFilter === '__legacy__' ? ' selected' : '') + '>Sin rol asignado</option>';
         html += '</select>';
         container.innerHTML = html;
 
@@ -244,19 +263,33 @@
         var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : '';
         var html = '';
         sorted.forEach(function(u) {
+            // §72 R7.2 — Detectar CEO via 3 vías independientes (defense-in-depth).
+            // El display "CEO" se renderiza HARDCODED en frontend, ignorando
+            // u.roleName denormalizado (que puede estar stale como
+            // "Super Administrador" si el cliente no ejecutó "Resembrar sistema"
+            // del §70). Esto desacopla la UI del estado del seeder backend.
+            var isCEORow = u.roleId === 'system_super_admin' ||
+                           u.rol === 'super_admin' ||
+                           (Array.isArray(u.permissions) && u.permissions.indexOf('*') !== -1);
+
             // §61.R3 — Mostrar roleName real si existe, fallback a label legacy
             var rolLabel, rolClass, roleColor;
-            if (u.roleId && u.roleName) {
-                // User migrado a sistema dinámico
+            if (isCEORow) {
+                // §72 — CEO siempre se muestra como "CEO" (no depende del backend)
+                rolLabel = 'CEO';
+                roleColor = '#b89658';
+                rolClass = 'badge-destacado';
+            } else if (u.roleId && u.roleName) {
+                // User migrado a sistema dinámico (custom role o legacy editor/viewer)
                 rolLabel = u.roleName;
                 // Buscar el role en cache para obtener su color
                 var roleDoc = _rolesCache.find(function(r) { return r._docId === u.roleId; });
                 roleColor = roleDoc && roleDoc.color ? roleDoc.color : '#b89658';
-                rolClass = u.rol === 'super_admin' ? 'badge-destacado' : (u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado');
+                rolClass = u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
             } else {
-                // Legacy fallback
-                rolLabel = u.rol === 'super_admin' ? 'Super Admin' : u.rol === 'editor' ? 'Editor' : 'Viewer';
-                rolClass = u.rol === 'super_admin' ? 'badge-destacado' : u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
+                // Legacy fallback total (sin roleId, solo rol)
+                rolLabel = u.rol === 'editor' ? 'Editor' : 'Viewer';
+                rolClass = u.rol === 'editor' ? 'badge-nuevo' : 'badge-usado';
                 roleColor = null;
             }
             // Check both usuarios.bloqueado AND loginAttempts

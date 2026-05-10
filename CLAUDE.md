@@ -28868,5 +28868,106 @@ refactor) o R6 (rules refactor) o R7 (trigger automático
 
 ---
 
+## 66.1 ADR-066.1 — Hotfix R4: handler de click ignoraba migrationModal (2026-05-10)
+
+> Cliente reportó tras deploy de R4: modal de preview funcionaba
+> perfecto (4 usuarios listados, stats correctas, plan completo),
+> pero al click "Ejecutar migración" **no pasaba absolutamente
+> nada** — la ventana se quedaba abierta sin feedback ni cambios.
+> NO había errores en consola, solo silencio.
+
+### 66.1.1 Causa raíz (RCA §19)
+
+`js/admin-roles.js:998` — el handler delegado de click filtraba
+SOLO clicks dentro de `#sec-roles` o `#rolesModal`:
+
+```js
+var section = $('sec-roles');
+var modal = $('rolesModal');
+if (!(section && section.contains(btn))
+    && !(modal && modal.contains(btn))) return;
+```
+
+PERO el botón "Ejecutar migración" vive dentro de `#migrationModal`,
+que es un modal SEPARADO creado dinámicamente. El click llegaba al
+listener delegado, encontraba el `[data-action="execute-migration"]`,
+pero el filtro descartaba el evento como "fuera de scope" sin
+ejecutar el switch.
+
+Resultado: silencio total (ni log de error). Por eso en la consola
+del cliente solo aparecía `preview result` (cuando abrió el modal)
+pero NO aparecía `executeLegacyMigration (real)` (cuando clickeaba
+ejecutar).
+
+### 66.1.2 Fix microquirúrgico
+
+`js/admin-roles.js:998` — agregado `migrationModal` al filter:
+
+```js
+var section = $('sec-roles');
+var modal = $('rolesModal');
+var migModal = $('migrationModal');
+if (!(section && section.contains(btn))
+    && !(modal && modal.contains(btn))
+    && !(migModal && migModal.contains(btn))) return;
+```
+
+### 66.1.3 Por qué los otros handlers funcionaban
+
+- **Open modal preview** (botón "Migrar legacy") — vive en
+  `roles-header-actions` que SÍ está dentro de `#sec-roles`. OK.
+- **Cerrar modal con backdrop** — había un listener separado al
+  final que matchea `e.target.id === 'migrationModal'`. OK.
+- **Cerrar modal con Esc** — handler keydown global, no afectado. OK.
+- **Cancelar / Cerrar buttons del modal** — tenían
+  `data-action="close-migration-modal"`, ignorados igual que
+  execute-migration. **TAMBIÉN bug latente** que el fix resuelve.
+
+### 66.1.4 Tests E2E post-fix
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (Ctrl+Shift+R) | Cache nueva carga |
+| 2 | Configuración → Roles → Migrar legacy | Modal preview con stats correctas |
+| 3 | Click "Ejecutar migración (4)" | Spinner aparece + invoca callable |
+| 4 | DevTools console post-click | `[AdminRoles] §61.R4 executeLegacyMigration (real)` |
+| 5 | Tras 1-3 segundos | Toast verde "✓ Migración completa. 4 usuarios migrados..." + modal cierra |
+| 6 | Verificar Firestore `usuarios/{uid}` | Cada user con campos roleId, roleName, permissions[], roleMigratedAt |
+| 7 | Sec-users tabla | Users sin tag `·legacy` + filtro "Sin rol asignado" muestra 0 |
+| 8 | Click "Cancelar" en preview | Modal cierra (también arreglado) |
+
+### 66.1.5 Lección aprendida
+
+Cuando se crean modales dinámicos con event delegation centralizado,
+SIEMPRE agregar el ID del modal nuevo al filter de scope. Sino el
+listener captura el evento pero lo descarta silenciosamente — peor
+que un error explícito porque no hay feedback al developer.
+
+§19 RCA aplicado: cliente reportó "click no hace nada", diagnostiqué
+de fondo (no parche). El hotfix es 3 líneas + 1 variable.
+
+§17.4 HTML/CSS estable: cero IDs renombrados.
+
+### 66.1.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-roles.js` | +3 líneas en filter del handler delegado de click (incluir migrationModal) |
+| `service-worker.js` | CACHE_VERSION → `v20260513050000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513050000'` |
+| `CLAUDE.md` | Esta sección §66.1 |
+
+**Total**: ~10 líneas modificadas.
+
+### 66.1.7 Sin deploys nuevos
+
+NINGÚN deploy nuevo requerido. La Cloud Function `migrateLegacyUsers`
+ya está desplegada (R4). Solo hay que invalidar la cache del
+navegador con **Ctrl+Shift+R**.
+
+**Cache bump**: `v20260513050000`.
+
+---
+
 ---
 

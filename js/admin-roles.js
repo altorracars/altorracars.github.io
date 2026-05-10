@@ -992,10 +992,15 @@
         document.addEventListener('click', function (e) {
             var btn = e.target.closest && e.target.closest('[data-action]');
             if (!btn) return;
-            // Solo procesar si está dentro de sec-roles o roles modal
+            // Solo procesar si está dentro de sec-roles, roles modal o migration modal
+            // §61.R4 hotfix — agregado migrationModal al filtro (sino el botón
+            // "Ejecutar migración" se ignoraba silenciosamente)
             var section = $('sec-roles');
             var modal = $('rolesModal');
-            if (!(section && section.contains(btn)) && !(modal && modal.contains(btn))) return;
+            var migModal = $('migrationModal');
+            if (!(section && section.contains(btn))
+                && !(modal && modal.contains(btn))
+                && !(migModal && migModal.contains(btn))) return;
 
             var action = btn.getAttribute('data-action');
             switch (action) {

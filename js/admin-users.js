@@ -295,8 +295,18 @@
         $('u2FAPhoneGroup').style.display = 'none';
     }
 
+    // §61.R5 — Helper local con la API canónica AP.hasPermission() (reemplaza
+    // AP.canManageUsers() @deprecated). Ejemplo del patrón a aplicar masivamente
+    // en R8 cleanup. Custom roles con permission users.create OR users.edit
+    // pasan correctamente. Wildcard '*' (super_admin) también pasa por la
+    // implementación interna de hasPermission.
+    function _canManageUsers() {
+        return AP.hasPermission('users.create') || AP.hasPermission('users.edit');
+    }
+
     $('btnAddUser').addEventListener('click', function() {
-        if (!AP.canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        // §61.R5 — Refactor demostración: usar _canManageUsers() en vez de AP.canManageUsers() @deprecated
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
         $('userModalTitle').textContent = 'Crear Usuario';
         $('uOriginalUid').value = '';
         $('userForm').reset();

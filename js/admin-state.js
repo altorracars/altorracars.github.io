@@ -80,12 +80,23 @@
         // §61.R1 — Helpers legacy preservados (signatura idéntica para 154 callsites).
         // Internamente prefieren AP.currentUserPermissions[]. Si está vacío,
         // caen al chequeo de AP.currentUserRole (legacy fallback).
-        // R8 los eliminará cuando todos los callsites usen hasPermission() directo.
+        //
+        // §61.R5 (2026-05-10) — Marcados @deprecated. Código nuevo debe usar
+        // AP.hasPermission(permId) directo. Los helpers seguirán funcionando
+        // hasta R8 cleanup (eliminación final cuando todos los callsites
+        // legacy estén refactorizados). Ver CLAUDE.md §67 para mapping table
+        // completa legacy → hasPermission.
 
         /**
          * Chequea si el user tiene un permission específico.
          * Retorna true si el array contiene el wildcard '*' (super_admin)
          * o el permId exacto.
+         *
+         * Esta es la API canónica de RBAC. Usar SIEMPRE en código nuevo.
+         *
+         * @example
+         *   if (AP.hasPermission('vehicles.delete')) { ... }
+         *   if (AP.hasPermission('*')) { ... } // wildcard super_admin
          */
         hasPermission: function(permId) {
             var perms = AP.currentUserPermissions;
@@ -94,32 +105,54 @@
             return perms.indexOf(permId) !== -1;
         },
 
+        /**
+         * @deprecated §61.R5 — Usar `AP.hasPermission('*')` en código nuevo.
+         * Source of truth: wildcard permission '*'.
+         * Fallback legacy: currentUserRole === 'super_admin'.
+         */
         isSuperAdmin: function() {
-            // Source of truth: wildcard permission '*'.
-            // Fallback legacy: currentUserRole === 'super_admin'.
             if (AP.currentUserPermissions && AP.currentUserPermissions.length > 0) {
                 return AP.currentUserPermissions.indexOf('*') !== -1;
             }
             return AP.currentUserRole === 'super_admin';
         },
+        /**
+         * @deprecated §61.R5 — No tiene equivalencia 1:1 con hasPermission.
+         * Para chequeos de permisos usar AP.hasPermission('vehicles.edit') etc.
+         * Para identificar el role específico usar AP.currentUserRoleId === 'system_editor'.
+         */
         isEditor: function() {
-            // Source of truth: roleId === 'system_editor'.
-            // Fallback legacy: currentUserRole === 'editor'.
             if (AP.currentUserRoleId) return AP.currentUserRoleId === 'system_editor';
             return AP.currentUserRole === 'editor';
         },
+        /**
+         * @deprecated §61.R5 — No tiene equivalencia 1:1 con hasPermission.
+         * Para chequeos read-only usar AP.hasPermission('vehicles.read') etc.
+         */
         isViewer: function() {
             if (AP.currentUserRoleId) return AP.currentUserRoleId === 'system_viewer';
             return AP.currentUserRole === 'viewer';
         },
+        /**
+         * @deprecated §61.R5 — Usar `AP.hasPermission('users.create') || AP.hasPermission('users.edit')`.
+         */
         canManageUsers: function() { return AP.hasPermission('users.create') || AP.hasPermission('users.edit') || AP.hasPermission('*') || AP.isSuperAdmin(); },
+        /**
+         * @deprecated §61.R5 — Usar `AP.hasPermission('vehicles.create') || AP.hasPermission('vehicles.edit')`.
+         */
         canCreateOrEditInventory: function() { return AP.hasPermission('vehicles.create') || AP.hasPermission('vehicles.edit') || AP.hasPermission('*') || AP.isSuperAdmin() || AP.isEditor(); },
+        /**
+         * @deprecated §61.R5 — Usar `AP.hasPermission('vehicles.delete')`.
+         */
         canDeleteInventory: function() { return AP.hasPermission('vehicles.delete') || AP.hasPermission('*') || AP.isSuperAdmin(); },
+        /**
+         * @deprecated §61.R5 — Demasiado genérico. Usar el permission específico que
+         * corresponda al callsite, ej. `AP.hasPermission('vehicles.edit')`,
+         * `AP.hasPermission('crm.edit')`, etc.
+         */
         isEditorOrAbove: function() {
-            // True para super_admin OR editor. Custom roles con permissions de inventario también pasan.
             if (AP.currentUserPermissions && AP.currentUserPermissions.length > 0) {
                 if (AP.currentUserPermissions.indexOf('*') !== -1) return true;
-                // Check si tiene permission de "edit" en cualquier resource principal (vehicles/concierge/crm)
                 if (AP.currentUserPermissions.indexOf('vehicles.edit') !== -1) return true;
                 if (AP.currentUserPermissions.indexOf('concierge.respond') !== -1) return true;
                 if (AP.currentUserPermissions.indexOf('crm.edit') !== -1) return true;
@@ -317,6 +350,13 @@
     // §61.R1 — Cada helper delega a AP.hasPermission(permId) si hay permissions[].
     // Si no hay (legacy users pre-migración), cae al chequeo de role legacy.
     // Signatura externa idéntica → cero impacto en los 154 callsites.
+    //
+    // §61.R5 — TODOS los helpers de AP.RBAC.* están @deprecated. Código
+    // nuevo debe usar AP.hasPermission(permId) directo. La equivalencia
+    // por helper está en el primer argumento de _check(permId, ...).
+    // Ejemplo: AP.RBAC.canCreateVehicle() → AP.hasPermission('vehicles.create')
+    // Ver CLAUDE.md §67 para mapping table completa.
+    // R8 los eliminará cuando todos los callsites estén refactorizados.
 
     function _check(permId, legacyFallback) {
         // Prefer dynamic permissions

@@ -205,6 +205,73 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       §76 Sprint S4 — Read Receipts (admin)
+       ───────────────────────────────────────────────────────────
+       Asesor escribe `lastReadByAdmin` en doc parent al abrir chat
+       + cada 10s mientras el chat sigue activo + al recibir mensaje
+       del cliente. Throttle 5s en el setter para minimizar writes.
+
+       renderChatDetail promueve _status='sent' → 'read' efectivo
+       en bubbles del asesor cuando chat.lastReadByUser ≥ message.timestamp.
+       ═══════════════════════════════════════════════════════════ */
+    var _lastReadByAdminSentAt = 0;
+    var _lastReadByAdminSidSent = null;
+    var _adminReadReceiptInterval = null;
+    var ADMIN_READ_RECEIPT_THROTTLE_MS = 5000;
+    var ADMIN_READ_RECEIPT_TICK_MS = 10000;
+
+    function markAdminRead(sessionId) {
+        if (!sessionId || !window.db) return;
+        // Throttle: no spam writes, max 1 cada 5s POR sessionId
+        // (si admin cambia rápido entre chats, cada uno tiene su propio
+        // tracking implícito porque el sessionId es la key del write).
+        var now = Date.now();
+        if (sessionId === _lastReadByAdminSidSent
+            && (now - _lastReadByAdminSentAt) < ADMIN_READ_RECEIPT_THROTTLE_MS) return;
+        _lastReadByAdminSentAt = now;
+        _lastReadByAdminSidSent = sessionId;
+        var nowIso = new Date().toISOString();
+        try {
+            window.db.collection('conciergeChats').doc(sessionId)
+                .update({ lastReadByAdmin: nowIso })
+                .catch(function () { /* permission_denied silencioso */ });
+        } catch (e) {}
+    }
+
+    function startAdminReadReceiptInterval() {
+        if (_adminReadReceiptInterval) return;
+        _adminReadReceiptInterval = setInterval(function () {
+            if (_activeSessionId) markAdminRead(_activeSessionId);
+        }, ADMIN_READ_RECEIPT_TICK_MS);
+    }
+
+    function stopAdminReadReceiptInterval() {
+        if (_adminReadReceiptInterval) {
+            clearInterval(_adminReadReceiptInterval);
+            _adminReadReceiptInterval = null;
+        }
+    }
+
+    /**
+     * §76 — Calcula status efectivo del bubble del asesor en el detail
+     * panel admin. Si chat.lastReadByUser ≥ msg.timestamp → 'read' (✓✓).
+     * Función pura, no muta el array de mensajes.
+     */
+    function effectiveStatusForAsesorMsg(m, chat) {
+        if (!m || !m._status) return null;
+        if (m._status !== 'sent') return m._status;
+        if (!chat || !chat.lastReadByUser) return 'sent';
+        try {
+            var msgTs = typeof m.timestamp === 'number' ? m.timestamp : new Date(m.timestamp).getTime();
+            var readTs = new Date(chat.lastReadByUser).getTime();
+            if (!isNaN(msgTs) && !isNaN(readTs) && msgTs <= readTs) {
+                return 'read';
+            }
+        } catch (e) {}
+        return 'sent';
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        LISTA DE CONVERSACIONES — listener realtime
        ═══════════════════════════════════════════════════════════ */
     // Filtro activo del listado: 'active' (default) | 'pinned' | 'archived' | 'deleted'
@@ -238,6 +305,9 @@
                 // §75 Sprint S3 — typing listener PER chat → cancelar al salir
                 // de sec-concierge para no consumir bandwidth innecesario.
                 try { stopAdminTypingListener(); } catch (e) {}
+                // §76 Sprint S4 — parar el ticker de read receipts (si
+                // admin sale de sec-concierge, no hay chat visible).
+                try { stopAdminReadReceiptInterval(); } catch (e) {}
             });
         }
 
@@ -261,6 +331,8 @@
                     if (change.type === 'removed' && change.doc.id === _activeSessionId) {
                         // §75 Sprint S3 — typing listener antes de _activeSessionId=null
                         try { stopAdminTypingListener(); } catch (e) {}
+                        // §76 Sprint S4 — read receipt interval también
+                        try { stopAdminReadReceiptInterval(); } catch (e) {}
                         _activeSessionId = null;
                         if (_messagesUnsub) {
                             try { _messagesUnsub(); } catch (e) {}
@@ -686,6 +758,14 @@
             startAdminTypingListener(sessionId);
         } catch (e) {}
 
+        // §76 Sprint S4 — read receipts: marcar leído INMEDIATO al abrir
+        // (admin acaba de ver el chat) + setInterval 10s para refrescar
+        // mientras el chat sigue activo. throttle 5s previene spam.
+        try {
+            markAdminRead(sessionId);
+            startAdminReadReceiptInterval();
+        } catch (e) {}
+
         // Suscribirse a los mensajes
         _messagesUnsub = window.db.collection('conciergeChats').doc(sessionId)
             .collection('messages')
@@ -705,6 +785,18 @@
                 // wipe del innerHTML en renderChatDetail).
                 if (_adminClientTypingActive) {
                     try { showAdminTypingIndicator(); } catch (e) {}
+                }
+                // §76 Sprint S4 — read receipts: si llegó un mensaje
+                // del CLIENTE y este chat sigue siendo el activo,
+                // marcar leído INMEDIATO (admin lo está viendo). El
+                // throttle 5s del helper previene spam si lluvia de
+                // mensajes. Para el resto de cambios (status/mode),
+                // el setInterval cada 10s ya cubre.
+                if (sessionId === _activeSessionId) {
+                    var hasUserMsg = messages.some(function (m) { return m.from === 'user'; });
+                    if (hasUserMsg) {
+                        try { markAdminRead(sessionId); } catch (e) {}
+                    }
                 }
                 // §26.3 — Auto-scroll a fondo solo si el admin está
                 // cerca del fondo (no interrumpe lectura de histórico)
@@ -926,27 +1018,35 @@
                 var bubbleClass = m.from === 'user' ? 'cnc-detail-user' :
                                   m.from === 'asesor' ? 'cnc-detail-asesor' : 'cnc-detail-bot';
 
-                // §60.1 — Estados visuales para mensajes del asesor
+                // §60.1 + §76 — Estados visuales para mensajes del asesor.
+                // §76 Sprint S4: si el msg no tiene _status local (vino del
+                // listener Firestore post-confirm), tratamos como 'sent' por
+                // default y aplicamos effectiveStatusForAsesorMsg que promueve
+                // a 'read' si chat.lastReadByUser ≥ msg.timestamp.
                 var statusClass = '';
                 var statusIcon = '';
                 if (m.from === 'asesor') {
-                    if (m._status === 'pending') {
+                    var baseStatus = m._status || 'sent';
+                    var effective = effectiveStatusForAsesorMsg(
+                        Object.assign({}, m, { _status: baseStatus }),
+                        chat
+                    );
+                    if (effective === 'pending') {
                         statusClass = ' cnc-msg-pending';
                         statusIcon = '<span class="cnc-msg-status" data-state="pending" aria-label="Enviando">⏱</span>';
-                    } else if (m._status === 'sent') {
+                    } else if (effective === 'sent') {
                         statusClass = ' cnc-msg-synced';
                         statusIcon = '<span class="cnc-msg-status" data-state="sent" aria-label="Enviado">✓</span>';
-                    } else if (m._status === 'read') {
+                    } else if (effective === 'read') {
                         statusClass = ' cnc-msg-synced';
                         statusIcon = '<span class="cnc-msg-status" data-state="read" aria-label="Leído">✓✓</span>';
-                    } else if (m._status === 'failed') {
+                    } else if (effective === 'failed') {
                         statusClass = ' cnc-msg-failed';
                         statusIcon = '<button class="cnc-msg-retry" type="button"' +
                             ' data-action="retry-msg"' +
                             ' data-temp-id="' + escTxt(m._tempId || '') + '"' +
                             ' aria-label="Reintentar envío">Reintentar</button>';
                     } else {
-                        // Mensaje del listener Firestore (sin _status local)
                         statusClass = ' cnc-msg-synced';
                     }
                 }

@@ -1502,6 +1502,81 @@
         if (el) el.remove();
     }
 
+    /* ═══════════════════════════════════════════════════════════
+       §76 Sprint S4 — Read Receipts (✓ enviado vs ✓✓ leído)
+       ───────────────────────────────────────────────────────────
+       Schema Firestore en `conciergeChats/{sid}`:
+         - lastReadByUser: ISO timestamp  (cliente lo escribe)
+         - lastReadByAdmin: ISO timestamp (admin lo escribe)
+
+       Cliente:
+         - markUserRead() con throttle 5s al abrir panel + cada 10s
+           mientras panel abierto + al recibir mensaje del asesor
+         - Listener parent ya extendido (más abajo) para leer
+           lastReadByAdmin → guardar en session
+         - renderMessages: promueve _status='sent' → 'read' (efectivo)
+           si message.timestamp ≤ session.lastReadByAdmin
+
+       Cero deploy backend: rules de §68 R6 ya permiten update por
+       cliente (resource.data.userId == auth.uid || == null) y por
+       admin (isEditorOrAbove o permission concierge.* con claim).
+
+       Doctrina §17 — guard window.db null. Catch silencioso si rules
+       rechazan (chat ajeno o stale).
+       Doctrina §17.12 — cero MO. Solo writes puntuales.
+       ═══════════════════════════════════════════════════════════ */
+    var _lastReadByUserSentAt = 0;
+    var _readReceiptInterval = null;
+    var READ_RECEIPT_THROTTLE_MS = 5000;
+    var READ_RECEIPT_TICK_MS = 10000;
+
+    function markUserRead() {
+        if (!_chatDocCreated || !window.db || !session.sessionId) return;
+        if (Date.now() - _lastReadByUserSentAt < READ_RECEIPT_THROTTLE_MS) return;
+        _lastReadByUserSentAt = Date.now();
+        var nowIso = new Date().toISOString();
+        try {
+            window.db.collection('conciergeChats').doc(session.sessionId)
+                .update({ lastReadByUser: nowIso })
+                .catch(function () { /* permission_denied silencioso */ });
+        } catch (e) {}
+    }
+
+    function startReadReceiptInterval() {
+        if (_readReceiptInterval) return;
+        _readReceiptInterval = setInterval(function () {
+            if (_isOpen) markUserRead();
+        }, READ_RECEIPT_TICK_MS);
+    }
+
+    function stopReadReceiptInterval() {
+        if (_readReceiptInterval) {
+            clearInterval(_readReceiptInterval);
+            _readReceiptInterval = null;
+        }
+    }
+
+    /**
+     * §76 — Convierte timestamp del mensaje + lastReadByAdmin a
+     * status efectivo. NO muta `m._status` (eso queda como original
+     * 'sent' en localStorage); solo retorna el status visual.
+     * Devuelve 'read' si el admin ya marcó leído al menos hasta ese
+     * timestamp; sino retorna el status original.
+     */
+    function effectiveStatusForUserMsg(m) {
+        if (!m || !m._status) return null;
+        if (m._status !== 'sent') return m._status;
+        if (!session.lastReadByAdmin) return 'sent';
+        try {
+            var msgTs = typeof m.timestamp === 'number' ? m.timestamp : new Date(m.timestamp).getTime();
+            var readTs = new Date(session.lastReadByAdmin).getTime();
+            if (!isNaN(msgTs) && !isNaN(readTs) && msgTs <= readTs) {
+                return 'read';
+            }
+        } catch (e) {}
+        return 'sent';
+    }
+
     function ensureFirestoreChatDoc() {
         if (_chatDocCreated || !window.db) return Promise.resolve();
         var doc = {
@@ -1647,6 +1722,14 @@
                             renderMessages();
                             window.db.collection('conciergeChats').doc(session.sessionId)
                                 .update({ unreadByUser: 0 }).catch(function () {});
+                            // §76 Sprint S4 — Marcar como leído INMEDIATO si el
+                            // panel está abierto (cliente está viendo el mensaje
+                            // ahora mismo). Si está cerrado, NO marcar — esperamos
+                            // a que el cliente abra el panel para que el asesor vea
+                            // ✓✓ azul. Throttle 5s del helper evita spam.
+                            if (_isOpen) {
+                                try { markUserRead(); } catch (e) {}
+                            }
                         }
                     }
                 });
@@ -1707,6 +1790,15 @@
                 if (typeof d.slaWarnedAt10min !== 'undefined' && session.slaWarnedAt10min !== d.slaWarnedAt10min) {
                     session.slaWarnedAt10min = d.slaWarnedAt10min;
                     changed = true;
+                }
+                // §76 Sprint S4 — propagar lastReadByAdmin para que
+                // los bubbles del cliente pasen de ✓ a ✓✓ azul cuando
+                // el admin abre el chat o lo deja abierto.
+                if (d.lastReadByAdmin && session.lastReadByAdmin !== d.lastReadByAdmin) {
+                    session.lastReadByAdmin = d.lastReadByAdmin;
+                    changed = true;
+                    // Re-render para promover _status sent → read efectivo
+                    try { renderMessages(); } catch (e) {}
                 }
                 if (changed) {
                     saveSession(session);
@@ -2778,6 +2870,9 @@
         if (typeof stopSLAWatcher === 'function') { try { stopSLAWatcher(); } catch (e) {} }
         // §75 Sprint S3 — typing listener + cleanup RTDB
         try { stopTypingListener(); } catch (e) {}
+        // §76 Sprint S4 — parar el ticker de read receipts (cleanup
+        // completo cuando se cancela toda la chain de listeners).
+        try { stopReadReceiptInterval(); } catch (e) {}
     }
 
     /**
@@ -2988,16 +3083,19 @@
             var statusClass = '';
             var statusIcon = '';
             if (m.from === 'user' && m._status) {
-                if (m._status === 'pending') {
+                // §76 Sprint S4 — promueve sent → read si el admin marcó leído
+                // hasta este timestamp (función pura, no muta m._status persistido).
+                var effectiveStatus = effectiveStatusForUserMsg(m);
+                if (effectiveStatus === 'pending') {
                     statusClass = ' cnc-msg-pending';
                     statusIcon = '<span class="cnc-msg-status" data-state="pending" aria-label="Enviando">⏱</span>';
-                } else if (m._status === 'sent') {
+                } else if (effectiveStatus === 'sent') {
                     statusClass = ' cnc-msg-sent';
                     statusIcon = '<span class="cnc-msg-status" data-state="sent" aria-label="Enviado">✓</span>';
-                } else if (m._status === 'read') {
+                } else if (effectiveStatus === 'read') {
                     statusClass = ' cnc-msg-sent';
                     statusIcon = '<span class="cnc-msg-status" data-state="read" aria-label="Leído">✓✓</span>';
-                } else if (m._status === 'failed') {
+                } else if (effectiveStatus === 'failed') {
                     statusClass = ' cnc-msg-failed';
                     statusIcon = '<button class="cnc-msg-retry" type="button"' +
                         ' data-action="retry-msg"' +
@@ -3268,6 +3366,10 @@
         // escalado (sesión previa con _chatDocCreated=true). El guard
         // interno previene si aún no escala. Idempotente.
         try { startTypingListener(); } catch (e) {}
+        // §76 Sprint S4 — marcar mensajes leídos por el cliente al abrir
+        // panel + setInterval cada 10s mientras está abierto (max 6
+        // writes/min, throttle 5s deduplica los redundantes).
+        try { markUserRead(); startReadReceiptInterval(); } catch (e) {}
         // Focus input
         setTimeout(function () {
             var input = document.getElementById('cncInput');
@@ -3281,6 +3383,10 @@
         panel.setAttribute('aria-hidden', 'true');
         panel.classList.remove('cnc-open');
         _isOpen = false;
+        // §76 Sprint S4 — parar el ticker (no consumir Firestore writes
+        // si el panel está cerrado). El listener parent sigue activo
+        // si _firestoreParentUnsub lo está; lastReadByAdmin sigue llegando.
+        try { stopReadReceiptInterval(); } catch (e) {}
     }
 
     /**

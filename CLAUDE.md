@@ -27554,121 +27554,146 @@ los usa) ni al patrón "lazy reset on next open" (intacto en
 > **Propósito**: este documento permite a un Claude en otra ventana
 > retomar el proyecto sin perder contexto. Resume QUÉ está hecho, QUÉ
 > está pendiente, y QUÉ acciones requiere del cliente. Última
-> actualización: 2026-05-10 tras el merge de PR #649 (Sprint S2).
+> actualización: 2026-05-10 tras §73.4 (Plan §61 RBAC dinámico
+> CERRADO funcionalmente).
 
 ### 62.1 Resumen ejecutivo en 1 minuto
 
 **Proyecto**: Altorra Cars (compraventa autos Cartagena Colombia) —
 sitio público + admin panel + bot ALTOR Hub estilo WhatsApp/Intercom.
 
-**Estado**: ALTOR Hub está en **Fase 2 de cirugía técnica del
-Mega-Plan §59**. Sprints S1 (admin) y S2 (cliente) ✅ completados y
-mergeados a main. Plan §61 RBAC dinámico documentado pero NO ejecutado.
+**Estado de los 2 planes mayores**:
 
-**Cache version actual en main**: `v20260510001247` (auto-bumped por
-GitHub Actions tras merge).
+| Plan | Estado | Detalle |
+|---|---|---|
+| **§59 Mega-Plan ALTOR Hub** | 🟡 2/7 sprints | S1+S2 mergeados a main. S3-S7 pendientes (typing/read receipts/presence/rediseño visual) |
+| **§61 RBAC Dinámico** | ✅ CERRADO funcionalmente | R1-R7b completos + 5 hotfixes UX. R8 grande (refactor 164 callsites) opcional futuro |
+
+**Cache version actual del trabajo**: `v20260513180000` (branch
+`claude/altor-hub-sprint-s1-wWNlV`, último commit `d75f73d`).
 
 **Branch de trabajo activa**: `claude/altor-hub-sprint-s1-wWNlV`
-(sincronizada con main tras pull).
+(con commits del Plan §61 R1-R8.4 listos para PR/merge).
 
-**Pendiente CRÍTICO del cliente** (5 minutos en su PC):
-```bash
-firebase deploy --only firestore:rules
-```
-Esto resuelve 2 bugs visibles en producción:
-- Editor no puede agregar preguntas de seguridad (§48)
-- Editor no puede tomar conversaciones (§23 claim)
+**Acciones pendientes del cliente**: ninguna crítica. El cliente
+ya ejecutó deploy de rules R6 (verificado porque el botón "Limpiar
+legacy" §73 funcionó correctamente — requería rules R6).
 
-### 62.2 Sprints completados en esta sesión (2026-05-09 → 2026-05-10)
+### 62.2 Sprints completados en esta sesión total (2026-05-09 → 2026-05-10)
 
-| Sprint | Commit | Sección CLAUDE.md | Estado | Detalle |
-|---|---|---|---|---|
-| S1 admin | `1dbf43e` | §60.1 | ✅ Mergeado | Optimistic UI 7 botones del Hub admin (claim, send, pin, archive, markUnread, close, reopen) + estados visuales WhatsApp + retry inline |
-| Hotfix permisos | `67eb52f` | §60.1.1 | ✅ Mergeado | Pre-check server en claimChat + mensajes amigables permission-denied |
-| Plan RBAC | `771ed7e` | §61 | ✅ Doc mergeada | Plan completo R1-R8 documentado (NO implementado) |
-| S2 cliente | `198b29a` | §60.2 | ✅ Mergeado | Optimistic UI cliente concierge.js con `_status` semántico + retry |
+**§59 Mega-Plan ALTOR Hub (sesión previa)**:
 
-**Validación post-merge**:
-- PR #649 cerrado y mergeado por usuario el 2026-05-10 00:12 UTC
-- Main actualmente en commit `f382bd6` (auto-generate vehicles)
-- Branch local `claude/altor-hub-sprint-s1-wWNlV` actualizada con main
+| Sprint | Commit | Sección | Estado |
+|---|---|---|---|
+| S1 admin Optimistic UI | `1dbf43e` | §60.1 | ✅ Mergeado a main |
+| Hotfix permisos S1 | `67eb52f` | §60.1.1 | ✅ Mergeado |
+| Plan RBAC §61 | `771ed7e` | §61 | ✅ Doc mergeada |
+| S2 cliente Optimistic UI | `198b29a` | §60.2 | ✅ Mergeado a main |
+
+**§61 Plan RBAC Dinámico (sesión actual)** — TODO en branch
+`claude/altor-hub-sprint-s1-wWNlV`:
+
+| Sprint | Sección | Commit | Detalle |
+|---|---|---|---|
+| R1 Foundation | §63 | (mergeado) | Catálogo 71 permissions + helpers + seeder Cloud Function |
+| R2 UI sec-roles CRUD | §64 | (mergeado) | Lista grid + modal permissions matrix + system roles read-only |
+| R3 Dropdown dinámico sec-users | §65 | (mergeado) | onSnapshot real-time + escritura denormalizada |
+| R4 Migración legacy users | §66 | (mergeado) | Cloud Function migrateLegacyUsers idempotente |
+| R4.1 hotfix click handler | §66.1 | (mergeado) | Filter migrationModal en delegated click |
+| R4.2 hotfix orderBy | §66.2 | (mergeado) | Eliminar orderBy compuesto, ordenar client-side |
+| R4.3 hotfix UX modal | §66.3 | (mergeado) | 1 solo botón Cerrar para system roles |
+| R5 @deprecated mapping | §67 | (mergeado) | JSDoc deprecated + mapping table para R8 grande |
+| R6 Rules backend hasPermission | §68 | (mergeado) | 50+ callsites en firestore.rules con OR fallback |
+| R7 CEO único + Guard "Sin rol" | §69 | (mergeado) | Editor/Viewer eliminados del catálogo |
+| R7.1 hotfix bugs UX | §70 | (mergeado) | Toast falso CEO + label stale + CEO editable |
+| R7b Cloud Function triggers | §71 | (mergeado) | onRoleUpdated/Deleted/UserRoleAssigned/recalc |
+| R7.2 hotfix UX | §72 | (mergeado) | Filter limpio + empty state + label hardcoded |
+| R8 mini cleanup | §73 | `42ccee9` | Botón "Limpiar legacy" client-side puro |
+| R8.1 header siempre visible | §73.1 | `ea4cffc` | Extraer renderRolesHeader() + render en empty states |
+| R8.2 auto-hide inteligente | §73.2 | `07dd42d` | Limpiar/Migrar legacy ocultan si sistema limpio |
+| R8.3 fix flicker + eliminar Inicializar | §73.3 | `1d2f886` | firstSnapshotReceived + Caso A eliminado |
+| R8.4 auto-hide Resembrar | §73.4 | `d75f73d` | Resembrar oculto si CEO sembrado |
 
 ### 62.3 Mega-Plan §59 — Cirugía ALTOR Hub: estado de los 7 sprints
 
-| Sprint | Foco | Estado | Cuándo |
-|---|---|---|---|
-| ✅ S1 | Optimistic UI admin (7 botones) | Mergeado | §60.1 |
-| ✅ S2 | Optimistic UI cliente | Mergeado | §60.2 |
-| ⏸ S3 | Typing indicators bidireccionales (RTDB) | Pendiente | Próximo sprint del Hub |
-| ⏸ S4 | Read receipts (✓ vs ✓✓) | Pendiente | Después de S3 |
-| ⏸ S5 | Presence avanzada (online/away/offline) | Pendiente | Después de S4 |
-| ⏸ S6 | Rediseño visual Hub admin | Pendiente | Después de S5 |
-| ⏸ S7 | Rediseño visual cliente widget | Pendiente | Después de S6 |
+| Sprint | Foco | Estado |
+|---|---|---|
+| ✅ S1 | Optimistic UI admin (7 botones) | Mergeado §60.1 |
+| ✅ S2 | Optimistic UI cliente | Mergeado §60.2 |
+| ⏸ **S3** | **Typing indicators bidireccionales (RTDB)** | **PRÓXIMO RECOMENDADO** |
+| ⏸ S4 | Read receipts (✓ vs ✓✓) | Después de S3 |
+| ⏸ S5 | Presence avanzada (online/away/offline) | Después de S4 |
+| ⏸ S6 | Rediseño visual Hub admin | Después de S5 |
+| ⏸ S7 | Rediseño visual cliente widget | Después de S6 |
 
 **Tiempo estimado restante S3-S7**: ~10 días de trabajo focalizado.
 
-### 62.4 Plan §61 — RBAC dinámico: estado de los 8 sprints
+### 62.4 Plan §61 — RBAC Dinámico: estado completo
 
-| Sprint | Foco | Estado |
-|---|---|---|
-| ⏸ R1 | Foundation (schema permissions + roles + helpers) | Pendiente — PRÓXIMO recomendado |
-| ⏸ R2 | UI sec-roles CRUD (super_admin) | Pendiente |
-| ⏸ R3 | UI sec-users dropdown dinámico | Pendiente |
-| ⏸ R4 | Migración legacy users a `roleId` | Pendiente |
-| ⏸ R5 | Frontend guards refactor (~218 callsites) | Pendiente |
-| ⏸ R6 | Firestore Rules refactor a `hasPermission()` | Pendiente |
-| ⏸ R7 | Audit log + real-time sync | Pendiente |
-| ⏸ R8 | Cleanup + tests | Pendiente |
+| Sprint | Foco | Estado | Sección |
+|---|---|---|---|
+| ✅ R1 | Foundation (schema permissions + roles + helpers) | Completo | §63 |
+| ✅ R2 | UI sec-roles CRUD (super_admin) | Completo | §64 |
+| ✅ R3 | UI sec-users dropdown dinámico | Completo | §65 |
+| ✅ R4 | Migración legacy users a `roleId` | Completo | §66 |
+| ✅ R5 | Frontend guards refactor (pragmático: @deprecated + mapping) | Completo | §67 |
+| ✅ R6 | Firestore Rules refactor a `hasPermission()` | Completo | §68 |
+| ✅ R7 | CEO único + Guard "Sin rol asignado" | Completo | §69 |
+| ✅ R7.1 | Hotfix UX (3 bugs CEO) | Completo | §70 |
+| ✅ R7b | Cloud Function triggers (onRoleUpdated/Deleted/UserRoleAssigned) | Completo | §71 |
+| ✅ R7.2 | Hotfix UX (label hardcoded, filter limpio, empty state) | Completo | §72 |
+| ✅ R8 mini | Cleanup masivo client-side | Completo | §73 |
+| ✅ R8.1 | Header siempre visible | Completo | §73.1 |
+| ✅ R8.2 | Auto-hide inteligente botones legacy | Completo | §73.2 |
+| ✅ R8.3 | Fix flicker + eliminar botón "Inicializar sistema" duplicado | Completo | §73.3 |
+| ✅ R8.4 | Auto-hide "Resembrar sistema" cuando CEO sembrado | Completo | §73.4 |
+| ⏸ R8 grande | Refactor 164 callsites legacy `AP.isSuperAdmin` → `AP.hasPermission` | OPCIONAL futuro | §67.5 |
 
-**Tiempo estimado total §61**: ~12-15 días.
+**Plan §61 RBAC funcional 100% completo**. El sistema funciona
+end-to-end:
+- ✅ CEO con wildcard permissions
+- ✅ Custom roles creables/editables/eliminables
+- ✅ Sync automático en tiempo real (R7b triggers)
+- ✅ Migración legacy users (R4)
+- ✅ Guard "Sin rol asignado" para usuarios sin acceso (§69)
+- ✅ UI sec-roles + sec-users completa con dropdown dinámico
+- ✅ Backend rules con hasPermission server-side + OR fallback (R6)
+- ✅ Frontend con AP.hasPermission API canónica (R1)
+- ✅ Cleanup masivo de huérfanos (§73)
+- ✅ Audit log de todas las operaciones críticas
+- ✅ UI mínima inteligente (botones legacy auto-ocultos cuando no necesarios)
 
-**Schema canónico ya documentado en §61.3**:
-- `permissions/{permId}` — atomic permissions read-only
-- `roles/{roleId}` — sets de permissions con CRUD
-- `usuarios/{uid}` extendido con `roleId` + `roleName` + `permissions[]`
+R8 grande (refactor de 164 callsites legacy) queda opcional futuro
+después de meses de validación en producción. El sistema funciona
+100% sin él gracias a los helpers legacy delegando internamente a
+hasPermission via `_check(permId, legacyFn)`.
 
-**71 atomic permissions documentadas en §61.4** agrupadas en 8 categorías:
-Inventario, Sitio público, CRM, Comunicaciones, Cerebro AI,
-Calendario, Reportes, Configuración.
+### 62.5 Acciones pendientes DEL CLIENTE
 
-### 62.5 Acciones pendientes DEL CLIENTE (no del agente)
+#### 🟢 Mergear branch `claude/altor-hub-sprint-s1-wWNlV` a main
 
-#### 🔴 CRÍTICA — Resuelve 2 bugs visibles AHORA
+La branch tiene 5 commits del Plan §61 R8 + hotfixes (`42ccee9`,
+`ea4cffc`, `07dd42d`, `1d2f886`, `d75f73d`). Tras merge:
+- Ctrl+Shift+R en admin para invalidar cache (carga v20260513180000)
+- UI de sec-roles muestra solo "+ Nuevo rol" en flujo normal
+- Botones legacy aparecen automáticamente solo si los detectores
+  encuentran algo que requiere acción
 
-**Acción**: ejecutar UNA vez en su PC:
-```bash
-cd /ruta/a/altorracars.github.io
-firebase deploy --only firestore:rules
-```
+#### 🟡 Si super_admin queda bloqueado por intentos fallidos (caso edge)
 
-**Resuelve simultáneamente**:
-- Editor agrega preguntas de seguridad (whitelist §48)
-- Editor toma conversaciones del Hub (claim §23 FASE 3)
-- Cualquier editor self-update de campos del whitelist
-
-**Por qué urgente**: las rules en el repo SON correctas, pero las
-desplegadas en producción son anteriores a §48. Sin este deploy,
-ningún fix de código del agente puede resolver el bug.
-
-#### 🟡 SI super_admin sigue bloqueado por intentos fallidos
-
-**Acción**: Firebase Console → Firestore →
-`loginAttempts/altorracarssale_gmail_com` → editar:
-- `intentos: 0`
-- `bloqueado: false`
-
-O esperar 15 min auto-unblock.
+Firebase Console → Firestore → `loginAttempts/altorracarssale_gmail_com`
+→ editar `intentos: 0`, `bloqueado: false`. O esperar 15 min.
 
 ### 62.6 Cómo continuar en otra ventana de Claude
 
 Si el contexto de esta ventana se agota, en una ventana nueva ejecutar:
 
 1. **Leer este documento §62 completo** + secciones referenciadas
-   (§59, §60.1, §60.1.1, §60.2, §61).
+   (§59, §60.x, §61, §63-§73.4).
 
 2. **Verificar estado actual del repo**:
    ```bash
-   git log --oneline -5 origin/main
+   git log --oneline -10 origin/main
    git branch --show-current
    git status
    ```
@@ -27680,58 +27705,72 @@ Si el contexto de esta ventana se agota, en una ventana nueva ejecutar:
    ```
 
 4. **Decidir próximo sprint** según lo que diga el cliente:
-   - Si dice "RBAC" o "roles" → arrancar **§61 R1** (Foundation)
-   - Si dice "typing" o "tiempo real bidireccional" → arrancar **§59 S3**
+   - Si dice "continuemos plan grande" o "S3" → arrancar **§59 S3
+     Typing Indicators** (próximo del Mega-Plan ALTOR Hub)
    - Si dice "rediseño visual" → arrancar **§59 S6** o **S7**
    - Si dice "bug X" → aplicar §19 RCA Mode
+   - Si dice "refactor masivo callsites" → arrancar **§61 R8 grande**
 
 5. **Antes de cualquier commit**: redactar IAP §37 (5 secciones)
    y obtener autorización del cliente.
 
-### 62.7 Archivos clave del Hub (referencia rápida)
+### 62.7 Archivos clave (referencia rápida)
+
+**Plan §59 ALTOR Hub**:
 
 | Archivo | Líneas | Última mod | Propósito |
 |---|---|---|---|
 | `js/concierge.js` | ~3,300 | §60.2 | Widget cliente público IIFE |
 | `js/admin-concierge.js` | ~1,750 | §60.1.1 | Hub del asesor |
-| `js/hub-store.js` | 199 | §60.1 (NUEVO) | Object Pool optimistic state |
+| `js/hub-store.js` | 199 | §60.1 | Object Pool optimistic state |
 | `css/concierge.css` | ~1,600 | §60.2 | Estilos widget cliente |
-| `css/admin.css` | (sec-concierge) | §60.1 | Estilos Hub admin |
-| `firestore.rules` | 518 | §48 | Permisos lectura/escritura (DEPLOY PENDIENTE) |
-| `functions/index.js` | 2,355 | §56 | 12 Cloud Functions del Hub |
+| `firestore.rules` | 720+ | §68 R6 | Permisos con hasPermission server-side |
+| `functions/index.js` | 2,800+ | §71 R7b | 16 Cloud Functions |
+
+**Plan §61 RBAC**:
+
+| Archivo | Líneas | Última mod | Propósito |
+|---|---|---|---|
+| `js/rbac-catalog.js` | ~280 | §69 R7 | Catálogo canónico permissions + 1 system role (CEO) |
+| `js/admin-roles.js` | ~1,580 | §73.4 | UI sec-roles CRUD + cleanup + auto-hide |
+| `js/admin-users.js` | ~700 | §73 R8 | sec-users con dropdown dinámico + filter |
+| `js/admin-state.js` | (varias) | §67 R5 | currentUserPermissions + hasPermission helper |
+| `js/admin-auth.js` | (varias) | §69 R7 | Guard "Sin rol asignado" + hidratación permissions |
 
 ### 62.8 Doctrinas críticas a respetar SIEMPRE
 
-1. **§17.2** — Nunca `transition: all` ni `* { transition }`. Solo
-   transitions específicas en propiedades compositor-only.
+1. **§17.2** — Nunca `transition: all` ni `* { transition }`.
 2. **§17.4** — HTML/CSS estable. Cero renombrar IDs/clases existentes.
-3. **§17.12** — Cero `MutationObserver subtree:true` global (RCA del
-   bug histórico clicks bloqueados centro botones).
-4. **§19** — RCA Mode estricto cuando hay bug recurrente: 5 fases
-   con STOP obligatorio antes de implementar.
+3. **§17.12** — Cero `MutationObserver subtree:true` global.
+4. **§19** — RCA Mode estricto cuando hay bug recurrente.
 5. **§35** — Cero `pointermove` listeners persistentes globales.
-6. **§37** — IAP (Impact Analysis Previo) obligatorio antes de
-   cada commit: 5 secciones (archivos a modificar, intactos, código
-   muerto, refactor, riesgos+rollback).
-7. **§57.7** — Listener admin `_chatsUnsub` SIEMPRE activo
-   globalmente. Solo `_messagesUnsub` se cancela on section change.
-8. **§57.9** — Patrón "lazy reset on next open" del cliente. NO
-   mezclar "cerrar UI" con "resetear state".
+6. **§37** — IAP obligatorio antes de cada commit.
+7. **§57.7** — Listener admin `_chatsUnsub` SIEMPRE activo globalmente.
+8. **§57.9** — Patrón "lazy reset on next open" del cliente.
+9. **§61 R7+R8** — UI mínima con auto-hide inteligente. Botones de
+   mantenimiento solo visibles cuando son necesarios.
 
-### 62.9 Recomendación próximo paso
+### 62.9 Próximo paso recomendado
 
-**Opción A** (Recomendada): Arrancar **§61 R1 (RBAC Foundation)**
-en paralelo a que el cliente ejecute `firebase deploy --only firestore:rules`.
+**OPCIÓN A — Continuar Mega-Plan §59 ALTOR Hub** (lo que el cliente
+mencionó):
+- **S3 Typing Indicators** bidireccionales (RTDB-based)
+- ~1.5 días de trabajo
+- Cliente y asesor ven cuando el otro está escribiendo (3 dots
+  animados estilo iMessage/WhatsApp)
+- Schema RTDB nuevo `/typing/{sessionId}` con throttle 1s + onDisconnect
 
-R1 es 2 días de trabajo, NO requiere deploy adicional, y establece
-las bases para los 7 sprints restantes del RBAC. Mientras el agente
-trabaja en R1, el cliente puede ejecutar el deploy de rules y
-desbloquear los bugs visibles.
+**OPCIÓN B — Pulir Plan §61 RBAC** (refactor opcional):
+- R8 grande: refactor de 164 callsites legacy a `hasPermission`
+- ~1 día de trabajo
+- Limpieza de código (sin cambio funcional visible)
 
-**Opción B**: Arrancar **§59 S3 (Typing Indicators)** para continuar
-la cirugía del Hub.
+**OPCIÓN C — Otro bug o feature** específico que el cliente identifique.
 
-**Opción C**: Esperar input del cliente sobre prioridad.
+**Recomendación del agente**: Opción A. El Plan §61 está
+funcionalmente completo y el cliente ya validó la UI. Continuar con
+el Mega-Plan §59 S3 (typing indicators) suma valor visible
+inmediato al asesor.
 
 ### 62.10 Costo recurrente actual
 

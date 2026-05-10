@@ -51,6 +51,160 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       §75 Sprint S3 — Typing Indicators bidireccionales (admin)
+       ───────────────────────────────────────────────────────────
+       Asesor: setea /typing/{sid}/asesor_<uid> con throttle 1s al
+                escribir en el textarea del Hub. Auto-clear 3s.
+                Listener de cliente: /typing/{sid}/user → muestra
+                "El cliente está escribiendo..." en el detail panel.
+
+       Cleanup: listener PER chat activo. Cancelar al cambiar de chat
+                (openChat) y al salir de sec-concierge (cleanup hook).
+                _chatsUnsub global SIEMPRE activo (§57.7) — el listener
+                de typing es complementario y específico al chat activo.
+       ═══════════════════════════════════════════════════════════ */
+    var _adminTypingThrottleActive = false;
+    var _adminTypingClearTimeout = null;
+    var _adminTypingListenerUnsub = null;
+    var _adminClientTypingActive = false;
+    var _adminTypingDisconnectRef = null;
+    var _adminTypingDelegationBound = false;
+    var ADMIN_TYPING_THROTTLE_MS = 1000;
+    var ADMIN_TYPING_AUTO_CLEAR_MS = 3000;
+    var ADMIN_TYPING_STALE_MS = 5000;
+
+    function setAdminTyping(isTyping) {
+        if (!window.rtdb || !_activeSessionId) return;
+        if (!window.auth || !window.auth.currentUser) return;
+        var uid = window.auth.currentUser.uid;
+        var name = (AP.currentUserProfile && AP.currentUserProfile.nombre)
+            || window.auth.currentUser.email || 'Asesor';
+        var photoURL = (AP.currentUserProfile && AP.currentUserProfile.photoURL) || null;
+        var ref;
+        try {
+            ref = window.rtdb.ref('/typing/' + _activeSessionId + '/asesor_' + uid);
+        } catch (e) { return; }
+        var payload = { name: name, photoURL: photoURL, typing: !!isTyping, ts: Date.now() };
+        ref.set(payload).catch(function () {});
+        if (isTyping) {
+            try {
+                if (!_adminTypingDisconnectRef) {
+                    _adminTypingDisconnectRef = ref;
+                    ref.onDisconnect().remove().catch(function () {});
+                }
+            } catch (e) {}
+        }
+    }
+
+    function onAdminComposerInput() {
+        // Throttle 1s + auto-clear 3s, mismo patrón del cliente.
+        if (_adminTypingThrottleActive) {
+            if (_adminTypingClearTimeout) clearTimeout(_adminTypingClearTimeout);
+            _adminTypingClearTimeout = setTimeout(function () {
+                setAdminTyping(false);
+            }, ADMIN_TYPING_AUTO_CLEAR_MS);
+            return;
+        }
+        _adminTypingThrottleActive = true;
+        setTimeout(function () { _adminTypingThrottleActive = false; }, ADMIN_TYPING_THROTTLE_MS);
+        setAdminTyping(true);
+        if (_adminTypingClearTimeout) clearTimeout(_adminTypingClearTimeout);
+        _adminTypingClearTimeout = setTimeout(function () {
+            setAdminTyping(false);
+        }, ADMIN_TYPING_AUTO_CLEAR_MS);
+    }
+
+    function bindAdminTypingDelegation() {
+        // §17.4 — el textarea cncAdminReply se re-renderiza en cada
+        // renderChatDetail. Event delegation en document evita rebind
+        // en cada render. Idempotente con flag.
+        if (_adminTypingDelegationBound) return;
+        _adminTypingDelegationBound = true;
+        document.addEventListener('input', function (e) {
+            if (!e.target || e.target.id !== 'cncAdminReply') return;
+            try { onAdminComposerInput(); } catch (err) {}
+        });
+    }
+
+    function startAdminTypingListener(sessionId) {
+        if (!window.rtdb || !sessionId) return;
+        // Cancelar listener anterior si existe (cambio de chat activo)
+        if (_adminTypingListenerUnsub) {
+            try { _adminTypingListenerUnsub(); } catch (e) {}
+            _adminTypingListenerUnsub = null;
+        }
+        var ref;
+        try {
+            ref = window.rtdb.ref('/typing/' + sessionId + '/user');
+        } catch (e) { return; }
+        var handler = ref.on('value', function (snap) {
+            var data = snap.val();
+            var isTyping = !!(data && data.typing
+                && (Date.now() - (data.ts || 0)) < ADMIN_TYPING_STALE_MS);
+            // Solo procesar si este chat sigue siendo el activo
+            if (sessionId !== _activeSessionId) {
+                hideAdminTypingIndicator();
+                return;
+            }
+            _adminClientTypingActive = isTyping;
+            if (isTyping) {
+                showAdminTypingIndicator();
+            } else {
+                hideAdminTypingIndicator();
+            }
+        }, function (err) {
+            if (err && err.code === 'PERMISSION_DENIED') {
+                console.info('[AdminConcierge] §75 typing listener permission_denied — deploy database rules pendiente.');
+            }
+        });
+        _adminTypingListenerUnsub = function () {
+            try { ref.off('value', handler); } catch (e) {}
+        };
+    }
+
+    function stopAdminTypingListener() {
+        if (_adminTypingListenerUnsub) {
+            try { _adminTypingListenerUnsub(); } catch (e) {}
+            _adminTypingListenerUnsub = null;
+        }
+        // Setear typing:false propio (best-effort) + cancel onDisconnect
+        if (_activeSessionId && window.rtdb && window.auth && window.auth.currentUser) {
+            try {
+                var uid = window.auth.currentUser.uid;
+                var ref = window.rtdb.ref('/typing/' + _activeSessionId + '/asesor_' + uid);
+                ref.remove().catch(function () {});
+                if (_adminTypingDisconnectRef) {
+                    _adminTypingDisconnectRef.onDisconnect().cancel().catch(function () {});
+                    _adminTypingDisconnectRef = null;
+                }
+            } catch (e) {}
+        }
+        if (_adminTypingClearTimeout) { clearTimeout(_adminTypingClearTimeout); _adminTypingClearTimeout = null; }
+        _adminTypingThrottleActive = false;
+        _adminClientTypingActive = false;
+        hideAdminTypingIndicator();
+    }
+
+    function showAdminTypingIndicator() {
+        var msgsBox = document.getElementById('cncAdminMessages');
+        if (!msgsBox) return;
+        if (document.getElementById('cncAdminTypingIndicator')) return;
+        var html = '<div id="cncAdminTypingIndicator" class="cnc-admin-typing-indicator">' +
+            '<span class="cnc-admin-typing-dots"><span></span><span></span><span></span></span>' +
+            '<span class="cnc-admin-typing-label">El cliente está escribiendo</span>' +
+        '</div>';
+        msgsBox.insertAdjacentHTML('beforeend', html);
+        // Auto-scroll si admin está cerca del fondo
+        var nearBottom = (msgsBox.scrollHeight - msgsBox.scrollTop - msgsBox.clientHeight) < 120;
+        if (nearBottom) msgsBox.scrollTop = msgsBox.scrollHeight;
+    }
+
+    function hideAdminTypingIndicator() {
+        var el = document.getElementById('cncAdminTypingIndicator');
+        if (el) el.remove();
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        LISTA DE CONVERSACIONES — listener realtime
        ═══════════════════════════════════════════════════════════ */
     // Filtro activo del listado: 'active' (default) | 'pinned' | 'archived' | 'deleted'
@@ -72,11 +226,18 @@
         // ANTES (§34): cancelaba ambos → si cliente escalaba mientras admin
         // estaba en otra sección, al volver el listener se re-iniciaba pero
         // había timing/race que hacía perder eventos. Solo refresh resolvía.
+        // §75 Sprint S3 — bind delegation del input listener apenas
+        // se inicializa el listener global (idempotente con flag).
+        try { bindAdminTypingDelegation(); } catch (e) {}
+
         if (window.AltorraSectionCleanup && !startChatsListener._cleanupRegistered) {
             startChatsListener._cleanupRegistered = true;
             window.AltorraSectionCleanup.register('concierge', function() {
                 // §57.7 — solo _messagesUnsub. _chatsUnsub queda activo.
                 if (_messagesUnsub) { try { _messagesUnsub(); } catch (e) {} _messagesUnsub = null; }
+                // §75 Sprint S3 — typing listener PER chat → cancelar al salir
+                // de sec-concierge para no consumir bandwidth innecesario.
+                try { stopAdminTypingListener(); } catch (e) {}
             });
         }
 
@@ -98,6 +259,8 @@
                 // un chat que ya no existe en Firestore).
                 snap.docChanges().forEach(function (change) {
                     if (change.type === 'removed' && change.doc.id === _activeSessionId) {
+                        // §75 Sprint S3 — typing listener antes de _activeSessionId=null
+                        try { stopAdminTypingListener(); } catch (e) {}
                         _activeSessionId = null;
                         if (_messagesUnsub) {
                             try { _messagesUnsub(); } catch (e) {}
@@ -491,6 +654,11 @@
        CHAT DETAIL — abrir conversación
        ═══════════════════════════════════════════════════════════ */
     function openChat(sessionId) {
+        // §75 Sprint S3 — Cancelar typing listener del chat anterior
+        // ANTES de cambiar _activeSessionId. Sin esto, el handler del
+        // chat viejo seguiría activo escribiendo a un sessionId que
+        // ya no es el visible.
+        try { stopAdminTypingListener(); } catch (e) {}
         _activeSessionId = sessionId;
         _activeMessages = []; // §57.ter — reset al abrir chat nuevo
         renderChatList();
@@ -511,6 +679,13 @@
         // §26.3 — Notifica al wrapper para activar pane mobile
         try { window.dispatchEvent(new Event('altor-hub:chat-opened')); } catch (e) {}
 
+        // §75 Sprint S3 — bind delegation idempotente (1ra vez) + arranque
+        // del listener para "el cliente está escribiendo" del chat actual.
+        try {
+            bindAdminTypingDelegation();
+            startAdminTypingListener(sessionId);
+        } catch (e) {}
+
         // Suscribirse a los mensajes
         _messagesUnsub = window.db.collection('conciergeChats').doc(sessionId)
             .collection('messages')
@@ -525,6 +700,12 @@
                 // en vez del closure cached (que está stale tras updates).
                 var freshChat = _chats.find(function (c) { return c._docId === sessionId; }) || chat;
                 renderChatDetail(freshChat, messages);
+                // §75 Sprint S3 — Si había typing del cliente antes del
+                // re-render, re-insertar el indicator (sobrevive al
+                // wipe del innerHTML en renderChatDetail).
+                if (_adminClientTypingActive) {
+                    try { showAdminTypingIndicator(); } catch (e) {}
+                }
                 // §26.3 — Auto-scroll a fondo solo si el admin está
                 // cerca del fondo (no interrumpe lectura de histórico)
                 setTimeout(scrollHubMessagesToBottom, 50);
@@ -1138,6 +1319,12 @@
         if (!input || !_activeSessionId || !window.db) return;
         var text = input.value.trim();
         if (!text) return;
+        // §75 Sprint S3 — typing:false sincrónico ANTES del send para que
+        // el indicador desaparezca instantáneo del lado cliente. Cancelamos
+        // el auto-clear timer porque ya no aplica.
+        if (_adminTypingClearTimeout) { clearTimeout(_adminTypingClearTimeout); _adminTypingClearTimeout = null; }
+        _adminTypingThrottleActive = false;
+        try { setAdminTyping(false); } catch (e) {}
 
         // §23 FASE 3 — auto-claim al primer mensaje del asesor.
         // Si el chat NO tiene claimedBy aún, lo adquirimos antes de enviar.

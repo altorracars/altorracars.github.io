@@ -8,6 +8,19 @@
         ".validate": "!newData.exists() || (newData.hasChild('uid') && newData.child('uid').val() === auth.uid)"
       }
     },
+    "typing": {
+      ".read": "auth != null",
+      "$sessionId": {
+        "user": {
+          ".write": "auth != null",
+          ".validate": "!newData.exists() || (newData.hasChild('typing') && newData.hasChild('ts') && newData.child('typing').isBoolean() && newData.child('ts').isNumber())"
+        },
+        "$asesorKey": {
+          ".write": "auth != null && $asesorKey == 'asesor_' + auth.uid",
+          ".validate": "!newData.exists() || (newData.hasChild('typing') && newData.hasChild('ts') && newData.child('typing').isBoolean() && newData.child('ts').isNumber() && newData.hasChild('name'))"
+        }
+      }
+    },
     ".read": false,
     ".write": false
   }

@@ -31085,3 +31085,406 @@ legacy).
 
 ---
 
+
+
+## 73. ADR-073 — Sprint §61.R8 mini cleanup: 3 fixes coordinados client-side (2026-05-10)
+
+> Cliente reportó tras §72 con captura del dropdown sec-users:
+>
+> 1. "Ya aparece en las listas sin roles pero no debe decir todo eso
+>    largo ahi en la lista solo Sin Roles o Sin asignar."
+> 2. "Al seleccionar esa opcion me tira un error dice: Selecciona un
+>    elemento de la lista y no me permite guardar."
+> 3. "Los usuarios sigue mostrandolos como editores y se supone que
+>    ya no son editores."
+> 4. "En firebase ya no debe existir esos roles ni en ningun lado
+>    porque se borraron."
+>
+> Plus instrucción explícita: "Pasemos a R8 sin preguntarme."
+>
+> R8 mini cierra el ciclo del bloque RBAC dinámico con cleanup masivo
+> CLIENT-SIDE puro (cero deploy backend) que elimina docs huérfanos
+> de Firestore + reset usuarios afectados. Aplicado bajo doctrina §17
+> (perf), §17.4 (HTML/CSS estable), §17.12 (anti-MutationObserver),
+> §35 (anti-patterns), §37 (IAP), §61 Plan Maestro RBAC.
+
+### 73.1 Causa raíz de cada bug
+
+#### Bug 1+2 — Dropdown texto largo + browser bloquea Guardar
+
+`js/admin-users.js populateRolesDropdown` (post-§65 R3) tenía:
+```js
+sel.innerHTML = '<option value="">Sin roles disponibles — primero
+    creá un rol personalizado desde Configuración → Roles</option>';
+```
+
+Cuando no hay custom roles, el `<select id="uRoleId">` queda con UNA
+sola opción cuyo `value=""`. El elemento tiene atributo `required` en
+el HTML. Al hacer click "Guardar", el browser lanza el error nativo
+"Selecciona un elemento de la lista" (HTML5 form validation) porque
+`value=""` no satisface `required`.
+
+Adicional: el texto de 70+ chars se ve mal en el dropdown.
+
+#### Bug 3 — Tabla muestra "EDITOR" para users legacy
+
+`renderUsersTable` post-§72 mostraba `u.roleName` denormalizado del
+doc usuarios/{uid}. Para users con `roleId='system_editor'` o
+`'system_viewer'` (migrados via R4 cuando esos system roles aún
+existían pre-§69), el `roleName` quedó como "Editor" o "Viewer".
+
+Aunque §69 eliminó editor/viewer del catálogo dinámico, los docs
+`roles/system_editor` y `roles/system_viewer` siguen existiendo en
+Firestore (sembrados en R1 antes del §69). Y los usuarios siguen
+con su `roleName` y `permissions[]` denormalizados de cuando esos
+system roles existían en el catálogo.
+
+El cliente correctamente identificó: "se supone que ya no son
+editores" — quiere que la UI refleje el estado canónico actual
+(donde solo CEO + customs existen), no el estado denormalizado
+que está stale.
+
+#### Bug 4 — Docs huérfanos en Firestore
+
+`roles/system_editor` y `roles/system_viewer` siguen siendo
+documentos válidos en Firestore. §69 los quitó del catálogo
+client-side y del seeder, PERO no los borró de Firestore (decisión
+de §69: "se mantienen intactos para retrocompat con users
+migrados"). Cliente quiere limpieza total del backend.
+
+### 73.2 Solución estructural — 3 fixes coordinados client-side
+
+#### Fix A — Dropdown corto + disable Guardar (`js/admin-users.js`)
+
+Cambios coordinados:
+
+1. **Texto corto** en option vacía:
+   ```js
+   sel.innerHTML = '<option value="">— Sin roles disponibles —</option>';
+   ```
+   Más legible (4 chars + 22 chars = 26 chars vs 70+ originales).
+
+2. **Nueva función `updateSaveButtonState()`**: detecta si hay alguna
+   option con `value` no vacío. Si NO hay roles válidos:
+   - Disable botón Guardar (`saveBtn.disabled = true`)
+   - Tooltip: "Primero creá un rol personalizado en Configuración → Roles"
+   - Hint visible debajo: `<small id="saveUserHint">` con color rojo
+     tenue y mensaje "Primero creá un rol en Configuración → Roles"
+
+3. **Hook**: invocado tras cada `populateRolesDropdown()`. Si llega
+   un role nuevo via onSnapshot, el botón se re-habilita
+   automáticamente.
+
+Resultado: cliente NO puede crear usuarios huérfanos accidentalmente
+(que quedarían bloqueados al login por el guard del §69). El error
+de browser desaparece porque el botón está disabled antes de submit.
+
+#### Fix B — Tabla muestra "Sin asignar" para system_editor/viewer (`js/admin-users.js`)
+
+`renderUsersTable` con detección triple de huérfanos:
+
+```js
+var isOrphanRow = u.roleId === 'system_editor' ||
+                  u.roleId === 'system_viewer' ||
+                  (!u.roleId && (u.rol === 'editor' || u.rol === 'viewer'));
+
+if (isCEORow) {
+    rolLabel = 'CEO'; roleColor = '#b89658'; rolClass = 'badge-destacado';
+} else if (isOrphanRow) {
+    // §73 R8 — User legacy o huérfano
+    rolLabel = 'Sin asignar';
+    roleColor = '#9ca3af';   // gris neutral
+    rolClass = 'badge-warning';
+} else if (u.roleId && u.roleName) {
+    // Custom role válido
+    ...
+} else {
+    rolLabel = 'Sin asignar';
+    roleColor = '#9ca3af';
+    rolClass = 'badge-warning';
+}
+```
+
+Plus eliminé el tag `·legacy` confuso al lado del badge:
+```js
+// §73 R8 — Eliminado el tag "·legacy" que confundía. Ahora la
+// columna ROL muestra "Sin asignar" para usuarios huérfanos
+// (sin tag adicional). El CEO debe asignar un role custom real.
+```
+
+Y actualicé el filter `__legacy__` para incluir TODOS los huérfanos:
+```js
+if (_rolesFilter === '__legacy__') {
+    return !u.roleId ||
+           u.roleId === 'system_editor' ||
+           u.roleId === 'system_viewer';
+}
+```
+
+#### Fix C — Botón "Limpiar legacy" en sec-roles (`js/admin-roles.js`)
+
+Botón nuevo en `roles-header-actions` (super_admin only — el subnav
+del workspace Configuración del §61.R2 ya filtra por
+`permission: 'canManageUsers'`):
+
+```html
+<button class="alt-btn alt-btn--ghost" data-action="cleanup-legacy"
+    title="Elimina los docs huérfanos roles/system_editor y
+    roles/system_viewer del catálogo + reset de usuarios con esos
+    roleId. Acción destructiva.">
+    <i data-lucide="archive-x"></i> Limpiar legacy
+</button>
+```
+
+3 funciones nuevas:
+
+**`cleanupLegacyRolesPreview()`**: invocado al click. En paralelo:
+- `db.collection('roles').doc('system_editor').get()` — chequea existencia
+- Idem `system_viewer`
+- `db.collection('usuarios').where('roleId', '==', 'system_editor').get()`
+- Idem `system_viewer`
+
+Construye `planData` con:
+- `editorExists` / `viewerExists` (bool)
+- `editorUsers[]` / `viewerUsers[]` (arrays con uid/nombre/email)
+- `totalDocsToDelete` / `totalUsersToOrphan` (counts)
+
+Llama `renderCleanupModal(planData)`.
+
+**`renderCleanupModal(planData)`**: modal estilo Linear/Stripe con:
+- Stats grid (docs a eliminar + usuarios a orphan)
+- Si totalDocs+totalUsers === 0: success banner verde "Sistema limpio"
+- Si > 0:
+  - Sección colapsable "Docs a eliminar de `roles/`" con lista
+  - Tabla detallada `email | nombre | antes | → | después` con
+    badge "Sin asignar" + iconos
+  - Warning visible con icono triangle-alert: "Los usuarios
+    afectados quedarán **bloqueados al login** con la pantalla
+    'Sin rol asignado' hasta que les asignes un rol custom desde
+    Configuración → Usuarios."
+  - Botones: Cancelar + "Ejecutar limpieza" (variant `--danger`)
+
+**`executeLegacyCleanup()`**: invocado al click "Ejecutar limpieza".
+
+1. Doble `confirm()` (acción destructiva):
+   - "⚠️ Esto eliminará N doc(s) Y dejará a M usuario(s) sin rol
+     asignado. ¿Continuar?"
+   - "Última confirmación: ¿estás seguro? Esta acción no se puede
+     deshacer."
+
+2. **Batch 1 — Reset usuarios huérfanos**:
+   ```js
+   var FieldValue = window.firebase.firestore.FieldValue;
+   var deleteFv = FieldValue.delete();
+
+   for (var i = 0; i < allUsers.length; i++) {
+       var u = allUsers[i];
+       var wasRole = plan.editorUsers.includes(u) ? 'system_editor' : 'system_viewer';
+       batch1.update(window.db.collection('usuarios').doc(u.uid), {
+           roleId: deleteFv,
+           roleName: deleteFv,
+           permissions: [],
+           permissionsUpdatedAt: nowIso,
+           _orphanedFromRole: wasRole,
+           _orphanedFromRoleName: wasRole === 'system_editor' ? 'Editor' : 'Viewer',
+           _orphanedAt: nowIso,
+           _orphanedBy: currentUid,
+           _orphanedReason: 'cleanup-legacy-§73-R8'
+       });
+   }
+   ```
+
+3. **Batch 2 — Delete docs roles/**:
+   ```js
+   if (plan.editorExists) batch2.delete(db.collection('roles').doc('system_editor'));
+   if (plan.viewerExists) batch2.delete(db.collection('roles').doc('system_viewer'));
+   ```
+
+4. **Audit log**:
+   ```js
+   db.collection('auditLog').add({
+       type: 'roles.cleanup-legacy',
+       ts: nowIso,
+       by: currentUid, byName: currentName,
+       docsDeleted: ['system_editor', 'system_viewer'].filter(...exists),
+       usersOrphaned: allUsers.length,
+       source: '§73-R8-mini-cleanup'
+   });
+   ```
+
+5. **Ejecución serial**: usuarios primero → docs después (preserva
+   integridad si delete falla — los users quedan reseteados aunque
+   el delete del role falle).
+
+6. Toast: "Limpieza completa: N docs eliminados, M usuarios orphan"
+7. `closeCleanupModal()` + refresh user counts.
+
+### 73.3 Garantía de seguridad: por qué client-side puro funciona
+
+`firestore.rules` §68 R6 ya define:
+
+```
+match /roles/{roleId} {
+    allow delete: if isSuperAdmin() || hasPermission('roles.delete');
+}
+
+match /usuarios/{userId} {
+    allow update: if isSuperAdmin()
+        || (hasPermission('users.edit'))
+        || (request.auth.uid == userId && diff-keys whitelist);
+}
+```
+
+CEO tiene `permissions: ['*']` (wildcard) → `hasPermission('*')` =
+true → pasa ambas rules → puede ejecutar delete de roles/ Y update
+de usuarios/ desde el cliente directamente.
+
+Cero deploy backend requerido. Cero callable Cloud Function nueva.
+Solo SDK Compat existente + UI del admin.
+
+### 73.4 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (Ctrl+Shift+R) | Cache nueva carga (v20260513140000) |
+| 2 | sec-users → Crear usuario sin customs configurados | Dropdown muestra "— Sin roles disponibles —" (corto). Botón Guardar disabled con tooltip + hint rojo "Primero creá un rol en Configuración → Roles" |
+| 3 | Click Guardar disabled | Browser NO emite el error "Selecciona un elemento de la lista". Botón simplemente no responde |
+| 4 | Crear un custom role en sec-roles → volver a sec-users → Crear usuario | Dropdown ahora muestra el custom role. Botón Guardar habilitado |
+| 5 | sec-users tabla con users que tienen roleId='system_editor' o 'system_viewer' | Muestran badge gris "Sin asignar" (NO "EDITOR" stale) |
+| 6 | Filter dropdown "Sin rol asignado" | Incluye también usuarios con roleId='system_editor'/'system_viewer' (no solo `null`) |
+| 7 | Tag "·legacy" al lado del badge | YA NO aparece (eliminado) |
+| 8 | sec-roles header → click "Limpiar legacy" | Modal preview con stats: cuántos docs eliminar (0/1/2) + cuántos usuarios orphan |
+| 9 | Si no hay nada que limpiar | Banner verde "Sistema limpio" + botón Cerrar |
+| 10 | Si hay docs/users a limpiar | Stats + tabla detallada + warning visible + botones Cancelar/Ejecutar |
+| 11 | Click "Ejecutar limpieza" | Doble confirm() — primero "¿Continuar?" luego "Última confirmación" |
+| 12 | Si confirma ambos | Toast "Limpieza completa: N docs, M usuarios" + modal cierra |
+| 13 | Verificar Firestore Console | `roles/system_editor` y `roles/system_viewer` ya NO existen. Usuarios afectados tienen `roleId` borrado + `permissions=[]` + markers `_orphanedFromRole/_orphanedAt/_orphanedBy` |
+| 14 | Verificar Firestore `auditLog/` | Entry `type='roles.cleanup-legacy', docsDeleted: [...], usersOrphaned: N, source: '§73-R8-mini-cleanup'` |
+| 15 | Login como user huérfano post-cleanup | Pantalla "No tienes roles asignados, contacta con un administrador" (§69 guard) |
+| 16 | CEO le asigna custom role nuevo desde sec-users | User entra normal con permissions del nuevo role |
+| 17 | Re-ejecutar "Limpiar legacy" tras success | Banner verde "Sistema limpio" (idempotente) |
+| 18 | Editor (no super_admin) intenta abrir cleanup modal | Toast "Solo super_admin puede limpiar roles legacy" |
+
+### 73.5 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | Cero modificación HTML. Solo nuevos selectores `.cleanup-modal-*` no colisionan con legacy |
+| §17.12 anti-MO | MutationObserver subtree:true | Cero MO. Modal renderizado imperativo |
+| §35 | pointermove persistente | Cero pointermove |
+| §37 IAP | Implementar sin autorización | Cliente autorizó "Pasemos a R8 sin preguntarme" |
+| Big Bang | Deploy nueva Cloud Function | Cero deploy backend. Todo client-side via SDK Compat |
+| §61 Plan | Saltarse fases | R8 mini estricto: cleanup de docs huérfanos system_editor/viewer + reset usuarios. NO refactoriza los 164 callsites legacy AP.isSuperAdmin (R8 grande, opcional, futuro) |
+| Permission-denied silencioso | Catch específico para permission-denied → mensaje claro "verificá que el deploy de firestore.rules R6 esté activo" |
+| FieldValue undefined | `var deleteFv = FieldValue ? FieldValue.delete() : null;` con fallback a `null` |
+
+### 73.6 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Cliente ejecuta cleanup sin entender consecuencias | 🟡 Media | Doble `confirm()` + warning visible "usuarios quedarán bloqueados al login" + tabla detallada de afectados | Re-asignar custom roles desde sec-users |
+| 2 | Batch1 falla mid-write | 🟢 Baja | Firestore garantiza atomicity por batch (cap 500). Si falla, ningún user fue modificado |
+| 3 | Batch2 falla tras batch1 success | 🟢 Baja | Users quedaron orphan PERO docs siguen. Re-ejecutar "Limpiar legacy" → modal solo muestra los docs restantes |
+| 4 | Audit log write falla | 🟢 Baja | Best-effort: log warn y continúa. Trazabilidad parcial pero cleanup OK |
+| 5 | super_admin se confunde y borra docs custom (no system_editor/viewer) | 🟢 Nula | Cleanup explícitamente busca `system_editor` y `system_viewer` por ID. Custom roles NO son tocados |
+| 6 | Permissions[] vacío hace que algún user quede sin acceso a algo importante | 🟡 Media | Es comportamiento esperado: el cleanup ES la acción para que queden bloqueados. CEO les debe asignar nuevo custom role inmediatamente |
+| 7 | Click "Limpiar legacy" abre modal pero firestore.rules no desplegadas | 🟢 Baja | Catch con código 'permission-denied' → mensaje claro "verificá que el deploy de firestore.rules R6 esté activo" |
+
+### 73.7 Acciones operativas del super_admin (post-merge)
+
+NINGUNA NUEVA. Solo:
+1. **Ctrl+Shift+R** en admin para invalidar cache previa (carga
+   v20260513140000)
+2. Ir a Configuración → Roles
+3. Click "Limpiar legacy"
+4. Revisar el plan en el modal de preview
+5. Click "Ejecutar limpieza"
+6. Doble confirm
+7. Verificar Firestore: docs `roles/system_editor` y `roles/system_viewer`
+   eliminados + users afectados con `roleId` borrado
+8. Re-asignar custom roles desde sec-users a los users orphan
+
+### 73.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-users.js` | Fix A: dropdown corto "— Sin roles disponibles —" + nueva función `updateSaveButtonState()` que disable botón + tooltip + hint visible. Fix B: detección `isOrphanRow` (3 vías: roleId='system_editor', roleId='system_viewer', !roleId && rol legacy) → badge gris "Sin asignar". Eliminado tag "·legacy" del HTML de cada fila. Filter `__legacy__` extendido para incluir huérfanos system_editor/viewer |
+| `js/admin-roles.js` | Fix C: nuevo botón "Limpiar legacy" en `roles-header-actions` con icono `archive-x`. 3 funciones nuevas (`cleanupLegacyRolesPreview`, `closeCleanupModal`, `executeLegacyCleanup`). 3 cases nuevos en switch de event delegation (cleanup-legacy / close-cleanup-modal / execute-cleanup). Filter del click handler extendido para incluir `cleanupModal`. Doble confirm() antes de ejecutar. Audit log entry. Ejecución serial usuarios → docs |
+| `service-worker.js` | CACHE_VERSION → `v20260513140000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513140000'` |
+| `CLAUDE.md` | Esta sección §73 |
+
+**Total**: 5 archivos.
+
+### 73.9 Archivos INTACTOS (afirmación)
+
+- `firestore.rules` — sin tocar (R6 ya cubre delete de roles/ +
+  update de usuarios/ por wildcard del CEO)
+- `functions/index.js` — sin tocar (cero Cloud Function nueva,
+  cleanup es 100% client-side)
+- `js/rbac-catalog.js` — sin tocar
+- `js/admin-state.js` — sin tocar
+- `js/admin-auth.js` — sin tocar (guard "Sin rol asignado" del §69
+  bloquea correctamente a usuarios orphan)
+- `admin.html` — sin tocar
+- `css/admin.css` — sin tocar (re-usa estilos `.migration-*`
+  existentes para el modal de cleanup)
+- 154 callsites legacy `AP.isSuperAdmin()` etc — sin tocar
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+
+### 73.10 Estado del Plan §61 RBAC tras §73
+
+| Sprint | Estado | Doc |
+|---|---|---|
+| R1-R7.1 | ✅ Completados | §63-§70 |
+| R7b Triggers automáticos | ✅ | §71 |
+| R7.2 hotfix UX | ✅ | §72 |
+| **R8 mini cleanup** | ✅ | §73 (este) |
+| ⏸ R8 grande (refactor 164 callsites) | Opcional futuro | (planeado §67.5) |
+
+### 73.11 Plan §61 RBAC: cierre operacional
+
+Tras §73, el sistema RBAC dinámico está **funcionalmente completo**:
+- ✅ CEO con wildcard permissions
+- ✅ Custom roles creables/editables/eliminables
+- ✅ Sync automático en tiempo real (R7b triggers)
+- ✅ Migración legacy users (R4)
+- ✅ Guard "Sin rol asignado" para usuarios sin acceso (§69)
+- ✅ UI sec-roles + sec-users completa con dropdown dinámico
+- ✅ Backend rules con hasPermission server-side + OR fallback (R6)
+- ✅ Frontend con AP.hasPermission API canónica (R1)
+- ✅ Cleanup masivo de huérfanos (§73)
+- ✅ Audit log de todas las operaciones críticas
+
+R8 grande (refactor de 164 callsites legacy AP.isSuperAdmin →
+AP.hasPermission) queda como **trabajo opcional futuro** después de
+meses de validación en producción. El sistema funciona 100% correcto
+sin él gracias a los helpers legacy delegando internamente a
+hasPermission via `_check(permId, legacyFn)`.
+
+### 73.12 Doctrina aplicada
+
+§19 RCA estricto: cada bug diagnosticado por separado:
+- Bug 1+2: required attribute + value="" → browser blocking. Fix:
+  texto corto + disable button con hint
+- Bug 3: denormalización stale de roleName/permissions[]. Fix: UI
+  detecta huérfanos y muestra "Sin asignar"
+- Bug 4: docs Firestore que sobreviven cambios del catálogo
+  client-side. Fix: cleanup masivo CLIENT-SIDE puro
+
+§37 IAP: análisis previo entregado al cliente. Cero deploy backend
+requerido (firestore.rules R6 ya cubre las operaciones).
+
+§17 Performance: cero MutationObserver, cero pointermove. Modal
+renderizado imperativo. Batch writes con cap implícito 500
+(Firestore limit).
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Solo nuevos
+selectores `.cleanup-modal-*` aditivos.
+
+§61 Plan Maestro: R8 mini puntual. Cero overflow a R8 grande
+(refactor masivo de 164 callsites legacy queda opcional futuro).
+
+**Cache bump**: `v20260513140000`.
+
+---

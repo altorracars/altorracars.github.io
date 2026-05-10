@@ -243,11 +243,15 @@
         }
 
         // Render header con botones de acción
+        // §73 R8 — agregado botón "Limpiar legacy" para eliminar docs huérfanos
+        // de roles/system_editor y roles/system_viewer + reset usuarios afectados
         var headerHtml = '<div class="roles-header">' +
             '<div class="roles-header-stats">' +
             '<span class="roles-header-count">' + _state.roles.length + ' rol' + (_state.roles.length === 1 ? '' : 'es') + '</span>' +
             '</div>' +
             '<div class="roles-header-actions">' +
+            '<button class="alt-btn alt-btn--ghost" data-action="cleanup-legacy" title="Elimina los docs huérfanos roles/system_editor y roles/system_viewer del catálogo + reset de usuarios con esos roleId. Acción destructiva.">' +
+            '<i data-lucide="archive-x"></i> Limpiar legacy</button>' +
             '<button class="alt-btn alt-btn--ghost" data-action="migrate-legacy" title="Migra usuarios pre-existentes (legacy) al sistema dinámico de roles. Idempotente — re-ejecutable sin riesgo.">' +
             '<i data-lucide="users-round"></i> Migrar legacy</button>' +
             '<button class="alt-btn alt-btn--ghost" data-action="seed-system-roles" title="Re-ejecutar seedSystemRoles (idempotente — solo agrega los que falten)">' +
@@ -1015,6 +1019,297 @@
     }
 
     // ════════════════════════════════════════════════════════════════
+    // §73 R8 — Cleanup masivo de roles legacy (system_editor/viewer)
+    // ════════════════════════════════════════════════════════════════
+    //
+    // Tras §69 R7 el catálogo solo tiene CEO. Editor y Viewer fueron
+    // eliminados del catálogo PERO los docs en Firestore (sembrados
+    // pre-§69) y los users con esos roleId siguen existiendo. Este
+    // cleanup ejecuta CLIENT-SIDE puro (cero deploy backend) usando
+    // el SDK Compat directo:
+    //
+    //   1. db.collection('roles').doc('system_editor').delete()
+    //   2. db.collection('roles').doc('system_viewer').delete()
+    //   3. Batch update usuarios con roleId in [system_editor, system_viewer]
+    //      → reset roleId=null, roleName=null, permissions=[],
+    //        + markers _orphanedFromRole, _orphanedAt
+    //   4. Audit log entry
+    //
+    // Garantía: firestore.rules R6 permite estas operaciones porque CEO
+    // tiene wildcard '*'. Cero deploy backend requerido.
+
+    function cleanupLegacyRolesPreview() {
+        if (!isSuperAdmin()) {
+            toast('Solo super_admin puede limpiar roles legacy', 'error');
+            return;
+        }
+        if (!window.db) {
+            toast('Firestore no disponible', 'error');
+            return;
+        }
+
+        var btns = document.querySelectorAll('[data-action="cleanup-legacy"]');
+        for (var b = 0; b < btns.length; b++) {
+            btns[b].disabled = true;
+            btns[b].innerHTML = '<i data-lucide="loader-2"></i> Cargando...';
+        }
+        refreshIcons(document.body);
+
+        // Paralelo: chequear existencia de docs + contar usuarios afectados
+        Promise.all([
+            window.db.collection('roles').doc('system_editor').get(),
+            window.db.collection('roles').doc('system_viewer').get(),
+            window.db.collection('usuarios').where('roleId', '==', 'system_editor').get(),
+            window.db.collection('usuarios').where('roleId', '==', 'system_viewer').get()
+        ]).then(function (results) {
+            var editorExists = results[0].exists;
+            var viewerExists = results[1].exists;
+            var editorUsers = [];
+            var viewerUsers = [];
+            results[2].forEach(function (d) {
+                editorUsers.push({ uid: d.id, nombre: (d.data() || {}).nombre || '', email: (d.data() || {}).email || '' });
+            });
+            results[3].forEach(function (d) {
+                viewerUsers.push({ uid: d.id, nombre: (d.data() || {}).nombre || '', email: (d.data() || {}).email || '' });
+            });
+
+            var totalDocsToDelete = (editorExists ? 1 : 0) + (viewerExists ? 1 : 0);
+            var totalUsersToOrphan = editorUsers.length + viewerUsers.length;
+            console.log('[AdminRoles] §73 R8 cleanupPreview', {
+                editorExists: editorExists,
+                viewerExists: viewerExists,
+                editorUsers: editorUsers.length,
+                viewerUsers: viewerUsers.length
+            });
+
+            renderCleanupModal({
+                editorExists: editorExists,
+                viewerExists: viewerExists,
+                editorUsers: editorUsers,
+                viewerUsers: viewerUsers,
+                totalDocsToDelete: totalDocsToDelete,
+                totalUsersToOrphan: totalUsersToOrphan
+            });
+        }).catch(function (err) {
+            console.warn('[AdminRoles] §73 R8 cleanupPreview error:', err && err.code);
+            toast('No pudimos consultar roles legacy: ' + (err && err.message ? err.message : 'error desconocido'), 'error');
+        }).finally(function () {
+            var btns2 = document.querySelectorAll('[data-action="cleanup-legacy"]');
+            for (var c = 0; c < btns2.length; c++) {
+                btns2[c].disabled = false;
+                btns2[c].innerHTML = '<i data-lucide="archive-x"></i> Limpiar legacy';
+            }
+            refreshIcons(document.body);
+        });
+    }
+
+    function renderCleanupModal(planData) {
+        var existing = $('cleanupModal');
+        if (existing) existing.remove();
+
+        var totalDocs = planData.totalDocsToDelete || 0;
+        var totalUsers = planData.totalUsersToOrphan || 0;
+
+        var html = '<div class="roles-modal-backdrop" id="cleanupModal" data-action="close-cleanup-modal">' +
+            '<div class="roles-modal" data-no-close>' +
+            '<header class="roles-modal-header">' +
+            '<h2 class="roles-modal-title"><i data-lucide="archive-x"></i> Limpiar roles legacy</h2>' +
+            '<button class="roles-modal-close" data-action="close-cleanup-modal" aria-label="Cerrar"><i data-lucide="x"></i></button>' +
+            '</header>' +
+            '<div class="roles-modal-body">';
+
+        if (totalDocs === 0 && totalUsers === 0) {
+            // Nada que hacer — ya está limpio
+            html += '<div class="migration-success-banner">' +
+                '<div class="migration-success-icon"><i data-lucide="check-circle-2"></i></div>' +
+                '<div><h3>Sistema limpio</h3><p>No quedan docs huérfanos de <code>system_editor</code> ni <code>system_viewer</code> en Firestore, ni usuarios con esos roleId.</p></div></div>';
+        } else {
+            html += '<div class="migration-intro">' +
+                '<p>Esta acción <strong>destructiva</strong> hará lo siguiente:</p></div>' +
+                '<div class="migration-stats">' +
+                '<div class="migration-stat-card migration-stat-card--skip">' +
+                '<div class="migration-stat-card-value">' + totalDocs + '</div>' +
+                '<div class="migration-stat-card-label">Docs a eliminar</div></div>' +
+                '<div class="migration-stat-card migration-stat-card--ready">' +
+                '<div class="migration-stat-card-value">' + totalUsers + '</div>' +
+                '<div class="migration-stat-card-label">Usuarios a orphan</div></div>' +
+                '</div>';
+
+            if (totalDocs > 0) {
+                html += '<div class="migration-skipped-section"><details open>' +
+                    '<summary>Docs a eliminar de <code>roles/</code></summary><ul>';
+                if (planData.editorExists) html += '<li><code>system_editor</code></li>';
+                if (planData.viewerExists) html += '<li><code>system_viewer</code></li>';
+                html += '</ul></details></div>';
+            }
+
+            if (totalUsers > 0) {
+                var allUsers = planData.editorUsers.concat(planData.viewerUsers);
+                html += '<div class="migration-plan-table-wrap"><table class="migration-plan-table">' +
+                    '<thead><tr><th>Email</th><th>Nombre</th><th>Antes</th><th>→</th><th>Después</th></tr></thead><tbody>';
+                for (var i = 0; i < allUsers.length; i++) {
+                    var u = allUsers[i];
+                    var wasEditor = planData.editorUsers.indexOf(u) !== -1;
+                    html += '<tr>' +
+                        '<td>' + escapeHtml(u.email) + '</td>' +
+                        '<td>' + escapeHtml(u.nombre) + '</td>' +
+                        '<td><code>' + (wasEditor ? 'system_editor' : 'system_viewer') + '</code></td>' +
+                        '<td><i data-lucide="arrow-right"></i></td>' +
+                        '<td><span class="badge badge-warning">Sin asignar</span></td>' +
+                        '</tr>';
+                }
+                html += '</tbody></table></div>';
+                html += '<div class="migration-intro" style="margin-top:1rem;"><p style="color:var(--admin-warning, #f59e0b);"><i data-lucide="triangle-alert"></i> Los usuarios afectados quedarán <strong>bloqueados al login</strong> con la pantalla "Sin rol asignado" hasta que les asignes un rol custom desde Configuración → Usuarios.</p></div>';
+            }
+        }
+
+        html += '</div>' +
+            '<footer class="roles-modal-footer">' +
+            '<button class="alt-btn alt-btn--ghost" data-action="close-cleanup-modal">Cancelar</button>' +
+            (totalDocs + totalUsers > 0
+                ? '<button class="alt-btn alt-btn--danger" data-action="execute-cleanup"><i data-lucide="archive-x"></i> Ejecutar limpieza</button>'
+                : '<button class="alt-btn alt-btn--primary" data-action="close-cleanup-modal">Cerrar</button>') +
+            '</footer>' +
+            '</div></div>';
+
+        document.body.insertAdjacentHTML('beforeend', html);
+        var modal = $('cleanupModal');
+        if (modal) {
+            // Stash plan data en el modal para reusar en execute
+            modal._planData = planData;
+            refreshIcons(modal);
+        }
+    }
+
+    function closeCleanupModal() {
+        var modal = $('cleanupModal');
+        if (modal) modal.remove();
+    }
+
+    function executeLegacyCleanup() {
+        var modal = $('cleanupModal');
+        if (!modal || !modal._planData) {
+            toast('No hay plan de limpieza activo', 'error');
+            return;
+        }
+        if (!isSuperAdmin()) {
+            toast('Solo super_admin puede ejecutar la limpieza', 'error');
+            return;
+        }
+        if (!window.db) {
+            toast('Firestore no disponible', 'error');
+            return;
+        }
+
+        var plan = modal._planData;
+
+        // Doble confirm — acción destructiva
+        var firstMsg = '⚠️ Esto eliminará ' + plan.totalDocsToDelete +
+            ' doc(s) de roles/ Y dejará a ' + plan.totalUsersToOrphan +
+            ' usuario(s) sin rol asignado. ¿Continuar?';
+        if (!confirm(firstMsg)) return;
+        if (!confirm('Última confirmación: ¿estás seguro? Esta acción no se puede deshacer.')) return;
+
+        var execBtn = modal.querySelector('[data-action="execute-cleanup"]');
+        if (execBtn) {
+            execBtn.disabled = true;
+            execBtn.innerHTML = '<i data-lucide="loader-2"></i> Limpiando...';
+            refreshIcons(modal);
+        }
+
+        console.log('[AdminRoles] §73 R8 executeLegacyCleanup START', {
+            docsToDelete: plan.totalDocsToDelete,
+            usersToOrphan: plan.totalUsersToOrphan
+        });
+
+        var allUsers = plan.editorUsers.concat(plan.viewerUsers);
+        var nowIso = new Date().toISOString();
+        var currentUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+        var currentName = (window.AP && window.AP.currentUserProfile && window.AP.currentUserProfile.nombre) || 'CEO';
+
+        // Usar FieldValue para borrar campos sin valor
+        var FieldValue = window.firebase && window.firebase.firestore && window.firebase.firestore.FieldValue;
+        var deleteFv = FieldValue ? FieldValue.delete() : null;
+
+        // Batch 1: usuarios huérfanos (cap 500 ops, suficiente para realismo)
+        var batch1 = window.db.batch();
+        for (var i = 0; i < allUsers.length; i++) {
+            var u = allUsers[i];
+            var wasRole = plan.editorUsers.indexOf(u) !== -1 ? 'system_editor' : 'system_viewer';
+            var userRef = window.db.collection('usuarios').doc(u.uid);
+            // Reset campos del sistema dinámico
+            var resetData = {
+                permissions: [],
+                permissionsUpdatedAt: nowIso,
+                _orphanedFromRole: wasRole,
+                _orphanedFromRoleName: wasRole === 'system_editor' ? 'Editor' : 'Viewer',
+                _orphanedAt: nowIso,
+                _orphanedBy: currentUid || 'unknown',
+                _orphanedReason: 'cleanup-legacy-§73-R8'
+            };
+            // FieldValue.delete() para limpiar roleId/roleName si existe
+            if (deleteFv) {
+                resetData.roleId = deleteFv;
+                resetData.roleName = deleteFv;
+            } else {
+                resetData.roleId = null;
+                resetData.roleName = null;
+            }
+            batch1.update(userRef, resetData);
+        }
+
+        // Batch 2: delete de los docs roles/system_editor + system_viewer
+        var batch2 = window.db.batch();
+        if (plan.editorExists) {
+            batch2.delete(window.db.collection('roles').doc('system_editor'));
+        }
+        if (plan.viewerExists) {
+            batch2.delete(window.db.collection('roles').doc('system_viewer'));
+        }
+
+        // Ejecutar en serie: usuarios primero (preserva integridad si delete falla)
+        // luego docs de roles
+        var usersCommit = allUsers.length > 0 ? batch1.commit() : Promise.resolve();
+        usersCommit.then(function () {
+            return (plan.editorExists || plan.viewerExists) ? batch2.commit() : Promise.resolve();
+        }).then(function () {
+            // Audit log
+            return window.db.collection('auditLog').add({
+                type: 'roles.cleanup-legacy',
+                ts: nowIso,
+                by: currentUid,
+                byName: currentName,
+                docsDeleted: [
+                    plan.editorExists ? 'system_editor' : null,
+                    plan.viewerExists ? 'system_viewer' : null
+                ].filter(Boolean),
+                usersOrphaned: allUsers.length,
+                source: '§73-R8-mini-cleanup'
+            }).catch(function (e) {
+                // Audit no crítico — log y continuar
+                console.warn('[AdminRoles] §73 R8 audit log failed:', e && e.code);
+            });
+        }).then(function () {
+            console.log('[AdminRoles] §73 R8 cleanup COMPLETE');
+            toast('Limpieza completa: ' + plan.totalDocsToDelete + ' docs eliminados, ' + plan.totalUsersToOrphan + ' usuarios orphan', 'success');
+            closeCleanupModal();
+            // Refresh user counts en background (UI se actualiza vía onSnapshot)
+            refreshUserCounts().then(function () { updateUserCountsDom(); });
+        }).catch(function (err) {
+            console.error('[AdminRoles] §73 R8 cleanup FAILED:', err);
+            var msg = (err && err.code === 'permission-denied')
+                ? 'Permission denied — verificá que el deploy de firestore.rules R6 esté activo'
+                : ((err && err.message) || 'error desconocido');
+            toast('Error al limpiar: ' + msg, 'error');
+            if (execBtn) {
+                execBtn.disabled = false;
+                execBtn.innerHTML = '<i data-lucide="play"></i> Reintentar';
+                refreshIcons(modal);
+            }
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // Event delegation
     // ════════════════════════════════════════════════════════════════
 
@@ -1032,9 +1327,11 @@
             var section = $('sec-roles');
             var modal = $('rolesModal');
             var migModal = $('migrationModal');
+            var cleanupModal = $('cleanupModal');
             if (!(section && section.contains(btn))
                 && !(modal && modal.contains(btn))
-                && !(migModal && migModal.contains(btn))) return;
+                && !(migModal && migModal.contains(btn))
+                && !(cleanupModal && cleanupModal.contains(btn))) return;
 
             var action = btn.getAttribute('data-action');
             switch (action) {
@@ -1081,6 +1378,22 @@
                 case 'execute-migration':
                     e.preventDefault();
                     executeLegacyMigration();
+                    break;
+                // §73 R8 — Cleanup masivo de roles legacy (system_editor/viewer)
+                case 'cleanup-legacy':
+                    e.preventDefault();
+                    cleanupLegacyRolesPreview();
+                    break;
+                case 'close-cleanup-modal':
+                    if (btn.closest('[data-no-close]') && !btn.classList.contains('roles-modal-close') && btn.getAttribute('data-action') !== 'close-cleanup-modal') {
+                        return;
+                    }
+                    e.preventDefault();
+                    closeCleanupModal();
+                    break;
+                case 'execute-cleanup':
+                    e.preventDefault();
+                    executeLegacyCleanup();
                     break;
             }
         });

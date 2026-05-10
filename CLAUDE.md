@@ -32106,3 +32106,493 @@ NINGUNA NUEVA. Solo Ctrl+Shift+R en admin para invalidar cache previa
 **Cache bump**: `v20260513180000`.
 
 ---
+
+## 74. PUNTO DE CONTINUIDAD — Cierre sesión 2026-05-10 + Plan S3 Typing Indicators
+
+> **Propósito**: documentar el estado exacto al cierre de la sesión
+> 2026-05-09 → 2026-05-10 + plan ejecutable de **§59 S3 Typing
+> Indicators** (próximo sprint del Mega-Plan ALTOR Hub) para que un
+> Claude en una nueva ventana pueda retomar sin pérdida de contexto.
+
+### 74.1 Estado al cierre
+
+**Branch activa**: `claude/altor-hub-sprint-s1-wWNlV`
+
+**Último commit pusheado**: `b88386f` — §62 actualizado con estado
+post-§73.4 RBAC funcional cerrado.
+
+**Cache version actual**: `v20260513180000`.
+
+**Cadena de commits de esta sesión** (en orden cronológico):
+
+```
+42ccee9 §73 R8 mini cleanup masivo (3 fixes coordinados client-side)
+ea4cffc §73.1 hotfix R8: header con acciones admin SIEMPRE visible
+07dd42d §73.2 hotfix UX: auto-hide inteligente botones legacy
+1d2f886 §73.3 hotfix UX: fix flicker + eliminar "Inicializar sistema"
+d75f73d §73.4 hotfix UX: auto-hide "Resembrar sistema" cuando CEO sembrado
+b88386f §62 actualizado: estado del proyecto post-§73.4
+```
+
+**Acciones operativas que el cliente debe ejecutar antes de continuar**:
+1. Mergear la branch `claude/altor-hub-sprint-s1-wWNlV` a main
+2. Ctrl+Shift+R en admin para invalidar cache previa (carga v20260513180000)
+3. Verificar que sec-roles muestra solo "+ Nuevo rol" en flujo normal
+
+**Cero deploys nuevos pendientes**. firestore.rules R6 ya está
+desplegado (verificado porque botón "Limpiar legacy" del §73 funcionó
+correctamente — requería esas rules).
+
+### 74.2 Plan §59 S3 — Typing Indicators bidireccionales
+
+**Foco**: cliente sabe cuando el asesor está escribiendo, asesor
+sabe cuando el cliente está escribiendo. Latencia <100ms desde el
+primer keystroke. Cero costo recurrente (RTDB en free tier).
+
+**Tecnología elegida**: **RTDB** (Realtime Database), NO Firestore.
+
+**Razón de la elección**:
+- Updates de typing son ALTA frecuencia (cada keystroke con throttle 1s)
+- RTDB cobra solo por bandwidth, no por read/write individual
+- `onDisconnect()` nativo limpia el flag automáticamente al cerrar
+  tab/perder conexión (cero ghosts visuales)
+- Latencia menor que Firestore para cambios efímeros
+
+#### 74.2.1 Schema RTDB
+
+```
+/typing/{sessionId}/
+    user: { typing: bool, ts: timestamp }
+    asesor_<uid>: { name: string, photoURL: string, typing: bool, ts: timestamp }
+```
+
+**Por qué la estructura es asimétrica**:
+- `user` es UNA sola entidad (cliente del chat) → key fija
+- Múltiples asesores podrían escribir en paralelo en algún caso edge
+  → key dinámica `asesor_<uid>` permite distinguir quién escribe
+
+**Por qué incluir `name` y `photoURL` en la entrada del asesor**:
+- El cliente debe ver "Daniel está escribiendo..." con su foto
+- Sin estos campos, el cliente tendría que cruzar contra
+  conciergeChats/{sid}.activeAsesor (extra read)
+
+#### 74.2.2 Lógica del cliente (`js/concierge.js`)
+
+**Marcar typing al escribir** (con throttle 1s):
+
+```js
+var input = document.getElementById('cncInput');
+var typingThrottle = false;
+var typingTimeout = null;
+
+input.addEventListener('input', function () {
+    if (!session._chatDocCreated || !window.rtdb) return;
+    if (typingThrottle) return;
+    typingThrottle = true;
+    setTimeout(function () { typingThrottle = false; }, 1000);
+
+    var ref = window.rtdb.ref('/typing/' + session.sessionId + '/user');
+    ref.set({ typing: true, ts: Date.now() });
+    // §52 cleanup: si pierde conexión, RTDB elimina el nodo automáticamente
+    ref.onDisconnect().remove();
+
+    // Auto-clear tras 3s sin nuevos keystrokes
+    if (typingTimeout) clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(function () {
+        ref.set({ typing: false });
+    }, 3000);
+});
+
+// Al enviar mensaje, marcar typing=false inmediato
+function send(text) {
+    // ... lógica existente ...
+    if (window.rtdb && session.sessionId) {
+        window.rtdb.ref('/typing/' + session.sessionId + '/user')
+            .set({ typing: false }).catch(function () {});
+    }
+}
+```
+
+**Listener para "asesor escribe"**:
+
+```js
+function startTypingListener() {
+    if (!window.rtdb || !session.sessionId) return;
+    var ref = window.rtdb.ref('/typing/' + session.sessionId);
+    _typingUnsub = ref.on('value', function (snap) {
+        var data = snap.val() || {};
+        // Buscar primer asesor con typing=true && ts < 5s ago
+        var typingAsesor = null;
+        Object.keys(data).forEach(function (key) {
+            if (key === 'user') return; // skip self
+            var entry = data[key];
+            if (entry && entry.typing
+                && (Date.now() - entry.ts) < 5000) {
+                typingAsesor = entry;
+            }
+        });
+        renderTypingIndicator(typingAsesor);
+    });
+}
+
+function renderTypingIndicator(asesor) {
+    var existing = document.getElementById('cncTypingIndicator');
+    if (!asesor) {
+        if (existing) existing.remove();
+        return;
+    }
+    if (existing) {
+        existing.querySelector('.cnc-typing-name').textContent = asesor.name + ' está escribiendo';
+        return;
+    }
+    // Crear indicator nuevo
+    var html = '<div id="cncTypingIndicator" class="cnc-typing-indicator">' +
+        '<img class="cnc-typing-avatar" src="' + (asesor.photoURL || '/img/default-avatar.png') + '">' +
+        '<div class="cnc-typing-bubble">' +
+        '<span class="cnc-typing-name">' + asesor.name + ' está escribiendo</span>' +
+        '<span class="cnc-typing-dots"><span></span><span></span><span></span></span>' +
+        '</div></div>';
+    var messages = document.getElementById('cncMessages');
+    messages.insertAdjacentHTML('beforeend', html);
+    messages.scrollTop = messages.scrollHeight;
+}
+```
+
+**Cleanup**:
+
+```js
+function stopTypingListener() {
+    if (_typingUnsub) {
+        var ref = window.rtdb.ref('/typing/' + session.sessionId);
+        ref.off('value', _typingUnsub);
+        _typingUnsub = null;
+    }
+    var indicator = document.getElementById('cncTypingIndicator');
+    if (indicator) indicator.remove();
+}
+```
+
+#### 74.2.3 Lógica del admin (`js/admin-concierge.js`)
+
+**Marcar typing al escribir** (en el textarea del chat detail):
+
+```js
+var input = $('cncAdminReply');
+var adminTypingThrottle = false;
+var adminTypingTimeout = null;
+
+input.addEventListener('input', function () {
+    if (!_activeSessionId || !window.rtdb) return;
+    if (adminTypingThrottle) return;
+    adminTypingThrottle = true;
+    setTimeout(function () { adminTypingThrottle = false; }, 1000);
+
+    var uid = window.auth.currentUser.uid;
+    var name = (AP.currentUserProfile && AP.currentUserProfile.nombre) || '—';
+    var photoURL = (AP.currentUserProfile && AP.currentUserProfile.photoURL) || null;
+
+    var ref = window.rtdb.ref('/typing/' + _activeSessionId + '/asesor_' + uid);
+    ref.set({ name: name, photoURL: photoURL, typing: true, ts: Date.now() });
+    ref.onDisconnect().remove();
+
+    if (adminTypingTimeout) clearTimeout(adminTypingTimeout);
+    adminTypingTimeout = setTimeout(function () {
+        ref.set({ name: name, photoURL: photoURL, typing: false, ts: Date.now() });
+    }, 3000);
+});
+```
+
+**Listener para "cliente escribe"**:
+
+```js
+function startAdminTypingListener(sessionId) {
+    if (!window.rtdb) return;
+    var ref = window.rtdb.ref('/typing/' + sessionId + '/user');
+    _adminTypingUnsub = ref.on('value', function (snap) {
+        var data = snap.val();
+        var isTyping = data && data.typing && (Date.now() - data.ts) < 5000;
+        renderAdminTypingIndicator(isTyping);
+    });
+}
+
+function renderAdminTypingIndicator(isTyping) {
+    var existing = document.querySelector('.cnc-admin-typing-indicator');
+    if (!isTyping) {
+        if (existing) existing.remove();
+        return;
+    }
+    if (existing) return; // ya está
+    var html = '<div class="cnc-admin-typing-indicator">' +
+        '<span class="cnc-admin-typing-dots"><span></span><span></span><span></span></span>' +
+        '<span>El cliente está escribiendo...</span>' +
+        '</div>';
+    var messages = $('conciergeChatMessages');
+    messages.insertAdjacentHTML('beforeend', html);
+}
+```
+
+**Cleanup en `openChat` (cuando admin cambia de chat)**:
+
+```js
+function openChat(sessionId) {
+    // ... lógica existente ...
+
+    // Cleanup typing listener del chat anterior
+    if (_adminTypingUnsub && _previousSessionId) {
+        var ref = window.rtdb.ref('/typing/' + _previousSessionId + '/user');
+        ref.off('value', _adminTypingUnsub);
+    }
+
+    // Arrancar typing listener del nuevo chat
+    startAdminTypingListener(sessionId);
+
+    _previousSessionId = sessionId;
+}
+```
+
+#### 74.2.4 CSS — animación 3 dots iMessage style
+
+`css/concierge.css`:
+
+```css
+.cnc-typing-indicator {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin: 8px 0;
+    animation: cncTypingSlideIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.cnc-typing-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.cnc-typing-bubble {
+    background: rgba(184, 150, 88, 0.12);
+    border: 1px solid rgba(184, 150, 88, 0.2);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.cnc-typing-dots {
+    display: inline-flex;
+    gap: 3px;
+}
+
+.cnc-typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(184, 150, 88, 0.6);
+    animation: cncTypingDot 1.4s ease-in-out infinite;
+}
+
+.cnc-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.cnc-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes cncTypingDot {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.85); }
+    30% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes cncTypingSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cnc-typing-indicator { animation: none; }
+    .cnc-typing-dots span { animation: none; opacity: 0.6; }
+}
+```
+
+`css/admin.css` (variante para el Hub):
+
+```css
+.cnc-admin-typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    margin: 8px 0;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.82rem;
+    font-style: italic;
+}
+
+.cnc-admin-typing-dots span {
+    /* Mismas reglas que .cnc-typing-dots span */
+}
+```
+
+#### 74.2.5 Schema RTDB rules (`database.rules.json`)
+
+Agregar al archivo existente:
+
+```json
+"typing": {
+    "$sessionId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "user": {
+            ".validate": "newData.hasChildren(['typing','ts'])"
+        },
+        "$asesorKey": {
+            ".validate": "$asesorKey.matches(/^asesor_[a-zA-Z0-9]+$/) && newData.hasChildren(['name','typing','ts'])"
+        }
+    }
+}
+```
+
+**REQUIERE DEPLOY MANUAL del cliente**:
+```bash
+firebase deploy --only database
+```
+
+#### 74.2.6 Anti-patterns a evitar (ya documentados)
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo transitions específicas en el indicator |
+| §17.4 | Renombrar IDs | Solo nuevos IDs `cncTypingIndicator` y clases `cnc-typing-*` |
+| §17.12 | MutationObserver | Cero MO. Listener RTDB es nativo |
+| §35 | pointermove persistente | Cero. Solo `input` event con throttle 1s |
+| §17 perf | Update RTDB en cada keystroke | Throttle 1s + auto-clear 3s |
+| Listener huérfano | RTDB listener queda activo tras cerrar chat | onDisconnect.remove() + cleanup explícito en openChat/stopChat |
+| Ghost typing | Cliente cierra tab sin marcar typing=false | onDisconnect.remove() lo limpia automáticamente |
+
+#### 74.2.7 Tests E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente abre chat → empieza a escribir | Admin Hub muestra "El cliente está escribiendo..." con 3 dots animados |
+| 2 | Cliente para de escribir 3s | Indicator desaparece automáticamente |
+| 3 | Cliente envía mensaje | Indicator desaparece inmediatamente |
+| 4 | Cliente cierra tab mid-escribiendo | onDisconnect limpia el nodo → admin ve indicator desaparecer en <2s |
+| 5 | Asesor empieza a escribir | Cliente ve "Daniel está escribiendo" con avatar + 3 dots |
+| 6 | 2 admins escriben en mismo chat | Cliente ve solo el primero (entry asesor_<uid> distinto) |
+| 7 | Latencia primer keystroke → indicator visible | <200ms p50 |
+| 8 | Throttle 1s funciona | DevTools → Network: máx 1 update RTDB por segundo aunque user escriba rápido |
+| 9 | `prefers-reduced-motion: reduce` | Animation desactivada, dots estáticos opacity 0.6 |
+| 10 | Cleanup al cambiar de chat (admin) | Listener viejo cancelado, nuevo arrancado |
+
+#### 74.2.8 Archivos a modificar
+
+| Archivo | Cambio estimado |
+|---|---|
+| `js/concierge.js` | +60 líneas (typing setter throttled + listener + render) |
+| `js/admin-concierge.js` | +60 líneas (typing setter throttled + listener + render + cleanup en openChat) |
+| `css/concierge.css` | +50 líneas (estilos `.cnc-typing-*` + keyframes + reduced-motion) |
+| `css/admin.css` | +30 líneas (variante admin del indicator) |
+| `database.rules.json` | +12 líneas (schema /typing/) |
+| `service-worker.js` + `js/cache-manager.js` | bump v20260514010000 |
+| `CLAUDE.md` | nueva sección §75 con doc del sprint S3 |
+
+**Total estimado**: ~220 líneas + 1 deploy manual del cliente.
+
+#### 74.2.9 IAP previo recomendado para S3
+
+Antes de tocar código, redactar:
+
+**A. Archivos a modificar**: los 7 listados arriba
+**B. Archivos INTACTOS**: hub-store.js, firestore.rules, functions/index.js, rbac-catalog.js, admin-state.js, admin-roles.js, admin-users.js, todo el resto del repo
+**C. Código muerto**: ninguno
+**D. Refactor**: ninguno (S3 es feature aditiva)
+**E. Riesgos**:
+- Cliente no ejecuta deploy de RTDB rules → typing falla con permission-denied. Mitigación: detectar error y log silencioso (no romper UX del chat).
+- Listener RTDB huérfano si admin cambia de chat sin cleanup. Mitigación: cleanup explícito en openChat.
+- Throttle 1s podría ser muy agresivo en desktop con typing rápido. Mitigación: ajustar a 800ms si feedback indica.
+
+#### 74.2.10 Tiempo estimado
+
+**~1.5 días** de trabajo focalizado distribuidos en:
+- 30 min: IAP detallado + revisar implementación actual de send/listener
+- 4h: implementación cliente (concierge.js + concierge.css)
+- 4h: implementación admin (admin-concierge.js + admin.css)
+- 1h: rules RTDB + testing
+- 1h: documentación §75 + commit + push
+- 30 min: validación E2E del cliente post-deploy
+
+### 74.3 Cómo retomar en una nueva ventana de Claude
+
+**Paso 1**: leer estas secciones de CLAUDE.md en orden:
+- §62 (Estado Actual del Proyecto — guía completa)
+- §74 (Punto de Continuidad — esta sección con plan S3)
+- §59 (Mega-Plan ALTOR Hub — visión completa de los 7 sprints)
+- §60.1 + §60.2 (cómo se hicieron S1 y S2 — patrones a replicar)
+
+**Paso 2**: verificar estado del repo:
+```bash
+git fetch origin main
+git log --oneline -10 origin/main  # ver si la branch fue merged
+git branch --show-current
+git status
+```
+
+**Paso 3**: si la branch ya está merged a main:
+```bash
+git checkout main && git pull origin main
+git checkout -b claude/altor-hub-sprint-s3-typing
+```
+
+Si la branch NO está merged aún:
+```bash
+git fetch origin claude/altor-hub-sprint-s1-wWNlV
+git checkout claude/altor-hub-sprint-s1-wWNlV
+git pull
+```
+
+**Paso 4**: aplicar el plan §74.2 con IAP previo (5 secciones).
+
+**Paso 5**: commits siguiendo patrón documentado:
+```
+§75 Sprint S3 Typing Indicators bidireccionales (RTDB)
+
+[descripción detallada]
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+Co-Authored-By: Claude <noreply@anthropic.com>
+https://claude.ai/code/session_01P1wB9iTSKPboNHHomiwfDm
+```
+
+### 74.4 Doctrinas a respetar (recordatorio)
+
+1. **§17.2** Nunca `transition: all`. Solo properties compositor-only.
+2. **§17.4** HTML/CSS estable. Cero renombrar IDs/clases existentes.
+3. **§17.12** Cero `MutationObserver subtree:true` global.
+4. **§19** RCA Mode estricto si aparece bug recurrente.
+5. **§35** Cero `pointermove` listeners persistentes globales.
+6. **§37** IAP obligatorio antes de cada commit (5 secciones).
+7. **§57.7** Listener admin `_chatsUnsub` SIEMPRE activo globalmente.
+8. **§57.9** Patrón "lazy reset on next open" del cliente.
+9. **§61 R7+R8** UI mínima con auto-hide inteligente.
+10. **§62** Documentar próximo punto de continuidad al cierre de cada sesión.
+
+### 74.5 Estado final declarativo
+
+```
+Plan §61 RBAC Dinámico:           ✅ CERRADO funcionalmente (18 sprints)
+Plan §59 Mega-Plan ALTOR Hub:     🟡 2/7 sprints (S1+S2 mergeados)
+Próximo Sprint S3 Typing:         📋 PLAN COMPLETO documentado en §74.2
+Próximo después de S3:            S4 Read receipts (✓ vs ✓✓)
+
+Acciones cliente al retomar:
+1. Mergear branch claude/altor-hub-sprint-s1-wWNlV a main (si no lo hizo)
+2. Ctrl+Shift+R en admin
+3. Validar UI sec-roles muestra solo "+ Nuevo rol"
+4. Autorizar arranque de S3 al nuevo Claude
+
+Cero deploys backend pendientes hasta S3 (que requerirá database rules deploy).
+```
+
+---

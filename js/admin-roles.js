@@ -119,6 +119,10 @@
                     // Firestore. Si existe, el empty state debe ofrecer
                     // "Crear primer rol custom" (no "Sembrar sistema").
                     _state.ceoExists = false;
+                    // §73.2 — Track si docs huérfanos system_editor/viewer
+                    // existen en Firestore. Si existen, mostrar botón
+                    // "Limpiar legacy". Sino, ocultar (sistema limpio).
+                    _state.hasLegacyDocs = false;
                     snap.forEach(function (doc) {
                         var data = doc.data() || {};
                         data._docId = doc.id;
@@ -134,6 +138,7 @@
                         }
                         if (doc.id === 'system_editor'
                             || doc.id === 'system_viewer') {
+                            _state.hasLegacyDocs = true; // §73.2
                             return; // skip — no agregar a la lista visible
                         }
                         _state.roles.push(data);
@@ -142,7 +147,7 @@
                     _state.roles.sort(function (a, b) {
                         return (a.name || '').localeCompare(b.name || '');
                     });
-                    console.log('[AdminRoles] §72 R7.2 snapshot — visibles:', _state.roles.length, '| CEO existe:', _state.ceoExists);
+                    console.log('[AdminRoles] §73.2 snapshot — visibles:', _state.roles.length, '| CEO existe:', _state.ceoExists, '| docs legacy:', _state.hasLegacyDocs);
                     render();
                 }, function (err) {
                     // Errores esperados (cross-tab logout, permissions denied al sign out)
@@ -176,9 +181,25 @@
         return window.db.collection('usuarios').get()
             .then(function (snap) {
                 var counts = {};
+                // §73.2 — Track usuarios legacy:
+                //   - hasLegacyUsersWithSystemRoleId: con roleId apuntando
+                //     a system_editor o system_viewer (necesitan cleanup)
+                //   - hasLegacyUsersWithoutRoleId: con rol legacy pero sin
+                //     roleId (necesitan migración R4)
+                _state.hasLegacyUsersWithSystemRoleId = false;
+                _state.hasLegacyUsersWithoutRoleId = false;
                 snap.forEach(function (doc) {
                     var data = doc.data() || {};
                     var roleId = data.roleId;
+                    // §73.2 — detectar huérfanos system_editor/viewer
+                    if (roleId === 'system_editor' || roleId === 'system_viewer') {
+                        _state.hasLegacyUsersWithSystemRoleId = true;
+                    }
+                    // §73.2 — detectar users legacy sin roleId que tienen rol
+                    // legacy editor/viewer (susceptibles de migración R4)
+                    if (!roleId && (data.rol === 'editor' || data.rol === 'viewer')) {
+                        _state.hasLegacyUsersWithoutRoleId = true;
+                    }
                     if (!roleId) {
                         // Legacy fallback: mapear desde rol
                         if (window.AltorraRBACCatalog && data.rol) {
@@ -190,11 +211,17 @@
                     }
                 });
                 _state.userCounts = counts;
+                console.log('[AdminRoles] §73.2 userCounts —',
+                    'totalRoles:', Object.keys(counts).length,
+                    '| legacy (system_editor/viewer roleId):', _state.hasLegacyUsersWithSystemRoleId,
+                    '| legacy (sin roleId):', _state.hasLegacyUsersWithoutRoleId);
                 return counts;
             })
             .catch(function (err) {
                 console.warn('[AdminRoles] §61.R2 refreshUserCounts error:', err && err.message);
                 _state.userCounts = {};
+                _state.hasLegacyUsersWithSystemRoleId = false;
+                _state.hasLegacyUsersWithoutRoleId = false;
                 return {};
             });
     }
@@ -203,27 +230,71 @@
     // Render lista de roles
     // ════════════════════════════════════════════════════════════════
 
+    // §73.2 — Re-render solo del header tras detección async de legacy
+    // (refreshUserCounts). Si los flags de visibilidad cambiaron desde
+    // el último render del header, reemplazar el HTML del header in-place
+    // sin tocar el grid. Si no cambiaron, no-op (cero costo).
+    var _lastRenderedHeaderState = { cleanup: null, migrate: null };
+    function refreshHeaderIfLegacyChanged() {
+        var currentCleanup = !!(_state.hasLegacyDocs || _state.hasLegacyUsersWithSystemRoleId);
+        var currentMigrate = !!_state.hasLegacyUsersWithoutRoleId;
+        if (_lastRenderedHeaderState.cleanup === currentCleanup
+            && _lastRenderedHeaderState.migrate === currentMigrate) {
+            return; // sin cambios, no re-render
+        }
+        _lastRenderedHeaderState.cleanup = currentCleanup;
+        _lastRenderedHeaderState.migrate = currentMigrate;
+        var oldHeader = document.querySelector('#rolesContainer .roles-header');
+        if (!oldHeader) return; // header no presente (renderEmpty u otra cosa)
+        oldHeader.outerHTML = renderRolesHeader();
+        var newHeader = document.querySelector('#rolesContainer .roles-header');
+        if (newHeader) refreshIcons(newHeader);
+        console.log('[AdminRoles] §73.2 header re-rendered: cleanup=' + currentCleanup + ' migrate=' + currentMigrate);
+    }
+
     // §73.1 hotfix — header de acciones SIEMPRE visible para super_admin.
-    // Antes vivía solo dentro del render con grid (cuando _state.roles.length>0),
-    // así que cuando el cliente tenía CEO sembrado pero 0 customs, el botón
-    // "Limpiar legacy" desaparecía. Solución: extraer a función y rendearlo
-    // también en los empty states (Caso A: sin sembrar / Caso B: con CEO sin customs).
+    // §73.2 — auto-hide inteligente: los botones de mantenimiento legacy
+    // solo se muestran cuando son necesarios:
+    //   - "Limpiar legacy": visible si hasLegacyDocs (system_editor/viewer
+    //     en Firestore) O hasLegacyUsersWithSystemRoleId (users con roleId
+    //     huérfano apuntando a esos system roles)
+    //   - "Migrar legacy": visible si hasLegacyUsersWithoutRoleId (users
+    //     con campo `rol` legacy pero sin roleId, susceptibles de R4)
+    //   - "Resembrar sistema": SIEMPRE visible (utility de mantenimiento
+    //     para futuras actualizaciones del catálogo canónico)
+    //   - "Nuevo rol": SIEMPRE visible (CTA principal)
     function renderRolesHeader() {
         var rolesCount = (_state.roles && _state.roles.length) || 0;
-        return '<div class="roles-header">' +
+
+        // §73.2 — Detectar si los botones legacy son necesarios.
+        // Si hasLegacyDocs/hasLegacyUsers* aún no se han calculado
+        // (refreshUserCounts no completó), default false (oculto)
+        // hasta que el detector confirme. Re-render tras la detección.
+        var showCleanupLegacy = !!(_state.hasLegacyDocs || _state.hasLegacyUsersWithSystemRoleId);
+        var showMigrateLegacy = !!_state.hasLegacyUsersWithoutRoleId;
+
+        var html = '<div class="roles-header">' +
             '<div class="roles-header-stats">' +
             '<span class="roles-header-count">' + rolesCount + ' rol' + (rolesCount === 1 ? '' : 'es') + '</span>' +
             '</div>' +
-            '<div class="roles-header-actions">' +
-            '<button class="alt-btn alt-btn--ghost" data-action="cleanup-legacy" title="Elimina los docs huérfanos roles/system_editor y roles/system_viewer del catálogo + reset de usuarios con esos roleId. Acción destructiva.">' +
-            '<i data-lucide="archive-x"></i> Limpiar legacy</button>' +
-            '<button class="alt-btn alt-btn--ghost" data-action="migrate-legacy" title="Migra usuarios pre-existentes (legacy) al sistema dinámico de roles. Idempotente — re-ejecutable sin riesgo.">' +
-            '<i data-lucide="users-round"></i> Migrar legacy</button>' +
-            '<button class="alt-btn alt-btn--ghost" data-action="seed-system-roles" title="Re-ejecutar seedSystemRoles (idempotente — solo agrega los que falten)">' +
+            '<div class="roles-header-actions">';
+
+        if (showCleanupLegacy) {
+            html += '<button class="alt-btn alt-btn--ghost" data-action="cleanup-legacy" title="Elimina los docs huérfanos roles/system_editor y roles/system_viewer del catálogo + reset de usuarios con esos roleId. Acción destructiva.">' +
+                '<i data-lucide="archive-x"></i> Limpiar legacy</button>';
+        }
+        if (showMigrateLegacy) {
+            html += '<button class="alt-btn alt-btn--ghost" data-action="migrate-legacy" title="Migra usuarios pre-existentes (legacy) al sistema dinámico de roles. Idempotente — re-ejecutable sin riesgo.">' +
+                '<i data-lucide="users-round"></i> Migrar legacy</button>';
+        }
+        // Resembrar sistema y Nuevo rol siempre visibles
+        html += '<button class="alt-btn alt-btn--ghost" data-action="seed-system-roles" title="Re-ejecutar seedSystemRoles (idempotente — solo agrega los que falten). Útil cuando se actualice el catálogo canónico de permisos en el futuro.">' +
             '<i data-lucide="refresh-cw"></i> Resembrar sistema</button>' +
             '<button class="alt-btn alt-btn--primary" data-action="create-role">' +
             '<i data-lucide="plus"></i> Nuevo rol</button>' +
             '</div></div>';
+
+        return html;
     }
 
     function render() {
@@ -267,11 +338,15 @@
             // §73.1 — Header con acciones admin SIEMPRE visible (incluso sin customs)
             root.innerHTML = renderRolesHeader() + emptyHtml;
             refreshIcons(root);
-            // Refresh user counts en background (puede haber users con roleId
-            // huérfano apuntando a system_editor/viewer que el botón Limpiar
-            // legacy va a procesar)
+            // §73.2 — refreshUserCounts detecta legacy users y permite que
+            // los botones "Limpiar legacy" / "Migrar legacy" aparezcan SOLO
+            // si son necesarios. Re-render del header tras la detección
+            // (re-llama render() para actualizar visibilidad condicional).
             refreshUserCounts().then(function () {
                 updateUserCountsDom();
+                // Re-render solo si la detección cambió la visibilidad
+                // de los botones legacy (evita re-render innecesario)
+                refreshHeaderIfLegacyChanged();
             });
             return;
         }
@@ -292,6 +367,8 @@
         // Refresh user counts en background y re-render
         refreshUserCounts().then(function () {
             updateUserCountsDom();
+            // §73.2 — Re-render header si la detección de legacy cambió
+            refreshHeaderIfLegacyChanged();
         });
     }
 

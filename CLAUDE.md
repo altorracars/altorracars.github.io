@@ -31488,3 +31488,118 @@ selectores `.cleanup-modal-*` aditivos.
 **Cache bump**: `v20260513140000`.
 
 ---
+
+## 73.1 ADR-073.1 — Hotfix R8: header con acciones admin siempre visible (2026-05-10)
+
+> Cliente reportó tras §73 con captura de `admin.html#/roles`: "El boton
+> que mencionas no aparece, cuando doy control shift R aparece un boton
+> en roles de iniciar sistema que demora milisegundos luego aparece el
+> boton crear nuevo rol."
+>
+> El cliente vio solo el empty state "Creá tu primer rol personalizado"
+> con UN solo botón "Crear nuevo rol". Los 4 botones de acciones admin
+> (Limpiar legacy / Migrar legacy / Resembrar sistema / Nuevo rol) que
+> agregué en §73 NO aparecían.
+>
+> Aplicado bajo §17 (perf), §17.4 (HTML/CSS estable), §17.12, §35,
+> §37 (IAP), §61 Plan Maestro RBAC.
+
+### 73.1.1 Causa raíz
+
+`render()` en `js/admin-roles.js` tenía 2 ramas:
+
+1. **Empty state branch** (cuando `_state.roles.length === 0`): renderiza
+   solo el card "Creá tu primer rol" con botón "Crear nuevo rol". Cero
+   header con acciones admin.
+2. **Grid branch** (cuando hay customs): renderiza header con los 4
+   botones + grid de cards.
+
+El problema: tras §69 (CEO único) + §72 (filtros sec-roles), `_state.roles`
+**filtra** system_super_admin/editor/viewer y solo expone customs. Si el
+cliente recién ejecutó "Resembrar sistema" para sembrar el CEO PERO aún
+no creó ningún custom role, `_state.roles.length === 0` → entra al empty
+state → el botón "Limpiar legacy" del §73 (que vivía en el header del
+grid branch) NUNCA se mostraba.
+
+Esto es exactamente el caso del cliente: tiene CEO sembrado (lo ve en
+"El rol CEO está activo (vos)"), 0 customs, entonces el empty state
+"Creá tu primer rol personalizado" aparece sin acciones admin.
+
+### 73.1.2 Solución
+
+Extraer el header a una función separada `renderRolesHeader()` y
+renderearlo SIEMPRE para super_admin, en ambas ramas:
+
+```js
+function renderRolesHeader() {
+    var rolesCount = (_state.roles && _state.roles.length) || 0;
+    return '<div class="roles-header">...' +
+        '<button data-action="cleanup-legacy">...Limpiar legacy</button>' +
+        '<button data-action="migrate-legacy">...Migrar legacy</button>' +
+        '<button data-action="seed-system-roles">...Resembrar</button>' +
+        '<button data-action="create-role">...Nuevo rol</button>' +
+        '</div></div>';
+}
+
+function render() {
+    // ...
+    if (_state.roles.length === 0) {
+        // Empty state branch
+        var emptyHtml = (_state.ceoExists)
+            ? '...Creá tu primer rol personalizado...'
+            : '...Inicializar sistema...';
+        // §73.1 — Header SIEMPRE visible
+        root.innerHTML = renderRolesHeader() + emptyHtml;
+        refreshIcons(root);
+        refreshUserCounts().then(updateUserCountsDom);
+        return;
+    }
+    // Grid branch
+    var headerHtml = renderRolesHeader();
+    // ... resto igual
+}
+```
+
+Plus: ahora `refreshUserCounts()` también se ejecuta en empty state
+para que el botón "Limpiar legacy" tenga datos frescos sobre cuántos
+users con roleId huérfano hay.
+
+### 73.1.3 Tests E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260513150000) | Cache nueva carga |
+| 2 | Login como CEO + ir a sec-roles con 0 customs | Header arriba con 4 botones (Limpiar legacy / Migrar legacy / Resembrar sistema / Nuevo rol). Empty state "Creá tu primer rol personalizado" debajo |
+| 3 | Click "Limpiar legacy" | Modal preview funcionando (igual que §73) |
+| 4 | Click "Crear nuevo rol" en empty state | Modal de crear role abre |
+| 5 | Tras crear primer custom role | Empty state desaparece, header sigue arriba con los 4 botones, grid de cards aparece debajo |
+| 6 | Caso A (sin CEO sembrado, primera vez) | Header arriba + empty state "Inicializar sistema" debajo. Click "Inicializar sistema" sigue funcionando |
+| 7 | Editor (no super_admin) entra a sec-roles | Empty state "Solo super_admin" sin header |
+
+### 73.1.4 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.4 | Cambiar IDs/clases | Cero. Solo extracción de función + reuso del HTML existente |
+| §17.12 | MutationObserver | Cero |
+| §35 | pointermove | Cero |
+| Big Bang | Refactor mayor | Hotfix puntual: 1 archivo, función nueva + reuso, lógica idéntica |
+| §61 | Saltarse fases | R8.1 hotfix puntual del §73. Cero overflow a R8 grande |
+
+### 73.1.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-roles.js` | Nueva función `renderRolesHeader()` + render llamada en ambas ramas (empty state + grid) + refreshUserCounts en empty state |
+| `service-worker.js` | CACHE_VERSION → `v20260513150000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513150000'` |
+| `CLAUDE.md` | Esta sección §73.1 |
+
+### 73.1.6 Acciones operativas
+
+NINGUNA NUEVA. Solo Ctrl+Shift+R en el admin para invalidar cache
+previa (carga v20260513150000).
+
+**Cache bump**: `v20260513150000`.
+
+---

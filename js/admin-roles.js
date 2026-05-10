@@ -203,6 +203,29 @@
     // Render lista de roles
     // ════════════════════════════════════════════════════════════════
 
+    // §73.1 hotfix — header de acciones SIEMPRE visible para super_admin.
+    // Antes vivía solo dentro del render con grid (cuando _state.roles.length>0),
+    // así que cuando el cliente tenía CEO sembrado pero 0 customs, el botón
+    // "Limpiar legacy" desaparecía. Solución: extraer a función y rendearlo
+    // también en los empty states (Caso A: sin sembrar / Caso B: con CEO sin customs).
+    function renderRolesHeader() {
+        var rolesCount = (_state.roles && _state.roles.length) || 0;
+        return '<div class="roles-header">' +
+            '<div class="roles-header-stats">' +
+            '<span class="roles-header-count">' + rolesCount + ' rol' + (rolesCount === 1 ? '' : 'es') + '</span>' +
+            '</div>' +
+            '<div class="roles-header-actions">' +
+            '<button class="alt-btn alt-btn--ghost" data-action="cleanup-legacy" title="Elimina los docs huérfanos roles/system_editor y roles/system_viewer del catálogo + reset de usuarios con esos roleId. Acción destructiva.">' +
+            '<i data-lucide="archive-x"></i> Limpiar legacy</button>' +
+            '<button class="alt-btn alt-btn--ghost" data-action="migrate-legacy" title="Migra usuarios pre-existentes (legacy) al sistema dinámico de roles. Idempotente — re-ejecutable sin riesgo.">' +
+            '<i data-lucide="users-round"></i> Migrar legacy</button>' +
+            '<button class="alt-btn alt-btn--ghost" data-action="seed-system-roles" title="Re-ejecutar seedSystemRoles (idempotente — solo agrega los que falten)">' +
+            '<i data-lucide="refresh-cw"></i> Resembrar sistema</button>' +
+            '<button class="alt-btn alt-btn--primary" data-action="create-role">' +
+            '<i data-lucide="plus"></i> Nuevo rol</button>' +
+            '</div></div>';
+    }
+
     function render() {
         var root = $('rolesContainer');
         if (!root) return;
@@ -216,10 +239,13 @@
         // §72 R7.2 — Empty state inteligente.
         // Caso A: NO hay system roles ni custom → primera vez, sembrar
         // Caso B: CEO existe pero NO hay custom → cliente debe crear el primero
+        // §73.1 hotfix — render header SIEMPRE para que las acciones admin
+        // (Limpiar legacy, Migrar legacy, Resembrar, Nuevo rol) estén siempre visibles
         if (!_state.roles || _state.roles.length === 0) {
+            var emptyHtml;
             if (_state.ceoExists) {
                 // Caso B: CEO existe, falta crear customs
-                root.innerHTML = '<div class="roles-empty">' +
+                emptyHtml = '<div class="roles-empty">' +
                     '<div class="roles-empty-icon"><i data-lucide="shield-plus"></i></div>' +
                     '<h3 class="roles-empty-title">Creá tu primer rol personalizado</h3>' +
                     '<p class="roles-empty-text">El rol CEO está activo (vos). Ahora podés crear roles para asesores, lectores o cualquier perfil que necesites, con los permisos que vos elijas por checkbox.</p>' +
@@ -229,7 +255,7 @@
                     '</div></div>';
             } else {
                 // Caso A: primera vez, hay que sembrar
-                root.innerHTML = '<div class="roles-empty">' +
+                emptyHtml = '<div class="roles-empty">' +
                     '<div class="roles-empty-icon"><i data-lucide="shield-check"></i></div>' +
                     '<h3 class="roles-empty-title">Inicializar el sistema de roles</h3>' +
                     '<p class="roles-empty-text">Para arrancar, sembrá el rol del sistema (CEO). Después podés crear roles personalizados con los permisos que necesites.</p>' +
@@ -238,27 +264,20 @@
                     '<i data-lucide="zap"></i> Inicializar sistema</button>' +
                     '</div></div>';
             }
+            // §73.1 — Header con acciones admin SIEMPRE visible (incluso sin customs)
+            root.innerHTML = renderRolesHeader() + emptyHtml;
             refreshIcons(root);
+            // Refresh user counts en background (puede haber users con roleId
+            // huérfano apuntando a system_editor/viewer que el botón Limpiar
+            // legacy va a procesar)
+            refreshUserCounts().then(function () {
+                updateUserCountsDom();
+            });
             return;
         }
 
-        // Render header con botones de acción
-        // §73 R8 — agregado botón "Limpiar legacy" para eliminar docs huérfanos
-        // de roles/system_editor y roles/system_viewer + reset usuarios afectados
-        var headerHtml = '<div class="roles-header">' +
-            '<div class="roles-header-stats">' +
-            '<span class="roles-header-count">' + _state.roles.length + ' rol' + (_state.roles.length === 1 ? '' : 'es') + '</span>' +
-            '</div>' +
-            '<div class="roles-header-actions">' +
-            '<button class="alt-btn alt-btn--ghost" data-action="cleanup-legacy" title="Elimina los docs huérfanos roles/system_editor y roles/system_viewer del catálogo + reset de usuarios con esos roleId. Acción destructiva.">' +
-            '<i data-lucide="archive-x"></i> Limpiar legacy</button>' +
-            '<button class="alt-btn alt-btn--ghost" data-action="migrate-legacy" title="Migra usuarios pre-existentes (legacy) al sistema dinámico de roles. Idempotente — re-ejecutable sin riesgo.">' +
-            '<i data-lucide="users-round"></i> Migrar legacy</button>' +
-            '<button class="alt-btn alt-btn--ghost" data-action="seed-system-roles" title="Re-ejecutar seedSystemRoles (idempotente — solo agrega los que falten)">' +
-            '<i data-lucide="refresh-cw"></i> Resembrar sistema</button>' +
-            '<button class="alt-btn alt-btn--primary" data-action="create-role">' +
-            '<i data-lucide="plus"></i> Nuevo rol</button>' +
-            '</div></div>';
+        // Render header (extraído a renderRolesHeader §73.1)
+        var headerHtml = renderRolesHeader();
 
         // Render grid de roles
         var gridHtml = '<div class="roles-grid">';

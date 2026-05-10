@@ -28612,5 +28612,261 @@ R5 (refactor callsites), R6 (rules), R7 (Cloud Function denormalización).
 
 ---
 
+## 66. ADR-066 — Sprint §61.R4 RBAC Migration: legacy users → roleId/permissions[] (2026-05-10)
+
+> Cuarto sprint del Plan §61. Migra **todos los usuarios pre-existentes**
+> que tienen el campo `rol` legacy (creados antes del sistema RBAC
+> dinámico) al nuevo schema con `roleId` + `roleName` + `permissions[]`
+> denormalizado. Idempotente, con preview antes de ejecutar.
+>
+> Aplicado bajo §17 (perf), §17.4 (HTML/CSS estable), §17.12 (anti-MO),
+> §35 (anti-patterns), §37 (IAP), §61 Plan Maestro RBAC.
+
+### 66.1 Por qué este sprint existe
+
+Tras §63 (R1), §64 (R2), §65 (R3):
+- Los **users nuevos** creados en sec-users (tras R3) ya nacen con
+  `roleId/permissions[]` denormalizado.
+- Los **users existentes** (creados antes de R3) solo tienen el campo
+  legacy `rol`. Su `roleId` está vacío → en la tabla aparecen con
+  tag `·legacy` y el filtro "Sin rol asignado" los muestra.
+
+R4 cierra ese gap: una Cloud Function recorre todos los docs y mapea
+los legacy al schema dinámico. Es el último paso antes de que R5
+pueda refactorizar callsites a `hasPermission()` directo, y antes
+de que R6 pueda activar rules backend basadas en `permissions[]`.
+
+### 66.2 Solución estructural — 3 piezas coordinadas
+
+#### A. Cloud Function `migrateLegacyUsers` (`functions/index.js`)
+
+Callable super_admin-only con signature:
+```js
+migrateLegacyUsers({ dryRun: false }) → {
+    success, dryRun, version, total, migrated, alreadyMigrated,
+    skipped, skippedDetails[], plan[], timestamp
+}
+```
+
+**Validación pre-migración**:
+- Verifica que existan `roles/system_super_admin`, `roles/system_editor`,
+  `roles/system_viewer` en Firestore. Si falta alguno → `failed-precondition`
+  con mensaje claro pidiendo ejecutar `seedSystemRoles` primero.
+
+**Lógica por user**:
+1. Si `data.roleId && Array.isArray(data.permissions)` → ya migrado,
+   incrementa `alreadyMigrated`
+2. Si no tiene `data.rol` legacy → skip con razón `'sin_rol_legacy'`
+3. Si `data.rol` no está en mapa `{super_admin, editor, viewer}` →
+   skip con razón `'rol_desconocido'`
+4. Sino: arma `updates = { roleId, roleName, permissions[],
+   permissionsUpdatedAt, roleMigratedAt, roleMigratedBy }`
+   - `roleName` y `permissions[]` se leen del role doc real (catálogo
+     vivo en Firestore, no del JS hardcoded)
+   - `roleMigratedAt` y `roleMigratedBy` son markers para audit
+5. Si `dryRun === false`: agrega al batch
+6. En todos los casos: agrega entrada al `result.plan[]` con detalles
+
+**Preserva el campo `rol` legacy intacto** — los 154 callsites
+existentes siguen funcionando. La migración solo AGREGA campos.
+
+**Batch writes** con cap 500 ops por batch (Firestore limit). Si
+hay más de 500 users, se commitea por chunks.
+
+**Modo dryRun**: si `request.data.dryRun === true`, NO escribe nada.
+Solo retorna el plan completo. Usado por la UI para preview.
+
+#### B. UI en `sec-roles` (`js/admin-roles.js`)
+
+**Nuevo botón** en `roles-header-actions`:
+```
+🛠️ Migrar legacy   ↻ Resembrar sistema   + Nuevo rol
+```
+
+Icono `users-round`. Tooltip explicativo. Visible solo si user es
+super_admin (filter del subnav `permission: 'canManageUsers'` lo
+oculta para editores).
+
+**Funciones nuevas**:
+
+`migrateLegacyUsers()`:
+- Disable botón + spinner "Cargando preview..."
+- Invoca callable con `{ dryRun: true }`
+- En `.then()` → `renderMigrationModal(planData)`
+- Restore botón en `.finally()`
+- Errores: parsea via `AP.parseCallableError` y muestra toast
+
+`renderMigrationModal(planData)`:
+- Modal con 4 stat cards (Total / A migrar / Ya migrados / Omitidos)
+- Si `migrated === 0 && alreadyMigrated > 0` → banner verde
+  "Todos los usuarios ya están migrados"
+- Si `migrated > 0` → tabla con columnas: Email | Nombre | Rol legacy
+  | → | Role nuevo | Permisos (count)
+- Si `skipped > 0` → `<details>` colapsable con lista de razones
+- Footer: Cancelar + "Ejecutar migración (N)" o solo "Cerrar" si
+  no hay nada que migrar
+
+`closeMigrationModal()`: cleanup del DOM.
+
+`executeLegacyMigration()`:
+- Disable footer buttons + spinner "Migrando..."
+- Invoca callable con `{ dryRun: false }`
+- Toast con summary `"X usuarios migrados. Y ya migrados. Z omitidos."`
+- Cierra modal en éxito
+- En error: toast + reintenta button habilitado
+
+**Event handlers** agregados al switch:
+- `migrate-legacy` → `migrateLegacyUsers()`
+- `close-migration-modal` → `closeMigrationModal()`
+- `execute-migration` → `executeLegacyMigration()`
+
+**Esc + click backdrop** también cierran el migration modal
+(integrados a los listeners existentes del rolesModal).
+
+#### C. CSS (`css/admin.css`) — ~180 líneas
+
+- `.migration-stats` grid 4 cols (responsive 2 cols mobile)
+- `.migration-stat-card` con border-left coloreado por tipo:
+  - `--total` gris, `--ready` dorado, `--done` verde, `--skip` ámbar
+- `.migration-success-banner` verde para empty state
+- `.migration-intro` con `<code>` para campos técnicos
+- `.migration-plan-table` con sticky head + max-height 360px scroll
+- `.migration-skipped-section` `<details>` colapsable ámbar
+- `@media (max-width: 768px)` colapsa stats a 2 cols
+
+### 66.3 Telemetría agregada
+
+Logs `§61.R4`:
+```
+[AdminRoles] §61.R4 migrateLegacyUsers preview (dryRun)
+[AdminRoles] §61.R4 preview result: { ... }
+[AdminRoles] §61.R4 executeLegacyMigration (real)
+[AdminRoles] §61.R4 migration result: { ... }
+```
+
+### 66.4 Tests E2E (validación post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Login super_admin → Configuración → Roles → click "Migrar legacy" | Modal de preview se abre con stats reales del proyecto |
+| 2 | Stats card "A migrar": muestra count de users con `rol` pero sin `roleId` | Match con conteo de Firestore |
+| 3 | Stats card "Ya migrados": muestra count de users con `roleId` ya seteado | Inicialmente 0 (ningún user pre-R4 tiene roleId). Si ya corriste R4, muestra los migrados de la run anterior |
+| 4 | Tabla muestra plan con email/nombre/rol legacy/role nuevo/permisos | Match con users reales |
+| 5 | Click "Ejecutar migración" | Toast `✓ Migración completa. X usuarios migrados. Y ya estaban migrados. Z omitidos.` |
+| 6 | Verificar Firestore `usuarios/{uid}` post-migración | Tiene: `rol` (preservado), `roleId`, `roleName`, `permissions[]`, `permissionsUpdatedAt`, `roleMigratedAt`, `roleMigratedBy` |
+| 7 | Re-ejecutar migración (idempotente) | Toast `0 migrados, X ya migrados, Y omitidos`. Stats card "A migrar" en 0 |
+| 8 | Pre-condición: si NO hay system roles sembrados | Toast error `failed-precondition: Roles del sistema no sembrados. Ejecutá primero "Sembrar roles del sistema"` |
+| 9 | User con `rol` desconocido (ej. 'admin' sin underscore) | Aparece en sección colapsable "Omitidos" con razón `Rol legacy desconocido: admin` |
+| 10 | User sin campo `rol` (perfil incompleto) | Skipped con razón `Sin campo rol legacy (perfil incompleto)` |
+| 11 | Editor intenta invocar callable directamente desde DevTools | `permission-denied` (verifySuperAdmin) |
+| 12 | Sec-users tabla post-migración: filtro "Sin rol asignado (legacy)" | Muestra 0 users (todos migrados) |
+| 13 | Sec-users tabla: badge de rol con color custom | Muestra colores reales del role asignado (no solo gold/blue/gray legacy) |
+| 14 | Tag `·legacy` en tabla | Desaparece de los users migrados |
+| 15 | Mobile (<768px) | Modal stats grid colapsa a 2 cols, tabla scroll horizontal |
+
+### 66.5 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo transitions específicas en stat cards |
+| §17.4 | Renombrar IDs | Cero modificación de IDs existentes. Nuevos elementos prefijados `migration-*` |
+| §17.12 | `MutationObserver subtree:true` | Cero MO. Modal renderizado imperativo |
+| §35 | `pointermove` persistente | Cero pointermove |
+| §37 IAP | Implementar sin autorización | Cliente autorizó "Ok arranca con R4" |
+| §61 Plan | Saltarse fases | R4 estricto: NO refactoriza callsites legacy (R5), NO modifica rules de collections existentes (R6), NO agrega trigger automático (R7). Solo migración one-shot manual |
+| §17 perf | Migrar 1000+ users en single tx | Batch writes con cap 500 ops + chunks múltiples si más users |
+| Firestore | Borrar campo `rol` legacy en migración | NO se borra. Se preserva intacto. Los 154 callsites siguen leyéndolo. R8 lo elimina cuando el refactor esté completo |
+
+### 66.6 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Cliente ejecuta sin haber sembrado system roles | 🟢 Baja | Pre-validación lanza `failed-precondition` con mensaje claro |
+| 2 | Migration corre 2x en paralelo (2 super_admins) | 🟢 Baja | Idempotente — segundo run skip todos los ya migrados |
+| 3 | Firestore batch >500 ops falla | 🟢 Baja | Cap explícito + commit por chunks |
+| 4 | Cliente cancela mid-migración | 🟢 Baja | Cada batch es atómico (Firestore garantiza). Re-ejecutar completa los pendientes |
+| 5 | Rol custom con permissions vacías | N/A | R4 solo migra a system roles, no a customs (los customs ya existen explícitamente) |
+| 6 | UI muestra plan obsoleto | 🟢 Baja | dryRun lee el estado actual de Firestore cada vez |
+| 7 | Migration corrompe doc del super_admin actual | 🟢 Baja | Solo AGREGA campos (`roleId`, `roleName`, etc), nunca borra. `rol` queda intacto. En el peor caso, se elimina manualmente esos 4 campos del doc del super_admin desde Firebase Console |
+| 8 | Permission-denied al escribir | 🟢 Baja | Cloud Function corre con Admin SDK (bypass de rules). Solo verifySuperAdmin valida el caller |
+
+### 66.7 Acciones operativas del super_admin (post-merge)
+
+**OBLIGATORIA**:
+```bash
+firebase deploy --only functions:migrateLegacyUsers
+```
+
+Esto despliega la nueva Cloud Function. Sin este deploy, el botón
+"Migrar legacy" lanza error `unavailable` o `not-found` en el
+callable. El resto del flujo (UI, modal, etc.) NO se afecta.
+
+Después del deploy:
+1. Ir a admin → Configuración → Roles
+2. Click "Migrar legacy"
+3. Revisar el plan en el modal de preview
+4. Click "Ejecutar migración"
+5. Verificar en sec-users que los users muestran roleName real
+   sin tag "·legacy"
+
+### 66.8 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `functions/index.js` | Cloud Function `migrateLegacyUsers` (callable super_admin, idempotente, dryRun support, batch writes con cap 500) | +145 |
+| `js/admin-roles.js` | Botón "Migrar legacy" + 3 funciones nuevas: `migrateLegacyUsers`, `renderMigrationModal`, `executeLegacyMigration` + 3 cases handler + cleanup ESC/backdrop | +210 |
+| `css/admin.css` | Estilos `.migration-stats`, `.migration-stat-card`, `.migration-success-banner`, `.migration-intro`, `.migration-plan-table`, `.migration-skipped-section`, responsive | +180 |
+| `service-worker.js` | CACHE_VERSION → `v20260513040000` | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260513040000'` | +1, -1 |
+| `CLAUDE.md` | Esta sección §66 | +200 |
+
+**Total**: ~735 líneas agregadas.
+
+### 66.9 Archivos INTACTOS (afirmación)
+
+- `js/rbac-catalog.js` (R1) — sin tocar
+- `js/admin-state.js` (R1) — sin tocar
+- `js/admin-auth.js` (R1) — sin tocar
+- `js/admin-users.js` (R3) — sin tocar (ya soporta `roleId/permissions[]` desde R3)
+- `firestore.rules` — sin tocar (R6 hace refactor backend)
+- 154 callsites legacy — sin tocar (siguen leyendo `rol` legacy intacto)
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+
+### 66.10 Próximo sprint del plan §61
+
+**R5 — Frontend guards refactor** (2-3 días):
+- Build mapa "legacy helper → permission":
+  - `AP.isEditorOrAbove()` → `AP.hasPermission('vehicles.edit')` (depende del contexto)
+  - `AP.canManageUsers()` → `AP.hasPermission('users.manage')`
+  - ...
+- Refactor archivo por archivo (admin-vehicles, admin-crm, admin-concierge, etc.)
+- Mantener helpers legacy como `@deprecated` durante el sprint
+- Total estimado: ~218 callsites a refactorizar (154 frontend + 38 que viven en HTML inline + 26 en CSS conditional)
+
+R5 NO requiere deploys nuevos (solo cambia código frontend).
+
+### 66.11 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Sprint planificado en §61.5.
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita del cliente.
+
+§17 Performance: cero MutationObserver, cero pointermove, transitions
+específicas. Modal renderizado imperativo desde `.then()`.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Solo nuevos elementos
+con prefijo `migration-*`.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+§61 Plan Maestro: R4 estricto, cero overflow a R5 (callsites
+refactor) o R6 (rules refactor) o R7 (trigger automático
+`onUserRoleAssigned`). Solo migración manual one-shot.
+
+**Cache bump**: `v20260513040000`.
+
+---
+
 ---
 

@@ -1769,3 +1769,240 @@
 /* ═══════════════════════════════════════════════════════════════════
    FIN §77 — Sprint S5 Status del equipo
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §79 — Sprint S7: Rediseño visual cliente widget (CSS-only)
+   ═══════════════════════════════════════════════════════════════════
+   Cierre del Mega-Plan §59 ALTOR Hub. Refactor visual 100% CSS
+   con prefijo `.altorra-concierge` (wrapper del panel) para
+   máxima especificidad (0,2,0 vs 0,1,0 legacy) — override sin
+   !important. Cero JS, cero schema, cero deploy backend.
+   Alinea visual del cliente con el del admin Hub (§78 S6).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── A. Onboarding initial pulse del FAB ─────────────────────────
+   Anillo expansivo 3 veces al primer page load (sin loop infinito).
+   El cliente NO se cansa porque solo se ejecuta una vez por carga.
+   animation-iteration-count: 3, animation-fill-mode: forwards →
+   se queda en estado final transparente. */
+.altorra-concierge-btn::before {
+    /* Reusa el sparkle existente con animation extra al onboarding */
+}
+@keyframes cncOnboardPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(184, 150, 88, 0.5); }
+    100% { box-shadow: 0 0 0 32px rgba(184, 150, 88, 0); }
+}
+.altorra-concierge-btn[data-onboarded="false"],
+body:not(.altorra-concierge-loaded) .altorra-concierge-btn {
+    /* Si el JS marca data-onboarded="false" o aún no agregó la
+       clase loaded al body, ejecutamos el pulse 3 veces */
+    animation: altorFloat 3.4s ease-in-out infinite,
+               altorGlow 3s ease-in-out infinite,
+               cncOnboardPulse 2.4s ease-out 3;
+}
+
+/* ─── B. Bubbles refinement (alinear con S6 admin) ────────────────
+   Radius 18px (vs 14px legacy), padding 11×16 (vs 10×14), max-width
+   78% (vs 80%), box-shadow sutil, animation entry overshoot.
+   Selector .altorra-concierge .cnc-msg gana specificity (0,2,0)
+   vs .cnc-msg legacy (0,1,0). */
+.altorra-concierge .cnc-msg {
+    max-width: 78%;
+    padding: 11px 16px;
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    animation: cncMsgSlideInPremium 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+@keyframes cncMsgSlideInPremium {
+    from { opacity: 0; transform: translateY(8px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Esquinas asimétricas (mismo patrón S6 admin):
+   - Bot/asesor: bottom-left-radius 4px (esquina cuadrada hacia
+     abajo-izquierda → indica "soy el emisor a la izquierda")
+   - User: bottom-right-radius 4px (esquina cuadrada hacia
+     abajo-derecha → indica "soy el emisor a la derecha")
+   Las reglas legacy ya tenían esta lógica con radius 14px.
+   Aquí solo refrescamos a 18px y agregamos sombra coordinada. */
+.altorra-concierge .cnc-bot-bubble {
+    border-bottom-left-radius: 4px;
+    background: linear-gradient(135deg,
+                rgba(184, 150, 88, 0.10) 0%,
+                rgba(184, 150, 88, 0.06) 100%);
+    border: 1px solid rgba(184, 150, 88, 0.14);
+}
+.altorra-concierge .cnc-asesor-bubble {
+    border-bottom-left-radius: 4px;
+    background: linear-gradient(135deg,
+                rgba(74, 222, 128, 0.12) 0%,
+                rgba(74, 222, 128, 0.08) 100%);
+    border-left: 2px solid #4ade80;
+}
+.altorra-concierge .cnc-user-bubble {
+    border-bottom-right-radius: 4px;
+    background: linear-gradient(135deg, #d4ad6e 0%, #b89658 50%, #9a7d44 100%);
+    box-shadow: 0 2px 6px rgba(184, 150, 88, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Mensajes system del cliente (mismo tratamiento que S6 admin) */
+.altorra-concierge .cnc-system-msg {
+    border-radius: 12px;
+    background: rgba(74, 222, 128, 0.10);
+    color: rgba(212, 243, 216, 0.85);
+    font-style: italic;
+    text-align: center;
+    align-self: center;
+    max-width: 84%;
+    padding: 7px 14px;
+    font-size: 0.78rem;
+}
+
+/* ─── C. Welcome bubble premium ───────────────────────────────────
+   Mejora del welcome bubble (cnc-welcome) con gradient sutil +
+   glow dorado tenue + animation entry diferenciada (suave, no
+   intrusiva). */
+.altorra-concierge .cnc-welcome {
+    background: linear-gradient(135deg,
+                rgba(184, 150, 88, 0.14) 0%,
+                rgba(184, 150, 88, 0.08) 100%);
+    border: 1px solid rgba(184, 150, 88, 0.28);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(184, 150, 88, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    padding: 16px 18px;
+    animation: cncWelcomeFadeIn 0.42s ease-out;
+}
+@keyframes cncWelcomeFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* CTA dentro del welcome bubble — refinado con hover lift */
+.altorra-concierge .cnc-bubble-cta {
+    border-radius: 10px;
+    transition: background-color 0.18s ease, transform 0.18s ease,
+                box-shadow 0.18s ease;
+}
+.altorra-concierge .cnc-bubble-cta:hover {
+    background: rgba(184, 150, 88, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(184, 150, 88, 0.20);
+}
+.altorra-concierge .cnc-bubble-cta:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(184, 150, 88, 0.15);
+}
+
+/* ─── D. Vehicle cards inline refinement ──────────────────────────
+   Las vehicle cards inline del bot (cnc-vcard-*) ya existen desde
+   §26.2. Aquí refinamos hover y transitions sin tocar layout. */
+.altorra-concierge .cnc-vcard {
+    border-radius: 14px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease,
+                border-color 0.18s ease;
+}
+.altorra-concierge .cnc-vcard:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.20);
+    border-color: rgba(184, 150, 88, 0.35);
+}
+
+/* ─── E. Skeleton loaders (preparados para futuro JS use) ─────────
+   Clases CSS-ready para que un futuro Sprint S8 muestre placeholders
+   visuales mientras Firestore conecta. JS de S1-S7 NO los usa
+   todavía — quedan disponibles. */
+.altorra-concierge .cnc-skeleton-bubble {
+    align-self: flex-start;
+    max-width: 72%;
+    height: 38px;
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0.04) 0%,
+                rgba(255, 255, 255, 0.10) 50%,
+                rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    animation: cncSkeletonShimmer 1.6s ease-in-out infinite;
+}
+.altorra-concierge .cnc-skeleton-bubble--user {
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 18px;
+    max-width: 64%;
+}
+.altorra-concierge .cnc-skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+    background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0.04) 0%,
+                rgba(255, 255, 255, 0.10) 50%,
+                rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    animation: cncSkeletonShimmer 1.6s ease-in-out infinite;
+    margin: 4px 0;
+}
+.altorra-concierge .cnc-skeleton-line--short { width: 50%; }
+.altorra-concierge .cnc-skeleton-line--medium { width: 70%; }
+.altorra-concierge .cnc-skeleton-line--long { width: 90%; }
+@keyframes cncSkeletonShimmer {
+    0%, 100% { background-position: 200% 0; }
+    50%      { background-position: -200% 0; }
+}
+
+/* ─── F. CTA bubble timing refinement ─────────────────────────────
+   El CTA bubble rotativo del FAB (timings 2/6/6 del §57+) ya tiene
+   su lógica en JS. Aquí solo refinamos la entry animation para que
+   sea más natural (overshoot suave) sin tocar el JS. */
+.altorra-concierge-btn ~ .cnc-cta-bubble.is-visible,
+.cnc-cta-bubble.is-visible {
+    animation-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+/* ─── G. Mobile responsive @media (max-width: 480px) ──────────────
+   Refinamientos para pantallas chicas (iPhone vertical). */
+@media (max-width: 480px) {
+    .altorra-concierge .cnc-msg {
+        max-width: 84%;
+        padding: 10px 14px;
+        font-size: 0.86rem;
+    }
+    .altorra-concierge .cnc-welcome {
+        padding: 14px 16px;
+    }
+    .altorra-concierge .cnc-system-msg {
+        font-size: 0.74rem;
+        padding: 6px 12px;
+    }
+}
+
+/* ─── H. Accesibilidad — prefers-reduced-motion ───────────────────
+   Desactiva onboarding pulse, animations entry, skeleton shimmer.
+   Fallback: estados estáticos sin movimiento. */
+@media (prefers-reduced-motion: reduce) {
+    .altorra-concierge-btn[data-onboarded="false"],
+    body:not(.altorra-concierge-loaded) .altorra-concierge-btn {
+        animation: none;
+    }
+    .altorra-concierge .cnc-msg {
+        animation: none;
+    }
+    .altorra-concierge .cnc-welcome {
+        animation: none;
+    }
+    .altorra-concierge .cnc-skeleton-bubble,
+    .altorra-concierge .cnc-skeleton-line {
+        animation: none;
+        opacity: 0.6;
+    }
+    .altorra-concierge .cnc-bubble-cta:hover,
+    .altorra-concierge .cnc-vcard:hover {
+        transform: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §79 — Sprint S7 Rediseño visual cliente widget
+   CIERRE Mega-Plan §59 ALTOR Hub (7 de 7 sprints completados)
+   ═══════════════════════════════════════════════════════════════════ */

@@ -1,5 +1,5 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentWritten, onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated, onDocumentUpdated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
@@ -2790,4 +2790,380 @@ exports.migrateLegacyUsers = onCall(callableOptionsV2, async (request) => {
     }
 
     return result;
+});
+
+// ============================================================
+// §61.R7b — RBAC AUTO-PROPAGATION TRIGGERS (§71)
+// ============================================================
+// 4 Cloud Functions que automatizan la propagación de cambios
+// en roles a los usuarios denormalizados, eliminando la dependencia
+// de "Resembrar sistema" manual del §70.
+//
+// 1. onRoleUpdated  → role doc cambia → re-sync usuarios con ese roleId
+// 2. onRoleDeleted  → role doc eliminado → orphana usuarios afectados
+// 3. onUserRoleAssigned → user.roleId cambia → sync name/permissions
+// 4. recalculateRoleUserCount (schedule 5min) → actualiza userCount
+//
+// Anti-loops:
+// - onRoleUpdated escribe SOLO roleName/permissions (no roleId) →
+//   no triggea onUserRoleAssigned (que filtra por roleId change).
+// - onUserRoleAssigned escribe roleName/permissions → no cambia
+//   roleId → no se vuelve a triggear.
+// - onRoleDeleted setea roleId=null → triggea onUserRoleAssigned
+//   pero el guard `!after.roleId` solo limpia permissions sin recursión.
+// ============================================================
+
+/**
+ * §71 — onRoleUpdated
+ * Trigger: roles/{roleId} actualizado.
+ * Acción: si name/permissions/color cambió, re-sync TODOS los usuarios
+ * con ese roleId (batch writes con cap 500).
+ * Audit log en auditLog/ con type='role.updated'.
+ */
+exports.onRoleUpdated = onDocumentUpdated('roles/{roleId}', async (event) => {
+    const roleId = event.params.roleId;
+    if (!event.data) return;
+    const before = event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after.exists ? event.data.after.data() : null;
+    if (!before || !after) return;
+
+    // Detectar drift relevante
+    const nameDrift = (before.name || '') !== (after.name || '');
+    const permsDrift = JSON.stringify(before.permissions || []) !== JSON.stringify(after.permissions || []);
+    const colorDrift = (before.color || '') !== (after.color || '');
+
+    if (!nameDrift && !permsDrift && !colorDrift) {
+        // Skip silencioso si solo cambiaron campos no-canonical
+        // (e.g. updatedAt, _resyncedAt, userCount)
+        return;
+    }
+
+    console.log(`[onRoleUpdated] §71 drift detectado en roleId=${roleId} — name:${nameDrift} perms:${permsDrift} color:${colorDrift}`);
+
+    // Buscar usuarios con este roleId
+    let usersSnap;
+    try {
+        usersSnap = await db.collection('usuarios').where('roleId', '==', roleId).get();
+    } catch (err) {
+        console.error('[onRoleUpdated] §71 error al buscar usuarios:', err.message);
+        return;
+    }
+
+    if (usersSnap.empty) {
+        console.log(`[onRoleUpdated] §71 sin usuarios con roleId=${roleId}`);
+        return;
+    }
+
+    // Construir update minimal (solo campos que cambiaron)
+    const userUpdates = {
+        _resyncedAt: new Date().toISOString(),
+        _resyncedBy: 'onRoleUpdated'
+    };
+    if (nameDrift) userUpdates.roleName = after.name;
+    if (permsDrift) {
+        userUpdates.permissions = after.permissions || [];
+        userUpdates.permissionsUpdatedAt = new Date().toISOString();
+    }
+
+    // Batch writes con cap 500
+    let updated = 0;
+    let batch = db.batch();
+    let batchCount = 0;
+
+    for (const uDoc of usersSnap.docs) {
+        batch.update(uDoc.ref, userUpdates);
+        batchCount++;
+        updated++;
+        if (batchCount === 500) {
+            await batch.commit();
+            batch = db.batch();
+            batchCount = 0;
+        }
+    }
+    if (batchCount > 0) await batch.commit();
+
+    console.log(`[onRoleUpdated] §71 resincronizados ${updated} usuarios con roleId=${roleId}`);
+
+    // Audit log (solo si hubo drift relevante)
+    try {
+        await db.collection('auditLog').add({
+            type: 'role.updated',
+            roleId: roleId,
+            roleName: after.name,
+            beforeName: before.name,
+            permissionsBeforeCount: (before.permissions || []).length,
+            permissionsAfterCount: (after.permissions || []).length,
+            usersResynced: updated,
+            triggeredBy: 'onRoleUpdated',
+            timestamp: new Date().toISOString(),
+            actor: 'system',
+            actorName: 'Cloud Function (§71 R7b)'
+        });
+    } catch (err) {
+        console.warn('[onRoleUpdated] §71 audit log falló:', err.message);
+    }
+});
+
+/**
+ * §71 — onRoleDeleted
+ * Trigger: roles/{roleId} eliminado.
+ * Acción: para todos los usuarios con ese roleId, setea roleId=null
+ * + roleName=null + permissions=[]. Esos usuarios quedan bloqueados
+ * con la pantalla "Sin rol asignado" (§69 guard) hasta que el CEO
+ * les reasigne.
+ */
+exports.onRoleDeleted = onDocumentDeleted('roles/{roleId}', async (event) => {
+    const roleId = event.params.roleId;
+    if (!event.data) return;
+    const data = event.data.data() || {};
+
+    // Alerta si se eliminó un system role (no debería pasar — rules
+    // backend lo bloquean, pero defense-in-depth)
+    if (data.isSystem) {
+        console.error(`[onRoleDeleted] §71 ALERTA CRÍTICA: system role eliminado! roleId=${roleId} name=${data.name}`);
+        try {
+            await db.collection('auditLog').add({
+                type: 'role.deleted-CRITICAL',
+                roleId: roleId,
+                wasName: data.name,
+                wasIsSystem: true,
+                severity: 'critical',
+                message: 'System role eliminado — verificar rules + restaurar manualmente',
+                timestamp: new Date().toISOString(),
+                actor: 'system',
+                actorName: 'Cloud Function (§71 R7b)'
+            });
+        } catch (e) {}
+    }
+
+    // Orphanar usuarios con ese roleId
+    let usersSnap;
+    try {
+        usersSnap = await db.collection('usuarios').where('roleId', '==', roleId).get();
+    } catch (err) {
+        console.error('[onRoleDeleted] §71 error al buscar usuarios:', err.message);
+        return;
+    }
+
+    if (usersSnap.empty) {
+        console.log(`[onRoleDeleted] §71 sin usuarios huérfanos con roleId=${roleId}`);
+        return;
+    }
+
+    const userUpdates = {
+        roleId: admin.firestore.FieldValue.delete(),
+        roleName: admin.firestore.FieldValue.delete(),
+        permissions: [],
+        permissionsUpdatedAt: new Date().toISOString(),
+        _resyncedAt: new Date().toISOString(),
+        _resyncedBy: 'onRoleDeleted',
+        _orphanedFromRole: roleId,
+        _orphanedRoleName: data.name || null,
+        _orphanedAt: new Date().toISOString()
+    };
+
+    let updated = 0;
+    let batch = db.batch();
+    let batchCount = 0;
+
+    for (const uDoc of usersSnap.docs) {
+        batch.update(uDoc.ref, userUpdates);
+        batchCount++;
+        updated++;
+        if (batchCount === 500) {
+            await batch.commit();
+            batch = db.batch();
+            batchCount = 0;
+        }
+    }
+    if (batchCount > 0) await batch.commit();
+
+    console.log(`[onRoleDeleted] §71 ${updated} usuarios huérfanos del roleId=${roleId} (${data.name})`);
+
+    try {
+        await db.collection('auditLog').add({
+            type: 'role.deleted',
+            roleId: roleId,
+            wasName: data.name || null,
+            wasIsSystem: !!data.isSystem,
+            wasPermissionsCount: (data.permissions || []).length,
+            usersOrphaned: updated,
+            triggeredBy: 'onRoleDeleted',
+            timestamp: new Date().toISOString(),
+            actor: 'system',
+            actorName: 'Cloud Function (§71 R7b)'
+        });
+    } catch (err) {
+        console.warn('[onRoleDeleted] §71 audit log falló:', err.message);
+    }
+});
+
+/**
+ * §71 — onUserRoleAssigned
+ * Trigger: usuarios/{uid} actualizado.
+ * Acción: si roleId cambió, leer el nuevo role doc y copiar
+ * roleName + permissions denormalizado. Cubre el caso de admin
+ * que cambia roleId desde Firestore Console o desde sec-users.
+ *
+ * Anti-loop: filter por roleId change. onRoleUpdated NO modifica
+ * roleId → no triggea esto recursivamente.
+ */
+exports.onUserRoleAssigned = onDocumentUpdated('usuarios/{uid}', async (event) => {
+    const uid = event.params.uid;
+    if (!event.data) return;
+    const before = event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after.exists ? event.data.after.data() : null;
+    if (!before || !after) return;
+
+    // Solo procesar si roleId cambió
+    if (before.roleId === after.roleId) return;
+
+    console.log(`[onUserRoleAssigned] §71 uid=${uid} roleId cambió: ${before.roleId} → ${after.roleId}`);
+
+    // Caso: roleId removido (set to null/undefined)
+    if (!after.roleId) {
+        // Asegurar permissions vacío y roleName limpio
+        const needsCleanup = (after.permissions && after.permissions.length > 0) ||
+                             after.roleName;
+        if (needsCleanup) {
+            try {
+                await event.data.after.ref.update({
+                    roleName: admin.firestore.FieldValue.delete(),
+                    permissions: [],
+                    permissionsUpdatedAt: new Date().toISOString(),
+                    _resyncedAt: new Date().toISOString(),
+                    _resyncedBy: 'onUserRoleAssigned (roleId removed)'
+                });
+                console.log(`[onUserRoleAssigned] §71 uid=${uid} cleanup: roleId removido`);
+            } catch (err) {
+                console.warn('[onUserRoleAssigned] §71 cleanup falló:', err.message);
+            }
+        }
+        return;
+    }
+
+    // Leer el nuevo role doc
+    let roleSnap;
+    try {
+        roleSnap = await db.collection('roles').doc(after.roleId).get();
+    } catch (err) {
+        console.error('[onUserRoleAssigned] §71 error al leer role:', err.message);
+        return;
+    }
+
+    if (!roleSnap.exists) {
+        console.warn(`[onUserRoleAssigned] §71 roleId=${after.roleId} no existe en Firestore`);
+        return;
+    }
+
+    const role = roleSnap.data();
+
+    // Verificar si necesita sync (drift entre user.roleName/permissions y role.*)
+    const nameDrift = after.roleName !== role.name;
+    const permsDrift = JSON.stringify(after.permissions || []) !== JSON.stringify(role.permissions || []);
+
+    if (!nameDrift && !permsDrift) return;
+
+    try {
+        await event.data.after.ref.update({
+            roleName: role.name,
+            permissions: role.permissions || [],
+            permissionsUpdatedAt: new Date().toISOString(),
+            _resyncedAt: new Date().toISOString(),
+            _resyncedBy: 'onUserRoleAssigned'
+        });
+        console.log(`[onUserRoleAssigned] §71 uid=${uid} sync con role ${after.roleId} OK`);
+    } catch (err) {
+        console.error('[onUserRoleAssigned] §71 update user falló:', err.message);
+        return;
+    }
+
+    // Audit log
+    try {
+        await db.collection('auditLog').add({
+            type: 'user.role-assigned',
+            uid: uid,
+            previousRoleId: before.roleId || null,
+            newRoleId: after.roleId,
+            newRoleName: role.name,
+            permissionsCount: (role.permissions || []).length,
+            triggeredBy: 'onUserRoleAssigned',
+            timestamp: new Date().toISOString(),
+            actor: 'system',
+            actorName: 'Cloud Function (§71 R7b)'
+        });
+    } catch (err) {
+        console.warn('[onUserRoleAssigned] §71 audit log falló:', err.message);
+    }
+});
+
+/**
+ * §71 — recalculateRoleUserCount
+ * Schedule cada 5 min: recorre usuarios/, cuenta cuántos tienen
+ * cada roleId, actualiza roles/{id}.userCount si difiere.
+ *
+ * Esto permite que sec-roles UI muestre el count real sin tener
+ * que recalcular client-side cada vez.
+ */
+exports.recalculateRoleUserCount = onSchedule({
+    schedule: 'every 5 minutes',
+    timeZone: 'America/Bogota',
+    region: 'us-central1'
+}, async () => {
+    console.log('[recalculateRoleUserCount] §71 iniciado');
+
+    let rolesSnap, usersSnap;
+    try {
+        [rolesSnap, usersSnap] = await Promise.all([
+            db.collection('roles').get(),
+            db.collection('usuarios').get()
+        ]);
+    } catch (err) {
+        console.error('[recalculateRoleUserCount] §71 error fetch:', err.message);
+        return;
+    }
+
+    if (rolesSnap.empty) {
+        console.log('[recalculateRoleUserCount] §71 sin roles');
+        return;
+    }
+
+    // Contar usuarios por roleId
+    const counts = {};
+    usersSnap.forEach(uDoc => {
+        const u = uDoc.data();
+        if (u.roleId) {
+            counts[u.roleId] = (counts[u.roleId] || 0) + 1;
+        }
+    });
+
+    // Actualizar roles/{id}.userCount si difiere
+    let batch = db.batch();
+    let batchCount = 0;
+    let updated = 0;
+
+    rolesSnap.forEach(rDoc => {
+        const r = rDoc.data();
+        const newCount = counts[rDoc.id] || 0;
+        const oldCount = typeof r.userCount === 'number' ? r.userCount : 0;
+        if (oldCount !== newCount) {
+            batch.update(rDoc.ref, {
+                userCount: newCount,
+                _userCountUpdatedAt: new Date().toISOString()
+            });
+            batchCount++;
+            updated++;
+        }
+    });
+
+    if (batchCount > 0) {
+        try {
+            await batch.commit();
+            console.log(`[recalculateRoleUserCount] §71 actualizados ${updated} roles`);
+        } catch (err) {
+            console.error('[recalculateRoleUserCount] §71 batch commit falló:', err.message);
+        }
+    } else {
+        console.log('[recalculateRoleUserCount] §71 sin cambios — counts actuales');
+    }
 });

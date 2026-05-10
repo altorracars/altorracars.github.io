@@ -833,6 +833,12 @@
         if (!text || !text.trim()) return;
         // Bloqueo: si la sesión está cerrada por el admin, ignorar
         if (session.closed) return;
+        // §75 Sprint S3 — typing:false sincrónico ANTES del addMessage
+        // para que el indicador desaparezca instantáneo del lado admin.
+        // Cancelamos el auto-clear timer porque ya no aplica.
+        if (_typingClearTimeout) { clearTimeout(_typingClearTimeout); _typingClearTimeout = null; }
+        _typingThrottleActive = false;
+        try { setMeTyping(false); } catch (e) {}
         addMessage('user', text.trim());
 
         // Intent classifier: actualizar memoria conversacional ANTES del response
@@ -1334,6 +1340,168 @@
     var _chatDocCreated = false;
     var _lastSyncedMsgIds = {}; // dedup contra eco
 
+    /* ═══════════════════════════════════════════════════════════
+       §75 Sprint S3 — Typing Indicators bidireccionales (RTDB)
+       ───────────────────────────────────────────────────────────
+       Schema: /typing/{sessionId}/
+           user: {typing, ts}
+           asesor_<uid>: {name, photoURL, typing, ts}
+
+       Cliente:
+         - input listener con throttle 1s + auto-clear 3s
+         - onDisconnect.remove para evitar ghosts
+         - listener /typing/{sid} para mostrar "X está escribiendo"
+           sobre asesor activo (filter stale 5s)
+
+       Namespace `asesor` para no colisionar con el typing del bot
+       LLM existente (`cncTypingIndicator`/`.cnc-typing` en líneas
+       775-790 — INTACTO). El nuevo es `cncAsesorTypingIndicator`.
+
+       Doctrina §17 — guard rtdb null (catch silencioso si no carga).
+       Doctrina §17.12 — cero MutationObserver. Solo `.on('value')`.
+       ═══════════════════════════════════════════════════════════ */
+    var _typingListenerUnsub = null;
+    var _typingThrottleActive = false;
+    var _typingClearTimeout = null;
+    var _typingActiveAsesor = null;     // cache del asesor visible
+    var _typingDisconnectRef = null;    // ref para cancel onDisconnect
+    var TYPING_THROTTLE_MS = 1000;
+    var TYPING_AUTO_CLEAR_MS = 3000;
+    var TYPING_STALE_MS = 5000;
+
+    function setMeTyping(isTyping) {
+        if (!window.rtdb || !session.sessionId) return;
+        if (!_chatDocCreated) return; // antes de escalar, cero typing
+        var ref;
+        try {
+            ref = window.rtdb.ref('/typing/' + session.sessionId + '/user');
+        } catch (e) { return; }
+        var payload = { typing: !!isTyping, ts: Date.now() };
+        ref.set(payload).catch(function () {});
+        if (isTyping) {
+            // onDisconnect cleanup (si cliente cierra tab mid-escribiendo,
+            // RTDB elimina el nodo automáticamente en <2s)
+            try {
+                if (!_typingDisconnectRef) {
+                    _typingDisconnectRef = ref;
+                    ref.onDisconnect().remove().catch(function () {});
+                }
+            } catch (e) {}
+        }
+    }
+
+    function onComposerInput() {
+        // Throttle 1s — máx 1 update RTDB por segundo aunque
+        // user escriba rápido. Auto-clear 3s sin keystrokes.
+        if (_typingThrottleActive) {
+            // Solo refrescar el auto-clear timer
+            if (_typingClearTimeout) clearTimeout(_typingClearTimeout);
+            _typingClearTimeout = setTimeout(function () {
+                setMeTyping(false);
+            }, TYPING_AUTO_CLEAR_MS);
+            return;
+        }
+        _typingThrottleActive = true;
+        setTimeout(function () { _typingThrottleActive = false; }, TYPING_THROTTLE_MS);
+        setMeTyping(true);
+        if (_typingClearTimeout) clearTimeout(_typingClearTimeout);
+        _typingClearTimeout = setTimeout(function () {
+            setMeTyping(false);
+        }, TYPING_AUTO_CLEAR_MS);
+    }
+
+    function startTypingListener() {
+        if (_typingListenerUnsub || !window.rtdb || !session.sessionId) return;
+        if (!_chatDocCreated) return;
+        var ref;
+        try {
+            ref = window.rtdb.ref('/typing/' + session.sessionId);
+        } catch (e) { return; }
+        // Closure handler para poder cancelarlo (RTDB requiere mismo callback ref)
+        var handler = ref.on('value', function (snap) {
+            var data = snap.val() || {};
+            // Buscar primer asesor con typing=true && ts < 5s ago
+            var typingAsesor = null;
+            Object.keys(data).forEach(function (key) {
+                if (key === 'user') return;
+                var entry = data[key];
+                if (entry && entry.typing
+                    && (Date.now() - (entry.ts || 0)) < TYPING_STALE_MS) {
+                    typingAsesor = entry;
+                }
+            });
+            if (typingAsesor) {
+                _typingActiveAsesor = typingAsesor;
+                showAsesorTypingIndicator(typingAsesor);
+            } else {
+                _typingActiveAsesor = null;
+                hideAsesorTypingIndicator();
+            }
+        }, function (err) {
+            // Permission denied es esperado si rules no desplegadas.
+            // Catch silencioso para no romper el chat.
+            if (err && err.code === 'PERMISSION_DENIED') {
+                console.info('[Concierge] §75 typing listener permission_denied — deploy database rules pendiente.');
+            }
+        });
+        _typingListenerUnsub = function () {
+            try { ref.off('value', handler); } catch (e) {}
+        };
+    }
+
+    function stopTypingListener() {
+        if (_typingListenerUnsub) {
+            try { _typingListenerUnsub(); } catch (e) {}
+            _typingListenerUnsub = null;
+        }
+        // Limpiar typing del cliente (best-effort) y cancel onDisconnect
+        if (_chatDocCreated && session.sessionId && window.rtdb) {
+            try {
+                var ref = window.rtdb.ref('/typing/' + session.sessionId + '/user');
+                ref.set({ typing: false, ts: Date.now() }).catch(function () {});
+                if (_typingDisconnectRef) {
+                    _typingDisconnectRef.onDisconnect().cancel().catch(function () {});
+                    _typingDisconnectRef = null;
+                }
+            } catch (e) {}
+        }
+        if (_typingClearTimeout) { clearTimeout(_typingClearTimeout); _typingClearTimeout = null; }
+        _typingThrottleActive = false;
+        _typingActiveAsesor = null;
+        hideAsesorTypingIndicator();
+    }
+
+    function showAsesorTypingIndicator(asesor) {
+        var box = document.getElementById('cncMessages');
+        if (!box) return;
+        var existing = document.getElementById('cncAsesorTypingIndicator');
+        var name = (asesor && asesor.name) || 'Asesor';
+        var photo = (asesor && asesor.photoURL) || '';
+        var avatarHTML = photo
+            ? '<img class="cnc-asesor-typing-avatar" src="' + escapeHtml(photo) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+            : '<div class="cnc-asesor-typing-avatar cnc-asesor-typing-avatar--initials">' + escapeHtml((name[0] || 'A').toUpperCase()) + '</div>';
+        if (existing) {
+            // Update name/avatar si cambiaron, no recrear (evita flicker)
+            var nameEl = existing.querySelector('.cnc-asesor-typing-name');
+            if (nameEl) nameEl.textContent = name + ' está escribiendo';
+            return;
+        }
+        var html = '<div id="cncAsesorTypingIndicator" class="cnc-asesor-typing-indicator">' +
+            avatarHTML +
+            '<div class="cnc-asesor-typing-bubble">' +
+                '<span class="cnc-asesor-typing-name">' + escapeHtml(name) + ' está escribiendo</span>' +
+                '<span class="cnc-asesor-typing-dots"><span></span><span></span><span></span></span>' +
+            '</div>' +
+        '</div>';
+        box.insertAdjacentHTML('beforeend', html);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function hideAsesorTypingIndicator() {
+        var el = document.getElementById('cncAsesorTypingIndicator');
+        if (el) el.remove();
+    }
+
     function ensureFirestoreChatDoc() {
         if (_chatDocCreated || !window.db) return Promise.resolve();
         var doc = {
@@ -1355,7 +1523,12 @@
         _chatDocCreated = true;
         return window.db.collection('conciergeChats').doc(session.sessionId)
             .set(doc, { merge: true })
-            .then(function () { startFirestoreSync(); })
+            .then(function () {
+                startFirestoreSync();
+                // §75 Sprint S3 — arrancar typing listener tras crear chat doc.
+                // El guard interno requiere _chatDocCreated=true (ya seteado).
+                try { startTypingListener(); } catch (e) {}
+            })
             .catch(function () { _chatDocCreated = false; });
     }
 
@@ -1840,6 +2013,12 @@
         sendBtn.addEventListener('click', doSend);
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') { e.preventDefault(); doSend(); }
+        });
+        // §75 Sprint S3 — Typing indicator: notifica al admin que el cliente
+        // está escribiendo. Throttle 1s + auto-clear 3s. Solo aplica si
+        // _chatDocCreated (post-escalate). Cero impacto antes del escalate.
+        input.addEventListener('input', function () {
+            try { onComposerInput(); } catch (e) {}
         });
 
         // Quick action handlers
@@ -2597,6 +2776,8 @@
         if (_workloadUnsub) { try { _workloadUnsub(); } catch (e) {} _workloadUnsub = null; }
         // Y el SLA watcher si está activo
         if (typeof stopSLAWatcher === 'function') { try { stopSLAWatcher(); } catch (e) {} }
+        // §75 Sprint S3 — typing listener + cleanup RTDB
+        try { stopTypingListener(); } catch (e) {}
     }
 
     /**
@@ -2873,6 +3054,12 @@
             && typeof renderSLABreach === 'function') {
             try { renderSLABreach(); } catch (e) {}
         }
+        // §75 Sprint S3 — Si había typing del asesor antes del re-render,
+        // re-insertarlo. Sin esto, cada nuevo mensaje del cliente borra el
+        // indicador y queda inconsistente con el listener RTDB.
+        if (_typingActiveAsesor) {
+            try { showAsesorTypingIndicator(_typingActiveAsesor); } catch (e) {}
+        }
     }
 
     /**
@@ -3077,6 +3264,10 @@
                 ? '👨 Asesor en vivo · respondemos pronto'
                 : 'Asistente · respuesta inmediata';
         }
+        // §75 Sprint S3 — arrancar typing listener si el chat ya está
+        // escalado (sesión previa con _chatDocCreated=true). El guard
+        // interno previene si aún no escala. Idempotente.
+        try { startTypingListener(); } catch (e) {}
         // Focus input
         setTimeout(function () {
             var input = document.getElementById('cncInput');

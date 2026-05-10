@@ -32596,3 +32596,299 @@ Cero deploys backend pendientes hasta S3 (que requerirá database rules deploy).
 ```
 
 ---
+
+## 75. ADR-075 — Sprint §59 S3: Typing Indicators bidireccionales (RTDB) (2026-05-10)
+
+> Tercer sprint del Mega-Plan §59 ALTOR Hub. Cliente y asesor ahora ven
+> en tiempo real cuando el otro está escribiendo, con 3 dots animados
+> estilo iMessage/WhatsApp y avatar+nombre del asesor del lado cliente.
+> Latencia <200ms del primer keystroke al indicador visible.
+>
+> Tecnología elegida: **RTDB**, no Firestore. Updates de typing son
+> alta frecuencia (cada keystroke con throttle 1s). RTDB cobra solo
+> por bandwidth, soporta `onDisconnect.remove()` nativo (cero ghosts
+> visuales si cliente cierra tab mid-escribiendo) y latencia menor que
+> Firestore para cambios efímeros. Cero costo recurrente (free tier).
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §35 (anti-patterns), §37 (IAP),
+> §57.7 (listener admin globalmente activo), §57.9 (lazy reset on
+> next open), §59 Mega-Plan ALTOR Hub.
+
+### 75.1 Hallazgo crítico durante el IAP previo
+
+Audit pre-implementación detectó conflicto con código existente. `js/concierge.js:771-786` ya usaba `id="cncTypingIndicator"` + funciones `showTypingIndicator()`/`hideTypingIndicator()` + clase `.cnc-typing` para mostrar **typing del bot LLM** mientras genera respuesta (línea 891 dentro de `respondWithLLMOrRules`).
+
+El plan §74.2 sugería el MISMO ID para el typing del asesor → habría producido nodos DOM duplicados con id idéntico y race conditions entre las dos funciones.
+
+**Decisión arquitectónica**: namespace `asesor` separado para no colisionar con el typing del bot, respetando §17.4 HTML/CSS estable:
+
+| Origen | ID DOM | Clase CSS | Funciones | Estado tras §75 |
+|---|---|---|---|---|
+| Bot LLM (existente, intacto) | `cncTypingIndicator` | `.cnc-typing` | `showTypingIndicator` / `hideTypingIndicator` | Preservado |
+| Asesor → cliente (NUEVO §75) | `cncAsesorTypingIndicator` | `.cnc-asesor-typing-*` | `showAsesorTypingIndicator` / `hideAsesorTypingIndicator` | Nuevo |
+| Cliente → admin (NUEVO §75) | `cncAdminTypingIndicator` | `.cnc-admin-typing-*` | `showAdminTypingIndicator` / `hideAdminTypingIndicator` | Nuevo |
+
+### 75.2 Schema RTDB
+
+```
+/typing/{sessionId}/
+    user: {typing: bool, ts: timestamp}
+    asesor_<uid>: {name: string, photoURL: string|null, typing: bool, ts: timestamp}
+```
+
+**Rules de seguridad** (`database.rules.json`):
+
+```json
+"typing": {
+    ".read": "auth != null",
+    "$sessionId": {
+        "user": {
+            ".write": "auth != null",
+            ".validate": "!newData.exists() || (newData.hasChild('typing') && newData.hasChild('ts') && newData.child('typing').isBoolean() && newData.child('ts').isNumber())"
+        },
+        "$asesorKey": {
+            ".write": "auth != null && $asesorKey == 'asesor_' + auth.uid",
+            ".validate": "!newData.exists() || (...shape exigido + name)"
+        }
+    }
+}
+```
+
+**Garantías**:
+- `.read auth != null`: cualquier user autenticado puede leer typing del chat. OK porque sessionIds son tokens random impredecibles (`cnc_<ts>_<rand>`).
+- `user write`: cualquier auth (cliente del chat). El sessionId actúa como token implícito — solo el cliente que abrió el chat conoce el sessionId.
+- `asesor_<key> write`: requiere `$asesorKey == 'asesor_' + auth.uid` (match exacto, no contains). **Cero impersonación de asesor**.
+- `.validate`: shape correcto obligatorio.
+
+### 75.3 Solución estructural — cliente (`js/concierge.js`)
+
+**Variables y helpers (después de `_lastSyncedMsgIds`)**:
+
+- `_typingListenerUnsub` — closure cleanup del listener
+- `_typingThrottleActive` — flag throttle 1s
+- `_typingClearTimeout` — timer auto-clear 3s
+- `_typingActiveAsesor` — cache para preservar tras re-render de `renderMessages`
+- `_typingDisconnectRef` — ref para cancelar `onDisconnect`
+- Constantes: `TYPING_THROTTLE_MS=1000`, `TYPING_AUTO_CLEAR_MS=3000`, `TYPING_STALE_MS=5000`
+
+**Funciones** (`setMeTyping`, `onComposerInput`, `startTypingListener`, `stopTypingListener`, `showAsesorTypingIndicator`, `hideAsesorTypingIndicator`):
+
+- `setMeTyping(value)`: setea `/typing/{sid}/user` con guard `_chatDocCreated`. Si `value=true`, registra `onDisconnect().remove()` para limpiar al cerrar tab.
+- `onComposerInput()`: throttle 1s con flag + auto-clear 3s con `clearTimeout` previo. Si throttle activo, solo refresca el timer.
+- `startTypingListener()`: idempotente con guard `_typingListenerUnsub`. Subscribe a `/typing/{sid}` con `.on('value')`. Filter: primer asesor con `typing=true && ts<5s ago`. Catch silencioso `PERMISSION_DENIED` (informa que rules pendientes).
+- `stopTypingListener()`: cancel listener + setea `typing:false` propio + cancel `onDisconnect` + limpia timer + flags + DOM.
+- `showAsesorTypingIndicator(asesor)`: si ya existe el nodo, solo actualiza nombre (evita flicker). Sino, inserta nodo con avatar (foto o iniciales) + bubble + 3 dots. Auto-scroll.
+- `hideAsesorTypingIndicator()`: remove node si existe.
+
+**Hooks en flow existente**:
+
+- **`send()` línea 832**: setea `setMeTyping(false)` SINCRÓNICAMENTE antes del `addMessage` para que el indicador desaparezca instantáneo del lado admin.
+- **`input` event en `cncInput`** (después del keydown listener línea 1843): dispara `onComposerInput()`. Cero impacto pre-escalate (guard interno).
+- **`ensureFirestoreChatDoc().then()` línea 1524**: arranca `startTypingListener()` tras crear chat doc.
+- **`open()` línea 3083**: arranca `startTypingListener()` (idempotente — si chat ya escalado de sesión previa).
+- **`cancelChatListeners()` línea 2599**: invoca `stopTypingListener()`.
+- **`renderMessages()` línea 2876**: re-aplica `showAsesorTypingIndicator(_typingActiveAsesor)` tras `box.innerHTML = ...` para preservar el indicador cuando llega un nuevo mensaje del cliente (sino el wipe lo borraría).
+
+### 75.4 Solución estructural — admin (`js/admin-concierge.js`)
+
+**Variables y helpers (después de `_activeMessages`)**:
+
+- `_adminTypingThrottleActive`, `_adminTypingClearTimeout`, `_adminTypingListenerUnsub`, `_adminClientTypingActive`, `_adminTypingDisconnectRef`, `_adminTypingDelegationBound`
+- Constantes: `ADMIN_TYPING_THROTTLE_MS=1000`, `ADMIN_TYPING_AUTO_CLEAR_MS=3000`, `ADMIN_TYPING_STALE_MS=5000`
+
+**Funciones** (`setAdminTyping`, `onAdminComposerInput`, `bindAdminTypingDelegation`, `startAdminTypingListener`, `stopAdminTypingListener`, `showAdminTypingIndicator`, `hideAdminTypingIndicator`):
+
+- `setAdminTyping(value)`: setea `/typing/{sid}/asesor_<uid>` con name + photoURL + typing + ts. `onDisconnect.remove()` cuando typing=true.
+- `bindAdminTypingDelegation()`: **delegation idempotente** sobre `document` para `e.target.id === 'cncAdminReply'`. Necesario porque el textarea del admin se re-renderiza en cada `renderChatDetail` — un listener directo sería rebindeado en cada render. Flag `_adminTypingDelegationBound` previene doble bind.
+- `startAdminTypingListener(sessionId)`: cancela listener anterior si existe + arranca nuevo sobre `/typing/{sid}/user`. Stale guard 5s. Closure check `sessionId === _activeSessionId` para ignorar callbacks tardíos cuando admin cambió de chat.
+- `stopAdminTypingListener()`: cancel listener + remove typing propio (no `set false`, sino `remove()` para limpiar nodo) + cancel `onDisconnect` + limpia DOM.
+- `showAdminTypingIndicator()`: idempotente. Inserta nodo en `#cncAdminMessages` con auto-scroll inteligente (solo si admin cerca del fondo, < 120px del final — patrón §26.3).
+
+**Hooks en flow existente**:
+
+- **`startChatsListener()` línea 75**: invoca `bindAdminTypingDelegation()` apenas se inicializa el listener global (cubre admins que entran a sec-concierge directamente).
+- **`AltorraSectionCleanup.register('concierge', ...)` línea 79**: ahora también cancela `stopAdminTypingListener()`. Listener typing es PER chat, NO global como `_chatsUnsub` (§57.7).
+- **Removed event en `_chatsUnsub.docChanges()` línea 261**: `stopAdminTypingListener()` antes de setear `_activeSessionId = null`.
+- **`openChat(sessionId)` línea 493**: `stopAdminTypingListener()` ANTES de cambiar `_activeSessionId`. Tras setear renderChatDetail, `bindAdminTypingDelegation()` + `startAdminTypingListener(sessionId)`. En el `_messagesUnsub` callback, re-aplica `showAdminTypingIndicator()` si `_adminClientTypingActive` (sobrevive wipe del innerHTML en renderChatDetail).
+- **`sendAsesorMessage()` línea 1136**: setea `setAdminTyping(false)` SINCRÓNICAMENTE antes del send.
+
+### 75.5 Estados visuales (CSS)
+
+**`css/concierge.css` (cliente, ~110 líneas)**:
+
+- `.cnc-asesor-typing-indicator`: flex con avatar 32px + bubble glass dorado tenue. Animation `cncAsesorTypingSlideIn` 0.22s spring.
+- `.cnc-asesor-typing-avatar`: 32×32 circular. Variant `--initials` con iniciales si no hay foto.
+- `.cnc-asesor-typing-bubble`: bg `rgba(184,150,88,0.12)` + border tenue + radius 16px + bottom-left 4px. max-width 78%.
+- `.cnc-asesor-typing-dots span`: 3 dots 6×6 con animation `cncAsesorTypingDot` 1.4s ease-in-out infinite con delays 0/0.2/0.4s.
+- `@keyframes cncAsesorTypingDot`: scale 0.85→1.10 + translateY 0→-2px + opacity 0.32→1.
+- `@media (prefers-reduced-motion: reduce)`: animation: none, opacity estática 0.62.
+
+**`css/admin.css` (admin, ~80 líneas)**:
+
+- `.cnc-admin-typing-indicator`: variante minimalista (sin avatar, italic gris). Patrón Slack.
+- `.cnc-admin-typing-dots span`: mismas dimensiones, color `rgba(184,150,88,0.55)`, animation `cncAdminTypingDot` (mismo timing).
+- `@keyframes cncAdminTypingDot`/`cncAdminTypingSlideIn`: idénticos al cliente.
+- `@media (prefers-reduced-motion: reduce)`: animations off, opacity estática 0.55.
+
+Cero `transition: all`. Solo `opacity`, `transform` (compositor-only).
+
+### 75.6 Telemetría
+
+```
+[Concierge] §75 typing listener permission_denied — deploy database rules pendiente.
+[AdminConcierge] §75 typing listener permission_denied — deploy database rules pendiente.
+```
+
+Si rules no desplegadas, el catch silencioso loguea info sin romper el chat. Cliente puede ver en consola post-Ctrl+Shift+R si el deploy aún está pendiente.
+
+### 75.7 Anti-patterns evitados (cruce con doctrinas)
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo `opacity`/`transform` específicas en CSS |
+| §17.4 | Renombrar IDs/clases existentes | Namespace `asesor`/`admin` separado del bot LLM. Cero IDs renombrados |
+| §17.12 | `MutationObserver subtree:true` | Cero MO. Solo `.on('value')` RTDB nativo + delegation discreta sobre `document` |
+| §35 | `pointermove` persistente | Cero pointermove. Solo `input` event con throttle 1s |
+| §37 IAP | Implementar sin autorización | IAP §37 entregado y autorizado por cliente con "autorizo" |
+| §57.7 | Listener admin que muere | Listener de typing PER chat (no global). `_chatsUnsub` global del Hub queda intacto |
+| §57.9 | Mezclar UI close con state reset | Typing no toca `close()`/`finalCloseAndCleanup()`. Cleanup automático via `cancelChatListeners` cuando aplique |
+| §17.7 | Crear archivo `concierge-v2.js` | Cero archivos nuevos. Refactor sobre archivos existentes |
+
+### 75.8 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente abre chat → empieza a escribir tras escalate a queue/live | Admin Hub muestra "El cliente está escribiendo..." con 3 dots animados en <200ms |
+| 2 | Cliente para de escribir 3s | Indicator desaparece automáticamente del lado admin |
+| 3 | Cliente envía mensaje | `setMeTyping(false)` sincrónico → indicador desaparece instantáneo (no espera al stale 5s) |
+| 4 | Cliente cierra tab mid-escribiendo | `onDisconnect.remove()` limpia el nodo RTDB → admin ve indicator desaparecer en <2s |
+| 5 | Asesor empieza a escribir en `cncAdminReply` | Cliente ve "[Nombre] está escribiendo" con avatar + 3 dots |
+| 6 | 2 admins escriben en mismo chat | Cliente ve solo el primero detectado por el filter (entries `asesor_<uid>` son distintas) |
+| 7 | Admin cambia de chat (openChat con sessionId nuevo) | Listener viejo cancelado + indicator anterior limpio + listener nuevo activo |
+| 8 | Admin sale de sec-concierge | `AltorraSectionCleanup` cancela typing listener (no consume bandwidth fuera de la sección) |
+| 9 | Admin vuelve a sec-concierge | Listener se rearma cuando openChat se invoca |
+| 10 | Throttle 1s funciona | DevTools Network: máx 1 update RTDB por segundo aunque user escriba rápido |
+| 11 | `prefers-reduced-motion: reduce` | Animation desactivada, dots estáticos opacity 0.62/0.55 |
+| 12 | Rules NO desplegadas | Catch silencioso `permission_denied` + log info en consola. Chat sigue funcionando sin indicador |
+| 13 | Asesor envía mensaje | `setAdminTyping(false)` sincrónico → cliente ve indicador desaparecer instantáneo |
+| 14 | RTDB no cargado (race con SDK diferido) | Guard `if (!window.rtdb) return` previene errores. Funciona sin typing, no bloquea chat |
+| 15 | Re-render en cliente al llegar mensaje del asesor | `_typingActiveAsesor` cache preserva indicador tras `renderMessages()` innerHTML wipe |
+| 16 | Re-render en admin al llegar mensaje del cliente | `_adminClientTypingActive` flag preserva indicador tras `renderChatDetail()` re-render |
+| 17 | Mobile (< 720px) | CSS responsive heredado, mismas animations |
+
+### 75.9 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Cliente NO ejecuta `firebase deploy --only database` | 🔴 Alta | Catch silencioso `permission_denied` → cero impacto en flow del chat. Indicador no aparece pero chat funciona | N/A — sin deploy, S3 inactivo pero no rompe nada |
+| 2 | Listener admin huérfano si openChat se llama sin cleanup previo | 🟢 Baja | Cleanup explícito al inicio de openChat: `try { stopAdminTypingListener(); } catch (e) {}` | git revert |
+| 3 | Ghost typing si cliente cierra tab mid-escribiendo | 🟢 Baja | `onDisconnect().remove()` nativo de RTDB limpia automáticamente en <2s | N/A |
+| 4 | Throttle 1s muy agresivo en desktop | 🟢 Baja | Constantes exportables (`TYPING_THROTTLE_MS`/`ADMIN_TYPING_THROTTLE_MS`). Si feedback indica, ajustar a 800ms | Patch puntual |
+| 5 | Stale entry sin cleanup (ts viejo de 1h sigue marcado typing:true) | 🟢 Baja | Listener filtra con `(Date.now() - entry.ts) < 5000` antes de mostrar | N/A |
+| 6 | Doble update RTDB en keystroke rápido | 🟢 Baja | Throttle 1s por flag local + auto-clear 3s con clearTimeout previo | N/A |
+| 7 | Indicador permanece tras cambio de chat (admin) | 🟢 Baja | Cleanup explícito en openChat antes de cambiar `_activeSessionId` | git revert |
+| 8 | Race con S1 Optimistic UI: setter typing ejecuta DESPUÉS del send | 🟢 Baja | `send()` y `sendAsesorMessage()` setean typing:false SINCRÓNICAMENTE como primer paso (antes del addMessage) | N/A |
+| 9 | RTDB no cargado (race con SDK diferido) | 🟢 Baja | Guard `if (!window.rtdb) return` al inicio de cada setter/listener | Funciona sin typing, no bloquea chat |
+| 10 | Entrada `user` o `asesor_<uid>` con campos inválidos rompe listener | 🟢 Baja | `.validate` en database.rules + try/catch en callback handler | N/A |
+| 11 | Plan §74 propuso mismo ID `cncTypingIndicator` ya usado por bot LLM | ⚠️ Detectado pre-implementación | **Resuelto en IAP**: namespace `asesor` separado. Bot LLM existente intacto | Implementación correcta |
+| 12 | Performance: keystroke rápido genera muchos updates | 🟢 Baja | Throttle 1s + el listener del otro lado es `.on('value')` que ya se debounce automáticamente | N/A |
+| 13 | Listener `_adminTypingListenerUnsub` no se cancela si docChanges removed dispara con _activeSessionId nulo | 🟢 Baja | Guard `if (_adminTypingListenerUnsub)` antes de invocarlo. Idempotente | N/A |
+| 14 | Cliente con typing activo recibe `mode='closed'` desde admin | 🟢 Baja | `cancelChatListeners()` invoca `stopTypingListener()` antes de aplicar closed state | N/A |
+
+### 75.10 Acciones operativas del super_admin (post-merge)
+
+**OBLIGATORIA**:
+```bash
+firebase deploy --only database
+```
+
+Esto activa las nuevas rules de `/typing/`. Sin este deploy, los `set()` a `/typing/` fallan con `permission_denied` → catch silencioso → indicador NO aparece pero el chat funciona normal.
+
+Tiempo estimado del deploy: 30-60 segundos. Cero downtime.
+
+**Validación**:
+1. Ctrl+Shift+R en cliente público (sitio público) Y en admin (admin.html) para invalidar cache previa (carga `v20260514010000`)
+2. Sesión 1: cliente real escribe en el FAB ALTOR Hub
+3. Sesión 2: admin con sec-concierge abierto y un chat seleccionado
+4. Verificar:
+   - Cliente escribe → admin ve "El cliente está escribiendo..." con 3 dots
+   - Asesor escribe → cliente ve "[Nombre] está escribiendo" con avatar + 3 dots
+   - Throttle: DevTools → Network filter "typing" → max 1 update/segundo
+   - Cerrar tab cliente mid-escribiendo → indicador desaparece en <2s del lado admin
+   - `prefers-reduced-motion`: animations desactivadas (test desde DevTools → Rendering)
+
+### 75.11 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/concierge.js` | +120 líneas: variables typing + 6 funciones helper. Modificado: `cancelChatListeners()` + `send()` (typing:false sincrónico) + input listener (`onComposerInput`) + `ensureFirestoreChatDoc().then()` (startTypingListener) + `open()` (idempotente startTypingListener) + `renderMessages()` (re-aplica indicator si cache activo) | +120, -3 |
+| `js/admin-concierge.js` | +85 líneas: variables typing + 7 funciones helper. Modificado: `startChatsListener()` (bind delegation idempotente + cleanup hook con stopAdminTypingListener) + `_chatsUnsub.docChanges() removed` (stopAdminTypingListener antes de _activeSessionId=null) + `openChat()` (stopAdminTypingListener al inicio + bind+start tras renderChatDetail + re-aplica indicator en messages snapshot) + `sendAsesorMessage()` (typing:false sincrónico) | +85, -1 |
+| `database.rules.json` | +12 líneas: bloque `/typing/{sessionId}` con `.read auth!=null` + write granular (user open + asesor_<uid> con match exacto) + `.validate` shape correcto | +12, 0 |
+| `css/concierge.css` | +110 líneas: `.cnc-asesor-typing-*` con avatar circular + bubble glass dorado + 3 dots animados + slide-in entry + `prefers-reduced-motion` | +110, 0 |
+| `css/admin.css` | +80 líneas: `.cnc-admin-typing-*` variante Hub minimalista (italic gris + 3 dots) + keyframes propios + `prefers-reduced-motion` | +80, 0 |
+| `service-worker.js` | CACHE_VERSION → `v20260514010000` con descripción §75 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260514010000'` con descripción §75 | +1, -1 |
+| `CLAUDE.md` | Esta sección §75 | +320, 0 |
+
+**Total**: ~729 líneas agregadas, ~6 modificadas. Cero archivos nuevos. Bundle JS Concierge: 3392 → 3512 líneas (dentro del budget §59 sección 13.6 max 4080).
+
+### 75.12 Archivos INTACTOS (afirmación explícita)
+
+- `js/hub-store.js` (S1) — sin tocar. Typing es estado efímero, no entra al store.
+- `firestore.rules` (R6) — sin tocar. Typing usa RTDB, no Firestore.
+- `functions/index.js` — sin tocar. Cero Cloud Function nueva.
+- `js/firebase-config.js` — sin tocar. `window.rtdb` ya estaba expuesto desde §6.5.
+- `js/rbac-catalog.js`, `js/admin-state.js`, `js/admin-auth.js`, `js/admin-roles.js`, `js/admin-users.js` — ZERO.
+- `admin.html` — ZERO.
+- `js/concierge.js` typing del bot LLM (`cncTypingIndicator`/`.cnc-typing` líneas 775-790 + 891 + 906) — INTACTO. Coexiste con el nuevo `cncAsesorTypingIndicator` por namespace separado.
+- Sitio público (todo lo no Concierge) — ZERO.
+
+### 75.13 Estado del Mega-Plan §59 ALTOR Hub tras §75
+
+| Sprint | Foco | Estado |
+|---|---|---|
+| ✅ S1 | Optimistic UI admin (7 botones) | §60.1 |
+| ✅ S2 | Optimistic UI cliente | §60.2 |
+| ✅ **S3** | **Typing indicators bidireccionales (RTDB)** | **§75 (este)** |
+| ⏸ S4 | Read receipts (✓ enviado vs ✓✓ leído) | Próximo |
+| ⏸ S5 | Presence avanzada (online/away/offline) | Después de S4 |
+| ⏸ S6 | Rediseño visual Hub admin | Después de S5 |
+| ⏸ S7 | Rediseño visual cliente widget | Después de S6 |
+
+**3/7 sprints completados**. Tiempo estimado restante S4-S7: ~7 días.
+
+### 75.14 Próximo sprint del Mega-Plan §59
+
+**S4 — Read receipts (✓ enviado vs ✓✓ leído)** (1 día):
+- Schema Firestore en `conciergeChats/{sid}`: `lastReadByUser: ISO_timestamp`, `lastReadByAdmin: ISO_timestamp`
+- Cliente: cada 10s con panel abierto → marcar `lastReadByUser`
+- Admin: al `openChat(sid)` → marcar `lastReadByAdmin`
+- Render bubbles:
+  - Si `message.timestamp < lastReadByOther` → ✓✓ azul `#34B7F1`
+  - Si `message.timestamp >= lastReadByOther` → ✓ gris (mantiene estado `sent` del §60.1/§60.2)
+- Integración con estados Optimistic UI existentes: `pending` → `sent` → `read`
+
+S4 NO requiere deploy de RTDB (usa Firestore). Sí requiere `firebase deploy --only firestore:rules` si los campos `lastReadByUser`/`lastReadByAdmin` no están whitelisteados (verificar antes).
+
+### 75.15 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Sprint planificado en plan §74.2 del Mega-Plan §59. Pero IAP previo detectó **conflicto con código existente** (cncTypingIndicator del bot LLM) que el plan §74 no había considerado. Ajusté el plan ANTES de tocar código con namespace `asesor` separado.
+
+§37 IAP: 5 secciones documentadas en §74 (cierre sesión anterior) + en este commit antes de tocar código + autorización explícita del cliente ("autorizo").
+
+§17 Performance: cero MutationObserver, cero pointermove persistente, cero `transition: all`. Throttle 1s en updates RTDB. Auto-clear 3s. Stale guard 5s en listeners. Constantes exportables para tuning futuro.
+
+§17.4 HTML/CSS estable: cero IDs/clases existentes renombrados. Namespace `asesor`/`admin` nuevo no colisiona con bot LLM (`cncTypingIndicator`/`.cnc-typing`).
+
+§17.12 anti-MutationObserver: cero MO global. Solo `.on('value')` RTDB nativo + event delegation discreta sobre `document` para `cncAdminReply` (sobrevive re-renders sin rebind).
+
+§57.7 listener admin globalmente activo: `_chatsUnsub` del Hub sigue intacto. Typing es PER chat (cancelado al cambiar de chat o salir de sec-concierge), complementario al global del Hub.
+
+§57.9 lazy reset on next open: typing no toca `close()` ni `finalCloseAndCleanup()`. Cleanup automático via `cancelChatListeners()` cuando aplica (e.g. en `cleanSessionAndRender`).
+
+§59 Mega-Plan ALTOR Hub: S3 cierre estricto al pie del plan §74.2 con ajuste de namespace IAP-detectado. Cero overflow a S4 (read receipts), S5 (presence), S6/S7 (rediseño visual).
+
+**Cache bump**: `v20260514010000`.
+
+---

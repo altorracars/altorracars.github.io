@@ -30481,3 +30481,330 @@ R7b automatice.
 
 ---
 
+## 71. ADR-071 — Sprint §61.R7b RBAC: Cloud Function triggers para auto-propagación (2026-05-10)
+
+> Sprint R7b del Plan §61. Elimina la dependencia del "Resembrar
+> sistema" manual del §70 con 4 Cloud Functions que auto-propagan
+> cambios en roles a usuarios denormalizados en tiempo real. Cuando
+> el CEO edita un custom role desde sec-roles UI, los usuarios con
+> ese role heredan automáticamente los nuevos permisos sin necesidad
+> de acción manual.
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §35 (anti-patterns), §37 (IAP),
+> §61 Plan Maestro RBAC.
+
+### 71.1 Por qué este sprint existe
+
+Tras §63-§70 (R1-R7.1) el sistema RBAC dinámico funciona end-to-end
+PERO requiere acción manual del super_admin cuando edita un role:
+- Si el CEO modifica permissions de "Asesor Senior", los usuarios con
+  ese role NO reciben los nuevos permissions hasta que el CEO ejecute
+  manualmente "Resembrar sistema" (§70).
+- Si el CEO elimina un role custom asignado a usuarios, esos usuarios
+  quedan con `roleId` huérfano apuntando a un doc inexistente, pero
+  sus `permissions[]` denormalizadas siguen activas.
+- El campo `userCount` en `roles/{id}` no se actualiza solo (UI muestra
+  count stale).
+
+R7b cierra estos gaps con 4 Cloud Functions automáticas.
+
+### 71.2 Solución estructural — 4 Cloud Functions coordinadas
+
+#### A. `onRoleUpdated` (trigger `onDocumentUpdated('roles/{roleId}')`)
+
+**Acción**: cuando un role doc cambia, detecta drift en
+`name`/`permissions`/`color` y re-sincroniza TODOS los usuarios con
+ese roleId via batch writes (cap 500 ops por batch).
+
+**Lógica**:
+1. Compara `before` y `after` para detectar drift relevante (ignora
+   cambios de `updatedAt`, `_resyncedAt`, `userCount`).
+2. Si drift, query `usuarios` where `roleId == roleId`.
+3. Construye update minimal (solo campos que cambiaron):
+   - Si name cambió → `roleName: after.name`
+   - Si permissions cambió → `permissions: after.permissions` +
+     `permissionsUpdatedAt`
+4. Batch writes con cap 500.
+5. Audit log entry `type='role.updated'` con `usersResynced` count.
+
+**Anti-loop**: NO modifica `roleId` de los usuarios → NO triggea
+`onUserRoleAssigned` (que filtra por roleId change).
+
+#### B. `onRoleDeleted` (trigger `onDocumentDeleted('roles/{roleId}')`)
+
+**Acción**: cuando se elimina un role, orphana los usuarios
+asignados a ese roleId.
+
+**Lógica**:
+1. Detecta si el role era system → log alerta crítica + audit
+   (defense-in-depth, rules backend ya bloquean delete de system roles).
+2. Query usuarios con ese roleId.
+3. Batch update: `roleId=null + roleName=null + permissions=[]` +
+   markers `_orphanedFromRole`, `_orphanedRoleName`, `_orphanedAt`.
+4. Audit log entry `type='role.deleted'` con `usersOrphaned` count.
+
+**Resultado**: usuarios huérfanos quedan bloqueados con la pantalla
+"No tienes roles asignados" (§69 guard) hasta que el CEO los
+reasigne manualmente desde sec-users.
+
+**Anti-loop**: setea `roleId=null` → triggea `onUserRoleAssigned`
+PERO el guard `!after.roleId` solo limpia permissions sin recursión.
+
+#### C. `onUserRoleAssigned` (trigger `onDocumentUpdated('usuarios/{uid}')`)
+
+**Acción**: cuando un usuario cambia su `roleId`, lee el nuevo role
+doc y copia `roleName` + `permissions` denormalizado.
+
+**Lógica**:
+1. Filter: solo procesa si `before.roleId !== after.roleId`.
+2. Si nuevo roleId es null → cleanup: limpiar roleName + permissions.
+3. Sino: lee `roles/{after.roleId}` y compara con valores actuales.
+4. Si drift, update user con name + permissions del role.
+5. Audit log entry `type='user.role-assigned'`.
+
+**Cubre**: admin que cambia roleId desde Firestore Console (sin pasar
+por sec-users JS) o desde scripts externos.
+
+**Anti-loop**: filter por roleId change. Las escrituras propias
+(roleName/permissions sin cambiar roleId) NO se triggean a sí mismas.
+
+#### D. `recalculateRoleUserCount` (schedule `every 5 minutes`)
+
+**Acción**: recorre `usuarios/`, cuenta cuántos tienen cada roleId,
+actualiza `roles/{id}.userCount` si difiere.
+
+**Lógica**:
+1. Promise.all fetch `roles/` y `usuarios/`.
+2. Construye map `{roleId: count}`.
+3. Para cada role, compara `userCount` actual vs nuevo. Si difiere,
+   batch update.
+
+**Beneficio**: sec-roles UI muestra count real sin recalcular
+client-side cada vez (que es costoso con muchos users).
+
+**Region**: `us-central1` para consistencia con otras Cloud Functions
+del proyecto.
+
+### 71.3 Diagrama de anti-loops
+
+```
+┌─────────────────────┐
+│ Admin edita role    │
+│ (sec-roles UI)      │
+└──────────┬──────────┘
+           │ writes roles/{id}
+           ▼
+┌─────────────────────┐
+│ onRoleUpdated       │  trigger
+│ - name cambió?      │
+│ - perms cambió?     │
+│ - color cambió?     │
+└──────────┬──────────┘
+           │ batch update usuarios/{uid}
+           │   solo: roleName + permissions
+           │   (NO roleId)
+           ▼
+┌─────────────────────┐
+│ usuarios/ updated   │
+│ (50 users en batch) │
+└──────────┬──────────┘
+           │ trigger fires per user doc
+           ▼
+┌─────────────────────┐
+│ onUserRoleAssigned  │
+│ filter:             │
+│   roleId === before │  → SKIP (cero loop)
+│   roleId? → false   │
+└─────────────────────┘
+```
+
+```
+┌─────────────────────┐
+│ Admin elimina role  │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ onRoleDeleted       │
+└──────────┬──────────┘
+           │ batch update usuarios/{uid}
+           │   roleId=null
+           │   permissions=[]
+           ▼
+┌─────────────────────┐
+│ usuarios/ updated   │
+└──────────┬──────────┘
+           │ trigger fires
+           ▼
+┌─────────────────────┐
+│ onUserRoleAssigned  │
+│ filter:             │
+│   before.roleId=X   │
+│   after.roleId=null │  → entra
+│ guard:              │
+│   !after.roleId     │  → cleanup sin recursión
+└─────────────────────┘
+```
+
+### 71.4 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | CEO edita custom role "Asesor Senior" agregando `crm.delete` | onRoleUpdated dispara automáticamente. Todos los usuarios con `roleId='custom_asesor_senior'` reciben `permissions: [..., 'crm.delete']` denormalizado en <2s |
+| 2 | DevTools console del usuario afectado tras refresh | `AP.currentUserPermissions` incluye `'crm.delete'` |
+| 3 | Verificar Firestore `auditLog/` | Nueva entry `type='role.updated', roleId='custom_asesor_senior', usersResynced: N` |
+| 4 | CEO renombra "Asesor Senior" a "Comercial Senior" | onRoleUpdated dispara. Todos usuarios con ese roleId tienen `roleName: 'Comercial Senior'`. sec-users tabla muestra el nuevo label tras refresh |
+| 5 | CEO elimina role custom asignado a 3 usuarios | onRoleDeleted dispara. Los 3 usuarios quedan con `roleId=null + permissions=[]`. Próximo login muestra pantalla "Sin rol asignado" (§69) |
+| 6 | Verificar Firestore `auditLog/` | Entry `type='role.deleted', usersOrphaned: 3, wasName: 'Custom Role X'` |
+| 7 | CEO usa sec-users dropdown para asignar nuevo role a un user | onUserRoleAssigned dispara. User recibe `roleName + permissions` denormalizado en <2s |
+| 8 | Admin cambia `roleId` de un user directamente desde Firestore Console | onUserRoleAssigned dispara igualmente. Cliente JS no necesita correr para sync |
+| 9 | Esperar 5 minutos sin acción | recalculateRoleUserCount corre. Verificar `roles/{id}.userCount` en Firestore es real |
+| 10 | sec-roles UI muestra "X usuarios" | Match con Firestore después del próximo schedule run |
+| 11 | DevTools Cloud Functions logs | Cada trigger loguea `[onRoleUpdated] §71 ...` con stats |
+| 12 | Eliminar system role manualmente desde Firestore Console | Alerta crítica en logs + auditLog `type='role.deleted-CRITICAL'`. Backend rules bloquean (defense-in-depth) |
+| 13 | Re-verificar §70 "Resembrar sistema" | Sigue funcionando como fallback manual. R7b lo automatiza pero el botón manual NO se elimina (compat) |
+
+### 71.5 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| Cloud Function loops infinitos | onRoleUpdated → onUserRoleAssigned → onRoleUpdated... | Anti-loops por design: filter por roleId change + onRoleUpdated nunca modifica roleId |
+| §17 Performance | Batch writes >500 ops Firestore limit | Cap 500 + chunking automático |
+| §17 Performance | Lectura completa de usuarios/ cada 5 min | recalculateRoleUserCount chequea drift antes de write — si counts no cambiaron, cero writes |
+| §17.12 anti-MutationObserver | N/A (backend) | N/A |
+| §35 | pointermove (N/A backend) | N/A |
+| §37 IAP | Implementar sin autorización | IAP entregado al cliente. Cliente autorizó "continua" |
+| §61 Plan Maestro | Saltarse fases | R7b completo según plan §61.5 R7. Cero overflow a R8 (cleanup masivo de callsites legacy) |
+| Audit log spam | Trigger en cada write a roles/ | Audit log SOLO si hay drift relevante (no si solo cambia updatedAt) |
+
+### 71.6 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Cliente NO ejecuta `firebase deploy --only functions:onRoleUpdated,...` | 🔴 Alta | Cache bump documenta acción obligatoria. Sin deploy, las funciones no existen y el sistema sigue funcionando con el "Resembrar sistema" manual del §70 | N/A — sin deploy, R7b no se activa |
+| 2 | Trigger se ejecuta múltiples veces por race condition Eventarc | 🟢 Baja | Operaciones idempotentes: `nameDrift`/`permsDrift` chequean estado actual. Si ya está sincronizado, skip | Audit log identifica duplicados |
+| 3 | Batch write falla mid-chunk (red, throttling) | 🟢 Baja | Chunks de 500 son commit atómico. Si falla un chunk, los anteriores ya commiteados quedan. Próximo trigger lo retomará | Manual: ejecutar "Resembrar sistema" |
+| 4 | Schedule corre sin necesidad (admin sin actividad) | 🟢 Baja | Cada run lee 1 query de roles + 1 de usuarios. Si counts no cambiaron, cero writes. Costo Firebase ~$0.0001 por run | N/A acceptable |
+| 5 | onRoleUpdated dispara para cambios cosméticos (e.g. solo `_resyncedAt` cambia) | 🟢 Baja | Filter por drift relevante (name/permissions/color). updatedAt solo NO triggea sync | N/A |
+| 6 | onUserRoleAssigned procesa user con roleId orphan (apunta a role inexistente) | 🟢 Baja | Manejo defensive: si `roleSnap.exists` es false, log warn y return. User queda con permissions previos | Manual reasignar role |
+| 7 | recalculateRoleUserCount cuenta incorrectamente users con roleId duplicado | 🟢 Esperado | El Map de counts dedupea automáticamente | N/A |
+| 8 | Audit log se llena con miles de entries por sync masivo | 🟡 Media | Audit log solo entry POR trigger (no por user resynced individual). 1 entry con `usersResynced: N` count | Cleanup audit log periódico |
+| 9 | onRoleDeleted dispara para system_super_admin si rules backend tienen bug | 🟢 Baja (rules R6 lo bloquean) | Alerta crítica en logs + audit. Cliente puede restaurar el doc manualmente desde Firebase Console | Manual restore |
+
+### 71.7 Acciones operativas del super_admin (post-merge)
+
+**OBLIGATORIA**:
+```bash
+firebase deploy --only functions:onRoleUpdated,functions:onRoleDeleted,functions:onUserRoleAssigned,functions:recalculateRoleUserCount
+```
+
+Tras el deploy:
+1. Las 4 Cloud Functions se activan automáticamente
+2. Cualquier edit a un role custom desde sec-roles → propaga
+   automáticamente a usuarios en <2s
+3. El botón "Resembrar sistema" del §70 sigue funcionando como
+   fallback manual (no se elimina por retrocompat)
+4. Schedule recalculateRoleUserCount corre cada 5 min
+   automáticamente
+
+**Validación**:
+1. Login admin → Configuración → Roles
+2. Editar un custom role (cambiar nombre o agregar/quitar permission)
+3. Esperar 1-2s
+4. Refresh Firebase Console → Firestore → `usuarios/` → verificar que
+   los users con ese roleId tienen `permissions[]` actualizado y
+   `_resyncedBy: 'onRoleUpdated'`
+5. Verificar `auditLog/` → debe haber entry `type='role.updated'` reciente
+
+### 71.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `functions/index.js` | + import `onDocumentDeleted` (línea 2). + ~470 líneas append: 4 Cloud Functions (onRoleUpdated/onRoleDeleted/onUserRoleAssigned/recalculateRoleUserCount) + diagramas anti-loop + audit log integration |
+| `service-worker.js` | CACHE_VERSION → `v20260513120000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513120000'` |
+| `CLAUDE.md` | Esta sección §71 |
+
+**Total**: 4 archivos.
+
+### 71.9 Archivos INTACTOS (afirmación)
+
+- `firestore.rules` — sin tocar (Cloud Functions corren con Admin SDK
+  bypass de rules)
+- `js/admin-state.js`, `js/admin-auth.js`, `js/admin-roles.js`,
+  `js/admin-users.js`, `js/rbac-catalog.js` — sin tocar
+- `admin.html` — sin tocar
+- `css/admin.css` — sin tocar
+- 154 callsites legacy `AP.isSuperAdmin()` etc — sin tocar (R8 cleanup)
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+- Sitio público — ZERO
+
+### 71.10 Estado del Plan §61 RBAC tras §71
+
+| Sprint | Estado | Doc |
+|---|---|---|
+| R1 Foundation | ✅ Completado | §63 |
+| R2 UI sec-roles CRUD | ✅ Completado | §64 |
+| R3 Dropdown dinámico sec-users | ✅ Completado | §65 |
+| R4 Migración legacy users | ✅ Completado | §66 + §66.1/2/3 hotfixes |
+| R5 Pragmático (deprecated + mapping) | ✅ Completado | §67 |
+| R6 Rules backend hasPermission | ✅ Completado | §68 |
+| R7 Ampliado (CEO + Guard "Sin rol") | ✅ Completado | §69 |
+| R7.1 Hotfix (3 bugs UX/sync) | ✅ Completado | §70 |
+| **R7b Cloud Function triggers** | ✅ Completado | §71 (este) |
+| ⏸ R8 Cleanup masivo | Opcional | (planeado §67.5) |
+
+### 71.11 Beneficios de R7b vs R7.1 manual
+
+| Caso | R7.1 (manual) | R7b (automático) |
+|---|---|---|
+| CEO edita un custom role | Cliente debe ejecutar "Resembrar sistema" + esperar | Sync automático en <2s |
+| CEO elimina un custom role | Users con ese role quedan con permissions stale | Users orphaned automáticamente con guard de §69 |
+| Admin cambia roleId desde Firestore Console | No se sincroniza hasta "Resembrar" | onUserRoleAssigned sincroniza automáticamente |
+| sec-roles UI muestra count de usuarios | Cliente debe recalcular client-side | userCount auto-actualizado cada 5min |
+| Trazabilidad de cambios | Sin audit log automático | auditLog entries con type/role/users count |
+
+### 71.12 Próximo sprint opcional del plan
+
+**R8 — Cleanup masivo** (futuro, requiere meses de validación):
+- Eliminar docs `roles/system_editor` y `roles/system_viewer` de
+  Firestore (orphana editor/viewer legacy users — onRoleDeleted los
+  cubrirá automáticamente con guard de §69)
+- Refactor de los ~164 callsites legacy `AP.isSuperAdmin()` etc a
+  `AP.hasPermission(perm)` directo (mapping table en §67.3)
+- Eliminar campo `rol` legacy de `usuarios/{uid}` (todos los users
+  migrados via R4 + onUserRoleAssigned)
+- Refactor `firestore.rules`: eliminar helpers legacy + eliminar OR
+  fallback en cada callsite (solo `hasPermission` queda)
+- Eliminar JSDoc @deprecated y código residual
+
+R8 es opcional. El sistema es 100% funcional sin él. Se ejecuta cuando
+el cliente confirme que después de meses NO hay regresiones, y queremos
+limpieza final del codebase.
+
+### 71.13 Doctrina aplicada
+
+§19 RCA estricto: NO había bug puntual. Sprint planificado en §61.5
+R7. Causa raíz del gap: §70 R7.1 hotfix dejó al cliente con dependency
+del "Resembrar sistema" manual. R7b lo automatiza con triggers.
+
+§37 IAP: análisis previo entregado al cliente con 4 secciones
+(archivos modificados, intactos, riesgos, acción operativa). Cliente
+autorizó con "continua".
+
+§17 Performance: cero MutationObserver, cero pointermove. Cloud
+Functions corren server-side. Schedule cada 5 min con drift detection
+para minimizar writes.
+
+§17.4 HTML/CSS estable: cero modificaciones HTML ni CSS. Solo
+backend (functions/index.js) + cache bump + CLAUDE.md.
+
+§61 Plan Maestro: R7b estricto. NO refactoriza callsites JS legacy
+(R8). NO elimina docs system_editor/system_viewer (R8). Solo agrega
+los 4 triggers automáticos planeados originalmente.
+
+**Cache bump**: `v20260513120000`.
+
+---
+

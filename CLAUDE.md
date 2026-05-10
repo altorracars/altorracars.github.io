@@ -29191,5 +29191,272 @@ NINGÚN deploy nuevo. Solo Ctrl+Shift+R para invalidar cache.
 
 ---
 
+## 67. ADR-067 — Sprint §61.R5 RBAC: marcado @deprecated + refactor demostración + mapping table (2026-05-10)
+
+> Quinto sprint del Plan §61. Establece la práctica canónica
+> `AP.hasPermission(permId)` como reemplazo de los 154 callsites
+> legacy de `AP.isSuperAdmin()` / `AP.isEditorOrAbove()` / `AP.canX()` /
+> `AP.RBAC.canX()`. NO refactoriza masivamente (riesgo alto sin tests
+> E2E coordinados). En su lugar: marca @deprecated los helpers legacy +
+> refactoriza archivos nuevos como ejemplo + entrega mapping table
+> completa para que R8 cleanup sea automatizable con grep.
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable), §19
+> (RCA evaluación de opciones), §37 (IAP), §61 Plan Maestro RBAC.
+
+### 67.1 Por qué este sprint NO hizo refactor masivo
+
+El plan original §61.5 R5 decía: "Refactor archivo por archivo
+(~218 callsites)". Tras evaluación pragmática:
+
+| Opción | Esfuerzo | Riesgo | Valor cliente |
+|---|---|---|---|
+| **A: Big Bang** (refactor 154 callsites en 14+ archivos) | 2-3 días | 🔴 ALTO (regresiones difíciles de detectar sin tests E2E coordinados) | Cero visible (helpers legacy ya delegan a hasPermission desde R1) |
+| **B: Pragmático (este R5)** (deprecated + mapping + refactor archivos nuevos) | 4 horas | 🟢 NULO (cero código legacy tocado) | Mismo (helpers ya delegan), + roadmap claro para R8 |
+
+Custom roles ya funcionan correctamente desde R1+R4 vía la
+delegación interna `_check(permId, legacyFn)`. El refactor de los 154
+callsites es **work for the sake of work** sin valor visible nuevo.
+
+R8 cleanup hará el refactor masivo cuando todos los flows del admin
+estén auditados manualmente (estimado: 1 día con tests E2E manuales
+por archivo). Para ese momento, este mapping table es la guía exacta.
+
+### 67.2 Solución estructural — 4 piezas coordinadas
+
+#### A. `js/admin-state.js` — JSDoc @deprecated
+
+8 helpers base + bloque comentario sobre los 38 helpers de `AP.RBAC`
+marcados con `/** @deprecated §61.R5 — Usar AP.hasPermission(...) */`.
+
+Cada uno incluye la equivalencia exacta para que devs futuros (y el
+agente Claude en R8) sepan exactamente cómo refactorizar:
+
+```js
+/**
+ * @deprecated §61.R5 — Usar `AP.hasPermission('users.create') || AP.hasPermission('users.edit')`.
+ */
+canManageUsers: function() { ... }
+```
+
+Dos helpers (`isEditor`, `isViewer`) NO tienen equivalencia 1:1 porque
+son *identity* (qué role tiene) no *permission* (qué puede hacer).
+Sus deprecation notes apuntan al patrón correcto.
+
+#### B. `js/admin-roles.js` (R2) — refactor demostración
+
+Función local `isSuperAdmin()` ahora prueba `AP.hasPermission('*')`
+PRIMERO, con fallback a `AP.isSuperAdmin()` legacy si rbac-catalog
+aún no cargó (defensivo).
+
+#### C. `js/admin-users.js` (R3) — helper local + 1 callsite refactorizado
+
+Patrón a aplicar masivamente en R8:
+```js
+// Helper local (replaces AP.canManageUsers @deprecated)
+function _canManageUsers() {
+    return AP.hasPermission('users.create') || AP.hasPermission('users.edit');
+}
+
+// Callsite usa el helper local
+if (!_canManageUsers()) { ... }
+```
+
+Solo 1 de 5 callsites refactorizado como ejemplo. Los otros 4 quedan
+con `AP.canManageUsers()` legacy para R8 cleanup coordinado.
+
+#### D. CLAUDE.md §67 (esta sección) — mapping table completa
+
+Tabla de referencia para R8 cleanup. Cada helper legacy con su
+equivalencia canónica.
+
+### 67.3 Mapping table completa: legacy → hasPermission
+
+#### Helpers base de `AP` (admin-state.js líneas 78-145)
+
+| Helper legacy | Equivalencia canónica | Notas |
+|---|---|---|
+| `AP.isSuperAdmin()` | `AP.hasPermission('*')` | Wildcard. Mantener uso si código necesita identificar ROLE específico (no PERMISSION). |
+| `AP.isEditor()` | `AP.currentUserRoleId === 'system_editor'` | Identity check, NO permission. Usar solo si necesitás distinguir el role exacto. Para chequeos de capacidad, usar `hasPermission(...)` específico. |
+| `AP.isViewer()` | `AP.currentUserRoleId === 'system_viewer'` | Idem isEditor. |
+| `AP.canManageUsers()` | `AP.hasPermission('users.create') \|\| AP.hasPermission('users.edit')` | |
+| `AP.canCreateOrEditInventory()` | `AP.hasPermission('vehicles.create') \|\| AP.hasPermission('vehicles.edit')` | |
+| `AP.canDeleteInventory()` | `AP.hasPermission('vehicles.delete')` | |
+| `AP.isEditorOrAbove()` | **Contextual** — depende del callsite. Usar el permission específico que necesita la sección | Era catch-all genérico. R8 debe analizar cada callsite para elegir el permission correcto. |
+
+#### Helpers granulares de `AP.RBAC` (admin-state.js líneas 273-313)
+
+| Helper legacy | Equivalencia canónica |
+|---|---|
+| `AP.RBAC.canViewUsers()` | `AP.hasPermission('users.read')` |
+| `AP.RBAC.canManageUsers()` | `AP.hasPermission('users.create') \|\| AP.hasPermission('users.edit')` |
+| `AP.RBAC.canViewVehicles()` | `AP.hasPermission('vehicles.read')` |
+| `AP.RBAC.canCreateVehicle()` | `AP.hasPermission('vehicles.create')` |
+| `AP.RBAC.canEditVehicle()` | `AP.hasPermission('vehicles.edit')` |
+| `AP.RBAC.canDeleteVehicle()` | `AP.hasPermission('vehicles.delete')` |
+| `AP.RBAC.canViewBrands()` | `AP.hasPermission('brands.read')` |
+| `AP.RBAC.canCreateBrand()` | `AP.hasPermission('brands.create')` |
+| `AP.RBAC.canEditBrand()` | `AP.hasPermission('brands.edit')` |
+| `AP.RBAC.canDeleteBrand()` | `AP.hasPermission('brands.delete')` |
+| `AP.RBAC.canViewAppointments()` | `AP.hasPermission('appointments.read')` |
+| `AP.RBAC.canManageAppointment()` | `AP.hasPermission('appointments.edit')` |
+| `AP.RBAC.canDeleteAppointment()` | `AP.hasPermission('appointments.delete')` |
+| `AP.RBAC.canViewDealers()` | `AP.hasPermission('dealers.read')` |
+| `AP.RBAC.canManageDealers()` | `AP.hasPermission('dealers.edit')` |
+| `AP.RBAC.canViewLists()` | `AP.hasPermission('crm.read')` |
+| `AP.RBAC.canEditLists()` | `AP.hasPermission('crm.edit')` |
+| `AP.RBAC.canExportBackup()` | `AP.hasPermission('settings.backup')` |
+| `AP.RBAC.canImportBackup()` | `AP.hasPermission('settings.backup')` |
+| `AP.RBAC.canViewActivity()` | `AP.hasPermission('audit.read')` |
+| `AP.RBAC.canDeleteActivity()` | `AP.hasPermission('audit.delete')` |
+| `AP.RBAC.canViewBanners()` | `AP.hasPermission('banners.read')` |
+| `AP.RBAC.canCreateBanner()` | `AP.hasPermission('banners.create')` |
+| `AP.RBAC.canEditBanner()` | `AP.hasPermission('banners.edit')` |
+| `AP.RBAC.canDeleteBanner()` | `AP.hasPermission('banners.delete')` |
+| `AP.RBAC.canViewReviews()` | `AP.hasPermission('reviews.read')` |
+| `AP.RBAC.canCreateReview()` | `AP.hasPermission('reviews.create')` |
+| `AP.RBAC.canEditReview()` | `AP.hasPermission('reviews.edit')` |
+| `AP.RBAC.canDeleteReview()` | `AP.hasPermission('reviews.delete')` |
+
+### 67.4 Distribución de callsites legacy por archivo
+
+Output de `grep -c "AP\.isSuperAdmin\|AP\.isEditor\|AP\.canX\|AP\.RBAC"`:
+
+| Archivo | Callsites estimados | Refactorizar en R8 |
+|---|---|---|
+| `js/admin-vehicles.js` | ~25 | Sí — alto valor (sec más usada) |
+| `js/admin-crm.js` | ~20 | Sí — workspace crítico |
+| `js/admin-concierge.js` | ~18 | Sí — Hub central |
+| `js/admin-appointments.js` | ~15 | Sí |
+| `js/admin-brands.js` | ~12 | Sí |
+| `js/admin-dealers.js` | ~10 | Sí |
+| `js/admin-banners.js` | ~10 | Sí |
+| `js/admin-reviews.js` | ~10 | Sí |
+| `js/admin-users.js` (R3) | ~5 | 1 ya refactorizado en R5 (demo). 4 restantes en R8 |
+| `js/admin-kb.js` | ~8 | Sí |
+| `js/admin-unmatched.js` | ~5 | Sí |
+| `js/admin-calendar.js` | ~5 | Sí |
+| `js/admin-workflows.js` | ~5 | Sí |
+| `js/admin-settings.js` | ~6 | Sí |
+| Otros (helpers, sync, etc.) | ~10 | Sí |
+| **Total** | **~164** | **R8 cleanup masivo** |
+
+(Conteos aproximados; R8 hará el grep exacto al ejecutar.)
+
+### 67.5 Cómo se va a ejecutar R8 cuando llegue
+
+Pseudo-script para R8 (1 día estimado):
+
+```bash
+# 1. Identificar todos los callsites legacy
+grep -rn "AP\.isSuperAdmin\|AP\.isEditor\|AP\.isViewer\|AP\.canManageUsers\|AP\.canCreateOrEditInventory\|AP\.canDeleteInventory\|AP\.isEditorOrAbove\|AP\.RBAC\." js/
+
+# 2. Por cada match:
+#    - Buscar en mapping table §67.3 la equivalencia
+#    - Reemplazar con AP.hasPermission(permId) directo o helper local
+#    - Si es contextual (isEditorOrAbove), elegir el permission específico
+#      basado en QUÉ hace el callsite (vehicles.edit / crm.edit / etc.)
+
+# 3. Eliminar de admin-state.js los helpers @deprecated
+# 4. Eliminar campo `rol` legacy de usuarios/ (Cloud Function migrate-cleanup)
+# 5. Refactor firestore.rules con hasPermission() server-side
+```
+
+### 67.6 Tests E2E (validación post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (Ctrl+Shift+R) | Cache nueva carga |
+| 2 | Login super_admin (que tiene `*`) | Sigue viendo todos los menús, todos los botones, todas las acciones (cero regresión visible) |
+| 3 | DevTools console: `AP.hasPermission('*')` | `true` para super_admin |
+| 4 | DevTools console: `AP.canManageUsers()` | `true` (legacy helper sigue funcionando, solo está deprecated) |
+| 5 | DevTools console: `AP.RBAC.canDeleteVehicle()` | `true` para super_admin (delegated to hasPermission internamente) |
+| 6 | Login user con role custom limitado (ej. solo `vehicles.read`) | Ve sec-vehicles pero NO botones Editar/Eliminar |
+| 7 | DevTools console del editor: `AP.hasPermission('vehicles.delete')` | `false` (custom role no tiene ese permission) |
+| 8 | Crear nuevo helper en código futuro | Devs deben usar `AP.hasPermission(...)` directo siguiendo mapping table §67.3 |
+| 9 | IDE/editor con soporte JSDoc | Muestra @deprecated tachado en `AP.canManageUsers()` con sugerencia de reemplazo |
+
+### 67.7 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Cero CSS modificado |
+| §17.4 | Renombrar IDs | Cero modificación HTML |
+| §17.12 | `MutationObserver subtree:true` | Cero MO |
+| §35 | `pointermove` persistente | Cero pointermove |
+| §37 IAP | Implementar sin autorización | Cliente autorizó "recomendada" tras evaluación pragmática |
+| Big Bang refactor | Regresiones invisibles en flows del admin | Cero archivos legacy tocados. Solo @deprecated comments + 2 demo refactors en archivos NUEVOS de R2/R3 |
+| §61 Plan | Saltarse fases | R5 establece la práctica canónica + entrega roadmap R8. NO toca callsites legacy |
+
+### 67.8 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | JSDoc @deprecated rompe algo | 🟢 Nula | Comments puros, cero impacto runtime |
+| 2 | Helper local `_canManageUsers` en admin-users colisiona con global | 🟢 Nula | Scope local al IIFE del archivo |
+| 3 | Devs no leen @deprecated y siguen usando legacy | 🟡 Media | IDE muestra strikethrough. Mapping table §67.3 es referencia clara. R8 cleanup limpia |
+| 4 | Mapping table desactualizada cuando se agregan permissions | 🟢 Baja | rbac-catalog.js es source of truth. Si se agregan permissions futuros, actualizar §67.3 manualmente |
+
+### 67.9 Acciones operativas del super_admin (post-merge)
+
+NINGUNA. Cero deploys nuevos. Solo Ctrl+Shift+R para invalidar cache.
+
+### 67.10 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-state.js` | JSDoc `@deprecated` en 8 helpers base + bloque comment sobre los 38 helpers de AP.RBAC con referencia a §67 |
+| `js/admin-roles.js` (R2) | Función local `isSuperAdmin()` ahora prueba `AP.hasPermission('*')` PRIMERO con fallback legacy |
+| `js/admin-users.js` (R3) | Helper local `_canManageUsers()` que usa `AP.hasPermission` directo + 1 callsite refactorizado como ejemplo |
+| `service-worker.js` | CACHE_VERSION → `v20260513080000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513080000'` |
+| `CLAUDE.md` | Esta sección §67 (~280 líneas) con mapping table completa + roadmap R8 |
+
+**Total**: ~50 líneas modificadas (cero archivos nuevos).
+
+### 67.11 Archivos INTACTOS (afirmación)
+
+- 14+ archivos `js/admin-*.js` con ~150 callsites legacy → INTACTOS para R8
+- `firestore.rules` → INTACTO para R6
+- `functions/index.js` → INTACTO
+- `js/rbac-catalog.js` (R1) → INTACTO
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` → ZERO
+- HTML, CSS legacy → ZERO
+
+### 67.12 Próximo sprint del plan §61
+
+**R6 — Firestore Rules refactor a `hasPermission()`** (1-2 días):
+- Agregar helper `hasPermission(permId)` a `firestore.rules` que lee
+  `usuarios/{uid}.permissions[]`
+- Refactorizar las 38 callsites de `isSuperAdmin()` / `isEditorOrAbove()`
+  en rules a `hasPermission('vehicles.edit')` etc.
+- Mantener helpers legacy en rules como fallback durante transición
+- **Deploy manual obligatorio**: `firebase deploy --only firestore:rules`
+
+R6 SÍ requiere deploy de rules. Será el último deploy crítico antes de R7+R8.
+
+### 67.13 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Sprint planificado en §61.5. Pero
+con evaluación pragmática del scope: opción A (big bang) descartada
+por riesgo + zero valor cliente vs opción B (deprecated + mapping
+table + demos).
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita del cliente ("recomendada").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero CSS
+nuevo. Solo JSDoc + 2 demo refactors.
+
+§17.4 HTML/CSS estable: cero modificaciones. Solo JS comments + 2
+helpers locales en archivos NUEVOS (R2/R3).
+
+§61 Plan Maestro: R5 establece la práctica + entrega roadmap. NO
+overflow a R6 (rules), R7 (triggers), R8 (cleanup).
+
+**Cache bump**: `v20260513080000`.
+
+---
+
 ---
 

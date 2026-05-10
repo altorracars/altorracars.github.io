@@ -31794,3 +31794,169 @@ previa (carga v20260513160000).
 **Cache bump**: `v20260513160000`.
 
 ---
+
+## 73.3 ADR-073.3 — Fix flicker en sec-roles + eliminar botón "Inicializar sistema" duplicado (2026-05-10)
+
+> Cliente reportó tras §73.2 con captura del flicker: "Hay una pantalla
+> que sale siempre en Roles cuando refresco que es inicializar el sistema
+> de roles con un boton de inicializar sistema que desaparece no dura ni
+> unos milisegundos. Verifica si ese boton tiene alguna funcionalidad en
+> estos momentos. y por que solo demora unos milisegundos si no funciona
+> eliminalo".
+>
+> El botón SÍ tenía funcionalidad técnica (invocaba Cloud Function
+> `seedSystemRoles` para sembrar el catálogo), PERO era un duplicado
+> redundante del botón "Resembrar sistema" del header que ya está
+> siempre visible. El flicker pasaba porque el primer render usaba
+> defaults (`_state.ceoExists = false`) antes de que llegara el snapshot
+> Firestore (~50-200ms).
+>
+> Aplicado bajo §17 (perf), §17.4 (HTML/CSS estable), §17.12, §35,
+> §37 (IAP), §61 Plan Maestro RBAC.
+
+### 73.3.1 Causa raíz del flicker (2 problemas combinados)
+
+**Problema 1**: el `render()` corría INMEDIATAMENTE después de
+`startListener()` con los defaults de `_state` (que tenía
+`ceoExists = false`). Como las condiciones del empty state usaban
+`_state.ceoExists`, el primer render entraba al **Caso A**:
+
+```js
+// Render inicial (antes del snapshot)
+if (_state.ceoExists) {
+    // Caso B: "Creá tu primer rol personalizado"
+} else {
+    // Caso A: "Inicializar el sistema de roles" + botón
+}
+```
+
+Como `ceoExists` aún no se había hidratado del Firestore, entraba al
+Caso A y mostraba la pantalla "Inicializar sistema". Cuando llegaba
+el snapshot ~50-200ms después, `ceoExists = true` → re-render →
+entra al Caso B "Creá tu primer rol personalizado". Resultado: el
+cliente veía un flicker entre 2 pantallas distintas.
+
+**Problema 2**: el botón "Inicializar sistema" del Caso A invocaba
+`seed-system-roles` (Cloud Function `seedSystemRoles` que siembra el
+catálogo + CEO). Pero este botón era **duplicado** del botón
+"Resembrar sistema" del header (que siempre está visible y hace
+exactamente lo mismo). UI con 2 botones para la misma acción
+confunde al usuario.
+
+### 73.3.2 Solución estructural — 2 fixes coordinados
+
+#### Fix A — Loading state inicial (`_state.firstSnapshotReceived`)
+
+Nuevo flag en `_state` que distingue entre "rendering con defaults"
+y "rendering con data real":
+
+```js
+var _state = {
+    // ... campos existentes ...
+    firstSnapshotReceived: false  // §73.3
+};
+```
+
+En el primer snap callback se marca `true`:
+
+```js
+.onSnapshot(function (snap) {
+    _state.lastListenerError = null;
+    _state.firstSnapshotReceived = true;  // §73.3
+    _state.roles = [];
+    _state.ceoExists = false;
+    // ...
+});
+```
+
+`render()` chequea el flag y si aún no llegó el primer snapshot,
+muestra solo el header (sin empty state):
+
+```js
+function render() {
+    // ... checks de auth ...
+
+    // §73.3 — Loading state inicial
+    if (!_state.firstSnapshotReceived) {
+        root.innerHTML = renderRolesHeader();
+        refreshIcons(root);
+        return;
+    }
+
+    // ... resto del render con empty states + grid ...
+}
+```
+
+Resultado: durante los primeros 50-200ms el cliente ve solo el header
+(sin contenido confuso). Cuando llega el snapshot, render real con
+empty state correcto. Cero flicker.
+
+#### Fix B — Empty state unificado (Caso A eliminado)
+
+Antes había 2 casos:
+- **Caso A** (`ceoExists = false`): "Inicializar el sistema de roles"
+  + botón "Inicializar sistema" (duplicado)
+- **Caso B** (`ceoExists = true`): "Creá tu primer rol personalizado"
+  + botón "Crear nuevo rol"
+
+Ahora UN solo empty state con texto condicional:
+
+```js
+if (_state.ceoExists) {
+    // Caso normal post-cleanup
+    emptyTitle = 'Creá tu primer rol personalizado';
+    emptyText = 'El rol CEO está activo (vos). Ahora podés crear roles...';
+    emptyActions = '<button data-action="create-role">Crear nuevo rol</button>';
+} else {
+    // Caso edge: CEO no sembrado. Dirigir al header.
+    emptyTitle = 'Sistema sin inicializar';
+    emptyText = 'El sistema aún no tiene rol CEO sembrado. Usá el botón "Resembrar sistema" del header arriba para inicializar el catálogo + el rol CEO. Después podés crear roles personalizados.';
+    emptyActions = ''; // sin botón duplicado del header
+}
+```
+
+Si el sistema NO está sembrado (caso edge muy improbable), el cliente
+ve un mensaje claro que lo dirige al botón "Resembrar sistema" del
+header — **UNA sola fuente de verdad** para sembrar.
+
+### 73.3.3 Tests E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260513170000) | Cache nueva carga |
+| 2 | Cliente con CEO sembrado entra a sec-roles | Solo se ve el header durante el loading inicial (sin texto "Inicializar sistema"). Cuando llega el snapshot (~50-200ms), aparece empty state "Creá tu primer rol personalizado" |
+| 3 | NO aparece pantalla "Inicializar el sistema de roles" parpadeante | Confirmado |
+| 4 | NO aparece botón "Inicializar sistema" | Confirmado |
+| 5 | Botón "Resembrar sistema" del header sigue funcionando | OK (no se tocó) |
+| 6 | Caso edge: borrar manualmente `roles/system_super_admin` desde Firestore Console + recargar | Snapshot llega con `ceoExists = false` → empty state muestra "Sistema sin inicializar" + texto que dirige a "Resembrar sistema" del header (sin botón duplicado) |
+| 7 | DevTools console al primer snapshot | Log `[AdminRoles] §73.2 snapshot — visibles: 0 \| CEO existe: true \| docs legacy: false` |
+
+### 73.3.4 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.4 | Cambiar IDs/clases | Cero. Solo lógica del render() y nuevo flag en _state |
+| §17.12 | MutationObserver | Cero |
+| §35 | pointermove | Cero |
+| §17 perf | Doble render por flicker | El loading state evita el render con defaults — UN solo render real cuando llega el snapshot |
+| Big Bang | Eliminar Cloud Function `seedSystemRoles` | NO se eliminó — sigue siendo invocable por "Resembrar sistema" del header (utility legítima) |
+| §61 Plan | Saltarse fases | R8.3 hotfix UX puntual del §73. Cero overflow a R8 grande |
+| Botón duplicado | UI confusa con 2 botones para misma acción | Eliminado el del Caso A — header tiene la única instancia |
+
+### 73.3.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-roles.js` | Nuevo flag `_state.firstSnapshotReceived` + setear a true en primer snap callback + render() con loading state inicial (solo header) si flag false + empty state unificado con texto condicional según `ceoExists` (Caso A "Inicializar sistema" eliminado) |
+| `service-worker.js` | CACHE_VERSION → `v20260513170000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513170000'` |
+| `CLAUDE.md` | Esta sección §73.3 |
+
+### 73.3.6 Acciones operativas
+
+NINGUNA NUEVA. Solo Ctrl+Shift+R en el admin para invalidar cache
+previa (carga v20260513170000).
+
+**Cache bump**: `v20260513170000`.
+
+---

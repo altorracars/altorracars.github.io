@@ -33526,3 +33526,331 @@ CSS + algunos templates HTML del Hub admin.
 **Cache bump**: `v20260514030000`.
 
 ---
+
+## 78. ADR-078 — Sprint §59 S6 Rediseño visual Hub admin (CSS-only) (2026-05-10)
+
+> Sexto sprint del Mega-Plan §59 (cirugía ALTOR Hub). Refactor visual
+> 100% CSS-only que eleva el Hub admin de "obra negra" funcional a
+> calidad premium nivel Intercom/Drift sin modificar HTML, JS, schema
+> ni deploys backend. Aplica el patrón industry-standard de
+> separación de responsabilidades: la lógica del Hub (Sprints S1-S5)
+> ya está sólida — S6 le da el lenguaje visual que merece.
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero transition all),
+> §17.4 (HTML/CSS estable — cero IDs renombrados), §17.12 (cero
+> MutationObserver), §35 (cero pointermove), §37 (IAP), §59 Plan
+> Maestro ALTOR Hub.
+
+### 78.1 Estado pre-S6
+
+Tras §75-§77 (S3+S4+S5) el Hub admin tiene:
+- ✅ Optimistic UI universal (S1) — botones responden <16ms
+- ✅ Optimistic UI cliente (S2) — estados WhatsApp ✓/✓✓/⚠
+- ✅ Typing indicators bidireccionales (S3) — RTDB throttle 1s
+- ✅ Read receipts (S4) — lastReadByUser/lastReadByAdmin
+- ✅ Presence avanzada (S5) — online/away/offline en cliente
+
+PERO el visual del Hub admin (sec-concierge wrapping `.altor-hub`)
+seguía con look post-§26.3 + §60.1: layout fullscreen Telegram-style
+funcional pero con bubbles cuadradas, sin animations entry, empty
+states de texto plano, sidebar plana sin hover lift, scrollbar
+nativo del browser. Cliente lo identificó previamente como "obra
+negra".
+
+### 78.2 Solución estructural — append CSS quirúrgico
+
+Estrategia: agregar ~350 líneas al final de `css/admin.css` con
+prefijo `.altor-hub` (clase wrapper que el HTML del Hub tiene
+desde §26.3) → especificidad 0,2,0 vs 0,1,0 de los selectores
+legacy. Override sin `!important`, sin tocar archivos legacy.
+
+**8 dimensiones del rediseño** (cada una en su propio bloque
+comentado para futura referencia):
+
+#### A. Sidebar lista de chats refinada
+
+`.altor-hub .cnc-admin-list` con scrollbar custom dorado:
+- Track transparente
+- Thumb `rgba(184, 150, 88, 0.3)` border-radius pill
+- Hover thumb `rgba(184, 150, 88, 0.5)`
+- Width 6px (sutil, no intrusivo)
+- Firefox scrollbar-color compatible
+
+`.altor-hub .cnc-admin-chat-item`:
+- Avatar 44px circular con gradient `#d4ad6e → #b89658`
+  + box-shadow inset white highlight (efecto 3D sutil)
+- Hover: `transform: translateY(-1px)` + bg dorado tenue
+  `rgba(184, 150, 88, 0.06)` + border dorado highlighted
+- Active state: gradient horizontal `rgba(184,150,88,0.14) →
+  rgba(184,150,88,0.06)` + box-shadow `inset 4px 0 0
+  rgba(184,150,88,0.5)` (accent vertical izquierda) + glow
+  externo `0 4px 16px rgba(184,150,88,0.15)`
+- Border-radius 12px
+- Transition específica `background-color 0.18s, transform
+  0.18s, box-shadow 0.18s` (cero `transition: all`)
+
+#### B. Detail header sticky con glassmorphism
+
+`.altor-hub .cnc-admin-detail-head`:
+- `position: sticky; top: 0; z-index: 5`
+- `backdrop-filter: blur(12px) saturate(140%)` (Apple HIG style)
+- Background semi-transparente `rgba(15, 15, 15, 0.85)`
+- Border-bottom dorado tenue `1px solid rgba(184,150,88,0.18)`
+- Padding 14px 18px refinado
+- Permanece visible al scrollear los mensajes (cliente nombre +
+  acciones siempre accesibles)
+
+#### C. Bubbles iMessage style — border-radius asimétrico
+
+`.altor-hub .cnc-detail-msg`:
+- Animation `hubMsgSlideIn 0.28s cubic-bezier(0.34, 1.4, 0.64, 1)`
+  (overshoot natural al entry)
+- max-width: 72% desktop, 84% mobile
+- gap entre bubbles: 12px
+
+`.altor-hub .cnc-detail-bubble`:
+- border-radius: 18px (general)
+- Background gradient sutil + border tenue
+- box-shadow: `0 1px 2px rgba(0,0,0,0.04)`
+- padding: 10px 14px
+
+**Variantes asimétricas**:
+- `.cnc-detail-msg--asesor .cnc-detail-bubble`:
+  border-bottom-right-radius: 4px (esquina cuadrada hacia abajo-
+  derecha indica "yo soy el emisor a la derecha"). Background
+  gradient dorado.
+- `.cnc-detail-msg--user .cnc-detail-bubble` y
+  `.cnc-detail-msg--bot .cnc-detail-bubble`:
+  border-bottom-left-radius: 4px (esquina cuadrada hacia abajo-
+  izquierda). Background blanco/gris tenue.
+- `.cnc-detail-msg--system .cnc-detail-bubble`:
+  border-radius: 12px (pill simétrica), centrada, italic, color
+  tertiary.
+
+`@keyframes hubMsgSlideIn`:
+```
+from { opacity: 0; transform: translateY(8px) scale(0.96); }
+to   { opacity: 1; transform: translateY(0) scale(1); }
+```
+
+#### D. Empty states con SVG inline data: URI
+
+`.altor-hub .cnc-admin-empty` (sidebar sin chats):
+- `::before` con SVG inline (chat bubble icon dorado opacity 0.4)
+- Padding 60px 20px centered
+- Texto guía "Aún no hay conversaciones"
+
+`.altor-hub .cnc-admin-detail-empty` (detail panel sin chat
+seleccionado):
+- `::before` con SVG checkmark verde + animación
+  `hubEmptyPulse 2.4s ease-in-out infinite` (scale 1 → 1.05 → 1
+  + opacity pulse)
+- Texto "Selecciona una conversación para ver los mensajes"
+- Layout flex column centered
+
+`@keyframes hubEmptyPulse`:
+```
+0%, 100% { transform: scale(1); opacity: 0.4; }
+50%      { transform: scale(1.05); opacity: 0.6; }
+```
+
+#### E. Unread badge con animation pulse
+
+`.altor-hub .cnc-admin-unread-badge`:
+- Border-radius pill
+- Background gold gradient
+- Color text dark (#1a1a1a) para contraste AAA sobre dorado
+- Animation `hubUnreadPulse 2s ease-in-out infinite`:
+  - scale 1 → 1.15 → 1
+  - box-shadow expand `0 0 0 0 rgba(...)` → `0 0 0 8px
+    rgba(...transparent)` (efecto onda)
+
+`@keyframes hubUnreadPulse`:
+```
+0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(184,150,88,0.5); }
+50%      { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(184,150,88,0); }
+```
+
+#### F. Skeleton loading classes (futuro JS use)
+
+`.altor-hub .cnc-skeleton-card`, `.cnc-skeleton-avatar`,
+`.cnc-skeleton-line`:
+- Background gradient horizontal `linear-gradient(90deg,
+  rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%,
+  rgba(255,255,255,0.04) 100%)`
+- Animation `hubSkeletonShimmer 1.6s ease-in-out infinite`
+  (background-position 200% → -200%)
+- Border-radius coordinado con elementos reales (avatar circular,
+  line pill, card 12px)
+
+Preparadas para futuro `setTimeout(showRealData, 0)` con
+skeleton intermedio. JS de S1-S5 NO los usa todavía — sprint S7
+o futuro S8 puede añadir.
+
+#### G. Mobile responsive @media (max-width: 768px)
+
+`.altor-hub .cnc-admin-layout`:
+- `grid-template-columns: 1fr` (single column)
+- gap: 12px
+- Sidebar arriba, detail panel debajo
+
+`.altor-hub .cnc-admin-list`:
+- `max-height: 40vh` (sidebar no domina viewport)
+- Scroll-y interno
+
+`.altor-hub .cnc-detail-msg`:
+- max-width: 84% (más espacio en pantallas chicas)
+
+`.altor-hub .cnc-admin-detail-head` y
+`.cnc-admin-detail-messages`:
+- Paddings reducidos (12-14px)
+
+#### H. Accesibilidad — prefers-reduced-motion
+
+Bloque `@media (prefers-reduced-motion: reduce)` desactiva:
+- Hover lift transitions (`.cnc-admin-chat-item`)
+- Bubble slide-in animation
+- Skeleton shimmer
+- Unread badge pulse
+- Empty state pulse
+
+Cero animation/transition — fallback a estados estáticos.
+
+### 78.3 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260514040000) | Cache nueva carga |
+| 2 | Login admin → ALTOR Hub (sec-concierge) | Layout fullscreen Telegram-style con visual premium nuevo |
+| 3 | Sidebar lista chats | Avatar 44px gradient dorado con shadow inset, hover lift sutil + bg dorado |
+| 4 | Click chat | Active state con gradient + accent left dorado + glow externo |
+| 5 | Scroll sidebar largo | Scrollbar dorado custom 6px (track invisible, thumb visible al hover) |
+| 6 | Detail panel mensajes | Bubbles asesor con esquina inferior-derecha cuadrada (4px), bubbles user/bot con esquina inferior-izquierda cuadrada |
+| 7 | Mensaje nuevo entra | Animation slide-in con overshoot natural (0.28s) |
+| 8 | Scroll mensajes | Header sticky permanece visible con glassmorphism (blur 12px saturate 140%) |
+| 9 | Sidebar vacía sin chats | Empty state con SVG chat bubble icon dorado opacity 0.4 |
+| 10 | Detail sin chat seleccionado | Empty state con checkmark verde + pulse animation 2.4s |
+| 11 | Unread badge en lista | Pulse animation 2s con onda expandiéndose |
+| 12 | Mobile <768px | Layout colapsa a 1 columna, sidebar max-height 40vh, bubbles max-width 84% |
+| 13 | DevTools → prefers-reduced-motion: reduce | Todas las animations/transitions desactivadas |
+| 14 | DevTools console | Cero errores nuevos. Funcionalidad S1-S5 intacta |
+
+### 78.4 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo `background-color`, `transform`, `box-shadow`, `opacity` específicas |
+| §17.4 | Renombrar IDs/clases | CERO. Solo selectores `.altor-hub .X` agregan especificidad sin tocar legacy |
+| §17.12 | `MutationObserver subtree:true` | Cero. Solo CSS append |
+| §35 | `pointermove` persistente | Cero pointermove (no hay JS modificado) |
+| §37 IAP | Implementar sin autorización | Cliente autorizó "continua" |
+| Big Bang | Refactor masivo de admin.css | Append al FINAL preserva todo el código legacy. Si rollback necesario, eliminar el bloque §78 |
+| §59 Plan | Saltarse fases | S6 estricto: solo CSS visual. Cero overflow a S7 (rediseño cliente widget) o S8+ (futuro) |
+| Specificity wars | Usar `!important` para vencer NOVA + admin.css | `.altor-hub` prefijo agrega 1 clase de specificity (0,2,0 vs 0,1,0) — gana sin escalada |
+
+### 78.5 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Backdrop-filter degrada perf en Safari iOS | 🟢 Baja | blur 12px es ligero. Sticky header ocupa <80px del viewport. Solo se renderiza si hay scroll | git revert |
+| 2 | Animation slide-in molesta en chats con muchos mensajes | 🟢 Baja | duration 0.28s + cubic-bezier suave. Solo aplica a entry (innerHTML insert), no re-render |
+| 3 | Pulse de unread distrae visualmente | 🟢 Baja | 2s ciclo lento + onda dorada tenue. prefers-reduced-motion desactiva |
+| 4 | SVG inline data: URI no carga en navegadores antiguos | 🟢 Baja | Fallback gracioso: empty state sin icono pero con texto. No bloquea funcionalidad |
+| 5 | Especificidad insuficiente vs admin-perf-kill.css cargado al final | 🟡 Media | admin.css se carga ANTES que admin-perf-kill.css. Si futuro override en perf-kill toca selectores `.altor-hub`, agregar específicamente. Por ahora cero conflicto detectado |
+| 6 | Mobile responsive rompe layout en tablets 768-900px | 🟢 Baja | Breakpoint 768px claro. Tablets >768px mantienen layout desktop. iPhones/Androids small <768px se adaptan |
+| 7 | Cliente NO ejecuta Ctrl+Shift+R | 🔴 Alta | Cache version bumped, SW invalidará automáticamente al recargar. Pero la primera vez requiere hard refresh |
+| 8 | Skeleton classes no se usan (dead CSS) | 🟢 Esperado | Documentado como "preparadas para futuro JS use". Costo: ~30 líneas CSS no críticas. S7+ las activará |
+
+### 78.6 Acciones operativas del super_admin (post-merge)
+
+NINGUNA NUEVA. Solo:
+1. **Ctrl+Shift+R** en admin para invalidar cache previa (carga
+   v20260514040000)
+2. Validar visualmente que el Hub admin (sec-concierge) muestra
+   los nuevos refinamientos
+
+### 78.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `css/admin.css` | Append final ~350 líneas §78 con prefijo `.altor-hub` (sidebar refinada + scrollbar custom + detail header sticky + bubbles iMessage + empty states con SVG + skeleton classes + unread pulse + mobile responsive + prefers-reduced-motion) |
+| `service-worker.js` | CACHE_VERSION → `v20260514040000` con changelog S6 |
+| `js/cache-manager.js` | APP_VERSION → `'20260514040000'` con changelog S6 |
+| `CLAUDE.md` | Esta sección §78 |
+
+**Total**: 4 archivos. Cero JS modificado. Cero schema. Cero deploy.
+
+### 78.8 Archivos INTACTOS (afirmación)
+
+- `js/concierge.js` (S2-S5) — sin tocar
+- `js/admin-concierge.js` (S1-S5) — sin tocar
+- `js/hub-store.js` (S1) — sin tocar
+- `js/admin-auth.js` (S5) — sin tocar
+- `firestore.rules` (R6) — sin tocar
+- `database.rules.json` (S3) — sin tocar
+- `functions/index.js` (S5 workload + R7b triggers) — sin tocar
+- `admin.html` — sin tocar (HTML del Hub `.altor-hub` ya existía
+  desde §26.3)
+- `css/concierge.css` (cliente público) — sin tocar (S7 lo cubre)
+- Resto de archivos del proyecto — ZERO
+
+### 78.9 Estado del Mega-Plan §59 ALTOR Hub tras §78
+
+| Sprint | Foco | Estado | Doc |
+|---|---|---|---|
+| ✅ S1 | Optimistic UI admin | Mergeado | §60.1 + §60.1.1 |
+| ✅ S2 | Optimistic UI cliente | Mergeado | §60.2 |
+| ✅ S3 | Typing indicators bidireccionales | Mergeado | §75 |
+| ✅ S4 | Read receipts ✓/✓✓ | Mergeado | §76 |
+| ✅ S5 | Presence avanzada online/away/offline | Mergeado | §77 |
+| ✅ **S6** | **Rediseño visual Hub admin** | **Mergeado** | **§78 (este)** |
+| ⏸ S7 | Rediseño visual cliente widget | Próximo | (planeado §59.5) |
+
+**6 de 7 sprints completados**. S7 es el último para cerrar el
+Mega-Plan §59 completo.
+
+### 78.10 Próximo sprint del Mega-Plan §59
+
+**S7 — Rediseño visual cliente widget** (~2 días):
+- Onboarding cinematográfico del FAB (pulse + glow al primer page
+  load)
+- CTA bubble rotativa con timing perfecto (refinar §57+)
+- Welcome message personalizado (logueado, en página de vehículo,
+  returning user)
+- Progressive profiling sin Lead Gate forzoso (gate light estilo
+  Intercom)
+- Quick replies inteligentes post-bot (2-3 follow-ups contextuales)
+- Vehicle cards rich con imagen + bullets + CTA
+- Carousel horizontal si hay 3+ vehículos
+- Skeleton loading mientras conecta a Firestore
+- Refinamiento de bubbles concierge.css con border-radius asimétrico
+  (mismo patrón S6 pero para cliente)
+
+S7 cerrará el Mega-Plan §59 al 100%. Estimado 2 días de trabajo
+focalizado.
+
+### 78.11 Doctrina aplicada
+
+§19 RCA estricto: NO había bug puntual. Sprint planificado en
+§59.5 S6.
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita del cliente ("continua").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Solo `transform/opacity/box-shadow/
+background-color` específicas. Backdrop-filter solo en sticky
+header (un elemento), no en grids/listas.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Cero clases legacy
+modificadas. Solo prefijo `.altor-hub` que ya existía agrega
+especificidad sin escalada.
+
+§17.12 anti-MutationObserver: cero MO. Solo CSS estático.
+
+§59 Plan Maestro: S6 estricto. Cero overflow a S7 (rediseño
+cliente widget). Cero modificación de S1-S5.
+
+**Cache bump**: `v20260514040000`.
+
+---

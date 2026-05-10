@@ -26,6 +26,36 @@ service cloud.firestore {
       return hasProfile();
     }
 
+    // ========== §61.R6 RBAC dinámico — hasPermission() ==========
+    // Helper canónico server-side equivalente a AP.hasPermission(permId)
+    // del frontend. Lee usuarios/{uid}.permissions[] denormalizado.
+    //
+    // Wildcard '*': si el array contiene '*', se permite cualquier
+    // permission (aplica a system_super_admin y custom roles que el
+    // super_admin haya marcado como wildcard).
+    //
+    // Defensive: si el doc no tiene 'permissions' o es null (user
+    // pre-migración R4), retorna false. Las callsites combinan
+    // hasPermission() con OR a los helpers legacy isSuperAdmin() /
+    // isEditorOrAbove() para preservar compatibilidad durante la
+    // transición. R8 cleanup eliminará los OR legacy cuando todos
+    // los users estén migrados.
+    function getUserPermissions() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.permissions;
+    }
+
+    function hasPermissionsField() {
+      return hasProfile()
+        && 'permissions' in get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data
+        && getUserPermissions() != null
+        && getUserPermissions() is list;
+    }
+
+    function hasPermission(perm) {
+      return hasPermissionsField()
+        && (perm in getUserPermissions() || '*' in getUserPermissions());
+    }
+
     // F4.5: Optimistic locking — validate _version increment
     // Allows: new docs with _version=1, updates with _version+1, or migration from null→1
     function validVersion() {
@@ -49,51 +79,80 @@ service cloud.firestore {
       // Public catalog — anyone can browse the inventory
       allow read: if true;
 
-      // Super Admin bypasses version check; Editor must set _version = 1
+      // §61.R6 — hasPermission('vehicles.create') con fallback legacy.
+      // Super Admin bypasses version check; Editor+ must set _version=1.
       allow create: if isSuperAdmin()
-        || (isEditorOrAbove() && validCreateVersion());
+        || (isEditorOrAbove() && validCreateVersion())
+        || (hasPermission('vehicles.create') && validCreateVersion());
 
-      // Super Admin bypasses version check; Editor must increment _version
+      // §61.R6 — hasPermission('vehicles.edit') con fallback legacy.
       allow update: if isSuperAdmin()
-        || (isEditorOrAbove() && validVersion());
+        || (isEditorOrAbove() && validVersion())
+        || (hasPermission('vehicles.edit') && validVersion());
 
-      // Only Super Admin can delete
-      allow delete: if isSuperAdmin();
+      // §61.R6 — hasPermission('vehicles.delete') con fallback legacy.
+      allow delete: if isSuperAdmin()
+        || hasPermission('vehicles.delete');
 
       // ========== VEHICLE AUDIT LOG (subcollection) ==========
       match /auditLog/{logId} {
         allow read: if isAuthenticated();
-        allow create: if isEditorOrAbove();
-        allow delete: if isSuperAdmin();
+        // §61.R6 — auditLog es write-on-edit; usa permission 'vehicles.edit'.
+        allow create: if isEditorOrAbove()
+          || hasPermission('vehicles.edit')
+          || hasPermission('vehicles.create');
+        allow delete: if isSuperAdmin()
+          || hasPermission('vehicles.delete');
       }
     }
 
     // ========== CONCESIONARIOS ==========
+    // §61.R6 — granularidad: dealers.read/create/edit/delete.
     match /concesionarios/{concesionarioId} {
-      allow read: if isAuthenticated();
-      allow create: if isSuperAdmin();
-      allow update: if isSuperAdmin();
-      allow delete: if isSuperAdmin();
+      allow read: if isAuthenticated()
+        || hasPermission('dealers.read');
+      allow create: if isSuperAdmin()
+        || hasPermission('dealers.create');
+      allow update: if isSuperAdmin()
+        || hasPermission('dealers.edit');
+      allow delete: if isSuperAdmin()
+        || hasPermission('dealers.delete');
     }
 
     // ========== MARCAS ==========
+    // §61.R6 — granularidad: brands.create/edit/delete.
     match /marcas/{marcaId} {
       allow read: if true;
 
-      // F4.5: Editor+ can create, update with version control
-      allow create: if isSuperAdmin() || isEditorOrAbove();
+      allow create: if isSuperAdmin()
+        || isEditorOrAbove()
+        || hasPermission('brands.create');
       allow update: if isSuperAdmin()
-        || (isEditorOrAbove() && validVersion());
+        || (isEditorOrAbove() && validVersion())
+        || (hasPermission('brands.edit') && validVersion());
 
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin()
+        || hasPermission('brands.delete');
     }
 
     // ========== USUARIOS ==========
+    // §61.R6 — granularidad: users.read/create/edit/delete.
+    // Importante: 'users.edit/create/delete' debe ser asignable solo
+    // a roles de gestión (system_super_admin tiene '*'). Custom roles
+    // que no incluyan estos permissions NO podrán gestionar usuarios.
     match /usuarios/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
+      allow read: if request.auth != null && (
+        request.auth.uid == userId
+        || isSuperAdmin()
+        || hasPermission('users.read')
+      );
 
-      // Super admin gestiona todo el doc del usuario (alta, baja, rol, bloqueado, etc.)
-      allow create, delete: if isSuperAdmin();
+      // Super admin (o role custom con users.create / users.delete)
+      // gestiona todo el doc del usuario (alta, baja, rol, bloqueado, etc.)
+      allow create: if isSuperAdmin()
+        || hasPermission('users.create');
+      allow delete: if isSuperAdmin()
+        || hasPermission('users.delete');
 
       // §23 FASE 7 + §43 ADR-043 — Self-service diff-keys.
       // El propio usuario (super_admin/editor/viewer) puede actualizar SOLO
@@ -132,7 +191,13 @@ service cloud.firestore {
       //
       // Patrón: diff().affectedKeys().hasOnly([whitelist]) garantiza
       // que la lista de campos modificados es subconjunto del array.
+      //
+      // §61.R6 — admin con users.edit (o users.create implícito) puede
+      // editar otros usuarios (rol, bloqueado, etc). Self-update con
+      // whitelist diff-keys sigue funcionando para cualquier user
+      // autenticado (independiente de su role).
       allow update: if isSuperAdmin()
+        || hasPermission('users.edit')
         || (request.auth.uid == userId &&
             request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly([
@@ -179,17 +244,22 @@ service cloud.firestore {
       // Self-service: el cliente lee su propio doc.
       // Admin (editor+): necesario para que admin-crm.js liste TODOS
       // los clientes en el CRM 360 con db.collection('clientes').get().
-      // Sin esta rama el list/get fallaba con permission-denied.
+      // §61.R6 — granularidad: crm.read.
       allow read:   if request.auth != null && (
-                        request.auth.uid == uid || isEditorOrAbove()
+                        request.auth.uid == uid
+                        || isEditorOrAbove()
+                        || hasPermission('crm.read')
                     );
       // Create only requires uid match — nombre/email may be empty for anon users
       allow create: if request.auth != null && request.auth.uid == uid
         && request.resource.data.uid == request.auth.uid;
-      // Update: el cliente edita su perfil; super_admin puede agregar
+      // Update: el cliente edita su perfil; admin con crm.edit puede agregar
       // notas/tags del CRM desde el panel admin (crmTags, crmNotes).
+      // §61.R6 — granularidad: crm.edit.
       allow update: if request.auth != null && (
-                        request.auth.uid == uid || isSuperAdmin()
+                        request.auth.uid == uid
+                        || isSuperAdmin()
+                        || hasPermission('crm.edit')
                     );
       allow delete: if false; // Users cannot self-delete (data retention)
 
@@ -207,45 +277,64 @@ service cloud.firestore {
     }
 
     // ========== RESENAS ==========
+    // §61.R6 — granularidad: reviews.create/edit/delete.
     match /resenas/{resenaId} {
       allow read: if true;
-      allow create: if isEditorOrAbove();
-      allow update: if isEditorOrAbove();
-      allow delete: if isSuperAdmin();
+      allow create: if isEditorOrAbove()
+        || hasPermission('reviews.create');
+      allow update: if isEditorOrAbove()
+        || hasPermission('reviews.edit');
+      allow delete: if isSuperAdmin()
+        || hasPermission('reviews.delete');
     }
 
     // ========== BANNERS ==========
+    // §61.R6 — granularidad: banners.create/edit/delete.
     match /banners/{bannerId} {
       allow read: if true;
 
-      // F4.5: Version-controlled banners
-      allow create: if isSuperAdmin() || isEditorOrAbove();
+      allow create: if isSuperAdmin()
+        || isEditorOrAbove()
+        || hasPermission('banners.create');
       allow update: if isSuperAdmin()
-        || (isEditorOrAbove() && validVersion());
+        || (isEditorOrAbove() && validVersion())
+        || (hasPermission('banners.edit') && validVersion());
 
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin()
+        || hasPermission('banners.delete');
     }
 
     // ========== LEADS ==========
+    // §61.R6 — granularidad: crm.delete (admin gestión de leads).
     match /leads/{leadId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated()
+        || hasPermission('crm.read');
       allow create: if true; // Public forms can create leads
-      allow update, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin()
+        || hasPermission('crm.edit');
+      allow delete: if isSuperAdmin()
+        || hasPermission('crm.delete');
     }
 
     // ========== CITAS (legacy — mantener para transición) ==========
+    // §61.R6 — granularidad: appointments.read/edit/delete.
     match /citas/{citaId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated()
+        || hasPermission('appointments.read');
       allow create: if true; // Public can request appointments
-      allow update: if isEditorOrAbove();
-      allow delete: if isSuperAdmin();
+      allow update: if isEditorOrAbove()
+        || hasPermission('appointments.edit');
+      allow delete: if isSuperAdmin()
+        || hasPermission('appointments.delete');
     }
 
     // ========== MENSAJES (MF2.5 — thread per vehicle/contact) ==========
+    // §61.R6 — granularidad: concierge.read/respond/delete.
     match /mensajes/{threadId} {
       // Admin can read all threads. Owner can read their own.
       allow read: if isAuthenticated() && (
         isEditorOrAbove() ||
+        hasPermission('concierge.read') ||
         (request.auth.uid == resource.data.userId)
       );
       // Anyone authenticated can create a thread (guests via anonymous auth)
@@ -257,14 +346,19 @@ service cloud.firestore {
       // Updates: admin always; user only on their own thread
       allow update: if isAuthenticated() && (
         isEditorOrAbove() ||
+        hasPermission('concierge.respond') ||
         (resource.data.userId == request.auth.uid && request.auth.uid != null)
       );
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin()
+        || hasPermission('concierge.delete');
     }
 
     // ========== SOLICITUDES (unified communications system) ==========
+    // §61.R6 — granularidad: crm.edit/delete + appointments.edit.
     match /solicitudes/{solicitudId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated()
+        || hasPermission('crm.read')
+        || hasPermission('appointments.read');
       // MF1.1 — Anti-impersonation: if userId is set, it must match the
       // requester's auth uid (allowing anonymous). Otherwise the doc is a
       // guest submission and userId stays null. clientCategory must match.
@@ -273,8 +367,11 @@ service cloud.firestore {
         || request.resource.data.userId == null
         || (request.auth != null && request.resource.data.userId == request.auth.uid)
       );
-      allow update: if isEditorOrAbove();
-      allow delete: if isSuperAdmin();
+      allow update: if isEditorOrAbove()
+        || hasPermission('crm.edit')
+        || hasPermission('appointments.edit');
+      allow delete: if isSuperAdmin()
+        || hasPermission('crm.delete');
     }
 
     // ========== LOGIN ATTEMPTS (cross-device account locking) ==========
@@ -285,32 +382,45 @@ service cloud.firestore {
     }
 
     // ========== AUDIT LOG ==========
+    // §61.R6 — granularidad: audit.read/delete.
     match /auditLog/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isEditorOrAbove();
+      allow read: if isAuthenticated()
+        || hasPermission('audit.read');
+      // Editor+ o cualquier user con permission de cualquier
+      // categoría puede crear entries (la creación de un audit es
+      // efecto secundario de operaciones administrativas reales).
+      allow create: if isEditorOrAbove()
+        || hasPermission('audit.read');
       // Super Admin can delete entries for activity management
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin()
+        || hasPermission('audit.delete');
       // F4.3: Audit log entries are IMMUTABLE — no updates allowed
     }
 
     // ========== AUTOMATION LOG (K.3 — workflow rule executions) ==========
+    // §61.R6 — granularidad: workflows.read/edit + audit.delete.
     match /automationLog/{logId} {
-      // Authenticated admins can read for auditing
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated()
+        || hasPermission('workflows.read')
+        || hasPermission('audit.read');
       // Anyone authenticated can create — automation runs in client
       allow create: if request.auth != null;
       // Immutable: rule executions are historical facts
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin()
+        || hasPermission('audit.delete');
     }
 
     // ========== APPOINTMENT REMINDERS (Bloque D.5 — recordatorios mostrados) ==========
     // Tracking de qué recordatorios ya se mostraron al admin para
-    // evitar dups cross-session. Solo editor+ pueden leer/escribir.
+    // evitar dups cross-session. §61.R6 — granularidad: appointments.*
     match /appointmentReminders/{reminderId} {
-      allow read: if isEditorOrAbove();
-      allow create: if isEditorOrAbove() &&
-                     request.resource.data.shownTo == request.auth.uid;
-      allow delete: if isSuperAdmin();
+      allow read: if isEditorOrAbove()
+        || hasPermission('appointments.read');
+      allow create: if (isEditorOrAbove()
+                        || hasPermission('appointments.edit'))
+                     && request.resource.data.shownTo == request.auth.uid;
+      allow delete: if isSuperAdmin()
+        || hasPermission('appointments.delete');
     }
 
     // ========== COEDITING (Bloque M.2 — co-edit locks blandos) ==========
@@ -346,19 +456,21 @@ service cloud.firestore {
     // ========== KNOWLEDGE BASE (Bloque U.5 — FAQs del bot Concierge) ==========
     // Admin (editor+) gestiona via UI. Cliente público lee para que el bot
     // del Concierge consulte respuestas.
+    // §61.R6 — granularidad: kb.create/edit/delete.
     match /knowledgeBase/{kbId} {
       allow read: if true; // público lee para el bot
-      allow create: if isEditorOrAbove();
-      // Editor+ puede modificar todo. Cualquier usuario autenticado puede
-      // tocar SOLO usageCount + lastUsedAt (analytics que el bot reporta).
-      // El doc singleton `knowledgeBase/_brain` (Cerebro Altorra AI) usa la
-      // misma rule: editor+ puede leer/escribir sus campos identidad,
-      // contexto, instrucciones, reglas_seguridad, llmProvider, etc.
-      allow update: if isEditorOrAbove() ||
-        (request.auth != null
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['usageCount', 'lastUsedAt']));
-      allow delete: if isSuperAdmin();
+      allow create: if isEditorOrAbove()
+        || hasPermission('kb.create');
+      // Editor+ (o roles con kb.edit) modifican todo. Cualquier user
+      // autenticado puede tocar SOLO usageCount + lastUsedAt (analytics
+      // que el bot reporta — no requiere kb.edit explícito).
+      allow update: if isEditorOrAbove()
+        || hasPermission('kb.edit')
+        || (request.auth != null
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['usageCount', 'lastUsedAt']));
+      allow delete: if isSuperAdmin()
+        || hasPermission('kb.delete');
     }
 
     // FASE 3 — Rate limit per session para el LLM (chatLLM Cloud Function).
@@ -377,21 +489,29 @@ service cloud.firestore {
     // - create: cualquier sesión autenticada (incluye guests anónimos)
     // - read/update: editor+ (revisar + marcar como vista/promovida)
     // - delete: super_admin
+    // §61.R6 — granularidad: unmatched.read/promote/delete.
     match /unmatchedQueries/{queryId} {
-      allow read, update: if isEditorOrAbove();
+      allow read: if isEditorOrAbove()
+        || hasPermission('unmatched.read');
+      allow update: if isEditorOrAbove()
+        || hasPermission('unmatched.promote');
       allow create: if request.auth != null;
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin()
+        || hasPermission('unmatched.delete');
     }
 
     // ========== EVENT BUS (I.1 / I.2 — admin Activity Feed) ==========
+    // §61.R6 — granularidad: audit.read/delete.
     match /events/{eventId} {
       // Authenticated users can read (Activity Feed shows them)
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated()
+        || hasPermission('audit.read');
       // Anyone authenticated can create — events are produced by both
       // admin and registered clients. The bySource field tracks origin.
       allow create: if request.auth != null;
       // Immutable like auditLog — no updates allowed
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin()
+        || hasPermission('audit.delete');
     }
 
     // ========== CONCIERGE CHATS (Bloque U — chat unificado bot/live) ==========
@@ -400,8 +520,10 @@ service cloud.firestore {
     // y responden todos. La regla de anti-impersonation requiere que el
     // userId del doc matchee el auth.uid si está seteado.
     match /conciergeChats/{sessionId} {
-      allow read: if isEditorOrAbove() ||
-        (request.auth != null && (
+      // §61.R6 — granularidad: concierge.read.
+      allow read: if isEditorOrAbove()
+        || hasPermission('concierge.read')
+        || (request.auth != null && (
           resource.data.userId == request.auth.uid ||
           resource.data.userId == null
         ));
@@ -413,16 +535,22 @@ service cloud.firestore {
       // §23 FASE 3 — Locks (Claiming).
       // Update permitido si:
       //   1. Es super_admin (override total: liberación de lock, reasignación)
-      //   2. El claim no existe (claimedBy == null) → cualquier editor+ puede tomar
+      //   2. El claim no existe (claimedBy == null) → admin con concierge.claim/edit puede tomar
       //   3. El que actualiza ES el claimer original (claimedBy == auth.uid)
       //   4. El cliente dueño actualiza su propio chat (campos limitados via diff
       //      keys — pero permisivo aquí, la subcolección messages ya tiene su
       //      propio guard de status='closed')
       //
-      // Esto previene que un asesor B pise el lock de A: si A claimed el chat,
-      // B's update fallará con permission-denied a menos que sea super_admin.
+      // §61.R6 — granularidad: concierge.claim/edit/transfer/close.
       allow update: if isSuperAdmin()
         || (isEditorOrAbove() && (
+            resource.data.claimedBy == null
+            || resource.data.claimedBy == request.auth.uid
+        ))
+        || ((hasPermission('concierge.claim')
+             || hasPermission('concierge.transfer')
+             || hasPermission('concierge.close')
+             || hasPermission('concierge.reopen')) && (
             resource.data.claimedBy == null
             || resource.data.claimedBy == request.auth.uid
         ))
@@ -430,11 +558,14 @@ service cloud.firestore {
             resource.data.userId == request.auth.uid
             || resource.data.userId == null
         ));
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin()
+        || hasPermission('concierge.delete');
 
       // Subcolección de mensajes — cada turno del bot/asesor/cliente
       match /messages/{msgId} {
+        // §61.R6 — granularidad: concierge.read.
         allow read: if isEditorOrAbove() ||
+          hasPermission('concierge.read') ||
           (request.auth != null && (
             get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.userId == request.auth.uid ||
             get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.userId == null
@@ -460,77 +591,101 @@ service cloud.firestore {
           && (
             request.resource.data.from in ['user', 'bot']
             // §23 FASE 3 — Solo el CLAIMER (o super_admin override) puede
-            // escribir mensajes 'asesor'. Esto previene colisión donde
-            // dos asesores responden al mismo cliente.
+            // escribir mensajes 'asesor'. §61.R6 agrega path con permission
+            // 'concierge.respond'.
             //
             // Lógica:
             //   a) Si el chat NO tiene claim (claimedBy null) → cualquier
-            //      editor+ puede escribir (compatibilidad con flujo viejo
-            //      pre-claiming + casos donde el asesor escribe ANTES de
-            //      claim explícito; el claim se asigna server-side
-            //      automáticamente al primer mensaje del asesor)
+            //      editor+ o user con concierge.respond puede escribir
             //   b) Si tiene claim → solo claimedBy == auth.uid
             //   c) super_admin siempre puede (override de auditoría)
             || (request.resource.data.from == 'asesor' && (
                 isSuperAdmin()
-                || (isEditorOrAbove() && (
+                || ((isEditorOrAbove() || hasPermission('concierge.respond')) && (
                     !('claimedBy' in get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data)
                     || get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.claimedBy == null
                     || get(/databases/$(database)/documents/conciergeChats/$(sessionId)).data.claimedBy == request.auth.uid
                 ))
             ))
-            || (request.resource.data.from == 'system' && isEditorOrAbove())
+            // Mensajes 'system' (closeChat/reopenChat/asesor_joined/etc):
+            // editor+ o user con concierge.respond/close/reopen.
+            || (request.resource.data.from == 'system' && (
+                isEditorOrAbove()
+                || hasPermission('concierge.respond')
+                || hasPermission('concierge.close')
+                || hasPermission('concierge.reopen')
+            ))
           );
         // Mensajes son inmutables (historial limpio)
-        allow delete: if isSuperAdmin();
+        allow delete: if isSuperAdmin()
+          || hasPermission('concierge.delete');
       }
     }
 
     // ========== CONFIG ==========
+    // §61.R6 — granularidad: settings.theme/seo/backup + calendar.config.
     match /config/{docId} {
       allow read: if true;
       // bookedSlots: public can update (atomic slot booking from public forms)
       // counters: editor+ can update
-      // everything else: super_admin only
+      // calendarConfig: requires calendar.config (settings de slots/turnos)
+      // followups, messageTemplates: requires templates.edit
+      // everything else: super_admin / settings.* permissions
       allow write: if isSuperAdmin()
         || (isEditorOrAbove() && docId in ['counters', 'bookedSlots'])
-        || (docId == 'bookedSlots');
+        || (docId == 'bookedSlots')
+        || (docId == 'counters' && hasPermission('settings.backup'))
+        || (docId == 'calendarConfig' && hasPermission('calendar.config'))
+        || (docId == 'followups' && hasPermission('templates.edit'))
+        || (docId == 'messageTemplates' && hasPermission('templates.edit'))
+        || hasPermission('settings.theme')
+        || hasPermission('settings.seo')
+        || hasPermission('settings.backup');
     }
 
     // ========== DRAFTS ACTIVOS (admin collaboration) ==========
+    // §61.R6 — granularidad: vehicles.edit (drafts son co-edit de inventario).
     match /drafts_activos/{userId} {
-      allow read: if isEditorOrAbove();
-      allow write: if isEditorOrAbove() && request.auth.uid == userId;
-      allow delete: if isEditorOrAbove();
+      allow read: if isEditorOrAbove()
+        || hasPermission('vehicles.edit');
+      allow write: if (isEditorOrAbove() || hasPermission('vehicles.edit'))
+        && request.auth.uid == userId;
+      allow delete: if isEditorOrAbove()
+        || hasPermission('vehicles.edit');
     }
 
     // ========== SYSTEM (cache invalidation) ==========
+    // §61.R6 — cache invalidation requiere settings.theme/seo/backup
+    // (cualquier admin que modifique algo dispara invalidación).
     match /system/{docId} {
       allow read: if true;
-      allow write: if isEditorOrAbove() || !exists(/databases/$(database)/documents/system/$(docId));
+      allow write: if isEditorOrAbove()
+        || hasPermission('settings.theme')
+        || hasPermission('settings.seo')
+        || hasPermission('settings.backup')
+        || !exists(/databases/$(database)/documents/system/$(docId));
     }
 
     // ========== §61.R1 RBAC — PERMISSIONS CATALOG (read-only) ==========
     // Catálogo canónico de permissions atómicas. Sembrado por Cloud
-    // Function seedSystemRoles. Lectura para cualquier auth admin
-    // (frontend lee para popular UI de selector de permisos).
-    // Escritura SOLO por Cloud Function (Admin SDK bypassa rules).
+    // Function seedSystemRoles. §61.R6 — granularidad: roles.read.
     match /permissions/{permId} {
-      allow read: if isEditorOrAbove();
+      allow read: if isEditorOrAbove()
+        || hasPermission('roles.read');
       allow write: if false; // Server-only via Cloud Function
     }
 
     // ========== §61.R1 RBAC — ROLES (system + custom) ==========
-    // 3 system roles inmutables (system_super_admin, system_editor,
-    // system_viewer) + custom roles creados por super_admin (R2 ship).
-    // Lectura para cualquier auth admin (UI dropdown de asignación).
-    // Escritura solo super_admin. System roles tienen flag isSystem
-    // que el frontend respeta como guard adicional (R2).
+    // §61.R6 — granularidad: roles.read/create/edit/delete.
     match /roles/{roleId} {
-      allow read: if isEditorOrAbove();
-      allow create: if isSuperAdmin();
-      allow update: if isSuperAdmin();
-      allow delete: if isSuperAdmin();
+      allow read: if isEditorOrAbove()
+        || hasPermission('roles.read');
+      allow create: if isSuperAdmin()
+        || hasPermission('roles.create');
+      allow update: if isSuperAdmin()
+        || hasPermission('roles.edit');
+      allow delete: if isSuperAdmin()
+        || hasPermission('roles.delete');
     }
 
     // Default: deny everything else

@@ -98,6 +98,7 @@
 
         // Configuración
         users:          { label: 'Usuarios',         group: 'configuracion', icon: 'users' },
+        roles:          { label: 'Roles',            group: 'configuracion', icon: 'shield-check' },
         lists:          { label: 'Atributos',        group: 'configuracion', icon: 'list-tree' },
         workflows:      { label: 'Workflows',        group: 'configuracion', icon: 'zap' },
         audit:          { label: 'Auditoría',        group: 'configuracion', icon: 'scroll-text' },

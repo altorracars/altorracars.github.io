@@ -61,6 +61,8 @@
             sections: [
                 // Usuarios SOLO visible para super_admin (canManageUsers)
                 { id: 'users',     label: 'Usuarios',  icon: 'users',       permission: 'canManageUsers' },
+                // §61.R2 — Roles también solo super_admin (rules backend lo enforce, frontend lo respeta para UX)
+                { id: 'roles',     label: 'Roles',     icon: 'shield-check', permission: 'canManageUsers' },
                 { id: 'lists',     label: 'Atributos', icon: 'list-tree' }, // todos
                 { id: 'workflows', label: 'Workflows', icon: 'zap' },        // todos
                 { id: 'audit',     label: 'Auditoría', icon: 'scroll-text' },// todos (canViewActivity = true)

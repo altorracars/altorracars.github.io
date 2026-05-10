@@ -1177,7 +1177,66 @@
         _workloadUnsub = window.db.doc('system/workload').onSnapshot(function (doc) {
             _workloadCache = doc.exists ? doc.data() : null;
             if (session.mode === 'queue') renderQueueState();
+            // §77 Sprint S5 — actualizar status del equipo en el header
+            // del Concierge cada vez que cambia workload (solo si el panel
+            // está abierto). Patrón WhatsApp/Messenger: cliente sabe si
+            // hay asesores disponibles antes de escalar.
+            try { updateAvailabilityStatus(); } catch (e) {}
         }, function () {});
+    }
+
+    /**
+     * §77 Sprint S5 — Render del status del equipo en cncStatus header.
+     * Lee `_workloadCache` (Firestore singleton system/workload, ya cargado
+     * por ensureWorkloadListener). Cuatro estados visuales:
+     *   - asesoresAvailable >= 1 → 🟢 "Asesores disponibles · respondemos al instante"
+     *   - asesoresOnline >= 1 (saturados) → 🟢 "Asesores online · respondemos pronto"
+     *   - asesoresAway >= 1 (todos lejos del teclado) → 🟡 "Te respondemos en breve"
+     *   - 0 → ⚫ "Fuera de horario · te contactamos cuando volvamos"
+     *
+     * Si la sesión está en mode='live' o 'wa_handed_over', preservamos
+     * el status de "asesor en vivo" sin sobrescribir.
+     *
+     * Cliente NO lee /presence directamente (RTDB) — eso expondría
+     * datos sensibles (email, IP, deviceId). En su lugar lee Firestore
+     * `system/workload` que solo tiene contadores agregados.
+     */
+    function updateAvailabilityStatus() {
+        var statusEl = document.getElementById('cncStatus');
+        if (!statusEl) return;
+        // Preservar mensajes ya seteados por flows específicos
+        if (session.mode === 'live' || session.mode === 'wa_handed_over') return;
+        // Si hay asesor activo, su nombre tiene prioridad (applyAsesorHeader)
+        if (session.activeAsesor) return;
+
+        var w = _workloadCache || {};
+        var available = (w.asesoresAvailable || 0) > 0;
+        var online = (w.asesoresOnline || 0) > 0;
+        var away = (w.asesoresAway || 0) > 0;
+
+        var label, dotClass;
+        if (available) {
+            label = 'Asesores disponibles · respondemos al instante';
+            dotClass = 'cnc-status-dot--online';
+        } else if (online) {
+            // Asesores online pero saturados (todos con 3+ chats)
+            label = 'Asesores online · respondemos pronto';
+            dotClass = 'cnc-status-dot--online';
+        } else if (away) {
+            label = 'Te respondemos en breve';
+            dotClass = 'cnc-status-dot--away';
+        } else {
+            label = 'Fuera de horario · te contactamos pronto';
+            dotClass = 'cnc-status-dot--offline';
+        }
+        // §17.4 — el header del Concierge usa cncStatus textContent.
+        // Para el dot indicator, usamos un span con clase. Re-render
+        // idempotente: solo update si cambió.
+        var html = '<span class="cnc-status-dot ' + dotClass + '" aria-hidden="true"></span>' +
+                   '<span class="cnc-status-label">' + escapeHtml(label) + '</span>';
+        if (statusEl.innerHTML !== html) {
+            statusEl.innerHTML = html;
+        }
     }
     function renderQueueState() {
         var msgsBox = document.getElementById('cncMessages');
@@ -3370,6 +3429,13 @@
         // panel + setInterval cada 10s mientras está abierto (max 6
         // writes/min, throttle 5s deduplica los redundantes).
         try { markUserRead(); startReadReceiptInterval(); } catch (e) {}
+        // §77 Sprint S5 — arrancar listener system/workload + render status
+        // del equipo en header. Cliente sabe si hay asesores disponibles
+        // antes de escalar (info útil para tomar la decisión).
+        try {
+            ensureWorkloadListener();
+            updateAvailabilityStatus();
+        } catch (e) {}
         // Focus input
         setTimeout(function () {
             var input = document.getElementById('cncInput');

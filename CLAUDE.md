@@ -31603,3 +31603,194 @@ previa (carga v20260513150000).
 **Cache bump**: `v20260513150000`.
 
 ---
+
+## 73.2 ADR-073.2 — Auto-hide inteligente de botones legacy en sec-roles (2026-05-10)
+
+> Cliente reportó tras §73.1 con captura: ejecutó "Limpiar legacy" y
+> vio el banner "Sistema limpio. No quedan docs huérfanos de
+> `system_editor` ni `system_viewer` en Firestore, ni usuarios con
+> esos roleId." Tras esto pregunta: "Hecho lo propio aun son
+> necesarios esos 3 botones de legacy".
+>
+> Respuesta: NO en el flujo normal post-cleanup. Pero queremos
+> mantenerlos accesibles para casos edge (alguien crea manualmente
+> un doc `system_editor` desde Firestore Console, o llega un user
+> nuevo con rol legacy sin `roleId`). Solución: **auto-hide
+> inteligente** — los botones de cleanup/migrate se ocultan cuando
+> el sistema está limpio y aparecen automáticamente solo si el
+> detector encuentra algo que requiera acción.
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §17.12 (anti-MutationObserver), §35, §37 (IAP), §61 Plan Maestro.
+
+### 73.2.1 Estrategia: auto-hide condicional
+
+3 botones del header de sec-roles, comportamiento ajustado:
+
+| Botón | Visibilidad | Razón |
+|---|---|---|
+| **Limpiar legacy** | Solo si `hasLegacyDocs OR hasLegacyUsersWithSystemRoleId` | Acción de cleanup. Aparece automáticamente si detecta huérfanos |
+| **Migrar legacy** | Solo si `hasLegacyUsersWithoutRoleId` | Migración R4 para users con `rol` legacy sin `roleId`. Aparece automáticamente si detecta candidatos |
+| **Resembrar sistema** | SIEMPRE visible | Utility de mantenimiento legítima para futuras actualizaciones del catálogo canónico (cuando se agreguen permissions nuevos al catálogo en versiones futuras) |
+| **Nuevo rol** | SIEMPRE visible | CTA principal |
+
+### 73.2.2 Implementación
+
+**1. Detector en `startListener` snap callback** (`js/admin-roles.js`):
+
+```js
+.onSnapshot(function (snap) {
+    _state.roles = [];
+    _state.ceoExists = false;
+    _state.hasLegacyDocs = false;  // §73.2 NUEVO
+    snap.forEach(function (doc) {
+        if (doc.id === 'system_super_admin') {
+            _state.ceoExists = true;
+            return;
+        }
+        if (doc.id === 'system_editor' || doc.id === 'system_viewer') {
+            _state.hasLegacyDocs = true;  // §73.2 NUEVO
+            return;
+        }
+        _state.roles.push(...);
+    });
+})
+```
+
+**2. Detector en `refreshUserCounts`**:
+
+```js
+function refreshUserCounts() {
+    return window.db.collection('usuarios').get().then(function (snap) {
+        var counts = {};
+        _state.hasLegacyUsersWithSystemRoleId = false;  // §73.2 NUEVO
+        _state.hasLegacyUsersWithoutRoleId = false;     // §73.2 NUEVO
+        snap.forEach(function (doc) {
+            var data = doc.data() || {};
+            var roleId = data.roleId;
+            if (roleId === 'system_editor' || roleId === 'system_viewer') {
+                _state.hasLegacyUsersWithSystemRoleId = true;
+            }
+            if (!roleId && (data.rol === 'editor' || data.rol === 'viewer')) {
+                _state.hasLegacyUsersWithoutRoleId = true;
+            }
+            // ... resto sin cambios ...
+        });
+    });
+}
+```
+
+**3. `renderRolesHeader` con visibilidad condicional**:
+
+```js
+function renderRolesHeader() {
+    var showCleanupLegacy = !!(_state.hasLegacyDocs || _state.hasLegacyUsersWithSystemRoleId);
+    var showMigrateLegacy = !!_state.hasLegacyUsersWithoutRoleId;
+
+    var html = '<div class="roles-header">' +
+        '<div class="roles-header-actions">';
+
+    if (showCleanupLegacy) {
+        html += '<button data-action="cleanup-legacy">...Limpiar legacy</button>';
+    }
+    if (showMigrateLegacy) {
+        html += '<button data-action="migrate-legacy">...Migrar legacy</button>';
+    }
+    // Resembrar + Nuevo rol siempre visibles
+    html += '<button data-action="seed-system-roles">...Resembrar sistema</button>' +
+        '<button data-action="create-role">...Nuevo rol</button>' +
+        '</div></div>';
+    return html;
+}
+```
+
+**4. Re-render in-place tras detección async** (`refreshHeaderIfLegacyChanged`):
+
+```js
+var _lastRenderedHeaderState = { cleanup: null, migrate: null };
+function refreshHeaderIfLegacyChanged() {
+    var currentCleanup = !!(_state.hasLegacyDocs || _state.hasLegacyUsersWithSystemRoleId);
+    var currentMigrate = !!_state.hasLegacyUsersWithoutRoleId;
+    if (_lastRenderedHeaderState.cleanup === currentCleanup
+        && _lastRenderedHeaderState.migrate === currentMigrate) {
+        return; // sin cambios, no re-render
+    }
+    _lastRenderedHeaderState.cleanup = currentCleanup;
+    _lastRenderedHeaderState.migrate = currentMigrate;
+    var oldHeader = document.querySelector('#rolesContainer .roles-header');
+    if (!oldHeader) return;
+    oldHeader.outerHTML = renderRolesHeader();
+    refreshIcons(document.querySelector('#rolesContainer .roles-header'));
+}
+```
+
+Memoiza últimos valores para evitar re-render innecesario en cada
+`refreshUserCounts()` (que se ejecuta varias veces por sesión).
+
+### 73.2.3 Flujo end-to-end (caso del cliente)
+
+1. Cliente carga `admin.html#/roles`
+2. `startListener` arranca, snap llega → `_state.hasLegacyDocs = false`
+   (no hay system_editor/viewer porque ya los borró en §73)
+3. `render()` invoca `renderRolesHeader()` con flags iniciales
+   → "Limpiar legacy" oculto, "Migrar legacy" oculto
+4. `refreshUserCounts()` corre en background → detecta que NO hay
+   users huérfanos (todos los users tienen roleId limpio)
+   → `_state.hasLegacyUsersWithSystemRoleId = false`,
+   `_state.hasLegacyUsersWithoutRoleId = false`
+5. `refreshHeaderIfLegacyChanged()` detecta que no hay cambios
+   (ambos flags ya eran false desde el primer render) → no-op
+
+Resultado final: el header solo muestra **Resembrar sistema** +
+**Nuevo rol**. Los 2 botones legacy desaparecen.
+
+### 73.2.4 Caso edge: alguien crea doc legacy manual
+
+Si en el futuro alguien crea un doc `roles/system_editor` desde
+Firestore Console (o un user con `roleId='system_editor'`):
+- El listener `startListener` detecta el doc nuevo → `_state.hasLegacyDocs = true`
+- `render()` ejecuta inmediatamente con el flag actualizado
+- "Limpiar legacy" reaparece sin necesidad de refresh
+
+### 73.2.5 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.4 | Cambiar IDs/clases | Cero. Solo lógica condicional dentro de `renderRolesHeader()` |
+| §17.12 | MutationObserver | Cero. Re-render in-place via `outerHTML` reemplazo del header |
+| §35 | pointermove | Cero |
+| §17 perf | Re-render completo del grid en cada refreshUserCounts | Memoización con `_lastRenderedHeaderState` evita re-render si flags no cambiaron. Solo re-render del header (no del grid) cuando cambia |
+| §37 IAP | Implementar sin autorización | Cliente preguntó "aun son necesarios esos 3 botones de legacy" — pregunta retórica que autoriza ajuste pragmático |
+| Big Bang | Eliminar botones por completo | Auto-hide preserva funcionalidad para casos edge sin agregar ruido visual |
+| §61 Plan | Saltarse fases | R8.2 hotfix UX puntual del §73. Cero overflow a R8 grande (refactor 164 callsites) |
+
+### 73.2.6 Tests E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260513160000) | Cache nueva carga |
+| 2 | Cliente con sistema limpio (post-§73 cleanup) entra a sec-roles | Header muestra solo **Resembrar sistema** + **Nuevo rol**. NO aparecen Limpiar legacy ni Migrar legacy |
+| 3 | DevTools console | Log `[AdminRoles] §73.2 snapshot — visibles: 0 \| CEO existe: true \| docs legacy: false` + `[AdminRoles] §73.2 userCounts — totalRoles: 1 \| legacy (system_editor/viewer roleId): false \| legacy (sin roleId): false` |
+| 4 | Crear manualmente doc `roles/system_editor` desde Firestore Console | snap llega → `_state.hasLegacyDocs = true` → render() → header re-render con "Limpiar legacy" visible |
+| 5 | Eliminar el doc manualmente desde Firestore Console | snap llega → flag false → header re-render sin "Limpiar legacy" |
+| 6 | Crear user con campo `rol: 'editor'` y `roleId: null` | refreshUserCounts detecta → `_state.hasLegacyUsersWithoutRoleId = true` → refreshHeaderIfLegacyChanged actualiza → "Migrar legacy" reaparece |
+| 7 | Click "Resembrar sistema" | Modal y flujo igual que antes (sin cambios funcionales) |
+| 8 | Click "Nuevo rol" | Modal de crear role abre normal |
+
+### 73.2.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-roles.js` | Track `_state.hasLegacyDocs` en snap callback + track `_state.hasLegacyUsersWithSystemRoleId` y `_state.hasLegacyUsersWithoutRoleId` en refreshUserCounts + renderRolesHeader con visibilidad condicional + refreshHeaderIfLegacyChanged() in-place re-render con memoización |
+| `service-worker.js` | CACHE_VERSION → `v20260513160000` |
+| `js/cache-manager.js` | APP_VERSION → `'20260513160000'` |
+| `CLAUDE.md` | Esta sección §73.2 |
+
+### 73.2.8 Acciones operativas
+
+NINGUNA NUEVA. Solo Ctrl+Shift+R en el admin para invalidar cache
+previa (carga v20260513160000).
+
+**Cache bump**: `v20260513160000`.
+
+---

@@ -792,6 +792,13 @@
        ═══════════════════════════════════════════════════════════ */
     function addMessage(from, text, opts) {
         opts = opts || {};
+        // §60.2 — Optimistic UI: mensajes del 'user' que SÍ se van a
+        // sincronizar a Firestore arrancan con _status:'pending' (icon ⏱).
+        // syncMessageToFirestore los marca a 'sent' al success o 'failed'
+        // al error. Mensajes 'user' que NO se sincronizan (chat doc aún
+        // no creado) y mensajes de bot/asesor/system no llevan _status
+        // visual (siempre 'synced' implícito para no mostrar icon).
+        var willSync = (from === 'user' && _chatDocCreated && window.db);
         var msg = {
             from: from,         // 'user' | 'bot' | 'asesor'
             text: text,
@@ -799,7 +806,9 @@
             cta: opts.cta || null,
             quickReplies: opts.quickReplies || null,
             vehicleCards: opts.vehicleCards || null,    // §26.2 vehicle cards inline
-            _synced: false
+            _synced: !willSync,                          // legacy field, mantenido para compat
+            _status: willSync ? 'pending' : null,        // §60.2 — pending|sent|failed (null = sin tracking)
+            _tempId: willSync ? ('tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)) : null
         };
         session.messages.push(msg);
         saveSession(session);
@@ -1038,6 +1047,16 @@
     function escalateToLive(reason) {
         var escalationReason = reason || 'manual';
         var nowIso = new Date().toISOString();
+
+        // §60.2 — Optimistic UI: el banner queue + mensaje empático
+        // aparecen INSTANT al setear session.mode='queue' + saveSession
+        // + addMessage. La transaction Firestore (ensureFirestoreChatDoc
+        // + set parent doc) corre en background dentro de waitForAuthThen.
+        // Si Firestore falla, addMessage('bot', '⚠️ No pude conectar...')
+        // se muestra al usuario con explicación clara.
+        console.log('[Concierge] §60.2 escalateToLive optimistic', {
+            sid: session.sessionId, reason: escalationReason
+        });
 
         session.mode = 'queue';
         session.queueEnteredAt = nowIso;
@@ -1546,18 +1565,79 @@
     }
     var _firestoreParentUnsub = null;
 
+    /**
+     * §60.2 — Retry de un mensaje 'user' que quedó en _status='failed'.
+     *
+     * Patrón WhatsApp/Telegram: error visible inline + acción
+     * recuperación. Click en "Reintentar" → quitamos el msg failed de
+     * session.messages y re-enviamos su texto via addMessage normal
+     * (que crea un msg fresh con _status='pending').
+     *
+     * Ventajas vs. solo reintentar el sync del msg viejo:
+     * - El nuevo msg tiene timestamp actual (más útil para el asesor).
+     * - Genera un tempId nuevo (no colisiona con el viejo si estaba en
+     *   _pending de algún store).
+     * - El UI se ordena cronológicamente con la última versión.
+     */
+    function retryFailedMessage(tempId) {
+        if (!tempId) return;
+        var idx = -1;
+        for (var i = 0; i < session.messages.length; i++) {
+            if (session.messages[i]._tempId === tempId &&
+                session.messages[i]._status === 'failed') {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) {
+            console.warn('[Concierge] §60.2 retry-msg: tempId no encontrado o ya no failed', tempId);
+            return;
+        }
+        var failedMsg = session.messages[idx];
+        var retryText = failedMsg.text;
+        console.log('[Concierge] §60.2 retry-msg', { tempId: tempId, text: retryText.slice(0, 40) });
+        // Remover el msg failed de la lista + re-render
+        session.messages.splice(idx, 1);
+        saveSession(session);
+        renderMessages();
+        // Re-enviar como mensaje fresco (el flow normal crea pending
+        // con tempId nuevo y dispara syncMessageToFirestore).
+        addMessage('user', retryText);
+    }
+
     function syncMessageToFirestore(msg) {
         if (!_chatDocCreated || !window.db) return;
         var ref = window.db.collection('conciergeChats').doc(session.sessionId)
             .collection('messages').doc();
+        // §60.2 — Optimistic UI confirm/rollback
+        if (msg._tempId) {
+            console.log('[Concierge] §60.2 syncMessage pending', { tempId: msg._tempId, from: msg.from });
+        }
         ref.set({
             from: msg.from,
             text: msg.text,
             timestamp: new Date(msg.timestamp).toISOString()
         }).then(function () {
             msg._synced = true;
+            // §60.2 — Marcar 'sent' SOLO si tenía status 'pending' (mensajes user con _chatDocCreated).
+            // Mensajes bot/asesor/system pasan por aquí también pero no tienen _status.
+            if (msg._status === 'pending') {
+                msg._status = 'sent';
+                msg.firestoreId = ref.id;
+                console.log('[Concierge] §60.2 syncMessage confirmed', { tempId: msg._tempId, firestoreId: ref.id });
+                renderMessages();
+            }
             saveSession(session);
-        }).catch(function () {});
+        }).catch(function (err) {
+            // §60.2 — Rollback: marcar 'failed' + mostrar botón Reintentar
+            if (msg._status === 'pending') {
+                msg._status = 'failed';
+                msg._error = (err && err.message) || 'unknown';
+                console.warn('[Concierge] §60.2 syncMessage failed', { tempId: msg._tempId, error: msg._error });
+                saveSession(session);
+                renderMessages();
+            }
+        });
         // Update parent doc lastMessage + counters
         var update = {
             lastMessage: msg.text.slice(0, 80),
@@ -1793,6 +1873,14 @@
             // o lógica del handler.
             var actionName = btn.getAttribute('data-action');
             console.log('[Concierge] §57.9 panel.click → data-action=' + actionName + ' target=' + (e.target.tagName || ''));
+            // §60.2 — Retry para mensajes failed (Optimistic UI cliente).
+            // El botón Reintentar está dentro de un bubble msg failed; trae
+            // su tempId para identificar el mensaje exacto a re-enviar.
+            if (actionName === 'retry-msg') {
+                var failedTempId = btn.getAttribute('data-temp-id');
+                if (failedTempId) retryFailedMessage(failedTempId);
+                return;
+            }
             handleAction(actionName);
         });
 
@@ -2181,6 +2269,16 @@
      * acciones (descargar + cerrar). El cliente decide cuándo cerrar.
      */
     function markSessionFinalized() {
+        // §60.2 — Optimistic UI: la pantalla "Chat finalizado"
+        // aparece INSTANT al setear session.closed=true + saveSession +
+        // applyClosedState. La escritura a Firestore
+        // (markChatClosedInFirestore) corre en background con
+        // .catch(silent) — si falla por red, el cliente igual ve la UI
+        // finalizada y al volver online el listener parent del admin
+        // sincroniza el cierre eventualmente.
+        console.log('[Concierge] §60.2 markSessionFinalized optimistic', {
+            sid: session.sessionId
+        });
         cancelChatListeners();
         markChatClosedInFirestore('client_finalized');
         session.closed = true;
@@ -2699,6 +2797,34 @@
             if (m.from === 'bot' && m.proactive) {
                 bubbleClass += ' cnc-proactive-bubble';
             }
+            // §60.2 — Estados visuales canónicos (WhatsApp pattern):
+            //   pending → ⏱ icon gris claro + opacity 0.7
+            //   sent    → ✓ gris (1 check)
+            //   read    → ✓✓ azul (#34B7F1)
+            //   failed  → border rojo + botón Reintentar
+            // Solo se aplica a mensajes 'user' que tuvieron willSync=true
+            // (chat doc creado al momento del addMessage).
+            var statusClass = '';
+            var statusIcon = '';
+            if (m.from === 'user' && m._status) {
+                if (m._status === 'pending') {
+                    statusClass = ' cnc-msg-pending';
+                    statusIcon = '<span class="cnc-msg-status" data-state="pending" aria-label="Enviando">⏱</span>';
+                } else if (m._status === 'sent') {
+                    statusClass = ' cnc-msg-sent';
+                    statusIcon = '<span class="cnc-msg-status" data-state="sent" aria-label="Enviado">✓</span>';
+                } else if (m._status === 'read') {
+                    statusClass = ' cnc-msg-sent';
+                    statusIcon = '<span class="cnc-msg-status" data-state="read" aria-label="Leído">✓✓</span>';
+                } else if (m._status === 'failed') {
+                    statusClass = ' cnc-msg-failed';
+                    statusIcon = '<button class="cnc-msg-retry" type="button"' +
+                        ' data-action="retry-msg"' +
+                        ' data-temp-id="' + escapeHtml(m._tempId || '') + '"' +
+                        ' aria-label="Reintentar envío">Reintentar</button>';
+                }
+            }
+            if (statusClass) bubbleClass += statusClass;
             var ctaHTML = '';
             if (m.cta && m.cta.action) {
                 ctaHTML = '<button class="cnc-bubble-cta" data-action="' + m.cta.action + '">' + escapeHtml(m.cta.label) + '</button>';
@@ -2726,7 +2852,8 @@
                     m.vehicleCards.map(renderVehicleCard).join('') +
                 '</div>';
             }
-            return '<div class="cnc-msg ' + bubbleClass + '">' + escapeHtml(m.text) + ctaHTML + quickRepliesHTML + vehicleCardsHTML + '</div>';
+            var tempIdAttr = m._tempId ? ' data-temp-id="' + escapeHtml(m._tempId) + '"' : '';
+            return '<div class="cnc-msg ' + bubbleClass + '"' + tempIdAttr + '>' + escapeHtml(m.text) + statusIcon + ctaHTML + quickRepliesHTML + vehicleCardsHTML + '</div>';
         }).join('');
         box.scrollTop = box.scrollHeight;
 

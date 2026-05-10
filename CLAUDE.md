@@ -27312,5 +27312,242 @@ Este plan es **independiente del Sprint S2** (cirugía Hub). Pueden ejecutarse e
 
 ---
 
+## 60.2 ADR-060.2 — Sprint S2 cirugía ALTOR Hub: Optimistic UI universal del cliente (2026-05-09)
+
+> Segundo sprint operativo del Mega-Plan §59 (cirugía técnica del
+> ALTOR Hub). Cierra el bucle iniciado por Sprint S1 (admin) — ahora
+> también el cliente público (`concierge.js`) usa Optimistic UI con
+> estados visuales canónicos WhatsApp + retry en mensajes failed.
+>
+> Reusa el mismo patrón industry-standard de Linear/Intercom/Drift
+> aplicado en §60.1: **UI nunca espera al server**. Mensajes del
+> usuario aparecen INSTANT y Firestore confirma/rechaza en background.
+>
+> Aplicado bajo doctrina §17 (perf), §17.12 (anti-MutationObserver),
+> §19 (RCA Mode), §35 (anti-patterns), §37 (IAP), §57.7-57.9
+> (lazy reset + listeners globales).
+
+### 60.2.1 Causa raíz
+
+**Asimetría histórica entre admin (broken) y cliente (semi-broken)**:
+
+Pre-§57: cliente ya tenía optimistic en `addMessage` (DOM update INSTANT
+local) pero NO tenía feedback visual del estado de sync. Mensaje
+aparecía + flag `_synced: false` → eventually `_synced: true` sin que
+el usuario lo viera. Si Firestore fallaba, el mensaje quedaba para
+siempre con `_synced: false` sin indicador.
+
+§60.1 cubrió el lado admin (7 botones del Hub). Faltaba paridad en el
+cliente: estado visual del envío + acción de recuperación si falla.
+
+### 60.2.2 Solución estructural — 5 cambios coordinados
+
+#### A. `addMessage` con `_status` semántico (línea 793)
+
+Reemplaza el flag legacy `_synced: bool` por un campo `_status`
+multi-valor que distingue:
+
+```js
+var willSync = (from === 'user' && _chatDocCreated && window.db);
+var msg = {
+    from, text, timestamp,
+    _synced: !willSync,                      // legacy preservado
+    _status: willSync ? 'pending' : null,    // §60.2 — null = sin tracking visual
+    _tempId: willSync ? 'tmp_<...>' : null   // matching para confirm/rollback
+};
+```
+
+**Lógica**:
+- Si el mensaje `from === 'user'` Y `_chatDocCreated === true` Y `window.db` → marcar `_status: 'pending'` + tempId
+- Sino (mensaje del bot, asesor, system, o pre-escalate) → `_status: null` (no se muestra icon)
+- `_synced` legacy se mantiene para retrocompat (lecturas viejas)
+
+#### B. `syncMessageToFirestore` confirma estado (línea 1549)
+
+`.then()` → si `_status === 'pending'`, actualizar a `'sent'` +
+guardar `firestoreId` + re-render.
+
+`.catch()` → si `_status === 'pending'`, actualizar a `'failed'` +
+guardar `_error` + re-render. Bubble pasa a `cnc-msg-failed` con
+border rojo + botón Reintentar inline.
+
+#### C. `renderMessages` distingue 4 estados visuales
+
+| `_status` | Visual | Trigger |
+|---|---|---|
+| `'pending'` | ⏱ icon gris claro + opacity 0.7 | addMessage local |
+| `'sent'` | ✓ gris (1 check) | syncMessageToFirestore success |
+| `'read'` | ✓✓ azul (#34B7F1 normal, #1d4ed8 sobre user-bubble dorada) | (S4 read receipts agregará trigger) |
+| `'failed'` | border rojo + botón Reintentar | syncMessageToFirestore catch |
+
+Solo aplica a `from === 'user'`. Mensajes bot/asesor/system se
+renderizan sin icon como antes.
+
+#### D. `retryFailedMessage(tempId)` — nueva función
+
+Click en `[data-action="retry-msg"]` → handler dispatch a
+`retryFailedMessage(tempId)`:
+
+1. Buscar el msg failed en `session.messages` por tempId
+2. Splice del array (remueve la entry failed) + `saveSession`
+3. Re-render
+4. Llamar `addMessage('user', retryText)` → crea msg fresh con
+   tempId nuevo + `_status: 'pending'`
+5. `syncMessageToFirestore` se ejecuta automático (chain del addMessage)
+
+Ventajas vs reusar el mismo objeto:
+- Timestamp actual (más útil para asesor)
+- TempId nuevo (no colisiona con stores externos)
+- UI ordena cronológicamente con la última versión
+
+#### E. Telemetría `§60.2` en escalateToLive + markSessionFinalized
+
+Ambas funciones ya eran semi-optimistic pre-S2 (UI cambia INSTANT,
+Firestore en background). Solo se agrega `console.log` de inicio
+para diagnóstico futuro.
+
+```
+[Concierge] §60.2 escalateToLive optimistic { sid, reason }
+[Concierge] §60.2 markSessionFinalized optimistic { sid }
+```
+
+### 60.2.3 Estados visuales (CSS)
+
+Nuevas clases en `css/concierge.css` (append final, ~110 líneas):
+
+- `.cnc-msg.cnc-msg-pending` — opacity 0.7
+- `.cnc-msg.cnc-msg-sent` — opacity 1.0
+- `.cnc-msg.cnc-msg-failed` — border rojo + animation `cncFailedShake`
+- `.cnc-msg-status[data-state]` — icon ⏱/✓/✓✓ con color por estado
+- `.cnc-user-bubble .cnc-msg-status[data-state]` — overrides para
+  contraste sobre fondo dorado del bubble del usuario
+- `.cnc-msg-retry` — botón rojo con hover/active
+- `@media (prefers-reduced-motion: reduce)` — desactiva animation
+
+Solo se animan `transform`, `opacity`, `color`, `background-color`
+(compositor-only, doctrina §17.2).
+
+### 60.2.4 Telemetría agregada
+
+```
+[Concierge] §60.2 syncMessage pending { tempId, from }
+[Concierge] §60.2 syncMessage confirmed { tempId, firestoreId }
+[Concierge] §60.2 syncMessage failed { tempId, error }
+[Concierge] §60.2 retry-msg { tempId, text }
+[Concierge] §60.2 retry-msg: tempId no encontrado o ya no failed
+[Concierge] §60.2 escalateToLive optimistic { sid, reason }
+[Concierge] §60.2 markSessionFinalized optimistic { sid }
+```
+
+### 60.2.5 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/concierge.js addMessage` | `_status: 'pending'` para mensajes user con _chatDocCreated | +9, -1 |
+| `js/concierge.js syncMessageToFirestore` | confirm/rollback de `_status` | +20, -3 |
+| `js/concierge.js retryFailedMessage` | NUEVA función para retry | +40 |
+| `js/concierge.js renderMessages` | distinguir `_status` visual + statusIcon | +35, -4 |
+| `js/concierge.js panel.click` | branch `[data-action="retry-msg"]` antes de handleAction | +8, -0 |
+| `js/concierge.js escalateToLive` | telemetría §60.2 | +9 |
+| `js/concierge.js markSessionFinalized` | telemetría §60.2 | +9 |
+| `css/concierge.css` (append §60.2) | estados canónicos + retry + shake + reduced-motion | +110, -0 |
+| `service-worker.js` | CACHE_VERSION → `v20260512030000` | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260512030000'` | +1, -1 |
+| `CLAUDE.md` | Esta sección §60.2 | +180 |
+
+**Total**: ~422 agregadas, ~10 eliminadas.
+
+### 60.2.6 Archivos INTACTOS (afirmación explícita)
+
+- `js/admin-concierge.js` — ZERO cambios. Sprint S1+§60.1.1 cubrió admin.
+- `js/hub-store.js` — sin tocar (es solo del admin).
+- `firestore.rules` — sin cambios de schema. Los campos `_status`/`_tempId`/`_error` son local-only, no se persisten en server.
+- `database.rules.json` — sin tocar (typing indicators son S3).
+- `functions/index.js` — ZERO cambios.
+- `css/admin.css` — sin tocar.
+
+### 60.2.7 Tests E2E (post-push, validación cliente)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente escribe + envía PRE-escalate (chat doc no creado) | Bubble aparece INSTANT sin status icon (mensaje local-only, no se sincroniza) |
+| 2 | Cliente escribe POST-escalate (chat doc creado) | Bubble INSTANT con icon ⏱ pending |
+| 3 | Esperar 200-500ms tras envío | Icon ⏱ → ✓ sent (transición sutil) |
+| 4 | Asesor abre el chat | (S4 ship): ✓ → ✓✓ azul. Por ahora, sin trigger; el icon se queda en ✓ |
+| 5 | Cliente click "Hablar con asesor" | Banner queue INSTANT, sin loading spinner |
+| 6 | Cliente click "Finalizar conversación" → confirm | Pantalla "Chat finalizado" INSTANT |
+| 7 | Network drop mid-send (DevTools throttle offline) | Bubble pasa a `failed` con border rojo + botón Reintentar + shake |
+| 8 | Click "Reintentar" en mensaje failed | Mensaje se elimina y se re-envía como nuevo (timestamp actualizado, tempId nuevo) |
+| 9 | DevTools console al enviar | `[Concierge] §60.2 syncMessage pending` + `confirmed` |
+| 10 | DevTools console al escalar | `[Concierge] §60.2 escalateToLive optimistic` |
+| 11 | DevTools console al finalizar | `[Concierge] §60.2 markSessionFinalized optimistic` |
+| 12 | F5 recarga con mensajes pending en localStorage | `_status` se persiste en localStorage; al re-render mostrará el estado guardado. Si quedó pending sin firestoreId, queda visualmente como pending (puede re-sync futuro o user retry manual) |
+| 13 | `prefers-reduced-motion: reduce` | Animaciones `cncFailedShake` desactivadas, transitions a 0 |
+| 14 | Mobile: enviar 5 mensajes rápido | Todos aparecen INSTANT con ⏱ → todos confirman a ✓ sent |
+
+### 60.2.8 Anti-patterns evitados (cruce con doctrinas)
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 | `transition: all` | Solo `transition: opacity, transform, color, background-color` (compositor-only) |
+| §17.12 | `MutationObserver subtree:true` | Cero MO. Solo click delegation event-by-event en panel.click handler existente |
+| §35 | `pointermove` persistente | Cero pointermove |
+| §17.10 | Mobile sin reduced-motion | Bloque `@media (prefers-reduced-motion: reduce)` con `transition:none` y `animation:none` |
+| §57.7 | Listener admin que muere | Sin cambios — `_chatsUnsub` admin sigue globalmente activo (cliente no usa ese listener) |
+| §57.9 | Mezclar UI close con state reset | `markSessionFinalized` mantiene el patrón "lazy reset on next open" intacto. Solo se agregó telemetría, NO se tocó la lógica |
+| §17.4 | Renombrar IDs DOM | IDs preservados literalmente. Solo se agregó `data-temp-id` opcional + clase `.cnc-msg-status`/`.cnc-msg-retry`/`.cnc-msg-pending`/`.cnc-msg-sent`/`.cnc-msg-failed` que NO colisionan con legacy |
+| §17.7 | Crear archivo `concierge-v2.js` | Cero archivos nuevos. Refactor sobre `js/concierge.js` existente |
+
+### 60.2.9 Riesgos + plan de rollback
+
+| Riesgo | Mitigación interna | Rollback |
+|---|---|---|
+| `_status` legacy (`_synced`) coexiste con nuevo (`_status`) — riesgo de inconsistencia | Mantener AMBOS por compat; `_status` es el canonical para el render. `_synced` se actualiza en paralelo | `git revert <commit>` |
+| Mensajes del bot/asesor renderizan con icono confuso | `_status` SOLO se setea para `from === 'user'` con `_chatDocCreated`. Bot/asesor sin status icon | `git revert` |
+| Render de bubbles cambia el layout existente | CSS aditivo, no cambia tamaños base | `git revert` |
+| Botón retry para failed bubble dispara doble-send | `retryFailedMessage` busca por tempId + status='failed'; si no encuentra, log warn y abort | `git revert` |
+| Network drop persistent → bubble queda en `pending` forever | Si `_chatDocCreated === false` (chat aún no escalado), mensajes nunca se envían a Firestore — son local-only. Status `null` desde el inicio para esos | `git revert` |
+| Cliente recarga la página → mensajes pending pierden tempId | localStorage persiste msg con `_status` incluido. Al cargar, mensajes con `_status: 'pending'` y sin firestoreId quedan visualmente pending. User puede hacer retry manual | `git revert` |
+| CSS shake animation marea | `prefers-reduced-motion: reduce` desactiva animation | `git revert` |
+
+### 60.2.10 Deuda técnica documentada
+
+- **`_synced` legacy field** (concierge.js): co-existe con `_status`
+  durante S2. Eliminación en S6 cuando todo el flujo use solo
+  `_status`. Estimado ~30 líneas a remover.
+- **`_resetting` flag** (concierge.js, §57 patches): pendiente de
+  reemplazar por reducer pattern post-S6.
+- **Read receipts trigger** (`_status: 'read'`): no hay trigger en
+  S2. Llegará en Sprint S4 (Read Receipts en Firestore con
+  `lastReadByAdmin` field). Por ahora el icon se queda en ✓ sent.
+
+### 60.2.11 Doctrina aplicada
+
+§19 RCA estricto: NO había bug específico que arreglar — Sprint S2 es
+parte planificada del Mega-Plan §59 sección 7.2. Reusa el mismo
+patrón validado en §60.1 (Sprint S1).
+
+§37 IAP: 5 secciones documentadas previo al cambio. Riesgos
+identificados con plan de rollback. Tests E2E listados.
+
+§17 (Performance): cero MutationObserver, cero pointermove
+persistente, cero `transition: all`. Solo `transform`/`opacity`/
+`color`/`background-color` en CSS.
+
+§17.12 (anti-MutationObserver): cero MO global. Click delegation
+existente extendida con un branch nuevo (`retry-msg`).
+
+§17.4 (HTML/CSS estable): ZERO cambios de IDs/clases existentes.
+Adición de `data-temp-id` y nuevas clases `.cnc-msg-*` que no
+colisionan con legacy.
+
+§57.7 / §57.9: sin cambios al patrón de listeners admin (cliente NO
+los usa) ni al patrón "lazy reset on next open" (intacto en
+`markSessionFinalized`).
+
+**Cache bump**: `v20260512030000`.
+
+---
+
 ---
 

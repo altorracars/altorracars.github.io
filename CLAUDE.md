@@ -27549,5 +27549,201 @@ los usa) ni al patrón "lazy reset on next open" (intacto en
 
 ---
 
+## 62. ESTADO ACTUAL DEL PROYECTO — Guía de Continuidad Cross-Window (2026-05-10)
+
+> **Propósito**: este documento permite a un Claude en otra ventana
+> retomar el proyecto sin perder contexto. Resume QUÉ está hecho, QUÉ
+> está pendiente, y QUÉ acciones requiere del cliente. Última
+> actualización: 2026-05-10 tras el merge de PR #649 (Sprint S2).
+
+### 62.1 Resumen ejecutivo en 1 minuto
+
+**Proyecto**: Altorra Cars (compraventa autos Cartagena Colombia) —
+sitio público + admin panel + bot ALTOR Hub estilo WhatsApp/Intercom.
+
+**Estado**: ALTOR Hub está en **Fase 2 de cirugía técnica del
+Mega-Plan §59**. Sprints S1 (admin) y S2 (cliente) ✅ completados y
+mergeados a main. Plan §61 RBAC dinámico documentado pero NO ejecutado.
+
+**Cache version actual en main**: `v20260510001247` (auto-bumped por
+GitHub Actions tras merge).
+
+**Branch de trabajo activa**: `claude/altor-hub-sprint-s1-wWNlV`
+(sincronizada con main tras pull).
+
+**Pendiente CRÍTICO del cliente** (5 minutos en su PC):
+```bash
+firebase deploy --only firestore:rules
+```
+Esto resuelve 2 bugs visibles en producción:
+- Editor no puede agregar preguntas de seguridad (§48)
+- Editor no puede tomar conversaciones (§23 claim)
+
+### 62.2 Sprints completados en esta sesión (2026-05-09 → 2026-05-10)
+
+| Sprint | Commit | Sección CLAUDE.md | Estado | Detalle |
+|---|---|---|---|---|
+| S1 admin | `1dbf43e` | §60.1 | ✅ Mergeado | Optimistic UI 7 botones del Hub admin (claim, send, pin, archive, markUnread, close, reopen) + estados visuales WhatsApp + retry inline |
+| Hotfix permisos | `67eb52f` | §60.1.1 | ✅ Mergeado | Pre-check server en claimChat + mensajes amigables permission-denied |
+| Plan RBAC | `771ed7e` | §61 | ✅ Doc mergeada | Plan completo R1-R8 documentado (NO implementado) |
+| S2 cliente | `198b29a` | §60.2 | ✅ Mergeado | Optimistic UI cliente concierge.js con `_status` semántico + retry |
+
+**Validación post-merge**:
+- PR #649 cerrado y mergeado por usuario el 2026-05-10 00:12 UTC
+- Main actualmente en commit `f382bd6` (auto-generate vehicles)
+- Branch local `claude/altor-hub-sprint-s1-wWNlV` actualizada con main
+
+### 62.3 Mega-Plan §59 — Cirugía ALTOR Hub: estado de los 7 sprints
+
+| Sprint | Foco | Estado | Cuándo |
+|---|---|---|---|
+| ✅ S1 | Optimistic UI admin (7 botones) | Mergeado | §60.1 |
+| ✅ S2 | Optimistic UI cliente | Mergeado | §60.2 |
+| ⏸ S3 | Typing indicators bidireccionales (RTDB) | Pendiente | Próximo sprint del Hub |
+| ⏸ S4 | Read receipts (✓ vs ✓✓) | Pendiente | Después de S3 |
+| ⏸ S5 | Presence avanzada (online/away/offline) | Pendiente | Después de S4 |
+| ⏸ S6 | Rediseño visual Hub admin | Pendiente | Después de S5 |
+| ⏸ S7 | Rediseño visual cliente widget | Pendiente | Después de S6 |
+
+**Tiempo estimado restante S3-S7**: ~10 días de trabajo focalizado.
+
+### 62.4 Plan §61 — RBAC dinámico: estado de los 8 sprints
+
+| Sprint | Foco | Estado |
+|---|---|---|
+| ⏸ R1 | Foundation (schema permissions + roles + helpers) | Pendiente — PRÓXIMO recomendado |
+| ⏸ R2 | UI sec-roles CRUD (super_admin) | Pendiente |
+| ⏸ R3 | UI sec-users dropdown dinámico | Pendiente |
+| ⏸ R4 | Migración legacy users a `roleId` | Pendiente |
+| ⏸ R5 | Frontend guards refactor (~218 callsites) | Pendiente |
+| ⏸ R6 | Firestore Rules refactor a `hasPermission()` | Pendiente |
+| ⏸ R7 | Audit log + real-time sync | Pendiente |
+| ⏸ R8 | Cleanup + tests | Pendiente |
+
+**Tiempo estimado total §61**: ~12-15 días.
+
+**Schema canónico ya documentado en §61.3**:
+- `permissions/{permId}` — atomic permissions read-only
+- `roles/{roleId}` — sets de permissions con CRUD
+- `usuarios/{uid}` extendido con `roleId` + `roleName` + `permissions[]`
+
+**71 atomic permissions documentadas en §61.4** agrupadas en 8 categorías:
+Inventario, Sitio público, CRM, Comunicaciones, Cerebro AI,
+Calendario, Reportes, Configuración.
+
+### 62.5 Acciones pendientes DEL CLIENTE (no del agente)
+
+#### 🔴 CRÍTICA — Resuelve 2 bugs visibles AHORA
+
+**Acción**: ejecutar UNA vez en su PC:
+```bash
+cd /ruta/a/altorracars.github.io
+firebase deploy --only firestore:rules
+```
+
+**Resuelve simultáneamente**:
+- Editor agrega preguntas de seguridad (whitelist §48)
+- Editor toma conversaciones del Hub (claim §23 FASE 3)
+- Cualquier editor self-update de campos del whitelist
+
+**Por qué urgente**: las rules en el repo SON correctas, pero las
+desplegadas en producción son anteriores a §48. Sin este deploy,
+ningún fix de código del agente puede resolver el bug.
+
+#### 🟡 SI super_admin sigue bloqueado por intentos fallidos
+
+**Acción**: Firebase Console → Firestore →
+`loginAttempts/altorracarssale_gmail_com` → editar:
+- `intentos: 0`
+- `bloqueado: false`
+
+O esperar 15 min auto-unblock.
+
+### 62.6 Cómo continuar en otra ventana de Claude
+
+Si el contexto de esta ventana se agota, en una ventana nueva ejecutar:
+
+1. **Leer este documento §62 completo** + secciones referenciadas
+   (§59, §60.1, §60.1.1, §60.2, §61).
+
+2. **Verificar estado actual del repo**:
+   ```bash
+   git log --oneline -5 origin/main
+   git branch --show-current
+   git status
+   ```
+
+3. **Sincronizar con main si es necesario**:
+   ```bash
+   git fetch origin main
+   git merge origin/main --no-edit
+   ```
+
+4. **Decidir próximo sprint** según lo que diga el cliente:
+   - Si dice "RBAC" o "roles" → arrancar **§61 R1** (Foundation)
+   - Si dice "typing" o "tiempo real bidireccional" → arrancar **§59 S3**
+   - Si dice "rediseño visual" → arrancar **§59 S6** o **S7**
+   - Si dice "bug X" → aplicar §19 RCA Mode
+
+5. **Antes de cualquier commit**: redactar IAP §37 (5 secciones)
+   y obtener autorización del cliente.
+
+### 62.7 Archivos clave del Hub (referencia rápida)
+
+| Archivo | Líneas | Última mod | Propósito |
+|---|---|---|---|
+| `js/concierge.js` | ~3,300 | §60.2 | Widget cliente público IIFE |
+| `js/admin-concierge.js` | ~1,750 | §60.1.1 | Hub del asesor |
+| `js/hub-store.js` | 199 | §60.1 (NUEVO) | Object Pool optimistic state |
+| `css/concierge.css` | ~1,600 | §60.2 | Estilos widget cliente |
+| `css/admin.css` | (sec-concierge) | §60.1 | Estilos Hub admin |
+| `firestore.rules` | 518 | §48 | Permisos lectura/escritura (DEPLOY PENDIENTE) |
+| `functions/index.js` | 2,355 | §56 | 12 Cloud Functions del Hub |
+
+### 62.8 Doctrinas críticas a respetar SIEMPRE
+
+1. **§17.2** — Nunca `transition: all` ni `* { transition }`. Solo
+   transitions específicas en propiedades compositor-only.
+2. **§17.4** — HTML/CSS estable. Cero renombrar IDs/clases existentes.
+3. **§17.12** — Cero `MutationObserver subtree:true` global (RCA del
+   bug histórico clicks bloqueados centro botones).
+4. **§19** — RCA Mode estricto cuando hay bug recurrente: 5 fases
+   con STOP obligatorio antes de implementar.
+5. **§35** — Cero `pointermove` listeners persistentes globales.
+6. **§37** — IAP (Impact Analysis Previo) obligatorio antes de
+   cada commit: 5 secciones (archivos a modificar, intactos, código
+   muerto, refactor, riesgos+rollback).
+7. **§57.7** — Listener admin `_chatsUnsub` SIEMPRE activo
+   globalmente. Solo `_messagesUnsub` se cancela on section change.
+8. **§57.9** — Patrón "lazy reset on next open" del cliente. NO
+   mezclar "cerrar UI" con "resetear state".
+
+### 62.9 Recomendación próximo paso
+
+**Opción A** (Recomendada): Arrancar **§61 R1 (RBAC Foundation)**
+en paralelo a que el cliente ejecute `firebase deploy --only firestore:rules`.
+
+R1 es 2 días de trabajo, NO requiere deploy adicional, y establece
+las bases para los 7 sprints restantes del RBAC. Mientras el agente
+trabaja en R1, el cliente puede ejecutar el deploy de rules y
+desbloquear los bugs visibles.
+
+**Opción B**: Arrancar **§59 S3 (Typing Indicators)** para continuar
+la cirugía del Hub.
+
+**Opción C**: Esperar input del cliente sobre prioridad.
+
+### 62.10 Costo recurrente actual
+
+**$2-5 USD/mes** total:
+- LLM Anthropic Claude Haiku 4.5: ~$2-5/mes (ya optimizado §21.10
+  con prompt caching + inventory cap 10 + rate limit 30)
+- Todo lo demás: $0 (Firebase free tier — Firestore + RTDB +
+  Cloud Functions + FCM + Storage)
+
+Sin servicios externos pagos. Cero dependencias de Pusher/Ably/Twilio.
+
+---
+
 ---
 

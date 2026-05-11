@@ -70,7 +70,14 @@ jobs:
           SHA_SHORT="${GITHUB_SHA:0:7}"
 
           # 1. deploy-info.json — read by cache-manager.js to detect new deploys
-          echo "{\"version\":\"${DEPLOY_TS}\",\"sha\":\"${SHA_SHORT}\",\"ref\":\"${GITHUB_REF_NAME}\"}" > data/deploy-info.json
+          #    §83 — Field `type` distingue 3 niveles de update:
+          #      • 'silent'  → cero notificación (cambios cosméticos, refactor interno)
+          #      • 'soft'    → pill sutil + toast contextual en páginas catálogo
+          #      • 'forced'  → modal obligatorio (security fix raro)
+          #    El generator emite SIEMPRE 'soft' porque solo corre cuando detecta
+          #    cambios en vehiculos/ marcas/ sitemap (contenido visible al user).
+          #    Default si falta el field: 'silent' (retrocompat conservadora).
+          echo "{\"version\":\"${DEPLOY_TS}\",\"sha\":\"${SHA_SHORT}\",\"ref\":\"${GITHUB_REF_NAME}\",\"type\":\"soft\",\"userVisible\":true}" > data/deploy-info.json
 
           # 2. Service Worker CACHE_VERSION — triggers updatefound in browsers
           sed -i "s/const CACHE_VERSION = '[^']*'/const CACHE_VERSION = 'v${DEPLOY_TS}'/" service-worker.js

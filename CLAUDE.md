@@ -35397,3 +35397,245 @@ a Fase C ni a otros planes.
 
 **Cache bump**: `v20260514090000`.
 
+
+---
+
+## 84. ADR-084 — Producción activada + reposición avisos + deuda técnica build system Vercel (2026-05-11)
+
+> Cliente dijo: "Pero no importa que este ahorita en desarrollo igual
+> siempre estare trabajando en mejoras asi que activa las notificaciones
+> de produccion. Ten en cuenta que abajo a la derecha esta el bot asi
+> que comvendria rodas el aviso a la izquierda. Documenta todo y deja
+> que falta por implementar lo del buid system que lo haremos una vez
+> migremos todo el sitio a VERCEL".
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition all), §17.4 (HTML/CSS
+> estable), §17.12 (cero MutationObserver), §35 (cero pointermove),
+> §37 (IAP), §82+§83 plan de fases.
+
+### 84.1 Cambios coordinados
+
+#### A. SILENT_DEV_MODE_DEFAULT: true → false (PRODUCCIÓN ACTIVADA)
+
+`js/cache-manager.js`:
+```js
+// Antes (§82):
+const SILENT_DEV_MODE_DEFAULT = true;  // ON durante fase de mejoras
+
+// Ahora (§84):
+const SILENT_DEV_MODE_DEFAULT = false; // §84 PRODUCCIÓN ACTIVADA.
+```
+
+Resultado: las decisiones del flow `showUpdateBanner()` cambian:
+- type='silent' → sigue cero notificación (correcto)
+- type='soft' + página catálogo → toast contextual visible
+- type='soft' + otra página → pill genérica visible
+- type='forced' → modal modal (raro)
+
+**Override runtime sigue disponible**: si en algún momento puntual
+cliente quiere silenciar todo de nuevo (ej. tras un commit grande
+que no quiere avisar), via DevTools console:
+```js
+localStorage.setItem('altorra_silent_updates', '1')
+```
+Para reactivar: `localStorage.removeItem('altorra_silent_updates')`.
+
+#### B. Pill (#altorra-update-pill) — bottom-RIGHT → bottom-LEFT
+
+Conflict visual: el FAB del bot ALTOR vive en `bottom: 24px right: 24px`
+con tamaño 108×108. La pill estaba en `bottom: 16px right: 16px` con
+ancho 320px → se solapaba directamente con el área del bot.
+
+**Fix desktop**: `left: 16px; bottom: 16px` (esquina opuesta).
+**Fix mobile <480px**: cambia a `top: 16px` (full-width arriba) porque
+en mobile el bot ALTOR puede tener burbujas/CTAs que ocupan más zona
+inferior. Animation entry: `translateY(-20px)` en lugar de `+20px`.
+
+#### C. Toast contextual catálogo (#altorra-catalog-toast) — bottom-CENTER → bottom-LEFT
+
+Estaba en `left: 50%; bottom: 20px; transform: translateX(-50%)`.
+Visualmente no chocaba con el bot en desktop (estaba al medio), PERO
+en mobile <480px ocupaba `left: 12px right: 12px` (full-width) y SÍ
+se solapaba con el bot.
+
+**Fix desktop**: igual que pill `left: 16px; bottom: 16px`.
+**Fix mobile**: `top: 16px` full-width.
+
+Como `_modalShown` flag previene renderizar pill + toast simultáneos,
+NO hay riesgo de doble aviso en la misma posición.
+
+### 84.2 Resultado UX en producción
+
+Cliente real navegando el sitio público:
+
+| Tipo de cambio | Página actual | Lo que ve el cliente |
+|---|---|---|
+| Cosmético (§X mío bot/UI) → `silent` | Cualquiera | Nada. Cache se invalida en background. Smart nav: próximo click trae la versión nueva |
+| Vehículo nuevo agregado → `soft` | Catálogo (busqueda, vehiculos-*, marcas) | Toast bottom-LEFT 🆕 "Nuevos vehículos disponibles" con CTA "Ver" + X dismiss. Auto-dismiss 15s |
+| Vehículo nuevo agregado → `soft` | Contacto/Nosotros/Cookies (NO catálogo) | Pill bottom-LEFT "Nueva versión disponible — Recargar" + X. Auto-dismiss 20s |
+| Bug fix crítico → `forced` (raro, 1-2x/año) | Cualquiera | Modal obligatorio (sobreescribe SILENT_DEV_MODE) |
+| Cliente con 3 tabs abiertas | Cualquiera | Solo ve aviso en UNA tab (cross-tab dedup §82) |
+| Cliente ya vio aviso hoy | Cualquiera | NO reaparece (daily dedup 24h §82) |
+| Cliente navega sin clickear aviso | Cualquier link interno | Swap silencioso transparente al próximo click (§83 B1) |
+
+### 84.3 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio público (cache v20260514100000) | Cache nueva carga |
+| 2 | Cliente abre sitio post-§84 + hay version mismatch en página catálogo | Toast bottom-LEFT con 🆕 "Nuevos vehículos disponibles". NO en bottom-right (donde está el bot) |
+| 3 | Cliente abre sitio post-§84 + hay version mismatch en página NO catálogo (ej. contacto) | Pill bottom-LEFT "Nueva versión disponible — Recargar" |
+| 4 | Click "Ver" en toast catálogo | clearAndReload() → carga versión fresca |
+| 5 | Mobile <480px en página catálogo | Toast TOP centrado full-width con margen 12px laterales |
+| 6 | Mobile <480px en página NO catálogo | Pill TOP centrado full-width |
+| 7 | FAB del bot ALTOR visible al lado | NO se solapa con pill/toast (cada uno en esquinas opuestas) |
+| 8 | DevTools console post-load (cliente con localStorage.altorra_silent_updates='1') | Cero pill/toast, log `[AltorraCache] §82 Silent update applied` (override runtime aún funciona) |
+| 9 | DevTools console post-load (cliente sin override) | Si type=soft + catálogo → log `[AltorraCache] §83 Soft update + página catálogo → toast contextual` |
+| 10 | Cliente con type=forced (manual editar deploy-info) | Modal aparece independiente del SILENT_DEV_MODE |
+| 11 | `prefers-reduced-motion: reduce` | Pill/toast con transitions a 0.2s simples sin spring |
+| 12 | Smart nav: cliente clickea cualquier `<a href>` interno antes de dismiss | Swap silencioso transparente (sin reload visible) |
+
+### 84.4 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 transition all | `transition: all` | Solo `transform/opacity` específicas |
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | CERO. Solo cambio de left/right/top/bottom en CSS existente |
+| §17.12 anti-MO | MutationObserver subtree:true | Cero MO |
+| §35 anti-pointermove | pointermove persistente | Cero pointermove |
+| §37 IAP | Implementar sin autorización | Cliente autorizó explícitamente activar producción + mover avisos a la izquierda |
+| Doble aviso en pantalla | Pill + toast renderizados simultáneamente | `_modalShown` flag previene; cross-tab dedup §82 también cubre |
+| Mobile bot tapado por aviso | Pill/toast en bottom-left mobile podría tapar burbujas FAB | Mobile pasa a TOP center full-width — bot queda libre en su zona inferior |
+
+### 84.5 DEUDA TÉCNICA — Migración a build system (Vercel/Cloudflare Pages)
+
+**Estado actual**: el sistema §82+§83+§84 cubre el 99% de los casos
+con un patrón clásico de "notification on update". Funciona bien para
+escala actual (~50-500 conversaciones/mes, deploys frecuentes).
+
+**Limitación arquitectónica** que requiere migración de hosting para
+resolver:
+
+Hoy los archivos del sitio (`style.css`, `js/cache-manager.js`,
+`js/concierge.js`, etc.) tienen nombres ESTÁTICOS. Cuando cambian:
+- El navegador del usuario tiene la versión cacheada del archivo
+  viejo asociada al MISMO nombre.
+- Necesitamos el "sistema de aviso" (pill/toast) para forzar al
+  navegador a re-descargar.
+- Sin aviso, el usuario podría quedar con código viejo durante días.
+
+**Cómo lo resuelven las webs grandes** (Vercel, Netlify, Cloudflare
+Pages, GitHub Actions con Vite):
+
+Usan un **build system** (Vite, esbuild, Webpack) que toma todo el
+código fuente y lo "empaqueta" generando archivos con HASH único:
+- `style-abc123def.css` (hoy) → `style-xyz789ghi.css` (mañana cuando cambió)
+- `concierge-7f3a92b.js` (hoy) → `concierge-1d4e5f8.js` (mañana)
+
+Cada cambio produce un nombre nuevo único. El HTML referencia el
+nombre nuevo automáticamente. El navegador NUNCA ve cache stale
+porque el nombre cambió → siempre descarga lo último → **CERO
+necesidad de sistema de aviso**.
+
+Resultado:
+- Cero pill/toast/modal de "Nueva versión disponible"
+- Cero `Ctrl+Shift+R` necesario nunca
+- El usuario ABRE el sitio y SIEMPRE está en la última versión
+- Performance mejor (assets con cache forever de 1 año, HTML siempre fresh)
+
+**Por qué NO se puede hacer hoy fácil**:
+
+El proyecto Altorra usa HTML/CSS/JS plano sin sistema de build:
+- ~80 archivos HTML estáticos en root
+- ~70 archivos JS en `js/` cargados con `<script src="js/X.js">`
+- ~30 archivos CSS en `css/` cargados con `<link href="css/X.css">`
+- Snippets HTML inyectados dinámicamente via fetch
+- Service Worker custom + Firebase SDK Compat v11
+- Páginas auto-generadas por `scripts/generate-vehicles.mjs` que
+  escribe HTML literal
+
+Migrar a build system requiere:
+1. Elegir herramienta: **Vite** (recomendado, moderno) o **esbuild**
+2. Crear `package.json` con scripts `build` y `dev`
+3. Reorganizar imports: `<script src="x.js">` → `import x from './x.js'`
+4. Configurar entry points por cada página HTML
+5. Adaptar el generator de vehículos para usar templating con hash
+6. Migrar Service Worker registration al patrón post-build
+7. Cambiar deploy de GitHub Pages a Vercel/Cloudflare Pages
+8. Configurar dominio custom + DNS
+9. Testing extensivo: admin panel + bot ALTOR + formularios + auth
+   + Firebase + Telegram + FCM + RTDB
+10. Migrar service worker + cache strategies al patrón nuevo
+
+**Estimado**: 3-5 días de trabajo dedicado + 1 día de testing E2E +
+riesgo medio-alto de romper algo durante la transición.
+
+**Cuándo hacerlo**: cuando cliente decida migrar todo el sitio a
+**Vercel** (acordado explícitamente en este §84). En ese momento se
+combina con la migración de hosting completa y se gana también:
+- CDN global edge (latencia <50ms desde Latam)
+- HTTPS automático
+- Deploy previews por cada commit
+- Analytics integrados
+- Headers HTTP custom (resuelve el COOP warning de §18 también)
+- Build caching automático
+- Rollback con 1 click
+
+**Hasta ese momento**: el sistema §82+§83+§84 (pill sutil + toast
+contextual + smart navigation + cross-tab dedup) cubre con elegancia
+el 99% de los casos. Cliente y usuarios están bien atendidos.
+
+### 84.6 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/cache-manager.js` | SILENT_DEV_MODE_DEFAULT true→false. Pill #altorra-update-pill: left:16px en lugar de right:16px. Mobile pill: top:16px en lugar de bottom:12px + translateY invertido. Toast #altorra-catalog-toast: left:16px en lugar de left:50% transform. Mobile toast: top:16px en lugar de bottom:12px. APP_VERSION → '20260514100000' con prepend §84 changelog | +30, -15 |
+| `service-worker.js` | CACHE_VERSION → 'v20260514100000' (vía sed mismo timestamp) | +1, -1 |
+| `CLAUDE.md` | Esta sección §84 + DEUDA TÉCNICA build system Vercel documentada | +200, 0 |
+
+**Total**: 3 archivos. Cero deploy backend. Cero schema. Cero JS admin.
+
+### 84.7 Archivos INTACTOS (afirmación)
+
+- `.github/workflows/generate-vehicles.yml` — sin cambios (sigue
+  emitiendo `type=soft` automáticamente)
+- Bot ALTOR (concierge.js + admin-concierge.js + AI modules) — ZERO
+- Firestore rules / RTDB rules / Cloud Functions — ZERO
+- Resto del cache-manager.js (validateDeployVersion / startPolling /
+  SWManager / armSmartNavigationUpdate / BroadcastChannel) — INTACTO
+- HTML/CSS externos — ZERO
+
+### 84.8 Acciones operativas del cliente
+
+NINGUNA NUEVA crítica. Solo:
+1. **Ctrl+Shift+R una vez** en sitio público para invalidar cache
+   previa (carga `v20260514100000`)
+2. A partir de ahí, los usuarios reciben notificaciones automáticas
+   cuando hay deploys con `type='soft'` (vehículos nuevos, marcas
+   nuevas, etc.)
+3. Smart nav §83 sigue activo: si alguien navega entre páginas antes
+   de ver el aviso, swap silencioso aplica
+
+**Para silenciar puntualmente** (sin redeploy):
+- DevTools console: `localStorage.setItem('altorra_silent_updates', '1')`
+- Para reactivar: `localStorage.removeItem('altorra_silent_updates')`
+
+**Para volver a modo desarrollo permanente** (futuro improbable):
+- Editar `js/cache-manager.js:57` → `SILENT_DEV_MODE_DEFAULT = true`
+- Bump cache + push
+
+### 84.9 Plan total de Smart Update Prompts post-§84
+
+| Fase | Status | Doc |
+|---|---|---|
+| ✅ A1 Modal → pill sutil | Mergeado | §82 |
+| ✅ A2 SILENT_DEV_MODE flag | Mergeado | §82 |
+| ✅ A3 Cross-tab dedup BroadcastChannel | Mergeado | §82 |
+| ✅ B1 Smart navigation handler | Mergeado | §83 |
+| ✅ B2 Schema deploy-info.json type | Mergeado | §83 |
+| ✅ B3 Toast contextual catálogo | Mergeado | §83 |
+| ✅ **PRODUCCIÓN ACTIVADA** + avisos a la izquierda | **§84 (este)** | §84 |
+| ⏸ C1 Network-first agresivo + hash assets | **DEUDA TÉCNICA — Vercel migration** | §84.5 |
+
+**Cache bump**: `v20260514100000`.
+

@@ -48,7 +48,20 @@
     function hasGreetedBefore(sessionContext) {
         if (!sessionContext || !sessionContext.context) return false;
         var th = sessionContext.context.turnHistory || [];
-        return th.some(function (t) { return t.intent === 'greeting' || t.intent === 'small_talk_greeting'; });
+        // §81 — Filtrar por timestamp (lookback 5 min). Causa raíz del
+        // "Volviste" inapropiado: turnHistory persiste en localStorage
+        // entre sesiones. Si el cliente tuvo greeting hace 10h y vuelve
+        // hoy, NO debe verse como "returning turn" — es nueva conversación.
+        // Plus guard >1s defensive: si por algún motivo el turn actual
+        // ya está en turnHistory (orden de invocación), no contarlo.
+        var FIVE_MIN = 5 * 60 * 1000;
+        var now = Date.now();
+        return th.some(function (t) {
+            var elapsed = now - (t.timestamp || 0);
+            return (t.intent === 'greeting' || t.intent === 'small_talk_greeting')
+                   && elapsed < FIVE_MIN
+                   && elapsed > 1000;
+        });
     }
 
     function lastTopicLabel(sessionContext) {
@@ -89,8 +102,9 @@
         {
             id: 'greeting',
             // hola, ola, holi, holaa, buenas, buenos dias, buenas tardes, buenas noches,
-            // hey, qubo, q hubo, qhubo, que mas, que más, qué onda, saludos, hi, halo
-            regex: /\b(h+ola+s?|h+oli+s?|buen[oa]s(\s+(d[ií]as|tardes|noches))?|hey+|q+u+b+o+|q\s*hubo|q'?hubo|qu[eé]\s*hubo|qu[eé]\s*m[aá]s|qu[eé]\s*onda|qu[eé]\s*tal|saludos|h+i+|hello|halo|holu)\b/i,
+            // hey, ey (§81 fix), qubo, q hubo, qhubo, que mas, que más, qué onda, saludos, hi, halo
+            // §81 — agregados: ey+ (saludo coloquial COL), epa, oye+
+            regex: /\b(h+ola+s?|h+oli+s?|ola+s?|buen[oa]s(\s+(d[ií]as|tardes|noches))?|hey+|ey+|epa+|oye+|q+u+b+o+|q\s*hubo|q'?hubo|qu[eé]\s*hubo|qu[eé]\s*m[aá]s|qu[eé]\s*onda|qu[eé]\s*tal|saludos|h+i+|hello|halo|holu)\b/i,
             priority: 90,
             skipIfEntity: true,
             build: function (text, ctx) {
@@ -100,10 +114,15 @@
                 // Si el cliente ya saludó antes en la sesión, returning variant
                 if (hasGreetedBefore(ctx)) {
                     var topic = lastTopicLabel(ctx);
+                    // §81 — ELIMINADO el variant "¡Hey! ¿Te quedó alguna duda?"
+                    // Causa: pregunta sí/no ambigua. Si cliente respondía "sí",
+                    // el bot interpretaba mal (matcheaba goodbye via "tengo que
+                    // irme" o similar). Reemplazado por variants neutrales con
+                    // pregunta abierta.
                     var returning = [
-                        '¡Volviste! 😄 ¿' + (topic ? 'Continuamos con ' + topic + '?' : 'En qué te ayudo ahora?'),
-                        'Hola de nuevo' + nombre + '. ¿' + (topic ? 'Te ayudo con ' + topic + '?' : 'Qué necesitabas?'),
-                        '¡Hey' + nombre + '! ¿Te quedó alguna duda?'
+                        '¡Hola de nuevo' + nombre + '! ¿' + (topic ? 'Continuamos con ' + topic + ' o necesitás algo más?' : 'En qué te ayudo ahora?'),
+                        'Hola otra vez' + nombre + ' 👋 ¿' + (topic ? 'Seguimos con ' + topic + '?' : 'Cuéntame qué necesitas') + '',
+                        '¡Hey' + nombre + '! Cuéntame, ¿qué te muestro o en qué te puedo ayudar?'
                     ];
                     return { text: pickRandom(returning), intent: 'small_talk_greeting' };
                 }
@@ -269,7 +288,8 @@
         {
             id: 'show_inventory_short',
             // "muéstrame", "muestrame autos", "ver carros", "qué tenés", "enseñame"
-            regex: /^(\s*(mu[eé]strame|enseñame|ens[eé]ñame|muestrame|muestra|enseña|ense[ñn]a|ver|veamos|a\s+ver|qu[eé]\s+(tienes|ten[eé]s|hay|manejas?|manejan|venden|venden|ofrecen)|opciones|alternativas|mostrame))[\s\.!?]*$/i,
+            // §81 — agregado sufijo opcional "(por ahi|por ahí|disponibles?|hoy|ahora)"
+            regex: /^(\s*(mu[eé]strame|enseñame|ens[eé]ñame|muestrame|muestra|enseña|ense[ñn]a|ver|veamos|a\s+ver|qu[eé]\s+(tienes|ten[eé]s|hay|manejas?|manejan|venden|venden|ofrecen)|opciones|alternativas|mostrame))(\s+(por\s+ah[ií]|disponibles?|hoy|ahora|por\s+aqu[ií]))?[\s\.!?]*$/i,
             priority: 78,
             skipIfEntity: false, // queremos que funcione incluso si menciona marca
             build: function (text, ctx) {

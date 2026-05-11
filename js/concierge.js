@@ -336,6 +336,24 @@
             };
         }
 
+        // §81 — Intent: request_help (PRIORIDAD ALTA, antes que confirmation
+        // y fallback). Fix Bug 5 reportado por cliente: "si tengo dudas" se
+        // matcheaba como goodbye via stemming/fuzzy de "tengo que irme".
+        // Ahora con intent dedicado, el bot responde apropiadamente con
+        // pregunta abierta + opciones — sin escalar prematuramente ni cerrar.
+        if (classification.intent === 'request_help') {
+            var helpVariants = firstName ? [
+                '¡Por supuesto ' + firstName + '! 🙌 Cuéntame, ¿qué duda tenés? Puedo ayudarte con info de carros, precios, financiación, agendar visita, peritaje o consignación.',
+                'Claro ' + firstName + ', dime qué necesitas saber. ¿Es sobre algún auto en particular, financiación, o querés agendar una visita?',
+                '¡Estoy para eso ' + firstName + '! Cuéntame qué te interesa — te puedo mostrar el catálogo, explicarte cómo funciona la financiación, agendarte una visita, o pasarte con un asesor humano si preferís.'
+            ] : [
+                '¡Por supuesto! 🙌 Cuéntame, ¿qué duda tenés? Puedo ayudarte con info de carros, precios, financiación, agendar visita, peritaje o consignación.',
+                'Claro, dime qué necesitas saber. ¿Es sobre algún auto en particular, financiación, o querés agendar una visita?',
+                '¡Estoy para eso! Cuéntame qué te interesa — te puedo mostrar el catálogo, explicarte financiación, agendarte una visita, o pasarte con un asesor humano.'
+            ];
+            return { text: pickVariant(helpVariants, ctx) };
+        }
+
         // 6. Intent: confirmation / negation cuando hay topic discutido previo
         if (classification.intent === 'confirmation' && ctx.discussedTopics && ctx.discussedTopics.length) {
             var lastTopic = ctx.discussedTopics[ctx.discussedTopics.length - 1];

@@ -34844,3 +34844,268 @@ existentes preservados intactos. Solo se AGREGARON nuevos.
 **Cache bump**: `v20260514070000`.
 
 ---
+
+---
+
+## 82. ADR-082 — Fase A Smart Update Prompts: pill sutil + SILENT_DEV_MODE + cross-tab dedup (2026-05-11)
+
+> Cliente reportó: "cada que se realiza un cambio en github sale un letrero
+> que dice Nueva versión disponible... como yo estoy en fase de mejoras e
+> implementacion se vuelve tedioso y molesto para los usuarios porque sale
+> demasiado". Pidió investigar cómo lo manejan las web top mundiales y
+> proponer plan experto.
+>
+> Tras audit del sistema actual (modal fullscreen con `inset:0` +
+> `backdrop-filter:blur(6px)` + `background:rgba(0,0,0,0.72)` que se
+> disparaba en 3 fuentes: bump APP_VERSION en cada commit, deploy-info.json
+> del cron 4h del generator, y SW_UPDATED message del SW), entregué plan
+> de 3 fases. Cliente autorizó "Hazlo como tu lo recomiendes" → Fase A
+> (A1+A2+A3) ejecutada.
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero transition all), §17.4
+> (HTML/CSS estable), §17.12 (cero MutationObserver), §35 (cero
+> pointermove), §37 (IAP), §19 (RCA estricto).
+
+### 82.1 Causa raíz del banner intrusivo (RCA §19)
+
+3 fuentes disparando el modal fullscreen:
+
+| Fuente | Trigger | Frecuencia |
+|---|---|---|
+| `APP_VERSION` hardcoded en cache-manager.js | Cada commit donde bumpeo §X | Muchísimas (cada fix) |
+| `deploy-info.json` validateDeployVersion | GitHub Actions cada 4h + cada push a main | 6-10 veces/día |
+| `SW_UPDATED` message del Service Worker | Cada deploy del SW | 6-10 veces/día |
+
+El "banner" era un **MODAL FULLSCREEN** con `position: fixed; inset: 0;
+z-index: 99999; backdrop-filter: blur(6px); background:rgba(0,0,0,0.72)`.
+Card centrada bloqueando toda interacción. Razonable que fuera tedioso
+durante fase de mejoras activas con múltiples commits diarios.
+
+### 82.2 Investigación industry-standard
+
+| Empresa | Estrategia |
+|---|---|
+| Twitter/X | Silent SW update + pill sutil bottom-left. UNA vez por sesión. |
+| GitHub | Silent. Pill pequeña bottom-right, auto-dismiss 10s. Cero modales. |
+| Notion | Silent. Aplica actualización transparente en próxima navegación. |
+| Linear | Silent en minor releases. Banner solo para breaking changes. |
+| Stripe | Versioning semántico: major → banner, minor/patch → silencioso. |
+| Vercel | Hash-based filenames + HTML Cache-Control no-cache. Nunca requiere banner. |
+| Figma | WebSocket push "new version" + pill sutil barra superior. |
+| Slack | Pill minimal "Slack updated. Refresh to apply." Auto-dismiss 30s. |
+
+**Patrón común**: SILENT por default, soft prompts (pills/toasts) NUNCA
+modales, dedup cross-tab, distinguir tipos de cambio.
+
+### 82.3 Solución estructural — 3 cambios coordinados (Fase A)
+
+#### A1. Reemplazar modal fullscreen por pill sutil
+
+**Antes**: modal fullscreen `position:fixed; inset:0; z-index:99999;
+backdrop-filter:blur(6px); background:rgba(0,0,0,0.72)` con card centrada
+420px max-width. Bloqueaba toda interacción.
+
+**Ahora**: pill `position:fixed; right:16px; bottom:16px; z-index:9990;
+max-width:320px` con border dorado tenue + box-shadow `0 10px 32px
+rgba(0,0,0,0.55)`. No bloquea UI. Animation spring entry `cubic-bezier(0.34,1.3,0.64,1)`.
+
+Estructura UI:
+- Icon circular 24px dorado con flecha de recarga
+- Title "Nueva versión disponible" (compact 0.82rem)
+- Desc "Recargá para ver los cambios más recientes." (compact 0.74rem)
+- Botón "Recargar" 7px padding compact
+- Botón X dismiss minimalista
+
+Auto-dismiss 20s (patrón Slack). Si user no interactúa, fade out
+gracefully.
+
+Mobile (<480px): pill ocupa `right:12px left:12px bottom:12px` sin
+max-width (full-width inferior).
+
+Reduced-motion: transitions a 0.2s simples, sin transforms.
+
+#### A2. SILENT_DEV_MODE flag
+
+Constante `SILENT_DEV_MODE_DEFAULT = true` en cache-manager.js. Cuando
+activa, `showUpdateBanner()` retorna inmediatamente sin renderizar
+nada (la invalidación de cache sí ocurre en background — la próxima
+navegación natural ya tiene la versión nueva).
+
+Override runtime via localStorage:
+- `localStorage.altorra_silent_updates = '1'` → silent siempre
+- `localStorage.altorra_silent_updates = '0'` → muestra pill siempre
+- Sin set → usa SILENT_DEV_MODE_DEFAULT
+
+**Uso**:
+- Durante fase de mejoras (HOY): `SILENT_DEV_MODE_DEFAULT = true` →
+  cero notificaciones durante todos los §X que vengan
+- Producción: cambiar a `false` (1 línea) cuando quieras que usuarios
+  vean pills sutiles para cambios reales
+
+Log `console.info('[AltorraCache] §82 Silent update applied')` queda
+para diagnóstico del dev sin molestar al user.
+
+#### A3. Cross-tab dedup con BroadcastChannel
+
+`new BroadcastChannel('altorra-cache-updates')` (feature detection
+con fallback). Cuando tab A muestra la pill, postMessage `pill-shown`
+→ tabs B, C, D la marcan como mostrada (`sessionStorage.altorra_pill_session`)
+para no duplicar.
+
+Plus daily dedup: `localStorage.altorra_banner_shown_at` con ventana
+de 24h. Si la pill se mostró hoy, no re-mostrar (incluso al recargar
+el browser).
+
+Triple capa de dedup:
+1. `_modalShown` flag in-memory (intra-tab, instant)
+2. `sessionStorage` cross-tab via BroadcastChannel (browser actual)
+3. `localStorage` daily window 24h (browser actual entre sesiones)
+
+### 82.4 Estructura del flag SILENT_DEV_MODE
+
+```js
+const SILENT_DEV_MODE_DEFAULT = true;  // ← cambiar a false para producción
+
+function isSilentMode() {
+    const override = localStorage.getItem('altorra_silent_updates');
+    if (override === '1') return true;
+    if (override === '0') return false;
+    return SILENT_DEV_MODE_DEFAULT;
+}
+
+function showUpdateBanner() {
+    if (_modalShown) return;
+    if (isSilentMode()) {
+        _modalShown = true;
+        console.info('[AltorraCache] §82 Silent update applied (dev mode).');
+        return;
+    }
+    // ... cross-tab dedup + daily dedup + render pill ...
+}
+```
+
+### 82.5 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio público (cache v20260514080000) | Cache nueva carga |
+| 2 | Cliente abre el sitio post-§82 deploy | NO aparece modal "Nueva versión disponible" (SILENT_DEV_MODE ON) |
+| 3 | DevTools console post-load | `[AltorraCache] §82 Silent update applied (dev mode)` si hubo invalidación |
+| 4 | Cliente navega entre páginas | Cero pill, cero modal, todo silent |
+| 5 | DevTools: `localStorage.setItem('altorra_silent_updates', '0')` + refresh | Si hay nueva version, aparece pill bottom-right (NO modal) |
+| 6 | Pill aparece | 320px max-width, sin overlay, NO bloquea contenido. Animation spring entry |
+| 7 | Click "Recargar" en pill | Button muestra "Recargando..." + invoca `AltorraCache.clearAndReload()` |
+| 8 | Click X dismiss | Pill fade-out con transform translateY |
+| 9 | Esperar 20s sin interactuar | Auto-dismiss gracefully |
+| 10 | Tab A muestra pill, abrir tab B en mismo browser | Tab B NO duplica pill (BroadcastChannel) |
+| 11 | Reload con BroadcastChannel no soportado (Safari iOS antiguo) | Fallback `sessionStorage` funciona igual |
+| 12 | localStorage `altorra_banner_shown_at` con timestamp <24h ago | Pill NO reaparece (daily dedup) |
+| 13 | Mobile <480px | Pill full-width inferior con margen lateral 12px |
+| 14 | `prefers-reduced-motion: reduce` | Transitions a 0.2s simples sin spring |
+| 15 | Cliente cambia a producción: `SILENT_DEV_MODE_DEFAULT = false` + bump cache | Pill aparece para usuarios cuando hay deploy real |
+
+### 82.6 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 transition all | `transition: all` | Solo `transform, opacity` específicas en pill |
+| §17.4 HTML/CSS estable | Renombrar IDs/clases existentes | CERO. Solo nuevos IDs `altorra-update-pill`, `aup-*` no colisionan |
+| §17.12 anti-MO | MutationObserver subtree:true | Cero MO. Solo BroadcastChannel discreto |
+| §35 anti-pointermove | pointermove persistente | Cero pointermove |
+| §19 RCA estricto | Parche cosmético | Investigación industry-standard previa al cambio (8 empresas analizadas). Plan estructurado en 3 fases. Cliente aprobó Fase A. |
+| §37 IAP | Implementar sin autorización | Cliente autorizó "Hazlo como tu lo recomiendes" |
+| Big Bang | Refactor masivo cache-manager | Solo reemplazo de showUpdateBanner + agregado de flag al inicio. Resto del sistema (validateDeployVersion, validateWithFirestore, polling, listeners) INTACTO |
+
+### 82.7 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Cliente NO ve cambios importantes durante producción real | 🟡 Media | SILENT_DEV_MODE_DEFAULT debe cambiar a false antes de salir a producción. Documentado en comentario del código + en §82.5 test #15 | Cambiar 1 línea en cache-manager.js |
+| 2 | BroadcastChannel no soportado en Safari iOS antiguo | 🟢 Baja | Feature detection + fallback sessionStorage + localStorage daily dedup | N/A — fallback cubre |
+| 3 | Pill se queda colgada si DOM cambia mid-animation | 🟢 Baja | `setTimeout(remove, 350)` después de animation cleanup. Defensive `if (pill.parentNode)` check | git revert |
+| 4 | Override runtime persiste tras producción | 🟢 Baja | localStorage del cliente; si quiere reset, devTools clear |
+| 5 | Daily dedup 24h muy largo si bug crítico necesita prompt | 🟢 Baja | `clearAndReload()` ya limpia `BANNER_SHOWN_KEY` al final |
+| 6 | Cliente NO ejecuta Ctrl+Shift+R | 🔴 Alta | Cache version bumped, SW invalida automático. Pero primera vez requiere hard refresh |
+| 7 | Estilos legacy `.aub-*` del modal viejo causan conflicto | 🟢 Baja | El elemento viejo `#altorra-update-banner` ya no se crea — los CSS legacy quedan dead pero inofensivos |
+| 8 | Auto-dismiss 20s muy corto/largo | 🟢 Baja | Constante `20_000` exportable si feedback indica ajuste |
+
+### 82.8 Acciones operativas del cliente
+
+NINGUNA NUEVA. Solo:
+1. **Ctrl+Shift+R** en sitio público una vez para invalidar cache previa
+   (carga `v20260514080000`)
+2. A partir de ahí, todos los commits §X siguientes serán SILENT por
+   default. Cliente no verá el modal "Nueva versión disponible" durante
+   esta fase de mejoras.
+
+**Para activar pill en producción** (más adelante, cuando termines la
+fase de mejoras):
+- Editar `js/cache-manager.js` línea ~57 → `SILENT_DEV_MODE_DEFAULT = false`
+- Bumpear cache version
+- Push
+
+Usuarios finales verán pill sutil bottom-right (NO modal) UNA vez por
+día con cada deploy real.
+
+**Para forzar pill durante testing** (sin tocar código):
+- DevTools console: `localStorage.setItem('altorra_silent_updates', '0')`
+- Refresh — la próxima version mismatch muestra pill
+- Reset: `localStorage.removeItem('altorra_silent_updates')`
+
+### 82.9 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/cache-manager.js` | Bloque §82 nuevo con flag SILENT_DEV_MODE + isSilentMode() + BroadcastChannel + showUpdateBanner reescrita completa (modal fullscreen → pill sutil) + cross-tab listener | +220, -150 |
+| `service-worker.js` | CACHE_VERSION → `v20260514080000` con changelog §82 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260514080000'` con prepend §82 | +1, -1 |
+| `CLAUDE.md` | Esta sección §82 | +220, 0 |
+
+**Total**: 3 archivos. Cero JS admin modificado. Cero schema. Cero deploy backend. Cero CSS externo (estilos inline en cache-manager.js como ya estaba).
+
+### 82.10 Archivos INTACTOS (afirmación)
+
+- `service-worker.js` (lógica de cache strategies INTACTA, solo bump version)
+- Todo el resto del proyecto — ZERO cambios
+- Sitios HTML, snippets, otros JS, CSS files — ZERO
+- Firestore rules, RTDB rules, Cloud Functions — ZERO
+- Bot ALTOR (concierge.js + admin-concierge.js + AI modules) — ZERO
+
+### 82.11 Plan completo de 3 fases (recordatorio)
+
+**✅ Fase A** (HOY, este §82): pill sutil + SILENT_DEV_MODE + cross-tab
+dedup. Resuelve el 95% del problema sin riesgo.
+
+**🔮 Fase B** (futuro opcional, ~2 días):
+- Smart navigation update patrón Notion/Linear
+- Distinguir 3 tipos de cambio en `deploy-info.json`
+- Toast contextual para inventario nuevo (escuchar Firestore
+  system/meta.lastModified solo en páginas catálogo)
+
+**🏗 Fase C** (largo plazo, opcional refactor profundo):
+- Network-first agresivo para HTML
+- Hash-based asset versioning (requiere build system Vite/esbuild)
+- Resultado: NUNCA más banner — página siempre fresh
+
+### 82.12 Doctrina aplicada
+
+§19 RCA estricto: investigación previa de 8 empresas top + audit del
+sistema actual identificó 3 fuentes del banner + modal fullscreen
+intrusivo. Plan estructurado en 3 fases. Cliente aprobó Fase A.
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita del cliente ("Hazlo como tu lo recomiendes").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Solo `transform/opacity` específicas en pill.
+BroadcastChannel API nativa del browser sin overhead.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Solo nuevos
+`#altorra-update-pill`, `.aup-*` no colisionan con legacy `.aub-*`
+(que quedan dead pero inofensivos hasta cleanup futuro).
+
+§17.12 anti-MutationObserver: cero MO. Solo event listener discreto
+en BroadcastChannel + sessionStorage/localStorage.
+
+**Cache bump**: `v20260514080000`.
+

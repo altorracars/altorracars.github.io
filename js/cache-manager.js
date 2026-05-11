@@ -31,7 +31,7 @@
     'use strict';
 
     /* ─── Configuración ─────────────────────────────────────────── */
-    const APP_VERSION = '20260514070000'; // §81 Mejora masiva inteligencia bot ALTOR — 7 bugs reportados por cliente. Bug 1 "Volviste" inapropiado: hasGreetedBefore filtra turnHistory por timestamp (elapsed >1s && <5min). Bug 2 cascade Bug 1. Bug 3 "que tienes por ahi": regex+lexicon. Bug 4 "no entiendes o que": frustration lexicon ampliado. Bug 5 "si tengo dudas" → goodbye: nuevo intent request_help prioritario + branch en concierge.js. Bug 6 "Que mas" → "¿Te quedó alguna duda?": variant problemático eliminado. Bug 7 "Ey" → fallback: regex greeting + lexicon expandido. Cero regresión. Cero deploy backend. // §80 Hotfix bugs bot ALTOR. Bug 1: aura cuadrada del FAB (§79 bloque A cncOnboardPulse aplicaba box-shadow rectangular al button transparente) → bloque A eliminado del CSS §79, FAB vuelve al onboarding original altorFloat+altorGlow. Bug 2: queue stale "1266 min" (loadSession no validaba staleness mode queue/live) → §80 STALENESS GUARD agregado: si mode='queue'/'live' Y last activity >4h → reset a 'bot' + messages=[] + queueEnteredAt=null + nuevo sessionId. Preserva profile. Welcome del bot aparece fresh al reabrir. Cero JS admin, cero schema, cero deploy. Cliente solo Ctrl+Shift+R. // §79 Sprint S7 Rediseño visual cliente widget Concierge (CSS-only ~250 líneas append). CIERRE Mega-Plan §59 ALTOR Hub 7/7 sprints. Onboarding pulse FAB (3 iterations, no loop), bubbles iMessage style con border-radius 18 asimétrico + animation overshoot + box-shadow sutil + max-width 78%, welcome bubble premium con gradient + glow + animation, vehicle cards hover lift, skeleton loaders preparados (futuro JS), CTA bubble entry suavizada, mobile responsive 480px, prefers-reduced-motion. Prefijo .altorra-concierge para especificidad sin !important. Cero JS, cero schema, cero deploy backend. Cliente solo Ctrl+Shift+R. Paridad visual cliente↔admin (S6+S7). // §78 Sprint S6 Rediseño visual ALTOR Hub admin (CSS-only ~350 líneas append). Sidebar refinada (avatar 44px gradient, hover lift, active gradient + accent left + glow), detail header sticky con backdrop-filter blur, bubbles iMessage style con border-radius asimétrico (4px en esquina del emisor) + animation hubMsgSlideIn cubic-bezier overshoot, empty states con SVG inline data:URI (chat bubble dorado + checkmark verde con pulse), skeleton loaders (preparados para futuro), unread badge con hubUnreadPulse, mobile responsive @media max-width:768px (1col), prefers-reduced-motion. Prefijo .altor-hub para especificidad sin !important. Cero JS, cero schema, cero deploy backend. Cliente solo Ctrl+Shift+R. Próximo S7 (último): rediseño visual cliente widget. // §77 Sprint S5 Presence avanzada (online/away/offline). Schema RTDB /presence extendido con status + currentChatId. Admin tracking via visibilitychange + click/keydown + setInterval 60s (sin pointermove). Cliente lee system/workload Firestore (privacy-safe, no /presence directo) y renderiza dot indicator + label en cncStatus header. 4 estados: 🟢 disponible (al instante), 🟢 online (pronto), 🟡 away, ⚫ offline. Aggregator workload extendido con asesoresAway count. Deploy obligatorio: firebase deploy --only functions:recalculateWorkloadOnChatChange,functions:recalculateWorkloadScheduled. // §76 Sprint S4 Read Receipts (✓ enviado vs ✓✓ leído). Cliente y admin marcan lastReadByUser/lastReadByAdmin en conciergeChats/{sid} con throttle 5s. Listener parent del cliente lee lastReadByAdmin para promover bubbles sent→read en renderMessages. renderChatDetail del admin promueve bubbles asesor a read si chat.lastReadByUser ≥ msg.timestamp. CSS ya existente en §60.2 y S1 (#34B7F1 azul + #1d4ed8 sobre user-bubble dorado). Cero deploy backend (rules R6 ya permiten update). // §75 Sprint S3 Typing Indicators bidireccionales (RTDB) — cliente y admin ven typing del otro lado con throttle 1s + auto-clear 3s + onDisconnect.remove. Schema /typing/{sid}/ con user + asesor_<uid>. Namespace `asesor` (cncAsesorTypingIndicator) no colisiona con typing del bot LLM existente (cncTypingIndicator INTACTO). Cliente: input listener + startTypingListener tras chat doc creado + cleanup en cancelChatListeners. Admin: setAdminTyping per uid + event delegation en cncAdminReply (sobrevive re-renders) + listener PER chat activo (cancela en openChat al cambiar + AltorraSectionCleanup al salir de sec-concierge). 3 dots iMessage style con keyframes + prefers-reduced-motion. database.rules.json: /typing/ con $asesorKey == 'asesor_' + auth.uid (cero impersonación). Cero costo (RTDB free tier). Deploy obligatorio: firebase deploy --only database. // §73.4 auto-hide "Resembrar sistema" cuando CEO ya está sembrado. Solo visible si ceoExists=false (caso edge). Header en flujo normal queda con solo "Nuevo rol". Re-sembrado manual via DevTools si se necesita en futuro. // §73.3 fix flicker pantalla "Inicializar sistema" en sec-roles + eliminado botón duplicado del header: nuevo flag _state.firstSnapshotReceived evita render con defaults antes de que llegue el snapshot Firestore. Caso A "Inicializar el sistema de roles" ELIMINADO (botón duplicaba "Resembrar sistema" del header). Empty state unificado con texto condicional según ceoExists. Si ceoExists=false (caso edge), texto dirige al header — UNA sola fuente de verdad. // §73.2 auto-hide inteligente: botones "Limpiar legacy" y "Migrar legacy" en sec-roles header se ocultan automáticamente cuando el sistema está limpio (cero huérfanos detectados). Detector en startListener snap + refreshUserCounts → flags _state.hasLegacyDocs + hasLegacyUsersWithSystemRoleId + hasLegacyUsersWithoutRoleId → renderRolesHeader condiciona. refreshHeaderIfLegacyChanged in-place re-render. "Resembrar sistema" siempre visible (utility). "Nuevo rol" siempre visible (CTA). // §73.1 hotfix — extraer header de sec-roles a renderRolesHeader() y mostrarlo SIEMPRE (también en empty states), para que el botón "Limpiar legacy" del §73 sea visible cuando hay CEO pero 0 customs. // §73 R8 mini cleanup masivo client-side: dropdown corto "— Sin roles disponibles —" + disable Guardar + hint visible cuando no hay customs + tabla sec-users muestra "Sin asignar" para users con roleId apuntando a system_editor/viewer legacy en lugar de "EDITOR" stale + eliminado tag "·legacy" confuso + filter __legacy__ incluye huérfanos system_editor/system_viewer. NUEVO botón "Limpiar legacy" en sec-roles header (super_admin only) que abre modal preview con stats + tabla detallada + warning + doble confirm + ejecuta CLIENT-SIDE PURO vía Firestore Compat SDK directo (cero deploy backend): batch update usuarios con FieldValue.delete() roleId/roleName + permissions=[] + markers _orphanedFromRole/_orphanedAt + batch delete docs roles/system_editor + roles/system_viewer + audit log entry. Garantía firestore.rules R6: CEO tiene wildcard '*' → permite delete de roles + update de usuarios. Cliente solo Ctrl+Shift+R y luego ejecuta el botón desde sec-roles UI para limpiar Firebase de restos legacy. // §72 R7.2 hotfix UX — CEO label hardcoded en frontend (independiente de roleName denormalizado stale) + empty state inteligente sec-roles (Crear rol vs Inicializar sistema según ceoExists) + filter sec-users limpiar editor/viewer/super_admin legacy. Cero deploy backend. // §71 R7b — RBAC auto-propagation triggers (4 Cloud Functions: onRoleUpdated/onRoleDeleted/onUserRoleAssigned/recalculateRoleUserCount). Elimina dependencia del "Resembrar sistema" manual del §70 — sync automático en tiempo real cuando admin edita roles. // §70 R7.1 hotfix — 3 bugs RBAC post-§69: toast falso CEO al refrescar (race condition), CEO label "Super Administrador" stale (seedSystemRoles ahora UPDATE + re-sync), CEO editable en sec-users (guard tabla + editUser/deleteUserFn programático). // §69 R7 — RBAC simplificación a UN solo system role CEO + guard "Sin rol asignado" + filtro de editor/viewer legacy en UI sec-roles + sec-users dropdown. // §61.R6 — Firestore Rules refactor con hasPermission(perm) server-side. 50+ callsites con OR fallback legacy preservado. ACCIÓN OBLIGATORIA POST-MERGE: firebase deploy --only firestore:rules. // §61.R5 Pragmático — JSDoc @deprecated + mapping table + refactor demo R2/R3. Cero refactor masivo (R8 lo hace). // §66.3 — modal system role: 1 solo botón Cerrar (no duplicado). // §66.2 hotfix — eliminar orderBy compuesto del listener admin-roles, ordenar client-side. Cero ruido en consola. // §61.R4.1 hotfix — handler de click ignoraba migrationModal, click en Ejecutar migración no respondía. Fix: agregar migModal al filtro. // §61.R4 — Migración legacy users: callable migrateLegacyUsers idempotente con dryRun support + UI sec-roles botón Migrar legacy + modal preview con plan + ejecución real. Cliente debe deployar functions:migrateLegacyUsers. // §61.R3 — Sec-users dropdown roles dinámico (onSnapshot real-time) + escritura denormalizada roleId/roleName/permissions al guardar + filtro por rol en tabla. // §61.R2 — UI sec-roles CRUD: lista grid + modal permissions matrix por categoría + system roles read-only + delete con guard de users + botón Sembrar invoca seedSystemRoles. Listener onSnapshot real-time. Cero impacto callsites legacy. // §61.R1 — RBAC Foundation: catálogo canónico permissions + roles + AP.hasPermission() + Cloud Function seedSystemRoles + rules permissions/+roles/. Cero impacto producción si no se ejecuta seedSystemRoles. R2 ship UI sec-roles. // §60.2 — Sprint S2 Optimistic UI cliente (concierge.js): estados pending/sent/read/failed + retry button // §60.1.1 — Hotfix Sprint S1: pre-check server claim + mensajes amigables permission-denied // §60.1 — Sprint S1 cirugía ALTOR Hub: Optimistic UI universal del admin (HubStore + 7 botones admin con snapshot/rollback + estados pending/sent/read/failed) // §57.9 — Refactor flow industry-standard (Intercom/Drift): open() lazy clean + finalCloseAndCleanup simplificado + telemetría completa // §57.8 — 3 botones pantalla Chat finalizado + fix radicado duplicado + defense-in-depth open() para bug Cerrar chat → reabrir conversación vieja — §57.7 admin listener globalmente activo + heartbeat self-healing // §57.7 — admin _chatsUnsub globalmente activo (no auto-cancel on section change) + heartbeat 30s self-healing → admin recibe chats nuevos en tiempo real sin refresh — §57.6 _resetting flag + Descargar en admin close + diag — fix unificado cleanSessionAndRender helper — 4 bugs tiempo real coordinados — finalCloseAndCleanup robusto + admin realtime detail re-render — fix botón Cerrar chat no respondía — refactor flow finalización chat cliente — fix definitivo radicado push Telegram — race condition radicado fix + disable_notification explícito — onChatEscalatedTelegram con onDocumentWritten + sin pin region + logs verbosos diagnostic
+    const APP_VERSION = '20260514080000'; // §82 Fase A Smart Update Prompts (industry-standard Slack/GitHub/Linear/Notion). MODAL FULLSCREEN ELIMINADO → pill sutil bottom-right 320px con auto-dismiss 20s + dismiss button X. SILENT_DEV_MODE flag ON por default durante esta fase de mejoras (cero notificación visible al cliente — la cache se invalida en background, próxima navegación natural ya está en la versión nueva). Toggle runtime: localStorage.altorra_silent_updates='1'|'0'. Cross-tab dedup via BroadcastChannel altorra-cache-updates con fallback sessionStorage. Daily dedup 24h (vs 5min anterior). Reduced-motion respetado. Cuando el cliente quiera mostrar pill a usuarios finales en producción, cambiar SILENT_DEV_MODE_DEFAULT a false (1 línea). Cero deploy backend. // §81 Mejora masiva inteligencia bot ALTOR — 7 bugs reportados por cliente. Bug 1 "Volviste" inapropiado: hasGreetedBefore filtra turnHistory por timestamp (elapsed >1s && <5min). Bug 2 cascade Bug 1. Bug 3 "que tienes por ahi": regex+lexicon. Bug 4 "no entiendes o que": frustration lexicon ampliado. Bug 5 "si tengo dudas" → goodbye: nuevo intent request_help prioritario + branch en concierge.js. Bug 6 "Que mas" → "¿Te quedó alguna duda?": variant problemático eliminado. Bug 7 "Ey" → fallback: regex greeting + lexicon expandido. Cero regresión. Cero deploy backend. // §80 Hotfix bugs bot ALTOR. Bug 1: aura cuadrada del FAB (§79 bloque A cncOnboardPulse aplicaba box-shadow rectangular al button transparente) → bloque A eliminado del CSS §79, FAB vuelve al onboarding original altorFloat+altorGlow. Bug 2: queue stale "1266 min" (loadSession no validaba staleness mode queue/live) → §80 STALENESS GUARD agregado: si mode='queue'/'live' Y last activity >4h → reset a 'bot' + messages=[] + queueEnteredAt=null + nuevo sessionId. Preserva profile. Welcome del bot aparece fresh al reabrir. Cero JS admin, cero schema, cero deploy. Cliente solo Ctrl+Shift+R. // §79 Sprint S7 Rediseño visual cliente widget Concierge (CSS-only ~250 líneas append). CIERRE Mega-Plan §59 ALTOR Hub 7/7 sprints. Onboarding pulse FAB (3 iterations, no loop), bubbles iMessage style con border-radius 18 asimétrico + animation overshoot + box-shadow sutil + max-width 78%, welcome bubble premium con gradient + glow + animation, vehicle cards hover lift, skeleton loaders preparados (futuro JS), CTA bubble entry suavizada, mobile responsive 480px, prefers-reduced-motion. Prefijo .altorra-concierge para especificidad sin !important. Cero JS, cero schema, cero deploy backend. Cliente solo Ctrl+Shift+R. Paridad visual cliente↔admin (S6+S7). // §78 Sprint S6 Rediseño visual ALTOR Hub admin (CSS-only ~350 líneas append). Sidebar refinada (avatar 44px gradient, hover lift, active gradient + accent left + glow), detail header sticky con backdrop-filter blur, bubbles iMessage style con border-radius asimétrico (4px en esquina del emisor) + animation hubMsgSlideIn cubic-bezier overshoot, empty states con SVG inline data:URI (chat bubble dorado + checkmark verde con pulse), skeleton loaders (preparados para futuro), unread badge con hubUnreadPulse, mobile responsive @media max-width:768px (1col), prefers-reduced-motion. Prefijo .altor-hub para especificidad sin !important. Cero JS, cero schema, cero deploy backend. Cliente solo Ctrl+Shift+R. Próximo S7 (último): rediseño visual cliente widget. // §77 Sprint S5 Presence avanzada (online/away/offline). Schema RTDB /presence extendido con status + currentChatId. Admin tracking via visibilitychange + click/keydown + setInterval 60s (sin pointermove). Cliente lee system/workload Firestore (privacy-safe, no /presence directo) y renderiza dot indicator + label en cncStatus header. 4 estados: 🟢 disponible (al instante), 🟢 online (pronto), 🟡 away, ⚫ offline. Aggregator workload extendido con asesoresAway count. Deploy obligatorio: firebase deploy --only functions:recalculateWorkloadOnChatChange,functions:recalculateWorkloadScheduled. // §76 Sprint S4 Read Receipts (✓ enviado vs ✓✓ leído). Cliente y admin marcan lastReadByUser/lastReadByAdmin en conciergeChats/{sid} con throttle 5s. Listener parent del cliente lee lastReadByAdmin para promover bubbles sent→read en renderMessages. renderChatDetail del admin promueve bubbles asesor a read si chat.lastReadByUser ≥ msg.timestamp. CSS ya existente en §60.2 y S1 (#34B7F1 azul + #1d4ed8 sobre user-bubble dorado). Cero deploy backend (rules R6 ya permiten update). // §75 Sprint S3 Typing Indicators bidireccionales (RTDB) — cliente y admin ven typing del otro lado con throttle 1s + auto-clear 3s + onDisconnect.remove. Schema /typing/{sid}/ con user + asesor_<uid>. Namespace `asesor` (cncAsesorTypingIndicator) no colisiona con typing del bot LLM existente (cncTypingIndicator INTACTO). Cliente: input listener + startTypingListener tras chat doc creado + cleanup en cancelChatListeners. Admin: setAdminTyping per uid + event delegation en cncAdminReply (sobrevive re-renders) + listener PER chat activo (cancela en openChat al cambiar + AltorraSectionCleanup al salir de sec-concierge). 3 dots iMessage style con keyframes + prefers-reduced-motion. database.rules.json: /typing/ con $asesorKey == 'asesor_' + auth.uid (cero impersonación). Cero costo (RTDB free tier). Deploy obligatorio: firebase deploy --only database. // §73.4 auto-hide "Resembrar sistema" cuando CEO ya está sembrado. Solo visible si ceoExists=false (caso edge). Header en flujo normal queda con solo "Nuevo rol". Re-sembrado manual via DevTools si se necesita en futuro. // §73.3 fix flicker pantalla "Inicializar sistema" en sec-roles + eliminado botón duplicado del header: nuevo flag _state.firstSnapshotReceived evita render con defaults antes de que llegue el snapshot Firestore. Caso A "Inicializar el sistema de roles" ELIMINADO (botón duplicaba "Resembrar sistema" del header). Empty state unificado con texto condicional según ceoExists. Si ceoExists=false (caso edge), texto dirige al header — UNA sola fuente de verdad. // §73.2 auto-hide inteligente: botones "Limpiar legacy" y "Migrar legacy" en sec-roles header se ocultan automáticamente cuando el sistema está limpio (cero huérfanos detectados). Detector en startListener snap + refreshUserCounts → flags _state.hasLegacyDocs + hasLegacyUsersWithSystemRoleId + hasLegacyUsersWithoutRoleId → renderRolesHeader condiciona. refreshHeaderIfLegacyChanged in-place re-render. "Resembrar sistema" siempre visible (utility). "Nuevo rol" siempre visible (CTA). // §73.1 hotfix — extraer header de sec-roles a renderRolesHeader() y mostrarlo SIEMPRE (también en empty states), para que el botón "Limpiar legacy" del §73 sea visible cuando hay CEO pero 0 customs. // §73 R8 mini cleanup masivo client-side: dropdown corto "— Sin roles disponibles —" + disable Guardar + hint visible cuando no hay customs + tabla sec-users muestra "Sin asignar" para users con roleId apuntando a system_editor/viewer legacy en lugar de "EDITOR" stale + eliminado tag "·legacy" confuso + filter __legacy__ incluye huérfanos system_editor/system_viewer. NUEVO botón "Limpiar legacy" en sec-roles header (super_admin only) que abre modal preview con stats + tabla detallada + warning + doble confirm + ejecuta CLIENT-SIDE PURO vía Firestore Compat SDK directo (cero deploy backend): batch update usuarios con FieldValue.delete() roleId/roleName + permissions=[] + markers _orphanedFromRole/_orphanedAt + batch delete docs roles/system_editor + roles/system_viewer + audit log entry. Garantía firestore.rules R6: CEO tiene wildcard '*' → permite delete de roles + update de usuarios. Cliente solo Ctrl+Shift+R y luego ejecuta el botón desde sec-roles UI para limpiar Firebase de restos legacy. // §72 R7.2 hotfix UX — CEO label hardcoded en frontend (independiente de roleName denormalizado stale) + empty state inteligente sec-roles (Crear rol vs Inicializar sistema según ceoExists) + filter sec-users limpiar editor/viewer/super_admin legacy. Cero deploy backend. // §71 R7b — RBAC auto-propagation triggers (4 Cloud Functions: onRoleUpdated/onRoleDeleted/onUserRoleAssigned/recalculateRoleUserCount). Elimina dependencia del "Resembrar sistema" manual del §70 — sync automático en tiempo real cuando admin edita roles. // §70 R7.1 hotfix — 3 bugs RBAC post-§69: toast falso CEO al refrescar (race condition), CEO label "Super Administrador" stale (seedSystemRoles ahora UPDATE + re-sync), CEO editable en sec-users (guard tabla + editUser/deleteUserFn programático). // §69 R7 — RBAC simplificación a UN solo system role CEO + guard "Sin rol asignado" + filtro de editor/viewer legacy en UI sec-roles + sec-users dropdown. // §61.R6 — Firestore Rules refactor con hasPermission(perm) server-side. 50+ callsites con OR fallback legacy preservado. ACCIÓN OBLIGATORIA POST-MERGE: firebase deploy --only firestore:rules. // §61.R5 Pragmático — JSDoc @deprecated + mapping table + refactor demo R2/R3. Cero refactor masivo (R8 lo hace). // §66.3 — modal system role: 1 solo botón Cerrar (no duplicado). // §66.2 hotfix — eliminar orderBy compuesto del listener admin-roles, ordenar client-side. Cero ruido en consola. // §61.R4.1 hotfix — handler de click ignoraba migrationModal, click en Ejecutar migración no respondía. Fix: agregar migModal al filtro. // §61.R4 — Migración legacy users: callable migrateLegacyUsers idempotente con dryRun support + UI sec-roles botón Migrar legacy + modal preview con plan + ejecución real. Cliente debe deployar functions:migrateLegacyUsers. // §61.R3 — Sec-users dropdown roles dinámico (onSnapshot real-time) + escritura denormalizada roleId/roleName/permissions al guardar + filtro por rol en tabla. // §61.R2 — UI sec-roles CRUD: lista grid + modal permissions matrix por categoría + system roles read-only + delete con guard de users + botón Sembrar invoca seedSystemRoles. Listener onSnapshot real-time. Cero impacto callsites legacy. // §61.R1 — RBAC Foundation: catálogo canónico permissions + roles + AP.hasPermission() + Cloud Function seedSystemRoles + rules permissions/+roles/. Cero impacto producción si no se ejecuta seedSystemRoles. R2 ship UI sec-roles. // §60.2 — Sprint S2 Optimistic UI cliente (concierge.js): estados pending/sent/read/failed + retry button // §60.1.1 — Hotfix Sprint S1: pre-check server claim + mensajes amigables permission-denied // §60.1 — Sprint S1 cirugía ALTOR Hub: Optimistic UI universal del admin (HubStore + 7 botones admin con snapshot/rollback + estados pending/sent/read/failed) // §57.9 — Refactor flow industry-standard (Intercom/Drift): open() lazy clean + finalCloseAndCleanup simplificado + telemetría completa // §57.8 — 3 botones pantalla Chat finalizado + fix radicado duplicado + defense-in-depth open() para bug Cerrar chat → reabrir conversación vieja — §57.7 admin listener globalmente activo + heartbeat self-healing // §57.7 — admin _chatsUnsub globalmente activo (no auto-cancel on section change) + heartbeat 30s self-healing → admin recibe chats nuevos en tiempo real sin refresh — §57.6 _resetting flag + Descargar en admin close + diag — fix unificado cleanSessionAndRender helper — 4 bugs tiempo real coordinados — finalCloseAndCleanup robusto + admin realtime detail re-render — fix botón Cerrar chat no respondía — refactor flow finalización chat cliente — fix definitivo radicado push Telegram — race condition radicado fix + disable_notification explícito — onChatEscalatedTelegram con onDocumentWritten + sin pin region + logs verbosos diagnostic
     const DB_NAME           = 'altorra-cache';
     const DB_VERSION        = 2;
     const STORE_DATA        = 'app-data';
@@ -45,6 +45,43 @@
     // justo después de que clearAndReload() reinstala el SW en la misma sesión.
     const UPDATE_GRACE_KEY  = 'altorra_update_grace';
     const UPDATE_GRACE_MS   = 30_000; // 30 segundos
+
+    /* ─── §82 Fase A — Smart Update Prompts (Industry-standard) ──── */
+    // SILENT_DEV_MODE: cuando true, las actualizaciones son completamente
+    // silenciosas (la cache se invalida en background, el SW se activa solo,
+    // el cliente sigue viendo la versión actual sin notificación; al
+    // próximo navegación natural ya está en la nueva versión).
+    //
+    // PARA ACTIVAR/DESACTIVAR:
+    //   • Hardcoded: cambia la constante abajo (true/false) y bumpea cache.
+    //   • Runtime: localStorage.setItem('altorra_silent_updates', '1')
+    //     o '0' para forzar override sin redeploy.
+    //
+    // Patrón Linear/Notion: silent durante fases de desarrollo activo,
+    // pill sutil cuando estás en producción con cambios visibles.
+    const SILENT_DEV_MODE_DEFAULT = true;  // ON durante fase de mejoras
+    function isSilentMode() {
+        try {
+            const override = localStorage.getItem('altorra_silent_updates');
+            if (override === '1') return true;
+            if (override === '0') return false;
+        } catch (e) {}
+        return SILENT_DEV_MODE_DEFAULT;
+    }
+    // Pill dedup window — UNA vez por ventana de tiempo (Slack/GitHub pattern).
+    // 24h: si el usuario ya vio la pill hoy, no la repetimos en cada nuevo
+    // commit del dev. En producción esto se vuelve útil porque el cliente
+    // sigue navegando varias veces al día.
+    const PILL_DEDUP_MS = 24 * 60 * 60 * 1000; // 24h
+    const PILL_SESSION_KEY = 'altorra_pill_session';
+    // BroadcastChannel: cross-tab dedup. Si tab A muestra la pill y tab B
+    // detecta la misma versión, B no la duplica.
+    let _bcChannel = null;
+    try {
+        if (typeof BroadcastChannel === 'function') {
+            _bcChannel = new BroadcastChannel('altorra-cache-updates');
+        }
+    } catch (e) { _bcChannel = null; }
 
     /* ─── L1: Memory cache ──────────────────────────────────────── */
     const memoryCache = new Map();
@@ -114,158 +151,222 @@
     const BANNER_DEDUP_MS  = 5 * 60 * 1000; // 5 minutes
 
     let _modalShown = false;
+    let _pillTimer = null;
 
+    /**
+     * §82 Smart Update Prompt — pill sutil bottom-right (NO modal fullscreen).
+     * Patrones combinados Slack + GitHub + Linear + Notion:
+     *   • Silent mode (default ON durante dev): cero notificación, swap silente
+     *   • Cross-tab dedup vía BroadcastChannel
+     *   • Session dedup vía sessionStorage (no spam intra-tab)
+     *   • Daily dedup vía localStorage (no se repite cada hora)
+     *   • Auto-dismiss 20s si user no interactúa
+     *   • Pill 300px bottom-right, sin overlay ni backdrop, no bloquea UI
+     *   • Reduced-motion friendly + a11y aria-live polite
+     */
     function showUpdateBanner() {
         if (_modalShown) return;
 
-        // Cross-page dedup: skip if banner was shown recently on ANY page
+        // 1) SILENT_DEV_MODE → cero notificación. La cache ya se invalidó
+        //    en background; al próximo navigation/reload el usuario está
+        //    en la versión nueva sin saberlo. Patrón Linear/Notion.
+        if (isSilentMode()) {
+            _modalShown = true; // bloquea futuras invocaciones en este tab
+            console.info('[AltorraCache] §82 Silent update applied (dev mode). Nueva versión disponible — sin notificación visible.');
+            return;
+        }
+
+        // 2) Cross-tab dedup (mismo browser, otras tabs): si otra tab ya
+        //    mostró la pill para esta versión, esta tab queda silent.
+        var alreadyShownInOtherTab = (function () {
+            try {
+                var data = sessionStorage.getItem(PILL_SESSION_KEY);
+                if (data) return true;
+            } catch (e) {}
+            return false;
+        })();
+        if (alreadyShownInOtherTab) {
+            _modalShown = true;
+            return;
+        }
+
+        // 3) Daily dedup: si la pill se mostró hace <24h en cualquier
+        //    tab/sesión de este browser, no re-mostrar.
         var lastShown = Number(localStorage.getItem(BANNER_SHOWN_KEY) || 0);
-        if (lastShown && (Date.now() - lastShown) < BANNER_DEDUP_MS) {
-            _modalShown = true; // block further attempts on this page too
+        if (lastShown && (Date.now() - lastShown) < PILL_DEDUP_MS) {
+            _modalShown = true;
             return;
         }
 
         _modalShown = true;
         localStorage.setItem(BANNER_SHOWN_KEY, Date.now().toString());
+        try { sessionStorage.setItem(PILL_SESSION_KEY, '1'); } catch (e) {}
+        // Notificar a otras tabs para que no dupliquen
+        try {
+            if (_bcChannel) _bcChannel.postMessage({ type: 'pill-shown', ts: Date.now() });
+        } catch (e) {}
 
         if (!document.getElementById('altorra-update-styles')) {
             const style = document.createElement('style');
             style.id = 'altorra-update-styles';
             style.textContent = `
-                #altorra-update-banner {
+                #altorra-update-pill {
                     position: fixed;
-                    inset: 0;
-                    z-index: 99999;
-                    background: rgba(0,0,0,0.72);
-                    backdrop-filter: blur(6px);
-                    -webkit-backdrop-filter: blur(6px);
+                    right: 16px;
+                    bottom: 16px;
+                    z-index: 9990;
+                    max-width: 320px;
+                    min-width: 240px;
+                    background: linear-gradient(160deg, rgba(15,12,0,0.96) 0%, rgba(28,22,0,0.96) 100%);
+                    border: 1px solid rgba(212,175,55,0.32);
+                    border-top: 1px solid rgba(212,175,55,0.55);
+                    border-radius: 14px;
+                    box-shadow: 0 10px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(212,175,55,0.08);
+                    padding: 14px 14px 14px 18px;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 10px;
+                    font-family: inherit;
+                    color: #fff;
+                    transform: translateY(20px);
+                    opacity: 0;
+                    transition: transform 0.32s cubic-bezier(0.34,1.3,0.64,1), opacity 0.28s ease;
+                    pointer-events: auto;
+                }
+                #altorra-update-pill.aup-visible {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+                #altorra-update-pill.aup-leaving {
+                    transform: translateY(20px);
+                    opacity: 0;
+                }
+                .aup-icon {
+                    flex-shrink: 0;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #d4af37 0%, #b89658 100%);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 20px;
-                    opacity: 0;
-                    transition: opacity 0.35s ease;
-                    font-family: inherit;
+                    font-size: 0.78rem;
+                    color: #0a0800;
+                    margin-top: 1px;
                 }
-                #altorra-update-banner.aub-visible {
-                    opacity: 1;
-                }
-                .aub-card {
-                    background: linear-gradient(160deg, #0f0c00 0%, #1c1600 55%, #0a0800 100%);
-                    border: 1px solid rgba(212,175,55,0.3);
-                    border-top: 2px solid #d4af37;
-                    border-radius: 14px;
-                    box-shadow: 0 32px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(212,175,55,0.07);
-                    padding: 40px 44px 36px;
-                    max-width: 420px;
-                    width: 100%;
-                    text-align: center;
-                    transform: translateY(24px) scale(0.96);
-                    transition: transform 0.42s cubic-bezier(0.16,1,0.3,1);
-                }
-                #altorra-update-banner.aub-visible .aub-card {
-                    transform: translateY(0) scale(1);
-                }
-                .aub-brand {
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    letter-spacing: 0.14em;
-                    background: linear-gradient(115deg, #c9a227 0%, #f5df80 50%, #d4af37 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                    line-height: 1;
-                }
-                .aub-brand-sub {
-                    display: block;
-                    font-size: 0.48rem;
-                    letter-spacing: 0.6em;
-                    text-indent: 0.6em;
-                    text-transform: uppercase;
-                    color: rgba(212,175,55,0.38);
-                    margin-top: 3px;
-                }
-                .aub-rule {
-                    width: 50px;
-                    height: 1px;
-                    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.55), transparent);
-                    margin: 14px auto 20px;
-                }
-                .aub-icon {
-                    font-size: 2.2rem;
-                    display: block;
-                    margin-bottom: 10px;
-                    line-height: 1;
-                }
-                .aub-title {
-                    font-size: 1rem;
-                    font-weight: 700;
+                .aup-body { flex: 1; min-width: 0; }
+                .aup-title {
+                    font-size: 0.82rem;
+                    font-weight: 600;
                     color: #d4af37;
+                    margin: 0 0 2px;
+                    letter-spacing: 0.01em;
+                    line-height: 1.2;
+                }
+                .aup-desc {
+                    font-size: 0.74rem;
+                    color: rgba(255,255,255,0.55);
                     margin: 0 0 8px;
-                    line-height: 1.3;
+                    line-height: 1.4;
                 }
-                .aub-desc {
-                    font-size: 0.81rem;
-                    color: rgba(255,255,255,0.42);
-                    line-height: 1.6;
-                    margin: 0 0 28px;
-                }
-                .aub-btn {
-                    display: block;
-                    width: 100%;
-                    padding: 14px 24px;
+                .aup-actions { display: flex; gap: 6px; align-items: center; }
+                .aup-btn {
                     background: linear-gradient(135deg, #d4af37 0%, #b89658 100%);
                     color: #0a0800;
                     border: none;
-                    border-radius: 8px;
+                    border-radius: 7px;
                     font-weight: 700;
-                    font-size: 0.8rem;
-                    letter-spacing: 1.6px;
+                    font-size: 0.7rem;
+                    letter-spacing: 0.08em;
                     text-transform: uppercase;
+                    padding: 7px 12px;
                     cursor: pointer;
-                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    transition: transform 0.18s ease, box-shadow 0.18s ease;
                     font-family: inherit;
                 }
-                .aub-btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 28px rgba(212,175,55,0.4);
+                .aup-btn:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(212,175,55,0.32);
                 }
-                .aub-btn:active  { transform: translateY(0); }
-                .aub-btn:disabled {
-                    opacity: 0.65;
-                    cursor: not-allowed;
-                    transform: none;
+                .aup-btn:active { transform: translateY(0); }
+                .aup-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+                .aup-dismiss {
+                    background: transparent;
+                    border: none;
+                    color: rgba(255,255,255,0.42);
+                    cursor: pointer;
+                    font-size: 1.05rem;
+                    line-height: 1;
+                    padding: 4px 6px;
+                    border-radius: 6px;
+                    transition: color 0.18s ease, background 0.18s ease;
+                }
+                .aup-dismiss:hover {
+                    color: #fff;
+                    background: rgba(255,255,255,0.08);
                 }
                 @media (max-width: 480px) {
-                    .aub-card { padding: 30px 24px 28px; }
+                    #altorra-update-pill {
+                        right: 12px;
+                        bottom: 12px;
+                        left: 12px;
+                        max-width: none;
+                    }
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    #altorra-update-pill,
+                    #altorra-update-pill.aup-leaving { transition: opacity 0.2s ease; transform: none; }
                 }
             `;
             document.head.appendChild(style);
         }
 
-        const overlay = document.createElement('div');
-        overlay.id = 'altorra-update-banner';
-        overlay.setAttribute('role', 'alertdialog');
-        overlay.setAttribute('aria-modal', 'true');
-        overlay.setAttribute('aria-labelledby', 'aub-title');
-        overlay.innerHTML = `
-            <div class="aub-card">
-                <div class="aub-brand">ALTORRA<span class="aub-brand-sub">CARS</span></div>
-                <div class="aub-rule"></div>
-                <span class="aub-icon" aria-hidden="true">⚡</span>
-                <p class="aub-title" id="aub-title">Nueva versión disponible</p>
-                <p class="aub-desc">Hay actualizaciones con nuevos vehículos o cambios recientes. Actualiza para ver el catálogo más reciente.</p>
-                <button class="aub-btn" id="aub-reload-btn">Actualizar ahora</button>
+        const pill = document.createElement('div');
+        pill.id = 'altorra-update-pill';
+        pill.setAttribute('role', 'status');
+        pill.setAttribute('aria-live', 'polite');
+        pill.innerHTML = `
+            <div class="aup-icon" aria-hidden="true">↻</div>
+            <div class="aup-body">
+                <p class="aup-title">Nueva versión disponible</p>
+                <p class="aup-desc">Recargá para ver los cambios más recientes.</p>
+                <div class="aup-actions">
+                    <button class="aup-btn" id="aup-reload-btn" type="button">Recargar</button>
+                </div>
             </div>
+            <button class="aup-dismiss" id="aup-dismiss-btn" type="button" aria-label="Descartar">×</button>
         `;
-        document.body.appendChild(overlay);
+        document.body.appendChild(pill);
 
-        requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('aub-visible')));
+        requestAnimationFrame(() => requestAnimationFrame(() => pill.classList.add('aup-visible')));
 
-        document.getElementById('aub-reload-btn').addEventListener('click', function () {
-            this.textContent = 'Actualizando…';
+        function dismissPill() {
+            if (_pillTimer) { clearTimeout(_pillTimer); _pillTimer = null; }
+            pill.classList.remove('aup-visible');
+            pill.classList.add('aup-leaving');
+            setTimeout(function () {
+                if (pill.parentNode) pill.parentNode.removeChild(pill);
+            }, 350);
+        }
+
+        document.getElementById('aup-reload-btn').addEventListener('click', function () {
+            this.textContent = 'Recargando…';
             this.disabled = true;
             AltorraCache.clearAndReload();
+        });
+        document.getElementById('aup-dismiss-btn').addEventListener('click', dismissPill);
+
+        // Auto-dismiss 20s (Slack pattern)
+        _pillTimer = setTimeout(dismissPill, 20_000);
+    }
+
+    // Cross-tab listener: si otra tab muestra la pill, esta queda silent
+    if (_bcChannel) {
+        _bcChannel.addEventListener('message', function (e) {
+            if (e.data && e.data.type === 'pill-shown') {
+                _modalShown = true;
+                try { sessionStorage.setItem(PILL_SESSION_KEY, '1'); } catch (err) {}
+            }
         });
     }
 

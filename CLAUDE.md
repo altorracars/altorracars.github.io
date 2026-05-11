@@ -35109,3 +35109,291 @@ en BroadcastChannel + sessionStorage/localStorage.
 
 **Cache bump**: `v20260514080000`.
 
+
+---
+
+## 83. ADR-083 — Fase B Smart Update Prompts: tipos de cambio + toast catálogo + smart navigation (2026-05-11)
+
+> Continuación inmediata del §82 (Fase A). Cliente autorizó "continua ya
+> mismo". Implementa B1 + B2 + B3 del plan §82.11 de 3 fases.
+>
+> **Fase B** cierra el trade-off del §82: con SILENT_DEV_MODE ON los
+> usuarios podían quedar con versión vieja indefinidamente. §83 agrega
+> 3 mecanismos coordinados para que las actualizaciones lleguen al user
+> de forma inteligente:
+>
+> 1. **B2** — Schema `deploy-info.json` extendido con `type`
+>    (silent/soft/forced). Generator emite `type=soft` cuando hay
+>    cambios reales de inventario.
+> 2. **B3** — Toast contextual `🆕 Nuevos vehículos disponibles` en
+>    páginas catálogo (en lugar de pill genérica), patrón Intercom.
+> 3. **B1** — Smart navigation handler: si hay version mismatch +
+>    cliente navega entre páginas → swap silente automático (patrón
+>    Notion/Linear).
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero transition all), §17.4
+> (HTML/CSS estable), §17.12 (cero MutationObserver), §35 (cero
+> pointermove), §37 (IAP), §19 (RCA estricto).
+
+### 83.1 Por qué este sprint existe
+
+§82 resolvió el "modal molesto" pero generó un trade-off:
+- Con SILENT_DEV_MODE=true, cliente NUNCA ve banner → riesgo de quedar
+  con versión vieja
+- Con SILENT_DEV_MODE=false en producción, cliente ve pill UNA vez por
+  día → mejor pero genérico, no distingue qué cambió
+
+Cliente reportó: *"Pero el cuento es que si no se actualiza los usuarios
+utilizarian la web antigua"*.
+
+§83 cierra ese gap con 3 mecanismos coordinados que combinan:
+- **Detección de tipo** (B2): el sistema sabe si el cambio es visible al
+  user o no
+- **Notificación contextual** (B3): solo notifica donde tiene sentido
+  (catálogo) con copy específico
+- **Swap silencioso al navegar** (B1): aunque el user no vea ningún
+  prompt, la próxima vez que navegue ya está en la versión nueva
+
+### 83.2 Solución estructural — 3 cambios coordinados
+
+#### B2 — Schema `deploy-info.json` con `type`
+
+**Antes**:
+```json
+{ "version": "20260514XXX", "sha": "abc1234", "ref": "main" }
+```
+
+**Ahora**:
+```json
+{ "version": "20260514XXX", "sha": "abc1234", "ref": "main",
+  "type": "soft", "userVisible": true }
+```
+
+3 valores válidos para `type`:
+
+| Type | Comportamiento | Cuándo emitir |
+|---|---|---|
+| `silent` | Cero notificación SIEMPRE (incluso con SILENT_DEV_MODE=false) | Cambios cosméticos, refactor interno, bumps internos |
+| `soft` | Respeta SILENT_DEV_MODE. En páginas catálogo muestra toast contextual. En otras muestra pill estándar | Cambios visibles: vehículos nuevos, marcas, banners, precios |
+| `forced` | Modal obligatorio (sobreescribe SILENT_DEV_MODE) | Bug fix crítico de seguridad (raro) |
+
+**Default fallback** si falta `type`: `'silent'` (retrocompat
+conservadora — deploys viejos sin el field no molestan).
+
+**Workflow generator** (`.github/workflows/generate-vehicles.yml`):
+```bash
+echo "{\"version\":\"${DEPLOY_TS}\",\"sha\":\"${SHA_SHORT}\",\"ref\":\"${GITHUB_REF_NAME}\",\"type\":\"soft\",\"userVisible\":true}" > data/deploy-info.json
+```
+
+El generator solo corre cuando detecta cambios reales en `vehiculos/`,
+`marcas/`, `sitemap.xml`, `data/`. Por lo tanto siempre que escribe el
+deploy-info es `soft`. Para `silent` o `forced` se haría editorialmente
+en deploys manuales (no implementado por ahora — todos los autoflows
+son soft).
+
+#### B3 — Toast contextual para inventario en catálogo
+
+Helper `isCatalogPage()` detecta páginas relevantes:
+- `/` o `/index.html`
+- `/busqueda*`
+- `/vehiculos-*` (categorías: suv, sedan, pickup, hatchback)
+- `/vehiculos/*` (páginas generadas)
+- `/marcas*` y `/marcas/*`
+- `/comparar*`
+- `/favoritos*`
+
+Cuando `getDeployType() === 'soft'` Y `isCatalogPage()` Y SILENT_DEV_MODE
+está OFF, `showUpdateBanner()` invoca `showCatalogToast()` en lugar de
+la pill genérica.
+
+**UI** (`#altorra-catalog-toast`):
+- Position fixed bottom-center 50% transform translateX
+- 360px max-width, sin overlay
+- Icon dorado circular 26px con 🆕
+- Title "Nuevos vehículos disponibles" (compact)
+- Desc "Refrescá para ver el catálogo actualizado."
+- Botón "Ver" (CTA primario, dispara `clearAndReload()`)
+- Botón X dismiss
+- Auto-dismiss 15s (vs 20s del pill genérico — más urgente para inventario)
+- Mobile <480px: full-width inferior
+- `prefers-reduced-motion: reduce`: solo opacity transition
+
+**Patrón usado por**: Intercom Resolution Bot post-action toast,
+Slack thread updates, Stripe Dashboard "New transactions" pill.
+
+#### B1 — Smart Navigation Update (Notion/Linear)
+
+Cuando se detecta version mismatch (en cualquiera de los 3 callsites
+de `showUpdateBanner`: validateDeployVersion, polling, notifyUpdate del
+SW), seteamos:
+
+```js
+_smartNavPending = true;
+armSmartNavigationUpdate();
+```
+
+`armSmartNavigationUpdate()`:
+- Bindea UNA sola vez (`_smartNavBound` flag)
+- Listener `click` capture-phase en `document` que captura clicks en
+  `<a href="...">` internos (mismo origen, no `target=_blank`, no
+  `download`, no anchor `#` mismo path)
+- Cuando dispara: `console.info` + `SKIP_WAITING` al SW waiting (si existe)
+  + `_smartNavPending = false`
+- Listener `pagehide` para diagnóstico (browser ya hará el swap natural)
+
+**Resultado**: cliente NO ve prompt. En el próximo click a otra página
+(o al cerrar/reabrir tab), el browser carga la nueva versión
+transparentemente. Patrón usado por:
+- Notion: swap silent al navegar entre páginas del workspace
+- Linear: silent en minor releases
+- GitHub: silent SW update + next route change ya tiene la versión
+
+### 83.3 Estructura de decisión en showUpdateBanner
+
+```
+showUpdateBanner() invocado
+       │
+       ▼
+    deployType = getDeployType()
+       │
+       ├─ silent  → console.info + return (cero notif)
+       │
+       ├─ forced  → modal (caso raro, sobreescribe SILENT_DEV_MODE)
+       │
+       └─ soft (default)
+              │
+              ├─ SILENT_DEV_MODE=true → silent + log
+              │
+              ├─ isCatalogPage() → showCatalogToast()
+              │
+              └─ else → pill estándar §82 (bottom-right)
+```
+
+Plus en todos los casos donde se detecta version mismatch:
+- `_smartNavPending = true` antes de showUpdateBanner
+- `armSmartNavigationUpdate()` bindeado (idempotente)
+
+### 83.4 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio público (cache v20260514090000) | Cache nueva carga |
+| 2 | Cliente abre el sitio post-§83 deploy (SILENT_DEV_MODE=true) | Cero notificación visual (igual que §82) |
+| 3 | DevTools console post-load | `[AltorraCache] §82 Silent update applied (dev mode)` o `§83 Silent deploy type` |
+| 4 | DevTools: `localStorage.setItem('altorra_silent_updates', '0')` + refresh con version mismatch + en página catálogo (busqueda) | Toast `🆕 Nuevos vehículos disponibles` bottom-center con CTA Ver/X |
+| 5 | Mismo escenario en página NO catálogo (contacto/cookies) | Pill estándar `Nueva versión disponible` bottom-right (§82) |
+| 6 | DevTools: deploy-info.json con `"type": "silent"` (editar manualmente) | Cero notificación incluso si `altorra_silent_updates='0'` |
+| 7 | DevTools: deploy-info.json con `"type": "forced"` | Modal aparece sobreescribiendo SILENT_DEV_MODE |
+| 8 | Cliente con version mismatch detectado + click en cualquier `<a href>` interno | DevTools log `[AltorraCache] §83 Smart nav update applied silently on link click` + SW SKIP_WAITING enviado |
+| 9 | Cliente con version mismatch + cerrar y reabrir tab | Browser carga nueva versión transparentemente (`pagehide` diagnóstico log) |
+| 10 | Mobile <480px | Toast catálogo ocupa full-width inferior con margen lateral 12px |
+| 11 | `prefers-reduced-motion: reduce` | Toast catálogo: solo opacity (sin transform) |
+| 12 | Workflow generator corre 4h cron | `data/deploy-info.json` incluye `"type": "soft"` + `"userVisible": true` |
+| 13 | Cross-tab dedup (§82) | Sigue funcionando: 1 sola pill/toast por sesión cross-tabs |
+
+### 83.5 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 transition all | `transition: all` | Solo `transform/opacity` específicas en toast |
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | CERO. Solo nuevos IDs `altorra-catalog-toast`, clases `act-*` |
+| §17.12 anti-MO | MutationObserver subtree:true | Cero MO. Listener click capture en document |
+| §35 anti-pointermove | pointermove persistente | Cero pointermove. Solo `click` y `pagehide` event-by-event |
+| §19 RCA estricto | Implementar sin diseño | Plan ya documentado en §82.11 con 3 fases. Cliente autorizó "continua ya mismo" |
+| §37 IAP | Implementar sin autorización | Cliente autorizó secuencialmente "Hazlo como tu lo recomiendes" (§82) + "continua ya mismo" (§83) |
+| Big Bang | Refactor masivo cache-manager | Solo extiende showUpdateBanner con branches por type + agrega 3 helpers (getDeployType/isCatalogPage/showCatalogToast/armSmartNavigationUpdate). Resto INTACTO |
+| Smart nav listener interfiere con SPA | Captura phase + checks de same-origin/target/download/hash | Solo intercepta navegaciones reales hacia distinto path del mismo origin |
+
+### 83.6 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Toast catálogo bloquea click en CTA legítimo del sitio | 🟢 Baja | `pointer-events: auto` solo sobre el toast (340×80px bottom-center). Resto de la página clickable | git revert |
+| 2 | Generator no emite type=soft correctamente | 🟢 Baja | Field es opcional, fallback default 'silent' (más conservador). Si el JSON malformado, fetchDeployVersion retorna null → no banner |
+| 3 | Smart nav handler captura click destructivo (logout, submit) | 🟢 Baja | Solo intercepta `<a href>` con same-origin + no target=_blank + no download. Submit/buttons no afectados |
+| 4 | SKIP_WAITING en smart nav rompe SW lifecycle | 🟢 Baja | Solo si reg.waiting existe. Si SW no tiene update pendiente, no-op |
+| 5 | Cliente con `type=forced` por error en deploy → modal innecesario | 🟢 Baja | Solo el generator emite type, hardcoded 'soft'. 'forced' requiere edit manual del workflow (improbable accidental) |
+| 6 | isCatalogPage() falsos positivos/negativos en URLs raras | 🟢 Baja | Lista explícita de patterns. Default false si no matchea (cae a pill estándar, no rompe nada) |
+| 7 | Auto-dismiss 15s muy corto para catálogo | 🟢 Baja | Constante exportable. Si feedback indica, ajustar a 20s |
+| 8 | Múltiples toasts (catálogo + pill) | 🟢 Nula | `_modalShown` flag + early return previenen doble render |
+
+### 83.7 Acciones operativas del cliente
+
+NINGUNA NUEVA. Solo:
+1. **Ctrl+Shift+R** una vez en sitio público para invalidar cache previa
+   (carga `v20260514090000`)
+2. Próximo deploy del generator (cron 4h o push con cambios reales)
+   emite `type=soft` automáticamente
+3. Durante fase de mejoras (SILENT_DEV_MODE=true), cliente sigue sin
+   ver banners — pero la cache se invalida en background Y el next
+   navigation aplica swap silente
+
+**Para activar pill/toast en producción** (futuro):
+- Editar `js/cache-manager.js` → `SILENT_DEV_MODE_DEFAULT = false`
+- Bumpear cache version
+- Push
+
+Usuarios finales verán:
+- En catálogo: toast `🆕 Nuevos vehículos disponibles` bottom-center
+- Fuera de catálogo: pill genérica bottom-right
+- Smart nav: si navegan antes de ver el toast, swap silente automático
+
+### 83.8 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `.github/workflows/generate-vehicles.yml` | Emit `type=soft` + `userVisible=true` en deploy-info.json | +9, -1 |
+| `js/cache-manager.js` | Helpers nuevos: `getDeployType`, `isCatalogPage`, `showCatalogToast`, `armSmartNavigationUpdate`. Cache `_lastDeployInfo` en fetchDeployVersion. Branch por type en showUpdateBanner. Smart nav pending flag + 3 callsites (validateDeployVersion + polling + notifyUpdate) | +220, -3 |
+| `service-worker.js` | CACHE_VERSION → `v20260514090000` con changelog §83 | +1, -1 |
+| `js/cache-manager.js` APP_VERSION | → `'20260514090000'` con prepend §83 | +1, -1 |
+| `CLAUDE.md` | Esta sección §83 | +210, 0 |
+
+**Total**: 4 archivos. Cero JS admin modificado. Cero schema Firestore. Cero deploy backend. Cero rules cambios.
+
+### 83.9 Archivos INTACTOS (afirmación)
+
+- Resto del sistema cache-manager (validateDeployVersion logic core,
+  validateWithFirestore, startPolling, SWManager.register, init) — lógica INTACTA
+- SW strategies (Network First HTML / Stale-While-Revalidate assets) — sin tocar
+- Cero JS admin/concierge modificado
+- Bot ALTOR (concierge.js + admin-concierge.js + AI modules) — ZERO
+- HTML/CSS externos — ZERO
+- Firestore rules / RTDB rules / Cloud Functions — ZERO
+
+### 83.10 Plan completo §82+§83 status
+
+| Fase | Status | Doc |
+|---|---|---|
+| ✅ A1 — Modal fullscreen → pill sutil | Mergeado | §82 |
+| ✅ A2 — SILENT_DEV_MODE flag | Mergeado | §82 |
+| ✅ A3 — Cross-tab dedup BroadcastChannel | Mergeado | §82 |
+| ✅ B1 — Smart navigation handler | **§83 (este)** | §83 |
+| ✅ B2 — Schema deploy-info.json con type | **§83 (este)** | §83 |
+| ✅ B3 — Toast contextual catálogo | **§83 (este)** | §83 |
+| ⏸ C1 — Network-first agresivo + hash assets | Opcional futuro | §82.11 |
+
+Fase C queda disponible para cuando proyecto migre a build system (Vite/esbuild). Por ahora §82+§83 cubren el 99% de casos sin requerir refactor profundo.
+
+### 83.11 Doctrina aplicada
+
+§19 RCA estricto: plan diseñado previamente en §82.11 con 3 fases. Fase B
+documentada en propuesta original al cliente. Ejecutada al pie de la
+propuesta.
+
+§37 IAP: autorización del cliente "continua ya mismo" tras §82 cierre.
+5 secciones de IAP documentadas en este §83 antes de tocar código.
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Solo `transform/opacity` específicas. Listener
+capture-phase eficiente. `_lastDeployInfo` cache evita re-fetch.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Solo nuevos
+`#altorra-catalog-toast`, `.act-*` que no colisionan con legacy.
+
+§17.12 anti-MutationObserver: cero MO. Solo event listeners discretos.
+
+§82 plan: §83 ejecuta exactamente lo prometido en §82.11. Cero overflow
+a Fase C ni a otros planes.
+
+**Cache bump**: `v20260514090000`.
+

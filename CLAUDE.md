@@ -35639,3 +35639,313 @@ NINGUNA NUEVA crítica. Solo:
 
 **Cache bump**: `v20260514100000`.
 
+---
+
+## 85. PENDIENTES DOCUMENTADOS — Roadmap de trabajo opcional (2026-05-15)
+
+> **CÓMO USAR ESTA SECCIÓN (lectura obligatoria para sesiones futuras)**:
+>
+> Cuando el cliente pregunte "¿qué hay pendiente?" en una sesión futura,
+> el agente Claude DEBE leer §85 PRIMERO antes de §62. Esta sección es
+> la fuente de verdad canónica de trabajo opcional documentado.
+>
+> Cada item tiene un marcador único `PENDIENTE-X` (donde X = A/B/C) para
+> que se pueda encontrar instantáneamente con grep:
+>
+> ```bash
+> grep -n "PENDIENTE-" CLAUDE.md
+> ```
+>
+> Estado actualizado al 2026-05-15:
+> - **Plan §61 RBAC**: ✅ Cerrado funcionalmente (§63-§73.4)
+> - **Plan §59 ALTOR Hub**: ✅ Cerrado 7/7 sprints (§60.1-§79)
+> - **Plan §82-§84 Smart Update**: ✅ Cerrado en producción
+> - **Deploy Cloud Functions**: ✅ Todas las 27 funciones deployadas
+>   (validado 2026-05-15 con `firebase functions:list --project altorra-cars`):
+>   `chatLLM`, `createManagedUserV2`, `deleteManagedUserV2`,
+>   `getTelegramWebhookStatus`, `linkTelegramChat`, `migrateLegacyUsers`,
+>   `onChatEscalated`, `onChatEscalatedTelegram`, `onConciergeChatCreated`,
+>   `onConciergeMessageAdded`, `onNewSolicitud`, `onRoleDeleted`,
+>   `onRoleUpdated`, `onSolicitudStatusChanged`, `onUserRoleAssigned`,
+>   `onVehicleChange`, `onVehiclePriceAlert`, `proactiveEngagement`,
+>   `recalculateRoleUserCount`, `recalculateWorkloadOnChatChange`,
+>   `recalculateWorkloadScheduled`, `seedSystemRoles`, `setupTelegramWebhook`,
+>   `summarizeChat`, `triggerSeoRegeneration`, `updateUserRoleV2`
+>
+> Quedan 3 items opcionales documentados abajo. NINGUNO es bloqueante para
+> producción.
+
+### 85.1 PENDIENTE-A — Fase C Smart Update Prompts (build system + Vercel)
+
+**Status**: 🔮 Documentado, bloqueado por decisión de migración a Vercel
+**Prioridad**: Baja (no urgente)
+**Esfuerzo estimado**: 3-5 días de trabajo + 1 día testing E2E
+**Bloqueado por**: Decisión de migrar de GitHub Pages a Vercel/Cloudflare Pages
+**Doc referencia**: §82, §83, §84.5, `PLAN-MIGRACION-ALTORRA.md`
+
+#### Qué es
+
+La parte final del plan §82-§84 de "Smart Update Prompts" (pill sutil
+para "Nueva versión disponible"). Hoy el sistema necesita el aviso porque
+los archivos JS/CSS tienen nombres ESTÁTICOS (`concierge.js`, `style.css`)
+y el navegador no sabe que cambiaron sin un disparador externo.
+
+#### Qué pasaría con Fase C
+
+Cada deploy generaría archivos con HASH único:
+- `concierge-7f3a92b.js` (hoy) → `concierge-1d4e5f8.js` (mañana)
+- `style-abc123def.css` (hoy) → `style-xyz789ghi.css` (mañana)
+
+El HTML referencia el nombre nuevo automáticamente → el navegador NUNCA
+ve cache stale porque el nombre cambió → **CERO necesidad de pill/toast
+de "Nueva versión disponible"**. Performance mejor también (assets con
+cache forever de 1 año, HTML siempre fresh).
+
+Patrón usado por Vercel/Netlify/Cloudflare Pages nativos.
+
+#### Qué necesita para implementarse (checklist)
+
+1. **Migrar hosting**: de GitHub Pages a **Vercel** (recomendado) o
+   **Cloudflare Pages**. Acordado en §84.5 + PLAN-MIGRACION-ALTORRA.md
+2. **Implementar build system**: **Vite** (recomendado, moderno) o esbuild
+3. **Reorganizar imports**: `<script src="js/X.js">` → `import X from './X.js'`
+4. **Configurar entry points** por cada HTML (~80 páginas)
+5. **Adaptar generador de vehículos**: `scripts/generate-vehicles.mjs`
+   para usar templating con hash de archivos
+6. **Migrar registro del Service Worker** al patrón post-build
+7. **Cambiar deploy**: de GitHub Actions (Pages) a Vercel/Cloudflare Pages
+8. **Configurar dominio custom + DNS** (parte del paquete migración)
+9. **Testing extensivo**:
+   - Admin panel completo (todas las secciones)
+   - Bot ALTOR (cliente + Hub admin)
+   - Formularios públicos + Firebase Auth
+   - Telegram + FCM + RTDB
+   - Service Worker + cache strategies
+
+#### Cuándo arrancar
+
+Cuando el cliente diga "arrancamos migración a Vercel" o equivalente. Se
+combina naturalmente con la migración completa de hosting documentada en
+`PLAN-MIGRACION-ALTORRA.md`. Ganancias adicionales del paquete:
+- CDN global edge (latencia <50ms desde Latam)
+- HTTPS automático sin Cloudflare proxy
+- Deploy previews por cada commit
+- Analytics integrados
+- Headers HTTP custom (resuelve el COOP warning de §18)
+- Build caching automático
+- Rollback con 1 click
+
+### 85.2 PENDIENTE-B — §61 R8 grande: refactor 164 callsites legacy
+
+**Status**: 🔮 Listo para arrancar cuando cliente diga "implementemos R8 grande"
+**Prioridad**: Media (limpieza de código, NO funcional)
+**Esfuerzo estimado**: 1 día dedicado con tests E2E
+**Bloqueado por**: NADA — opcional puro. Sistema RBAC funciona 100% sin esto
+**Doc referencia**: §67 (mapping table completa en §67.3), §73 R8 mini
+
+#### Qué es
+
+Hoy en el código admin hay ~164 lugares que llaman a helpers viejos como:
+- `AP.isSuperAdmin()`
+- `AP.isEditorOrAbove()`
+- `AP.canManageUsers()`
+- `AP.canCreateOrEditInventory()`
+- `AP.canDeleteInventory()`
+- `AP.RBAC.canDeleteVehicle()`, `canCreateBrand()`, etc.
+
+Esos helpers internamente ya delegan al sistema nuevo `AP.hasPermission(...)`
+gracias al §67 (R5 pragmático). Por eso **todo funciona perfecto** sin
+tocar nada.
+
+#### Qué se ganaría con R8 grande
+
+**Limpieza pura**. Reemplazar cada callsite legacy por su equivalente
+canónica directa. Código más legible, mantenible y consistente.
+
+Ejemplo de migración:
+```js
+// ANTES (legacy):
+if (AP.canManageUsers()) { ... }
+
+// DESPUÉS (canónico):
+if (AP.hasPermission('users.create') || AP.hasPermission('users.edit')) { ... }
+```
+
+Mapping table completa en §67.3 del CLAUDE.md cubre cada helper legacy
+con su equivalente exacta.
+
+#### Qué necesita para implementarse (checklist)
+
+1. **Refactor archivo por archivo** (~14 archivos JS del admin):
+   - `js/admin-vehicles.js` (~25 callsites)
+   - `js/admin-crm.js` (~20)
+   - `js/admin-concierge.js` (~18)
+   - `js/admin-appointments.js` (~15)
+   - `js/admin-brands.js` (~12)
+   - `js/admin-dealers.js` (~10)
+   - `js/admin-banners.js` (~10)
+   - `js/admin-reviews.js` (~10)
+   - `js/admin-users.js` (~5 — 1 ya refactorizado demo §67)
+   - `js/admin-kb.js` (~8)
+   - `js/admin-unmatched.js` (~5)
+   - `js/admin-calendar.js` (~5)
+   - `js/admin-workflows.js` (~5)
+   - `js/admin-settings.js` (~6)
+2. **Usar mapping table** `CLAUDE.md §67.3` para cada reemplazo
+3. **Eliminar helpers `@deprecated`** de `js/admin-state.js`
+4. **Eliminar campo `rol` legacy** de `usuarios/{uid}` (todos los users
+   ya migrados via §61 R4)
+5. **Refactor `firestore.rules`**:
+   - Eliminar helpers `isSuperAdmin()` y `isEditorOrAbove()`
+   - Eliminar branches OR fallback en cada callsite (dejar solo
+     `hasPermission(permId)`)
+6. **Tests E2E archivo por archivo** validando cada sección del admin
+7. **Cache bump** + deploy de `firestore.rules`
+
+#### Cuándo arrancar
+
+Idealmente después de unas **semanas de validación en producción** para
+asegurar que el sistema funciona estable sin sorpresas. Una vez confirmado,
+es un sprint dedicado de 1 día completo de refactor + tests.
+
+NO hacerlo si: hay cambios urgentes en desarrollo (riesgo de merge
+conflicts). Hacerlo en ventana tranquila.
+
+### 85.3 PENDIENTE-C — §59 S8+S9+S10 ALTOR Hub features adicionales
+
+**Status**: 🔮 Tres sub-sprints opcionales del Mega-Plan §59
+**Prioridad**: Baja-media (features mejora, NO bugs)
+**Esfuerzo total**: ~5 días (S8: 2d, S9: 1d, S10: 2d)
+**Bloqueado por**: NADA — opcionales puros. Hub funciona 100% sin estos
+**Doc referencia**: §59 Mega-Plan ALTOR Hub, §79.11 próximos pasos
+
+Stack ya está completo (Firestore, RTDB, FCM, Telegram). Cero deploys
+nuevos de infraestructura. Solo decisión + tiempo.
+
+#### Sprint S8 — Welcome contextual + Progressive profiling (~2 días)
+
+**Qué incluye**:
+- **Welcome message personalizado**:
+  - Si cliente logueado: "¡Hola Daniel! ¿Buscas algo en particular?"
+  - Si en página de vehículo: "Veo que mirás el Toyota Hilux 2020,
+    ¿tenés preguntas sobre este auto?"
+  - Si returning user (sesión previa): "¡Bienvenido de vuelta!"
+- **Lead Gate progresivo**: en vez de pedir nombre+cédula+celular al
+  primer mensaje, pedir SOLO cuando es relevante:
+  - Email solo si pide cotización o agendar visita
+  - Cédula solo si avanza a financiación/peritaje
+- **Quick replies dinámicos** post-respuesta del bot: 3 opciones
+  contextuales según intent detectado
+- **Carousel horizontal** con scroll-snap si el bot muestra 3+ vehículos
+  como resultado
+
+#### Sprint S9 — CSAT + Auto-resolve (~1 día)
+
+**Qué incluye**:
+- **Survey post-cierre**:
+  - Opción 1: "¿Cómo fue tu experiencia? ⭐⭐⭐⭐⭐ (1-5 estrellas)"
+  - Opción 2: "¿Te ayudamos bien? 👍 / 👎"
+  - Persistencia en `conciergeChats/{sid}.csat = {score, comment, ts}`
+- **Auto-resolve por inactividad**:
+  - Schedule Cloud Function que cierra chats con `mode='live'` sin
+    actividad por 24h con `closedReason: 'idle_timeout'`
+- **Dashboard de métricas** en sec-reports nuevo tab "Concierge":
+  - Tasa de resolución, CSAT promedio, tiempo medio de respuesta
+  - Funnel: visitor → chat → live → closed → CSAT
+  - Top intents, top FAQs missed
+
+**Cuándo arrancar**: idealmente cuando ya tengan **tráfico real** para
+que las métricas tengan significado estadístico (mínimo ~50
+conversaciones/mes para que CSAT promedio sea representativo).
+
+#### Sprint S10 — Internal notes + Transferencias (~2 días)
+
+**Qué incluye**:
+- **Internal notes** (notas privadas del asesor):
+  - Visibles SOLO en admin Hub, NUNCA al cliente
+  - Schema: `conciergeChats/{sid}/notes/{noteId}` o campo en mensajes
+    con flag `isInternal: true`
+  - UI: toggle "Visible al cliente: NO" en el composer del Hub
+- **Transferencia de chat entre asesores**:
+  - Preserva todo el historial completo
+  - Notifica al nuevo asesor por FCM Push + Telegram
+  - Audit log de transferencias
+- **"X está atendiendo este chat" en el Dynamic Island del admin**:
+  - Cuando un asesor abre un chat, otros admins ven indicador visual
+    de que está siendo atendido (presence avanzada extendida)
+  - Útil cuando varios admins están online (presence §77 ya provee
+    `currentChatId` por sesión RTDB)
+
+**Cuándo arrancar**: cuando haya un **equipo de 2+ asesores trabajando
+simultáneamente** (sino son features sin uso real). Si el cliente sigue
+operando como único asesor, S10 puede esperar.
+
+### 85.4 Resumen ejecutivo (tabla)
+
+| ID | Item | Status | Esfuerzo | Bloqueante | Prioridad |
+|---|---|---|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado | 3-5d + 1d test | Migración a Vercel | Baja |
+| **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo | 1d dedicado | Nada (opcional) | Media |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | 🔮 Listo | 2d | Nada (opcional) | Baja |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | 🔮 Listo | 1d | Tráfico real (~50 chats/mes) | Media |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias | 🔮 Listo | 2d | Equipo 2+ asesores activos | Baja |
+
+### 85.5 Cómo retomar cada PENDIENTE en sesión futura
+
+**Para PENDIENTE-A**:
+1. Leer §82, §83, §84.5 (Smart Update Prompts plan completo)
+2. Leer `PLAN-MIGRACION-ALTORRA.md` (plan migración Vercel completo)
+3. Confirmar con cliente que va a migrar a Vercel
+4. Empezar por crear `package.json` con Vite + entry points
+
+**Para PENDIENTE-B**:
+1. Leer §67.3 mapping table completa
+2. Confirmar con cliente que quiere arrancar refactor
+3. Crear branch dedicado `claude/r8-cleanup-legacy-callsites`
+4. Refactor archivo por archivo siguiendo el orden de §85.2
+5. Tests E2E por cada archivo antes de mergear
+
+**Para PENDIENTE-C-S8/S9/S10**:
+1. Leer §59 (Mega-Plan ALTOR Hub) + §79.11 (próximos pasos)
+2. Confirmar con cliente qué sub-sprint quiere
+3. Para S9: verificar que hay tráfico real (>50 chats/mes)
+4. Para S10: verificar que hay equipo 2+ asesores activos
+5. Aplicar IAP §37 antes de tocar código
+
+### 85.6 Estado de PENDIENTES (auto-validación al cerrar)
+
+Al final de cada sprint que cierre alguno de estos pendientes, el agente
+DEBE actualizar el status en §85.4 (cambiar 🔮 a ✅ + linkear al §X que
+lo documenta).
+
+Ejemplo cuando se cierre PENDIENTE-B:
+```
+| **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | ✅ §86 | 1d dedicado | Nada | Media |
+```
+
+### 85.7 Cross-reference desde §62
+
+§62 (Estado Actual del Proyecto — Guía Cross-Window) y §85 son
+complementarios:
+- **§62** = índice rápido del estado general del proyecto
+- **§85** = fuente de verdad de pendientes específicos con detalle
+
+Agente futuro: si cliente pregunta "qué hay pendiente", leer **§85**
+primero (más detalle). Si pregunta "estado del proyecto", leer **§62**.
+
+### 85.8 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Documentación pura solicitada por cliente
+para preservar continuidad cross-window con marcadores grep-friendly
+(`PENDIENTE-A/B/C`).
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita del cliente ("Esto dejemoslo documentado como pendiente...
+pero que sea facil de identificar por ti cuando te pregunte en otra
+cesion").
+
+§17.4 HTML/CSS estable: cero modificación de código. Solo append de
+documentación al final de CLAUDE.md.
+
+**Sin cambios de código. Solo documentación. Cero cache bump necesario.**
+

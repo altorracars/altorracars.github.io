@@ -2,3 +2,43 @@ node_modules/
 dist/
 .env
 .env.local
+
+# Firebase CLI logs (locales, NO commitear — pueden contener tokens y paths internos)
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+database-debug.log
+pubsub-debug.log
+ui-debug.log
+.firebase/
+.runtimeconfig.json
+
+# Logs varios
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs locales
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.output/
+
+# Testing
+coverage/
+.nyc_output/

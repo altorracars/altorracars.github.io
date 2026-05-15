@@ -1992,3 +1992,82 @@
    FIN §79 — Sprint S7 Rediseño visual cliente widget
    CIERRE Mega-Plan §59 ALTOR Hub (7 de 7 sprints completados)
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §86 Sprint C-S8 — Carousel horizontal de vehicle cards (sub-feat B4)
+   Cuando el bot muestra 3+ vehículos en su respuesta, las cards pasan
+   de stack vertical a carousel horizontal con scroll-snap-type x
+   mandatory. Swipe nativo en mobile, scroll-x con shift+wheel desktop.
+   Patrón WhatsApp Business cards / Intercom Resolution Bot.
+
+   Selectores con prefijo .altorra-concierge para especificidad 0,2,0
+   sin necesidad de !important.
+
+   Cero impacto cuando vehicleCards.length < 3 (clase --carousel
+   no se aplica → mantiene flex-direction: column legacy).
+   ═══════════════════════════════════════════════════════════════════ */
+.altorra-concierge .cnc-vcard-list.cnc-vcard-list--carousel {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    /* Padding inferior para no recortar shadow del :hover de las cards */
+    padding-bottom: 6px;
+    /* Scrollbar dorada sutil (consistente con el resto del widget) */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(184, 150, 88, 0.4) transparent;
+}
+.altorra-concierge .cnc-vcard-list--carousel::-webkit-scrollbar {
+    height: 6px;
+}
+.altorra-concierge .cnc-vcard-list--carousel::-webkit-scrollbar-track {
+    background: transparent;
+}
+.altorra-concierge .cnc-vcard-list--carousel::-webkit-scrollbar-thumb {
+    background: rgba(184, 150, 88, 0.4);
+    border-radius: 3px;
+}
+.altorra-concierge .cnc-vcard-list--carousel::-webkit-scrollbar-thumb:hover {
+    background: rgba(184, 150, 88, 0.65);
+}
+
+/* Cada card del carousel: width fija 280px + scroll-snap-align: start */
+.altorra-concierge .cnc-vcard.cnc-vcard--snap {
+    flex: 0 0 280px;
+    min-width: 280px;
+    max-width: 280px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+/* Hint visual: leve gradient en el borde derecho para indicar
+   que hay más cards al hacer scroll. Solo si hay overflow real. */
+.altorra-concierge .cnc-vcard-list--carousel::after {
+    content: '';
+    flex: 0 0 4px;
+    /* Spacer al final para que la última card no quede pegada al borde */
+}
+
+/* Mobile (<480px): cards un poco más chicas para encajar
+   mejor en pantallas estrechas (~360px de viewport). */
+@media (max-width: 480px) {
+    .altorra-concierge .cnc-vcard.cnc-vcard--snap {
+        flex: 0 0 240px;
+        min-width: 240px;
+        max-width: 240px;
+    }
+}
+
+/* prefers-reduced-motion: scroll instantáneo en lugar de smooth.
+   El scroll-snap del browser ya respeta reduced-motion nativamente,
+   pero forzamos scroll-behavior: auto por defensa. */
+@media (prefers-reduced-motion: reduce) {
+    .altorra-concierge .cnc-vcard-list--carousel {
+        scroll-behavior: auto;
+    }
+}
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §86 Sprint C-S8 — Welcome contextual + Progressive profiling +
+   Quick replies dinámicos + Carousel horizontal vehicle cards
+   ═══════════════════════════════════════════════════════════════════ */

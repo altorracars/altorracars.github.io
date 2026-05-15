@@ -148,6 +148,10 @@
                         s.activeAsesor = null;
                         s.messages = [];
                         s.context = { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 };
+                        // §86 — reset también flags de progressive profiling
+                        s.gateRequestedInline = false;
+                        s.gateRequestReason = null;
+                        s._deferredQuery = null;
                         // Nuevo sessionId → chat doc fresh en Firestore
                         s.sessionId = 'cnc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
                         s.createdAt = Date.now();
@@ -185,6 +189,12 @@
             // Lead Capture Gate
             gateCompleted: false,    // true tras submit del form de captura
             profile: null,           // { nombre, apellido, cedula, celular, correo, consent }
+            // §86 Sprint C-S8 — Progressive profiling: gate NO es forzoso al
+            // primer mensaje. Solo aparece cuando el bot lo solicita
+            // (intent high-value: financiacion, agendar visita, peritaje).
+            gateRequestedInline: false,    // true cuando bot pidió gate inline
+            gateRequestReason: null,       // 'financiacion'|'cita'|'asesor'|'vender'
+            _deferredQuery: null,          // query del cliente diferida hasta completar gate
             // Intent classifier memoria conversacional
             context: { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 },
             // Handoff dinámico
@@ -412,7 +422,18 @@
         }
 
         // 8. Intent: financiacion_query con CTA al simulador
+        // §86 Sprint C-S8 — Progressive profiling: si el cliente NO dio
+        // contacto aún, pedimos gate inline antes de la respuesta
+        // detallada. El _deferredQuery se ejecuta tras completar gate.
         if (classification.intent === 'financiacion_query') {
+            if (needsIdentityForHighValueAction()) {
+                return {
+                    text: 'Te ayudo con la financiación' + (firstName ? ', ' + firstName : '') + '. ' +
+                          'Antes necesito unos datos breves para que un asesor te arme una propuesta personalizada con los plazos y cuotas que te convengan.',
+                    _requestGate: 'financiacion',
+                    _deferredQuery: userMsg
+                };
+            }
             return {
                 text: '💳 Trabajamos con varios aliados financieros. Cuota inicial mínima del 30%, plazos hasta 72 meses. ' +
                       '¿Quieres simular tu cuota o que te conecte con un asesor para una propuesta personalizada?',
@@ -441,7 +462,15 @@
         }
 
         // 10. Intent: appointment_request — escalar para agendar
+        // §86 — Pedir gate inline si falta contacto (cita = high-value)
         if (classification.intent === 'appointment_request') {
+            if (needsIdentityForHighValueAction()) {
+                return {
+                    text: '📅 ¡Perfecto' + (firstName ? ', ' + firstName : '') + '! Para agendar tu visita necesito unos datos breves así un asesor confirma fecha y hora contigo.',
+                    _requestGate: 'cita',
+                    _deferredQuery: userMsg
+                };
+            }
             return {
                 text: '📅 Para agendar una cita o test drive, te conecto con un asesor que coordina fecha y hora directamente contigo. ¿Procedemos?',
                 cta: { label: 'Agendar con asesor', action: 'escalate' }
@@ -449,7 +478,16 @@
         }
 
         // 11. Intent: sell_my_car
+        // §86 — Pedir gate inline si falta contacto (peritaje = high-value)
         if (classification.intent === 'sell_my_car') {
+            if (needsIdentityForHighValueAction()) {
+                return {
+                    text: '🚙 ¡Excelente! Te ayudamos a vender tu auto con peritaje gratis y compra directa o consignación. ' +
+                          'Antes necesito tus datos para que un asesor coordine la valuación.',
+                    _requestGate: 'vender',
+                    _deferredQuery: userMsg
+                };
+            }
             return {
                 text: '🚙 Te ayudamos a vender tu auto. Tenemos compra directa con valuación inmediata o consignación. Inicia con peritaje gratis sin compromiso.',
                 cta: { label: 'Vender mi auto', action: 'open-modal-vende' }
@@ -836,6 +874,66 @@
     };
 
     /* ═══════════════════════════════════════════════════════════
+       §86 Sprint C-S8 — Quick replies contextuales POST-bot
+       Después de la respuesta del bot, ofrecer 2-3 opciones útiles
+       según el último intent del cliente. Patrón Intercom/Drift:
+       guiar el flow sin obligar al cliente a tipear libre.
+
+       Solo se invocan si la respuesta del bot NO trae quickReplies
+       propias (FAQ ambigua, triple fallback). Función pura, retorna
+       array o null.
+       ═══════════════════════════════════════════════════════════ */
+    function getContextualQuickReplies(intent, hasVehicleCards) {
+        if (!intent) return null;
+        var QR_MAP = {
+            greeting: [
+                { label: '🚗 Ver autos', payload: 'Muéstrame los autos disponibles' },
+                { label: '💳 Financiación', payload: 'Quiero información sobre financiación' },
+                { label: '📅 Agendar visita', payload: 'Quiero agendar una visita' }
+            ],
+            // Si el bot mostró vehicle cards, ofrecer filtros refinados.
+            // Si no mostró, ofrecer opciones más generales.
+            inventory_query: hasVehicleCards ? [
+                { label: 'Bajo $50M', payload: 'Muéstrame autos por menos de 50 millones' },
+                { label: 'Más opciones', payload: 'Muéstrame más autos disponibles' },
+                { label: '👨 Hablar con asesor', payload: 'Quiero hablar con un asesor' }
+            ] : [
+                { label: '🚙 SUV', payload: 'Muéstrame SUVs disponibles' },
+                { label: '🚗 Sedán', payload: 'Muéstrame sedanes disponibles' },
+                { label: '🛻 Pickup', payload: 'Muéstrame pickups disponibles' }
+            ],
+            pricing_query: [
+                { label: '¿Aceptan parte de pago?', payload: '¿Aceptan parte de pago?' },
+                { label: '💳 Calcular financiación', payload: 'Quiero calcular mi financiación' },
+                { label: '👨 Hablar con asesor', payload: 'Quiero hablar con un asesor' }
+            ],
+            financiacion_query: [
+                { label: '💰 Sin cuota inicial', payload: '¿Hay opciones sin cuota inicial?' },
+                { label: '📅 Plazos largos', payload: '¿Cuáles son los plazos máximos?' },
+                { label: '👨 Hablar con asesor', payload: 'Quiero hablar con un asesor' }
+            ],
+            appointment_request: [
+                { label: 'Mañana', payload: 'Mañana en la mañana' },
+                { label: 'Esta semana', payload: 'Esta semana' },
+                { label: 'Próxima semana', payload: 'Próxima semana' }
+            ],
+            sell_my_car: [
+                { label: '🔍 Cómo es la valuación', payload: '¿Cómo funciona la valuación?' },
+                { label: '🤝 Consignación', payload: 'Quiero saber sobre consignación' },
+                { label: '👨 Hablar con asesor', payload: 'Quiero hablar con un asesor' }
+            ],
+            request_help: [
+                { label: '🚗 Ver autos', payload: 'Muéstrame los autos disponibles' },
+                { label: '💳 Financiación', payload: 'Quiero información sobre financiación' },
+                { label: '👨 Hablar con asesor', payload: 'Quiero hablar con un asesor' }
+            ]
+            // Otros intents (thanks, goodbye, frustration, ask_human,
+            // confirmation, negation): cero quick replies — no aportan UX
+        };
+        return QR_MAP[intent] || null;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        FASE 3 — Typing indicator
        Mientras esperamos al LLM, mostramos 3 puntitos animados en
        la zona de mensajes (estilo iMessage / WhatsApp).
@@ -970,11 +1068,28 @@
                     // §23 FASE 1 — si la respuesta NO es del path de fallback,
                     // reseteamos el counter (cliente fue entendido bien)
                     if (!resp._isFallback) resetFallbackCounter();
+                    // §86 Sprint C-S8 — Quick replies contextuales: si la
+                    // respuesta NO trae quickReplies propias (FAQ ambigua,
+                    // triple fallback) y el intent del cliente tiene
+                    // opciones útiles → agregar 2-3 sugerencias inline.
+                    var lastIntent = (session.context && session.context.lastIntent) || null;
+                    var hasVCards = Array.isArray(resp.vehicleCards) && resp.vehicleCards.length > 0;
+                    var contextualQR = resp.quickReplies
+                        ? null
+                        : getContextualQuickReplies(lastIntent, hasVCards);
                     addMessage('bot', resp.text, {
                         cta: resp.cta,
-                        quickReplies: resp.quickReplies,
+                        quickReplies: resp.quickReplies || contextualQR,
                         vehicleCards: resp.vehicleCards   // §26.2 inline cards
                     });
+                    // §86 — Progressive profiling: si la respuesta marcó
+                    // _requestGate, pedir gate inline con delay corto para
+                    // que el cliente vea el bubble del bot primero.
+                    if (resp._requestGate) {
+                        setTimeout(function () {
+                            requestGateInline(resp._requestGate, resp._deferredQuery || text);
+                        }, 700);
+                    }
                     setTimeout(function () { maybeAskForProfile(); }, 1200);
                 }).catch(function (err) {
                     hideTypingIndicator();
@@ -982,11 +1097,23 @@
                     // Último recurso: rule-based fallback síncrono
                     var fallback = generateBotResponse(text);
                     if (!fallback._isFallback) resetFallbackCounter();
+                    // §86 Sprint C-S8 — mismo patrón en catch para contextual QR
+                    var fallbackIntent = (session.context && session.context.lastIntent) || null;
+                    var fallbackHasVCards = Array.isArray(fallback.vehicleCards) && fallback.vehicleCards.length > 0;
+                    var fallbackContextualQR = fallback.quickReplies
+                        ? null
+                        : getContextualQuickReplies(fallbackIntent, fallbackHasVCards);
                     addMessage('bot', fallback.text, {
                         cta: fallback.cta,
-                        quickReplies: fallback.quickReplies,
+                        quickReplies: fallback.quickReplies || fallbackContextualQR,
                         vehicleCards: fallback.vehicleCards
                     });
+                    // §86 — Progressive profiling: si el fallback marca _requestGate
+                    if (fallback._requestGate) {
+                        setTimeout(function () {
+                            requestGateInline(fallback._requestGate, fallback._deferredQuery || text);
+                        }, 700);
+                    }
                     setTimeout(function () { maybeAskForProfile(); }, 1200);
                 });
             }, 350 + Math.random() * 400);
@@ -2303,6 +2430,32 @@
         // saltamos el gate. Si falta cedula (usuario viejo pre-fix), pedimos solo eso
         // a través de maybeAskForProfile más adelante en lugar del gate completo.
         if (session.uid && session.email && session.nombre) return false;
+        // §86 Sprint C-S8 — Progressive profiling: gate NO es forzoso al
+        // primer mensaje. Solo aparece cuando el bot lo solicita
+        // explícitamente vía requestGateInline() (intents high-value:
+        // financiacion, agendar visita, sell my car, asesor humano).
+        // Antes era forzoso (return true por default) → ahora es contextual.
+        if (session.gateRequestedInline) return true;
+        return false;
+    }
+
+    /**
+     * §86 Sprint C-S8 — ¿El cliente necesita dejar identidad para una
+     * acción high-value (financiación, agendar visita, peritaje,
+     * conectar con asesor humano)?
+     *
+     * Retorna true si el cliente NO tiene perfil completo. False si el
+     * cliente ya completó el gate, está logueado con datos completos,
+     * o ya fue marcado para gate inline (evita pedirlo 2 veces).
+     */
+    function needsIdentityForHighValueAction() {
+        // Ya completó gate manualmente — listo
+        if (session.gateCompleted && session.profile) return false;
+        // Logueado con datos esenciales (uid + email + nombre)
+        if (session.uid && session.email && session.nombre) return false;
+        // Ya pidió gate inline en un turno anterior — no duplicar el pedido
+        if (session.gateRequestedInline) return false;
+        // Cualquier otro caso (anónimo, logueado sin datos completos) → requiere gate
         return true;
     }
 
@@ -2380,9 +2533,16 @@
         var inp = document.getElementById('cncInputWrap');
         if (!gate) return;
         if (isGateRequired()) {
+            // §86 — Sub-header dinámico según el motivo del gate inline
+            applyGateHeaderForReason(session.gateRequestReason || null);
             gate.style.display = 'flex';
             if (qa) qa.style.display = 'none';
-            if (msgs) msgs.style.display = 'none';
+            // §86 — Si gate viene de progressive profiling (deferred query),
+            // mantener mensajes VISIBLES arriba del gate para preservar el
+            // contexto de la conversación. Si es flow legacy (cliente nuevo
+            // pre-§86), ocultarlos como antes.
+            var keepMsgsVisible = !!session.gateRequestedInline;
+            if (msgs) msgs.style.display = keepMsgsVisible ? '' : 'none';
             if (inp) inp.style.display = 'none';
         } else {
             gate.style.display = 'none';
@@ -2390,6 +2550,69 @@
             if (msgs) msgs.style.display = '';
             if (inp) inp.style.display = '';
         }
+    }
+
+    /**
+     * §86 Sprint C-S8 — Sub-header dinámico del gate según el motivo.
+     * El gate inline pide datos solo cuando es relevante. El sub-header
+     * explica POR QUÉ pide los datos para que el cliente entienda.
+     */
+    function applyGateHeaderForReason(reason) {
+        var titleEl = document.querySelector('.cnc-gate-title');
+        var subEl = document.querySelector('.cnc-gate-sub');
+        if (!titleEl || !subEl) return;
+        // Mapa reason → {title, sub}
+        var REASONS = {
+            financiacion: {
+                title: 'Datos para financiación',
+                sub: 'Para que un asesor te arme una propuesta personalizada.'
+            },
+            cita: {
+                title: 'Coordinemos tu visita',
+                sub: 'Necesitamos tus datos para confirmar fecha y hora.'
+            },
+            asesor: {
+                title: 'Te conectamos con un asesor',
+                sub: 'Para que pueda llamarte o escribirte directo.'
+            },
+            vender: {
+                title: 'Datos para tu peritaje',
+                sub: 'Un asesor te contactará para coordinar valuación.'
+            }
+        };
+        var entry = REASONS[reason] || null;
+        if (entry) {
+            titleEl.textContent = entry.title;
+            subEl.textContent = entry.sub;
+        } else {
+            titleEl.textContent = 'Antes de empezar';
+            subEl.textContent = 'Cuéntanos quién eres para que podamos darte el mejor servicio.';
+        }
+    }
+
+    /**
+     * §86 Sprint C-S8 — Pedir el gate inline en flujos high-value.
+     * El bot lo invoca cuando detecta intent que requiere identidad
+     * (financiacion_query, appointment_request, sell_my_car,
+     * request_help con asesor humano).
+     *
+     * @param {string} reason   Identificador del motivo (financiacion, cita, asesor, vender)
+     * @param {string} deferredQuery   Mensaje original del cliente que disparó el gate.
+     *                                 Se ejecuta como bot response tras completar el gate.
+     */
+    function requestGateInline(reason, deferredQuery) {
+        // Si el cliente ya está logueado con perfil completo, NO pedir gate
+        if (session.gateCompleted && session.profile) return false;
+        if (session.uid && session.email && session.nombre) return false;
+        // Marcar el flag → isGateRequired retorna true en próxima evaluación
+        session.gateRequestedInline = true;
+        session.gateRequestReason = reason || null;
+        if (deferredQuery) {
+            session._deferredQuery = deferredQuery;
+        }
+        saveSession(session);
+        applyGateVisibility();
+        return true;
     }
 
     function handleGateSubmit(e) {
@@ -2423,27 +2646,62 @@
         session.telefono = fd.celular;
         session.gateCompleted = true;
         session.level = Math.max(session.level || 0, 2); // L2 contactable
+        // §86 — limpiar flags de progressive profiling (gate ya cumplido)
+        session.gateRequestedInline = false;
+        session.gateRequestReason = null;
+        var deferredQuery = session._deferredQuery || null;
+        session._deferredQuery = null;
         saveSession(session);
 
         // Crear soft contact con perfil COMPLETO (NER ya tiene todo)
         if (!_leadCreated) createSoftContact();
         else updateSoftContact();
 
-        // Sembrar greeting personalizado
         var firstName = fd.nombre.trim().split(/\s+/)[0];
-        var sourceVeh = session.sourceVehicleId ? resolveVehicleTitleFromCache(session.sourceVehicleId) : null;
-        var greet;
-        if (sourceVeh) {
-            greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
-                    'Veo que te interesa el ' + sourceVeh + '. Pregúntame lo que quieras: ' +
-                    'precio final, financiación, peritaje, agendar una visita, o lo que necesites.';
+
+        // §86 Sprint C-S8 — Si el gate vino de progressive profiling
+        // (cliente pidió financiación/cita/peritaje y bot pidió datos),
+        // NO sembrar greeting genérico. En su lugar, agradecer brevemente
+        // y ejecutar la respuesta diferida con el intent original.
+        if (deferredQuery) {
+            addMessage('bot', '¡Listo, ' + firstName + '! 🙌 Ya tengo tus datos. Te respondo:');
+            applyGateVisibility();
+            // Ejecutar la respuesta diferida con delay corto para que el
+            // cliente vea primero el bubble de "Listo, X".
+            setTimeout(function () {
+                try {
+                    var resp = generateBotResponse(deferredQuery);
+                    if (resp && resp.text) {
+                        var deferredIntent = (session.context && session.context.lastIntent) || null;
+                        var deferredHasVCards = Array.isArray(resp.vehicleCards) && resp.vehicleCards.length > 0;
+                        addMessage('bot', resp.text, {
+                            cta: resp.cta,
+                            quickReplies: resp.quickReplies || getContextualQuickReplies(deferredIntent, deferredHasVCards),
+                            vehicleCards: resp.vehicleCards
+                        });
+                    }
+                } catch (err) {
+                    console.warn('[Concierge] §86 deferred response error:', err && err.message);
+                }
+            }, 900);
         } else {
-            greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
-                    'Estoy aquí para ayudarte con info del catálogo, financiación, citas, peritaje y más. ' +
-                    'Si en algún momento querés hablar con un asesor humano, decímelo nomás.';
+            // Greeting personalizado normal (cliente completó gate inicial,
+            // no por progressive profiling — caso legacy o cliente que
+            // explícitamente quiso identificarse antes de chatear)
+            var sourceVeh = session.sourceVehicleId ? resolveVehicleTitleFromCache(session.sourceVehicleId) : null;
+            var greet;
+            if (sourceVeh) {
+                greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
+                        'Veo que te interesa el ' + sourceVeh + '. Pregúntame lo que quieras: ' +
+                        'precio final, financiación, peritaje, agendar una visita, o lo que necesites.';
+            } else {
+                greet = '¡Hola ' + firstName + '! 👋 Soy ALTOR, el Asistente Virtual IA de Altorra Cars. ' +
+                        'Estoy aquí para ayudarte con info del catálogo, financiación, citas, peritaje y más. ' +
+                        'Si en algún momento querés hablar con un asesor humano, decímelo nomás.';
+            }
+            addMessage('bot', greet);
+            applyGateVisibility();
         }
-        addMessage('bot', greet);
-        applyGateVisibility();
 
         // Focus al input para escribir inmediatamente
         setTimeout(function () {
@@ -3175,16 +3433,92 @@
         }
     }
 
+    /**
+     * §86 Sprint C-S8 — Welcome contextual PRE-gate (sub-feature B1).
+     *
+     * Reemplaza el welcome hardcoded por 4 variantes según contexto:
+     *
+     *   1. Returning user (sesión previa <7 días con mensajes previos en
+     *      otra apertura, NO en queue/closed): "¡Bienvenido de vuelta!"
+     *   2. En página de vehículo: "Veo que mirás el {marca modelo año}..."
+     *   3. Logueado con nombre: "¡Hola {firstName}!..."
+     *   4. Default genérico (sin contexto identificable): welcome estándar
+     *
+     * Función pura — solo lee session + window.vehicleDB. No persiste nada.
+     */
+    function buildContextualWelcomeHTML() {
+        // Detectar returning user: sesión NO nueva (>10 min de antigüedad)
+        // + algún mensaje pasado (que pueda haber sido limpiado por reset
+        // del cliente o finalización del admin). Threshold 7 días para
+        // que "Hola de nuevo" no aparezca a alguien que jamás volvió.
+        var SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        var TEN_MIN_MS = 10 * 60 * 1000;
+        var nowMs = Date.now();
+        var sessionAgeMs = (session.createdAt && nowMs > session.createdAt)
+            ? (nowMs - session.createdAt) : 0;
+        var isReturningUser = sessionAgeMs > TEN_MIN_MS
+            && sessionAgeMs < SEVEN_DAYS_MS
+            && session.profile && session.profile.nombre
+            && session.mode === 'bot'
+            && !session.closed;
+
+        var firstName = '';
+        if (session.profile && session.profile.nombre) {
+            firstName = String(session.profile.nombre).trim().split(/\s+/)[0];
+        } else if (session.nombre) {
+            firstName = String(session.nombre).trim().split(/\s+/)[0];
+        }
+
+        // Variante 1: Returning user (prioridad más alta)
+        if (isReturningUser) {
+            var greetReturning = firstName
+                ? '¡Bienvenido de vuelta, ' + escapeHtml(firstName) + '! 👋'
+                : '¡Bienvenido de vuelta! 👋';
+            return '<div class="cnc-bot-bubble cnc-welcome">' +
+                '<strong>' + greetReturning + '</strong>' +
+                '<br><br>' +
+                'Soy ALTOR. ¿Seguimos donde dejamos la conversación o necesitás algo nuevo?' +
+            '</div>';
+        }
+
+        // Variante 2: En página de vehículo
+        if (session.sourceVehicleId) {
+            var vehTitle = resolveVehicleTitleFromCache(session.sourceVehicleId);
+            if (vehTitle) {
+                var greetVehicle = firstName
+                    ? '¡Hola ' + escapeHtml(firstName) + '! 👋'
+                    : '👋 ¡Hola! Soy ALTOR';
+                return '<div class="cnc-bot-bubble cnc-welcome">' +
+                    '<strong>' + greetVehicle + '</strong>' +
+                    '<br><br>' +
+                    'Veo que mirás el <strong>' + escapeHtml(vehTitle) + '</strong>. ' +
+                    '¿Tenés preguntas sobre este auto, o querés ver opciones similares?' +
+                '</div>';
+            }
+        }
+
+        // Variante 3: Logueado con nombre conocido
+        if (firstName) {
+            return '<div class="cnc-bot-bubble cnc-welcome">' +
+                '<strong>¡Hola ' + escapeHtml(firstName) + '! 👋 Soy ALTOR</strong>' +
+                '<br><br>' +
+                'Soy el Asistente Virtual IA de Altorra Cars. ¿En qué te ayudo hoy?' +
+            '</div>';
+        }
+
+        // Variante 4: Default genérico (cero contexto identificable)
+        return '<div class="cnc-bot-bubble cnc-welcome">' +
+            '<strong>👋 ¡Hola! Soy ALTOR</strong>, el Asistente Virtual IA de Altorra Cars.' +
+            '<br><br>' +
+            'Pregúntame sobre vehículos, financiación, citas, peritaje o lo que necesites. Si querés, puedo conectarte directo con un asesor humano.' +
+        '</div>';
+    }
+
     function renderMessages() {
         var box = document.getElementById('cncMessages');
         if (!box) return;
         if (session.messages.length === 0) {
-            box.innerHTML =
-                '<div class="cnc-bot-bubble cnc-welcome">' +
-                    '<strong>👋 ¡Hola! Soy ALTOR</strong>, el Asistente Virtual IA de Altorra Cars.' +
-                    '<br><br>' +
-                    'Pregúntame sobre vehículos, financiación, citas, peritaje o lo que necesites. Si querés, puedo conectarte directo con un asesor humano.' +
-                '</div>';
+            box.innerHTML = buildContextualWelcomeHTML();
             return;
         }
         box.innerHTML = session.messages.map(function (m) {
@@ -3254,8 +3588,17 @@
             // Patrón Telegram/WhatsApp Business cards.
             var vehicleCardsHTML = '';
             if (m.from === 'bot' && Array.isArray(m.vehicleCards) && m.vehicleCards.length > 0) {
-                vehicleCardsHTML = '<div class="cnc-vcard-list">' +
-                    m.vehicleCards.map(renderVehicleCard).join('') +
+                // §86 Sprint C-S8 — Carousel horizontal si 3+ vehículos
+                // (sub-feature B4). 1-2 cards mantienen stack vertical.
+                // 3+ → flex-row + scroll-snap-type: x mandatory + scroll
+                // horizontal con swipe nativo en mobile. Patrón Intercom
+                // Resolution Bot / WhatsApp Business cards.
+                var isCarousel = m.vehicleCards.length >= 3;
+                var listClass = 'cnc-vcard-list' + (isCarousel ? ' cnc-vcard-list--carousel' : '');
+                vehicleCardsHTML = '<div class="' + listClass + '">' +
+                    m.vehicleCards.map(function (vc) {
+                        return renderVehicleCard(vc, isCarousel);
+                    }).join('') +
                 '</div>';
             }
             var tempIdAttr = m._tempId ? ' data-temp-id="' + escapeHtml(m._tempId) + '"' : '';
@@ -3292,7 +3635,7 @@
      * Imagen miniatura + título + año/km/transmisión + precio + bullets
      * humanos + 3 CTAs (Ver ficha · Agendar visita · Asesor).
      */
-    function renderVehicleCard(vc) {
+    function renderVehicleCard(vc, isInCarousel) {
         if (!vc) return '';
         var imgHTML = vc.image
             ? '<img class="cnc-vcard-img" src="' + escapeHtml(vc.image) + '" alt="' + escapeHtml(vc.title) + '" loading="lazy" onerror="this.style.display=\'none\'">'
@@ -3318,7 +3661,9 @@
         if (vc.estado === 'reservado') statusBadge = '<span class="cnc-vcard-status cnc-vcard-status--reservado">Reservado</span>';
         else if (vc.estado === 'vendido') statusBadge = '<span class="cnc-vcard-status cnc-vcard-status--vendido">Vendido</span>';
 
-        return '<div class="cnc-vcard" data-vehicle-id="' + escapeHtml(String(vc.id || '')) + '">' +
+        // §86 — En carousel, agregar clase --snap para scroll-snap-align
+        var cardClass = 'cnc-vcard' + (isInCarousel ? ' cnc-vcard--snap' : '');
+        return '<div class="' + cardClass + '" data-vehicle-id="' + escapeHtml(String(vc.id || '')) + '">' +
             '<div class="cnc-vcard-imgwrap">' + imgHTML + statusBadge + '</div>' +
             '<div class="cnc-vcard-body">' +
                 '<div class="cnc-vcard-title">' + escapeHtml(vc.title) + '</div>' +

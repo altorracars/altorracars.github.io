@@ -35949,3 +35949,277 @@ documentación al final de CLAUDE.md.
 
 **Sin cambios de código. Solo documentación. Cero cache bump necesario.**
 
+---
+
+## 86. ADR-086 — Sprint C-S8: Welcome contextual + Progressive profiling + Quick replies dinámicos + Carousel horizontal (2026-05-15)
+
+> Cierre del **PENDIENTE-C-S8** documentado en §85.3. Primer sprint del
+> bloque de "trabajo opcional" (B+C) que el cliente autorizó arrancar
+> tras la activación de producción del sistema Smart Update §84 y la
+> finalización del Plan §61 RBAC (§63-§73.4) y Plan §59 ALTOR Hub
+> (§60.1-§79).
+>
+> Implementa 4 sub-features de UX coordinadas en 1 solo commit:
+> welcome contextual pre-gate, lead gate progresivo (no forzoso al
+> primer mensaje), quick replies dinámicos según intent del cliente, y
+> carousel horizontal con scroll-snap para vehicle cards cuando hay 3+.
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero transition all),
+> §17.4 (HTML/CSS estable), §17.12 (cero MutationObserver), §35 (cero
+> pointermove), §37 (IAP), §59 Plan ALTOR Hub roadmap, §85.3
+> PENDIENTE-C-S8.
+
+### 86.1 Por qué este sprint existe
+
+El cliente cerró el día 2026-05-15 con:
+- ✅ Plan §61 RBAC funcionalmente cerrado
+- ✅ Plan §59 ALTOR Hub 7/7 sprints
+- ✅ Plan §82-§84 Smart Update Prompts en producción
+- ✅ 27 Cloud Functions desplegadas (validado §85)
+- ✅ §85 PENDIENTES documentados con marcadores grep-friendly
+
+Y autorizó arrancar el primer sprint opcional: C-S8 (Welcome contextual
++ Progressive profiling). Mi recomendación de orden (§85.5) priorizaba
+C-S8 sobre B porque:
+- C-S8 da impacto UX visible inmediato al cliente del bot
+- Cero riesgo de regresión (features aditivas, no refactor)
+- Sirve de validación incremental antes de C-S9/S10 y B
+
+### 86.2 Causa raíz del estado pre-§86
+
+Audit del bot ALTOR antes del sprint (mapeo via Explore agent):
+
+| Aspecto | Estado pre-§86 |
+|---|---|
+| Welcome bubble pre-gate | Hardcoded "¡Hola! Soy ALTOR..." sin personalización |
+| Lead Gate | **Forzoso al primer mensaje** — bloquea panel hasta completar (nombre + apellido + cédula + celular + email + consent) |
+| Quick replies dinámicos | Solo existían para FAQ ambigua (§22) y triple fallback (§23). Cero para intents normales |
+| Vehicle cards | Stack vertical (`flex-direction: column`) sin importar cantidad |
+
+El gate forzoso era el bloqueo más grande: cualquier visitante que abriera el bot tenía que llenar 5 campos antes de poder escribir nada. Patrón disonante con industry-standard (Intercom/Drift permiten chat anónimo y piden datos cuando es relevante).
+
+### 86.3 Solución estructural — 4 sub-features coordinadas
+
+#### B1 — Welcome contextual pre-gate (`buildContextualWelcomeHTML`)
+
+Reemplaza el welcome hardcoded por una cascada de 4 variantes según contexto:
+
+1. **Returning user** (sesión >10min y <7d con `session.profile.nombre`):
+   - "¡Bienvenido de vuelta, {nombre}! 👋 Soy ALTOR. ¿Seguimos donde dejamos o necesitás algo nuevo?"
+2. **En página de vehículo** (`session.sourceVehicleId` resolved por `resolveVehicleTitleFromCache()`):
+   - "¡Hola {nombre}! 👋 Veo que mirás el **{marca modelo año}**. ¿Tenés preguntas sobre este auto, o querés ver opciones similares?"
+3. **Logueado con nombre**:
+   - "¡Hola {firstName}! 👋 Soy ALTOR, el Asistente Virtual IA. ¿En qué te ayudo hoy?"
+4. **Default genérico** (cero contexto): igual al texto pre-§86
+
+Función pura — solo lee `session` y `window.vehicleDB`. Cero side effects.
+
+#### B2 — Progressive profiling — Gate NO forzoso
+
+Cambio fundamental en `isGateRequired()`:
+
+**Antes**:
+```js
+function isGateRequired() {
+    if (session.gateCompleted && session.profile) return false;
+    if (session.uid && session.email && session.nombre) return false;
+    return true;  // ← gate FORZOSO al inicio
+}
+```
+
+**Ahora**:
+```js
+function isGateRequired() {
+    if (session.gateCompleted && session.profile) return false;
+    if (session.uid && session.email && session.nombre) return false;
+    if (session.gateRequestedInline) return true;
+    return false;  // ← gate solo si bot lo solicitó explícitamente
+}
+```
+
+Nuevo helper `needsIdentityForHighValueAction()` determina cuándo el bot debe pedir datos:
+- `financiacion_query`: cliente quiere financiar → bot pide datos para que asesor arme propuesta
+- `appointment_request`: cliente quiere agendar → bot pide datos para confirmar fecha
+- `sell_my_car`: cliente quiere vender → bot pide datos para coordinar peritaje
+
+Si el intent matchea Y `needsIdentityForHighValueAction()` es true:
+- Bot retorna respuesta con `_requestGate: 'financiacion'|'cita'|'vender'` + `_deferredQuery: userMsg`
+- `send()` detecta `_requestGate` y llama `requestGateInline(reason, deferredQuery)` con delay 700ms
+- Gate aparece con **sub-header dinámico** explicando el motivo (`applyGateHeaderForReason`)
+- **Mensajes previos quedan VISIBLES arriba del gate** (`keepMsgsVisible` flag en `applyGateVisibility`) — el cliente NO pierde contexto
+- Cliente completa gate → `handleGateSubmit` detecta `_deferredQuery` → ejecuta `generateBotResponse(deferredQuery)` y responde el intent original con quick replies contextuales
+
+Bypass automático para clientes logueados con datos completos sigue funcionando (cero cambio).
+
+#### B3 — Quick replies dinámicos (`getContextualQuickReplies`)
+
+Helper nuevo que retorna 3 opciones según el último intent del cliente:
+
+| Intent | Quick replies |
+|---|---|
+| `greeting` | 🚗 Ver autos · 💳 Financiación · 📅 Agendar visita |
+| `inventory_query` (con vcards) | Bajo $50M · Más opciones · 👨 Hablar con asesor |
+| `inventory_query` (sin vcards) | 🚙 SUV · 🚗 Sedán · 🛻 Pickup |
+| `pricing_query` | ¿Aceptan parte de pago? · 💳 Calcular financiación · 👨 Hablar con asesor |
+| `financiacion_query` | 💰 Sin cuota inicial · 📅 Plazos largos · 👨 Hablar con asesor |
+| `appointment_request` | Mañana · Esta semana · Próxima semana |
+| `sell_my_car` | 🔍 Cómo es la valuación · 🤝 Consignación · 👨 Hablar con asesor |
+| `request_help` | 🚗 Ver autos · 💳 Financiación · 👨 Hablar con asesor |
+
+Lógica en `send()` post-respuesta del bot:
+- Si `resp.quickReplies` existe (FAQ ambigua, triple fallback) → preservar
+- Si NO → invocar `getContextualQuickReplies(session.context.lastIntent, hasVCards)` y agregar al `addMessage('bot', ...)`
+
+Cliente click → re-envía como mensaje del cliente, bot procesa normal.
+
+#### B4 — Carousel horizontal con scroll-snap (3+ vehículos)
+
+Modificación de `renderMessages()` callsite del `vehicleCardsHTML`:
+
+```js
+var isCarousel = m.vehicleCards.length >= 3;
+var listClass = 'cnc-vcard-list' + (isCarousel ? ' cnc-vcard-list--carousel' : '');
+```
+
+`renderVehicleCard(vc, isInCarousel)` acepta nuevo flag y agrega clase `cnc-vcard--snap` si está en carousel.
+
+CSS append (`css/concierge.css` ~70 líneas):
+- `.cnc-vcard-list--carousel`: `flex-direction: row`, `overflow-x: auto`, `scroll-snap-type: x mandatory`, scrollbar dorada custom
+- `.cnc-vcard--snap`: `flex: 0 0 280px` desktop, `240px` mobile (<480px), `scroll-snap-align: start`, `scroll-snap-stop: always`
+- `prefers-reduced-motion: reduce` → `scroll-behavior: auto`
+
+Para 1-2 cards → mantiene stack vertical (cero impacto). Para 3+ → carousel.
+
+### 86.4 Schema session ampliado
+
+3 campos nuevos en el default + reset en staleness guard:
+- `gateRequestedInline: false` — flag de progressive profiling
+- `gateRequestReason: null` — 'financiacion' | 'cita' | 'asesor' | 'vender'
+- `_deferredQuery: null` — mensaje del cliente diferido hasta completar gate
+
+Limpieza en `handleGateSubmit` post-success:
+```js
+session.gateRequestedInline = false;
+session.gateRequestReason = null;
+var deferredQuery = session._deferredQuery || null;
+session._deferredQuery = null;
+```
+
+Y en §80 staleness guard (4h sin actividad en modo queue/live):
+```js
+s.gateRequestedInline = false;
+s.gateRequestReason = null;
+s._deferredQuery = null;
+```
+
+### 86.5 Tests E2E (post-deploy + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente nuevo en `index.html` (sin login) abre el bot | Welcome genérico "¡Hola! Soy ALTOR..." (variante 4). Cero gate. Cliente puede escribir directo |
+| 2 | Cliente nuevo en `vehiculos/toyota-hilux-2020.html` abre el bot | Welcome con "Veo que mirás el **Toyota Hilux 2020**" (variante 2) |
+| 3 | Cliente logueado con nombre "Daniel" abre el bot | "¡Hola Daniel! 👋 Soy ALTOR..." (variante 3) |
+| 4 | Cliente con sesión >10min Y <7d Y profile.nombre abre el bot | "¡Bienvenido de vuelta, Daniel! 👋" (variante 1) |
+| 5 | Cliente nuevo escribe "hola, qué tenés" | Bot responde inventario directo SIN pedir gate. Quick replies "🚙 SUV / 🚗 Sedán / 🛻 Pickup" debajo |
+| 6 | Click quick reply "🚙 SUV" | Re-envía como mensaje cliente, bot responde con SUVs disponibles |
+| 7 | Cliente escribe "muéstrame SUVs" → bot muestra 5 cards | Cards en carousel horizontal con scroll-snap. Cliente puede swipear (mobile) o scroll wheel (desktop) |
+| 8 | Cliente escribe "quiero financiar un Toyota" | Bot dice "Te ayudo con la financiación..." y aparece gate inline con sub-header "Datos para financiación". Mensajes previos siguen visibles arriba |
+| 9 | Cliente completa gate → "¡Listo Daniel! 🙌 Ya tengo tus datos. Te respondo:" + 900ms después bot ejecuta respuesta financiación |
+| 10 | Click quick reply "💰 Sin cuota inicial" | Bot responde detalle |
+| 11 | Cliente escribe "quiero agendar visita" | Gate inline con sub-header "Coordinemos tu visita" |
+| 12 | Cliente escribe "quiero vender mi auto" | Gate inline con sub-header "Datos para tu peritaje" |
+| 13 | Cliente con `session.email` existente escribe "quiero financiar" | NO pide gate (needsIdentityForHighValueAction retorna false) — responde directo |
+| 14 | Mobile <480px, carousel | Cards 240px width, swipe nativo |
+| 15 | `prefers-reduced-motion: reduce` | scroll-behavior auto, sin smooth |
+| 16 | DevTools console post-load | Cero errores nuevos. Logs §86 si aplican |
+
+### 86.6 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 transition all | `transition: all` | Solo `background-color`, `transform`, `border-color` específicas en CSS append |
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | CERO. Selectores nuevos `cnc-vcard-list--carousel`, `cnc-vcard--snap` no colisionan con legacy |
+| §17.12 anti-MutationObserver | MO global | Cero. Solo helpers puros + event listeners discretos existentes |
+| §35 anti-pointermove | pointermove persistente | Cero. Carousel usa scroll-snap nativo del browser |
+| §37 IAP | Implementar sin autorización | IAP §37 entregado y autorizado explícitamente por cliente ("Ok arranca") |
+| Big Bang refactor | Romper flow legacy | Gate forzoso eliminado de forma CONDICIONAL (solo afecta usuarios nuevos sin gate completado). Clientes con `gateCompleted=true` no notan cambio. Clientes logueados con datos completos sin cambio |
+| Doctrina §59 (cliente nunca espera al server) | Carousel rompe responsive nativo | Scroll-snap es feature nativa CSS — cero JS adicional. Swipe nativo del browser en mobile |
+| Pedir gate sin contexto | Bot abrupto pidiendo datos | Sub-header dinámico explica POR QUÉ ("Datos para financiación", "Coordinemos tu visita"). Bot dice "Te ayudo con eso, antes necesito unos datos breves..." antes del gate |
+| Perder contexto al mostrar gate | Cliente olvida qué quería | `keepMsgsVisible = !!session.gateRequestedInline` mantiene mensajes previos VISIBLES arriba del gate |
+
+### 86.7 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Gate progressive rompe flujos críticos (cliente quiere financiar y bot no pide datos) | 🟢 Baja | Lista explícita de 3 intents que SÍ piden gate (financiacion, appointment, sell). Tests E2E #5-#13 cubren cada caso | git revert |
+| 2 | Welcome contextual muestra info de vehículo borrado | 🟢 Baja | `resolveVehicleTitleFromCache()` ya retorna null gracefully si no encuentra vehículo | git revert |
+| 3 | Quick replies confunden al cliente | 🟢 Baja | Solo 2-3 opciones contextuales claras. Cliente igual puede tipear libre | git revert |
+| 4 | Carousel horizontal rompe en mobile estrecho | 🟢 Baja | `flex 0 0 280px` desktop, `240px` <480px. Probado en WhatsApp Business / Intercom / Instagram DM | git revert |
+| 5 | "Bienvenido de vuelta" dispara a alguien que nunca volvió | 🟢 Baja | Detector estricto: `sessionAgeMs > 10min Y <7d Y profile.nombre Y mode=='bot' Y !closed` | git revert |
+| 6 | Cliente con `gateCompleted=true` legacy nota cambio | 🟢 Nula | `isGateRequired` chequea gateCompleted ANTES de gateRequestedInline — preserva comportamiento legacy | natural |
+| 7 | Deferred query falla post-gate (race condition con saveSession) | 🟢 Baja | try/catch en handleGateSubmit deferred execution, fallback a greeting normal si falla | git revert |
+| 8 | Cliente legacy con `gateCompleted=false` y `_deferredQuery` corrupto en localStorage | 🟢 Baja | `_deferredQuery` se setea solo cuando bot lo solicita explícitamente. Si valor stale, handleGateSubmit lo limpia | natural |
+| 9 | Cliente no ejecuta Ctrl+Shift+R post-deploy | 🔴 Alta | Cache version bumped `v20260515010000`. SW invalida automático en próximo refresh natural. En catálogo aparece toast §83 con CTA "Ver" para forzar reload | N/A |
+
+### 86.8 Acciones operativas
+
+NINGUNA backend. Sprint 100% client-side. Solo:
+
+1. **Ctrl+Shift+R** en sitio público (`https://altorracars.github.io/`) una vez para invalidar cache previa (`v20260514100000` → `v20260515010000`)
+2. Validar UX según tests E2E §86.5
+
+### 86.9 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/concierge.js` | Sub-features B1+B2+B3+B4: `buildContextualWelcomeHTML` (~80), `needsIdentityForHighValueAction` (~15), `applyGateHeaderForReason` (~30), `requestGateInline` (~20), schema extendido (3 campos), staleness guard reset, `isGateRequired` con flag inline, `applyGateVisibility` con `keepMsgsVisible`, 3 branches generateBotResponse (financiacion/appointment/sell) con `_requestGate`, send() con _requestGate dispatch + getContextualQuickReplies (~70), handleGateSubmit con deferred query execution, renderMessages carousel detection, renderVehicleCard isInCarousel param | +280, -25 |
+| `css/concierge.css` | CSS append §86 — carousel scroll-snap horizontal + responsive 480px + prefers-reduced-motion | +75 |
+| `service-worker.js` | CACHE_VERSION `v20260514100000` → `v20260515010000` con changelog §86 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION prepend §86 | +1, -1 |
+| `CLAUDE.md` | Esta sección §86 + actualización tabla §85.4 (PENDIENTE-C-S8 🔮 → ✅ §86) | +220 |
+
+**Total**: 5 archivos. Cero archivos nuevos. Cero schema. Cero deploy backend. Cero Cloud Function nueva. Cero rules.
+
+### 86.10 Archivos INTACTOS (afirmación)
+
+- `js/admin-concierge.js` — sin tocar. ALTOR Hub admin no afectado
+- `js/hub-store.js` (S1) — sin tocar
+- `firestore.rules`, `database.rules.json` — sin tocar
+- `functions/index.js` — sin tocar (27 Cloud Functions intactas)
+- AI modules (`js/ai/*.js`) — sin tocar. Motor cognitivo del bot intacto
+- HTML del sitio público — sin tocar
+- §59 S1-S7 features (Optimistic UI, typing indicators, read receipts, presence, rediseños visuales) — sin tocar
+- §80 staleness guard, §81 inteligencia bot, §82-§84 Smart Update Prompts — sin tocar (sólo se agregan los 3 campos nuevos al reset)
+- Plan §61 RBAC (§63-§73.4) — sin tocar
+- Plan §85 PENDIENTES — solo se actualiza §85.4 cambiando PENDIENTE-C-S8 de 🔮 a ✅
+
+### 86.11 Estado de PENDIENTES post-§86
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado (bloqueado por migración Vercel) |
+| **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo (próximo del orden recomendado §85.5) |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | **✅ §86** |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | 🔮 Listo |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias | 🔮 Listo |
+
+Próximo sprint según orden recomendado §85.5: **PENDIENTE-C-S9** (CSAT + Auto-resolve, ~1 día).
+
+### 86.12 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Sprint planificado en §85.3 PENDIENTE-C-S8 + §79.11 próximos pasos del Mega-Plan §59. Investigación previa con Explore agent para mapear estado exacto del bot antes de tocar código.
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización explícita del cliente ("Ok arranca").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero `transition: all`. Solo helpers puros + event listeners discretos existentes. Scroll-snap nativo del browser (cero JS adicional para carousel).
+
+§17.4 HTML/CSS estable: cero IDs/clases existentes renombrados. Selectores nuevos `--carousel`/`--snap` aditivos con prefijo namespace `.altorra-concierge` para especificidad sin `!important`.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+§59 Plan ALTOR Hub roadmap: C-S8 estricto al pie del plan documentado en §85.3. Cero overflow a C-S9 (CSAT), C-S10 (Internal notes) o B (refactor 164 callsites).
+
+§85 PENDIENTES: ✅ tabla §85.4 actualizada con PENDIENTE-C-S8 → ✅ §86 según protocolo §85.6 (auto-validación al cerrar).
+
+**Cache bump**: `v20260515010000`.
+

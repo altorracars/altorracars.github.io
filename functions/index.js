@@ -3187,3 +3187,158 @@ exports.recalculateRoleUserCount = onSchedule({
         console.log('[recalculateRoleUserCount] §71 sin cambios — counts actuales');
     }
 });
+
+
+// ════════════════════════════════════════════════════════════════════
+// §87 Sprint C-S9 — autoResolveIdleChats
+// ════════════════════════════════════════════════════════════════════
+// Cierra automáticamente los chats con mode='live' (asesor estaba
+// atendiendo) que llevan >24h sin actividad. Marca:
+//   status='closed', closedReason='idle_timeout', closedByRole='system',
+//   closedAt=now, closedBy='system'
+// + inserta msg system explicando + audit log entry.
+//
+// Schedule: cada 30 minutos (consistente con baseline §85.3)
+// Region: us-central1 (consistente con resto)
+// Idempotente: solo procesa chats con status != 'closed'
+// Batch writes con cap 500 (Firestore limit)
+// ════════════════════════════════════════════════════════════════════
+
+exports.autoResolveIdleChats = onSchedule({
+    schedule: 'every 30 minutes',
+    timeZone: 'America/Bogota',
+    region: 'us-central1'
+}, async () => {
+    const startedAt = Date.now();
+    console.log('[autoResolveIdleChats] §87 iniciado');
+
+    const IDLE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24h
+    const cutoffMs = startedAt - IDLE_THRESHOLD_MS;
+    const nowIso = new Date(startedAt).toISOString();
+
+    let candidatesSnap;
+    try {
+        // Filtrar por mode='live' AND status != 'closed' (Firestore
+        // permite hasta 1 != en queries; el resto se evalúa client-side).
+        candidatesSnap = await db.collection('conciergeChats')
+            .where('mode', '==', 'live')
+            .limit(500)
+            .get();
+    } catch (err) {
+        console.error('[autoResolveIdleChats] §87 fetch failed:', err.message);
+        return;
+    }
+
+    if (candidatesSnap.empty) {
+        console.log('[autoResolveIdleChats] §87 sin candidatos (cero chats en mode=live)');
+        return;
+    }
+
+    const idleChats = [];
+    candidatesSnap.forEach(doc => {
+        const data = doc.data() || {};
+        if (data.status === 'closed') return; // ya cerrados, skip
+        // Determinar lastActivityMs desde lastMessageAt (ISO string)
+        let lastActivityMs = 0;
+        if (data.lastMessageAt) {
+            const ts = new Date(data.lastMessageAt).getTime();
+            if (!isNaN(ts)) lastActivityMs = ts;
+        }
+        // Fallback al claimedAt o queueEnteredAt si no hay lastMessageAt
+        if (!lastActivityMs && data.claimedAt) {
+            const ts = new Date(data.claimedAt).getTime();
+            if (!isNaN(ts)) lastActivityMs = ts;
+        }
+        if (!lastActivityMs && data.queueEnteredAt) {
+            const ts = new Date(data.queueEnteredAt).getTime();
+            if (!isNaN(ts)) lastActivityMs = ts;
+        }
+        if (!lastActivityMs) return; // sin timestamp confiable, skip
+        if (lastActivityMs > cutoffMs) return; // dentro del threshold, skip
+        idleChats.push({ ref: doc.ref, sessionId: doc.id, lastActivityMs, data });
+    });
+
+    if (idleChats.length === 0) {
+        console.log('[autoResolveIdleChats] §87 sin chats idle (>24h sin actividad)');
+        return;
+    }
+
+    console.log(`[autoResolveIdleChats] §87 encontrados ${idleChats.length} chats idle. Procesando...`);
+
+    let resolved = 0;
+    let errors = 0;
+    // Cap defensive: 500 ops por batch (Firestore limit). Cada chat
+    // genera 2 ops (update parent + insert msg system) → cap a 200 chats.
+    const MAX_PER_RUN = 200;
+    const toProcess = idleChats.slice(0, MAX_PER_RUN);
+
+    let batch = db.batch();
+    let batchOps = 0;
+
+    for (const item of toProcess) {
+        try {
+            // Op 1: update doc parent del chat
+            batch.update(item.ref, {
+                status: 'closed',
+                closedAt: nowIso,
+                closedBy: 'system',
+                closedReason: 'idle_timeout',
+                closedByRole: 'system',
+                lastMessage: '✓ Conversación cerrada automáticamente por inactividad (24h sin actividad)',
+                lastMessageAt: nowIso,
+                _autoResolvedAt: nowIso,
+                _autoResolvedBy: 'autoResolveIdleChats-§87'
+            });
+            batchOps++;
+            // Op 2: insert msg system en subcolección messages/
+            const msgRef = item.ref.collection('messages').doc();
+            batch.set(msgRef, {
+                from: 'system',
+                systemType: 'auto-resolved',
+                text: '✓ Conversación cerrada automáticamente por inactividad (24h sin actividad). Si necesitás algo más, podés iniciar una nueva conversación.',
+                timestamp: nowIso,
+                _source: 'autoResolveIdleChats-§87'
+            });
+            batchOps++;
+            resolved++;
+            // Commit batch cada 450 ops (margen para no exceder 500)
+            if (batchOps >= 450) {
+                await batch.commit();
+                console.log(`[autoResolveIdleChats] §87 batch parcial commit (${batchOps} ops)`);
+                batch = db.batch();
+                batchOps = 0;
+            }
+        } catch (err) {
+            errors++;
+            console.warn(`[autoResolveIdleChats] §87 chat ${item.sessionId} falló:`, err.message);
+        }
+    }
+
+    // Commit final si quedaron ops pendientes
+    if (batchOps > 0) {
+        try {
+            await batch.commit();
+        } catch (err) {
+            console.error('[autoResolveIdleChats] §87 batch final commit falló:', err.message);
+            errors++;
+        }
+    }
+
+    // Audit log entry (best-effort)
+    try {
+        await db.collection('auditLog').add({
+            type: 'chat.auto-resolved',
+            count: resolved,
+            errors: errors,
+            threshold_h: 24,
+            timestamp: nowIso,
+            actor: 'system',
+            actorName: 'Cloud Function (autoResolveIdleChats §87)',
+            durationMs: Date.now() - startedAt
+        });
+    } catch (err) {
+        console.warn('[autoResolveIdleChats] §87 audit log skip:', err.message);
+    }
+
+    console.log(`[autoResolveIdleChats] §87 completado: ${resolved} chats cerrados, ${errors} errores. Total candidatos en mode=live: ${candidatesSnap.size}.`);
+});

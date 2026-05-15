@@ -14899,3 +14899,160 @@ html.theme-changing-stop * {
 /* ═══════════════════════════════════════════════════════════════════
    FIN §78 — Sprint S6 Rediseño visual ALTOR Hub admin
    ═══════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   §87 Sprint C-S9 — Métricas Concierge en sec-reports
+   Grid de 3 bloques (distribución de cierres + top intents + top
+   FAQs missed) responsive 3→2→1 cols. Estilo coherente con
+   reports-card existentes.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.reports-concierge-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.reports-concierge-block {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.reports-concierge-title {
+    margin: 0 0 12px 0;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.78);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reports-concierge-title [data-lucide] {
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+}
+
+.reports-concierge-distribution {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reports-concierge-dist-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 70px;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.78rem;
+}
+
+.reports-concierge-dist-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.78);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.reports-concierge-dist-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.reports-concierge-dist-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.reports-concierge-dist-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.reports-concierge-dist-count {
+    font-size: 0.74rem;
+    color: rgba(255, 255, 255, 0.55);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.reports-concierge-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.reports-concierge-list-row {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.8rem;
+}
+
+.reports-concierge-list-rank {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(184, 150, 88, 0.18);
+    color: #b89658;
+    font-weight: 700;
+    font-size: 0.72rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.reports-concierge-list-name {
+    color: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.reports-concierge-list-count {
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.74rem;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+@media (max-width: 1024px) {
+    .reports-concierge-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+    .reports-concierge-grid { grid-template-columns: 1fr; }
+    .reports-concierge-dist-row {
+        grid-template-columns: 90px 1fr 60px;
+        font-size: 0.74rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reports-concierge-dist-bar-fill { transition: none; }
+}
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §87 Sprint C-S9 — Métricas Concierge
+   ═══════════════════════════════════════════════════════════════════ */

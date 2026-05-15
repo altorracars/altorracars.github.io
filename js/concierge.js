@@ -103,6 +103,8 @@
                 if (typeof s.activeAsesor === 'undefined') s.activeAsesor = null;
                 if (typeof s.profile === 'undefined') s.profile = null;
                 if (typeof s.closed === 'undefined') s.closed = false;
+                // §87 — CSAT field defensive default para sesiones pre-§87
+                if (typeof s.csat === 'undefined') s.csat = null;
 
                 /* §80 STALENESS GUARD — abandono de queue/live por >4h
                    ──────────────────────────────────────────────────
@@ -152,6 +154,8 @@
                         s.gateRequestedInline = false;
                         s.gateRequestReason = null;
                         s._deferredQuery = null;
+                        // §87 — CSAT pertenece a un chat específico; nuevo chat = csat null
+                        s.csat = null;
                         // Nuevo sessionId → chat doc fresh en Firestore
                         s.sessionId = 'cnc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
                         s.createdAt = Date.now();
@@ -195,6 +199,10 @@
             gateRequestedInline: false,    // true cuando bot pidió gate inline
             gateRequestReason: null,       // 'financiacion'|'cita'|'asesor'|'vender'
             _deferredQuery: null,          // query del cliente diferida hasta completar gate
+            // §87 Sprint C-S9 — CSAT (Customer Satisfaction) post-cierre.
+            // null = no respondido (mostrar form). { score, comment, submittedAt, source }
+            // = ya respondió (mostrar "✓ Gracias por tu valoración"). Idempotente.
+            csat: null,
             // Intent classifier memoria conversacional
             context: { lastIntent: null, discussedTopics: [], bot_repeated_count: 0 },
             // Handoff dinámico
@@ -2398,6 +2406,15 @@
             // o lógica del handler.
             var actionName = btn.getAttribute('data-action');
             console.log('[Concierge] §57.9 panel.click → data-action=' + actionName + ' target=' + (e.target.tagName || ''));
+            // §87 Sprint C-S9 — CSAT rate handler especial: necesita leer
+            // data-csat-score del button matched. Lo procesamos ANTES de
+            // delegar a handleAction(actionName) porque handleAction solo
+            // recibe el action string, no el button.
+            if (actionName === 'csat-rate') {
+                var csatScore = btn.getAttribute('data-csat-score');
+                handleCSATRate(csatScore);
+                return;
+            }
             // §60.2 — Retry para mensajes failed (Optimistic UI cliente).
             // El botón Reintentar está dentro de un bubble msg failed; trae
             // su tempId para identificar el mensaje exacto a re-enviar.
@@ -2760,6 +2777,126 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       §87 Sprint C-S9 — CSAT (Customer Satisfaction) post-cierre
+       ═══════════════════════════════════════════════════════════
+       Patrón industry-standard Intercom/Drift/Zendesk: tras cerrar
+       un chat, mostrar survey de 5 caritas para medir experiencia.
+
+       Idempotente: si session.csat ya existe, muestra "Gracias por
+       tu valoración" en lugar del form.
+
+       Persistencia: conciergeChats/{sid}.csat = { score, comment,
+       submittedAt, source: 'client' } via Firestore .set merge:true.
+
+       Schema rule R6: cliente puede update si auth.uid == userId
+       || userId == null (rule existente, cero deploy de rules).
+    ─────────────────────────────────────────────────────────── */
+
+    var _csatSelectedScore = null; // score temporal antes de submit
+
+    var CSAT_EMOJIS = [
+        { score: 1, emoji: '😞', label: 'Muy mala' },
+        { score: 2, emoji: '😐', label: 'Mala' },
+        { score: 3, emoji: '🙂', label: 'Regular' },
+        { score: 4, emoji: '😊', label: 'Buena' },
+        { score: 5, emoji: '🤩', label: 'Excelente' }
+    ];
+
+    function buildCSATBlockHTML() {
+        // Si ya respondió, mostrar resumen estático
+        if (session.csat && session.csat.score) {
+            var picked = CSAT_EMOJIS[session.csat.score - 1] || CSAT_EMOJIS[2];
+            return '<div class="cnc-csat-block cnc-csat-block--submitted" id="cncCSATBlock">' +
+                '<div class="cnc-csat-thanks">' +
+                    '<span class="cnc-csat-thanks-emoji">' + picked.emoji + '</span>' +
+                    '<span>¡Gracias por tu valoración!</span>' +
+                '</div>' +
+            '</div>';
+        }
+        // Form de rating
+        var emojisHTML = CSAT_EMOJIS.map(function (e) {
+            return '<button type="button" class="cnc-csat-emoji" ' +
+                'data-action="csat-rate" data-csat-score="' + e.score + '" ' +
+                'aria-label="' + escapeHtml(e.label) + '" title="' + escapeHtml(e.label) + '">' +
+                '<span class="cnc-csat-emoji-icon">' + e.emoji + '</span>' +
+                '<span class="cnc-csat-emoji-label">' + escapeHtml(e.label) + '</span>' +
+            '</button>';
+        }).join('');
+        return '<div class="cnc-csat-block" id="cncCSATBlock">' +
+            '<div class="cnc-csat-question">¿Cómo fue tu experiencia con nosotros?</div>' +
+            '<div class="cnc-csat-emojis" id="cncCSATEmojis">' + emojisHTML + '</div>' +
+            '<textarea class="cnc-csat-comment" id="cncCSATComment" maxlength="280" ' +
+                'placeholder="Comentario opcional (qué te gustó o qué mejorar)" rows="2"></textarea>' +
+            '<div class="cnc-csat-actions">' +
+                '<button type="button" class="cnc-csat-btn cnc-csat-btn--ghost" data-action="csat-skip">Saltar</button>' +
+                '<button type="button" class="cnc-csat-btn cnc-csat-btn--primary" id="cncCSATSubmitBtn" data-action="csat-submit" disabled>Enviar valoración</button>' +
+            '</div>' +
+        '</div>';
+    }
+
+    function handleCSATRate(score) {
+        var n = parseInt(score, 10);
+        if (isNaN(n) || n < 1 || n > 5) return;
+        _csatSelectedScore = n;
+        // Highlight visual del seleccionado
+        var emojiButtons = document.querySelectorAll('#cncCSATEmojis .cnc-csat-emoji');
+        for (var i = 0; i < emojiButtons.length; i++) {
+            var btn = emojiButtons[i];
+            var bScore = parseInt(btn.getAttribute('data-csat-score'), 10);
+            if (bScore === n) {
+                btn.classList.add('cnc-csat-emoji--selected');
+            } else {
+                btn.classList.remove('cnc-csat-emoji--selected');
+            }
+        }
+        // Habilitar submit
+        var submitBtn = document.getElementById('cncCSATSubmitBtn');
+        if (submitBtn) submitBtn.disabled = false;
+    }
+
+    function handleCSATSubmit() {
+        if (!_csatSelectedScore) return; // botón disabled, defensive
+        var commentEl = document.getElementById('cncCSATComment');
+        var comment = commentEl ? String(commentEl.value || '').trim().slice(0, 280) : '';
+        var csatData = {
+            score: _csatSelectedScore,
+            comment: comment,
+            submittedAt: new Date().toISOString(),
+            source: 'client'
+        };
+        // Persistir en sesión + Firestore (best-effort)
+        session.csat = csatData;
+        try { saveSession(session); } catch (e) {}
+        if (session.sessionId && window.db) {
+            window.db.collection('conciergeChats').doc(session.sessionId)
+                .set({ csat: csatData }, { merge: true })
+                .catch(function (err) {
+                    console.warn('[Concierge] §87 CSAT persist failed:', err && err.message);
+                });
+        }
+        // Re-render solo el bloque CSAT con la versión "Gracias"
+        var oldBlock = document.getElementById('cncCSATBlock');
+        if (oldBlock && oldBlock.parentNode) {
+            var wrapper = document.createElement('div');
+            wrapper.innerHTML = buildCSATBlockHTML();
+            var newBlock = wrapper.firstChild;
+            oldBlock.parentNode.replaceChild(newBlock, oldBlock);
+            if (window.AltorraIcons && window.AltorraIcons.refresh) {
+                window.AltorraIcons.refresh(newBlock);
+            }
+        }
+        _csatSelectedScore = null;
+        console.log('[Concierge] §87 CSAT submitted:', csatData);
+    }
+
+    function handleCSATSkip() {
+        var block = document.getElementById('cncCSATBlock');
+        if (block) block.remove();
+        _csatSelectedScore = null;
+        console.log('[Concierge] §87 CSAT skipped by user');
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        FASE 1.B — Cierre de sesión: bloqueo del input + botón nuevo chat
        ═══════════════════════════════════════════════════════════ */
     function applyClosedState() {
@@ -2821,6 +2958,8 @@
                         (radicadoTxt
                             ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
                             : '') +
+                        // §87 — CSAT survey entre radicado y botones de acción
+                        buildCSATBlockHTML() +
                         '<div class="cnc-closed-actions">' +
                             '<button class="cnc-closed-action cnc-closed-action--secondary" id="cncDownloadBtn" type="button" data-action="download-conversation">' +
                                 '<i data-lucide="download"></i><span>Descargar conversación</span>' +
@@ -2847,6 +2986,8 @@
                         (radicadoTxt
                             ? '<div class="cnc-closed-radicado" id="cncClosedRadicado">Radicado: <strong>' + radicadoTxt + '</strong></div>'
                             : '') +
+                        // §87 — CSAT survey entre radicado y botones de acción
+                        buildCSATBlockHTML() +
                         '<div class="cnc-closed-actions">' +
                             '<button class="cnc-closed-action cnc-closed-action--secondary" id="cncDownloadBtn" type="button" data-action="download-conversation">' +
                                 '<i data-lucide="download"></i><span>Descargar conversación</span>' +
@@ -3429,6 +3570,32 @@
                 // arrancar fresco sin perder el panel.
                 console.log('[Concierge] §57.8 reset-from-finalized action triggered');
                 cleanSessionAndRender();
+                break;
+            // §87 Sprint C-S9 — CSAT (Customer Satisfaction) handlers.
+            // Aparecen en la pantalla "Chat finalizado" entre radicado
+            // y botones. Persistencia idempotente en conciergeChats/{sid}.csat
+            case 'csat-rate':
+                // El score viaja en data-csat-score del button clickeado.
+                // Buscamos el target real (el button con data-action) para
+                // leer su atributo. handleAction() recibe action solo —
+                // necesitamos el button original via document.activeElement
+                // o via el currentTarget del listener delegado. Como
+                // panel.click() captura e.target.closest('[data-action]')
+                // y aquí ya perdimos el evento, usamos un patrón distinto:
+                // delegamos directamente desde el panel listener leyendo
+                // el data-csat-score del button matched antes de invocar
+                // handleAction. Ver bloque panel.click más abajo.
+                // (Ver action 'csat-rate' handling en panel.click — esta
+                // rama solo loggea para diagnóstico.)
+                console.log('[Concierge] §87 csat-rate action — score leído por panel.click');
+                break;
+            case 'csat-submit':
+                console.log('[Concierge] §87 csat-submit action triggered');
+                handleCSATSubmit();
+                break;
+            case 'csat-skip':
+                console.log('[Concierge] §87 csat-skip action triggered');
+                handleCSATSkip();
                 break;
         }
     }

@@ -2383,6 +2383,76 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                     <div class="pred-empty">Analizando patrones…</div>
                 </div>
             </div>
+
+            <!-- §87 Sprint C-S9 — Métricas Concierge (Bot ALTOR + Hub) -->
+            <div class="reports-card" id="reportsConciergeCard">
+                <div class="reports-card-head">
+                    <h3><i data-lucide="message-square-text"></i> Métricas Concierge (Bot ALTOR + Hub)</h3>
+                    <span class="reports-card-hint" id="reportsConciergeHint">Cargando…</span>
+                </div>
+                <div class="reports-kpis" style="margin-top: 12px;">
+                    <div class="reports-kpi-card">
+                        <div class="reports-kpi-icon" style="background:rgba(59,130,246,0.12);color:#3b82f6;">
+                            <i data-lucide="messages-square"></i>
+                        </div>
+                        <div class="reports-kpi-body">
+                            <div class="reports-kpi-label">Total chats</div>
+                            <div class="reports-kpi-value" id="rkConciergeTotal">—</div>
+                            <div class="reports-kpi-sub" id="rkConciergeTotalSub">Del periodo</div>
+                        </div>
+                    </div>
+                    <div class="reports-kpi-card">
+                        <div class="reports-kpi-icon" style="background:rgba(16,185,129,0.12);color:#10b981;">
+                            <i data-lucide="check-circle-2"></i>
+                        </div>
+                        <div class="reports-kpi-body">
+                            <div class="reports-kpi-label">Tasa resolución</div>
+                            <div class="reports-kpi-value" id="rkConciergeResolved">—</div>
+                            <div class="reports-kpi-sub" id="rkConciergeResolvedSub">% cerrados</div>
+                        </div>
+                    </div>
+                    <div class="reports-kpi-card">
+                        <div class="reports-kpi-icon" style="background:rgba(184,150,88,0.18);color:#b89658;">
+                            <i data-lucide="star"></i>
+                        </div>
+                        <div class="reports-kpi-body">
+                            <div class="reports-kpi-label">CSAT promedio</div>
+                            <div class="reports-kpi-value" id="rkConciergeCsat">—</div>
+                            <div class="reports-kpi-sub" id="rkConciergeCsatSub">/ 5</div>
+                        </div>
+                    </div>
+                    <div class="reports-kpi-card">
+                        <div class="reports-kpi-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">
+                            <i data-lucide="timer"></i>
+                        </div>
+                        <div class="reports-kpi-body">
+                            <div class="reports-kpi-label">Tiempo respuesta</div>
+                            <div class="reports-kpi-value" id="rkConciergeRespTime">—</div>
+                            <div class="reports-kpi-sub" id="rkConciergeRespTimeSub">Asesor desde escalado</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="reports-concierge-grid" id="reportsConciergeGrid">
+                    <div class="reports-concierge-block">
+                        <h4 class="reports-concierge-title"><i data-lucide="pie-chart"></i> Distribución de cierres</h4>
+                        <div id="reportsConciergeDistribution" class="reports-concierge-distribution">
+                            <div class="pred-empty">Sin datos</div>
+                        </div>
+                    </div>
+                    <div class="reports-concierge-block">
+                        <h4 class="reports-concierge-title"><i data-lucide="trending-up"></i> Top intents detectados</h4>
+                        <div id="reportsConciergeTopIntents" class="reports-concierge-list">
+                            <div class="pred-empty">Sin datos</div>
+                        </div>
+                    </div>
+                    <div class="reports-concierge-block">
+                        <h4 class="reports-concierge-title"><i data-lucide="help-circle"></i> Top FAQs sin respuesta</h4>
+                        <div id="reportsConciergeFAQsMissed" class="reports-concierge-list">
+                            <div class="pred-empty">Sin datos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- AUDIT LOG PANEL (F4.1) — §27.2 ahora también incluye Actividad Reciente

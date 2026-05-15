@@ -35887,7 +35887,7 @@ operando como único asesor, S10 puede esperar.
 | **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado | 3-5d + 1d test | Migración a Vercel | Baja |
 | **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo | 1d dedicado | Nada (opcional) | Media |
 | **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | 🔮 Listo | 2d | Nada (opcional) | Baja |
-| **PENDIENTE-C-S9** | CSAT + Auto-resolve | 🔮 Listo | 1d | Tráfico real (~50 chats/mes) | Media |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 | 1d | Tráfico real (~50 chats/mes) | Media |
 | **PENDIENTE-C-S10** | Internal notes + Transferencias | 🔮 Listo | 2d | Equipo 2+ asesores activos | Baja |
 
 ### 85.5 Cómo retomar cada PENDIENTE en sesión futura
@@ -36223,3 +36223,285 @@ Próximo sprint según orden recomendado §85.5: **PENDIENTE-C-S9** (CSAT + Auto
 
 **Cache bump**: `v20260515010000`.
 
+
+---
+
+## 87. ADR-087 — Sprint C-S9: CSAT post-cierre + Auto-resolve idle chats + Dashboard métricas Concierge (2026-05-15)
+
+> Cierre del **PENDIENTE-C-S9** documentado en §85.3. Segundo sprint
+> del bloque opcional B+C autorizado por el cliente. Implementa 3
+> sub-features coordinadas en 1 commit:
+>
+> 1. **CSAT survey post-cierre** (cliente concierge.js): 5 caritas
+>    estilo Intercom/Drift entre el radicado y los botones de la
+>    pantalla "Chat finalizado". Idempotente, opcional con "Saltar".
+> 2. **Auto-resolve idle chats** (Cloud Function): cierra chats con
+>    `mode='live'` sin actividad por 24h. Schedule cada 30 minutos.
+> 3. **Dashboard métricas Concierge** (admin-reports): nuevo bloque
+>    en sec-reports con 4 KPIs + distribución de cierres + top 5
+>    intents + top 5 FAQs missed.
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero transition all),
+> §17.4 (HTML/CSS estable), §17.12 (cero MutationObserver), §35 (cero
+> pointermove), §37 (IAP), §59 Plan ALTOR Hub roadmap, §85.3
+> PENDIENTE-C-S9.
+
+### 87.1 Por qué este sprint existe
+
+Tras §86 (Sprint C-S8 mergeado), el cliente autorizó "sigamos con
+Sprint C-S9 (CSAT + Auto-resolve, ~1 día)". Mi recomendación de
+orden (§85.5) priorizaba C-S9 después de C-S8 porque:
+- Cierra el ciclo de feedback del cliente (CSAT) post-conversación
+- Higieniza el dataset (auto-resolve evita acumular chats fantasma
+  que distorsionan métricas)
+- Provee visibilidad (dashboard) — sin métricas, el negocio decide
+  a ciegas
+
+### 87.2 Causa raíz del estado pre-§87
+
+Audit del Hub antes del sprint reveló:
+
+| Aspecto | Estado pre-§87 |
+|---|---|
+| Pantalla "Chat finalizado" | 3 botones (Descargar / Iniciar nueva / Cerrar) sin survey de feedback |
+| Schema `conciergeChats/{sid}` | Sin campo `csat`. Sin tracking de satisfacción |
+| Cierre por inactividad | NO existía. Chats `mode=live` quedan abiertos forever si nadie los cierra |
+| Dashboard métricas | sec-reports solo muestra ventas/conversión/forecast/performance/anomalías. Cero métricas Concierge |
+| Tracking de FAQs missed | Tabla `unmatchedQueries` poblada pero NO agregada a métricas |
+
+### 87.3 Solución estructural — 3 sub-features coordinadas
+
+#### A. CSAT Survey (cliente concierge.js)
+
+Helper nuevo `buildCSATBlockHTML()` que retorna:
+- **Si `session.csat` ya existe** → bloque "✓ ¡Gracias por tu valoración!"
+  con el emoji que eligió (idempotente)
+- **Si NO** → form con 5 caritas + textarea opcional + Submit/Skip
+
+5 emojis canónicos:
+- 😞 Muy mala (1)
+- 😐 Mala (2)
+- 🙂 Regular (3)
+- 😊 Buena (4)
+- 🤩 Excelente (5)
+
+Inyectado en `applyClosedState()` entre el radicado y `cnc-closed-actions`
+en AMBAS variants (`client_finalized` y `admin`).
+
+**Handlers**:
+- `handleCSATRate(score)`: marca el seleccionado con `cnc-csat-emoji--selected`,
+  habilita el botón Submit
+- `handleCSATSubmit()`: lee comment + score, persiste `session.csat = {score, comment, submittedAt, source: 'client'}`
+  en localStorage + Firestore (best-effort), re-renderiza el bloque
+  como "Gracias"
+- `handleCSATSkip()`: oculta el bloque sin escribir nada
+
+**Persistencia**:
+```js
+window.db.collection('conciergeChats').doc(session.sessionId)
+    .set({ csat: csatData }, { merge: true })
+```
+
+Garantizado por rule R6: cliente puede update si `auth.uid == userId || userId == null`. **Cero deploy de rules**.
+
+**Click handling**: Como `handleAction` recibe solo el action string,
+necesitamos leer `data-csat-score` del button original. Solución:
+interceptar `csat-rate` en `panel.click` ANTES de delegar a
+`handleAction()`:
+
+```js
+if (actionName === 'csat-rate') {
+    var csatScore = btn.getAttribute('data-csat-score');
+    handleCSATRate(csatScore);
+    return;
+}
+```
+
+#### B. Auto-resolve Cloud Function (`autoResolveIdleChats`)
+
+Schedule `every 30 minutes`, region `us-central1`, memory 256MiB.
+
+Lógica:
+1. Query `conciergeChats` `where('mode', '==', 'live')` `.limit(500)`
+2. Filter client-side: `status !== 'closed'` AND `lastMessageAt > 24h ago`
+3. Fallback de timestamp: `claimedAt` o `queueEnteredAt` si no hay `lastMessageAt`
+4. Cap defensive: max 200 chats por run (400 ops Firestore con cap 500/batch)
+5. Para cada chat idle:
+   - Update parent: `status='closed'`, `closedReason='idle_timeout'`,
+     `closedByRole='system'`, `closedAt=nowIso`, `_autoResolvedAt`,
+     `_autoResolvedBy`
+   - Insert msg system: "✓ Conversación cerrada automáticamente por
+     inactividad (24h sin actividad)"
+6. Audit log entry `chat.auto-resolved` con count + threshold
+
+**Idempotente**: chats ya cerrados se filtran. Re-correr no toca chats
+que cerró otro mecanismo (cliente/admin/SLA breach).
+
+**Por qué `mode='live'` y no también `mode='queue'`**: queue es
+responsabilidad del SLA breach handler (§23), que ya cierra con
+`closedReason='sla_breach_handover'`. live es donde acumulan chats
+que asesor abandonó.
+
+#### C. Dashboard métricas Concierge (`admin-reports.js`)
+
+Nuevo método `renderConciergeMetrics()` agregado al `renderAll()`.
+
+**Lectura Firestore con cache 60s**:
+- Query 1: `conciergeChats` `where('createdAt', '>=', cutoffIso).limit(1000)`
+- Query 2: `unmatchedQueries.limit(1000)`
+- Fallback: si index compuesto no existe, query simple + filter client-side
+
+**4 KPIs**:
+- **Total chats** del periodo
+- **Tasa de resolución**: `closed.length / total * 100`
+- **CSAT promedio**: avg de `chat.csat.score` (si hay)
+- **Tiempo respuesta**: avg de `claimedAt - queueEnteredAt` (asesor
+  tomó el chat tras escalar)
+
+**Distribución de cierres** (visualización con barras horizontales):
+- `client_finalized` (azul) — cliente cerró
+- `admin_resolved` (verde) — asesor cerró
+- `idle_timeout` (violeta) — auto-resolve §87
+- `sla_breach_handover` (ámbar) — SLA breach §23
+- `other` (gris) — fallback
+
+**Top 5 intents detectados**: agregación client-side de `context.lastIntent`
+(intent del último turno del cliente, ranked por frecuencia).
+
+**Top 5 FAQs sin respuesta**: agregación de keywords de `unmatchedQueries`,
+ranked por frecuencia. Si dataset >5000, mover agregación a Cloud
+Function nocturna (NO en este sprint).
+
+**Range selector existente**: reutiliza el `reportsRange` (month /
+quarter / year) sin cambios.
+
+### 87.4 Schema session ampliado
+
+1 campo nuevo en el default + reset en staleness guard + defensive
+init en loadSession para sesiones pre-§87:
+
+```js
+csat: null  // null = no respondió | { score, comment, submittedAt, source }
+```
+
+### 87.5 Tests E2E (post-deploy + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente conversa, escala a live, asesor cierra el chat | Pantalla "Chat finalizado" muestra survey CSAT entre radicado y botones |
+| 2 | Cliente click una carita | Carita seleccionada con highlight dorado, botón Submit se habilita |
+| 3 | Cliente click Submit | Bloque cambia a "✓ ¡Gracias por tu valoración! 😊" + persiste en Firestore |
+| 4 | Cliente reabre el chat tras Submit | El bloque sigue mostrando "Gracias" (idempotente — `session.csat` ya existe) |
+| 5 | Cliente click Saltar | Bloque desaparece sin escribir nada en Firestore |
+| 6 | Cliente cierra chat sin Submit + reabre | Survey aparece de nuevo (no se persistió) |
+| 7 | Verificar Firestore `conciergeChats/{sid}.csat` | `{score: 1-5, comment: '', submittedAt: ISO, source: 'client'}` |
+| 8 | Mobile <480px | 5 emojis compactos, botones full-width stacked |
+| 9 | `prefers-reduced-motion: reduce` | Animación entry desactivada, hover sin transform |
+| 10 | Cloud Function deployed: chat con `mode=live` y `lastMessageAt` hace 25h | Cierra automáticamente al próximo run (cada 30 min) |
+| 11 | Verificar `auditLog/` | Entry `type: 'chat.auto-resolved', count: N, threshold_h: 24` |
+| 12 | Admin → Reportes → bloque "Métricas Concierge" | KPIs correctos, distribución de cierres, top intents, top FAQs |
+| 13 | DevTools console | Cero errores. Logs `§87 csat-submit action triggered` y `§87 CSAT submitted: {...}` |
+
+### 87.6 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 transition all | `transition: all` | Solo `background-color`, `transform`, `border-color` específicas |
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | CERO. Selectores nuevos `cnc-csat-*` y `reports-concierge-*` no colisionan con legacy |
+| §17.12 anti-MutationObserver | MO global | Cero. Solo helpers puros + handlers data-action delegation existente |
+| §35 anti-pointermove | pointermove persistente | Cero. Survey solo escucha `click` + `change` discretos |
+| §37 IAP | Implementar sin autorización | IAP §37 entregado y autorizado por cliente ("procede") |
+| Big Bang | CSAT forzoso bloqueando UX | Botón "Saltar" siempre visible. Sin gate. Cliente puede cerrar el panel sin responder |
+| Auto-resolve agresivo | Cerrar chats donde cliente todavía espera respuesta | Filtro `mode='live'` (asesor estaba atendiendo, abandonó). 24h es generous. Cliente que vuelve a escribir reactiva el chat (mode permanece live) |
+| Métricas pesadas | Query sin limit explota a 10K+ chats | Limit 1000 + cache 60s. Si crece >5000, mover agregación a Cloud Function nocturna (deuda futura) |
+| Falsos positivos en CSAT | Botón Submit habilitado sin score seleccionado | `disabled` por default, se habilita en `handleCSATRate()` |
+| §59 Plan | Saltarse fases | C-S9 estricto al pie del plan §85.3. Cero overflow a C-S10 (internal notes) ni B (refactor 164 callsites) |
+
+### 87.7 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Cliente no ejecuta `firebase deploy --only functions:autoResolveIdleChats` | 🟡 Media | Sin deploy, auto-resolve queda inactivo. CSAT + dashboard funcionan igual (cero dependencia) | N/A — graceful degradation |
+| 2 | Persist Firestore CSAT falla por permission-denied | 🟢 Baja | rule R6 ya cubre client write. Catch silencioso loggea warning, no bloquea UX | git revert |
+| 3 | Auto-resolve cierra chat de cliente que vuelve tras vacaciones | 🟢 Baja | 24h es generous. Cliente puede iniciar nueva conversación cuando quiera (msg system explica) | Aumentar threshold |
+| 4 | Métricas dashboard pesado con 5000+ chats | 🟢 Baja | Limit 1000 + cache 60s. Mover a Cloud Function nocturna en futuro |
+| 5 | Index compuesto Firestore para `where('createdAt', '>=', X).limit(1000)` no existe | 🟢 Baja | Fallback automático: query simple + filter client-side. Console warn explicativo |
+| 6 | Cliente NO ejecuta Ctrl+Shift+R | 🟠 Alta | Cache version bumped `v20260515030000`. SW invalidará automático. Pero primera vez requiere hard refresh |
+| 7 | CSAT survey rompe layout pantalla "Chat finalizado" | 🟢 Baja | Bloque colapsable con animation entry suave. Mobile con padding reducido |
+| 8 | Bot no escribe `csat` en sesiones legacy (campo no existe) | 🟢 Baja | Default `null` en loadSession() para sesiones pre-§87. Field aparece al primer Submit |
+
+### 87.8 Acciones operativas
+
+**OBLIGATORIO**:
+```bash
+firebase deploy --only functions:autoResolveIdleChats
+```
+
+Tras el deploy:
+1. **Ctrl+Shift+R** en sitio público y admin para invalidar cache
+   previa (`v20260515020000` → `v20260515030000`)
+2. Validar UX según tests E2E §87.5
+3. Verificar Firebase Console → Functions → `autoResolveIdleChats`
+   activa con schedule `every 30 minutes`
+
+**Cero deploy de rules** (R6 ya cubre `csat` write client-side).
+**Cero deploy de RTDB** (no se usa).
+
+### 87.9 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/concierge.js` | Sub-feature A: schema extendido (csat field), defensive init en loadSession + reset en staleness guard, helper `buildCSATBlockHTML()` (~40 líneas), 3 funciones handler (handleCSATRate/Submit/Skip), inyección en applyClosedState() ambas variants, intercept `csat-rate` en panel.click ANTES de handleAction, cases nuevos en handleAction switch | +180, -3 |
+| `css/concierge.css` | CSS append §87 — `.cnc-csat-*` con 5 emojis flexbox + textarea + botones + animation entry + responsive 480px + prefers-reduced-motion | +200 |
+| `functions/index.js` | Sub-feature B: Cloud Function `autoResolveIdleChats` schedule every 30 minutes us-central1 — query mode=live + filter client-side + batch updates con cap 200/run + audit log entry | +150 |
+| `js/admin-reports.js` | Sub-feature C: `renderConciergeMetrics()` + helper `fetchConciergeData()` con cache 60s. Lee conciergeChats + unmatchedQueries. 4 KPIs + distribución + top intents + top FAQs missed. Llamado en `renderAll()` | +200 |
+| `admin.html` | Bloque HTML nuevo en sec-reports después de Anomalías: 4 KPI cards + grid responsive 3-cols con distribución/intents/FAQs | +75 |
+| `css/admin.css` | CSS append §87 — `.reports-concierge-grid` + `.reports-concierge-block` + `.reports-concierge-dist-*` (barras horizontales) + `.reports-concierge-list-*` (rank+name+count) + responsive 1024/640px + prefers-reduced-motion | +150 |
+| `service-worker.js` | CACHE_VERSION `v20260515020000` → `v20260515030000` con changelog §87 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION prepend §87 | +1, -1 |
+| `CLAUDE.md` | Esta sección §87 + actualización tabla §85.4 (PENDIENTE-C-S9 🔮 → ✅ §87) | +210 |
+
+**Total**: 9 archivos. Cero archivos nuevos. Cero schema Firestore (csat field es write-on-demand). Cero rules deploy. 1 deploy backend (Cloud Function).
+
+### 87.10 Archivos INTACTOS (afirmación)
+
+- `js/admin-concierge.js` (Hub admin) — sin tocar (CSAT lo ve solo el cliente, métricas las ve solo el admin en reports)
+- `js/hub-store.js` (S1) — sin tocar
+- `js/admin-roles.js`, `js/admin-users.js`, `js/admin-state.js`, `js/admin-auth.js`, `js/rbac-catalog.js` — ZERO
+- `firestore.rules`, `database.rules.json` — sin cambios (rule R6 ya cubre client write con merge:true)
+- `js/concierge.js` flow de welcome contextual / progressive profiling / quick replies / carousel (§86) — sin tocar
+- AI modules (`js/ai/*.js`), bot LLM — ZERO
+- §59 S1-S7 features (Optimistic UI, typing, read receipts, presence, rediseños) — sin tocar
+- §80 staleness guard, §81 inteligencia bot, §82-§84 Smart Update — sin tocar (solo se agrega `csat=null` al reset)
+- Plan §61 RBAC — ZERO
+- HTML del sitio público — sin tocar
+
+### 87.11 Estado de PENDIENTES post-§87
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado (bloqueado por migración Vercel) |
+| **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo (último del orden recomendado §85.5) |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | **✅ §87** |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias | 🔮 Listo (próximo del orden recomendado) |
+
+Próximo sprint según orden recomendado §85.5: **PENDIENTE-C-S10** (Internal notes + Transferencias entre asesores, ~2 días).
+
+### 87.12 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Sprint planificado en §85.3 PENDIENTE-C-S9. Investigación previa con Explore agent para mapear estado exacto del Hub antes de tocar código.
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización explícita del cliente ("procede").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero `transition: all`. Solo helpers puros + event listeners discretos. Cache 60s en queries Firestore para no spammear (4 queries por render del dashboard).
+
+§17.4 HTML/CSS estable: cero IDs/clases existentes renombrados. Selectores nuevos `cnc-csat-*` y `reports-concierge-*` aditivos con prefijo namespace para especificidad sin `!important`.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+§59 Plan ALTOR Hub roadmap: C-S9 estricto al pie del plan documentado en §85.3. Cero overflow a C-S10 (Internal notes) o B (refactor 164 callsites).
+
+§85 PENDIENTES: ✅ tabla §85.4 actualizada con PENDIENTE-C-S9 → ✅ §87 según protocolo §85.6 (auto-validación al cerrar).
+
+**Cache bump**: `v20260515030000`.

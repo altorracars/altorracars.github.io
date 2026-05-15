@@ -2071,3 +2071,226 @@
    FIN §86 Sprint C-S8 — Welcome contextual + Progressive profiling +
    Quick replies dinámicos + Carousel horizontal vehicle cards
    ═══════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   §87 Sprint C-S9 — CSAT (Customer Satisfaction) post-cierre
+   Survey de 5 caritas estilo Intercom/Drift entre el radicado y los
+   botones de acción de la pantalla "Chat finalizado". Idempotente.
+   Cero transition: all (§17.2). Solo transform/opacity/border-color
+   específicos. prefers-reduced-motion respetado.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.altorra-concierge .cnc-csat-block {
+    margin: 16px 0 12px;
+    padding: 14px 14px 12px;
+    background: rgba(184, 150, 88, 0.06);
+    border: 1px solid rgba(184, 150, 88, 0.18);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: cncCSATIn 0.35s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+.altorra-concierge .cnc-csat-question {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    text-align: center;
+    line-height: 1.4;
+}
+
+.altorra-concierge .cnc-csat-emojis {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+}
+
+.altorra-concierge .cnc-csat-emoji {
+    flex: 1 1 0;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+    padding: 8px 4px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.altorra-concierge .cnc-csat-emoji:hover {
+    background: rgba(184, 150, 88, 0.14);
+    border-color: rgba(184, 150, 88, 0.5);
+    transform: translateY(-2px) scale(1.04);
+}
+
+.altorra-concierge .cnc-csat-emoji:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.altorra-concierge .cnc-csat-emoji--selected {
+    background: rgba(184, 150, 88, 0.22);
+    border-color: rgba(184, 150, 88, 0.8);
+    transform: translateY(-1px) scale(1.06);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.25);
+}
+
+.altorra-concierge .cnc-csat-emoji-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.altorra-concierge .cnc-csat-emoji-label {
+    font-size: 0.66rem;
+    color: rgba(255, 255, 255, 0.55);
+    text-align: center;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.altorra-concierge .cnc-csat-emoji--selected .cnc-csat-emoji-label {
+    color: rgba(184, 150, 88, 0.95);
+    font-weight: 600;
+}
+
+.altorra-concierge .cnc-csat-comment {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: rgba(255, 255, 255, 0.92);
+    font-family: inherit;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    resize: none;
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.altorra-concierge .cnc-csat-comment:focus {
+    outline: none;
+    border-color: rgba(184, 150, 88, 0.55);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.altorra-concierge .cnc-csat-comment::placeholder {
+    color: rgba(255, 255, 255, 0.42);
+}
+
+.altorra-concierge .cnc-csat-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+
+.altorra-concierge .cnc-csat-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease, color 0.18s ease;
+}
+
+.altorra-concierge .cnc-csat-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.altorra-concierge .cnc-csat-btn--ghost {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.altorra-concierge .cnc-csat-btn--ghost:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.altorra-concierge .cnc-csat-btn--primary {
+    background: linear-gradient(135deg, #d4ad6e, #b89658);
+    border-color: rgba(184, 150, 88, 0.7);
+    color: #1a1310;
+}
+
+.altorra-concierge .cnc-csat-btn--primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e0bb7d, #c4a466);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.3);
+}
+
+.altorra-concierge .cnc-csat-btn--primary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Estado "ya respondió" — bloque colapsado mostrando agradecimiento */
+.altorra-concierge .cnc-csat-block--submitted {
+    padding: 10px 14px;
+    background: rgba(74, 222, 128, 0.08);
+    border-color: rgba(74, 222, 128, 0.28);
+}
+
+.altorra-concierge .cnc-csat-thanks {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.86rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.altorra-concierge .cnc-csat-thanks-emoji {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+@keyframes cncCSATIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile: emojis compactos sin labels visibles */
+@media (max-width: 480px) {
+    .altorra-concierge .cnc-csat-block { padding: 12px; }
+    .altorra-concierge .cnc-csat-question { font-size: 0.86rem; }
+    .altorra-concierge .cnc-csat-emoji { padding: 7px 2px; }
+    .altorra-concierge .cnc-csat-emoji-icon { font-size: 1.4rem; }
+    .altorra-concierge .cnc-csat-emoji-label { font-size: 0.6rem; }
+    .altorra-concierge .cnc-csat-actions { flex-direction: column; align-items: stretch; gap: 6px; }
+    .altorra-concierge .cnc-csat-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .altorra-concierge .cnc-csat-block { animation: none; }
+    .altorra-concierge .cnc-csat-emoji,
+    .altorra-concierge .cnc-csat-btn--primary,
+    .altorra-concierge .cnc-csat-comment {
+        transition: none;
+    }
+    .altorra-concierge .cnc-csat-emoji:hover,
+    .altorra-concierge .cnc-csat-emoji--selected {
+        transform: none;
+    }
+    .altorra-concierge .cnc-csat-btn--primary:hover:not(:disabled) {
+        transform: none;
+    }
+}
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §87 Sprint C-S9 — CSAT post-cierre
+   ═══════════════════════════════════════════════════════════════════ */

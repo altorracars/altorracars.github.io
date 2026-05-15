@@ -35888,7 +35888,7 @@ operando como único asesor, S10 puede esperar.
 | **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo | 1d dedicado | Nada (opcional) | Media |
 | **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | 🔮 Listo | 2d | Nada (opcional) | Baja |
 | **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 | 1d | Tráfico real (~50 chats/mes) | Media |
-| **PENDIENTE-C-S10** | Internal notes + Transferencias | 🔮 Listo | 2d | Equipo 2+ asesores activos | Baja |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias entre asesores | ✅ §88 | 2d | Equipo 2+ asesores activos | Baja |
 
 ### 85.5 Cómo retomar cada PENDIENTE en sesión futura
 
@@ -36484,9 +36484,9 @@ Tras el deploy:
 | **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo (último del orden recomendado §85.5) |
 | **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
 | **PENDIENTE-C-S9** | CSAT + Auto-resolve | **✅ §87** |
-| **PENDIENTE-C-S10** | Internal notes + Transferencias | 🔮 Listo (próximo del orden recomendado) |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias | **✅ §88** |
 
-Próximo sprint según orden recomendado §85.5: **PENDIENTE-C-S10** (Internal notes + Transferencias entre asesores, ~2 días).
+Próximo sprint según orden recomendado §85.5: **PENDIENTE-B** (§61 R8 grande refactor 164 callsites, ~1 día) — último item del bloque opcional.
 
 ### 87.12 Doctrina aplicada
 
@@ -36505,3 +36505,338 @@ Próximo sprint según orden recomendado §85.5: **PENDIENTE-C-S10** (Internal n
 §85 PENDIENTES: ✅ tabla §85.4 actualizada con PENDIENTE-C-S9 → ✅ §87 según protocolo §85.6 (auto-validación al cerrar).
 
 **Cache bump**: `v20260515030000`.
+
+---
+
+## 88. ADR-088 — Sprint C-S10: Internal Notes + Transferencias entre asesores + Indicador "X está atendiendo" (2026-05-15)
+
+> Cierre del **PENDIENTE-C-S10** documentado en §85.3. Tercer y último
+> sprint del bloque opcional C (Mega-Plan §59 ALTOR Hub) autorizado por
+> el cliente. Tras §88 queda solo PENDIENTE-B (refactor 164 callsites
+> legacy, opcional) como item pendiente del roadmap §85.
+>
+> Implementa 3 sub-features coordinadas en 1 commit:
+>
+> 1. **Internal Notes** (notas privadas asesor): subcolección
+>    dedicada `conciergeChats/{sid}/notes/{noteId}` con
+>    defense-in-depth — el cliente NO matchea ninguna rule de esa
+>    subcolección, ni siquiera puede LEER (aislamiento absoluto).
+>    Toggle en composer del Hub + render diferenciado (card amber
+>    dashed con badge 🔒 "Nota privada").
+> 2. **Transferencias entre asesores**: modal con lista de asesores
+>    online (via RTDB `/presence`) + `runTransaction` atómica para
+>    cambiar `claimedBy` + msg system informativo + Cloud Function
+>    `onChatTransferred` que dispara FCM Push + Telegram al nuevo
+>    claimer + audit log entry `chat.transferred`.
+> 3. **Indicador "X está atendiendo"**: listener RTDB `/presence`
+>    construye map sessionId → advisor info usando el campo
+>    `currentChatId` agregado en §77 S5 (cero cambio de schema RTDB).
+>    Render: pill azul "Daniel está mirando este chat ahora mismo"
+>    en el detail panel cuando OTRO admin tiene el mismo chat abierto.
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero `transition: all`),
+> §17.4 (HTML/CSS estable), §17.12 (cero MutationObserver),
+> §35 (cero pointermove), §37 (IAP), §59 Plan ALTOR Hub roadmap,
+> §85.3 PENDIENTE-C-S10.
+
+### 88.1 Por qué este sprint existe
+
+Tras §87 (Sprint C-S9 mergeado), el cliente autorizó "ARRANCA CS10".
+Es el último sub-sprint del bloque C autorizado en §85.5 orden
+recomendado. Cierra el roadmap §59 ALTOR Hub al 100% con las features
+que faltaban para que un equipo de asesores pueda colaborar
+eficientemente:
+- Notas privadas (audit trail interno sin contaminar el chat cliente)
+- Transferencias (cuando un asesor está sobrecargado o tiene una
+  consulta fuera de su área)
+- Visibilidad (saber si otro asesor ya está atendiendo el chat antes
+  de duplicar esfuerzo)
+
+### 88.2 Decisión arquitectónica clave — Subcolección dedicada para notes
+
+**Plan alternativo evaluado**: campo `isInternal: true` en mensajes
+de la subcolección `messages/` existente. Más simple pero **inseguro
+por design**:
+- Cliente tiene rule de READ en `messages/` (filtrado por `userId == auth.uid`)
+- Aunque el cliente JS no renderiza msgs con `isInternal=true`, el
+  doc llega via onSnapshot al cliente
+- Aunque las rules bloquearan ese field específico (complejo), la
+  nota viajaría en network response y podría inspeccionarse en
+  DevTools network tab
+
+**Plan ELEGIDO**: subcolección separada `conciergeChats/{sid}/notes/{noteId}`.
+Defense-in-depth absoluto:
+- Cliente NO matchea NINGUNA rule de la subcolección
+  → Firestore rechaza el read antes de devolver el doc
+- Cero exposición incluso a un atacante inspeccionando network
+- Audit trail limpio (notes nunca se mezclan con messages reales)
+- Inmutables tras crear (rule `allow update: if false`)
+
+### 88.3 Solución estructural — 5 archivos coordinados
+
+#### A. `firestore.rules` — subcolección notes/
+
+```
+match /conciergeChats/{sessionId} {
+  match /messages/{msgId} { ... existente intacto ... }
+
+  // §88 Sprint C-S10 — NUEVA subcolección notes/
+  match /notes/{noteId} {
+    allow read: if isEditorOrAbove()
+      || hasPermission('concierge.read');
+    allow create: if isEditorOrAbove()
+      || hasPermission('concierge.respond');
+    allow update: if false; // Notas inmutables (audit trail)
+    allow delete: if isSuperAdmin();
+  }
+}
+```
+
+#### B. `functions/index.js` — onChatTransferred
+
+Trigger `onDocumentUpdated` en `conciergeChats/{sessionId}`. Anti-loop:
+filter por `before.claimedBy !== after.claimedBy` AND ambos `!== null`
+(transferencia, no primer claim). Si claim era `null` y pasa a un uid,
+**lo cubre onChatEscalated** (no este trigger).
+
+Acciones:
+1. FCM Push al nuevo claimer (usa `fcmTokens[]` de su doc `usuarios/`)
+2. Telegram alert (usa `sendTelegramAlert` helper existente)
+3. Audit log entry `type='chat.transferred'` con from/to/cliente/radicado
+
+#### C. `js/admin-concierge.js` — 6 funciones nuevas + hooks
+
+**Variables nuevas** (~5 al inicio del IIFE):
+- `_activeNotes[]` — cache notas del chat activo
+- `_notesUnsub` — listener onSnapshot subcolección notes
+- `_isInternalNoteMode` — toggle del composer (true = nota interna)
+- `_attendingByChatId{}` — map sessionId → advisor info
+- `_attendingPresenceUnsub` — listener RTDB `/presence`
+
+**Funciones nuevas**:
+- `subscribeToNotes(sessionId)` — onSnapshot subcolección notes,
+  cleanup automático al cambiar de chat
+- `sendInternalNote(text)` — escribe a notes/ subcolección con
+  metadata del autor
+- `toggleInternalNoteMode()` — flip flag + actualiza visual del
+  composer (borde amber, placeholder cambia, button "Guardar nota")
+- `openTransferModal(sessionId)` — lee `/presence` RTDB, filtra
+  asesores online != self con `lastSeen < 5min` (no stale),
+  popula modal
+- `renderTransferList(advisors)` — render items con avatar +
+  nombre + cargo + status dot (online/away)
+- `executeTransfer(toUid, toName)` — confirm + `runTransaction`
+  atómica + msg system "X transfirió a Y"
+- `closeTransferModal()` — hide modal
+- `startAttendingPresenceListener()` — listener global `/presence`
+  → map `currentChatId` → renderChatList re-render solo si cambia
+- `stopAttendingPresenceListener()` — cleanup en section change
+- `onAttendingPresenceSnapshot(snap)` — handler con dedup por uid
+  y filter stale 5min
+
+**Hooks en flow existente**:
+- `startChatsListener()` invoca `startAttendingPresenceListener()` al inicializar
+- `openChat()` invoca `subscribeToNotes(sessionId)` + reset modo nota + re-arranca attending listener si quedó cancelado
+- `AltorraSectionCleanup` cancela `_notesUnsub` + `stopAttendingPresenceListener`
+- `sendAsesorMessage()` con branch nuevo: si `_isInternalNoteMode === true` → llama `sendInternalNote(text)` y NO manda mensaje al cliente
+- `renderChatDetail()` ahora hace MERGE de `messages[]` + `_activeNotes[]` ordenado cronológicamente, con branch en el map para render diferenciado de notas (card amber dashed)
+- Banner "Estás atendiendo este chat" extendido: botón **Transferir** ahora visible para editor también (antes solo super_admin podía via #cncAdminTransferBtn legacy)
+- Composer extiende quick-replies con botón "🔒 Nota interna" (`data-action="toggle-internal-note"`)
+- Detail panel renderiza indicador "X está atendiendo" si `_attendingByChatId[chat._docId]` matchea
+
+**Event delegation extendida** (4 nuevos data-action):
+- `toggle-internal-note` → `toggleInternalNoteMode()`
+- `open-transfer-modal` → `openTransferModal(sid)`
+- `close-transfer-modal` → `closeTransferModal()`
+- `confirm-transfer` → `executeTransfer(toUid, toName)`
+- Listener legacy `#cncAdminReleaseBtn` (super_admin only) ahora separa Transferir (modal) de Liberar (release lock)
+
+#### D. `admin.html` — modal cncTransferModal
+
+Modal hidden por default (`<div id="cncTransferModal" hidden>`)
+con backdrop + dialog 460px max-width + header con icono Lucide
+`users` + body con lista popolada por JS + footer Cancelar.
+
+Eventos delegados via `data-action="close-transfer-modal"` y
+`data-action="confirm-transfer"`. Cero código duplicado.
+
+#### E. `css/admin.css` — ~340 líneas append
+
+3 bloques visuales coordinados:
+
+**Internal Notes**:
+- `.cnc-detail-note`: card amber tenue (`rgba(251, 191, 36, 0.08)`)
+  con border-dashed amber → distingue visualmente de bubbles
+- `.cnc-admin-note-header`: avatar circular dorado + nombre author +
+  badge "Nota privada" con icono lock
+- `.cnc-admin-note-body`: texto con `white-space: pre-wrap`
+- `.cnc-internal-note-toggle.is-active`: state amber del botón
+- `.cnc-admin-detail-input-wrap--note-mode`: borde dashed amber del input
+
+**Indicador attending**:
+- `.cnc-admin-attending-indicator`: pill azul tenue
+- `.cnc-admin-attending-avatar`: 26px circular con dot online/away
+  bottom-right (verde/ámbar) usando `::after` pseudo
+
+**Modal transferir**:
+- `.cnc-transfer-modal`: fullscreen overlay z-index 10000
+- `.cnc-transfer-dialog`: card 460px max + max-height 80vh
+- `.cnc-transfer-item`: row con avatar + info + chevron-right + hover lift `translateX(2px)`
+- `.cnc-transfer-status--online/away`: dot 11px con border
+- Responsive `<600px`: dialog 100% width
+- `prefers-reduced-motion`: cancela transitions
+
+### 88.4 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260515040000) | Cache nueva carga |
+| 2 | Login admin → Hub → abrir un chat | Composer muestra botón "🔒 Nota interna" entre quick replies |
+| 3 | Click "Nota interna" toggle | Button cambia a amber active + input cambia borde a dashed amber + placeholder "🔒 Nota privada del asesor (cliente NO la verá)…" + botón Enviar cambia a "Guardar nota" |
+| 4 | Escribir nota + click Guardar nota | Nota aparece en el thread como card amber con badge "🔒 Nota privada" + nombre asesor + timestamp |
+| 5 | Verificar Firestore `conciergeChats/{sid}/notes/` | Doc con text + authorUid + authorName + authorPhotoURL + timestamp |
+| 6 | Cliente público abre el chat | NO ve la nota (subcolección notes/ sin rule de read para él) |
+| 7 | DevTools del cliente → consola Firebase | Cero docs de notes/ en network response |
+| 8 | Click "🔒 Nota interna" otra vez | Vuelve a modo mensaje normal |
+| 9 | En banner "Estás atendiendo este chat" click "Transferir" | Modal cncTransferModal abre con lista de asesores online (excluye self) |
+| 10 | Click un asesor target | Confirm dialog "¿Transferir esta conversación a X?" |
+| 11 | Aceptar confirm | runTransaction → claimedBy cambia + msg system "🔁 Y transfirió esta conversación a X." aparece en el thread |
+| 12 | Cloud Function deployed: nuevo asesor recibe push | FCM notification "🔁 Chat transferido a ti" + Telegram alert con botón "📲 Atender ahora" |
+| 13 | Verificar `auditLog/` | Entry `type='chat.transferred'` con from/to/cliente |
+| 14 | 2 admins abren el mismo chat simultáneamente | Cada uno ve indicador "X está mirando este chat ahora mismo" (pill azul) con avatar + status dot |
+| 15 | Otro admin cierra su panel del chat | Indicador desaparece automáticamente del primer admin via listener RTDB |
+| 16 | Mobile <600px | Modal transferir ocupa 100% width |
+| 17 | `prefers-reduced-motion: reduce` | Hover translateX y transitions desactivadas |
+| 18 | DevTools console | Logs `§88 internal note saved` / `§88 transfer success` / `§88 INVOKED` |
+
+### 88.5 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 transition all | `transition: all` | Solo `background-color`, `border-color`, `transform` específicas |
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | CERO. Nuevos prefijos `cnc-admin-note*`, `cnc-admin-attending*`, `cnc-transfer-*` no colisionan |
+| §17.12 anti-MO | MutationObserver subtree:true | Cero MO. Listeners onSnapshot + event delegation existente |
+| §35 anti-pointermove | pointermove persistente | Cero pointermove. Solo click + RTDB `on('value')` discreto |
+| §37 IAP | Implementar sin autorización | IAP §37 entregado + autorización explícita "ARRANCA CS10" |
+| Defense-in-depth violado | Cliente puede leer notes via network inspect | Subcolección DEDICADA en lugar de field `isInternal` en messages — cliente no matchea ninguna rule de notes/ |
+| Race en transfer | 2 super_admins transfieren al mismo tiempo | `runTransaction` Firestore atómica garantiza last-write-wins |
+| Listener attending huérfano | Re-arranque al volver al Hub fallaría sin guard | `openChat` chequea `if (!_attendingPresenceUnsub)` antes de re-arrancar |
+| Race attending re-render | onSnapshot dispara N veces por minuto | Detector de cambio (compara claves antes/después) evita re-render si no hay diff |
+
+### 88.6 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Cliente no deploya rules + functions | 🟡 Media | Sin deploy: notes write falla con permission-denied (catch silencioso con toast claro), transfer no notifica al asesor pero el chat sí se transfiere localmente (Cloud Function trigger no dispara). Cero ruptura visual | N/A graceful degradation |
+| 2 | Race condition 2 super_admins transfieren al mismo chat | 🟢 Baja | runTransaction atómica — uno gana, otro recibe error y mensaje "El chat ya no existe / está cerrado" | Recargar y reintentar |
+| 3 | Cloud Function onChatTransferred dispara para primer claim (no transferencia) | 🟢 Baja | Filter en líneas iniciales: `if (!before.claimedBy \|\| !after.claimedBy) return` — primer claim tiene `before.claimedBy=null` | N/A |
+| 4 | Modal transferir muestra asesores stale | 🟢 Baja | Filter `lastSeen < 5min` ago + dedup por uid (heredado de §77) | N/A |
+| 5 | Indicador "X atendiendo" lag | 🟢 Baja | onSnapshot RTDB es real-time (<200ms). Comparación shallow detecta cambios | N/A |
+| 6 | Cliente NO ejecuta Ctrl+Shift+R | 🟠 Alta | Cache version bumped `v20260515040000`. SW invalidará automático | Hard refresh primera vez |
+| 7 | Listener attending consume bandwidth | 🟢 Baja | `/presence` ya está siendo leído por Dynamic Island §F.3 (admin-presence-ui.js). Reuso del listener Firebase optimiza | N/A |
+| 8 | Transfer rompe lockReadonly del nuevo asesor en otra tab | 🟢 Baja | El listener `_chatsUnsub` propaga el cambio de claimedBy → renderChatDetail re-renderiza con canWrite correcto | N/A |
+
+### 88.7 Acciones operativas
+
+**OBLIGATORIO**:
+```bash
+firebase deploy --only firestore:rules,functions:onChatTransferred
+```
+
+Tras el deploy:
+1. **Ctrl+Shift+R** en admin para invalidar cache previa
+   (`v20260515030000` → `v20260515040000`)
+2. Validar UX según tests E2E §88.4
+3. Verificar Firebase Console → Functions → `onChatTransferred`
+   activa con trigger onDocumentUpdated
+
+**Validación rápida sin tener equipo**:
+- Test 1-8 (Internal Notes): solo requiere 1 admin logueado
+- Test 14-15 (Indicador attending): requiere 2 sesiones admin
+  simultáneas (incógnita + tab normal funcionan)
+- Test 9-13 (Transfer): requiere 2 admins con cuentas distintas Y
+  al menos uno con sesión activa de presence
+
+### 88.8 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/admin-concierge.js` | 5 vars nuevas + 11 funciones nuevas (subscribeToNotes/sendInternalNote/toggleInternalNoteMode/openTransferModal/renderTransferList/closeTransferModal/executeTransfer/startAttendingPresenceListener/stopAttendingPresenceListener/onAttendingPresenceSnapshot). Hooks: startChatsListener + openChat + AltorraSectionCleanup + sendAsesorMessage branch. renderChatDetail merge notes+messages + banner Transferir + indicador attending + toggle nota interna + composer state amber. 4 event delegation nuevos | +500, -10 |
+| `firestore.rules` | Nueva subcolección notes/ con read+create isEditorOrAbove (cliente cero acceso) + update false + delete super_admin | +22 |
+| `functions/index.js` | Nueva Cloud Function `onChatTransferred` trigger onUpdate: filter anti-loop + FCM Push al nuevo claimer + Telegram alert + audit log entry | +110 |
+| `admin.html` | Modal #cncTransferModal hidden por default con header + body + footer estructurados | +30 |
+| `css/admin.css` | ~340 líneas append §88: .cnc-detail-note (card amber dashed) + .cnc-internal-note-toggle.is-active + .cnc-admin-detail-input-wrap--note-mode + .cnc-admin-attending-indicator (pill azul) + .cnc-admin-attending-avatar con dot online/away + .cnc-transfer-modal/dialog/header/body/list/item/avatar/status + responsive 600px + prefers-reduced-motion | +340 |
+| `service-worker.js` | CACHE_VERSION `v20260515030000` → `v20260515040000` con changelog §88 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION prepend §88 | +1, -1 |
+| `CLAUDE.md` | Esta sección §88 + actualización tabla §85.4 (PENDIENTE-C-S10 🔮 → ✅ §88) | +280 |
+
+**Total**: 8 archivos. Cero archivos nuevos. Cero schema breaking
+change. 1 deploy de rules + 1 Cloud Function nueva.
+
+### 88.9 Archivos INTACTOS (afirmación)
+
+- `js/concierge.js` — cliente público SIN tocar. Cliente nunca verá
+  notes ni indicador attending (esos son features admin-exclusive)
+- `js/hub-store.js` (S1) — sin tocar
+- `js/admin-roles.js`, `js/admin-users.js`, `js/admin-state.js`,
+  `js/admin-auth.js`, `js/rbac-catalog.js` — ZERO
+- `database.rules.json` (S3 typing + S5 presence schema) — sin tocar
+  (reutiliza campo `currentChatId` agregado en §77)
+- §59 S1-S7 features (Optimistic UI, typing, read receipts, presence,
+  rediseños) — sin tocar
+- §80 staleness guard, §81 inteligencia bot, §82-§84 Smart Update,
+  §86 welcome contextual, §87 CSAT + auto-resolve — sin tocar
+- Plan §61 RBAC — ZERO
+- HTML del sitio público — sin tocar
+
+### 88.10 Estado del Plan §59 + PENDIENTES post-§88
+
+**Plan §59 ALTOR Hub roadmap**: ✅ CERRADO 100%
+- Sprints S1-S7 (§60.1-§79) — completados
+- Sub-sprints C-S8 (§86), C-S9 (§87), C-S10 (§88) — completados
+- Hotfixes y mejoras intermedias (§80, §81, §82-§84) — completados
+
+**PENDIENTES post-§88** (tabla §85.4):
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado (bloqueado por migración Vercel) |
+| **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo (último item del roadmap §85.5) |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias | **✅ §88** |
+
+Tras §88 solo queda **PENDIENTE-B** como item pendiente. Cero
+dependencias bloqueantes para arrancarlo cuando el cliente quiera
+(es trabajo de cleanup interno, sin impacto visual al usuario).
+
+### 88.11 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Sprint planificado en §85.3
+PENDIENTE-C-S10 + §79.11 próximos pasos del Mega-Plan §59.
+Investigación previa con Read tool + grep para mapear estado exacto
+del Hub antes de tocar código (rules messages, sendTelegramAlert
+pattern, openChat hooks).
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita del cliente ("ARRANCA CS10").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Solo transitions específicas + RTDB `on('value')`
+listener único + dedup before re-render. Cache local _activeNotes
+y _attendingByChatId minimiza reads.
+
+§17.4 HTML/CSS estable: cero IDs existentes renombrados. Selectores
+nuevos prefijados `cnc-admin-note*`, `cnc-admin-attending*`,
+`cnc-transfer-*` no colisionan con legacy.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+§59 Plan ALTOR Hub roadmap: C-S10 estricto al pie del plan
+documentado en §85.3. Cero overflow a B (refactor 164 callsites
+legacy, opcional).
+
+§85 PENDIENTES: ✅ tabla §85.4 actualizada con PENDIENTE-C-S10 →
+✅ §88 según protocolo §85.6 (auto-validación al cerrar).
+
+**Cache bump**: `v20260515040000`.

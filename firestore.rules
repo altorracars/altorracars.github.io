@@ -620,6 +620,26 @@ service cloud.firestore {
         allow delete: if isSuperAdmin()
           || hasPermission('concierge.delete');
       }
+
+      // §88 Sprint C-S10 — Subcolección notes/: notas privadas del
+      // asesor. Defense-in-depth: el cliente NO matchea ninguna rule
+      // de esta subcolección → cero ruleo posible (ni lectura ni
+      // escritura), independientemente del rol legacy o permissions[].
+      //
+      // Solo isEditorOrAbove (admins) puede leer/escribir/borrar.
+      // Los notes nunca aparecen en el flujo del cliente — ni en el
+      // listener de messages ni en ninguna parte del concierge.js.
+      // Aislamiento absoluto del cliente.
+      match /notes/{noteId} {
+        allow read: if isEditorOrAbove()
+          || hasPermission('concierge.read');
+        allow create: if isEditorOrAbove()
+          || hasPermission('concierge.respond');
+        // Notas son inmutables tras crear (audit trail limpio).
+        // Solo super_admin puede borrar (auditoría).
+        allow update: if false;
+        allow delete: if isSuperAdmin();
+      }
     }
 
     // ========== CONFIG ==========

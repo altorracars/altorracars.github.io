@@ -1470,6 +1470,38 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
         <!-- MF4.7 sec-inbox ELIMINADA — todo flujo unificado al sec-concierge (ALTOR Hub).
              vehicle-thread.js + admin-inbox.js eliminados. mensajes/ Firestore deprecated. -->
 
+        <!-- §88 Sprint C-S10 — Modal Transferir conversación.
+             Oculto por default. JS admin-concierge.js lo muestra cuando
+             el asesor click "Transferir" desde el chat detail. Lista
+             asesores online (RTDB presence) + selector + confirm. -->
+        <div id="cncTransferModal" class="cnc-transfer-modal" hidden>
+            <div class="cnc-transfer-backdrop" data-action="close-transfer-modal"></div>
+            <div class="cnc-transfer-dialog" role="dialog" aria-labelledby="cncTransferTitle">
+                <header class="cnc-transfer-header">
+                    <h3 id="cncTransferTitle">
+                        <i data-lucide="users"></i>
+                        Transferir conversación
+                    </h3>
+                    <button type="button" class="cnc-transfer-close" data-action="close-transfer-modal" aria-label="Cerrar">
+                        <i data-lucide="x"></i>
+                    </button>
+                </header>
+                <div class="cnc-transfer-body">
+                    <p class="cnc-transfer-hint">
+                        Elegí el asesor al que querés transferir esta conversación.
+                        El nuevo asesor recibirá una notificación inmediata por
+                        FCM Push y Telegram.
+                    </p>
+                    <div class="cnc-transfer-list" id="cncTransferList">
+                        <div class="cnc-transfer-loading">Cargando asesores disponibles…</div>
+                    </div>
+                </div>
+                <footer class="cnc-transfer-footer">
+                    <button type="button" class="alt-btn alt-btn--ghost" data-action="close-transfer-modal">Cancelar</button>
+                </footer>
+            </div>
+        </div>
+
         <!-- MF4.1 — CRM section -->
         <!-- §27.3 — CRM UNIFICADO. Una sola sección con 3 tabs internos:
              • Contactos & Ventas — la tabla 360° de contactos (era sec-crm)

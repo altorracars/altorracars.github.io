@@ -30,6 +30,16 @@
     // teníamos visibles.
     var _activeMessages = [];
 
+    // ─── §88 Sprint C-S10 — Internal Notes + Transfer + Presence ──
+    // Notas internas viven en subcolección dedicada
+    // conciergeChats/{sid}/notes/{noteId} — defense-in-depth:
+    // el cliente NO matchea ninguna rule de esa subcolección.
+    var _activeNotes = [];           // cache de notas del chat activo
+    var _notesUnsub = null;          // listener onSnapshot subcolección notes
+    var _isInternalNoteMode = false; // toggle del composer: true = nota interna, false = msg al cliente
+    var _attendingByChatId = {};     // map sessionId → {uid, nombre, photoURL} asesores atendiendo
+    var _attendingPresenceUnsub = null; // listener RTDB /presence
+
     function $(id) { return document.getElementById(id); }
     function escTxt(s) {
         var d = document.createElement('div');
@@ -272,6 +282,344 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       §88 Sprint C-S10 — Internal Notes
+       ───────────────────────────────────────────────────────────
+       Notas privadas del asesor (visibles SOLO en admin Hub, NUNCA
+       al cliente). Subcolección dedicada: conciergeChats/{sid}/notes/{noteId}.
+       Defense-in-depth: cliente no matchea ninguna rule de notes/
+       → ni siquiera puede leer (cero exposición ni en network response).
+
+       Flow:
+       - Asesor toggleea "Nota interna" en composer → _isInternalNoteMode=true
+       - Click Enviar → si modo nota, escribe a notes/ subcolección; sino, escribe a messages/ normal
+       - Listener onSnapshot a notes/ del chat activo → merge con messages en orden cronológico para render
+       - Toggle visual: cuando activo, input cambia de borde + placeholder + label "Nota interna"
+       ═══════════════════════════════════════════════════════════ */
+    function subscribeToNotes(sessionId) {
+        // Cleanup listener anterior si existe
+        if (_notesUnsub) {
+            try { _notesUnsub(); } catch (e) {}
+            _notesUnsub = null;
+        }
+        _activeNotes = [];
+        if (!sessionId || !window.db) return;
+        _notesUnsub = window.db.collection('conciergeChats').doc(sessionId)
+            .collection('notes')
+            .orderBy('timestamp', 'asc')
+            .onSnapshot(function (snap) {
+                _activeNotes = [];
+                snap.forEach(function (doc) {
+                    var n = doc.data();
+                    n._docId = doc.id;
+                    n._isNote = true; // marker para distinguir de messages
+                    _activeNotes.push(n);
+                });
+                // Re-render del detail con notes + messages combinados
+                if (_activeSessionId === sessionId) {
+                    var chat = _chats.find(function (c) { return c._docId === sessionId; });
+                    if (chat) renderChatDetail(chat, _activeMessages);
+                }
+            }, function (err) {
+                if (window.auth && window.auth.currentUser) {
+                    console.warn('[AdminConcierge] §88 notes listener error', err.message);
+                }
+            });
+    }
+
+    function sendInternalNote(text) {
+        if (!_activeSessionId || !window.db || !window.auth || !window.auth.currentUser) return;
+        var trimmed = (text || '').trim();
+        if (!trimmed) return;
+        var uid = window.auth.currentUser.uid;
+        var name = (AP.currentUserProfile && AP.currentUserProfile.nombre) || 'Asesor';
+        var photoURL = (AP.currentUserProfile && AP.currentUserProfile.photoURL) || null;
+        var noteData = {
+            text: trimmed,
+            authorUid: uid,
+            authorName: name,
+            authorPhotoURL: photoURL,
+            timestamp: new Date().toISOString()
+        };
+        var sessionId = _activeSessionId;
+        window.db.collection('conciergeChats').doc(sessionId)
+            .collection('notes').add(noteData)
+            .then(function () {
+                console.log('[AdminConcierge] §88 internal note saved', { sid: sessionId });
+                if (AP.toast) AP.toast('Nota interna guardada', 'success');
+            })
+            .catch(function (err) {
+                console.warn('[AdminConcierge] §88 internal note save failed:', err.message);
+                if (err.code === 'permission-denied') {
+                    if (AP.toast) AP.toast('No tenés permiso para crear notas. Verificá deploy de firestore.rules §88.', 'error');
+                } else {
+                    if (AP.toast) AP.toast('No se pudo guardar la nota: ' + err.message, 'error');
+                }
+            });
+    }
+
+    function toggleInternalNoteMode() {
+        _isInternalNoteMode = !_isInternalNoteMode;
+        var input = $('cncAdminReply');
+        var toggleBtn = $('cncInternalNoteToggle');
+        var wrap = input ? input.parentNode : null;
+        if (input) {
+            input.placeholder = _isInternalNoteMode
+                ? '🔒 Nota privada del asesor (cliente NO la verá)…'
+                : 'Responder como asesor…';
+            if (wrap) {
+                if (_isInternalNoteMode) wrap.classList.add('cnc-admin-detail-input-wrap--note-mode');
+                else wrap.classList.remove('cnc-admin-detail-input-wrap--note-mode');
+            }
+            try { input.focus(); } catch (e) {}
+        }
+        if (toggleBtn) {
+            toggleBtn.classList.toggle('is-active', _isInternalNoteMode);
+            toggleBtn.setAttribute('aria-pressed', _isInternalNoteMode ? 'true' : 'false');
+            toggleBtn.title = _isInternalNoteMode
+                ? 'Modo nota interna activo (click para volver a mensaje al cliente)'
+                : 'Activar modo nota interna (no la verá el cliente)';
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       §88 Sprint C-S10 — Transferencias entre asesores
+       ───────────────────────────────────────────────────────────
+       super_admin / editor con permission concierge.transfer puede
+       transferir un chat que tiene claimedBy=self (o cualquiera si
+       super_admin) a otro asesor online.
+
+       Flow:
+       1. Click "Transferir" → openTransferModal()
+       2. Modal carga lista de asesores online (RTDB /presence con status='online' o 'away')
+       3. Click asesor target → confirm → executeTransfer(toUid, toName)
+       4. runTransaction: cambia claimedBy/claimedByName/claimedAt
+       5. Inserta msg system "X transfirió la conversación a Y"
+       6. Cloud Function onChatTransferred dispara FCM + Telegram al nuevo asesor
+       ═══════════════════════════════════════════════════════════ */
+    function openTransferModal(sessionId) {
+        if (!sessionId || !window.rtdb) return;
+        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) {
+            if (AP.toast) AP.toast('No tenés permisos para transferir', 'error');
+            return;
+        }
+        var modal = $('cncTransferModal');
+        if (!modal) return;
+        modal.hidden = false;
+        modal.setAttribute('data-session-id', sessionId);
+        var listEl = $('cncTransferList');
+        if (listEl) listEl.innerHTML = '<div class="cnc-transfer-loading">Cargando asesores disponibles…</div>';
+
+        // Leer /presence RTDB para listar asesores online/away
+        window.rtdb.ref('/presence').once('value').then(function (snap) {
+            var advisors = {}; // uid → {nombre, photoURL, status, lastSeen}
+            var data = snap.val() || {};
+            var fiveMinAgo = Date.now() - 5 * 60 * 1000;
+            var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : null;
+            Object.keys(data).forEach(function (pushKey) {
+                var entry = data[pushKey];
+                if (!entry || !entry.uid || !entry.online) return;
+                if (entry.uid === currentUid) return; // skip self
+                if (entry.rol !== 'super_admin' && entry.rol !== 'editor') return; // skip clientes
+                var lastSeen = entry.lastSeen || 0;
+                if (lastSeen < fiveMinAgo) return; // stale
+                // Mantener más reciente si hay duplicados (tabs múltiples)
+                var existing = advisors[entry.uid];
+                if (!existing || lastSeen > (existing.lastSeen || 0)) {
+                    advisors[entry.uid] = {
+                        nombre: entry.nombre || entry.email || 'Asesor',
+                        photoURL: entry.photoURL || null,
+                        status: entry.status || 'online',
+                        cargo: entry.cargo || entry.rol || '',
+                        lastSeen: lastSeen,
+                        rol: entry.rol
+                    };
+                }
+            });
+            renderTransferList(advisors);
+        }).catch(function (err) {
+            console.warn('[AdminConcierge] §88 transfer presence read error:', err.message);
+            if (listEl) listEl.innerHTML = '<div class="cnc-transfer-empty">No se pudieron cargar los asesores disponibles.</div>';
+        });
+    }
+
+    function renderTransferList(advisors) {
+        var listEl = $('cncTransferList');
+        if (!listEl) return;
+        var uids = Object.keys(advisors);
+        if (uids.length === 0) {
+            listEl.innerHTML = '<div class="cnc-transfer-empty">' +
+                '<i data-lucide="users-x" style="width:32px;height:32px;opacity:0.4;"></i>' +
+                '<p>No hay otros asesores online en este momento.</p>' +
+                '<p style="font-size:0.78rem;opacity:0.7;">Solo se pueden transferir chats a asesores con sesión activa.</p>' +
+                '</div>';
+            if (window.AltorraIcons) window.AltorraIcons.refresh(listEl);
+            return;
+        }
+        listEl.innerHTML = uids.map(function (uid) {
+            var a = advisors[uid];
+            var initials = (a.nombre || 'A').split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+            var statusClass = a.status === 'away' ? 'cnc-transfer-status--away' : 'cnc-transfer-status--online';
+            var statusLabel = a.status === 'away' ? 'Ausente' : 'Online';
+            var photoHTML = a.photoURL
+                ? '<img class="cnc-transfer-avatar-img" src="' + escTxt(a.photoURL) + '" alt="">'
+                : '<span class="cnc-transfer-avatar-initials">' + escTxt(initials) + '</span>';
+            return '<button type="button" class="cnc-transfer-item" data-action="confirm-transfer" data-target-uid="' + escTxt(uid) + '" data-target-name="' + escTxt(a.nombre) + '">' +
+                '<span class="cnc-transfer-avatar ' + statusClass + '">' + photoHTML + '</span>' +
+                '<span class="cnc-transfer-info">' +
+                    '<span class="cnc-transfer-name">' + escTxt(a.nombre) + '</span>' +
+                    '<span class="cnc-transfer-meta">' + escTxt(a.cargo || '') + ' · ' + statusLabel + '</span>' +
+                '</span>' +
+                '<i data-lucide="chevron-right" style="width:18px;height:18px;opacity:0.5;"></i>' +
+                '</button>';
+        }).join('');
+        if (window.AltorraIcons) window.AltorraIcons.refresh(listEl);
+    }
+
+    function closeTransferModal() {
+        var modal = $('cncTransferModal');
+        if (modal) {
+            modal.hidden = true;
+            modal.removeAttribute('data-session-id');
+        }
+    }
+
+    function executeTransfer(toUid, toName) {
+        var modal = $('cncTransferModal');
+        var sessionId = modal ? modal.getAttribute('data-session-id') : _activeSessionId;
+        if (!sessionId || !toUid || !window.db || !window.auth || !window.auth.currentUser) return;
+        var currentUid = window.auth.currentUser.uid;
+        var currentName = (AP.currentUserProfile && AP.currentUserProfile.nombre) || 'Asesor';
+        var nowIso = new Date().toISOString();
+
+        if (!confirm('¿Transferir esta conversación a ' + toName + '?\n\n' +
+                     toName + ' recibirá una notificación inmediata por FCM Push y Telegram.')) {
+            return;
+        }
+
+        var ref = window.db.collection('conciergeChats').doc(sessionId);
+        // runTransaction atomico: cambiar claimedBy
+        window.db.runTransaction(function (tx) {
+            return tx.get(ref).then(function (doc) {
+                if (!doc.exists) throw new Error('chat-not-found');
+                var data = doc.data();
+                if (data.status === 'closed') throw new Error('chat-closed');
+                tx.update(ref, {
+                    claimedBy: toUid,
+                    claimedByName: toName,
+                    claimedAt: nowIso,
+                    _transferredFrom: currentUid,
+                    _transferredFromName: currentName,
+                    _transferredAt: nowIso
+                });
+                return { prev: data.claimedByName || 'Asesor anterior' };
+            });
+        }).then(function (result) {
+            console.log('[AdminConcierge] §88 transfer success', { sid: sessionId, to: toUid });
+            // Insertar mensaje system informativo en messages/
+            return window.db.collection('conciergeChats').doc(sessionId)
+                .collection('messages').add({
+                    from: 'system',
+                    text: '🔁 ' + currentName + ' transfirió esta conversación a ' + toName + '.',
+                    timestamp: nowIso,
+                    systemType: 'transferred',
+                    transferFromUid: currentUid,
+                    transferToUid: toUid
+                });
+        }).then(function () {
+            if (AP.toast) AP.toast('Conversación transferida a ' + toName, 'success');
+            closeTransferModal();
+        }).catch(function (err) {
+            console.warn('[AdminConcierge] §88 transfer failed:', err && err.message);
+            if (err && err.message === 'chat-not-found') {
+                if (AP.toast) AP.toast('El chat ya no existe', 'error');
+            } else if (err && err.message === 'chat-closed') {
+                if (AP.toast) AP.toast('No se puede transferir un chat cerrado', 'error');
+            } else if (err && err.code === 'permission-denied') {
+                if (AP.toast) AP.toast('No tenés permisos para transferir este chat. Solo super_admin o el asesor actual pueden transferirlo.', 'error');
+            } else {
+                if (AP.toast) AP.toast('Error al transferir: ' + (err && err.message), 'error');
+            }
+        });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       §88 Sprint C-S10 — Indicador "X está atendiendo"
+       ───────────────────────────────────────────────────────────
+       Listener RTDB /presence construye map sessionId → advisor.
+       Se actualiza cada vez que cambia el currentChatId de alguna
+       sesión presence. Render: pill con avatar+nombre en cada row
+       de la lista de chats si OTRO asesor lo está atendiendo.
+
+       Reutiliza el campo `currentChatId` agregado en §77 Sprint S5
+       al schema de /presence. Cero cambio de schema RTDB.
+       ═══════════════════════════════════════════════════════════ */
+    function startAttendingPresenceListener() {
+        if (_attendingPresenceUnsub || !window.rtdb) return;
+        try {
+            var ref = window.rtdb.ref('/presence');
+            ref.on('value', onAttendingPresenceSnapshot);
+            _attendingPresenceUnsub = function () {
+                try { ref.off('value', onAttendingPresenceSnapshot); } catch (e) {}
+            };
+        } catch (e) {
+            console.warn('[AdminConcierge] §88 attending presence listener error:', e.message);
+        }
+    }
+
+    function stopAttendingPresenceListener() {
+        if (_attendingPresenceUnsub) {
+            try { _attendingPresenceUnsub(); } catch (e) {}
+            _attendingPresenceUnsub = null;
+        }
+        _attendingByChatId = {};
+    }
+
+    function onAttendingPresenceSnapshot(snap) {
+        var data = snap.val() || {};
+        var fiveMinAgo = Date.now() - 5 * 60 * 1000;
+        var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : null;
+        var newMap = {};
+        Object.keys(data).forEach(function (pushKey) {
+            var entry = data[pushKey];
+            if (!entry || !entry.uid || !entry.online || !entry.currentChatId) return;
+            if (entry.uid === currentUid) return; // no mostrar a uno mismo
+            if (entry.rol !== 'super_admin' && entry.rol !== 'editor') return;
+            var lastSeen = entry.lastSeen || 0;
+            if (lastSeen < fiveMinAgo) return; // stale
+            var sid = entry.currentChatId;
+            var existing = newMap[sid];
+            if (!existing || lastSeen > (existing.lastSeen || 0)) {
+                newMap[sid] = {
+                    uid: entry.uid,
+                    nombre: entry.nombre || entry.email || 'Asesor',
+                    photoURL: entry.photoURL || null,
+                    status: entry.status || 'online',
+                    lastSeen: lastSeen
+                };
+            }
+        });
+        // Detectar cambio antes de re-render para evitar trabajo innecesario
+        var changed = false;
+        var oldKeys = Object.keys(_attendingByChatId);
+        var newKeys = Object.keys(newMap);
+        if (oldKeys.length !== newKeys.length) {
+            changed = true;
+        } else {
+            for (var i = 0; i < newKeys.length; i++) {
+                var k = newKeys[i];
+                if (!_attendingByChatId[k] || _attendingByChatId[k].uid !== newMap[k].uid) {
+                    changed = true;
+                    break;
+                }
+            }
+        }
+        if (changed) {
+            _attendingByChatId = newMap;
+            try { renderChatList(); } catch (e) {}
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        LISTA DE CONVERSACIONES — listener realtime
        ═══════════════════════════════════════════════════════════ */
     // Filtro activo del listado: 'active' (default) | 'pinned' | 'archived' | 'deleted'
@@ -313,10 +661,24 @@
                 if (typeof AP.setPresenceCurrentChat === 'function') {
                     try { AP.setPresenceCurrentChat(null); } catch (e) {}
                 }
+                // §88 Sprint C-S10 — notes listener PER chat → cancelar
+                // al salir de sec-concierge. _activeNotes se limpia
+                // automáticamente al próximo openChat.
+                if (_notesUnsub) { try { _notesUnsub(); } catch (e) {} _notesUnsub = null; }
+                _activeNotes = [];
+                // §88 — apagar attending presence listener cuando admin
+                // sale del Hub (cero consumo bandwidth fuera de la sección).
+                try { stopAttendingPresenceListener(); } catch (e) {}
             });
         }
 
         console.log('[AdminConcierge] §57.7 startChatsListener init — global listener (no auto-cancel on section change)');
+
+        // §88 Sprint C-S10 — listener RTDB /presence para indicador
+        // "X está atendiendo este chat" en la lista. Globalmente activo
+        // mientras admin está logueado (igual que _chatsUnsub).
+        startAttendingPresenceListener();
+
         _chatsUnsub = window.db.collection('conciergeChats')
             .orderBy('lastMessageAt', 'desc')
             .limit(100)
@@ -782,6 +1144,21 @@
             try { AP.setPresenceCurrentChat(sessionId); } catch (e) {}
         }
 
+        // §88 Sprint C-S10 — suscribirse a notas privadas del chat activo
+        // (subcolección conciergeChats/{sid}/notes/). El cliente no las ve.
+        try { subscribeToNotes(sessionId); } catch (e) {
+            console.warn('[AdminConcierge] §88 subscribeToNotes error:', e.message);
+        }
+
+        // §88 — Reset modo nota interna al abrir un chat nuevo (UX cleanliness)
+        _isInternalNoteMode = false;
+
+        // §88 — Re-arrancar attending presence listener si fue cancelado
+        // por el section cleanup hook (admin salió y volvió al Hub).
+        if (!_attendingPresenceUnsub) {
+            try { startAttendingPresenceListener(); } catch (e) {}
+        }
+
         // Suscribirse a los mensajes
         _messagesUnsub = window.db.collection('conciergeChats').doc(sessionId)
             .collection('messages')
@@ -1018,9 +1395,43 @@
         //   failed  → border rojo + botón Reintentar (data-action="retry-msg")
         // Solo se aplica a mensajes 'asesor' (los del cliente y bot
         // se rigen por el listener Firestore directo).
-        var msgsHTML = messages.length === 0
+        //
+        // §88 Sprint C-S10 — MERGE notes + messages en orden cronológico.
+        // Notas internas viven en _activeNotes (subcolección notes/).
+        // Cada nota lleva flag _isNote=true para render diferenciado.
+        // Cliente NO ve las notas (subcolección sin rule de lectura para él).
+        var combinedItems = (messages || []).slice();
+        if (_activeNotes && _activeNotes.length > 0) {
+            for (var ni = 0; ni < _activeNotes.length; ni++) {
+                combinedItems.push(_activeNotes[ni]);
+            }
+            combinedItems.sort(function (a, b) {
+                var ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                var tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                return ta - tb;
+            });
+        }
+
+        var msgsHTML = combinedItems.length === 0
             ? '<div class="cnc-admin-detail-empty">Sin mensajes en esta conversación.</div>'
-            : messages.map(function (m) {
+            : combinedItems.map(function (m) {
+                // §88 — render diferenciado para notas internas
+                if (m._isNote) {
+                    var noteAuthor = m.authorName || 'Asesor';
+                    var initialsN = noteAuthor.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+                    var avatarHTML = m.authorPhotoURL
+                        ? '<img class="cnc-admin-note-avatar-img" src="' + escTxt(m.authorPhotoURL) + '" alt="">'
+                        : '<span class="cnc-admin-note-avatar-initials">' + escTxt(initialsN) + '</span>';
+                    return '<div class="cnc-detail-msg cnc-detail-note" data-note-id="' + escTxt(m._docId || '') + '">' +
+                        '<div class="cnc-admin-note-header">' +
+                            '<span class="cnc-admin-note-avatar">' + avatarHTML + '</span>' +
+                            '<span class="cnc-admin-note-author">' + escTxt(noteAuthor) + '</span>' +
+                            '<span class="cnc-admin-note-badge"><i data-lucide="lock"></i> Nota privada</span>' +
+                        '</div>' +
+                        '<div class="cnc-admin-note-body">' + escTxt(m.text) + '</div>' +
+                        '<div class="cnc-detail-time">' + escTxt(timeAgo(m.timestamp)) + '</div>' +
+                    '</div>';
+                }
                 if (m.from === 'system') {
                     var sysExtraCls = '';
                     if (m._status === 'pending') sysExtraCls = ' cnc-msg-pending';
@@ -1182,15 +1593,35 @@
                 '<div class="cnc-admin-mine-banner">' +
                     '<i data-lucide="check-circle-2"></i>' +
                     '<span>Estás atendiendo este chat. Otros asesores no pueden responder.</span>' +
+                    // §88 Sprint C-S10 — Botón Transferir ahora visible para
+                    // editor también (no solo super_admin). Modal con asesores
+                    // online via RTDB presence.
+                    '<button class="alt-btn alt-btn--ghost alt-btn--sm" data-action="open-transfer-modal" data-session-id="' + escTxt(chat._docId) + '">' +
+                        '<i data-lucide="users"></i> Transferir' +
+                    '</button>' +
                     (isSuper ?
-                        '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminTransferBtn" data-session-id="' + escTxt(chat._docId) + '">' +
-                            '<i data-lucide="users"></i> Transferir / Liberar' +
+                        '<button class="alt-btn alt-btn--ghost alt-btn--sm" id="cncAdminReleaseBtn" data-session-id="' + escTxt(chat._docId) + '">' +
+                            '<i data-lucide="undo-2"></i> Liberar' +
                         '</button>'
                         : ''
                     ) +
                 '</div>'
                 : ''
             ) +
+            // §88 Sprint C-S10 — Indicador "X está atendiendo" cuando OTRO admin
+            // tiene el chat abierto en su detail panel (vía RTDB presence.currentChatId).
+            (function () {
+                var att = _attendingByChatId[chat._docId];
+                if (!att) return '';
+                var attInitials = (att.nombre || 'A').split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+                var attAvatar = att.photoURL
+                    ? '<img class="cnc-admin-attending-avatar-img" src="' + escTxt(att.photoURL) + '" alt="">'
+                    : '<span class="cnc-admin-attending-avatar-initials">' + escTxt(attInitials) + '</span>';
+                return '<div class="cnc-admin-attending-indicator">' +
+                    '<span class="cnc-admin-attending-avatar cnc-admin-attending-status--' + escTxt(att.status || 'online') + '">' + attAvatar + '</span>' +
+                    '<span><strong>' + escTxt(att.nombre) + '</strong> está mirando este chat ahora mismo.</span>' +
+                    '</div>';
+            })() +
             '<div class="cnc-admin-detail-messages" id="cncAdminMessages">' + msgsHTML + '</div>' +
             (canWrite ?
                 '<div class="cnc-smart-suggestions" id="cncSmartSuggestions" style="display:none;"></div>' +
@@ -1200,9 +1631,11 @@
                     '<button class="cnc-quick-reply" data-text="¿Te gustaría agendar una visita para ver el carro? Tenemos disponibilidad esta semana.">📅 Agendar</button>' +
                     '<button class="cnc-quick-reply" data-text="Listo, te paso a WhatsApp para continuar la conversación.">📲 A WhatsApp</button>' +
                     // §27.6 — Plantillas integradas (admin-templates.js).
-                    // Botón que abre dropdown con plantillas del admin con
-                    // variables resueltas {{nombre}}, {{vehiculo}}, etc.
                     '<button class="cnc-quick-reply cnc-templates-trigger" data-action="open-templates" data-tooltip="Plantillas guardadas">📋 Plantillas</button>' +
+                    // §88 Sprint C-S10 — Toggle "Nota interna" (visible solo asesor).
+                    '<button class="cnc-quick-reply cnc-internal-note-toggle' + (_isInternalNoteMode ? ' is-active' : '') + '" id="cncInternalNoteToggle" data-action="toggle-internal-note" aria-pressed="' + (_isInternalNoteMode ? 'true' : 'false') + '" data-tooltip="Modo nota interna (cliente NO la verá)">' +
+                        '<i data-lucide="lock"></i> Nota interna' +
+                    '</button>' +
                 '</div>' +
                 // Container para el dropdown de plantillas (mounted on demand)
                 '<div class="cnc-templates-dropdown" id="cncTemplatesDropdown" hidden></div>'
@@ -1210,14 +1643,17 @@
             ) +
             '<div class="cnc-admin-detail-input-wrap' +
                 (isClosed ? ' cnc-admin-detail-input-wrap--closed' : '') +
-                (lockReadonly ? ' cnc-admin-detail-input-wrap--locked' : '') + '">' +
+                (lockReadonly ? ' cnc-admin-detail-input-wrap--locked' : '') +
+                (_isInternalNoteMode && canWrite ? ' cnc-admin-detail-input-wrap--note-mode' : '') + '">' +
                 '<input type="text" class="form-input cnc-admin-detail-input" id="cncAdminReply" ' +
                     (isClosed ? 'disabled placeholder="🔒 Conversación cerrada — solo lectura"'
                               : lockReadonly ? 'disabled placeholder="🔒 Atendido por ' + escTxt(chat.claimedByName || 'otro asesor') + '"'
-                                             : 'placeholder="Responder como asesor…"') +
+                                             : (_isInternalNoteMode ? 'placeholder="🔒 Nota privada del asesor (cliente NO la verá)…"' : 'placeholder="Responder como asesor…"')) +
                     ' autocomplete="off">' +
                 '<button class="alt-btn alt-btn--primary" id="cncAdminSend"' +
-                    (canWrite ? '' : ' disabled') + '>Enviar</button>' +
+                    (canWrite ? '' : ' disabled') + '>' +
+                    (_isInternalNoteMode && canWrite ? 'Guardar nota' : 'Enviar') +
+                '</button>' +
             '</div>';
 
         // Auto-scroll al final
@@ -1435,6 +1871,19 @@
         if (!input || !_activeSessionId || !window.db) return;
         var text = input.value.trim();
         if (!text) return;
+
+        // §88 Sprint C-S10 — Si el modo "Nota interna" está activo,
+        // guardar como nota privada (subcolección notes/) en lugar de
+        // mandar al cliente. La nota aparece SOLO en el admin Hub.
+        if (_isInternalNoteMode) {
+            sendInternalNote(text);
+            input.value = '';
+            // Mantener el modo activo: el asesor puede agregar varias
+            // notas seguidas sin re-toggle. Para volver a mensaje cliente
+            // debe click el toggle.
+            return;
+        }
+
         // §75 Sprint S3 — typing:false sincrónico ANTES del send para que
         // el indicador desaparezca instantáneo del lado cliente. Cancelamos
         // el auto-clear timer porque ya no aplica.
@@ -2184,12 +2633,50 @@
             });
             return;
         }
-        // §26.4 — Transferir / liberar (super_admin desde botón mine)
+        // §26.4 — Transferir / liberar (super_admin desde botón mine) — LEGACY
         if (e.target && e.target.closest && e.target.closest('#cncAdminTransferBtn')) {
             var sid2 = e.target.closest('#cncAdminTransferBtn').getAttribute('data-session-id') || _activeSessionId;
             if (sid2 && confirm('¿Liberar esta conversación para que otro asesor la tome?')) {
                 releaseClaim(sid2);
             }
+            return;
+        }
+
+        // §88 Sprint C-S10 — Liberar lock (solo super_admin, botón "Liberar")
+        if (e.target && e.target.closest && e.target.closest('#cncAdminReleaseBtn')) {
+            var sidR = e.target.closest('#cncAdminReleaseBtn').getAttribute('data-session-id') || _activeSessionId;
+            if (sidR && confirm('¿Liberar esta conversación para que otro asesor la tome?')) {
+                releaseClaim(sidR);
+            }
+            return;
+        }
+
+        // §88 Sprint C-S10 — Abrir modal Transferir
+        var openTransferBtn = e.target && e.target.closest && e.target.closest('[data-action="open-transfer-modal"]');
+        if (openTransferBtn) {
+            var sidT = openTransferBtn.getAttribute('data-session-id') || _activeSessionId;
+            if (sidT) openTransferModal(sidT);
+            return;
+        }
+
+        // §88 — Cerrar modal Transferir
+        if (e.target && e.target.closest && e.target.closest('[data-action="close-transfer-modal"]')) {
+            closeTransferModal();
+            return;
+        }
+
+        // §88 — Confirmar transferencia (click en un asesor del modal)
+        var confirmTransferBtn = e.target && e.target.closest && e.target.closest('[data-action="confirm-transfer"]');
+        if (confirmTransferBtn) {
+            var toUid = confirmTransferBtn.getAttribute('data-target-uid');
+            var toName = confirmTransferBtn.getAttribute('data-target-name');
+            if (toUid && toName) executeTransfer(toUid, toName);
+            return;
+        }
+
+        // §88 Sprint C-S10 — Toggle modo nota interna
+        if (e.target && e.target.closest && e.target.closest('[data-action="toggle-internal-note"]')) {
+            toggleInternalNoteMode();
             return;
         }
         if (e.target && e.target.closest && e.target.closest('#cncAdminSummarize')) {

@@ -15056,3 +15056,344 @@ html.theme-changing-stop * {
 /* ═══════════════════════════════════════════════════════════════════
    FIN §87 Sprint C-S9 — Métricas Concierge
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   §88 Sprint C-S10 — Internal Notes + Transferencias + Indicador
+   "X está atendiendo"
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Internal Notes (notas privadas del asesor) ─── */
+.cnc-detail-note {
+    /* Card amber tenue distinta de bubble normal. Cliente NUNCA las ve
+       (subcolección sin rule de lectura para él). */
+    align-self: stretch;
+    margin: 12px 0;
+    padding: 12px 14px;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px dashed rgba(251, 191, 36, 0.35);
+    border-radius: 12px;
+}
+.cnc-admin-note-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.cnc-admin-note-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #d4ad6e, #b89658);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.cnc-admin-note-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.cnc-admin-note-avatar-initials {
+    color: #1a1a1a;
+    font-weight: 700;
+    font-size: 0.65rem;
+}
+.cnc-admin-note-author {
+    color: rgba(251, 191, 36, 0.95);
+    font-weight: 600;
+    font-size: 0.78rem;
+    margin-right: auto;
+}
+.cnc-admin-note-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(251, 191, 36, 0.15);
+    color: rgba(251, 191, 36, 0.95);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+}
+.cnc-admin-note-badge [data-lucide] { width: 11px; height: 11px; }
+.cnc-admin-note-body {
+    color: rgba(255, 255, 255, 0.90);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Toggle "Nota interna" en composer */
+.cnc-internal-note-toggle {
+    transition: background-color 0.18s, color 0.18s, border-color 0.18s;
+}
+.cnc-internal-note-toggle [data-lucide] {
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    margin-right: 4px;
+}
+.cnc-internal-note-toggle.is-active {
+    background: rgba(251, 191, 36, 0.18) !important;
+    color: rgba(251, 191, 36, 1) !important;
+    border-color: rgba(251, 191, 36, 0.45) !important;
+}
+
+/* Modo nota interna: borde amber del input */
+.cnc-admin-detail-input-wrap--note-mode {
+    border: 1px dashed rgba(251, 191, 36, 0.45) !important;
+    background: rgba(251, 191, 36, 0.04);
+    border-radius: 12px;
+    padding: 4px;
+}
+.cnc-admin-detail-input-wrap--note-mode .cnc-admin-detail-input { background: transparent; }
+.cnc-admin-detail-input-wrap--note-mode .alt-btn {
+    background: rgba(251, 191, 36, 0.18) !important;
+    border-color: rgba(251, 191, 36, 0.5) !important;
+    color: rgba(251, 191, 36, 1) !important;
+}
+
+/* ─── Indicador "X está atendiendo" en detail panel ─── */
+.cnc-admin-attending-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    margin: 8px 16px 0;
+    background: rgba(96, 165, 250, 0.08);
+    border: 1px solid rgba(96, 165, 250, 0.20);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+.cnc-admin-attending-indicator strong {
+    color: rgba(96, 165, 250, 0.95);
+    font-weight: 600;
+}
+.cnc-admin-attending-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+.cnc-admin-attending-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.cnc-admin-attending-avatar-initials {
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.7rem;
+}
+.cnc-admin-attending-avatar.cnc-admin-attending-status--online::after,
+.cnc-admin-attending-avatar.cnc-admin-attending-status--away::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 2px solid #0f0f0f;
+}
+.cnc-admin-attending-avatar.cnc-admin-attending-status--online::after { background: #22c55e; }
+.cnc-admin-attending-avatar.cnc-admin-attending-status--away::after { background: #fbbf24; }
+
+/* ─── Modal Transferir conversación ─── */
+.cnc-transfer-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.cnc-transfer-modal[hidden] { display: none; }
+.cnc-transfer-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.68);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+}
+.cnc-transfer-dialog {
+    position: relative;
+    background: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+}
+.cnc-transfer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.cnc-transfer-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.cnc-transfer-header h3 [data-lucide] {
+    width: 20px;
+    height: 20px;
+    color: var(--admin-gold, #b89658);
+}
+.cnc-transfer-close {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background-color 0.18s, color 0.18s;
+}
+.cnc-transfer-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+.cnc-transfer-close [data-lucide] { width: 18px; height: 18px; }
+.cnc-transfer-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+.cnc-transfer-hint {
+    margin: 0 0 14px;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+.cnc-transfer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.cnc-transfer-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: background-color 0.18s, border-color 0.18s, transform 0.18s;
+}
+.cnc-transfer-item:hover {
+    background: rgba(184, 150, 88, 0.10);
+    border-color: rgba(184, 150, 88, 0.30);
+    transform: translateX(2px);
+}
+.cnc-transfer-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #d4ad6e, #b89658);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+.cnc-transfer-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.cnc-transfer-avatar-initials {
+    color: #1a1a1a;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+.cnc-transfer-status--online::after,
+.cnc-transfer-status--away::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 2px solid #1a1a1a;
+}
+.cnc-transfer-status--online::after { background: #22c55e; }
+.cnc-transfer-status--away::after { background: #fbbf24; }
+.cnc-transfer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.cnc-transfer-name {
+    color: #fff;
+    font-size: 0.92rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cnc-transfer-meta {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.74rem;
+}
+.cnc-transfer-loading,
+.cnc-transfer-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.85rem;
+}
+.cnc-transfer-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.cnc-transfer-empty p { margin: 0; }
+.cnc-transfer-footer {
+    padding: 12px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+    .cnc-transfer-dialog {
+        max-width: 100%;
+        max-height: 92vh;
+        border-radius: 14px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cnc-transfer-item,
+    .cnc-internal-note-toggle,
+    .cnc-transfer-close {
+        transition: none;
+    }
+    .cnc-transfer-item:hover {
+        transform: none;
+    }
+}
+/* ═══════════════════════════════════════════════════════════════════
+   FIN §88 Sprint C-S10 — Internal Notes + Transferencias + Indicador
+   ═══════════════════════════════════════════════════════════════════ */

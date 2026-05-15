@@ -2281,6 +2281,119 @@ exports.onChatEscalatedTelegram = onDocumentWritten({
 });
 
 // ═══════════════════════════════════════════════════════════════════
+// §88 Sprint C-S10 — onChatTransferred
+// ───────────────────────────────────────────────────────────────────
+// Trigger onUpdate cuando `claimedBy` cambia y el nuevo claimer es
+// distinto del previo (transferencia, NO un primer claim).
+//
+// Acciones:
+// 1. Envía FCM push al nuevo claimer (super_admin/editor) con info
+//    del chat transferido (cliente, radicado, asesor previo).
+// 2. Envía Telegram alert al nuevo claimer (si tiene chatId vinculado).
+// 3. Audit log entry `chat.transferred`.
+//
+// Anti-loop: filter por `before.claimedBy !== after.claimedBy` y
+// además `before.claimedBy != null` (sino es un primer claim, NO
+// transferencia — eso lo cubre onChatEscalated).
+// ═══════════════════════════════════════════════════════════════════
+exports.onChatTransferred = onDocumentUpdated({
+    document: 'conciergeChats/{sessionId}',
+    secrets: [telegramBotToken]
+}, async (event) => {
+    const sessionId = event.params.sessionId;
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+
+    // Anti-loop: solo trigger en TRANSFERENCIA (no primer claim).
+    // Primer claim: before.claimedBy=null → after.claimedBy=X (onChatEscalated lo cubre).
+    // Transfer: before.claimedBy=X → after.claimedBy=Y (X != Y, ambos != null).
+    if (!before.claimedBy || !after.claimedBy) {
+        return; // primer claim o release — no es transfer
+    }
+    if (before.claimedBy === after.claimedBy) {
+        return; // sin cambio
+    }
+
+    const newClaimerUid = after.claimedBy;
+    const newClaimerName = after.claimedByName || 'Asesor';
+    const prevClaimerName = before.claimedByName || 'Asesor anterior';
+    const radicado = after.radicado || sessionId.slice(-8);
+    const clienteName = after.userNombre || after.userEmail || 'Cliente';
+    const vehicleHint = after.sourceVehicleId ? '\n🚗 Vehículo: ' + after.sourceVehicleId : '';
+
+    console.log('[onChatTransferred] §88 INVOKED', {
+        sessionId,
+        from: before.claimedBy,
+        to: newClaimerUid,
+        radicado
+    });
+
+    // ─── FCM Push ─────────────────────────────────────────────
+    try {
+        const newClaimerSnap = await db.collection('usuarios').doc(newClaimerUid).get();
+        if (newClaimerSnap.exists) {
+            const fcmTokens = newClaimerSnap.data().fcmTokens || [];
+            if (fcmTokens.length > 0) {
+                const messaging = admin.messaging();
+                const fcmPromises = fcmTokens.map(token =>
+                    messaging.send({
+                        token: token,
+                        notification: {
+                            title: '🔁 Chat transferido a ti',
+                            body: prevClaimerName + ' te transfirió la conversación de ' + clienteName + ' (' + radicado + ')'
+                        },
+                        webpush: {
+                            fcmOptions: {
+                                link: 'https://altorracars.github.io/admin.html#concierge:' + sessionId
+                            }
+                        }
+                    }).catch(err => {
+                        console.warn('[onChatTransferred] FCM token failed', token.slice(-8), err.message);
+                        return null;
+                    })
+                );
+                await Promise.all(fcmPromises);
+                console.log('[onChatTransferred] FCM enviado a', newClaimerUid);
+            }
+        }
+    } catch (err) {
+        console.warn('[onChatTransferred] FCM error:', err.message);
+    }
+
+    // ─── Telegram Alert ─────────────────────────────────────────
+    const tgText = '🔁 *Chat transferido a ti*\n\n' +
+        '👤 *Cliente:* ' + clienteName + '\n' +
+        '📋 *Radicado:* ' + radicado + '\n' +
+        '👨‍💼 *De:* ' + prevClaimerName +
+        vehicleHint + '\n\n' +
+        '_Tocá el botón para atender de inmediato._';
+    const tgUrl = 'https://altorracars.github.io/admin.html#concierge:' + sessionId;
+    await sendTelegramAlert(newClaimerUid, tgText, {
+        url: tgUrl,
+        urlLabel: '📲 Atender ahora'
+    });
+
+    // ─── Audit log ──────────────────────────────────────────────
+    try {
+        await db.collection('auditLog').add({
+            type: 'chat.transferred',
+            sessionId: sessionId,
+            radicado: radicado,
+            fromUid: before.claimedBy,
+            fromName: prevClaimerName,
+            toUid: newClaimerUid,
+            toName: newClaimerName,
+            clienteName: clienteName,
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (err) {
+        console.warn('[onChatTransferred] audit log error:', err.message);
+    }
+
+    console.log('[onChatTransferred] §88 completo');
+});
+
+// ═══════════════════════════════════════════════════════════════════
 // §51 — setupTelegramWebhook (callable)
 // Configura el webhook del bot de Telegram apuntando a la URL de
 // linkTelegramChat. Antes el cliente debía correr un curl manual.

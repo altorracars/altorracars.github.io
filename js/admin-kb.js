@@ -30,6 +30,10 @@
     var AP = window.AP;
     if (!AP) return;
 
+    // §61.R8 PENDIENTE-B — Helpers locales canónicos (mapping §67.3)
+    function _canReadKB()  { return AP.hasPermission('kb.read'); }
+    function _isSuper()    { return AP.hasPermission('*'); }
+
     var _entries = [];
     var _unsub = null;
 
@@ -146,7 +150,7 @@
             if (localStorage.getItem('altorra_kb_seeded') === '1') return;
         } catch (e) {}
         if (!window.auth || !window.auth.currentUser) return;
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+        if (!_isSuper()) return;
 
         var batch = window.db.batch();
         var now = new Date().toISOString();
@@ -449,7 +453,7 @@
     var attempts = 0;
     var iv = setInterval(function () {
         attempts++;
-        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.auth && window.auth.currentUser && _canReadKB()) {
             startListener();
             clearInterval(iv);
         } else if (attempts > 60) clearInterval(iv);
@@ -582,7 +586,7 @@
     }
 
     function saveBrain() {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+        if (!_isSuper()) {
             AP.toast('Solo super_admin puede modificar el Cerebro AI', 'error');
             return;
         }
@@ -768,7 +772,7 @@
      * (matching por question normalizada).
      */
     function bootstrapFAQs() {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+        if (!_isSuper()) {
             AP.toast('Solo super_admin puede sembrar la KB', 'error');
             return;
         }
@@ -827,7 +831,7 @@
      * primer setup o cuando el admin quiere "resetear" el tono.
      */
     function restoreBrainDefaults() {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+        if (!_isSuper()) {
             AP.toast('Solo super_admin puede restaurar el Cerebro', 'error');
             return;
         }
@@ -904,7 +908,7 @@
     var brainAttempts = 0;
     var brainIv = setInterval(function () {
         brainAttempts++;
-        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.auth && window.auth.currentUser && _canReadKB()) {
             loadBrain();
             clearInterval(brainIv);
         } else if (brainAttempts > 60) clearInterval(brainIv);

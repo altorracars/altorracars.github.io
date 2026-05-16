@@ -197,7 +197,7 @@
 
     /** Hooked into appointments listener — runs evaluation on relevant events */
     function checkRulesForNewDocs(snap) {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return; // only super_admin runs auto-routing
+        if (!AP.hasPermission || !AP.hasPermission('*')) return; // only super_admin runs auto-routing
         snap.docChanges().forEach(function (chg) {
             if (chg.type !== 'added') return;
             var d = Object.assign({ _docId: chg.doc.id }, chg.doc.data());
@@ -207,7 +207,7 @@
 
     /** K.1 — EventBus dispatcher with cycle protection */
     function onBusEvent(event) {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+        if (!AP.hasPermission || !AP.hasPermission('*')) return;
         if (!event || !event.type) return;
         // Skip replays — they exist to debug listeners visually, not to re-fire rules
         if (event.payload && event.payload.__replay === true) return;
@@ -240,7 +240,7 @@
 
     /** Periodic SLA check — runs every minute on super_admin sessions */
     function startSlaCheckLoop() {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+        if (!AP.hasPermission || !AP.hasPermission('*')) return;
         var notifiedIds = {};
         setInterval(function () {
             (AP.appointments || []).forEach(function (a) {
@@ -378,7 +378,7 @@
     var attempts = 0;
     var int = setInterval(function () {
         attempts++;
-        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.auth && window.auth.currentUser && AP.isAuthenticatedAdmin && AP.isAuthenticatedAdmin()) {
             loadRules().then(function () {
                 renderRulesUI();
                 startSlaCheckLoop();

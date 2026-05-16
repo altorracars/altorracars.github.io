@@ -475,7 +475,7 @@
 
     // ========== EDIT USER ==========
     function editUser(uid) {
-        if (!AP.canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
         var u = AP.users.find(function(x) { return x._docId === uid; });
         if (!u) return;
         // §70 R7.1 — Defense-in-depth: el CEO no se edita desde sec-users.
@@ -518,7 +518,7 @@
 
     // ========== SAVE USER ==========
     $('saveUser').addEventListener('click', function() {
-        if (!AP.canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
 
         var form = $('userForm');
         if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -633,7 +633,7 @@
 
     // ========== DELETE USER ==========
     function deleteUserFn(uid) {
-        if (!AP.canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
         if (AP._deletingUser) { AP.toast('Ya hay una eliminacion en curso...', 'info'); return; }
 
         var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : '';
@@ -704,7 +704,7 @@
 
     // ========== UNLOCK USER ==========
     function unlockUserFn(uid) {
-        if (!AP.canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canManageUsers()) { AP.toast('No tienes permisos', 'error'); return; }
         var u = AP.users.find(function(x) { return x._docId === uid; });
         if (!u) return;
         if (!confirm('¿Desbloquear la cuenta de "' + (u.nombre || u.email) + '"?\n\nEl usuario podra iniciar sesion nuevamente.')) return;

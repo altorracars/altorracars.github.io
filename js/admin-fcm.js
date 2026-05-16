@@ -185,7 +185,7 @@
         _initialized = true;
 
         if (!VAPID_PUBLIC_KEY) return; // setup pendiente
-        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+        if (!AP.isAuthenticatedAdmin || !AP.isAuthenticatedAdmin()) return;
         if (!isSupported()) return;
 
         // Si ya está granted, registrar token directo
@@ -269,7 +269,7 @@
 
     // Auto-init cuando firebase-app está listo + admin autenticado + AP cargado
     function bootIfReady() {
-        if (window.AP && AP.currentUserProfile && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.AP && AP.currentUserProfile && AP.isAuthenticatedAdmin && AP.isAuthenticatedAdmin()) {
             // Cargar messaging-compat de forma diferida ANTES de init
             (window.firebaseReady || Promise.resolve())
                 .then(loadMessagingCompat)

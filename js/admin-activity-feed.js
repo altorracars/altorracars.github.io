@@ -138,7 +138,7 @@
         var when = timeAgo(event.timestamp);
         var isReplay = event.payload && event.payload.__replay === true;
         var isExpanded = _expandedId === event.id;
-        var canDebug = AP && AP.isSuperAdmin && AP.isSuperAdmin();
+        var canDebug = AP && AP.hasPermission && AP.hasPermission('*');
 
         var inspector = '';
         if (isExpanded) {
@@ -246,7 +246,7 @@
        ═══════════════════════════════════════════════════════════ */
     function startFirestoreListener() {
         if (_firestoreUnsub) return;
-        if (!window.db || !AP || !AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+        if (!window.db || !AP || !AP.hasPermission || !AP.hasPermission('*')) return;
         try {
             _firestoreUnsub = window.db.collection('events')
                 .orderBy('timestamp', 'desc')

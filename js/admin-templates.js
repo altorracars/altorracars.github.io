@@ -105,7 +105,7 @@
     var attempts = 0;
     var int = setInterval(function () {
         attempts++;
-        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.auth && window.auth.currentUser && AP.isAuthenticatedAdmin && AP.isAuthenticatedAdmin()) {
             startListener();
             clearInterval(int);
         } else if (attempts > 60) clearInterval(int);

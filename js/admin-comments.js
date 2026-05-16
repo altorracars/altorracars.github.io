@@ -175,7 +175,7 @@
         depth = depth || 0;
         var initials = (comment.authorNombre || comment.authorEmail || '?')
             .split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
-        var canDelete = AP.isSuperAdmin && AP.isSuperAdmin() ||
+        var canDelete = (AP.hasPermission && AP.hasPermission('*')) ||
                         (window.auth && window.auth.currentUser && window.auth.currentUser.uid === comment.authorUid);
         var html = '<div class="cmt-item' + (depth > 0 ? ' cmt-item--reply' : '') + '" data-id="' + escTxt(comment._id) + '">' +
             '<div class="cmt-avatar">' + escTxt(initials) + '</div>' +

@@ -314,7 +314,7 @@
     }
 
     function refresh() {
-        if (!AP || !AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+        if (!AP || !AP.isAuthenticatedAdmin || !AP.isAuthenticatedAdmin()) return;
         renderWidget();
     }
 
@@ -346,7 +346,7 @@
     var attempts = 0;
     var int = setInterval(function () {
         attempts++;
-        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.auth && window.auth.currentUser && AP.isAuthenticatedAdmin && AP.isAuthenticatedAdmin()) {
             // Esperar a que AP.vehicles tenga datos
             if (AP.vehicles && AP.vehicles.length > 0) {
                 refresh();

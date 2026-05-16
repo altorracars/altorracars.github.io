@@ -453,7 +453,7 @@
        ═══════════════════════════════════════════════════════════ */
     if (window.AltorraEventBus) {
         window.AltorraEventBus.on('vehicle.created', function (event) {
-            if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+            if (!AP.hasPermission || !AP.hasPermission('*')) return;
             if (event.payload && event.payload.__replay) return;
 
             // Esperar a que el grafo se reconstruya con el vehículo nuevo

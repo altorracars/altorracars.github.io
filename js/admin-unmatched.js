@@ -59,7 +59,7 @@
      */
     function start() {
         if (_unsub || !window.db) return;
-        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+        if (!AP.hasPermission || !AP.hasPermission('unmatched.read')) return;
         _started = true;
 
         _unsub = window.db.collection('unmatchedQueries')
@@ -175,7 +175,7 @@
             var seenBtn = e.seen
                 ? ''
                 : '<button class="alt-btn alt-btn--ghost alt-btn--sm" data-unmatched-seen="' + escTxt(e._docId) + '" data-tooltip="Marcar como vista"><i data-lucide="eye"></i></button>';
-            var deleteBtn = (AP.isSuperAdmin && AP.isSuperAdmin())
+            var deleteBtn = (AP.hasPermission && AP.hasPermission('unmatched.delete'))
                 ? '<button class="alt-btn alt-btn--ghost alt-btn--sm" data-unmatched-delete="' + escTxt(e._docId) + '" data-tooltip="Eliminar"><i data-lucide="trash-2"></i></button>'
                 : '';
 
@@ -285,7 +285,7 @@
     }
 
     function deleteEntry(docId) {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+        if (!AP.hasPermission || !AP.hasPermission('unmatched.delete')) {
             if (AP.toast) AP.toast('Solo super admin puede eliminar', 'error');
             return;
         }
@@ -358,7 +358,7 @@
     // Iniciar listener globalmente para que el badge funcione desde el primer
     // page load (sin esperar a entrar a la sección).
     function bootIfReady() {
-        if (window.db && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.db && AP.hasPermission && AP.hasPermission('unmatched.read')) {
             start();
         } else {
             setTimeout(bootIfReady, 1500);

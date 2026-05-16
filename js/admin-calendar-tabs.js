@@ -116,7 +116,7 @@
     }
 
     function saveAvailability() {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+        if (!AP.hasPermission || !AP.hasPermission('*')) {
             if (AP.toast) AP.toast('Solo super_admin puede modificar la disponibilidad', 'error');
             return;
         }
@@ -215,7 +215,7 @@
         var f = $('holidayAddForm'); if (f) f.style.display = 'none';
     }
     function saveHoliday() {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+        if (!AP.hasPermission || !AP.hasPermission('*')) return;
         var date = ($('holidayDate') || {}).value;
         var label = ($('holidayLabel') || {}).value || '';
         if (!date) { if (AP.toast) AP.toast('Seleccioná una fecha', 'error'); return; }
@@ -237,7 +237,7 @@
         }
     }
     function removeHoliday(date) {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return;
+        if (!AP.hasPermission || !AP.hasPermission('*')) return;
         if (!confirm('¿Quitar este festivo?')) return;
         var cfg = getCalConfig();
         if (!cfg) return;

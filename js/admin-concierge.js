@@ -18,6 +18,13 @@
     var AP = window.AP;
     if (!AP) return;
 
+    // §61.R8 PENDIENTE-B — Helpers locales canónicos (mapping §67.3)
+    function _canReadConcierge()    { return AP.hasPermission('concierge.read'); }
+    function _canRespondConcierge() { return AP.hasPermission('concierge.respond'); }
+    function _canDeleteConcierge()  { return AP.hasPermission('concierge.delete'); }
+    function _canClaimConcierge()   { return AP.hasPermission('concierge.claim') || AP.hasPermission('concierge.respond'); }
+    function _isSuper()             { return AP.hasPermission('*'); }
+
     var DAY_MS = 86400000;
     var _chats = [];
     var _activeSessionId = null;
@@ -398,7 +405,7 @@
        ═══════════════════════════════════════════════════════════ */
     function openTransferModal(sessionId) {
         if (!sessionId || !window.rtdb) return;
-        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) {
+        if (!_canRespondConcierge()) {
             if (AP.toast) AP.toast('No tenés permisos para transferir', 'error');
             return;
         }
@@ -633,7 +640,7 @@
 
     function startChatsListener() {
         if (_chatsUnsub || !window.db) return;
-        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+        if (!_canReadConcierge()) return;
 
         // §57.7 — CRÍTICO: solo cancelar _messagesUnsub al cambiar de sección.
         // El listener _chatsUnsub debe quedar SIEMPRE activo cuando admin
@@ -990,7 +997,7 @@
      * irreversible. Solo super_admin (rules `allow delete: if isSuperAdmin()`).
      */
     function hardDeleteChat(sessionId) {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+        if (!_canDeleteConcierge() && !_isSuper()) {
             if (AP.toast) AP.toast('Solo super admin puede eliminar chats', 'error');
             return;
         }
@@ -1032,9 +1039,9 @@
 
         var chat = _chats.find(function (c) { return c._docId === sessionId; });
         if (!chat) return;
-        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
+        var isSuper = _isSuper();
 
-        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
+        var isSuper = _isSuper();
         var items = [
             { action: 'pin',     label: chat.isPinned ? 'Quitar fijación' : 'Fijar al top', icon: 'pin' },
             { action: 'archive', label: chat.isArchived ? 'Desarchivar' : 'Archivar',       icon: 'archive' },
@@ -1374,7 +1381,7 @@
 
         // §23 FASE 5 — chat cerrado = read-only bidireccional
         var isClosed = chat.status === 'closed';
-        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
+        var isSuper = _isSuper();
 
         // §23 FASE 3 — Locks: detectar si el chat fue tomado por OTRO asesor.
         // §26.4 — Claiming Estricto: si el chat NO tiene claimedBy aún,
@@ -1573,7 +1580,7 @@
             claimedBanner +
             // §26.4 — Banner CLAIM: si el chat está sin tomar, ofrecer
             // "Tomar Conversación" gigante. Bloquea el input.
-            (unclaimed && AP.isEditorOrAbove && AP.isEditorOrAbove() ?
+            (unclaimed && _canClaimConcierge() ?
                 '<div class="cnc-admin-claim-banner">' +
                     '<div class="cnc-admin-claim-banner-icon"><i data-lucide="user-plus"></i></div>' +
                     '<div class="cnc-admin-claim-banner-text">' +
@@ -1688,7 +1695,7 @@
         if (!window.db || !window.auth || !window.auth.currentUser) {
             return Promise.reject(new Error('not-authenticated'));
         }
-        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) {
+        if (!_canRespondConcierge()) {
             return Promise.reject(new Error('not-authorized'));
         }
         var ref = window.db.collection('conciergeChats').doc(sessionId);
@@ -1849,7 +1856,7 @@
      * Libera el claim para que otro asesor pueda tomar el chat.
      */
     function releaseClaim(sessionId) {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+        if (!_isSuper()) {
             if (AP.toast) AP.toast('Solo super_admin puede liberar claims', 'error');
             return Promise.reject(new Error('not-authorized'));
         }
@@ -1899,7 +1906,7 @@
         var needsClaim = chat && !chat.claimedBy;
         var currentUid = window.auth.currentUser ? window.auth.currentUser.uid : null;
         var alreadyClaimedByOther = chat && chat.claimedBy && chat.claimedBy !== currentUid;
-        var isSuper = AP.isSuperAdmin && AP.isSuperAdmin();
+        var isSuper = _isSuper();
 
         if (alreadyClaimedByOther && !isSuper) {
             if (AP.toast) AP.toast('Este chat lo está atendiendo ' + (chat.claimedByName || 'otro asesor'), 'warning');
@@ -2767,7 +2774,7 @@
      */
     setInterval(function () {
         if (!window.auth || !window.auth.currentUser) return;
-        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+        if (!_canReadConcierge()) return;
         if (_chatsUnsub) return; // listener activo, todo OK
         console.warn('[AdminConcierge] §57.7 heartbeat: listener detected as null, restarting');
         startChatsListener();
@@ -2806,7 +2813,7 @@
     var attempts = 0;
     var iv = setInterval(function () {
         attempts++;
-        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.auth && window.auth.currentUser && _canReadConcierge()) {
             startChatsListener();
             clearInterval(iv);
         } else if (attempts > 60) clearInterval(iv);
@@ -2818,7 +2825,7 @@
        Solo super_admin. Borra el doc + toda la subcolección messages.
        ═══════════════════════════════════════════════════════════ */
     function cleanupOldChats() {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) {
+        if (!_isSuper()) {
             AP.toast('Solo super_admin puede limpiar chats', 'error');
             return Promise.reject('not-allowed');
         }

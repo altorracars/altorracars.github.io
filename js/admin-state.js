@@ -106,6 +106,24 @@
         },
 
         /**
+         * §61.R8 (PENDIENTE-B) — Helper canónico ADITIVO para reemplazar el uso
+         * semántico de `isEditorOrAbove()` cuando solo se valida "es un admin
+         * autenticado con permisos válidos" (no un permission específico).
+         *
+         * Retorna true si `currentUserPermissions[]` tiene al menos 1 entry
+         * (cubre super_admin con ['*'] + cualquier custom role + Path B legacy
+         * fallback hidratado desde rol). Patrón usado por adaptive tracking,
+         * onboarding tour, telemetría, etc. — donde NO importa QUÉ permiso
+         * tiene, solo que es un admin válido (no anónimo).
+         *
+         * @example
+         *   if (AP.isAuthenticatedAdmin()) { trackAdminUsage(); }
+         */
+        isAuthenticatedAdmin: function() {
+            return !!(AP.currentUserPermissions && AP.currentUserPermissions.length > 0);
+        },
+
+        /**
          * @deprecated §61.R5 — Usar `AP.hasPermission('*')` en código nuevo.
          * Source of truth: wildcard permission '*'.
          * Fallback legacy: currentUserRole === 'super_admin'.

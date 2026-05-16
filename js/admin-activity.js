@@ -261,7 +261,7 @@
     }
 
     function clearAllActivity() {
-        if (!AP.canDeleteInventory || !AP.canDeleteInventory()) { AP.toast('Solo Super Admin puede limpiar actividad', 'error'); return; }
+        if (!AP.hasPermission('audit.delete')) { AP.toast('Solo Super Admin puede limpiar actividad', 'error'); return; }
         if (!confirm('Eliminar TODA la actividad reciente? Esta accion no se puede deshacer.')) return;
         var batch = window.db.batch();
         var count = 0;

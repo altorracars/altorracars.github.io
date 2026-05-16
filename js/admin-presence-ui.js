@@ -503,7 +503,7 @@
         var iv = setInterval(function () {
             attempts++;
             if (window.rtdb && window.auth && window.auth.currentUser &&
-                AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+                AP.isAuthenticatedAdmin && AP.isAuthenticatedAdmin()) {
                 startPeerListener();
                 ensureIsland();
                 clearInterval(iv);

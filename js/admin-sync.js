@@ -40,7 +40,7 @@
 
             // F0.5: Automatic schema migration — runs once on first load
             // Idempotent: only touches vehicles missing required fields
-            if (!_vehiclesInitialized && window.db && AP.canCreateOrEditInventory && AP.canCreateOrEditInventory()) {
+            if (!_vehiclesInitialized && window.db && AP.hasPermission && (AP.hasPermission('vehicles.create') || AP.hasPermission('vehicles.edit'))) {
                 migrateVehicleSchema(AP.vehicles);
             }
 
@@ -77,7 +77,7 @@
             handleSnapshotError('marcas', err);
         });
 
-        if (AP.canManageUsers()) {
+        if (AP.hasPermission('users.create') || AP.hasPermission('users.edit')) {
             loadUsers();
         }
     }
@@ -323,9 +323,9 @@
             return;
         }
         if (!Array.isArray(solicitudes) || solicitudes.length === 0) return;
-        // Only super_admin or editor should attempt the migration (writes
-        // require editor+ permission per Firestore rules)
-        if (!AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+        // Only users with crm.edit permission attempt the migration (writes
+        // require equivalent server-side via Firestore rules R6)
+        if (!AP.hasPermission || !(AP.hasPermission('crm.edit') || AP.hasPermission('appointments.edit'))) return;
         _commMigrationRan = true;
 
         var schema = window.AltorraCommSchema;
@@ -392,7 +392,7 @@
     AP.migrateCommunicationsSchema = migrateCommunicationsSchema;
 
     function loadUsers() {
-        if (!AP.canManageUsers()) return;
+        if (!AP.hasPermission('users.create') && !AP.hasPermission('users.edit') && !AP.hasPermission('users.read')) return;
         window.db.collection('usuarios').get().then(function(snap) {
             AP.users = snap.docs.map(function(d) {
                 var data = d.data();

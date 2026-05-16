@@ -167,7 +167,7 @@
 
             // MF3.4 — auto-routing: assign new unassigned docs based on rules
             try {
-                if (AP.isSuperAdmin && AP.isSuperAdmin()) {
+                if (AP.hasPermission && AP.hasPermission('*')) {
                     snap.docChanges().forEach(function (chg) {
                         if (chg.type !== 'added') return;
                         var d = chg.doc.data();
@@ -604,8 +604,8 @@
                     return dot + AP.escapeHtml(msg);
                 })() + '</td>' +
                 '<td style="white-space:nowrap;">' +
-                    (AP.RBAC.canManageAppointment() ? '<button class="btn btn-sm btn-ghost" data-action="manageAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Gestionar">Gestionar</button>' : '') +
-                    (AP.RBAC.canDeleteAppointment() ? ' <button class="btn btn-sm btn-danger" data-action="deleteAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Eliminar">&times;</button>' : '') +
+                    (AP.hasPermission('appointments.edit') ? '<button class="btn btn-sm btn-ghost" data-action="manageAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Gestionar">Gestionar</button>' : '') +
+                    (AP.hasPermission('appointments.delete') ? ' <button class="btn btn-sm btn-danger" data-action="deleteAppointment" data-id="' + AP.escapeHtml(a._docId) + '" title="Eliminar">&times;</button>' : '') +
                 '</td>' +
             '</tr>';
         }).join('');
@@ -621,7 +621,7 @@
 
     // ========== DELETE APPOINTMENT ==========
     function deleteAppointment(docId) {
-        if (!AP.RBAC.canDeleteAppointment()) { AP.toast('Solo Super Admin puede eliminar solicitudes', 'error'); return; }
+        if (!AP.hasPermission('appointments.delete')) { AP.toast('Solo Super Admin puede eliminar solicitudes', 'error'); return; }
         if (!confirm('Eliminar esta solicitud? Esta accion no se puede deshacer.')) return;
         window.db.collection('solicitudes').doc(docId).delete().then(function() {
             AP.toast('Solicitud eliminada');
@@ -1067,7 +1067,7 @@
         saveAppStatusBtn.addEventListener('click', function() {
             var docId = $('amDocId').value;
             if (!docId) return;
-            if (!AP.isEditorOrAbove() && !AP.isSuperAdmin()) { AP.toast('Sin permisos', 'error'); return; }
+            if (!AP.hasPermission('appointments.edit')) { AP.toast('Sin permisos', 'error'); return; }
 
             var updateData = {
                 estado: $('amEstado').value,
@@ -1149,7 +1149,7 @@
     var btnCreateIA = $('btnCreateInternalAppt');
     if (btnCreateIA) {
         btnCreateIA.addEventListener('click', function() {
-            if (!AP.isEditorOrAbove() && !AP.isSuperAdmin()) { AP.toast('Sin permisos para crear solicitudes', 'error'); return; }
+            if (!AP.hasPermission('appointments.create') && !AP.hasPermission('appointments.edit')) { AP.toast('Sin permisos para crear solicitudes', 'error'); return; }
             // Set default date to tomorrow
             var tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1326,7 +1326,7 @@
 
     // ========== DAY MANAGER (CLICK ON CALENDAR DAY) ==========
     function openDayManager(dateStr) {
-        if (!AP.isSuperAdmin()) { AP.toast('Solo Super Admin puede gestionar bloqueos', 'error'); return; }
+        if (!AP.hasPermission('*')) { AP.toast('Solo Super Admin puede gestionar bloqueos', 'error'); return; }
 
         var dateObj = new Date(dateStr + 'T12:00:00');
         var dateLabel = dateObj.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -1513,7 +1513,7 @@
     var btnSaveAvail = $('btnSaveAvailability');
     if (btnSaveAvail) {
         btnSaveAvail.addEventListener('click', function() {
-            if (!AP.isSuperAdmin()) { AP.toast('Solo Super Admin puede cambiar disponibilidad', 'error'); return; }
+            if (!AP.hasPermission('*')) { AP.toast('Solo Super Admin puede cambiar disponibilidad', 'error'); return; }
             var startHour = parseInt($('availStartHour').value, 10);
             var endHour = parseInt($('availEndHour').value, 10);
             var interval = $('availInterval') ? parseInt($('availInterval').value, 10) : 30;

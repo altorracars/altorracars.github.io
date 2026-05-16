@@ -4,6 +4,13 @@
     var AP = window.AP;
     var $ = AP.$;
 
+    // §61.R8 PENDIENTE-B — Helpers locales canónicos para reducir verbosidad.
+    // Reemplazan AP.canCreateOrEditInventory / AP.canDeleteInventory / AP.isSuperAdmin
+    // que están @deprecated desde §67. Mapping table en CLAUDE.md §67.3.
+    function _canEditInv()    { return AP.hasPermission('vehicles.create') || AP.hasPermission('vehicles.edit'); }
+    function _canDeleteInv()  { return AP.hasPermission('vehicles.delete'); }
+    function _isSuper()       { return AP.hasPermission('*'); }
+
     // ========== VEHICLE AUDIT TRAIL ==========
     // Returns current user info for audit fields
     function getAuditUser() {
@@ -142,10 +149,10 @@
         var actions = '';
         actions += '<button class="v-act v-act--info" data-action="previewVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Vista previa"><i data-lucide="eye"></i></button>';
         actions += '<button class="v-act v-act--info" data-action="showAuditTimeline" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Historial"><i data-lucide="clock-3"></i></button>';
-        if (AP.canCreateOrEditInventory()) {
+        if (_canEditInv()) {
             actions += '<span class="v-act-sep"></span>';
             actions += '<button class="v-act v-act--gold' + (v.destacado ? ' v-act--active' : '') + '" data-action="toggleDestacado" data-id="' + AP.escapeHtml(String(v.id)) + '" title="' + (v.destacado ? 'Quitar destacado' : 'Destacar') + '"><i data-lucide="star"></i></button>';
-            if (esVendido && !AP.isSuperAdmin()) {
+            if (esVendido && !_isSuper()) {
                 actions += '<button class="v-act" disabled title="Solo Super Admin edita vendidos"><i data-lucide="pencil"></i></button>';
             } else {
                 actions += '<button class="v-act v-act--success" data-action="editVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Editar"><i data-lucide="pencil"></i></button>';
@@ -155,7 +162,7 @@
                 actions += '<button class="v-act v-act--operation" data-action="markAsSold" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Gestionar operacion"><i data-lucide="handshake"></i></button>';
             }
         }
-        if (AP.canDeleteInventory()) {
+        if (_canDeleteInv()) {
             actions += '<span class="v-act-sep"></span>';
             actions += '<button class="v-act v-act--danger" data-action="deleteVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
         }
@@ -308,7 +315,7 @@
 
     // ========== REORDER MODE TOGGLE ==========
     function toggleReorderMode() {
-        if (!AP.canCreateOrEditInventory()) {
+        if (!_canEditInv()) {
             AP.toast('No tienes permisos para reordenar vehiculos', 'error');
             return;
         }
@@ -792,7 +799,7 @@
 
     // ========== MODAL EVENT LISTENERS ==========
     $('btnAddVehicle').addEventListener('click', function() {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos para crear vehiculos', 'error'); return; }
+        if (!_canEditInv()) { AP.toast('No tienes permisos para crear vehiculos', 'error'); return; }
         $('modalTitle').textContent = 'Agregar Vehiculo';
         $('vId').value = '';
         $('vCodigoUnico').value = '';
@@ -819,12 +826,12 @@
 
     // ========== EDIT VEHICLE ==========
     function editVehicle(id) {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos para editar vehiculos', 'error'); return; }
+        if (!_canEditInv()) { AP.toast('No tienes permisos para editar vehiculos', 'error'); return; }
         var v = AP.vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
 
         // Fase 22: Proteccion vehiculos vendidos
-        if (v.estado === 'vendido' && !AP.isSuperAdmin()) {
+        if (v.estado === 'vendido' && !_isSuper()) {
             AP.toast('Este vehiculo esta vendido. Solo Super Admin puede editarlo.', 'error');
             return;
         }
@@ -879,7 +886,7 @@
         estadoSelect.disabled = false;
         estadoSelect.style.opacity = '';
         if (v.estado === 'vendido') {
-            if (AP.isSuperAdmin()) {
+            if (_isSuper()) {
                 // Super admin can edit but show warning
                 var warn = document.createElement('div');
                 warn.id = 'soldProtectionWarning';
@@ -918,7 +925,7 @@
 
     // F10.3: Duplicate vehicle
     function duplicateVehicle(id) {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canEditInv()) { AP.toast('No tienes permisos', 'error'); return; }
         var v = AP.vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
         editVehicle(id);
@@ -1058,19 +1065,19 @@
     }
 
     $('saveVehicle').addEventListener('click', function() {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canEditInv()) { AP.toast('No tienes permisos', 'error'); return; }
         if (!validateAndHighlightFields()) { AP.toast('Completa los campos requeridos marcados en rojo', 'error'); return; }
 
         // Fase 22: Proteccion vehiculos vendidos en save
         var _editingId = $('vId').value ? parseInt($('vId').value, 10) : null;
         if (_editingId) {
             var _originalVehicle = AP.vehicles.find(function(v) { return v.id === _editingId; });
-            if (_originalVehicle && _originalVehicle.estado === 'vendido' && !AP.isSuperAdmin()) {
+            if (_originalVehicle && _originalVehicle.estado === 'vendido' && !_isSuper()) {
                 AP.toast('No puedes modificar un vehiculo vendido. Contacta al Super Admin.', 'error');
                 return;
             }
             // Solo super_admin puede revertir estado vendido
-            if (_originalVehicle && _originalVehicle.estado === 'vendido' && $('vEstado').value !== 'vendido' && !AP.isSuperAdmin()) {
+            if (_originalVehicle && _originalVehicle.estado === 'vendido' && $('vEstado').value !== 'vendido' && !_isSuper()) {
                 AP.toast('Solo Super Admin puede cambiar el estado de un vehiculo vendido.', 'error');
                 return;
             }
@@ -1078,7 +1085,7 @@
         // Prevenir que editores asignen estado vendido directamente (debe usar Gestionar Operacion)
         if ($('vEstado').value === 'vendido') {
             var _wasVendido = _editingId && AP.vehicles.find(function(v) { return v.id === _editingId && v.estado === 'vendido'; });
-            if (!_wasVendido && !AP.isSuperAdmin()) {
+            if (!_wasVendido && !_isSuper()) {
                 AP.toast('Para marcar como vendido usa "Gestionar Operacion". No se puede cambiar manualmente.', 'error');
                 return;
             }
@@ -1231,7 +1238,7 @@
 
     // ========== DELETE VEHICLE ==========
     function deleteVehicleFn(id) {
-        if (!AP.canDeleteInventory()) { AP.toast('Solo un Super Admin puede eliminar vehiculos', 'error'); return; }
+        if (!_canDeleteInv()) { AP.toast('Solo un Super Admin puede eliminar vehiculos', 'error'); return; }
         var v = AP.vehicles.find(function(x) { return x.id === id; });
         if (!v) return;
         AP.deleteTargetId = id;
@@ -1243,7 +1250,7 @@
     $('cancelDelete').addEventListener('click', function() { $('deleteModal').classList.remove('active'); AP.deleteTargetId = null; });
     $('confirmDelete').addEventListener('click', function() {
         if (!AP.deleteTargetId) return;
-        if (!AP.canDeleteInventory()) { AP.toast('Sin permisos', 'error'); return; }
+        if (!_canDeleteInv()) { AP.toast('Sin permisos', 'error'); return; }
         var btn = $('confirmDelete');
         btn.disabled = true;
         btn.textContent = 'Eliminando...';
@@ -1798,7 +1805,7 @@
 
     // Fase 18: Open modal with a restored draft (called from admin-panel.js)
     function restoreAndOpenDraft(snap) {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos para editar vehiculos', 'error'); return; }
+        if (!_canEditInv()) { AP.toast('No tienes permisos para editar vehiculos', 'error'); return; }
         $('modalTitle').textContent = 'Continuar Borrador';
         $('vId').value = snap.vId || '';
         $('vCodigoUnico').value = '';
@@ -1890,7 +1897,7 @@
 
     // ========== TOGGLE DESTACADO (estrella en tabla) ==========
     function toggleDestacadoFn(id) {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('Sin permisos.', 'error'); return; }
+        if (!_canEditInv()) { AP.toast('Sin permisos.', 'error'); return; }
         var vehicle = AP.vehicles.find(function(v) { return v.id === id; });
         if (!vehicle) return;
         var newVal = !vehicle.destacado; /* destacado is the single source of truth */
@@ -1966,7 +1973,7 @@
                         html += '</div>';
 
                         // Revert button (only for edits with from values, super_admin only)
-                        if (AP.isSuperAdmin() && e.action === 'edited') {
+                        if (_isSuper() && e.action === 'edited') {
                             var hasRevertable = e.changes.some(function(c) { return c.from !== null && c.from !== undefined; });
                             if (hasRevertable) {
                                 html += '<button class="btn btn-ghost btn-sm audit-revert-btn" data-action="revertAuditEntry" data-vehicle-id="' + vehicleId + '" data-audit-id="' + doc.id + '" style="margin-top:0.35rem;font-size:0.75rem;color:var(--admin-warning);" title="Revertir estos cambios"><i data-lucide="undo-2" style="width:12px;height:12px;"></i> Revertir</button>';
@@ -1995,7 +2002,7 @@
     }
 
     function revertAuditEntry(vehicleId, auditId) {
-        if (!AP.isSuperAdmin()) { AP.toast('Solo Super Admin puede revertir cambios', 'error'); return; }
+        if (!_isSuper()) { AP.toast('Solo Super Admin puede revertir cambios', 'error'); return; }
         if (!confirm('¿Revertir estos cambios? El vehiculo volvera a los valores anteriores de los campos modificados.')) return;
 
         var vehicleRef = window.db.collection('vehiculos').doc(String(vehicleId));
@@ -2116,7 +2123,7 @@
 
     var btnBatchDel = $('btnBatchDeleteVehicles');
     if (btnBatchDel) btnBatchDel.addEventListener('click', function() {
-        if (!AP.canDeleteInventory()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canDeleteInv()) { AP.toast('No tienes permisos', 'error'); return; }
         var ids = [];
         document.querySelectorAll('.vehicle-cb:checked').forEach(function(cb) { ids.push(parseInt(cb.getAttribute('data-vid'), 10)); });
         if (ids.length === 0) return;

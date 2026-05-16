@@ -97,7 +97,7 @@
                         '<button class="btn btn-ghost btn-sm" data-action="toggleBannerActive" data-id="' + docId + '" title="' + (b.active ? 'Desactivar' : 'Activar') + '">' +
                             (b.active ? '<i data-lucide="eye-off"></i> Ocultar' : '<i data-lucide="eye"></i> Mostrar') +
                         '</button>' +
-                        (AP.RBAC.canDeleteBanner() ?
+                        (AP.hasPermission('banners.delete') ?
                         '<button class="btn btn-ghost btn-sm" data-action="deleteBannerConfirm" data-id="' + docId + '" title="Eliminar" style="color:var(--admin-danger);">' +
                             '<i data-lucide="trash-2"></i> Eliminar' +
                         '</button>' : '') +
@@ -211,7 +211,7 @@
 
     // ========== SAVE BANNER ==========
     function saveBanner() {
-        if (!AP.RBAC.canCreateBanner()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!AP.hasPermission('banners.create')) { AP.toast('No tienes permisos', 'error'); return; }
 
         var title = $('bannerTitle').value.trim();
         if (!title) { AP.toast('El titulo es requerido', 'error'); return; }
@@ -276,7 +276,7 @@
 
     // ========== EDIT BANNER ==========
     function editBanner(docId) {
-        if (!AP.RBAC.canEditBanner()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!AP.hasPermission('banners.edit')) { AP.toast('No tienes permisos', 'error'); return; }
 
         var banner = AP.banners.find(function(b) { return b._docId === docId; });
         if (!banner) return;
@@ -307,7 +307,7 @@
 
     // ========== TOGGLE ACTIVE ==========
     function toggleBannerActive(docId) {
-        if (!AP.RBAC.canEditBanner()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!AP.hasPermission('banners.edit')) { AP.toast('No tienes permisos', 'error'); return; }
 
         var banner = AP.banners.find(function(b) { return b._docId === docId; });
         if (!banner) return;
@@ -325,7 +325,7 @@
 
     // ========== DELETE BANNER ==========
     function deleteBannerConfirm(docId) {
-        if (!AP.RBAC.canDeleteBanner()) { AP.toast('Solo super_admin puede eliminar banners', 'error'); return; }
+        if (!AP.hasPermission('banners.delete')) { AP.toast('Solo super_admin puede eliminar banners', 'error'); return; }
         _deleteBannerId = docId;
         $('bannerDeleteConfirm').classList.add('active');
     }
@@ -375,7 +375,7 @@
 
     // ========== EVENT LISTENERS ==========
     $('btnAddBanner').addEventListener('click', function() {
-        if (!AP.RBAC.canCreateBanner()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!AP.hasPermission('banners.create')) { AP.toast('No tienes permisos', 'error'); return; }
         $('bannerModalTitle').textContent = 'Nuevo Banner';
         closeBannerModal(); // Reset form
         toggleCategoryField();

@@ -114,7 +114,7 @@
                     '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.75rem;">' +
                         '<div><h4 style="margin:0;color:var(--admin-gold);">' + AP.escapeHtml(d.nombre || 'Sin nombre') + '</h4>' +
                         '<small style="color:var(--admin-text-muted);">' + AP.escapeHtml(d.ciudad || '') + (d.direccion ? ' - ' + AP.escapeHtml(d.direccion) : '') + '</small></div>' +
-                        (AP.isSuperAdmin() ? '<button class="v-act v-act--success" data-action="editDealer" data-id="' + AP.escapeHtml(d._docId) + '" title="Editar"><i data-lucide="pencil"></i></button>' : '') +
+                        (AP.hasPermission('dealers.edit') ? '<button class="v-act v-act--success" data-action="editDealer" data-id="' + AP.escapeHtml(d._docId) + '" title="Editar"><i data-lucide="pencil"></i></button>' : '') +
                     '</div>' +
                     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;text-align:center;">' +
                         '<div style="background:rgba(63,185,80,0.1);padding:0.5rem;border-radius:8px;"><div style="font-size:1.25rem;font-weight:800;color:var(--admin-success);">' + active + '</div><div style="font-size:0.7rem;color:var(--admin-text-muted);">Activos</div></div>' +
@@ -134,7 +134,7 @@
     var btnAddDealer = $('btnAddDealer');
     if (btnAddDealer) {
         btnAddDealer.addEventListener('click', function() {
-            if (!AP.RBAC.canManageDealers()) { AP.toast('Solo Super Admin puede gestionar concesionarios', 'error'); return; }
+            if (!AP.hasPermission('dealers.edit')) { AP.toast('Solo Super Admin puede gestionar concesionarios', 'error'); return; }
             $('dealerModalTitle').textContent = 'Agregar Aliado';
             $('dOriginalId').value = '';
             $('dealerForm').reset();
@@ -149,7 +149,7 @@
     if (cancelDealerModalEl) cancelDealerModalEl.addEventListener('click', function() { $('dealerModal').classList.remove('active'); });
 
     function editDealer(docId) {
-        if (!AP.isSuperAdmin()) { AP.toast('Sin permisos', 'error'); return; }
+        if (!AP.hasPermission('dealers.edit')) { AP.toast('Sin permisos', 'error'); return; }
         var d = AP.dealers.find(function(x) { return x._docId === docId; });
         if (!d) return;
         $('dealerModalTitle').textContent = 'Editar Aliado';
@@ -166,7 +166,7 @@
     var saveDealerBtn = $('saveDealer');
     if (saveDealerBtn) {
         saveDealerBtn.addEventListener('click', function() {
-            if (!AP.isSuperAdmin()) { AP.toast('Sin permisos', 'error'); return; }
+            if (!AP.hasPermission('dealers.create') && !AP.hasPermission('dealers.edit')) { AP.toast('Sin permisos', 'error'); return; }
             var nombre = $('dNombre').value.trim();
             if (!nombre) { AP.toast('Nombre es requerido', 'error'); return; }
 

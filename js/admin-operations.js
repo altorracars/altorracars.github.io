@@ -103,7 +103,7 @@
 
     // ========== MARK AS SOLD ==========
     function markAsSold(vehicleId) {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('Sin permisos', 'error'); return; }
+        if (!AP.hasPermission('vehicles.create') && !AP.hasPermission('vehicles.edit')) { AP.toast('Sin permisos', 'error'); return; }
         var v = AP.vehicles.find(function(x) { return x.id === vehicleId; });
         if (!v) return;
 
@@ -289,7 +289,7 @@
         importFile.addEventListener('change', function() {
             var file = this.files[0];
             if (!file) return;
-            if (!AP.isSuperAdmin()) { AP.toast('Solo Super Admin puede importar datos', 'error'); return; }
+            if (!AP.hasPermission('*')) { AP.toast('Solo Super Admin puede importar datos', 'error'); return; }
 
             // F6.10: Validate MIME type
             if (file.type && file.type !== 'application/json' && file.type !== 'text/plain') {
@@ -492,7 +492,7 @@
         var saveBtn  = $('btnSaveGhToken');
         var clearBtn = $('btnClearGhToken');
         var statusEl = $('ghTokenStatus');
-        if (!section || !AP.isSuperAdmin()) return;
+        if (!section || !AP.hasPermission('*')) return;
         if (section.dataset.initialized) return; // evitar duplicados
         section.dataset.initialized = '1';
         section.style.display = 'block';
@@ -530,7 +530,7 @@
     var btnRegenSeo = $('btnRegenerateSeo');
     if (btnRegenSeo) {
         btnRegenSeo.addEventListener('click', function() {
-            if (!AP.isSuperAdmin()) {
+            if (!AP.hasPermission('*')) {
                 AP.toast('Solo Super Admin puede regenerar paginas SEO', 'error');
                 return;
             }

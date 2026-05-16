@@ -53,20 +53,15 @@
     }
 
     /**
-     * §61.R5 — Refactor demostración: chequea wildcard '*' (super_admin)
-     * usando la API canónica AP.hasPermission. Reemplaza el legacy
-     * AP.isSuperAdmin() que está @deprecated. Mantiene fallback a
-     * AP.isSuperAdmin() por seguridad si rbac-catalog aún no cargó.
+     * §61.R8 (PENDIENTE-B, 2026-05-16) — Helper local canónico.
+     * Chequea wildcard '*' usando AP.hasPermission directo.
+     * Eliminado fallback legacy a AP.isSuperAdmin() — toda la cadena
+     * de carga (rbac-catalog.js + admin-state.js) está garantizada
+     * antes de cualquier callsite de admin-roles.js.
      */
     function isSuperAdmin() {
-        if (window.AP && typeof window.AP.hasPermission === 'function') {
-            // Path A canónico: chequear wildcard '*' directo.
-            // Pero hasPermission devuelve false si currentUserPermissions
-            // está vacío (legacy users pre-migración), así que también
-            // caemos al check legacy.
-            if (window.AP.hasPermission('*')) return true;
-        }
-        return !!(window.AP && window.AP.isSuperAdmin && window.AP.isSuperAdmin());
+        return !!(window.AP && typeof window.AP.hasPermission === 'function'
+                  && window.AP.hasPermission('*'));
     }
 
     function refreshIcons(scope) {

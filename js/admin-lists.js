@@ -81,7 +81,7 @@
     }
 
     function saveList(listKey) {
-        if (!AP.isSuperAdmin()) { AP.toast('Solo Super Admin puede modificar listas', 'error'); return; }
+        if (!AP.hasPermission('*')) { AP.toast('Solo Super Admin puede modificar listas', 'error'); return; }
         var container = $('list-items-' + listKey);
         if (!container) return;
 

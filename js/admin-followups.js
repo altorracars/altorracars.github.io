@@ -49,7 +49,7 @@
             }
         });
         // Mark as notified (best-effort — only super_admin to avoid race)
-        if (AP.isSuperAdmin && AP.isSuperAdmin()) {
+        if (AP.hasPermission && AP.hasPermission('*')) {
             var updated = AP.followups.map(function (fu) {
                 return triggered.indexOf(fu) !== -1 ? Object.assign({}, fu, { notified: true }) : fu;
             });
@@ -84,7 +84,7 @@
     var attempts = 0;
     var int = setInterval(function () {
         attempts++;
-        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.auth && window.auth.currentUser && AP.isAuthenticatedAdmin && AP.isAuthenticatedAdmin()) {
             startListener();
             // Check pending periodically
             setInterval(checkPending, 60 * 1000);

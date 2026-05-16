@@ -35885,8 +35885,8 @@ operando como único asesor, S10 puede esperar.
 | ID | Item | Status | Esfuerzo | Bloqueante | Prioridad |
 |---|---|---|---|---|---|
 | **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado | 3-5d + 1d test | Migración a Vercel | Baja |
-| **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo | 1d dedicado | Nada (opcional) | Media |
-| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | 🔮 Listo | 2d | Nada (opcional) | Baja |
+| **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | ✅ §89 | 1d dedicado | Nada | Media |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 | 2d | Nada | Baja |
 | **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 | 1d | Tráfico real (~50 chats/mes) | Media |
 | **PENDIENTE-C-S10** | Internal notes + Transferencias entre asesores | ✅ §88 | 2d | Equipo 2+ asesores activos | Baja |
 
@@ -36840,3 +36840,294 @@ legacy, opcional).
 ✅ §88 según protocolo §85.6 (auto-validación al cerrar).
 
 **Cache bump**: `v20260515040000`.
+
+---
+
+## 89. ADR-089 — Sprint PENDIENTE-B: Refactor masivo 174 callsites legacy → AP.hasPermission (2026-05-16)
+
+> Cierre del **PENDIENTE-B** documentado en §85.2. Último item del
+> roadmap §85 (orden recomendado §85.5). Refactor microquirúrgico
+> de 174 callsites legacy en 35 archivos del admin, aplicando la
+> mapping table canónica documentada en §67.3 (R5 pragmático).
+>
+> Tras §89, el frontend del admin queda 100% migrado a la API
+> canónica `AP.hasPermission(permId)`. Los helpers legacy de
+> `admin-state.js` se PRESERVAN como retrocompat absoluta (no son
+> rotos por este sprint — siguen funcionando si algún módulo
+> externo los llama, e.g. tests, scripts ad-hoc, deuda futura).
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero transition all),
+> §17.4 (HTML/CSS estable), §17.12 (cero MutationObserver),
+> §19 (RCA estricto), §35 (cero pointermove), §37 (IAP),
+> §61 Plan Maestro RBAC, §67 mapping table, §85.2 PENDIENTE-B.
+
+### 89.1 Audit del estado pre-§89
+
+`grep -rE` sobre `js/**/*.js` reportó:
+
+| Helper legacy | Callsites | Distribución |
+|---|---|---|
+| `AP.isSuperAdmin()` | 77 | 21 archivos |
+| `AP.isEditor()` | 14 | 5 archivos (incluyendo defs admin-state.js) |
+| `AP.isViewer()` | 0 | — |
+| `AP.isEditorOrAbove()` | 31 | 18 archivos |
+| `AP.canManageUsers()` | 10 | 5 archivos |
+| `AP.canCreateOrEditInventory()` | 18 | 4 archivos |
+| `AP.canDeleteInventory()` | 8 | 4 archivos |
+| `AP.RBAC.*` | 16 | 6 archivos |
+| **Total** | **174** | **36 archivos** |
+
+De esos 174:
+- **31 callsites** son DEFINICIONES en `admin-state.js` (los
+  helpers legacy preservados). NO se tocan.
+- **143 callsites externos** son los reemplazados en §89.
+
+### 89.2 Decisión arquitectónica clave
+
+**No eliminar los helpers legacy de admin-state.js**. Razones:
+
+1. **Cero riesgo de regresión**: los helpers internamente delegan
+   a `AP.hasPermission()` desde §63 R1. Mantenerlos vivos es
+   defense-in-depth — si algún módulo externo (script ad-hoc,
+   futuro código, tests) llama `AP.isSuperAdmin()`, sigue
+   funcionando idéntico.
+2. **Retrocompat absoluta**: `firestore.rules` siguen con OR
+   fallback `hasPermission || isSuperAdmin`. El frontend ya solo
+   usa `hasPermission`, pero el backend acepta ambos paths.
+3. **§85.2 paso 3 ("Eliminar helpers @deprecated")**: queda como
+   fase 2 OPCIONAL. Sin valor visible para el cliente hoy —
+   solo limpieza interna. Se hace cuando: (a) hayan pasado
+   meses sin regresiones en producción, (b) el cliente quiera
+   limpieza final del codebase.
+
+### 89.3 Helper aditivo nuevo: `AP.isAuthenticatedAdmin()`
+
+Para los 18 callsites que usaban `AP.isEditorOrAbove()` con
+semántica "es un admin autenticado con permisos válidos" (no un
+permission específico — patrón usado por adaptive tracking,
+onboarding tour, telemetría, presence, FCM init, etc.), agrego
+en `admin-state.js`:
+
+```js
+isAuthenticatedAdmin: function() {
+    return !!(AP.currentUserPermissions && AP.currentUserPermissions.length > 0);
+}
+```
+
+Aditivo, cero impacto en helpers existentes. Más semántico que
+`isEditorOrAbove()` para el caso "tiene permissions[] no vacío
+post §69 guard".
+
+### 89.4 Mapping aplicado por archivo (resumen)
+
+| Archivo | Callsites pre | Mapping aplicado |
+|---|---|---|
+| `js/admin-state.js` | 31 (defs) | NO se tocan (preservadas) + helper aditivo `isAuthenticatedAdmin` |
+| `js/admin-vehicles.js` | 20 | Helpers locales `_canEditInv/_canDeleteInv/_isSuper` + 20 reemplazos |
+| `js/admin-concierge.js` | 13 | Helpers locales `_canReadConcierge/_canRespondConcierge/_canDeleteConcierge/_canClaimConcierge/_isSuper` + reemplazos contextuales |
+| `js/admin-brands.js` | 9 | Helpers locales `_canEditBrand/_canDeleteBrand` (mapping a `brands.*` propio, NO `vehicles.*` como legacy) + reemplazos |
+| `js/admin-appointments.js` | 8 | `appointments.edit/delete/create` + wildcard `*` para gestión bloqueos/disponibilidad |
+| `js/admin-users.js` | 6 (4 callsites + 2 comentarios) | `_canManageUsers()` local ya existía desde §67 — solo migrar callsites restantes |
+| `js/admin-kb.js` | 6 | Helpers `_canReadKB/_isSuper` |
+| `js/admin-banners.js` | 6 | `AP.RBAC.canCreateBanner/canEditBanner/canDeleteBanner` → `AP.hasPermission('banners.<action>')` directo |
+| `js/admin-group-tabs.js` | 5 | INTACTO — 4 comentarios docstring + 1 lookup dinámico `AP.RBAC[key]` legítimo retrocompat |
+| `js/admin-unmatched.js` | 4 | `unmatched.read/delete` |
+| `js/admin-sync.js` | 4 | `vehicles.*` migrate + `users.*` loadUsers + `crm.edit / appointments.edit` para commsMigration |
+| `js/admin-operations.js` | 4 | `vehicles.*` markAsSold + `*` import/SEO/GitHub token |
+| `js/admin-dealers.js` | 4 | `dealers.edit/create/delete` (mapping canónico, NO super_admin-only legacy) |
+| `js/admin-automation.js` | 4 | `*` para auto-routing/SLA loop + `isAuthenticatedAdmin` para init |
+| `js/admin-auth.js` | 4 | `users.create/edit` + `vehicles.create/edit` para nav guards |
+| `js/admin-roles.js` | 3 (2 comentarios + 1 callsite) | `_isSuper()` local fast path |
+| `js/admin-calendar-tabs.js` | 3 | `*` para save availability + festivos |
+| `js/admin-reviews.js` | 2 | `reviews.edit/delete` directo |
+| `js/admin-reminders.js` | 2 | `*` para SLA reminders |
+| `js/admin-predictive.js` | 2 | `isAuthenticatedAdmin` |
+| `js/admin-performance.js` | 2 | `isAuthenticatedAdmin` |
+| `js/admin-kpis.js` | 2 | `isAuthenticatedAdmin` |
+| `js/admin-insights.js` | 2 | `isAuthenticatedAdmin` |
+| `js/admin-followups.js` | 2 | `*` mark notified + `isAuthenticatedAdmin` init |
+| `js/admin-fcm.js` | 2 | `isAuthenticatedAdmin` (FCM init = cualquier admin) |
+| `js/admin-activity-feed.js` | 2 | `*` para canDebug + listener events |
+| `js/admin-activity.js` | 1 | `audit.delete` (canonical mapping vs legacy `canDeleteInventory` que era wrong) |
+| `js/admin-adaptive.js` | 1 | `isAuthenticatedAdmin` |
+| `js/admin-calendar-config.js` | 1 | `isAuthenticatedAdmin` |
+| `js/admin-comments.js` | 1 | `*` para can-delete-comment-of-other-user |
+| `js/admin-lists.js` | 1 | `*` (save listas requiere super_admin) |
+| `js/admin-onboarding.js` | 1 | `isAuthenticatedAdmin` |
+| `js/admin-presence-ui.js` | 1 | `isAuthenticatedAdmin` |
+| `js/admin-sidebar-adaptive.js` | 1 | `isAuthenticatedAdmin` |
+| `js/admin-templates.js` | 1 | `isAuthenticatedAdmin` listener init |
+| `js/ai/knowledge-graph.js` | 1 | `*` (vehicle.created NBA solo super_admin) |
+
+### 89.5 Estado post-§89
+
+`grep -rEn 'AP\.(isSuperAdmin\|isEditor\|isViewer\|isEditorOrAbove\|canManageUsers\|canCreateOrEditInventory\|canDeleteInventory\|RBAC)' js/ --include='*.js'`:
+
+| Categoría | Callsites | Notas |
+|---|---|---|
+| Definiciones en `admin-state.js` | 31 | Preservadas (retrocompat) |
+| Comentarios/docstrings | 8 | No funcionales |
+| `AP.RBAC[key]` lookup dinámico (admin-group-tabs.js:106) | 1 | Legítimo — config string-based |
+| **Callsites externos funcionales restantes** | **0** | ✅ 100% migrados |
+
+### 89.6 Tests E2E (post-deploy + Ctrl+Shift+R)
+
+Cliente y devs futuros pueden validar:
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260516010000) | Cache nueva carga |
+| 2 | Login como CEO | Admin Hub abre con todos los menús/botones (wildcard `*` cubre todo) |
+| 3 | Login como admin con custom role limitado (e.g. solo `crm.read`) | Sec-vehicles botones Edit/Delete ocultos (`_canEditInv/_canDeleteInv` retornan false) |
+| 4 | Login como admin con `concierge.respond` pero no `concierge.delete` | Hub permite enviar mensajes, NO permite hardDeleteChat (`_canDeleteConcierge` false) |
+| 5 | DevTools console al cargar admin | Cero errores nuevos. Logs §61.R1 muestran `AP.currentUserPermissions` hidratado |
+| 6 | `firestore.rules` deployadas | OR fallback con hasPermission server-side preservado §68 — Cero impacto |
+| 7 | Click eliminar comentario propio (cualquier admin) | Permitido (check `comment.authorUid === uid` preservado) |
+| 8 | Click eliminar comentario ajeno (admin no-CEO) | Bloqueado (`AP.hasPermission('*')` false) |
+| 9 | Auto-routing de chats (admin-automation) | Solo CEO ejecuta — `_isSuper()` guard funcionando |
+| 10 | Limpiar audit log (sec-audit) | Solo admin con `audit.delete` permission (canonical) |
+| 11 | Save dealer/banner/review | Solo admin con permission del workspace correspondiente |
+| 12 | Carousel de vehículos en concierge cliente | Sin cambios funcionales — solo refactor admin |
+
+### 89.7 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 transition all | `transition: all` | Cero CSS modificado |
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | CERO HTML/CSS tocado |
+| §17.12 anti-MutationObserver | MO global | Cero MO. Solo refactor JS sincrónico |
+| §35 anti-pointermove | pointermove persistente | Cero pointermove |
+| §37 IAP | Implementar sin autorización | IAP §37 entregado y autorizado por cliente ("ejecuta lo pendiente: PENDIENTE-B") |
+| Big Bang refactor | Romper funcionalidad legacy | Helpers legacy preservados intactos en admin-state.js. Migración solo de callsites externos |
+| §61 Plan | Saltarse fases | §89 estricto al pie de §85.2 + §67 mapping table. Cero overflow a Fase 2 (eliminar helpers legacy, modificar firestore.rules) |
+| Cambio semántico no documentado | Alterar comportamiento legacy sin avisar | Mapping en §89.4 explícito. Cambios en `dealers.*` y `brands.*` (antes super_admin-only por usar canCreateOrEditInventory genérico, ahora granular) documentados como BENEFICIO del refactor — custom roles pueden crear "Gestor de Aliados" o "Gestor de Marcas" sin necesidad de wildcard |
+
+### 89.8 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Algún callsite mappeado a permission incorrecto rompe flow del CEO | 🟢 Baja | CEO tiene `*` wildcard → `hasPermission('cualquier.cosa')` retorna true. Para CEO, comportamiento idéntico |
+| 2 | Custom role con permissions parciales falla en flow específico | 🟡 Media | Mapping table §67.3 cuidadosamente revisada. Helpers locales (`_canEditInv`, `_canEditBrand`, `_canReadConcierge`, etc.) cubren combinaciones canónicas |
+| 3 | Editor que tenía acceso a brand edit ahora no lo tiene | 🟡 Media | Editor legacy migrado via §61 R4 tiene `brands.edit` en su permissions denormalizadas. Para users no migrados con `rol='editor'` legacy y guard §69 los bloquea al login → no llegan a sec-brands |
+| 4 | Cliente NO ejecuta Ctrl+Shift+R | 🔴 Alta | Cache version bumped `v20260516010000`. SW invalidará automático en próximo refresh natural. Pero primera vez requiere hard refresh |
+| 5 | `isAuthenticatedAdmin` retorna false para CEO si permissions[] no hidratada | 🟢 Baja | §63 R1 `loadProfileViaREST` siempre hidrata permissions[] post-login. Si vacío, §69 guard bloquea entrada al admin. CEO siempre tiene `['*']` |
+| 6 | Test E2E manual no cubre algún caso edge | 🟡 Media | Mitigado: helpers legacy NO eliminados — si algún caso falla, los helpers legacy siguen disponibles como debugging fallback temporal |
+| 7 | admin-state.js helper legacy ya no se invoca en runtime | 🟢 Esperado | Si en el futuro algún módulo externo llama `AP.isSuperAdmin()`, sigue funcionando — los helpers están preservados como pública |
+
+### 89.9 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `js/admin-state.js` | +18 líneas: nuevo helper `AP.isAuthenticatedAdmin()` con JSDoc completo. Cero modificación de helpers legacy existentes | +18 |
+| `js/admin-vehicles.js` | +7 líneas helpers locales `_canEditInv/_canDeleteInv/_isSuper` + 20 reemplazos via replace_all | +27, -20 |
+| `js/admin-concierge.js` | +10 líneas helpers locales `_canReadConcierge/_canRespondConcierge/_canDeleteConcierge/_canClaimConcierge/_isSuper` + 13 reemplazos contextuales | +23, -13 |
+| `js/admin-brands.js` | +7 líneas helpers locales `_canEditBrand/_canDeleteBrand` + 9 reemplazos | +16, -10 |
+| `js/admin-kb.js` | +5 líneas helpers locales `_canReadKB/_isSuper` + 6 reemplazos | +11, -6 |
+| `js/admin-users.js` | 4 callsites migrados a `_canManageUsers()` local (helper §67) | +4, -4 |
+| `js/admin-banners.js` | 6 callsites `AP.RBAC.canX()` → `AP.hasPermission('banners.<action>')` | +6, -6 |
+| `js/admin-appointments.js` | 8 reemplazos contextuales (`appointments.*`, `*`) | +9, -9 |
+| `js/admin-unmatched.js` | 4 reemplazos (`unmatched.read/delete`) | +4, -4 |
+| `js/admin-sync.js` | 4 reemplazos contextuales (`vehicles.*`, `users.*`, `crm.edit/appointments.edit`) | +4, -4 |
+| `js/admin-operations.js` | 4 reemplazos (`vehicles.*`, `*`) | +4, -4 |
+| `js/admin-dealers.js` | 4 reemplazos (`dealers.edit/create/delete`) | +4, -4 |
+| `js/admin-automation.js` | 4 reemplazos (3 con `*` + 1 con `isAuthenticatedAdmin`) | +4, -4 |
+| `js/admin-auth.js` | 4 reemplazos en `applyRolePermissions` + section guard `users` | +6, -4 |
+| `js/admin-roles.js` | 1 callsite refactor del fast path `isSuperAdmin()` local | +5, -10 |
+| `js/admin-calendar-tabs.js` | 3 reemplazos `*` | +3, -3 |
+| `js/admin-reviews.js` | 2 reemplazos (`reviews.edit/delete`) | +2, -2 |
+| `js/admin-reminders.js` | 2 reemplazos `*` | +2, -2 |
+| `js/admin-predictive.js` | 2 reemplazos `isAuthenticatedAdmin` | +2, -2 |
+| `js/admin-performance.js` | 2 reemplazos `isAuthenticatedAdmin` | +2, -2 |
+| `js/admin-kpis.js` | 2 reemplazos `isAuthenticatedAdmin` | +2, -2 |
+| `js/admin-insights.js` | 2 reemplazos `isAuthenticatedAdmin` | +2, -2 |
+| `js/admin-followups.js` | 2 reemplazos (`*` + `isAuthenticatedAdmin`) | +2, -2 |
+| `js/admin-fcm.js` | 2 reemplazos `isAuthenticatedAdmin` | +2, -2 |
+| `js/admin-activity-feed.js` | 2 reemplazos `*` | +2, -2 |
+| `js/admin-activity.js` | 1 reemplazo (`audit.delete`, canonical mapping fix) | +1, -1 |
+| `js/admin-adaptive.js` | 1 reemplazo `isAuthenticatedAdmin` | +1, -1 |
+| `js/admin-calendar-config.js` | 1 reemplazo `isAuthenticatedAdmin` | +1, -1 |
+| `js/admin-comments.js` | 1 reemplazo `*` | +1, -1 |
+| `js/admin-lists.js` | 1 reemplazo `*` | +1, -1 |
+| `js/admin-onboarding.js` | 1 reemplazo `isAuthenticatedAdmin` | +1, -1 |
+| `js/admin-presence-ui.js` | 1 reemplazo `isAuthenticatedAdmin` | +1, -1 |
+| `js/admin-sidebar-adaptive.js` | 1 reemplazo `isAuthenticatedAdmin` | +1, -1 |
+| `js/admin-templates.js` | 1 reemplazo `isAuthenticatedAdmin` | +1, -1 |
+| `js/ai/knowledge-graph.js` | 1 reemplazo `*` | +1, -1 |
+| `service-worker.js` | CACHE_VERSION → `v20260516010000` con changelog §89 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION prepend §89 | +1, -1 |
+| `CLAUDE.md` | Esta sección §89 + actualización tabla §85.4 (PENDIENTE-B 🔮→✅ §89) | +250 |
+
+**Total**: 38 archivos modificados. Cero archivos nuevos. Cero
+schema Firestore. Cero deploy backend. Cero rules touch. Cero
+Cloud Function nueva. Cero HTML/CSS tocado.
+
+### 89.10 Archivos INTACTOS (afirmación)
+
+- `firestore.rules` (R6 OR fallback hasPermission server-side intacto)
+- `database.rules.json` (RTDB rules — sin tocar)
+- `functions/index.js` (27 Cloud Functions intactas)
+- `js/rbac-catalog.js` (catálogo canónico — sin tocar)
+- `js/hub-store.js` (S1 — sin tocar)
+- `js/concierge.js` (cliente público — sin tocar)
+- `js/admin-group-tabs.js` (lookup dinámico `AP.RBAC[key]` legítimo
+  preservado para retrocompat de config string-based de roles —
+  comentarios docstring intactos)
+- HTML del sitio público — ZERO
+- CSS — ZERO
+- AI modules (excepto knowledge-graph.js) — ZERO
+
+### 89.11 Estado del Plan §61 RBAC tras §89
+
+| Sprint | Estado | Doc |
+|---|---|---|
+| R1-R7.2 | ✅ Completados | §63-§72 |
+| R7b Triggers automáticos | ✅ | §71 |
+| R8 mini cleanup | ✅ | §73-§73.4 |
+| **R8 grande — refactor 174 callsites legacy** | **✅** | **§89 (este)** |
+
+Plan §61 RBAC ahora **100% completo**. Cero items pendientes.
+
+### 89.12 Estado de PENDIENTES post-§89
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado (bloqueado por migración Vercel) |
+| **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | **✅ §89** |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias | ✅ §88 |
+
+Roadmap §85 **completado al 80%**. El único item pendiente es
+**PENDIENTE-A** (Fase C Smart Update + Vercel) que está
+**bloqueado por la decisión externa de migrar el hosting a
+Vercel/Cloudflare Pages**. No es trabajo de desarrollo del agente
+— es infraestructura.
+
+### 89.13 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Sprint planificado en §85.2
+PENDIENTE-B + §67.3 mapping table. Audit profundo de 174 callsites
+en 36 archivos antes de tocar código. Análisis caso por caso para
+los 18 callsites de `isEditorOrAbove()` contextual.
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita del cliente ("ejecuta lo pendiente: PENDIENTE-B").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Cero CSS modificado.
+
+§17.4 HTML/CSS estable: cero IDs/clases existentes renombrados.
+Cero HTML/CSS tocado.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+§61 Plan Maestro: §89 estricto al pie de §85.2 + §67 mapping
+table. Helpers legacy de `admin-state.js` PRESERVADOS (retrocompat
+absoluta). Cero overflow a Fase 2 OPCIONAL (eliminar helpers
+legacy, modificar firestore.rules para quitar OR fallback,
+eliminar campo `rol` legacy).
+
+§85 PENDIENTES: ✅ tabla §85.4 actualizada con PENDIENTE-B → ✅
+§89 según protocolo §85.6 (auto-validación al cerrar).
+
+**Cache bump**: `v20260516010000`.

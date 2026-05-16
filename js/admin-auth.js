@@ -2250,11 +2250,13 @@
 
     function applyRolePermissions() {
         var usersNav = document.querySelector('.nav-item[data-section="users"]');
-        if (usersNav) usersNav.style.display = AP.canManageUsers() ? '' : 'none';
+        var canManageUsers = AP.hasPermission('users.create') || AP.hasPermission('users.edit');
+        if (usersNav) usersNav.style.display = canManageUsers ? '' : 'none';
         var btnAddVehicle = $('btnAddVehicle');
         var btnAddBrand   = $('btnAddBrand');
-        if (btnAddVehicle) btnAddVehicle.style.display = AP.canCreateOrEditInventory() ? '' : 'none';
-        if (btnAddBrand)   btnAddBrand.style.display   = AP.canCreateOrEditInventory() ? '' : 'none';
+        var canEditInv = AP.hasPermission('vehicles.create') || AP.hasPermission('vehicles.edit');
+        if (btnAddVehicle) btnAddVehicle.style.display = canEditInv ? '' : 'none';
+        if (btnAddBrand)   btnAddBrand.style.display   = canEditInv ? '' : 'none';
     }
 
     // ========== LOGIN FORM ==========
@@ -2488,7 +2490,7 @@
             // Esto evita el toast "No tienes permisos" falso al refrescar
             // como CEO antes que loadProfileViaREST complete.
             var profileReady = !!(AP.currentUserProfile);
-            if (section === 'users' && profileReady && !AP.canManageUsers()) {
+            if (section === 'users' && profileReady && !(AP.hasPermission('users.create') || AP.hasPermission('users.edit'))) {
                 AP.toast('No tienes permisos para acceder a esta seccion', 'error');
                 return;
             }

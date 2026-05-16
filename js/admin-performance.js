@@ -171,7 +171,7 @@
     }
 
     function refresh() {
-        if (!AP || !AP.isEditorOrAbove || !AP.isEditorOrAbove()) return;
+        if (!AP || !AP.isAuthenticatedAdmin || !AP.isAuthenticatedAdmin()) return;
         renderWidget();
     }
 
@@ -190,7 +190,7 @@
     var attempts = 0;
     var iv = setInterval(function () {
         attempts++;
-        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove()) {
+        if (window.auth && window.auth.currentUser && AP.isAuthenticatedAdmin && AP.isAuthenticatedAdmin()) {
             if (AP.users && AP.appointments) {
                 refresh();
                 clearInterval(iv);

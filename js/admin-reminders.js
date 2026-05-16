@@ -74,7 +74,7 @@
        CHECK CYCLE
        ═══════════════════════════════════════════════════════════ */
     function check() {
-        if (!AP.isSuperAdmin || !AP.isSuperAdmin()) return; // solo super_admin para no spam multi-tab
+        if (!AP.hasPermission || !AP.hasPermission('*')) return; // solo super_admin para no spam multi-tab
         if (!AP.appointments) return;
 
         var citas = AP.appointments.filter(function (a) {
@@ -162,7 +162,7 @@
     var attempts = 0;
     var bootIv = setInterval(function () {
         attempts++;
-        if (window.auth && window.auth.currentUser && AP.isSuperAdmin && AP.isSuperAdmin()) {
+        if (window.auth && window.auth.currentUser && AP.hasPermission && AP.hasPermission('*')) {
             // Espera que AP.appointments tenga datos
             if (AP.appointments && AP.appointments.length >= 0) {
                 check();

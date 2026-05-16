@@ -4,6 +4,12 @@
     var AP = window.AP;
     var $ = AP.$;
 
+    // §61.R8 PENDIENTE-B — Helpers locales canónicos (mapping §67.3).
+    // El código legacy reusaba canCreateOrEditInventory/canDeleteInventory
+    // de vehicles, pero el mapping canónico de brands es brands.* propio.
+    function _canEditBrand()   { return AP.hasPermission('brands.create') || AP.hasPermission('brands.edit'); }
+    function _canDeleteBrand() { return AP.hasPermission('brands.delete'); }
+
     // ========== LOGO URL RESOLVER ==========
     // Normalizes brand logo URLs: fixes path typos and .png → .webp for local files
     function resolveLogoUrl(url) {
@@ -43,7 +49,7 @@
     // ========== AUTO-MIGRATE LOGO PATHS IN FIRESTORE ==========
     var _migrationDone = false;
     function migrateLogoPaths() {
-        if (_migrationDone || !window.db || !AP.canCreateOrEditInventory || !AP.canCreateOrEditInventory()) return;
+        if (_migrationDone || !window.db || !_canEditBrand()) return;
         _migrationDone = true;
 
         var batch = null;
@@ -131,11 +137,11 @@
                 var logoUrl = getBrandLogoUrl(b);
 
                 var actions = '';
-                if (AP.canCreateOrEditInventory()) {
+                if (_canEditBrand()) {
                     actions += '<button class="v-act v-act--success" data-action="editBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Editar"><i data-lucide="pencil"></i></button>';
                 }
-                if (AP.canDeleteInventory()) {
-                    if (AP.canCreateOrEditInventory()) actions += '<span class="v-act-sep"></span>';
+                if (_canDeleteBrand()) {
+                    if (_canEditBrand()) actions += '<span class="v-act-sep"></span>';
                     actions += '<button class="v-act v-act--danger" data-action="deleteBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
                 }
                 if (!actions) {
@@ -183,7 +189,7 @@
     $('brandForm').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
 
     $('btnAddBrand').addEventListener('click', function() {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canEditBrand()) { AP.toast('No tienes permisos', 'error'); return; }
         $('brandModalTitle').textContent = 'Agregar Marca';
         $('bOriginalId').value = '';
         $('brandForm').reset();
@@ -278,7 +284,7 @@
 
     // ========== EDIT BRAND ==========
     function editBrand(brandId) {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canEditBrand()) { AP.toast('No tienes permisos', 'error'); return; }
         var b = AP.brands.find(function(x) { return x.id === brandId; });
         if (!b) return;
 
@@ -305,7 +311,7 @@
 
     // ========== SAVE BRAND ==========
     $('saveBrand').addEventListener('click', function() {
-        if (!AP.canCreateOrEditInventory()) { AP.toast('No tienes permisos', 'error'); return; }
+        if (!_canEditBrand()) { AP.toast('No tienes permisos', 'error'); return; }
 
         var form = $('brandForm');
         if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -356,7 +362,7 @@
 
     // ========== DELETE BRAND ==========
     function deleteBrandFn(brandId) {
-        if (!AP.canDeleteInventory()) { AP.toast('Solo un Super Admin puede eliminar marcas', 'error'); return; }
+        if (!_canDeleteBrand()) { AP.toast('Solo un Super Admin puede eliminar marcas', 'error'); return; }
 
         var b = AP.brands.find(function(x) { return x.id === brandId; });
         if (!b) return;
@@ -371,7 +377,7 @@
 
     $('confirmDeleteBrand').addEventListener('click', function() {
         if (!AP.deleteBrandTargetId) return;
-        if (!AP.canDeleteInventory()) { AP.toast('Sin permisos', 'error'); return; }
+        if (!_canDeleteBrand()) { AP.toast('Sin permisos', 'error'); return; }
 
         var btn = $('confirmDeleteBrand');
         btn.disabled = true;

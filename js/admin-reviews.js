@@ -115,8 +115,8 @@
             return;
         }
 
-        var canEdit = AP.RBAC.canEditReview();
-        var canDelete = AP.RBAC.canDeleteReview();
+        var canEdit = AP.hasPermission('reviews.edit');
+        var canDelete = AP.hasPermission('reviews.delete');
 
         var html = '';
         AP.reviews.forEach(function(r) {

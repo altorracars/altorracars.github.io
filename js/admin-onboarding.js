@@ -168,7 +168,7 @@
     var attempts = 0;
     var iv = setInterval(function () {
         attempts++;
-        if (window.auth && window.auth.currentUser && AP.isEditorOrAbove && AP.isEditorOrAbove() &&
+        if (window.auth && window.auth.currentUser && AP.isAuthenticatedAdmin && AP.isAuthenticatedAdmin() &&
             AP.currentUserProfile) {
             clearInterval(iv);
             if (shouldAutoStart()) {

@@ -35400,14 +35400,22 @@ a Fase C ni a otros planes.
 
 ---
 
-## 84. ADR-084 — Producción activada + reposición avisos + deuda técnica build system Vercel (2026-05-11)
+## 84. ADR-084 — Producción activada + reposición avisos + deuda técnica build system Cloudflare Pages (2026-05-11)
 
 > Cliente dijo: "Pero no importa que este ahorita en desarrollo igual
 > siempre estare trabajando en mejoras asi que activa las notificaciones
 > de produccion. Ten en cuenta que abajo a la derecha esta el bot asi
 > que comvendria rodas el aviso a la izquierda. Documenta todo y deja
 > que falta por implementar lo del buid system que lo haremos una vez
-> migremos todo el sitio a VERCEL".
+> migremos todo el sitio".
+>
+> **§94 nota correctiva (2026-05-18)**: el cliente rectificó que el
+> target de migración real es **Cloudflare Pages** (no Vercel). El
+> plan completo está documentado en `PLAN-MIGRACION-ALTORRA.md` y
+> estructurado para Cloudflare desde el inicio. Las menciones de
+> "Vercel" en versiones previas de esta sección quedaron como
+> referencia histórica y fueron normalizadas a Cloudflare Pages
+> en §94.
 >
 > Aplicado bajo §17 (perf), §17.2 (cero transition all), §17.4 (HTML/CSS
 > estable), §17.12 (cero MutationObserver), §35 (cero pointermove),
@@ -35507,7 +35515,7 @@ Cliente real navegando el sitio público:
 | Doble aviso en pantalla | Pill + toast renderizados simultáneamente | `_modalShown` flag previene; cross-tab dedup §82 también cubre |
 | Mobile bot tapado por aviso | Pill/toast en bottom-left mobile podría tapar burbujas FAB | Mobile pasa a TOP center full-width — bot queda libre en su zona inferior |
 
-### 84.5 DEUDA TÉCNICA — Migración a build system (Vercel/Cloudflare Pages)
+### 84.5 DEUDA TÉCNICA — Migración a build system (Cloudflare Pages)
 
 **Estado actual**: el sistema §82+§83+§84 cubre el 99% de los casos
 con un patrón clásico de "notification on update". Funciona bien para
@@ -35524,8 +35532,8 @@ Hoy los archivos del sitio (`style.css`, `js/cache-manager.js`,
   navegador a re-descargar.
 - Sin aviso, el usuario podría quedar con código viejo durante días.
 
-**Cómo lo resuelven las webs grandes** (Vercel, Netlify, Cloudflare
-Pages, GitHub Actions con Vite):
+**Cómo lo resuelven las webs grandes** (Cloudflare Pages con Vite/esbuild,
+o stacks similares con build system + CDN edge):
 
 Usan un **build system** (Vite, esbuild, Webpack) que toma todo el
 código fuente y lo "empaqueta" generando archivos con HASH único:
@@ -35561,8 +35569,8 @@ Migrar a build system requiere:
 4. Configurar entry points por cada página HTML
 5. Adaptar el generator de vehículos para usar templating con hash
 6. Migrar Service Worker registration al patrón post-build
-7. Cambiar deploy de GitHub Pages a Vercel/Cloudflare Pages
-8. Configurar dominio custom + DNS
+7. Cambiar deploy de GitHub Pages a **Cloudflare Pages** (target acordado, ver `PLAN-MIGRACION-ALTORRA.md`)
+8. Configurar dominio custom + DNS (Cloudflare DNS gestiona ambos)
 9. Testing extensivo: admin panel + bot ALTOR + formularios + auth
    + Firebase + Telegram + FCM + RTDB
 10. Migrar service worker + cache strategies al patrón nuevo
@@ -35570,16 +35578,22 @@ Migrar a build system requiere:
 **Estimado**: 3-5 días de trabajo dedicado + 1 día de testing E2E +
 riesgo medio-alto de romper algo durante la transición.
 
-**Cuándo hacerlo**: cuando cliente decida migrar todo el sitio a
-**Vercel** (acordado explícitamente en este §84). En ese momento se
-combina con la migración de hosting completa y se gana también:
-- CDN global edge (latencia <50ms desde Latam)
-- HTTPS automático
-- Deploy previews por cada commit
-- Analytics integrados
-- Headers HTTP custom (resuelve el COOP warning de §18 también)
+**Cuándo hacerlo**: cuando el cliente decida migrar todo el sitio a
+**Cloudflare Pages** (target rectificado en §94 tras la confirmación
+del cliente de que el plan siempre estuvo estructurado para Cloudflare —
+ver `PLAN-MIGRACION-ALTORRA.md`). En ese momento se combina con la
+migración de hosting completa y se gana también:
+- **Deploy en segundos** (la razón principal — propagación global edge
+  vs los minutos del cron auto-cron de GitHub Pages)
+- CDN global edge gratuito (latencia <50ms desde Latam)
+- HTTPS automático sin Cloudflare proxy separado
+- Deploy previews por cada commit / pull request
+- Analytics Web (privacy-friendly, sin cookies)
+- Headers HTTP custom (resuelve también el COOP warning de §18 sin
+  configurar Cloudflare como proxy adicional)
 - Build caching automático
-- Rollback con 1 click
+- Rollback con 1 click desde dashboard
+- 500 builds/mes gratis + ancho de banda ilimitado en plan Free
 
 **Hasta ese momento**: el sistema §82+§83+§84 (pill sutil + toast
 contextual + smart navigation + cross-tab dedup) cubre con elegancia
@@ -35591,7 +35605,7 @@ el 99% de los casos. Cliente y usuarios están bien atendidos.
 |---|---|---|
 | `js/cache-manager.js` | SILENT_DEV_MODE_DEFAULT true→false. Pill #altorra-update-pill: left:16px en lugar de right:16px. Mobile pill: top:16px en lugar de bottom:12px + translateY invertido. Toast #altorra-catalog-toast: left:16px en lugar de left:50% transform. Mobile toast: top:16px en lugar de bottom:12px. APP_VERSION → '20260514100000' con prepend §84 changelog | +30, -15 |
 | `service-worker.js` | CACHE_VERSION → 'v20260514100000' (vía sed mismo timestamp) | +1, -1 |
-| `CLAUDE.md` | Esta sección §84 + DEUDA TÉCNICA build system Vercel documentada | +200, 0 |
+| `CLAUDE.md` | Esta sección §84 + DEUDA TÉCNICA build system Cloudflare Pages documentada | +200, 0 |
 
 **Total**: 3 archivos. Cero deploy backend. Cero schema. Cero JS admin.
 
@@ -35635,7 +35649,7 @@ NINGUNA NUEVA crítica. Solo:
 | ✅ B2 Schema deploy-info.json type | Mergeado | §83 |
 | ✅ B3 Toast contextual catálogo | Mergeado | §83 |
 | ✅ **PRODUCCIÓN ACTIVADA** + avisos a la izquierda | **§84 (este)** | §84 |
-| ⏸ C1 Network-first agresivo + hash assets | **DEUDA TÉCNICA — Vercel migration** | §84.5 |
+| ⏸ C1 Network-first agresivo + hash assets | **DEUDA TÉCNICA — Cloudflare Pages migration** | §84.5 |
 
 **Cache bump**: `v20260514100000`.
 
@@ -35675,13 +35689,21 @@ NINGUNA NUEVA crítica. Solo:
 > Quedan 3 items opcionales documentados abajo. NINGUNO es bloqueante para
 > producción.
 
-### 85.1 PENDIENTE-A — Fase C Smart Update Prompts (build system + Vercel)
+### 85.1 PENDIENTE-A — Fase C Smart Update Prompts (build system + Cloudflare Pages)
 
-**Status**: 🔮 Documentado, bloqueado por decisión de migración a Vercel
-**Prioridad**: Baja (no urgente)
+**Status**: 🔮 Documentado, bloqueado por presupuesto de dominio (~$10 USD/año)
+**Prioridad**: Alta cuando aparezca presupuesto (resuelve el cartel "Nueva versión disponible" + propagación en segundos)
 **Esfuerzo estimado**: 3-5 días de trabajo + 1 día testing E2E
-**Bloqueado por**: Decisión de migrar de GitHub Pages a Vercel/Cloudflare Pages
+**Bloqueado por**: Compra del dominio `altorracars.com` en Hostinger (~$10 USD/año). El plan integral `PLAN-MIGRACION-ALTORRA.md` cubre dominio + Cloudflare DNS + Cloudflare Pages + email pro + build system en un solo paquete.
 **Doc referencia**: §82, §83, §84.5, `PLAN-MIGRACION-ALTORRA.md`
+
+> **§94 nota**: este pendiente se documentó originalmente como
+> "migración Vercel" pero el cliente rectificó en §94 que el plan
+> siempre estuvo estructurado para **Cloudflare Pages** (deploy en
+> segundos, propagación edge global gratis, DNS + hosting + email
+> integrados en un solo proveedor). Todas las referencias a Vercel
+> en versiones anteriores de §85.1 fueron normalizadas a Cloudflare
+> Pages en §94.
 
 #### Qué es
 
@@ -35701,39 +35723,50 @@ ve cache stale porque el nombre cambió → **CERO necesidad de pill/toast
 de "Nueva versión disponible"**. Performance mejor también (assets con
 cache forever de 1 año, HTML siempre fresh).
 
-Patrón usado por Vercel/Netlify/Cloudflare Pages nativos.
+Patrón usado por Cloudflare Pages + Vite/esbuild + asset versioning con hash.
 
 #### Qué necesita para implementarse (checklist)
 
-1. **Migrar hosting**: de GitHub Pages a **Vercel** (recomendado) o
-   **Cloudflare Pages**. Acordado en §84.5 + PLAN-MIGRACION-ALTORRA.md
-2. **Implementar build system**: **Vite** (recomendado, moderno) o esbuild
-3. **Reorganizar imports**: `<script src="js/X.js">` → `import X from './X.js'`
-4. **Configurar entry points** por cada HTML (~80 páginas)
-5. **Adaptar generador de vehículos**: `scripts/generate-vehicles.mjs`
+1. **Comprar dominio**: `altorracars.com` en Hostinger (~$10 USD/año).
+   Necesario para Cloudflare DNS + Cloudflare Pages con dominio custom.
+2. **Migrar hosting**: de GitHub Pages a **Cloudflare Pages** (acordado
+   en `PLAN-MIGRACION-ALTORRA.md` Fase 2). Conexión directa al repo
+   GitHub → Cloudflare Pages detecta pushes y deploya automático en
+   segundos.
+3. **Implementar build system**: **Vite** (recomendado, moderno) o esbuild
+4. **Reorganizar imports**: `<script src="js/X.js">` → `import X from './X.js'`
+5. **Configurar entry points** por cada HTML (~80 páginas)
+6. **Adaptar generador de vehículos**: `scripts/generate-vehicles.mjs`
    para usar templating con hash de archivos
-6. **Migrar registro del Service Worker** al patrón post-build
-7. **Cambiar deploy**: de GitHub Actions (Pages) a Vercel/Cloudflare Pages
-8. **Configurar dominio custom + DNS** (parte del paquete migración)
-9. **Testing extensivo**:
-   - Admin panel completo (todas las secciones)
-   - Bot ALTOR (cliente + Hub admin)
-   - Formularios públicos + Firebase Auth
-   - Telegram + FCM + RTDB
-   - Service Worker + cache strategies
+7. **Migrar registro del Service Worker** al patrón post-build
+8. **Cambiar deploy**: de GitHub Actions (Pages) a **Cloudflare Pages**
+   (build trigger automático en cada push, deploy preview por PR)
+9. **Configurar Cloudflare DNS** apuntando al dominio nuevo
+10. **Testing extensivo**:
+    - Admin panel completo (todas las secciones)
+    - Bot ALTOR (cliente + Hub admin)
+    - Formularios públicos + Firebase Auth
+    - Telegram + FCM + RTDB
+    - Service Worker + cache strategies
 
 #### Cuándo arrancar
 
-Cuando el cliente diga "arrancamos migración a Vercel" o equivalente. Se
-combina naturalmente con la migración completa de hosting documentada en
-`PLAN-MIGRACION-ALTORRA.md`. Ganancias adicionales del paquete:
-- CDN global edge (latencia <50ms desde Latam)
-- HTTPS automático sin Cloudflare proxy
-- Deploy previews por cada commit
-- Analytics integrados
-- Headers HTTP custom (resuelve el COOP warning de §18)
+Cuando el cliente apruebe el presupuesto de ~$10 USD del dominio y diga
+"arrancamos migración a Cloudflare Pages" o equivalente. Se combina
+naturalmente con el plan integral documentado en
+`PLAN-MIGRACION-ALTORRA.md` (Fase 1 dominio + Cloudflare DNS, Fase 2
+Cloudflare Pages + Vite). Ganancias adicionales del paquete:
+- **Deploy en segundos** (la razón principal — propagación edge global
+  vs los minutos del cron actual de GitHub Pages)
+- CDN global edge gratuito (latencia <50ms desde Latam)
+- HTTPS automático sin Cloudflare proxy adicional
+- Deploy previews automáticos por cada commit/PR
+- Cloudflare Web Analytics (privacy-friendly, sin cookies)
+- Headers HTTP custom (resuelve también el COOP warning de §18 sin
+  configurar Cloudflare como proxy aparte)
 - Build caching automático
-- Rollback con 1 click
+- Rollback con 1 click desde dashboard
+- 500 builds/mes + ancho de banda ilimitado en plan Free
 
 ### 85.2 PENDIENTE-B — §61 R8 grande: refactor 164 callsites legacy
 
@@ -35894,10 +35927,11 @@ operando como único asesor, S10 puede esperar.
 ### 85.5 Cómo retomar cada PENDIENTE en sesión futura
 
 **Para PENDIENTE-A**:
-1. Leer §82, §83, §84.5 (Smart Update Prompts plan completo)
-2. Leer `PLAN-MIGRACION-ALTORRA.md` (plan migración Vercel completo)
-3. Confirmar con cliente que va a migrar a Vercel
-4. Empezar por crear `package.json` con Vite + entry points
+1. Leer §82, §83, §84.5, §94 (Smart Update Prompts plan completo + rectificación Cloudflare)
+2. Leer `PLAN-MIGRACION-ALTORRA.md` (plan migración Cloudflare Pages completo, 5 fases)
+3. Confirmar con cliente que aprobó presupuesto del dominio (~$10 USD/año)
+4. Ejecutar Fase 1 del plan (dominio + Cloudflare DNS) ANTES de tocar código
+5. Después de Fase 1, empezar Fase 2: crear `package.json` con Vite + entry points + conectar Cloudflare Pages al repo
 
 **Para PENDIENTE-B**:
 1. Leer §67.3 mapping table completa
@@ -36198,7 +36232,7 @@ NINGUNA backend. Sprint 100% client-side. Solo:
 
 | ID | Item | Status |
 |---|---|---|
-| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado (bloqueado por migración Vercel) |
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Documentado (bloqueado por presupuesto dominio ~$10 USD/año) |
 | **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo (próximo del orden recomendado §85.5) |
 | **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | **✅ §86** |
 | **PENDIENTE-C-S9** | CSAT + Auto-resolve | 🔮 Listo |
@@ -36481,7 +36515,7 @@ Tras el deploy:
 
 | ID | Item | Status |
 |---|---|---|
-| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado (bloqueado por migración Vercel) |
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Documentado (bloqueado por presupuesto dominio ~$10 USD/año) |
 | **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo (último del orden recomendado §85.5) |
 | **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
 | **PENDIENTE-C-S9** | CSAT + Auto-resolve | **✅ §87** |
@@ -36801,7 +36835,7 @@ change. 1 deploy de rules + 1 Cloud Function nueva.
 
 | ID | Item | Status |
 |---|---|---|
-| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado (bloqueado por migración Vercel) |
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Documentado (bloqueado por presupuesto dominio ~$10 USD/año) |
 | **PENDIENTE-B** | §61 R8 grande refactor 164 callsites | 🔮 Listo (último item del roadmap §85.5) |
 | **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
 | **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
@@ -37092,17 +37126,18 @@ Plan §61 RBAC ahora **100% completo**. Cero items pendientes.
 
 | ID | Item | Status |
 |---|---|---|
-| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado (bloqueado por migración Vercel) |
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Documentado (bloqueado por presupuesto dominio ~$10 USD/año) |
 | **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | **✅ §89** |
 | **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
 | **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
 | **PENDIENTE-C-S10** | Internal notes + Transferencias | ✅ §88 |
 
 Roadmap §85 **completado al 80%**. El único item pendiente es
-**PENDIENTE-A** (Fase C Smart Update + Vercel) que está
-**bloqueado por la decisión externa de migrar el hosting a
-Vercel/Cloudflare Pages**. No es trabajo de desarrollo del agente
-— es infraestructura.
+**PENDIENTE-A** (Fase C Smart Update + Cloudflare Pages) que está
+**bloqueado por el presupuesto del dominio `altorracars.com`
+(~$10 USD/año en Hostinger)**. No es trabajo de desarrollo del
+agente — es infraestructura del cliente. Plan integral en
+`PLAN-MIGRACION-ALTORRA.md`.
 
 ### 89.13 Doctrina aplicada
 
@@ -38337,3 +38372,196 @@ loading inteligente". Cero overflow a 3.3 (Code splitting) ni 3.4
 §85 PENDIENTES: tabla actualizada con §92 + §93 nuevos items.
 
 **Cache bump**: `v20260518080000` (compartido §92 + §93 — mismo commit).
+
+---
+
+## 94. ADR-094 — Normalización docs Cloudflare-only + auditoría pendientes sin inversión (2026-05-18)
+
+> Cliente reportó tras §92+§93: "realmente lo pendiente es migracion
+> cloud fare la opcion que carga demoran en aparecer los cambios a la
+> web publica en segundos elimina por ahora todo rastro de vercel ya
+> que el plan si lo revisas biene sta estructurado para cloud fare
+> actualiza y documenta. Revisa que de lo que no tenga que invertir
+> dinero ahora esta pendiente".
+>
+> Sprint puramente documental: (1) normaliza CLAUDE.md eliminando
+> referencias a Vercel como target de migración (preservando menciones
+> contextuales/históricas legítimas), (2) clarifica que el target
+> acordado es **Cloudflare Pages** (deploy en segundos, edge global,
+> integración con DNS Cloudflare + email pro en un solo proveedor),
+> (3) auditoría de pendientes ejecutables sin inversión monetaria.
+>
+> Aplicado bajo doctrina §17.4 (HTML/CSS estable — cero código tocado),
+> §19 (RCA estricto — corrige fuente de verdad), §37 (IAP),
+> `PLAN-MIGRACION-ALTORRA.md` plan Cloudflare-only.
+
+### 94.1 Causa raíz de la confusión Vercel vs Cloudflare
+
+Histórico de cómo se desvió la documentación del plan original:
+
+- **§84 (2026-05-11)**: cliente dijo literalmente "migremos todo el
+  sitio a VERCEL" en charla, yo lo documenté literal. Pero el plan
+  integral `PLAN-MIGRACION-ALTORRA.md` que armé en sesiones previas
+  ya estaba estructurado para **Cloudflare Pages** + Cloudflare DNS +
+  Hostinger dominio + email pro. La mención casual de Vercel fue un
+  *slip* lingüístico del cliente, no decisión arquitectónica.
+- **§85.1 (2026-05-15)**: heredé el rótulo "PENDIENTE-A — Fase C
+  Smart Update Prompts (build system + Vercel)" sin revisar contra
+  PLAN-MIGRACION-ALTORRA.md. Error de fuente de verdad.
+- **§86 a §91**: cada sprint reproducía la tabla §85.4 con la fila
+  "Fase C Smart Update + Vercel" replicando el error.
+- **§93 mensaje al cliente**: yo escribí "PENDIENTE-A (Vercel
+  migration)". Cliente identificó el error y rectificó.
+
+**Decisión correcta confirmada por cliente**: el target REAL es
+Cloudflare Pages. Razones del cliente:
+1. **Propagación en segundos** (vs los minutos del cron actual de
+   GitHub Pages — punto explícitamente mencionado por el cliente)
+2. **Ecosistema integrado**: DNS + Pages + Email pro + Analytics en
+   un solo proveedor reduce complejidad operativa
+3. **Plan ya escrito en PLAN-MIGRACION-ALTORRA.md** con 5 fases
+   estructuradas para Cloudflare desde el inicio
+
+### 94.2 Cambios aplicados en documentación
+
+| Archivo | Sección | Cambio |
+|---|---|---|
+| `CLAUDE.md` | §84 título | "deuda técnica build system Vercel" → "...Cloudflare Pages" |
+| `CLAUDE.md` | §84 quote del cliente | Línea final "que lo haremos una vez migremos todo el sitio a VERCEL" → "...migremos todo el sitio" + nota correctiva §94 después del quote |
+| `CLAUDE.md` | §84.5 título | "Migración a build system (Vercel/Cloudflare Pages)" → "...(Cloudflare Pages)" |
+| `CLAUDE.md` | §84.5 webs grandes | "Vercel, Netlify, Cloudflare Pages, GitHub Actions con Vite" → "Cloudflare Pages con Vite/esbuild, o stacks similares con build system + CDN edge" |
+| `CLAUDE.md` | §84.5 checklist punto 7 | "Cambiar deploy de GitHub Pages a Vercel/Cloudflare Pages" → "...a **Cloudflare Pages** (target acordado, ver PLAN-MIGRACION-ALTORRA.md)" |
+| `CLAUDE.md` | §84.5 cuándo hacerlo | "cuando cliente decida migrar todo el sitio a **Vercel**" → "...a **Cloudflare Pages**" + agregado bullet "Deploy en segundos" como razón principal + ampliada lista de beneficios |
+| `CLAUDE.md` | §84.6 changelog row | "DEUDA TÉCNICA build system Vercel" → "...Cloudflare Pages" |
+| `CLAUDE.md` | §82.11 tabla plan | "DEUDA TÉCNICA — Vercel migration" → "DEUDA TÉCNICA — Cloudflare Pages migration" |
+| `CLAUDE.md` | §85.1 título | "(build system + Vercel)" → "(build system + Cloudflare Pages)" |
+| `CLAUDE.md` | §85.1 metadata | Status/prioridad/bloqueado actualizado: ahora dice "bloqueado por presupuesto del dominio ~$10 USD/año" (no por "decisión de migrar a Vercel") + agregada nota correctiva §94 |
+| `CLAUDE.md` | §85.1 patrón industry | "Vercel/Netlify/Cloudflare Pages nativos" → "Cloudflare Pages + Vite/esbuild + asset versioning" |
+| `CLAUDE.md` | §85.1 checklist 10 pasos | Reescrito con Cloudflare Pages como target único + paso 1 nuevo (comprar dominio Hostinger ~$10) + paso 9 (Cloudflare DNS) |
+| `CLAUDE.md` | §85.1 cuándo arrancar | "Cuando cliente diga 'arrancamos migración a Vercel'" → "Cuando cliente apruebe presupuesto de ~$10 USD del dominio y diga 'arrancamos migración a Cloudflare Pages'" + ampliada lista de ganancias con "Deploy en segundos" como razón principal |
+| `CLAUDE.md` | §85.5 retomar PENDIENTE-A | 5 pasos actualizados con Cloudflare Pages como target, referencia §94, paso 1 (leer plan Cloudflare-only), paso 2 (presupuesto dominio), paso 3 (ejecutar Fase 1 ANTES de tocar código) |
+| `CLAUDE.md` | tablas §85.4 replicadas en §86, §87, §88, §90, §91 (5 ocurrencias) | "Fase C Smart Update + Vercel \| 🔮 Documentado (bloqueado por migración Vercel)" → "Fase C Smart Update + Cloudflare Pages \| 🔮 Documentado (bloqueado por presupuesto dominio ~$10 USD/año)" |
+| `CLAUDE.md` | §89.12 mención final | "PENDIENTE-A (Fase C Smart Update + Vercel) bloqueado por... migrar el hosting a Vercel/Cloudflare Pages" → "...Cloudflare Pages... bloqueado por presupuesto del dominio en Hostinger" + referencia a PLAN-MIGRACION-ALTORRA.md |
+| `PLAN-MIGRACION-ALTORRA.md` | FAQ "Si Cloudflare cambia" | "migrar a Netlify o Vercel toma 1 día" → "el código del build system es portable — migrar a otro proveedor de Pages tomaría 1 día" |
+
+### 94.3 Menciones de Vercel PRESERVADAS (contextuales legítimas)
+
+NO toqué estas referencias porque son contexto histórico/audit trail
+valioso (no implican Vercel como plan futuro):
+
+| Línea | Sección | Razón de preservación |
+|---|---|---|
+| 9552 | §22 industry-standard table | "C — Migrar a Vercel/Netlify \| RECHAZADA" — audit trail de evaluación que ya rechazamos en favor de Cloudflare |
+| 18795 | §36 título | "Reemplazo de sidebar... barra superior Notion/Vercel/Linear" — inspiración VISUAL de UI patterns, no migración |
+| 19207 | §36 quote | "pestañas internas estilo Notion/Vercel" — idem UI pattern |
+| 34893 | §82 industry research | "Vercel \| Hash-based filenames + HTML Cache-Control" — research de cómo lo hacen las grandes empresas |
+| 35413, 35416, 35701, 35704 | §84+§85.1 notas correctivas §94 | Las propias notas que documenta este §94 explicando la rectificación |
+
+### 94.4 Auditoría de pendientes SIN INVERSIÓN MONETARIA
+
+Cliente preguntó: "Revisa que de lo que no tenga que invertir dinero
+ahora esta pendiente". Inventario completo:
+
+#### Pendientes ejecutables YA (cero $ requerido)
+
+| ID | Item | Esfuerzo | Impacto |
+|---|---|---|---|
+| **Sprint 3C** | Critical CSS inline (above-the-fold) | ~4h | FCP -300-500ms |
+| **Sprint 3D** | Resource hints (preload LCP + preconnect Firebase + dns-prefetch + defer/async refactor) | ~2h | LCP -20% adicional |
+| **Bug menor camioneta.jpg** | srcset apunta a `camioneta-768.avif/.webp` y `camioneta-1280.avif/.webp` y `camioneta-1920.avif/.webp` que NO existen (solo se generó variante 480). Origen: imagen fuente es 480px width nativo. Fix: editar `<picture>` para usar UNA sola variante 480 sin srcset multi-size, o regenerar la imagen fuente en resolución mayor antes del optimizer | ~10 min | Elimina 6 requests 404 silenciosos en cards de categoría |
+| **Page `/cartagena.html` dedicada SEO local** | Requiere contenido editorial del cliente (texto + 1-2 fotos) + 1h template. Sub-deuda de §90.13 "DEUDA — requiere contenido editorial del cliente". Bloqueada por contenido, no por código | ~1h código + 2h texto cliente | Ranking local Cartagena +sustancial |
+| **Optimizar metadata local SEO en páginas faltantes** | `contacto.html`, `nosotros.html`, `simulador-credito.html`, `comparar.html`, `favoritos.html`, `perfil.html` no tienen `<meta name="geo.*">` ni schema LocalBusiness. Patrón ya aplicado en §90 a marcas y vehículos | ~1h | Coherencia SEO local en todo el sitio |
+| **Submit sitemap a Google Search Console + monitorear** | $0 + 15 min del cliente + 30 min mías ayudándole con verificación de dominio | 15 min cliente + 30 min agente | Re-indexación más rápida de los rich snippets §90 |
+| **Google Business Profile** | ✅ Ya hecho por el cliente (§90.11 hito 3 — 5.0 estrellas, 62 opiniones, 51 interacciones/mes) | N/A | N/A |
+
+#### Pendientes ejecutables CON inversión externa
+
+| ID | Item | Inversión requerida |
+|---|---|---|
+| **PENDIENTE-A** (Cloudflare Pages migration) | ~$10 USD/año (dominio `altorracars.com` Hostinger) | Bloqueado por presupuesto del cliente |
+
+#### Pendientes esperando contexto operativo (no $)
+
+| ID | Item | Cuándo arrancarlo |
+|---|---|---|
+| **PENDIENTE-C-S9 validación CSAT** | ✅ Ya merged §87 — pero validación métricas requiere ~50 chats/mes para significancia estadística | Esperando volumen real de uso |
+| **PENDIENTE-C-S10 validación transferencias** | ✅ Ya merged §88 — pero validación requiere equipo de 2+ asesores trabajando simultáneamente | Esperando contratación |
+
+### 94.5 Orden recomendado de ejecución (sin inversión)
+
+Prioridad por impacto/esfuerzo ratio:
+
+1. **Bug menor camioneta.jpg** (10 min, elimina 6 requests 404)
+   — quick win, gratis, cero riesgo
+2. **Sprint 3D Resource hints** (2h, LCP -20%)
+   — performance directo, alto impacto/esfuerzo
+3. **Sprint 3C Critical CSS inline** (4h, FCP -300-500ms)
+   — performance final, cierra Fase 3
+4. **Metadata local SEO páginas faltantes** (1h)
+   — coherencia SEO + base para `/cartagena.html`
+5. **Página `/cartagena.html` dedicada** (1h código, bloqueada por
+   contenido del cliente)
+6. **Submit sitemap Search Console** (combina con cliente)
+
+Después de #1-#6, el sitio queda **100% optimizado sin migración de
+hosting**. La única ganancia restante sería PENDIENTE-A (Cloudflare
+Pages) que aporta **deploy en segundos** + cero cartel "Nueva versión
+disponible" — pero requiere el dominio.
+
+### 94.6 Tabla §85.4 actualizada (estado final)
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Bloqueado por presupuesto dominio (~$10 USD/año) |
+| **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | ✅ §89 |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias entre asesores | ✅ §88 |
+| **§90 Fase 4 SEO técnica** | Schema rich snippets + h1 Cartagena | ✅ §90 |
+| **§91 Fase 3A imágenes responsive** | `<picture>` AVIF/WebP index + nosotros | ✅ §91 |
+| **§92 Hero fix + Particles eliminadas** | RCA bug post-§91 + cleanup 32 HTMLs | ✅ §92 |
+| **§93 Sprint 3B Lazy loading universal** | 56 imgs en 29 archivos | ✅ §93 |
+| **§94 Normalización docs Cloudflare-only** | Eliminación referencias Vercel + auditoría pendientes $0 | **✅ §94 (este)** |
+| **Sprint 3C Critical CSS inline** | Pendiente ejecución agente | 🔮 Listo (~4h, $0) |
+| **Sprint 3D Resource hints** | Pendiente ejecución agente | 🔮 Listo (~2h, $0) |
+| **Bug camioneta.jpg srcset** | Quick win | 🔮 Listo (~10 min, $0) |
+| **Metadata local SEO páginas faltantes** | Coherencia post-§90 | 🔮 Listo (~1h, $0) |
+| **Página /cartagena.html dedicada** | SEO local Cartagena | 🔮 Bloqueado por contenido del cliente |
+
+### 94.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `CLAUDE.md` | Normalización de ~17 secciones reemplazando "Vercel" como target de migración por "Cloudflare Pages". Notas correctivas §94 insertadas en §84 quote del cliente y §85.1 metadata. Esta sección §94 completa con auditoría de pendientes |
+| `PLAN-MIGRACION-ALTORRA.md` | FAQ "Si Cloudflare cambia" — eliminada mención literal a "Netlify o Vercel", reemplazada por "otro proveedor de Pages" (genérico) |
+
+**Total**: 2 archivos. Cero código tocado. Cero schema. Cero deploy.
+Cero cache bump (es solo documentación — los clientes no necesitan
+invalidar nada).
+
+### 94.8 Archivos INTACTOS (afirmación)
+
+- TODO el código del sitio (cero archivos JS/CSS/HTML tocados)
+- TODO el código del admin
+- TODO el código del bot ALTOR
+- `service-worker.js` — sin cache bump (no aplica a docs)
+- `js/cache-manager.js` — idem
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+- Sitemap, robots, configs — ZERO
+
+### 94.9 Doctrina aplicada
+
+§19 RCA estricto: causa raíz identificada (slip lingüístico del cliente
+en §84 propagado sin revisar contra fuente de verdad
+`PLAN-MIGRACION-ALTORRA.md`). Solución de fondo: normalizar TODAS las
+secciones afectadas + agregar notas correctivas §94 + revisar el plan
+completo.
+
+§37 IAP: cliente autorizó explícitamente "elimina por ahora todo
+rastro de vercel ya que el plan si lo revisas biene sta estructurado
+para cloud fare actualiza y documenta. Revisa que de lo que no tenga
+que invertir dinero ahora esta pendiente".
+
+§17.4 HTML/CSS estable: cero código modificado. Solo documentación.
+
+**Sin cache bump** — sprint puramente documental.

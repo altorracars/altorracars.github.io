@@ -648,7 +648,7 @@ Vamos a trackear esto MES a MES:
 **Respuesta**: NO. Configuramos redirects 301 de `altorracars.github.io/X` → `altorracars.com/X`. Google entiende y transfiere el ranking automáticamente. **Tarda 1-3 meses en re-rankearse completamente.**
 
 ### "¿Y si Cloudflare cambia y empieza a cobrar?"
-**Respuesta**: Cloudflare Pages tiene plan gratuito desde 2020 sin cambios. Si algún día cambia, migrar a Netlify o Vercel toma 1 día. El código sigue siendo el mismo.
+**Respuesta**: Cloudflare Pages tiene plan gratuito desde 2020 sin cambios (500 builds/mes + ancho de banda ilimitado). Si algún día cambiara (improbable), el código del build system es portable — migrar a otro proveedor de Pages tomaría 1 día. El código sigue siendo el mismo.
 
 ### "¿El bot ALTOR sigue funcionando?"
 **Respuesta**: SÍ, 100%. El bot vive en Firebase (no en hosting). Solo cambia el lugar de donde se sirve la web. Bot intacto.

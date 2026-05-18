@@ -174,8 +174,45 @@ function generatePage(template, v, slug) {
         `id="tw-image" content="${escapeAttr(fullImage)}"`
     );
 
-    // 7. Inject JSON-LD schema before </head>
-    const schema = {
+    // 7. Inject JSON-LD schemas before </head>
+    // §90 Fase 4 SEO — expandido con bodyType + driveWheelConfiguration +
+    //                  vehicleEngine (si cilindrada/potencia) + itemCondition
+    //                  + BreadcrumbList Home > Marcas > {Marca} > {Vehiculo}
+    const bodyTypeMap = {
+        'suv': 'SUV',
+        'sedan': 'Sedan',
+        'sedán': 'Sedan',
+        'hatchback': 'Hatchback',
+        'pickup': 'PickupTruck',
+        'camioneta': 'SUV',
+        'coupe': 'Coupe',
+        'coupé': 'Coupe',
+        'convertible': 'Convertible',
+        'minivan': 'MiniVan',
+        'van': 'Van'
+    };
+    const bodyTypeRaw = String(v.categoria || '').toLowerCase().trim();
+    const bodyType = bodyTypeMap[bodyTypeRaw] || '';
+
+    const tracMap = {
+        'delantera': 'FrontWheelDriveConfiguration',
+        'fwd': 'FrontWheelDriveConfiguration',
+        'trasera': 'RearWheelDriveConfiguration',
+        'rwd': 'RearWheelDriveConfiguration',
+        '4x4': 'AllWheelDriveConfiguration',
+        '4wd': 'AllWheelDriveConfiguration',
+        'awd': 'AllWheelDriveConfiguration',
+        '4x2': 'FrontWheelDriveConfiguration'
+    };
+    const tracRaw = String(v.traccion || '').toLowerCase().trim();
+    const driveConfig = tracMap[tracRaw] || '';
+
+    const isUsed = String(v.tipo || '').toLowerCase() === 'usado';
+    const itemCondition = isUsed
+        ? 'https://schema.org/UsedCondition'
+        : 'https://schema.org/NewCondition';
+
+    const carSchema = {
         '@context': 'https://schema.org',
         '@type': 'Car',
         name: `${marca} ${modelo} ${year}`,
@@ -193,23 +230,71 @@ function generatePage(template, v, slug) {
         },
         color: v.color || '',
         numberOfDoors: v.puertas || 5,
-        vehicleSeatingCapacity: v.pasajeros || 5,
+        vehicleSeatingCapacity: v.pasajeros || v.asientos || 5,
+        itemCondition,
         offers: {
             '@type': 'Offer',
             price: precio,
             priceCurrency: 'COP',
             availability: 'https://schema.org/InStock',
+            itemCondition,
             seller: {
                 '@type': 'AutoDealer',
                 name: 'ALTORRA CARS',
-                url: SITE_URL
+                url: SITE_URL,
+                address: {
+                    '@type': 'PostalAddress',
+                    addressLocality: 'Cartagena',
+                    addressRegion: 'Bolívar',
+                    addressCountry: 'CO'
+                }
             }
         }
     };
 
+    // Campos condicionales — solo si hay datos reales
+    if (bodyType) carSchema.bodyType = bodyType;
+    if (driveConfig) carSchema.driveWheelConfiguration = driveConfig;
+    if (v.placa && v.placa !== 'Disponible al contactar') {
+        carSchema.vehicleIdentificationNumber = String(v.placa);
+    }
+    if (v.cilindraje || v.potencia) {
+        carSchema.vehicleEngine = {
+            '@type': 'EngineSpecification',
+            ...(v.cilindraje && {
+                engineDisplacement: {
+                    '@type': 'QuantitativeValue',
+                    value: String(v.cilindraje).replace(/[^0-9.]/g, ''),
+                    unitCode: 'CMQ'
+                }
+            }),
+            ...(v.potencia && {
+                enginePower: {
+                    '@type': 'QuantitativeValue',
+                    value: v.potencia,
+                    unitCode: 'BHP'
+                }
+            })
+        };
+    }
+
+    // BreadcrumbList: Home > Marcas > {Marca} > {Vehículo}
+    const brandSlug = slugifyBrand(v.marca || '');
+    const breadcrumbSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Inicio', item: SITE_URL + '/' },
+            { '@type': 'ListItem', position: 2, name: 'Marcas', item: SITE_URL + '/marcas.html' },
+            { '@type': 'ListItem', position: 3, name: marca, item: `${SITE_URL}/marcas/${brandSlug}.html` },
+            { '@type': 'ListItem', position: 4, name: `${marca} ${modelo} ${year}`, item: canonicalUrl }
+        ]
+    };
+
     html = html.replace(
         '</head>',
-        `    <script type="application/ld+json">${JSON.stringify(schema)}</script>\n</head>`
+        `    <script type="application/ld+json">${JSON.stringify(carSchema)}</script>\n` +
+        `    <script type="application/ld+json">${JSON.stringify(breadcrumbSchema)}</script>\n</head>`
     );
 
     // 8. Inject PRERENDERED_VEHICLE_ID before historial-visitas.js so auto-tracking
@@ -300,25 +385,78 @@ function generateBrandPage(template, brand, slug, vehicles) {
         );
     }
 
-    // JSON-LD schema
-    const schema = {
+    // §90 Fase 4 SEO — OG + Twitter Cards + JSON-LD AutoDealer + BreadcrumbList
+    // Las páginas /marcas/*.html no tenían meta tags sociales hasta hoy. Al
+    // compartir una marca en WhatsApp/IG/FB no aparecía preview.
+    const ogTitle = `Vehículos ${nombre} en Cartagena | ALTORRA CARS`;
+    const ogBlock = [
+        '<meta property="og:type" content="website">',
+        `<meta property="og:title" content="${escapeAttr(ogTitle)}">`,
+        `<meta property="og:description" content="${escapeAttr(desc)}">`,
+        `<meta property="og:url" content="${escapeAttr(canonicalUrl)}">`,
+        `<meta property="og:image" content="${escapeAttr(bannerImage)}">`,
+        '<meta property="og:image:width" content="1200">',
+        '<meta property="og:image:height" content="630">',
+        '<meta property="og:locale" content="es_CO">',
+        '<meta property="og:site_name" content="ALTORRA CARS">',
+        '<meta name="twitter:card" content="summary_large_image">',
+        `<meta name="twitter:title" content="${escapeAttr(ogTitle)}">`,
+        `<meta name="twitter:description" content="${escapeAttr(desc)}">`,
+        `<meta name="twitter:image" content="${escapeAttr(bannerImage)}">`,
+        // Local SEO Cartagena
+        '<meta name="geo.region" content="CO-BOL">',
+        '<meta name="geo.placename" content="Cartagena">',
+        '<meta name="geo.position" content="10.3910485;-75.4794257">',
+        '<meta name="ICBM" content="10.3910485, -75.4794257">'
+    ].map(t => '    ' + t).join('\n');
+
+    html = html.replace(
+        /<link rel="canonical"[^>]*>/,
+        m => m + '\n' + ogBlock
+    );
+
+    // JSON-LD AutoDealer expandido + BreadcrumbList
+    const dealerSchema = {
         '@context': 'https://schema.org',
         '@type': 'AutoDealer',
         name: `ALTORRA CARS - ${nombre}`,
         url: canonicalUrl,
         brand: { '@type': 'Brand', name: nombre },
         description: desc,
+        image: bannerImage,
+        telephone: '+57 323 501 6747',
         address: {
             '@type': 'PostalAddress',
             addressLocality: 'Cartagena',
+            addressRegion: 'Bolívar',
             addressCountry: 'CO'
+        },
+        geo: {
+            '@type': 'GeoCoordinates',
+            latitude: 10.3910485,
+            longitude: -75.4794257
+        },
+        areaServed: {
+            '@type': 'City',
+            name: 'Cartagena de Indias'
         },
         numberOfItems: count
     };
 
+    const breadcrumbSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Inicio', item: SITE_URL + '/' },
+            { '@type': 'ListItem', position: 2, name: 'Marcas', item: SITE_URL + '/marcas.html' },
+            { '@type': 'ListItem', position: 3, name: nombre, item: canonicalUrl }
+        ]
+    };
+
     html = html.replace(
         '</head>',
-        `    <script type="application/ld+json">${JSON.stringify(schema)}</script>\n</head>`
+        `    <script type="application/ld+json">${JSON.stringify(dealerSchema)}</script>\n` +
+        `    <script type="application/ld+json">${JSON.stringify(breadcrumbSchema)}</script>\n</head>`
     );
 
     // Inject PRERENDERED_BRAND_ID so the inline script picks up the brand without ?marca= query param

@@ -37547,3 +37547,75 @@ Fase 3 Performance dividida en 4 sub-sprints microquirúrgicos
 Cliente autorizó "si detectas que todo esta bien pasemos a fase 3"
 tras validación §90.11. Siguiente paso: arrancar **Sprint 3A**
 (imágenes responsive completas).
+
+### 90.14 Fix Node.js 20 deprecation warning + merge main (2026-05-18)
+
+Cliente reportó tras el merge del PR #687 dos cosas a corregir
+antes de arrancar Fase 3:
+
+**(1) Conflicto branch vs main**: el cron auto-cron de main había
+bumpeado nuevamente CACHE_VERSION mientras la branch estaba activa
+con commits §90 + §90.11 también bumpeando cache. Mismo patrón que
+§82-§84 (auto-cron tras push del generator vehicles). Resuelto con
+`git checkout --ours` + bump explícito a `v20260518060000` (timestamp
+mayor que el auto-cron de main `v20260518034000` para garantizar
+orden de cache).
+
+**(2) Warning Node.js 20 deprecation en GitHub Actions**:
+
+```
+Node.js 20 actions are deprecated. The following actions are
+running on Node.js 20 and may not work as expected:
+actions/checkout@v4, actions/setup-node@v4. Actions will be
+forced to run with Node.js 24 by default starting June 2nd, 2026.
+Node.js 20 will be removed from the runner on September 16th, 2026.
+```
+
+**Causa raíz**: GitHub está descontinuando Node.js 20 como runtime
+de las actions internas. Las actions oficiales publicaron versiones
+`@v5` que ya corren en Node.js 24 nativo. Sin upgrade, los workflows
+seguirían funcionando hasta junio 2026 con un fallback automático,
+pero post-septiembre 2026 fallarían cuando Node.js 20 sea removido
+del runner.
+
+**Fix aplicado** — los 3 workflows del repo actualizados:
+
+| Workflow | Cambios |
+|---|---|
+| `.github/workflows/generate-vehicles.yml` | `actions/checkout@v4` → `@v5`, `actions/setup-node@v4` → `@v5`, `node-version: '20'` → `'22'` |
+| `.github/workflows/optimize-images.yml` | Idem |
+| `.github/workflows/deploy-firebase-rules.yml` | Idem |
+
+**Decisión de versión Node.js**: elegimos **Node.js 22 LTS** sobre
+24 porque:
+- v22 es LTS estable hasta abril 2027 (cero riesgo de breaking changes)
+- v24 será LTS desde octubre 2025 pero algunos packages aún pueden
+  no estar 100% listos (precaución conservadora)
+- `firebase-admin` v12, `sharp`, `firebase-tools` — todos compatibles
+  con v22
+
+**Garantías**:
+- `actions/checkout@v5` y `actions/setup-node@v5` corren en Node.js
+  24 nativo de GitHub Actions runner → cero warning de deprecation
+- El runtime `node-version: '22'` aplica al código del usuario (los
+  scripts `generate-vehicles.mjs` y `optimize-images.mjs`)
+- Ambos son independientes: las actions usan Node 24 (interno),
+  los scripts del usuario usan Node 22 (configurable)
+
+**Tests E2E post-merge**:
+1. Próximo cron run del generator (cada 4h) — sin warning Node.js 20
+2. Push manual a `firestore.rules` o `storage.rules` — deploy
+   workflow corre sin warning
+3. Push de imagen nueva a `multimedia/heroes/` — optimize-images
+   workflow corre sin warning
+4. Manual workflow_dispatch del Generate Vehicle Pages — sin warning
+
+**Anti-patterns evitados**:
+- §17.4 HTML/CSS estable: cero archivos del sitio modificados.
+  Solo workflows
+- §37 IAP: cliente reportó el warning específico, autorizó implícito
+- Big Bang upgrade a Node.js 24: postpone v24 hasta que sea LTS
+  estable (octubre 2025 + ~6 meses validación = abril 2026)
+
+**Cache bump**: `v20260518060000` (también aplica al fix workflows
+porque el commit incluye ambos cambios).

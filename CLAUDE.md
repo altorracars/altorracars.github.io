@@ -37450,3 +37450,100 @@ migración hosting).
 y PENDIENTE-A status preservado (sigue 🔮 bloqueado por presupuesto).
 
 **Cache bump**: `v20260518010000`.
+
+### 90.11 Validación post-deploy (2026-05-18)
+
+Cliente reportó tras merge del PR del §90 + workflow dispatch:
+
+**Hito 1 — Workflow Generate Vehicle Pages**:
+- Run #1036 manualmente disparado desde GitHub Actions UI
+- Status: ✅ Success en 20s (single job "generate" tomó 15s)
+- Resultado: las 25+ páginas `/vehiculos/*.html` y 18+ `/marcas/*.html`
+  re-generadas con el nuevo schema Car expandido (bodyType +
+  driveWheelConfiguration + itemCondition + vehicleEngine
+  condicional + vehicleIdentificationNumber) + BreadcrumbList JSON-LD.
+  Páginas de marcas con OG + Twitter Cards + AutoDealer expandido
+  + BreadcrumbList. Warning de Node.js 20 deprecation en
+  `actions/checkout@v4` / `actions/setup-node@v4` reportado por
+  GitHub Actions — cosmético, no bloquea ejecución.
+
+**Hito 2 — Google Rich Results Test**:
+- URL probada: `https://altorracars.github.io/vehiculos/kia-cerato-pro-2015-27.html`
+- Resultado: **3 elementos válidos detectados**:
+  - ✅ Rutas de exploración (BreadcrumbList)
+  - ✅ Empresas locales (LocalBusiness/AutoDealer — vía
+    `offers.seller`) — "Detectados problemas no críticos"
+  - ✅ Organización — "Detectados problemas no críticos"
+- Rastreado correctamente el 18 may 2026 16:36:15
+- Los "problemas no críticos" son recomendaciones de Google para
+  campos opcionales adicionales (e.g. `priceRange` en
+  LocalBusiness, `logo` con dimensiones específicas) — NO bloquean
+  rich snippets ni indexación. Pueden refinarse en sprint futuro
+  sin urgencia.
+
+**Hito 3 — Google Business Profile activo**:
+- "ALTORRA CARS USADOS" creado y verificado en Cartagena (Bolívar)
+- ⭐ 5.0 promedio con 62 opiniones reales
+- 51 interacciones de clientes mensuales
+- Dirección visible: "OFICINA INTERNA ADMINISTRATIVA, MANZANA E
+  #LOTE 6, Santa Lucía, Cartagena de Indias, Bolívar"
+- Teléfono visible: 333 2666647
+- Horario: Abierto · Cierra a las 6 p.m.
+- Mapa en Cartagena con foto del lote
+- Categoría: "Tienda de vehículos de segunda mano y de ocasión
+  en Cartagena"
+- Estado: cliente administra el perfil
+
+**Resultado integrado**: cuando alguien busca "carros usados Cartagena"
+en Google ahora:
+1. Aparece la ficha de Google Business Profile en el top con mapa
+   + fotos + estrellas + teléfono (gracias al hito 3)
+2. Los resultados orgánicos del sitio aparecen con rich snippets
+   (breadcrumbs, schema Car con precio, schema AutoDealer)
+   gracias a los hitos 1+2
+3. Google entiende el contexto local Cartagena gracias al `geo.*`
+   metadata + `areaServed` schema (Fase 4 §90)
+
+Fase 4 SEO técnica = ✅ ÉXITO TOTAL validado en producción.
+
+### 90.12 Tabla §85.4 actualizada post-validación
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Bloqueado por presupuesto dominio (~$10/año) |
+| **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | ✅ §89 |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias entre asesores | ✅ §88 |
+| **§90 Fase 4 SEO técnica** | Schema rich snippets + h1 Cartagena | ✅ §90 + validado §90.11 |
+| **Google Business Profile** | Empresa registrada y operativa Cartagena | ✅ 2026-05-18 (cliente) |
+
+### 90.13 Próximo sprint — Fase 3 Performance (post §90 validación)
+
+**Audit pre-Fase 3 (2026-05-18)**:
+
+| Componente | Estado |
+|---|---|
+| Workflow `optimize-images.yml` | ✅ Activo (Bonus B §16). Trigger en push a heroes/categories/marcas-hero |
+| Carpeta `multimedia/optimized/` | ✅ 90 archivos (AVIF + WebP × 4 tamaños) ya generados para hero/categorías |
+| Páginas HTML con `<picture>` srcset | ⚠️ Solo 11/64 páginas (busqueda, contacto, marcas, privacidad, cookies, vehiculos-sedan/hatchback/pickup, resenas, terminos + 1). Faltan ~25 páginas raíz + 25 generadas vehículos + 18 generadas marcas |
+| Páginas HTML con `loading="lazy"` | ⚠️ Solo 41/64 páginas. Faltan 23 (entre ellas detalle-vehiculo template, comparar, favoritos, perfil, nosotros, simulador-credito) |
+| Critical CSS inline | ❌ Cero inline. Todo en `<link rel="stylesheet">` blocking |
+| Resource hints | ⚠️ Algunos `preconnect` a Google Fonts pero sin `preload` de critical CSS o LCP image |
+| Defer/async scripts | ⚠️ Mezcla de defer/async/sync entre los 70+ JS files |
+
+Fase 3 Performance dividida en 4 sub-sprints microquirúrgicos
+(orden recomendado por impacto LCP/FCP):
+
+| Sub | Foco | Esfuerzo | Impacto |
+|---|---|---|---|
+| **3A** | Imágenes hero + categorías con `<picture>` srcset AVIF/WebP en TODAS las páginas faltantes | 4h | LCP -40-60% en pages que cargan hero pesado |
+| **3B** | Lazy loading universal + `decoding="async"` en TODAS las imgs below-the-fold | 2h | FCP -10-20% |
+| **3C** | Critical CSS inline (above-the-fold) — extraer ~5KB de estilos hero+header de style.css → inline en cada HTML | 4h | FCP -300-500ms (elimina render-blocking) |
+| **3D** | Resource hints — preload LCP image + preconnect Firebase + dns-prefetch + defer/async scripts no críticos | 2h | LCP -20% adicional |
+
+**Total estimado Fase 3**: ~12h de trabajo focalizado distribuido en 4 commits documentados.
+
+Cliente autorizó "si detectas que todo esta bien pasemos a fase 3"
+tras validación §90.11. Siguiente paso: arrancar **Sprint 3A**
+(imágenes responsive completas).

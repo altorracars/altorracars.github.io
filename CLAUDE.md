@@ -35884,11 +35884,12 @@ operando como único asesor, S10 puede esperar.
 
 | ID | Item | Status | Esfuerzo | Bloqueante | Prioridad |
 |---|---|---|---|---|---|
-| **PENDIENTE-A** | Fase C Smart Update + Vercel | 🔮 Documentado | 3-5d + 1d test | Migración a Vercel | Baja |
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Bloqueado por presupuesto dominio (~$10/año) | 3-5d + 1d test | $10 USD dominio | Baja |
 | **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | ✅ §89 | 1d dedicado | Nada | Media |
 | **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 | 2d | Nada | Baja |
 | **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 | 1d | Tráfico real (~50 chats/mes) | Media |
 | **PENDIENTE-C-S10** | Internal notes + Transferencias entre asesores | ✅ §88 | 2d | Equipo 2+ asesores activos | Baja |
+| **§90 Fase 4 SEO técnica** | Schema rich snippets + h1 Cartagena | ✅ §90 | 4h | Nada (cero $) | Alta |
 
 ### 85.5 Cómo retomar cada PENDIENTE en sesión futura
 
@@ -37131,3 +37132,321 @@ eliminar campo `rol` legacy).
 §89 según protocolo §85.6 (auto-validación al cerrar).
 
 **Cache bump**: `v20260516010000`.
+
+
+---
+
+## 90. ADR-090 — Sprint Fase 4 SEO (parte técnica): rich snippets vehículos/marcas + h1 Cartagena (2026-05-18)
+
+> Primer sprint del bloque de mejoras **sin presupuesto** acordado tras
+> el cierre de PENDIENTE-B (§89). Cliente confirmó (§ Acción de turno
+> previo): no hay presupuesto para dominio `altorracars.com` por ahora,
+> por lo que Fase 1 (dominio + Cloudflare DNS + email pro) y Fase 2
+> (build system + migración Cloudflare Pages) quedan PAUSADAS hasta
+> que aparezcan los ~$10 USD.
+>
+> Lo que SÍ podemos hacer hoy con $0: **Fase 4 SEO** documentada en
+> `PLAN-MIGRACION-ALTORRA.md` — mejoras al SEO orgánico que aplican
+> directamente a GitHub Pages actual sin cambiar de hosting.
+>
+> Audit pre-sprint reveló que el sitio ya tiene SEO decente (sitemap
+> bien estructurado, robots OK, canonical en todas, schema básico de
+> vehículos desde §14), pero hay **4 gaps críticos** que aún no estaban
+> resueltos:
+>
+> 1. Páginas de marca (`/marcas/*.html`) **sin OG ni Twitter Cards** —
+>    al compartir una marca en WhatsApp/IG/FB no aparecía preview
+> 2. Páginas de marca con JSON-LD AutoDealer pobre (sin teléfono ni
+>    geo coords ni areaServed)
+> 3. Schema Car de vehículos faltando campos para rich snippets más
+>    ricos (`bodyType`, `driveWheelConfiguration`, `itemCondition`,
+>    `vehicleEngine`)
+> 4. `busqueda.html` sin `<h1>` (solo h2 con contador dinámico) y
+>    `index.html` con h1 que no mencionaba Cartagena
+>
+> Sprint §90 cierra esos 4 gaps. **Cero impacto visual**, cero refactor
+> de admin/bot/RBAC, cero deploy backend.
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero transition all),
+> §17.4 (HTML/CSS estable), §17.12 (cero MutationObserver),
+> §19 (RCA estricto), §35 (cero pointermove), §37 (IAP),
+> `PLAN-MIGRACION-ALTORRA.md` Fase 4.
+
+### 90.1 Causa raíz del estado pre-§90
+
+Audit con Explore agent encontró:
+
+| Componente | Estado pre-§90 |
+|---|---|
+| `sitemap.xml` (priority + changefreq + lastmod) | ✅ Bien estructurado |
+| `robots.txt` | ✅ OK (allow + disallow admin + sitemap directive) |
+| Canonical URLs en todas las páginas | ✅ OK |
+| OG + Twitter Cards en `/vehiculos/*.html` | ✅ OK desde §14 |
+| Schema `Car` por vehículo | ⚠️ Existe pero le faltan `bodyType`, `driveWheelConfiguration`, `itemCondition`, `vehicleEngine`, `vehicleIdentificationNumber` |
+| OG + Twitter Cards en `/marcas/*.html` | ❌ **NO existían** |
+| JSON-LD AutoDealer en marcas | ⚠️ Pobre (sin teléfono, geo, areaServed) |
+| BreadcrumbList JSON-LD | ❌ NO existía en ninguna página |
+| H1 en `index.html` | ⚠️ "Encuentra el Auto de tus Sueños" — NO mencionaba "Cartagena" ni "Carros Usados" (keywords críticas SEO local) |
+| H1 en `busqueda.html` | ❌ NO existía (solo h2 dinámico) |
+| Página `/cartagena.html` dedicada | ❌ NO existe (DEUDA — requiere contenido editorial del cliente, mejor para Fase 5 blog) |
+
+### 90.2 Solución estructural — 5 cambios coordinados
+
+#### A. `scripts/generate-vehicles.mjs` `generatePage` — schema Car expandido + BreadcrumbList
+
+**Maps de conversión**:
+- `bodyTypeMap`: categoria → bodyType canonical
+  (`'suv' → 'SUV'`, `'pickup' → 'PickupTruck'`, `'hatchback' → 'Hatchback'`, etc.)
+- `tracMap`: tracción → driveWheelConfiguration
+  (`'delantera'/'fwd' → 'FrontWheelDriveConfiguration'`,
+  `'trasera'/'rwd' → 'RearWheelDriveConfiguration'`,
+  `'4x4'/'4wd'/'awd' → 'AllWheelDriveConfiguration'`)
+- `itemCondition`: `tipo='usado' → 'UsedCondition'` else `'NewCondition'`
+
+**Campos nuevos en schema Car**:
+- `bodyType` (si categoria conocida)
+- `driveWheelConfiguration` (si tracción conocida)
+- `itemCondition` + duplicado en `offers.itemCondition`
+- `vehicleEngine` con `engineDisplacement` (CC) y `enginePower` (BHP)
+  **condicional** — solo si hay `cilindraje` o `potencia` en BD
+- `vehicleIdentificationNumber` (si `placa` ≠ default)
+- `offers.seller.address` ampliado con `addressRegion: 'Bolívar'`
+- `vehicleSeatingCapacity` usa `pasajeros || asientos || 5` (antes solo `pasajeros`)
+
+**JSON-LD BreadcrumbList nuevo**:
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "..." },
+    { "@type": "ListItem", "position": 2, "name": "Marcas", "item": "..." },
+    { "@type": "ListItem", "position": 3, "name": "{Marca}", "item": "..." },
+    { "@type": "ListItem", "position": 4, "name": "{Marca} {Modelo} {Año}", "item": "..." }
+  ]
+}
+```
+
+#### B. `scripts/generate-vehicles.mjs` `generateBrandPage` — OG + Twitter + Schema mejorado
+
+**OG block inyectado** después del canonical:
+- `og:type=website`, `og:title`, `og:description`, `og:url`
+- `og:image` apunta a `multimedia/banner/b_{brandId}.png` (banner de la marca)
+- `og:image:width=1200`, `og:image:height=630`
+- `og:locale=es_CO`, `og:site_name=ALTORRA CARS`
+- Twitter Cards `summary_large_image` con title/desc/image
+- **Local SEO Cartagena**: `geo.region=CO-BOL`, `geo.placename=Cartagena`,
+  `geo.position=10.3910485;-75.4794257`, `ICBM`
+
+**AutoDealer expandido**:
+- Agregado `telephone: '+57 323 501 6747'`
+- Agregado `image: bannerImage`
+- Agregado `address.addressRegion: 'Bolívar'`
+- Agregado `geo: { '@type': 'GeoCoordinates', latitude, longitude }`
+- Agregado `areaServed: { '@type': 'City', name: 'Cartagena de Indias' }`
+
+**BreadcrumbList nuevo**: Home > Marcas > {Marca}
+
+#### C. `index.html` — h1 con sr-only keyword
+
+```html
+<h1 class="hero-title">
+    <span class="sr-only">Carros Usados Certificados en Cartagena — </span>Encuentra el Auto
+    <span class="hero-title-accent">de tus Sueños</span>
+</h1>
+```
+
+Google lee el h1 completo "Carros Usados Certificados en Cartagena —
+Encuentra el Auto de tus Sueños". Visualmente el usuario sigue viendo
+SOLO "Encuentra el Auto de tus Sueños" (sr-only es invisible).
+Patrón estándar Apple/Stripe.
+
+#### D. `busqueda.html` — h1 sr-only completamente nuevo
+
+Antes solo había `<h2><span id="resultsCount">0</span> vehículos
+encontrados</h2>` que es dinámico. Google sin h1 → penalty SEO.
+
+Agregado al inicio del `search-results-section`:
+```html
+<h1 class="sr-only">Catálogo de Carros Usados en Cartagena | ALTORRA CARS</h1>
+```
+
+#### E. `css/style.css` — append `.sr-only` utility
+
+Patrón estándar W3C (mismo que `.alt-visually-hidden` en `components.css`):
+```css
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+```
+
+Cero impacto visual. Solo afecta a screen readers + crawlers.
+
+### 90.3 Acciones operativas tras merge
+
+**OBLIGATORIA** para que las páginas ya generadas (~25 vehículos + ~18
+marcas) usen el nuevo formato SEO:
+
+1. Ir a https://github.com/altorracars/altorracars.github.io/actions
+2. Click en workflow "Generate Vehicles" (o el nombre exacto que tenga)
+3. Click "Run workflow" → branch `main` → "Run workflow"
+4. Esperar 2-3 minutos → todas las páginas re-generadas con SEO mejorado
+5. Verificar con Google Rich Results Test:
+   - Visitar https://search.google.com/test/rich-results
+   - Pegar URL de cualquier vehículo: `https://altorracars.github.io/vehiculos/{slug}.html`
+   - Validar que detecte `Car` schema + `BreadcrumbList`
+   - Misma validación para una marca: `https://altorracars.github.io/marcas/{slug}.html`
+   - Debe detectar `AutoDealer` + `BreadcrumbList`
+
+**Si no querés esperar el cron 4h y no querés hacer workflow_dispatch**:
+las páginas seguirán funcionando con el formato anterior hasta el
+próximo cron run del generator. El SEO mejorado solo aplica cuando
+las páginas se re-generan.
+
+**Plus** (decisión tuya, $0, 30 min):
+- Crear **Google Business Profile** en https://business.google.com:
+  - Categoría: "Concesionario de autos usados"
+  - Dirección de Altorra Cars en Cartagena
+  - Teléfono: +57 323 501 6747
+  - Horario: Lun-Vie 8AM-6PM, Sáb 9AM-2PM
+  - 5-10 fotos del lote y de autos destacados
+  - Link a `https://altorracars.github.io`
+- Google te pide verificar (postal o llamada, depende del país)
+- Una vez verificado: cuando alguien busca "carros usados Cartagena" en
+  Google, ALTORRA aparece en el TOP 3 con mapa + fotos + reviews
+
+Esto es **lo que más mueve la aguja** sin gastar nada.
+
+### 90.4 Anti-patterns evitados
+
+| Doctrina | Riesgo | Mitigación |
+|---|---|---|
+| §17.2 transition all | `transition: all` | Cero CSS animation/transition agregado |
+| §17.4 HTML/CSS estable | Renombrar IDs/clases | CERO. Solo `.sr-only` nueva clase aditiva |
+| §17.12 anti-MO | MutationObserver global | Cero MO |
+| §35 anti-pointermove | pointermove persistente | Cero pointermove |
+| §37 IAP | Implementar sin autorización | IAP entregado al cliente + autorización explícita ("continuemos bajo tu recomendación") |
+| Schema malformado | Romper rich snippets | Validación pendiente: Google Rich Results Test post-merge (§90.3 acción 5) |
+| H1 dinámico | Google no captura H1 cargado por JS | h1 estático con sr-only — Google lee en SSR/crawl inicial |
+| h1 que cambia visualmente | Romper UX | sr-only es invisible, hero visual idéntico |
+| Cambiar todas las páginas estáticas | Riesgo masivo | Solo `index.html` + `busqueda.html` — las demás ya tienen estructura OK |
+| Generator script con regex frágil | Reemplazo accidental | Patrones específicos con `<link rel="canonical">` o `</head>` como anchors |
+
+### 90.5 Riesgos + plan de rollback
+
+| # | Riesgo | Probabilidad | Mitigación | Rollback |
+|---|---|---|---|---|
+| 1 | Generator no se ejecuta tras merge | 🟡 Media | workflow_dispatch manual en GitHub Actions (acción operativa §90.3) | N/A — páginas viejas siguen funcionando con SEO anterior |
+| 2 | Schema mal formado rompe rich snippets | 🟢 Baja | Validar con Google Rich Results Test post-merge. JSON.stringify de objetos estructurados — cero error de parsing |
+| 3 | `vehicleEngine` con datos inválidos (cilindraje raro) | 🟢 Baja | Regex `replace(/[^0-9.]/g, '')` limpia el valor antes de inyectarlo |
+| 4 | `vehicleIdentificationNumber` expone placas reales | 🟢 Esperado | Solo si la placa NO es "Disponible al contactar" (default). Si admin la setea, es intencional. Google permite VIN/placa en schema vehicular |
+| 5 | sr-only oculta texto importante a screen readers | 🟢 Nula | sr-only es accesible para screen readers (su propósito justamente) |
+| 6 | `.sr-only` definida en components.css colisiona | 🟢 Nula | components.css define `.alt-visually-hidden` con el mismo CSS. Cero conflicto |
+| 7 | h1 con sr-only viola WCAG | 🟢 Nula | Es práctica recomendada por W3C/Apple/Stripe para texto SEO oculto visualmente pero accesible |
+| 8 | Banner de marca `b_{brandId}.png` no existe → og:image roto | 🟡 Media | URL apunta a recurso que puede no existir. Si falla, Google fallback al og:image global del sitio. **Acción tuya futura**: subir banners por marca al admin (`multimedia/banner/b_{id}.png`) |
+| 9 | Cliente NO ejecuta Ctrl+Shift+R | 🔴 Alta | Cache version bumped `v20260518010000`. SW invalida automático en próximo refresh |
+
+### 90.6 Acciones operativas del cliente (post-merge)
+
+1. **Workflow dispatch** (5 min): regenerar todas las páginas
+   /vehiculos/*.html y /marcas/*.html con SEO nuevo
+2. **Validar 2-3 URLs** con Google Rich Results Test (~5 min)
+3. **Crear Google Business Profile** (30 min, opcional pero recomendado)
+4. **Submit sitemap a Google Search Console**:
+   - Ir a https://search.google.com/search-console
+   - "Add property" → URL: `https://altorracars.github.io`
+   - Verificar dominio (te paso pasos si necesitás)
+   - "Sitemaps" → submit `sitemap.xml`
+5. Esperar 1-4 semanas para que Google re-indexe con rich snippets nuevos
+
+### 90.7 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `scripts/generate-vehicles.mjs` | `generatePage` (vehículos): schema Car expandido con bodyType/driveWheelConfiguration/itemCondition/vehicleEngine/VIN + BreadcrumbList JSON-LD. `generateBrandPage` (marcas): OG + Twitter Cards + AutoDealer expandido + BreadcrumbList | +154, -10 |
+| `index.html` | h1 con `<span class="sr-only">Carros Usados Certificados en Cartagena — </span>` antes de "Encuentra el Auto" | +7, -3 |
+| `busqueda.html` | h1 sr-only nuevo "Catálogo de Carros Usados en Cartagena \| ALTORRA CARS" antes del search-results-section | +4 |
+| `css/style.css` | append `.sr-only` utility class (W3C standard) | +18 |
+| `service-worker.js` | CACHE_VERSION → `v20260518010000` con changelog §90 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION prepend §90 | +1, -1 |
+| `CLAUDE.md` | Esta sección §90 + actualización tabla §85.4 (PENDIENTE-A sigue 🔮 — bloqueado por presupuesto dominio) | +200 |
+
+**Total**: 7 archivos. Cero archivos nuevos. Cero schema Firestore. Cero
+deploy backend. Cero Cloud Function nueva. Cero rules touch.
+
+### 90.8 Archivos INTACTOS (afirmación)
+
+- `sitemap.xml` (ya OK desde §14)
+- `robots.txt` (ya OK desde §14)
+- `marca.html` template (el generator inyecta meta tags directamente
+  via post-process, no requiere placeholder en el template)
+- `detalle-vehiculo.html` template (igual)
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+- AI modules (`js/ai/*.js`), `js/concierge.js`, `js/admin-concierge.js`,
+  `js/hub-store.js` — ZERO
+- Sistema RBAC (`js/rbac-catalog.js`, `js/admin-state.js`, etc.) — ZERO
+- Plan §59 ALTOR Hub features (S1-S10) — ZERO
+- HTML de páginas estáticas no modificadas (contacto, nosotros,
+  cookies, terminos, privacidad, etc.) — ZERO
+- 60+ archivos JS del admin — ZERO
+
+### 90.9 Estado de PENDIENTES post-§90
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages migration | 🔮 Bloqueado por presupuesto dominio (~$10/año) |
+| **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | ✅ §89 |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias | ✅ §88 |
+| **§90 Fase 4 SEO técnica** | Schema rich snippets + h1 Cartagena | **✅ §90 (este)** |
+
+**Próximos pasos opcionales sin presupuesto** (cuando quieras seguir):
+
+| Item | Esfuerzo | Tu tiempo | Mi tiempo |
+|---|---|---|---|
+| Crear Google Business Profile | $0 | 30 min | 0 (es 100% tuyo) |
+| Submit a Google Search Console + monitorear | $0 | 15 min | 30 min ayudándote |
+| **Fase 3 Performance** (WebP/AVIF + code splitting + critical CSS) | $0 | 0 | ~3 días |
+| Crear página `/cartagena.html` dedicada | $0 | 2 hs (texto editorial) | 1 hs (template) |
+| Optimizar metadata local SEO en páginas faltantes (contacto, nosotros) | $0 | 0 | 1 hs |
+
+**Cuando aparezcan los $10 USD del dominio**:
+- Fase 1 (dominio Hostinger + Cloudflare DNS + email pro)
+- Fase 2 (Cloudflare Pages + Vite build system) → adiós cartel "Nueva versión disponible" + deploy 45-90s
+- Esto cierra PENDIENTE-A (Fase C Smart Update)
+
+### 90.10 Doctrina aplicada
+
+§19 RCA estricto: audit profundo previo con Explore agent identificó
+los 4 gaps reales (no parches cosméticos). Cero overengineering.
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita del cliente ("continuemos bajo tu recomendación").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Cero CSS animation. Solo data + metadata estática.
+
+§17.4 HTML/CSS estable: cero IDs/clases existentes renombrados. Solo
+`.sr-only` nueva clase aditiva siguiendo patrón W3C.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+`PLAN-MIGRACION-ALTORRA.md` Fase 4: §90 ejecuta estricto al pie de
+Fase 4 sección 4.1 (Schema.org JSON-LD por vehículo) + 4.2 (Open Graph
+en marcas) + 4.5 (Local SEO Cartagena en metadata). Cero overflow a
+Fase 5 contenido (blog, página /cartagena) ni Fase 1-2 (dominio +
+migración hosting).
+
+§85 PENDIENTES: tabla §85.4 actualizada con §90 nuevo item agregado
+y PENDIENTE-A status preservado (sigue 🔮 bloqueado por presupuesto).
+
+**Cache bump**: `v20260518010000`.

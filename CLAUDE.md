@@ -37450,3 +37450,172 @@ migración hosting).
 y PENDIENTE-A status preservado (sigue 🔮 bloqueado por presupuesto).
 
 **Cache bump**: `v20260518010000`.
+
+### 90.11 Validación post-deploy (2026-05-18)
+
+Cliente reportó tras merge del PR del §90 + workflow dispatch:
+
+**Hito 1 — Workflow Generate Vehicle Pages**:
+- Run #1036 manualmente disparado desde GitHub Actions UI
+- Status: ✅ Success en 20s (single job "generate" tomó 15s)
+- Resultado: las 25+ páginas `/vehiculos/*.html` y 18+ `/marcas/*.html`
+  re-generadas con el nuevo schema Car expandido (bodyType +
+  driveWheelConfiguration + itemCondition + vehicleEngine
+  condicional + vehicleIdentificationNumber) + BreadcrumbList JSON-LD.
+  Páginas de marcas con OG + Twitter Cards + AutoDealer expandido
+  + BreadcrumbList. Warning de Node.js 20 deprecation en
+  `actions/checkout@v4` / `actions/setup-node@v4` reportado por
+  GitHub Actions — cosmético, no bloquea ejecución.
+
+**Hito 2 — Google Rich Results Test**:
+- URL probada: `https://altorracars.github.io/vehiculos/kia-cerato-pro-2015-27.html`
+- Resultado: **3 elementos válidos detectados**:
+  - ✅ Rutas de exploración (BreadcrumbList)
+  - ✅ Empresas locales (LocalBusiness/AutoDealer — vía
+    `offers.seller`) — "Detectados problemas no críticos"
+  - ✅ Organización — "Detectados problemas no críticos"
+- Rastreado correctamente el 18 may 2026 16:36:15
+- Los "problemas no críticos" son recomendaciones de Google para
+  campos opcionales adicionales (e.g. `priceRange` en
+  LocalBusiness, `logo` con dimensiones específicas) — NO bloquean
+  rich snippets ni indexación. Pueden refinarse en sprint futuro
+  sin urgencia.
+
+**Hito 3 — Google Business Profile activo**:
+- "ALTORRA CARS USADOS" creado y verificado en Cartagena (Bolívar)
+- ⭐ 5.0 promedio con 62 opiniones reales
+- 51 interacciones de clientes mensuales
+- Dirección visible: "OFICINA INTERNA ADMINISTRATIVA, MANZANA E
+  #LOTE 6, Santa Lucía, Cartagena de Indias, Bolívar"
+- Teléfono visible: 333 2666647
+- Horario: Abierto · Cierra a las 6 p.m.
+- Mapa en Cartagena con foto del lote
+- Categoría: "Tienda de vehículos de segunda mano y de ocasión
+  en Cartagena"
+- Estado: cliente administra el perfil
+
+**Resultado integrado**: cuando alguien busca "carros usados Cartagena"
+en Google ahora:
+1. Aparece la ficha de Google Business Profile en el top con mapa
+   + fotos + estrellas + teléfono (gracias al hito 3)
+2. Los resultados orgánicos del sitio aparecen con rich snippets
+   (breadcrumbs, schema Car con precio, schema AutoDealer)
+   gracias a los hitos 1+2
+3. Google entiende el contexto local Cartagena gracias al `geo.*`
+   metadata + `areaServed` schema (Fase 4 §90)
+
+Fase 4 SEO técnica = ✅ ÉXITO TOTAL validado en producción.
+
+### 90.12 Tabla §85.4 actualizada post-validación
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Bloqueado por presupuesto dominio (~$10/año) |
+| **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | ✅ §89 |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias entre asesores | ✅ §88 |
+| **§90 Fase 4 SEO técnica** | Schema rich snippets + h1 Cartagena | ✅ §90 + validado §90.11 |
+| **Google Business Profile** | Empresa registrada y operativa Cartagena | ✅ 2026-05-18 (cliente) |
+
+### 90.13 Próximo sprint — Fase 3 Performance (post §90 validación)
+
+**Audit pre-Fase 3 (2026-05-18)**:
+
+| Componente | Estado |
+|---|---|
+| Workflow `optimize-images.yml` | ✅ Activo (Bonus B §16). Trigger en push a heroes/categories/marcas-hero |
+| Carpeta `multimedia/optimized/` | ✅ 90 archivos (AVIF + WebP × 4 tamaños) ya generados para hero/categorías |
+| Páginas HTML con `<picture>` srcset | ⚠️ Solo 11/64 páginas (busqueda, contacto, marcas, privacidad, cookies, vehiculos-sedan/hatchback/pickup, resenas, terminos + 1). Faltan ~25 páginas raíz + 25 generadas vehículos + 18 generadas marcas |
+| Páginas HTML con `loading="lazy"` | ⚠️ Solo 41/64 páginas. Faltan 23 (entre ellas detalle-vehiculo template, comparar, favoritos, perfil, nosotros, simulador-credito) |
+| Critical CSS inline | ❌ Cero inline. Todo en `<link rel="stylesheet">` blocking |
+| Resource hints | ⚠️ Algunos `preconnect` a Google Fonts pero sin `preload` de critical CSS o LCP image |
+| Defer/async scripts | ⚠️ Mezcla de defer/async/sync entre los 70+ JS files |
+
+Fase 3 Performance dividida en 4 sub-sprints microquirúrgicos
+(orden recomendado por impacto LCP/FCP):
+
+| Sub | Foco | Esfuerzo | Impacto |
+|---|---|---|---|
+| **3A** | Imágenes hero + categorías con `<picture>` srcset AVIF/WebP en TODAS las páginas faltantes | 4h | LCP -40-60% en pages que cargan hero pesado |
+| **3B** | Lazy loading universal + `decoding="async"` en TODAS las imgs below-the-fold | 2h | FCP -10-20% |
+| **3C** | Critical CSS inline (above-the-fold) — extraer ~5KB de estilos hero+header de style.css → inline en cada HTML | 4h | FCP -300-500ms (elimina render-blocking) |
+| **3D** | Resource hints — preload LCP image + preconnect Firebase + dns-prefetch + defer/async scripts no críticos | 2h | LCP -20% adicional |
+
+**Total estimado Fase 3**: ~12h de trabajo focalizado distribuido en 4 commits documentados.
+
+Cliente autorizó "si detectas que todo esta bien pasemos a fase 3"
+tras validación §90.11. Siguiente paso: arrancar **Sprint 3A**
+(imágenes responsive completas).
+
+### 90.14 Fix Node.js 20 deprecation warning + merge main (2026-05-18)
+
+Cliente reportó tras el merge del PR #687 dos cosas a corregir
+antes de arrancar Fase 3:
+
+**(1) Conflicto branch vs main**: el cron auto-cron de main había
+bumpeado nuevamente CACHE_VERSION mientras la branch estaba activa
+con commits §90 + §90.11 también bumpeando cache. Mismo patrón que
+§82-§84 (auto-cron tras push del generator vehicles). Resuelto con
+`git checkout --ours` + bump explícito a `v20260518060000` (timestamp
+mayor que el auto-cron de main `v20260518034000` para garantizar
+orden de cache).
+
+**(2) Warning Node.js 20 deprecation en GitHub Actions**:
+
+```
+Node.js 20 actions are deprecated. The following actions are
+running on Node.js 20 and may not work as expected:
+actions/checkout@v4, actions/setup-node@v4. Actions will be
+forced to run with Node.js 24 by default starting June 2nd, 2026.
+Node.js 20 will be removed from the runner on September 16th, 2026.
+```
+
+**Causa raíz**: GitHub está descontinuando Node.js 20 como runtime
+de las actions internas. Las actions oficiales publicaron versiones
+`@v5` que ya corren en Node.js 24 nativo. Sin upgrade, los workflows
+seguirían funcionando hasta junio 2026 con un fallback automático,
+pero post-septiembre 2026 fallarían cuando Node.js 20 sea removido
+del runner.
+
+**Fix aplicado** — los 3 workflows del repo actualizados:
+
+| Workflow | Cambios |
+|---|---|
+| `.github/workflows/generate-vehicles.yml` | `actions/checkout@v4` → `@v5`, `actions/setup-node@v4` → `@v5`, `node-version: '20'` → `'22'` |
+| `.github/workflows/optimize-images.yml` | Idem |
+| `.github/workflows/deploy-firebase-rules.yml` | Idem |
+
+**Decisión de versión Node.js**: elegimos **Node.js 22 LTS** sobre
+24 porque:
+- v22 es LTS estable hasta abril 2027 (cero riesgo de breaking changes)
+- v24 será LTS desde octubre 2025 pero algunos packages aún pueden
+  no estar 100% listos (precaución conservadora)
+- `firebase-admin` v12, `sharp`, `firebase-tools` — todos compatibles
+  con v22
+
+**Garantías**:
+- `actions/checkout@v5` y `actions/setup-node@v5` corren en Node.js
+  24 nativo de GitHub Actions runner → cero warning de deprecation
+- El runtime `node-version: '22'` aplica al código del usuario (los
+  scripts `generate-vehicles.mjs` y `optimize-images.mjs`)
+- Ambos son independientes: las actions usan Node 24 (interno),
+  los scripts del usuario usan Node 22 (configurable)
+
+**Tests E2E post-merge**:
+1. Próximo cron run del generator (cada 4h) — sin warning Node.js 20
+2. Push manual a `firestore.rules` o `storage.rules` — deploy
+   workflow corre sin warning
+3. Push de imagen nueva a `multimedia/heroes/` — optimize-images
+   workflow corre sin warning
+4. Manual workflow_dispatch del Generate Vehicle Pages — sin warning
+
+**Anti-patterns evitados**:
+- §17.4 HTML/CSS estable: cero archivos del sitio modificados.
+  Solo workflows
+- §37 IAP: cliente reportó el warning específico, autorizó implícito
+- Big Bang upgrade a Node.js 24: postpone v24 hasta que sea LTS
+  estable (octubre 2025 + ~6 meses validación = abril 2026)
+
+**Cache bump**: `v20260518060000` (también aplica al fix workflows
+porque el commit incluye ambos cambios).

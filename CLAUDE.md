@@ -37619,3 +37619,254 @@ del runner.
 
 **Cache bump**: `v20260518060000` (también aplica al fix workflows
 porque el commit incluye ambos cambios).
+
+---
+
+## 91. ADR-091 — Sprint Fase 3A: Imágenes responsive `<picture>` srcset AVIF/WebP para LCP (2026-05-18)
+
+> Primer sprint del bloque **Fase 3 Performance** documentado en
+> §90.13 tras la validación exitosa del SEO en §90.11. Cliente
+> autorizó secuencialmente "si detectas que todo esta bien pasemos
+> a fase 3" → "Arrancamos ahora Sprint 3A".
+>
+> Refactor microquirúrgico de los 2 únicos archivos raíz del sitio
+> público con hero pesado **sin** wrap `<picture>`: `index.html`
+> (LCP `heroindex.webp`) y `nosotros.html` (LCP `nosotros-hero.webp`).
+> Plus wrap de las 4 category cards del index. Pipeline de
+> `multimedia/optimized/` extendido con 2 nuevas variants de origen.
+>
+> **El audit pre-sprint refinó la estimación previa** del §90.13
+> ("~25 páginas raíz + 25 vehículos + 18 marcas faltantes"):
+> - 11 páginas raíz ya tenían `<picture>` desde §16 Bonus B
+> - 13 son admin/internas/redirects sin hero estático (no aplican)
+> - 5 raíz solo usan logo 68px (no LCP candidate)
+> - 2 templates dinámicos (`detalle-vehiculo.html` / `marca.html`)
+>   usan imágenes runtime de Firestore
+> - 27 `vehiculos/*.html` generadas usan imágenes desde Firebase
+>   Storage (admin upload, **sin pipeline AVIF/WebP** — fuera de
+>   scope Sprint 3A, requiere refactor del flujo admin)
+> - 18 `marcas/*.html` generadas usan `banners/b_{id}.png` **fuera
+>   del TARGETS del optimizer** (idem)
+> - **2 raíz** (`index.html` + `nosotros.html`) son el objetivo real
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero `transition: all`),
+> §17.4 (HTML/CSS estable), §17.12 (cero MutationObserver),
+> §19 (RCA estricto), §35 (cero pointermove), §37 (IAP),
+> `PLAN-MIGRACION-ALTORRA.md` Fase 3, §90.13 audit pre-Fase 3.
+
+### 91.1 Causa raíz pre-§91
+
+Audit previo identificó estado dispar de optimización por archivo:
+
+| Archivo | Estado pre-§91 | Impacto LCP |
+|---|---|---|
+| `index.html` `.hero` | LCP = `heroindex.webp` cargado como `background-image: url()` de `.hero::after`, opacity 0→1 cross-fade. Preload single URL sin srcset | LCP penalty: ~145KB single-size en todos los devices vs ~30-50KB AVIF responsive |
+| `index.html` 4 category cards | `<img src="multimedia/categories/X.jpg">` single-format JPG sin srcset | -50% LCP posible con AVIF |
+| `nosotros.html` `.about-hero` | LCP = `nosotros-hero.webp` como `background-image: url()` de `.about-hero::before`. **Sin preload** | LCP penalty severo: ~124KB descarga tarde en el waterfall |
+| `multimedia/categories/camioneta.jpg` | **NO incluida** en TARGETS del optimizer. Histórico: existe `camioneta.jpg` (minúscula) separada de `PICKUP.jpg` (mayúscula) | Sin AVIF/WebP variants |
+| `multimedia/nosotros-hero.webp` | **NO incluida** en TARGETS del optimizer | Sin AVIF/WebP variants |
+
+### 91.2 Solución estructural — 4 cambios coordinados
+
+#### A. `scripts/optimize-images.mjs` — TARGETS extendido
+
+```js
+const TARGETS = [
+    'multimedia/heroindex.webp',
+    'multimedia/marcas-hero.jpg',
+    'multimedia/nosotros-hero.webp',          // §91 NUEVO
+    'multimedia/categories/SUV.jpg',
+    'multimedia/categories/PICKUP.jpg',
+    'multimedia/categories/SEDAN.jpg',
+    'multimedia/categories/HATCHBACK.jpg',
+    'multimedia/categories/BUSQUEDA.jpg',
+    'multimedia/categories/camioneta.jpg',    // §91 NUEVO
+    ...
+];
+```
+
+El workflow `.github/workflows/optimize-images.yml` tiene path filter
+que incluye `scripts/optimize-images.mjs` → trigger automático al
+push. Script idempotente (mtime check) genera 8 variants nuevas por
+target (AVIF + WebP × 4 sizes), commitea a `multimedia/optimized/`
+con `[skip ci]`.
+
+#### B. `index.html` — refactor LCP del hero + 4 category cards
+
+**B.1 Preload con `imagesrcset` responsive AVIF/WebP**:
+
+2 `<link rel="preload">` tags con `type="image/avif"` y
+`type="image/webp"`. Browser que soporta AVIF descarga el primero,
+IGNORA el segundo (gracias al `type=` attribute). Browser sin AVIF
+descarga el WebP preload. Browser sin ninguno cae al `<img src>`
+fallback.
+
+**B.2 Refactor `.hero` section a `<picture>` real**:
+
+Antes: `.hero::after { background-image: url('heroindex.webp') }`.
+Ahora: `<picture>` con `<source type="image/avif">` + `<source
+type="image/webp">` + `<img class="hero-bg-img" src="...">` fallback.
+Cross-fade idéntico vía `.hero.hero-img-loaded .hero-bg-img`.
+
+**Beneficios refactor `<img>` real vs `background-image`**:
+- LCP detection del browser prefiere `<img>` sobre `background-image`
+- srcset nativo con responsive sizes
+- `decoding="async"` permite parsing paralelo
+- `fetchpriority="high"` consistente con preload
+- Cache hit garantizado: URLs del `<source>` matchean exact con preload
+
+**B.3 CSS refactor en `css/hero.css`**:
+
+`.hero::after` REEMPLAZADO por `.hero-bg-img` (position absolute +
+object-fit cover + opacity 0→1 transition). `@media
+prefers-reduced-motion` mantiene opacity:1 sin transition. Fallback
+`.no-js .hero .hero-bg-img { opacity: 1 }` para JS desactivado.
+
+**B.4 JS inline observa el `<img>` real**:
+
+Antes `new Image()` virtual. Ahora `document.querySelector('.hero
+.hero-bg-img')` y observa `load` event real. Si `img.complete &&
+img.naturalHeight > 0` al parsear (cache hit del preload), `reveal()`
+síncrono sin listener.
+
+**B.5 Category cards** (SUV/camioneta/SEDAN/HATCHBACK) wrap con
+`<picture>` similar pattern. HATCHBACK solo tiene 480/768 (imagen
+original 1200×800).
+
+#### C. `nosotros.html` — refactor LCP `.about-hero`
+
+Patrón análogo a B sin category cards:
+1. **2 preloads AVIF/WebP** en `<head>` (nuevo)
+2. **`<picture>` real** dentro de `<section class="about-hero">`
+3. **`.about-hero-bg`** CSS class reemplaza `.about-hero::before`
+4. Ambient lights, overlay, particles INTACTAS (z-index separado)
+
+#### D. Cache bump
+
+- `service-worker.js`: `CACHE_VERSION` → `v20260518070000`
+- `js/cache-manager.js`: `APP_VERSION` → `'20260518070000'`
+
+### 91.3 Acciones operativas tras merge
+
+**Automática**: GitHub Actions workflow `optimize-images.yml` se
+dispara al detectar cambio en `scripts/optimize-images.mjs` (path
+filter). Genera 16 variants nuevas (8 por target × 2 targets) y
+commitea a `multimedia/optimized/`. Tiempo: 1-2 min.
+
+**Validación post-deploy** (cliente):
+1. **Ctrl+Shift+R** en sitio público
+2. **DevTools → Network → filter "heroindex"**: confirma
+   `heroindex-768.avif` o `heroindex-1280.avif` (según viewport),
+   NO `heroindex.webp` legacy
+3. **DevTools → Network → filter "nosotros-hero"**: idem
+4. **Lighthouse Performance**: medir LCP antes/después.
+   Esperado -40-60% mobile
+
+### 91.4 Anti-patterns evitados
+
+| Doctrina | Mitigación |
+|---|---|
+| §17.2 transition all | Solo `transition: opacity` específica en `.hero-bg-img` |
+| §17.4 HTML/CSS estable | CERO IDs renombrados. Clases nuevas aditivas. `.hero::after` REEMPLAZADO (patrón es sustituir, no romper otros callsites) |
+| §17.12 anti-MO | Cero. JS observa `<img>.load` event discreto |
+| §35 anti-pointermove | Cero |
+| §37 IAP | Autorizado explícito por cliente |
+| Big Bang refactor | Cross-fade idéntico — solo cambia el `qué observamos` |
+| Doble preload | `type=` attribute hace browser elegir UNO solo |
+| Cache miss preload | URLs preload IDÉNTICAS a `<source srcset>` |
+| Mobile lento descargando 1920 | `sizes="100vw"` indica viewport-relative |
+| Páginas dinámicas (`vehiculos/*`, `marcas/*`) | Documentado fuera de scope §91 — requiere refactor admin upload pipeline |
+
+### 91.5 Riesgos + plan de rollback
+
+| # | Riesgo | Mitigación |
+|---|---|---|
+| 1 | Workflow no genera variants | Path filter incluye `scripts/optimize-images.mjs` desde §16 Bonus B + verificado §90.14. Fallback: workflow_dispatch manual |
+| 2 | Cache 404 si JS corre antes del DOM | `bind()` checa `document.readyState === 'loading'` + agenda `DOMContentLoaded` |
+| 3 | Browser viejo ignora `<picture>` | `<img src>` fallback dentro de `<picture>` cubre IE11+ |
+| 4 | Safari iOS 15 sin AVIF | Cae al `<source type=image/webp>` o `<img>` fallback |
+| 5 | LCP empeora descargando 1920 mobile | `sizes="100vw"` indica viewport-relative — browser usa el más chico |
+| 6 | Bot ALTOR pierde referencia visual | Cero JS admin/bot tocado |
+| 7 | Cliente NO ejecuta Ctrl+Shift+R | Cache bumped, SW invalida automático. Primera vez requiere hard refresh |
+| 8 | `nosotros-hero.webp` variants no listas | `<img>` fallback funciona. UX degrada graceful sin AVIF hasta que workflow complete |
+| 9 | Conflictos query param `?v=` | Solo aplica al `<img src>` fallback. Los `<source>` apuntan a URLs limpias |
+
+### 91.6 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `scripts/optimize-images.mjs` | TARGETS +2 entradas (nosotros-hero.webp + camioneta.jpg) con comentarios `// §91` | +2 |
+| `index.html` | Preload single → 2 preloads AVIF/WebP. `<picture>` wrap hero LCP + 4 category cards. JS inline observa `<img>.load` real | +95, -3 |
+| `css/hero.css` | `.hero::after` background-image REEMPLAZADO por `.hero-bg-img`. Cross-fade idéntico. Reduced-motion + no-js fallbacks | +40, -28 |
+| `nosotros.html` | 2 preloads AVIF/WebP (nuevo). `.about-hero::before` REEMPLAZADO por `.about-hero-bg`. `<picture>` wrap LCP | +50, -8 |
+| `service-worker.js` | CACHE_VERSION → `v20260518070000` con changelog §91 prepend | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260518070000'` con changelog §91 prepend | +1, -1 |
+| `CLAUDE.md` | Esta sección §91 | +220 |
+
+**Total**: 7 archivos. Cero JS admin/bot tocado. Cero schema. Cero
+deploy backend. Cero rules.
+
+### 91.7 Archivos INTACTOS (afirmación)
+
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+- Plan §61 RBAC (todos los `admin-*.js`) — ZERO
+- AI modules (`js/ai/*.js`) — ZERO
+- 11 páginas con `<picture>` desde §16 Bonus B — ZERO
+- 13 admin/internas/redirects — ZERO
+- 5 raíz sin LCP hero — ZERO
+- 2 templates dinámicos (`detalle-vehiculo.html`, `marca.html`) — ZERO
+- 27 `vehiculos/*.html` + 18 `marcas/*.html` generadas — ZERO (out of scope)
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+- HTML del admin — ZERO
+
+### 91.8 Estado de PENDIENTES post-§91
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Bloqueado por presupuesto dominio (~$10/año) |
+| **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | ✅ §89 |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias | ✅ §88 |
+| **§90 Fase 4 SEO técnica** | Schema rich snippets + h1 Cartagena | ✅ §90 |
+| **§91 Fase 3A Imágenes responsive** | `<picture>` srcset AVIF/WebP index + nosotros | **✅ §91 (este)** |
+
+**Próximos sub-sprints opcionales Fase 3 Performance** (§90.13):
+
+| Item | Esfuerzo | Impacto |
+|---|---|---|
+| **Sprint 3B** Lazy loading universal | 2h | FCP -10-20% |
+| **Sprint 3C** Critical CSS inline | 4h | FCP -300-500ms |
+| **Sprint 3D** Resource hints (preload + preconnect + defer) | 2h | LCP -20% adicional |
+
+Plus opcional futuro: pipeline de optimización para imágenes
+uploadeadas por el admin (Firebase Storage → Cloud Function que
+genere variants AVIF/WebP al subir). Permitiría cubrir las 45
+páginas generadas (vehiculos + marcas).
+
+### 91.9 Doctrina aplicada
+
+§19 RCA estricto: audit profundo previo identificó los 2 archivos
+reales con hero pesado (cero pages-list inflada). Refactor de fondo
+del LCP (background-image → `<img>` real) en lugar de parche
+superficial.
+
+§37 IAP: 5 secciones documentadas previo al cambio + autorización
+explícita ("Arrancamos ahora Sprint 3A").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Solo `transition: opacity` específica.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. `.hero::after` legacy
+REEMPLAZADO por `.hero-bg-img` aditiva.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+`PLAN-MIGRACION-ALTORRA.md` Fase 3: §91 ejecuta sub-Sprint 3.1
+"Optimización de fotos" + parte de 3.2 "Lazy loading inteligente"
+(loading="lazy" ya estaba — solo wrap `<picture>`). Cero overflow a
+3.3 (Code splitting) ni 3.4 (Critical CSS inline).
+
+§85 PENDIENTES: tabla actualizada con §91 nuevo item (Fase 3A).
+
+**Cache bump**: `v20260518070000`.

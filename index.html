@@ -58,7 +58,24 @@
     <link rel="preload" href="css/dark-theme.css" as="style">
     <link rel="preload" href="js/components.js" as="script">
     <link rel="preload" href="js/database.js" as="script">
-    <link rel="preload" href="multimedia/heroindex.webp" as="image" fetchpriority="high">
+    <!-- §91 Sprint 3A — LCP hero preload responsive AVIF/WebP.
+         Browser que soporta AVIF descarga del primer preload (más liviano ~70%).
+         Browser que NO soporta AVIF ignora ese, descarga del segundo preload WebP.
+         Browser sin AVIF ni WebP cae al <img src="multimedia/heroindex.webp"> legacy
+         (no preload, descarga al parsear el <picture>). Matches exact URLs en
+         <picture> abajo → cache hit garantizado, LCP -40-60% vs WebP único. -->
+    <link rel="preload" as="image" type="image/avif" fetchpriority="high"
+          imagesrcset="multimedia/optimized/heroindex-480.avif 480w,
+                       multimedia/optimized/heroindex-768.avif 768w,
+                       multimedia/optimized/heroindex-1280.avif 1280w,
+                       multimedia/optimized/heroindex-1920.avif 1920w"
+          imagesizes="100vw">
+    <link rel="preload" as="image" type="image/webp" fetchpriority="high"
+          imagesrcset="multimedia/optimized/heroindex-480.webp 480w,
+                       multimedia/optimized/heroindex-768.webp 768w,
+                       multimedia/optimized/heroindex-1280.webp 1280w,
+                       multimedia/optimized/heroindex-1920.webp 1920w"
+          imagesizes="100vw">
     <link rel="preload" href="/multimedia/logo-placeholder.png" as="image">
 
 
@@ -359,26 +376,36 @@
         <div class="pl-ring" aria-hidden="true"></div>
     </div>
 
-    <!-- L1.2: hero LQIP cross-fade.
-         The .hero shows a gradient placeholder instantly (in CSS).
-         Once the real heroindex.webp is loaded (preloaded in <head> with
-         fetchpriority=high so this resolves fast), we add .hero-img-loaded
-         to trigger the cross-fade defined in css/hero.css. Inline here so
-         it runs IMMEDIATELY during HTML parse — no defer waiting. -->
+    <!-- §91 Sprint 3A: hero LQIP cross-fade adaptado a <img> + <picture>.
+         Antes (L1.2): cargabamos heroindex.webp via new Image() y al
+         onload togglábamos .hero-img-loaded. Ahora el hero usa un <img>
+         real dentro de <picture> con srcset AVIF/WebP/legacy. El JS
+         observa el <img> real (que el browser ya está descargando vía
+         el preload del head). El cross-fade se mantiene idéntico — solo
+         cambia el qué observamos. Si la imagen ya está completa al
+         parsear este script (cache hit del preload), reveal() corre
+         síncrono. Si no, esperamos al load event. Inline aquí para
+         arrancar durante HTML parse — no defer waiting. -->
     <script>
     (function () {
-        var img = new Image();
         function reveal() {
             var hero = document.querySelector('.hero');
             if (hero) hero.classList.add('hero-img-loaded');
         }
-        // If already cached, this fires synchronously
-        img.onload = function () {
-            if (document.querySelector('.hero')) reveal();
-            else document.addEventListener('DOMContentLoaded', reveal);
-        };
-        img.onerror = reveal; // fail open: show whatever we have
-        img.src = 'multimedia/heroindex.webp';
+        function bind() {
+            var img = document.querySelector('.hero .hero-bg-img');
+            if (!img) return reveal(); // fail open si <picture> falló
+            if (img.complete && img.naturalHeight > 0) {
+                return reveal(); // cache hit del preload
+            }
+            img.addEventListener('load', reveal);
+            img.addEventListener('error', reveal); // fail open
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bind);
+        } else {
+            bind();
+        }
     })();
     </script>
 
@@ -387,6 +414,30 @@
 
     <!-- Hero Section -->
     <section class="hero" aria-label="Portada principal">
+        <!-- §91 Sprint 3A: LCP hero con <picture> responsive AVIF/WebP.
+             Browser elige variant + formato según viewport. El preload
+             en <head> matchea exact URLs → cache hit garantizado.
+             El .hero-bg-img CSS hace cross-fade cuando .hero-img-loaded
+             es agregado por el JS inline al final de <body>. -->
+        <picture>
+            <source type="image/avif" sizes="100vw"
+                    srcset="multimedia/optimized/heroindex-480.avif 480w,
+                            multimedia/optimized/heroindex-768.avif 768w,
+                            multimedia/optimized/heroindex-1280.avif 1280w,
+                            multimedia/optimized/heroindex-1920.avif 1920w">
+            <source type="image/webp" sizes="100vw"
+                    srcset="multimedia/optimized/heroindex-480.webp 480w,
+                            multimedia/optimized/heroindex-768.webp 768w,
+                            multimedia/optimized/heroindex-1280.webp 1280w,
+                            multimedia/optimized/heroindex-1920.webp 1920w">
+            <img class="hero-bg-img"
+                 src="multimedia/heroindex.webp"
+                 alt=""
+                 aria-hidden="true"
+                 fetchpriority="high"
+                 decoding="async"
+                 width="1920" height="1080">
+        </picture>
         <div class="hero-overlay" aria-hidden="true"></div>
         <div class="hero-ambient" aria-hidden="true"></div>
         <div class="hero-particles" aria-hidden="true">
@@ -566,28 +617,72 @@
             <div class="categories-grid">
                 <a href="vehiculos-suv.html" class="category-card">
                     <div class="category-image">
-                        <img src="multimedia/categories/SUV.jpg" alt="SUV" loading="lazy" width="600" height="400" decoding="async">
+                        <picture>
+                            <source type="image/avif" sizes="(max-width: 768px) 100vw, 600px"
+                                    srcset="multimedia/optimized/SUV-480.avif 480w,
+                                            multimedia/optimized/SUV-768.avif 768w,
+                                            multimedia/optimized/SUV-1280.avif 1280w,
+                                            multimedia/optimized/SUV-1920.avif 1920w">
+                            <source type="image/webp" sizes="(max-width: 768px) 100vw, 600px"
+                                    srcset="multimedia/optimized/SUV-480.webp 480w,
+                                            multimedia/optimized/SUV-768.webp 768w,
+                                            multimedia/optimized/SUV-1280.webp 1280w,
+                                            multimedia/optimized/SUV-1920.webp 1920w">
+                            <img src="multimedia/categories/SUV.jpg" alt="SUV" loading="lazy" width="600" height="400" decoding="async">
+                        </picture>
                     </div>
                     <h3 class="category-name">SUV</h3>
                 </a>
 
                 <a href="vehiculos-pickup.html" class="category-card">
                     <div class="category-image">
-                        <img src="multimedia/categories/camioneta.jpg?v=20260310" alt="Pickup" loading="lazy" width="600" height="400" decoding="async">
+                        <picture>
+                            <source type="image/avif" sizes="(max-width: 768px) 100vw, 600px"
+                                    srcset="multimedia/optimized/camioneta-480.avif 480w,
+                                            multimedia/optimized/camioneta-768.avif 768w,
+                                            multimedia/optimized/camioneta-1280.avif 1280w,
+                                            multimedia/optimized/camioneta-1920.avif 1920w">
+                            <source type="image/webp" sizes="(max-width: 768px) 100vw, 600px"
+                                    srcset="multimedia/optimized/camioneta-480.webp 480w,
+                                            multimedia/optimized/camioneta-768.webp 768w,
+                                            multimedia/optimized/camioneta-1280.webp 1280w,
+                                            multimedia/optimized/camioneta-1920.webp 1920w">
+                            <img src="multimedia/categories/camioneta.jpg?v=20260310" alt="Pickup" loading="lazy" width="600" height="400" decoding="async">
+                        </picture>
                     </div>
                     <h3 class="category-name">Pickup</h3>
                 </a>
 
                 <a href="vehiculos-sedan.html" class="category-card">
                     <div class="category-image">
-                        <img src="multimedia/categories/SEDAN.jpg?v=20260310" alt="Sedán" loading="lazy" width="600" height="400" decoding="async">
+                        <picture>
+                            <source type="image/avif" sizes="(max-width: 768px) 100vw, 600px"
+                                    srcset="multimedia/optimized/SEDAN-480.avif 480w,
+                                            multimedia/optimized/SEDAN-768.avif 768w,
+                                            multimedia/optimized/SEDAN-1280.avif 1280w,
+                                            multimedia/optimized/SEDAN-1920.avif 1920w">
+                            <source type="image/webp" sizes="(max-width: 768px) 100vw, 600px"
+                                    srcset="multimedia/optimized/SEDAN-480.webp 480w,
+                                            multimedia/optimized/SEDAN-768.webp 768w,
+                                            multimedia/optimized/SEDAN-1280.webp 1280w,
+                                            multimedia/optimized/SEDAN-1920.webp 1920w">
+                            <img src="multimedia/categories/SEDAN.jpg?v=20260310" alt="Sedán" loading="lazy" width="600" height="400" decoding="async">
+                        </picture>
                     </div>
                     <h3 class="category-name">Sedán</h3>
                 </a>
 
                 <a href="vehiculos-hatchback.html" class="category-card">
                     <div class="category-image">
-                        <img src="multimedia/categories/HATCHBACK.jpg?v=20260325" alt="Hatchback" loading="lazy" width="600" height="400" decoding="async">
+                        <picture>
+                            <source type="image/avif" sizes="(max-width: 768px) 100vw, 600px"
+                                    srcset="multimedia/optimized/HATCHBACK-480.avif 480w,
+                                            multimedia/optimized/HATCHBACK-768.avif 768w">
+                            <source type="image/webp" sizes="(max-width: 768px) 100vw, 600px"
+                                    srcset="multimedia/optimized/HATCHBACK-480.webp 480w,
+                                            multimedia/optimized/HATCHBACK-768.webp 768w">
+                            <img src="multimedia/categories/HATCHBACK.jpg?v=20260325" alt="Hatchback" loading="lazy" width="600" height="400" decoding="async">
+                        </picture>
                     </div>
                     <h3 class="category-name">Hatchback</h3>
                 </a>

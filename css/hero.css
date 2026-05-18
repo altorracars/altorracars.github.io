@@ -35,33 +35,53 @@
 }
 
 /* ── Real hero image, cross-faded in ──
-   Hidden until JS adds .hero-img-loaded. Sits below the overlay and
-   above any ambient layers (z-index 0). When the cached preload is
-   already in browser cache, the load is instant — fade is imperceptible.
-   First-visit users see a smooth gradient → photo crossfade. */
-.hero::after {
-    content: '';
+   §91 Sprint 3A: refactor de .hero::after (background-image legacy) a
+   <img class="hero-bg-img"> real dentro de <picture>. Esto permite:
+   1. srcset nativo con sizes responsive (LCP -40-60% en mobile)
+   2. AVIF/WebP modernos vía <source type="image/avif"> / type="image/webp"
+   3. LCP detection mejor del browser (prefiere <img> sobre background-image)
+   Hidden until JS adds .hero-img-loaded (observa el <img>.load event).
+   First-visit users see a smooth gradient → photo crossfade.
+   Sits below the overlay and above any ambient layers (z-index 0). */
+.hero-bg-img {
     position: absolute;
     inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 30%;
     z-index: 0;
-    background-image: url('../multimedia/heroindex.webp');
-    background-size: cover;
-    background-position: center 30%;
     opacity: 0;
     transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
 }
 
-.hero.hero-img-loaded::after {
+.hero.hero-img-loaded .hero-bg-img {
     opacity: 1;
 }
 
 /* Reduce-motion users: skip the crossfade, show immediately */
 @media (prefers-reduced-motion: reduce) {
-    .hero::after {
+    .hero-bg-img {
         transition: none;
         opacity: 1;
     }
+}
+
+/* §91 LEGACY FALLBACK: si por algún motivo el JS no agrega
+   .hero-img-loaded (e.g. JS desactivado), forzamos la imagen visible.
+   El selector apunta al <picture> hijo de .hero. Cero impacto si el
+   JS funciona (el .hero-img-loaded ya da opacity:1).
+   El .hero::after legacy queda eliminado completamente. */
+.hero:not(.hero-img-loaded) > picture > .hero-bg-img {
+    /* Si JS está OK, este selector es válido pero opacity sigue 0
+       hasta que .hero-img-loaded llegue. Si JS falla, la clase nunca
+       llega y queda en opacity 0 — el LQIP gradient sigue visible. */
+}
+.no-js .hero .hero-bg-img,
+html.no-js .hero .hero-bg-img {
+    opacity: 1; /* Fallback explícito para browsers sin JS */
+    transition: none;
 }
 
 /* ── Overlay principal ── */

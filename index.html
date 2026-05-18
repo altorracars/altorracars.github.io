@@ -388,7 +388,10 @@
          arrancar durante HTML parse — no defer waiting. -->
     <script>
     (function () {
+        var revealed = false;
         function reveal() {
+            if (revealed) return;
+            revealed = true;
             var hero = document.querySelector('.hero');
             if (hero) hero.classList.add('hero-img-loaded');
         }
@@ -406,6 +409,12 @@
         } else {
             bind();
         }
+        // §92 FAIL-SAFE: si por cualquier motivo el load event nunca
+        // dispara (cache hit weirdo, network drop, picture quirk),
+        // forzar reveal tras 2s. UX: peor caso ve gradient → imagen
+        // con cross-fade en 2s. Mejor caso (preload cache hit) reveal
+        // ya corrió síncrono en bind().
+        setTimeout(reveal, 2000);
     })();
     </script>
 
@@ -440,17 +449,6 @@
         </picture>
         <div class="hero-overlay" aria-hidden="true"></div>
         <div class="hero-ambient" aria-hidden="true"></div>
-        <div class="hero-particles" aria-hidden="true">
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-        </div>
-
         <div class="hero-content">
 
             <!-- Badge -->

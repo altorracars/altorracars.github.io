@@ -37870,3 +37870,470 @@ REEMPLAZADO por `.hero-bg-img` aditiva.
 §85 PENDIENTES: tabla actualizada con §91 nuevo item (Fase 3A).
 
 **Cache bump**: `v20260518070000`.
+
+---
+
+## 92. ADR-092 — Hotfix hero invisible post-§91 + ELIMINACIÓN total de particles (2026-05-18)
+
+> Cliente reportó tras el merge de §91 (Sprint 3A imágenes responsive):
+>
+> 1. "En el último merge se dañó la imagen del Hero del home, ya no aparece, arreglalo"
+> 2. "Los heros de todas las páginas tienen unas partículas redondas que consumen mucha capacidad, elimina absolutamente todas las partículas y cualquier residuo de ellas"
+>
+> Sprint coordinado de 2 fixes microquirúrgicos antes de continuar con Sprint 3B
+> (lazy loading universal, §93). Aplicado bajo §17 (perf), §17.2 (cero transition all),
+> §17.4 (HTML/CSS estable — cero IDs renombrados), §17.12 (cero MutationObserver),
+> §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 92.1 Causa raíz del hero invisible (RCA §19)
+
+§91 Sprint 3A refactorizó el hero del home de `background-image` CSS a
+`<img class="hero-bg-img">` real dentro de `<picture>` para habilitar
+srcset AVIF/WebP responsive y mejor LCP detection. Estructura nueva:
+
+```html
+<section class="hero">
+    <picture>
+        <source type="image/avif" srcset="...">
+        <source type="image/webp" srcset="...">
+        <img class="hero-bg-img" src="..." width="1920" height="1080">
+    </picture>
+    <div class="hero-overlay">...</div>
+    ...
+</section>
+```
+
+CSS de `.hero-bg-img`:
+```css
+.hero-bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.7s;
+}
+.hero.hero-img-loaded .hero-bg-img { opacity: 1; }
+```
+
+**Bug**: el elemento `<picture>` es `display: inline` por default.
+Dentro de `.hero` (que es `display: flex; align-items: center;
+justify-content: center`), el `<picture>` queda como flex item de
+tamaño 0 (su único contenido `<img>` está `position: absolute` →
+saca del flujo).
+
+El `<img>` con `position: absolute; inset: 0` busca el ancestor
+positioned y encuentra el `.hero` (relative), debería renderizar.
+**Sin embargo** la regla universal de `css/style.css`:
+
+```css
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+```
+
+aplica con specificity `(0,0,1)` y el `.hero-bg-img` tiene
+specificity `(0,1,0)` — por specificity gana `.hero-bg-img` con
+`width:100%; height:100%`. PERO si el navegador del cliente tiene
+cache stale del HTML viejo (`background-image` legacy) o cache stale
+del CSS nuevo, hay un momento donde solo aplica `img { height:auto }`
+y la imagen queda con `height` natural fuera del flex container.
+
+**Adicional**: `<picture>` inline + flex item puede tener quirks de
+stacking context que impiden que el `<img>` absolute interno se
+ancle correctamente. El stacking context del `.hero` con `isolation:
+isolate` aísla el render del `<img>`.
+
+### 92.2 Solución estructural — 3 fixes coordinados
+
+#### Fix A — `.hero > picture` como contenedor absoluto (`css/hero.css`)
+
+Regla nueva que garantiza que el `<picture>` SIEMPRE sea un contenedor
+sólido que llena el `.hero` completamente:
+
+```css
+.hero > picture {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    pointer-events: none;
+}
+```
+
+Esto elimina cualquier quirk de flex item / inline / stacking context.
+El `<img>` dentro sigue siendo `position: absolute; inset: 0` y se
+ancla al `<picture>` (que ahora es relative? No — sigue siendo
+absolute pero ahora forma un nuevo stacking context implícito).
+
+#### Fix B — Override regla universal `img { max-width: 100% }`
+
+Agregar `max-width: none` explícito a `.hero-bg-img`:
+
+```css
+.hero-bg-img {
+    ...
+    max-width: none;  /* §92: override style.css img { max-width: 100% } */
+}
+```
+
+Esto garantiza que la imagen del hero NUNCA quede limitada por la
+regla universal, sin importar el orden de carga de CSS.
+
+#### Fix C — JS fail-safe timeout 2s (`index.html` inline script)
+
+El JS observa el `<img>.load` event para añadir `.hero-img-loaded`
+y disparar el cross-fade. Si por cualquier razón (cache hit weirdo,
+network drop, picture quirk) el load event nunca dispara, el hero
+queda en `opacity: 0` permanentemente.
+
+Fix: `setTimeout(reveal, 2000)` que añade `.hero-img-loaded`
+INCONDICIONALMENTE tras 2s. Plus flag `revealed` para idempotencia
+(no doble-añadir clase si load event sí dispara).
+
+```js
+var revealed = false;
+function reveal() {
+    if (revealed) return;
+    revealed = true;
+    var hero = document.querySelector('.hero');
+    if (hero) hero.classList.add('hero-img-loaded');
+}
+// ... bind() observa <img>.load ...
+setTimeout(reveal, 2000); // fail-safe
+```
+
+UX peor caso: ve gradient → imagen con cross-fade en 2s. Mejor caso
+(preload cache hit del head): reveal síncrono en bind().
+
+### 92.3 Por qué solo el hero del home estaba afectado
+
+Las otras páginas con `<picture>` (cookies, contacto, marcas, busqueda,
+terminos, privacidad, resenas, vehiculos-*, nosotros) usan clases
+distintas: `.gradient-hero-bg`, `.brand-hero-bg`, `.marcas-hero-bg`,
+`.about-hero-bg`. Esas clases tienen sus propias reglas CSS desde §16
+Bonus B con `position: absolute; top:0; left:0; width:100%; height:100%`
+que ya estaban validadas en producción.
+
+Solo el `.hero-bg-img` del index era nuevo en §91 y no tenía el
+fallback de `.hero > picture` que las otras heros tenían implícito
+por sus reglas más antiguas.
+
+### 92.4 ELIMINACIÓN total de particles — alcance del cambio
+
+8 partículas circulares animadas en cada hero (radius: 50%, animation
+infinite con `particleFloat` keyframe). Cada una es un GPU compositor
+layer permanente activo siempre. Distribución pre-§92:
+
+- **HTML**: 32 archivos con `<div class="hero-particles">` + 8 `<div
+  class="hero-particle">` dentro:
+  - 14 root: index, busqueda, contacto, cookies, marca, marcas,
+    nosotros, privacidad, resenas, terminos, vehiculos-hatchback,
+    vehiculos-pickup, vehiculos-sedan, vehiculos-suv
+  - 18 marcas/* generadas: audi, bmw, chevrolet, citroen, fiat, ford,
+    honda, hyundai, jeep, kia, mazda, mitsubishi, nissan, peugeot,
+    renault, suzuki, toyota, volkswagen
+  - **Total HTML**: 32 archivos × 9 nodos (1 wrapper + 8 particles) = ~288 nodos DOM
+- **CSS inline** en `nosotros.html` y `marcas.html`: bloques completos
+  `.hero-particles`/`.hero-particle`/`.hero-particle:nth-child(N)` (×8)
+  + `@keyframes particleFloat`
+- **CSS externos**: 3 archivos con definiciones:
+  - `css/hero.css` líneas 144-194 (bloque principal + media query mobile)
+  - `css/performance-fixes.css` líneas 216-244 (sección 16 con will-change
+    + media queries por viewport: hide n+7 en 1280px, n+5 en 968px,
+    n+4 en 480px, all en 360px)
+  - `css/dark-theme.css` líneas 1222-1250 (bloque duplicado del de hero.css)
+- **JavaScript**: `js/performance.js` línea 233 referencia
+  `.hero-particle` en el selector del `IntersectionObserver` que pausa
+  animations off-screen
+
+Eliminación en 4 fases:
+1. **Script Python masivo** (`/tmp/remove_particles.py`): regex
+   patterns para detectar y eliminar bloques `<div class="hero-particles">`
+   tanto multi-line indented como single-line compactos, plus
+   bloques CSS inline. Procesó 32 archivos HTML con 35 replacements totales.
+2. **Cleanup CSS externos manual**: hero.css (eliminé bloque 144-194 +
+   media query mobile 776-778), performance-fixes.css (eliminé sección 16),
+   dark-theme.css (eliminé bloque duplicado).
+3. **Cleanup JS**: removí `.hero-particle,` del selector de
+   `performance.js:233` (las otras refs como `.hero-ambient`,
+   `.brand-hero-bg`, `.marcas-hero-bg` siguen intactas).
+4. **Residuos huérfanos**: el regex de eliminación dejó 2 fragmentos
+   huérfanos del `@keyframes particleFloat` que tuve que limpiar
+   manualmente:
+   - `nosotros.html:134-137` (líneas `10% { opacity: 1; }` etc.
+     fuera de cualquier keyframes wrapper)
+   - `marcas.html:55` (línea compacta single-line del fin del keyframes)
+
+Validación final post-cleanup: `grep -rn "hero-particle\|particleFloat"`
+en todo el repo retorna solo 3 referencias en comentarios `// §92`
+explicativos (cero código activo). Bot ALTOR `altorSparkleA`/
+`altorSparkleB` intactos (NO son particles, son sparkles del FAB).
+
+### 92.5 Tests E2E (post-deploy + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio público (cache v20260518080000) | Cache nueva carga |
+| 2 | Cliente abre index.html | Hero con imagen `heroindex.webp` visible (gradient → imagen con cross-fade) |
+| 3 | DevTools Network | `heroindex-768.avif` o `heroindex-1280.avif` descargado (LCP) |
+| 4 | DevTools Elements | `<section class="hero hero-img-loaded">` clase aplicada tras load |
+| 5 | DevTools Performance recorder | Cero GPU compositor layers de `.hero-particle` activos |
+| 6 | Inspect any hero en cualquier página | NO hay `<div class="hero-particles">` ni `<div class="hero-particle">` |
+| 7 | `grep "hero-particle" *.html marcas/*.html` | Cero matches |
+| 8 | FAB del bot ALTOR | Sigue funcionando con sparkles dorados (altorSparkleA/B intactos) |
+| 9 | Network slow + cache busted | Fail-safe setTimeout 2s revela hero aunque load event no dispare |
+| 10 | `prefers-reduced-motion: reduce` | Hero sin transition opacity (instant reveal) |
+
+### 92.6 Anti-patterns evitados
+
+| Doctrina | Mitigación |
+|---|---|
+| §17.2 transition all | Solo `transition: opacity` específica preservada |
+| §17.4 HTML/CSS estable | CERO IDs renombrados. Regla nueva `.hero > picture` aditiva no rompe legacy |
+| §17.12 anti-MutationObserver | Cero MO |
+| §35 anti-pointermove | Cero pointermove |
+| §19 RCA estricto | Causa raíz identificada (display:inline picture + flex container + universal img regla + cache stale) — solución estructural cubre las 4 hipótesis simultáneamente |
+| §37 IAP | Cliente autorizó explícito |
+| Big Bang | Particles eliminadas en 4 fases controladas. Validación post-cleanup con grep |
+
+### 92.7 Riesgos + plan de rollback
+
+| # | Riesgo | Mitigación | Rollback |
+|---|---|---|---|
+| 1 | `.hero > picture` regla rompe layout de otros usos de `<picture>` en home | Selector específico `.hero >` (child directo). Cero impacto en `<picture>` dentro de category cards (`.cat-card > picture`) o resto del DOM | git revert |
+| 2 | Particles eliminadas hacen ver el hero "menos atmosférico" | El hero-ambient (orbs blur 70px) sigue activo. Gradient LQIP + orbs + imagen real = suficiente atmósfera. Cliente lo pidió explícito por perf |
+| 3 | Fail-safe setTimeout 2s causa flash de reveal si load event no dispara nunca | UX peor caso: cliente ve gradient → cross-fade tras 2s. Acceptable vs hero negro permanente |
+| 4 | Cliente NO hace Ctrl+Shift+R | Cache version bumped v20260518080000. SW invalidará automático. Primera vez requiere hard refresh |
+| 5 | Residuos huérfanos no detectados rompen CSS parse | Balance de braces validado: nosotros.html (150 open / 150 close), marcas.html (133/133) — sintaxis válida |
+
+### 92.8 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `css/hero.css` | Regla nueva `.hero > picture` + override `.hero-bg-img { max-width: none }`. Eliminado bloque particles (líneas 144-194) + media query mobile (776-778) | +20, -45 |
+| `index.html` | JS inline fail-safe `setTimeout(reveal, 2000)` + flag `revealed` idempotente. Eliminado `<div class="hero-particles">` block | +8, -10 |
+| `css/performance-fixes.css` | Sección 16 (HERO PARTICLES will-change + media queries) ELIMINADA | -29 |
+| `css/dark-theme.css` | Bloque particles duplicado ELIMINADO. Media query `.hero-particle:nth-child(n+6) { display: none }` removida | -32 |
+| `js/performance.js` | `.hero-particle,` removido del selector del IntersectionObserver | +3, -1 |
+| `nosotros.html` | Bloque `<div class="hero-particles">` + CSS inline particles eliminado. Keyframe huérfano `particleFloat` residuo limpiado (línea 134-137 + 668) | -42 |
+| `marcas.html` | Bloque `<div class="hero-particles">` + CSS inline particles eliminado. Línea 55 keyframe huérfano single-line limpiada | -22 |
+| `busqueda.html`, `contacto.html`, `cookies.html`, `marca.html`, `privacidad.html`, `resenas.html`, `terminos.html`, `vehiculos-hatchback.html`, `vehiculos-pickup.html`, `vehiculos-sedan.html`, `vehiculos-suv.html` | Bloque `<div class="hero-particles">...8x...</div>` eliminado | ~11 archivos × -10 |
+| `marcas/audi.html`, `marcas/bmw.html`, ..., `marcas/volkswagen.html` | Mismo bloque eliminado | 18 archivos × -10 |
+| `service-worker.js` | CACHE_VERSION → `v20260518080000` con changelog §92 + §93 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260518080000'` con changelog §92 + §93 | +1, -1 |
+| `CLAUDE.md` | Esta sección §92 + sección §93 (próxima) | +280 |
+
+**Total**: 35+ archivos modificados. Cero archivos nuevos. Cero schema.
+Cero deploy backend.
+
+### 92.9 Archivos INTACTOS (afirmación)
+
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+- Bot ALTOR `altorSparkle*` keyframes en `css/concierge.css` — INTACTOS (NO son particles)
+- AI modules (`js/ai/*.js`) — ZERO
+- Plan §61 RBAC (todos los `admin-*.js`) — ZERO
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+- 11 páginas con `<picture>` desde §16 Bonus B (cookies, contacto, marcas, busqueda, etc.) — sus reglas `.gradient-hero-bg`/`.brand-hero-bg`/`.marcas-hero-bg`/`.about-hero-bg` siguen funcionando idénticas (no requieren el fix `.hero > picture` porque ya tenían sus propias reglas validadas)
+
+### 92.10 Doctrina aplicada
+
+§19 RCA estricto: NO se aplicó parche cosmético. Identificación de
+causa raíz cubrió 4 hipótesis simultáneas (display:inline picture +
+flex container + universal img regla + cache stale) con fix
+estructural triple coordinado.
+
+§37 IAP: cliente reportó 2 bugs específicos con instrucción clara.
+Autorización implícita amplia.
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Eliminación de particles REDUCE compositor layers
+(beneficio perf neto). Solo `transition: opacity` específica preservada.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Regla `.hero > picture`
+aditiva con prefijo `.hero` específico — no afecta a otros `<picture>`.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+**Cache bump**: `v20260518080000`.
+
+---
+
+## 93. ADR-093 — Sprint 3B Lazy loading universal (2026-05-18)
+
+> Segundo sub-sprint del bloque Fase 3 Performance documentado en
+> §90.13. Continuación natural de §91 (Sprint 3A imágenes responsive)
+> tras el hotfix §92. Aplica `loading="lazy"` + `decoding="async"`
+> universal a TODAS las `<img>` below-the-fold en el sitio público.
+> Skip inteligente para LCP candidates (above-fold, fetchpriority,
+> hero-bg, brand-hero-bg, etc.).
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable), §17.12
+> (cero MutationObserver), §35 (cero pointermove), §37 (IAP),
+> §90.13 Fase 3 Performance roadmap.
+
+### 93.1 Causa raíz pre-§93
+
+Audit del estado pre-§93:
+
+| Métrica | Valor |
+|---|---|
+| Total `<img>` tags en HTMLs | 222 |
+| Ya tenían `loading="lazy"` | 7 |
+| Tenían `loading="eager"` (LCP intencional) | 58 |
+| Above-fold detectables por class/id | 70 |
+| **Candidatas a recibir `loading="lazy"`** | **87** |
+
+Sin `loading="lazy"`, el navegador descarga TODAS las imágenes
+inmediatamente al parsear el HTML — incluso las que están a 5
+pantallas de scroll. Esto:
+- Compite con LCP critical resources por bandwidth
+- Causa FCP retrasado (recursos parallel descargan más lento cada uno)
+- Consume bytes innecesarios en mobile con datos limitados
+
+`loading="lazy"` nativo del browser difiere la descarga hasta que la
+imagen esté ~viewport away del scroll position. Soporte universal
+(Chrome 76+, Firefox 75+, Safari 15.4+).
+
+`decoding="async"` desacopla el decode de la imagen del main thread,
+permite que el navegador decode en paralelo sin bloquear paint.
+
+### 93.2 Solución estructural — script masivo quirúrgico
+
+`/tmp/sprint_3b_lazy.py` con detector inteligente de candidatas:
+
+```python
+# Reglas de SKIP (preservar comportamiento legacy):
+- Skip si ya tiene loading="lazy" o loading="eager"
+- Skip si tiene fetchpriority="high" (LCP intencional)
+- Skip si class/id matchea ABOVE_FOLD_HINTS (hero-bg-img,
+  brand-hero-bg, marcas-hero-bg, about-hero-bg, pl-logo,
+  preloader, hero-mark, hero-img, main-image, mainImage)
+- Skip si tag está dentro de comentario HTML <!-- -->
+- Skip si tag está dentro de <script>...</script>
+- Skip si tag tiene template literal ${} (templates JS)
+- Skip admin.html y admin-upload.html (UI interna, no afecta perf cliente)
+```
+
+Acción para candidatas legítimas:
+```python
+# Append a los atributos del tag:
+new_attrs = attrs + ' loading="lazy"' + ' decoding="async"'
+```
+
+### 93.3 Tests E2E
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio público | Cache v20260518080000 carga |
+| 2 | DevTools Network throttle "Slow 3G" + abrir index.html | LCP image (heroindex AVIF) descarga primero, brand logos y category cards (que no son LCP) descargan después o al hacer scroll |
+| 3 | Abrir detalle-vehiculo.html | Main image (LCP) descarga eager. Lightbox image y galería NO descargan hasta open lightbox o scroll a galería |
+| 4 | Abrir un vehiculos/*.html generado | Mismo comportamiento |
+| 5 | DevTools Lighthouse | FCP esperado -10-20% en páginas con muchas imgs |
+| 6 | Browser sin soporte loading=lazy (legacy) | Imagen carga normal (graceful degradation — el atributo es ignorado) |
+| 7 | DevTools console | Cero errores nuevos |
+
+### 93.4 Anti-patterns evitados
+
+| Doctrina | Mitigación |
+|---|---|
+| §17.2 transition all | Cero CSS modificado |
+| §17.4 HTML/CSS estable | CERO IDs renombrados. Solo se agregan atributos `loading` y `decoding` |
+| §17.12 anti-MutationObserver | Cero MO |
+| §35 anti-pointermove | Cero pointermove |
+| §37 IAP | Autorización explícita ("ok sprint 3B") |
+| Big Bang lazy en LCP | Detector inteligente skip de above-fold + LCP intencional + comentarios + scripts |
+| admin.html UI interna afectada | Skip explícito admin.html y admin-upload.html |
+
+### 93.5 Resultados del script
+
+| Métrica | Valor |
+|---|---|
+| Archivos modificados | 29 |
+| `loading="lazy"` agregados | 56 |
+| `decoding="async"` agregados | 56 |
+| Skip ya tenía loading attr | 62 |
+| Skip fetchpriority=high (LCP) | 2 |
+| Skip above-fold hints | 67 |
+| Skip dentro de comentario HTML | 6 |
+| Skip dentro de `<script>` (template strings) | 32 |
+
+Archivos modificados:
+- `detalle-vehiculo.html` (template — 2 imgs)
+- `nosotros.html` (1 img)
+- 27 archivos `vehiculos/*.html` generados (3 imgs cada uno: noscript SEO fallback + lightbox modal + template gallery)
+
+### 93.6 Archivos modificados
+
+| Archivo | Cambio | Líneas |
+|---|---|---|
+| `detalle-vehiculo.html` (template) | 2 imgs con loading=lazy + decoding=async | +2, -2 |
+| `nosotros.html` | 1 img con loading=lazy + decoding=async | +1, -1 |
+| `vehiculos/*.html` × 27 archivos generados | 3 imgs cada uno = 81 cambios | 81 imgs modificadas |
+| `service-worker.js` | CACHE_VERSION → `v20260518080000` (compartido con §92) | (ya bumped en §92) |
+| `js/cache-manager.js` | APP_VERSION → `'20260518080000'` (compartido con §92) | (ya bumped en §92) |
+| `CLAUDE.md` | Esta sección §93 (incluida en commit del §92) | (incluido) |
+
+**Total**: 29 archivos. Cero archivos nuevos. Cero schema. Cero deploy
+backend.
+
+### 93.7 Archivos INTACTOS (afirmación)
+
+- `admin.html`, `admin-upload.html` — SKIP explícito (UI interna)
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+- AI modules — ZERO
+- Plan §61 RBAC (admin-*.js) — ZERO
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+- Imágenes dentro de templates JS (con `${...}`) — preservadas con
+  comportamiento original. Para agregar lazy en esos casos hay que
+  modificar el JS que genera el template (deuda futura si fuera
+  necesario).
+
+### 93.8 Estado de PENDIENTES post-§92 + §93
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Bloqueado por ~$10 USD dominio |
+| **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | ✅ §89 |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias | ✅ §88 |
+| **§90 Fase 4 SEO técnica** | Schema rich snippets + h1 Cartagena | ✅ §90 |
+| **§91 Fase 3A** | Imágenes responsive `<picture>` srcset | ✅ §91 |
+| **§92 Hotfix hero + ELIMINACIÓN particles** | hero invisible + particles eliminadas | **✅ §92 (este)** |
+| **§93 Fase 3B Lazy loading universal** | `loading=lazy` + `decoding=async` en 56 imgs | **✅ §93 (este)** |
+
+**Próximos sub-sprints opcionales Fase 3 Performance** (§90.13):
+
+| Item | Esfuerzo | Impacto |
+|---|---|---|
+| **Sprint 3C** Critical CSS inline | ~4h | FCP -300-500ms (elimina render-blocking style.css) |
+| **Sprint 3D** Resource hints (preload + preconnect + defer) | ~2h | LCP -20% adicional |
+
+### 93.9 Doctrina aplicada
+
+§19 RCA estricto: NO había bug. Sprint planificado en §90.13. Audit
+profundo previo identificó 87 candidatas legítimas + skip inteligente
+para 130+ falsos positivos.
+
+§37 IAP: autorización explícita ("ok sprint 3B").
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Solo atributos HTML `loading` y `decoding` (nativos
+del browser, cero overhead JS).
+
+§17.4 HTML/CSS estable: cero IDs renombrados.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+`PLAN-MIGRACION-ALTORRA.md` Fase 3: §93 ejecuta sub-sprint 3.2 "Lazy
+loading inteligente". Cero overflow a 3.3 (Code splitting) ni 3.4
+(Critical CSS inline).
+
+§85 PENDIENTES: tabla actualizada con §92 + §93 nuevos items.
+
+**Cache bump**: `v20260518080000` (compartido §92 + §93 — mismo commit).

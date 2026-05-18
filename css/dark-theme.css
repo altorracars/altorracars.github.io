@@ -1219,35 +1219,9 @@ body .page-header {
     100% { transform: translate(-15px, -15px) scale(0.96); }
 }
 
-/* ── Floating particles ── */
-.hero-particles {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    overflow: hidden;
-}
-.hero-particle {
-    position: absolute;
-    width: 3px; height: 3px;
-    border-radius: 50%;
-    background: rgba(212,175,55,0.4);
-    animation: heroParticleFloat linear infinite;
-}
-.hero-particle:nth-child(1) { left: 10%; top: 80%; animation-duration: 12s; }
-.hero-particle:nth-child(2) { left: 25%; top: 90%; animation-duration: 15s; animation-delay: 2s; width: 2px; height: 2px; }
-.hero-particle:nth-child(3) { left: 45%; top: 85%; animation-duration: 10s; animation-delay: 4s; }
-.hero-particle:nth-child(4) { left: 65%; top: 95%; animation-duration: 14s; animation-delay: 1s; width: 2px; height: 2px; }
-.hero-particle:nth-child(5) { left: 80%; top: 88%; animation-duration: 11s; animation-delay: 3s; }
-.hero-particle:nth-child(6) { left: 35%; top: 92%; animation-duration: 16s; animation-delay: 5s; width: 4px; height: 4px; background: rgba(212,175,55,0.2); }
-.hero-particle:nth-child(7) { left: 55%; top: 78%; animation-duration: 13s; animation-delay: 6s; }
-.hero-particle:nth-child(8) { left: 90%; top: 82%; animation-duration: 17s; animation-delay: 2.5s; width: 2px; height: 2px; }
-@keyframes heroParticleFloat {
-    0%   { transform: translateY(0) scale(1); opacity: 0; }
-    10%  { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { transform: translateY(-85vh) scale(0); opacity: 0; }
-}
+/* §92 — Particles ELIMINADAS de dark-theme.css.
+   Bloque duplicado del que vivía en hero.css. Cero markup HTML
+   <div class="hero-particle"> queda en ningún HTML del repo. */
 
 /* ── Bottom fade — 140px gradient to body bg + gold accent line ── */
 .hero-bottom-fade {
@@ -1457,8 +1431,7 @@ body .catalog-section {
         font-size: clamp(1.5rem, 3.5vw, 2rem);
     }
     .hero-bottom-fade { height: 100px; }
-    .hero-particle:nth-child(n+6) { display: none; }
-    .hero-particle { opacity: 0.6; }
+    /* §92 — particles eliminadas */
 }
 @media (max-width: 480px) {
     body .brand-hero {

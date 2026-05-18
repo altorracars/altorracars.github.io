@@ -62,7 +62,7 @@
             isolation: isolate;
             margin-top: 70px;
         }
-        /* §91 Sprint 3A — Background image migrado a <img> dentro de <picture>.
+        /* §91 Sprint 3A — Background image migrado a <img loading="lazy" decoding="async"> dentro de <picture>.
            Antes: .about-hero::before con background: url('nosotros-hero.webp').
            Ahora: <img class="about-hero-bg"> con srcset AVIF/WebP responsive.
            LCP -40-60% en mobile (AVIF es ~70% más liviano que WebP/JPG).
@@ -130,37 +130,7 @@
             50%  { transform: translate(30px, 20px) scale(1.08); }
             100% { transform: translate(-15px, -15px) scale(0.96); }
         }
-
-        /* Floating particles — identical to index */
-        .hero-particles {
-            position: absolute;
-            inset: 0;
-            z-index: 2;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .hero-particle {
-            position: absolute;
-            width: 3px;
-            height: 3px;
-            border-radius: 50%;
-            background: rgba(212,175,55,0.4);
-            animation: particleFloat linear infinite;
-        }
-        .hero-particle:nth-child(1) { left: 10%; top: 80%; animation-duration: 12s; animation-delay: 0s; }
-        .hero-particle:nth-child(2) { left: 25%; top: 90%; animation-duration: 15s; animation-delay: 2s; width: 2px; height: 2px; }
-        .hero-particle:nth-child(3) { left: 45%; top: 85%; animation-duration: 10s; animation-delay: 4s; }
-        .hero-particle:nth-child(4) { left: 65%; top: 95%; animation-duration: 14s; animation-delay: 1s; width: 2px; height: 2px; }
-        .hero-particle:nth-child(5) { left: 80%; top: 88%; animation-duration: 11s; animation-delay: 3s; }
-        .hero-particle:nth-child(6) { left: 35%; top: 92%; animation-duration: 16s; animation-delay: 5s; width: 4px; height: 4px; background: rgba(212,175,55,0.2); }
-        .hero-particle:nth-child(7) { left: 55%; top: 78%; animation-duration: 13s; animation-delay: 6s; }
-        .hero-particle:nth-child(8) { left: 90%; top: 82%; animation-duration: 17s; animation-delay: 2.5s; width: 2px; height: 2px; }
-        @keyframes particleFloat {
-            0%   { transform: translateY(0) scale(1); opacity: 0; }
-            10%  { opacity: 1; }
-            90%  { opacity: 1; }
-            100% { transform: translateY(-85vh) scale(0); opacity: 0; }
-        }
+        /* §92 — particles eliminadas, keyframe huérfano limpiado */
 
         /* Bottom fade — identical to index hero::before (140px) */
         .hero-bottom-fade {
@@ -692,8 +662,6 @@
             .hero-mark__sub { font-size: clamp(0.65rem, 1.4vw, 0.9rem); }
             .hero-subtitle { font-size: 0.95rem; }
             .hero-bottom-fade { height: 100px; }
-            .hero-particle:nth-child(n+6) { display: none; }
-            .hero-particle { opacity: 0.6; }
         }
         @media (max-width: 600px) {
             .values-grid  { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; }
@@ -807,16 +775,6 @@
                  width="1920" height="1080">
         </picture>
         <div class="hero-ambient" aria-hidden="true"></div>
-        <div class="hero-particles" aria-hidden="true">
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-            <div class="hero-particle"></div>
-        </div>
         <div class="container">
             <span class="hero-label">
                 <span class="hero-label-dot" aria-hidden="true"></span>

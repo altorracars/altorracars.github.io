@@ -229,8 +229,11 @@ class PerformanceOptimizer {
         var animObs = new IntersectionObserver(function(entries) {
             entries.forEach(function(entry) {
                 // Pause/resume all animations inside the section
+                /* §92 — .hero-particle eliminada del selector. Particles
+                   ya no existen en el DOM. Cero impacto, querySelectorAll
+                   simplemente skipea selectors sin matches. */
                 var children = entry.target.querySelectorAll(
-                    '.hero-particle, .hero-ambient, .dest-hud-ring-arc, ' +
+                    '.hero-ambient, .dest-hud-ring-arc, ' +
                     '.dest-visual-glow, .fw-hud-scanline, .fw-hud-layer, ' +
                     '[class*="dest-hud-ring"], .brand-hero-bg, .marcas-hero-bg'
                 );

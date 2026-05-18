@@ -43,6 +43,24 @@
    Hidden until JS adds .hero-img-loaded (observa el <img>.load event).
    First-visit users see a smooth gradient → photo crossfade.
    Sits below the overlay and above any ambient layers (z-index 0). */
+
+/* §92 FIX hero invisible post-§91: el <picture> es display:inline por
+   default. Como está dentro de un .hero flex container, queda como flex
+   item de tamaño 0 (su único contenido <img> está position:absolute).
+   El <img> con position:absolute busca ancestor positioned y encuentra
+   el .hero (relative), PERO si el <picture> tiene quirks de layout o
+   stacking, la imagen puede no renderizar correctamente. Solución de
+   fondo: forzar el <picture> mismo a position:absolute + display:block
+   para que sea un contenedor sólido de su <img>. Cero impacto en el
+   <img> interno (mantiene sus reglas). */
+.hero > picture {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    pointer-events: none;
+}
+
 .hero-bg-img {
     position: absolute;
     inset: 0;
@@ -54,6 +72,9 @@
     opacity: 0;
     transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
+    /* §92: max-width: none override de la regla universal img{max-width:100%}
+       de style.css que estaba conflictando con inset:0 width:100%. */
+    max-width: none;
 }
 
 .hero.hero-img-loaded .hero-bg-img {
@@ -140,37 +161,13 @@ html.no-js .hero .hero-bg-img {
     100% { transform: translate(-15px, -15px) scale(0.96); }
 }
 
-/* ── Floating particles (bubbles) ── */
-.hero-particles {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    overflow: hidden;
-}
-.hero-particle {
-    position: absolute;
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: rgba(212,175,55,0.4);
-    animation: heroParticleFloat linear infinite;
-}
-.hero-particle:nth-child(1) { left: 10%; top: 80%; animation-duration: 12s; animation-delay: 0s; }
-.hero-particle:nth-child(2) { left: 25%; top: 90%; animation-duration: 15s; animation-delay: 2s; width: 2px; height: 2px; }
-.hero-particle:nth-child(3) { left: 45%; top: 85%; animation-duration: 10s; animation-delay: 4s; }
-.hero-particle:nth-child(4) { left: 65%; top: 95%; animation-duration: 14s; animation-delay: 1s; width: 2px; height: 2px; }
-.hero-particle:nth-child(5) { left: 80%; top: 88%; animation-duration: 11s; animation-delay: 3s; }
-.hero-particle:nth-child(6) { left: 35%; top: 92%; animation-duration: 16s; animation-delay: 5s; width: 4px; height: 4px; background: rgba(212,175,55,0.2); }
-.hero-particle:nth-child(7) { left: 55%; top: 78%; animation-duration: 13s; animation-delay: 6s; }
-.hero-particle:nth-child(8) { left: 90%; top: 82%; animation-duration: 17s; animation-delay: 2.5s; width: 2px; height: 2px; }
-
-@keyframes heroParticleFloat {
-    0%   { transform: translateY(0) scale(1); opacity: 0; }
-    10%  { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { transform: translateY(-85vh) scale(0); opacity: 0; }
-}
+/* §92 — Particles ELIMINADAS completamente.
+   Decisión cliente: 8 partículas circulares animadas en cada hero
+   consumían GPU layers permanentes (cada una con animation:infinite
+   creaba un compositor layer dedicado). El gradient + ambient orbs
+   en hero-ambient (líneas arriba) dan suficiente atmósfera visual
+   sin coste perf. Cero markup HTML <div class="hero-particle"> queda
+   válido — ya eliminado de los 32+ HTMLs que las tenían. */
 
 /* ── Fade inferior → fusión con trust bar ── */
 .hero::before {
@@ -774,11 +771,7 @@ body.loaded .hero-content > .hero-search-wrap { animation: hero-stagger-in .7s c
     }
 }
 
-/* Reduce particles on mobile for performance */
-@media (max-width: 768px) {
-    .hero-particle:nth-child(n+6) { display: none; }
-    .hero-particle { opacity: 0.6; }
-}
+/* §92 — Media query particles ELIMINADA (particles ya no existen). */
 
 /* Very small screens */
 @media (max-width: 360px) {

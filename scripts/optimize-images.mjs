@@ -50,11 +50,13 @@ const ROOT = dirname(__dirname);
 const TARGETS = [
     'multimedia/heroindex.webp',
     'multimedia/marcas-hero.jpg',
+    'multimedia/nosotros-hero.webp',          // §91 — Sprint 3A: hero pesado de /nosotros.html
     'multimedia/categories/SUV.jpg',
     'multimedia/categories/PICKUP.jpg',
     'multimedia/categories/SEDAN.jpg',
     'multimedia/categories/HATCHBACK.jpg',
     'multimedia/categories/BUSQUEDA.jpg',
+    'multimedia/categories/camioneta.jpg',    // §91 — Sprint 3A: usada como card "Pickup" en index.html
     'multimedia/heroes/contacto-hero.jpg',
     'multimedia/heroes/cookies-hero.jpg',
     'multimedia/heroes/privacidad-hero.jpg',

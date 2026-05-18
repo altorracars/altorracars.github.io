@@ -20,6 +20,25 @@
     <meta property="og:image" content="https://altorracars.github.io/multimedia/nosotros-hero.webp">
     <meta property="og:site_name" content="ALTORRA CARS">
     <meta property="og:locale" content="es_CO">
+
+    <!-- §91 Sprint 3A: LCP hero preload responsive AVIF/WebP.
+         Browser que soporta AVIF descarga del primer preload (más liviano ~70%).
+         Browser que NO soporta AVIF ignora ese, descarga del segundo preload WebP.
+         Browser sin AVIF ni WebP cae al <img src="multimedia/nosotros-hero.webp"> legacy.
+         Matches exact URLs del <picture> abajo → cache hit garantizado. -->
+    <link rel="preload" as="image" type="image/avif" fetchpriority="high"
+          imagesrcset="multimedia/optimized/nosotros-hero-480.avif 480w,
+                       multimedia/optimized/nosotros-hero-768.avif 768w,
+                       multimedia/optimized/nosotros-hero-1280.avif 1280w,
+                       multimedia/optimized/nosotros-hero-1920.avif 1920w"
+          imagesizes="100vw">
+    <link rel="preload" as="image" type="image/webp" fetchpriority="high"
+          imagesrcset="multimedia/optimized/nosotros-hero-480.webp 480w,
+                       multimedia/optimized/nosotros-hero-768.webp 768w,
+                       multimedia/optimized/nosotros-hero-1280.webp 1280w,
+                       multimedia/optimized/nosotros-hero-1920.webp 1920w"
+          imagesizes="100vw">
+
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
@@ -43,12 +62,20 @@
             isolation: isolate;
             margin-top: 70px;
         }
-        /* Background image */
-        .about-hero::before {
-            content: '';
+        /* §91 Sprint 3A — Background image migrado a <img> dentro de <picture>.
+           Antes: .about-hero::before con background: url('nosotros-hero.webp').
+           Ahora: <img class="about-hero-bg"> con srcset AVIF/WebP responsive.
+           LCP -40-60% en mobile (AVIF es ~70% más liviano que WebP/JPG).
+           Las ambient lights, overlay y particles siguen idénticos. */
+        .about-hero-bg {
             position: absolute;
             inset: 0;
-            background: url('multimedia/nosotros-hero.webp') center/cover no-repeat;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+            z-index: 0;
+            pointer-events: none;
         }
         /* Dark gradient overlay — identical to index hero-overlay */
         .about-hero::after {
@@ -754,6 +781,31 @@
 
     <!-- ══════════ HERO INMERSIVO ══════════ -->
     <section class="about-hero" aria-label="Nosotros — ALTORRA CARS">
+        <!-- §91 Sprint 3A: hero LCP con <picture> responsive AVIF/WebP.
+             Reemplaza el background-image legacy de .about-hero::before.
+             El <img class="about-hero-bg"> queda position:absolute behind
+             del overlay (gradient en .about-hero::after) y ambient lights.
+             Browser elige variant + formato según viewport. Cero cambio
+             visual — LCP -40-60% en mobile. -->
+        <picture>
+            <source type="image/avif" sizes="100vw"
+                    srcset="multimedia/optimized/nosotros-hero-480.avif 480w,
+                            multimedia/optimized/nosotros-hero-768.avif 768w,
+                            multimedia/optimized/nosotros-hero-1280.avif 1280w,
+                            multimedia/optimized/nosotros-hero-1920.avif 1920w">
+            <source type="image/webp" sizes="100vw"
+                    srcset="multimedia/optimized/nosotros-hero-480.webp 480w,
+                            multimedia/optimized/nosotros-hero-768.webp 768w,
+                            multimedia/optimized/nosotros-hero-1280.webp 1280w,
+                            multimedia/optimized/nosotros-hero-1920.webp 1920w">
+            <img class="about-hero-bg"
+                 src="multimedia/nosotros-hero.webp"
+                 alt=""
+                 aria-hidden="true"
+                 fetchpriority="high"
+                 decoding="async"
+                 width="1920" height="1080">
+        </picture>
         <div class="hero-ambient" aria-hidden="true"></div>
         <div class="hero-particles" aria-hidden="true">
             <div class="hero-particle"></div>

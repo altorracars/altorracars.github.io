@@ -31,7 +31,14 @@
     background-attachment: scroll;
     overflow: visible;
     isolation: isolate;
-    margin-top: 70px;
+    /* §95 — Eliminado margin-top: 70px legacy. El header (#header) es
+       position:fixed top:0, por lo tanto NO ocupa espacio en el flow.
+       Al tener margin-top, el hero dejaba 70px de espacio NEGRO entre
+       el bottom del header visible y el top del hero. Quitándolo, el
+       header fluye encima del hero y el cliente percibe ambos
+       "fundidos" sin gap visual. Los primeros ~80px del hero quedan
+       tapados visualmente por el header opaco (intencional, el hero
+       mide 720px). */
 }
 
 /* ── Real hero image, cross-faded in ──

@@ -64,17 +64,22 @@
          Browser sin AVIF ni WebP cae al <img src="multimedia/heroindex.webp"> legacy
          (no preload, descarga al parsear el <picture>). Matches exact URLs en
          <picture> abajo → cache hit garantizado, LCP -40-60% vs WebP único. -->
+    <!-- §95: variant 1920w ELIMINADA — la imagen fuente
+         multimedia/heroindex.webp tiene resolución máx 1280px, el optimizer
+         NO genera upscaling, por eso heroindex-1920.avif/.webp NUNCA
+         existieron → browser intentaba descargar, 404, JS .hero-img-loaded
+         fallaba parcialmente → hero quedaba en gradient negro sin imagen
+         real. Fix: solo referenciar variants que realmente existen en
+         multimedia/optimized/. -->
     <link rel="preload" as="image" type="image/avif" fetchpriority="high"
           imagesrcset="multimedia/optimized/heroindex-480.avif 480w,
                        multimedia/optimized/heroindex-768.avif 768w,
-                       multimedia/optimized/heroindex-1280.avif 1280w,
-                       multimedia/optimized/heroindex-1920.avif 1920w"
+                       multimedia/optimized/heroindex-1280.avif 1280w"
           imagesizes="100vw">
     <link rel="preload" as="image" type="image/webp" fetchpriority="high"
           imagesrcset="multimedia/optimized/heroindex-480.webp 480w,
                        multimedia/optimized/heroindex-768.webp 768w,
-                       multimedia/optimized/heroindex-1280.webp 1280w,
-                       multimedia/optimized/heroindex-1920.webp 1920w"
+                       multimedia/optimized/heroindex-1280.webp 1280w"
           imagesizes="100vw">
     <link rel="preload" href="/multimedia/logo-placeholder.png" as="image">
 
@@ -267,7 +272,7 @@
         .nav-links{display:flex;gap:2rem;list-style:none}
         .nav-links a{color:#e8e8e8;text-decoration:none;font-weight:500;transition:color 0.3s}
         /* Hero — FOUC prevention (mínimo crítico; estilos completos en css/hero.css) */
-        .hero{min-height:clamp(480px,70vh,720px);display:flex;align-items:center;justify-content:center;position:relative;background-color:#0a0a0a;background-image:radial-gradient(ellipse at 20% 35%,rgba(212,175,55,.10) 0%,transparent 55%),radial-gradient(ellipse at 80% 65%,rgba(184,150,88,.06) 0%,transparent 60%),linear-gradient(135deg,#1a1410 0%,#0a0a0a 50%,#14110a 100%);background-size:cover;background-position:center 30%;overflow:visible;isolation:isolate;margin-top:70px}
+        .hero{min-height:clamp(480px,70vh,720px);display:flex;align-items:center;justify-content:center;position:relative;background-color:#0a0a0a;background-image:radial-gradient(ellipse at 20% 35%,rgba(212,175,55,.10) 0%,transparent 55%),radial-gradient(ellipse at 80% 65%,rgba(184,150,88,.06) 0%,transparent 60%),linear-gradient(135deg,#1a1410 0%,#0a0a0a 50%,#14110a 100%);background-size:cover;background-position:center 30%;overflow:visible;isolation:isolate}
         .hero-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(to bottom,rgba(0,0,0,.78) 0%,rgba(0,0,0,.28) 38%,rgba(0,0,0,.30) 62%,rgba(0,0,0,.88) 100%)}
         .hero-ambient{position:absolute;inset:0;z-index:2;pointer-events:none}
         .hero-content{position:relative;z-index:4;text-align:center;padding:3rem 2rem 3rem;max-width:880px;margin:0 auto;width:100%}
@@ -432,13 +437,11 @@
             <source type="image/avif" sizes="100vw"
                     srcset="multimedia/optimized/heroindex-480.avif 480w,
                             multimedia/optimized/heroindex-768.avif 768w,
-                            multimedia/optimized/heroindex-1280.avif 1280w,
-                            multimedia/optimized/heroindex-1920.avif 1920w">
+                            multimedia/optimized/heroindex-1280.avif 1280w">
             <source type="image/webp" sizes="100vw"
                     srcset="multimedia/optimized/heroindex-480.webp 480w,
                             multimedia/optimized/heroindex-768.webp 768w,
-                            multimedia/optimized/heroindex-1280.webp 1280w,
-                            multimedia/optimized/heroindex-1920.webp 1920w">
+                            multimedia/optimized/heroindex-1280.webp 1280w">
             <img class="hero-bg-img"
                  src="multimedia/heroindex.webp"
                  alt=""

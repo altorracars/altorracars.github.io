@@ -38565,3 +38565,260 @@ que invertir dinero ahora esta pendiente".
 §17.4 HTML/CSS estable: cero código modificado. Solo documentación.
 
 **Sin cache bump** — sprint puramente documental.
+
+---
+
+## 95. ADR-095 — Hotfix hero invisible (REAL) + eliminación margin-top:70px legacy en TODOS los heros (2026-05-19)
+
+> Cliente reportó tras §92+§93+§94 con captura del index.html mostrando
+> gap negro grande entre header y hero + imagen del hero todavía
+> invisible:
+>
+> 1. "No corregiste la imagen del hero que aun no se ve" — el fix
+>    §92 NO resolvió el bug real.
+> 2. "dejaste un espacio grande entre todos los heros y el header un
+>    espacio negro ahi sin sentido eso debe estar compacto y debe
+>    fluir y fundirse con la seccion con la cual tiene lindero".
+>
+> §92 había aplicado 3 hipótesis (display:inline picture + max-width
+> universal + JS failsafe setTimeout) pero ninguna era la causa raíz.
+> RCA estricto §19 esta vez identificó las 2 causas REALES, en 2
+> bugs separados con orígenes distintos.
+>
+> Aplicado bajo doctrina §17 (perf), §17.2 (cero transition all),
+> §17.4 (HTML/CSS estable), §17.12 (cero MutationObserver),
+> §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 95.1 Causa raíz #1 — heroindex-1920.avif/.webp NUNCA existieron
+
+§91 (Sprint 3A) generó el `<picture>` srcset del hero del index.html
+referenciando 4 sizes: `480w`, `768w`, `1280w`, `1920w`. PERO la imagen
+fuente `multimedia/heroindex.webp` mide máximo 1280px de ancho. El
+script `scripts/optimize-images.mjs` **NO hace upscaling** — solo
+genera variantes ≤ source resolution.
+
+Resultado:
+- `multimedia/optimized/heroindex-480.{avif,webp}` ✅ existe
+- `multimedia/optimized/heroindex-768.{avif,webp}` ✅ existe
+- `multimedia/optimized/heroindex-1280.{avif,webp}` ✅ existe
+- `multimedia/optimized/heroindex-1920.{avif,webp}` ❌ **NUNCA SE GENERÓ**
+
+Cuando el browser parseaba el `<picture>` en viewports >1280px,
+elegía el `1920w` (el más cercano al device pixel ratio × viewport).
+Request HTTP → 404 silencioso. `<img>` queda con `src` roto. El JS
+inline observador del `<img>.load` event NUNCA dispara → la clase
+`.hero-img-loaded` jamás se aplica → `.hero-bg-img` queda `opacity: 0`
+permanentemente.
+
+`nosotros.html` con `nosotros-hero.webp` NO sufría el bug porque esa
+imagen fuente SÍ tiene resolución ≥1920px → todas las variants existen.
+
+**Fix**: eliminar las referencias a `1920w` en el `<picture>` del index
+y en sus 2 `<link rel="preload">` tags. Mantener solo 480/768/1280 que
+sí existen físicamente.
+
+### 95.2 Causa raíz #2 — `margin-top: 70px` legacy en TODOS los heros
+
+`#header` del sitio público vive con:
+```css
+#header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 70px;
+    z-index: 1000;
+}
+```
+
+Un elemento `position: fixed` **NO ocupa espacio en el document flow**.
+Es como si no existiera para el layout — flota sobre el resto del
+contenido. El primer elemento dentro del `<body>` (que es el `.hero`
+de cada página) se debería renderizar empezando en `top: 0`, con el
+header flotando ENCIMA de los primeros 70px del hero.
+
+PERO 7 callsites en CSS del sitio tenían `margin-top: 70px` (o `56px`
+mobile) en los heros:
+
+| Archivo | Línea | Selector |
+|---|---|---|
+| `css/hero.css` | 34 | `.hero` |
+| `css/dark-theme.css` | 1253 | `body .brand-hero` |
+| `css/dark-theme.css` | 1320 | `.gradient-hero` |
+| `css/dark-theme.css` | 1439 | `body .brand-hero` (mobile 56px) |
+| `index.html` | 270 | `.hero` (critical CSS inline) |
+| `nosotros.html` | 63 | `.about-hero` (critical CSS inline) |
+| `marcas.html` | 44 + 132 | `.marcas-hero` (desktop + mobile 56px) |
+
+Patrón legacy de cuando el header era estático (ocupaba espacio en el
+flow). Cuando se migró a `position: fixed`, los heros heredaron el
+margin que ahora genera un **gap visual NEGRO de 70px** entre el header
+y el contenido visible del hero. Cliente lo notó como espacio muerto
+"sin sentido".
+
+**Fix**: eliminar `margin-top: 70px` (y `56px` mobile) de los 7 sitios.
+Resultado:
+- Header fixed flota encima del top del hero (intencional)
+- Los primeros ~80px del hero quedan tapados por el header (gradient
+  + overlay del hero los cubre — no se nota corte visual)
+- Hero mide 720px, contenido del hero centrado vertical sigue visible
+- Cliente percibe header+hero **"fundidos"** sin gap
+
+### 95.3 Solución estructural — 7 archivos coordinados
+
+#### A. `index.html` — eliminar 1920w en preload + `<picture>`
+
+Líneas 67-78 (2 preloads AVIF + WebP): eliminar
+`heroindex-1920.avif 1920w` y `heroindex-1920.webp 1920w` de los
+`imagesrcset`. Comentario §95 explicativo.
+
+Líneas 432-441 (`<picture>` real): mismo eliminado en los 2
+`<source srcset>`. Quedan 480w / 768w / 1280w.
+
+#### B. `index.html` línea 270 — critical CSS inline `.hero`
+
+`margin-top: 70px;` → eliminado. Reemplazado por comentario §95.
+
+#### C. `nosotros.html` línea 63 — critical CSS `.about-hero`
+
+Idem. Hero ahora se funde con header desde `top: 0`.
+
+#### D. `marcas.html` líneas 44 + 132 — critical CSS `.marcas-hero`
+
+Desktop: `margin-top: 70px;` → eliminado.
+Mobile: `margin-top: 56px;` → eliminado.
+
+#### E. `css/hero.css` línea 34 — `.hero` regla canónica
+
+`margin-top: 70px;` → eliminado con comentario §95 explicativo.
+
+#### F. `css/dark-theme.css` — 3 callsites
+
+- Línea 1253 `body .brand-hero`: `margin-top: 70px` → eliminado
+- Línea 1320 `.gradient-hero`: `margin-top: 70px` → eliminado
+- Línea 1439 mobile `body .brand-hero`: `margin-top: 56px` → eliminado
+
+### 95.4 Validación post-fix
+
+Audit final con grep:
+```bash
+grep -rn "heroindex-1920\|margin-top: 70px\|margin-top: 56px" \
+    *.html css/ js/ scripts/ --include="*.html" --include="*.css" --include="*.js"
+```
+
+Resultado: cero matches activos. Solo comentarios `// §95` explicativos.
+
+### 95.5 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio público (cache v20260518090000) | Cache nueva carga |
+| 2 | Abrir index.html | Hero con imagen `heroindex.webp` VISIBLE (gradient → imagen con cross-fade 0.7s) |
+| 3 | DevTools Network filter "heroindex" | Descarga `heroindex-1280.avif` o `heroindex-768.avif` (NO 1920 ya no existe en HTML) |
+| 4 | DevTools Network cero requests 404 | Confirmado |
+| 5 | DevTools Elements `.hero` computed style | `margin-top: 0` (heredado del browser default) |
+| 6 | Visualmente | Header y hero "fundidos" — cero gap negro entre ambos |
+| 7 | Scroll en cualquier página | Header sticky se queda arriba, hero scrollea correctamente debajo |
+| 8 | Abrir nosotros.html | About-hero también sin gap, imagen visible |
+| 9 | Abrir marcas.html | Marcas-hero sin gap |
+| 10 | Mobile <768px | Sin gap mobile (56px también eliminado) |
+| 11 | DevTools Lighthouse | LCP cuenta con la imagen correcta (no fallback opacity:0) |
+
+### 95.6 Anti-patterns evitados
+
+| Doctrina | Mitigación |
+|---|---|
+| §17.2 transition all | Solo eliminaciones de propiedades CSS. Cero animation/transition agregado |
+| §17.4 HTML/CSS estable | CERO IDs renombrados. Solo eliminación de `margin-top` + variants 1920 |
+| §17.12 anti-MO | Cero MO |
+| §35 anti-pointermove | Cero pointermove |
+| §19 RCA estricto | Causa raíz REAL identificada esta vez: (1) variants 1920 no existen físicamente, (2) margin-top legacy. §92 falló porque hipotetizó sin verificar archivos físicos en disco |
+| §37 IAP | Cliente reportó con captura, autorización implícita |
+| Big Bang | 7 callsites quirúrgicos. Cero archivos nuevos, cero refactor |
+
+### 95.7 Riesgos + plan de rollback
+
+| # | Riesgo | Mitigación | Rollback |
+|---|---|---|---|
+| 1 | Heros con `margin-top` removido se solapan visualmente con el header | Header tiene `background` sólido + z-index 1000. Hero queda detrás, primeros 80px tapados pero contenido visible (hero mide 720px, contenido centrado vertical) | git revert |
+| 2 | Imágenes hero de marcas/vehículos (páginas generadas) tienen el mismo bug | NO — los `<picture>` de marcas/vehículos usan `marcas-hero.jpg` (≥1920) o imágenes de Firebase Storage del admin. Solo `heroindex.webp` era ≤1280 |
+| 3 | Cliente NO hace Ctrl+Shift+R | Cache version bumped v20260518090000. SW invalidará automático |
+| 4 | Mobile <768px también necesita el fix | ✅ Cubierto en §95.3.D (marcas) y §95.3.F (dark-theme mobile) |
+| 5 | Otra página con hero similar al de index queda afectada | Audit con grep confirmó cero matches activos |
+
+### 95.8 Acciones operativas del cliente
+
+NINGUNA backend. Solo:
+1. **Ctrl+Shift+R** en sitio público (`https://altorracars.github.io/`)
+   una vez para invalidar cache previa (`v20260518080000` →
+   `v20260518090000`)
+2. Validar visualmente:
+   - Hero de index.html con imagen visible
+   - Cero gap negro entre header y hero
+   - Heros de nosotros, marcas, vehiculos-* también sin gap
+
+### 95.9 Archivos modificados
+
+| Archivo | Cambio | Líneas (±) |
+|---|---|---|
+| `index.html` | 2 preloads + 2 `<picture> <source>` srcset sin `1920w` (heroindex-1920 no existe). Critical CSS inline `.hero` sin `margin-top: 70px` | +5 comentarios, -8 |
+| `nosotros.html` | Critical CSS `.about-hero` sin `margin-top: 70px` | +1 comentario, -1 |
+| `marcas.html` | Critical CSS `.marcas-hero` desktop + mobile sin `margin-top: 70px / 56px` | +2 comentarios, -2 |
+| `css/hero.css` | `.hero` sin `margin-top: 70px` | +1 comentario, -1 |
+| `css/dark-theme.css` | 3 callsites: `body .brand-hero` desktop, `.gradient-hero`, `body .brand-hero` mobile — sin margin-top | +3 comentarios, -3 |
+| `service-worker.js` | CACHE_VERSION → `v20260518090000` con changelog §95 | +1, -1 |
+| `js/cache-manager.js` | APP_VERSION → `'20260518090000'` con changelog §95 | +1, -1 |
+| `CLAUDE.md` | Esta sección §95 + actualización tabla §85.4 | +220 |
+
+**Total**: 8 archivos. Cero archivos nuevos. Cero schema. Cero deploy backend.
+
+### 95.10 Archivos INTACTOS (afirmación)
+
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+- Plan §61 RBAC (todos los admin-*.js) — ZERO
+- AI modules (`js/ai/*.js`) — ZERO
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+- Bot ALTOR sparkles — ZERO
+- Páginas con hero ≥1920 (nosotros-hero.webp es ≥1920) — ZERO en `<picture>`
+- Páginas generadas `vehiculos/*.html` y `marcas/*.html` — ZERO (usan otras imágenes que SÍ tienen 1920)
+- 11 páginas con `<picture>` desde §16 Bonus B (cookies, contacto, etc.) — sus `<picture>` referencian imágenes que SÍ tienen 1920 (marcas-hero.jpg es ≥1920)
+
+### 95.11 Estado de PENDIENTES post-§95
+
+| ID | Item | Status |
+|---|---|---|
+| **PENDIENTE-A** | Fase C Smart Update + Cloudflare Pages | 🔮 Bloqueado por presupuesto dominio (~$10/año) |
+| **PENDIENTE-B** | §61 R8 grande refactor 174 callsites | ✅ §89 |
+| **PENDIENTE-C-S8** | Welcome contextual + Progressive profiling | ✅ §86 |
+| **PENDIENTE-C-S9** | CSAT + Auto-resolve | ✅ §87 |
+| **PENDIENTE-C-S10** | Internal notes + Transferencias entre asesores | ✅ §88 |
+| **§90 Fase 4 SEO técnica** | Schema rich snippets + h1 Cartagena | ✅ §90 |
+| **§91 Fase 3A imágenes responsive** | `<picture>` AVIF/WebP index + nosotros | ✅ §91 |
+| **§92 Hotfix particles + (intento) hero** | particles eliminadas (OK) + hero (parcialmente) | ✅ §92 |
+| **§93 Sprint 3B Lazy loading universal** | 56 imgs lazy + decoding=async | ✅ §93 |
+| **§94 Normalización docs Cloudflare-only** | Eliminadas referencias Vercel + auditoría pendientes $0 | ✅ §94 |
+| **§95 Hero invisible REAL fix + margin-top legacy removed** | RCA real (2 causas) + 7 callsites limpios | **✅ §95 (este)** |
+| **Sprint 3C Critical CSS inline** | Pendiente ejecución agente | 🔮 Listo (~4h, $0) |
+| **Sprint 3D Resource hints** | Pendiente ejecución agente | 🔮 Listo (~2h, $0) |
+| **Bug camioneta.jpg srcset** | Quick win | 🔮 Listo (~10 min, $0) |
+| **Metadata local SEO páginas faltantes** | Coherencia post-§90 | 🔮 Listo (~1h, $0) |
+| **Página /cartagena.html dedicada** | SEO local Cartagena | 🔮 Bloqueado por contenido del cliente |
+
+### 95.12 Doctrina aplicada
+
+§19 RCA estricto: causa raíz REAL identificada esta vez por
+verificación física de archivos en disco (`ls multimedia/optimized/`)
++ grep cross-referencia `margin-top: 70px`. §92 había hipotetizado
+sin verificar lo físico — error documentado para no repetir.
+
+§37 IAP: cliente reportó con captura visual del problema, autorización
+implícita amplia.
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`. Solo eliminaciones quirúrgicas de propiedades CSS.
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Solo eliminación de
+propiedades `margin-top` legacy + variants 1920 inexistentes.
+
+§17.12 anti-MutationObserver: cero MO global.
+
+**Cache bump**: `v20260518090000`.

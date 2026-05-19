@@ -1250,7 +1250,7 @@ body .brand-hero {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    margin-top: 70px;
+    /* §95 — margin-top:70px legacy ELIMINADO. Header fixed flota encima. */
     isolation: isolate;
     z-index: 10;
     animation: brandHeroFadeIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -1317,7 +1317,7 @@ body .catalog-section {
     align-items: center;
     justify-content: center;
     min-height: clamp(420px, 60vh, 620px);
-    margin-top: 70px;
+    /* §95 — margin-top:70px legacy ELIMINADO. Header fixed flota encima. */
     background: #0a0a0a;
     color: white;
     text-align: center;
@@ -1436,7 +1436,7 @@ body .catalog-section {
 @media (max-width: 480px) {
     body .brand-hero {
         min-height: clamp(220px, 32vh, 300px);
-        margin-top: 56px;
+        /* §95 — margin-top:56px mobile legacy ELIMINADO. */
     }
     body .brand-hero-bg {
         object-position: center 40%;

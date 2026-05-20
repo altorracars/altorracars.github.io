@@ -36,6 +36,48 @@
 
     var _initialized = false;
     var _currentToken = null;
+    var _foregroundBound = false;
+
+    /**
+     * bindForegroundHandler — §98. Cuando llega un push y la pestaña del
+     * admin está ABIERTA/visible, FCM NO dispara el SW background handler.
+     * Llama a messaging.onMessage() en su lugar. Sin este handler, los
+     * push en foreground se perdían (causa de "las notificaciones nunca
+     * funcionan cuando estoy en el Hub"). Mostramos un toast in-app
+     * (siempre visible) con CTA "Ver" que abre el ALTOR Hub.
+     */
+    function bindForegroundHandler(messaging) {
+        if (_foregroundBound || !messaging || typeof messaging.onMessage !== 'function') return;
+        _foregroundBound = true;
+        try {
+            messaging.onMessage(function (payload) {
+                var n = (payload && payload.notification) || {};
+                var d = (payload && payload.data) || {};
+                var title = n.title || '🚨 Cliente esperando';
+                var body = n.body || 'Hay un cliente en cola en el ALTOR Hub.';
+                if (window.notify && window.notify.warning) {
+                    window.notify.warning({
+                        title: title,
+                        message: body,
+                        duration: 10000,
+                        action: {
+                            label: 'Ver',
+                            onClick: function () {
+                                if (window.AltorraSections && window.AltorraSections.go) {
+                                    window.AltorraSections.go('concierge');
+                                } else {
+                                    window.location.hash = '#/concierge';
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        } catch (e) {
+            console.warn('[AdminFCM] onMessage handler error:', e && e.message);
+            _foregroundBound = false;
+        }
+    }
 
     /**
      * detectDevice — etiqueta humana del dispositivo (útil para que el
@@ -122,6 +164,13 @@
                 var messaging = window.firebaseApp
                     ? window.firebase.messaging(window.firebaseApp)
                     : window.firebase.messaging();
+                // §98 — handler FOREGROUND. El SW (firebase-messaging-sw.js)
+                // solo dispara onBackgroundMessage cuando la pestaña está en
+                // segundo plano/cerrada. Cuando el asesor tiene el ALTOR Hub
+                // ABIERTO y visible, esos push se perdían silenciosamente
+                // (no había onMessage handler) → "las notificaciones nunca
+                // funcionan". Ahora mostramos un toast in-app + sonido.
+                bindForegroundHandler(messaging);
                 return messaging.getToken({
                     vapidKey: VAPID_PUBLIC_KEY,
                     serviceWorkerRegistration: registration
@@ -197,10 +246,19 @@
         // Si está denied, no preguntar (respeta decisión del usuario)
         if (Notification.permission === 'denied') return;
 
-        // Default: mostrar prompt amigable UNA vez por sesión
-        var promptedKey = 'altorra_fcm_prompted_v1';
-        if (sessionStorage.getItem(promptedKey)) return;
-        sessionStorage.setItem(promptedKey, '1');
+        // §98 — NO molestar en cada login. Antes usaba sessionStorage
+        // (se reseteaba al cerrar la pestaña → el prompt salía SIEMPRE
+        // al volver a iniciar sesión). Ahora persistimos en localStorage
+        // con cooldown de 3 días:
+        //   - granted  → nunca se prompts (lo cubre el branch de arriba)
+        //   - denied   → nunca (branch de arriba)
+        //   - default  → prompt a lo sumo 1 vez cada 3 días
+        var PROMPT_KEY = 'altorra_fcm_prompted_at';
+        var COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 días
+        var lastPrompt = 0;
+        try { lastPrompt = parseInt(localStorage.getItem(PROMPT_KEY) || '0', 10); } catch (e) {}
+        if (lastPrompt && (Date.now() - lastPrompt) < COOLDOWN_MS) return;
+        try { localStorage.setItem(PROMPT_KEY, String(Date.now())); } catch (e) {}
 
         // Diferir 3s para no bombardear al admin recién logueado
         setTimeout(function () {

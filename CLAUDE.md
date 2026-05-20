@@ -39075,3 +39075,162 @@ cualquier otro error similar").
 a variants existentes.
 
 **Cache bump**: `v20260520050000`.
+
+---
+
+## 98. ADR-098 — Admin: FCM prompt deja de salir en cada login + foreground push + fix badge CRM "0" (2026-05-20)
+
+> Cliente reportó 2 issues del panel admin:
+>
+> 1. "El mensaje para activar notificaciones sale SIEMPRE al iniciar
+>    sesión. Al darle Activar y aceptar permisos en Chrome, las
+>    notificaciones nunca funcionan cuando entran mensajes al ALTOR Hub."
+> 2. "En el menú CRM al dar click aparece un cero (0), luego se quita
+>    al rato — no sé qué indica."
+>
+> Sprint coordinado de 3 fixes (2 para FCM, 1 para el badge) bajo
+> doctrina §17 (perf), §17.4 (HTML/CSS estable), §17.12 (cero
+> MutationObserver), §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 98.1 Causa raíz Issue 1 (FCM) — 2 sub-problemas
+
+**Sub-problema A — prompt sale en cada login**:
+
+`js/admin-fcm.js` usaba `sessionStorage.getItem('altorra_fcm_prompted_v1')`
+como guard del prompt. `sessionStorage` se borra al cerrar la pestaña →
+cada nueva sesión (login tras cerrar/reabrir) re-mostraba el prompt. Si
+el usuario lo descartaba sin otorgar permiso, `Notification.permission`
+quedaba en `'default'` → re-prompt eterno.
+
+**Sub-problema B — notificaciones nunca funcionan con el Hub abierto**:
+
+`firebase-messaging-sw.js` solo dispara `onBackgroundMessage` cuando la
+pestaña del admin está en **segundo plano o cerrada** (comportamiento
+estándar de FCM Web Push, igual que WhatsApp Web). Cuando el asesor
+tiene el **ALTOR Hub ABIERTO y visible** (que es como prueba), FCM NO
+llama al SW background handler — llama a `messaging.onMessage()`
+(foreground). Pero `admin-fcm.js` **NO tenía registrado ningún
+`onMessage` handler** → esos push se perdían silenciosamente.
+
+Adicional importante: el push solo se dispara en `onChatEscalated`
+cuando un chat pasa a `mode='queue'` (cliente pide "Hablar con asesor"),
+NO en cada mensaje. Es el diseño correcto ("te despertamos solo si hay
+un cliente esperando"), pero el cliente esperaba notificación en cada
+mensaje. Lo aclaramos en §98.5.
+
+### 98.2 Causa raíz Issue 2 (badge CRM "0")
+
+3 sistemas escribían al badge del CRM con lógica distinta:
+- `admin-crm.js:340` → `navBadge.textContent = total` **CRUDO** (escribe
+  "0" cuando total es 0: al cargar, filtrar vacío o sin contactos)
+- `admin-sidebar-badges.js:105` → `setBadge('navBadgeCrm', hotCount)`
+  con hide-on-zero (oculta en 0, muestra "contactos calientes ≥70")
+- `admin-topnav.js:412` → `syncBadges()` copia `navBadgeCrm.textContent`
+  → `atnBadgeCrm.textContent` (cada 5s)
+
+El CSS `.atn-tab-badge:empty { display:none }` SOLO oculta con string
+vacío, NO con "0". Timeline del bug:
+1. Click CRM → `admin-crm.js` escribe `navBadgeCrm = "0"`.
+2. `syncBadges` (≤5s) copia "0" → `atnBadgeCrm` del topnav muestra "0".
+3. `admin-sidebar-badges.compute()` (≤60s o por evento) escribe `''`
+   (oculta).
+4. `syncBadges` (≤5s) copia `''` → topnav oculta. → "se quita al rato".
+
+### 98.3 Solución estructural — 3 cambios coordinados
+
+**Fix A — prompt FCM con cooldown localStorage** (`js/admin-fcm.js`):
+- `sessionStorage` → `localStorage` con clave `altorra_fcm_prompted_at`
+  (timestamp) + cooldown 3 días.
+- granted → nunca prompt (branch existente). denied → nunca. default →
+  a lo sumo 1 vez cada 3 días. Resuelve "sale siempre al iniciar sesión".
+
+**Fix B — handler foreground `onMessage`** (`js/admin-fcm.js`):
+- Nueva función `bindForegroundHandler(messaging)` con flag idempotente
+  `_foregroundBound`. Se invoca dentro del chain de `getToken` apenas se
+  crea la instancia `messaging`.
+- Cuando llega un push con la pestaña abierta, muestra toast in-app
+  (`notify.warning`) con CTA "Ver" que abre el ALTOR Hub via
+  `AltorraSections.go('concierge')`. Ahora las notificaciones SÍ se ven
+  cuando el asesor está en el panel.
+
+**Fix C — eliminar badge CRM "0"** (`admin-crm.js` + `admin-topnav.js`):
+- `admin-crm.js`: NO escribir `total` crudo. Delega a
+  `AltorraSidebarBadges.refresh()` (dueño canónico, hide-on-zero,
+  semántica "contactos calientes ≥70" del §27.7). Fallback defensivo
+  oculta si total≤0, nunca muestra "0".
+- `admin-topnav.js syncBadges`: normaliza `"0"` → `''` al mirror, para
+  que ningún writer legacy pueda surfacear "0" en el topnav
+  (belt-and-suspenders).
+
+### 98.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Login admin → cerrar pestaña → re-login | Prompt FCM NO reaparece (cooldown 3d localStorage) |
+| 2 | Permiso ya granted → re-login | Cero prompt, token se registra silencioso |
+| 3 | Permiso denied → re-login | Cero prompt |
+| 4 | default + descartar prompt → re-login mismo día | NO reaparece (dentro de cooldown 3d) |
+| 5 | Activar permisos + cliente escala a "Hablar con asesor" CON Hub abierto | Toast in-app "🚨 Cliente esperando" + CTA "Ver" (antes: nada) |
+| 6 | Mismo escalado con pestaña en background/cerrada | Notificación OS nativa (onBackgroundMessage del SW) |
+| 7 | Click "Ver" en el toast | Abre el ALTOR Hub (sec-concierge) |
+| 8 | Click menú CRM con 0 contactos calientes | NO aparece "0" en el badge (oculto) |
+| 9 | CRM con ≥1 contacto caliente (≥70) | Badge muestra el número real |
+| 10 | DevTools console | Cero errores nuevos |
+
+### 98.5 Aclaración al cliente sobre cuándo dispara el push FCM
+
+El push de notificación (OS o in-app) se dispara cuando un **cliente
+solicita hablar con un asesor** (escala a la cola del Hub), NO en cada
+mensaje individual. Es el diseño correcto: "te avisamos cuando hay un
+cliente esperando atención humana". Con el Hub abierto → toast in-app
+(§98 Fix B). Con el Hub cerrado / en el celular → notificación del SO.
+Para recibir push en el celular, el asesor debe instalar la PWA del
+admin y aceptar permisos.
+
+### 98.6 Anti-patterns evitados
+
+| Doctrina | Mitigación |
+|---|---|
+| §17.4 HTML/CSS estable | Cero IDs/clases renombrados. Solo lógica JS |
+| §17.12 anti-MutationObserver | Cero MO. onMessage es callback nativo de FCM |
+| §35 anti-pointermove | Cero pointermove |
+| §19 RCA estricto | 2 causas raíz reales identificadas (sessionStorage vs localStorage; falta de onMessage foreground; dual-writer del badge). Verificación de los 3 writers del badge antes de tocar |
+| §37 IAP | Cliente reportó 2 issues concretos, autorización implícita |
+| Single source of truth | Badge CRM: AltorraSidebarBadges es el dueño canónico. admin-crm.js delega |
+
+### 98.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-fcm.js` | sessionStorage→localStorage cooldown 3d + función `bindForegroundHandler(messaging)` con flag `_foregroundBound` + invocación en chain getToken |
+| `js/admin-crm.js` | Reemplazado raw `navBadge.textContent = total` por delegación a `AltorraSidebarBadges.refresh()` + fallback defensivo hide-on-zero |
+| `js/admin-topnav.js` | `syncBadges` normaliza "0" → '' al mirror del topnav |
+| `service-worker.js` | CACHE_VERSION → `v20260520190000` con changelog §98 |
+| `js/cache-manager.js` | APP_VERSION → `v20260520190000` |
+| `CLAUDE.md` | Esta sección §98 |
+
+**Total**: 6 archivos. Cero archivos nuevos. Cero schema. Cero deploy
+backend. Cero rules.
+
+### 98.8 Archivos INTACTOS (afirmación)
+
+- `firebase-messaging-sw.js` — sin tocar (background handler ya correcto)
+- `functions/index.js` (onChatEscalated, etc.) — ZERO
+- `js/admin-native-notifications.js` (§G.2 notificaciones in-panel) — ZERO
+- `js/concierge.js`, `js/admin-concierge.js`, `js/hub-store.js` — ZERO
+- `firestore.rules`, `database.rules.json` — ZERO
+- Sitio público — ZERO
+
+### 98.9 Doctrina aplicada
+
+§19 RCA estricto: causas raíz reales (sessionStorage efímero; ausencia
+de foreground onMessage handler; dual-writer del badge sin hide-on-zero).
+
+§37 IAP: cliente reportó 2 issues concretos. Cambios focalizados.
+
+§17 Performance: cero MutationObserver, cero pointermove, cero
+`transition: all`.
+
+§17.4 HTML/CSS estable: cero IDs renombrados.
+
+**Cache bump**: `v20260520190000`.

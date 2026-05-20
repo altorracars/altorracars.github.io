@@ -415,9 +415,14 @@
         pairs.forEach(function (pair) {
             var src = $(pair[0]);
             var dst = $(pair[1]);
-            if (src && dst && dst.textContent !== src.textContent) {
-                dst.textContent = src.textContent;
-            }
+            if (!src || !dst) return;
+            // §98 — defensa: "0" o vacío → badge oculto. El topnav usa
+            // `.atn-tab-badge:empty { display:none }`, así que un "0"
+            // crudo de cualquier writer legacy se vería en el menú.
+            // Normalizamos "0" a string vacío para que nunca aparezca.
+            var val = src.textContent;
+            if (!val || val === '0') val = '';
+            if (dst.textContent !== val) dst.textContent = val;
         });
     }
 

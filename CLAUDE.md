@@ -38822,3 +38822,256 @@ propiedades `margin-top` legacy + variants 1920 inexistentes.
 §17.12 anti-MutationObserver: cero MO global.
 
 **Cache bump**: `v20260518090000`.
+
+---
+
+## 96. ADR-096 — Hotfix category card Pickup imagen rota (mismo bug §95 en otra card) (2026-05-19)
+
+> Cliente reportó con captura del index.html: "Lo mismo que paso con el
+> hero paso con la imagen de la categoria de pickup". La card de Pickup
+> mostraba el alt text "Pickup" con icono de imagen rota, mientras
+> SUV/Sedán/Hatchback renderizaban bien.
+>
+> Mismo patrón del §95: `<picture>` srcset referenciando variants que
+> NO existen físicamente. Ya estaba anticipado en el audit del §94
+> ("Bug camioneta.jpg srcset").
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §19 RCA estricto, §37 (IAP).
+
+### 96.1 Causa raíz
+
+§91 (Sprint 3A) wrappeó las 4 category cards del index.html con
+`<picture>` srcset AVIF/WebP. La card de Pickup usó la fuente
+`camioneta.jpg` que mide solo **600×400** → el optimizer solo generó
+`camioneta-480.{avif,webp}`. Pero el `<picture>` srcset referenciaba
+`768/1280/1920` que NO existen.
+
+El browser en viewports normales elegía el `768w`/`1280w`/`1920w` →
+404 → imagen rota mostrando el alt text "Pickup".
+
+**Descubrimiento clave**: existe una fuente mejor `PICKUP.jpg`
+(**1920×900**, misma resolución que SUV/SEDAN) que YA tiene las 4
+variants generadas (`PICKUP-480/768/1280/1920.{avif,webp}`) y YA está
+en los TARGETS del optimizer. La card de Pickup usaba la imagen chica
+por error en §91.
+
+Estado de las 4 category cards pre-§96:
+
+| Card | Fuente | Variants existentes | Estado |
+|---|---|---|---|
+| SUV | SUV.jpg (1920×900) | 480/768/1280/1920 ✅ | OK |
+| **Pickup** | **camioneta.jpg (600×400)** | **solo 480** ❌ | **ROTA** |
+| Sedán | SEDAN.jpg (1920×900) | 480/768/1280/1920 ✅ | OK |
+| Hatchback | HATCHBACK.jpg | solo 480/768, srcset solo referencia 480/768 ✅ | OK |
+
+### 96.2 Solución estructural — 3 cambios coordinados
+
+#### A. `index.html` — card Pickup usa PICKUP.jpg
+
+`<picture>` de la card Pickup cambiado:
+- srcset AVIF + WebP: `camioneta-*` → `PICKUP-480/768/1280/1920`
+- `<img src>`: `camioneta.jpg?v=20260310` → `PICKUP.jpg`
+
+Beneficio extra: PICKUP.jpg (1920×900) tiene mucha mejor resolución
+que camioneta.jpg (600×400) en pantallas retina.
+
+#### B. `vehiculos-pickup.html` — og:image a PICKUP.jpg
+
+El `og:image` (preview social WhatsApp/FB) usaba `camioneta.jpg`
+(600×400, subóptimo — los shares prefieren ~1200×630). Cambiado a
+`PICKUP.jpg` (1920×900). No era imagen rota (es meta tag de URL
+única, no `<picture>` srcset) pero mejora calidad del preview.
+
+#### C. `scripts/optimize-images.mjs` — eliminar TARGET camioneta.jpg
+
+`camioneta.jpg` removida de TARGETS (ya no la usa ninguna `<picture>`,
+solo generaba un variant 480 huérfano). Comentario §96 explicativo.
+Los archivos `camioneta-480.{avif,webp}` existentes quedan en disco
+pero ya no se referencian (cleanup físico opcional futuro).
+
+### 96.3 Validación
+
+- HATCHBACK card: solo referencia 480/768 (ambos existen) → ✅ ya estaba bien
+- SUV/SEDAN: las 4 variants existen → ✅ siempre OK
+- index.html post-fix: única referencia restante a `camioneta` son
+  keywords de texto en meta tags + comentario §96 (cero `<picture>` roto)
+
+### 96.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio público (cache v20260519060000) | Cache nueva carga |
+| 2 | index.html sección categorías | Card "Pickup" muestra imagen PICKUP.jpg (NO icono roto + alt "Pickup") |
+| 3 | DevTools Network filter "PICKUP" | Descarga PICKUP-768.avif o PICKUP-1280.avif (existen) |
+| 4 | DevTools Network cero 404 de camioneta-768/1280/1920 | Confirmado |
+| 5 | Las otras 3 cards (SUV/Sedán/Hatchback) | Siguen renderizando bien |
+| 6 | Compartir vehiculos-pickup.html en WhatsApp | Preview con imagen PICKUP.jpg de alta resolución |
+| 7 | Mobile <768px | Card Pickup responsive correcta |
+
+### 96.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `index.html` | Card Pickup `<picture>` srcset + `<img src>` de camioneta-* → PICKUP-* (4 variants existentes, fuente 1920×900) |
+| `vehiculos-pickup.html` | og:image camioneta.jpg → PICKUP.jpg (mejor preview social) |
+| `scripts/optimize-images.mjs` | TARGET camioneta.jpg eliminado (huérfano post-fix) |
+| `service-worker.js` | CACHE_VERSION → v20260519060000 |
+| `js/cache-manager.js` | APP_VERSION → v20260519060000 |
+| `CLAUDE.md` | Esta sección §96 |
+
+**Total**: 6 archivos. Cero archivos nuevos. Cero schema. Cero deploy backend.
+
+### 96.6 Archivos INTACTOS (afirmación)
+
+- Las otras 3 category cards (SUV/SEDAN/HATCHBACK) — ZERO
+- Hero del index (§95 ya lo arregló) — ZERO
+- `js/concierge.js`, `js/admin-concierge.js` — ZERO
+- Plan §61 RBAC, AI modules — ZERO
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+- Archivos físicos `camioneta-480.{avif,webp}` quedan en disco (cleanup opcional futuro, no molestan)
+
+### 96.7 Doctrina aplicada
+
+§19 RCA estricto: causa raíz idéntica al §95 (srcset → variants
+inexistentes). Verificación física en disco (`ls multimedia/optimized/`)
++ descubrimiento de fuente mejor (PICKUP.jpg 1920×900 con 4 variants
+ya generadas). Fix óptimo: usar la fuente correcta, no solo trimmear
+el srcset roto.
+
+§37 IAP: cliente reportó con captura, autorización implícita.
+
+§17.4 HTML/CSS estable: cero IDs renombrados.
+
+**Cache bump**: `v20260519060000`.
+
+---
+
+## 97. ADR-097 — Resolver branch conflict (auto-cron) + escaneo masivo bug class §95/§96 → HATCHBACK hero (2026-05-20)
+
+> Cliente reportó: "Arregla el branch y escanea cualquier otro error
+> similar o algun bug que haya surgido de las ultimas implementaciones
+> para corregirlos" (con captura del PR mostrando conflictos en
+> js/cache-manager.js + service-worker.js otra vez).
+>
+> Sprint coordinado en 2 partes: (A) resolver el conflicto recurrente
+> del auto-cron de main, (B) escaneo exhaustivo de la bug class de
+> §95/§96 (`<picture>` srcset referenciando variants AVIF/WebP que NO
+> existen físicamente en disco) en TODO el sitio, encontrando y
+> arreglando el último foco: el hero de vehiculos-hatchback.html.
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §19 RCA estricto (verificación física en disco), §37 (IAP).
+
+### 97.1 Parte A — Conflicto branch recurrente
+
+Mismo patrón documentado en §82-§84 y §90.14: el auto-cron de main
+(`Auto-generate vehicle pages + bump cache version [skip ci]`)
+bumpeó CACHE_VERSION/APP_VERSION a `v20260520033408` mientras el
+branch tenía `v20260519060000` → conflicto en los 2 archivos de cache.
+
+Resolución (receta canónica):
+1. `git fetch origin main` → main en `v20260520033408`
+2. `git merge origin/main` → conflicto en service-worker.js + js/cache-manager.js
+3. `git checkout --ours` ambos archivos (preserva changelog §95/§96)
+4. Bump a `v20260520050000` (timestamp MAYOR que main para garantizar
+   orden de invalidación de cache)
+5. `git add` + `git commit --no-edit` (merge commit e5afd27)
+
+### 97.2 Parte B — Escaneo exhaustivo bug class §95/§96
+
+**Bug class**: `<picture>` srcset (o preload imagesrcset) referenciando
+variants `multimedia/optimized/X-{480,768,1280,1920}.{avif,webp}` que
+NO existen físicamente porque la imagen fuente es más chica que el
+size solicitado (`scripts/optimize-images.mjs` NO hace upscaling —
+solo genera variants ≤ source width). Resultado: 404 silencioso →
+imagen rota o LCP fallido.
+
+Precedentes: §95 (heroindex-1920, fuente ≤1280) y §96 (camioneta-768/
+1280/1920, fuente 600×400).
+
+**Método de escaneo** (RCA §19 — verificación física):
+```bash
+comm -23 \
+  <(grep -rhoE "optimized/[a-zA-Z0-9_-]+-(480|768|1280|1920)\.(avif|webp)" \
+       *.html vehiculos/ marcas/ | sed 's|.*optimized/||' | sort -u) \
+  <(ls multimedia/optimized/ | sort -u)
+```
+
+Compara TODAS las refs (root + subdirs generados) contra los archivos
+reales en disco.
+
+**Resultado**: ÚNICO foco roto en todo el sitio:
+- `HATCHBACK-1280.avif/webp` + `HATCHBACK-1920.avif/webp`
+  referenciados en `vehiculos-hatchback.html` (hero LCP, `<picture>`
+  líneas 95-96)
+- Fuente `HATCHBACK.jpg` es 1200×800 → optimizer solo generó
+  `HATCHBACK-480` y `HATCHBACK-768` (1280 > 1200, no upscale)
+
+**Nota**: la card HATCHBACK de index.html YA estaba correcta (solo
+referencia 480/768). El bug estaba SOLO en el hero de la página
+dedicada vehiculos-hatchback.html.
+
+**Fix**: trimmear el srcset de ambos `<source>` a `480w, 768w`
+(igual que §95). El `<img>` fallback usa `HATCHBACK.jpg` 1200px
+full-res para browsers sin AVIF/WebP. Sin fuente mejor disponible
+(a diferencia de §96 donde PICKUP.jpg 1920×900 existía), trimmear es
+la solución correcta.
+
+### 97.3 Escaneo de otras regresiones §90-§96 (todas limpias)
+
+| Verificación | Resultado |
+|---|---|
+| Refs optimized/ inexistentes (root + vehiculos/ + marcas/) | ✅ VACÍO tras fix HATCHBACK |
+| Preloads imagesrcset con variant inexistente | ✅ Ninguno |
+| margin-top:70px/56px legacy residual (§95) | ✅ Solo comentarios §95 (cero CSS activo) |
+| Refs a camioneta-* tras §96 | ✅ Ninguna en HTMLs |
+| Residuos de particles tras §92 (markup/keyframes huérfanos) | ✅ Solo comentarios §92 (cero código activo) |
+| Sintaxis JS (generate-vehicles, optimize-images, cache-manager post-merge) | ✅ `node -c` OK los 3 |
+| `<picture>` tags balanceados | ✅ index 5/5, nosotros 1/1, vehiculos-* 1/1 (las "11" de index eran 6 menciones en comentarios HTML/strings JS + 5 etiquetas reales) |
+
+### 97.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio (cache v20260520050000) | Cache nueva carga |
+| 2 | Abrir vehiculos-hatchback.html | Hero con imagen HATCHBACK.jpg VISIBLE (no rota) |
+| 3 | DevTools Network filter "HATCHBACK" | Descarga HATCHBACK-768.avif (NO 1280/1920) |
+| 4 | DevTools Network cero 404 de HATCHBACK | Confirmado |
+| 5 | Otras páginas vehiculos-* (suv/sedan/pickup) | Heros visibles (sus variants existen) |
+| 6 | index.html cards categorías | 4 cards con imágenes visibles |
+
+### 97.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `service-worker.js` | Merge conflict resuelto + CACHE_VERSION → v20260520050000 |
+| `js/cache-manager.js` | Merge conflict resuelto + APP_VERSION → v20260520050000 |
+| `vehiculos-hatchback.html` | `<picture>` srcset trimmeado de 480/768/1280/1920 → 480/768 (1280/1920 nunca existieron) + comentario §97 |
+| `CLAUDE.md` | Esta sección §97 |
+
+**Total**: 4 archivos. Cero archivos nuevos. Cero schema. Cero deploy
+backend. Cero JS admin/bot tocado.
+
+### 97.6 Archivos INTACTOS (afirmación)
+
+- `index.html` card HATCHBACK — ya estaba correcta (480/768)
+- Los otros 3 hero/cards (SUV/SEDAN/PICKUP) — sus variants 1920 existen
+- 11 páginas §16 Bonus B (cookies/contacto/marcas/etc.) — sus heroes
+  (contacto-hero, cookies-hero, etc.) tienen las 4 variants completas
+- `js/concierge.js`, `js/admin-concierge.js`, Plan §61 RBAC, AI modules — ZERO
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+
+### 97.7 Doctrina aplicada
+
+§19 RCA estricto: escaneo por verificación física en disco (`comm -23`
+refs vs `ls`) en lugar de hipótesis. Confirmó que HATCHBACK era el
+ÚNICO foco restante de la bug class §95/§96 en todo el sitio.
+
+§37 IAP: cliente reportó con captura, autorización amplia ("escanea
+cualquier otro error similar").
+
+§17.4 HTML/CSS estable: cero IDs renombrados. Solo trimmeo de srcset
+a variants existentes.
+
+**Cache bump**: `v20260520050000`.

@@ -56,7 +56,8 @@ const TARGETS = [
     'multimedia/categories/SEDAN.jpg',
     'multimedia/categories/HATCHBACK.jpg',
     'multimedia/categories/BUSQUEDA.jpg',
-    'multimedia/categories/camioneta.jpg',    // §91 — Sprint 3A: usada como card "Pickup" en index.html
+    // §96: camioneta.jpg ELIMINADA de TARGETS — fuente 600×400 solo generaba variant 480
+    // (768/1280/1920 daban 404 en la card Pickup). Card ahora usa PICKUP.jpg (1920×900, 4 variants).
     'multimedia/heroes/contacto-hero.jpg',
     'multimedia/heroes/cookies-hero.jpg',
     'multimedia/heroes/privacidad-hero.jpg',

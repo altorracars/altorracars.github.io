@@ -1893,7 +1893,7 @@ body:has(.admin-panel) {
 .admin-panel .stat-card,
 .admin-panel .info-card,
 .admin-panel .form-card,
-.admin-panel [class*="-card"]:not(.alt-card):not(.workflow-card):not(.reports-card):not(.kpi-card):not(.hero-kpi):not(.pipeline-card):not(.nba-dash-item):not(.insights-card):not(.cnc-admin-list-item) {
+.admin-panel [class*="-card"]:not(.alt-card):not(.workflow-card):not(.reports-card):not(.kpi-card):not(.hero-kpi):not(.pipeline-card):not(.nba-dash-item):not(.insights-card):not(.cnc-admin-list-item):not([class*="av2-card"]) {
     background:
         linear-gradient(180deg,
             rgba(255, 255, 255, 0.03) 0%,
@@ -1901,6 +1901,30 @@ body:has(.admin-panel) {
         var(--vis-surface-1);
     border: var(--vis-border-2);
     border-radius: var(--vis-r-lg);
+}
+
+/* §101.1 — El sistema av2-card (cards + lista §100/§101) tiene su estilo
+   propio completo en admin-v2.css. El catch-all [class*="-card"] de
+   visionary cajeaba CADA hijo (av2-card-title/-meta/-price/-codeflat/
+   -subline...) porque todos contienen "-card" como substring → boxes
+   apilados. Excluido arriba con :not([class*="av2-card"]). Garantia
+   adicional: neutralizar cualquier residuo en hijos planos de texto. */
+.admin-panel .av2-card-title,
+.admin-panel .av2-card-meta,
+.admin-panel .av2-card-price,
+.admin-panel .av2-card-codeflat,
+.admin-panel .av2-card-subline,
+.admin-panel .av2-card-branddesc,
+.admin-panel .av2-row-title,
+.admin-panel .av2-row-meta,
+.admin-panel .av2-row-price,
+.admin-panel .av2-row-code {
+    background: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
 
 /* Fix: transition: all (caro) → solo lo que necesita transition */

@@ -39611,3 +39611,113 @@ duplicado de nombre por alt-logo + descripción==nombre. §37 IAP entregado.
 `background-color`/`transform` transitions específicas, cero `transition: all`.
 
 **Cache bump**: `v20260521010000`.
+
+---
+
+## 101.1 — HOTFIX §101: causa raíz REAL del box en cada hijo de las cards (catch-all visionary) (2026-05-21)
+
+> Tras §101 el cliente reportó (con 2 capturas — marcas + vehículos) que
+> los boxes PERSISTEN: cada línea de información (código, título, meta,
+> precio, subline, count de marca) sigue encerrada en un cuadro
+> transparente estrecho. El dedup de nombre de marca SÍ funcionó (positivo),
+> pero el clutter de boxes no. Pidió "rediseño al verdadero estilo del
+> HARMONY OS".
+>
+> §101 cambió el markup (overlays, texto plano) pero NO encontró la capa
+> CSS que cajeaba. §101.1 la encuentra y la neutraliza.
+
+### 101.1.1 Causa raíz REAL (RCA §19)
+
+`css/admin-visionary.css:1896`:
+```css
+.admin-panel [class*="-card"]:not(.alt-card):not(...9 nots...) {
+    background: linear-gradient(...) + var(--vis-surface-1);
+    border: var(--vis-border-2);
+    border-radius: var(--vis-r-lg);
+}
+```
+
+El selector `[class*="-card"]` matchea por **SUBSTRING** cualquier clase
+que contenga "-card". TODOS los hijos del sistema av2-card lo contienen:
+- `av2-card-title` → contiene "-card" ✓
+- `av2-card-meta`, `av2-card-price`, `av2-card-codeflat`,
+  `av2-card-subline`, `av2-card-branddesc`, `av2-card-status-ov`, etc.
+
+La regla estaba pensada para contenedores legacy (`.stat-card`,
+`.info-card`, `.form-card`) pero el substring atrapaba CADA hijo de texto.
+Especificidad `(0,11,0)` (`.admin-panel` + `[class*]` + 9× `:not`) → vencía
+a las reglas de admin-v2.css `(0,1,0)` que definían esos hijos SIN
+background. Por eso el §101 (cambios de markup) no eliminó los boxes:
+la capa visionary los re-aplicaba con mayor especificidad.
+
+Esta es la razón por la que el audit inicial del §101 "no encontró
+override" — buscaba selectores explícitos `.av2-card-title`, no un
+catch-all por substring `[class*="-card"]`.
+
+### 101.1.2 Fix
+
+1. **Excluir el namespace av2-card del catch-all** (línea 1896):
+   agregado `:not([class*="av2-card"])`. El sistema av2-card (container +
+   cards + lista §100/§101) tiene su estilo propio completo en
+   admin-v2.css → no necesita el tile genérico de visionary.
+   - `.av2-card` container → conserva `var(--av2-bg-island)` (admin-v2)
+     + `rgba(20,20,22,0.96)` (perf-kill). Sigue siendo card visible.
+   - Todos los `.av2-card-*` hijos → ya no reciben tile → sin box.
+   - Legacy `.stat-card`/`.info-card`/`.dealer-card`/etc. → siguen
+     recibiendo el tile (no contienen "av2-card").
+
+2. **Reset !important belt-and-suspenders** en hijos de texto plano
+   (`.av2-card-title/-meta/-price/-codeflat/-subline/-branddesc` +
+   `.av2-row-title/-meta/-price/-code`): `background:none; border:none;
+   border-radius:0; box-shadow:none; padding-left/right:0`. Garantiza
+   cero residuo aunque otra capa futura intente cajearlos.
+
+3. **Overlays/badges preservan su fondo**: `.av2-card-status-ov`,
+   `.av2-card-cb-ov`, `.av2-card-badge-featured` están excluidos del
+   catch-all (contienen "av2-card") y NO en el reset → mantienen su
+   background §101. Sin cambios.
+
+### 101.1.3 Resultado HarmonyOS
+
+Cards planas de superficie única (HarmonyOS NEXT): imagen arriba +
+jerarquía tipográfica limpia (código mono dorado tenue → título bold →
+meta muted → precio gold → subline muted) SIN cajas anidadas. Marca:
+logo prominente + nombre 1× + "N vehículos" texto plano. Cero boxes
+internos en vehículos ni marcas.
+
+### 101.1.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260521020000) | Carga nueva |
+| 2 | Vehículos vista tarjetas | Cada línea (código/título/meta/precio/subline) SIN box transparente |
+| 3 | Marcas vista tarjetas | Nombre y "N vehículos" SIN box; logo sin caja interna |
+| 4 | Container de la card | Sigue siendo tile dark visible (no transparente) |
+| 5 | Estado overlay sobre imagen | Mantiene su badge de color |
+| 6 | Checkbox overlay | Mantiene su fondo translúcido |
+| 7 | Vista lista §100 | Sin boxes en las celdas de texto (av2-row-* reseteados) |
+| 8 | Cards legacy (stat-card, info-card, dealer) | Siguen con su superficie visionary (no afectadas) |
+
+### 101.1.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `css/admin-visionary.css` | Línea 1896: `:not([class*="av2-card"])` agregado al catch-all `[class*="-card"]` + bloque §101.1 reset !important en hijos de texto plano (av2-card-* y av2-row-*) |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260521020000 |
+| `CLAUDE.md` | Esta sección §101.1 |
+
+**Total**: 3 archivos. Cero JS, cero schema, cero deploy backend. Solo Ctrl+Shift+R.
+
+### 101.1.6 Lección documentada (anti-pattern detectado)
+
+> Los selectores de atributo por **substring** `[class*="palabra"]` son
+> peligrosos: matchean clases hijas que comparten el substring del
+> contenedor (`av2-card-title` contiene "-card"). Cuando se use un
+> catch-all `[class*="-card"]` para estilizar CONTENEDORES, SIEMPRE
+> excluir los namespaces de hijos con `:not([class*="prefijo-card"])`,
+> o usar un selector más preciso (`[class$="-card"]` para terminación,
+> o lista explícita de contenedores). Esto causó que §101 (correcto en
+> markup) no resolviera el bug — la causa estaba en una capa con
+> especificidad mayor y matcher por substring.
+
+**Cache bump**: `v20260521020000`.

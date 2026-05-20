@@ -335,9 +335,23 @@
             }).join('');
         }
 
-        // Update sidebar nav badge with total contacts
-        var navBadge = $('navBadgeCrm');
-        if (navBadge) navBadge.textContent = total;
+        // §98 — NO escribir "total" crudo al badge. Causaba un "0"
+        // fantasma en el menú CRM del topnav cuando total era 0 (al
+        // cargar, filtrar vacío o sin contactos): el topnav mirror
+        // copiaba "0" y solo ocultaba con string vacío, no con "0".
+        // AltorraSidebarBadges es el ÚNICO dueño de navBadgeCrm: muestra
+        // "contactos calientes (≥70)" y oculta en 0 (setBadge hide-on-zero).
+        // Le pedimos un refresh para que recalcule con la lógica correcta.
+        if (window.AltorraSidebarBadges && window.AltorraSidebarBadges.refresh) {
+            window.AltorraSidebarBadges.refresh();
+        } else {
+            // Fallback defensivo: nunca mostrar "0" si el módulo no cargó.
+            var navBadge = $('navBadgeCrm');
+            if (navBadge) {
+                navBadge.textContent = total > 0 ? String(total) : '';
+                navBadge.style.display = total > 0 ? '' : 'none';
+            }
+        }
 
         if (filtered.length === 0) {
             body.innerHTML = '<tr><td colspan="7" class="table-empty">Sin contactos que coincidan</td></tr>';

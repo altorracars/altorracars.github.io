@@ -1769,31 +1769,65 @@ exports.recalculateWorkloadScheduled = onSchedule({
 // (messaging/registration-token-not-registered o invalid-argument),
 // removemos el token del array fcmTokens del asesor.
 //
-exports.onChatEscalated = onDocumentUpdated({
+// §99 (2026-05-20) — onDocumentUpdated → onDocumentWritten + condición de
+// ESTADO (no transición). Causa raíz del bug "no notifica nada": cuando el
+// cliente abre el bot y clickea "Hablar con asesor" SIN chatear primero,
+// ensureFirestoreChatDoc CREA el doc ya con mode='queue' (un CREATE). El
+// trigger onUpdate solo dispara con before≠after, NUNCA con CREATE → push
+// jamás se enviaba en la escalación directa (el caso más común). Es el mismo
+// bug que §54/§56 arreglaron para onChatEscalatedTelegram. Mirror exacto:
+// onWrite + nowInQueue + single-shot notifiedFcmAt + esperar radicado.
+// Región us-central1 SE MANTIENE (onConciergeChatCreated + workload usan la
+// misma y funcionan — no es problema cross-region, solo era el trigger type).
+exports.onChatEscalated = onDocumentWritten({
     document: 'conciergeChats/{sessionId}',
     region: 'us-central1',
     timeoutSeconds: 60,
     memory: '256MiB'
 }, async (event) => {
-    const before = event.data.before.data();
-    const after = event.data.after.data();
-    if (!after) return;
+    const sessionId = event.params.sessionId;
+    console.log('[onChatEscalated] §99 INVOKED — sessionId:', sessionId);
 
-    const becameQueue = before.mode !== 'queue' && after.mode === 'queue';
-    if (!becameQueue) return;
-
-    // §50 — Eliminado filtro por asesoresAvailable.
-    // Cliente pidió notificación desde minuto 0 SIEMPRE.
-    // Solo conservamos cooldown anti-duplicado (5 min por chat).
-
-    // Anti-spam temporal: 1 push por chat cada 5 min
-    if (after.notifiedFcmAt) {
-        const lastNotif = new Date(after.notifiedFcmAt).getTime();
-        if (Date.now() - lastNotif < 5 * 60 * 1000) {
-            console.log('[onChatEscalated] skip push: notificado hace <5min');
-            return;
-        }
+    if (!event.data) {
+        console.warn('[onChatEscalated] event.data null. Skip.');
+        return;
     }
+    const before = event.data.before && event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after && event.data.after.exists ? event.data.after.data() : null;
+
+    const beforeMode = before ? before.mode : '(no-before)';
+    const afterMode = after ? after.mode : '(deleted)';
+    console.log('[onChatEscalated] mode transition:', beforeMode, '→', afterMode);
+
+    if (!after) {
+        console.log('[onChatEscalated] Doc deleted. Skip.');
+        return;
+    }
+
+    // §99 — condición de ESTADO (mirror §56): el chat está en cola,
+    // no se notificó aún, y ya tiene radicado canónico.
+    const nowInQueue = after.mode === 'queue';
+    if (!nowInQueue) {
+        console.log('[onChatEscalated] Not in queue. Skip.');
+        return;
+    }
+
+    // Single-shot anti-duplicado (mirror §56). Con onWrite el trigger
+    // dispara en CADA escritura del doc parent (lastMessageAt, read
+    // receipts §76, etc.). notifiedFcmAt garantiza 1 sola push por chat.
+    if (after.notifiedFcmAt) {
+        console.log('[onChatEscalated] Already notified at', after.notifiedFcmAt, '. Skip.');
+        return;
+    }
+
+    // §99 — Esperar al radicado canónico (mirror §56). onConciergeChatCreated
+    // lo asigna en breve; ese write re-dispara este trigger con radicado ya
+    // presente. Evita enviar el push con el slice feo del sessionId.
+    if (!after.radicado) {
+        console.log('[onChatEscalated] Pending radicado canónico. Skip (will retrigger).');
+        return;
+    }
+    console.log('[onChatEscalated] ✓ Chat in queue with radicado:', after.radicado, '. Sending FCM push...');
 
     // Recolectar fcmTokens de TODOS los editores + super_admins
     const usuariosSnap = await db.collection('usuarios')
@@ -1818,8 +1852,8 @@ exports.onChatEscalated = onDocumentUpdated({
         return;
     }
 
-    // Construir payload
-    const radicado = after.radicado || '#' + event.params.sessionId.slice(-6);
+    // Construir payload — §99 radicado garantizado por el guard de arriba
+    const radicado = after.radicado;
     const userName = after.userNombre || after.userEmail || 'Cliente anónimo';
     const reason = after.escalationReason || 'manual';
     const message = {

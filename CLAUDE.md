@@ -39234,3 +39234,153 @@ de foreground onMessage handler; dual-writer del badge sin hide-on-zero).
 §17.4 HTML/CSS estable: cero IDs renombrados.
 
 **Cache bump**: `v20260520190000`.
+
+---
+
+## 99. ADR-099 — FCM no notifica en escalación directa: onChatEscalated era onDocumentUpdated (RCA) (2026-05-20)
+
+> Cliente reportó tras §98 (con captura): generó una conversación nueva
+> escalando a "Hablar con asesor" (visible en el ALTOR Hub admin
+> "Daniel Romero · hace 9s"), PERO a pesar de aceptar las notificaciones
+> en §98 NO le notificó absolutamente nada.
+>
+> §98 había agregado el foreground onMessage handler (Fix B) + cooldown
+> del prompt (Fix A) y debería haber funcionado. RCA estricto §19
+> identificó que el problema NO estaba en el cliente FCM (admin-fcm.js
+> está OK) sino en el Cloud Function que envía el push.
+>
+> Aplicado bajo §17 (perf), §17.4 (HTML/CSS estable), §17.12 (cero
+> MutationObserver), §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 99.1 Causa raíz (RCA §19) — trigger CREATE-blind
+
+`onChatEscalated` (FCM, functions/index.js) usaba `onDocumentUpdated`
+con condición de **transición**:
+
+```js
+const becameQueue = before.mode !== 'queue' && after.mode === 'queue';
+if (!becameQueue) return;
+```
+
+`onDocumentUpdated` SOLO dispara en UPDATE (cuando existe before≠after).
+NUNCA dispara en CREATE.
+
+Flujo del cliente cuando escala DIRECTO (abre el bot → "Hablar con
+asesor" sin chatear antes — el caso más común):
+1. `escalateToLive('manual')` setea `session.mode = 'queue'` (concierge.js:1270)
+2. `ensureFirestoreChatDoc()` CREA el doc con `mode: session.mode` =
+   `'queue'` (concierge.js:1853) → es un **CREATE**, no UPDATE
+3. El `.set({mode:'queue'}, merge)` posterior (línea 1297) es no-op
+   (mode ya era 'queue')
+4. `onChatEscalated` (onDocumentUpdated) NUNCA se invoca para el CREATE
+   → cero push FCM → cliente acepta notificaciones pero nada llega
+
+Cuando el cliente SÍ chatea primero (doc creado en mode='bot', luego
+escala bot→queue por UPDATE), el trigger SÍ disparaba. Por eso era
+intermitente. La escalación directa (lo que el cliente probó) fallaba
+siempre.
+
+**Es el MISMO bug que §54/§56 arreglaron para `onChatEscalatedTelegram`**
+(cambiado a `onDocumentWritten` + condición de estado), pero el FCM
+`onChatEscalated` se quedó con el patrón viejo `onDocumentUpdated`.
+
+### 99.2 Descarte de la hipótesis cross-region (§53)
+
+§53 documentó un IAM 401 cross-region para Telegram. Verifiqué que
+NO aplica al FCM: `onConciergeChatCreated` (que asigna el radicado —
+funciona, §90.11) y `recalculateWorkloadOnChatChange` (workload —
+funciona) AMBOS usan `region: 'us-central1'` sin problema. La región
+us-central1 NO es el problema. El único diferencial era el trigger
+type. Por eso **mantengo `region: 'us-central1'`** (evita el
+delete-redeploy operacional que un cambio de región exigiría).
+
+### 99.3 Solución — mirror exacto del patrón Telegram §56
+
+`onChatEscalated` refactorizado:
+- `onDocumentUpdated` → `onDocumentWritten` (captura CREATE + UPDATE)
+- `before`/`after` con guards `.exists`
+- Condición de ESTADO: `nowInQueue = after.mode === 'queue'` (no transición)
+- Single-shot anti-duplicado: `if (after.notifiedFcmAt) return` (reemplaza
+  el cooldown de 5 min — necesario porque onWrite dispara en CADA escritura
+  del doc parent: lastMessageAt, read receipts §76, etc.)
+- Esperar radicado canónico: `if (!after.radicado) return` (mirror §56 —
+  onConciergeChatCreated lo asigna y re-dispara el trigger)
+- Body usa `after.radicado` directo (ya garantizado, eliminado fallback `#slice`)
+- Logging verboso al inicio (mirror §54) para diagnóstico futuro
+
+Flujo post-fix (escalación directa):
+1. CREATE doc mode='queue' sin radicado → fire A: `nowInQueue=true`,
+   `notifiedFcmAt=null`, `radicado=null` → skip (espera)
+2. onConciergeChatCreated asigna radicado → UPDATE → fire B:
+   `radicado=REQ-...` → **envía push FCM** + setea `notifiedFcmAt`
+3. Futuras escrituras → `notifiedFcmAt` set → skip
+
+### 99.4 Acción operativa OBLIGATORIA del super_admin
+
+```bash
+firebase deploy --only functions:onChatEscalated
+```
+
+Deploy in-place (misma región us-central1, mismo nombre — NO requiere
+delete). Sin este deploy, el push FCM sigue sin enviarse en escalación
+directa. El §98 (foreground handler + prompt cooldown) ya está activo
+client-side; este §99 completa la cadena del lado server.
+
+### 99.5 Tests E2E (post-deploy)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Cliente abre el bot → "Hablar con asesor" DIRECTO (sin chatear) | Admin con Hub abierto: toast in-app "🚨 Cliente esperando" (§98 Fix B) en <5s |
+| 2 | Mismo con admin en otra pestaña / cerrado | Notificación OS nativa |
+| 3 | Cliente chatea primero → luego escala | También notifica (path UPDATE bot→queue) |
+| 4 | Logs Cloud Function `onChatEscalated` | `§99 INVOKED` + `mode transition: (no-before) → queue` + `✓ Chat in queue with radicado` + `N/N push notifications sent` |
+| 5 | Cliente escala 2da vez mismo chat | NO re-notifica (notifiedFcmAt single-shot) |
+| 6 | Verificar `usuarios/{uid}.fcmTokens[]` tiene token registrado | Si vacío → el problema sería token registration (admin-fcm.js), investigar separado |
+
+Si tras el deploy el push aún no llega Y los logs muestran "no tokens
+FCM registrados — skip", el problema secundario sería que el token del
+admin no se registró (getToken falló). En ese caso revisar: VAPID key,
+SW `/firebase-messaging-sw.js` registrado, permiso `granted`, y que
+`usuarios/{uid}.fcmTokens[]` tenga al menos 1 entrada. Pero el RC
+primario (este §99) es el trigger type.
+
+### 99.6 Anti-patterns evitados
+
+| Doctrina | Mitigación |
+|---|---|
+| §19 RCA estricto | Causa raíz real (trigger CREATE-blind) identificada con verificación cruzada vs §54/§56 Telegram + descarte de cross-region. NO parche al cliente que ya estaba OK |
+| §37 IAP | IAP de 5 secciones documentado antes de tocar código + autorización del cliente |
+| §17.4 HTML/CSS estable | Cero frontend tocado. Solo functions/index.js |
+| Cambio de región innecesario | Mantengo us-central1 (funciona) — evita delete-redeploy |
+
+### 99.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `functions/index.js` | `onChatEscalated`: onDocumentUpdated → onDocumentWritten + condición de estado + single-shot + esperar radicado + logging (mirror §56). Body usa radicado canónico directo |
+| `CLAUDE.md` | Esta sección §99 |
+
+**Total**: 2 archivos. Cero frontend. Cero cache bump (backend-only —
+admin-fcm.js §98 sin cambios, cero impacto en el cliente del navegador).
+Requiere `firebase deploy --only functions:onChatEscalated`.
+
+### 99.8 Archivos INTACTOS (afirmación)
+
+- `js/admin-fcm.js` (§98 — token registration + foreground handler OK)
+- `firebase-messaging-sw.js` (background handler OK)
+- `js/concierge.js`, `js/admin-concierge.js` — ZERO
+- `firestore.rules`, `database.rules.json` — ZERO
+- Otras Cloud Functions — ZERO
+- Frontend completo — ZERO (sin cache bump)
+
+### 99.9 Doctrina aplicada
+
+§19 RCA estricto: trigger CREATE-blind identificado de raíz, no parche.
+Verificación cruzada con el precedente Telegram §54/§56 + descarte
+empírico de la hipótesis cross-region.
+
+§37 IAP: 5 secciones + autorización.
+
+§17.4 HTML/CSS estable: cero frontend.
+
+**Sin cache bump** — cambio puramente backend (Cloud Function).

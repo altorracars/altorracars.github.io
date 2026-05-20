@@ -1186,5 +1186,117 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   FIN admin-v2.css — V2-5 fluid sections + perf + §34 Cards + §100 Lista
+   §101 — CARD VIEW LIMPIA Y CORPORATIVA (vehiculos + marcas)
+   Elimina exceso de pills/cajas apiladas. Jerarquia plana escaneable.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Codigo como texto plano mono (sin pill box) */
+.av2-card-codeflat {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.68rem;
+    color: rgba(184, 150, 88, 0.78);
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Subline: tipo · concesionario (texto plano muted, sin pills) */
+.av2-card-subline {
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.52);
+    letter-spacing: 0.01em;
+    margin-top: 2px;
+}
+
+/* Estado como overlay sobre la imagen (patron Kavak/CarGurus) */
+.av2-card-status-ov {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    z-index: 2;
+    padding: 3px 9px;
+    border-radius: var(--av2-radius-pill);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.av2-card-status-ov.av2-card-status--disponible { color: #052e16; background: rgba(74, 222, 128, 0.92); }
+.av2-card-status-ov.av2-card-status--reservado  { color: #422006; background: rgba(251, 191, 36, 0.92); }
+.av2-card-status-ov.av2-card-status--vendido    { color: #fff; background: rgba(220, 38, 38, 0.88); }
+.av2-card-status-ov.av2-card-status--borrador   { color: #fff; background: rgba(82, 82, 91, 0.88); }
+
+/* Checkbox como overlay top-left sobre la imagen */
+.av2-card-cb-ov {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 3;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background-color 0.18s var(--av2-spring);
+}
+.av2-card-cb-ov:hover { background: rgba(0, 0, 0, 0.62); }
+.av2-card-cb-ov input { cursor: pointer; width: 15px; height: 15px; accent-color: #b89658; }
+
+/* ── MARCA: card centrada, logo prominente, nombre una sola vez ── */
+.av2-card--brand {
+    text-align: center;
+}
+.av2-card--brand .av2-card-thumb--logo {
+    aspect-ratio: 16 / 9;
+    padding: 22px 24px 14px;
+}
+.av2-card-brandlogo--empty {
+    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.30);
+    font-size: 0.8rem;
+    padding: 22px 24px 14px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+}
+.av2-card-body--brand {
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px 16px;
+}
+.av2-card-title--brand {
+    font-size: 1.02rem;
+    -webkit-line-clamp: 1;
+}
+.av2-card-subline--brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+}
+.av2-card-subline--brand i { width: 13px; height: 13px; opacity: 0.7; }
+.av2-card-branddesc {
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-v2.css — V2-5 fluid sections + perf + §34 Cards + §100 Lista + §101 Card limpia
    ═══════════════════════════════════════════════════════════════════ */

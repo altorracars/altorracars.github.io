@@ -238,26 +238,27 @@
             ? '<div class="av2-card-grip" title="Arrastra para reordenar"><i data-lucide="grip-vertical"></i></div>'
             : '';
 
+        // §101 — Tipo + origen como subline de texto plano (sin pills apilados)
+        var tipoStr = AP.escapeHtml(v.tipo || 'usado');
+        var subParts = [tipoStr.charAt(0).toUpperCase() + tipoStr.slice(1)];
+        if (origen && origen !== '—') subParts.push(AP.escapeHtml(origen));
+        var subline = subParts.join(' · ');
+
         return ''
             + '<article class="av2-card" data-vehicle-id="' + AP.escapeHtml(String(v.id)) + '"' + ((opts && opts.reorder) ? ' draggable="true"' : '') + '>'
             +   '<div class="av2-card-thumb-wrap">'
             +       grip
             +       featured
+            +       '<span class="av2-card-status-ov av2-card-status--' + AP.escapeHtml(estado) + '">' + AP.escapeHtml(estado) + '</span>'
+            +       '<label class="av2-card-cb-ov" title="Seleccionar"><input type="checkbox" class="vehicle-cb" data-vid="' + AP.escapeHtml(String(v.id)) + '"></label>'
             +       '<img class="av2-card-thumb" src="' + AP.escapeHtml(imageUrl) + '" alt="" loading="lazy" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">'
             +   '</div>'
             +   '<div class="av2-card-body">'
-            +     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
-            +       '<span class="av2-card-code">' + AP.escapeHtml(v.codigoUnico || '—') + '</span>'
-            +       '<input type="checkbox" class="vehicle-cb" data-vid="' + AP.escapeHtml(String(v.id)) + '" title="Seleccionar">'
-            +     '</div>'
+            +     '<span class="av2-card-codeflat">' + AP.escapeHtml(v.codigoUnico || '—') + '</span>'
             +     '<h3 class="av2-card-title">' + titleStr + '</h3>'
             +     '<div class="av2-card-meta">' + yearStr + (catStr ? ' · ' + catStr : '') + (kmStr ? ' · ' + kmStr : '') + '</div>'
-            +     '<div class="av2-card-meta">'
-            +       '<span class="av2-card-status av2-card-status--' + AP.escapeHtml(estado) + '">' + AP.escapeHtml(estado) + '</span>'
-            +       ' · <span class="badge badge-' + AP.escapeHtml(v.tipo || 'usado') + '" style="font-size:0.68rem;">' + AP.escapeHtml(v.tipo || 'usado') + '</span>'
-            +     '</div>'
             +     '<div class="av2-card-price">' + priceHTML + '</div>'
-            +     '<div class="av2-card-meta" style="font-size:0.74rem;opacity:0.78;">' + AP.escapeHtml(origen) + '</div>'
+            +     '<div class="av2-card-subline">' + subline + '</div>'
             +   '</div>'
             +   '<div class="av2-card-actions">' + actions + '</div>'
             + '</article>';

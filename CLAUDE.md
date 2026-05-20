@@ -39384,3 +39384,115 @@ empírico de la hipótesis cross-region.
 §17.4 HTML/CSS estable: cero frontend.
 
 **Sin cache bump** — cambio puramente backend (Cloud Function).
+
+---
+
+## 100. ADR-100 — Toggle Tarjetas↔Lista + limpieza HarmonyOS en Vehículos y Marcas (2026-05-20)
+
+> Cliente reportó (con capturas): (Issue #2) "exceso de cuadros/box/burbujas
+> en las tarjetas de vehículos dificulta la legibilidad — pasa en muchos
+> lugares del admin, audita y mejora el diseño acorde a HarmonyOS" +
+> (Issue #3) "la vista de marcas y vehículos no puede limitarse a tarjetas,
+> es complejo manejar inventario así — debe haber vista de listas. Revisa
+> cómo los expertos hacen las mejores webs del mundo".
+>
+> Vía AskUserQuestion el cliente confirmó: **Toggle Tarjetas ↔ Lista**
+> (default Lista, cards a 1 click — patrón Linear/Notion/Stripe) aplicado a
+> **Vehículos + Marcas juntos** en este sprint.
+>
+> (Issue #1 — FCM no notifica — se cerró por separado en §99: backend
+> Cloud Function `onChatEscalated` onDocumentUpdated→onDocumentWritten.)
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition all), §17.4 (HTML/CSS
+> estable — cero IDs/clases legacy renombrados), §17.12 (cero MutationObserver),
+> §35 (cero pointermove), §37 (IAP).
+
+### 100.1 Causa raíz Issue #2 (box clutter)
+
+Las cards de vehículo apilaban múltiples pills/boxes: `.av2-card-code`
+(pill bg+border), `.av2-card-status--*` (pill bg+border), `.badge badge-*`
+(tipo, pill), featured badge, footer con `background: rgba(0,0,0,0.18)`.
+Para gestión de inventario denso eso satura visualmente. HarmonyOS prefiere
+densidad plana y escaneable. Verifiqué que `.av2-card-title/-meta/-price`
+NO tenían background; el clutter venía de los pills + footer dark.
+
+### 100.2 Causa raíz Issue #3 (no list view)
+
+§34 había reemplazado las `<table>` legacy por cards (`#vehiclesCardList`,
+`#brandsCardList`), pero NO dejó vista lista. Para inventario grande las
+cards son lentas de escanear (no alinean columnas). Los expertos
+(Linear/Notion/Stripe/Airtable) usan **lista densa por default + toggle a
+cards** para gestión, no cards-only.
+
+### 100.3 Solución estructural
+
+**Vehículos (`js/admin-vehicles.js`)**:
+- `_viewMode` ('list'|'cards') persistido en `localStorage.altorra_vehicles_view`, default `'list'`.
+- Extraídos `_vehicleActionsHTML(v)` + `_vehicleOrigen(v)` (DRY entre card y row).
+- Nuevo `_vehicleRowHTML(v)`: fila grid densa (checkbox · thumb 52×40 con star · código mono · marca/modelo+meta · tipo · estado · precio · acciones).
+- `renderVehiclesTable` elige modo: `effectiveMode = _reorderMode ? 'cards' : _viewMode`. Reorder fuerza cards (drag-drop usa el grip de la card). Setea `cardList.className` a `av2-list` o `av2-card-list`.
+- Toggle wired por delegación en `#vehiclesViewToggle`. `_syncViewToggleUI()` marca el botón activo.
+
+**Marcas (`js/admin-brands.js`)**:
+- Mismo patrón: `_viewMode` en `altorra_brands_view`, `_brandActionsHTML(b)` DRY, vista lista (`.av2-row--brand`: logo · id · nombre+descripción · #vehículos · acciones) + cards gallery.
+- Toggle wired en `#brandsViewToggle`.
+
+**HTML (`admin.html`)**: segmented control `.av2-view-toggle` con 2 botones
+(`data-view="list"` / `data-view="cards"`) en el toolbar de ambas secciones.
+Añadido `id="brandsTable"` + `<div class="table-header">` a marcas (antes
+no tenía toolbar).
+
+**CSS (`css/admin-v2.css` §100 append ~210 líneas)**:
+- `.av2-view-toggle` / `.av2-view-btn` segmented control (activo dorado).
+- `.av2-list` / `.av2-row` grid de columnas escaneable. Estado = dot+texto
+  SIN box (reusa color de `.av2-card-status--*` pero override
+  `background:transparent;border:none;padding:0`). HarmonyOS flat.
+- `.av2-row--brand` grid propio. Responsive 1100px (oculta código+tipo) y
+  700px (colapsa a 2-3 cols + checkbox oculto). `prefers-reduced-motion`.
+- Card footer `.av2-card-actions` background dark → transparent (menos peso).
+
+### 100.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260520200000) | Carga nueva |
+| 2 | sec-vehicles primera carga | Vista LISTA por default, toggle "lista" activo |
+| 3 | Click botón tarjetas en toggle | Cambia a grid de cards, persiste localStorage |
+| 4 | Reload | Mantiene el modo elegido |
+| 5 | Click "Reordenar" estando en lista | Fuerza cards + drag-drop funciona; al salir vuelve al modo elegido |
+| 6 | Lista: checkbox selección | Batch bar funciona (clase `.vehicle-cb` preservada) |
+| 7 | Lista: acciones (editar/eliminar/destacar/etc.) | Funcionan (data-action event delegation intacto) |
+| 8 | Estado en lista | dot coloreado + texto, SIN burbuja/box |
+| 9 | sec-brands | Mismo toggle, default lista, logo+nombre+#vehículos+acciones |
+| 10 | Responsive <700px | Filas colapsan legibles |
+| 11 | RBAC viewer (sin permisos) | Acciones ocultas igual que en cards |
+
+### 100.5 Anti-patterns evitados
+
+| Doctrina | Mitigación |
+|---|---|
+| §17.2 | Solo `background-color`/`color` transitions específicas, cero `transition: all` |
+| §17.4 | Cero IDs/clases legacy renombrados. `.av2-card-*` intactos. Clases nuevas `.av2-row-*`/`.av2-view-*` aditivas |
+| §17.12 | Cero MutationObserver. Toggle por event delegation discreta |
+| §35 | Cero pointermove |
+| §37 IAP | Confirmado vía AskUserQuestion (toggle + ambas secciones) |
+| DRY | `_vehicleActionsHTML`/`_vehicleOrigen`/`_brandActionsHTML` compartidos card↔row |
+
+### 100.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-vehicles.js` | `_viewMode` + helpers extraídos + `_vehicleRowHTML` + render modo + toggle wiring |
+| `js/admin-brands.js` | `_viewMode` + `_brandActionsHTML` + render lista/cards + toggle wiring |
+| `admin.html` | `#vehiclesViewToggle` + `#brandsViewToggle` segmented controls + `id="brandsTable"` + table-header marcas |
+| `css/admin-v2.css` | §100 append: toggle + vista lista densa + responsive + card footer cleanup |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260520200000 |
+| `CLAUDE.md` | Esta sección §100 |
+
+**Total**: 6 archivos. Cero schema. Cero deploy backend. Solo Ctrl+Shift+R.
+
+### 100.7 Doctrina aplicada
+
+§19 RCA: identificadas las 2 causas raíz reales (pills apilados + footer dark = clutter; §34 cards-only sin lista). §37 IAP: dirección confirmada por el cliente. §17.4: cero ruptura de clases existentes — todo aditivo.
+
+**Cache bump**: `v20260520200000`.

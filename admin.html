@@ -893,6 +893,10 @@
                 <div class="table-header">
                     <h3>Inventario</h3>
                     <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+                        <div class="av2-view-toggle" id="vehiclesViewToggle" role="group" aria-label="Modo de vista">
+                            <button class="av2-view-btn av2-view-btn--active" data-view="list" title="Vista lista"><i data-lucide="list"></i></button>
+                            <button class="av2-view-btn" data-view="cards" title="Vista tarjetas"><i data-lucide="layout-grid"></i></button>
+                        </div>
                         <input type="text" class="search-input" id="vehicleSearch" placeholder="Buscar por marca, modelo, ano...">
                         <select class="search-input" id="vehicleFilterEstado" style="width:auto;min-width:120px;">
                             <option value="">Estado</option>
@@ -947,8 +951,15 @@
                 </button>
             </div>
             <div class="table-container">
+                <div class="table-header">
+                    <h3>Marcas registradas</h3>
+                    <div class="av2-view-toggle" id="brandsViewToggle" role="group" aria-label="Modo de vista">
+                        <button class="av2-view-btn av2-view-btn--active" data-view="list" title="Vista lista"><i data-lucide="list"></i></button>
+                        <button class="av2-view-btn" data-view="cards" title="Vista tarjetas"><i data-lucide="layout-grid"></i></button>
+                    </div>
+                </div>
                 <div class="overflow-x-auto">
-                    <table>
+                    <table id="brandsTable">
                         <thead><tr><th>Logo</th><th data-sort="id" data-table="brands">ID</th><th data-sort="nombre" data-table="brands">Nombre</th><th>Descripcion</th><th>Vehiculos</th><th>Acciones</th></tr></thead>
                         <tbody id="brandsTableBody"><tr><td colspan="6" class="table-empty">Cargando...</td></tr></tbody>
                     </table>

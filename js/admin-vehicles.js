@@ -103,6 +103,24 @@
     var _dragSrcRow = null;
     var _searchTimer = null;
 
+    // §100 — View mode toggle (list por default, cards via 1 click).
+    // Patrón Linear/Notion/Stripe. Persistido en localStorage.
+    var _viewMode = (function() {
+        try { return localStorage.getItem('altorra_vehicles_view') || 'list'; }
+        catch (e) { return 'list'; }
+    })();
+    function _setViewMode(mode) {
+        _viewMode = (mode === 'cards') ? 'cards' : 'list';
+        try { localStorage.setItem('altorra_vehicles_view', _viewMode); } catch (e) {}
+    }
+    function _syncViewToggleUI() {
+        var wrap = document.getElementById('vehiclesViewToggle');
+        if (!wrap) return;
+        wrap.querySelectorAll('[data-view]').forEach(function(b) {
+            b.classList.toggle('av2-view-btn--active', b.getAttribute('data-view') === _viewMode);
+        });
+    }
+
     // F9.2: Build cached search string per vehicle
     function _buildSearchStr(v) {
         if (!v._searchStr) {
@@ -126,9 +144,76 @@
         return list;
     }
 
-    function _vehicleCardHTML(v, opts) {
+    // §100 — Builder de acciones compartido entre card y row (DRY).
+    function _vehicleActionsHTML(v) {
         var estado = v.estado || 'disponible';
         var esVendido = estado === 'vendido';
+        var id = AP.escapeHtml(String(v.id));
+        var actions = '';
+        actions += '<button class="v-act v-act--info" data-action="previewVehicle" data-id="' + id + '" title="Vista previa"><i data-lucide="eye"></i></button>';
+        actions += '<button class="v-act v-act--info" data-action="showAuditTimeline" data-id="' + id + '" title="Historial"><i data-lucide="clock-3"></i></button>';
+        if (_canEditInv()) {
+            actions += '<span class="v-act-sep"></span>';
+            actions += '<button class="v-act v-act--gold' + (v.destacado ? ' v-act--active' : '') + '" data-action="toggleDestacado" data-id="' + id + '" title="' + (v.destacado ? 'Quitar destacado' : 'Destacar') + '"><i data-lucide="star"></i></button>';
+            if (esVendido && !_isSuper()) {
+                actions += '<button class="v-act" disabled title="Solo Super Admin edita vendidos"><i data-lucide="pencil"></i></button>';
+            } else {
+                actions += '<button class="v-act v-act--success" data-action="editVehicle" data-id="' + id + '" title="Editar"><i data-lucide="pencil"></i></button>';
+                actions += '<button class="v-act v-act--info" data-action="duplicateVehicle" data-id="' + id + '" title="Duplicar"><i data-lucide="copy"></i></button>';
+            }
+            if (estado === 'disponible') {
+                actions += '<button class="v-act v-act--operation" data-action="markAsSold" data-id="' + id + '" title="Gestionar operacion"><i data-lucide="handshake"></i></button>';
+            }
+        }
+        if (_canDeleteInv()) {
+            actions += '<span class="v-act-sep"></span>';
+            actions += '<button class="v-act v-act--danger" data-action="deleteVehicle" data-id="' + id + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
+        }
+        return actions;
+    }
+
+    // §100 — Origen legible del vehiculo (compartido).
+    function _vehicleOrigen(v) {
+        if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
+            var dealer = AP.dealers.find(function(x) { return x._docId === v.concesionario; });
+            return dealer ? dealer.nombre : v.concesionario;
+        }
+        if (v.concesionario === '_particular' && v.consignaParticular) {
+            return 'Consigna: ' + v.consignaParticular;
+        }
+        return 'Propio';
+    }
+
+    // §100 — Fila compacta para vista LISTA (default). Lectura densa de inventario.
+    function _vehicleRowHTML(v) {
+        var estado = v.estado || 'disponible';
+        var imageUrl = v.imagen || 'multimedia/vehicles/placeholder-car.jpg';
+        var marcaCap = (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1);
+        var titleStr = AP.escapeHtml(marcaCap + ' ' + (v.modelo || ''));
+        var yearStr = AP.escapeHtml(String(v.year || ''));
+        var catStr = AP.escapeHtml(v.categoria || '');
+        var kmStr = v.kilometraje ? AP.escapeHtml(String(v.kilometraje).replace(/\B(?=(\d{3})+(?!\d))/g, '.')) + ' km' : '';
+        var metaStr = yearStr + (catStr ? ' · ' + catStr : '') + (kmStr ? ' · ' + kmStr : '');
+        var priceHTML = v.precioOferta
+            ? AP.formatPrice(v.precioOferta) + '<span class="av2-card-price-old">' + AP.formatPrice(v.precio) + '</span>'
+            : AP.formatPrice(v.precio);
+        var featStar = v.destacado ? '<i data-lucide="star" class="av2-row-star" title="Destacado"></i>' : '';
+
+        return ''
+            + '<div class="av2-row" data-vehicle-id="' + AP.escapeHtml(String(v.id)) + '">'
+            +   '<input type="checkbox" class="vehicle-cb av2-row-cb" data-vid="' + AP.escapeHtml(String(v.id)) + '" title="Seleccionar">'
+            +   '<div class="av2-row-thumb"><img src="' + AP.escapeHtml(imageUrl) + '" alt="" loading="lazy" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">' + featStar + '</div>'
+            +   '<span class="av2-row-code">' + AP.escapeHtml(v.codigoUnico || '—') + '</span>'
+            +   '<div class="av2-row-main"><span class="av2-row-title">' + titleStr + '</span><span class="av2-row-meta">' + metaStr + '</span></div>'
+            +   '<span class="av2-row-tipo badge badge-' + AP.escapeHtml(v.tipo || 'usado') + '">' + AP.escapeHtml(v.tipo || 'usado') + '</span>'
+            +   '<span class="av2-row-status av2-card-status--' + AP.escapeHtml(estado) + '">' + AP.escapeHtml(estado) + '</span>'
+            +   '<span class="av2-row-price">' + priceHTML + '</span>'
+            +   '<div class="av2-row-actions">' + _vehicleActionsHTML(v) + '</div>'
+            + '</div>';
+    }
+
+    function _vehicleCardHTML(v, opts) {
+        var estado = v.estado || 'disponible';
         var imageUrl = v.imagen || 'multimedia/vehicles/placeholder-car.jpg';
         var marcaCap = (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1);
         var titleStr = AP.escapeHtml(marcaCap + ' ' + (v.modelo || ''));
@@ -136,36 +221,8 @@
         var catStr = AP.escapeHtml(v.categoria || '');
         var kmStr = v.kilometraje ? AP.escapeHtml(String(v.kilometraje).replace(/\B(?=(\d{3})+(?!\d))/g, '.')) + ' km' : '';
 
-        // Origen del vehiculo
-        var origen = 'Propio';
-        if (v.concesionario && v.concesionario !== '' && v.concesionario !== '_particular') {
-            var dealer = AP.dealers.find(function(x) { return x._docId === v.concesionario; });
-            origen = dealer ? dealer.nombre : v.concesionario;
-        } else if (v.concesionario === '_particular' && v.consignaParticular) {
-            origen = 'Consigna: ' + v.consignaParticular;
-        }
-
-        // Actions footer (data-action — XSS safe, event delegation)
-        var actions = '';
-        actions += '<button class="v-act v-act--info" data-action="previewVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Vista previa"><i data-lucide="eye"></i></button>';
-        actions += '<button class="v-act v-act--info" data-action="showAuditTimeline" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Historial"><i data-lucide="clock-3"></i></button>';
-        if (_canEditInv()) {
-            actions += '<span class="v-act-sep"></span>';
-            actions += '<button class="v-act v-act--gold' + (v.destacado ? ' v-act--active' : '') + '" data-action="toggleDestacado" data-id="' + AP.escapeHtml(String(v.id)) + '" title="' + (v.destacado ? 'Quitar destacado' : 'Destacar') + '"><i data-lucide="star"></i></button>';
-            if (esVendido && !_isSuper()) {
-                actions += '<button class="v-act" disabled title="Solo Super Admin edita vendidos"><i data-lucide="pencil"></i></button>';
-            } else {
-                actions += '<button class="v-act v-act--success" data-action="editVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Editar"><i data-lucide="pencil"></i></button>';
-                actions += '<button class="v-act v-act--info" data-action="duplicateVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Duplicar"><i data-lucide="copy"></i></button>';
-            }
-            if (estado === 'disponible') {
-                actions += '<button class="v-act v-act--operation" data-action="markAsSold" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Gestionar operacion"><i data-lucide="handshake"></i></button>';
-            }
-        }
-        if (_canDeleteInv()) {
-            actions += '<span class="v-act-sep"></span>';
-            actions += '<button class="v-act v-act--danger" data-action="deleteVehicle" data-id="' + AP.escapeHtml(String(v.id)) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
-        }
+        var origen = _vehicleOrigen(v);
+        var actions = _vehicleActionsHTML(v);
 
         // Price
         var priceHTML = AP.formatPrice(v.precio);
@@ -244,13 +301,20 @@
             filtered = AP.paginate(filtered, 'vehicles');
         }
 
-        // §34 — Render cards (replaces <table> arcaica). Tabla legacy se oculta.
+        // §34/§100 — Render cards o lista (tabla legacy se oculta).
+        // Reorder fuerza cards (drag-drop usa el grip de la card).
+        var effectiveMode = _reorderMode ? 'cards' : _viewMode;
         var cardList = _ensureVehiclesCardList();
         var tableEl = document.getElementById('vehiclesTable');
         if (cardList) {
             if (tableEl) tableEl.style.display = 'none';
+            cardList.className = (effectiveMode === 'list') ? 'av2-list' : 'av2-card-list';
             if (filtered.length === 0) {
                 cardList.innerHTML = '<div class="av2-card-empty"><i data-lucide="inbox"></i><div>No se encontraron vehiculos</div></div>';
+            } else if (effectiveMode === 'list') {
+                var rowsHTML = '';
+                filtered.forEach(function(v) { rowsHTML += _vehicleRowHTML(v); });
+                cardList.innerHTML = rowsHTML;
             } else {
                 var cardsHTML = '';
                 filtered.forEach(function(v) {
@@ -281,6 +345,7 @@
         if (countEl) countEl.textContent = totalFiltered + ' vehiculo' + (totalFiltered !== 1 ? 's' : '');
 
         AP.refreshIcons();
+        _syncViewToggleUI();
         if (_reorderMode) initCardsDragDrop();
     }
 
@@ -346,6 +411,20 @@
 
     var toggleBtn = $('toggleReorderMode');
     if (toggleBtn) toggleBtn.addEventListener('click', toggleReorderMode);
+
+    // §100 — View toggle (Lista ↔ Tarjetas). Delegación en el wrapper.
+    var viewToggleWrap = document.getElementById('vehiclesViewToggle');
+    if (viewToggleWrap) {
+        viewToggleWrap.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-view]');
+            if (!btn) return;
+            var mode = btn.getAttribute('data-view');
+            if (mode === _viewMode) return;
+            if (_reorderMode) { AP.toast('Salí del modo reordenar para cambiar de vista', 'info'); return; }
+            _setViewMode(mode);
+            renderVehiclesTable($('vehicleSearch').value);
+        });
+    }
 
     // ========== TABLE DRAG & DROP ==========
     function initTableDragDrop() {

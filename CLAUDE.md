@@ -38822,3 +38822,125 @@ propiedades `margin-top` legacy + variants 1920 inexistentes.
 §17.12 anti-MutationObserver: cero MO global.
 
 **Cache bump**: `v20260518090000`.
+
+---
+
+## 96. ADR-096 — Hotfix category card Pickup imagen rota (mismo bug §95 en otra card) (2026-05-19)
+
+> Cliente reportó con captura del index.html: "Lo mismo que paso con el
+> hero paso con la imagen de la categoria de pickup". La card de Pickup
+> mostraba el alt text "Pickup" con icono de imagen rota, mientras
+> SUV/Sedán/Hatchback renderizaban bien.
+>
+> Mismo patrón del §95: `<picture>` srcset referenciando variants que
+> NO existen físicamente. Ya estaba anticipado en el audit del §94
+> ("Bug camioneta.jpg srcset").
+>
+> Aplicado bajo doctrina §17 (perf), §17.4 (HTML/CSS estable),
+> §19 RCA estricto, §37 (IAP).
+
+### 96.1 Causa raíz
+
+§91 (Sprint 3A) wrappeó las 4 category cards del index.html con
+`<picture>` srcset AVIF/WebP. La card de Pickup usó la fuente
+`camioneta.jpg` que mide solo **600×400** → el optimizer solo generó
+`camioneta-480.{avif,webp}`. Pero el `<picture>` srcset referenciaba
+`768/1280/1920` que NO existen.
+
+El browser en viewports normales elegía el `768w`/`1280w`/`1920w` →
+404 → imagen rota mostrando el alt text "Pickup".
+
+**Descubrimiento clave**: existe una fuente mejor `PICKUP.jpg`
+(**1920×900**, misma resolución que SUV/SEDAN) que YA tiene las 4
+variants generadas (`PICKUP-480/768/1280/1920.{avif,webp}`) y YA está
+en los TARGETS del optimizer. La card de Pickup usaba la imagen chica
+por error en §91.
+
+Estado de las 4 category cards pre-§96:
+
+| Card | Fuente | Variants existentes | Estado |
+|---|---|---|---|
+| SUV | SUV.jpg (1920×900) | 480/768/1280/1920 ✅ | OK |
+| **Pickup** | **camioneta.jpg (600×400)** | **solo 480** ❌ | **ROTA** |
+| Sedán | SEDAN.jpg (1920×900) | 480/768/1280/1920 ✅ | OK |
+| Hatchback | HATCHBACK.jpg | solo 480/768, srcset solo referencia 480/768 ✅ | OK |
+
+### 96.2 Solución estructural — 3 cambios coordinados
+
+#### A. `index.html` — card Pickup usa PICKUP.jpg
+
+`<picture>` de la card Pickup cambiado:
+- srcset AVIF + WebP: `camioneta-*` → `PICKUP-480/768/1280/1920`
+- `<img src>`: `camioneta.jpg?v=20260310` → `PICKUP.jpg`
+
+Beneficio extra: PICKUP.jpg (1920×900) tiene mucha mejor resolución
+que camioneta.jpg (600×400) en pantallas retina.
+
+#### B. `vehiculos-pickup.html` — og:image a PICKUP.jpg
+
+El `og:image` (preview social WhatsApp/FB) usaba `camioneta.jpg`
+(600×400, subóptimo — los shares prefieren ~1200×630). Cambiado a
+`PICKUP.jpg` (1920×900). No era imagen rota (es meta tag de URL
+única, no `<picture>` srcset) pero mejora calidad del preview.
+
+#### C. `scripts/optimize-images.mjs` — eliminar TARGET camioneta.jpg
+
+`camioneta.jpg` removida de TARGETS (ya no la usa ninguna `<picture>`,
+solo generaba un variant 480 huérfano). Comentario §96 explicativo.
+Los archivos `camioneta-480.{avif,webp}` existentes quedan en disco
+pero ya no se referencian (cleanup físico opcional futuro).
+
+### 96.3 Validación
+
+- HATCHBACK card: solo referencia 480/768 (ambos existen) → ✅ ya estaba bien
+- SUV/SEDAN: las 4 variants existen → ✅ siempre OK
+- index.html post-fix: única referencia restante a `camioneta` son
+  keywords de texto en meta tags + comentario §96 (cero `<picture>` roto)
+
+### 96.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh sitio público (cache v20260519060000) | Cache nueva carga |
+| 2 | index.html sección categorías | Card "Pickup" muestra imagen PICKUP.jpg (NO icono roto + alt "Pickup") |
+| 3 | DevTools Network filter "PICKUP" | Descarga PICKUP-768.avif o PICKUP-1280.avif (existen) |
+| 4 | DevTools Network cero 404 de camioneta-768/1280/1920 | Confirmado |
+| 5 | Las otras 3 cards (SUV/Sedán/Hatchback) | Siguen renderizando bien |
+| 6 | Compartir vehiculos-pickup.html en WhatsApp | Preview con imagen PICKUP.jpg de alta resolución |
+| 7 | Mobile <768px | Card Pickup responsive correcta |
+
+### 96.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `index.html` | Card Pickup `<picture>` srcset + `<img src>` de camioneta-* → PICKUP-* (4 variants existentes, fuente 1920×900) |
+| `vehiculos-pickup.html` | og:image camioneta.jpg → PICKUP.jpg (mejor preview social) |
+| `scripts/optimize-images.mjs` | TARGET camioneta.jpg eliminado (huérfano post-fix) |
+| `service-worker.js` | CACHE_VERSION → v20260519060000 |
+| `js/cache-manager.js` | APP_VERSION → v20260519060000 |
+| `CLAUDE.md` | Esta sección §96 |
+
+**Total**: 6 archivos. Cero archivos nuevos. Cero schema. Cero deploy backend.
+
+### 96.6 Archivos INTACTOS (afirmación)
+
+- Las otras 3 category cards (SUV/SEDAN/HATCHBACK) — ZERO
+- Hero del index (§95 ya lo arregló) — ZERO
+- `js/concierge.js`, `js/admin-concierge.js` — ZERO
+- Plan §61 RBAC, AI modules — ZERO
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+- Archivos físicos `camioneta-480.{avif,webp}` quedan en disco (cleanup opcional futuro, no molestan)
+
+### 96.7 Doctrina aplicada
+
+§19 RCA estricto: causa raíz idéntica al §95 (srcset → variants
+inexistentes). Verificación física en disco (`ls multimedia/optimized/`)
++ descubrimiento de fuente mejor (PICKUP.jpg 1920×900 con 4 variants
+ya generadas). Fix óptimo: usar la fuente correcta, no solo trimmear
+el srcset roto.
+
+§37 IAP: cliente reportó con captura, autorización implícita.
+
+§17.4 HTML/CSS estable: cero IDs renombrados.
+
+**Cache bump**: `v20260519060000`.

@@ -638,17 +638,20 @@
                 <a href="vehiculos-pickup.html" class="category-card">
                     <div class="category-image">
                         <picture>
+                            <!-- §96: usar PICKUP.jpg (1920×900, full-res, las 4 variants existen)
+                                 en lugar de camioneta.jpg (600×400, solo variant 480 → 768/1280/1920
+                                 daban 404 → imagen rota). PICKUP-* ya está en TARGETS del optimizer. -->
                             <source type="image/avif" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/camioneta-480.avif 480w,
-                                            multimedia/optimized/camioneta-768.avif 768w,
-                                            multimedia/optimized/camioneta-1280.avif 1280w,
-                                            multimedia/optimized/camioneta-1920.avif 1920w">
+                                    srcset="multimedia/optimized/PICKUP-480.avif 480w,
+                                            multimedia/optimized/PICKUP-768.avif 768w,
+                                            multimedia/optimized/PICKUP-1280.avif 1280w,
+                                            multimedia/optimized/PICKUP-1920.avif 1920w">
                             <source type="image/webp" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/camioneta-480.webp 480w,
-                                            multimedia/optimized/camioneta-768.webp 768w,
-                                            multimedia/optimized/camioneta-1280.webp 1280w,
-                                            multimedia/optimized/camioneta-1920.webp 1920w">
-                            <img src="multimedia/categories/camioneta.jpg?v=20260310" alt="Pickup" loading="lazy" width="600" height="400" decoding="async">
+                                    srcset="multimedia/optimized/PICKUP-480.webp 480w,
+                                            multimedia/optimized/PICKUP-768.webp 768w,
+                                            multimedia/optimized/PICKUP-1280.webp 1280w,
+                                            multimedia/optimized/PICKUP-1920.webp 1920w">
+                            <img src="multimedia/categories/PICKUP.jpg" alt="Pickup" loading="lazy" width="600" height="400" decoding="async">
                         </picture>
                     </div>
                     <h3 class="category-name">Pickup</h3>

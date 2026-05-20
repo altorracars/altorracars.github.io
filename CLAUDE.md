@@ -39721,3 +39721,178 @@ internos en vehículos ni marcas.
 > especificidad mayor y matcher por substring.
 
 **Cache bump**: `v20260521020000`.
+
+---
+
+## 102. ADR-102 — Auditoría HarmonyOS panel admin completo + refinamiento status badges + fix transition:all paginación (2026-05-21)
+
+> Cliente confirmó el fix de boxes en cards (§101+§101.1: "Perfecto ahora
+> si se soluciono") y pidió: "Auditemos entonces ahora toda el panel admin
+> en busquedas de mejoras de diseños mas apegado a HARMONY OS. luego
+> documentemos todo lo que hasta ahora no esta documentado."
+>
+> Sprint de auditoría exhaustiva read-only (Explore agent sobre las 6 capas
+> CSS + admin.html, 10 áreas) + 2 refinamientos genuinos de bajo riesgo.
+> Conclusión honesta: el panel ya está **~80-85% alineado a HarmonyOS** —
+> la base es sólida y el problema grande (box-clutter en cards) se resolvió
+> en §101/§101.1. NO había problema visual estructural pendiente. Aplicar
+> cambios masivos habría violado "no agregar más de lo requerido".
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all NUEVO), §17.4
+> (HTML/CSS estable — solo aditivo/refinamiento), §17.12 (cero
+> MutationObserver), §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 102.1 Resultado de la auditoría (10 áreas)
+
+| # | Área | Veredicto |
+|---|---|---|
+| 1 | Boxes anidados / bordes excesivos | ✅ Resuelto §101.1. Residuo: solo CSS muerto (ver §102.3) |
+| 2 | Modales (.modal, .av2-modal) | ✅ HarmonyOS-clean: single-surface, radii 18px, header con gradient text + accent underline, close btn limpio |
+| 3 | Formularios (input/select/textarea, .form-group) | ✅ Clean: flat con focus tint, label jerárquico por peso tipográfico, sin boxes |
+| 4 | Tablas/listas (.data-table) | ✅ Bien: sliding accent en hover, first-col accent line. Lista §100 (.av2-row-code) ya flat |
+| 5 | Toolbars/headers (admin header, topnav) | ✅ HarmonyOS: backdrop blur 16-24px, soft radii, padding generoso |
+| 6 | Badges/pills/chips | ⚠️ Status badges con borde sólido + inset highlight → REFINADO (§102.2) |
+| 7 | Botones (primary/secondary/ghost) | ✅ Soft radii 10px, elevación sutil |
+| 8 | Spacing/radii consistencia | ✅ Excelente — token system --vis-r-xs..3xl consistente, 16-18px primario |
+| 9 | KPI/stat cards (dashboard, reports) | ✅ Beautifully layered: cursor-follow glow + border gradient hover. Sin violaciones |
+| 10 | Sidebar/topnav | ✅ Premium: island bg + blur, nav items hover/active gradient |
+
+**Conclusión**: foundation sólida. Los 2 únicos items accionables eran
+micro-refinamientos, no problemas estructurales.
+
+### 102.2 Refinamiento aplicado #1 — Status badges flat HarmonyOS
+
+`css/admin-visionary.css:1193-1212` (base de `.status-badge`, `.badge`,
+`.pill`, `.vehicle-status`, `.role-badge`, `.estado-badge`):
+
+**Antes** (skeuomórfico/glassy):
+```css
+border: 1px solid currentColor;
+box-shadow: inset 0 1px 0 rgba(255,255,255,0.05),
+            0 1px 2px rgba(0,0,0,0.20);
+```
+
+**Después** (HarmonyOS single-surface flat):
+```css
+/* §102 HarmonyOS: chip de estado plano — borde neutro sutil (las
+   variantes lo sobreescriben con su color tinted) + sin inset
+   highlight glassy ni drop-shadow. Single-surface flat. */
+border: 1px solid rgba(255, 255, 255, 0.08);
+box-shadow: none;
+```
+
+**Por qué es seguro**: las variantes (`--disponible`/`--reservado`/
+`--vendido`/`--borrador`/`role-badge--*`) ya definen su propio
+`border-color` con rgba 0.40-0.55 que OVERRIDE el borde base. El cambio
+solo afecta:
+- El borde base de badges genéricos sin variante (antes `currentColor`
+  loud → ahora neutro sutil).
+- Elimina el inset highlight glassy + drop-shadow que daba sensación
+  "boxy/skeuomorphic" en TODOS los badges.
+
+Resultado: chips de estado planos con bg tint + color del texto + borde
+sutil — el lenguaje de chip de estado de HarmonyOS NEXT. Sigue siendo
+legible y distinguible por color.
+
+### 102.3 Refinamiento aplicado #2 — Fix `transition: all` en paginación (§17.2)
+
+`css/admin-visionary.css` (bloque `.pagination button`):
+
+**Antes**: `transition: all var(--vis-d-fast) var(--vis-ease-spring-3);`
+(viola §17.2 — anima TODAS las propiedades, jank potencial).
+
+**Después**: `transition: background-color ..., border-color ..., color ...;`
+(solo las 3 propiedades que realmente cambian en hover/active).
+
+Cero cambio visual — solo cumplimiento de doctrina §17.2 + micro-perf.
+
+### 102.4 CSS muerto identificado (NO eliminado — documentado)
+
+Durante la auditoría confirmé 3 bloques de CSS que el agente marcó como
+"boxy" pero que son **CÓDIGO MUERTO** (nunca visibles). NO se tocaron
+porque eliminar código muerto carga riesgo §17.4 sin beneficio visual.
+Documentados aquí para futura limpieza si se hace mantenimiento del
+generador de tablas:
+
+| Selector | Ubicación | Por qué es muerto |
+|---|---|---|
+| `.vehicle-codigo`, `#vehiclesTableBody [class*="codigo"]` (pill) | admin-visionary.css:3307-3322 | Apunta a `#vehiclesTableBody`, la tabla legacy que §34 ocultó (`admin-vehicles.js:311` → `tableEl.style.display='none'`). El sistema vivo usa `#vehiclesCardList` (card `.av2-card-codeflat` flat + lista `.av2-row-code` flat) |
+| `#vehiclesTableBody .estado-badge`, `[class*="estado"]` (pill) | admin-visionary.css:3324-3335 | Mismo: tabla oculta. Estado vivo = overlay sobre imagen (`.av2-card-status-ov`, §101) |
+| `#vehiclesTable .badge[class*="estado"]` | admin-visionary.css:3747 | Mismo: tabla oculta |
+| `.av2-card-code` (pill con bg+border) | admin-v2.css:763-774 | Ya no se usa. Card usa `.av2-card-codeflat` (§101), lista usa `.av2-row-code` (ya flat). Preservado por §17.4 retrocompat |
+
+**Nota sobre selectores substring `[class*=]`**: confirmado que los
+restantes (`[class*="codigo"]`, `[class*="estado"]`, `[class*="paginat"]`)
+están scopeados (a `#vehiclesTableBody` muerto, o a clases raras que no
+over-matchean) — NO repiten el bug §101.1 del catch-all `[class*="-card"]`.
+La lección §101.1.6 sigue vigente: nunca usar substring matchers sin
+scope o sin `:not()` de exclusión de namespaces hijos.
+
+### 102.5 `transition: all` restantes (perf concern, NO visual)
+
+Hay ~46 instancias de `transition: all` en admin-visionary.css + 1 en
+admin-v2.css. `css/admin-perf-kill.css:183-197` ya las NEUTRALIZA en los
+elementos de alto impacto de jank (cards, botones en grids, nav-items,
+v-act) reemplazando `transition-property` por una lista específica
+(background-color, border-color, color, transform, box-shadow, opacity).
+Las restantes están en elementos de bajo conteo (modales, badges
+individuales) donde el jank es despreciable. Es un tradeoff documentado
+desde §35/§17.2 — NO se hace refactor masivo de las 46 (alto riesgo,
+cero valor visible). §102.3 arregló la de paginación porque era trivial.
+
+### 102.6 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260521030000) | Carga nueva |
+| 2 | Vehículos vista cards → badge de estado | Chip plano (bg tint + color + borde sutil), SIN borde grueso ni brillo glassy inset |
+| 3 | sec-users → role badges (super_admin/editor/viewer) | Chips planos con color por variante, sin bevel |
+| 4 | CRM/citas → status badges | Idem plano |
+| 5 | Paginación (si alguna tabla la usa) | Hover funciona (bg+border+color), sin jank |
+| 6 | DevTools console | Cero errores nuevos |
+| 7 | Resto del panel (modales, forms, sidebar, KPI) | Sin cambios (ya eran HarmonyOS) |
+
+### 102.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `css/admin-visionary.css` | Status badge base: borde neutro sutil + `box-shadow: none` (flat HarmonyOS). Paginación: `transition: all` → propiedades específicas (§17.2) |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260521030000 |
+| `CLAUDE.md` | Esta sección §102 |
+
+**Total**: 3 archivos. Cero JS, cero HTML, cero schema, cero deploy
+backend. Solo Ctrl+Shift+R.
+
+### 102.8 Archivos INTACTOS (afirmación)
+
+- admin.html, todos los `js/admin-*.js`, `js/concierge.js`,
+  `js/admin-concierge.js` — ZERO
+- `firestore.rules`, `database.rules.json`, `functions/index.js` — ZERO
+- Variantes de badge por estado/rol (`--disponible`/`--reservado`/etc.)
+  — ZERO (solo cambió la base; las variantes overridean el borde con su
+  color como siempre)
+- CSS muerto (§102.4) — preservado intacto (§17.4)
+- Modales, forms, botones, sidebar, topnav, KPI cards, tablas/listas,
+  tokens — ZERO (ya eran HarmonyOS)
+
+### 102.9 Doctrina aplicada
+
+§19 RCA estricto: auditoría exhaustiva read-only ANTES de tocar nada.
+Conclusión honesta (panel ya 80-85% alineado) en lugar de inventar
+cambios masivos. Verificación física de qué CSS es muerto vs vivo
+(tabla oculta línea 311) antes de clasificar.
+
+§37 IAP: hallazgos presentados al cliente con tabla de 10 áreas +
+impacto real antes de editar. Scope acotado a 2 refinamientos genuinos.
+
+§17.2: arreglada la única `transition: all` trivial (paginación). Las
+46 restantes documentadas como tradeoff existente (perf-kill ya las
+cubre donde importa).
+
+§17.4 HTML/CSS estable: cero IDs/clases renombrados. Solo refinamiento
+del valor de 2 propiedades en una regla existente + CSS muerto
+preservado.
+
+§17.12 anti-MutationObserver: cero MO.
+
+**Cache bump**: `v20260521030000`.

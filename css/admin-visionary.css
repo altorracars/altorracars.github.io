@@ -1206,9 +1206,11 @@ body:has(.admin-panel) {
     letter-spacing: var(--vis-ls-wide);
     text-transform: uppercase;
     line-height: 1.5;
-    border: 1px solid currentColor;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
-                0 1px 2px rgba(0, 0, 0, 0.20);
+    /* §102 HarmonyOS: chip de estado plano — borde neutro sutil (las
+       variantes lo sobreescriben con su color tinted) + sin inset
+       highlight glassy ni drop-shadow. Single-surface flat. */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: none;
 }
 .admin-panel .vehicle-status--disponible,
 .admin-panel .vehicle-status--available,
@@ -4206,7 +4208,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     color: rgba(255, 255, 255, 0.78) !important;
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
+    transition: background-color var(--vis-d-fast) var(--vis-ease-spring-3), border-color var(--vis-d-fast) var(--vis-ease-spring-3), color var(--vis-d-fast) var(--vis-ease-spring-3);
     display: inline-flex;
     align-items: center;
     justify-content: center;

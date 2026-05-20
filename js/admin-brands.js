@@ -10,6 +10,37 @@
     function _canEditBrand()   { return AP.hasPermission('brands.create') || AP.hasPermission('brands.edit'); }
     function _canDeleteBrand() { return AP.hasPermission('brands.delete'); }
 
+    // §100 — View mode toggle (lista por default, cards via 1 click).
+    var _viewMode = (function() {
+        try { return localStorage.getItem('altorra_brands_view') || 'list'; }
+        catch (e) { return 'list'; }
+    })();
+    function _setViewMode(mode) {
+        _viewMode = (mode === 'cards') ? 'cards' : 'list';
+        try { localStorage.setItem('altorra_brands_view', _viewMode); } catch (e) {}
+    }
+    function _syncViewToggleUI() {
+        var wrap = document.getElementById('brandsViewToggle');
+        if (!wrap) return;
+        wrap.querySelectorAll('[data-view]').forEach(function(b) {
+            b.classList.toggle('av2-view-btn--active', b.getAttribute('data-view') === _viewMode);
+        });
+    }
+    function _brandActionsHTML(b) {
+        var actions = '';
+        if (_canEditBrand()) {
+            actions += '<button class="v-act v-act--success" data-action="editBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Editar"><i data-lucide="pencil"></i></button>';
+        }
+        if (_canDeleteBrand()) {
+            if (_canEditBrand()) actions += '<span class="v-act-sep"></span>';
+            actions += '<button class="v-act v-act--danger" data-action="deleteBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
+        }
+        if (!actions) {
+            actions = '<span style="color:rgba(255,255,255,0.45);font-size:0.74rem;font-style:italic;">Solo lectura</span>';
+        }
+        return actions;
+    }
+
     // ========== LOGO URL RESOLVER ==========
     // Normalizes brand logo URLs: fixes path typos and .png → .webp for local files
     function resolveLogoUrl(url) {
@@ -118,7 +149,7 @@
         var totalBrands = sorted.length;
         if (AP.paginate) sorted = AP.paginate(sorted, 'brands');
 
-        // §34 — Render como gallery de cards
+        // §34/§100 — Render como lista (default) o gallery de cards
         var cardList = _ensureBrandsCardList();
         var tableEl = document.getElementById('brandsTable');
         if (!cardList) {
@@ -127,27 +158,35 @@
             return;
         }
         if (tableEl) tableEl.style.display = 'none';
+        cardList.className = (_viewMode === 'list') ? 'av2-list av2-list--brands' : 'av2-card-list av2-card-list--gallery';
 
         if (sorted.length === 0) {
             cardList.innerHTML = '<div class="av2-card-empty"><i data-lucide="badge"></i><div>No hay marcas registradas</div></div>';
+        } else if (_viewMode === 'list') {
+            var rows = '';
+            sorted.forEach(function(b) {
+                var count = AP.vehicles.filter(function(v) { return v.marca === b.id; }).length;
+                var logoUrl = getBrandLogoUrl(b);
+                var logoMarkup = logoUrl
+                    ? '<img src="' + AP.escapeHtml(logoUrl) + '" alt="" loading="lazy" onerror="this.style.opacity=\'0.25\';this.onerror=null;">'
+                    : '<span class="av2-row-nologo">—</span>';
+                rows += ''
+                    + '<div class="av2-row av2-row--brand" data-brand-id="' + AP.escapeHtml(b.id) + '">'
+                    +   '<div class="av2-row-thumb av2-row-thumb--logo">' + logoMarkup + '</div>'
+                    +   '<span class="av2-row-code">' + AP.escapeHtml(b.id) + '</span>'
+                    +   '<div class="av2-row-main"><span class="av2-row-title">' + AP.escapeHtml(b.nombre) + '</span>'
+                    +     (b.descripcion ? '<span class="av2-row-meta">' + AP.escapeHtml(b.descripcion) + '</span>' : '')
+                    +   '</div>'
+                    +   '<span class="av2-row-count"><i data-lucide="car"></i>' + count + '</span>'
+                    +   '<div class="av2-row-actions">' + _brandActionsHTML(b) + '</div>'
+                    + '</div>';
+            });
+            cardList.innerHTML = rows;
         } else {
             var html = '';
             sorted.forEach(function(b) {
                 var count = AP.vehicles.filter(function(v) { return v.marca === b.id; }).length;
                 var logoUrl = getBrandLogoUrl(b);
-
-                var actions = '';
-                if (_canEditBrand()) {
-                    actions += '<button class="v-act v-act--success" data-action="editBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Editar"><i data-lucide="pencil"></i></button>';
-                }
-                if (_canDeleteBrand()) {
-                    if (_canEditBrand()) actions += '<span class="v-act-sep"></span>';
-                    actions += '<button class="v-act v-act--danger" data-action="deleteBrand" data-id="' + AP.escapeHtml(b.id) + '" title="Eliminar"><i data-lucide="trash-2"></i></button>';
-                }
-                if (!actions) {
-                    actions = '<span style="color:rgba(255,255,255,0.45);font-size:0.74rem;font-style:italic;">Solo lectura</span>';
-                }
-
                 var logoMarkup = logoUrl
                     ? '<img class="av2-card-thumb av2-card-thumb--logo" src="' + AP.escapeHtml(logoUrl) + '" alt="' + AP.escapeHtml(b.nombre) + '" loading="lazy" onerror="this.style.opacity=\'0.25\';this.onerror=null;">'
                     : '<div class="av2-card-thumb av2-card-thumb--logo" style="display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.32);font-size:0.78rem;">Sin logo</div>';
@@ -160,7 +199,7 @@
                     +     '<div class="av2-card-meta"><span class="av2-card-code">' + AP.escapeHtml(b.id) + '</span> · <span class="av2-card-badge-count"><i data-lucide="car" style="width:11px;height:11px;"></i>' + count + '</span></div>'
                     +     (b.descripcion ? '<div class="av2-card-meta" style="font-size:0.78rem;line-height:1.45;">' + AP.escapeHtml(b.descripcion) + '</div>' : '')
                     +   '</div>'
-                    +   '<div class="av2-card-actions">' + actions + '</div>'
+                    +   '<div class="av2-card-actions">' + _brandActionsHTML(b) + '</div>'
                     + '</article>';
             });
             cardList.innerHTML = html;
@@ -172,6 +211,7 @@
 
         if (AP.renderPagination) AP.renderPagination('brandsPagination', 'brands', totalBrands);
         AP.refreshIcons();
+        _syncViewToggleUI();
     }
 
     // ========== BRAND MODAL ==========
@@ -187,6 +227,19 @@
 
     $('brandForm').addEventListener('submit', function(e) { e.preventDefault(); });
     $('brandForm').addEventListener('keydown', function(e) { if (e.key === 'Enter') e.preventDefault(); });
+
+    // §100 — View toggle (Lista ↔ Tarjetas) para marcas.
+    var brandsViewToggleWrap = document.getElementById('brandsViewToggle');
+    if (brandsViewToggleWrap) {
+        brandsViewToggleWrap.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-view]');
+            if (!btn) return;
+            var mode = btn.getAttribute('data-view');
+            if (mode === _viewMode) return;
+            _setViewMode(mode);
+            renderBrandsTable();
+        });
+    }
 
     $('btnAddBrand').addEventListener('click', function() {
         if (!_canEditBrand()) { AP.toast('No tienes permisos', 'error'); return; }

@@ -39496,3 +39496,118 @@ no tenía toolbar).
 §19 RCA: identificadas las 2 causas raíz reales (pills apilados + footer dark = clutter; §34 cards-only sin lista). §37 IAP: dirección confirmada por el cliente. §17.4: cero ruptura de clases existentes — todo aditivo.
 
 **Cache bump**: `v20260520200000`.
+
+---
+
+## 101. ADR-101 — Card view limpia y corporativa: elimina exceso de pills/cajas en vehículos y marcas (2026-05-21)
+
+> Cliente reportó (con 2 capturas — card de vehículo + card de marca Audi)
+> que las **vistas TARJETA** (distintas de la vista lista que §100 construyó)
+> tienen exceso de cajas/cuadros transparentes apilados:
+> - **Marca**: el nombre aparece 3× cada uno en una caja (alt del logo +
+>   título + descripción que iguala al nombre) + pills de id y count.
+> - **Vehículo**: código, nombre, precio normal, descuento, estado y
+>   concesionario "todos tienen cajas y se ven apilados feos".
+>
+> Pidió auditoría general + rediseño "bonito y corporativo" + tests. Es la
+> reapertura de Issue #2 (§100 solo hizo limpieza menor del footer; el
+> clutter de los pills internos seguía).
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition all), §17.4 (HTML/CSS
+> estable — clases legacy preservadas, solo aditivo), §17.12 (cero
+> MutationObserver), §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 101.1 Causa raíz (RCA §19)
+
+Audit cruzado de capas CSS (admin-v2.css canónica + admin.css + visionary
++ perf-kill): NO había override que cajeara `.av2-card-title/-meta/-price`
+(esos son texto plano). El clutter venía de **pills reales** en el markup:
+
+**Vehículo card** (`_vehicleCardHTML`):
+- `.av2-card-code` → pill con bg+border (código)
+- `.av2-card-status` → pill con bg+border (estado, inline en meta)
+- `.badge badge-{tipo}` → pill legacy (tipo)
+- + featured badge → 4 pills apilados verticalmente con `gap:6px` = "feos".
+
+**Marca card** (branch en `renderBrandsTable`):
+- Logo `alt="{nombre}"` → al romper la imagen (`onerror` opacity 0.25)
+  el navegador muestra el **alt text con el nombre**.
+- `.av2-card-title` → nombre (visible).
+- `.av2-card-meta` descripción → el campo `descripcion` suele **igualar
+  al nombre** (marca "Audi" con descripción "Audi") → nombre 3× total.
+- + `.av2-card-code` pill (id) + `.av2-card-badge-count` pill (count).
+
+### 101.2 Solución estructural
+
+**Vehículo card — jerarquía plana corporativa (patrón Kavak/CarGurus)**:
+- Estado → **overlay sobre la imagen** (bottom-left, `.av2-card-status-ov`
+  con backdrop-blur y color sólido) en vez de pill inline.
+- Checkbox → **overlay top-left** sobre la imagen (`.av2-card-cb-ov`).
+- Código → **texto plano mono** dorado tenue (`.av2-card-codeflat`, sin
+  bg/border).
+- Tipo + concesionario → **subline de texto plano** muted
+  (`.av2-card-subline`, ej. "Usado · Propio") en vez de pill `.badge` +
+  meta separada.
+- Resultado: 0 pills apilados en el body. Solo overlays en la imagen +
+  texto limpio (código / título / meta / precio / subline).
+
+**Marca card — nombre UNA sola vez, logo prominente, centrado**:
+- `alt=""` en el logo (el nombre ya no aparece al romper la imagen;
+  `.av2-card-brandlogo--empty` para el caso "Sin logo").
+- Dedup descripción: solo se muestra si `descNorm !== nombreNorm`
+  (lowercase+trim) → mata el duplicado "Audi/Audi".
+- Count → **texto plano** con icono inline (`.av2-card-subline--brand`,
+  ej. "🚗 5 vehículos") en vez de pill `.av2-card-badge-count`.
+- Id pill **eliminado** (redundante con el slug del nombre).
+- Layout centrado `.av2-card--brand` + `.av2-card-body--brand` con logo
+  prominente arriba.
+
+### 101.3 Compatibilidad / no-regresión
+
+- Clases legacy `.av2-card-code`, `.av2-card-status` (inline), `.av2-card-
+  badge-count`, `.badge` **preservadas en CSS** (otras vistas/usos podrían
+  referenciarlas). Solo el markup de las 2 cards dejó de usarlas.
+- Vista LISTA §100 (`.av2-row-*`) **intacta** — sin tocar.
+- Reorder mode (drag-drop con grip) **intacto** — sigue forzando cards.
+- Checkbox `vehicle-cb` + `data-vid` preservados → selección masiva sigue
+  funcionando.
+- RBAC (`_vehicleActionsHTML`/`_brandActionsHTML`) **intacto**.
+- Event delegation `data-action`/`data-id` **intacto**.
+
+### 101.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260521010000) | Carga nueva |
+| 2 | Vehículos → vista tarjetas | Estado como badge overlay sobre la foto (bottom-left), NO pill inline |
+| 3 | Card vehículo body | Código mono plano + título + meta + precio + subline "Tipo · Concesionario" — SIN pills apilados |
+| 4 | Checkbox selección | Overlay top-left sobre la imagen, batch bar funciona |
+| 5 | Estado vendido/reservado/borrador | Overlay con color sólido legible |
+| 6 | Marcas → vista tarjetas | Logo prominente arriba + nombre 1 sola vez + "N vehículos" texto plano |
+| 7 | Marca con descripción == nombre | Descripción NO se muestra (dedup) |
+| 8 | Marca con logo roto | NO aparece el nombre como alt text |
+| 9 | Marca con descripción distinta | Se muestra debajo del count, 2 líneas máx |
+| 10 | Vista lista (toggle §100) ambas secciones | Intacta |
+| 11 | Reorder vehículos | Drag-drop funciona (grip en card) |
+| 12 | Responsive mobile | Cards 1-col legibles |
+
+### 101.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-vehicles.js` | `_vehicleCardHTML`: estado→overlay imagen, checkbox→overlay, código→texto plano `.av2-card-codeflat`, tipo+origen→`.av2-card-subline`. Eliminados pills código/status-inline/badge-tipo del body |
+| `js/admin-brands.js` | brand card branch: `alt=""` en logo, dedup descripción (descNorm!==nombreNorm), count→`.av2-card-subline--brand` texto plano, id pill eliminado, layout `.av2-card--brand` centrado |
+| `css/admin-v2.css` | §101 append: `.av2-card-codeflat`, `.av2-card-subline`, `.av2-card-status-ov` (overlay), `.av2-card-cb-ov`, `.av2-card--brand`, `.av2-card-brandlogo--empty`, `.av2-card-body--brand`, `.av2-card-title--brand`, `.av2-card-subline--brand`, `.av2-card-branddesc`. Clases legacy preservadas |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260521010000 |
+| `CLAUDE.md` | Esta sección §101 |
+
+**Total**: 5 archivos. Cero schema. Cero deploy backend. Solo Ctrl+Shift+R.
+
+### 101.6 Doctrina aplicada
+
+§19 RCA: causa raíz real identificada (pills en markup, no override CSS) +
+duplicado de nombre por alt-logo + descripción==nombre. §37 IAP entregado.
+§17.4: clases legacy preservadas, todo aditivo. §17.2: solo
+`background-color`/`transform` transitions específicas, cero `transition: all`.
+
+**Cache bump**: `v20260521010000`.

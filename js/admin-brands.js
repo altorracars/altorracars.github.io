@@ -187,17 +187,24 @@
             sorted.forEach(function(b) {
                 var count = AP.vehicles.filter(function(v) { return v.marca === b.id; }).length;
                 var logoUrl = getBrandLogoUrl(b);
+                // §101 — alt="" para que no aparezca el nombre como texto al romper el logo
                 var logoMarkup = logoUrl
-                    ? '<img class="av2-card-thumb av2-card-thumb--logo" src="' + AP.escapeHtml(logoUrl) + '" alt="' + AP.escapeHtml(b.nombre) + '" loading="lazy" onerror="this.style.opacity=\'0.25\';this.onerror=null;">'
-                    : '<div class="av2-card-thumb av2-card-thumb--logo" style="display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.32);font-size:0.78rem;">Sin logo</div>';
+                    ? '<img class="av2-card-thumb av2-card-thumb--logo" src="' + AP.escapeHtml(logoUrl) + '" alt="" loading="lazy" onerror="this.style.opacity=\'0.25\';this.onerror=null;">'
+                    : '<div class="av2-card-thumb av2-card-thumb--logo av2-card-brandlogo--empty">Sin logo</div>';
+
+                // §101 — Dedup: ocultar descripcion si iguala al nombre (caso comun: "Audi" / "Audi")
+                var nombreNorm = (b.nombre || '').toLowerCase().trim();
+                var descNorm = (b.descripcion || '').toLowerCase().trim();
+                var showDesc = b.descripcion && descNorm !== nombreNorm;
+                var countStr = count + ' ' + (count === 1 ? 'vehículo' : 'vehículos');
 
                 html += ''
-                    + '<article class="av2-card" data-brand-id="' + AP.escapeHtml(b.id) + '">'
+                    + '<article class="av2-card av2-card--brand" data-brand-id="' + AP.escapeHtml(b.id) + '">'
                     +   logoMarkup
-                    +   '<div class="av2-card-body">'
-                    +     '<h3 class="av2-card-title" style="font-size:0.96rem;">' + AP.escapeHtml(b.nombre) + '</h3>'
-                    +     '<div class="av2-card-meta"><span class="av2-card-code">' + AP.escapeHtml(b.id) + '</span> · <span class="av2-card-badge-count"><i data-lucide="car" style="width:11px;height:11px;"></i>' + count + '</span></div>'
-                    +     (b.descripcion ? '<div class="av2-card-meta" style="font-size:0.78rem;line-height:1.45;">' + AP.escapeHtml(b.descripcion) + '</div>' : '')
+                    +   '<div class="av2-card-body av2-card-body--brand">'
+                    +     '<h3 class="av2-card-title av2-card-title--brand">' + AP.escapeHtml(b.nombre) + '</h3>'
+                    +     '<div class="av2-card-subline av2-card-subline--brand"><i data-lucide="car"></i>' + countStr + '</div>'
+                    +     (showDesc ? '<div class="av2-card-branddesc">' + AP.escapeHtml(b.descripcion) + '</div>' : '')
                     +   '</div>'
                     +   '<div class="av2-card-actions">' + _brandActionsHTML(b) + '</div>'
                     + '</article>';

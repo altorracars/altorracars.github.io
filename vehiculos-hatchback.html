@@ -92,8 +92,9 @@
         <div class="brand-hero-overlay"></div>
     <div class="hero-ambient" aria-hidden="true"></div>
         <picture>
-        <source type="image/avif" srcset="multimedia/optimized/HATCHBACK-480.avif 480w, multimedia/optimized/HATCHBACK-768.avif 768w, multimedia/optimized/HATCHBACK-1280.avif 1280w, multimedia/optimized/HATCHBACK-1920.avif 1920w" sizes="100vw">
-        <source type="image/webp" srcset="multimedia/optimized/HATCHBACK-480.webp 480w, multimedia/optimized/HATCHBACK-768.webp 768w, multimedia/optimized/HATCHBACK-1280.webp 1280w, multimedia/optimized/HATCHBACK-1920.webp 1920w" sizes="100vw">
+        <!-- §97: HATCHBACK.jpg fuente es 1200×800 → optimizer solo generó 480/768 (1280/1920 > source width, no upscaling). Variants 1280/1920 NUNCA existieron → 404 + LCP roto. Mismo bug class que §95 (heroindex-1920) y §96 (camioneta). Fix: srcset solo 480/768. <img> fallback usa HATCHBACK.jpg 1200px full-res. -->
+        <source type="image/avif" srcset="multimedia/optimized/HATCHBACK-480.avif 480w, multimedia/optimized/HATCHBACK-768.avif 768w" sizes="100vw">
+        <source type="image/webp" srcset="multimedia/optimized/HATCHBACK-480.webp 480w, multimedia/optimized/HATCHBACK-768.webp 768w" sizes="100vw">
         <img src="multimedia/categories/HATCHBACK.jpg" alt="Hatchback" class="brand-hero-bg" width="1200" height="800" fetchpriority="high" loading="eager" decoding="async">
     </picture>
     <div class="hero-bottom-fade"></div>

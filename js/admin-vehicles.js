@@ -184,8 +184,9 @@
         return 'Propio';
     }
 
-    // §100 — Fila compacta para vista LISTA (default). Lectura densa de inventario.
-    function _vehicleRowHTML(v) {
+    // §100/§103 — Fila compacta para vista LISTA. Lectura densa de inventario.
+    // En modo reorder: grip de arrastre + número de posición en lugar del checkbox.
+    function _vehicleRowHTML(v, pos, reorder) {
         var estado = v.estado || 'disponible';
         var imageUrl = v.imagen || 'multimedia/vehicles/placeholder-car.jpg';
         var marcaCap = (v.marca || '').charAt(0).toUpperCase() + (v.marca || '').slice(1);
@@ -199,9 +200,14 @@
             : AP.formatPrice(v.precio);
         var featStar = v.destacado ? '<i data-lucide="star" class="av2-row-star" title="Destacado"></i>' : '';
 
+        // §103 — Celda líder: grip + posición (reorder) o checkbox (normal).
+        var leadCell = reorder
+            ? '<span class="av2-row-lead"><span class="av2-row-grip" title="Arrastra para reordenar"><i data-lucide="grip-vertical"></i></span><span class="av2-row-pos">' + pos + '</span></span>'
+            : '<input type="checkbox" class="vehicle-cb av2-row-cb" data-vid="' + AP.escapeHtml(String(v.id)) + '" title="Seleccionar">';
+
         return ''
-            + '<div class="av2-row" data-vehicle-id="' + AP.escapeHtml(String(v.id)) + '">'
-            +   '<input type="checkbox" class="vehicle-cb av2-row-cb" data-vid="' + AP.escapeHtml(String(v.id)) + '" title="Seleccionar">'
+            + '<div class="av2-row' + (reorder ? ' av2-row--reorder' : '') + '" data-vehicle-id="' + AP.escapeHtml(String(v.id)) + '"' + (reorder ? ' draggable="true"' : '') + '>'
+            +   leadCell
             +   '<div class="av2-row-thumb"><img src="' + AP.escapeHtml(imageUrl) + '" alt="" loading="lazy" onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">' + featStar + '</div>'
             +   '<span class="av2-row-code">' + AP.escapeHtml(v.codigoUnico || '—') + '</span>'
             +   '<div class="av2-row-main"><span class="av2-row-title">' + titleStr + '</span><span class="av2-row-meta">' + metaStr + '</span></div>'
@@ -265,35 +271,41 @@
     }
 
     function renderVehiclesTable(filter) {
-        var filtered = AP.vehicles;
-        if (filter) {
-            var q = filter.toLowerCase();
-            filtered = filtered.filter(function(v) {
-                return _buildSearchStr(v).indexOf(q) >= 0;
-            });
-        }
-        // F8.5: Advanced filters
-        var fEstado = $('vehicleFilterEstado');
-        var fDealer = $('vehicleFilterDealer');
-        if (fEstado && fEstado.value) {
-            var est = fEstado.value.toLowerCase();
-            filtered = filtered.filter(function(v) { return (v.estado || '').toLowerCase() === est; });
-        }
-        if (fDealer && fDealer.value) {
-            var dlr = fDealer.value;
-            filtered = filtered.filter(function(v) { return v.concesionario === dlr; });
-        }
-        // In reorder mode sort by prioridad desc, otherwise by id or user sort
+        var filtered;
         if (_reorderMode) {
-            filtered.sort(function(a, b) {
+            // §103 — Reorder estilo Shopify manual-sort: opera sobre TODO el
+            // inventario (ignora búsqueda/estado/dealer y paginación) ordenado
+            // global por prioridad desc. Posiciones secuenciales globales →
+            // cero colisiones, inserción real (no swap).
+            filtered = AP.vehicles.slice().sort(function(a, b) {
                 var pa = a.prioridad || 0, pb = b.prioridad || 0;
                 if (pa !== pb) return pb - pa;
                 return a.id - b.id;
             });
-        } else if (AP._sorting && AP._sorting.vehicles && AP._sorting.vehicles.col) {
-            filtered = AP.sortData(filtered, 'vehicles');
         } else {
-            filtered.sort(function(a, b) { return a.id - b.id; });
+            filtered = AP.vehicles;
+            if (filter) {
+                var q = filter.toLowerCase();
+                filtered = filtered.filter(function(v) {
+                    return _buildSearchStr(v).indexOf(q) >= 0;
+                });
+            }
+            // F8.5: Advanced filters
+            var fEstado = $('vehicleFilterEstado');
+            var fDealer = $('vehicleFilterDealer');
+            if (fEstado && fEstado.value) {
+                var est = fEstado.value.toLowerCase();
+                filtered = filtered.filter(function(v) { return (v.estado || '').toLowerCase() === est; });
+            }
+            if (fDealer && fDealer.value) {
+                var dlr = fDealer.value;
+                filtered = filtered.filter(function(v) { return v.concesionario === dlr; });
+            }
+            if (AP._sorting && AP._sorting.vehicles && AP._sorting.vehicles.col) {
+                filtered = AP.sortData(filtered, 'vehicles');
+            } else {
+                filtered.sort(function(a, b) { return a.id - b.id; });
+            }
         }
 
         var totalFiltered = filtered.length;
@@ -302,19 +314,21 @@
             filtered = AP.paginate(filtered, 'vehicles');
         }
 
-        // §34/§100 — Render cards o lista (tabla legacy se oculta).
-        // Reorder fuerza cards (drag-drop usa el grip de la card).
-        var effectiveMode = _reorderMode ? 'cards' : _viewMode;
+        // §34/§100/§103 — Render cards o lista (tabla legacy se oculta).
+        // Reorder fuerza vista LISTA (mejor herramienta para ordenar inventario).
+        var effectiveMode = _reorderMode ? 'list' : _viewMode;
         var cardList = _ensureVehiclesCardList();
         var tableEl = document.getElementById('vehiclesTable');
         if (cardList) {
             if (tableEl) tableEl.style.display = 'none';
-            cardList.className = (effectiveMode === 'list') ? 'av2-list' : 'av2-card-list';
+            cardList.className = (effectiveMode === 'list')
+                ? ('av2-list' + (_reorderMode ? ' av2-list--reorder' : ''))
+                : 'av2-card-list';
             if (filtered.length === 0) {
                 cardList.innerHTML = '<div class="av2-card-empty"><i data-lucide="inbox"></i><div>No se encontraron vehiculos</div></div>';
             } else if (effectiveMode === 'list') {
                 var rowsHTML = '';
-                filtered.forEach(function(v) { rowsHTML += _vehicleRowHTML(v); });
+                filtered.forEach(function(v, idx) { rowsHTML += _vehicleRowHTML(v, idx + 1, _reorderMode); });
                 cardList.innerHTML = rowsHTML;
             } else {
                 var cardsHTML = '';
@@ -347,7 +361,7 @@
 
         AP.refreshIcons();
         _syncViewToggleUI();
-        if (_reorderMode) initCardsDragDrop();
+        if (_reorderMode) initListDragDrop();
     }
 
     // §34 — Drag-drop adapter para cards (reorder mode). Mantiene
@@ -379,6 +393,110 @@
         });
     }
 
+    // §103 — Drag-drop por INSERCIÓN en vista LISTA (estándar Shopify/Notion).
+    // Línea indicadora de drop + inserción real (no swap). El grip es el
+    // affordance visual; toda la fila es draggable excepto los botones de acción.
+    function initListDragDrop() {
+        var list = document.getElementById('vehiclesCardList');
+        if (!list) return;
+        var rows = list.querySelectorAll('.av2-row[draggable="true"]');
+        function clearIndicators() {
+            list.querySelectorAll('.av2-row--drag-over-top, .av2-row--drag-over-bottom')
+                .forEach(function(r) { r.classList.remove('av2-row--drag-over-top', 'av2-row--drag-over-bottom'); });
+        }
+        rows.forEach(function(row) {
+            row.addEventListener('dragstart', function(e) {
+                // No iniciar drag desde un botón de acción (deja funcionar el click)
+                if (e.target.closest && e.target.closest('.av2-row-actions')) { e.preventDefault(); return; }
+                _dragSrcRow = row;
+                row.classList.add('av2-row--dragging');
+                if (e.dataTransfer) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', row.getAttribute('data-vehicle-id'));
+                }
+            });
+            row.addEventListener('dragend', function() {
+                row.classList.remove('av2-row--dragging');
+                clearIndicators();
+                _dragSrcRow = null;
+            });
+            row.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                if (this === _dragSrcRow) return;
+                var rect = this.getBoundingClientRect();
+                var midY = rect.top + rect.height / 2;
+                clearIndicators();
+                this.classList.add(e.clientY < midY ? 'av2-row--drag-over-top' : 'av2-row--drag-over-bottom');
+            });
+            row.addEventListener('dragleave', function() {
+                this.classList.remove('av2-row--drag-over-top', 'av2-row--drag-over-bottom');
+            });
+            row.addEventListener('drop', function(e) {
+                e.preventDefault();
+                var insertBefore = this.classList.contains('av2-row--drag-over-top');
+                clearIndicators();
+                if (this === _dragSrcRow || !_dragSrcRow) return;
+                var srcId = parseInt(_dragSrcRow.getAttribute('data-vehicle-id'), 10);
+                var tgtId = parseInt(this.getAttribute('data-vehicle-id'), 10);
+                _dragSrcRow = null;
+                handleListReorder(srcId, tgtId, insertBefore);
+            });
+        });
+    }
+
+    // §103 — Inserción real: reconstruye el orden global, reasigna prioridad
+    // secuencial (top = mayor, spacing 10) y persiste solo los docs que cambian.
+    function handleListReorder(srcId, targetId, insertBefore) {
+        if (srcId === targetId) return;
+        // Orden global actual (mismo criterio que el render de reorder)
+        var ordered = AP.vehicles.slice().sort(function(a, b) {
+            var pa = a.prioridad || 0, pb = b.prioridad || 0;
+            if (pa !== pb) return pb - pa;
+            return a.id - b.id;
+        });
+        var srcIdx = ordered.findIndex(function(v) { return v.id === srcId; });
+        if (srcIdx < 0) return;
+        var src = ordered[srcIdx];
+        ordered.splice(srcIdx, 1);
+        var tgtIdx = ordered.findIndex(function(v) { return v.id === targetId; });
+        if (tgtIdx < 0) return;
+        var insertAt = insertBefore ? tgtIdx : tgtIdx + 1;
+        ordered.splice(insertAt, 0, src);
+
+        // Reasignar prioridad secuencial descendente. Solo escribir lo que cambió.
+        var count = ordered.length;
+        var batch = window.db.batch();
+        var changes = 0;
+        var nowIso = new Date().toISOString();
+        ordered.forEach(function(v, idx) {
+            var newPrio = (count - idx) * 10;
+            if ((v.prioridad || 0) !== newPrio) {
+                batch.update(window.db.collection('vehiculos').doc(String(v.id)), {
+                    prioridad: newPrio,
+                    updatedAt: nowIso,
+                    _version: (v._version || 0) + 1
+                });
+                // Optimistic local (objetos compartidos con AP.vehicles)
+                v.prioridad = newPrio;
+                v._version = (v._version || 0) + 1;
+                changes++;
+            }
+        });
+        if (changes === 0) return;
+
+        // Re-render optimista inmediato (refleja el nuevo orden al instante)
+        renderVehiclesTable($('vehicleSearch').value);
+
+        batch.commit().then(function() {
+            var srcName = (src.marca || '') + ' ' + (src.modelo || '');
+            AP.toast(srcName + ' → posición ' + (insertAt + 1), 'success');
+            AP.writeAuditLog('reordenar', 'vehiculo', srcName + ' movido a posición ' + (insertAt + 1) + ' (' + changes + ' cambios)');
+        }).catch(function(err) {
+            AP.toast('Error al guardar el orden: ' + (err.message || err), 'error');
+        });
+    }
+
     // ========== REORDER MODE TOGGLE ==========
     function toggleReorderMode() {
         if (!_canEditInv()) {
@@ -406,7 +524,7 @@
         renderVehiclesTable($('vehicleSearch').value);
 
         if (_reorderMode) {
-            AP.toast('Modo reordenar activo — arrastra filas para cambiar posicion', 'info');
+            AP.toast('Modo ordenar activo — mostrando todo el inventario. Arrastra desde el grip ⠿ para insertar en otra posición', 'info');
         }
     }
 
@@ -421,7 +539,7 @@
             if (!btn) return;
             var mode = btn.getAttribute('data-view');
             if (mode === _viewMode) return;
-            if (_reorderMode) { AP.toast('Salí del modo reordenar para cambiar de vista', 'info'); return; }
+            if (_reorderMode) { AP.toast('El modo ordenar usa vista lista. Salí de "Reordenar" para cambiar de vista', 'info'); return; }
             _setViewMode(mode);
             renderVehiclesTable($('vehicleSearch').value);
         });

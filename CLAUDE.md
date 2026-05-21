@@ -40009,3 +40009,98 @@ solo transitions específicas + inset box-shadow para la línea de drop.
 pointermove persistente.
 
 **Cache bump**: `v20260521040000`.
+
+---
+
+## 104. ADR-104 — Wizard "Agregar/Editar Vehículo" refactor completo: Sprints A-E (2026-05-21)
+
+> Cliente reportó 4 áreas del wizard del formulario de vehículos (con 2
+> capturas) y pidió plan punto-por-punto + ejecución inmediata
+> (frustrado: "llevas 4 horas sin ejecutar"). Sprints organizados A→B→C→D→E
+> (E último porque cambios de schema afectan snapshots de borradores).
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all), §17.4 (HTML/CSS
+> estable — sin renombrar IDs, callsites preservados via hidden inputs),
+> §17.12 (cero MutationObserver), §19 RCA estricto, §35 (cero pointermove
+> persistente), §37 (IAP).
+
+### 104.1 Causa raíz por sprint
+
+| Sprint | Issue | Causa raíz |
+|---|---|---|
+| A.1 | Toasts "Reordenar" se apilan al click repetido | `AP.toast` crudo crea uno nuevo por click sin dedup |
+| A.2 | Tabs del wizard (BASICA/PRECIO/SPECS/ESTADO/FOTOS/EXTRAS) cortados | Modal estrecho + wizard-steps sin overflow horizontal |
+| B.1 | dropdown nuevo/usado redundante | El tipo es derivable del kilometraje (0=nuevo, ≤10k=semi-nuevo, >10k=usado) — Smart Fields ya lo deriva |
+| B.2 | checkbox "oferta" redundante | `oferta` es derivable de `precioOferta` (existe → true) |
+| B.3 | fotos sin orden + portada manual | handleFiles no ordenaba; primera foto = portada no garantizado |
+| C.1/C.2 | botón generar descripción + Smart Fields en "BASICA"/"PRECIO" | Ubicación temprana confunde el flujo (datos aún incompletos) |
+| D.1 | textarea "Caracteristicas (una por linea)" propenso a typos | Texto libre sin estructura ni sync con config admin |
+| E | drafts "funcionan terriblemente" | listener huérfano post-logout, declinar borrador lo destruía, snapshot incompleto (perdía features categorizadas + imágenes + dealer), dirty-check inconsistente |
+
+### 104.2 Solución por sprint
+
+**Sprint A — UX del wizard**:
+- A.1: `_reorderToastId` + `notify.resetTimer(id, 4000)` evita acumulación al click repetido; dismiss al salir de reorder mode.
+- A.2: `#vehicleModal .modal { max-width: 880px }` + `.wizard-steps { overflow-x: auto; scroll-snap-type: x mandatory }` + scrollbar oculto. Tabs legibles y scrollables.
+
+**Sprint B — automatización de campos derivables**:
+- B.1: dropdown `vTipo` → `<input type="hidden" id="vTipo">` + `#vTipoDisplay` readonly. `deriveTipoFromKm()` recalcula en cada `input` del km. (callsites de `vTipo.value` intactos por el hidden con mismo id).
+- B.2: checkbox `vOferta` → hidden. Auto-derive de `precioOferta`.
+- B.3: `uploadFileToStorage` resuelve URL/null (no boolean, no self-push). `handleFiles` usa slot-array con `localeCompare` numeric sort → primera foto alfanumérica = portada.
+
+**Sprint C — reubicación**:
+- C.1: botón `#btnGenDesc` + `#vDescripcion` movidos de tab BASICA al final (tab EXTRAS), tras tener specs cargadas.
+- C.2: `#smartFieldsPreview` reubicado al final del flujo.
+
+**Sprint D — características dinámicas**:
+- D.1: textarea → checkboxes por categoría (`FEAT_CATEGORIES`: featSeguridad/featConfort/featTecnologia/featExterior/featInterior leídas de DynamicLists `config/listas`). `#btnAddFeature` agrega nueva característica con `DynamicLists.saveLists()` → sync a `config/listas` + localStorage + sec-lists. `renderFeatureCheckboxes()` puebla; `collectAllFeatures()` lee checkboxes + hidden `vCaracteristicas` (uncategorized). `loadFeaturesIntoForm` renderiza checkboxes ANTES de marcar (evita mis-bucketing).
+
+**Sprint E — auditoría de drafts**:
+- E.1: `stopDraftsListener()` (export `AP.stopDraftsListener`) invocado en `admin-sync.stopRealtimeSync` → evita listener huérfano de `drafts_activos/{uid}` tras logout.
+- E.2: `checkForDraft` al declinar (Cancelar) retorna false SIN destruir el borrador — se conserva para más tarde.
+- E.3: `deriveTipoFromKm()` tras `restoreFormSnapshot` (tipo coherente con km restaurado).
+- E.4: `getFormSnapshot` ahora captura `_images` (AP.uploadedImageUrls), `vConcesionario`, `vConsignaParticular` y features COMPLETAS (`collectAllFeatures().join('\n')`, no solo uncategorized). `restoreFormSnapshot` restaura imágenes + dealer fields + toggleConsignaField + features.
+- E.5: `formHasData()` unificado via `snapshotHasAnyData(getFormSnapshot())` (un solo dirty-check consistente).
+
+### 104.3 No-regresión
+
+- Callsites de `vTipo.value` / `vOferta.checked` / `vCaracteristicas.value` preservados via hidden inputs con mismo `id` (patrón §17.4).
+- `handlePrioritySwap`/`initCardsDragDrop` (reorder cards §103) intactos.
+- Selección masiva, RBAC, event delegation `data-action` intactos.
+- `node -c js/admin-vehicles.js` y `node -c js/admin-sync.js` → OK.
+
+### 104.4 Items diferidos (no mandatorios, menor prioridad/mayor riesgo)
+
+E.7 `_draftModalActive` flag, E.8 clearDraftFromFirestore non-silent, E.9 stale draft "Liberar" button, E.10 reemplazar `confirm()` por modal no-bloqueante. `confirm()` se mantiene (funciona; la queja central — pérdida de datos + clashes — se resolvió con E.1/E.2/E.4).
+
+### 104.5 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260521190000) | Carga nueva |
+| 2 | Click "Reordenar" repetido | UN solo toast (timer reset, no apila) |
+| 3 | Abrir wizard vehículo | 6 tabs visibles/scrollables, no cortados |
+| 4 | Cambiar km a 0 / 5000 / 50000 | vTipoDisplay muestra nuevo / semi-nuevo / usado |
+| 5 | Ingresar precioOferta | oferta se deriva automático (sin checkbox) |
+| 6 | Subir 3 fotos desordenadas | Se ordenan alfanumérico, primera = portada |
+| 7 | Tab EXTRAS | Botón generar descripción + Smart Fields preview ahí |
+| 8 | Características | Checkboxes por categoría; agregar nueva sincroniza a sec-lists |
+| 9 | Guardar borrador con features + fotos + dealer → reabrir | Recupera TODO (features categorizadas, imágenes, concesionario) |
+| 10 | Borrador → "Cancelar" en prompt recuperar | Borrador se conserva (no se destruye) |
+| 11 | Logout con borrador activo | Sin errores de listener huérfano en consola |
+
+### 104.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-vehicles.js` | Sprints A-E: deriveTipoFromKm, renderFeatureCheckboxes, collectAllFeatures, FEAT_CATEGORIES, btnAddFeature handler, uploadFileToStorage URL/null, handleFiles slot-array sort, getFormSnapshot completo, restoreFormSnapshot, formHasData unificado, checkForDraft non-destructive, stopDraftsListener, toggleConsignaField |
+| `js/admin-sync.js` | stopRealtimeSync invoca AP.stopDraftsListener (E.1) + renderFeatureCheckboxes tras DynamicLists.load (D.1) |
+| `admin.html` | sec-features con checkboxes + #btnAddFeature + #vCaracteristicas hidden + Descripción/SmartFields al final. vTipo→hidden+vTipoDisplay. vOferta→hidden. modal 880px |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260521190000 |
+| `CLAUDE.md` | Esta sección §104 |
+
+### 104.7 Doctrina aplicada
+
+§19 RCA: causa raíz por sprint identificada. §37 IAP: plan documentado A→E. §17.4: hidden inputs preservan callsites (vTipo/vOferta/vCaracteristicas). §35: km listener usa evento `input` discreto, cero pointermove. §17.12: cero MutationObserver. §17.2: solo transitions específicas + scroll-snap.
+
+**Cache bump**: `v20260521190000`.

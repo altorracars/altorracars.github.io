@@ -3156,23 +3156,18 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                                 <input type="number" id="vYear" class="form-input" required min="1990" max="2030" placeholder="2024">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Tipo *</label>
-                                <select id="vTipo" class="form-select" required><option value="">Seleccionar...</option></select>
+                                <label class="form-label">Tipo (automático)</label>
+                                <input type="text" id="vTipoDisplay" class="form-input" readonly placeholder="Se detecta por kilometraje" style="cursor:default;">
+                                <input type="hidden" id="vTipo">
+                                <small class="text-xs text-muted" style="display:block;margin-top:3px;">0 km = Nuevo · 1–10.000 = Semi-nuevo · +10.000 = Usado</small>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Categoria *</label>
                                 <select id="vCategoria" class="form-select" required><option value="">Seleccionar...</option></select>
                             </div>
                         </div>
-                        <div class="form-group mt-sm">
-                            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
-                                Descripcion
-                                <button type="button" id="btnGenDesc" class="alt-btn alt-btn--ghost alt-btn--sm" data-tooltip="Generar descripción automática a partir de las specs">
-                                    <i data-lucide="sparkles"></i> Generar
-                                </button>
-                            </label>
-                            <textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea>
-                        </div>
+                        <!-- §C.1 — Descripción + generador movidos al último paso (Características),
+                             donde ya están todas las specs cargadas para generar mejor. -->
                     </div>
                 </div>
 
@@ -3197,8 +3192,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                             <div class="form-group">
                                 <label class="form-label">Kilometraje *</label>
                                 <input type="number" id="vKm" class="form-input" required min="0" placeholder="0">
-                                <!-- K.4 — Smart Fields live preview -->
-                                <div id="smartFieldsPreview" class="smart-fields-preview" style="display:none;"></div>
+                                <small class="text-xs text-muted" style="display:block;margin-top:3px;">El tipo (Nuevo/Semi-nuevo/Usado) se detecta de este valor</small>
                             </div>
                         </div>
                         <div class="form-row">
@@ -3347,10 +3341,11 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                         </div>
 
                         <div class="checkbox-grid">
-                            <label class="form-checkbox"><input type="checkbox" id="vOferta"> En Oferta</label>
                             <label class="form-checkbox"><input type="checkbox" id="vRevision" checked> Revision Tecnico-Mecanica</label>
                             <label class="form-checkbox"><input type="checkbox" id="vPeritaje" checked> Peritaje Realizado</label>
                         </div>
+                        <!-- §B.2 — "En Oferta" se deriva automáticamente de Precio Oferta (hidden, preserva callsites) -->
+                        <input type="checkbox" id="vOferta" style="display:none;" tabindex="-1" aria-hidden="true">
                         <div class="form-row mt-md">
                             <div class="form-group">
                                 <label class="form-label">Origen del vehiculo</label>
@@ -3392,74 +3387,44 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-features">
-                        <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:0.75rem;">Selecciona las caracteristicas por categoria o agrega personalizadas abajo.</p>
-                        <div id="featCategoriesContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-bottom:1rem;">
-                            <!-- Seguridad -->
-                            <div class="feat-category-card" style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;">
-                                <h5 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--admin-gold);">Seguridad</h5>
-                                <div class="feat-checkboxes" data-category="seguridad">
-                                    <label class="feat-cb"><input type="checkbox" value="Sistema de frenos ABS"> ABS</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Airbags frontales"> Airbags frontales</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Airbags laterales"> Airbags laterales</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Alarma"> Alarma</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Bloqueo central"> Bloqueo central</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Control de estabilidad"> Control estabilidad</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Control de traccion"> Control traccion</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Sensor de reversa"> Sensor reversa</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Camara de reversa"> Camara reversa</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Camara 360"> Camara 360</label>
-                                </div>
+                        <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:0.75rem;">Selecciona las caracteristicas. Si falta alguna, agregala abajo y quedara guardada en la configuracion para todos los vehiculos.</p>
+                        <!-- §D.1 — Tarjetas de categorias renderizadas dinamicamente desde config/listas (admin-vehicles.renderFeatureCheckboxes) -->
+                        <div id="featCategoriesContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-bottom:1rem;"></div>
+                        <!-- §D.3 — Agregar caracteristica nueva: se guarda en config/listas y aparece para todos -->
+                        <div class="feat-add-row" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end;background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;margin-bottom:1rem;">
+                            <div class="form-group" style="flex:1;min-width:160px;margin:0;">
+                                <label class="form-label" style="font-size:0.75rem;">Nueva caracteristica</label>
+                                <input type="text" id="featNewInput" class="form-input" placeholder="Ej: Sunroof panoramico">
                             </div>
-                            <!-- Confort -->
-                            <div class="feat-category-card" style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;">
-                                <h5 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--admin-gold);">Confort</h5>
-                                <div class="feat-checkboxes" data-category="confort">
-                                    <label class="feat-cb"><input type="checkbox" value="Aire acondicionado"> Aire acondicionado</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Climatizador automatico"> Climatizador auto</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Asientos en cuero"> Asientos en cuero</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Asientos calefactados"> Asientos calefactados</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Asiento electrico"> Asiento electrico</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Volante multifuncional"> Volante multifuncional</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Tapizado en cuero"> Tapizado en cuero</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Techo panoramico"> Techo panoramico</label>
-                                </div>
+                            <div class="form-group" style="min-width:140px;margin:0;">
+                                <label class="form-label" style="font-size:0.75rem;">Categoria</label>
+                                <select id="featNewCategory" class="form-select">
+                                    <option value="featSeguridad">Seguridad</option>
+                                    <option value="featConfort">Confort</option>
+                                    <option value="featTecnologia">Tecnologia</option>
+                                    <option value="featExterior">Exterior</option>
+                                    <option value="featInterior">Interior</option>
+                                </select>
                             </div>
-                            <!-- Tecnologia -->
-                            <div class="feat-category-card" style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;">
-                                <h5 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--admin-gold);">Tecnologia</h5>
-                                <div class="feat-checkboxes" data-category="tecnologia">
-                                    <label class="feat-cb"><input type="checkbox" value="Pantalla tactil"> Pantalla tactil</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Bluetooth"> Bluetooth</label>
-                                    <label class="feat-cb"><input type="checkbox" value="USB / Auxiliar"> USB / Auxiliar</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Android Auto"> Android Auto</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Apple CarPlay"> Apple CarPlay</label>
-                                    <label class="feat-cb"><input type="checkbox" value="GPS / Navegacion"> GPS / Navegacion</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Radio AM/FM"> Radio AM/FM</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Computador de viaje"> Computador de viaje</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Keyless entry"> Keyless entry</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Boton de encendido"> Boton de encendido</label>
-                                </div>
-                            </div>
-                            <!-- Exterior e Interior -->
-                            <div class="feat-category-card" style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;">
-                                <h5 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--admin-gold);">Exterior e Interior</h5>
-                                <div class="feat-checkboxes" data-category="exterior">
-                                    <label class="feat-cb"><input type="checkbox" value="Vidrios electricos"> Vidrios electricos</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Espejos electricos"> Espejos electricos</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Luces LED"> Luces LED</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Luces DRL"> Luces DRL</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Rines de aluminio"> Rines de aluminio</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Barras de techo"> Barras de techo</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Exploradoras"> Exploradoras</label>
-                                    <label class="feat-cb"><input type="checkbox" value="Cierre centralizado"> Cierre centralizado</label>
-                                </div>
-                            </div>
+                            <button type="button" id="btnAddFeature" class="btn btn-ghost btn-sm"><i data-lucide="plus" width="14" height="14"></i> Agregar</button>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Caracteristicas adicionales (una por linea)</label>
-                            <textarea id="vCaracteristicas" class="form-textarea" rows="3" placeholder="Caracteristicas no listadas arriba..."></textarea>
-                            <div class="tags-container" id="featuresPreview"></div>
+                        <!-- §D.2 — vCaracteristicas conservado como hidden: preserva features legacy no categorizadas + callsites -->
+                        <input type="hidden" id="vCaracteristicas">
+                        <div class="tags-container" id="featuresPreview" style="display:none;"></div>
+
+                        <!-- §C.1 — Descripcion + generador (movidos desde Informacion Basica al ultimo paso) -->
+                        <div class="form-group mt-md">
+                            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+                                Descripcion
+                                <button type="button" id="btnGenDesc" class="alt-btn alt-btn--ghost alt-btn--sm" data-tooltip="Generar descripción automática a partir de las specs">
+                                    <i data-lucide="sparkles"></i> Generar
+                                </button>
+                            </label>
+                            <textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea>
                         </div>
+
+                        <!-- §C.2 — Smart Fields review (movido desde Precio): resumen de autocompletado + validaciones antes de guardar -->
+                        <div id="smartFieldsPreview" class="smart-fields-preview" style="display:none;"></div>
                     </div>
                 </div>
             </form>

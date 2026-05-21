@@ -121,6 +121,7 @@
         if (AP.unsubAuditLog) { AP.unsubAuditLog(); AP.unsubAuditLog = null; }
         if (AP.unsubBanners) { AP.unsubBanners(); AP.unsubBanners = null; }
         if (AP.unsubReviews) { AP.unsubReviews(); AP.unsubReviews = null; }
+        if (AP.stopDraftsListener) { AP.stopDraftsListener(); } // §E.1 — evita listener huérfano de drafts_activos tras logout
     }
 
     function loadData() {
@@ -145,6 +146,7 @@
         if (window.DynamicLists) {
             window.DynamicLists.load().then(function() {
                 window.DynamicLists.populateAdminForm();
+                if (AP.renderFeatureCheckboxes) AP.renderFeatureCheckboxes(); // §D.1
                 if (AP.renderListsSection) AP.renderListsSection();
                 if (AP.loadBlockedDates) AP.loadBlockedDates();
             });

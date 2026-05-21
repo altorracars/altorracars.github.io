@@ -3108,19 +3108,19 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
             <span class="draft-save-indicator" id="draftSaveIndicator"></span>
             <button class="modal-close" aria-label="Cerrar" id="closeModal">&times;</button>
         </div>
-        <!-- F5.5: Wizard Steps Bar -->
+        <!-- F5.5: Wizard Steps Bar — §105 reorganizado en 6 secciones lógicas -->
         <div class="wizard-steps" id="wizardSteps">
-            <div class="wizard-step active" data-step="sec-basica"><span class="wizard-step-num">1</span>Basica</div>
+            <div class="wizard-step active" data-step="sec-identificacion"><span class="wizard-step-num">1</span>Vehículo</div>
             <div class="wizard-step-connector"></div>
-            <div class="wizard-step" data-step="sec-precio"><span class="wizard-step-num">2</span>Precio</div>
+            <div class="wizard-step" data-step="sec-specs"><span class="wizard-step-num">2</span>Specs</div>
             <div class="wizard-step-connector"></div>
-            <div class="wizard-step" data-step="sec-specs"><span class="wizard-step-num">3</span>Specs</div>
+            <div class="wizard-step" data-step="sec-comercial"><span class="wizard-step-num">3</span>Comercial</div>
             <div class="wizard-step-connector"></div>
-            <div class="wizard-step" data-step="sec-estado"><span class="wizard-step-num">4</span>Estado</div>
+            <div class="wizard-step" data-step="sec-fotos"><span class="wizard-step-num">4</span>Fotos</div>
             <div class="wizard-step-connector"></div>
-            <div class="wizard-step" data-step="sec-fotos"><span class="wizard-step-num">5</span>Fotos</div>
+            <div class="wizard-step" data-step="sec-features"><span class="wizard-step-num">5</span>Detalle</div>
             <div class="wizard-step-connector"></div>
-            <div class="wizard-step" data-step="sec-features"><span class="wizard-step-num">6</span>Extras</div>
+            <div class="wizard-step" data-step="sec-publicacion"><span class="wizard-step-num">6</span>Publicar</div>
         </div>
         <div class="modal-body">
             <form id="vehicleForm">
@@ -3132,14 +3132,14 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                     <div id="codigoUnicoValue" style="font-family:monospace; font-size:1.1rem; font-weight:600; color:var(--admin-accent,#58a6ff); letter-spacing:1px;"></div>
                 </div>
 
-                <!-- Seccion: Info Basica -->
+                <!-- §105 Seccion 1: Identificación (marca/modelo/año/categoría + km↔tipo juntos + placa/fasecolda) -->
                 <div class="form-section">
-                    <div class="form-section-title" data-toggle="sec-basica">
-                        <i data-lucide="car" width="16" height="16"></i>
-                        Informacion Basica
+                    <div class="form-section-title" data-toggle="sec-identificacion">
+                        <i data-lucide="car-front" width="16" height="16"></i>
+                        Identificación del Vehículo
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
-                    <div class="form-section-body open" id="sec-basica">
+                    <div class="form-section-body open" id="sec-identificacion">
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Marca *</label>
@@ -3156,68 +3156,39 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                                 <input type="number" id="vYear" class="form-input" required min="1990" max="2030" placeholder="2024">
                             </div>
                             <div class="form-group">
+                                <label class="form-label">Categoria *</label>
+                                <select id="vCategoria" class="form-select" required><option value="">Seleccionar...</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Kilometraje *</label>
+                                <input type="number" id="vKm" class="form-input" required min="0" placeholder="0">
+                                <small class="text-xs text-muted" style="display:block;margin-top:3px;">Define el tipo automáticamente</small>
+                            </div>
+                        </div>
+                        <div class="form-row-3">
+                            <div class="form-group">
                                 <label class="form-label">Tipo (automático)</label>
                                 <input type="text" id="vTipoDisplay" class="form-input" readonly placeholder="Se detecta por kilometraje" style="cursor:default;">
                                 <input type="hidden" id="vTipo">
                                 <small class="text-xs text-muted" style="display:block;margin-top:3px;">0 km = Nuevo · 1–10.000 = Semi-nuevo · +10.000 = Usado</small>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Categoria *</label>
-                                <select id="vCategoria" class="form-select" required><option value="">Seleccionar...</option></select>
-                            </div>
-                        </div>
-                        <!-- §C.1 — Descripción + generador movidos al último paso (Características),
-                             donde ya están todas las specs cargadas para generar mejor. -->
-                    </div>
-                </div>
-
-                <!-- Seccion: Precio -->
-                <div class="form-section">
-                    <div class="form-section-title" data-toggle="sec-precio">
-                        <i data-lucide="dollar-sign" width="16" height="16"></i>
-                        Precio y Disponibilidad
-                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="form-section-body open" id="sec-precio">
-                        <div class="form-row-3">
-                            <div class="form-group">
-                                <label class="form-label">Precio *</label>
-                                <input type="number" id="vPrecio" class="form-input" required min="0" placeholder="75000000">
+                                <label class="form-label">Placa</label>
+                                <input type="text" id="vPlaca" class="form-input" placeholder="Disponible al contactar">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Precio Oferta</label>
-                                <input type="number" id="vPrecioOferta" class="form-input" min="0" placeholder="Vacio si no aplica">
-                                <small class="text-xs text-muted" style="display:block;margin-top:3px;">Ingresa precio menor al normal para activar "En Oferta" automaticamente</small>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Kilometraje *</label>
-                                <input type="number" id="vKm" class="form-input" required min="0" placeholder="0">
-                                <small class="text-xs text-muted" style="display:block;margin-top:3px;">El tipo (Nuevo/Semi-nuevo/Usado) se detecta de este valor</small>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Estado del vehiculo</label>
-                                <select id="vEstado" class="form-select">
-                                    <option value="disponible">Disponible</option>
-                                    <option value="reservado">Reservado</option>
-                                    <option value="vendido">Vendido</option>
-                                    <option value="borrador">Borrador</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Ubicacion</label>
-                                <input type="text" id="vUbicacion" class="form-input" placeholder="Barranquilla" value="Barranquilla">
+                                <label class="form-label">Codigo Fasecolda</label>
+                                <input type="text" id="vFasecolda" class="form-input" placeholder="Consultar">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Seccion: Especificaciones -->
+                <!-- §105 Seccion 2: Especificaciones técnicas (solo specs mecánicas; placa/fasecolda movidas a Identificación) -->
                 <div class="form-section">
                     <div class="form-section-title" data-toggle="sec-specs">
-                        <i data-lucide="settings" width="16" height="16"></i>
-                        Especificaciones Tecnicas
+                        <i data-lucide="settings-2" width="16" height="16"></i>
+                        Especificaciones Técnicas
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                     <div class="form-section-body open" id="sec-specs">
@@ -3259,7 +3230,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                                 <input type="text" id="vColor" class="form-input" placeholder="Blanco">
                             </div>
                         </div>
-                        <div class="form-row-3">
+                        <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Puertas</label>
                                 <input type="number" id="vPuertas" class="form-input" min="2" max="5" placeholder="5">
@@ -3268,23 +3239,135 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                                 <label class="form-label">Pasajeros</label>
                                 <input type="number" id="vPasajeros" class="form-input" min="2" max="9" placeholder="5">
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Placa</label>
-                                <input type="text" id="vPlaca" class="form-input" placeholder="Disponible al contactar">
-                            </div>
                         </div>
-                        <div class="form-group"><label class="form-label">Codigo Fasecolda</label><input type="text" id="vFasecolda" class="form-input" placeholder="Consultar"></div>
                     </div>
                 </div>
 
-                <!-- Seccion: Publicacion y Destacado -->
+                <!-- §105 Seccion 3: Comercial (precio/oferta/estado/ubicación/origen + garantía revisión/peritaje) -->
                 <div class="form-section">
-                    <div class="form-section-title" data-toggle="sec-estado">
-                        <i data-lucide="star" width="16" height="16"></i>
-                        Publicacion y Destacado
+                    <div class="form-section-title" data-toggle="sec-comercial">
+                        <i data-lucide="tag" width="16" height="16"></i>
+                        Comercial
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
-                    <div class="form-section-body open" id="sec-estado">
+                    <div class="form-section-body open" id="sec-comercial">
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">Precio *</label>
+                                <input type="number" id="vPrecio" class="form-input" required min="0" placeholder="75000000">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Precio Oferta</label>
+                                <input type="number" id="vPrecioOferta" class="form-input" min="0" placeholder="Vacio si no aplica">
+                                <small class="text-xs text-muted" style="display:block;margin-top:3px;">Menor al normal activa "En Oferta" automaticamente</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Estado del vehiculo</label>
+                                <select id="vEstado" class="form-select">
+                                    <option value="disponible">Disponible</option>
+                                    <option value="reservado">Reservado</option>
+                                    <option value="vendido">Vendido</option>
+                                    <option value="borrador">Borrador</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Ubicacion</label>
+                                <input type="text" id="vUbicacion" class="form-input" placeholder="Barranquilla" value="Barranquilla">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Origen del vehiculo</label>
+                                <select id="vConcesionario" class="form-select">
+                                    <option value="">Propio (ALTORRA)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="checkbox-grid mt-md">
+                            <label class="form-checkbox"><input type="checkbox" id="vRevision" checked> Revision Tecnico-Mecanica</label>
+                            <label class="form-checkbox"><input type="checkbox" id="vPeritaje" checked> Peritaje Realizado</label>
+                        </div>
+                        <!-- §B.2 — "En Oferta" se deriva automáticamente de Precio Oferta (hidden, preserva callsites) -->
+                        <input type="checkbox" id="vOferta" style="display:none;" tabindex="-1" aria-hidden="true">
+                    </div>
+                </div>
+
+                <!-- §105 Seccion 4: Fotos -->
+                <div class="form-section">
+                    <div class="form-section-title" data-toggle="sec-fotos">
+                        <i data-lucide="image" width="16" height="16"></i>
+                        Fotos del Vehiculo
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="form-section-body open" id="sec-fotos">
+                        <div class="upload-area" id="uploadArea">
+                            <i data-lucide="upload" width="36" height="36" style="color:var(--admin-text-muted);"></i>
+                            <p><strong>Haz clic aqui</strong> o arrastra las fotos</p>
+                            <p class="upload-hint">JPG, PNG o WebP — Se comprimen automaticamente a ~150KB</p>
+                            <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp" style="display:none">
+                        </div>
+                        <div id="uploadProgress" style="display:none;margin-top:0.5rem;"><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div><small id="uploadStatus" style="color:var(--admin-text-muted);">Subiendo...</small></div>
+                        <div id="uploadError" style="display:none;margin-top:0.5rem;padding:0.75rem;background:rgba(248,81,73,0.1);border:1px solid var(--admin-danger);border-radius:6px;font-size:0.8rem;color:var(--admin-danger);"></div>
+                        <div style="margin-top:0.75rem;"><label class="form-label" style="font-size:0.8rem;color:var(--admin-text-muted);">O agrega URLs manualmente:</label><div style="display:flex;gap:0.5rem;"><input type="text" id="manualImageUrl" class="form-input" placeholder="https://ejemplo.com/imagen.jpg" style="flex:1;"><button type="button" class="btn btn-ghost btn-sm" id="btnAddImageUrl">Agregar</button></div></div>
+                        <div class="uploaded-images" id="uploadedImages"></div>
+                        <input type="hidden" id="vImagen"><input type="hidden" id="vImagenes">
+                    </div>
+                </div>
+
+                <!-- §105 Seccion 5: Detalle (características + descripción) -->
+                <div class="form-section">
+                    <div class="form-section-title" data-toggle="sec-features">
+                        <i data-lucide="list-checks" width="16" height="16"></i>
+                        Características y Descripción
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="form-section-body open" id="sec-features">
+                        <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:0.75rem;">Selecciona las caracteristicas. Si falta alguna, agregala abajo y quedara guardada en la configuracion para todos los vehiculos.</p>
+                        <!-- §D.1 — Tarjetas de categorias renderizadas dinamicamente desde config/listas (admin-vehicles.renderFeatureCheckboxes) -->
+                        <div id="featCategoriesContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-bottom:1rem;"></div>
+                        <!-- §D.3 — Agregar caracteristica nueva: se guarda en config/listas y aparece para todos -->
+                        <div class="feat-add-row" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end;background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;margin-bottom:1rem;">
+                            <div class="form-group" style="flex:1;min-width:160px;margin:0;">
+                                <label class="form-label" style="font-size:0.75rem;">Nueva caracteristica</label>
+                                <input type="text" id="featNewInput" class="form-input" placeholder="Ej: Sunroof panoramico">
+                            </div>
+                            <div class="form-group" style="min-width:140px;margin:0;">
+                                <label class="form-label" style="font-size:0.75rem;">Categoria</label>
+                                <select id="featNewCategory" class="form-select">
+                                    <option value="featSeguridad">Seguridad</option>
+                                    <option value="featConfort">Confort</option>
+                                    <option value="featTecnologia">Tecnologia</option>
+                                    <option value="featExterior">Exterior</option>
+                                    <option value="featInterior">Interior</option>
+                                </select>
+                            </div>
+                            <button type="button" id="btnAddFeature" class="btn btn-ghost btn-sm"><i data-lucide="plus" width="14" height="14"></i> Agregar</button>
+                        </div>
+                        <!-- §D.2 — vCaracteristicas conservado como hidden: preserva features legacy no categorizadas + callsites -->
+                        <input type="hidden" id="vCaracteristicas">
+                        <div class="tags-container" id="featuresPreview" style="display:none;"></div>
+
+                        <!-- §C.1 — Descripcion + generador (con todas las specs cargadas para generar mejor) -->
+                        <div class="form-group mt-md">
+                            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+                                Descripcion
+                                <button type="button" id="btnGenDesc" class="alt-btn alt-btn--ghost alt-btn--sm" data-tooltip="Generar descripción automática a partir de las specs">
+                                    <i data-lucide="sparkles"></i> Generar
+                                </button>
+                            </label>
+                            <textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- §105 Seccion 6: Publicación (destacado/banner marketing + revisión final Smart Fields) -->
+                <div class="form-section">
+                    <div class="form-section-title" data-toggle="sec-publicacion">
+                        <i data-lucide="megaphone" width="16" height="16"></i>
+                        Publicación
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="form-section-body open" id="sec-publicacion">
                         <!-- Hidden sync checkboxes -->
                         <input type="checkbox" id="vDestacado" aria-hidden="true" style="display:none">
                         <input type="checkbox" id="vFeaturedWeek" aria-hidden="true" style="display:none">
@@ -3292,7 +3375,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 
                         <!-- Destacar vehiculo — toggle unico -->
                         <div style="margin-bottom:1.2rem;">
-                            <div id="destacadoToggleBtn" style="display:flex;align-items:center;gap:12px;padding:0.7rem 1rem;border-radius:8px;border:1.5px solid var(--admin-border,#30363d);cursor:pointer;transition:all 0.2s;">
+                            <div id="destacadoToggleBtn" style="display:flex;align-items:center;gap:12px;padding:0.7rem 1rem;border-radius:8px;border:1.5px solid var(--admin-border,#30363d);cursor:pointer;transition:border-color 0.2s,background 0.2s;">
                                 <span id="destacadoStar" style="line-height:1;"><i data-lucide="star" style="width:20px;height:20px;color:var(--admin-text-muted);"></i></span>
                                 <div style="flex:1;">
                                     <span id="destacadoLabel" style="font-size:0.85rem;font-weight:600;color:var(--admin-text,#e6edf3);">Destacar vehiculo</span>
@@ -3340,90 +3423,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                             </div>
                         </div>
 
-                        <div class="checkbox-grid">
-                            <label class="form-checkbox"><input type="checkbox" id="vRevision" checked> Revision Tecnico-Mecanica</label>
-                            <label class="form-checkbox"><input type="checkbox" id="vPeritaje" checked> Peritaje Realizado</label>
-                        </div>
-                        <!-- §B.2 — "En Oferta" se deriva automáticamente de Precio Oferta (hidden, preserva callsites) -->
-                        <input type="checkbox" id="vOferta" style="display:none;" tabindex="-1" aria-hidden="true">
-                        <div class="form-row mt-md">
-                            <div class="form-group">
-                                <label class="form-label">Origen del vehiculo</label>
-                                <select id="vConcesionario" class="form-select">
-                                    <option value="">Propio (ALTORRA)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Seccion: Fotos -->
-                <div class="form-section">
-                    <div class="form-section-title" data-toggle="sec-fotos">
-                        <i data-lucide="image" width="16" height="16"></i>
-                        Fotos del Vehiculo
-                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="form-section-body open" id="sec-fotos">
-                        <div class="upload-area" id="uploadArea">
-                            <i data-lucide="upload" width="36" height="36" style="color:var(--admin-text-muted);"></i>
-                            <p><strong>Haz clic aqui</strong> o arrastra las fotos</p>
-                            <p class="upload-hint">JPG, PNG o WebP — Se comprimen automaticamente a ~150KB</p>
-                            <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp" style="display:none">
-                        </div>
-                        <div id="uploadProgress" style="display:none;margin-top:0.5rem;"><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div><small id="uploadStatus" style="color:var(--admin-text-muted);">Subiendo...</small></div>
-                        <div id="uploadError" style="display:none;margin-top:0.5rem;padding:0.75rem;background:rgba(248,81,73,0.1);border:1px solid var(--admin-danger);border-radius:6px;font-size:0.8rem;color:var(--admin-danger);"></div>
-                        <div style="margin-top:0.75rem;"><label class="form-label" style="font-size:0.8rem;color:var(--admin-text-muted);">O agrega URLs manualmente:</label><div style="display:flex;gap:0.5rem;"><input type="text" id="manualImageUrl" class="form-input" placeholder="https://ejemplo.com/imagen.jpg" style="flex:1;"><button type="button" class="btn btn-ghost btn-sm" id="btnAddImageUrl">Agregar</button></div></div>
-                        <div class="uploaded-images" id="uploadedImages"></div>
-                        <input type="hidden" id="vImagen"><input type="hidden" id="vImagenes">
-                    </div>
-                </div>
-
-                <!-- Seccion: Caracteristicas -->
-                <div class="form-section">
-                    <div class="form-section-title" data-toggle="sec-features">
-                        <i data-lucide="list" width="16" height="16"></i>
-                        Caracteristicas
-                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="form-section-body open" id="sec-features">
-                        <p style="font-size:0.8rem;color:var(--admin-text-muted);margin-bottom:0.75rem;">Selecciona las caracteristicas. Si falta alguna, agregala abajo y quedara guardada en la configuracion para todos los vehiculos.</p>
-                        <!-- §D.1 — Tarjetas de categorias renderizadas dinamicamente desde config/listas (admin-vehicles.renderFeatureCheckboxes) -->
-                        <div id="featCategoriesContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-bottom:1rem;"></div>
-                        <!-- §D.3 — Agregar caracteristica nueva: se guarda en config/listas y aparece para todos -->
-                        <div class="feat-add-row" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end;background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;margin-bottom:1rem;">
-                            <div class="form-group" style="flex:1;min-width:160px;margin:0;">
-                                <label class="form-label" style="font-size:0.75rem;">Nueva caracteristica</label>
-                                <input type="text" id="featNewInput" class="form-input" placeholder="Ej: Sunroof panoramico">
-                            </div>
-                            <div class="form-group" style="min-width:140px;margin:0;">
-                                <label class="form-label" style="font-size:0.75rem;">Categoria</label>
-                                <select id="featNewCategory" class="form-select">
-                                    <option value="featSeguridad">Seguridad</option>
-                                    <option value="featConfort">Confort</option>
-                                    <option value="featTecnologia">Tecnologia</option>
-                                    <option value="featExterior">Exterior</option>
-                                    <option value="featInterior">Interior</option>
-                                </select>
-                            </div>
-                            <button type="button" id="btnAddFeature" class="btn btn-ghost btn-sm"><i data-lucide="plus" width="14" height="14"></i> Agregar</button>
-                        </div>
-                        <!-- §D.2 — vCaracteristicas conservado como hidden: preserva features legacy no categorizadas + callsites -->
-                        <input type="hidden" id="vCaracteristicas">
-                        <div class="tags-container" id="featuresPreview" style="display:none;"></div>
-
-                        <!-- §C.1 — Descripcion + generador (movidos desde Informacion Basica al ultimo paso) -->
-                        <div class="form-group mt-md">
-                            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
-                                Descripcion
-                                <button type="button" id="btnGenDesc" class="alt-btn alt-btn--ghost alt-btn--sm" data-tooltip="Generar descripción automática a partir de las specs">
-                                    <i data-lucide="sparkles"></i> Generar
-                                </button>
-                            </label>
-                            <textarea id="vDescripcion" class="form-textarea" rows="3" placeholder="Descripcion detallada del vehiculo..."></textarea>
-                        </div>
-
-                        <!-- §C.2 — Smart Fields review (movido desde Precio): resumen de autocompletado + validaciones antes de guardar -->
+                        <!-- §C.2 — Smart Fields review: resumen de autocompletado + validaciones antes de guardar -->
                         <div id="smartFieldsPreview" class="smart-fields-preview" style="display:none;"></div>
                     </div>
                 </div>

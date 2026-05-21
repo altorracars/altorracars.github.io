@@ -193,7 +193,8 @@
     };
 
     // ========== F5.5: WIZARD MODAL ==========
-    var WIZARD_STEPS = ['sec-basica', 'sec-precio', 'sec-specs', 'sec-estado', 'sec-fotos', 'sec-features'];
+    // §105 — Reorganización del wizard por modelo mental del usuario (Kavak/Carvana/MercadoLibre)
+    var WIZARD_STEPS = ['sec-identificacion', 'sec-specs', 'sec-comercial', 'sec-fotos', 'sec-features', 'sec-publicacion'];
     var _wizardEnabled = true;
     var _currentStep = 0;
 

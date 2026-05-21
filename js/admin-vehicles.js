@@ -1053,7 +1053,14 @@
         $('uploadedImages').innerHTML = '';
         $('uploadError').style.display = 'none';
         setDestaqueRadio(false);
-        checkForDraft().then(function() { captureOriginalSnapshot(); startDraftAutoSave(); openModal(); });
+        // §106 — Estilo TikTok: "Agregar Vehiculo" abre SIEMPRE un formulario
+        // limpio (sin el confirm() molesto que reaparecía al cancelar). Los
+        // borradores guardados se retoman desde el panel "Borradores" que
+        // muestra cada borrador con botones Retomar / Eliminar.
+        AP._editingDraftOwner = true; // este flujo guarda en el draft propio
+        captureOriginalSnapshot();
+        startDraftAutoSave();
+        openModal();
     });
 
     $('closeModal').addEventListener('click', function() { closeModalFn(); });
@@ -2233,18 +2240,27 @@
         var list = $('activeDraftsList');
         if (!panel || !list) return;
 
-        // Filter out stale drafts (older than 2 hours)
+        // §106 — El borrador PROPIO siempre se muestra (es tuyo: tú decides
+        // retomarlo o eliminarlo). Solo los borradores de OTROS admins se
+        // filtran por antigüedad (>2h = sesión probablemente abandonada).
         var now = Date.now();
         var TWO_HOURS = 2 * 60 * 60 * 1000;
+        var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : '';
         drafts = drafts.filter(function(d) {
+            if (d.userId === currentUid) return true; // propio: siempre
             if (!d.lastSaved) return false;
             return (now - new Date(d.lastSaved).getTime()) < TWO_HOURS;
         });
 
         if (drafts.length === 0) { panel.style.display = 'none'; return; }
 
+        // Propio primero
+        drafts.sort(function(a, b) {
+            if ((a.userId === currentUid) !== (b.userId === currentUid)) return a.userId === currentUid ? -1 : 1;
+            return new Date(b.lastSaved || 0) - new Date(a.lastSaved || 0);
+        });
+
         panel.style.display = 'block';
-        var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : '';
 
         list.innerHTML = drafts.map(function(d) {
             var label = ((d.marca || '') + ' ' + (d.modelo || '') + ' ' + (d.year || '')).trim() || 'Sin titulo';
@@ -2253,8 +2269,11 @@
             var ago = d.lastSaved ? AP.formatTimeAgo(d.lastSaved) : '';
             var isOwn = d.userId === currentUid;
             var editingLabel = d.vehicleId ? ('Editando #' + d.vehicleId) : 'Nuevo vehiculo';
+            // §106 — borrador propio: Retomar + Eliminar (estilo TikTok).
+            // Borrador de otro admin: solo Continuar (lectura colaborativa).
             var btnHtml = isOwn
-                ? '<span style="color:var(--admin-success);font-size:0.7rem;font-weight:500;">Tu borrador</span>'
+                ? '<button class="btn btn-primary btn-sm" data-action="resumeOwnDraft" title="Retomar este borrador">Retomar</button>'
+                  + '<button class="btn btn-ghost btn-sm" data-action="deleteOwnDraft" title="Eliminar borrador" style="color:var(--admin-danger);">Eliminar</button>'
                 : '<button class="btn btn-ghost btn-sm" data-action="loadDraftFromUser" data-user-id="' + AP.escapeHtml(d.userId || '') + '">Continuar</button>';
 
             return '<div class="draft-item">'
@@ -2279,6 +2298,28 @@
                 restoreAndOpenDraft(snap);
             })
             .catch(function() { AP.toast('No se pudo cargar el borrador de este usuario', 'error'); });
+    }
+
+    // §106 — Retomar el borrador propio desde el panel de borradores (TikTok).
+    function resumeOwnDraft() {
+        if (!_canEditInv()) { AP.toast('No tienes permisos para editar vehiculos', 'error'); return; }
+        var ref = getDraftDocRef();
+        if (!ref) { AP.toast('No se pudo acceder al borrador', 'error'); return; }
+        ref.get().then(function(doc) {
+            if (!doc.exists) { AP.toast('No hay borrador guardado.', 'info'); return; }
+            var snap = doc.data();
+            if (!snap || !snapshotHasAnyData(snap)) { AP.toast('El borrador esta vacio.', 'info'); return; }
+            restoreAndOpenDraft(snap);
+        }).catch(function() { AP.toast('No se pudo cargar tu borrador', 'error'); });
+    }
+
+    // §106 — Eliminar el borrador propio definitivamente.
+    function deleteOwnDraft() {
+        if (!confirm('¿Eliminar este borrador definitivamente? Esta accion no se puede deshacer.')) return;
+        clearDraftFromFirestore().then(function() {
+            AP.toast('Borrador eliminado.');
+            // El listener real-time de drafts_activos refresca el panel solo.
+        });
     }
 
     // ========== TOGGLE DESTACADO (estrella en tabla) ==========
@@ -2459,6 +2500,8 @@
     AP.restoreAndOpenDraft = restoreAndOpenDraft;
     AP.startDraftsListener = startDraftsListener;
     AP.loadDraftFromUser = loadDraftFromUser;
+    AP.resumeOwnDraft = resumeOwnDraft;
+    AP.deleteOwnDraft = deleteOwnDraft;
     AP.toggleDestacado = toggleDestacadoFn;
     AP.showAuditTimeline = showAuditTimeline;
     AP.clearCutoutPng = clearCutoutPng;
@@ -2474,7 +2517,9 @@
         markAsSold: function(id) { AP.markAsSold(parseInt(id, 10)); },
         deleteVehicle: function(id) { deleteVehicleFn(parseInt(id, 10)); },
         removeImage: function(_, btn) { removeImage(parseInt(btn.getAttribute('data-idx'), 10)); },
-        loadDraftFromUser: function(_, btn) { loadDraftFromUser(btn.getAttribute('data-user-id')); }
+        loadDraftFromUser: function(_, btn) { loadDraftFromUser(btn.getAttribute('data-user-id')); },
+        resumeOwnDraft: function() { resumeOwnDraft(); },
+        deleteOwnDraft: function() { deleteOwnDraft(); }
     };
     document.addEventListener('click', function(e) {
         var btn = AP.closestAction(e);

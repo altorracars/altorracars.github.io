@@ -4707,8 +4707,10 @@ input[type="checkbox"] { transition: all 0.15s ease; }
 
 /* ========== F5.5: WIZARD MODAL STYLES ========== */
 /* §A.2 — El modal del wizard de vehículos tiene 6 pasos; necesita más
-   ancho para que todos los tabs sean legibles sin cortarse. */
-#vehicleModal .modal { max-width: 880px; }
+   ancho para que todos los tabs sean legibles sin cortarse.
+   §106 — Más ancho (no alto): aprovecha el viewport horizontal para
+   reducir el scroll vertical y mostrar más campos por fila. */
+#vehicleModal .modal { max-width: min(1140px, 96vw); width: 96vw; }
 .wizard-steps {
     display: flex; align-items: center; justify-content: flex-start;
     padding: 0 1.25rem 1rem;

@@ -2901,6 +2901,32 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     color: #ffffff !important;
 }
 
+/* §106 — Los modales (#vehicleModal, #brandModal, #userModal, etc.) son
+   HERMANOS de #adminPanel en el DOM, no descendientes. Por eso las reglas
+   .admin-panel select de arriba NUNCA los alcanzan → los dropdowns salen
+   con fondo blanco + texto blanco (ilegibles). Este archivo solo carga en
+   admin.html, así que es seguro estilizar .modal-overlay directamente. */
+.modal-overlay select option,
+.modal-overlay select optgroup {
+    background: #1a1a1c !important;
+    color: #ffffff !important;
+    padding: 8px 12px;
+}
+.modal-overlay select option:hover,
+.modal-overlay select option:checked {
+    background: rgba(184, 150, 88, 0.30) !important;
+    color: #ffffff !important;
+}
+.modal-overlay select,
+.modal-overlay .form-select {
+    color: #ffffff !important;
+    background-color: var(--vis-surface-2, #1a1a1c) !important;
+}
+.modal-overlay select:focus,
+.modal-overlay .form-select:focus {
+    color: #ffffff !important;
+}
+
 /* Datalist + autocomplete chrome legible */
 .admin-panel input::-webkit-calendar-picker-indicator {
     filter: invert(1) opacity(0.6);

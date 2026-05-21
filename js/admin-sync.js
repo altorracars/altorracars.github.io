@@ -121,7 +121,7 @@
         if (AP.unsubAuditLog) { AP.unsubAuditLog(); AP.unsubAuditLog = null; }
         if (AP.unsubBanners) { AP.unsubBanners(); AP.unsubBanners = null; }
         if (AP.unsubReviews) { AP.unsubReviews(); AP.unsubReviews = null; }
-        if (AP.stopDraftsListener) { AP.stopDraftsListener(); } // §E.1 — evita listener huérfano de drafts_activos tras logout
+        if (AP.stopDraftsListener) { AP.stopDraftsListener(); } // §107 — evita listener huérfano de la subcolección de borradores tras logout
     }
 
     function loadData() {

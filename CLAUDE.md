@@ -40319,3 +40319,181 @@ nuevo. §17.12: cero MutationObserver (drafts usan listener onSnapshot
 existente). §35: cero pointermove.
 
 **Cache bump**: `v20260522010000`.
+
+---
+
+## 107. ADR-107 — Sistema de borradores REESCRITO desde cero: multi-borrador por cuenta (2026-05-22)
+
+> Cliente reportó que el sistema de borradores (tras §104/§106) "sigue
+> habiendo bugs en todo" y solicitó eliminarlo e implementarlo desde
+> cero ("se elimine e implemente desde cero todo el sistema"). Requisitos
+> de arquitectura explícitos (intent verbatim):
+> 1. Borradores almacenados en un espacio dentro de la sección de
+>    vehículos ("un lugar un espacio de la seccion de vehiculos").
+> 2. Memoria por cuentas para que no se pisen entre cuentas ("la memoria
+>    de los borradores sera por cuentas... para que no se pisen entre
+>    ellas").
+> 3. Editando un vehículo + sin tiempo → "guardar borrador" → se guarda
+>    en una sección que se pueda retomar.
+> 4. Click en la X con datos ingresados → el sistema pregunta "¿deseas
+>    guardar borrador? sí/no" → si NO, NO se guarda nada ("si se
+>    selecciona a no no se guarda nada").
+> 5. NO auto-restaurar el último borrador al "Agregar Vehículo" ("No me
+>    gusta la idea de que al darle en agregar vehiculo retome el ultimo
+>    borrador") — galería donde se pueda retomar CUALQUIER borrador.
+> 6. Investigar mejores sistemas de borradores e implementar arquitectura
+>    avanzada (el actual "tiene muchas falencias").
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all), §17.4 (HTML/CSS
+> estable — IDs y nombres de función preservados), §17.12 (cero
+> MutationObserver), §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 107.1 Causa raíz del sistema viejo (RCA §19)
+
+El modelo previo era **single-draft por cuenta** + colaboración
+compartida + autosave silencioso, lo que generaba clashes y la queja
+"sigue apareciendo al cancelar":
+
+| Falencia | Causa raíz |
+|---|---|
+| Un solo borrador | `usuarios/{uid}/drafts/vehicleDraft` (doc fijo único) → al editar otro vehículo se pisaba el borrador anterior |
+| Autosave silencioso cada 10s | `startDraftAutoSave()` escribía sin acción del usuario → "No" en el prompt de cierre igual dejaba rastro guardado por el autosave |
+| Auto-restore al Agregar | `checkForDraft()` con `confirm()` reaparecía en CADA "Agregar Vehículo" → molesto + no había forma de elegir QUÉ borrador retomar |
+| Colaboración compartida | `drafts_activos/{uid}` mostraba borradores de otros admins → confusión "se pisan entre cuentas" |
+| Snapshot incompleto | El snapshot guardado perdía features categorizadas, imágenes y dealer fields al restaurar |
+
+### 107.2 Nueva arquitectura — multi-borrador subcolección por cuenta
+
+Investigación de sistemas de referencia (TikTok drafts, Google Docs
+versions, Notion, MercadoLibre publicaciones guardadas): TODOS usan
+**galería de N borradores guardados explícitamente** + retomar
+cualquiera + eliminar individual. Cero auto-restore.
+
+**Modelo Firestore**:
+```
+usuarios/{uid}/drafts/{draftId}    // draftId = draft_<base36-ts>_<rand>
+{
+    ...todos los campos del wizard (vMarca, vModelo, ...),
+    _images, vConcesionario, vConsignaParticular,
+    _caracteristicas (collectAllFeatures completo),
+    _draftId, _userId, _userEmail, _savedAt
+}
+```
+
+- **Multi-doc**: cada "guardar borrador" con `_currentDraftId === null`
+  crea un doc nuevo (`newDraftId()`). Si ya estás trabajando sobre un
+  borrador (`_currentDraftId` es string), lo sobreescribe.
+- **Aislamiento por cuenta**: subcolección bajo `usuarios/{uid}` →
+  imposible que se pisen entre cuentas. Eliminado `drafts_activos`
+  compartido (queda como dead code inofensivo en rules).
+- **Estado `_currentDraftId`**: `null` = vehículo nuevo aún no guardado
+  como borrador; `string` = trabajando sobre un borrador específico.
+  Se resetea a `null` en "Agregar Vehículo", `editVehicle()`,
+  `doCloseModal()`.
+
+### 107.3 Sin autosave silencioso — guardado 100% explícito
+
+Eliminados `startDraftAutoSave`/`stopDraftAutoSave`. El borrador SOLO
+se guarda en 2 momentos explícitos:
+1. **Botón "Guardar borrador"** (`#saveDraftBtn` → `saveDraft(true)`).
+2. **Prompt al cerrar la X** con datos: `closeModalFn(force)` →
+   `if (!force && formHasData())` → `confirm('¿Deseas guardar como
+   borrador antes de cerrar?\n\nAceptar = guardar borrador.\nCancelar
+   = cerrar sin guardar (no se guarda nada).')`. Aceptar → `saveDraft(true)`
+   → cerrar. Cancelar → `doCloseModal()` SIN guardar.
+
+**Garantía clave del requisito #4**: como NO hay autosave, "Cancelar"
+(No) en el prompt realmente NO deja NADA guardado.
+
+`saveDraft(showToast)` además hace skip-si-vacío
+(`!snapshotHasAnyData(snap)` → no guarda form en blanco).
+
+### 107.4 Sin auto-restore — galería "Mis borradores"
+
+- "Agregar Vehículo" SIEMPRE abre form limpio (`_currentDraftId = null`,
+  cero confirm de recuperación). Eliminado `checkForDraft()`.
+- Panel `#activeDraftsPanel` (top de sec-vehicles, header renombrado a
+  **"Mis borradores"**) = la "sección donde se almacenan" del requisito
+  #1. Listener real-time `getDraftsCollectionRef().onSnapshot(...)`
+  puebla `_draftsCache` (cada doc con `_draftId = doc.id`).
+- `_renderActiveDrafts(drafts)`: filtra `snapshotHasAnyData`, ordena por
+  `_savedAt` desc, cada item con avatar (de vMarca) + label
+  (vMarca/vModelo/vYear) + "Guardado {ago}" + botones **Retomar**
+  (`data-action="resumeDraft" data-draft-id`) y **Eliminar**
+  (`data-action="deleteDraft" data-draft-id`).
+- `resumeDraft(draftId)`: `_draftsCache.find` o `getDraftRef(draftId).get()`
+  → `restoreAndOpenDraft(snap, draftId)` (setea `_currentDraftId`).
+- `deleteDraftFromGallery(draftId)`: confirm + `deleteDraft(draftId)` +
+  toast (el listener refresca la galería solo).
+- **Borrar al publicar**: en el success del guardado del vehículo,
+  `if (_currentDraftId) deleteDraft(_currentDraftId)` → el borrador
+  desaparece de la galería al convertirse en vehículo real.
+
+### 107.5 Snapshot completo (fix de pérdida de datos)
+
+`getFormSnapshot` (§104 E.4) ya captura `_images` (AP.uploadedImageUrls),
+`vConcesionario`, `vConsignaParticular` y features COMPLETAS
+(`collectAllFeatures().join('\n')`). `restoreAndOpenDraft` restaura
+imágenes + dealer fields + `toggleConsignaField` + features + deriva
+tipo del km restaurado. Esto se preserva en §107 (no se rompió).
+
+### 107.6 No-regresión (§17.4)
+
+- Nombres de función preservados para callsites externos:
+  `startDraftsListener`/`stopDraftsListener` (admin-sync.js loadData
+  línea ~142 + stopRealtimeSync línea ~124) y `restoreAndOpenDraft`
+  (ahora acepta 2º param `draftId` opcional).
+- IDs DOM preservados: `#activeDraftsPanel`, `#activeDraftsList`,
+  `#saveDraftBtn`. CSS `.active-drafts-panel`/`.draft-item` reusado sin
+  edición.
+- `firestore.rules`: `usuarios/{userId}/drafts/{draftId}` ya permite
+  `read, write: if auth.uid == userId` → soporta multi-doc, **cero rule
+  nueva, cero deploy**. `drafts_activos/{userId}` queda como dead code.
+- Removidos sin dejar referencias colgantes (grep confirmado):
+  `getDraftDocRef`, `getSharedDraftRef`, `updateSharedDraft`,
+  `clearSharedDraft`, `startDraftAutoSave`, `stopDraftAutoSave`,
+  `checkForDraft`, `loadDraftFromUser`, `resumeOwnDraft`, `deleteOwnDraft`.
+- `node -c js/admin-vehicles.js && node -c js/admin-sync.js` → OK.
+
+### 107.7 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260522020000) | Carga nueva |
+| 2 | "Agregar Vehículo" | Form limpio, SIN prompt de recuperar borrador |
+| 3 | Llenar campos → click "Guardar borrador" | Toast "borrador guardado"; aparece en panel "Mis borradores" |
+| 4 | Llenar campos → click X | Prompt "¿guardar borrador? Aceptar/Cancelar" |
+| 5 | Prompt → Cancelar | Cierra, NADA guardado (verificar galería vacía) |
+| 6 | Prompt → Aceptar | Guarda + cierra; aparece en galería |
+| 7 | Guardar 3 borradores distintos | Galería muestra los 3 (multi-borrador) |
+| 8 | Click "Retomar" en uno | Carga ese borrador exacto en el wizard |
+| 9 | Editar el retomado + "Guardar borrador" | Sobreescribe el mismo (no crea duplicado) |
+| 10 | Click "Eliminar" en un borrador → confirmar | Desaparece de la galería (real-time) |
+| 11 | Retomar borrador → completar → publicar vehículo | Borrador desaparece de la galería al publicar |
+| 12 | Cuenta B distinta | NO ve los borradores de cuenta A (aislamiento) |
+| 13 | Logout con galería abierta | Sin errores de listener huérfano en consola |
+| 14 | Borrador con fotos+features+dealer → Retomar | Recupera TODO completo |
+
+### 107.8 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-vehicles.js` | Reescritura del sistema de borradores: getDraftsCollectionRef/getDraftRef/newDraftId, `_currentDraftId` state, `saveDraft(showToast)`, `deleteDraft(draftId)`, `closeModalFn` con prompt no-guarda-nada, `restoreAndOpenDraft(snap, draftId)`, `startDraftsListener` subcolección, `_renderActiveDrafts` galería multi + Retomar/Eliminar, `resumeDraft`/`deleteDraftFromGallery`, exports + vehicleActions actualizados. Removidos getDraftDocRef/getSharedDraftRef/updateSharedDraft/clearSharedDraft/startDraftAutoSave/stopDraftAutoSave/checkForDraft/loadDraftFromUser/resumeOwnDraft/deleteOwnDraft |
+| `js/admin-sync.js` | Comentario línea 124 actualizado a §107 (call `AP.stopDraftsListener()` intacto) |
+| `admin.html` | Panel header → "Mis borradores"; comentario §107 galería multi-borrador por cuenta. IDs preservados |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260522020000 |
+| `CLAUDE.md` | Esta sección §107 |
+
+**Total**: 5 archivos. Cero schema, cero deploy backend, solo Ctrl+Shift+R.
+
+### 107.9 Doctrina aplicada
+
+§19 RCA: causa raíz del sistema viejo identificada (single-doc +
+autosave silencioso + auto-restore + colaboración compartida). §37 IAP:
+arquitectura nueva diseñada e implementada según los 6 requisitos
+explícitos del cliente. §17.4: nombres de función y IDs DOM preservados
+para callsites externos; `restoreAndOpenDraft` retrocompat con 2º param.
+§17.2: cero transition:all nuevo. §17.12: borradores usan listener
+onSnapshot existente, cero MutationObserver. §35: cero pointermove.
+
+**Cache bump**: `v20260522020000`.

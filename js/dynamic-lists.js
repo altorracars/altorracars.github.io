@@ -300,7 +300,7 @@
     function populateAdminForm() {
         var lists = getLists();
 
-        populateSelect(document.getElementById('vTipo'), 'tipos', { placeholder: 'Seleccionar...' });
+        // §B.1 — #vTipo ya no es <select>: es hidden input derivado del kilometraje (admin-vehicles.deriveTipoFromKm)
         populateSelect(document.getElementById('vCategoria'), 'categorias', { placeholder: 'Seleccionar...' });
         populateSelect(document.getElementById('vTransmision'), 'transmisiones', { placeholder: 'Seleccionar...' });
         populateSelect(document.getElementById('vCombustible'), 'combustibles', { placeholder: 'Seleccionar...' });

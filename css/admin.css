@@ -4706,11 +4706,20 @@ input[type="checkbox"] { transition: all 0.15s ease; }
 }
 
 /* ========== F5.5: WIZARD MODAL STYLES ========== */
+/* §A.2 — El modal del wizard de vehículos tiene 6 pasos; necesita más
+   ancho para que todos los tabs sean legibles sin cortarse. */
+#vehicleModal .modal { max-width: 880px; }
 .wizard-steps {
-    display: flex; align-items: center; padding: 0 1.5rem 1rem;
+    display: flex; align-items: center; justify-content: flex-start;
+    padding: 0 1.25rem 1rem;
     border-bottom: 1px solid var(--admin-border); gap: 0;
     overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none; /* Firefox: oculta la scrollbar fea */
+    -ms-overflow-style: none;
 }
+.wizard-steps::-webkit-scrollbar { display: none; } /* WebKit */
+.wizard-step { scroll-snap-align: start; }
 .wizard-step {
     display: flex; align-items: center; gap: 0.5rem;
     padding: 0.5rem 0.75rem; font-size: 0.78rem; color: var(--admin-text-muted);

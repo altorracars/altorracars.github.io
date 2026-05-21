@@ -524,9 +524,27 @@
         renderVehiclesTable($('vehicleSearch').value);
 
         if (_reorderMode) {
-            AP.toast('Modo ordenar activo — mostrando todo el inventario. Arrastra desde el grip ⠿ para insertar en otra posición', 'info');
+            // §A.1 — Dedup: si el toast del modo reorder sigue visible, solo
+            // reinicia su timer en vez de apilar otro. Evita acumulación al
+            // hacer click repetido en "Reordenar".
+            var reorderMsg = 'Modo ordenar activo — mostrando todo el inventario. Arrastra desde el grip ⠿ para insertar en otra posición';
+            if (_reorderToastId != null && window.notify && window.notify.resetTimer(_reorderToastId, 4000)) {
+                return;
+            }
+            if (window.notify) {
+                _reorderToastId = window.notify.info({ message: reorderMsg });
+            } else {
+                AP.toast(reorderMsg, 'info');
+            }
+        } else {
+            // Al salir del modo, descarta el toast si sigue en pantalla.
+            if (_reorderToastId != null && window.notify && window.notify.dismiss) {
+                window.notify.dismiss(_reorderToastId);
+            }
+            _reorderToastId = null;
         }
     }
+    var _reorderToastId = null;
 
     var toggleBtn = $('toggleReorderMode');
     if (toggleBtn) toggleBtn.addEventListener('click', toggleReorderMode);
@@ -759,7 +777,11 @@
         syncDestaqueFromRadio(val);
     }
 
-    function formHasData() { return !!($('vMarca').value || $('vModelo').value || $('vPrecio').value); }
+    // §E.5 — detección unificada: cualquier campo significativo o imagen cuenta como "datos sin guardar"
+    function formHasData() {
+        try { return snapshotHasAnyData(getFormSnapshot()); }
+        catch (e) { return !!($('vMarca').value || $('vModelo').value || $('vPrecio').value); }
+    }
 
     function clearValidationErrors() {
         document.querySelectorAll('.field-error').forEach(function(el) { el.classList.remove('field-error'); });
@@ -844,10 +866,13 @@
             vPlaca: $('vPlaca').value, vFasecolda: $('vFasecolda').value, vDescripcion: $('vDescripcion').value,
             vEstado: $('vEstado').value, vDestacado: $('vDestacado').checked, vOferta: $('vOferta').checked,
             vRevision: $('vRevision').checked, vPeritaje: $('vPeritaje').checked,
-            vPrioridad: $('vPrioridad').value, vCaracteristicas: $('vCaracteristicas').value,
+            vPrioridad: $('vPrioridad').value, vCaracteristicas: collectAllFeatures().join('\n'), // §D/§E.4 — checkboxes + legacy
             vFeaturedWeek: $('vFeaturedWeek') ? $('vFeaturedWeek').checked : false,
             vFeaturedOrder: $('vFeaturedOrder') ? $('vFeaturedOrder').value : '',
             vFeaturedCutoutPng: $('vFeaturedCutoutPng') ? $('vFeaturedCutoutPng').value : '',
+            // §E.4 — concesionario/consigna se preservan en el borrador
+            vConcesionario: $('vConcesionario') ? $('vConcesionario').value : '',
+            vConsignaParticular: $('vConsignaParticular') ? $('vConsignaParticular').value : '',
             _images: AP.uploadedImageUrls.slice(), _savedAt: new Date().toISOString()
         };
     }
@@ -887,6 +912,16 @@
         renderCutoutPreview(snap.vFeaturedCutoutPng || '');
         if (snap._images && snap._images.length) { AP.uploadedImageUrls = snap._images.slice(); renderUploadedImages(); }
         setDestaqueRadio(!!snap.vDestacado);
+        // §E.4 — restaurar concesionario/consigna + toggle de campo consigna
+        if ($('vConcesionario') && snap.vConcesionario !== undefined) {
+            $('vConcesionario').value = snap.vConcesionario;
+            toggleConsignaField();
+        }
+        if ($('vConsignaParticular') && snap.vConsignaParticular !== undefined) $('vConsignaParticular').value = snap.vConsignaParticular;
+        // §E.3 — tras restaurar km, recomputar tipo + display (vTipo es derivado desde B.1)
+        if (AP.deriveTipoFromKm) AP.deriveTipoFromKm();
+        // §D.1 — re-marcar checkboxes de características desde el borrador
+        loadFeaturesIntoForm((snap.vCaracteristicas || '').split('\n').filter(function(s){ return s.trim(); }));
     }
 
     function getDraftDocRef() {
@@ -988,10 +1023,13 @@
             if (!snapshotHasAnyData(snap)) return false;
             var savedAt = snap._savedAt ? AP.formatTimeAgo(snap._savedAt) : '';
             var label = (snap.vMarca || '') + ' ' + (snap.vModelo || '') + ' ' + (snap.vYear || '');
-            if (confirm('Tienes un borrador guardado: ' + label.trim() + ' (' + savedAt + '). ¿Deseas recuperarlo?')) {
+            if (confirm('Tienes un borrador guardado: ' + label.trim() + ' (' + savedAt + '). ¿Deseas recuperarlo?\n\n(Si eliges Cancelar, el borrador se conserva para mas tarde.)')) {
                 restoreFormSnapshot(snap);
                 return true;
-            } else { clearDraftFromFirestore(); return false; }
+            }
+            // §E.2 — declinar NO destruye el borrador: se preserva. El autosave solo lo
+            // sobreescribe si el usuario ingresa datos nuevos (snapshotHasAnyData en form vacío = false).
+            return false;
         }).catch(function() { return false; });
     }
 
@@ -1008,6 +1046,9 @@
         $('vEstado').value = 'disponible';
         $('vRevision').checked = true;
         $('vPeritaje').checked = true;
+        deriveTipoFromKm(); // §B.1 — km vacío tras reset → tipo en blanco
+        if (AP.renderFeatureCheckboxes) AP.renderFeatureCheckboxes(); // §D.1 — render limpio de checkboxes
+        if ($('vCaracteristicas')) $('vCaracteristicas').value = '';
         AP.uploadedImageUrls = [];
         $('uploadedImages').innerHTML = '';
         $('uploadError').style.display = 'none';
@@ -1052,6 +1093,7 @@
         $('vPrecio').value = v.precio || '';
         $('vPrecioOferta').value = v.precioOferta || '';
         $('vKm').value = v.kilometraje || 0;
+        deriveTipoFromKm(); // §B.1 — recalcula tipo desde km (fuente de verdad)
         $('vTransmision').value = v.transmision || '';
         $('vCombustible').value = v.combustible || '';
         $('vMotor').value = v.motor || '';
@@ -1158,6 +1200,9 @@
     }
 
     function loadFeaturesIntoForm(caracteristicas) {
+        // §D.1 — asegurar que los checkboxes existan antes de marcar (lists ya cargadas o no)
+        renderFeatureCheckboxes();
+        if ($('vCaracteristicas')) $('vCaracteristicas').value = '';
         if (!caracteristicas || !caracteristicas.length) return;
         document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
         var uncategorized = [];
@@ -1166,7 +1211,85 @@
             document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) { if (cb.value === feat) { cb.checked = true; found = true; } });
             if (!found) uncategorized.push(feat);
         });
+        // §D.2 — features legacy no presentes en ninguna categoría se preservan en hidden input
         if ($('vCaracteristicas')) $('vCaracteristicas').value = uncategorized.join('\n');
+    }
+
+    // §D.1 — Categorías de características renderizadas dinámicamente desde config/listas
+    var FEAT_CATEGORIES = [
+        { key: 'featSeguridad', label: 'Seguridad' },
+        { key: 'featConfort', label: 'Confort' },
+        { key: 'featTecnologia', label: 'Tecnologia' },
+        { key: 'featExterior', label: 'Exterior' },
+        { key: 'featInterior', label: 'Interior' }
+    ];
+
+    function renderFeatureCheckboxes() {
+        var container = document.getElementById('featCategoriesContainer');
+        if (!container) return;
+        // Preservar checks actuales a través del re-render
+        var checked = {};
+        container.querySelectorAll('.feat-checkboxes input[type="checkbox"]:checked').forEach(function(cb) { checked[cb.value] = true; });
+        var lists = (window.DynamicLists && window.DynamicLists.getLists) ? window.DynamicLists.getLists() : {};
+        var html = '';
+        FEAT_CATEGORIES.forEach(function(cat) {
+            var items = lists[cat.key] || [];
+            if (!items.length) return;
+            html += '<div class="feat-category-card" style="background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:0.75rem;">';
+            html += '<h5 style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--admin-gold);">' + AP.escapeHtml(cat.label) + '</h5>';
+            html += '<div class="feat-checkboxes" data-category="' + cat.key + '">';
+            items.forEach(function(item) {
+                var val = typeof item === 'string' ? item : item.value;
+                var label = typeof item === 'string' ? item : (item.label || item.value);
+                if (!val) return;
+                var isChecked = checked[val] ? ' checked' : '';
+                html += '<label class="feat-cb"><input type="checkbox" value="' + AP.escapeHtml(val) + '"' + isChecked + '> ' + AP.escapeHtml(label) + '</label>';
+            });
+            html += '</div></div>';
+        });
+        container.innerHTML = html;
+    }
+    AP.renderFeatureCheckboxes = renderFeatureCheckboxes;
+
+    // §D.3 — Agregar característica nueva → guarda en config/listas (sec-lists sync)
+    var btnAddFeature = $('btnAddFeature');
+    if (btnAddFeature) {
+        btnAddFeature.addEventListener('click', function() {
+            var input = $('featNewInput');
+            var catSel = $('featNewCategory');
+            if (!input || !catSel || !window.DynamicLists) { AP.toast('Configuración no disponible', 'error'); return; }
+            var val = (input.value || '').trim();
+            if (!val) { AP.toast('Escribe la característica', 'warning'); input.focus(); return; }
+            var catKey = catSel.value;
+            var lists = window.DynamicLists.getLists();
+            // Dedup case-insensitive en TODAS las categorías
+            var exists = false;
+            FEAT_CATEGORIES.forEach(function(c) {
+                (lists[c.key] || []).forEach(function(it) {
+                    var v = typeof it === 'string' ? it : it.value;
+                    if (v && v.toLowerCase() === val.toLowerCase()) exists = true;
+                });
+            });
+            if (exists) { AP.toast('Esa característica ya existe', 'info'); input.value = ''; return; }
+            var arr = (lists[catKey] || []).slice();
+            arr.push({ value: val, label: val });
+            lists[catKey] = arr;
+            btnAddFeature.disabled = true;
+            window.DynamicLists.saveLists(lists).then(function() {
+                renderFeatureCheckboxes();
+                document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) { if (cb.value === val) cb.checked = true; });
+                input.value = '';
+                AP.toast('Característica agregada y guardada');
+                if (window.AltorraIcons) window.AltorraIcons.refresh(document.getElementById('featCategoriesContainer'));
+                if (AP.renderListsSection) AP.renderListsSection();
+            }).catch(function() {
+                AP.toast('No se pudo guardar la característica', 'error');
+            }).then(function() { btnAddFeature.disabled = false; });
+        });
+        var featNewInput = $('featNewInput');
+        if (featNewInput) {
+            featNewInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); btnAddFeature.click(); } });
+        }
     }
 
     // ========== BUILD & SAVE ==========
@@ -1490,6 +1613,12 @@
     function handleFiles(files) {
         if (!window.storage) { showUploadError('Firebase Storage no esta disponible. Usa la opcion de URL manual.'); return; }
         var fileArray = Array.from(files);
+        // §B.3 — Orden alfanumérico por nombre de archivo. La 1ª foto
+        // alfanuméricamente queda de portada (índice 0). numeric:true ordena
+        // "foto2" antes que "foto10".
+        fileArray.sort(function(a, b) {
+            return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+        });
         var invalidType = fileArray.filter(function(f) { return AP.UPLOAD_CONFIG.allowedTypes.indexOf(f.type) === -1; });
         if (invalidType.length) { showUploadError('Formatos permitidos: JPG, PNG, WebP.'); return; }
         var maxBytes = AP.UPLOAD_CONFIG.maxFileSizeMB * 1024 * 1024;
@@ -1500,11 +1629,30 @@
         $('uploadProgress').style.display = 'block';
         $('uploadStatus').textContent = 'Comprimiendo a WebP y subiendo 0 de ' + total + '...';
         $('progressFill').style.width = '0%';
-        fileArray.forEach(function(file) {
+        // §B.3 — Slots por índice: la subida es paralela pero el resultado se
+        // coloca en su posición original (orden alfanumérico), no en orden de
+        // finalización. Así la portada siempre es la 1ª foto alfanumérica.
+        var slots = new Array(total);
+        fileArray.forEach(function(file, idx) {
             AP.compressImage(file).then(function(compressed) { return uploadFileToStorage(compressed); })
-                .then(function(success) { done++; if (!success) errors++; updateUploadProgress(done, total, errors); })
-                .catch(function() { done++; errors++; updateUploadProgress(done, total, errors); });
+                .then(function(url) {
+                    if (url) { slots[idx] = url; } else { errors++; }
+                    done++;
+                    finalizeBatch(done, total, errors, slots);
+                })
+                .catch(function() { errors++; done++; finalizeBatch(done, total, errors, slots); });
         });
+    }
+
+    // §B.3 — Cuando termina toda la tanda, agrega las URLs en orden de slot
+    // (alfanumérico) al final de las existentes y re-renderiza una sola vez.
+    function finalizeBatch(done, total, errors, slots) {
+        updateUploadProgress(done, total, errors);
+        if (done < total) return;
+        for (var i = 0; i < slots.length; i++) {
+            if (slots[i]) AP.uploadedImageUrls.push(slots[i]);
+        }
+        renderUploadedImages();
     }
 
     function updateUploadProgress(done, total, errors) {
@@ -1519,9 +1667,12 @@
         }
     }
 
+    // §B.3 — Resuelve la URL de descarga (string) o null en error.
+    // NO empuja a AP.uploadedImageUrls ni re-renderiza: el orden y el
+    // render los gestiona handleFiles/finalizeBatch (orden alfanumérico).
     function uploadFileToStorage(file) {
         return new Promise(function(resolve) {
-            if (!window.storage) { resolve(false); return; }
+            if (!window.storage) { resolve(null); return; }
             var timestamp = Date.now();
             var baseName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.[^.]+$/, '');
             var ext = (file.type === 'image/webp') ? 'webp' : (file.type === 'image/jpeg' ? 'jpg' : 'webp');
@@ -1529,9 +1680,9 @@
             try {
                 var ref = window.storage.ref(path);
                 ref.put(file).then(function(snapshot) { return snapshot.ref.getDownloadURL(); })
-                    .then(function(url) { AP.uploadedImageUrls.push(url); renderUploadedImages(); resolve(true); })
-                    .catch(function(err) { showUploadError('Error subiendo imagen: ' + (err.message || err.code)); resolve(false); });
-            } catch (e) { resolve(false); }
+                    .then(function(url) { resolve(url); })
+                    .catch(function(err) { showUploadError('Error subiendo imagen: ' + (err.message || err.code)); resolve(null); });
+            } catch (e) { resolve(null); }
         });
     }
 
@@ -1681,6 +1832,36 @@
             if (cb) cb.checked = !!this.value;
         });
     }
+
+    // §B.1 — Tipo automático por kilometraje (0=nuevo, 1-10k=semi-nuevo, >10k=usado).
+    // El <select id="vTipo"> fue reemplazado por un hidden input (slug canónico,
+    // preserva todos los $('vTipo').value) + un input read-only #vTipoDisplay (label).
+    function deriveTipoFromKm() {
+        var tipoHidden = $('vTipo');
+        var disp = $('vTipoDisplay');
+        if (!tipoHidden) return;
+        var raw = $('vKm') ? $('vKm').value : '';
+        if (raw === '' || raw === null || raw === undefined) {
+            tipoHidden.value = '';
+            if (disp) disp.value = '';
+            return;
+        }
+        var km = parseInt(raw, 10);
+        if (isNaN(km) || km < 0) {
+            tipoHidden.value = '';
+            if (disp) disp.value = '';
+            return;
+        }
+        var slug, label;
+        if (km === 0) { slug = 'nuevo'; label = 'Nuevo (0 km)'; }
+        else if (km <= 10000) { slug = 'semi-nuevo'; label = 'Semi-nuevo (≤ 10.000 km)'; }
+        else { slug = 'usado'; label = 'Usado (+10.000 km)'; }
+        tipoHidden.value = slug;
+        if (disp) disp.value = label;
+    }
+    AP.deriveTipoFromKm = deriveTipoFromKm;
+    var kmInput = $('vKm');
+    if (kmInput) kmInput.addEventListener('input', deriveTipoFromKm);
 
     // Cutout buttons (migrated from inline onclick)
     var btnCutoutClear = $('btnCutoutClear');
@@ -2039,6 +2220,13 @@
             }
         } catch (_) {}
     }
+
+    // §E.1 — teardown explícito (lo llama stopRealtimeSync en logout)
+    function stopDraftsListener() {
+        if (_unsubDrafts) { try { _unsubDrafts(); } catch (e) {} _unsubDrafts = null; }
+        startDraftsListener._cleanupRegistered = false;
+    }
+    AP.stopDraftsListener = stopDraftsListener;
 
     function _renderActiveDrafts(drafts) {
         var panel = $('activeDraftsPanel');

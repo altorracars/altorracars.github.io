@@ -40212,3 +40212,110 @@ intactos. §17.2: destacadoToggleBtn transition específica. §17.12: cero
 MutationObserver. §35: cero pointermove (km listener `input` discreto §104).
 
 **Cache bump**: `v20260521210000`.
+
+---
+
+## 106. ADR-106 — Wizard vehículo: 3 fixes (modal ancho + dropdowns ilegibles + drafts estilo TikTok) (2026-05-22)
+
+> Cliente reportó 3 errores (con captura del dropdown de marca abierto:
+> fondo blanco + texto blanco ilegible):
+> 1. "El cuadro de agregar vehiculo es muy grande a lo alto, debe ser
+>    mas ancho para que pueda abarcar mejor la pantalla."
+> 2. "Todas las listas salen blancas y las letras blancas que no se lee
+>    nada (en marcas y en vehiculos)."
+> 3. "El sistema de borradores tiene errores: no hay un lugar donde se
+>    almacenen, si se le da cancelar al borrador sigue apareciendo, debe
+>    aparecer un boton para retomarlos o eliminarlos (como TikTok)."
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all nuevo), §17.4
+> (HTML/CSS estable — IDs preservados), §17.12 (cero MutationObserver),
+> §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 106.1 Causa raíz por issue
+
+| Issue | Causa raíz |
+|---|---|
+| #1 modal alto | `#vehicleModal .modal { max-width: 880px }` (§A.2) — angosto, fuerza scroll vertical largo |
+| #2 dropdowns ilegibles | El fix de §S5/`#71` `.admin-panel select option { background:#1a1a1c; color:#fff }` está scopeado a `.admin-panel`, PERO **todos los modales (`#vehicleModal`, `#brandModal`, `#userModal`...) son HERMANOS de `#adminPanel` en el DOM** (verificado: depth 0, son `.modal-overlay` siblings). La regla nunca los alcanza → el browser usa su default (fondo blanco) + el texto blanco del tema = ilegible |
+| #3 drafts | `checkForDraft()` usaba `confirm()` que reaparecía en CADA click a "Agregar Vehiculo" (de ahí "sigue apareciendo al cancelar"). El panel `#activeDraftsPanel` (Fase 18) solo mostraba el borrador propio como texto "Tu borrador" SIN botones, y se ocultaba a las 2h |
+
+### 106.2 Solución estructural
+
+**Fix #1 (`css/admin.css`)**: `#vehicleModal .modal` →
+`max-width: min(1140px, 96vw); width: 96vw`. Más ancho aprovecha el
+viewport horizontal → menos scroll vertical, más campos por fila.
+
+**Fix #2 (`css/admin-visionary.css`)**: agregadas reglas `.modal-overlay
+select`, `.modal-overlay select option`, `.modal-overlay select
+optgroup`, `.modal-overlay .form-select` → fondo dark `#1a1a1c` + texto
+blanco + checked/hover dorado. Seguro porque admin-visionary.css solo
+carga en admin.html. Cubre vehículos + marcas + TODOS los modales admin.
+
+**Fix #3 (`js/admin-vehicles.js`) — drafts estilo TikTok**:
+- `btnAddVehicle`: eliminado `checkForDraft().then(...)`. "Agregar
+  Vehiculo" ahora abre SIEMPRE un formulario limpio (sin el `confirm()`
+  que reaparecía). El autosave de 10s sigue activo (snapshotHasAnyData
+  evita guardar form vacío).
+- `_renderActiveDrafts`: el borrador PROPIO siempre se muestra (no se
+  filtra por antigüedad — es tuyo, tú decides). Solo borradores de OTROS
+  admins se filtran >2h. Propio ordenado primero.
+- Botones por borrador propio: **Retomar** (`data-action="resumeOwnDraft"`)
+  + **Eliminar** (`data-action="deleteOwnDraft"`). Borrador de otro admin:
+  solo **Continuar** (lectura colaborativa, sin cambios).
+- `resumeOwnDraft()`: lee `getDraftDocRef()` → `restoreAndOpenDraft(snap)`.
+- `deleteOwnDraft()`: confirm + `clearDraftFromFirestore()` + toast. El
+  listener real-time de `drafts_activos` refresca el panel solo.
+- Handlers registrados en `vehicleActions` + exports `AP.resumeOwnDraft`/
+  `AP.deleteOwnDraft`.
+
+El panel `#activeDraftsPanel` (top de sec-vehicles) ES el "lugar donde se
+almacenan los borradores" que el cliente pedía — ahora siempre muestra el
+propio con Retomar/Eliminar. `checkForDraft()` queda como código muerto
+(no se elimina, §17.4 retrocompat).
+
+### 106.3 No-regresión
+
+- Modelo de draft sin cambios (single doc `usuarios/{uid}/drafts/vehicleDraft`
+  + visibilidad `drafts_activos/{uid}`). Cero schema, cero migración.
+- `closeModalFn` "guardar antes de cerrar?" intacto (NO es el confirm
+  molesto — ese era el de recuperación en checkForDraft, ya removido).
+- `loadDraftFromUser` (otros admins), autosave, clear-on-save intactos.
+- `node -c js/admin-vehicles.js` → OK.
+
+### 106.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260522010000) | Carga nueva |
+| 2 | Abrir "Agregar Vehiculo" | Modal más ancho (96vw, hasta 1140px), menos scroll vertical |
+| 3 | Abrir cualquier dropdown del modal vehículo (marca/categoría/transmisión/etc.) | Fondo oscuro + texto blanco legible |
+| 4 | Abrir dropdown del modal de marca (sec-marcas) | Idem legible |
+| 5 | Abrir dropdown del modal de usuario/reseña/banner | Idem legible |
+| 6 | Click "Agregar Vehiculo" con un borrador previo | NO aparece confirm() de recuperación; abre form limpio |
+| 7 | Escribir datos + cerrar → reabrir Vehículos | Panel "Borradores" muestra tu borrador con Retomar + Eliminar |
+| 8 | Click "Retomar" | Carga el borrador en el modal |
+| 9 | Click "Eliminar" → confirmar | Borrador desaparece del panel (listener real-time) |
+| 10 | Borrador de OTRO admin | Solo botón "Continuar" |
+
+### 106.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `css/admin.css` | `#vehicleModal .modal` max-width min(1140px,96vw) + width 96vw |
+| `css/admin-visionary.css` | `.modal-overlay select`/`option`/`optgroup`/`.form-select` dark legible |
+| `js/admin-vehicles.js` | btnAddVehicle sin confirm; `_renderActiveDrafts` propio siempre + Retomar/Eliminar; `resumeOwnDraft`/`deleteOwnDraft` + handlers + exports |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260522010000 |
+| `CLAUDE.md` | Esta sección §106 |
+
+**Total**: 5 archivos. Cero schema, cero deploy backend, solo Ctrl+Shift+R.
+
+### 106.6 Doctrina aplicada
+
+§19 RCA: causa raíz #2 identificada de fondo (modales hermanos de
+#adminPanel, no descendientes — verificado depth 0). §37 IAP entregado.
+§17.4: IDs preservados, checkForDraft preservado como dead code,
+clases legacy `.admin-panel select` intactas. §17.2: cero transition:all
+nuevo. §17.12: cero MutationObserver (drafts usan listener onSnapshot
+existente). §35: cero pointermove.
+
+**Cache bump**: `v20260522010000`.

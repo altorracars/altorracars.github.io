@@ -39896,3 +39896,116 @@ preservado.
 §17.12 anti-MutationObserver: cero MO.
 
 **Cache bump**: `v20260521030000`.
+
+---
+
+## 103. ADR-103 — Reorder de inventario por INSERCIÓN en vista lista (estándar Shopify/Notion) (2026-05-21)
+
+> Cliente reportó: "Cuando se le da a reordenar estando en listas
+> automáticamente se convierte en vista tarjetas... Encuentra la mejor
+> forma, revisa cómo lo hacen las grandes empresas en sus webs para el
+> orden del inventario y mejoremos ese flujo y esas herramientas."
+>
+> Vía AskUserQuestion el cliente eligió **"Lista con inserción (estándar
+> industria)"**. Refactor del flujo de reorder de `prioridad` swap-based
+> (intercambio) a inserción real en vista lista con grip de arrastre +
+> línea indicadora de drop + posiciones secuenciales globales.
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all nuevo), §17.4
+> (HTML/CSS estable — clases legacy preservadas), §17.12 (cero
+> MutationObserver), §19 RCA estricto, §35 (cero pointermove persistente),
+> §37 (IAP).
+
+### 103.1 Causa raíz del flujo viejo (RCA §19)
+
+`handlePrioritySwap` (§34) usaba **swap**: arrastrar A sobre B intercambia
+sus valores de `prioridad`. Problemas:
+1. **Swap, no inserción** — arrastrar a la posición 3 NO inserta ahí,
+   solo intercambia con quien estuviera en 3. Confuso.
+2. **Magic numbers** — si ambos tienen `prioridad=0` asigna `10/5`.
+3. **`window.confirm` por colisión** — feo, bloquea UI, solo desplaza
+   UN vehículo en conflicto (+1), no cascada.
+4. **Lista sin drag** — la vista lista (`.av2-row`, §100) NO tenía
+   drag-drop cableado, por eso reorder forzaba tarjetas
+   (`effectiveMode = _reorderMode ? 'cards' : _viewMode`).
+
+### 103.2 Investigación industria
+
+Shopify collections (manual sort), Notion, Linear, Airtable, WooCommerce
+TODAS usan **vista LISTA con inserción**, no tarjetas ni swap:
+- Grip de arrastre (⠿) por fila — affordance visual claro
+- Línea indicadora de drop — barra horizontal mostrando dónde caerá
+- Inserción real — empuja los demás, no intercambia
+- Posiciones enteras secuenciales recalculadas al soltar → cero colisiones
+- Shopify manual-sort muestra **todo el inventario sin filtros** (la
+  posición es global) — no se puede filtrar mientras ordenás manual
+
+### 103.3 Solución estructural
+
+**`js/admin-vehicles.js`**:
+- `renderVehiclesTable`: en `_reorderMode` opera sobre `AP.vehicles.slice()`
+  completo (ignora búsqueda/estado/dealer + paginación) ordenado por
+  `prioridad desc`. `effectiveMode = _reorderMode ? 'list' : _viewMode`
+  (reorder ahora FUERZA lista, no tarjetas).
+- `_vehicleRowHTML(v, pos, reorder)`: en reorder, celda líder = grip +
+  número de posición (en lugar del checkbox); `<div>` con `draggable="true"`.
+- `initListDragDrop()`: drag-drop con línea indicadora (dragover detecta
+  mitad superior/inferior → `--drag-over-top/bottom`). `dragstart` cancela
+  si se origina en `.av2-row-actions` (deja funcionar el click de botones).
+- `handleListReorder(srcId, targetId, insertBefore)`: reconstruye el orden
+  global, inserta src antes/después del target, reasigna
+  `prioridad = (count - idx) * 10` (top = mayor), `batch.update()` solo de
+  los docs que cambiaron, re-render optimista inmediato + audit log.
+- Toast actualizado: "mostrando todo el inventario... arrastra desde el grip".
+
+**`css/admin-v2.css`** (append §103): `.av2-list--reorder .av2-row--reorder`
+(grid con primera columna 56px), `.av2-row-lead` (grip+pos en 1 celda),
+`.av2-row-grip` (cursor grab), `.av2-row-pos` (número dorado tabular-nums),
+`.av2-row--dragging` (opacity 0.4), `.av2-row--drag-over-top/bottom`
+(línea dorada vía inset box-shadow, no afecta layout), responsive 1100/700px,
+prefers-reduced-motion.
+
+### 103.4 No-regresión
+
+- `prioridad` sigue siendo la métrica de destacado homepage (§5) — top del
+  reorder = mayor prioridad = primero en homepage. Misma semántica que el swap.
+- `handlePrioritySwap`/`initCardsDragDrop`/`initTableDragDrop`/
+  `savePriorityToFirestore` **preservados** (dead pero intactos, §17.4) por
+  si futuro reorder en cards.
+- Vista lista normal (§100), vista tarjetas (§101), selección masiva,
+  RBAC, event delegation — INTACTOS.
+
+### 103.5 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Vehículos vista lista → click "Reordenar" | Permanece en LISTA (no salta a tarjetas), muestra TODO el inventario con grip ⠿ + número de posición |
+| 2 | Arrastrar fila desde el grip a otra posición | Línea dorada indica dónde caerá; al soltar inserta ahí (no swap) |
+| 3 | Soltar | Posiciones se renumeran 1,2,3... instantáneo + toast "→ posición N" |
+| 4 | Verificar Firestore | Solo los docs entre origen/destino cambian `prioridad` (batch mínimo) |
+| 5 | Click en botón editar/eliminar de una fila en reorder | Funciona (drag cancelado en `.av2-row-actions`) |
+| 6 | Salir de "Reordenar" | Vuelve al modo de vista elegido + filtros/paginación re-aplican |
+| 7 | Cero `window.confirm` de colisión | Confirmado (posiciones secuenciales globales) |
+| 8 | Responsive mobile | Grip+pos legibles, grid colapsa |
+
+### 103.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-vehicles.js` | renderVehiclesTable (reorder sin filtros + fuerza lista), `_vehicleRowHTML(v,pos,reorder)` grip+pos, `initListDragDrop()`, `handleListReorder()` inserción, toasts |
+| `css/admin-v2.css` | §103 append: `.av2-row--reorder`/`.av2-row-lead`/`.av2-row-grip`/`.av2-row-pos`/`.av2-row--dragging`/`.av2-row--drag-over-*` + responsive + reduced-motion |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260521040000 |
+| `CLAUDE.md` | Esta sección §103 |
+
+**Total**: 4 archivos. Cero schema. Cero deploy backend. Solo Ctrl+Shift+R.
+
+### 103.7 Doctrina aplicada
+
+§19 RCA: causa raíz real (swap vs inserción + lista sin drag) + investigación
+industria antes de tocar código. §37 IAP: dirección confirmada vía
+AskUserQuestion. §17.4: helpers legacy preservados, todo aditivo. §17.2:
+solo transitions específicas + inset box-shadow para la línea de drop.
+§35: drag-drop usa eventos discretos (dragstart/dragover/drop), cero
+pointermove persistente.
+
+**Cache bump**: `v20260521040000`.

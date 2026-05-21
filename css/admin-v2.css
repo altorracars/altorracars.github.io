@@ -1298,5 +1298,63 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   FIN admin-v2.css — V2-5 fluid sections + perf + §34 Cards + §100 Lista + §101 Card limpia
+   §103 — REORDER por inserción en vista LISTA (estándar Shopify/Notion)
+   Grip de arrastre + número de posición + línea indicadora de drop.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Primera columna más ancha para alojar grip + posición */
+.av2-list--reorder .av2-row--reorder {
+    grid-template-columns: 56px 52px 116px minmax(150px, 1fr) 88px 116px 132px max-content;
+    cursor: grab;
+}
+.av2-list--reorder .av2-row--reorder:active { cursor: grabbing; }
+
+/* Celda líder: grip + posición en 1 sola celda del grid */
+.av2-row-lead {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.av2-row-grip {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.35);
+    cursor: grab;
+    flex-shrink: 0;
+}
+.av2-row-grip:active { cursor: grabbing; }
+.av2-row-grip i { width: 16px; height: 16px; }
+.av2-row--reorder:hover .av2-row-grip { color: var(--admin-gold, #b89658); }
+.av2-row-pos {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--admin-gold, #b89658);
+    font-variant-numeric: tabular-nums;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Estado durante el arrastre */
+.av2-row--dragging { opacity: 0.4; }
+
+/* Línea indicadora de drop (inset box-shadow → no afecta layout) */
+.av2-row--drag-over-top { box-shadow: inset 0 2px 0 0 var(--admin-gold, #b89658); }
+.av2-row--drag-over-bottom { box-shadow: inset 0 -2px 0 0 var(--admin-gold, #b89658); }
+
+/* Responsive: en mobile el grid de reorder colapsa pero conserva grip+pos */
+@media (max-width: 1100px) {
+    .av2-list--reorder .av2-row--reorder {
+        grid-template-columns: 56px 52px minmax(140px, 1fr) 120px max-content;
+    }
+}
+@media (max-width: 700px) {
+    .av2-list--reorder .av2-row--reorder {
+        grid-template-columns: 48px 1fr max-content;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .av2-row--reorder, .av2-row--dragging { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIN admin-v2.css — V2-5 fluid sections + perf + §34 Cards + §100 Lista + §101 Card limpia + §103 Reorder inserción
    ═══════════════════════════════════════════════════════════════════ */

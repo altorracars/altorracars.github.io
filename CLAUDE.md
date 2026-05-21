@@ -40104,3 +40104,111 @@ E.7 `_draftModalActive` flag, E.8 clearDraftFromFirestore non-silent, E.9 stale 
 §19 RCA: causa raíz por sprint identificada. §37 IAP: plan documentado A→E. §17.4: hidden inputs preservan callsites (vTipo/vOferta/vCaracteristicas). §35: km listener usa evento `input` discreto, cero pointermove. §17.12: cero MutationObserver. §17.2: solo transitions específicas + scroll-snap.
 
 **Cache bump**: `v20260521190000`.
+
+---
+
+## 105. ADR-105 — Wizard "Agregar/Editar Vehículo" REORGANIZACIÓN por modelo mental del usuario (2026-05-21)
+
+> Cliente solicitó análisis de fondo del wizard ("CREES QUE HAYA QUE
+> REEORGANIZAR MEJOR TODO EL PANEL DE AGREGAR VEHICULO? ANALIZA A FONDO
+> COMO LO HARIAN LAS MEJORES EMPRESAS") y autorizó refactor completo:
+> **"REORDENA, CAMBIA EL DISEÑO, LOS MENUS, AGRUPA MEJOR. DECIDE LAS
+> MEJORES OPCIONES SIEMPRE"**.
+>
+> Tras §104 (refactor funcional del wizard: drafts, tipo auto-derive,
+> fotos, características dinámicas), §105 ataca la ORGANIZACIÓN de las
+> secciones por modelo mental del usuario (estándar Kavak/Carvana/
+> MercadoLibre), preservando el wizard engine existente (drafts/
+> validación/navegación) en lugar de un Big Bang single-page-scroll
+> riesgoso.
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all), §17.4 (HTML/CSS
+> estable — IDs preservados via hidden inputs), §17.12 (cero
+> MutationObserver), §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 105.1 Causa raíz — 3 clashes organizacionales
+
+El layout viejo (6 secciones BASICA/PRECIO/SPECS/ESTADO/FOTOS/EXTRAS)
+mezclaba modelos mentales distintos:
+
+| Clash | Detalle |
+|---|---|
+| #1 km/tipo separados | `km` vivía en "Precio" pero `tipo` (que SE DERIVA del km, §104 B.1) vivía en "Básica" → editar uno sin ver el otro |
+| #2 "Precio" heterogénea | mezclaba precio + km + estado + ubicación (4 modelos mentales: comercial, técnico, disponibilidad, logística) |
+| #3 "Estado" catch-all 11 campos | revolvía marketing (destacado/featured/prioridad) + garantía (revisión/peritaje) + precio (oferta) + origen (concesionario) |
+
+### 105.2 Solución — 6 secciones reagrupadas
+
+| # | Sección (ID) | Campos | Modelo mental |
+|---|---|---|---|
+| 1 | Identificación (`sec-identificacion`) | marca, modelo, year, categoria, **km**, **tipo**(derivado), placa, fasecolda | "¿Qué auto es?" |
+| 2 | Specs (`sec-specs`) | transmision, combustible, motor, potencia, cilindraje, traccion, direccion, color, puertas, pasajeros | "¿Cómo es técnicamente?" |
+| 3 | Comercial (`sec-comercial`) | precio, precioOferta, **estado**, **ubicacion**, **concesionario**, **revisión**, **peritaje**, oferta(hidden) | "¿Cómo se vende y de dónde viene?" |
+| 4 | Fotos (`sec-fotos`) | uploadArea, fileInput, manualImageUrl, imágenes | "Imágenes" |
+| 5 | Detalle (`sec-features`) | características (checkboxes dinámicos), descripción + generar | "Detalle del producto" |
+| 6 | Publicación (`sec-publicacion`) | **destacado/featured/prioridad** (marketing), cutout banner, Smart Fields review | "¿Cómo se publica?" |
+
+Resuelve los 3 clashes: km+tipo juntos en Identificación; estado/
+ubicación movidos a Comercial (la disponibilidad y logística SON
+comercial); el catch-all "Estado" dividido (marketing→Publicación,
+garantía+origen→Comercial, oferta-hidden→Comercial junto a precioOferta).
+
+### 105.3 Cambios técnicos
+
+- **`admin.html`**: barra `.wizard-step` actualizada (Vehículo/Specs/
+  Comercial/Fotos/Detalle/Publicar) + región de 6 secciones reescrita
+  en nuevo orden DOM con nuevos IDs. Todos los field IDs preservados
+  verbatim. `data-toggle` = `.form-section-body` id (toggle colapso OK).
+- **`js/admin-phase5.js`**: `WIZARD_STEPS` actualizado a
+  `['sec-identificacion','sec-specs','sec-comercial','sec-fotos','sec-features','sec-publicacion']`. Engine (validateWizardStep/updateWizardUI/edit-mode showAllSections) itera por ID → automáticamente correcto.
+- destacadoToggleBtn: `transition: all` → `border-color,background` (§17.2).
+
+### 105.4 No-regresión
+
+- Field IDs preservados verbatim → cero callsite roto (grep confirmó
+  IDs solo hardcodeados en WIZARD_STEPS de admin-phase5.js; selectores
+  de admin-vehicles.js usan `.form-section-body`/`.form-section-title`
+  genéricos, no IDs).
+- `node -c js/admin-phase5.js` → OK. Los 36 field IDs verificados presentes.
+- §104 (tipo auto-derive, fotos sort, características dinámicas, drafts)
+  intactos — solo se movieron de sección, no cambió su lógica.
+- Smart Fields preview + botón generar descripción funcionan en sus
+  nuevas ubicaciones (Detalle/Publicación).
+
+### 105.5 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260521210000) | Carga nueva |
+| 2 | Abrir wizard "Agregar Vehículo" | 6 pasos: Vehículo/Specs/Comercial/Fotos/Detalle/Publicar |
+| 3 | Paso 1 Vehículo | marca/modelo/year/categoria/km/tipo(readonly)/placa/fasecolda |
+| 4 | Cambiar km en paso 1 | tipo se deriva en vivo (0=nuevo, ≤10k=semi, >10k=usado) |
+| 5 | Navegar Next/Prev | wizard avanza por las 6 secciones sin error |
+| 6 | Validación required | bloquea en la sección correcta si falta campo |
+| 7 | Paso Comercial | precio/precioOferta/estado/ubicacion/concesionario/revisión/peritaje |
+| 8 | Paso Publicación | destacado toggle + cutout + Smart Fields review |
+| 9 | Editar vehículo existente (edit-mode) | todas las secciones renderizadas, datos cargados correctos |
+| 10 | Guardar borrador → reabrir | recupera todos los campos en sus nuevas secciones |
+| 11 | Toggle colapso de cada sección | abre/cierra correcto (data-toggle = body id) |
+
+### 105.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `admin.html` | barra wizard-steps + región de 6 secciones reescrita (sec-identificacion/sec-specs/sec-comercial/sec-fotos/sec-features/sec-publicacion). Field IDs verbatim. destacadoToggleBtn transition específica |
+| `js/admin-phase5.js` | WIZARD_STEPS array → 6 nuevos IDs |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260521210000 |
+| `CLAUDE.md` | Esta sección §105 |
+
+**Total**: 4 archivos. Cero schema, cero deploy backend, solo Ctrl+Shift+R.
+
+### 105.7 Doctrina aplicada
+
+§19 RCA: 3 clashes organizacionales identificados antes de tocar.
+§37 IAP: autorización explícita del cliente ("DECIDE LAS MEJORES
+OPCIONES SIEMPRE"). §17.4: field IDs preservados verbatim, IDs de
+sección solo en WIZARD_STEPS (verificado por grep), hidden inputs §104
+intactos. §17.2: destacadoToggleBtn transition específica. §17.12: cero
+MutationObserver. §35: cero pointermove (km listener `input` discreto §104).
+
+**Cache bump**: `v20260521210000`.

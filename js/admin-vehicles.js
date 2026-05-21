@@ -825,9 +825,11 @@
     }
 
     function closeModalFn(force) {
+        // §107 — al cerrar con datos ingresados, preguntar explícitamente.
+        // "Sí" → guarda el borrador. "No" → NO se guarda absolutamente nada.
         if (!force && formHasData()) {
-            var action = confirm('Tienes datos sin guardar. ¿Deseas guardar como borrador antes de cerrar?');
-            if (action) { saveDraftToFirestore(true).then(function() { doCloseModal(); }); return; }
+            var wantSave = confirm('¿Deseas guardar como borrador antes de cerrar?\n\nAceptar = guardar borrador.\nCancelar = cerrar sin guardar (no se guarda nada).');
+            if (wantSave) { saveDraft(true).then(function() { doCloseModal(); }); return; }
         }
         doCloseModal();
     }
@@ -844,9 +846,9 @@
         $('manualImageUrl').value = '';
         $('featuresPreview').innerHTML = '';
         document.querySelectorAll('.feat-checkboxes input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
-        stopDraftAutoSave();
         _originalSnapshot = null;
         _lastSavedSnapshot = null;
+        _currentDraftId = null; // §107 — al cerrar se sale del contexto del borrador
     }
 
     // ========== DRAFTS ==========
@@ -924,9 +926,27 @@
         loadFeaturesIntoForm((snap.vCaracteristicas || '').split('\n').filter(function(s){ return s.trim(); }));
     }
 
-    function getDraftDocRef() {
+    // §107 — Arquitectura multi-borrador por cuenta. Cada borrador es un
+    // doc propio en usuarios/{uid}/drafts/{draftId}. Sin colección
+    // compartida (privado por cuenta → no se pisan entre cuentas).
+    // _currentDraftId: null = vehículo nuevo aún no guardado como borrador;
+    // string = se está trabajando sobre un borrador concreto (retomado o
+    // ya guardado en esta sesión).
+    var _currentDraftId = null;
+
+    function getDraftsCollectionRef() {
         if (!window.auth || !window.auth.currentUser || !window.db) return null;
-        return window.db.collection('usuarios').doc(window.auth.currentUser.uid).collection('drafts').doc('vehicleDraft');
+        return window.db.collection('usuarios').doc(window.auth.currentUser.uid).collection('drafts');
+    }
+
+    function getDraftRef(draftId) {
+        var col = getDraftsCollectionRef();
+        if (!col || !draftId) return null;
+        return col.doc(draftId);
+    }
+
+    function newDraftId() {
+        return 'draft_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
     }
 
     function snapshotHasAnyData(snap) {
@@ -936,65 +956,39 @@
         return false;
     }
 
-    function saveDraftToFirestore(showToast) {
-        var ref = getDraftDocRef();
-        if (!ref) { if (showToast) AP.toast('No se pudo acceder al almacenamiento de borradores', 'error'); return Promise.resolve(); }
+    // §107 — Guardado EXPLÍCITO de borrador (sin autosave silencioso). Lo
+    // dispara el botón "Guardar Borrador" o el prompt al cerrar con datos.
+    // Si _currentDraftId es null → crea un borrador nuevo. Si existe →
+    // actualiza ese mismo borrador (retomado/ya guardado en esta sesión).
+    function saveDraft(showToast) {
+        var col = getDraftsCollectionRef();
+        if (!col) { if (showToast) AP.toast('No se pudo acceder al almacenamiento de borradores', 'error'); return Promise.resolve(); }
         var snap = getFormSnapshot();
         if (!snapshotHasAnyData(snap)) { if (showToast) AP.toast('No hay datos para guardar como borrador', 'info'); return Promise.resolve(); }
 
-        // Fase 18: Smart dirty check — skip save if nothing changed
-        if (!showToast && _originalSnapshot && !snapshotsAreDifferent(snap, _lastSavedSnapshot || _originalSnapshot)) {
-            return Promise.resolve();
-        }
-
+        var draftId = _currentDraftId || newDraftId();
+        snap._draftId = draftId;
         snap._userId = window.auth.currentUser.uid;
-        snap._userEmail = window.auth.currentUser.email;
-        return ref.set(snap).then(function() {
+        snap._userEmail = window.auth.currentUser.email || '';
+        return col.doc(draftId).set(snap).then(function() {
+            _currentDraftId = draftId; // a partir de ahora se actualiza este mismo borrador
             _lastSavedSnapshot = snap;
             if (showToast) AP.toast('Borrador guardado correctamente');
             showDraftIndicator();
-            // Fase 18: Update shared drafts collection for visibility
-            updateSharedDraft(snap);
         }).catch(function(err) {
             if (showToast) AP.toast('Error al guardar borrador: ' + (err.code === 'permission-denied' ? 'Sin permisos.' : err.message), 'error');
         });
     }
 
-    // Fase 18: Track last saved snapshot to avoid redundant writes
+    // §107 — track del último snapshot guardado (dirty-check del indicador)
     var _lastSavedSnapshot = null;
 
-    function clearDraftFromFirestore() {
-        var ref = getDraftDocRef();
-        _lastSavedSnapshot = null;
+    // §107 — Eliminar un borrador concreto por id.
+    function deleteDraft(draftId) {
+        var ref = getDraftRef(draftId);
         if (!ref) return Promise.resolve();
-        clearSharedDraft();
+        if (draftId === _currentDraftId) { _currentDraftId = null; _lastSavedSnapshot = null; }
         return ref.delete().catch(function() {});
-    }
-
-    // Fase 18: Shared drafts visible to all admins
-    function getSharedDraftRef() {
-        if (!window.auth || !window.auth.currentUser || !window.db) return null;
-        return window.db.collection('drafts_activos').doc(window.auth.currentUser.uid);
-    }
-
-    function updateSharedDraft(snap) {
-        var ref = getSharedDraftRef();
-        if (!ref) return;
-        ref.set({
-            userId: window.auth.currentUser.uid,
-            userEmail: window.auth.currentUser.email || '',
-            marca: snap.vMarca || '',
-            modelo: snap.vModelo || '',
-            year: snap.vYear || '',
-            vehicleId: snap.vId || '',
-            lastSaved: new Date().toISOString()
-        }).catch(function() { /* silent — rules may not allow */ });
-    }
-
-    function clearSharedDraft() {
-        var ref = getSharedDraftRef();
-        if (!ref) return;
-        ref.delete().catch(function() {});
     }
 
     // Fase 18: Visual indicator when draft is saved
@@ -1007,31 +1001,11 @@
         el._timeout = setTimeout(function() { el.classList.remove('visible'); }, 2500);
     }
 
-    function stopDraftAutoSave() { if (AP.draftInterval) { clearInterval(AP.draftInterval); AP.draftInterval = null; } }
-
-    function startDraftAutoSave() {
-        stopDraftAutoSave();
-        AP.draftInterval = setInterval(function() { saveDraftToFirestore(false); }, 10000);
-    }
-
-    function checkForDraft() {
-        var ref = getDraftDocRef();
-        if (!ref) return Promise.resolve(false);
-        return ref.get().then(function(doc) {
-            if (!doc.exists) return false;
-            var snap = doc.data();
-            if (!snapshotHasAnyData(snap)) return false;
-            var savedAt = snap._savedAt ? AP.formatTimeAgo(snap._savedAt) : '';
-            var label = (snap.vMarca || '') + ' ' + (snap.vModelo || '') + ' ' + (snap.vYear || '');
-            if (confirm('Tienes un borrador guardado: ' + label.trim() + ' (' + savedAt + '). ¿Deseas recuperarlo?\n\n(Si eliges Cancelar, el borrador se conserva para mas tarde.)')) {
-                restoreFormSnapshot(snap);
-                return true;
-            }
-            // §E.2 — declinar NO destruye el borrador: se preserva. El autosave solo lo
-            // sobreescribe si el usuario ingresa datos nuevos (snapshotHasAnyData en form vacío = false).
-            return false;
-        }).catch(function() { return false; });
-    }
+    // §107 — Eliminado el autosave silencioso (setInterval 10s) y el
+    // auto-restore (checkForDraft). Decisión del cliente: los borradores
+    // se guardan SOLO de forma explícita (botón "Guardar Borrador" o
+    // prompt al cerrar). "Agregar Vehículo" abre siempre un formulario
+    // limpio; los borradores se retoman desde la galería "Mis borradores".
 
     // ========== MODAL EVENT LISTENERS ==========
     $('btnAddVehicle').addEventListener('click', function() {
@@ -1053,20 +1027,19 @@
         $('uploadedImages').innerHTML = '';
         $('uploadError').style.display = 'none';
         setDestaqueRadio(false);
-        // §106 — Estilo TikTok: "Agregar Vehiculo" abre SIEMPRE un formulario
-        // limpio (sin el confirm() molesto que reaparecía al cancelar). Los
-        // borradores guardados se retoman desde el panel "Borradores" que
-        // muestra cada borrador con botones Retomar / Eliminar.
-        AP._editingDraftOwner = true; // este flujo guarda en el draft propio
+        // §107 — "Agregar Vehículo" SIEMPRE abre formulario limpio y un
+        // contexto de borrador NUEVO (_currentDraftId = null). NO retoma el
+        // último borrador (cualquiera se retoma desde la galería). Sin
+        // autosave silencioso: el guardado es explícito.
+        _currentDraftId = null;
         captureOriginalSnapshot();
-        startDraftAutoSave();
         openModal();
     });
 
     $('closeModal').addEventListener('click', function() { closeModalFn(); });
     $('cancelModal').addEventListener('click', function() { closeModalFn(); });
     var saveDraftBtn = $('saveDraftBtn');
-    if (saveDraftBtn) saveDraftBtn.addEventListener('click', function() { saveDraftToFirestore(true); });
+    if (saveDraftBtn) saveDraftBtn.addEventListener('click', function() { saveDraft(true); });
     $('vehicleForm').addEventListener('submit', function(e) { e.preventDefault(); });
     $('vehicleForm').addEventListener('keydown', function(e) { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault(); });
 
@@ -1165,8 +1138,10 @@
         renderUploadedImages();
         $('uploadError').style.display = 'none';
         setDestaqueRadio(!!v.destacado);
+        // §107 — editar un vehículo publicado NO es un borrador. _currentDraftId
+        // = null; si el admin pulsa "Guardar Borrador" se crea uno nuevo. Sin autosave.
+        _currentDraftId = null;
         captureOriginalSnapshot();
-        startDraftAutoSave();
         openModal();
     }
 
@@ -1545,7 +1520,8 @@
                 var derived = vehicleData._smartDerived.map(window.AltorraSmartFields.formatSuggestion).join(' · ');
                 if (window.notify) window.notify.info('Smart Fields: ' + derived);
             }
-            clearDraftFromFirestore();
+            // §107 — al publicar con éxito, eliminar el borrador en curso (si lo hay)
+            if (_currentDraftId) deleteDraft(_currentDraftId);
             closeModalFn(true);
         }).catch(function(err) {
             if (err.code === 'version-conflict') AP.toast(err.message, 'error');
@@ -2189,8 +2165,10 @@
         previewFromFormBtn.addEventListener('click', function() { previewFromForm(); });
     }
 
-    // Fase 18: Open modal with a restored draft (called from admin-panel.js)
-    function restoreAndOpenDraft(snap) {
+    // §107 — Abrir el modal con un borrador restaurado. draftId fija el
+    // contexto: al pulsar "Guardar Borrador" se ACTUALIZA ese mismo
+    // borrador (no crea uno nuevo). Sin autosave.
+    function restoreAndOpenDraft(snap, draftId) {
         if (!_canEditInv()) { AP.toast('No tienes permisos para editar vehiculos', 'error'); return; }
         $('modalTitle').textContent = 'Continuar Borrador';
         $('vId').value = snap.vId || '';
@@ -2198,8 +2176,8 @@
         $('codigoUnicoDisplay').style.display = 'none';
         $('vehicleForm').reset();
         restoreFormSnapshot(snap);
+        _currentDraftId = draftId || snap._draftId || null;
         captureOriginalSnapshot();
-        startDraftAutoSave();
         openModal();
     }
 
@@ -2207,11 +2185,18 @@
     var _unsubDrafts = null;
 
     function startDraftsListener() {
-        if (!window.db) return;
+        // §107 — escucha la subcolección PROPIA usuarios/{uid}/drafts
+        // (privada por cuenta, no se pisa con otras). Galería "Mis borradores".
+        var col = getDraftsCollectionRef();
+        if (!col) return;
         try {
-            _unsubDrafts = window.db.collection('drafts_activos').onSnapshot(function(snap) {
+            _unsubDrafts = col.onSnapshot(function(snap) {
                 var drafts = [];
-                snap.forEach(function(doc) { drafts.push(doc.data()); });
+                snap.forEach(function(doc) {
+                    var d = doc.data() || {};
+                    d._draftId = doc.id; // id real del doc para retomar/eliminar
+                    drafts.push(d);
+                });
                 _renderActiveDrafts(drafts);
             }, function() {
                 // Permission denied or collection doesn't exist — silent fail
@@ -2235,90 +2220,73 @@
     }
     AP.stopDraftsListener = stopDraftsListener;
 
+    // §107 — cache local de los borradores propios (para retomar por id).
+    var _draftsCache = [];
+
     function _renderActiveDrafts(drafts) {
         var panel = $('activeDraftsPanel');
         var list = $('activeDraftsList');
         if (!panel || !list) return;
 
-        // §106 — El borrador PROPIO siempre se muestra (es tuyo: tú decides
-        // retomarlo o eliminarlo). Solo los borradores de OTROS admins se
-        // filtran por antigüedad (>2h = sesión probablemente abandonada).
-        var now = Date.now();
-        var TWO_HOURS = 2 * 60 * 60 * 1000;
-        var currentUid = window.auth && window.auth.currentUser ? window.auth.currentUser.uid : '';
-        drafts = drafts.filter(function(d) {
-            if (d.userId === currentUid) return true; // propio: siempre
-            if (!d.lastSaved) return false;
-            return (now - new Date(d.lastSaved).getTime()) < TWO_HOURS;
-        });
+        // §107 — todos son propios (subcolección privada). Solo descartar
+        // docs sin datos reales (ej. residuos). Más recientes primero.
+        drafts = (drafts || []).filter(function(d) { return snapshotHasAnyData(d); });
+        _draftsCache = drafts.slice();
 
         if (drafts.length === 0) { panel.style.display = 'none'; return; }
 
-        // Propio primero
         drafts.sort(function(a, b) {
-            if ((a.userId === currentUid) !== (b.userId === currentUid)) return a.userId === currentUid ? -1 : 1;
-            return new Date(b.lastSaved || 0) - new Date(a.lastSaved || 0);
+            return new Date(b._savedAt || 0) - new Date(a._savedAt || 0);
         });
 
         panel.style.display = 'block';
 
         list.innerHTML = drafts.map(function(d) {
-            var label = ((d.marca || '') + ' ' + (d.modelo || '') + ' ' + (d.year || '')).trim() || 'Sin titulo';
-            var email = d.userEmail || 'Admin';
-            var initials = email.substring(0, 2).toUpperCase();
-            var ago = d.lastSaved ? AP.formatTimeAgo(d.lastSaved) : '';
-            var isOwn = d.userId === currentUid;
-            var editingLabel = d.vehicleId ? ('Editando #' + d.vehicleId) : 'Nuevo vehiculo';
-            // §106 — borrador propio: Retomar + Eliminar (estilo TikTok).
-            // Borrador de otro admin: solo Continuar (lectura colaborativa).
-            var btnHtml = isOwn
-                ? '<button class="btn btn-primary btn-sm" data-action="resumeOwnDraft" title="Retomar este borrador">Retomar</button>'
-                  + '<button class="btn btn-ghost btn-sm" data-action="deleteOwnDraft" title="Eliminar borrador" style="color:var(--admin-danger);">Eliminar</button>'
-                : '<button class="btn btn-ghost btn-sm" data-action="loadDraftFromUser" data-user-id="' + AP.escapeHtml(d.userId || '') + '">Continuar</button>';
+            var label = ((d.vMarca || '') + ' ' + (d.vModelo || '') + ' ' + (d.vYear || '')).trim() || 'Sin titulo';
+            var ago = d._savedAt ? AP.formatTimeAgo(d._savedAt) : '';
+            var editingLabel = d.vId ? ('Editando #' + d.vId) : 'Nuevo vehiculo';
+            var avatarTxt = (d.vMarca || '?').substring(0, 2).toUpperCase();
+            var did = AP.escapeHtml(d._draftId || '');
+            // §107 — cada borrador propio: Retomar + Eliminar (galería estilo TikTok).
+            var btnHtml = '<button class="btn btn-primary btn-sm" data-action="resumeDraft" data-draft-id="' + did + '" title="Retomar este borrador">Retomar</button>'
+                + '<button class="btn btn-ghost btn-sm" data-action="deleteDraft" data-draft-id="' + did + '" title="Eliminar borrador" style="color:var(--admin-danger);">Eliminar</button>';
 
             return '<div class="draft-item">'
                 + '<div class="draft-item-info">'
-                + '<div class="draft-item-avatar">' + initials + '</div>'
+                + '<div class="draft-item-avatar">' + AP.escapeHtml(avatarTxt) + '</div>'
                 + '<div class="draft-item-text">'
                 + '<div class="draft-item-label">' + AP.escapeHtml(label) + ' <small style="color:var(--admin-text-muted);">(' + AP.escapeHtml(editingLabel) + ')</small></div>'
-                + '<div class="draft-item-meta">' + AP.escapeHtml(email) + ' · ' + ago + '</div>'
+                + '<div class="draft-item-meta">Guardado ' + ago + '</div>'
                 + '</div></div>'
                 + '<div class="draft-item-actions">' + btnHtml + '</div>'
                 + '</div>';
         }).join('');
     }
 
-    function loadDraftFromUser(userId) {
-        if (!window.db || !userId) return;
-        window.db.collection('usuarios').doc(userId).collection('drafts').doc('vehicleDraft').get()
-            .then(function(doc) {
-                if (!doc.exists) { AP.toast('Borrador no encontrado — puede que ya se haya guardado.', 'info'); return; }
-                var snap = doc.data();
-                if (!snap || !snap.vMarca) { AP.toast('Borrador vacio', 'info'); return; }
-                restoreAndOpenDraft(snap);
-            })
-            .catch(function() { AP.toast('No se pudo cargar el borrador de este usuario', 'error'); });
-    }
-
-    // §106 — Retomar el borrador propio desde el panel de borradores (TikTok).
-    function resumeOwnDraft() {
+    // §107 — Retomar un borrador concreto de la galería por su id.
+    function resumeDraft(draftId) {
         if (!_canEditInv()) { AP.toast('No tienes permisos para editar vehiculos', 'error'); return; }
-        var ref = getDraftDocRef();
+        if (!draftId) return;
+        // Intento rápido desde cache; si no, fetch directo.
+        var cached = _draftsCache.find(function(d) { return d._draftId === draftId; });
+        if (cached && snapshotHasAnyData(cached)) { restoreAndOpenDraft(cached, draftId); return; }
+        var ref = getDraftRef(draftId);
         if (!ref) { AP.toast('No se pudo acceder al borrador', 'error'); return; }
         ref.get().then(function(doc) {
-            if (!doc.exists) { AP.toast('No hay borrador guardado.', 'info'); return; }
+            if (!doc.exists) { AP.toast('Este borrador ya no existe.', 'info'); return; }
             var snap = doc.data();
             if (!snap || !snapshotHasAnyData(snap)) { AP.toast('El borrador esta vacio.', 'info'); return; }
-            restoreAndOpenDraft(snap);
-        }).catch(function() { AP.toast('No se pudo cargar tu borrador', 'error'); });
+            restoreAndOpenDraft(snap, draftId);
+        }).catch(function() { AP.toast('No se pudo cargar el borrador', 'error'); });
     }
 
-    // §106 — Eliminar el borrador propio definitivamente.
-    function deleteOwnDraft() {
+    // §107 — Eliminar un borrador concreto de la galería por su id.
+    function deleteDraftFromGallery(draftId) {
+        if (!draftId) return;
         if (!confirm('¿Eliminar este borrador definitivamente? Esta accion no se puede deshacer.')) return;
-        clearDraftFromFirestore().then(function() {
+        deleteDraft(draftId).then(function() {
             AP.toast('Borrador eliminado.');
-            // El listener real-time de drafts_activos refresca el panel solo.
+            // El listener real-time de la subcolección refresca la galería solo.
         });
     }
 
@@ -2499,9 +2467,8 @@
     AP.previewFromForm = previewFromForm;
     AP.restoreAndOpenDraft = restoreAndOpenDraft;
     AP.startDraftsListener = startDraftsListener;
-    AP.loadDraftFromUser = loadDraftFromUser;
-    AP.resumeOwnDraft = resumeOwnDraft;
-    AP.deleteOwnDraft = deleteOwnDraft;
+    AP.resumeDraft = resumeDraft;
+    AP.deleteDraftFromGallery = deleteDraftFromGallery;
     AP.toggleDestacado = toggleDestacadoFn;
     AP.showAuditTimeline = showAuditTimeline;
     AP.clearCutoutPng = clearCutoutPng;
@@ -2517,9 +2484,8 @@
         markAsSold: function(id) { AP.markAsSold(parseInt(id, 10)); },
         deleteVehicle: function(id) { deleteVehicleFn(parseInt(id, 10)); },
         removeImage: function(_, btn) { removeImage(parseInt(btn.getAttribute('data-idx'), 10)); },
-        loadDraftFromUser: function(_, btn) { loadDraftFromUser(btn.getAttribute('data-user-id')); },
-        resumeOwnDraft: function() { resumeOwnDraft(); },
-        deleteOwnDraft: function() { deleteOwnDraft(); }
+        resumeDraft: function(_, btn) { resumeDraft(btn.getAttribute('data-draft-id')); },
+        deleteDraft: function(_, btn) { deleteDraftFromGallery(btn.getAttribute('data-draft-id')); }
     };
     document.addEventListener('click', function(e) {
         var btn = AP.closestAction(e);

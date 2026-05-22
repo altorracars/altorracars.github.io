@@ -40713,3 +40713,103 @@ marcadores grep-friendly `TODO-NN`.
 §17.4 HTML/CSS estable: cero modificación de código.
 
 **Sin cache bump** — sección puramente documental (igual que §94).
+
+---
+
+## 110. ADR-110 — Eliminar borrador: toast aparece pero la fila no se va (eliminación optimista) (2026-05-22)
+
+> Cliente reportó (con captura — toast "Listo · Borrador eliminado" sobre
+> el inventario): "EL BOTON DE ELIMINAR LOS BORRADORES, APARECE LA
+> NOTIFICACION DE QUE SE BORRO PERO NO PASA NADA CORRIGE Y DOCUMENTA."
+>
+> El botón Eliminar de la galería "Mis borradores" mostraba el toast
+> "Borrador eliminado." pero la fila del borrador NO desaparecía.
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all), §17.4 (HTML/CSS
+> estable — IDs y funciones preservados), §17.12 (cero MutationObserver),
+> §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 110.1 Causa raíz (RCA §19)
+
+`deleteDraftFromGallery(draftId)` (§107) confiaba 100% en el listener
+real-time del onSnapshot para refrescar la galería tras borrar:
+
+```js
+deleteDraft(draftId).then(function() {
+    AP.toast('Borrador eliminado.');
+    // El listener real-time de la subcolección refresca la galería solo.
+});
+```
+
+Dos fallas combinadas:
+
+1. **Listener inactivo**: el listener `_unsubDrafts` se desuscribe vía el
+   cleanup hook §34 (`AltorraSectionCleanup.register('vehicles')`) al
+   SALIR de la sección vehículos. Si el onSnapshot no estaba activo en el
+   momento del delete (timing, o el borrador era solo optimista §108 que
+   nunca confirmó), el callback nunca disparaba → la galería no se
+   re-renderizaba.
+
+2. **Error tragado**: `deleteDraft` hacía `ref.delete().catch(function(){})`
+   — el `.catch` silencioso interno hacía que `.then()` SIEMPRE resolviera
+   (incluso si Firestore rechazaba), mostrando el toast de éxito aunque el
+   borrado fallara, y sin posibilidad de rollback.
+
+Resultado exacto del cliente: toast de éxito + fila que no se va.
+
+### 110.2 Solución estructural — eliminación optimista + rollback
+
+Mismo patrón optimista que el guardado §108 (Linear/Intercom/Drift —
+"UI nunca espera al server"):
+
+1. **`deleteDraft` propaga el error** (línea 1057): quitado el `.catch`
+   silencioso interno → `return ref.delete();`. Ahora el rollback puede
+   detectar fallos reales.
+2. **Callsite de publicación** (línea 1599): `deleteDraft(_currentDraftId).catch(function(){})`
+   — silencio explícito ahí (no romper el flujo de publicar vehículo).
+3. **`deleteDraftFromGallery` optimista**: quita el borrador de
+   `_draftsCache` y re-renderiza la galería AL INSTANTE (`_renderActiveDrafts(kept)`),
+   luego corre `deleteDraft` en background. Si falla de verdad → rollback
+   (`_renderActiveDrafts(_draftsCache.concat(removed))`) + toast de error.
+
+La fila desaparece inmediatamente sin depender del estado del listener.
+
+### 110.3 No-regresión
+
+- `deleteDraft` / `deleteDraftFromGallery` / `_renderActiveDrafts` /
+  `_draftsCache` — nombres y firmas preservados (§17.4).
+- Borrar al publicar (§107) sigue silencioso (catch propio).
+- Listener real-time (§108) sigue funcionando como confirmación
+  secundaria — si está activo, el onSnapshot re-renderiza con el estado
+  real de Firestore (idempotente con el render optimista).
+- `node -c js/admin-vehicles.js` → OK.
+
+### 110.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260522050000) | Carga nueva |
+| 2 | Guardar borrador → aparece en "Mis borradores" → click "Eliminar" → confirmar | Fila desaparece AL INSTANTE + toast "Borrador eliminado." |
+| 3 | Eliminar tras navegar fuera de vehículos y volver | Fila desaparece igual (no depende del listener) |
+| 4 | Eliminar el último borrador | Panel "Mis borradores" se oculta (display:none) |
+| 5 | Eliminar con varios borradores | Solo desaparece el elegido, los demás quedan |
+| 6 | Cancelar el confirm | Nada cambia |
+| 7 | Borrador en curso eliminado (era `_currentDraftId`) | `_currentDraftId`/`_lastSavedSnapshot` se limpian |
+
+### 110.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-vehicles.js` | `deleteDraft` propaga error (sin catch silencioso interno); callsite publicación con `.catch()` explícito; `deleteDraftFromGallery` con render optimista + rollback |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260522050000 |
+| `CLAUDE.md` | Esta sección §110 |
+
+**Total**: 4 archivos. Cero schema, cero deploy backend, solo Ctrl+Shift+R.
+
+### 110.6 Doctrina aplicada
+
+§19 RCA: causa raíz real identificada (listener inactivo + error tragado),
+no parche. §37 IAP entregado. §17.4: nombres/firmas preservados. §17.2:
+cero transition nuevo. §17.12: cero MutationObserver. §35: cero pointermove.
+
+**Cache bump**: `v20260522050000`.

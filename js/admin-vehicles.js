@@ -1054,11 +1054,14 @@
     var _lastSavedSnapshot = null;
 
     // §107 — Eliminar un borrador concreto por id.
+    // §110 — propaga el error (antes lo tragaba con .catch silencioso, lo
+    // que impedía el rollback de la galería). Los callsites que necesitan
+    // silencio (borrar al publicar) agregan su propio .catch.
     function deleteDraft(draftId) {
         var ref = getDraftRef(draftId);
         if (!ref) return Promise.resolve();
         if (draftId === _currentDraftId) { _currentDraftId = null; _lastSavedSnapshot = null; }
-        return ref.delete().catch(function() {});
+        return ref.delete();
     }
 
     // Fase 18: Visual indicator when draft is saved
@@ -1593,7 +1596,8 @@
                 if (window.notify) window.notify.info('Smart Fields: ' + derived);
             }
             // §107 — al publicar con éxito, eliminar el borrador en curso (si lo hay)
-            if (_currentDraftId) deleteDraft(_currentDraftId);
+            // §110 — .catch silencioso: no romper el flujo de publicación si el delete falla.
+            if (_currentDraftId) deleteDraft(_currentDraftId).catch(function() {});
             closeModalFn(true);
         }).catch(function(err) {
             if (err.code === 'version-conflict') AP.toast(err.message, 'error');
@@ -2373,13 +2377,27 @@
         }).catch(function() { AP.toast('No se pudo cargar el borrador', 'error'); });
     }
 
-    // §107 — Eliminar un borrador concreto de la galería por su id.
+    // §107/§110 — Eliminar un borrador concreto de la galería por su id.
+    // §110 FIX: eliminación OPTIMISTA. Antes confiaba 100% en el onSnapshot
+    // para refrescar, pero si el listener estaba inactivo (cleanup §34 al
+    // salir de la sección) o el borrador era solo optimista, la fila NO
+    // desaparecía pese al toast. Ahora se quita de la galería al instante y
+    // el delete corre en background; si falla de verdad, se revierte.
     function deleteDraftFromGallery(draftId) {
         if (!draftId) return;
         if (!confirm('¿Eliminar este borrador definitivamente? Esta accion no se puede deshacer.')) return;
+
+        // Render optimista: quitar de la galería YA.
+        var removed = _draftsCache.filter(function(d) { return d._draftId === draftId; });
+        var kept = _draftsCache.filter(function(d) { return d._draftId !== draftId; });
+        _renderActiveDrafts(kept);
+
         deleteDraft(draftId).then(function() {
             AP.toast('Borrador eliminado.');
-            // El listener real-time de la subcolección refresca la galería solo.
+        }).catch(function() {
+            // Rollback: re-insertar el borrador si el delete falló.
+            if (removed.length) { _renderActiveDrafts(_draftsCache.concat(removed)); }
+            AP.toast('No se pudo eliminar el borrador. Intenta de nuevo.', 'error');
         });
     }
 

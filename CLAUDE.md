@@ -40813,3 +40813,134 @@ no parche. §37 IAP entregado. §17.4: nombres/firmas preservados. §17.2:
 cero transition nuevo. §17.12: cero MutationObserver. §35: cero pointermove.
 
 **Cache bump**: `v20260522050000`.
+
+---
+
+## 111. ADR-111 — Borradores se borraban al Ctrl+Shift+R y desaparecía la sección "Mis borradores" (RCA + fix de fondo) (2026-05-22)
+
+> Cliente reportó: "Entre otro error cuando se le da control shift R todos
+> los borradores que aparecian guardados se borran y ya no aparece la
+> seccion de borradores ni todos los que se guardaron."
+>
+> Al hacer hard refresh (Ctrl+Shift+R), TODOS los borradores que aparecían
+> guardados desaparecían Y el panel "Mis borradores" dejaba de mostrarse.
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all), §17.4 (HTML/CSS
+> estable — IDs y funciones preservados), §17.12 (cero MutationObserver),
+> §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 111.1 Causa raíz (RCA §19)
+
+Síntoma engañoso: el borrador "aparecía guardado" (toast + fila en la
+galería) pero al refrescar **no estaba en Firestore**. Eso significa que
+el render era OPTIMISTA pero el `set()` real había fallado silenciosamente.
+
+Cadena de fallo (§108 saveDraft optimista, Linear/Intercom/Drift):
+1. `saveDraft` aplicaba estado local (`_currentDraftId`,
+   `_lastSavedSnapshot`) + toast "Borrador guardado" + inyección en la
+   galería (`_renderActiveDraftsOptimistic`) **SINCRÓNICOS**.
+2. La escritura `col.doc(draftId).set(snap)` corría en background.
+3. **Firestore Compat rechaza valores `undefined` y arrays sparse**
+   ("Unsupported field value: undefined"). El snapshot incluía `_images`
+   (de `AP.uploadedImageUrls`) que podía tener **huecos** (`undefined`)
+   por un upload pendiente/fallido — o cualquier campo `undefined`.
+4. El `.set()` rechazaba → el `.catch` de §108 SOLO nuleaba
+   `_lastSavedSnapshot`, **nunca quitaba la fila fantasma de la galería**.
+5. Resultado: el borrador parecía guardado pero NO se persistía.
+6. Al Ctrl+Shift+R: el `_draftsCache` en memoria se pierde, el
+   `onSnapshot` trae SOLO lo realmente guardado en Firestore (nada) →
+   `_renderActiveDrafts([])` → `snapshotHasAnyData` filtra a 0 → panel
+   `display:none` → **galería vacía + sección oculta**.
+
+Por qué solo se notaba al refrescar: en la misma sesión la galería
+mostraba la fila optimista en `_draftsCache`. El refresh es el único
+momento donde la UI se reconstruye 100% desde Firestore real.
+
+### 111.2 Solución estructural — 4 fixes coordinados
+
+**Fix #1 — `getFormSnapshot` limpia `_images` a strings válidos**:
+```js
+_images: (AP.uploadedImageUrls || []).filter(function(u) {
+    return typeof u === 'string' && u;
+}),
+```
+Elimina holes/undefined del array de imágenes en origen.
+
+**Fix #2 — `sanitizeForFirestore(value)` recursivo**: helper nuevo que
+recorre arrays y objetos eliminando cualquier `undefined` o slot sparse
+antes de persistir. Cubre TODA la clase de error (no solo `_images`):
+```js
+function sanitizeForFirestore(value) {
+    if (Array.isArray(value)) { /* skip undefined, recurse */ }
+    if (value && typeof value === 'object' && !(value instanceof Date)) {
+        /* skip undefined keys, recurse */
+    }
+    return value;
+}
+```
+
+**Fix #3 — `saveDraft` rollback de la galería en `.catch`**: si el
+`set()` falla de verdad, quita el borrador fantasma de `_draftsCache`,
+re-renderiza la galería SIN él, resetea `_currentDraftId`/
+`_lastSavedSnapshot` y muestra un toast de **error real** (antes mostraba
+éxito):
+```js
+col.doc(draftId).set(sanitizeForFirestore(snap)).catch(function(err) {
+    if (_currentDraftId === draftId) { _currentDraftId = null; _lastSavedSnapshot = null; }
+    var kept = _draftsCache.filter(function(d) { return d._draftId !== draftId; });
+    _renderActiveDrafts(kept);
+    AP.toast('No se pudo guardar el borrador: ' + (err && err.code === 'permission-denied' ? 'sin permisos.' : (err && err.message) || 'error desconocido') + ' Intenta de nuevo.', 'error');
+});
+```
+
+**Fix #4 — `startDraftsListener` retry-once**: el `onSnapshot` puede
+fallar en el primer disparo post-auth por el WebChannel stale-token race
+(§8). El error callback re-suscribe UNA vez tras 1.2s; el success callback
+resetea el presupuesto de reintento (`startDraftsListener._retried = false`).
+Garantiza que la galería se hidrate aunque el primer snapshot post-refresh
+falle transitoriamente.
+
+### 111.3 No-regresión
+
+- `getFormSnapshot`/`saveDraft`/`startDraftsListener`/`_renderActiveDrafts`/
+  `_draftsCache`/`_currentDraftId`/`_lastSavedSnapshot` — nombres y firmas
+  preservados (§17.4).
+- Modelo Firestore §107 (subcolección `usuarios/{uid}/drafts/{draftId}`)
+  sin cambios → cero schema, cero rule nueva, cero deploy backend.
+- `firestore.rules` líneas 230-232 ya soportan multi-draft (`allow read,
+  write: if auth.uid == userId`) — verificado, sin cambio.
+- Render optimista (§108) y eliminación optimista (§110) intactos — solo
+  se añadió el rollback que faltaba en el guardado.
+- `node -c js/admin-vehicles.js` → OK.
+
+### 111.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260522060000) | Carga nueva |
+| 2 | Guardar borrador con datos válidos → Ctrl+Shift+R | El borrador SIGUE en "Mis borradores" (persistido en Firestore) |
+| 3 | Guardar 3 borradores → Ctrl+Shift+R | Los 3 reaparecen, panel visible |
+| 4 | Guardar borrador con imágenes a medio subir | Si el set() falla, fila desaparece + toast de error real (no éxito falso) |
+| 5 | Navegar fuera de vehículos y volver → refrescar | Galería se re-hidrata (listener retry-once) |
+| 6 | Primer onSnapshot post-auth falla transitorio | Re-suscribe a 1.2s, galería aparece |
+| 7 | Galería con 0 borradores reales | Panel oculto (correcto) |
+
+### 111.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-vehicles.js` | `getFormSnapshot` limpia `_images` a strings; `sanitizeForFirestore` helper recursivo; `saveDraft` sanitiza antes de `set()` + rollback de galería en `.catch` + toast error real; `startDraftsListener` retry-once con presupuesto reseteado en snapshot OK |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260522060000 |
+| `CLAUDE.md` | Esta sección §111 |
+
+**Total**: 4 archivos. Cero schema, cero deploy backend, solo Ctrl+Shift+R.
+
+### 111.6 Doctrina aplicada
+
+§19 RCA: causa raíz REAL identificada (optimista sin rollback + Firestore
+rechaza undefined/sparse), descartadas 2 hipótesis previas leyendo el
+código. §37 IAP entregado. §17.4: nombres/firmas/IDs preservados. §17.2:
+cero transition nuevo. §17.12: cero MutationObserver (galería usa
+onSnapshot existente). §35: cero pointermove.
+
+**Cache bump**: `v20260522060000`.

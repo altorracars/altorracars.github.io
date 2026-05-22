@@ -934,8 +934,37 @@
             // §E.4 — concesionario/consigna se preservan en el borrador
             vConcesionario: $('vConcesionario') ? $('vConcesionario').value : '',
             vConsignaParticular: $('vConsignaParticular') ? $('vConsignaParticular').value : '',
-            _images: AP.uploadedImageUrls.slice(), _savedAt: new Date().toISOString()
+            // §111 — _images saneado a strings válidos: AP.uploadedImageUrls
+            // puede traer huecos/undefined de una subida pendiente o fallida.
+            // Firestore Compat set() RECHAZA arrays con undefined ("Unsupported
+            // field value: undefined") → el draft no persistía y desaparecía al
+            // refresh. Filtramos a URLs string no vacías.
+            _images: (AP.uploadedImageUrls || []).filter(function(u) { return typeof u === 'string' && u; }),
+            _savedAt: new Date().toISOString()
         };
+    }
+
+    // §111 — Defensa-en-profundidad: elimina recursivamente valores undefined
+    // y compacta arrays (quita huecos/undefined) para que Firestore Compat
+    // set() nunca rechace el documento. Devuelve un objeto NUEVO seguro.
+    function sanitizeForFirestore(value) {
+        if (Array.isArray(value)) {
+            var arr = [];
+            for (var i = 0; i < value.length; i++) {
+                if (value[i] === undefined) continue;
+                arr.push(sanitizeForFirestore(value[i]));
+            }
+            return arr;
+        }
+        if (value && typeof value === 'object' && !(value instanceof Date)) {
+            var out = {};
+            Object.keys(value).forEach(function(k) {
+                if (value[k] === undefined) return;
+                out[k] = sanitizeForFirestore(value[k]);
+            });
+            return out;
+        }
+        return value;
     }
 
     // Fase 18: Compare two snapshots ignoring _savedAt
@@ -1042,10 +1071,19 @@
         // (el onSnapshot lo reemplazará con el dato real al confirmar).
         _renderActiveDraftsOptimistic(snap);
 
-        col.doc(draftId).set(snap).catch(function(err) {
-            // Rollback del estado optimista en caso de fallo real.
-            if (_currentDraftId === draftId) { _lastSavedSnapshot = null; }
-            AP.toast('Error al guardar borrador: ' + (err && err.code === 'permission-denied' ? 'Sin permisos.' : (err && err.message) || 'desconocido'), 'error');
+        // §111 — sanear antes de persistir (sin undefined/huecos) para que el
+        // set() nunca sea rechazado por Firestore Compat.
+        col.doc(draftId).set(sanitizeForFirestore(snap)).catch(function(err) {
+            // §111 FIX: rollback COMPLETO del estado optimista en fallo real.
+            // Antes solo se reseteaba _lastSavedSnapshot, pero la fila quedaba
+            // en la galería como "guardado" pese a no haber persistido → al
+            // refresh desaparecía (síntoma reportado). Ahora se quita de la
+            // galería y se sale del contexto del borrador para que lo visible
+            // siempre coincida con lo realmente persistido en Firestore.
+            if (_currentDraftId === draftId) { _currentDraftId = null; _lastSavedSnapshot = null; }
+            var kept = _draftsCache.filter(function(d) { return d._draftId !== draftId; });
+            _renderActiveDrafts(kept);
+            AP.toast('No se pudo guardar el borrador: ' + (err && err.code === 'permission-denied' ? 'sin permisos.' : (err && err.message) || 'error desconocido') + ' Intenta de nuevo.', 'error');
         });
         return Promise.resolve(true);
     }
@@ -2269,6 +2307,7 @@
         if (!col) return;
         try {
             _unsubDrafts = col.onSnapshot(function(snap) {
+                startDraftsListener._retried = false; // §111 — snapshot OK: renueva presupuesto de reintento
                 var drafts = [];
                 snap.forEach(function(doc) {
                     var d = doc.data() || {};
@@ -2277,7 +2316,16 @@
                 });
                 _renderActiveDrafts(drafts);
             }, function() {
-                // Permission denied or collection doesn't exist — silent fail
+                // §111 — Error en el primer snapshot. En hard refresh puede ser
+                // un race del WebChannel del SDK Compat con el token de auth
+                // recién resuelto (ver §8). Antes era un fail silencioso → la
+                // galería quedaba vacía y "no aparecía la seccion de borradores".
+                // Reintento UNA vez tras un breve backoff con auth ya estable.
+                if (_unsubDrafts) { try { _unsubDrafts(); } catch (e) {} _unsubDrafts = null; }
+                if (!startDraftsListener._retried) {
+                    startDraftsListener._retried = true;
+                    setTimeout(function() { startDraftsListener(); }, 1200);
+                }
             });
 
             // §34 — Section cleanup hook

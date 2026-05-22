@@ -146,7 +146,14 @@
         }
         var prevSection = null;
         window.AltorraSections.onChange(function (newSection) {
-            if (prevSection && window.AltorraSectionCleanup) {
+            // §112 — FIX raíz: ejecutar cleanup SOLO al navegar a una sección
+            // DISTINTA. go() dispara notifyChange dos veces para la misma
+            // sección (explícito en router + MutationObserver al flip de
+            // .active), y sin este guard el segundo disparo corría
+            // cleanup('vehicles') justo tras suscribir el listener de
+            // borradores → lo desuscribía antes del primer onSnapshot →
+            // la galería "Mis borradores" quedaba vacía tras refresh.
+            if (prevSection && prevSection !== newSection && window.AltorraSectionCleanup) {
                 window.AltorraSectionCleanup.run(prevSection);
             }
             prevSection = newSection;

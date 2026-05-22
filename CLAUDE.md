@@ -40608,3 +40608,108 @@ IDs y nombres de función preservados. §17.2: solo transitions específicas
 + onChange existentes). §35: cero pointermove.
 
 **Cache bump**: `v20260522030000`.
+
+---
+
+## 109. INVENTARIO CONSOLIDADO DE PENDIENTES (actualizado post-§108) (2026-05-22)
+
+> **CÓMO USAR ESTA SECCIÓN (lectura obligatoria para sesiones futuras)**:
+>
+> Esta sección REEMPLAZA a §85.4 como fuente de verdad canónica de
+> pendientes (§85 quedó desactualizada — no refleja §90-§108). Cuando
+> el cliente pregunte "¿qué hay pendiente?" en una sesión futura, leer
+> §109 PRIMERO. Marcadores únicos `TODO-NN` grep-friendly:
+>
+> ```bash
+> grep -n "TODO-[0-9]" CLAUDE.md
+> ```
+>
+> Estado de planes mayores al 2026-05-22:
+> - **Plan §61 RBAC dinámico**: ✅ 100% completo (§63-§73.4 + §89 R8 grande)
+> - **Plan §59 ALTOR Hub**: ✅ 7/7 sprints + C-S8/S9/S10 (§60.1-§88)
+> - **Plan §82-§84 Smart Update**: ✅ producción activada (pill+toast+smart-nav)
+> - **Fase 4 SEO técnica**: ✅ §90 validado §90.11 + Google Business Profile
+> - **Fase 3A imágenes responsive**: ✅ §91 + hotfixes §92/§95/§96/§97
+> - **Wizard vehículo refactor**: ✅ §104-§108 (reorg + drafts multi-cuenta)
+> - **27 Cloud Functions**: ✅ desplegadas (validado §85)
+
+### 109.1 Pendientes BLOQUEADOS por inversión externa (no son trabajo del agente)
+
+| ID | Item | Bloqueo | Doc |
+|---|---|---|---|
+| **TODO-01** | Fase 1+2 migración: dominio `altorracars.com` + Cloudflare DNS + email pro + Cloudflare Pages (build system Vite → adiós cartel "Nueva versión disponible" + deploy en segundos) | ~$10 USD/año dominio Hostinger | §84.5, §85.1, §94, `PLAN-MIGRACION-ALTORRA.md` |
+| **TODO-02** | Fase C Smart Update (hash-based asset versioning) — depende de TODO-01 (requiere build system) | Hereda bloqueo de TODO-01 | §82.11 C1, §84.5 |
+
+> TODO-01 y TODO-02 se ejecutan JUNTOS cuando el cliente apruebe el
+> presupuesto del dominio. El plan integral está en
+> `PLAN-MIGRACION-ALTORRA.md` (5 fases). Ganancia principal: deploy en
+> segundos (vs minutos del cron actual de GitHub Pages) + cero cartel
+> de actualización.
+
+### 109.2 Pendientes EJECUTABLES YA (cero $ — solo tiempo del agente)
+
+| ID | Item | Esfuerzo | Impacto | Doc |
+|---|---|---|---|---|
+| **TODO-03** | Sprint 3C — Critical CSS inline (above-the-fold ~5KB de hero+header → inline en cada HTML) | ~4h | FCP -300-500ms (elimina render-blocking de style.css) | §90.13, §93.8 |
+| **TODO-04** | Sprint 3D — Resource hints (preload LCP image + preconnect Firebase + dns-prefetch + defer/async refactor scripts no críticos) | ~2h | LCP -20% adicional | §90.13, §93.8 |
+| **TODO-05** | Metadata local SEO en páginas faltantes (`contacto.html`, `nosotros.html`, `simulador-credito.html`, `comparar.html`, `favoritos.html`, `perfil.html`): agregar `<meta name="geo.*">` + schema LocalBusiness (patrón §90 ya aplicado a marcas/vehículos) | ~1h | Coherencia SEO local en todo el sitio | §94.4 |
+
+### 109.3 Pendientes BLOQUEADOS por contenido/contexto (no son código)
+
+| ID | Item | Bloqueo | Doc |
+|---|---|---|---|
+| **TODO-06** | Página `/cartagena.html` dedicada SEO local | Requiere ~2h de contenido editorial del cliente (texto + 1-2 fotos). Template = ~1h del agente | §90.13, §94.4 |
+| **TODO-07** | Validar métricas CSAT (§87) en producción | Requiere ~50 chats/mes para significancia estadística | §85.4, §87 |
+| **TODO-08** | Validar transferencias entre asesores (§88) en producción | Requiere equipo de 2+ asesores trabajando simultáneamente | §85.4, §88 |
+
+### 109.4 DEUDA TÉCNICA documentada (limpieza interna opcional — sin impacto visible)
+
+| ID | Item | Origen | Notas |
+|---|---|---|---|
+| **TODO-09** | Wizard drafts items diferidos: E.7 `_draftModalActive` flag, E.8 clearDraftFromFirestore non-silent, E.9 stale draft "Liberar" button, E.10 reemplazar `confirm()` restante por modal no-bloqueante | §104.4 | Bajo valor: la queja central (pérdida de datos + clashes + prompt molesto) ya se resolvió en §104/§106/§107/§108. `confirm()` restante solo queda en flujos no-críticos |
+| **TODO-10** | CSS muerto: `.vehicle-codigo`/`#vehiclesTableBody` pills + `.estado-badge` + `.av2-card-code` legacy (apuntan a la `<table>` oculta desde §34) | §102.4 | Preservados por §17.4 retrocompat. Eliminables en mantenimiento del generador de tablas |
+| **TODO-11** | `dead code` del sistema de drafts viejo: `getDraftDocRef`/`getSharedDraftRef`/`updateSharedDraft`/`clearSharedDraft`/`startDraftAutoSave`/`stopDraftAutoSave`/`checkForDraft`/`loadDraftFromUser` (§107 los reemplazó) + `drafts_activos` rule huérfana | §107.6 | Confirmado sin referencias colgantes (grep). Preservados por §17.4. `drafts_activos/{uid}` rule queda como dead code inofensivo |
+| **TODO-12** | ~46 instancias `transition: all` restantes en admin-visionary.css (modales, badges individuales) | §102.5 | `admin-perf-kill.css` ya las neutraliza en elementos de alto jank (cards/botones/nav). Las restantes son bajo conteo — tradeoff documentado, refactor masivo = alto riesgo / cero valor visible |
+| **TODO-13** | Selectores substring `[class*=]` peligrosos (lección §101.1.6) — auditar si quedan catch-alls sin `:not()` de exclusión de namespaces hijos | §101.1.6, §102.4 | El catch-all `[class*="-card"]` ya fue excluido (§101.1). Los restantes (`[class*="codigo"]`/`[class*="estado"]`) están scopeados a `#vehiclesTableBody` muerto — sin riesgo actual |
+
+### 109.5 Patrón recurrente OPERATIVO (no es bug — es flujo conocido)
+
+| ID | Item | Acción |
+|---|---|---|
+| **TODO-14** | Conflicto de merge en `js/cache-manager.js` + `service-worker.js` cada vez que el auto-cron de main bumpea CACHE_VERSION mientras una rama está activa | **Receta canónica** (§82-§84/§90.14/§97/§108-merge): `git fetch origin main` → `git merge origin/main` → `git checkout --ours` ambos archivos (preserva changelog de la rama) → bump a timestamp MAYOR que el de main → `node -c` → commit merge → push |
+
+### 109.6 Orden recomendado de ejecución (cuando el cliente diga "sigamos con pendientes")
+
+Por ratio impacto/esfuerzo, sin inversión:
+
+1. **TODO-04** Sprint 3D Resource hints (2h, LCP -20%) — mayor impacto/esfuerzo
+2. **TODO-03** Sprint 3C Critical CSS inline (4h, FCP -300-500ms) — cierra Fase 3 Performance
+3. **TODO-05** Metadata local SEO páginas faltantes (1h) — coherencia + base para TODO-06
+4. **TODO-06** Página `/cartagena.html` (1h código, bloqueada por contenido del cliente)
+5. Limpieza opcional TODO-09 a TODO-13 (deuda técnica, sin urgencia)
+
+Cuando aparezca el presupuesto del dominio: **TODO-01 + TODO-02** (migración Cloudflare Pages — el más transformador: deploy en segundos + adiós cartel "Nueva versión disponible").
+
+### 109.7 Cross-reference
+
+- **§62** = índice rápido del estado general del proyecto (cross-window)
+- **§85** = fuente de verdad HISTÓRICA de pendientes (PENDIENTE-A/B/C). DESACTUALIZADA — usar §109 en su lugar
+- **§109** (esta) = inventario consolidado VIGENTE de pendientes (TODO-01..14)
+- `PLAN-MIGRACION-ALTORRA.md` = plan integral Cloudflare Pages (5 fases)
+
+> **Protocolo de auto-validación**: al cerrar cualquier TODO-NN, el
+> agente DEBE actualizar su fila en §109 (cambiar a ✅ + linkear al §X
+> que lo documenta), igual que el protocolo §85.6.
+
+### 109.8 Doctrina aplicada
+
+§19 RCA: NO había bug. Documentación pura solicitada por el cliente
+("DOCUMENTA TODO LO PENDIENTE") para consolidar el estado real tras
+§90-§108 (la tabla §85.4 había quedado desactualizada).
+
+§37 IAP: cero código tocado. Solo append de documentación con
+marcadores grep-friendly `TODO-NN`.
+
+§17.4 HTML/CSS estable: cero modificación de código.
+
+**Sin cache bump** — sección puramente documental (igual que §94).

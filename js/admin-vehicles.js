@@ -825,13 +825,72 @@
     }
 
     function closeModalFn(force) {
-        // §107 — al cerrar con datos ingresados, preguntar explícitamente.
-        // "Sí" → guarda el borrador. "No" → NO se guarda absolutamente nada.
-        if (!force && formHasData()) {
-            var wantSave = confirm('¿Deseas guardar como borrador antes de cerrar?\n\nAceptar = guardar borrador.\nCancelar = cerrar sin guardar (no se guarda nada).');
-            if (wantSave) { saveDraft(true).then(function() { doCloseModal(); }); return; }
+        // §108 — Al cerrar:
+        //  · Sin datos → cerrar directo.
+        //  · Datos pero SIN cambios respecto al último guardado (o al estado
+        //    original al abrir) → cerrar directo, NO re-preguntar (resuelve
+        //    "ya guardé y vuelve a preguntar").
+        //  · Datos con cambios sin guardar → modal custom con botones "Sí"/"No"
+        //    (resuelve "debe aparecer sí o no, no aceptar y cancelar").
+        if (force || !formHasData()) { doCloseModal(); return; }
+
+        var current = getFormSnapshot();
+        // Ya guardado y sin ediciones posteriores → cerrar sin preguntar.
+        if (_lastSavedSnapshot && !snapshotsAreDifferent(current, _lastSavedSnapshot)) { doCloseModal(); return; }
+        // Editando un vehículo existente sin cambios desde que abrió → cerrar.
+        if (_originalSnapshot && !snapshotsAreDifferent(current, _originalSnapshot)) { doCloseModal(); return; }
+
+        showDraftCloseConfirm(
+            function onYes() { saveDraft(true); doCloseModal(); },  // optimista: cierra ya
+            function onNo() { doCloseModal(); }                      // No → no se guarda nada
+        );
+    }
+
+    // §108 — Modal de confirmación custom con botones "Sí" / "No" (el
+    // confirm() nativo no permite renombrar Aceptar/Cancelar). Sí = guardar
+    // borrador. No = descartar sin guardar nada.
+    function showDraftCloseConfirm(onYes, onNo) {
+        var existing = document.getElementById('draftCloseConfirm');
+        if (existing) { try { document.body.removeChild(existing); } catch (e) {} }
+
+        var ov = document.createElement('div');
+        ov.id = 'draftCloseConfirm';
+        ov.className = 'draft-confirm-overlay';
+        ov.innerHTML =
+            '<div class="draft-confirm-box" role="dialog" aria-modal="true" aria-labelledby="draftConfirmTitle">' +
+                '<div class="draft-confirm-icon"><i data-lucide="save"></i></div>' +
+                '<h3 id="draftConfirmTitle" class="draft-confirm-title">¿Guardar borrador?</h3>' +
+                '<p class="draft-confirm-text">Tienes cambios sin guardar. ¿Quieres guardarlos como borrador antes de cerrar?</p>' +
+                '<div class="draft-confirm-actions">' +
+                    '<button type="button" class="btn btn-ghost" data-confirm="no">No, descartar</button>' +
+                    '<button type="button" class="btn btn-primary" data-confirm="yes">Sí, guardar</button>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(ov);
+        if (window.lucide && window.lucide.createIcons) { try { window.lucide.createIcons(); } catch (e) {} }
+
+        function cleanup() {
+            document.removeEventListener('keydown', onKey);
+            if (ov.parentNode) ov.parentNode.removeChild(ov);
         }
-        doCloseModal();
+        function onKey(e) {
+            if (e.key === 'Escape') { cleanup(); if (onNo) onNo(); }
+            else if (e.key === 'Enter') { cleanup(); if (onYes) onYes(); }
+        }
+        ov.addEventListener('click', function(e) {
+            var b = e.target.closest('[data-confirm]');
+            if (b) {
+                var v = b.getAttribute('data-confirm');
+                cleanup();
+                if (v === 'yes') { if (onYes) onYes(); } else { if (onNo) onNo(); }
+                return;
+            }
+            if (e.target === ov) { cleanup(); if (onNo) onNo(); } // click fuera = No
+        });
+        document.addEventListener('keydown', onKey);
+        // foco al botón primario
+        var yesBtn = ov.querySelector('[data-confirm="yes"]');
+        if (yesBtn) { try { yesBtn.focus(); } catch (e) {} }
     }
 
     function doCloseModal() {
@@ -962,22 +1021,33 @@
     // actualiza ese mismo borrador (retomado/ya guardado en esta sesión).
     function saveDraft(showToast) {
         var col = getDraftsCollectionRef();
-        if (!col) { if (showToast) AP.toast('No se pudo acceder al almacenamiento de borradores', 'error'); return Promise.resolve(); }
+        if (!col) { if (showToast) AP.toast('No se pudo acceder al almacenamiento de borradores', 'error'); return Promise.resolve(false); }
         var snap = getFormSnapshot();
-        if (!snapshotHasAnyData(snap)) { if (showToast) AP.toast('No hay datos para guardar como borrador', 'info'); return Promise.resolve(); }
+        if (!snapshotHasAnyData(snap)) { if (showToast) AP.toast('No hay datos para guardar como borrador', 'info'); return Promise.resolve(false); }
 
         var draftId = _currentDraftId || newDraftId();
         snap._draftId = draftId;
         snap._userId = window.auth.currentUser.uid;
         snap._userEmail = window.auth.currentUser.email || '';
-        return col.doc(draftId).set(snap).then(function() {
-            _currentDraftId = draftId; // a partir de ahora se actualiza este mismo borrador
-            _lastSavedSnapshot = snap;
-            if (showToast) AP.toast('Borrador guardado correctamente');
-            showDraftIndicator();
-        }).catch(function(err) {
-            if (showToast) AP.toast('Error al guardar borrador: ' + (err.code === 'permission-denied' ? 'Sin permisos.' : err.message), 'error');
+
+        // §108 — Guardado OPTIMISTA: el estado local + el feedback visual se
+        // aplican de inmediato (se siente instantáneo). La escritura a
+        // Firestore corre en segundo plano. Si falla, se notifica y se
+        // revierte el indicador. Esto resuelve "el guardado es muy lento".
+        _currentDraftId = draftId; // a partir de ahora se actualiza este mismo borrador
+        _lastSavedSnapshot = snap;
+        if (showToast) AP.toast('Borrador guardado correctamente');
+        showDraftIndicator();
+        // Inyección optimista en la galería para que el espacio aparezca ya
+        // (el onSnapshot lo reemplazará con el dato real al confirmar).
+        _renderActiveDraftsOptimistic(snap);
+
+        col.doc(draftId).set(snap).catch(function(err) {
+            // Rollback del estado optimista en caso de fallo real.
+            if (_currentDraftId === draftId) { _lastSavedSnapshot = null; }
+            AP.toast('Error al guardar borrador: ' + (err && err.code === 'permission-denied' ? 'Sin permisos.' : (err && err.message) || 'desconocido'), 'error');
         });
+        return Promise.resolve(true);
     }
 
     // §107 — track del último snapshot guardado (dirty-check del indicador)
@@ -1032,6 +1102,7 @@
         // último borrador (cualquiera se retoma desde la galería). Sin
         // autosave silencioso: el guardado es explícito.
         _currentDraftId = null;
+        _lastSavedSnapshot = null; // §108 — estado limpio para el dirty-check al cerrar
         captureOriginalSnapshot();
         openModal();
     });
@@ -1141,6 +1212,7 @@
         // §107 — editar un vehículo publicado NO es un borrador. _currentDraftId
         // = null; si el admin pulsa "Guardar Borrador" se crea uno nuevo. Sin autosave.
         _currentDraftId = null;
+        _lastSavedSnapshot = null; // §108 — estado limpio para el dirty-check al cerrar
         captureOriginalSnapshot();
         openModal();
     }
@@ -2177,6 +2249,7 @@
         $('vehicleForm').reset();
         restoreFormSnapshot(snap);
         _currentDraftId = draftId || snap._draftId || null;
+        _lastSavedSnapshot = snap; // §108 — el borrador retomado ya está guardado
         captureOriginalSnapshot();
         openModal();
     }
@@ -2187,6 +2260,7 @@
     function startDraftsListener() {
         // §107 — escucha la subcolección PROPIA usuarios/{uid}/drafts
         // (privada por cuenta, no se pisa con otras). Galería "Mis borradores".
+        if (_unsubDrafts) return; // §108 — idempotente: no duplicar el listener
         var col = getDraftsCollectionRef();
         if (!col) return;
         try {
@@ -2219,6 +2293,15 @@
         startDraftsListener._cleanupRegistered = false;
     }
     AP.stopDraftsListener = stopDraftsListener;
+
+    // §108 — Re-suscribir el listener al ENTRAR a la sección de vehículos.
+    // El cleanup de §34 lo cancela al salir; sin esto, al volver la galería
+    // quedaba "muerta" y no aparecía el espacio de borradores.
+    if (window.AltorraSections && window.AltorraSections.onChange) {
+        window.AltorraSections.onChange(function(section) {
+            if (section === 'vehicles') { startDraftsListener(); }
+        });
+    }
 
     // §107 — cache local de los borradores propios (para retomar por id).
     var _draftsCache = [];
@@ -2261,6 +2344,16 @@
                 + '<div class="draft-item-actions">' + btnHtml + '</div>'
                 + '</div>';
         }).join('');
+    }
+
+    // §108 — Inserción optimista en la galería: muestra el borrador recién
+    // guardado de inmediato (antes de que el onSnapshot confirme), para que
+    // el espacio "Mis borradores" aparezca al instante tras guardar.
+    function _renderActiveDraftsOptimistic(snap) {
+        if (!snap || !snap._draftId) return;
+        var merged = _draftsCache.filter(function(d) { return d._draftId !== snap._draftId; });
+        merged.unshift(snap);
+        _renderActiveDrafts(merged);
     }
 
     // §107 — Retomar un borrador concreto de la galería por su id.

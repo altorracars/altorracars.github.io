@@ -40497,3 +40497,114 @@ para callsites externos; `restoreAndOpenDraft` retrocompat con 2º param.
 onSnapshot existente, cero MutationObserver. §35: cero pointermove.
 
 **Cache bump**: `v20260522020000`.
+
+---
+
+## 108. ADR-108 — Drafts: 4 fixes (galería invisible, re-prompt tras guardar, botones Aceptar/Cancelar, guardado lento) (2026-05-22)
+
+> Tras §107 (reescritura del sistema de borradores) el cliente reportó
+> 4 errores (con 2 capturas — inventario en vista lista + toast "Borrador
+> guardado correctamente") y exigió "UN ANALISIS PROFUNDO SIN CRASHEOS":
+> 1. "No se observa ningún espacio en vehículos para guardar borradores"
+>    — no aparece el espacio designado de borradores.
+> 2. "Cuando se le da guardar al borrador aparece la notificación que
+>    guardó, luego se le da a la X para cerrar la pestaña el sistema no
+>    detecta que ya se guardó y pregunta nuevamente."
+> 3. "El dar en X y preguntar si desea guardar borrador... debe aparecer
+>    sí o no, no aceptar y cancelar."
+> 4. "El sistema de guardado es muy lento."
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all), §17.4 (HTML/CSS
+> estable — IDs y nombres de función preservados), §17.12 (cero
+> MutationObserver), §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 108.1 Causa raíz por error (RCA §19)
+
+| Error | Causa raíz |
+|---|---|
+| #1 galería invisible | `#activeDraftsPanel` es `display:none` hasta que `_renderActiveDrafts` recibe drafts. El listener `startDraftsListener` se suscribe 1× en `admin-sync.loadData`, PERO el hook de §34 `AltorraSectionCleanup.register('vehicles')` lo cancela al SALIR de vehículos y nada lo re-suscribía al volver → galería "muerta". Además, tras guardar no había feedback inmediato en el panel (esperaba el round-trip del onSnapshot) |
+| #2 re-prompt tras guardar | `closeModalFn` usaba `formHasData()` (¿hay datos?) SIN comparar contra `_lastSavedSnapshot` (¿hay cambios sin guardar?). Un borrador recién guardado igual tiene datos → re-preguntaba |
+| #3 botones Aceptar/Cancelar | `confirm()` nativo NO permite renombrar los botones del navegador (OK/Cancel) — requiere modal custom |
+| #4 guardado lento | `saveDraft` hacía `await col.doc().set()` ANTES del toast/cierre → la UI esperaba el round-trip de Firestore |
+
+### 108.2 Solución estructural — 4 fixes coordinados
+
+**Fix #4 — `saveDraft` OPTIMISTA**: estado local (`_currentDraftId`,
+`_lastSavedSnapshot`) + toast + indicador + inyección en galería
+(`_renderActiveDraftsOptimistic`) se aplican SÍNCRONOS. La escritura
+Firestore `.set()` corre en background con `.catch` que revierte el
+estado y notifica si falla. Retorna `Promise.resolve(true)`.
+
+**Fix #1 — galería instantánea + listener siempre vivo**:
+- `_renderActiveDraftsOptimistic(snap)`: mergea el borrador recién
+  guardado en `_draftsCache` (por `_draftId`) y re-renderiza → el panel
+  "Mis borradores" aparece al instante (antes del onSnapshot).
+- `startDraftsListener` ahora idempotente (`if (_unsubDrafts) return`).
+- Re-suscripción en `AltorraSections.onChange(s => s==='vehicles' && startDraftsListener())`
+  → al volver a vehículos el listener revive (el cleanup §34 lo había
+  cancelado).
+
+**Fix #2 — dirty-check en `closeModalFn`**:
+- Sin datos → cerrar directo.
+- `_lastSavedSnapshot` existe Y `!snapshotsAreDifferent(current, _lastSavedSnapshot)`
+  → cerrar SIN preguntar (borrador ya guardado sin ediciones posteriores).
+- `_originalSnapshot` existe Y sin cambios desde que abrió → cerrar
+  (evita falso prompt al editar un vehículo y cerrar sin tocar nada).
+- Solo si hay cambios sin guardar → modal custom.
+- `_lastSavedSnapshot` se resetea en btnAddVehicle/editVehicle (estado
+  limpio) y se setea en `restoreAndOpenDraft` (el borrador retomado ya
+  está guardado).
+
+**Fix #3 — modal custom `showDraftCloseConfirm(onYes, onNo)`**:
+overlay `.draft-confirm-overlay` con botones "Sí, guardar" / "No,
+descartar". Sí → `saveDraft(true)` (optimista) + `doCloseModal()`
+inmediato. No → `doCloseModal()` (NO guarda nada — coherente con §107).
+Esc/click-fuera = No. Enter = Sí. Animación spring + `prefers-reduced-motion`.
+
+### 108.3 No-regresión
+
+- IDs DOM (`#activeDraftsPanel`, `#activeDraftsList`, `#saveDraftBtn`,
+  `#draftSaveIndicator`) y nombres de función exportados
+  (`startDraftsListener`/`stopDraftsListener`/`restoreAndOpenDraft`/
+  `resumeDraft`/`deleteDraftFromGallery`) preservados (§17.4).
+- Modelo Firestore §107 sin cambios (subcolección `usuarios/{uid}/drafts/{draftId}`)
+  → cero schema, cero rule nueva, cero deploy backend.
+- `node -c js/admin-vehicles.js` → OK.
+
+### 108.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260522030000) | Carga nueva |
+| 2 | Agregar Vehículo → llenar campos → "Guardar Borrador" | Toast + panel "Mis borradores" aparece AL INSTANTE con el borrador |
+| 3 | Tras guardar, click X (sin más ediciones) | Cierra directo, NO re-pregunta |
+| 4 | Llenar datos nuevos → click X | Modal con botones "Sí, guardar" / "No, descartar" (no Aceptar/Cancelar) |
+| 5 | Modal → "No, descartar" | Cierra sin guardar nada (galería sin borrador nuevo) |
+| 6 | Modal → "Sí, guardar" | Guarda + cierra al instante; aparece en galería |
+| 7 | Editar vehículo existente → cerrar sin tocar nada | NO pregunta (sin cambios vs original) |
+| 8 | Guardar borrador → editar un campo → X | Sí pregunta (hay cambios sin guardar) |
+| 9 | Navegar fuera de vehículos y volver → guardar borrador | Galería se actualiza (listener re-suscrito) |
+| 10 | Esc / click fuera del modal de confirmación | Equivale a "No" (cierra sin guardar) |
+| 11 | Guardado | Se siente instantáneo (optimista, sin esperar red) |
+
+### 108.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-vehicles.js` | `saveDraft` optimista + `_renderActiveDraftsOptimistic` + `closeModalFn` dirty-check + `showDraftCloseConfirm` modal Sí/No + `startDraftsListener` idempotente + re-suscripción onChange + `_lastSavedSnapshot` reset en add/edit/restore |
+| `css/admin.css` | `.draft-confirm-overlay`/`.draft-confirm-box`/`.draft-confirm-*` (modal custom, animación spring, prefers-reduced-motion) |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260522030000 |
+| `CLAUDE.md` | Esta sección §108 |
+
+**Total**: 4 archivos. Cero schema, cero deploy backend, solo Ctrl+Shift+R.
+
+### 108.6 Doctrina aplicada
+
+§19 RCA: 4 causas raíz reales identificadas (listener no re-suscrito +
+sin feedback optimista; falta de dirty-check; confirm() no renombrable;
+await bloqueante). §37 IAP: análisis profundo previo a editar. §17.4:
+IDs y nombres de función preservados. §17.2: solo transitions específicas
++ animación keyframe. §17.12: cero MutationObserver (galería usa onSnapshot
++ onChange existentes). §35: cero pointermove.
+
+**Cache bump**: `v20260522030000`.

@@ -40944,3 +40944,157 @@ cero transition nuevo. §17.12: cero MutationObserver (galería usa
 onSnapshot existente). §35: cero pointermove.
 
 **Cache bump**: `v20260522060000`.
+
+---
+
+## 112. ADR-112 — FIX DEFINITIVO: borradores desaparecen al Ctrl+Shift+R (§111 falló — causa raíz era equivocada) (2026-05-22)
+
+> Cliente reportó tras §111 (commit 95e2cdb): "Eso no corrigio el problema,
+> sigue pasando lo mismo. Hay muchos borradores que he guardado que al
+> refrescar se han eliminado." Y exigió: "necesito que hagas un analisis
+> profundo de lo que esta pasando" + "CORRIGE Y DOCUMENTA".
+>
+> §111 había hipotetizado (sin verificar) que la causa era el guardado
+> optimista §108 escribiendo `undefined`/sparse `_images` que Firestore
+> rechazaba silenciosamente. Implementó sanitizeForFirestore + rollback +
+> retry-once. NO funcionó. **Lección §19: §111 ADIVINÓ en vez de VERIFICAR.**
+>
+> §112 aplicó §19 RCA-strict de verdad: leyó los paths exactos de carga,
+> teardown y suscripción ANTES de tocar nada, y encontró la causa raíz
+> REAL — un race de teardown del listener, no un problema de escritura.
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all), §17.4 (HTML/CSS
+> estable — cero IDs/funciones renombrados), §17.12 (cero MutationObserver),
+> §19 RCA estricto, §35 (cero pointermove), §37 (IAP).
+
+### 112.1 Por qué §111 falló (lección documentada)
+
+§111 NO leyó el flujo completo de carga/teardown. Asumió que el síntoma
+("aparecía guardado pero al refrescar no estaba") implicaba que el `.set()`
+fallaba. PERO:
+- El cliente NUNCA reportó el toast de error que el `.catch` de §108 ya
+  mostraba si el write fallaba de verdad → los writes SÍ se persistían.
+- Verificación posterior: los borradores SÍ están en Firestore tras el
+  refresh — el problema es que la galería "Mis borradores" NO los lee y
+  queda vacía + el panel se oculta. "Se han eliminado" = "no aparecen".
+
+§111 arregló un bug que no existía (writes sparse) y dejó intacto el real.
+
+### 112.2 Causa raíz REAL (verificada §19)
+
+Cadena de teardown del listener de borradores tras hard refresh:
+
+1. **Carga**: `onAuthStateChanged` → `showAdmin(user)` (admin-auth.js:1668).
+   Línea 1704: `setTimeout(() => AltorraSections.go(lastSection), 50)`
+   (restaura la última sección, p.ej. `vehicles`). Línea 1753:
+   `AP.loadData()` → admin-sync.js loadData:142 → `AP.startDraftsListener()`
+   suscribe el `onSnapshot` de `usuarios/{uid}/drafts`.
+
+2. **`go('vehicles')` dispara `notifyChange('vehicles')` DOS VECES**:
+   - `js/admin-section-router.js` `go()` PATH A: línea 142 `btn.click()`
+     (el handler legacy añade `.active` a `sec-vehicles`) + línea 151
+     `notifyChange(section, prevA)` **explícito**.
+   - `observeSectionChanges()` (línea 246): un MutationObserver por cada
+     `.section` que dispara `notifyChange` cuando la sección GANA `.active`.
+     El `btn.click()` del PATH A provoca ese flip → **segundo**
+     `notifyChange('vehicles')`.
+
+3. **El race fatal** en `js/admin-v2-core.js` `attachToRouter()` (línea 148):
+   ```js
+   var prevSection = null;
+   window.AltorraSections.onChange(function (newSection) {
+       if (prevSection && window.AltorraSectionCleanup) {  // ← SIN guard !==
+           window.AltorraSectionCleanup.run(prevSection);
+       }
+       prevSection = newSection;
+   });
+   ```
+   - 1er `notifyChange('vehicles')`: `prevSection=null` → no cleanup;
+     `prevSection='vehicles'`.
+   - 2do `notifyChange('vehicles')`: `prevSection='vehicles'` (truthy) →
+     ejecuta **`cleanup('vehicles')`** → corre el teardown registrado por
+     `startDraftsListener` (admin-vehicles.js:2334) → `_unsubDrafts()` →
+     **desuscribe el listener de borradores que `loadData` acababa de
+     suscribir, ANTES de que su primer `onSnapshot` entregara los docs.**
+   - Resultado: `_renderActiveDrafts` nunca recibe los borradores reales →
+     galería vacía → `#activeDraftsPanel` queda `display:none`.
+
+4. **Intermitencia**: hay múltiples `go('vehicles')` por refresh
+   (showAdmin:1704 + router init:291). El re-subscribe del §108
+   (`onChange` → `startDraftsListener` al entrar a `vehicles`) compite con
+   el teardown según el orden de los listeners de `onChange` → a veces
+   ganaba, a veces perdía. Por eso "muchos borradores" desaparecían pero
+   no siempre todos.
+
+El bug NO es de escritura ni de Firestore — es un **teardown del listener
+disparado por un `notifyChange` duplicado de la misma sección**.
+
+### 112.3 Fix (1 línea)
+
+`js/admin-v2-core.js` `attachToRouter()` — guard de sección distinta:
+
+```js
+// ANTES:
+if (prevSection && window.AltorraSectionCleanup) {
+// AHORA:
+if (prevSection && prevSection !== newSection && window.AltorraSectionCleanup) {
+```
+
+`cleanup(prevSection)` corre SOLO al navegar a una sección **DISTINTA**,
+nunca en un `notifyChange` duplicado de la misma. Correr cleanup para un
+duplicado same-section nunca es correcto para NINGUNA sección que registre
+teardown (topnav, profile, dealers, crm/appointments, vehicles, banners,
+reviews, concierge), así que el fix es universalmente seguro.
+
+### 112.4 Por qué este fix es de fondo y no un parche
+
+- Ataca el race directamente (no agrega retries/timeouts que enmascaran).
+- Una sola condición; cero cambio de comportamiento al navegar entre
+  secciones reales (el cleanup sigue ocurriendo, solo deja de dispararse
+  en el duplicado espurio).
+- §108 re-subscribe sigue presente como red de seguridad; con el guard,
+  ya no hay teardown que deshacer.
+
+### 112.5 No-regresión
+
+- `AltorraSectionCleanup.run/register` — sin cambios de firma.
+- Teardown real al cambiar de sección (p.ej. salir de `vehicles` a `crm`)
+  sigue corriendo (prevSection !== newSection).
+- §111 (sanitizeForFirestore + rollback + getFormSnapshot `_images` filter
+  + retry-once) se MANTIENE — es defensa válida contra writes sparse aunque
+  no era la causa de este bug.
+- `node -c js/admin-v2-core.js` → OK.
+
+### 112.6 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260522070000) | Carga nueva |
+| 2 | Guardar 3 borradores → Ctrl+Shift+R | Los 3 SIGUEN en "Mis borradores", panel visible |
+| 3 | Refresh estando en otra sección (crm) → ir a Vehículos | Galería se hidrata correctamente |
+| 4 | Navegar vehicles→crm→vehicles | Borradores siguen apareciendo (teardown real al salir, re-subscribe al volver) |
+| 5 | Eliminar un borrador → refresh | Solo ese desaparece; el resto persiste |
+| 6 | DevTools console | Cero errores nuevos |
+
+### 112.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-v2-core.js` | `attachToRouter()`: guard `prevSection !== newSection` antes de `cleanup(prevSection)` (cleanup solo al cambiar a sección distinta, nunca en notifyChange duplicado same-section) |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260522070000 |
+| `CLAUDE.md` | Esta sección §112 (documenta que §111 tenía la causa raíz equivocada) |
+
+**Total**: 4 archivos. Cero schema, cero deploy backend, solo Ctrl+Shift+R.
+
+### 112.8 Doctrina aplicada
+
+§19 RCA estricto — **lección clave**: §111 violó §19 al adivinar la causa
+sin verificar los paths de código; falló. §112 leyó loadData→startDraftsListener,
+attachToRouter, go()/observeSectionChanges/notifyChange y todos los sitios
+de registro de cleanup ANTES de tocar nada, y confirmó el race de teardown.
+§37 IAP entregado. §17.4: cero IDs/funciones renombrados. §17.2: cero
+transition nuevo. §17.12: cero MutationObserver nuevo (el bug nacía del
+MutationObserver existente de observeSectionChanges + falta de guard, no
+se añade otro). §35: cero pointermove.
+
+**Cache bump**: `v20260522070000`.

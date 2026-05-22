@@ -41098,3 +41098,93 @@ MutationObserver existente de observeSectionChanges + falta de guard, no
 se añade otro). §35: cero pointermove.
 
 **Cache bump**: `v20260522070000`.
+
+---
+
+## 113. ADR-113 — Contador en tiempo real para la sección Marcas (paridad con Vehículos) (2026-05-22)
+
+> Cliente reportó (con 2 capturas — header de Vehículos "27 vehiculos" +
+> header de Marcas sin contador): "la seccion de vehiculos tiene un
+> contador en tiempo real actualmente dice 27 vehiculos, sin embargo la
+> de marcas no lo tiene, necesito que agregues el contador a marcas."
+>
+> Aplicado bajo §17 (perf), §17.4 (HTML/CSS estable — IDs preservados),
+> §17.12 (cero MutationObserver), §19 RCA estricto, §35 (cero
+> pointermove), §37 (IAP).
+
+### 113.1 Causa raíz (RCA §19)
+
+El header de Vehículos (admin.html:877) tiene
+`<p class="page-subtitle" id="vehiclesCount"></p>` que `renderVehiclesTable`
+(admin-vehicles.js:359-360) puebla en cada render con
+`totalFiltered + ' vehiculo' + (s)`. El listener `onSnapshot` de
+`vehiculos` (admin-sync.js) llama `renderVehiclesTable` en cada cambio →
+contador en tiempo real.
+
+El header de Marcas (admin.html:947) YA tenía el placeholder
+`<p class="page-subtitle" id="brandsCount"></p>` (paridad de markup),
+PERO `renderBrandsTable` (admin-brands.js) NUNCA lo poblaba → quedaba
+vacío. `totalBrands` ya se calculaba (línea 149) pero no se mostraba.
+
+### 113.2 Solución estructural (1 bloque)
+
+`renderBrandsTable` (admin-brands.js, tras `renderPagination`): poblar
+`#brandsCount` con `totalBrands + ' marca' + (totalBrands !== 1 ? 's' : '')`,
+espejo exacto del patrón de Vehículos.
+
+```js
+if (AP.renderPagination) AP.renderPagination('brandsPagination', 'brands', totalBrands);
+
+// §113 — Contador en tiempo real (paridad con #vehiclesCount)
+var countEl = $('brandsCount');
+if (countEl) countEl.textContent = totalBrands + ' marca' + (totalBrands !== 1 ? 's' : '');
+```
+
+El listener `onSnapshot` de `marcas` (admin-sync.js:64-69) ya llama
+`AP.renderBrandsTable()` en cada cambio → el contador se actualiza en
+tiempo real igual que el de Vehículos (agregar/eliminar marca lo refresca
+sin recargar).
+
+### 113.3 Detalles
+
+- `totalBrands` = total real de marcas (sin filtro de búsqueda — Marcas
+  no tiene buscador, solo orden), igual semántica que "27 vehiculos"
+  (total filtrado).
+- `$` ya se usa en admin-brands.js (líneas 157/216/470) → resuelve en runtime.
+- Pluralización correcta: "1 marca" / "N marcas".
+
+### 113.4 No-regresión
+
+- IDs DOM preservados (`#brandsCount` ya existía en admin.html). Cero HTML tocado.
+- `renderBrandsTable` firma sin cambios.
+- `node -c js/admin-brands.js` → OK.
+
+### 113.5 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260522080000) | Carga nueva |
+| 2 | Ir a Marcas | Header muestra "N marcas" bajo el título |
+| 3 | Agregar una marca | Contador incrementa en tiempo real (sin recargar) |
+| 4 | Eliminar una marca | Contador decrementa en tiempo real |
+| 5 | 1 sola marca | Muestra "1 marca" (singular) |
+| 6 | Toggle lista/tarjetas | Contador se mantiene correcto |
+
+### 113.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-brands.js` | `renderBrandsTable` puebla `#brandsCount` con totalBrands + 'marca(s)' |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260522080000 |
+| `CLAUDE.md` | Esta sección §113 |
+
+**Total**: 4 archivos. Cero HTML, cero schema, cero deploy backend, solo Ctrl+Shift+R.
+
+### 113.7 Doctrina aplicada
+
+§19 RCA: causa raíz identificada (placeholder existía, render nunca lo
+poblaba). §37 IAP entregado. §17.4: IDs preservados, cero HTML tocado.
+§17.12: usa el onSnapshot existente, cero MutationObserver. §35: cero
+pointermove.
+
+**Cache bump**: `v20260522080000`.

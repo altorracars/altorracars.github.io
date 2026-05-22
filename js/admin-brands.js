@@ -217,6 +217,11 @@
         if (tbody) tbody.innerHTML = '';
 
         if (AP.renderPagination) AP.renderPagination('brandsPagination', 'brands', totalBrands);
+
+        // §113 — Contador en tiempo real (paridad con #vehiclesCount)
+        var countEl = $('brandsCount');
+        if (countEl) countEl.textContent = totalBrands + ' marca' + (totalBrands !== 1 ? 's' : '');
+
         AP.refreshIcons();
         _syncViewToggleUI();
     }

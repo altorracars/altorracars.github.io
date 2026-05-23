@@ -35,7 +35,7 @@
     --av2-bg-island:      rgba(20, 20, 22, 0.72);
     --av2-bg-island-2:    rgba(15, 15, 17, 0.68);
     --av2-border-glass:   1px solid rgba(255, 255, 255, 0.08);
-    --av2-border-glow:    1px solid rgba(184, 150, 88, 0.30);
+    --av2-border-glow:    1px solid rgba(var(--ak-rgb), 0.30);
     --av2-shadow-island:
         0 8px 32px rgba(0, 0, 0, 0.30),
         inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -55,7 +55,7 @@ body {
     /* Mesh gradient sutil */
     background-image:
         radial-gradient(ellipse 1200px 800px at 10% 0%,
-            rgba(184, 150, 88, 0.06) 0%, transparent 50%),
+            rgba(var(--ak-rgb), 0.06) 0%, transparent 50%),
         radial-gradient(ellipse 900px 600px at 90% 100%,
             rgba(139, 92, 246, 0.04) 0%, transparent 60%);
     background-attachment: fixed;
@@ -280,11 +280,11 @@ body.is-sidebar-collapsed .sidebar {
 .admin-panel:hover ::-webkit-scrollbar-thumb,
 .admin-panel *:hover > ::-webkit-scrollbar-thumb,
 .admin-panel *:focus-within > ::-webkit-scrollbar-thumb {
-    background: rgba(184, 150, 88, 0.35);
+    background: rgba(var(--ak-rgb), 0.35);
     background-clip: padding-box;
 }
 .admin-panel ::-webkit-scrollbar-thumb:hover {
-    background: rgba(184, 150, 88, 0.65);
+    background: rgba(var(--ak-rgb), 0.65);
     background-clip: padding-box;
 }
 .admin-panel ::-webkit-scrollbar-corner {
@@ -297,7 +297,7 @@ body.is-sidebar-collapsed .sidebar {
 }
 .admin-panel:hover *,
 .admin-panel *:hover {
-    scrollbar-color: rgba(184, 150, 88, 0.35) transparent;
+    scrollbar-color: rgba(var(--ak-rgb), 0.35) transparent;
 }
 
 /* HTML/body root scrollbar también invisible */
@@ -565,9 +565,9 @@ body {
     z-index: 10;
 }
 .admin-panel .sidebar-collapse-btn:hover {
-    background: rgba(184, 150, 88, 0.12) !important;
-    border-color: rgba(184, 150, 88, 0.40) !important;
-    color: #d4ad6e !important;
+    background: rgba(var(--ak-rgb), 0.12) !important;
+    border-color: rgba(var(--ak-rgb), 0.40) !important;
+    color: var(--ak-light,#d4ad6e) !important;
 }
 .admin-panel.is-sidebar-collapsed .sidebar-collapse-btn,
 body.is-sidebar-collapsed .sidebar-collapse-btn {
@@ -587,7 +587,7 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
                 rgba(15, 15, 17, 0.85) 100%);
         backdrop-filter: blur(28px) saturate(200%);
         -webkit-backdrop-filter: blur(28px) saturate(200%);
-        border-bottom: 1px solid rgba(184, 150, 88, 0.20);
+        border-bottom: 1px solid rgba(var(--ak-rgb), 0.20);
         padding: 12px 16px;
     }
 }
@@ -675,13 +675,13 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
     transform: translateY(-2px);
     box-shadow:
         0 12px 28px rgba(0, 0, 0, 0.32),
-        0 0 0 1px rgba(184, 150, 88, 0.18),
+        0 0 0 1px rgba(var(--ak-rgb), 0.18),
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    border-color: rgba(184, 150, 88, 0.22);
+    border-color: rgba(var(--ak-rgb), 0.22);
 }
 
 .av2-card:focus-within {
-    box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.28);
+    box-shadow: 0 0 0 3px rgba(var(--ak-rgb), 0.28);
 }
 
 /* Thumb / Hero image */
@@ -747,7 +747,7 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 .av2-card-price {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #d4ad6e;
+    color: var(--ak-light,#d4ad6e);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
     margin-top: 2px;
@@ -763,9 +763,9 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 .av2-card-code {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.7rem;
-    color: rgba(184, 150, 88, 0.85);
-    background: rgba(184, 150, 88, 0.10);
-    border: 1px solid rgba(184, 150, 88, 0.22);
+    color: rgba(var(--ak-rgb), 0.85);
+    background: rgba(var(--ak-rgb), 0.10);
+    border: 1px solid rgba(var(--ak-rgb), 0.22);
     border-radius: 6px;
     padding: 2px 7px;
     display: inline-block;
@@ -804,14 +804,14 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
     right: 8px;
     z-index: 2;
     padding: 4px 8px;
-    background: linear-gradient(135deg, #d4ad6e, #b89658);
+    background: linear-gradient(135deg, var(--ak-light,#d4ad6e), var(--ak-primary,#b89658));
     color: #1a1310;
     font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     border-radius: var(--av2-radius-pill);
-    box-shadow: 0 4px 12px rgba(184, 150, 88, 0.40);
+    box-shadow: 0 4px 12px rgba(var(--ak-rgb), 0.40);
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -844,7 +844,7 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #b89658, #916652);
+    background: linear-gradient(135deg, var(--ak-primary,#b89658), #916652);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -852,7 +852,7 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
     font-weight: 700;
     font-size: 0.85rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(184, 150, 88, 0.32);
+    box-shadow: 0 2px 8px rgba(var(--ak-rgb), 0.32);
 }
 
 .av2-card-avatar-row {
@@ -1002,8 +1002,8 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 .av2-view-btn i { width: 16px; height: 16px; }
 .av2-view-btn:hover { color: rgba(255, 255, 255, 0.85); }
 .av2-view-btn--active {
-    background: rgba(184, 150, 88, 0.18);
-    color: #d4ad6e;
+    background: rgba(var(--ak-rgb), 0.18);
+    color: var(--ak-light,#d4ad6e);
 }
 
 /* ── Vista LISTA — contenedor ── */
@@ -1028,7 +1028,7 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
     transition: background-color 0.16s ease;
 }
 .av2-row:last-child { border-bottom: none; }
-.av2-row:hover { background: rgba(184, 150, 88, 0.05); }
+.av2-row:hover { background: rgba(var(--ak-rgb), 0.05); }
 
 .av2-row-cb { width: 16px; height: 16px; cursor: pointer; }
 
@@ -1047,14 +1047,14 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
     left: 2px;
     width: 13px !important;
     height: 13px !important;
-    color: #d4ad6e;
+    color: var(--ak-light,#d4ad6e);
     filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
 }
 
 .av2-row-code {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.7rem;
-    color: rgba(184, 150, 88, 0.85);
+    color: rgba(var(--ak-rgb), 0.85);
     letter-spacing: 0.03em;
     font-weight: 600;
     white-space: nowrap;
@@ -1117,7 +1117,7 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 .av2-row-price {
     font-size: 0.92rem;
     font-weight: 700;
-    color: #d4ad6e;
+    color: var(--ak-light,#d4ad6e);
     font-variant-numeric: tabular-nums;
     text-align: right;
     white-space: nowrap;
@@ -1194,7 +1194,7 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 .av2-card-codeflat {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.68rem;
-    color: rgba(184, 150, 88, 0.78);
+    color: rgba(var(--ak-rgb), 0.78);
     letter-spacing: 0.06em;
     font-weight: 600;
     text-transform: uppercase;
@@ -1248,7 +1248,7 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
     transition: background-color 0.18s var(--av2-spring);
 }
 .av2-card-cb-ov:hover { background: rgba(0, 0, 0, 0.62); }
-.av2-card-cb-ov input { cursor: pointer; width: 15px; height: 15px; accent-color: #b89658; }
+.av2-card-cb-ov input { cursor: pointer; width: 15px; height: 15px; accent-color: var(--ak-primary,#b89658); }
 
 /* ── MARCA: card centrada, logo prominente, nombre una sola vez ── */
 .av2-card--brand {
@@ -1323,11 +1323,11 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 }
 .av2-row-grip:active { cursor: grabbing; }
 .av2-row-grip i { width: 16px; height: 16px; }
-.av2-row--reorder:hover .av2-row-grip { color: var(--admin-gold, #b89658); }
+.av2-row--reorder:hover .av2-row-grip { color: var(--admin-gold, var(--ak-primary,#b89658)); }
 .av2-row-pos {
     font-size: 0.78rem;
     font-weight: 700;
-    color: var(--admin-gold, #b89658);
+    color: var(--admin-gold, var(--ak-primary,#b89658));
     font-variant-numeric: tabular-nums;
     min-width: 18px;
     text-align: center;
@@ -1337,8 +1337,8 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
 .av2-row--dragging { opacity: 0.4; }
 
 /* Línea indicadora de drop (inset box-shadow → no afecta layout) */
-.av2-row--drag-over-top { box-shadow: inset 0 2px 0 0 var(--admin-gold, #b89658); }
-.av2-row--drag-over-bottom { box-shadow: inset 0 -2px 0 0 var(--admin-gold, #b89658); }
+.av2-row--drag-over-top { box-shadow: inset 0 2px 0 0 var(--admin-gold, var(--ak-primary,#b89658)); }
+.av2-row--drag-over-bottom { box-shadow: inset 0 -2px 0 0 var(--admin-gold, var(--ak-primary,#b89658)); }
 
 /* Responsive: en mobile el grid de reorder colapsa pero conserva grip+pos */
 @media (max-width: 1100px) {

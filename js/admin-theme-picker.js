@@ -1,16 +1,20 @@
 /**
- * AltorraThemePicker — Selector de tema cromático del admin (§28.8)
- * ==================================================================
- * Permite al admin elegir entre 3 paletas cromáticas:
- *   - gold (default Altorra)
- *   - blue (cool/corporate)
- *   - violet (creative/luxury)
+ * AltorraThemePicker — Selector de tema cromático del admin (§28.8 + §115)
+ * ========================================================================
+ * Permite al admin elegir entre 6 paletas cromáticas:
+ *   - gold (default Altorra) · blue · violet · emerald · crimson · cyan
  *
- * El theme aplica clase `.theme-{name}` al <html> y los CSS vars
- * `--brand-primary`, `--ws-color-gold`, etc. se overridean.
+ * El theme aplica clase `.theme-{name}` al <html>. El motor cromático
+ * (css/admin-theme-engine.css) redefine TODO el set de tokens de acento
+ * `--ak-*`; como el admin remapeó sus literales dorados a esos tokens,
+ * cambiar la paleta recolorea MUCHÍSIMOS elementos a la vez (§115).
  * Persistencia en localStorage `altorra_admin_theme`.
  *
  * Funciona ortogonal al theme-switcher.js (light/dark/contrast).
+ *
+ * §115 FIX toast-spam: bind único idempotente (delegación que sobrevive
+ * al innerHTML), sin re-attach por render, y skip de applyTheme/toast
+ * cuando se clickea el tema YA activo.
  */
 (function () {
     'use strict';
@@ -18,7 +22,7 @@
 
     var STORAGE_KEY = 'altorra_admin_theme';
     var DEFAULT_THEME = 'gold';
-    var THEMES = ['gold', 'blue', 'violet'];
+    var THEMES = ['gold', 'blue', 'violet', 'emerald', 'crimson', 'cyan'];
 
     var THEME_META = {
         gold: {
@@ -38,11 +42,28 @@
             description: 'Lujo y distinción',
             primary: '#8b5cf6',
             preview: ['#a78bfa', '#8b5cf6', '#6d28d9']
+        },
+        emerald: {
+            name: 'Esmeralda',
+            description: 'Verde fresco y natural',
+            primary: '#10b981',
+            preview: ['#34d399', '#10b981', '#047857']
+        },
+        crimson: {
+            name: 'Carmesí',
+            description: 'Rojo intenso de lujo',
+            primary: '#e11d48',
+            preview: ['#fb7185', '#e11d48', '#9f1239']
+        },
+        cyan: {
+            name: 'Cian tech',
+            description: 'Tecnológico y vibrante',
+            primary: '#06b6d4',
+            preview: ['#22d3ee', '#06b6d4', '#0e7490']
         }
     };
 
     function applyTheme(theme) {
-        if (!THEMES.indexOf(theme) === -1 && theme !== '') theme = DEFAULT_THEME;
         if (THEMES.indexOf(theme) === -1) theme = DEFAULT_THEME;
 
         // Limpia clases viejas
@@ -80,7 +101,7 @@
             var swatches = meta.preview.map(function (c) {
                 return '<span class="atp-swatch" style="background:' + c + '"></span>';
             }).join('');
-            return '<button class="atp-card' + (isActive ? ' is-active' : '') +
+            return '<button type="button" class="atp-card' + (isActive ? ' is-active' : '') +
                 '" data-theme="' + t + '" data-tooltip="' + meta.description + '">' +
                 '<div class="atp-swatches">' + swatches + '</div>' +
                 '<div class="atp-card-name">' + meta.name + '</div>' +
@@ -99,28 +120,47 @@
             '</div>';
     }
 
+    /* ─── §115 FIX toast-spam: bind único idempotente ──────────
+       El listener se ata UNA sola vez por container (flag dataset).
+       Sobrevive al innerHTML (la delegación captura clicks en los
+       hijos re-renderizados). NO se re-ata por render → cero
+       acumulación de handlers → una sola notificación por click. */
+    function onPickerClick(e) {
+        var root = e.currentTarget;
+        var card = e.target.closest('[data-theme]');
+        if (!card || !root.contains(card)) return;
+
+        var t = card.getAttribute('data-theme');
+
+        // Skip si ya es el tema activo: ni aplica ni notifica.
+        if (t === getTheme()) return;
+
+        applyTheme(t);
+
+        // Re-render para actualizar el .is-active (el listener delegado
+        // sigue vivo en el container — NO re-atar).
+        root.innerHTML = buildPickerHTML();
+        if (window.AltorraIcons && typeof window.AltorraIcons.refresh === 'function') {
+            try { window.AltorraIcons.refresh(root); } catch (e2) {}
+        }
+
+        // Toast feedback (una sola vez).
+        if (window.notify && typeof window.notify.success === 'function') {
+            try {
+                window.notify.success({
+                    title: '🎨 Tema aplicado',
+                    message: 'Apariencia: ' + THEME_META[t].name,
+                    duration: 2400
+                });
+            } catch (e3) {}
+        }
+    }
+
     function attachClickHandlers(root) {
         if (!root) return;
-        root.addEventListener('click', function (e) {
-            var card = e.target.closest('[data-theme]');
-            if (!card) return;
-            var t = card.getAttribute('data-theme');
-            applyTheme(t);
-            // Re-render para actualizar el .is-active
-            root.innerHTML = buildPickerHTML();
-            attachClickHandlers(root);
-
-            // Toast feedback
-            if (window.notify && typeof window.notify.success === 'function') {
-                try {
-                    window.notify.success({
-                        title: '🎨 Tema aplicado',
-                        message: 'Apariencia: ' + THEME_META[t].name,
-                        duration: 2400
-                    });
-                } catch (e) {}
-            }
-        });
+        if (root._atpBound) return;   // idempotente — un solo bind por container
+        root._atpBound = true;
+        root.addEventListener('click', onPickerClick);
     }
 
     /* ─── Auto-mount en sec-settings (si existe el container) ── */
@@ -129,7 +169,7 @@
                         document.querySelector('[data-theme-picker]');
         if (!container) return;
         container.innerHTML = buildPickerHTML();
-        attachClickHandlers(container);
+        attachClickHandlers(container);   // no-op si ya estaba atado
     }
 
     /* ─── Initial: aplicar tema persistido ANTES de paint ─── */

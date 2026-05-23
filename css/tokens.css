@@ -303,6 +303,24 @@
     --ws-color-amber:   #f59e0b;       /* Workflows */
     --ws-color-neutral: #6b7280;       /* Configuración */
 
+    /* ════════════════════════════════════════════════════════════
+       §115 — ACCENT TOKENS (theme engine). Default = Dorado clásico.
+       Las paletas (gold/blue/violet/emerald/crimson/cyan) overridean
+       TODO este set vía html.theme-{name} en admin-theme-engine.css.
+       Los literales dorados hardcoded del admin se remapearon a estos
+       tokens con fallback al valor dorado original (reversible/seguro).
+       --ak-rgb es el triplete R,G,B para expandir dentro de rgba().
+       ════════════════════════════════════════════════════════════ */
+    --ak-rgb:        184, 150, 88;     /* primary triplet (gold)   */
+    --ak-primary:    #b89658;          /* primary hex              */
+    --ak-light:      #d4ad6e;          /* lighter shade            */
+    --ak-light-rgb:  212, 173, 110;
+    --ak-dark:       #9a7d44;          /* darker shade             */
+    --ak-mid:        #c9a663;          /* mid shade                */
+    --ak-mid-rgb:    201, 166, 99;
+    --ak-bright:     #d4af37;          /* bright/saturated accent  */
+    --ak-bright-rgb: 212, 175, 55;
+
     /* Tipografía jerárquica HarmonyOS */
     --hmy-font-page-title:     2rem;          /* 32px */
     --hmy-font-page-title-lh:  1.2;

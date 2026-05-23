@@ -2778,9 +2778,11 @@ exports.seedSystemRoles = onCall(callableOptionsV2, async (request) => {
                     const u = uDoc.data();
                     const nameDrift = u.roleName !== role.name;
                     const permsDrift = JSON.stringify(u.permissions || []) !== JSON.stringify(role.permissions);
-                    if (nameDrift || permsDrift) {
+                    const cargoDrift = u.cargo !== role.name; // §114 — cargo = roleName espejo
+                    if (nameDrift || permsDrift || cargoDrift) {
                         userBatch.update(uDoc.ref, {
                             roleName: role.name,
+                            cargo: role.name, // §114 — sincroniza CARGO (read-only mirror)
                             permissions: role.permissions,
                             permissionsUpdatedAt: new Date().toISOString(),
                             _resyncedAt: new Date().toISOString()
@@ -2919,6 +2921,8 @@ exports.migrateLegacyUsers = onCall(callableOptionsV2, async (request) => {
         const updates = {
             roleId: targetRoleId,
             roleName: targetRole.name,
+            // §114 — cargo = roleName (espejo read-only del rol del sistema)
+            cargo: targetRole.name,
             permissions: Array.isArray(targetRole.permissions) ? targetRole.permissions.slice() : [],
             permissionsUpdatedAt: nowIso,
             roleMigratedAt: nowIso,
@@ -3026,7 +3030,12 @@ exports.onRoleUpdated = onDocumentUpdated('roles/{roleId}', async (event) => {
         _resyncedAt: new Date().toISOString(),
         _resyncedBy: 'onRoleUpdated'
     };
-    if (nameDrift) userUpdates.roleName = after.name;
+    if (nameDrift) {
+        userUpdates.roleName = after.name;
+        // §114 — cargo es espejo read-only del rol del sistema (roleName).
+        // Al renombrar el rol, se propaga al CARGO de todos sus usuarios.
+        userUpdates.cargo = after.name;
+    }
     if (permsDrift) {
         userUpdates.permissions = after.permissions || [];
         userUpdates.permissionsUpdatedAt = new Date().toISOString();
@@ -3192,10 +3201,12 @@ exports.onUserRoleAssigned = onDocumentUpdated('usuarios/{uid}', async (event) =
         // Asegurar permissions vacío y roleName limpio
         const needsCleanup = (after.permissions && after.permissions.length > 0) ||
                              after.roleName;
-        if (needsCleanup) {
+        if (needsCleanup || after.cargo) {
             try {
                 await event.data.after.ref.update({
                     roleName: admin.firestore.FieldValue.delete(),
+                    // §114 — sin rol → CARGO se limpia (queda "Sin rol asignado")
+                    cargo: admin.firestore.FieldValue.delete(),
                     permissions: [],
                     permissionsUpdatedAt: new Date().toISOString(),
                     _resyncedAt: new Date().toISOString(),
@@ -3225,15 +3236,19 @@ exports.onUserRoleAssigned = onDocumentUpdated('usuarios/{uid}', async (event) =
 
     const role = roleSnap.data();
 
-    // Verificar si necesita sync (drift entre user.roleName/permissions y role.*)
+    // Verificar si necesita sync (drift entre user.roleName/permissions/cargo y role.*)
     const nameDrift = after.roleName !== role.name;
     const permsDrift = JSON.stringify(after.permissions || []) !== JSON.stringify(role.permissions || []);
+    // §114 — cargo es espejo read-only del rol: debe igualar role.name
+    const cargoDrift = after.cargo !== role.name;
 
-    if (!nameDrift && !permsDrift) return;
+    if (!nameDrift && !permsDrift && !cargoDrift) return;
 
     try {
         await event.data.after.ref.update({
             roleName: role.name,
+            // §114 — CARGO = roleName (auto-asignado, read-only en el perfil)
+            cargo: role.name,
             permissions: role.permissions || [],
             permissionsUpdatedAt: new Date().toISOString(),
             _resyncedAt: new Date().toISOString(),

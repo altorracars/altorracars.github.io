@@ -124,6 +124,52 @@
         },
 
         /**
+         * §114 — RESOLVER CANÓNICO de la etiqueta de rol que se muestra en TODA la UI.
+         * Single source of truth para reemplazar las 3 implementaciones duplicadas
+         * (formatRole/roleLabel) y eliminar los labels crudos legacy ("editor",
+         * "super_admin", "viewer") de cualquier vista.
+         *
+         * Prioridad de resolución:
+         *   1) roleName (denormalizado del rol dinámico del sistema — §61)
+         *   2) cargo (espejo de roleName desde §114; fallback si roleName falta)
+         *   3) etiqueta legible del rol legacy (super_admin→"CEO", etc.)
+         *   4) 'Sin rol asignado'
+         *
+         * @param {Object|string} userOrRol — doc de usuario (con roleName/cargo/rol)
+         *        o un string de rol legacy.
+         * @returns {string} etiqueta lista para mostrar al usuario.
+         * @example
+         *   AP.resolveRoleLabel(userDoc)      // "CEO" / "Asesor comercial" / ...
+         *   AP.resolveRoleLabel('super_admin') // "CEO"
+         */
+        resolveRoleLabel: function(userOrRol) {
+            if (!userOrRol) return 'Sin rol asignado';
+            if (typeof userOrRol === 'string') {
+                return AP._legacyRoleLabel(userOrRol);
+            }
+            var u = userOrRol;
+            if (u.roleName && String(u.roleName).trim()) return String(u.roleName).trim();
+            if (u.cargo && String(u.cargo).trim()) return String(u.cargo).trim();
+            if (u.rol) return AP._legacyRoleLabel(u.rol);
+            return 'Sin rol asignado';
+        },
+
+        /**
+         * §114 — Traduce un rol legacy crudo a su etiqueta legible.
+         * Usado SOLO como fallback por resolveRoleLabel cuando no hay roleName/cargo.
+         */
+        _legacyRoleLabel: function(rol) {
+            if (!rol) return 'Sin rol asignado';
+            switch (String(rol)) {
+                case 'super_admin': return 'CEO';
+                case 'editor': return 'Editor';
+                case 'viewer': return 'Lector';
+                case 'admin': return 'Administrador';
+                default: return String(rol);
+            }
+        },
+
+        /**
          * @deprecated §61.R5 — Usar `AP.hasPermission('*')` en código nuevo.
          * Source of truth: wildcard permission '*'.
          * Fallback legacy: currentUserRole === 'super_admin'.

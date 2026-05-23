@@ -41188,3 +41188,174 @@ poblaba). §37 IAP entregado. §17.4: IDs preservados, cero HTML tocado.
 pointermove.
 
 **Cache bump**: `v20260522080000`.
+
+---
+
+## 114. ADR-114 — Depuración total de roles legacy → rol del sistema (roleName) en todos lados + CARGO read-only espejo (2026-05-23)
+
+> Cliente reportó (con captura del dashboard "Performance del equipo"
+> mostrando "Francisco Londoño / editor" + "Daniel Romero / super_admin")
+> verbatim: "Sabes que me estoy dando cuenta: que hay lugares que aun
+> reflejan los usuarios como editor y super admin, necesito que hagas una
+> depuracion total de los roles antiguos y los alinees con el ROL del
+> sistema actual, adicionalmente ese mismo ROL es el que debe salir y
+> aparecer en todos lados incluyendo en la casilla CARGO del perfil que no
+> puede ser editada por nadie ya que se asigna automaticamente desde la
+> creacion del ROL, verifica que todo esto tenga sincronizacion con
+> firebase y dejemos atras el antiguo sistema. Has un escaneo profundo de
+> las documentaciones y del sistema, no quiero que supongas quiero que
+> soluciones con informacion real veridica y revisada para evitar errores."
+>
+> Aplicado bajo §17 (perf), §17.2 (cero transition:all), §17.4 (HTML/CSS
+> estable — IDs y funciones preservados), §17.12 (cero MutationObserver),
+> §19 RCA estricto (leí cada path antes de tocar — "no quiero que supongas"),
+> §35 (cero pointermove), §37 (IAP), §61/§69/§71 RBAC dinámico.
+
+### 114.1 Causa raíz (RCA §19 — escaneo profundo verificado)
+
+El sistema RBAC dinámico (§61-§89) migró usuarios a `roleId` + `roleName`
+denormalizado, PERO varios sitios de render seguían leyendo el campo
+legacy crudo `rol` ('super_admin'/'editor'/'viewer') y mostrándolo tal
+cual o con 3 helpers duplicados e inconsistentes. Sitios verificados con
+grep que mostraban legacy crudo:
+
+| Sitio | Causa raíz |
+|---|---|
+| `js/admin-performance.js:158` (CRÍTICO — la captura) | advisor object NO incluía `roleName`; render mostraba `a.rol` crudo |
+| `js/admin-auth.js` topbar+sidebar | `formatRole(AP.currentUserRole)` legacy |
+| `js/admin-auth.js` Active Sessions | `formatRole(s.rol)` legacy |
+| `js/admin-appointments.js` dropdown asesor | label legacy del rol |
+| `js/admin-presence-ui.js` | `formatRole(p.rol)` con fallback |
+| `js/admin-topnav.js` | `roleLabel(profile.rol)` legacy |
+| `admin.html` CARGO input | editable + se llenaba con `cargo` libre (no roleName) |
+| `js/admin-profile.js` | leía/escribía `cargo` como campo libre editable |
+
+Adicional: el CARGO del perfil era un campo de texto LIBRE editable por
+el usuario (no reflejaba el rol del sistema). El cliente lo quiere
+read-only espejo de `roleName`, asignado automáticamente.
+
+### 114.2 Solución estructural — resolver canónico único + CARGO espejo + sync Firebase
+
+**Frontend — resolver canónico** (`js/admin-state.js`): UN solo helper
+`AP.resolveRoleLabel(userOrRol)` reemplaza los 3 duplicados:
+```js
+resolveRoleLabel: function(userOrRol) {
+    if (!userOrRol) return 'Sin rol asignado';
+    if (typeof userOrRol === 'string') return AP._legacyRoleLabel(userOrRol);
+    var u = userOrRol;
+    if (u.roleName && String(u.roleName).trim()) return String(u.roleName).trim();
+    if (u.cargo && String(u.cargo).trim()) return String(u.cargo).trim();
+    if (u.rol) return AP._legacyRoleLabel(u.rol);
+    return 'Sin rol asignado';
+},
+_legacyRoleLabel: function(rol) {
+    switch (String(rol)) {
+        case 'super_admin': return 'CEO';
+        case 'editor': return 'Editor';
+        case 'viewer': return 'Lector';
+        case 'admin': return 'Administrador';
+        default: return String(rol);
+    }
+}
+```
+Prioridad: `roleName` (dinámico actual) → `cargo` (espejo) → legacy-legible.
+Acepta string (legacy crudo) u objeto user. Cero suposición — siempre
+prefiere el rol del sistema actual.
+
+**6 sitios de render migrados** a `AP.resolveRoleLabel(...)`:
+- admin-performance.js: advisor incluye `roleName` + `cargo`; render usa resolver
+- admin-auth.js: topbar/sidebar + Active Sessions + startPresence sessionData añade `roleName`
+- admin-appointments.js: dropdown asesor
+- admin-presence-ui.js: displayLabel
+- admin-topnav.js: displayRole
+
+**CARGO read-only espejo** (`admin.html` + `js/admin-profile.js`):
+- Input `#profileCargo` ahora `readonly aria-readonly="true"` + hint "Se
+  asigna automáticamente según tu rol del sistema. No es editable."
+- `admin-profile.js`: `setValue('profileCargo', roleDisplay)` donde
+  `roleDisplay = AP.resolveRoleLabel(profile)`. `_initialState`/`readForm`/
+  `saveProfile` ya NO leen ni escriben `cargo` (nadie lo edita).
+
+**Sync Firebase — cargo denormalizado** (`functions/index.js`): 4
+funciones escriben `cargo = role.name` a los user docs:
+- `onRoleUpdated` (nameDrift branch): `userUpdates.cargo = after.name`
+- `onUserRoleAssigned` (sync branch): `cargoDrift = after.cargo !== role.name` + guard + `cargo: role.name`; cleanup branch borra cargo con `FieldValue.delete()`
+- `migrateLegacyUsers`: updates object añade `cargo: targetRole.name`
+- `seedSystemRoles` resync: `cargoDrift = u.cargo !== role.name` + `cargo: role.name`
+- `js/admin-users.js` (admin crea/edita user): rbacData añade `cargo: roleData.name || roleId`
+
+**Anti-loop §71**: `onRoleUpdated` escribe cargo a user docs → dispara
+`onUserRoleAssigned`, que retorna early porque `roleId` no cambió
+(`if (before.roleId === after.roleId) return;`). Mismo patrón seguro del §71.
+
+### 114.3 No-regresión
+
+- `admin-roles.js` migration preview "Rol legacy" column INTACTO (es el
+  display legítimo "from→to" de la migración, NO un render crudo).
+- Helpers legacy `formatRole`/`roleLabel` en cada módulo preservados como
+  fallback interno (resolver los usa). Cero IDs/funciones renombrados (§17.4).
+- `node -c` OK en los 9 JS editados: admin-state, admin-performance,
+  admin-auth, admin-appointments, admin-presence-ui, admin-topnav,
+  admin-profile, admin-users, functions/index.js.
+- Modelo Firestore sin cambio de schema (campo `cargo` ya existía; solo
+  cambia su semántica: libre → espejo de roleName). Cero rule nueva.
+
+### 114.4 ACCIÓN OPERATIVA OBLIGATORIA del super_admin
+
+```bash
+firebase deploy --only functions
+```
+
+Sin este deploy, las 4 Cloud Functions siguen con la versión vieja (no
+escriben `cargo`). El frontend (resolver + CARGO read-only) funciona
+igual con cache bump, pero el `cargo` denormalizado en Firestore solo se
+sincroniza tras el deploy. Para forzar el resync inmediato de usuarios
+existentes: admin → sec-roles → "Resembrar sistema" (corre el resync
+block de seedSystemRoles que ahora escribe cargo).
+
+### 114.5 Tests E2E (post-merge + Ctrl+Shift+R + firebase deploy --only functions)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260522090000) | Carga nueva |
+| 2 | Dashboard → "Performance del equipo" | Bajo cada asesor aparece el rol del sistema (ej "CEO"), NO "super_admin"/"editor" crudo |
+| 3 | Topbar + sidebar (rol del usuario logueado) | Muestra roleName del sistema |
+| 4 | Active Sessions / presence | roleName del sistema |
+| 5 | Dropdown asignar asesor (citas) | roleName del sistema |
+| 6 | Mi Perfil → CARGO | Read-only, muestra roleName, NO editable (hint visible) |
+| 7 | Intentar editar CARGO | Bloqueado (readonly), no se guarda |
+| 8 | Tras `firebase deploy --only functions` + "Resembrar sistema" | user docs en Firestore tienen `cargo` = roleName |
+| 9 | Editar un custom role (cambiar nombre) | onRoleUpdated propaga roleName + cargo a todos los users con ese roleId |
+| 10 | Crear nuevo usuario | rbacData incluye cargo = roleName |
+| 11 | Usuario sin roleId (legacy puro) | resolver cae a legacy-legible (CEO/Editor/Lector) sin crash |
+
+### 114.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-state.js` | `AP.resolveRoleLabel` + `AP._legacyRoleLabel` (resolver canónico) |
+| `js/admin-performance.js` | advisor incluye roleName+cargo; render usa resolver |
+| `js/admin-auth.js` | topbar/sidebar + Active Sessions usan resolver; startPresence sessionData añade roleName |
+| `js/admin-appointments.js` | dropdown asesor usa resolver |
+| `js/admin-presence-ui.js` | displayLabel usa resolver |
+| `js/admin-topnav.js` | displayRole usa resolver |
+| `admin.html` | CARGO input readonly + hint |
+| `js/admin-profile.js` | CARGO espejo read-only (roleDisplay), sin self-edit |
+| `js/admin-users.js` | rbacData incluye cargo=roleName |
+| `functions/index.js` | onRoleUpdated + onUserRoleAssigned + migrateLegacyUsers + seedSystemRoles escriben cargo=roleName |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260522090000 |
+| `CLAUDE.md` | Esta sección §114 |
+
+**Total**: 12 archivos. Cero schema nuevo, cero rule nueva. REQUIERE
+`firebase deploy --only functions` (cargo denormalization).
+
+### 114.7 Doctrina aplicada
+
+§19 RCA estricto: cumplí "no quiero que supongas" — leí con grep cada
+sitio que renderizaba `rol`/`formatRole`/`roleLabel` ANTES de tocar, y
+verifiqué el anti-loop de onUserRoleAssigned leyendo su guard real. §37
+IAP entregado. §17.4: resolver es aditivo, helpers legacy preservados
+como fallback, IDs DOM preservados. §17.2: cero transition nuevo. §17.12:
+cero MutationObserver. §35: cero pointermove. §71: anti-loop respetado.
+
+**Cache bump**: `v20260522090000`.

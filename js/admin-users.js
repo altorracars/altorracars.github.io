@@ -557,9 +557,13 @@
         var telefono2FA = $('u2FAPhone').value.trim();
 
         // §61.R3 — Datos denormalizados del role (escritura adicional al doc del user)
+        // §114 — cargo = roleName: el CARGO del perfil es espejo read-only del
+        // rol del sistema, auto-asignado al crear/asignar el rol. La Cloud
+        // Function onUserRoleAssigned/onRoleUpdated lo mantiene autoritativo.
         var rbacData = {
             roleId: roleId,
             roleName: roleData.name || roleId,
+            cargo: roleData.name || roleId,
             permissions: Array.isArray(roleData.permissions) ? roleData.permissions.slice() : [],
             permissionsUpdatedAt: new Date().toISOString()
         };

@@ -883,7 +883,7 @@
                 users.map(function (u) {
                     var sel = u.uid === current ? ' selected' : '';
                     return '<option value="' + u.uid + '" data-name="' + AP.escapeHtml(u.nombre || u.email) + '"' + sel + '>' +
-                        AP.escapeHtml(u.nombre || u.email) + ' (' + (u.rol === 'super_admin' ? 'Super' : 'Editor') + ')' +
+                        AP.escapeHtml(u.nombre || u.email) + ' (' + AP.escapeHtml(AP.resolveRoleLabel(u)) + ')' +
                         '</option>';
                 }).join('') +
             '</select>';

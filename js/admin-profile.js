@@ -82,8 +82,13 @@
         var email = profile.email || '';
         var telefono = profile.telefono || '';
         var prefijo = profile.prefijo || '+57';
-        var cargo = profile.cargo || '';
         var cedula = profile.cedula || '';
+        // §114 — El CARGO ya NO es free-text editable: es espejo del rol dinámico
+        // del sistema (roleName), auto-asignado y read-only. Resuelto vía el
+        // resolver canónico (roleName → cargo → legacy legible).
+        var roleDisplay = (window.AP && AP.resolveRoleLabel)
+            ? AP.resolveRoleLabel(profile)
+            : (profile.roleName || profile.cargo || roleLabel(profile.rol || ''));
         var tipoDoc = profile.tipoDoc || 'cc';
         var avatarURL = profile.photoURL || profile.avatarURL || '';
         var rol = profile.rol || '';
@@ -104,7 +109,7 @@
         }
         setText('profileHeroName', nombre || '(Sin nombre)');
         setText('profileHeroEmail', email);
-        setText('profileHeroRole', cargo || roleLabel(rol));
+        setText('profileHeroRole', roleDisplay);
         setText('profileHeroJoined', creadoEn ? '📅 Desde ' + formatDate(creadoEn) : '');
         setText('profileHeroLastAccess', ultimoAcceso ? '⚡ Última conexión ' + formatRelative(ultimoAcceso) : '');
 
@@ -113,7 +118,8 @@
         setValue('profileEmail', email);
         setValue('profileTelefono', telefono);
         setValue('profilePrefijo', prefijo);
-        setValue('profileCargo', cargo);
+        // §114 — CARGO es read-only: espejo del rol dinámico (roleName).
+        setValue('profileCargo', roleDisplay);
         setValue('profileTipoDoc', tipoDoc);
         setValue('profileCedula', cedula);
 
@@ -143,7 +149,7 @@
 
         // Read-only info (defensive — usar helpers para evitar crash si
         // algún ID falta por race con DOM)
-        setText('profileInfoRol', roleLabel(rol));
+        setText('profileInfoRol', roleDisplay);
         setText('profileInfoUid', uid);
         setText('profileInfoCreated', creadoEn ? formatDate(creadoEn) : '—');
         setText('profileInfoLastAccess', ultimoAcceso ? formatDate(ultimoAcceso) + ' · ' + formatRelative(ultimoAcceso) : '—');
@@ -152,11 +158,11 @@
             : '<span style="color:rgba(255,255,255,0.55);">No habilitado</span>');
 
         // Snapshot estado inicial para detectar dirty
+        // §114 — cargo eliminado del dirty-check: ya no es editable.
         _initialState = {
             nombre: nombre,
             telefono: telefono,
             prefijo: prefijo,
-            cargo: cargo,
             tipoDoc: tipoDoc,
             cedula: cedula
         };
@@ -243,11 +249,11 @@
         return changed;
     }
     function readForm() {
+        // §114 — cargo NO se lee del form: es read-only (espejo del rol).
         return {
             nombre: ($('profileNombre').value || '').trim(),
             telefono: ($('profileTelefono').value || '').trim(),
             prefijo: $('profilePrefijo').value || '+57',
-            cargo: ($('profileCargo').value || '').trim(),
             tipoDoc: $('profileTipoDoc').value || 'cc',
             cedula: ($('profileCedula').value || '').trim()
         };
@@ -320,11 +326,12 @@
         updateSaveBar();
 
         var snap = readForm();
+        // §114 — cargo NO se escribe desde el perfil: lo sincroniza la
+        // Cloud Function (onUserRoleAssigned/onRoleUpdated) = roleName.
         var updates = {
             nombre: snap.nombre,
             telefono: snap.telefono,
-            prefijo: snap.prefijo,
-            cargo: snap.cargo
+            prefijo: snap.prefijo
         };
         // Cédula solo se envía si NO estaba bloqueada (primer registro)
         if (!_cedulaLocked && snap.cedula) {

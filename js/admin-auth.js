@@ -1713,7 +1713,9 @@
         if (window.notifyCenter && document.getElementById('headerNotifBell')) {
             window.notifyCenter.mount('#headerNotifBell');
         }
-        var rolLabel = AP.currentUserRole === 'super_admin' ? 'Super Admin' : AP.currentUserRole === 'editor' ? 'Editor' : 'Viewer';
+        // §114 — Etiqueta de rol vía resolver canónico (roleName del rol dinámico,
+        // NO el rol crudo legacy). Pasa el perfil completo para que resuelva roleName/cargo.
+        var rolLabel = AP.resolveRoleLabel(AP.currentUserProfile || AP.currentUserRole);
         var userName = (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0];
         $('adminEmail').textContent = user.email + ' (' + rolLabel + ')';
 
@@ -2061,9 +2063,13 @@
                 email: user.email,
                 nombre: (AP.currentUserProfile && AP.currentUserProfile.nombre) || user.email.split('@')[0],
                 rol: AP.currentUserRole || 'viewer',
+                // §114 — roleName del rol dinámico del sistema, denormalizado en
+                // la sesión RTDB para que el resolver canónico (AP.resolveRoleLabel)
+                // muestre la etiqueta correcta en la isla dinámica y Sesiones Activas.
+                roleName: (AP.currentUserProfile && AP.currentUserProfile.roleName) || '',
                 // §47.ter — cargo personalizado del perfil para mostrarse en
-                // la isla dinámica (ej: "CEO", "Asesor comercial") en lugar
-                // del rol técnico (super_admin/editor/viewer).
+                // la isla dinámica (ej: "CEO", "Asesor comercial"). Desde §114
+                // el cargo es espejo del roleName (auto-asignado, no editable).
                 cargo: (AP.currentUserProfile && AP.currentUserProfile.cargo) || '',
                 browser: dev.browser,
                 os: dev.os,
@@ -2214,7 +2220,9 @@
 
             listEl.innerHTML = sessions.map(function(s) {
                 var rolColors = { super_admin: 'admin-danger', editor: 'admin-info', viewer: 'admin-text-muted' };
-                var rolLabel = s.rol === 'super_admin' ? 'Super Admin' : s.rol === 'editor' ? 'Editor' : 'Viewer';
+                // §114 — Etiqueta vía resolver canónico (roleName del rol dinámico de la sesión
+                // RTDB; fallback a cargo/legacy). Color sigue usando el rol legacy s.rol.
+                var rolLabel = AP.escapeHtml(AP.resolveRoleLabel(s));
                 var nombre = AP.escapeHtml(s.nombre || s.email || '?');
                 var initials = (s.nombre || '?').split(' ').map(function(w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join('');
                 var isSelf = currentUid && s.uid === currentUid;

@@ -47,6 +47,8 @@
                     nombre: u.nombre || u.email,
                     email: u.email,
                     rol: u.rol,
+                    roleName: u.roleName,
+                    cargo: u.cargo,
                     ventas: 0,
                     asignadas: 0,
                     contactadas: 0,
@@ -155,7 +157,7 @@
                                        'var(--status-danger)';
                         return '<tr>' +
                             '<td><strong>' + medal + escTxt(a.nombre) + '</strong>' +
-                                '<small style="color:var(--text-tertiary);display:block;font-size:0.7rem;">' + escTxt(a.rol) + '</small>' +
+                                '<small style="color:var(--text-tertiary);display:block;font-size:0.7rem;">' + escTxt(AP.resolveRoleLabel(a)) + '</small>' +
                             '</td>' +
                             '<td>' + a.ventas + '</td>' +
                             '<td>' + a.asignadas + '</td>' +

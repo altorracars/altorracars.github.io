@@ -333,8 +333,12 @@
             .split(' ').map(function (w) { return w.charAt(0); })
             .join('').substring(0, 2).toUpperCase();
 
-        // Si hay cargo personalizado, mostrarlo. Sino, usar label humano del rol.
-        var displayRole = cargo || roleLabel(rol);
+        // §114 — Etiqueta vía resolver canónico (roleName del rol dinámico →
+        // cargo → legacy legible). Single source of truth. Fallback a roleLabel
+        // local si AP no está disponible.
+        var displayRole = (window.AP && AP.resolveRoleLabel)
+            ? AP.resolveRoleLabel(profile)
+            : (cargo || roleLabel(rol));
 
         var nameEl = $('atnUserName');
         var roleEl = $('atnUserRole');

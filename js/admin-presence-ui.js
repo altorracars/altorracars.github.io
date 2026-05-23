@@ -214,11 +214,13 @@
         detailListEl.innerHTML = _allOthers.map(function (p) {
             var name = p.nombre || p.email || '?';
             var initials = getInitials(name);
-            // §47.ter — Mostrar CARGO personalizado del perfil (ej: "CEO",
-            // "Asesor comercial") en lugar del rol técnico. Si no hay cargo,
-            // fallback a rol con label legible. Ubicación (sección) eliminada
-            // del detail por solicitud del cliente — no es info relevante.
-            var displayLabel = (p.cargo && String(p.cargo).trim()) || formatRole(p.rol);
+            // §114 — Etiqueta vía resolver canónico (roleName del rol dinámico →
+            // cargo → legacy legible). Single source of truth. Fallback a
+            // formatRole local si AP no está disponible. Ubicación (sección)
+            // eliminada del detail por solicitud del cliente (§47.ter).
+            var displayLabel = (window.AP && AP.resolveRoleLabel)
+                ? AP.resolveRoleLabel(p)
+                : ((p.cargo && String(p.cargo).trim()) || formatRole(p.rol));
             var inMine = _currentSection && p.currentSection === _currentSection;
             var lastSeenAgo = p.lastSeen ? formatTimeAgo(p.lastSeen) : '';
             var tabsBadge = p.tabs > 1 ? ' <span class="alt-presence-tabs-badge" title="' + p.tabs + ' pestañas abiertas">×' + p.tabs + '</span>' : '';

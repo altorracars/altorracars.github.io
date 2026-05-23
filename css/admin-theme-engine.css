@@ -1,0 +1,128 @@
+/* ════════════════════════════════════════════════════════════════════
+   ALTORRA — ADMIN THEME ENGINE (§115)
+   ====================================================================
+   Motor cromático del panel admin. Cada paleta redefine TODO el set de
+   tokens de acento `--ak-*` (definidos por defecto en tokens.css = gold).
+   Como el admin remapeó sus literales dorados hardcoded a estos tokens,
+   cambiar la paleta recolorea MUCHÍSIMOS elementos a la vez (no "2 cositas").
+
+   Carga ÚLTIMA en admin.html para ganar el cascade sobre los bloques
+   parciales legacy de admin.css en igualdad de especificidad.
+
+   Ortogonal a theme-switcher.js (light/dark/high-contrast vía data-theme).
+   Aplicado por AltorraThemePicker → html.theme-{name}.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ─── Paleta DORADO clásico (default Altorra) ───────────────────────── */
+html.theme-gold {
+    --ak-rgb:        184, 150, 88;
+    --ak-primary:    #b89658;
+    --ak-light:      #d4ad6e;
+    --ak-light-rgb:  212, 173, 110;
+    --ak-dark:       #9a7d44;
+    --ak-mid:        #c9a663;
+    --ak-mid-rgb:    201, 166, 99;
+    --ak-bright:     #d4af37;
+    --ak-bright-rgb: 212, 175, 55;
+}
+
+/* ─── Paleta AZUL corporativo ───────────────────────────────────────── */
+html.theme-blue {
+    --ak-rgb:        59, 130, 246;
+    --ak-primary:    #3b82f6;
+    --ak-light:      #60a5fa;
+    --ak-light-rgb:  96, 165, 250;
+    --ak-dark:       #1d4ed8;
+    --ak-mid:        #2563eb;
+    --ak-mid-rgb:    37, 99, 235;
+    --ak-bright:     #38bdf8;
+    --ak-bright-rgb: 56, 189, 248;
+}
+
+/* ─── Paleta VIOLETA creativo ───────────────────────────────────────── */
+html.theme-violet {
+    --ak-rgb:        139, 92, 246;
+    --ak-primary:    #8b5cf6;
+    --ak-light:      #a78bfa;
+    --ak-light-rgb:  167, 139, 250;
+    --ak-dark:       #6d28d9;
+    --ak-mid:        #7c3aed;
+    --ak-mid-rgb:    124, 58, 237;
+    --ak-bright:     #c084fc;
+    --ak-bright-rgb: 192, 132, 252;
+}
+
+/* ─── Paleta ESMERALDA (verde) ──────────────────────────────────────── */
+html.theme-emerald {
+    --ak-rgb:        16, 185, 129;
+    --ak-primary:    #10b981;
+    --ak-light:      #34d399;
+    --ak-light-rgb:  52, 211, 153;
+    --ak-dark:       #047857;
+    --ak-mid:        #059669;
+    --ak-mid-rgb:    5, 150, 105;
+    --ak-bright:     #6ee7b7;
+    --ak-bright-rgb: 110, 231, 183;
+}
+
+/* ─── Paleta CARMESÍ (rojo lujo) ────────────────────────────────────── */
+html.theme-crimson {
+    --ak-rgb:        225, 29, 72;
+    --ak-primary:    #e11d48;
+    --ak-light:      #fb7185;
+    --ak-light-rgb:  251, 113, 133;
+    --ak-dark:       #9f1239;
+    --ak-mid:        #be123c;
+    --ak-mid-rgb:    190, 18, 60;
+    --ak-bright:     #fda4af;
+    --ak-bright-rgb: 253, 164, 175;
+}
+
+/* ─── Paleta CIAN (tech) ────────────────────────────────────────────── */
+html.theme-cyan {
+    --ak-rgb:        6, 182, 212;
+    --ak-primary:    #06b6d4;
+    --ak-light:      #22d3ee;
+    --ak-light-rgb:  34, 211, 238;
+    --ak-dark:       #0e7490;
+    --ak-mid:        #0891b2;
+    --ak-mid-rgb:    8, 145, 178;
+    --ak-bright:     #67e8f9;
+    --ak-bright-rgb: 103, 232, 249;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   DERIVACIÓN de tokens legacy desde --ak-* (aplica a TODAS las paletas).
+   Así los componentes que ya usaban var(--brand-primary)/var(--ws-color-gold)
+   /var(--nova-*-gold) también se recolorean sin tocar su CSS.
+   Mismo set que los bloques parciales legacy de admin.css, pero completo
+   y derivado del acento activo.
+   ════════════════════════════════════════════════════════════════════ */
+html.theme-gold,
+html.theme-blue,
+html.theme-violet,
+html.theme-emerald,
+html.theme-crimson,
+html.theme-cyan {
+    --brand-primary:           var(--ak-primary);
+    --brand-primary-hover:     var(--ak-light);
+    --brand-primary-active:    var(--ak-dark);
+    --ws-color-gold:           var(--ak-primary);
+    --nova-tint-gold:          rgba(var(--ak-rgb), 0.10);
+    --nova-acrylic-tint-gold:  rgba(var(--ak-rgb), 0.06);
+    --nova-reveal-color:       rgba(var(--ak-rgb), 0.16);
+    --nova-reveal-color-hi:    rgba(var(--ak-rgb), 0.28);
+    --nova-border-gold:        1px solid rgba(var(--ak-rgb), 0.30);
+    --nova-border-gold-hi:     1px solid rgba(var(--ak-rgb), 0.55);
+    --nova-focus-ring:         0 0 0 3px rgba(var(--ak-rgb), 0.32);
+    --nova-focus-ring-soft:    0 0 0 4px rgba(var(--ak-rgb), 0.18);
+}
+
+html.theme-blue ::selection,
+html.theme-violet ::selection,
+html.theme-emerald ::selection,
+html.theme-crimson ::selection,
+html.theme-cyan ::selection {
+    background: rgba(var(--ak-rgb), 0.32);
+    color: #fff;
+}

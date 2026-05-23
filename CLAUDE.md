@@ -41359,3 +41359,116 @@ como fallback, IDs DOM preservados. §17.2: cero transition nuevo. §17.12:
 cero MutationObserver. §35: cero pointermove. §71: anti-loop respetado.
 
 **Cache bump**: `v20260522090000`.
+
+---
+
+## 115. ADR-115 — Sistema de tema cromático del admin: toast-spam fix + recoloreo masivo real (6 paletas) (2026-05-24)
+
+> Cliente reportó 3 cosas sobre "Apariencia del panel" (verbatim):
+> 1. "Hay un bug cuando se cambia la Apariencia del panel a los colores
+>    que se desee dorado violeta azul, aparecen muchisimas notificaciones.
+>    Necesito que audites todas las notificaciones del sistema para que
+>    corrias ese bug de que aparezcan muchas veces."
+> 2. "El tema no cambia en absolutamente nada solo 2 cositas de color, se
+>    necesita realmente una implementacion que al seleccionar dorado
+>    muchas cosas sean doradas, si se selecciona violeta y asi
+>    sucesivamente."
+> 3. "Demos un nivel top de potenciacion de diseño a todo el panel admin
+>    en tema sin dañar su flujo ni su funcionalidad."
+>
+> Aplicado bajo §17.2 (cero transition:all/`*` global nuevo), §17.4
+> (HTML/CSS estable — IDs/funciones/callsites preservados), §17.12 (cero
+> MutationObserver nuevo), §19 RCA estricto (leí los paths antes de tocar
+> — el toast-spam era acumulación de listeners, no un bug de notify),
+> §35 (cero pointermove), §37 (IAP), §28.8 (picker original).
+
+### 115.1 Causa raíz Issue 1 — toast spam (RCA §19)
+
+`AltorraThemePicker` (§28.8) re-ataba `addEventListener('click', ...)` en
+el MISMO container en cada render/auto-mount. El container sobrevive al
+`innerHTML` (solo se reemplazan sus hijos), así que cada re-attach SUMABA
+un handler nuevo sin remover el anterior → tras N renders, 1 click
+disparaba N veces `applyTheme` + N toasts "Tema aplicado". El anti-patrón
+es de acumulación de listeners, NO de `notify` (notify estaba correcto).
+
+### 115.2 Causa raíz Issue 2 — el tema "no cambia nada"
+
+El picker aplicaba `.theme-{name}` al `<html>` pero el CSS del admin tenía
+~838 literales dorados HARDCODED (`#b89658`, `rgba(184,150,88,...)`, etc.)
+que NO leían ninguna variable temática → cambiar la clase recoloreaba solo
+las pocas reglas que ya usaban tokens. Por eso "solo 2 cositas".
+
+### 115.3 Solución estructural
+
+**Issue 1 — picker reescrito (`js/admin-theme-picker.js`)**:
+- `THEMES` 3→6: gold, blue, violet, **emerald, crimson, cyan** (nuevos).
+- Bind ÚNICO idempotente: `attachClickHandlers(root)` con flag
+  `root._atpBound` → un solo `addEventListener` por container de por vida.
+- `onPickerClick` delegado (captura clicks en hijos re-renderizados) →
+  sobrevive al `innerHTML`, NO se re-ata por render ni por auto-mount.
+- Skip total si el tema clickeado YA está activo (`if (t === getTheme())
+  return;`) → ni `applyTheme` ni toast. **Una sola notificación por
+  cambio real.**
+
+**Issue 2 — capa canónica de acento + recoloreo masivo**:
+- `css/tokens.css`: nueva capa `--ak-*` en `:root` (gold por defecto):
+  `--ak-rgb / --ak-primary / --ak-light / --ak-light-rgb / --ak-dark /
+  --ak-mid / --ak-mid-rgb / --ak-bright / --ak-bright-rgb`.
+- `css/admin-theme-engine.css` (CREADO, carga ÚLTIMA en admin.html para
+  ganar el cascade por source-order): redefine TODO el set `--ak-*` por
+  `html.theme-{name}` (6 paletas) + deriva tokens legacy
+  (`--brand-primary`, `--ws-color-gold`, `--nova-tint-gold`,
+  `--nova-reveal-*`, `--nova-border-*`, `--nova-focus-*`) desde `--ak-*` +
+  `::selection` por paleta.
+- ~838 literales dorados en `admin.css` / `admin-visionary.css` /
+  `admin-v2.css` / `admin-topnav.css` / `admin-perf-kill.css` remapeados
+  a `var(--ak-*, <gold-fallback>)` → cambiar paleta recolorea MUCHÍSIMOS
+  elementos a la vez (no "2 cositas"). Validado: 0 literales residuales,
+  0 dobles-wraps, llaves/paréntesis balanceados en los 7 CSS.
+
+`rgba(var(--ak-rgb), A)` es válido porque `--ak-rgb` expande al triplete
+`R, G, B`. Especificidad: `html.theme-blue` (0,1,1) vence a `:root`
+(0,1,0); el engine carga LAST → gana entre bloques de igual especificidad.
+
+### 115.4 No-regresión
+
+- `STORAGE_KEY='altorra_admin_theme'`, `DEFAULT_THEME='gold'`, API pública
+  (`apply`/`get`/`themes`/`meta`/`mount`) preservadas.
+- Ortogonal a `theme-switcher.js` (light/dark/high-contrast vía
+  `data-theme`) — sin colisión.
+- `node -c js/admin-theme-picker.js` → OK. Cero schema, cero deploy
+  backend. Cliente solo Ctrl+Shift+R.
+
+### 115.5 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260524010000) | Carga nueva |
+| 2 | Ajustes → Apariencia → click "Violeta" | TODO el acento del panel se vuelve violeta (sidebar/botones/badges/links/focus), no "2 cositas" |
+| 3 | Click la MISMA paleta activa de nuevo | NO aparece toast (skip-if-active) |
+| 4 | Cambiar paleta 10 veces seguidas | UNA notificación por cambio (cero spam acumulado) |
+| 5 | Probar las 6 paletas (gold/blue/violet/emerald/crimson/cyan) | Cada una recolorea el set `--ak-*` completo |
+| 6 | Refresh tras elegir crimson | Persiste (localStorage), recolorea pre-paint |
+| 7 | Light/dark/high-contrast (theme-switcher) | Sigue funcionando ortogonal |
+
+### 115.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-theme-picker.js` | THEMES 3→6, bind idempotente `_atpBound` + `onPickerClick` delegado, skip-if-active (toast-spam fix) |
+| `css/tokens.css` | Capa canónica `--ak-*` (gold default) en `:root` |
+| `css/admin-theme-engine.css` | CREADO — 6 paletas `html.theme-{name}` + derivación tokens legacy + `::selection`; carga última |
+| `admin.html` | `<link>` del engine después de admin-topnav.css (carga last) |
+| `css/admin.css` + `admin-visionary.css` + `admin-v2.css` + `admin-topnav.css` + `admin-perf-kill.css` | ~838 literales dorados → `var(--ak-*, gold-fallback)` |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260524010000 |
+| `CLAUDE.md` | Esta sección §115 |
+
+### 115.7 Doctrina aplicada
+
+§19 RCA: toast-spam diagnosticado como acumulación de listeners (no notify);
+"no cambia nada" diagnosticado como literales hardcoded fuera de tokens.
+§37 IAP entregado. §17.4: API/IDs/callsites preservados, gold como fallback
+en cada `var()`. §17.2: cero transition:all/`*` global nuevo. §17.12: cero
+MutationObserver. §35: cero pointermove.
+
+**Cache bump**: `v20260524010000`.

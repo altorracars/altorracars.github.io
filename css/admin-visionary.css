@@ -31,25 +31,25 @@
     --vis-brand-50:          #fff8e6;
     --vis-brand-100:         #f5e3b8;
     --vis-brand-200:         #ecd292;
-    --vis-brand-300:         #d4ad6e;
+    --vis-brand-300:         var(--ak-light,#d4ad6e);
     --vis-brand-400:         #c4a065;
-    --vis-brand-500:         #b89658;
+    --vis-brand-500:         var(--ak-primary,#b89658);
     --vis-brand-600:         #a78649;
     --vis-brand-700:         #8c6f3a;
     --vis-brand-800:         #6f5829;
-    --vis-brand-glow:        rgba(184, 150, 88, 0.55);
-    --vis-brand-glow-soft:   rgba(184, 150, 88, 0.22);
-    --vis-brand-tint:        rgba(184, 150, 88, 0.06);
-    --vis-brand-tint-strong: rgba(184, 150, 88, 0.14);
+    --vis-brand-glow:        rgba(var(--ak-rgb), 0.55);
+    --vis-brand-glow-soft:   rgba(var(--ak-rgb), 0.22);
+    --vis-brand-tint:        rgba(var(--ak-rgb), 0.06);
+    --vis-brand-tint-strong: rgba(var(--ak-rgb), 0.14);
 
     /* ─── Borders glass refractive ─── */
     --vis-border-1:          1px solid rgba(255, 255, 255, 0.05);
     --vis-border-2:          1px solid rgba(255, 255, 255, 0.08);
     --vis-border-3:          1px solid rgba(255, 255, 255, 0.12);
     --vis-border-4:          1px solid rgba(255, 255, 255, 0.18);
-    --vis-border-gold:       1px solid rgba(184, 150, 88, 0.20);
-    --vis-border-gold-hi:    1px solid rgba(184, 150, 88, 0.45);
-    --vis-border-glow:       1px solid rgba(184, 150, 88, 0.32);
+    --vis-border-gold:       1px solid rgba(var(--ak-rgb), 0.20);
+    --vis-border-gold-hi:    1px solid rgba(var(--ak-rgb), 0.45);
+    --vis-border-glow:       1px solid rgba(var(--ak-rgb), 0.32);
 
     /* ─── Elevation 6 niveles físicos ─── */
     --vis-elev-1:
@@ -76,13 +76,13 @@
         0 48px 96px rgba(0, 0, 0, 0.36),
         0 96px 200px rgba(0, 0, 0, 0.28);
     --vis-elev-glow:
-        0 0 0 1px rgba(184, 150, 88, 0.20),
-        0 8px 32px rgba(184, 150, 88, 0.20),
-        0 16px 64px rgba(184, 150, 88, 0.10);
+        0 0 0 1px rgba(var(--ak-rgb), 0.20),
+        0 8px 32px rgba(var(--ak-rgb), 0.20),
+        0 16px 64px rgba(var(--ak-rgb), 0.10);
     --vis-elev-glow-strong:
-        0 0 0 1px rgba(184, 150, 88, 0.40),
-        0 12px 48px rgba(184, 150, 88, 0.32),
-        0 24px 96px rgba(184, 150, 88, 0.18);
+        0 0 0 1px rgba(var(--ak-rgb), 0.40),
+        0 12px 48px rgba(var(--ak-rgb), 0.32),
+        0 24px 96px rgba(var(--ak-rgb), 0.18);
 
     /* ─── Motion 12 spring curves ─── */
     --vis-ease-linear:       linear;
@@ -163,12 +163,12 @@
 
     /* ─── State layers (Material You) ─── */
     --vis-state-hover:       rgba(255, 255, 255, 0.04);
-    --vis-state-hover-gold:  rgba(184, 150, 88, 0.10);
+    --vis-state-hover-gold:  rgba(var(--ak-rgb), 0.10);
     --vis-state-active:      rgba(255, 255, 255, 0.08);
-    --vis-state-active-gold: rgba(184, 150, 88, 0.18);
-    --vis-state-focus:       0 0 0 3px rgba(184, 150, 88, 0.32);
-    --vis-state-focus-tight: 0 0 0 2px rgba(184, 150, 88, 0.55);
-    --vis-state-selected:    rgba(184, 150, 88, 0.14);
+    --vis-state-active-gold: rgba(var(--ak-rgb), 0.18);
+    --vis-state-focus:       0 0 0 3px rgba(var(--ak-rgb), 0.32);
+    --vis-state-focus-tight: 0 0 0 2px rgba(var(--ak-rgb), 0.55);
+    --vis-state-selected:    rgba(var(--ak-rgb), 0.14);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -178,11 +178,11 @@
 body:has(.admin-panel) {
     background:
         radial-gradient(ellipse 1200px 800px at 10% 0%,
-            rgba(184, 150, 88, 0.08) 0%, transparent 50%),
+            rgba(var(--ak-rgb), 0.08) 0%, transparent 50%),
         radial-gradient(ellipse 1000px 700px at 90% 100%,
             rgba(139, 92, 246, 0.05) 0%, transparent 50%),
         radial-gradient(ellipse 600px 400px at 50% 50%,
-            rgba(184, 150, 88, 0.03) 0%, transparent 70%),
+            rgba(var(--ak-rgb), 0.03) 0%, transparent 70%),
         var(--vis-surface-base);
     background-attachment: fixed;
     color: rgba(255, 255, 255, 0.92);
@@ -331,8 +331,8 @@ body:has(.admin-panel) {
     inset: 0;
     background: radial-gradient(
         circle 280px at var(--vis-mx, 50%) var(--vis-my, 50%),
-        rgba(184, 150, 88, 0.10) 0%,
-        rgba(184, 150, 88, 0.04) 25%,
+        rgba(var(--ak-rgb), 0.10) 0%,
+        rgba(var(--ak-rgb), 0.04) 25%,
         transparent 60%);
     opacity: 0;
     transition: opacity var(--vis-d-base) var(--vis-ease-snap);
@@ -360,9 +360,9 @@ body:has(.admin-panel) {
     padding: 1px;
     background: linear-gradient(
         135deg,
-        rgba(184, 150, 88, 0) 0%,
-        rgba(184, 150, 88, 0.40) 50%,
-        rgba(184, 150, 88, 0) 100%);
+        rgba(var(--ak-rgb), 0) 0%,
+        rgba(var(--ak-rgb), 0.40) 50%,
+        rgba(var(--ak-rgb), 0) 100%);
     -webkit-mask:
         linear-gradient(#000 0 0) content-box,
         linear-gradient(#000 0 0);
@@ -387,7 +387,7 @@ body:has(.admin-panel) {
 .admin-panel .pipeline-card:hover {
     transform: translateY(-3px);
     box-shadow: var(--vis-elev-3),
-                0 0 0 1px rgba(184, 150, 88, 0.18);
+                0 0 0 1px rgba(var(--ak-rgb), 0.18);
 }
 .admin-panel .hero-kpi:hover {
     transform: translateY(-4px);
@@ -409,7 +409,7 @@ body:has(.admin-panel) {
     border-right: var(--vis-border-3);
     box-shadow:
         4px 0 32px rgba(0, 0, 0, 0.28),
-        inset -1px 0 0 rgba(184, 150, 88, 0.06);
+        inset -1px 0 0 rgba(var(--ak-rgb), 0.06);
     position: relative;
 }
 .admin-panel .sidebar::before {
@@ -419,8 +419,8 @@ body:has(.admin-panel) {
     width: 1px;
     background: linear-gradient(180deg,
         transparent 0%,
-        rgba(184, 150, 88, 0.18) 30%,
-        rgba(184, 150, 88, 0.18) 70%,
+        rgba(var(--ak-rgb), 0.18) 30%,
+        rgba(var(--ak-rgb), 0.18) 70%,
         transparent 100%);
     pointer-events: none;
 }
@@ -513,15 +513,15 @@ body:has(.admin-panel) {
 .admin-panel .nav-item.active {
     background:
         linear-gradient(135deg,
-            rgba(184, 150, 88, 0.20) 0%,
-            rgba(184, 150, 88, 0.08) 100%);
+            rgba(var(--ak-rgb), 0.20) 0%,
+            rgba(var(--ak-rgb), 0.08) 100%);
     color: var(--vis-brand-200);
     font-weight: 600;
-    border-color: rgba(184, 150, 88, 0.30);
+    border-color: rgba(var(--ak-rgb), 0.30);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.08),
-        inset 0 0 24px rgba(184, 150, 88, 0.06),
-        0 4px 12px rgba(184, 150, 88, 0.10);
+        inset 0 0 24px rgba(var(--ak-rgb), 0.06),
+        0 4px 12px rgba(var(--ak-rgb), 0.10);
 }
 .admin-panel .sidebar .nav-item.active::before,
 .admin-panel .nav-item.active::before {
@@ -547,8 +547,8 @@ body:has(.admin-panel) {
 /* Badge en nav-item */
 .admin-panel .nav-badge {
     background: linear-gradient(135deg,
-        rgba(184, 150, 88, 0.30) 0%,
-        rgba(184, 150, 88, 0.18) 100%);
+        rgba(var(--ak-rgb), 0.30) 0%,
+        rgba(var(--ak-rgb), 0.18) 100%);
     color: var(--vis-brand-200);
     border: var(--vis-border-gold);
     border-radius: var(--vis-r-pill);
@@ -579,15 +579,15 @@ body:has(.admin-panel) {
 .admin-panel .user-profile-card {
     background:
         linear-gradient(135deg,
-            rgba(184, 150, 88, 0.10) 0%,
-            rgba(184, 150, 88, 0.02) 100%);
+            rgba(var(--ak-rgb), 0.10) 0%,
+            rgba(var(--ak-rgb), 0.02) 100%);
     border: var(--vis-border-gold);
     border-radius: var(--vis-r-md);
     padding: 12px 14px;
     transition: all var(--vis-d-base) var(--vis-ease-spring-1);
 }
 .admin-panel .sidebar-profile:hover {
-    border-color: rgba(184, 150, 88, 0.40);
+    border-color: rgba(var(--ak-rgb), 0.40);
     box-shadow: var(--vis-elev-glow);
     transform: translateY(-1px);
 }
@@ -605,7 +605,7 @@ body:has(.admin-panel) {
     color: #1a1310;
     font-weight: 650;
     letter-spacing: var(--vis-ls-base);
-    border: 1px solid rgba(212, 173, 110, 0.50);
+    border: 1px solid rgba(var(--ak-light-rgb), 0.50);
     border-radius: var(--vis-r-sm);
     padding: 10px 18px;
     box-shadow:
@@ -671,7 +671,7 @@ body:has(.admin-panel) {
 .admin-panel .btn-secondary:hover:not(:disabled),
 .admin-panel .alt-btn--secondary:hover:not(:disabled) {
     background: var(--vis-state-hover-gold);
-    border-color: rgba(184, 150, 88, 0.30);
+    border-color: rgba(var(--ak-rgb), 0.30);
     color: #ffffff;
     transform: translateY(-1px);
     box-shadow: var(--vis-elev-2);
@@ -695,7 +695,7 @@ body:has(.admin-panel) {
 .admin-panel .btn-ghost:hover:not(:disabled),
 .admin-panel .alt-btn--icon:hover:not(:disabled) {
     background: var(--vis-state-hover-gold);
-    border-color: rgba(184, 150, 88, 0.20);
+    border-color: rgba(var(--ak-rgb), 0.20);
     color: var(--vis-brand-300);
     transform: scale(1.05);
 }
@@ -714,8 +714,8 @@ body:has(.admin-panel) {
     outline: none;
     box-shadow:
         0 0 0 2px var(--vis-surface-base),
-        0 0 0 4px rgba(184, 150, 88, 0.55),
-        0 0 16px rgba(184, 150, 88, 0.20);
+        0 0 0 4px rgba(var(--ak-rgb), 0.55),
+        0 0 16px rgba(var(--ak-rgb), 0.20);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -761,8 +761,8 @@ body:has(.admin-panel) {
     border-color: var(--vis-brand-500);
     outline: none;
     box-shadow:
-        0 0 0 3px rgba(184, 150, 88, 0.20),
-        inset 0 1px 0 rgba(184, 150, 88, 0.10);
+        0 0 0 3px rgba(var(--ak-rgb), 0.20),
+        inset 0 1px 0 rgba(var(--ak-rgb), 0.10);
 }
 .admin-panel input::placeholder,
 .admin-panel textarea::placeholder {
@@ -791,8 +791,8 @@ body:has(.admin-panel) {
 .admin-panel table thead th {
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.08) 0%,
-            rgba(184, 150, 88, 0.02) 100%);
+            rgba(var(--ak-rgb), 0.08) 0%,
+            rgba(var(--ak-rgb), 0.02) 100%);
     backdrop-filter: blur(var(--vis-blur-8));
     -webkit-backdrop-filter: blur(var(--vis-blur-8));
     color: rgba(255, 255, 255, 0.72);
@@ -913,8 +913,8 @@ body:has(.admin-panel) {
 .admin-panel #sec-dealers .page-header {
     background:
         radial-gradient(ellipse 800px 200px at 50% 0%,
-            rgba(184, 150, 88, 0.15) 0%,
-            rgba(184, 150, 88, 0.04) 40%,
+            rgba(var(--ak-rgb), 0.15) 0%,
+            rgba(var(--ak-rgb), 0.04) 40%,
             transparent 80%);
     border-bottom: var(--vis-border-2);
     padding: 32px 32px 24px;
@@ -998,8 +998,8 @@ body:has(.admin-panel) {
 .admin-panel ::-webkit-scrollbar-thumb {
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.40) 0%,
-            rgba(184, 150, 88, 0.25) 100%);
+            rgba(var(--ak-rgb), 0.40) 0%,
+            rgba(var(--ak-rgb), 0.25) 100%);
     border-radius: var(--vis-r-pill);
     border: 2px solid transparent;
     background-clip: padding-box;
@@ -1008,8 +1008,8 @@ body:has(.admin-panel) {
 .admin-panel ::-webkit-scrollbar-thumb:hover {
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.65) 0%,
-            rgba(184, 150, 88, 0.45) 100%);
+            rgba(var(--ak-rgb), 0.65) 0%,
+            rgba(var(--ak-rgb), 0.45) 100%);
     background-clip: padding-box;
 }
 
@@ -1051,12 +1051,12 @@ body:has(.admin-panel) {
    13. TEXT SELECTION dorada signature
    ═══════════════════════════════════════════════════════════════════ */
 .admin-panel ::selection {
-    background: rgba(184, 150, 88, 0.45);
+    background: rgba(var(--ak-rgb), 0.45);
     color: #ffffff;
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.30);
 }
 .admin-panel ::-moz-selection {
-    background: rgba(184, 150, 88, 0.45);
+    background: rgba(var(--ak-rgb), 0.45);
     color: #ffffff;
 }
 
@@ -1139,7 +1139,7 @@ body:has(.admin-panel) {
     height: 1px;
     background: linear-gradient(90deg,
         transparent 0%,
-        rgba(184, 150, 88, 0.20) 50%,
+        rgba(var(--ak-rgb), 0.20) 50%,
         transparent 100%);
     pointer-events: none;
 }
@@ -1242,10 +1242,10 @@ body:has(.admin-panel) {
 }
 .admin-panel .role-badge--super_admin {
     background: linear-gradient(135deg,
-        rgba(184, 150, 88, 0.24) 0%,
-        rgba(184, 150, 88, 0.12) 100%);
+        rgba(var(--ak-rgb), 0.24) 0%,
+        rgba(var(--ak-rgb), 0.12) 100%);
     color: var(--vis-brand-200);
-    border-color: rgba(184, 150, 88, 0.55);
+    border-color: rgba(var(--ak-rgb), 0.55);
 }
 .admin-panel .role-badge--editor {
     background: rgba(59, 130, 246, 0.18);
@@ -1274,8 +1274,8 @@ body:has(.admin-panel) {
 #appointmentManagerModal .modal-header {
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.10) 0%,
-            rgba(184, 150, 88, 0.02) 100%);
+            rgba(var(--ak-rgb), 0.10) 0%,
+            rgba(var(--ak-rgb), 0.02) 100%);
     border-bottom: var(--vis-border-gold);
     padding: 20px 26px;
     position: relative;
@@ -1358,7 +1358,7 @@ body:has(.admin-panel) {
 }
 .altorra-bell:hover {
     background: var(--vis-state-hover-gold);
-    border-color: rgba(184, 150, 88, 0.30);
+    border-color: rgba(var(--ak-rgb), 0.30);
     color: var(--vis-brand-300);
     transform: rotate(-12deg) scale(1.08);
 }
@@ -1458,8 +1458,8 @@ body:has(.admin-panel) {
 .alt-palette-item.selected {
     background:
         linear-gradient(90deg,
-            rgba(184, 150, 88, 0.24) 0%,
-            rgba(184, 150, 88, 0.08) 100%);
+            rgba(var(--ak-rgb), 0.24) 0%,
+            rgba(var(--ak-rgb), 0.08) 100%);
     border-left: 3px solid var(--vis-brand-500);
     padding-left: 11px;
 }
@@ -1478,7 +1478,7 @@ body:has(.admin-panel) {
     font-weight: 700;
     letter-spacing: var(--vis-ls-tight);
     box-shadow:
-        0 2px 8px rgba(184, 150, 88, 0.30),
+        0 2px 8px rgba(var(--ak-rgb), 0.30),
         inset 0 1px 0 rgba(255, 255, 255, 0.40);
     transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
 }
@@ -1546,13 +1546,13 @@ body:has(.admin-panel) {
 .cal-tab[aria-selected="true"] {
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.30) 0%,
-            rgba(184, 150, 88, 0.12) 100%);
+            rgba(var(--ak-rgb), 0.30) 0%,
+            rgba(var(--ak-rgb), 0.12) 100%);
     color: var(--vis-brand-200);
     font-weight: 650;
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.10),
-        0 2px 8px rgba(184, 150, 88, 0.20);
+        0 2px 8px rgba(var(--ak-rgb), 0.20);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1562,7 +1562,7 @@ body:has(.admin-panel) {
 .admin-panel .welcome-card {
     background:
         radial-gradient(ellipse 600px 300px at 0% 0%,
-            rgba(184, 150, 88, 0.10) 0%, transparent 60%),
+            rgba(var(--ak-rgb), 0.10) 0%, transparent 60%),
         linear-gradient(135deg,
             rgba(20, 20, 22, 0.85) 0%,
             rgba(14, 14, 16, 0.92) 100%);
@@ -1613,10 +1613,10 @@ body:has(.admin-panel) {
    29. WORKFLOW CARDS detail (existing — refinados)
    ═══════════════════════════════════════════════════════════════════ */
 .admin-panel .workflow-card--on {
-    border-color: rgba(184, 150, 88, 0.32);
+    border-color: rgba(var(--ak-rgb), 0.32);
     box-shadow:
         var(--vis-elev-1),
-        inset 0 0 24px rgba(184, 150, 88, 0.04);
+        inset 0 0 24px rgba(var(--ak-rgb), 0.04);
 }
 .admin-panel .workflow-card--off {
     opacity: 0.65;
@@ -1698,7 +1698,7 @@ body:has(.admin-panel) {
     letter-spacing: var(--vis-ls-base);
     padding: 12px 24px;
     border-radius: var(--vis-r-md);
-    border: 1px solid rgba(212, 173, 110, 0.55);
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55);
     box-shadow:
         var(--vis-elev-3),
         var(--vis-elev-glow),
@@ -1738,8 +1738,8 @@ body:has(.admin-panel) {
 .cnc-admin-list-item.is-active {
     background:
         linear-gradient(90deg,
-            rgba(184, 150, 88, 0.18) 0%,
-            rgba(184, 150, 88, 0.06) 100%);
+            rgba(var(--ak-rgb), 0.18) 0%,
+            rgba(var(--ak-rgb), 0.06) 100%);
     border-left: 3px solid var(--vis-brand-500);
     padding-left: 13px;
 }
@@ -1825,9 +1825,9 @@ body:has(.admin-panel) {
 .admin-panel .upload-area {
     background:
         radial-gradient(ellipse at center,
-            rgba(184, 150, 88, 0.04) 0%, transparent 70%),
+            rgba(var(--ak-rgb), 0.04) 0%, transparent 70%),
         var(--vis-surface-1);
-    border: 2px dashed rgba(184, 150, 88, 0.30);
+    border: 2px dashed rgba(var(--ak-rgb), 0.30);
     border-radius: var(--vis-r-lg);
     padding: 36px 28px;
     transition: all var(--vis-d-fast) var(--vis-ease-spring-3);
@@ -1838,7 +1838,7 @@ body:has(.admin-panel) {
     border-color: var(--vis-brand-500);
     background:
         radial-gradient(ellipse at center,
-            rgba(184, 150, 88, 0.08) 0%, transparent 70%),
+            rgba(var(--ak-rgb), 0.08) 0%, transparent 70%),
         var(--vis-surface-2);
     transform: scale(1.005);
 }
@@ -1846,7 +1846,7 @@ body:has(.admin-panel) {
     border-color: var(--vis-brand-300);
     background:
         radial-gradient(ellipse at center,
-            rgba(184, 150, 88, 0.15) 0%, transparent 70%),
+            rgba(var(--ak-rgb), 0.15) 0%, transparent 70%),
         var(--vis-brand-tint);
     box-shadow: var(--vis-elev-glow);
     transform: scale(1.01);
@@ -2000,7 +2000,7 @@ body:has(.admin-panel) {
 .admin-panel a:not(.btn):not(.alt-btn):not(.nav-item):hover {
     color: var(--vis-brand-200);
     text-decoration: underline;
-    text-decoration-color: rgba(184, 150, 88, 0.40);
+    text-decoration-color: rgba(var(--ak-rgb), 0.40);
     text-underline-offset: 3px;
 }
 
@@ -2064,7 +2064,7 @@ body:has(.admin-panel) {
 }
 .altorra-notify--info,
 .altorra-notify--default {
-    border-color: rgba(184, 150, 88, 0.35);
+    border-color: rgba(var(--ak-rgb), 0.35);
     box-shadow:
         var(--vis-elev-4),
         var(--vis-elev-glow),
@@ -2086,7 +2086,7 @@ body:has(.admin-panel) {
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%);
     color: #1a1310;
-    border: 1px solid rgba(212, 173, 110, 0.55);
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55);
     border-radius: var(--vis-r-pill);
     box-shadow:
         var(--vis-elev-3),
@@ -2118,10 +2118,10 @@ body:has(.admin-panel) {
 .admin-panel .hero-kpi:hover::after {
     background:
         linear-gradient(135deg,
-            rgba(184, 150, 88, 0) 0%,
-            rgba(184, 150, 88, 0.60) 30%,
-            rgba(184, 150, 88, 0.25) 60%,
-            rgba(184, 150, 88, 0) 100%);
+            rgba(var(--ak-rgb), 0) 0%,
+            rgba(var(--ak-rgb), 0.60) 30%,
+            rgba(var(--ak-rgb), 0.25) 60%,
+            rgba(var(--ak-rgb), 0) 100%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2164,7 +2164,7 @@ body:has(.admin-panel) {
     border-color: var(--vis-brand-500);
     box-shadow:
         inset 0 1px 2px rgba(0, 0, 0, 0.20),
-        0 0 12px rgba(184, 150, 88, 0.30);
+        0 0 12px rgba(var(--ak-rgb), 0.30);
 }
 .admin-panel .alt-toggle.is-on::before,
 .admin-panel .alt-toggle[aria-checked="true"]::before {
@@ -2208,8 +2208,8 @@ body:has(.admin-panel) {
     height: 32px;
     border-radius: 50%;
     background: conic-gradient(from 0deg,
-        rgba(184, 150, 88, 0) 0%,
-        rgba(184, 150, 88, 0.60) 50%,
+        rgba(var(--ak-rgb), 0) 0%,
+        rgba(var(--ak-rgb), 0.60) 50%,
         var(--vis-brand-500) 100%);
     -webkit-mask: radial-gradient(circle, transparent 50%, #000 51%);
     mask: radial-gradient(circle, transparent 50%, #000 51%);
@@ -2246,7 +2246,7 @@ body:has(.admin-panel) {
     background-size: 200% 100%;
     border-radius: var(--vis-r-pill);
     box-shadow:
-        0 0 12px rgba(184, 150, 88, 0.40),
+        0 0 12px rgba(var(--ak-rgb), 0.40),
         inset 0 1px 0 rgba(255, 255, 255, 0.30);
     animation: visProgressShimmer 2.4s ease-in-out infinite;
     transition: width var(--vis-d-medium) var(--vis-ease-spring-3);
@@ -2293,8 +2293,8 @@ body:has(.admin-panel) {
     border-left-color: var(--vis-brand-500);
     background:
         linear-gradient(90deg,
-            rgba(184, 150, 88, 0.12) 0%,
-            rgba(184, 150, 88, 0.02) 30%,
+            rgba(var(--ak-rgb), 0.12) 0%,
+            rgba(var(--ak-rgb), 0.02) 30%,
             rgba(255, 255, 255, 0.02) 100%),
         var(--vis-surface-1);
 }
@@ -2510,8 +2510,8 @@ body:has(.admin-panel) {
 .admin-panel #sec-dashboard > h1:first-child {
     background:
         radial-gradient(ellipse 800px 300px at 30% 0%,
-            rgba(184, 150, 88, 0.20) 0%,
-            rgba(184, 150, 88, 0.06) 30%,
+            rgba(var(--ak-rgb), 0.20) 0%,
+            rgba(var(--ak-rgb), 0.06) 30%,
             transparent 70%),
         radial-gradient(ellipse 600px 200px at 70% 100%,
             rgba(139, 92, 246, 0.10) 0%,
@@ -2531,7 +2531,7 @@ body:has(.admin-panel) {
     top: -50%; right: -10%;
     width: 320px; height: 320px;
     background: radial-gradient(circle,
-        rgba(184, 150, 88, 0.12) 0%,
+        rgba(var(--ak-rgb), 0.12) 0%,
         transparent 70%);
     filter: blur(32px);
     pointer-events: none;
@@ -2552,7 +2552,7 @@ body:has(.admin-panel) {
 .admin-panel .admin-section .page-header {
     background:
         radial-gradient(ellipse 800px 200px at 0% 0%,
-            rgba(184, 150, 88, 0.08) 0%,
+            rgba(var(--ak-rgb), 0.08) 0%,
             transparent 60%),
         var(--vis-surface-1);
     border: var(--vis-border-2);
@@ -2604,7 +2604,7 @@ body:has(.admin-panel) {
         var(--vis-brand-300),
         var(--vis-brand-600));
     color: #1a1310;
-    border-color: rgba(212, 173, 110, 0.55);
+    border-color: rgba(var(--ak-light-rgb), 0.55);
 }
 .admin-panel .cnc-admin-msg-bubble--bot {
     background: var(--vis-brand-tint);
@@ -2632,13 +2632,13 @@ body:has(.admin-panel) {
 .admin-panel .cal-day--today {
     background:
         linear-gradient(135deg,
-            rgba(184, 150, 88, 0.20) 0%,
-            rgba(184, 150, 88, 0.06) 100%);
+            rgba(var(--ak-rgb), 0.20) 0%,
+            rgba(var(--ak-rgb), 0.06) 100%);
     border-color: var(--vis-brand-500);
     box-shadow: var(--vis-elev-glow);
 }
 .admin-panel .cal-day--has-events {
-    border-color: rgba(184, 150, 88, 0.30);
+    border-color: rgba(var(--ak-rgb), 0.30);
 }
 .admin-panel .cal-event {
     background: linear-gradient(135deg,
@@ -2889,7 +2889,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel select option:hover,
 .admin-panel select option:checked {
-    background: rgba(184, 150, 88, 0.30) !important;
+    background: rgba(var(--ak-rgb), 0.30) !important;
     color: #ffffff !important;
 }
 /* Forzar text color en selects (Safari + Firefox bug) */
@@ -2914,7 +2914,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .modal-overlay select option:hover,
 .modal-overlay select option:checked {
-    background: rgba(184, 150, 88, 0.30) !important;
+    background: rgba(var(--ak-rgb), 0.30) !important;
     color: #ffffff !important;
 }
 .modal-overlay select,
@@ -3072,7 +3072,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     display: block;
 }
 .vis-prv-thumb:hover {
-    border-color: rgba(184, 150, 88, 0.55);
+    border-color: rgba(var(--ak-rgb), 0.55);
     transform: scale(1.05);
 }
 .vis-prv-thumb.is-active {
@@ -3139,8 +3139,8 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     padding: 16px 18px;
     background:
         linear-gradient(135deg,
-            rgba(184, 150, 88, 0.14) 0%,
-            rgba(184, 150, 88, 0.04) 100%);
+            rgba(var(--ak-rgb), 0.14) 0%,
+            rgba(var(--ak-rgb), 0.04) 100%);
     border: var(--vis-border-gold);
     border-radius: var(--vis-r-md);
     box-shadow: var(--vis-elev-1);
@@ -3177,7 +3177,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     transition: all var(--vis-d-fast) var(--vis-ease-snap);
 }
 .vis-prv-highlight:hover {
-    border-color: rgba(184, 150, 88, 0.32);
+    border-color: rgba(var(--ak-rgb), 0.32);
     background: var(--vis-state-hover-gold);
 }
 .vis-prv-highlight [data-lucide] {
@@ -3296,7 +3296,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel .v-act:hover {
     background: var(--vis-state-hover-gold);
-    border-color: rgba(184, 150, 88, 0.30);
+    border-color: rgba(var(--ak-rgb), 0.30);
     color: var(--vis-brand-300);
     transform: scale(1.08);
 }
@@ -3370,7 +3370,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel #sec-dealers .table-header {
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.04) 0%,
+            rgba(var(--ak-rgb), 0.04) 0%,
             transparent 100%),
         var(--vis-surface-1);
     border: var(--vis-border-2);
@@ -3428,7 +3428,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel .table-toolbar .btn-ghost:hover {
     background: var(--vis-state-hover-gold);
-    border-color: rgba(184, 150, 88, 0.40);
+    border-color: rgba(var(--ak-rgb), 0.40);
     color: var(--vis-brand-300);
 }
 
@@ -3448,7 +3448,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-700) 100%);
     color: #1a1310;
     font-weight: 700;
-    border: 1px solid rgba(212, 173, 110, 0.55);
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55);
     border-radius: var(--vis-r-pill);
     padding: 10px 20px;
     box-shadow:
@@ -3524,7 +3524,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel #adminSidebar {
     width: var(--layout-sidebar-w-expanded, 256px) !important;
     padding: 18px 12px;
-    box-shadow: inset -1px 0 0 rgba(184, 150, 88, 0.08);
+    box-shadow: inset -1px 0 0 rgba(var(--ak-rgb), 0.08);
 }
 .admin-panel .sidebar-logo {
     padding: 6px 12px 18px;
@@ -3563,7 +3563,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel .sidebar-collapse-btn:hover {
     background: var(--vis-state-hover-gold);
-    border-color: rgba(184, 150, 88, 0.35);
+    border-color: rgba(var(--ak-rgb), 0.35);
     color: var(--vis-brand-300);
 }
 
@@ -3672,8 +3672,8 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel #vehiclesTable thead {
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.12) 0%,
-            rgba(184, 150, 88, 0.04) 100%);
+            rgba(var(--ak-rgb), 0.12) 0%,
+            rgba(var(--ak-rgb), 0.04) 100%);
 }
 .admin-panel #vehiclesTable thead th {
     padding: 14px 16px;
@@ -3689,7 +3689,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     user-select: none;
 }
 .admin-panel #vehiclesTable thead th:hover {
-    background: rgba(184, 150, 88, 0.06);
+    background: rgba(var(--ak-rgb), 0.06);
 }
 .admin-panel #vehiclesTable thead th:first-child {
     width: 40px;
@@ -3840,12 +3840,12 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     border-radius: var(--vis-r-sm) !important;
     object-fit: cover;
     border: var(--vis-border-3);
-    box-shadow: var(--vis-elev-1), 0 0 0 1px rgba(184, 150, 88, 0.10);
+    box-shadow: var(--vis-elev-1), 0 0 0 1px rgba(var(--ak-rgb), 0.10);
     transition: transform var(--vis-d-fast) var(--vis-ease-spring-3);
 }
 .admin-panel #vehiclesTable tbody tr:hover .vehicle-thumb {
     transform: scale(1.08);
-    box-shadow: var(--vis-elev-2), 0 0 0 1px rgba(184, 150, 88, 0.30);
+    box-shadow: var(--vis-elev-2), 0 0 0 1px rgba(var(--ak-rgb), 0.30);
 }
 
 /* Acciones inline organizadas */
@@ -3877,7 +3877,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel .v-act:hover:not(:disabled) {
     background: var(--vis-state-hover-gold) !important;
-    border-color: rgba(184, 150, 88, 0.30) !important;
+    border-color: rgba(var(--ak-rgb), 0.30) !important;
     color: var(--vis-brand-300) !important;
     transform: scale(1.10);
 }
@@ -3892,12 +3892,12 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     gap: 6px;
     font-size: var(--vis-fs-2xs);
     font-weight: 600;
-    background: rgba(184, 150, 88, 0.10) !important;
-    border-color: rgba(184, 150, 88, 0.30) !important;
+    background: rgba(var(--ak-rgb), 0.10) !important;
+    border-color: rgba(var(--ak-rgb), 0.30) !important;
     color: var(--vis-brand-300) !important;
 }
 .admin-panel .v-act--operation:hover {
-    background: rgba(184, 150, 88, 0.18) !important;
+    background: rgba(var(--ak-rgb), 0.18) !important;
 }
 .admin-panel .v-act-sep {
     width: 1px;
@@ -3914,8 +3914,8 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel #sec-reviews .page-header {
     background:
         radial-gradient(ellipse 600px 200px at 0% 0%,
-            rgba(184, 150, 88, 0.18) 0%,
-            rgba(184, 150, 88, 0.02) 50%,
+            rgba(var(--ak-rgb), 0.18) 0%,
+            rgba(var(--ak-rgb), 0.02) 50%,
             transparent 100%),
         var(--vis-surface-1);
     border: var(--vis-border-gold);
@@ -3965,7 +3965,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel #sec-users .table-header {
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.06) 0%,
+            rgba(var(--ak-rgb), 0.06) 0%,
             transparent 100%),
         var(--vis-surface-1);
     border: var(--vis-border-2);
@@ -4037,7 +4037,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-700) 100%) !important;
     color: #1a1310 !important;
     font-weight: 700 !important;
-    border: 1px solid rgba(212, 173, 110, 0.55) !important;
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55) !important;
     border-radius: var(--vis-r-pill) !important;
     padding: 10px 22px !important;
     box-shadow:
@@ -4084,7 +4084,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel #sec-brands .brand-card:hover {
     transform: translateY(-3px) scale(1.02);
-    border-color: rgba(184, 150, 88, 0.40);
+    border-color: rgba(var(--ak-rgb), 0.40);
     box-shadow: var(--vis-elev-3),
                 var(--vis-elev-glow);
 }
@@ -4101,8 +4101,8 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel #sec-dashboard > div:first-child {
     background:
         radial-gradient(ellipse 800px 300px at 20% 0%,
-            rgba(184, 150, 88, 0.20) 0%,
-            rgba(184, 150, 88, 0.04) 40%,
+            rgba(var(--ak-rgb), 0.20) 0%,
+            rgba(var(--ak-rgb), 0.04) 40%,
             transparent 80%),
         radial-gradient(ellipse 600px 200px at 80% 100%,
             rgba(139, 92, 246, 0.10) 0%,
@@ -4123,7 +4123,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     top: -100px; right: -100px;
     width: 360px; height: 360px;
     background: radial-gradient(circle,
-        rgba(184, 150, 88, 0.15) 0%,
+        rgba(var(--ak-rgb), 0.15) 0%,
         transparent 70%);
     filter: blur(40px);
     pointer-events: none;
@@ -4179,7 +4179,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel .stat-card:hover {
     transform: translateY(-3px);
-    border-color: rgba(184, 150, 88, 0.32);
+    border-color: rgba(var(--ak-rgb), 0.32);
     box-shadow: var(--vis-elev-3),
                 var(--vis-elev-glow);
 }
@@ -4242,7 +4242,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel .pagination button:hover:not(:disabled),
 .admin-panel .pagination-wrapper button:hover:not(:disabled) {
     background: var(--vis-state-hover-gold) !important;
-    border-color: rgba(184, 150, 88, 0.40) !important;
+    border-color: rgba(var(--ak-rgb), 0.40) !important;
     color: var(--vis-brand-300) !important;
 }
 .admin-panel .pagination button.active,
@@ -4297,7 +4297,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel #sec-dealers .dealer-card:hover {
     transform: translateY(-2px);
-    border-color: rgba(184, 150, 88, 0.40);
+    border-color: rgba(var(--ak-rgb), 0.40);
     box-shadow: var(--vis-elev-2),
                 var(--vis-elev-glow);
 }
@@ -4343,7 +4343,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel #sec-banners .banner-preview-card:hover {
     transform: translateY(-3px);
-    border-color: rgba(184, 150, 88, 0.40);
+    border-color: rgba(var(--ak-rgb), 0.40);
     box-shadow: var(--vis-elev-3),
                 var(--vis-elev-glow);
 }
@@ -4357,7 +4357,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     padding: 14px 18px;
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.04) 0%,
+            rgba(var(--ak-rgb), 0.04) 0%,
             transparent 100%);
 }
 
@@ -4505,8 +4505,8 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .admin-panel #sec-calendar .cal-day--today {
     background: linear-gradient(135deg,
-        rgba(184, 150, 88, 0.18) 0%,
-        rgba(184, 150, 88, 0.06) 100%);
+        rgba(var(--ak-rgb), 0.18) 0%,
+        rgba(var(--ak-rgb), 0.06) 100%);
     border-color: var(--vis-brand-500);
     box-shadow: var(--vis-elev-glow);
 }
@@ -4526,7 +4526,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    border: 1px solid rgba(184, 150, 88, 0.30);
+    border: 1px solid rgba(var(--ak-rgb), 0.30);
 }
 
 /* ─── 106. WORKFLOWS rules visual cards ───── */
@@ -4685,7 +4685,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(184, 150, 88, 0.30),
+    box-shadow: 0 2px 8px rgba(var(--ak-rgb), 0.30),
                 inset 0 1px 0 rgba(255, 255, 255, 0.40);
 }
 
@@ -4715,11 +4715,11 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     height: 8px;
     border-radius: 50%;
     background: var(--vis-brand-500);
-    box-shadow: 0 0 0 3px rgba(184, 150, 88, 0.20);
+    box-shadow: 0 0 0 3px rgba(var(--ak-rgb), 0.20);
 }
 .admin-panel #sec-audit .audit-entry:hover {
     background: var(--vis-state-hover-gold);
-    border-color: rgba(184, 150, 88, 0.30);
+    border-color: rgba(var(--ak-rgb), 0.30);
     transform: translateX(4px);
 }
 .admin-panel #sec-audit .audit-action {
@@ -4794,8 +4794,8 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 #userModal .modal-header {
     background:
         linear-gradient(180deg,
-            rgba(184, 150, 88, 0.10) 0%,
-            rgba(184, 150, 88, 0.02) 100%) !important;
+            rgba(var(--ak-rgb), 0.10) 0%,
+            rgba(var(--ak-rgb), 0.02) 100%) !important;
     border-bottom: var(--vis-border-gold) !important;
     padding: 20px 28px !important;
     border-radius: var(--vis-r-xl) var(--vis-r-xl) 0 0 !important;
@@ -4913,7 +4913,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .modal-overlay .modal-footer .btn-ghost:hover,
 .modal-overlay .modal-footer .btn-secondary:hover {
     background: var(--vis-state-hover-gold) !important;
-    border-color: rgba(184, 150, 88, 0.40) !important;
+    border-color: rgba(var(--ak-rgb), 0.40) !important;
     color: #ffffff !important;
 }
 .modal-overlay .modal-footer .btn-primary {
@@ -4923,7 +4923,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-700) 100%) !important;
     color: #1a1310 !important;
     font-weight: 700 !important;
-    border: 1px solid rgba(212, 173, 110, 0.55) !important;
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55) !important;
     border-radius: var(--vis-r-sm) !important;
     padding: 9px 22px !important;
     box-shadow:
@@ -4965,11 +4965,11 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .modal-overlay .wizard-step.active {
     background: linear-gradient(135deg,
-        rgba(184, 150, 88, 0.24) 0%,
-        rgba(184, 150, 88, 0.08) 100%);
+        rgba(var(--ak-rgb), 0.24) 0%,
+        rgba(var(--ak-rgb), 0.08) 100%);
     border-color: var(--vis-brand-500);
     color: var(--vis-brand-200);
-    box-shadow: 0 0 16px rgba(184, 150, 88, 0.18);
+    box-shadow: 0 0 16px rgba(var(--ak-rgb), 0.18);
     transform: scale(1.05);
 }
 .modal-overlay .wizard-step.done {
@@ -4994,7 +4994,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel .alt-empty-illustrated-svg {
     margin-bottom: 16px;
     opacity: 0.85;
-    filter: drop-shadow(0 4px 12px rgba(184, 150, 88, 0.20));
+    filter: drop-shadow(0 4px 12px rgba(var(--ak-rgb), 0.20));
 }
 .admin-panel .empty-state-title,
 .admin-panel .alt-empty-illustrated-title {
@@ -5085,12 +5085,12 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel .crm-detail-tab.is-active,
 .admin-panel .crm-tab[aria-selected="true"] {
     background: linear-gradient(180deg,
-        rgba(184, 150, 88, 0.32) 0%,
-        rgba(184, 150, 88, 0.14) 100%);
+        rgba(var(--ak-rgb), 0.32) 0%,
+        rgba(var(--ak-rgb), 0.14) 100%);
     color: var(--vis-brand-200);
     font-weight: 700;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10),
-                0 2px 8px rgba(184, 150, 88, 0.20);
+                0 2px 8px rgba(var(--ak-rgb), 0.20);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -5257,7 +5257,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 }
 .bulk-actions-bar button:hover {
     background: var(--vis-state-hover-gold);
-    border-color: rgba(184, 150, 88, 0.40);
+    border-color: rgba(var(--ak-rgb), 0.40);
     color: var(--vis-brand-300);
     transform: scale(1.05);
 }
@@ -5320,7 +5320,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-300) 0%,
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%);
-    border: 1px solid rgba(212, 173, 110, 0.55);
+    border: 1px solid rgba(var(--ak-light-rgb), 0.55);
     color: #1a1310;
     display: inline-flex;
     align-items: center;
@@ -5390,7 +5390,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     stroke: var(--vis-brand-400);
     stroke-width: 1.75;
     fill: none;
-    filter: drop-shadow(0 2px 4px rgba(184, 150, 88, 0.30));
+    filter: drop-shadow(0 2px 4px rgba(var(--ak-rgb), 0.30));
 }
 .admin-panel .kpi-sparkline-area {
     fill: url(#visSparklineGradient);
@@ -5449,13 +5449,13 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel .heatmap-cell {
     aspect-ratio: 1;
     border-radius: var(--vis-r-xs);
-    background: rgba(184, 150, 88, 0.05);
+    background: rgba(var(--ak-rgb), 0.05);
     transition: transform var(--vis-d-quick) var(--vis-ease-spring-3);
     cursor: pointer;
 }
-.admin-panel .heatmap-cell[data-intensity="1"] { background: rgba(184, 150, 88, 0.20); }
-.admin-panel .heatmap-cell[data-intensity="2"] { background: rgba(184, 150, 88, 0.40); }
-.admin-panel .heatmap-cell[data-intensity="3"] { background: rgba(184, 150, 88, 0.65); }
+.admin-panel .heatmap-cell[data-intensity="1"] { background: rgba(var(--ak-rgb), 0.20); }
+.admin-panel .heatmap-cell[data-intensity="2"] { background: rgba(var(--ak-rgb), 0.40); }
+.admin-panel .heatmap-cell[data-intensity="3"] { background: rgba(var(--ak-rgb), 0.65); }
 .admin-panel .heatmap-cell[data-intensity="4"] {
     background: linear-gradient(135deg, var(--vis-brand-300), var(--vis-brand-500));
     box-shadow: 0 0 8px var(--vis-brand-glow-soft);
@@ -5477,7 +5477,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .admin-panel .kanban-column.is-drop-target {
     background: var(--vis-brand-tint);
     border-color: var(--vis-brand-500);
-    box-shadow: inset 0 0 32px rgba(184, 150, 88, 0.15);
+    box-shadow: inset 0 0 32px rgba(var(--ak-rgb), 0.15);
 }
 .admin-panel .kanban-drop-indicator {
     height: 3px;
@@ -5563,7 +5563,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .vis-ripple {
     position: absolute;
     border-radius: 50%;
-    background: rgba(184, 150, 88, 0.45);
+    background: rgba(var(--ak-rgb), 0.45);
     pointer-events: none;
     animation: visRipple 0.6s ease-out;
 }
@@ -5581,9 +5581,9 @@ body.sidebar-collapsed .admin-panel.admin-layout {
 .vis-skeleton {
     position: relative;
     background: linear-gradient(90deg,
-        rgba(184, 150, 88, 0.04) 0%,
-        rgba(184, 150, 88, 0.10) 50%,
-        rgba(184, 150, 88, 0.04) 100%);
+        rgba(var(--ak-rgb), 0.04) 0%,
+        rgba(var(--ak-rgb), 0.10) 50%,
+        rgba(var(--ak-rgb), 0.04) 100%);
     background-size: 200% 100%;
     border-radius: var(--vis-r-sm);
     overflow: hidden;
@@ -5648,8 +5648,8 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     outline: none;
     box-shadow:
         0 0 0 2px var(--vis-surface-base),
-        0 0 0 5px rgba(184, 150, 88, 0.85),
-        0 0 32px rgba(184, 150, 88, 0.30);
+        0 0 0 5px rgba(var(--ak-rgb), 0.85),
+        0 0 32px rgba(var(--ak-rgb), 0.30);
     border-radius: var(--vis-r-xs);
 }
 
@@ -5838,7 +5838,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     width: 280px;
     height: 280px;
     background: radial-gradient(circle,
-        rgba(184, 150, 88, 0.10) 0%,
+        rgba(var(--ak-rgb), 0.10) 0%,
         transparent 70%);
     filter: blur(40px);
     pointer-events: none;
@@ -5861,7 +5861,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     z-index: 99999;
     background:
         radial-gradient(ellipse 800px 600px at center,
-            rgba(184, 150, 88, 0.08) 0%,
+            rgba(var(--ak-rgb), 0.08) 0%,
             transparent 70%),
         #0a0a0c;
     display: flex;
@@ -5896,7 +5896,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    border: 3px solid rgba(184, 150, 88, 0.20);
+    border: 3px solid rgba(var(--ak-rgb), 0.20);
     border-top-color: var(--vis-brand-500);
     animation: visSpinnerSpin 0.8s linear infinite;
 }
@@ -6050,7 +6050,7 @@ body.vis-konami {
 .vis-sound-toggle.is-on {
     opacity: 1;
     color: var(--vis-brand-300);
-    border-color: rgba(184, 150, 88, 0.40);
+    border-color: rgba(var(--ak-rgb), 0.40);
 }
 
 /* ═══════════════════════════════════════════════════════════════════

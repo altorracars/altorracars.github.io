@@ -41472,3 +41472,120 @@ en cada `var()`. §17.2: cero transition:all/`*` global nuevo. §17.12: cero
 MutationObserver. §35: cero pointermove.
 
 **Cache bump**: `v20260524010000`.
+
+---
+
+## 116. ADR-116 — Plan A: superficies (Mica/Acrylic/vis-surface) teñidas con el acento activo vía color-mix (2026-05-24)
+
+> Continuación del §115 (motor cromático). Tras §115 el cliente dijo
+> (verbatim): "ok aun asi siento que toda la cuestion del tema la hiciste
+> por encima necesito un escaner de 1 a 100% donde tengas todo el panorama
+> y puedas maximizar el potencial visual" + "continua: ejecuta uno por uno
+> primero A, luego B y luego C asegurate que no se rompa nada".
+>
+> Escaneo exhaustivo (1-100%) reveló que §115 SÍ remapeó completo el
+> acento (0 literales dorados residuales — todos `var(--ak-*,#fallback)`),
+> pero las SUPERFICIES (fondos Mica/Acrylic/vis-surface) eran frías y
+> constantes (gris-negro puro) en todas las paletas → al cambiar el tema
+> solo se recoloreaba el acento y las superficies seguían iguales ("solo
+> cambian 2 cositas"). Plan A es el primero de 3 (A→B→C).
+>
+> Aplicado bajo §17.2 (cero transition:all/`*` global nuevo), §17.4
+> (HTML/CSS estable — cero IDs/funciones/consumidores tocados), §17.12
+> (cero MutationObserver), §19 RCA estricto (grep-verifiqué que
+> light/high-contrast NO tocan superficies antes de editar), §35 (cero
+> pointermove), §37 (IAP — plan de 3 fases presentado y aprobado), §115
+> (capa `--ak-*`).
+
+### 116.1 Causa raíz (RCA §19)
+
+`css/tokens.css` y `css/admin-visionary.css` definían las superficies
+(`--nova-mica-bg`/`-strong`, `--nova-acrylic-bg`,
+`--vis-surface-base/canvas/1/2/3/4/modal/popover`) como gris-negro frío
+CONSTANTE (ej. `rgba(18,18,20,0.72)`, `#0a0a0c`). Esas superficies son la
+mayor área de pintura del panel (~101 consumidores: sidebar, modales,
+cards, popovers, topnav, paneles). Como NO leían `var(--ak-rgb)`, ninguna
+paleta las recoloreaba → la percepción de cambio era mínima.
+
+### 116.2 Solución estructural — color-mix + lazy var() (1 archivo, 0 consumidores)
+
+`css/admin-theme-engine.css` (carga ÚLTIMA en admin.html → gana cascade):
+nuevo bloque `:root` que redefine las 11 superficies como MEZCLA del
+mismo gris-negro base + el acento activo a baja saturación (4–8%):
+
+```css
+:root {
+    --nova-mica-bg:        color-mix(in srgb, rgba(18,18,20,0.72) 94%, rgb(var(--ak-rgb)));
+    --nova-mica-bg-strong: color-mix(in srgb, rgba(15,15,17,0.85) 95%, rgb(var(--ak-rgb)));
+    --nova-acrylic-bg:     color-mix(in srgb, rgba(28,28,30,0.55) 93%, rgb(var(--ak-rgb)));
+    --vis-surface-base:    color-mix(in srgb, #0a0a0c 96%, rgb(var(--ak-rgb)));
+    --vis-surface-canvas:  color-mix(in srgb, rgba(14,14,16,0.98) 96%, rgb(var(--ak-rgb)));
+    --vis-surface-1:       color-mix(in srgb, rgba(20,20,22,0.78) 94%, rgb(var(--ak-rgb)));
+    --vis-surface-2:       color-mix(in srgb, rgba(26,26,28,0.76) 94%, rgb(var(--ak-rgb)));
+    --vis-surface-3:       color-mix(in srgb, rgba(32,32,34,0.78) 93%, rgb(var(--ak-rgb)));
+    --vis-surface-4:       color-mix(in srgb, rgba(40,40,42,0.82) 92%, rgb(var(--ak-rgb)));
+    --vis-surface-modal:   color-mix(in srgb, rgba(15,15,17,0.88) 95%, rgb(var(--ak-rgb)));
+    --vis-surface-popover: color-mix(in srgb, rgba(18,18,20,0.92) 94%, rgb(var(--ak-rgb)));
+}
+```
+
+**Mecanismo clave — lazy var() resolution**: `var(--ak-rgb)` dentro de
+una custom property se resuelve PEREZOSAMENTE en el sitio de USO de cada
+token, no donde se define. Como `--ak-rgb` está cascadeado por
+`html.theme-{name}`, una sola definición en `:root` tiñe las 6 paletas
+(blue/violet/emerald/crimson/cyan) + dorado (que no tiene clase: usa el
+`:root` default de tokens.css) automáticamente. CERO ediciones a los
+~101 consumidores — heredan el tinte solos.
+
+### 116.3 Seguridad verificada (light/high-contrast intactos)
+
+Grep confirmó que `[data-theme="light"]` (tokens.css:339) y
+`[data-theme="high-contrast"]` (tokens.css:378-380) overridean SOLO la
+familia `--bg-*` (`--bg-base/-elevated/-card/-overlay/-input`), NUNCA
+mica/acrylic/vis-surface. Ningún otro CSS tiene bloque light/high-contrast
+tocando superficies. Por tanto el `:root` de Plan A NO necesita scoping
+`:not([data-theme=...])` — los modos light/high-contrast usan una familia
+de tokens distinta intocada por Plan A.
+
+### 116.4 No-regresión
+
+- color-mix mezcla color Y alpha (rgba 0.78 mezclado 94/6 → alpha ≈0.793,
+  imperceptible) → la translucidez Mica/Acrylic se preserva.
+- Tinte 4-8%: visible al cambiar paleta pero sin sacrificar contraste de
+  texto (#e5e5e5/#fff) ni legibilidad.
+- color-mix: Chrome 111+, Safari 16.2+, FF 113+ (admin-only, OK).
+- Cero IDs/funciones/consumidores tocados (§17.4). Cero schema, cero
+  deploy backend. Solo Ctrl+Shift+R.
+- Braces balanceados 10/10 en el archivo; 11 superficies teñidas.
+
+### 116.5 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260524020000) | Carga nueva |
+| 2 | Ajustes → Apariencia → "Violeta" | Sidebar/modales/cards/popovers adquieren tinte violeta sutil (no solo el acento) |
+| 3 | Probar las 6 paletas | Cada superficie se tiñe con el acento de la paleta |
+| 4 | Dorado (default, sin clase) | Superficies con tinte dorado sutil vía :root default |
+| 5 | Contraste de texto en cards/modales | Sigue legible (#e5e5e5/#fff) |
+| 6 | data-theme="light" | Superficies NO afectadas (usa --bg-* aparte) |
+| 7 | data-theme="high-contrast" | Idem, intacto |
+
+### 116.6 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `css/admin-theme-engine.css` | Bloque `:root` Plan A: 11 superficies (mica/acrylic/vis-surface) como color-mix base-fría + rgb(var(--ak-rgb)) 4-8% |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260524020000 |
+| `CLAUDE.md` | Esta sección §116 |
+
+**Total**: 4 archivos. Cero consumidores tocados, cero schema, cero deploy backend.
+
+### 116.7 Doctrina aplicada
+
+§19 RCA: causa raíz (superficies frías constantes) verificada con grep +
+seguridad light/high-contrast comprobada ANTES de editar (no supuse). §37
+IAP: Plan A de un plan de 3 fases aprobado. §17.4: cero consumidores/IDs
+tocados — lazy var() hace el trabajo. §17.2: cero transition nuevo. §17.12:
+cero MutationObserver. §35: cero pointermove.
+
+**Cache bump**: `v20260524020000`.

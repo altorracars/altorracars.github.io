@@ -101,7 +101,7 @@
     --text-tertiary:  rgba(255, 255, 255, 0.5);
     --text-disabled:  rgba(255, 255, 255, 0.3);
     --text-inverse:   var(--color-neutral-900);
-    --text-on-brand:  #1a1100;          /* readable on gold */
+    --text-on-brand:  var(--ak-on-accent, #1a1100); /* §117 sigue al acento activo */
 
     /* Borders */
     --border-subtle:  rgba(255, 255, 255, 0.06);
@@ -320,6 +320,13 @@
     --ak-mid-rgb:    201, 166, 99;
     --ak-bright:     #d4af37;          /* bright/saturated accent  */
     --ak-bright-rgb: 212, 175, 55;
+    /* §117 Plan B — superficies cálidas tintadas + texto sobre acento.
+       Gold por defecto; las 6 paletas los overridean en el engine.
+       --ak-surface-warm/-2 = gradiente de superficie cálida (header/cards
+       dorados). --ak-on-accent = casi-negro legible SOBRE cualquier acento. */
+    --ak-surface-warm:   #15110a;      /* gradiente cálido top (gold)  */
+    --ak-surface-warm-2: #0d0a06;      /* gradiente cálido bottom      */
+    --ak-on-accent:      #1a1100;      /* texto casi-negro sobre acento */
 
     /* Tipografía jerárquica HarmonyOS */
     --hmy-font-page-title:     2rem;          /* 32px */

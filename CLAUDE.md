@@ -41589,3 +41589,117 @@ tocados — lazy var() hace el trabajo. §17.2: cero transition nuevo. §17.12:
 cero MutationObserver. §35: cero pointermove.
 
 **Cache bump**: `v20260524020000`.
+
+---
+
+## 117. ADR-117 — Plan B: superficies cálidas + texto-sobre-acento siguen el tema activo vía tokens (2026-05-24)
+
+> Segundo de los 3 planes aprobados ("ejecuta uno por uno primero A, luego
+> B y luego C asegurate que no se rompa nada"). §116 (Plan A) tiñó las
+> superficies frías Mica/Acrylic/vis-surface con el acento activo. §117
+> (Plan B) ataca el otro grupo de superficies hardcoded que NO seguían el
+> tema: los gradientes cálidos marrones (`#15110a → #0d0a06`) y el texto
+> casi-negro sobre fondos de acento (`#1a1500`, `#1a1100`).
+>
+> Aplicado bajo §17.4 (HTML/CSS estable — cero consumidores/IDs/callsites
+> tocados, lazy var() hace el trabajo), §17.2 (cero transition:all nuevo),
+> §17.12 (cero MutationObserver), §19 RCA estricto (grep + verificación
+> light/high-contrast ANTES de editar), §35 (cero pointermove), §37 (IAP),
+> §115/§116 (motor de tema + capa `--ak-*`).
+
+### 117.1 Causa raíz (RCA §19)
+
+Tras §116, dos grupos de literales en admin.css seguían sin reaccionar al
+cambio de paleta:
+
+1. **Superficies cálidas marrones**: 6 callsites con
+   `linear-gradient(..., #15110a 0%, #0d0a06 100%)` (y una variante sin
+   stops `linear-gradient(180deg, #15110a, #0d0a06)`) — header/cards
+   dorados que se veían marrones FIJOS en azul/violeta/etc.
+2. **Texto sobre acento**: 12× `#1a1500` + 4× `#1a1100` (texto casi-negro
+   legible sobre fondos del color de acento) — quedaban con tinte
+   marrón-dorado aunque la paleta fuera azul, rompiendo la armonía.
+
+Cambiar la clase `.theme-{name}` recoloreaba el acento (§115) y las
+superficies frías (§116) pero NO estos dos grupos → "solo cambian unas
+cositas más" persistía en las zonas cálidas.
+
+### 117.2 Solución estructural — 3 tokens nuevos + lazy var()
+
+**3 tokens canónicos nuevos** (gold-default en `css/tokens.css` `:root`):
+```css
+--ak-surface-warm:   #15110a;   /* gradiente cálido top (gold)  */
+--ak-surface-warm-2: #0d0a06;   /* gradiente cálido bottom      */
+--ak-on-accent:      #1a1100;   /* texto casi-negro sobre acento */
+```
+
+**Derivación per-paleta** (single `:root` block en `css/admin-theme-engine.css`,
+carga ÚLTIMA → gana cascade):
+```css
+--ak-surface-warm:   color-mix(in srgb, #100f0c 86%, rgb(var(--ak-rgb)));
+--ak-surface-warm-2: color-mix(in srgb, #08080a 90%, rgb(var(--ak-rgb)));
+--ak-on-accent:      color-mix(in srgb, var(--ak-primary) 22%, #000);
+```
+
+**Decisión de base NEUTRA**: las superficies cálidas usan base neutra-dark
+`#100f0c`/`#08080a` (NO el marrón original `#15110a`/`#0d0a06`). Un base
+marrón enturbiaría las paletas no-doradas (azul/violeta saldrían sucios).
+Con base neutra, cada paleta tiñe limpio. `--ak-on-accent =
+color-mix(var(--ak-primary) 22%, #000)` → casi-negro con tinte del acento
+activo → alto contraste sobre acentos claros/medios + armonía cromática.
+
+**Remap masivo en admin.css** (sed validado): los 6 gradientes cálidos →
+`var(--ak-surface-warm)` / `var(--ak-surface-warm-2)`; los 16 textos →
+`var(--ak-on-accent, #1a1100)`. Cero edición a la lógica de los ~consumidores
+— la lazy var() resuelve `rgb(var(--ak-rgb))` en el sitio de uso, tiñendo
+las 6 paletas + dorado con una sola definición.
+
+`--text-on-brand` (tokens.css línea 104) ahora `var(--ak-on-accent, #1a1100)`
+→ el texto sobre botones brand sigue al acento activo. El
+`--text-on-brand: #000000` del bloque light/high-contrast (línea 404)
+queda INTACTO (modos de accesibilidad usan negro puro = 14:1).
+
+### 117.3 No-regresión
+
+- Cero consumidores/IDs/callsites tocados — solo se cambió el VALOR de los
+  literales por `var()`, el HTML y la lógica JS no se rozan.
+- `[data-theme="light"]` y `[data-theme="high-contrast"]` intactos
+  (`--text-on-brand: #000000` separado, líneas 397-404 sin tocar).
+- Semantic state colors (success/warning/danger/info), body text neutro,
+  estructurales puros — sin tocar.
+- Validado: 0 literales residuales (`#15110a`/`#0d0a06`/`#1a1500`) en
+  admin.css; braces 2805/2805; parens 4371/4371; `node -c` picker OK.
+- color-mix: Chrome 111+ / Safari 16.2+ / FF 113+ (admin-only).
+
+### 117.4 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260524030000) | Carga nueva |
+| 2 | Ajustes → Apariencia → "Violeta" | Header/cards cálidos toman tinte violeta (no marrón fijo) |
+| 3 | Texto sobre botones/badges de acento en cada paleta | Casi-negro con tinte del acento, legible (contraste OK) |
+| 4 | Probar las 6 paletas (gold/blue/violet/emerald/crimson/cyan) | Superficies cálidas + texto-sobre-acento siguen el acento |
+| 5 | Dorado (sin clase) | Usa los defaults gold de tokens.css (visual original) |
+| 6 | `data-theme="light"` / `high-contrast` | Texto-sobre-brand sigue negro puro (intacto) |
+
+### 117.5 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `css/tokens.css` | 3 tokens nuevos `--ak-surface-warm/-warm-2/-on-accent` (gold-default) + `--text-on-brand` → `var(--ak-on-accent, #1a1100)` |
+| `css/admin-theme-engine.css` | Derivación per-paleta de los 3 tokens vía color-mix base-neutra en `:root` |
+| `css/admin.css` | 6 gradientes cálidos + 16 textos sobre-acento remapeados a los tokens nuevos (sed validado) |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260524030000 |
+| `CLAUDE.md` | Esta sección §117 |
+
+**Total**: 5 archivos. Cero consumidores tocados, cero schema, cero deploy backend.
+
+### 117.6 Doctrina aplicada
+
+§19 RCA: literales cálidos verificados con grep + seguridad light/high-contrast
+comprobada ANTES de editar (no supuse). §37 IAP: Plan B de un plan de 3
+fases aprobado. §17.4: cero consumidores/IDs tocados — lazy var() hace el
+trabajo. §17.2: cero transition nuevo. §17.12: cero MutationObserver. §35:
+cero pointermove. Continúa §116 (Plan A); sigue Plan C (§118).
+
+**Cache bump**: `v20260524030000`.

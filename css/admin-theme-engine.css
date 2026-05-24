@@ -159,4 +159,14 @@ html.theme-cyan ::selection {
     --vis-surface-4:       color-mix(in srgb, rgba(40, 40, 42, 0.82) 92%, rgb(var(--ak-rgb)));
     --vis-surface-modal:   color-mix(in srgb, rgba(15, 15, 17, 0.88) 95%, rgb(var(--ak-rgb)));
     --vis-surface-popover: color-mix(in srgb, rgba(18, 18, 20, 0.92) 94%, rgb(var(--ak-rgb)));
+
+    /* §117 Plan B — superficies cálidas tintadas + texto sobre acento.
+       Base NEUTRA dark (no marrón) para que cada paleta tinte limpio
+       (un base marrón #15110a se enturbiaría con azul/violeta). Una sola
+       definición tiñe LAS 6 PALETAS + dorado vía resolución perezosa.
+       --ak-on-accent: casi-negro con tinte del acento (22% acento + negro)
+       → alto contraste sobre los acentos claros/medios + armonía cromática. */
+    --ak-surface-warm:   color-mix(in srgb, #100f0c 86%, rgb(var(--ak-rgb)));
+    --ak-surface-warm-2: color-mix(in srgb, #08080a 90%, rgb(var(--ak-rgb)));
+    --ak-on-accent:      color-mix(in srgb, var(--ak-primary) 22%, #000);
 }

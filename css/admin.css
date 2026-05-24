@@ -613,7 +613,7 @@ body {
     transform: translate(-50%, -50%);
     width: min(640px, calc(100vw - 32px));
     max-height: 80vh;
-    background: linear-gradient(180deg, #15110a 0%, #0d0a06 100%);
+    background: linear-gradient(180deg, var(--ak-surface-warm) 0%, var(--ak-surface-warm-2) 100%);
     border: 1px solid rgba(var(--ak-rgb), 0.25);
     border-radius: 14px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
@@ -821,7 +821,7 @@ body.sidebar-show-rare .nav-item--rare {
     background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08));
 }
 .funnel-bar-count {
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     font-weight: 700;
     font-size: 0.85rem;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
@@ -854,7 +854,7 @@ body.sidebar-show-rare .nav-item--rare {
 .alt-onboard-card {
     position: relative;
     width: min(520px, 92vw);
-    background: linear-gradient(180deg, #15110a 0%, #0d0a06 100%);
+    background: linear-gradient(180deg, var(--ak-surface-warm) 0%, var(--ak-surface-warm-2) 100%);
     border: 1px solid rgba(var(--ak-rgb), 0.30);
     border-radius: 16px;
     padding: 36px 40px 28px;
@@ -988,7 +988,7 @@ select:focus-visible {
     z-index: 100000;
     padding: 10px 16px;
     background: var(--brand-gold, var(--ak-primary,#b89658));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     border-radius: 0 0 8px 8px;
     font-weight: 600;
     text-decoration: none;
@@ -1255,7 +1255,7 @@ select:focus-visible {
 }
 .alt-sec-card {
     position: relative;
-    background: linear-gradient(180deg, #15110a 0%, #0d0a06 100%);
+    background: linear-gradient(180deg, var(--ak-surface-warm) 0%, var(--ak-surface-warm-2) 100%);
     border: 1px solid rgba(var(--ak-rgb), 0.30);
     border-radius: 16px;
     padding: 32px 36px;
@@ -1402,7 +1402,7 @@ select:focus-visible {
     height: 32px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--ak-mid,#c9a663), var(--ak-dark,#9a7d44));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     font-size: 0.72rem;
     font-weight: 700;
     display: flex;
@@ -1864,7 +1864,7 @@ select:focus-visible {
     position: relative;
     margin-top: 12vh;
     width: min(640px, 92vw);
-    background: linear-gradient(180deg, #15110a 0%, #0d0a06 100%);
+    background: linear-gradient(180deg, var(--ak-surface-warm) 0%, var(--ak-surface-warm-2) 100%);
     border: 1px solid rgba(var(--ak-rgb), 0.35);
     border-radius: 14px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
@@ -2167,7 +2167,7 @@ select:focus-visible {
     pointer-events: auto;
 }
 .alt-voice-card {
-    background: linear-gradient(180deg, #15110a, #0d0a06);
+    background: linear-gradient(180deg, var(--ak-surface-warm), var(--ak-surface-warm-2));
     border: 1px solid rgba(var(--ak-rgb), 0.30);
     border-radius: 18px;
     padding: 32px 36px;
@@ -2180,7 +2180,7 @@ select:focus-visible {
     height: 80px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--ak-mid,#c9a663), var(--ak-dark,#9a7d44));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2590,7 +2590,7 @@ select:focus-visible {
     height: 40px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--ak-mid,#c9a663), var(--ak-dark,#9a7d44));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     font-size: 0.82rem;
     font-weight: 700;
     display: flex;
@@ -2637,7 +2637,7 @@ select:focus-visible {
 }
 .cnc-admin-unread-badge {
     background: var(--brand-gold, var(--ak-primary,#b89658));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     font-size: 0.7rem;
     font-weight: 700;
     padding: 2px 8px;
@@ -2717,7 +2717,7 @@ select:focus-visible {
 }
 .cnc-detail-asesor .cnc-detail-bubble {
     background: linear-gradient(135deg, var(--ak-mid,#c9a663), var(--ak-dark,#9a7d44));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     border-bottom-right-radius: 4px;
 }
 .cnc-detail-bot .cnc-detail-bubble {
@@ -2954,7 +2954,7 @@ select:focus-visible {
     height: 32px;
     border-radius: 50%;
     background: var(--brand-gold, var(--ak-primary,#b89658));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     font-size: 0.75rem;
     font-weight: 700;
     display: flex;
@@ -3048,7 +3048,7 @@ select:focus-visible {
     height: 28px;
     border-radius: 50%;
     background: var(--brand-gold, var(--ak-primary,#b89658));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     font-size: 0.7rem;
     font-weight: 700;
     display: flex;
@@ -5448,7 +5448,7 @@ table th:focus-visible,
     font-size: 0.78rem;
     border-radius: 6px;
     background: var(--admin-gold);
-    color: #1a1100;
+    color: var(--ak-on-accent, #1a1100);
     border: none;
     font-weight: 600;
     cursor: pointer;
@@ -5576,7 +5576,7 @@ table th:focus-visible,
 }
 .crm-avatar-letter {
     background: linear-gradient(135deg, var(--ak-mid,#c9a663), var(--ak-primary,#b89658));
-    color: #1a1100;
+    color: var(--ak-on-accent, #1a1100);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5949,7 +5949,7 @@ table th:focus-visible,
     top: 8px;
     right: 8px;
     background: var(--admin-gold);
-    color: #1a1100;
+    color: var(--ak-on-accent, #1a1100);
     font-size: 0.68rem;
     font-weight: 700;
     border-radius: 999px;
@@ -6069,7 +6069,7 @@ table th:focus-visible,
     align-items: center;
     padding: 0 10px;
     transition: width 0.4s cubic-bezier(0.22,1,0.36,1);
-    color: #1a1100;
+    color: var(--ak-on-accent, #1a1100);
     font-weight: 700;
     font-size: 0.82rem;
 }
@@ -7243,7 +7243,7 @@ body.sidebar-collapsed .sidebar-collapse-btn i {
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .cnc-summary-card {
-    background: linear-gradient(180deg, #15110a 0%, #0d0a06 100%);
+    background: linear-gradient(180deg, var(--ak-surface-warm) 0%, var(--ak-surface-warm-2) 100%);
     border: 1px solid rgba(var(--ak-rgb), 0.30);
     border-radius: 14px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.60);
@@ -14639,7 +14639,7 @@ html.theme-changing-stop * {
     height: 44px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--ak-light,#d4ad6e), var(--ak-dark,#9a7d44));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     font-size: 0.92rem;
     font-weight: 700;
     display: flex;
@@ -14680,7 +14680,7 @@ html.theme-changing-stop * {
 }
 .altor-hub .cnc-admin-unread-badge {
     background: linear-gradient(135deg, var(--ak-light,#d4ad6e), var(--ak-primary,#b89658));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     font-size: 0.72rem;
     font-weight: 700;
     padding: 3px 9px;
@@ -14796,7 +14796,7 @@ html.theme-changing-stop * {
 }
 .altor-hub .cnc-detail-asesor .cnc-detail-bubble {
     background: linear-gradient(135deg, var(--ak-light,#d4ad6e), var(--ak-dark,#9a7d44));
-    color: #1a1500;
+    color: var(--ak-on-accent, #1a1100);
     /* Tail apuntando abajo-derecha (asesor a la derecha) */
     border-bottom-right-radius: 4px;
     box-shadow:

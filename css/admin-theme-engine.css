@@ -126,3 +126,37 @@ html.theme-cyan ::selection {
     background: rgba(var(--ak-rgb), 0.32);
     color: #fff;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   PLAN A (§116) — TINTE DE SUPERFICIES con el acento activo.
+   ====================================================================
+   Las superficies Mica/Acrylic/vis-surface eran frías y constantes
+   (gris-negro puro) → al cambiar la paleta solo se recoloreaba el acento
+   y las superficies seguían iguales ("solo cambian 2 cositas").
+
+   Aquí redefinimos cada superficie como una MEZCLA del mismo gris-negro
+   base + el acento activo a baja saturación (4–8%) usando color-mix.
+   Como `var(--ak-rgb)` se resuelve PEREZOSAMENTE en el sitio de USO de
+   cada token, una sola definición en :root tiñe LAS 6 PALETAS + dorado
+   automáticamente (dorado no tiene clase: usa el :root default de tokens).
+
+   CERO ediciones a los ~101 consumidores de superficie — heredan el
+   tinte solos. NO toca modos light/high-contrast (usan tokens --bg-*).
+   color-mix: Chrome 111+, Safari 16.2+, FF 113+ (admin-only, OK).
+   ════════════════════════════════════════════════════════════════════ */
+:root {
+    /* Mica / Acrylic (Windows-11-like) — base frío + acento sutil */
+    --nova-mica-bg:        color-mix(in srgb, rgba(18, 18, 20, 0.72) 94%, rgb(var(--ak-rgb)));
+    --nova-mica-bg-strong: color-mix(in srgb, rgba(15, 15, 17, 0.85) 95%, rgb(var(--ak-rgb)));
+    --nova-acrylic-bg:     color-mix(in srgb, rgba(28, 28, 30, 0.55) 93%, rgb(var(--ak-rgb)));
+
+    /* vis-surface stack — profundidad creciente, tinte creciente */
+    --vis-surface-base:    color-mix(in srgb, #0a0a0c 96%, rgb(var(--ak-rgb)));
+    --vis-surface-canvas:  color-mix(in srgb, rgba(14, 14, 16, 0.98) 96%, rgb(var(--ak-rgb)));
+    --vis-surface-1:       color-mix(in srgb, rgba(20, 20, 22, 0.78) 94%, rgb(var(--ak-rgb)));
+    --vis-surface-2:       color-mix(in srgb, rgba(26, 26, 28, 0.76) 94%, rgb(var(--ak-rgb)));
+    --vis-surface-3:       color-mix(in srgb, rgba(32, 32, 34, 0.78) 93%, rgb(var(--ak-rgb)));
+    --vis-surface-4:       color-mix(in srgb, rgba(40, 40, 42, 0.82) 92%, rgb(var(--ak-rgb)));
+    --vis-surface-modal:   color-mix(in srgb, rgba(15, 15, 17, 0.88) 95%, rgb(var(--ak-rgb)));
+    --vis-surface-popover: color-mix(in srgb, rgba(18, 18, 20, 0.92) 94%, rgb(var(--ak-rgb)));
+}

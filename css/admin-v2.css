@@ -805,7 +805,7 @@ body.is-sidebar-collapsed .sidebar-collapse-btn {
     z-index: 2;
     padding: 4px 8px;
     background: linear-gradient(135deg, var(--ak-light,#d4ad6e), var(--ak-primary,#b89658));
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;

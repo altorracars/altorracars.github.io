@@ -12,6 +12,7 @@
 | `notifications-demo.html` | Página demo del sistema de notificaciones | Demo de desarrollo, no producción. |
 | `admin-upload.html` | Herramienta manual de subida de datos a Firestore (`vehiculos`/`marcas` vía `.set()`) | **MUERTA — validado §119.** Creada 2026-02-07 (Firestore original), sin trabajo real desde entonces, **sin autenticación**. Bajo las `firestore.rules` actuales (escritura exige `isSuperAdmin()`, §68) cualquier escritura suya da *permission-denied* → no funciona aunque se abra. Reemplazada por el wizard de `admin.html` (§104-§108). |
 | `admin-components.html` | "Storybook" de componentes (T.3), `noindex,nofollow` | Galería de componentes de desarrollo. |
+| `theme-switcher.js` | Conmutador de tema light/dark/contrast (T.4) | **MUERTO — validado §119.** `admin.html:3721` dice "theme-switcher.js eliminado — tema dark permanente". 0 cargas funcionales (solo menciones en comentarios). El admin usa tema dark fijo + el motor cromático §115 (admin-theme-picker.js) para las 6 paletas. |
 
 ## Cómo revertir un archivo
 

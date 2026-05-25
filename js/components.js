@@ -313,7 +313,7 @@ function loadAuthSystem() {
                 }
                 if (!document.querySelector('script[src*="concierge.js"]')) {
                     var cncScript = document.createElement('script');
-                    cncScript.src = 'js/concierge.js';
+                    cncScript.src = 'js/concierge/concierge.js';
                     cncScript.defer = true;
                     document.body.appendChild(cncScript);
                 }
@@ -413,14 +413,14 @@ function loadAuthSystem() {
                 // U.5 — Knowledge Base client (FAQ que admin gestiona)
                 if (!document.querySelector('script[src*="kb-client.js"]')) {
                     var kb = document.createElement('script');
-                    kb.src = 'js/kb-client.js';
+                    kb.src = 'js/concierge/kb-client.js';
                     kb.defer = true;
                     document.body.appendChild(kb);
                 }
                 // U.19 — Marketing opt-in granular + GDPR
                 if (!document.querySelector('script[src*="concierge-optin.js"]')) {
                     var optin = document.createElement('script');
-                    optin.src = 'js/concierge-optin.js';
+                    optin.src = 'js/concierge/concierge-optin.js';
                     optin.defer = true;
                     document.body.appendChild(optin);
                 }
@@ -449,7 +449,7 @@ function loadCookieSystem() {
     // Cargar JS
     if (!document.querySelector('script[src*="cookies.js"]')) {
         const script = document.createElement('script');
-        script.src = 'js/cookies.js';
+        script.src = 'js/public/cookies.js';
         document.body.appendChild(script);
     }
 }
@@ -834,7 +834,7 @@ function loadModalsIfNeeded() {
             // Load JS if not already present
             if (!document.querySelector('script[src*="contact-forms.js"]')) {
                 var script = document.createElement('script');
-                script.src = 'js/contact-forms.js';
+                script.src = 'js/public/contact-forms.js';
                 document.body.appendChild(script);
             }
         })

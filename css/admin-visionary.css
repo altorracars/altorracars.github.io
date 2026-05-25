@@ -602,7 +602,7 @@ body:has(.admin-panel) {
         var(--vis-brand-300) 0%,
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%);
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     font-weight: 650;
     letter-spacing: var(--vis-ls-base);
     border: 1px solid rgba(var(--ak-light-rgb), 0.50);
@@ -1474,7 +1474,7 @@ body:has(.admin-panel) {
         var(--vis-brand-200) 0%,
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%);
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     font-weight: 700;
     letter-spacing: var(--vis-ls-tight);
     box-shadow:
@@ -1693,7 +1693,7 @@ body:has(.admin-panel) {
         var(--vis-brand-300) 0%,
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%);
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     font-weight: 700;
     letter-spacing: var(--vis-ls-base);
     padding: 12px 24px;
@@ -2085,7 +2085,7 @@ body:has(.admin-panel) {
         var(--vis-brand-300) 0%,
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%);
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     border: 1px solid rgba(var(--ak-light-rgb), 0.55);
     border-radius: var(--vis-r-pill);
     box-shadow:
@@ -2603,7 +2603,7 @@ body:has(.admin-panel) {
     background: linear-gradient(135deg,
         var(--vis-brand-300),
         var(--vis-brand-600));
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     border-color: rgba(var(--ak-light-rgb), 0.55);
 }
 .admin-panel .cnc-admin-msg-bubble--bot {
@@ -3446,7 +3446,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-300) 0%,
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%);
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     font-weight: 700;
     border: 1px solid rgba(var(--ak-light-rgb), 0.55);
     border-radius: var(--vis-r-pill);
@@ -4035,7 +4035,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-300) 0%,
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%) !important;
-    color: #1a1310 !important;
+    color: var(--ak-on-accent, #1a1310) !important;
     font-weight: 700 !important;
     border: 1px solid rgba(var(--ak-light-rgb), 0.55) !important;
     border-radius: var(--vis-r-pill) !important;
@@ -4252,7 +4252,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-300) 0%,
         var(--vis-brand-500) 100%) !important;
     border-color: var(--vis-brand-500) !important;
-    color: #1a1310 !important;
+    color: var(--ak-on-accent, #1a1310) !important;
     font-weight: 700;
     box-shadow: var(--vis-elev-1),
                 var(--vis-elev-glow);
@@ -4680,7 +4680,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-200) 0%,
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%);
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     font-weight: 700;
     display: inline-flex;
     align-items: center;
@@ -4921,7 +4921,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-300) 0%,
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%) !important;
-    color: #1a1310 !important;
+    color: var(--ak-on-accent, #1a1310) !important;
     font-weight: 700 !important;
     border: 1px solid rgba(var(--ak-light-rgb), 0.55) !important;
     border-radius: var(--vis-r-sm) !important;
@@ -5321,7 +5321,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
         var(--vis-brand-500) 50%,
         var(--vis-brand-700) 100%);
     border: 1px solid rgba(var(--ak-light-rgb), 0.55);
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -5659,7 +5659,7 @@ body.sidebar-collapsed .admin-panel.admin-layout {
     left: -200%;
     top: 12px;
     background: var(--vis-brand-500);
-    color: #1a1310;
+    color: var(--ak-on-accent, #1a1310);
     padding: 10px 18px;
     border-radius: var(--vis-r-sm);
     font-weight: 700;

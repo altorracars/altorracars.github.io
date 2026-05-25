@@ -10632,7 +10632,7 @@ kbd {
     width: 100% !important;
     background: linear-gradient(135deg, var(--ak-mid,#c9a663) 0%, var(--ak-primary,#b89658) 50%, var(--ak-dark,#9a7d44) 100%) !important;
     border: none !important;
-    color: #1a1a1a !important;
+    color: var(--ak-on-accent, #1a1a1a) !important;
     font-weight: 700 !important;
     padding: 13px 18px !important;
     margin-top: 0.5rem;
@@ -10938,7 +10938,7 @@ kbd {
     width: 34px; height: 34px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--ak-primary,#b89658), var(--ak-dark,#9a7d44));
-    color: #1a1a1a;
+    color: var(--ak-on-accent, #1a1a1a);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -11881,7 +11881,7 @@ dialog::backdrop {
 .alt-onboard-actions .btn-primary {
     background: linear-gradient(135deg, var(--ak-mid,#c9a663) 0%, var(--ak-primary,#b89658) 50%, var(--ak-dark,#9a7d44) 100%) !important;
     border: none !important;
-    color: #1a1a1a !important;
+    color: var(--ak-on-accent, #1a1a1a) !important;
     box-shadow: 0 4px 14px rgba(var(--ak-rgb), 0.30),
                 inset 0 1px 0 rgba(255, 255, 255, 0.20);
 }
@@ -11931,42 +11931,15 @@ dialog::backdrop {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   ADR-028 §28.8 — Theme picker (gold/blue/violet)
-   El admin elige paleta cromática. Override de --brand-primary +
-   --ws-color-* + colores derivados via clase en <html>.
+   ADR-028 §28.8 — Theme picker (gold/blue/violet/emerald/crimson/cyan)
+   El admin elige paleta cromática. Los overrides de --brand-primary +
+   --ws-color-* + tokens --nova-* derivados ahora viven en
+   css/admin-theme-engine.css (carga ÚLTIMA → gana el cascade y cubre
+   las 6 paletas desde el set --ak-*). §117 Plan C eliminó aquí los
+   bloques legacy redundantes html.theme-blue/html.theme-violet
+   (tinte 0.06/reveal 0.10) que el engine ahora reemplaza con valores
+   más vibrantes (tinte 0.14/reveal 0.20) sin duplicación.
    ═══════════════════════════════════════════════════════════════════ */
-
-/* ─── Theme: BLUE corporate ─────────────────────────────────── */
-html.theme-blue {
-    --brand-primary: #3b82f6;
-    --ws-color-gold: #3b82f6;
-    --nova-tint-gold: rgba(59, 130, 246, 0.06);
-    --nova-acrylic-tint-gold: rgba(59, 130, 246, 0.04);
-    --nova-reveal-color: rgba(59, 130, 246, 0.10);
-    --nova-reveal-color-hi: rgba(59, 130, 246, 0.18);
-    --nova-border-gold: 1px solid rgba(59, 130, 246, 0.18);
-    --nova-border-gold-hi: 1px solid rgba(59, 130, 246, 0.32);
-    --nova-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.32);
-    --nova-focus-ring-soft: 0 0 0 3px rgba(59, 130, 246, 0.16);
-}
-html.theme-blue ::selection { background: rgba(59, 130, 246, 0.32); }
-html.theme-blue ::-moz-selection { background: rgba(59, 130, 246, 0.32); }
-
-/* ─── Theme: VIOLET creative ────────────────────────────────── */
-html.theme-violet {
-    --brand-primary: #8b5cf6;
-    --ws-color-gold: #8b5cf6;
-    --nova-tint-gold: rgba(139, 92, 246, 0.06);
-    --nova-acrylic-tint-gold: rgba(139, 92, 246, 0.04);
-    --nova-reveal-color: rgba(139, 92, 246, 0.10);
-    --nova-reveal-color-hi: rgba(139, 92, 246, 0.18);
-    --nova-border-gold: 1px solid rgba(139, 92, 246, 0.18);
-    --nova-border-gold-hi: 1px solid rgba(139, 92, 246, 0.32);
-    --nova-focus-ring: 0 0 0 3px rgba(139, 92, 246, 0.32);
-    --nova-focus-ring-soft: 0 0 0 3px rgba(139, 92, 246, 0.16);
-}
-html.theme-violet ::selection { background: rgba(139, 92, 246, 0.32); }
-html.theme-violet ::-moz-selection { background: rgba(139, 92, 246, 0.32); }
 
 /* Smooth transition al cambiar tema */
 * {
@@ -12405,7 +12378,7 @@ html.theme-changing-stop * {
     width: 22px; height: 22px;
     border-radius: 50%;
     background: currentColor;
-    color: #1a1a1a;
+    color: var(--ak-on-accent, #1a1a1a);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -15164,7 +15137,7 @@ html.theme-changing-stop * {
 }
 .cnc-admin-note-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 .cnc-admin-note-avatar-initials {
-    color: #1a1a1a;
+    color: var(--ak-on-accent, #1a1a1a);
     font-weight: 700;
     font-size: 0.65rem;
 }
@@ -15391,7 +15364,7 @@ html.theme-changing-stop * {
 }
 .cnc-transfer-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 .cnc-transfer-avatar-initials {
-    color: #1a1a1a;
+    color: var(--ak-on-accent, #1a1a1a);
     font-weight: 700;
     font-size: 0.82rem;
 }

@@ -41589,3 +41589,142 @@ tocados — lazy var() hace el trabajo. §17.2: cero transition nuevo. §17.12:
 cero MutationObserver. §35: cero pointermove.
 
 **Cache bump**: `v20260524020000`.
+
+---
+
+## 117. ADR-117 — Plan B (texto legible sobre acento) + Plan C (tints vibrantes + dedup legacy theme blocks) (2026-05-25)
+
+> Cierre del plan de 3 fases A→B→C del motor cromático (§115 capa `--ak-*`,
+> §116 Plan A superficies teñidas vía color-mix). Tras §116 el Plan A
+> introdujo un riesgo latente: como las superficies y muchos gradientes
+> usan el acento activo, el texto OSCURO hardcoded (`#1a1310`/`#1a1a1a`)
+> que se pintaba sobre gradientes dorados quedaba ILEGIBLE cuando el
+> acento es una paleta oscura (blue/violet/emerald/crimson/cyan → texto
+> oscuro sobre fondo oscuro). Plan B lo resuelve con un token de
+> contraste por paleta. Plan C sube la vibración de los tints (Plan A
+> los dejó muy sutiles 4-8%) y elimina código legacy ahora redundante.
+>
+> Instrucción del cliente (sesión previa): "continua: ejecuta uno por uno
+> primero A, luego B y luego C asegurate que no se rompa nada".
+>
+> Aplicado bajo §17.2 (cero transition:all/`*` global nuevo), §17.4
+> (HTML/CSS estable — cero IDs/funciones/callsites renombrados, gold
+> fallback en cada var()), §17.12 (cero MutationObserver), §19 RCA
+> estricto, §35 (cero pointermove), §37 (IAP), §115/§116 (motor cromático).
+
+### 117.1 Causa raíz Plan B (RCA §19)
+
+~24 elementos pintaban texto OSCURO hardcoded sobre un fondo de acento:
+botones primarios, badges, pills, chips, avatares (iniciales), skip-link,
+y las iniciales de note/transfer en el ALTOR Hub. El literal era
+`color: #1a1310` (o `#1a1a1a`) — perfecto sobre dorado (`--ak-primary`
+claro), pero al cambiar a una paleta oscura el fondo del gradiente
+(`var(--vis-brand-*)` / `rgb(var(--ak-rgb))`) se oscurece y el texto
+oscuro desaparece (contraste insuficiente). El acento cambiaba (§115)
+pero su texto de contraste seguía constante.
+
+### 117.2 Solución Plan B — token `--ak-on-accent` por paleta
+
+Nuevo token de contraste que acompaña al acento:
+- `css/tokens.css` `:root` (gold default): `--ak-on-accent: #1a1310;`
+  (texto oscuro sobre dorado claro).
+- `css/admin-theme-engine.css` — 6 bloques `html.theme-{name}`:
+  - gold → `#1a1310` (texto oscuro)
+  - blue/violet/emerald/crimson/cyan → `#ffffff` (texto blanco sobre
+    acento oscuro)
+
+~24 callsites remapeados `color: #1a1310|#1a1a1a` → `var(--ak-on-accent, #1a1a1a)`
+preservando cualquier `!important`:
+- `css/admin.css` (6): login btn, avatar, onboard btn, kbd-like badge,
+  note avatar initials, transfer avatar initials.
+- `css/admin-visionary.css` (12): botones/badges/pills/chips/skip-link/
+  note+transfer avatars (varios con `!important` preservado).
+- `css/admin-v2.css` (1): sidebar collapse badge.
+- `css/admin-topnav.css` (5): nav-badge, user avatar 28px, profile
+  avatar 44px, `.profile-avatar`, mobile nav-badge.
+
+Lazy `var()`: una sola redefinición por paleta cascadea a los 24
+consumidores. CERO ediciones a más callsites de los necesarios.
+
+### 117.3 Causa raíz Plan C (tints muy sutiles + legacy redundante)
+
+Plan A (§116) tiñó superficies a 4-8% — seguro pero el cliente quería
+"muchas cosas" coloreadas con más presencia. Además quedaban 2 bloques
+legacy `html.theme-blue { ... }` y `html.theme-violet { ... }` en
+`admin.css` (de §28.8, con tint 0.06 / reveal 0.10 hardcoded +
+`::selection`) que ahora el engine de 6 paletas cubre por completo →
+código muerto que podía pelear por especificidad.
+
+### 117.4 Solución Plan C — vibración + dedup
+
+En `css/admin-theme-engine.css` (bloque de derivación compartido):
+- `--nova-tint-gold: rgba(var(--ak-rgb), 0.14)` (era 0.10)
+- `--nova-acrylic-tint-gold: rgba(var(--ak-rgb), 0.10)` (era 0.06)
+- `--nova-reveal-color: rgba(var(--ak-rgb), 0.20)` (era 0.16)
+
+Tints/reveal más presentes en TODAS las paletas (lazy var()), sin
+sacrificar contraste de texto.
+
+Dedup en `css/admin.css`: ELIMINADOS los bloques `html.theme-blue { }`
+y `html.theme-violet { }` (hardcoded, solo 2 de 6 paletas) — el engine
+los reemplaza para las 6. Header de comentario §28.8 reemplazado por
+nota de migración a §117.
+
+### 117.5 No-regresión
+
+- `--ak-on-accent` con fallback `#1a1a1a`/`#1a1310` en cada `var()` →
+  si el token no resuelve, comportamiento idéntico al previo (§17.4).
+- `!important` preservado donde existía.
+- Light/dark/high-contrast (`theme-switcher.js` vía `data-theme`)
+  ortogonales — overridean solo `--bg-*`, intactos.
+- Bloque `* { transition: background-color/border-color/color 0.4s }`
+  pre-existente de §28.8 NO se toca (propiedades específicas, fuera de
+  scope, cumple §17.2).
+- Verificado: `--ak-on-accent` count = 7 (1 tokens.css + 6 engine);
+  24 callsites `var(--ak-on-accent`; 0 bloques legacy theme-blue/violet
+  activos en admin.css; llaves balanceadas en los 6 CSS.
+- Cero schema, cero deploy backend. Cliente solo Ctrl+Shift+R.
+
+### 117.6 Tests E2E (post-merge + Ctrl+Shift+R)
+
+| # | Test | Esperado |
+|---|---|---|
+| 1 | Hard refresh admin (cache v20260525010000) | Carga nueva |
+| 2 | Ajustes → Apariencia → "Violeta" | Texto de botones/badges/avatares sobre acento = BLANCO legible (no oscuro invisible) |
+| 3 | Probar las 6 paletas | gold = texto oscuro; blue/violet/emerald/crimson/cyan = texto blanco sobre acento |
+| 4 | Tints de superficies (Plan C) | Sidebar/cards/modales con tinte MÁS presente que en §116 (sin perder legibilidad) |
+| 5 | Reveal hover sobre cards | Glow del acento más visible |
+| 6 | Login screen / onboard / skip-link / Hub avatars | Texto legible en todas las paletas |
+| 7 | data-theme light/high-contrast | Intactos (no afectados) |
+| 8 | DevTools: `getComputedStyle(document.documentElement).getPropertyValue('--ak-on-accent')` con theme-blue | `#ffffff` |
+
+### 117.7 Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `css/tokens.css` | `--ak-on-accent: #1a1310` (gold default) en `:root` |
+| `css/admin-theme-engine.css` | `--ak-on-accent` en 6 bloques de paleta (gold oscuro / 5 dark blanco) + Plan C tint/reveal bumps (0.10→0.14, 0.06→0.10, 0.16→0.20) |
+| `css/admin.css` | 6 callsites → `var(--ak-on-accent, #1a1a1a)` + dedup bloques legacy `html.theme-blue`/`html.theme-violet` |
+| `css/admin-visionary.css` | 12 callsites → `var(--ak-on-accent, #1a1310)` (preserva `!important`) |
+| `css/admin-v2.css` | 1 callsite → `var(--ak-on-accent, #1a1310)` |
+| `css/admin-topnav.css` | 5 callsites → `var(--ak-on-accent, #1a1310)` |
+| `service-worker.js` + `js/cache-manager.js` | Cache bump v20260525010000 |
+| `CLAUDE.md` | Esta sección §117 |
+
+**Total**: 9 archivos. Cero schema, cero deploy backend, solo Ctrl+Shift+R.
+
+### 117.8 Doctrina aplicada
+
+§19 RCA: riesgo de legibilidad detectado como consecuencia directa de
+§116 (acento variable + texto de contraste constante); legacy dedup
+verificado redundante con el engine ANTES de borrar. §37 IAP: Plan B+C
+finales del plan de 3 fases A→B→C aprobado. §17.4: token con gold
+fallback en cada var(), `!important` preservado, cero IDs/funciones
+renombrados. §17.2: cero transition:all/`*` global nuevo. §17.12: cero
+MutationObserver. §35: cero pointermove.
+
+**Plan A→B→C COMPLETO**: §116 (A superficies) + §117 (B texto legible +
+C vibración/dedup). El motor cromático §115 ahora recolorea acento +
+superficies + texto de contraste de forma coherente en las 6 paletas.
+
+**Cache bump**: `v20260525010000`.

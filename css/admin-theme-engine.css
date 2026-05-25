@@ -24,6 +24,8 @@ html.theme-gold {
     --ak-mid-rgb:    201, 166, 99;
     --ak-bright:     #d4af37;
     --ak-bright-rgb: 212, 175, 55;
+    /* §117 Plan B — texto legible SOBRE el acento. Dorado = oscuro. */
+    --ak-on-accent:  #1a1310;
 }
 
 /* ─── Paleta AZUL corporativo ───────────────────────────────────────── */
@@ -37,6 +39,8 @@ html.theme-blue {
     --ak-mid-rgb:    37, 99, 235;
     --ak-bright:     #38bdf8;
     --ak-bright-rgb: 56, 189, 248;
+    /* §117 Plan B — paleta oscura → texto blanco sobre el acento. */
+    --ak-on-accent:  #ffffff;
 }
 
 /* ─── Paleta VIOLETA creativo ───────────────────────────────────────── */
@@ -50,6 +54,8 @@ html.theme-violet {
     --ak-mid-rgb:    124, 58, 237;
     --ak-bright:     #c084fc;
     --ak-bright-rgb: 192, 132, 252;
+    /* §117 Plan B — paleta oscura → texto blanco sobre el acento. */
+    --ak-on-accent:  #ffffff;
 }
 
 /* ─── Paleta ESMERALDA (verde) ──────────────────────────────────────── */
@@ -63,6 +69,8 @@ html.theme-emerald {
     --ak-mid-rgb:    5, 150, 105;
     --ak-bright:     #6ee7b7;
     --ak-bright-rgb: 110, 231, 183;
+    /* §117 Plan B — paleta oscura → texto blanco sobre el acento. */
+    --ak-on-accent:  #ffffff;
 }
 
 /* ─── Paleta CARMESÍ (rojo lujo) ────────────────────────────────────── */
@@ -76,6 +84,8 @@ html.theme-crimson {
     --ak-mid-rgb:    190, 18, 60;
     --ak-bright:     #fda4af;
     --ak-bright-rgb: 253, 164, 175;
+    /* §117 Plan B — paleta oscura → texto blanco sobre el acento. */
+    --ak-on-accent:  #ffffff;
 }
 
 /* ─── Paleta CIAN (tech) ────────────────────────────────────────────── */
@@ -89,6 +99,8 @@ html.theme-cyan {
     --ak-mid-rgb:    8, 145, 178;
     --ak-bright:     #67e8f9;
     --ak-bright-rgb: 103, 232, 249;
+    /* §117 Plan B — paleta oscura → texto blanco sobre el acento. */
+    --ak-on-accent:  #ffffff;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -108,9 +120,9 @@ html.theme-cyan {
     --brand-primary-hover:     var(--ak-light);
     --brand-primary-active:    var(--ak-dark);
     --ws-color-gold:           var(--ak-primary);
-    --nova-tint-gold:          rgba(var(--ak-rgb), 0.10);
-    --nova-acrylic-tint-gold:  rgba(var(--ak-rgb), 0.06);
-    --nova-reveal-color:       rgba(var(--ak-rgb), 0.16);
+    --nova-tint-gold:          rgba(var(--ak-rgb), 0.14);  /* §117 Plan C — más vibrante */
+    --nova-acrylic-tint-gold:  rgba(var(--ak-rgb), 0.10);  /* §117 Plan C */
+    --nova-reveal-color:       rgba(var(--ak-rgb), 0.20);  /* §117 Plan C */
     --nova-reveal-color-hi:    rgba(var(--ak-rgb), 0.28);
     --nova-border-gold:        1px solid rgba(var(--ak-rgb), 0.30);
     --nova-border-gold-hi:     1px solid rgba(var(--ak-rgb), 0.55);

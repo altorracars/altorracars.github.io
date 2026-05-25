@@ -320,6 +320,7 @@
     --ak-mid-rgb:    201, 166, 99;
     --ak-bright:     #d4af37;          /* bright/saturated accent  */
     --ak-bright-rgb: 212, 175, 55;
+    --ak-on-accent:  #1a1310;          /* §117 texto sobre acento (gold=oscuro) */
 
     /* Tipografía jerárquica HarmonyOS */
     --hmy-font-page-title:     2rem;          /* 32px */

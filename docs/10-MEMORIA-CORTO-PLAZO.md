@@ -14,8 +14,18 @@
 
 ## 🎯 Foco actual
 
-- **Última acción**: ✅ Arquitectura Documental Neuronal cerrada y consolidada como ADR §118 (Largo Plazo). Validación lossless contra respaldos `*DEANTES.md` (byte-idénticos salvo CRLF) → respaldos borrados.
-- **Branch activa**: `main` (verificar con `git branch --show-current` al iniciar).
+- **EN CURSO — §119 Reestructuración de frontend** (rama `refactor/estructura`, NO mergeada a main). Plan de 5 fases, riesgo escalonado. Objetivo: orden modular sin romper URLs públicas (ruta=URL en GitHub Pages, sin bundler). NO replicar la imagen React/Vite literal. La migración Vite real es TODO-01 (~1 año).
+  - **Fase 0** ✅ rama creada + rastreo de dependencias.
+  - **Fase 1** ✅ commit `f071461`: cuarentena `_legacy/` (notifications-demo, admin-upload, admin-components) + `backups/` fuera de git. Cero refs rotas verificado. Prueba local (localhost:3000) OK — errores de consola eran solo restricción de referer de Firebase (Auth/Installations/Analytics bloqueados en localhost), NO de los cambios. Firestore carga 27 veh/18 marcas, snippets/ vía fetch OK.
+  - **Validado §119**: `admin-upload.html` confirmado MUERTO — sin auth, las rules actuales (§68 `isSuperAdmin()`) rechazarían sus escrituras. (El §2 del historial lo describía mal como "subida de imágenes"; corregido en `_legacy/README.md`.)
+  - **Fase 2** ⏳ reagrupar `js/` (109 archivos planos → subcarpetas core/public/admin/concierge/ai). EL núcleo. Toca ~900 refs (uniformes por `<base href="/">`) + generador + SW.
+  - **Fase 3** ⏳ reagrupar `css/` (31 planos).
+  - **Fase 4** ⏳ actualizar `scripts/generate-vehicles.mjs` (cron cada 4h — PELIGRO #1 si no se sincroniza) + `service-worker.js`.
+  - **Fase 5** ⏳ E2E + consolidar ADR §119 a Largo Plazo.
+  - **Decisión tomada**: subcarpetas DENTRO de `js/` y `css/` (ej. `js/core/`), NO un `assets/` nuevo → menos rutas tocadas, mismo beneficio.
+  - **NO tocar**: `snippets/` (runtime `fetch()` en components.js), `v/` (links de compartir externos), `admin.html` monolito (refactor aparte), toolchain (bun+npm cumplen roles distintos).
+- **Última acción previa**: ✅ Arquitectura Documental Neuronal cerrada como ADR §118.
+- **Branch activa**: `refactor/estructura` (verificar con `git branch --show-current`).
 - **Cache version actual**: `v20260525010000` — el siguiente bump debe ser MAYOR (formato `vYYYYMMDDHHMMSS`).
 
 ---

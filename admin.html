@@ -3715,11 +3715,11 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <!-- SCRIPTS (defer preserves execution order, unblocks HTML parser) -->
 <script src="js/firebase-config.js" defer></script>
 <!-- I.1 (mega-plan v4) — Event Bus: load EARLY so all modules can emit/listen -->
-<script src="js/event-bus.js" defer></script>
+<script src="js/admin/event-bus.js" defer></script>
 <script src="js/dynamic-lists.js" defer></script>
 <script src="js/comm-schema.js" defer></script>
 <!-- theme-switcher.js eliminado — tema dark permanente -->
-<script src="js/icons.js" defer></script>
+<script src="js/admin/icons.js" defer></script>
 <script src="js/admin/admin-sidebar.js" defer></script>
 <script src="js/admin/admin-section-router.js" defer></script>
 <!-- §36 ADR-036 — Top Nav (debe cargar tras section-router para suscribirse) -->
@@ -3735,7 +3735,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <!-- §61.R1 RBAC Foundation — catálogo canónico ANTES de admin-state.js
      para que window.AltorraRBACCatalog esté disponible en hidratación de
      permissions (admin-auth.js loadProfileViaREST). -->
-<script src="js/rbac-catalog.js" defer></script>
+<script src="js/admin/rbac-catalog.js" defer></script>
 <script src="js/admin/admin-state.js" defer></script>
 <script src="js/admin/admin-table-utils.js" defer></script>
 <!-- §48 — Recovery system (backup codes + security questions) carga ANTES
@@ -3744,7 +3744,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin/admin-auth.js" defer></script>
 <script src="js/admin/admin-sync.js" defer></script>
 <script src="js/admin/admin-activity.js" defer></script>
-<script src="js/smart-fields.js" defer></script>
+<script src="js/admin/smart-fields.js" defer></script>
 <script src="js/ai/fuzzy.js" defer></script>
 <script src="js/ai/brain-config.js" defer></script>
 <script src="js/ai/automotive-vocab.js" defer></script>
@@ -3770,7 +3770,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/admin/admin-crm.js" defer></script>
 <script src="js/admin/admin-predictive.js" defer></script>
 <!-- §60.1 — HubStore: Object Pool in-memory para Optimistic UI universal del admin -->
-<script src="js/hub-store.js" defer></script>
+<script src="js/admin/hub-store.js" defer></script>
 <script src="js/admin/admin-concierge.js" defer></script>
 <script src="js/admin/admin-kb.js" defer></script>
 <script src="js/admin/admin-unmatched.js" defer></script>

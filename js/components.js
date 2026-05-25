@@ -449,7 +449,7 @@ function loadCookieSystem() {
     // Cargar JS
     if (!document.querySelector('script[src*="cookies.js"]')) {
         const script = document.createElement('script');
-        script.src = 'js/cookies.js';
+        script.src = 'js/public/cookies.js';
         document.body.appendChild(script);
     }
 }
@@ -834,7 +834,7 @@ function loadModalsIfNeeded() {
             // Load JS if not already present
             if (!document.querySelector('script[src*="contact-forms.js"]')) {
                 var script = document.createElement('script');
-                script.src = 'js/contact-forms.js';
+                script.src = 'js/public/contact-forms.js';
                 document.body.appendChild(script);
             }
         })

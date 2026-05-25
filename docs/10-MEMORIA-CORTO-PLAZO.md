@@ -18,7 +18,20 @@
   - **Fase 0** ✅ rama creada + rastreo de dependencias.
   - **Fase 1** ✅ commit `f071461`: cuarentena `_legacy/` (notifications-demo, admin-upload, admin-components) + `backups/` fuera de git. Cero refs rotas verificado. Prueba local (localhost:3000) OK — errores de consola eran solo restricción de referer de Firebase (Auth/Installations/Analytics bloqueados en localhost), NO de los cambios. Firestore carga 27 veh/18 marcas, snippets/ vía fetch OK.
   - **Validado §119**: `admin-upload.html` confirmado MUERTO — sin auth, las rules actuales (§68 `isSuperAdmin()`) rechazarían sus escrituras. (El §2 del historial lo describía mal como "subida de imágenes"; corregido en `_legacy/README.md`.)
-  - **Fase 2** ⏳ reagrupar `js/` (109 archivos planos → subcarpetas core/public/admin/concierge/ai). EL núcleo. Toca ~900 refs (uniformes por `<base href="/">`) + generador + SW.
+  - **Fase 2** ⏳ reagrupar `js/`. ANÁLISIS DE DEPENDENCIAS HECHO (mapa abajo).
+    - **Mapa de referencias js/ (§119)** — dónde vive cada ruta a un .js:
+      1. **74 `admin-*.js`** → solo `admin.html` (74 `<script src>`) + 1 cross-ref: `components.js` carga `js/admin-calendar-config.js`. NO los toca el generador/SW/snippets/público. **Más contenido.**
+      2. **`js/components.js` = CARGADOR DINÁMICO**: inyecta ~25 scripts por ruta hardcodeada (`.src='js/...'`): auth, solicitudes-watcher, concierge, todo `js/ai/*`, comm-schema, kb-client, concierge-optin, admin-calendar-config, cookies, contact-forms. Cargado en 65 HTML.
+      3. **~10 HTML** inyectan dinámico: comparador.js, reviews.js, featured-week-banner.js, cookies.js, contact-forms.js.
+      4. **Generador `generate-vehicles.mjs` es TEMPLATE-DRIVEN**: lee `detalle-vehiculo.html` (→ vehiculos/*) y `marca.html` (→ marcas/*) y copia sus `<script>`/`<link>` tal cual. Actualizar esos 2 HTML + re-correr generador = las 45 páginas generadas quedan OK. Única ruta hardcodeada en el generador: `js/historial-visitas.js` (línea ~303, ancla de inyección).
+      5. **service-worker.js**: NO cachea js/css por ruta (STATIC_ASSETS solo multimedia). Sin impacto.
+      6. **snippets/**: HTML inerte, cero refs a js/.
+      7. Ya existen subcarpetas `js/ai/` (16) y `js/simulador/` (4) → patrón de subcarpeta YA funciona con `<base href="/">`.
+    - **Refs ocultas peligrosas** = las `.src='js/X.js'` de components.js + los ~10 HTML (NO son `<script src>` visibles). Toda ref a un js es string literal idéntico → reescritura determinista y verificable (`grep ruta-vieja`=0).
+    - **Tiers de riesgo**: A) admin-* (contenido, ~75 refs en 2 archivos, no toca cron) · B) concierge/features (refs en components.js + HTML, testeable en localhost) · C) core público (firebase-config/database/components/auth/main/render/toast: ~900 refs + 2 templates + generador + components.js — el más ancho).
+    - **DECISIÓN de secuencia (guía, cliente no-técnico)**: empezar por lo testeable en localhost, NO por admin (login bloqueado por referer en localhost → no verificable visualmente). Orden: concierge → public features → core público → **admin AL FINAL** (verificación post-merge con rollback listo).
+    - **✅ 2.1 hecho** (commit `40d34ad`): `js/concierge/` (concierge, concierge-optin, kb-client). Solo 3 líneas `.src` en components.js. Probado en local: bot abre y saluda (concierge.js:3980 open log). Cero 404. Errores de consola = referer-block Firebase (ajenos).
+    - **⏳ próximo 2.2**: `js/public/` — features visibles (comparador, reviews, featured-week-banner, cookies, contact-forms, contact, citas, vehicle-hotspots, filtros-avanzados). Verificar refs antes de mover.
   - **Fase 3** ⏳ reagrupar `css/` (31 planos).
   - **Fase 4** ⏳ actualizar `scripts/generate-vehicles.mjs` (cron cada 4h — PELIGRO #1 si no se sincroniza) + `service-worker.js`.
   - **Fase 5** ⏳ E2E + consolidar ADR §119 a Largo Plazo.

@@ -427,7 +427,7 @@ function loadAuthSystem() {
                 // D.7 — AI Auto-Scheduling helper para el Concierge
                 if (!document.querySelector('script[src*="admin-calendar-config.js"]')) {
                     var calCfg = document.createElement('script');
-                    calCfg.src = 'js/admin-calendar-config.js';
+                    calCfg.src = 'js/admin/admin-calendar-config.js';
                     calCfg.defer = true;
                     document.body.appendChild(calCfg);
                 }

@@ -10,7 +10,7 @@
 | Archivo | Qué era | Por qué se cuarentenó |
 |---|---|---|
 | `notifications-demo.html` | Página demo del sistema de notificaciones | Demo de desarrollo, no producción. |
-| `admin-upload.html` | Herramienta manual de subida de datos a Firestore | Reemplazada por el wizard de `admin.html`. ⚠️ Si aún la usás para cargas masivas, avisá y la restauramos. |
+| `admin-upload.html` | Herramienta manual de subida de datos a Firestore (`vehiculos`/`marcas` vía `.set()`) | **MUERTA — validado §119.** Creada 2026-02-07 (Firestore original), sin trabajo real desde entonces, **sin autenticación**. Bajo las `firestore.rules` actuales (escritura exige `isSuperAdmin()`, §68) cualquier escritura suya da *permission-denied* → no funciona aunque se abra. Reemplazada por el wizard de `admin.html` (§104-§108). |
 | `admin-components.html` | "Storybook" de componentes (T.3), `noindex,nofollow` | Galería de componentes de desarrollo. |
 
 ## Cómo revertir un archivo

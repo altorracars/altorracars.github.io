@@ -42,3 +42,9 @@ desktop.ini
 # Testing
 coverage/
 .nyc_output/
+
+# Respaldos locales de Firestore (salida de scripts/backup-firestore.mjs — NO versionar)
+backups/
+
+# Cuarentena de legacy (no se sirve; ver _legacy/README.md)
+# _legacy/  <- se MANTIENE versionado a propósito, comentado aquí solo como nota

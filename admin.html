@@ -3720,30 +3720,30 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/comm-schema.js" defer></script>
 <!-- theme-switcher.js eliminado — tema dark permanente -->
 <script src="js/icons.js" defer></script>
-<script src="js/admin-sidebar.js" defer></script>
-<script src="js/admin-section-router.js" defer></script>
+<script src="js/admin/admin-sidebar.js" defer></script>
+<script src="js/admin/admin-section-router.js" defer></script>
 <!-- §36 ADR-036 — Top Nav (debe cargar tras section-router para suscribirse) -->
-<script src="js/admin-topnav.js" defer></script>
+<script src="js/admin/admin-topnav.js" defer></script>
 <!-- §42 ADR-042 — Group Tabs: inyecta tabstrip DENTRO de cada sección activa
      que pertenece a un grupo (Inventario/Hub/Config). Replica visual del
      patrón .crm-tabstrip de CRM para consistencia de UX. Carga tras
      admin-section-router.js para suscribirse a section changes. -->
-<script src="js/admin-group-tabs.js" defer></script>
+<script src="js/admin/admin-group-tabs.js" defer></script>
 <!-- §36.1 — Mi Perfil (avatar upload + cargo + cédula one-time-edit) -->
-<script src="js/admin-profile.js" defer></script>
-<script src="js/admin-activity-feed.js" defer></script>
+<script src="js/admin/admin-profile.js" defer></script>
+<script src="js/admin/admin-activity-feed.js" defer></script>
 <!-- §61.R1 RBAC Foundation — catálogo canónico ANTES de admin-state.js
      para que window.AltorraRBACCatalog esté disponible en hidratación de
      permissions (admin-auth.js loadProfileViaREST). -->
 <script src="js/rbac-catalog.js" defer></script>
-<script src="js/admin-state.js" defer></script>
-<script src="js/admin-table-utils.js" defer></script>
+<script src="js/admin/admin-state.js" defer></script>
+<script src="js/admin/admin-table-utils.js" defer></script>
 <!-- §48 — Recovery system (backup codes + security questions) carga ANTES
      de admin-auth.js para que esté disponible al manejar 2FA bloqueado. -->
-<script src="js/admin-recovery.js" defer></script>
-<script src="js/admin-auth.js" defer></script>
-<script src="js/admin-sync.js" defer></script>
-<script src="js/admin-activity.js" defer></script>
+<script src="js/admin/admin-recovery.js" defer></script>
+<script src="js/admin/admin-auth.js" defer></script>
+<script src="js/admin/admin-sync.js" defer></script>
+<script src="js/admin/admin-activity.js" defer></script>
 <script src="js/smart-fields.js" defer></script>
 <script src="js/ai/fuzzy.js" defer></script>
 <script src="js/ai/brain-config.js" defer></script>
@@ -3761,93 +3761,93 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
 <script src="js/ai/nba.js" defer></script>
 <script src="js/ai/forecast.js" defer></script>
 <script src="js/ai/knowledge-graph.js" defer></script>
-<script src="js/admin-vehicles.js" defer></script>
-<script src="js/admin-brands.js" defer></script>
-<script src="js/admin-users.js" defer></script>
+<script src="js/admin/admin-vehicles.js" defer></script>
+<script src="js/admin/admin-brands.js" defer></script>
+<script src="js/admin/admin-users.js" defer></script>
 <!-- §61.R2 RBAC — UI sec-roles CRUD -->
-<script src="js/admin-roles.js" defer></script>
-<script src="js/admin-appointments.js" defer></script>
-<script src="js/admin-crm.js" defer></script>
-<script src="js/admin-predictive.js" defer></script>
+<script src="js/admin/admin-roles.js" defer></script>
+<script src="js/admin/admin-appointments.js" defer></script>
+<script src="js/admin/admin-crm.js" defer></script>
+<script src="js/admin/admin-predictive.js" defer></script>
 <!-- §60.1 — HubStore: Object Pool in-memory para Optimistic UI universal del admin -->
 <script src="js/hub-store.js" defer></script>
-<script src="js/admin-concierge.js" defer></script>
-<script src="js/admin-kb.js" defer></script>
-<script src="js/admin-unmatched.js" defer></script>
-<script src="js/admin-calendar-config.js" defer></script>
-<script src="js/admin-calendar.js" defer></script>
-<script src="js/admin-voice.js" defer></script>
-<script src="js/admin-insights.js" defer></script>
-<script src="js/admin-pwa.js" defer></script>
-<script src="js/admin-adaptive.js" defer></script>
-<script src="js/admin-palette.js" defer></script>
-<script src="js/admin-comments.js" defer></script>
-<script src="js/admin-presence-ui.js" defer></script>
-<script src="js/admin-security.js" defer></script>
-<script src="js/admin-voice-dictate.js" defer></script>
-<script src="js/admin-desc-gen.js" defer></script>
-<script src="js/admin-coedit.js" defer></script>
-<script src="js/admin-offline.js" defer></script>
-<script src="js/admin-anomaly.js" defer></script>
-<script src="js/admin-onboarding.js" defer></script>
-<script src="js/admin-kpis.js" defer></script>
-<script src="js/admin-reminders.js" defer></script>
-<script src="js/admin-sidebar-adaptive.js" defer></script>
-<script src="js/admin-native-notifications.js" defer></script>
+<script src="js/admin/admin-concierge.js" defer></script>
+<script src="js/admin/admin-kb.js" defer></script>
+<script src="js/admin/admin-unmatched.js" defer></script>
+<script src="js/admin/admin-calendar-config.js" defer></script>
+<script src="js/admin/admin-calendar.js" defer></script>
+<script src="js/admin/admin-voice.js" defer></script>
+<script src="js/admin/admin-insights.js" defer></script>
+<script src="js/admin/admin-pwa.js" defer></script>
+<script src="js/admin/admin-adaptive.js" defer></script>
+<script src="js/admin/admin-palette.js" defer></script>
+<script src="js/admin/admin-comments.js" defer></script>
+<script src="js/admin/admin-presence-ui.js" defer></script>
+<script src="js/admin/admin-security.js" defer></script>
+<script src="js/admin/admin-voice-dictate.js" defer></script>
+<script src="js/admin/admin-desc-gen.js" defer></script>
+<script src="js/admin/admin-coedit.js" defer></script>
+<script src="js/admin/admin-offline.js" defer></script>
+<script src="js/admin/admin-anomaly.js" defer></script>
+<script src="js/admin/admin-onboarding.js" defer></script>
+<script src="js/admin/admin-kpis.js" defer></script>
+<script src="js/admin/admin-reminders.js" defer></script>
+<script src="js/admin/admin-sidebar-adaptive.js" defer></script>
+<script src="js/admin/admin-native-notifications.js" defer></script>
 <!-- §23 FASE 4 — FCM Web Push para alertas en celular del asesor.
      §45 — firebase-messaging-compat.js se carga DINÁMICAMENTE desde
      admin-fcm.js cuando window.firebaseReady resuelve. Antes se cargaba
      como <script defer> estático y crasheaba con "Cannot read properties
      of undefined (reading 'INTERNAL')" porque se ejecutaba antes que
      firebase-app-compat.js (que firebase-config.js carga via loadScript). -->
-<script src="js/admin-fcm.js" defer></script>
-<script src="js/admin-telegram.js" defer></script>
-<script src="js/admin-color-extract.js" defer></script>
-<script src="js/admin-performance.js" defer></script>
+<script src="js/admin/admin-fcm.js" defer></script>
+<script src="js/admin/admin-telegram.js" defer></script>
+<script src="js/admin/admin-color-extract.js" defer></script>
+<script src="js/admin/admin-performance.js" defer></script>
 <!-- §27.2 Inicio productivo — KPIs hero (3 grandes) + NBA dashboard (top 5) -->
-<script src="js/admin-hero-kpis.js" defer></script>
-<script src="js/admin-nba-dashboard.js" defer></script>
+<script src="js/admin/admin-hero-kpis.js" defer></script>
+<script src="js/admin/admin-nba-dashboard.js" defer></script>
 <!-- §27.3 CRM unificado — tabs internos + Pipeline Kanban -->
-<script src="js/admin-crm-tabs.js" defer></script>
-<script src="js/admin-pipeline.js" defer></script>
+<script src="js/admin/admin-crm-tabs.js" defer></script>
+<script src="js/admin/admin-pipeline.js" defer></script>
 <!-- §27.4 Agenda unificada — tabs Calendario / Disponibilidad / Festivos -->
-<script src="js/admin-calendar-tabs.js" defer></script>
+<script src="js/admin/admin-calendar-tabs.js" defer></script>
 <!-- §27.5 Reportes ejecutivos — KPIs + Funnel + Forecast + Performance + Anomalías -->
-<script src="js/admin-reports.js" defer></script>
+<script src="js/admin/admin-reports.js" defer></script>
 <!-- §27.7 HarmonyOS polish — sidebar badges dinámicos -->
-<script src="js/admin-sidebar-badges.js" defer></script>
+<script src="js/admin/admin-sidebar-badges.js" defer></script>
 <!-- §28 ADR-028 NOVA — micro-interacciones (reveal hover Fluent) -->
-<script src="js/admin-nova-fx.js" defer></script>
+<script src="js/admin/admin-nova-fx.js" defer></script>
 <!-- §30 ADR-030 VISIONARY — micro-interacciones world-class
      (cursor follow Vision Pro + haptic visual + motion choreography) -->
-<script src="js/admin-visionary-fx.js" defer></script>
+<script src="js/admin/admin-visionary-fx.js" defer></script>
 <!-- §32 ADR-032 MASTER — UX flows + Data Viz + Micro + A11y + Polish -->
-<script src="js/admin-visionary-master.js" defer></script>
+<script src="js/admin/admin-visionary-master.js" defer></script>
 <!-- §33 V2-2 — Anti-FOUC bootstrap (window.load + doble rAF + reveal) -->
-<script src="js/admin-v2-bootstrap.js" defer></script>
+<script src="js/admin/admin-v2-bootstrap.js" defer></script>
 <!-- §33 V2-3 — Sidebar Island collapse + ⌘+B + mobile drawer -->
-<script src="js/admin-v2-sidebar.js" defer></script>
+<script src="js/admin/admin-v2-sidebar.js" defer></script>
 <!-- §33 V2-4 — Core: DOMBus + ScrollBus + cleanup hooks + auto-scroll-top -->
-<script src="js/admin-v2-core.js" defer></script>
+<script src="js/admin/admin-v2-core.js" defer></script>
 <!-- §28.5 NOVA — empty state illustrations SVG + auto-upgrade -->
-<script src="js/admin-empty-states.js" defer></script>
-<script src="js/admin-empty-states-autoupgrade.js" defer></script>
+<script src="js/admin/admin-empty-states.js" defer></script>
+<script src="js/admin/admin-empty-states-autoupgrade.js" defer></script>
 <!-- §28.6 NOVA — Skeleton screens realistas mimic per section -->
-<script src="js/admin-skeletons.js" defer></script>
+<script src="js/admin/admin-skeletons.js" defer></script>
 <!-- §28.8 NOVA — Theme picker (gold/blue/violet) -->
-<script src="js/admin-theme-picker.js" defer></script>
+<script src="js/admin/admin-theme-picker.js" defer></script>
 <!-- admin-inbox.js eliminado — unificado al Concierge (sec-concierge → ALTOR Hub) -->
-<script src="js/admin-automation.js" defer></script>
-<script src="js/admin-followups.js" defer></script>
-<script src="js/admin-templates.js" defer></script>
-<script src="js/admin-quote.js" defer></script>
-<script src="js/admin-postventa.js" defer></script>
-<script src="js/admin-dealers.js" defer></script>
-<script src="js/admin-lists.js" defer></script>
-<script src="js/admin-banners.js" defer></script>
-<script src="js/admin-reviews.js" defer></script>
-<script src="js/admin-operations.js" defer></script>
-<script src="js/admin-phase5.js" defer></script>
+<script src="js/admin/admin-automation.js" defer></script>
+<script src="js/admin/admin-followups.js" defer></script>
+<script src="js/admin/admin-templates.js" defer></script>
+<script src="js/admin/admin-quote.js" defer></script>
+<script src="js/admin/admin-postventa.js" defer></script>
+<script src="js/admin/admin-dealers.js" defer></script>
+<script src="js/admin/admin-lists.js" defer></script>
+<script src="js/admin/admin-banners.js" defer></script>
+<script src="js/admin/admin-reviews.js" defer></script>
+<script src="js/admin/admin-operations.js" defer></script>
+<script src="js/admin/admin-phase5.js" defer></script>
 <script>
 // Initialize Lucide icons when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {

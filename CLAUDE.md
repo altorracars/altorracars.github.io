@@ -68,6 +68,10 @@ por contexto). En su lugar:
 Ejemplo: para entender §61 RBAC → índice dice línea 26879 →
 `Read docs/99-HISTORIAL-ADR.md offset=26879 limit=200`.
 
+> ⚠️ La línea es una **pista, no verdad absoluta** (puede desincronizarse). Si el
+> tramo no arranca en el header `## NN` esperado, regenera con `grep -n "^## " ` o
+> corre `npm run brain:check` (valida el desync automáticamente). Robustez sobre fe ciega.
+
 ---
 
 ## §1 — Identidad y arquitectura (exprés)
@@ -176,6 +180,10 @@ Al iniciar una conversación nueva estás **estrictamente obligado** a leer SOLO
 2. `docs/05-ESTADO-GLOBAL.md`: en qué estado está el sistema AHORA (build, versión, branch, riesgos).
 3. `docs/10-MEMORIA-CORTO-PLAZO.md` (el WIP vivo): en qué estabas trabajando.
 
+Al arrancar, **imprime un resumen de 2-3 líneas de los signos vitales** (build, cache
+version, branch, flags de riesgo) extraídos de `05`. Procesarlos activamente —no solo
+leerlos— te obliga a saber dónde estás parado antes de tocar código.
+
 **IGNORA el resto del cerebro** (Espacial, Índice, Largo Plazo y hojas de
 detalle) para ahorrar tokens, A MENOS que un trigger (G.2) o una petición
 explícita del usuario te ordene leerlo. No leas el historial "por si acaso".
@@ -245,10 +253,11 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   (2) extrae sus lecciones a `30`, (3) actualiza `05` si cambió el estado, (4) recorta
   `10` dejando SOLO el foco vivo + pendientes abiertos. ⛔ Nunca volcar a `99` sin
   convertir en ADR (eso es basura, no consolidación).
-- **Reflejo de Auto-auditoría (arranque)**: tras leer CLAUDE.md + `05-ESTADO-GLOBAL`
-  + Corto Plazo, verifica BARATO (sin escanear todo): ¿`05` desactualizado? ¿`10`
-  sobre su cap? ¿tarea cerrada sin consolidar? Si sí, propón/ejecuta la limpieza
-  ANTES de empezar la tarea nueva.
+- **Reflejo de Auto-auditoría (arranque)**: tras leer CLAUDE.md + `05` + Corto Plazo,
+  corre **`npm run brain:check`** (linter: detecta neuronas huérfanas, saturación de
+  caps y desync del índice — le quita a tu disciplina el trabajo de verificar). Si
+  reporta problemas (o si `05` está viejo / hay tarea cerrada sin consolidar),
+  arréglalos ANTES de empezar la tarea nueva.
 - **Reflejo de Auto-mejora**: llena VACÍOS. Si detectas fricción (re-investigaste
   algo ya sabido, faltó un índice o lección), MEJORA el cerebro ahí mismo: crea lo
   que faltaba.
@@ -276,7 +285,7 @@ carga. El tope es BLANDO (señal de acción, no muro):
 
 | Neurona | Carga | Tope | Al acercarse al tope |
 |---|---|---|---|
-| `CLAUDE.md` | 🔴 auto (siempre) | ~300 líneas | Mover detalle a su neurona. JAMÁS crece con historial/tareas/cache. |
+| `CLAUDE.md` | 🔴 auto (siempre) | ~320 líneas | Núcleo de gobernanza. Más crecimiento DEBE desplazar detalle a una neurona, NO volver a subir el tope. Jamás historial/tareas/cache. |
 | `05-ESTADO-GLOBAL` | 🔴 auto (siempre) | ~25 líneas | Es un tablero, no bitácora. Solo señales vitales actuales (pisar, no apilar). |
 | `10-CORTO-PLAZO` | 🔴 auto (siempre) | ~110 líneas | Higiene §G.4 (GC): consolidar a `99`/`30`, recortar al foco vivo. |
 | `20-ESPACIAL` | 🟡 on-demand entera | ~280 líneas | Shard: extraer sub-área a neurona hermana (ej. `21-ESPACIAL-ADMIN.md`). |

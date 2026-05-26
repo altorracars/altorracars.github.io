@@ -41812,3 +41812,71 @@ se mantiene liviano (213 líneas vs 41.730 previas).
 
 §19 RCA (verificar, no asumir) + §37 IAP. **Sin cache bump**: cambio 100%
 documental, no afecta assets servidos al cliente final.
+
+---
+
+## 119. ADR-119 — Reestructuración de frontend (js/ plano → modular)
+
+> "Auditar y reestructurar mi repositorio para que sea limpio, modular, escalable y optimizado para IA."
+
+### 119.1 Causa raíz (RCA §19)
+`js/` era un pozo plano de ~109 archivos (admin + público + core + concierge + ai mezclados). Ubicar "lo que toca un bug" era lento y propenso a error. NO aplica la imagen React/Vite literal (el proyecto es vanilla sin bundler; en GitHub Pages **ruta=URL**, mover una página rompe SEO/301).
+
+### 119.2 Solución estructural
+Reorganización modular de `js/` en subcarpetas, preservando que ruta=URL (NO se movieron páginas HTML públicas): `js/core/` (17: firebase-config, database, cache-manager, components, auth, toast, main, render, page-loader, performance, comm-schema, event-bus, favorites-*, historial-visitas, solicitudes-watcher, perfil, dynamic-lists), `js/admin/` (79: admin-* + hub-store/rbac-catalog/smart-fields/icons), `js/public/` (9: comparador, reviews, cookies, contact-forms, contact, filtros-avanzados, citas, vehicle-hotspots, featured-week-banner), `js/concierge/` (3) + `js/ai/` y `js/simulador/` preexistentes. **128 archivos, 0 sueltos en raíz.** Método por lotes atómicos: `git mv` → `sed` SOLO en archivos con match → verificar `grep ruta-vieja`=0 + `node -c` → probar en localhost → commit. CSS reorg DIFERIDA a la migración Vite (TODO-01) por bajo valor/alto toque.
+
+### 119.3 No-regresión
+URLs públicas idénticas (cero cambio SEO). `<base href="/">` hace toda ref un string raíz-relativo uniforme. El generador es template-driven (`detalle-vehiculo.html`/`marca.html`) → propaga a las 45 páginas generadas; ancla hardcodeada `js/core/historial-visitas.js` actualizada. Refs dinámicas en `components.js` (auth/solicitudes-watcher/comm-schema/concierge/ai/cookies/contact-forms/admin-calendar-config) actualizadas. Cero código funcional, schema, functions ni backend tocados.
+
+### 119.4 Limpieza asociada (cuarentena `_legacy/`, validada §19)
+`admin-upload.html` (sin auth → rules §68 rechazan escrituras), `theme-switcher.js` (mergeado, tema dark fijo), `auth-header.css` (mergeado en style.css), demos (`notifications-demo.html`, `admin-components.html`). `backups/` fuera de git.
+
+### 119.5 Lecciones (→ 30-LECCIONES)
+L-01 (sed corrompe line-endings en archivos sin match → pasar solo los que matchean), L-02 (conflicto cron↔cache, `git merge origin/main` lo resuelve solo vía ort), L-04 (receta de move), L-05 (`<base href>`), L-06 (components.js carga dinámica), L-10 (también carga CSS dinámico).
+
+### 119.6 Doctrina + estado
+§37 IAP + §19 RCA + §4. Fusionado y LIVE en producción (PRs #716-#723+). Sin cache bump propio (el cron lo maneja).
+
+---
+
+## 120. ADR-120 — Cerebro Documental Neuronal AUTÓNOMO
+
+> "Que el cerebro se autoconstruya y se alimente solo bajo tu guía... CLAUDE.md = soporte que te recuerda tu función en cada sesión nueva."
+
+### 120.1 Causa raíz
+El §118 creó los nodos de memoria, pero el cerebro era PASIVO: dependía de que el operador recordara mover info. Faltaba: identidad persistente, memoria de experiencia, recuperación semántica y mantenimiento automático.
+
+### 120.2 Solución estructural
+1. **Identidad `CLAUDE.md §0.0`**: Claude = constructor/guardián; el cerebro ES su memoria; obligatorio leerlo en cada sesión.
+2. **Neurona nueva `30-LECCIONES.md`** (memoria procedimental: gotchas/recetas indexadas por disparador).
+3. **Enrutamiento semántico** en `00-INDICE` (síntoma → neurona, recuperación rápida sin escanear).
+4. **Reflejos autónomos `§G.4`** (bajo guía, no automatismo ciego): Captura (auto-alimentación), Neurogénesis (crear neurona nueva + registrarla, nada huérfano), Frescura, Higiene/GC, Auto-auditoría, Auto-mejora + **🛡️ límite de guardián** (apendar no sobrescribir; cuarentenar no borrar).
+5. **`§G.5` Capacidad + Sharding**: tope por neurona según modo de carga (evita el desastre del CLAUDE.md de 40k líneas).
+6. **Nodo `05-ESTADO-GLOBAL`** (heartbeat auto-cargado: signos vitales).
+
+### 120.3 No-regresión + economía
+Lossless. Auto-carga ~1% del cerebro (≈450/46.487 líneas) vs el 100% del monolito viejo. CLAUDE.md liviano (núcleo de gobernanza).
+
+### 120.4 Doctrina
+Gobernanza §G (Ignorancia Selectiva, Triggers, Consolidación, Reflejos). Cero código.
+
+---
+
+## 121. ADR-121 — Autocrítica + Linter brain-check + robustez (cross-review)
+
+> Cross-review con Gemini para anticipar fallos y que la red no se rompa.
+
+### 121.1 Causa raíz
+Cross-review detectó 3 fragilidades reales: (a) dependencia de la DISCIPLINA del LLM para mantener el cerebro (fatiga de mantenimiento → fragmentación), (b) fragilidad del offset/línea del índice, (c) falta de auto-cuestionamiento del propio cerebro.
+
+### 121.2 Solución estructural
+1. **Reflejo de Autocrítica (`§G.4`)** — distinto de Auto-mejora: Auto-mejora llena VACÍOS, Autocrítica corrige DEFECTOS (cuando el cerebro causa un error). Post-mortem → nombrar defecto → corregir → registrar en `30-LECCIONES §Meta`; estructural → ADR + flag en `05`. Acotado (no auto-duda en bucle). Sembrado con M-01 (spatial stale) y M-02 (falso negativo grep).
+2. **Tooling `scripts/brain-check.mjs` + `npm run brain:check`** (el aporte clave): linter READ-ONLY que valida neuronas huérfanas, saturación de caps y desync del índice → le quita el trabajo de verificación a la disciplina del LLM (un script no se vuelve perezoso). Conectado al Reflejo de Auto-auditoría.
+3. **`§G.1` auditoría de arranque** (imprimir signos vitales) + **`§0` robustez de offset** (la línea es pista, no verdad; regenerar/`brain:check`).
+4. **DIFERIDO**: shard físico del historial → a las 50k líneas (append-only + `brain:check` confirma 145/145 sincronizado; partir el archivo precioso ahora sería más riesgo que beneficio).
+
+### 121.3 No-regresión
+`brain:check` reporta CEREBRO SANO (0 huérfanas, 145/145 índice sincronizado). CLAUDE.md cap recalibrado 300→320 (única vez, justificado: núcleo de gobernanza). Cero código de la web.
+
+### 121.4 Doctrina
+Gobernanza §G + RCA §19. La autocrítica cierra el ciclo: usar → criticar → corregir = madurez.

@@ -10,15 +10,15 @@
 
 | Señal | Valor (al 2026-05-26) |
 |---|---|
-| **Build** | 🟡 Work-in-progress (refactor §119 + cerebro §120 en rama, no fusionados del todo a main) |
+| **Build** | 🟢 OK — todo fusionado y LIVE en producción (js reorg §119, cerebro §120/121, SEO, hints #04). |
 | **Cache version vigente** | `v20260526002104` (próximo bump → MAYOR, formato `vYYYYMMDDHHMMSS`, §4) |
-| **Branch activa** | `refactor/estructura` (adelantada de `main`) |
-| **Producción (`main`)** | 🟢 OK — web en vivo funciona; tiene §119 hasta main+render (PR #723 mergeado) |
-| **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios sin deployar) |
+| **Branch activa** | `refactor/estructura` — sincronizada con `main` (el cliente fusiona por paso vía PR). |
+| **Producción (`main`)** | 🟢 web en vivo funciona; tiene todo el trabajo de la sesión. |
+| **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios sin deployar). |
 
 ## ⚠️ Flags de riesgo activos
-- Falta **fusión final** `refactor/estructura → main` (workflow: UNA sola al cerrar todo, no por paso — ver L-03).
-- Al fusionar puede aparecer conflicto cron↔cache → resolver con `git merge origin/main` (L-02, se resuelve solo).
+- Ninguno crítico. Conflicto cron↔cache al fusionar = patrón conocido, se resuelve solo (`git merge origin/main`, L-02).
+- **En PAUSA esperando el REDISEÑO TOTAL** del cliente (próxima gran iniciativa, ver `10` Contexto estratégico).
 
 ## 🧩 Sub-sistemas (resumen)
-`js/` modular ✅ · CSS reorg ⏸️ (diferida a Vite) · cerebro autónomo §120 ✅ · SEO meta (Twitter/OG) ✅ · bot/RBAC/Hub estables ✅
+`js/` modular ✅ · CSS reorg ⏸️ (diferida a Vite) · cerebro autónomo §120/121 ✅ · SEO meta+schema+hints ✅ · bot/RBAC/Hub estables ✅

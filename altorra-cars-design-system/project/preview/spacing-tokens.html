@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#0a0a0a;padding:24px;display:flex;flex-direction:column;gap:16px;}
+.title{color:#b89658;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;opacity:0.6;}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+.sp-block{border-radius:6px;background:#1a1a1a;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:hidden;position:relative;}
+.sp-fill{background:linear-gradient(135deg,#b89658,#d4af37);width:100%;position:absolute;bottom:0;}
+.sp-label{position:relative;z-index:1;color:#fff;font-size:0.62rem;font-weight:600;text-align:center;padding:6px 4px 8px;}
+.sp-token{color:#9c9997;font-size:0.6rem;text-align:center;margin-top:2px;}
+.radius-row{display:flex;gap:10px;align-items:center;}
+.rbox{background:#1a1a1a;border:1.5px solid rgba(212,175,55,0.4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:14px;}
+</style></head><body>
+<div class="title">Spacing Scale</div>
+<div class="grid">
+  <div class="sp-block" style="height:70px;"><div class="sp-fill" style="height:4px;"></div><div class="sp-label">4px<br><span style="color:#9c9997;font-size:0.58rem;">--space-1</span></div></div>
+  <div class="sp-block" style="height:70px;"><div class="sp-fill" style="height:8px;"></div><div class="sp-label">8px<br><span style="color:#9c9997;font-size:0.58rem;">--space-2 / xs</span></div></div>
+  <div class="sp-block" style="height:70px;"><div class="sp-fill" style="height:16px;"></div><div class="sp-label">16px<br><span style="color:#9c9997;font-size:0.58rem;">--space-4 / sm</span></div></div>
+  <div class="sp-block" style="height:70px;"><div class="sp-fill" style="height:32px;"></div><div class="sp-label">32px<br><span style="color:#9c9997;font-size:0.58rem;">--space-8 / md</span></div></div>
+  <div class="sp-block" style="height:70px;"><div class="sp-fill" style="height:48px;"></div><div class="sp-label">48px<br><span style="color:#9c9997;font-size:0.58rem;">--space-12 / lg</span></div></div>
+  <div class="sp-block" style="height:70px;"><div class="sp-fill" style="height:64px;"></div><div class="sp-label">64px<br><span style="color:#9c9997;font-size:0.58rem;">--space-16 / xl</span></div></div>
+</div>
+
+<div class="title">Border Radius</div>
+<div class="radius-row">
+  <div class="rbox" style="border-radius:2px;width:52px;height:44px;"><span style="color:#d4af37;font-size:0.65rem;font-weight:700;">xs</span><span style="color:#9c9997;font-size:0.58rem;">2px</span></div>
+  <div class="rbox" style="border-radius:4px;width:52px;height:44px;"><span style="color:#d4af37;font-size:0.65rem;font-weight:700;">sm</span><span style="color:#9c9997;font-size:0.58rem;">4px</span></div>
+  <div class="rbox" style="border-radius:8px;width:52px;height:44px;"><span style="color:#d4af37;font-size:0.65rem;font-weight:700;">md</span><span style="color:#9c9997;font-size:0.58rem;">8px</span></div>
+  <div class="rbox" style="border-radius:12px;width:52px;height:44px;"><span style="color:#d4af37;font-size:0.65rem;font-weight:700;">lg</span><span style="color:#9c9997;font-size:0.58rem;">12px</span></div>
+  <div class="rbox" style="border-radius:20px;width:52px;height:44px;"><span style="color:#d4af37;font-size:0.65rem;font-weight:700;">xl</span><span style="color:#9c9997;font-size:0.58rem;">20px</span></div>
+  <div class="rbox" style="border-radius:100px;width:80px;height:44px;"><span style="color:#d4af37;font-size:0.65rem;font-weight:700;">pill</span><span style="color:#9c9997;font-size:0.58rem;">100px</span></div>
+  <div class="rbox" style="border-radius:50%;width:44px;height:44px;"><span style="color:#d4af37;font-size:0.65rem;font-weight:700;">full</span></div>
+</div>
+</body></html>

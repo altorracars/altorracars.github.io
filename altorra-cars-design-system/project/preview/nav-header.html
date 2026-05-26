@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#0a0a0a;padding:0;}
+header{background:rgba(10,10,10,0.98);border-bottom:1px solid rgba(184,150,88,0.2);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(15px);}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo img{height:44px;}
+.logo-txt{font-size:1rem;font-weight:800;color:#d4af37;text-transform:uppercase;letter-spacing:0.02em;text-shadow:0 2px 15px rgba(212,175,55,0.5);}
+.nav{display:flex;gap:4px;}
+.nav-link{padding:6px 12px;color:#e8e8e8;font-size:0.88rem;font-weight:500;border-radius:4px;cursor:pointer;}
+.nav-link:hover{color:#d4af37;background:rgba(212,175,55,0.1);}
+.actions{display:flex;gap:6px;align-items:center;}
+.hdr-btn{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 12px;font-size:0.75rem;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;border-radius:4px;cursor:pointer;font-family:inherit;}
+.hdr-outline{background:transparent;color:rgba(255,255,255,0.85);border:1.5px solid rgba(255,255,255,0.3);}
+.hdr-gold{background:#d4af37;color:#0a0a0a;border:1.5px solid #d4af37;}
+.badge{background:#d4af37;color:#0a0a0a;min-width:16px;height:14px;padding:0 4px;border-radius:8px;font-size:0.62rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+/* Dropdown demo */
+.nav-item{position:relative;}
+.nav-item:hover .dropdown{opacity:1;visibility:visible;transform:translateY(0);}
+.dropdown{position:absolute;top:100%;left:0;background:rgba(26,26,26,0.97);border:1.5px solid rgba(184,150,88,0.35);border-radius:8px;padding:6px 0;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all 0.25s;min-width:160px;box-shadow:0 10px 40px rgba(0,0,0,0.6);}
+.dropdown a{display:block;padding:8px 16px;color:#e8e8e8;font-size:0.82rem;font-weight:500;cursor:pointer;}
+.dropdown a:hover{background:rgba(212,175,55,0.15);color:#d4af37;}
+</style></head><body>
+<header>
+  <div class="logo">
+    <img src="../assets/logo.png" alt="Altorra Cars" onerror="this.style.display='none'">
+    <span class="logo-txt">Altorra Cars</span>
+  </div>
+  <nav class="nav">
+    <div class="nav-item">
+      <div class="nav-link">Vehículos ▾</div>
+      <div class="dropdown">
+        <a>SUV</a><a>Pickup</a><a>Sedán</a><a>Hatchback</a><a>Ver todos</a>
+      </div>
+    </div>
+    <div class="nav-link">Marcas</div>
+    <div class="nav-link">Servicios</div>
+    <div class="nav-link">Nosotros</div>
+    <div class="nav-link">Contacto</div>
+  </nav>
+  <div class="actions">
+    <button class="hdr-btn hdr-outline">♥ Favoritos <span class="badge">3</span></button>
+    <button class="hdr-btn hdr-outline">→ Ingresar</button>
+    <button class="hdr-btn hdr-gold">+ Registrarse</button>
+  </div>
+</header>
+</body></html>

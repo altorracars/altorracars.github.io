@@ -300,10 +300,10 @@ function generatePage(template, v, slug) {
     // 8. Inject PRERENDERED_VEHICLE_ID before historial-visitas.js so auto-tracking
     //    can read it synchronously. Falls back to before inline script if not found.
     const prerenderedTag = `<script>window.PRERENDERED_VEHICLE_ID = ${JSON.stringify(String(v.id))};</script>`;
-    if (html.includes('<script src="js/historial-visitas.js"></script>')) {
+    if (html.includes('<script src="js/core/historial-visitas.js"></script>')) {
         html = html.replace(
-            '<script src="js/historial-visitas.js"></script>',
-            prerenderedTag + '\n    <script src="js/historial-visitas.js"></script>'
+            '<script src="js/core/historial-visitas.js"></script>',
+            prerenderedTag + '\n    <script src="js/core/historial-visitas.js"></script>'
         );
     } else {
         html = html.replace(

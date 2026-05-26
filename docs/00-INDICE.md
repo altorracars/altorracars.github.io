@@ -5,9 +5,9 @@
 > nodo de Largo Plazo. Se consulta on-demand (Trigger de Error/Historia, ver
 > `CLAUDE.md §G`).
 >
-> **Cerebro completo**: 🧠 `CLAUDE.md` (router/identidad) · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP)
-> · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura) · 🧪 `30-LECCIONES.md` (experiencia/recetas)
-> · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
+> **Cerebro completo**: 🧠 `CLAUDE.md` (router/identidad) · 🩺 `05-ESTADO-GLOBAL.md` (signos vitales)
+> · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP) · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura)
+> · 🧪 `30-LECCIONES.md` (experiencia/recetas) · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
 >
 > **Cómo usarlo (regla de oro anti-saturación)**:
 > 1. Busca aquí el § que necesitas y su línea de inicio.

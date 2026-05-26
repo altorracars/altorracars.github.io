@@ -195,6 +195,9 @@
 | §116 | Plan A superficies teñidas (color-mix) | 41478 |
 | §117 | Plan B texto legible + Plan C tints + dedup | 41595 |
 | §118 | Arquitectura Documental Neuronal (cerebro de memoria) | 41734 |
+| §119 | Reestructuración frontend (js/ plano → modular) | 41818 |
+| §120 | Cerebro Documental Neuronal AUTÓNOMO | 41842 |
+| §121 | Autocrítica + linter brain-check + robustez (cross-review) | 41865 |
 
 ---
 

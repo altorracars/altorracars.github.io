@@ -2168,6 +2168,9 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                 <button class="btn btn-ghost banners-tab" data-banners-tab="categoria" class="admin-tab-btn" role="tab" aria-selected="false">
                     Categorias
                 </button>
+                <button class="btn btn-ghost banners-tab" data-banners-tab="homePromo" role="tab" aria-selected="false">
+                    Inicio · Promos
+                </button>
             </div>
 
             <!-- TAB: Hero -->
@@ -2205,6 +2208,18 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                     </div>
                 </div>
             </div>
+
+            <!-- TAB: Inicio Promos -->
+            <div id="bannersTabHomePromo" class="banners-tab-content" style="display:none;">
+                <div class="stat-card">
+                    <p style="color:var(--admin-text-muted);margin-bottom:1rem;font-size:0.85rem;">
+                        Banners de "Lo que esta pasando esta semana" en el inicio. Sin limite. Usa los campos enriquecidos (badge, tasa, pills, CTA).
+                    </p>
+                    <div id="homePromoBannersList" class="banners-grid">
+                        <p class="empty-state">Cargando banners...</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Banner Modal -->
@@ -2235,6 +2250,7 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                                     <option value="hero">Hero Principal</option>
                                     <option value="promocional">Promocional</option>
                                     <option value="categoria">Categoria</option>
+                                    <option value="home_promo">Inicio · Promos semana</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -2252,6 +2268,41 @@ NUNCA confirmes una cita sin que un asesor la valide."></textarea>
                                 <option value="comerciales">Comerciales</option>
                                 <option value="motos">Motos</option>
                             </select>
+                        </div>
+
+                        <!-- Campos enriquecidos (solo para posicion home_promo) -->
+                        <div id="bannerHomePromoGroup" style="display:none;border:1px solid rgba(184,150,88,0.25);border-radius:8px;padding:0.9rem 1rem;margin-bottom:1rem;background:rgba(184,150,88,0.04);">
+                            <p style="margin:0 0 0.8rem;font-size:0.78rem;color:var(--admin-text-muted,#8b949e);line-height:1.5;">
+                                Para "Lo que esta pasando esta semana": el <strong>Titulo</strong> es el titular (usa <code>*asteriscos*</code> para la parte dorada en cursiva, ej. <code>Aprobado en *24 horas*</code>); el <strong>Subtitulo</strong> es el parrafo; <strong>Texto del boton CTA</strong> + <strong>Enlace</strong> arman el boton; la imagen es el fondo.
+                            </p>
+                            <div class="form-row form-grid-2">
+                                <div class="form-group">
+                                    <label>Badge / etiqueta</label>
+                                    <input type="text" id="bannerBadge" class="form-input" maxlength="28" placeholder="Ej: Financiacion Premium">
+                                </div>
+                                <div class="form-group">
+                                    <label>Eyebrow (linea superior)</label>
+                                    <input type="text" id="bannerEyebrow" class="form-input" maxlength="48" placeholder="Ej: Tasa preferencial · solo este mes">
+                                </div>
+                            </div>
+                            <div class="form-row form-grid-2">
+                                <div class="form-group">
+                                    <label>Chip tasa — valor</label>
+                                    <input type="text" id="bannerRateValue" class="form-input" maxlength="16" placeholder="Ej: 0.95% MV">
+                                </div>
+                                <div class="form-group">
+                                    <label>Chip tasa — etiqueta</label>
+                                    <input type="text" id="bannerRateLabel" class="form-input" maxlength="20" placeholder="Ej: Tasa desde">
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Pills (hasta 3)</label>
+                                <div class="form-row form-grid-2" style="gap:0.5rem;">
+                                    <input type="text" id="bannerPill1" class="form-input" maxlength="28" placeholder="Ej: 5 bancos aliados">
+                                    <input type="text" id="bannerPill2" class="form-input" maxlength="28" placeholder="Ej: Hasta 84 meses">
+                                </div>
+                                <input type="text" id="bannerPill3" class="form-input" maxlength="28" placeholder="Ej: 0% inicial disponible" style="margin-top:0.5rem;">
+                            </div>
                         </div>
 
                         <div class="form-group mb-md">

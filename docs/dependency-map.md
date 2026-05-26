@@ -4,6 +4,13 @@
 > **Purpose**: snapshot of all JavaScript modules and their dependencies
 > before starting the v4 rebuild. Reference for impact analysis: when
 > a MF touches one of these files, check what else depends on it.
+>
+> ⚠️ **RUTAS ACTUALIZADAS EN §119**: `js/` dejó de ser plano. Los nombres de
+> módulo abajo siguen válidos (las DEPENDENCIAS no cambiaron), pero sus RUTAS
+> ahora viven en subcarpetas. Mapa de carpetas autoritativo →
+> `docs/20-MEMORIA-ESPACIAL.md` §"Estructura de js/". En corto:
+> fundación → `js/core/`, `admin-*`+singletons admin → `js/admin/`,
+> features → `js/public/`, bot → `js/concierge/`, IA → `js/ai/`, simulador → `js/simulador/`.
 
 ## Total inventory
 

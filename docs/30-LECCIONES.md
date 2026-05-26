@@ -1,0 +1,86 @@
+# 🧪 30 — MEMORIA PROCEDIMENTAL (Lecciones · Anti-patterns · Recetas)
+
+> **Nodo neuronal: la EXPERIENCIA del cerebro.** Aquí vive lo que un humano
+> experto "ya sabe por haberse quemado": gotchas, trampas, recetas que funcionan.
+> Es lo que evita el **reproceso** y la **regresión** — el corazón del
+> auto-aprendizaje.
+>
+> **Cuándo leerlo (Trigger de Experiencia, `CLAUDE.md §G.2`)**: ANTES de una
+> operación riesgosa o repetitiva (mover archivos, merges, tocar el cron, cache),
+> y SIEMPRE que un síntoma "me suena". No se auto-carga.
+>
+> **Cómo crece (Reflejo de Captura, `CLAUDE.md §G.4`)**: cada vez que algo falla,
+> sorprende o se resuelve de forma no-obvia, el constructor (Claude) APENDE aquí
+> una lección — formato: **Síntoma/Contexto → Causa → Receta → Cómo evitarlo** —
+> ANTES de cerrar la tarea. Bajo su juicio: solo lo reutilizable, no ruido.
+
+---
+
+## 🔧 Operaciones de Git / refactor
+
+### L-01 · `sed -i '*.html'` corrompe el fin de línea (CRLF→LF)
+- **Síntoma**: tras un `sed` masivo aparecen 15+ archivos "modificados" que NO tocaste; GitHub Desktop muestra muchos más archivos de los esperados.
+- **Causa**: `sed -i` reescribe TODOS los archivos que recibe; en Windows convierte CRLF→LF aunque no haya match → git (con `core.autocrlf=true`) los marca como cambiados (ruido).
+- **Receta**: pasar a `sed` SOLO los archivos que contienen el patrón → `sed -i 's|viejo|nuevo|g' $(grep -rl "patrón" archivos)`. O usar la herramienta **Edit con replace_all** (no toca line-endings).
+- **Limpiar el ruido**: restaurar los archivos que están en `git status` pero NO en `git diff --name-only` → `git checkout -- <esos archivos>`.
+- *Descubierto en §119 Fase 2.2b-ii (comparador).*
+
+### L-02 · Conflicto recurrente cron ↔ cache al fusionar a `main`
+- **Síntoma**: el PR de la rama marca conflicto en `js/core/cache-manager.js` (o `service-worker.js`).
+- **Causa**: el cron de `main` (`Auto-generate vehicle pages + bump cache version`) bumpea `APP_VERSION`/`CACHE_VERSION` mientras la rama tiene esos archivos movidos/modificados → modify-en-main vs move/modify-nuestro.
+- **Receta**: en la rama → `git merge origin/main --no-edit`. La estrategia **`ort` detecta el rename y aplica el bump del cron al archivo movido AUTOMÁTICAMENTE** (cero conflicto manual). Verificar después: `node -c`, 0 refs viejas.
+- **Cómo evitarlo**: NO fusionar cada micro-paso a `main` (ver L-03). Sincronizar `main`→rama tras cada merge si se insiste en fusionar por paso.
+- *Doctrina relacionada: `CLAUDE.md §4` (cache bump). Vivido en §119.*
+
+### L-03 · No fusionar cada micro-paso a `main` durante un refactor largo
+- **Síntoma**: conflictos en bucle, un PR tras otro.
+- **Causa**: el cron mueve `main` entre fusiones (pintar la pared mientras la ensucian).
+- **Receta**: hacer todo el trabajo en la rama (`commit + push` solo guarda en GitHub), **UNA sola fusión final** tras terminar y probar. Un conflicto (o ninguno) en vez de uno por paso.
+
+### L-04 · Receta canónica para mover un archivo JS sin romper nada
+1. **Mapear refs**: `grep -rl "js/X.js"` en `*.html vehiculos/*.html marcas/*.html` + ¿dinámico en `js/core/components.js` (`.src=`)? + ¿ancla hardcodeada en `scripts/generate-vehicles.mjs`?
+2. `git mv js/X.js js/<carpeta>/X.js`.
+3. Refs estáticas (`"js/X.js"`) → `sed` solo en archivos con match. Refs dinámicas/ancla → **Edit**.
+4. **Verificar**: `grep` ruta-vieja = 0 en todo el repo · `node -c` · sin doble `carpeta/carpeta`.
+5. Probar en localhost · `commit`.
+
+---
+
+## 🌐 Frontend / runtime
+
+### L-05 · `<base href="/">` hace que TODA ruta sea raíz-relativa idéntica
+- Las páginas en subcarpetas (`vehiculos/`, `marcas/`) usan `src="js/..."` SIN `../` porque tienen `<base href="/">`. → toda ref a un asset es el MISMO string en todo el repo → el reemplazo de rutas es **determinista y global** (no hay que calcular rutas relativas por carpeta).
+
+### L-06 · `js/core/components.js` es un CARGADOR DINÁMICO (refs ocultas)
+- Inyecta ~25 scripts por ruta hardcodeada (`script.src = 'js/...'`): `auth`, `solicitudes-watcher`, `comm-schema`, todo `js/ai/*`, `concierge`, `cookies`, `contact-forms`, `admin-calendar-config`. **Al mover cualquiera de esos, hay que actualizar components.js además del HTML.** No son `<script src>` visibles → fáciles de olvidar.
+
+### L-07 · El generador es TEMPLATE-DRIVEN (cron cada 4h)
+- `scripts/generate-vehicles.mjs` lee `detalle-vehiculo.html` (→ `vehiculos/*`) y `marca.html` (→ `marcas/*`) y **copia sus tags tal cual**. Actualizar esas 2 plantillas = las 45 páginas generadas quedan bien en la próxima corrida. Única ruta hardcodeada propia: `js/core/historial-visitas.js` (ancla de inyección del prerendered tag, ~L303). **PELIGRO**: si muevo algo y no actualizo la plantilla, el cron regenera con rutas viejas → producción rota en silencio.
+
+---
+
+## 🔥 Firebase / entorno
+
+### L-08 · Los errores `403` de Firebase en `localhost` son NORMALES
+- **Síntoma**: en `localhost:3000`, consola llena de `403 (Forbidden)` / `requests-from-referer-http://localhost:3000-are-blocked` (Auth, Installations, Analytics) + login admin falla.
+- **Causa**: la API key tiene restricción de HTTP referrer (solo `altorracars.github.io` + dominios Firebase), no `localhost`. Es seguridad funcionando bien.
+- **Implicación de prueba**: en localhost NO se prueba login/Auth. Lo que SÍ se prueba: que carguen los archivos (0 `404`), Firestore público (`[DB] Firestore loaded: 27 vehicles`), render, snippets. La prueba real de Auth es en el dominio en vivo.
+
+---
+
+## 🗂️ Validación de código muerto
+
+### L-09 · Cómo confirmar que un archivo es código muerto (antes de cuarentenar)
+- Cero refs internas (`grep` en HTML/JS/MJS) + no en `sitemap.xml` + (para herramientas) **sin autenticación** cuando las `firestore.rules` actuales la exigen → no podría funcionar aunque se abriera.
+- Casos validados §119: `admin-upload.html` (sin auth → rules §68 rechazan escrituras), `theme-switcher.js` (comentario "eliminado — tema dark permanente", 0 cargas).
+- **Acción**: cuarentenar a `_legacy/` (reversible) + documentar en `_legacy/README.md`, NO borrar de una.
+
+---
+
+> Esta neurona crece sola (bajo guía del constructor). Si una lección se vuelve
+> doctrina permanente, promoverla a `CLAUDE.md §3`. Si encaja en un § histórico,
+> enlazarla. Mantenerla accionable: síntoma → causa → receta.
+>
+> **📏 Capacidad (CLAUDE.md §G.5): ~350 líneas.** Al acercarse, SHARD por categoría
+> → ej. extraer la sección "Git / refactor" a `docs/31-LECCIONES-GIT.md`, registrarla
+> en la tabla §0 + `00-INDICE`, y dejar aquí un puntero a la hija. Nada huérfano.

@@ -27,14 +27,28 @@
 
 ## 🏗️ Estructura del repo (vista aérea)
 
+> **Actualizado §119** (reorganización frontend): `js/` pasó de plano a modular.
+
 - **Sitio público**: `index.html`, `busqueda.html`, `detalle-vehiculo.html`, `marcas.html`, `contacto.html`, `nosotros.html`, etc.
 - **Páginas generadas** (CI cada 4h desde Firestore vía `scripts/generate-vehicles.mjs`): `vehiculos/*.html`, `marcas/*.html`, `sitemap.xml`.
-- **Panel admin**: `admin.html` (SPA monolítica) + cadena de `js/admin-*.js`.
-- **Bot ALTOR Hub**: cliente `js/concierge.js` + admin `js/admin-concierge.js`.
-- **JS**: 52 archivos en `/js/` (22 admin-only, 30 público/compartido).
-- **CSS**: 27 archivos en `/css/`.
+- **Panel admin**: `admin.html` (SPA monolítica) + cadena de `js/admin/admin-*.js`.
+- **Bot ALTOR Hub**: cliente `js/concierge/concierge.js` + admin `js/admin/admin-concierge.js`.
+- **CSS**: 31 archivos en `/css/` (planos — Fase 3 pendiente reorganizarlos).
 - **Backend**: Firebase (Auth, Firestore, RTDB, Storage, 27 Cloud Functions V2, FCM, Analytics). Project ID `altorra-cars`.
 - **Hosting**: GitHub Pages (`altorracars.github.io`). Push a `main` → auto-deploy.
+
+### 📁 Estructura de `js/` (modular desde §119 — 128 archivos, 0 sueltos en raíz)
+
+| Carpeta | Qué contiene | Cómo se carga |
+|---|---|---|
+| `js/core/` (17) | Fundación compartida: `firebase-config`, `database`, `cache-manager`, `components` (inyecta header/footer + cargador dinámico), `auth`, `toast`, `main`, `render`, `page-loader`, `performance`, `comm-schema`, `event-bus`, `favorites-manager`, `favorites-watcher`, `historial-visitas`, `solicitudes-watcher`, `perfil`, `dynamic-lists` | `<script src="js/core/X.js">` en casi todas las páginas + `<base href="/">` |
+| `js/admin/` (79) | Todo lo del panel: `admin-*.js` + `hub-store`, `rbac-catalog`, `smart-fields`, `icons`, `event-bus` | `<script>` en `admin.html` |
+| `js/public/` (9) | Features del sitio: `comparador`, `reviews`, `cookies`, `contact-forms`, `contact`, `filtros-avanzados`, `citas`, `vehicle-hotspots`, `featured-week-banner` | estático en HTML + dinámico vía `components.js` |
+| `js/concierge/` (3) | Bot cliente: `concierge`, `concierge-optin`, `kb-client` | dinámico vía `components.js` |
+| `js/ai/` (16) | Cerebro del bot: `engine`, `intent`, `ner`, `fuzzy`, `knowledge-graph`, etc. | dinámico vía `components.js` |
+| `js/simulador/` (4) | Simulador de crédito: `finance`, `simulator`, `data`, `ui` | en `simulador-credito.html` |
+
+**⚠️ Reflejo de Frescura (§G.4):** si mueves/creas/renombras un JS, actualiza esta tabla en el MISMO cambio.
 
 ---
 

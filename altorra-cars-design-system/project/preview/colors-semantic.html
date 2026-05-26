@@ -1,0 +1,46 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#0a0a0a;padding:24px;display:flex;flex-direction:column;gap:12px;}
+.title{color:#b89658;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;opacity:0.6;}
+.row{display:flex;gap:8px;}
+.chip{flex:1;border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;}
+.chip-label{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:0.7;}
+.chip-value{font-size:0.78rem;font-weight:600;}
+.chip-hex{font-size:0.65rem;opacity:0.5;}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:100px;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+.badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+</style></head><body>
+<div class="title">Semantic Colors</div>
+<div class="row">
+  <div class="chip" style="background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.3);">
+    <div class="chip-label" style="color:#d4af37;">Interactive</div>
+    <div class="chip-value" style="color:#d4af37;">Gold Primary</div>
+    <div class="chip-hex" style="color:#d4af37;">#d4af37 — CTAs, Prices, Highlights</div>
+  </div>
+  <div class="chip" style="background:rgba(56,162,142,0.12);border:1px solid rgba(56,162,142,0.3);">
+    <div class="chip-label" style="color:#38a28e;">Success</div>
+    <div class="chip-value" style="color:#38a28e;">Accent Green</div>
+    <div class="chip-hex" style="color:#38a28e;">#38a28e — New badge, Status OK</div>
+  </div>
+  <div class="chip" style="background:rgba(145,102,82,0.12);border:1px solid rgba(145,102,82,0.3);">
+    <div class="chip-label" style="color:#916652;">Error / Hover</div>
+    <div class="chip-value" style="color:#916652;">Primary Brown</div>
+    <div class="chip-hex" style="color:#916652;">#916652 — Pressed states</div>
+  </div>
+  <div class="chip" style="background:rgba(52,152,219,0.12);border:1px solid rgba(52,152,219,0.3);">
+    <div class="chip-label" style="color:#3498db;">Info</div>
+    <div class="chip-value" style="color:#3498db;">Blue</div>
+    <div class="chip-hex" style="color:#3498db;">#3498db — Used badge</div>
+  </div>
+</div>
+<div class="title" style="margin-top:4px;">Status Badges</div>
+<div class="badges">
+  <span class="badge" style="background:linear-gradient(135deg,#25d366,#1da851);color:#fff;">NUEVO</span>
+  <span class="badge" style="background:linear-gradient(135deg,#3498db,#2980b9);color:#fff;">USADO</span>
+  <span class="badge" style="background:linear-gradient(135deg,#d4af37,#b89658);color:#0a0a0a;">DESTACADO</span>
+  <span class="badge" style="background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;">OFERTA</span>
+  <span class="badge" style="background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.38);color:#d4af37;">PLATAFORMA PREMIUM</span>
+</div>
+</body></html>

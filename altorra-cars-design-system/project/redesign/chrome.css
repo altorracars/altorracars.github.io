@@ -1,0 +1,248 @@
+/* ============================================================
+   ALTORRA · CINEMATIC CHROME (Nav + Footer)
+   Lightweight version for internal pages — coherent w/ home
+   ============================================================ */
+
+/* ---------- NAV ---------- */
+.cn-nav {
+  position: sticky; top: 14px; z-index: 100;
+  width: calc(100% - 28px);
+  max-width: 1320px;
+  margin: 14px auto 0;
+  height: 60px;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 18px;
+  border-radius: 20px;
+  background: rgba(8,7,10,0.62);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(244,238,222,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  --cn-dur: 720ms;
+  --cn-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    width var(--cn-dur) var(--cn-ease),
+    max-width var(--cn-dur) var(--cn-ease),
+    height var(--cn-dur) var(--cn-ease),
+    border-radius var(--cn-dur) var(--cn-ease),
+    padding var(--cn-dur) var(--cn-ease),
+    opacity 360ms var(--cn-ease),
+    transform var(--cn-dur) var(--cn-ease),
+    background 240ms ease,
+    box-shadow 240ms ease;
+  will-change: width, height, border-radius, transform, opacity;
+  transform-origin: 50% 50%;
+}
+.cn-nav.cn-nav--wheel {
+  width: 60px !important; max-width: 60px !important;
+  height: 60px !important; border-radius: 999px !important;
+  padding: 0 !important;
+  background: rgba(8,7,10,0.92) !important;
+  border-color: rgba(212,168,90,0.35) !important;
+  box-shadow: 0 0 0 4px rgba(212,168,90,0.06), 0 18px 36px -14px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.10);
+  justify-content: center;
+}
+.cn-nav--wheel .cn-logo-text,
+.cn-nav--wheel .cn-nav-links,
+.cn-nav--wheel .cn-actions {
+  opacity: 0; max-width: 0 !important; margin: 0 !important; padding: 0 !important;
+  overflow: hidden; pointer-events: none;
+}
+.cn-nav--gone {
+  opacity: 0 !important;
+  transform: translateY(-16px) scale(0.65) !important;
+  pointer-events: none;
+}
+
+/* Logo */
+.cn-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+.cn-logo-wheel {
+  width: 38px; height: 38px;
+  border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.cn-logo-wheel img { width: 100%; height: 100%; object-fit: contain; }
+.cn-logo-text { display: flex; flex-direction: column; gap: 0; line-height: 1.05; }
+.cn-logo-name {
+  font-family: var(--cin-sans); font-weight: 700;
+  font-size: 14px; letter-spacing: 0.18em; color: var(--cin-ink);
+}
+.cn-logo-sub {
+  font-family: var(--cin-display); font-style: italic; font-weight: 400;
+  font-size: 13px; color: var(--cin-gold-hot); line-height: 1;
+}
+
+/* Links */
+.cn-nav-links {
+  display: flex; align-items: center; gap: 6px;
+  margin-left: 20px;
+  transition: opacity var(--cn-dur) var(--cn-ease), max-width var(--cn-dur) var(--cn-ease);
+}
+.cn-link {
+  padding: 8px 12px;
+  font-size: 13px; color: var(--cin-ink-soft);
+  text-decoration: none; border-radius: 999px;
+  transition: background 240ms, color 240ms;
+}
+.cn-link:hover { color: var(--cin-ink); background: rgba(244,238,222,0.06); }
+.cn-link.is-on { color: var(--cin-gold-hot); background: rgba(212,168,90,0.10); }
+
+/* Actions */
+.cn-actions {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+  transition: opacity var(--cn-dur) var(--cn-ease), max-width var(--cn-dur) var(--cn-ease);
+}
+.cn-publish {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 14px 0 8px; height: 36px;
+  border-radius: 999px;
+  font-family: inherit; font-size: 12.5px; font-weight: 600;
+  color: #1a1410;
+  background: linear-gradient(135deg, #f5df80 0%, #d4a85a 55%, #b8893e 100%);
+  border: 1px solid rgba(255,229,160,0.55);
+  box-shadow: 0 4px 14px -2px rgba(212,168,90,0.45);
+  cursor: pointer;
+  transition: transform 280ms cubic-bezier(0.22,1,0.36,1), box-shadow 280ms, filter 280ms;
+}
+.cn-publish:hover { transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 8px 20px -4px rgba(212,168,90,0.6); }
+.cn-publish-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(26,20,16,0.92); color: #f5df80;
+}
+.cn-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(244,238,222,0.04); border: 1px solid rgba(244,238,222,0.08);
+  color: var(--cin-ink-soft); cursor: pointer;
+  transition: background 240ms, color 240ms;
+}
+.cn-icon-btn:hover { background: rgba(244,238,222,0.10); color: var(--cin-ink); }
+
+/* Mobile drawer */
+.cn-only-mobile { display: none; }
+@media (max-width: 880px) {
+  .cn-nav-links { display: none; }
+  .cn-only-mobile { display: inline-flex; }
+  .cn-publish-label { display: none; }
+  .cn-publish { padding: 0 8px; gap: 0; }
+}
+.cn-mob-shade {
+  position: fixed; inset: 0; z-index: 110;
+  background: rgba(8,7,10,0.7);
+  backdrop-filter: blur(8px);
+}
+.cn-mob-panel {
+  position: absolute; right: 12px; top: 12px;
+  width: min(360px, calc(100% - 24px));
+  background: rgba(20,18,24,0.96);
+  border: 1px solid rgba(244,238,222,0.10);
+  border-radius: 18px;
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.cn-mob-head { display: flex; justify-content: space-between; align-items: center; }
+.cn-mob-links { display: flex; flex-direction: column; gap: 4px; }
+.cn-mob-links a {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; border-radius: 12px;
+  background: rgba(244,238,222,0.04); border: 1px solid rgba(244,238,222,0.06);
+  color: var(--cin-ink); font-size: 14px; text-decoration: none;
+}
+.cn-mob-links a.is-on { background: rgba(212,168,90,0.14); border-color: rgba(212,168,90,0.32); color: var(--cin-gold-hot); }
+.cn-mob-links a svg { color: var(--cin-ink-faint); }
+.cn-mob-cta {
+  padding: 12px; border-radius: 12px;
+  background: linear-gradient(135deg, #f5df80, #d4a85a);
+  color: #1a1410; font-weight: 600; font-size: 13.5px;
+  border: 0; cursor: pointer; font-family: inherit;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.cn-footer {
+  margin-top: clamp(64px, 10vh, 120px);
+  padding: clamp(40px, 6vh, 72px) clamp(24px, 5vw, 72px) 24px;
+  border-top: 1px solid rgba(244,238,222,0.06);
+  background: linear-gradient(180deg, transparent, rgba(212,168,90,0.04));
+}
+.cn-footer-grid {
+  max-width: 1320px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.4fr;
+  gap: clamp(24px, 3vw, 48px);
+}
+@media (max-width: 880px) { .cn-footer-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 540px) { .cn-footer-grid { grid-template-columns: 1fr; } }
+
+.cn-footer-brand .cn-footer-mark {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+}
+.cn-footer-name {
+  font-family: var(--cin-sans); font-weight: 700;
+  font-size: 20px; letter-spacing: 0.16em; color: var(--cin-ink);
+}
+.cn-footer-rule {
+  width: 28px; height: 1px;
+  background: linear-gradient(90deg, var(--cin-gold-hot), transparent);
+}
+.cn-footer-sub {
+  font-family: var(--cin-display); font-style: italic;
+  font-size: 16px; color: var(--cin-gold-hot);
+}
+.cn-footer-tagline {
+  font-size: 13.5px; color: var(--cin-ink-soft);
+  line-height: 1.6; margin: 0; max-width: 380px;
+}
+.cn-footer-tagline strong { color: var(--cin-ink); font-weight: 500; }
+
+.cn-footer-col { display: flex; flex-direction: column; gap: 8px; }
+.cn-footer-h {
+  font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--cin-gold-hot); font-weight: 600;
+  margin-bottom: 6px;
+}
+.cn-footer-col a,
+.cn-footer-link-btn {
+  font-size: 13.5px;
+  color: var(--cin-ink-soft);
+  text-decoration: none;
+  background: none; border: 0;
+  padding: 0; text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 240ms;
+}
+.cn-footer-col a:hover,
+.cn-footer-link-btn:hover { color: var(--cin-gold-hot); }
+.cn-footer-ci {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13.5px; color: var(--cin-ink-soft);
+  text-decoration: none;
+}
+.cn-footer-ci svg { color: var(--cin-gold-hot); flex-shrink: 0; }
+.cn-footer-ci:hover { color: var(--cin-ink); }
+
+.cn-footer-bottom {
+  max-width: 1320px; margin: clamp(24px, 4vh, 48px) auto 0;
+  padding-top: 18px;
+  border-top: 1px dashed rgba(244,238,222,0.08);
+  display: flex; justify-content: space-between; align-items: center; gap: 18px;
+  font-size: 12px; color: var(--cin-ink-faint);
+  flex-wrap: wrap;
+}
+.cn-footer-bottom nav { display: flex; gap: 12px; flex-wrap: wrap; }
+.cn-footer-bottom nav a {
+  color: var(--cin-ink-soft); text-decoration: none;
+  transition: color 240ms;
+}
+.cn-footer-bottom nav a:hover { color: var(--cin-gold-hot); }
+.cn-footer-bottom nav span { color: rgba(244,238,222,0.20); }
+
+/* Hide the Chrome on the cinematic home (it already has its own nav/footer baked in) */
+body[data-cin="on"] #chrome-root:has(+ .cin-hero) {
+  /* :has selector — if not supported it's fine, the home doesn't load Chrome.jsx anyway */
+}

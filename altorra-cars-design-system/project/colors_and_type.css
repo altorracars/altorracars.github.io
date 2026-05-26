@@ -1,0 +1,279 @@
+/* =============================================
+   ALTORRA CARS — Design Tokens
+   colors_and_type.css
+   Single source of truth for all visual tokens.
+   ============================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
+
+/* ─────────────────────────────────────────────
+   BASE COLOR PALETTE
+───────────────────────────────────────────── */
+:root {
+  /* Gold — primary brand color */
+  --gold-primary:    #d4af37;
+  --gold-secondary:  #b89658;
+  --gold-dark:       #8b6f47;
+  --gold-light:      #f5df80;
+
+  /* Dark backgrounds */
+  --black-pure:      #000000;
+  --black-deep:      #0a0a0a;
+  --black-medium:    #1a1a1a;
+  --black-light:     #242424;
+
+  /* Text */
+  --white-pure:      #ffffff;
+  --white-soft:      #f8f8f8;
+  --gray-light:      #e8e8e8;
+  --gray-medium:     #b0b0b0;
+  --gray-muted:      #9c9997;
+
+  /* Light-mode backgrounds */
+  --bg-light:        #fafafa;
+  --bg-warm:         #f0ebe3;
+  --border-light:    #c5c6c6;
+
+  /* Semantic / status */
+  --color-success:   #38a28e;
+  --color-warning:   #b89658;
+  --color-error:     #916652;
+  --color-info:      #3498db;
+
+  /* Aliases (match codebase var names) */
+  --primary-gold:    var(--gold-secondary);   /* #b89658 */
+  --primary-brown:   #916652;
+  --primary-dark:    #1d1b19;
+  --secondary-beige: #d1c4ac;
+  --accent-green:    #38a28e;
+  --text-gray:       #9c9997;
+}
+
+/* ─────────────────────────────────────────────
+   SEMANTIC COLOR VARS
+───────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --surface-page:     var(--black-deep);
+  --surface-card:     var(--black-medium);
+  --surface-elevated: var(--black-light);
+  --surface-light:    var(--bg-light);
+
+  /* Foreground */
+  --fg-primary:       var(--white-pure);
+  --fg-secondary:     var(--gray-medium);
+  --fg-muted:         var(--gray-muted);
+  --fg-accent:        var(--gold-primary);
+  --fg-on-gold:       var(--black-deep);
+
+  /* Interactive */
+  --interactive-default:  var(--gold-primary);
+  --interactive-hover:    var(--gold-secondary);
+  --interactive-pressed:  var(--gold-dark);
+
+  /* Borders */
+  --border-subtle:    rgba(255, 255, 255, 0.10);
+  --border-gold:      rgba(184, 150, 88, 0.40);
+  --border-gold-strong: var(--gold-secondary);
+}
+
+/* ─────────────────────────────────────────────
+   TYPOGRAPHY
+───────────────────────────────────────────── */
+:root {
+  /* Font families */
+  --font-sans:    'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* No serif or mono in this brand */
+
+  /* Font sizes — fluid */
+  --text-hero:    clamp(2.4rem, 5.5vw, 4.5rem);
+  --text-h1:      clamp(1.8rem, 4vw, 2.5rem);
+  --text-h2:      clamp(1.4rem, 3vw, 2rem);
+  --text-h3:      1.3rem;
+  --text-h4:      1.1rem;
+  --text-body:    1rem;
+  --text-sm:      0.9rem;
+  --text-xs:      0.82rem;
+  --text-xxs:     0.72rem;
+
+  /* Font weights */
+  --weight-regular:    400;
+  --weight-medium:     500;
+  --weight-semibold:   600;
+  --weight-bold:       700;
+  --weight-extrabold:  800;
+  --weight-black:      900;
+
+  /* Line heights */
+  --leading-tight:   1.06;
+  --leading-snug:    1.2;
+  --leading-normal:  1.6;
+  --leading-relaxed: 1.8;
+
+  /* Letter spacing */
+  --tracking-tight:   -0.03em;
+  --tracking-normal:   0;
+  --tracking-wide:     0.03em;
+  --tracking-wider:    0.08em;
+  --tracking-widest:   0.12em;
+}
+
+/* ─────────────────────────────────────────────
+   SEMANTIC TYPE STYLES
+   Apply as utility classes or extend via CSS.
+───────────────────────────────────────────── */
+
+.t-hero {
+  font-family: var(--font-sans);
+  font-size: var(--text-hero);
+  font-weight: var(--weight-black);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.t-h1 {
+  font-family: var(--font-sans);
+  font-size: var(--text-h1);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+}
+
+.t-h2 {
+  font-family: var(--font-sans);
+  font-size: var(--text-h2);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+}
+
+.t-h3 {
+  font-family: var(--font-sans);
+  font-size: var(--text-h3);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+}
+
+.t-body {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+}
+
+.t-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+.t-price {
+  font-family: var(--font-sans);
+  font-size: 1.3rem;
+  font-weight: var(--weight-bold);
+  color: var(--gold-primary);
+  line-height: var(--leading-snug);
+}
+
+.t-gold {
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 40%, var(--gold-secondary) 70%, var(--gold-light) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: goldShimmer 4s ease-in-out infinite;
+}
+
+@keyframes goldShimmer {
+  0%, 100% { background-position: 0% center; }
+  50%       { background-position: 200% center; }
+}
+
+/* ─────────────────────────────────────────────
+   SPACING SCALE
+───────────────────────────────────────────── */
+:root {
+  --space-1:   0.25rem;  /*  4px */
+  --space-2:   0.5rem;   /*  8px */
+  --space-3:   0.75rem;  /* 12px */
+  --space-4:   1rem;     /* 16px */
+  --space-6:   1.5rem;   /* 24px */
+  --space-8:   2rem;     /* 32px */
+  --space-12:  3rem;     /* 48px */
+  --space-16:  4rem;     /* 64px */
+
+  /* Named aliases */
+  --spacing-xs: var(--space-2);
+  --spacing-sm: var(--space-4);
+  --spacing-md: var(--space-8);
+  --spacing-lg: var(--space-12);
+  --spacing-xl: var(--space-16);
+
+  --container-width: 1200px;
+}
+
+/* ─────────────────────────────────────────────
+   BORDER RADIUS
+───────────────────────────────────────────── */
+:root {
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   20px;
+  --radius-pill: 100px;
+  --radius-full: 9999px;
+}
+
+/* ─────────────────────────────────────────────
+   SHADOWS & ELEVATION
+───────────────────────────────────────────── */
+:root {
+  --shadow-sm:   0 2px 4px rgba(29, 27, 25, 0.10);
+  --shadow-md:   0 4px 12px rgba(29, 27, 25, 0.15);
+  --shadow-lg:   0 8px 24px rgba(29, 27, 25, 0.20);
+
+  --shadow-gold:      0 8px 30px rgba(212, 175, 55, 0.40);
+  --shadow-gold-lg:   0 12px 40px rgba(212, 175, 55, 0.60);
+
+  --shadow-glass:
+    0 8px 32px rgba(0, 0, 0, 0.37),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 0 1px rgba(184, 150, 88, 0.10);
+
+  --shadow-glass-hover:
+    0 20px 60px rgba(0, 0, 0, 0.50),
+    0 0 0 2px var(--gold-secondary),
+    0 0 50px rgba(212, 175, 55, 0.40),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30);
+}
+
+/* ─────────────────────────────────────────────
+   TRANSITIONS
+───────────────────────────────────────────── */
+:root {
+  --transition:        all 0.3s ease;
+  --transition-fast:   all 0.2s ease;
+  --transition-slow:   all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: all 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─────────────────────────────────────────────
+   GLASSMORPHISM MIXIN (utility class)
+───────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-glass);
+  transition: var(--transition-slow);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(184, 150, 88, 0.50);
+  box-shadow: var(--shadow-glass-hover);
+  transform: translateY(-8px) scale(1.015);
+}

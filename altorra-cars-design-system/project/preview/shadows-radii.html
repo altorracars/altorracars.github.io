@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:#0a0a0a;padding:24px;display:flex;flex-direction:column;gap:14px;}
+.title{color:#b89658;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;opacity:0.6;}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.shadow-card{background:#1a1a1a;border-radius:10px;padding:16px 20px;display:flex;flex-direction:column;gap:4px;}
+.shadow-label{font-size:0.68rem;font-weight:700;color:#d4af37;letter-spacing:0.06em;text-transform:uppercase;}
+.shadow-value{font-size:0.6rem;color:#9c9997;max-width:200px;line-height:1.5;}
+</style></head><body>
+<div class="title">Shadow System</div>
+<div class="row">
+  <div class="shadow-card" style="box-shadow:0 2px 4px rgba(29,27,25,0.10);">
+    <div class="shadow-label">sm</div>
+    <div class="shadow-value">0 2px 4px rgba(29,27,25,.10)</div>
+    <div style="color:#fff;font-size:0.75rem;margin-top:4px;">Cards · Default</div>
+  </div>
+  <div class="shadow-card" style="box-shadow:0 4px 12px rgba(29,27,25,0.15);">
+    <div class="shadow-label">md</div>
+    <div class="shadow-value">0 4px 12px rgba(29,27,25,.15)</div>
+    <div style="color:#fff;font-size:0.75rem;margin-top:4px;">Dropdowns · Hover</div>
+  </div>
+  <div class="shadow-card" style="box-shadow:0 8px 24px rgba(29,27,25,0.20);">
+    <div class="shadow-label">lg</div>
+    <div class="shadow-value">0 8px 24px rgba(29,27,25,.20)</div>
+    <div style="color:#fff;font-size:0.75rem;margin-top:4px;">Modals · Lifted Cards</div>
+  </div>
+  <div class="shadow-card" style="box-shadow:0 8px 30px rgba(212,175,55,0.40);">
+    <div class="shadow-label" style="color:#f5df80;">Gold Glow</div>
+    <div class="shadow-value">0 8px 30px rgba(212,175,55,.40)</div>
+    <div style="color:#d4af37;font-size:0.75rem;margin-top:4px;">CTAs · Gold Buttons</div>
+  </div>
+</div>
+<div class="row">
+  <div class="shadow-card" style="flex:1;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.18);box-shadow:0 8px 32px rgba(0,0,0,0.37),inset 0 1px 0 rgba(255,255,255,0.15),0 0 0 1px rgba(184,150,88,0.10);">
+    <div class="shadow-label">Glass Default</div>
+    <div class="shadow-value">Glass + blur(20px) + border rgba(255,255,255,.18)</div>
+    <div style="color:#e8e8e8;font-size:0.75rem;margin-top:4px;">Vehicle Cards (dark theme)</div>
+  </div>
+  <div class="shadow-card" style="flex:1;background:rgba(255,255,255,0.12);backdrop-filter:blur(20px);border:2px solid #b89658;box-shadow:0 20px 60px rgba(0,0,0,0.50),0 0 0 2px #b89658,0 0 50px rgba(212,175,55,0.40),inset 0 1px 0 rgba(255,255,255,0.30);">
+    <div class="shadow-label">Glass Hover</div>
+    <div class="shadow-value">0 20px 60px + gold ring + gold glow</div>
+    <div style="color:#d4af37;font-size:0.75rem;margin-top:4px;">Vehicle Cards — hover state</div>
+  </div>
+</div>
+</body></html>

@@ -83,6 +83,24 @@
 
 ---
 
+## 🪞 Meta: fallos del propio cerebro (Reflejo de Autocrítica `CLAUDE.md §G.4`)
+
+> El cerebro se critica a SÍ MISMO: dónde una neurona/regla **causó un error o me
+> engañó**, y qué se corrigió. Cierra el bucle: usar → criticar → corregir = madurez.
+> Formato: **Defecto del cerebro → Causa → Corrección**.
+
+### M-01 · Una neurona stale me habría engañado (Memoria Espacial)
+- **Defecto**: tras reorganizar `js/` (§119), `20-ESPACIAL` siguió describiendo el `js/` plano viejo → una sesión futura habría leído rutas inexistentes y errado.
+- **Causa**: no había regla que obligara a refrescar la memoria espacial al cambiar la estructura.
+- **Corrección**: actualicé `20-ESPACIAL` + nació el **Reflejo de Frescura (§G.4)**. Principio: una neurona vieja es peor que ninguna.
+
+### M-02 · Un chequeo del cerebro dio falso negativo (casi asumo mal)
+- **Defecto**: mi `grep` de "CSS dinámico" devolvió 0 por comillas mal escapadas → casi concluyo que todo el CSS era estático (falso: `components.js` carga 4 CSS).
+- **Causa**: confié en un resultado de `0` sin verificar archivo-por-archivo.
+- **Corrección**: regla en L-10 — **un chequeo que devuelve 0 puede ser falso negativo; verificar los 0-ref uno por uno** antes de asumir. Refuerza RCA §19.
+
+---
+
 > Esta neurona crece sola (bajo guía del constructor). Si una lección se vuelve
 > doctrina permanente, promoverla a `CLAUDE.md §3`. Si encaja en un § histórico,
 > enlazarla. Mantenerla accionable: síntoma → causa → receta.

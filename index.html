@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -259,47 +259,14 @@
     }
     </script>
 
-    <!-- Critical CSS Inline - Above the fold styles for faster FCP -->
+    <!-- Critical CSS Inline - Above the fold styles for faster FCP.
+         Cinematic redesign: el fondo base oscuro previene flash blanco
+         antes de que carguen tokens-redesign/cinematic. -->
     <style>
-        :root{--gold-primary:#d4af37;--gold-secondary:#b89658;--black-deep:#0a0a0a;--black-medium:#1a1a1a;--white-pure:#fff;--gray-light:#e8e8e8}
+        :root{--gold-primary:#d4af37;--gold-secondary:#b89658;--black-deep:#0a0a0a}
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Poppins',sans-serif;background-color:#0a0a0a;color:#e8e8e8;line-height:1.6;overflow-x:hidden}
-        .header{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(10,10,10,0.95);backdrop-filter:blur(10px);padding:1rem 0;transition:all 0.3s}
-        .header .container{display:flex;justify-content:space-between;align-items:center;max-width:1400px;margin:0 auto;padding:0 2rem}
-        .logo{display:flex;align-items:center;gap:12px;text-decoration:none}
-        .logo img{height:50px;width:auto}
-        .logo-text{font-size:1.5rem;font-weight:800;color:#d4af37}
-        .nav-links{display:flex;gap:2rem;list-style:none}
-        .nav-links a{color:#e8e8e8;text-decoration:none;font-weight:500;transition:color 0.3s}
-        /* Hero — FOUC prevention (mínimo crítico; estilos completos en css/hero.css) */
-        .hero{min-height:clamp(480px,70vh,720px);display:flex;align-items:center;justify-content:center;position:relative;background-color:#0a0a0a;background-image:radial-gradient(ellipse at 20% 35%,rgba(212,175,55,.10) 0%,transparent 55%),radial-gradient(ellipse at 80% 65%,rgba(184,150,88,.06) 0%,transparent 60%),linear-gradient(135deg,#1a1410 0%,#0a0a0a 50%,#14110a 100%);background-size:cover;background-position:center 30%;overflow:visible;isolation:isolate}
-        .hero-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(to bottom,rgba(0,0,0,.78) 0%,rgba(0,0,0,.28) 38%,rgba(0,0,0,.30) 62%,rgba(0,0,0,.88) 100%)}
-        .hero-ambient{position:absolute;inset:0;z-index:2;pointer-events:none}
-        .hero-content{position:relative;z-index:4;text-align:center;padding:3rem 2rem 3rem;max-width:880px;margin:0 auto;width:100%}
-        .hero-title{font-size:clamp(2.4rem,5.5vw,4.5rem);font-weight:900;color:rgba(255,255,255,.95);margin-bottom:1.4rem;line-height:1.06;letter-spacing:-.03em}
-        .hero-title-accent{display:block;background:linear-gradient(135deg,#f5df80 0%,#d4af37 40%,#b89658 70%,#f5df80 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .hero-cta{display:flex;flex-direction:column;align-items:center;gap:.9rem;margin-bottom:2.4rem}
-        .hero-btn-main{display:inline-flex;align-items:center;gap:.55rem;padding:.95rem 2.4rem;background:linear-gradient(135deg,#d4af37 0%,#b89658 100%);color:#0a0a0a;font-weight:700;font-size:1rem;border-radius:100px;text-decoration:none;box-shadow:0 4px 24px rgba(212,175,55,.38)}
-        .btn-arrow-icon{flex-shrink:0}
-        .hero-badge{display:inline-flex;align-items:center;gap:.55rem;background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.38);color:#d4af37;padding:.5rem 1.5rem;border-radius:100px;font-size:.82rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.2rem}
-        .hero-badge-dot{width:6px;height:6px;background:#d4af37;border-radius:50%;flex-shrink:0}
-        @media(max-width:768px){.hero{min-height:clamp(300px,42vh,420px)}.hero-content{padding:1.4rem 1.5rem 2rem}.hero-title{font-size:clamp(1.6rem,6vw,2.2rem)}}
-        @media(max-width:480px){.hero{min-height:0!important;height:auto!important;background-position:center 48%}.hero-content{padding:7vh 1.25rem 5vh}.hero-title{font-size:clamp(1.3rem,7vw,1.8rem)}}
-        .container{max-width:1400px;margin:0 auto;padding:0 2rem}
-        @media(max-width:768px){.nav-links{display:none}.header .container{padding:0 1rem}}
-        /* Critical: prevent FOUC for carousels and brands */
-        .featured-section .vehicles-grid{display:flex!important;flex-direction:row!important;gap:1.5rem!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none;padding:1rem 0 1.5rem 0!important}
-        .featured-section .vehicles-grid::-webkit-scrollbar{display:none}
-        .featured-section .vehicle-card{flex:0 0 320px!important;min-width:320px!important;max-width:320px!important}
-        .brands-carousel{overflow:hidden;position:relative}
-        .brands-track{display:flex;gap:0;width:max-content;will-change:transform}
-        /* Fondo oscuro inline — evita flash blanco mientras carga style.css */
-        .brands-section--hero-flow{background:#111111!important;padding:0!important;margin:0!important}
-        .brands-section--hero-flow .brand-card{flex:0 0 150px;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:transparent;border:none;border-right:1px solid rgba(255,255,255,0.07);border-radius:0;padding:1.4rem 1rem}
-        /* Hide sections that flash before their CSS loads */
-        .carousel-hint{display:none}
-        #testimonials-section{opacity:0;transition:opacity 0.3s ease}
-        #testimonials-section.loaded{opacity:1}
+        html{background:#08070A}
+        body{font-family:'Manrope','Plus Jakarta Sans',system-ui,sans-serif;background:#08070A;color:#F4EEDE;line-height:1.6;overflow-x:hidden;min-height:100vh}
     </style>
 
     <!-- Critical CSS (render-blocking — needed for first paint) -->
@@ -322,9 +289,23 @@
     <link rel="stylesheet" href="css/animaciones.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/citas.css" media="print" onload="this.media='all'">
 
-    <!-- Optimized Google Fonts Loading -->
+    <!-- ============================================================
+         REDISEÑO CINEMATIC (Fase 1) — fuentes + CSS namespaced css/home/*
+         Cascade obligatorio: tokens → base → chrome → cinematic → quicktools.
+         Cargan DESPUÉS del CSS legacy para ganar donde haya solape de chrome.
+         (El retiro del CSS viejo del index = Task 7.)
+         ============================================================ -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Manrope:wght@200;300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/home/tokens-redesign.css">
+    <link rel="stylesheet" href="css/home/base-redesign.css">
+    <link rel="stylesheet" href="css/home/chrome-redesign.css">
+    <link rel="stylesheet" href="css/home/cinematic.css">
+    <link rel="stylesheet" href="css/home/quicktools.css">
+
+    <!-- Optimized Google Fonts Loading (Poppins — aún usado por CSS legacy/modales) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
     <!-- Auth hint reader — synchronous, pre-paint. Eliminates FOUC of
@@ -344,22 +325,13 @@
         }
     })();
     </script>
-    <!-- Critical header CSS — inlined for first-paint stability.
-         (1) Reserves 80px for the header so layout doesn't shift when
-             components.js injects the fetched header HTML.
-         (2) Hides .nav-actions until JS adds .hdr-ready (atomic reveal —
-             prevents the sequential paint of favoritos→login→register→bell).
-         (3) Auth hint rules duplicated here so they apply even before
-             style.css finishes parsing (defense-in-depth).
-         Apple/Amazon pattern: critical chrome CSS is always inline. -->
+    <!-- Auth-hint chrome rules para el nav cinematic nuevo. Cuando el usuario
+         está logueado se ocultan los botones Ingresar/Registrarse y el área de
+         usuario (#headerUserArea) se muestra; auth.js los rellena. -->
     <style>
-    #header-placeholder{min-height:80px;display:block}
-    header .nav-actions{opacity:0;visibility:hidden;transition:opacity .28s cubic-bezier(.22,1,.36,1);min-height:34px}
-    header .nav-actions.hdr-ready{opacity:1;visibility:visible}
     html.auth-authenticated #btnLogin,html.auth-authenticated #btnRegister,html.auth-authenticated #mobBtnLogin,html.auth-authenticated #mobBtnRegister{display:none!important}
     html.auth-guest #headerUserArea{display:none!important}
     html.auth-authenticated #headerUserArea{min-width:36px;display:inline-flex;align-items:center}
-    @media (prefers-reduced-motion:reduce){header .nav-actions{transition:none}}
     </style>
     <!-- Page Loader — Critical Inline CSS (cross-browser) -->
     <style>
@@ -374,489 +346,618 @@
     </style>
     <link rel="stylesheet" href="css/page-loader.css">
 </head>
-<body>
+<body data-cin="on">
     <!-- Page Loader -->
     <div id="page-loader" role="status" aria-label="Cargando ALTORRA CARS">
         <img src="/multimedia/logo-placeholder.png" class="pl-logo" alt="ALTORRA CARS" width="68" height="68" onerror="this.style.display='none'">
         <div class="pl-ring" aria-hidden="true"></div>
     </div>
 
-    <!-- §91 Sprint 3A: hero LQIP cross-fade adaptado a <img> + <picture>.
-         Antes (L1.2): cargabamos heroindex.webp via new Image() y al
-         onload togglábamos .hero-img-loaded. Ahora el hero usa un <img>
-         real dentro de <picture> con srcset AVIF/WebP/legacy. El JS
-         observa el <img> real (que el browser ya está descargando vía
-         el preload del head). El cross-fade se mantiene idéntico — solo
-         cambia el qué observamos. Si la imagen ya está completa al
-         parsear este script (cache hit del preload), reveal() corre
-         síncrono. Si no, esperamos al load event. Inline aquí para
-         arrancar durante HTML parse — no defer waiting. -->
-    <script>
-    (function () {
-        var revealed = false;
-        function reveal() {
-            if (revealed) return;
-            revealed = true;
-            var hero = document.querySelector('.hero');
-            if (hero) hero.classList.add('hero-img-loaded');
-        }
-        function bind() {
-            var img = document.querySelector('.hero .hero-bg-img');
-            if (!img) return reveal(); // fail open si <picture> falló
-            if (img.complete && img.naturalHeight > 0) {
-                return reveal(); // cache hit del preload
-            }
-            img.addEventListener('load', reveal);
-            img.addEventListener('error', reveal); // fail open
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', bind);
-        } else {
-            bind();
-        }
-        // §92 FAIL-SAFE: si por cualquier motivo el load event nunca
-        // dispara (cache hit weirdo, network drop, picture quirk),
-        // forzar reveal tras 2s. UX: peor caso ve gradient → imagen
-        // con cross-fade en 2s. Mejor caso (preload cache hit) reveal
-        // ya corrió síncrono en bind().
-        setTimeout(reveal, 2000);
-    })();
-    </script>
+    <!-- Barra de progreso de scroll (cinematic) — JS la alimenta en Task 4 -->
+    <div class="cin-scroll-progress" aria-hidden="true"></div>
 
-    <!-- Header Component -->
-    <div id="header-placeholder"></div>
+    <!-- ============================================================
+         NAV cinematic (index-only en Fase 1).
+         Contratos preservados para los módulos existentes:
+           - id="header" + .alt-nav  → favoritesManager._forceShowHeader()
+           - id="btnLogin"           → auth.js updateHeaderAuthState/rewireBtn
+           - id="btnRegister"        → auth.js (oculto cuando guest por defecto)
+           - id="headerUserArea"     → auth.js renderUserArea (avatar logueado)
+           - id="favCount"           → favoritesManager.updateAllCounters()
+           - .mob-auth-row           → auth.js updateMobileAuthRow
+         El comportamiento (ocultarse/dropdown/drawer) = Task 3.
+         ============================================================ -->
+    <header class="alt-nav" id="header">
+        <div class="alt-nav-inner container">
+            <a href="index.html" class="alt-logo" aria-label="ALTORRA CARS — Inicio">
+                <span class="alt-logo-stage">
+                    <span class="alt-logo-skid"></span>
+                    <span class="alt-logo-smoke alt-logo-smoke-1"></span>
+                    <span class="alt-logo-smoke alt-logo-smoke-2"></span>
+                    <span class="alt-logo-smoke alt-logo-smoke-3"></span>
+                    <img src="multimedia/logo-wheel.png" alt="" class="alt-logo-icon" width="38" height="38">
+                </span>
+                <span class="alt-logo-text">
+                    <span class="t-gold-grad alt-logo-name" style="font-weight:800;font-size:18px;letter-spacing:0.04em;">ALTORRA</span>
+                    <span class="alt-logo-sub" style="font-size:10px;letter-spacing:0.32em;color:var(--ink-text-muted);font-weight:600;">CARS</span>
+                </span>
+            </a>
 
-    <!-- Hero Section -->
-    <section class="hero" aria-label="Portada principal">
-        <!-- §91 Sprint 3A: LCP hero con <picture> responsive AVIF/WebP.
-             Browser elige variant + formato según viewport. El preload
-             en <head> matchea exact URLs → cache hit garantizado.
-             El .hero-bg-img CSS hace cross-fade cuando .hero-img-loaded
-             es agregado por el JS inline al final de <body>. -->
-        <picture>
-            <source type="image/avif" sizes="100vw"
-                    srcset="multimedia/optimized/heroindex-480.avif 480w,
-                            multimedia/optimized/heroindex-768.avif 768w,
-                            multimedia/optimized/heroindex-1280.avif 1280w">
-            <source type="image/webp" sizes="100vw"
-                    srcset="multimedia/optimized/heroindex-480.webp 480w,
-                            multimedia/optimized/heroindex-768.webp 768w,
-                            multimedia/optimized/heroindex-1280.webp 1280w">
-            <img class="hero-bg-img"
-                 src="multimedia/heroindex.webp"
-                 alt=""
-                 aria-hidden="true"
-                 fetchpriority="high"
-                 decoding="async"
-                 width="1920" height="1080">
-        </picture>
-        <div class="hero-overlay" aria-hidden="true"></div>
-        <div class="hero-ambient" aria-hidden="true"></div>
-        <div class="hero-content">
+            <nav class="alt-nav-links" aria-label="Navegación principal">
+                <a href="index.html" class="nav-link active">Inicio</a>
+                <div class="nav-dd-wrap">
+                    <button type="button" class="nav-link" aria-haspopup="true" aria-expanded="false">
+                        Vehículos
+                        <span class="nav-chev"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </button>
+                    <!-- Mega-dropdown "Vehículos" — wiring (hover/abrir) = Task 3.
+                         Categorías → vehiculos-*.html · condición → páginas reales. -->
+                    <div class="nav-dd acrylic-hi nav-dd-pro" hidden>
+                        <div class="nav-dd-grid">
+                            <div>
+                                <div class="nav-dd-h">Por categoría</div>
+                                <a class="nav-dd-link" href="vehiculos-suv.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/SUV.jpg');"></span>
+                                    <span><strong>SUV</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="vehiculos-sedan.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/SEDAN.jpg');"></span>
+                                    <span><strong>Sedán</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="vehiculos-pickup.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/PICKUP.jpg');"></span>
+                                    <span><strong>Pickup</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="vehiculos-hatchback.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/HATCHBACK.jpg');"></span>
+                                    <span><strong>Hatchback</strong></span>
+                                </a>
+                            </div>
+                            <div>
+                                <div class="nav-dd-h">Por condición</div>
+                                <a class="nav-dd-link" href="busqueda.html?tipo=nuevo">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/NUEVOS.jpg');"></span>
+                                    <span><strong>Nuevos 0KM</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="busqueda.html?tipo=usado">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/USADOS.jpg');"></span>
+                                    <span><strong>Usados</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="vehiculos-pickup.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/CAMIONETAS.jpg');"></span>
+                                    <span><strong>Camionetas</strong></span>
+                                </a>
+                                <a class="nav-dd-link" href="busqueda.html">
+                                    <span class="nav-dd-thumb" style="background-image:url('multimedia/categories/BUSQUEDA.jpg');"></span>
+                                    <span><strong>Ver todos</strong></span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <a href="index.html#marcas" class="nav-link">Marcas</a>
+                <a href="nosotros.html" class="nav-link">Nosotros</a>
+                <a href="contacto.html" class="nav-link">Contacto</a>
+            </nav>
 
-            <!-- Badge -->
-            <div class="hero-badge">
-                <span class="hero-badge-dot" aria-hidden="true"></span>
-                Concesionario Líder en Cartagena
+            <div class="alt-nav-actions">
+                <a href="#" data-modal="vende-auto" class="nav-publish" aria-label="Publica tu vehículo">
+                    <span class="nav-publish-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </span>
+                    <span class="nav-publish-label">Publica tu vehículo</span>
+                    <span class="nav-publish-shine" aria-hidden="true"></span>
+                </a>
+                <a href="favoritos.html" class="btn btn-icon btn-ghost" aria-label="Favoritos" style="position:relative;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>
+                    <span class="nav-pip" id="favCount" aria-live="polite">0</span>
+                </a>
+                <button type="button" class="btn btn-subtle" id="btnLogin">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+                    <span class="hide-sm">Ingresar</span>
+                </button>
+                <!-- Botón Registrarse (oculto por defecto para guest vía auth-hint;
+                     auth.js lo gestiona). Mantiene contrato #btnRegister. -->
+                <button type="button" class="btn btn-primary" id="btnRegister" style="display:none;">
+                    <span class="hide-sm">Registrarse</span>
+                </button>
+                <!-- Área de usuario logueado — auth.js renderUserArea() la rellena -->
+                <div id="headerUserArea" style="display:none;"></div>
+                <button type="button" class="btn btn-icon btn-ghost mob-only" id="navMobOpen" aria-label="Menú">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+                </button>
             </div>
+        </div>
 
-            <!-- Título -->
-            <!-- §90 Fase 4 SEO — span sr-only con keyword Cartagena local.
-                 Google lee el h1 completo "Carros Usados Certificados en
-                 Cartagena - Encuentra el Auto de tus Sueños". Visualmente
-                 el usuario sigue viendo solo "Encuentra el Auto de tus
-                 Sueños" (cero impacto UX). Patrón Apple/Stripe. -->
-            <h1 class="hero-title">
-                <span class="sr-only">Carros Usados Certificados en Cartagena — </span>Encuentra el Auto
-                <span class="hero-title-accent">de tus Sueños</span>
+        <!-- Mobile drawer — toggle (hamburguesa) = Task 3. Oculto por defecto.
+             style="display:none" inline porque .mob-drawer{display:flex} (CSS)
+             vencería al atributo [hidden] de la UA stylesheet; home-chrome.js
+             alterna display:none/'' al abrir/cerrar. -->
+        <div class="mob-drawer" id="navMobDrawer" hidden style="display:none;">
+            <div class="mob-panel acrylic-hi">
+                <div class="row" style="justify-content:space-between;">
+                    <strong class="t-title-sm t-gold-grad">ALTORRA</strong>
+                    <button type="button" class="btn btn-icon btn-ghost" id="navMobClose" aria-label="Cerrar">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <!-- Fila de auth móvil — auth.js updateMobileAuthRow() la rellena -->
+                <div class="mob-auth-row"></div>
+                <div class="mob-links">
+                    <a class="mob-link" href="index.html">Inicio<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="busqueda.html">Vehículos<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="index.html#marcas">Marcas<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="simulador-credito.html">Simulador<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="comparar.html">Comparar<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="nosotros.html">Nosotros<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link" href="contacto.html">Contacto<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                    <a class="mob-link mob-link--fav" href="favoritos.html">
+                        <span class="mob-link-label">Favoritos<!-- pip de favoritos (contrato favCountMobile de favorites-manager.js).
+                             Oculto hasta count>0; home-chrome.js lo muestra/oculta
+                             escuchando el evento favoritesChanged. Estilado como .nav-pip. -->
+                        <span class="nav-pip mob-link-pip" id="favCountMobile" aria-live="polite" style="position:static;display:none;margin-left:8px;">0</span></span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         01 · HERO (CinHero)
+         ============================================================ -->
+    <section class="cin-hero" data-screen-label="01 Hero">
+        <div class="cin-hero-bg" aria-hidden="true"></div>
+        <div class="cin-grain" aria-hidden="true"></div>
+
+        <header class="cin-hero-meta">
+            <div><span class="cin-pulse" aria-hidden="true"></span>Concesionario Líder en Cartagena</div>
+            <div class="cin-hero-meta-r" id="cinHeroClock"></div>
+        </header>
+
+        <div class="cin-hero-stage">
+            <!-- WordReveal portado 1:1: cada palabra es .cin-word con su
+                 animation-delay inline (la animación cinWord es CSS-only, no
+                 requiere JS). El span .sr-only añade keyword SEO sin afectar
+                 el reveal. El acento usa .cin-word para heredar el degradado
+                 dorado (.cin-headline-accent .cin-word en cinematic.css). -->
+            <h1 class="cin-headline">
+                <span class="sr-only">Carros Usados Certificados en Cartagena — </span><span class="cin-word" style="animation-delay:150ms">Encuentra</span> <span class="cin-word" style="animation-delay:245ms">el</span> <span class="cin-word" style="animation-delay:340ms">Auto</span>
+                <br>
+                <span class="cin-headline-accent">
+                    <span class="cin-word" style="animation-delay:560ms">de</span> <span class="cin-word" style="animation-delay:660ms">tus</span> <span class="cin-word" style="animation-delay:760ms">Sueños</span>
+                </span>
             </h1>
+        </div>
 
-            <!-- CTA principal -->
-            <div class="hero-cta">
-                <a href="busqueda.html" class="hero-btn-main" aria-label="Explorar catálogo completo">
-                    Explorar Catálogo
-                    <svg class="btn-arrow-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                    </svg>
-                </a>
+        <footer class="cin-hero-foot">
+            <div class="cin-hero-foot-l">
+                <b>+90 vehículos</b> de aliados estratégicos en Colombia.
+                Conectamos compradores con los mejores concesionarios del país.
             </div>
 
-            <!-- Barra de búsqueda inteligente -->
-            <div class="hero-search-wrap" role="search" aria-label="Búsqueda de vehículos">
-                <div class="hero-search-inner">
-                    <svg class="hero-search-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
-                    </svg>
-                    <input
-                        type="text"
-                        id="heroSearchInput"
-                        class="hero-search-input"
-                        placeholder="Busca por marca, modelo, año o código…"
-                        autocomplete="off"
-                        aria-autocomplete="list"
-                        aria-controls="heroSearchDropdown"
-                        aria-label="Buscar vehículos"
-                    />
-                </div>
+            <!-- HERO SEARCH — contrato: #heroSearchInput + #heroSearchDropdown
+                 (initHeroSearch en js/core/main.js). .hero-search-wrap añadido
+                 para el handler de click-fuera existente. Dropdown vacío/hidden
+                 lo rellena el JS. -->
+            <form class="hero-search hero-search-wrap" role="search" aria-label="Búsqueda inteligente" onsubmit="return false;">
+                <span class="hero-search-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input
+                    type="text"
+                    id="heroSearchInput"
+                    placeholder="Busca por marca, modelo o año…"
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-controls="heroSearchDropdown"
+                    aria-label="Buscar vehículos">
+                <button type="submit" class="hero-search-submit" aria-label="Buscar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                </button>
                 <ul id="heroSearchDropdown" class="hero-search-dropdown" role="listbox" aria-label="Sugerencias" hidden></ul>
-            </div>
+            </form>
 
+            <div class="cin-hero-foot-r">
+                <b>Vende con nosotros</b><br>
+                Te ayudamos a vender al mejor precio del mercado.
+            </div>
+        </footer>
+    </section>
+
+    <!-- ============================================================
+         02 · DISPONIBLES (CinAvailable)
+         Contenedor vacío → home-carousels.js lo rellena (Task 5.1).
+         ============================================================ -->
+    <section class="cin-av" data-screen-label="05 Disponibles">
+        <div class="cin-av-head">
+            <h2 class="cin-av-h">Vehículos <em>disponibles</em>.</h2>
+            <a href="busqueda.html" class="cin-av-all">
+                Ver todos
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+
+        <div class="cin-av-track-wrap">
+            <button class="cin-nav cin-nav--prev" type="button" aria-label="Anterior" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button class="cin-nav cin-nav--next" type="button" aria-label="Siguiente">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+
+            <!-- Cards de vehículos disponibles → JS (.cin-av-card) -->
+            <div class="cin-av-track" id="cinAvailableTrack"></div>
         </div>
     </section>
 
-    <!-- Trust Bar — estadísticas fuera del hero -->
-    <div class="trust-bar" aria-label="Estadísticas del inventario">
-        <div class="trust-bar-stats" role="list">
-            <div class="trust-bar-item" role="listitem">
-                <span class="trust-bar-num" id="trustStatVehicles" aria-live="polite">–</span>
-                <span class="trust-bar-label">Vehículos Disponibles</span>
-            </div>
-            <div class="trust-bar-sep" aria-hidden="true"></div>
-            <div class="trust-bar-item" role="listitem">
-                <span class="trust-bar-num" id="trustStatBrands" aria-live="polite">–</span>
-                <span class="trust-bar-label">Marcas Premium</span>
-            </div>
-            <div class="trust-bar-sep" aria-hidden="true"></div>
-            <div class="trust-bar-item" role="listitem">
-                <span class="trust-bar-icon" aria-hidden="true">⚡</span>
-                <span class="trust-bar-label">Financiación Inmediata</span>
-            </div>
+    <!-- ============================================================
+         03 · LA COLECCIÓN (CinCollection)
+         Contenedor vacío → home-carousels.js (Task 5.2, destacados + tag).
+         ============================================================ -->
+    <section class="cin-collection" data-screen-label="03 Vehículos">
+        <div class="cin-collection-head">
+            <h2 class="cin-collection-h">La colección, <em>esta semana</em>.</h2>
+            <p class="cin-collection-aside">
+                Llegadas seleccionadas con historial verificado y documentación lista.
+                Coordinamos visita o entrega con el aliado que tenga el vehículo.
+            </p>
         </div>
-    </div>
 
-    <!-- Destacados de la Semana — Banner Premium HUD v4 -->
-    <section id="fw-banner" class="fw-section" style="display:none;"
-             aria-label="Destacados de la Semana">
-        <div class="container">
-            <div class="fw-inner">
-                <!-- Live region for screen readers -->
-                <span id="fw-live" class="fw-sr-only" aria-live="polite" aria-atomic="true"></span>
+        <div class="cin-track-wrap">
+            <button class="cin-nav cin-nav--prev" type="button" aria-label="Anterior" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button class="cin-nav cin-nav--next" type="button" aria-label="Siguiente">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
 
-                <!-- Navigation arrows -->
-                <button class="fw-nav fw-nav--prev" id="fw-prev" type="button" aria-label="Vehículo anterior">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.5"
-                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="15 18 9 12 15 6"/>
-                    </svg>
-                </button>
-                <button class="fw-nav fw-nav--next" id="fw-next" type="button" aria-label="Vehículo siguiente">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.5"
-                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                </button>
-
-                <!-- Slides (generated by JS) -->
-                <div class="fw-track" id="fw-track"
-                     role="region" aria-label="Carrusel de vehículos destacados"></div>
-
-                <!-- Dot indicators (generated by JS) -->
-                <div class="fw-dots" id="fw-dots" role="tablist"
-                     aria-label="Indicadores de posición"></div>
-            </div>
+            <!-- Cards de la colección → JS (.cin-card) -->
+            <div class="cin-track" id="cinCollectionTrack"></div>
         </div>
     </section>
 
-    <!-- Carrusel Vehículos Disponibles -->
-    <section class="featured-section">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Vehículos <span class="highlight">Disponibles</span></h2>
-                <a href="busqueda.html" class="btn-view-more">Ver todos →</a>
+    <!-- ============================================================
+         04 · CATEGORÍAS (CinCats) — set fijo de 4 tiles (no data-driven).
+         Links reales a vehiculos-*.html + imágenes reales; el conteo
+         (.cin-cat-count) lo rellena el JS (Task 5.6).
+         ============================================================ -->
+    <section class="cin-cats" data-screen-label="04 Categorías">
+        <div class="cin-cats-head">
+            <h2 class="cin-cats-h">Empieza por <em>cómo lo manejas</em>.</h2>
+            <p class="cin-collection-aside">Filtra por tipo. Sigue por marca, precio o año.</p>
+        </div>
+        <div class="cin-cats-grid">
+            <a href="vehiculos-suv.html" class="cin-cat" data-cat="suv">
+                <div class="cin-cat-img" style="background-image:url('multimedia/categories/SUV.jpg');"></div>
+                <div class="cin-cat-label">
+                    <span class="cin-cat-name">SUV</span>
+                    <span class="cin-cat-count" data-count-for="suv"></span>
+                </div>
+            </a>
+            <a href="vehiculos-sedan.html" class="cin-cat" data-cat="sedan">
+                <div class="cin-cat-img" style="background-image:url('multimedia/categories/SEDAN.jpg');"></div>
+                <div class="cin-cat-label">
+                    <span class="cin-cat-name">Sedán</span>
+                    <span class="cin-cat-count" data-count-for="sedan"></span>
+                </div>
+            </a>
+            <a href="vehiculos-pickup.html" class="cin-cat" data-cat="pickup">
+                <div class="cin-cat-img" style="background-image:url('multimedia/categories/PICKUP.jpg');"></div>
+                <div class="cin-cat-label">
+                    <span class="cin-cat-name">Pickup</span>
+                    <span class="cin-cat-count" data-count-for="pickup"></span>
+                </div>
+            </a>
+            <a href="vehiculos-hatchback.html" class="cin-cat" data-cat="hatchback">
+                <div class="cin-cat-img" style="background-image:url('multimedia/categories/HATCHBACK.jpg');"></div>
+                <div class="cin-cat-label">
+                    <span class="cin-cat-name">Hatchback</span>
+                    <span class="cin-cat-count" data-count-for="hatchback"></span>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         05 · PROMOS / PROGRAMAS (CinPrograms)
+         Carrusel de banners home_promo → home-carousels.js (Task 5.3).
+         La sección se oculta si no hay banners. Track vacío.
+         ============================================================ -->
+    <section class="promo-section" id="promoSection" data-screen-label="02 Promos">
+        <div class="promo-head">
+            <span class="cin-eyebrow">Promos y programas Altorra</span>
+            <h2 class="promo-h">Lo que está pasando <em>esta semana</em>.</h2>
+        </div>
+
+        <div class="promo-stage">
+            <!-- Slides (.promo-slide) → JS -->
+            <div class="promo-track" id="promoTrack"></div>
+
+            <button type="button" class="promo-arrow promo-arrow--prev" aria-label="Anterior">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="promo-arrow promo-arrow--next" aria-label="Siguiente">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         06 · TU RASTRO / RECOMENDADOS (CinTrail)
+         Contenido → home-carousels.js (Task 5.5). Stage vacío.
+         ============================================================ -->
+    <section class="cin-trail" id="cinTrail" data-screen-label="07 Rastro">
+        <div class="cin-trail-head">
+            <span class="cin-eyebrow">Tu rastro</span>
+            <h2 class="cin-trail-h">Los que <em>volverías a mirar.</em></h2>
+            <button class="cin-trail-clear" type="button" id="cinTrailClear" hidden>
+                Limpiar rastro
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M6 18L18 6"/></svg>
+            </button>
+        </div>
+        <!-- Stage (card grande + lista lateral) o variante "Recomendados" → JS -->
+        <div id="cinTrailBody"></div>
+    </section>
+
+    <!-- ============================================================
+         07 · MARCAS (CinBrands) — marquee con logos reales.
+         Track vacío → home-carousels.js (Task 5.4). id="marcas" (contrato
+         de ancla #marcas usada por nav + hash-scroll de components.js).
+         ============================================================ -->
+    <section class="cin-brands" id="marcas" data-screen-label="02 Marcas">
+        <div class="cin-brands-head">
+            <h2 class="cin-brands-h">16 marcas. <em>Una vitrina.</em></h2>
+            <p class="cin-brands-aside">
+                Del Renault Twingo al Toyota Prado. Inventario rotativo cada semana —
+                si la marca está, la tenemos lista para mostrar.
+            </p>
+        </div>
+
+        <div class="cin-marquee">
+            <!-- Logos (.cin-brand) duplicados para loop → JS -->
+            <div class="cin-marquee-track" id="cinBrandsTrack"></div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         08 · MANIFIESTO (CinManifesto) — reveal por scroll (Task 4).
+         ============================================================ -->
+    <section class="cin-manifesto" id="manifesto" data-screen-label="05 Manifiesto">
+        <div class="cin-manifesto-inner">
+            <span class="cin-eyebrow">Manifiesto</span>
+            <p class="cin-manifesto-text">
+                <span>Cada carro pasa por nuestras manos.</span>
+                <span>Cada cliente, por <em>nuestra historia</em>.</span>
+                <span>No vendemos vehículos —</span> <span><em>acompañamos decisiones</em>.</span>
+            </p>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         09 · CONSIGNA / VENDE CON NOSOTROS (CinConv)
+         ============================================================ -->
+    <section class="cin-conv" data-screen-label="06 Consignación">
+        <div class="cin-conv-inner">
+            <div class="cin-conv-head">
+                <span class="cin-eyebrow">Vende con nosotros</span>
+                <h2 class="cin-conv-h">Tu carro merece <em>la mejor vitrina</em>.</h2>
             </div>
 
-            <div class="carousel-wrapper">
-                <!-- Flechas del carrusel -->
-                <button class="carousel-arrow prev" type="button" aria-label="Anterior" onclick="scrollCarouselById('allVehiclesCarousel', -1)">‹</button>
-                <button class="carousel-arrow next" type="button" aria-label="Siguiente" onclick="scrollCarouselById('allVehiclesCarousel', 1)">›</button>
-
-                <div class="vehicles-grid" id="allVehiclesCarousel">
-                    <!-- Vehicles will be loaded dynamically -->
+            <div class="cin-conv-thread">
+                <div class="cin-bubble cin-bubble--them">
+                    <div class="cin-bubble-meta">Tú</div>
+                    Quiero vender mi carro, pero no quiero perder tiempo con curiosos.
+                </div>
+                <div class="cin-bubble cin-bubble--us">
+                    <div class="cin-bubble-meta">Altorra</div>
+                    <strong>Te entendemos.</strong> Avalúo, peritaje técnico y fotografía profesional gratis.
+                    Solo cuando esté listo lo publicamos en <em>nuestros canales</em>.
+                </div>
+                <div class="cin-bubble cin-bubble--them">
+                    <div class="cin-bubble-meta">Tú</div>
+                    ¿Y la comisión?
+                </div>
+                <div class="cin-bubble cin-bubble--us">
+                    <div class="cin-bubble-meta">Altorra</div>
+                    <strong>0%.</strong> No te cobramos nada hasta que tu carro se venda. Si no se vende, no pagas.
+                </div>
+                <div class="cin-bubble cin-bubble--them">
+                    <div class="cin-bubble-meta">Tú</div>
+                    ¿Cuánto se demora?
+                </div>
+                <div class="cin-bubble cin-bubble--us">
+                    <div class="cin-bubble-meta">Altorra</div>
+                    En promedio <strong>21 días</strong>. Y mientras tanto, tú no abres la puerta a nadie.
                 </div>
             </div>
-            <p class="carousel-hint">👉 Desliza para ver más</p>
+
+            <div class="cin-conv-cta">
+                <span class="cin-magnet">
+                    <a href="#" data-modal="vende-auto" class="cin-link">
+                        Empieza con un <em>avalúo gratis</em>
+                        <span class="cin-link-arrow">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                        </span>
+                    </a>
+                </span>
+                <span class="cin-conv-fine">Respondemos en menos de 2 horas</span>
+            </div>
         </div>
     </section>
 
-    <!-- Vistos Recientemente (localStorage, sin auth) -->
-    <section class="recently-viewed-section" id="recentlyViewedSection" style="display:none;" aria-label="Vehículos vistos recientemente">
-        <div class="container">
-            <div class="rv-header">
-                <div class="rv-header-left">
-                    <svg class="rv-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12,6 12,12 16,14"/>
-                    </svg>
-                    <h2 class="rv-title">Vistos <span class="highlight">Recientemente</span></h2>
+    <!-- ============================================================
+         10 · STATS (CinStats) — counters animados (Task 4).
+         Cifras reales de vehicleDB para vehículos/marcas (Task 4 Step 2).
+         ============================================================ -->
+    <section class="cin-stats" data-screen-label="07 Datos">
+        <div class="cin-stats-grid">
+            <div class="cin-stat">
+                <div class="cin-stat-num" data-counter="2400" data-suffix="+"><span>0</span></div>
+                <div class="cin-stat-label">Clientes desde 2017</div>
+            </div>
+            <div class="cin-stat">
+                <div class="cin-stat-num" data-counter="21"><span>0</span><em>días</em></div>
+                <div class="cin-stat-label">Promedio para vender</div>
+            </div>
+            <div class="cin-stat">
+                <div class="cin-stat-num" data-counter="16" data-counter-source="brands"><span>0</span></div>
+                <div class="cin-stat-label">Marcas en vitrina</div>
+            </div>
+            <div class="cin-stat">
+                <div class="cin-stat-num">0<em>%</em></div>
+                <div class="cin-stat-label">Comisión consignación</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         11 · CIERRE (CinEnd) — newsletter fusionado.
+         ============================================================ -->
+    <section class="cin-end" data-screen-label="11 Cierre">
+        <div class="cin-end-grid">
+            <div class="cin-end-lead">
+                <span class="cin-eyebrow">Una ventana, todos los carros</span>
+                <h2 class="cin-end-text">
+                    Toda Colombia<br>
+                    <em>en una sola vitrina.</em>
+                </h2>
+                <p class="cin-end-lead-sub">
+                    Altorra es un marketplace digital. Conectamos compradores con concesionarios
+                    aliados verificados en todo el país. Sin desplazamientos. Sin presión.
+                    Sin letras chicas.
+                </p>
+            </div>
+
+            <form class="cin-end-news" aria-label="Suscríbete" onsubmit="return false;">
+                <span class="cin-end-news-mark" aria-hidden="true">✦</span>
+                <div class="cin-end-news-copy">
+                    <h3 class="cin-end-news-h">Los mejores carros, <em>antes que nadie</em>.</h3>
+                    <p>Una vez por semana: llegadas frescas, bajadas de precio y consejos para comprar mejor. Cero spam.</p>
                 </div>
-                <button class="rv-clear-btn" id="rvClearBtn" type="button" aria-label="Limpiar historial">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3,6 5,6 21,6"/>
-                        <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"/>
-                    </svg>
-                    Limpiar
-                </button>
-            </div>
-            <div class="rv-carousel-wrapper">
-                <button class="rv-arrow rv-arrow--prev" id="rvPrev" type="button" aria-label="Anterior">&#8249;</button>
-                <div class="rv-track" id="rvTrack"></div>
-                <button class="rv-arrow rv-arrow--next" id="rvNext" type="button" aria-label="Siguiente">&#8250;</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- Promotional Banner Slot (loaded from admin) -->
-    <section class="promo-banner-section" id="promoBannerSection" style="display:none;">
-        <div class="promo-banner-wrapper" id="promoBannerWrapper"></div>
-    </section>
-
-    <!-- Categories Section -->
-    <section class="categories-section">
-        <div class="container">
-            <div class="categories-grid">
-                <a href="vehiculos-suv.html" class="category-card">
-                    <div class="category-image">
-                        <picture>
-                            <source type="image/avif" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/SUV-480.avif 480w,
-                                            multimedia/optimized/SUV-768.avif 768w,
-                                            multimedia/optimized/SUV-1280.avif 1280w,
-                                            multimedia/optimized/SUV-1920.avif 1920w">
-                            <source type="image/webp" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/SUV-480.webp 480w,
-                                            multimedia/optimized/SUV-768.webp 768w,
-                                            multimedia/optimized/SUV-1280.webp 1280w,
-                                            multimedia/optimized/SUV-1920.webp 1920w">
-                            <img src="multimedia/categories/SUV.jpg" alt="SUV" loading="lazy" width="600" height="400" decoding="async">
-                        </picture>
-                    </div>
-                    <h3 class="category-name">SUV</h3>
-                </a>
-
-                <a href="vehiculos-pickup.html" class="category-card">
-                    <div class="category-image">
-                        <picture>
-                            <!-- §96: usar PICKUP.jpg (1920×900, full-res, las 4 variants existen)
-                                 en lugar de camioneta.jpg (600×400, solo variant 480 → 768/1280/1920
-                                 daban 404 → imagen rota). PICKUP-* ya está en TARGETS del optimizer. -->
-                            <source type="image/avif" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/PICKUP-480.avif 480w,
-                                            multimedia/optimized/PICKUP-768.avif 768w,
-                                            multimedia/optimized/PICKUP-1280.avif 1280w,
-                                            multimedia/optimized/PICKUP-1920.avif 1920w">
-                            <source type="image/webp" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/PICKUP-480.webp 480w,
-                                            multimedia/optimized/PICKUP-768.webp 768w,
-                                            multimedia/optimized/PICKUP-1280.webp 1280w,
-                                            multimedia/optimized/PICKUP-1920.webp 1920w">
-                            <img src="multimedia/categories/PICKUP.jpg" alt="Pickup" loading="lazy" width="600" height="400" decoding="async">
-                        </picture>
-                    </div>
-                    <h3 class="category-name">Pickup</h3>
-                </a>
-
-                <a href="vehiculos-sedan.html" class="category-card">
-                    <div class="category-image">
-                        <picture>
-                            <source type="image/avif" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/SEDAN-480.avif 480w,
-                                            multimedia/optimized/SEDAN-768.avif 768w,
-                                            multimedia/optimized/SEDAN-1280.avif 1280w,
-                                            multimedia/optimized/SEDAN-1920.avif 1920w">
-                            <source type="image/webp" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/SEDAN-480.webp 480w,
-                                            multimedia/optimized/SEDAN-768.webp 768w,
-                                            multimedia/optimized/SEDAN-1280.webp 1280w,
-                                            multimedia/optimized/SEDAN-1920.webp 1920w">
-                            <img src="multimedia/categories/SEDAN.jpg?v=20260310" alt="Sedán" loading="lazy" width="600" height="400" decoding="async">
-                        </picture>
-                    </div>
-                    <h3 class="category-name">Sedán</h3>
-                </a>
-
-                <a href="vehiculos-hatchback.html" class="category-card">
-                    <div class="category-image">
-                        <picture>
-                            <source type="image/avif" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/HATCHBACK-480.avif 480w,
-                                            multimedia/optimized/HATCHBACK-768.avif 768w">
-                            <source type="image/webp" sizes="(max-width: 768px) 100vw, 600px"
-                                    srcset="multimedia/optimized/HATCHBACK-480.webp 480w,
-                                            multimedia/optimized/HATCHBACK-768.webp 768w">
-                            <img src="multimedia/categories/HATCHBACK.jpg?v=20260325" alt="Hatchback" loading="lazy" width="600" height="400" decoding="async">
-                        </picture>
-                    </div>
-                    <h3 class="category-name">Hatchback</h3>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- FASE 2: Marcas — carrusel interactivo full-width -->
-    <section id="marcas" class="brands-section brands-section--hero-flow"
-             aria-label="Marcas disponibles en ALTORRA CARS">
-        <h2 class="fw-sr-only">Marcas disponibles</h2>
-        <div class="brands-carousel-wrapper">
-            <button class="brands-arrow prev" type="button" aria-label="Anterior" onclick="scrollBrandsCarousel(-1)">&#8249;</button>
-            <div class="brands-grid brands-carousel" id="popularBrands">
-                <!-- Brands will be loaded dynamically -->
-            </div>
-            <button class="brands-arrow next" type="button" aria-label="Siguiente" onclick="scrollBrandsCarousel(1)">&#8250;</button>
-        </div>
-    </section>
-
-    <!-- Testimonials Section -->
-    <div id="testimonials-section"></div>
-
-    <!-- Commercial Section - Compra / Vende / Financia -->
-    <section class="commercial-section">
-        <div class="container">
-            <div class="commercial-header">
-                <h2 class="commercial-title">Todo en un <span class="highlight">Solo Lugar</span></h2>
-                <p class="commercial-subtitle">Soluciones integrales para tu movilidad en Cartagena</p>
-            </div>
-
-            <!-- Servicios Comerciales -->
-            <div class="commercial-grid">
-                <div class="commercial-card">
-                    <div class="commercial-icon icon-compra">
-                        <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Car Body -->
-                            <path class="car-body" d="M20 42C20 40 21 39 23 39H30L33 35C34 33 36 32 38 32H50C52 32 54 33 55 35L58 39H65C67 39 68 40 68 42V50C68 52 67 53 65 53H63C63 56 61 58 58 58C55 58 53 56 53 53H35C35 56 33 58 30 58C27 58 25 56 25 53H23C21 53 20 52 20 50V42Z" fill="#d4af37"/>
-                            <!-- Windows -->
-                            <path d="M35 36C35 35 36 34 37 34H47C48 34 49 35 49 36V38H35V36Z" fill="rgba(26, 26, 26, 0.4)"/>
-                            <rect x="34" y="36" width="7" height="4" fill="rgba(255, 255, 255, 0.3)"/>
-                            <rect x="43" y="36" width="7" height="4" fill="rgba(255, 255, 255, 0.3)"/>
-                            <!-- Wheels -->
-                            <circle class="wheel-left" cx="30" cy="53" r="6" fill="#1a1a1a"/>
-                            <circle cx="30" cy="53" r="3.5" fill="#b89658"/>
-                            <circle class="wheel-right" cx="58" cy="53" r="6" fill="#1a1a1a"/>
-                            <circle cx="58" cy="53" r="3.5" fill="#b89658"/>
-                            <!-- Key -->
-                            <g class="car-key">
-                                <circle cx="56" cy="24" r="8" fill="rgba(212, 175, 55, 0.2)" stroke="#d4af37" stroke-width="2"/>
-                                <circle cx="56" cy="24" r="3" fill="#d4af37"/>
-                                <rect x="59" y="22" width="8" height="4" rx="1" fill="#d4af37"/>
-                                <rect x="63" y="20" width="2" height="2" fill="#1a1a1a"/>
-                                <rect x="63" y="24" width="2" height="2" fill="#1a1a1a"/>
-                            </g>
-                        </svg>
-                    </div>
-                    <h3 class="commercial-card-title">Compra tu Auto</h3>
-                    <p class="commercial-card-text">Encuentra el vehículo perfecto entre nuestra amplia selección certificada y garantizada.</p>
-                    <a href="busqueda.html" class="btn-commercial">VER INVENTARIO</a>
+                <div class="cin-end-news-row">
+                    <input
+                        type="email" required
+                        placeholder="tu@email.com"
+                        class="cin-end-news-input"
+                        aria-label="Tu correo electrónico">
+                    <button type="submit" class="cin-end-news-btn">
+                        Suscribirme
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                    </button>
                 </div>
-                <div class="commercial-card">
-                    <div class="commercial-icon icon-vende">
-                        <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Billetes apilados -->
-                            <g class="money-stack">
-                                <rect class="bill bill-1" x="22" y="38" width="36" height="20" rx="2" fill="#b89658" stroke="#8b6f47" stroke-width="1.5"/>
-                                <rect class="bill bill-2" x="24" y="34" width="36" height="20" rx="2" fill="#d4af37" stroke="#b89658" stroke-width="1.5"/>
-                                <rect class="bill bill-3" x="26" y="30" width="36" height="20" rx="2" fill="#d4af37" stroke="#b89658" stroke-width="1.5"/>
-                            </g>
-                            <!-- Detalles del billete principal -->
-                            <circle cx="44" cy="40" r="6" fill="rgba(26, 26, 26, 0.2)" stroke="#8b6f47" stroke-width="1"/>
-                            <!-- Símbolo de dólar -->
-                            <text x="44" y="44" text-anchor="middle" fill="#1a1a1a" font-size="10" font-weight="900" font-family="Arial">$</text>
-                            <!-- Líneas decorativas -->
-                            <line x1="30" y1="35" x2="38" y2="35" stroke="#8b6f47" stroke-width="1.5" stroke-linecap="round"/>
-                            <line x1="30" y1="38" x2="36" y2="38" stroke="#8b6f47" stroke-width="1.5" stroke-linecap="round"/>
-                            <line x1="52" y1="42" x2="58" y2="42" stroke="#8b6f47" stroke-width="1.5" stroke-linecap="round"/>
-                            <line x1="52" y1="45" x2="58" y2="45" stroke="#8b6f47" stroke-width="1.5" stroke-linecap="round"/>
-                            <!-- Flecha hacia arriba (mejor precio) -->
-                            <g class="price-arrow">
-                                <circle cx="56" cy="25" r="10" stroke="#d4af37" stroke-width="2" fill="rgba(212, 175, 55, 0.1)"/>
-                                <path d="M56 22L56 28M53 25L56 22L59 25" stroke="#d4af37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </g>
-                        </svg>
-                    </div>
-                    <h3 class="commercial-card-title">Vende tu Auto</h3>
-                    <p class="commercial-card-text">Recibe la mejor oferta del mercado. Avalúo rápido, transparente y seguro.</p>
+                <div class="cin-end-news-foot">
+                    <span>Más de 2.400 lectores ya están dentro</span>
+                    <span>Date de baja en un clic</span>
+                </div>
+            </form>
+        </div>
+    </section>
 
-                    <!-- Beneficios del proceso de venta -->
-                    <div class="vende-features">
-                        <div class="vende-feature">
-                            <div class="vende-feature-icon" aria-hidden="true">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            </div>
-                            <div class="vende-feature-text">
-                                <strong>Avalúo en 24h</strong>
-                                <span>Respuesta el mismo día hábil</span>
-                            </div>
+    <!-- ============================================================
+         FOOTER cinematic (Footer de components.jsx, adaptado a estático).
+         Iconos chat/mail (indefinidos en el diseño) sustituidos por SVG
+         reales. Tarjetas sociales con URLs reales (contrato Pre-flight).
+         ============================================================ -->
+    <footer class="alt-footer">
+        <div class="footer-topline" aria-hidden="true"></div>
+
+        <div class="footer-body">
+            <span class="footer-wm" aria-hidden="true">ALTORRA</span>
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-col footer-col--brand">
+                        <div class="footer-mark">
+                            <span class="footer-mark__name">ALTORRA</span>
+                            <span class="footer-mark__rule" aria-hidden="true"></span>
+                            <span class="footer-mark__sub">Cars</span>
                         </div>
-                        <div class="vende-feature">
-                            <div class="vende-feature-icon" aria-hidden="true">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                            </div>
-                            <div class="vende-feature-text">
-                                <strong>Proceso Seguro</strong>
-                                <span>Transparente y 100% verificado</span>
-                            </div>
+                        <p class="footer-tagline">
+                            <strong>Donde la calidad y la confianza convergen.</strong>
+                            Conectamos oportunidades sobre ruedas, ofreciendo una experiencia de compra y venta de vehículos usados más cercana, estratégica, profesional y orientada a generar valor en cada decisión.
+                        </p>
+                    </div>
+
+                    <div class="footer-col-sep" aria-hidden="true"></div>
+
+                    <div class="footer-col footer-col--contact">
+                        <h3 class="footer-col-heading">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            <span>Hablemos</span>
+                        </h3>
+                        <div class="footer-contact">
+                            <a href="mailto:altorracarssale@gmail.com" class="footer-ci">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+                                <span>altorracarssale@gmail.com</span>
+                            </a>
+                            <a href="tel:+573235016747" class="footer-ci">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
+                                <span>+57 323 501 6747</span>
+                            </a>
+                            <span class="footer-ci">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <span>Marketplace digital · Colombia</span>
+                            </span>
                         </div>
-                        <div class="vende-feature">
-                            <div class="vende-feature-icon" aria-hidden="true">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                            </div>
-                            <div class="vende-feature-text">
-                                <strong>Sin Compromiso</strong>
-                                <span>Oferta sin obligación de venta</span>
-                            </div>
-                        </div>
-                        <div class="vende-feature">
-                            <div class="vende-feature-icon" aria-hidden="true">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                            </div>
-                            <div class="vende-feature-text">
-                                <strong>Mejor Precio</strong>
-                                <span>Pagamos el precio justo</span>
-                            </div>
+                        <div class="footer-schedule">
+                            <span class="footer-schedule__label">Atención al cliente</span>
+                            <span class="footer-schedule__value">Lun – Vie · 8:00 am – 6:00 pm</span>
+                            <span class="footer-schedule__value">Sáb · 9:00 am – 2:00 pm</span>
                         </div>
                     </div>
 
-                    <button type="button" class="btn-commercial" data-modal="vende-auto">COTIZAR AHORA</button>
-                </div>
-                <div class="commercial-card">
-                    <div class="commercial-icon icon-financia">
-                        <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Tarjeta de crédito -->
-                            <g class="credit-card">
-                                <rect x="20" y="30" width="40" height="26" rx="3" fill="#d4af37" stroke="#b89658" stroke-width="2"/>
-                                <!-- Banda magnética -->
-                                <rect x="20" y="35" width="40" height="5" fill="#1a1a1a"/>
-                                <!-- Chip -->
-                                <rect class="card-chip" x="25" y="42" width="8" height="7" rx="1" fill="#b89658" stroke="#8b6f47" stroke-width="1"/>
-                                <line x1="27" y1="44" x2="27" y2="47" stroke="#8b6f47" stroke-width="0.5"/>
-                                <line x1="29" y1="44" x2="29" y2="47" stroke="#8b6f47" stroke-width="0.5"/>
-                                <line x1="31" y1="44" x2="31" y2="47" stroke="#8b6f47" stroke-width="0.5"/>
-                                <!-- Números de tarjeta -->
-                                <line x1="36" y1="45" x2="42" y2="45" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
-                                <line x1="36" y1="48" x2="42" y2="48" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
-                                <line x1="45" y1="45" x2="51" y2="45" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
-                                <line x1="45" y1="48" x2="51" y2="48" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
-                            </g>
-                            <!-- Símbolo de porcentaje (interés) -->
-                            <g class="percent-symbol">
-                                <circle cx="54" cy="22" r="9" fill="rgba(212, 175, 55, 0.2)" stroke="#d4af37" stroke-width="2"/>
-                                <text x="54" y="26" text-anchor="middle" fill="#d4af37" font-size="11" font-weight="900" font-family="Arial">%</text>
-                            </g>
-                            <!-- Checkmark (aprobado) -->
-                            <path class="checkmark" d="M48 50L50 52L54 48" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                    <div class="footer-col-sep" aria-hidden="true"></div>
+
+                    <div class="footer-col footer-col--social">
+                        <h3 class="footer-col-heading"><span>Conéctate con Nosotros</span></h3>
+                        <div class="footer-social">
+                            <a href="https://wa.me/573235016747" class="footer-soc footer-soc--wa" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9s-.5-.1-.6.1-.7.9-.8 1.1-.3.2-.5.1c-.7-.4-1.5-.8-2.3-1.7-.6-.6-1-1.4-1.2-1.6s0-.3.1-.4l.4-.5.3-.5c0-.2 0-.3 0-.4l-.6-1.4c-.1-.4-.3-.4-.4-.4h-.4c-.2 0-.4 0-.6.3-.2.3-.8.8-.8 1.9 0 1.1.8 2.2 1 2.4.1.2 1.7 2.6 4.1 3.7 1.4.6 2 .7 2.7.6.4-.1 1.3-.5 1.5-1.1.2-.5.2-1 .1-1.1-.1-.1-.3-.2-.5-.3zM12 2C6.5 2 2 6.5 2 12c0 1.7.5 3.4 1.3 4.9L2 22l5.3-1.3c1.4.7 3 1.1 4.7 1.1 5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+                                <span class="footer-soc__label">WhatsApp</span>
+                            </a>
+                            <a href="https://www.instagram.com/altorracars/" class="footer-soc footer-soc--ig" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor"/></svg>
+                                <span class="footer-soc__label">Instagram</span>
+                            </a>
+                            <a href="https://www.facebook.com/share/14XKk6MCmiT/" class="footer-soc footer-soc--fb" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H8v-3h2.4V9.4c0-2.4 1.4-3.7 3.6-3.7 1 0 2.1.2 2.1.2v2.3h-1.2c-1.2 0-1.5.7-1.5 1.5V12h2.6l-.4 3h-2.2v7A10 10 0 0 0 22 12z"/></svg>
+                                <span class="footer-soc__label">Facebook</span>
+                            </a>
+                        </div>
+                        <div class="footer-rating">
+                            <span class="review-stars">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </span>
+                            <strong>4.9</strong>
+                            <span class="t-caption t-muted">· 247 reseñas Google</span>
+                        </div>
                     </div>
-                    <h3 class="commercial-card-title">Financiación</h3>
-                    <p class="commercial-card-text">Contamos con aliados estratégicos financieros para ofrecerte las mejores opciones de crédito.</p>
-                    <a href="simulador-credito.html" class="btn-commercial btn-commercial-primary">SIMULAR CRÉDITO</a>
-                    <button type="button" class="btn-commercial btn-commercial-secondary" data-modal="financiacion">SOLICITAR INFO</button>
                 </div>
             </div>
         </div>
-    </section>
 
-    <!-- Footer Component -->
-    <div id="footer-placeholder"></div>
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="footer-bottom__row">
+                    <p class="footer-copy">© 2026 <strong>ALTORRA CARS</strong> — ALTORRA COMPANY SAS. Todos los derechos reservados.</p>
+                    <nav class="footer-legal" aria-label="Legal">
+                        <a class="alt-footer-bottom-link" href="terminos.html">Términos</a>
+                        <span aria-hidden="true">·</span>
+                        <a class="alt-footer-bottom-link" href="privacidad.html">Privacidad</a>
+                        <span aria-hidden="true">·</span>
+                        <a class="alt-footer-bottom-link" href="cookies.html">Cookies</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- QuickTools mount point — quicktools.js (Task 6) lo rellena -->
+    <div id="quicktools-root"></div>
 
     <!-- Modal: Vende tu Auto — Wizard 3 pasos -->
     <div class="modal-overlay" id="vende-auto-modal" role="dialog" aria-modal="true" aria-labelledby="vende-auto-title">
@@ -1144,7 +1245,13 @@
     <script src="js/core/firebase-config.js" defer></script>
     <script src="js/core/comm-schema.js" defer></script>
 
-    <!-- Scripts - Optimized Loading -->
+    <!-- Scripts - Optimized Loading.
+         components.js sigue cargando: bootstrapea el modal de auth
+         (snippets/auth-modal.html + auth.js), el Concierge (ALTOR), Lucide,
+         GIS y cookies. Ya NO inyecta el header/footer viejos porque se
+         quitaron los placeholders #header-placeholder/#footer-placeholder
+         (el nav y footer ahora son estáticos arriba). El wiring del nav nuevo
+         (ocultarse/dropdown/drawer) llega en Task 3. -->
     <script src="js/core/favorites-manager.js" defer></script>
     <script src="js/core/favorites-watcher.js" defer></script>
     <script src="js/core/toast.js" defer></script>
@@ -1152,50 +1259,11 @@
     <script src="js/core/components.js" defer></script>
     <script src="js/core/database.js" defer></script>
     <script src="js/core/render.js" defer></script>
-    <!-- Featured Week Banner — lazy load with multiple triggers for safety.
-         The 31KB module is heavy. We DO NOT use IntersectionObserver here
-         because #fw-banner has display:none initially (the JS shows it only
-         after confirming featured vehicles exist) — and IO does NOT observe
-         display:none elements. Instead we use:
-           1) requestIdleCallback / setTimeout — guaranteed eventual load
-           2) First user interaction (scroll/touch/mouse) — instant response
-              if the user starts using the page
-         Whichever fires first wins; window._fwLoaded sentinel dedupes. -->
-    <script>
-    (function () {
-        function loadFW() {
-            if (window._fwLoaded) return;
-            window._fwLoaded = true;
-            var s = document.createElement('script');
-            s.src = 'js/public/featured-week-banner.js';
-            s.async = false;
-            s.onload = function () {
-                if (typeof window.loadDestacadosBanner === 'function') {
-                    window.loadDestacadosBanner().catch(function (e) {
-                        console.warn('[FW] Init failed:', e);
-                    });
-                }
-            };
-            s.onerror = function () {
-                // Network failed — allow re-trigger so retry can attempt
-                window._fwLoaded = false;
-            };
-            document.body.appendChild(s);
-        }
-        // Trigger 1: idle callback (or 1.5s fallback in browsers without rIC)
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(loadFW, { timeout: 2500 });
-        } else {
-            setTimeout(loadFW, 1500);
-        }
-        // Trigger 2: first user interaction — load instantly if user engages
-        var interactionEvents = ['scroll', 'touchstart', 'mousemove', 'keydown'];
-        interactionEvents.forEach(function (ev) {
-            window.addEventListener(ev, loadFW, { once: true, passive: true, capture: true });
-        });
-    })();
-    </script>
     <script src="js/core/main.js" defer></script>
+    <!-- Chrome del index cinematic (Task 3): nav hide-on-scroll (3 estados),
+         mega-dropdown "Vehículos" y drawer móvil. Se auto-monta en
+         DOMContentLoaded; idempotente (no choca con home.js de Task 4). -->
+    <script src="js/public/home/home-chrome.js" defer></script>
     <!-- Comparador — deferred to idle. Cards render fine without it
          (render.js uses defensive typeof check); user-triggered actions
          only fire after the script loads. -->
@@ -1220,134 +1288,8 @@
         }
     })();
     </script>
-    <!-- Reviews — deferred to idle. Below-fold testimonials section,
-         render gated by whenReady() guard below. -->
-    <script>
-    (function () {
-        function loadReviews() {
-            if (window._reviewsLoaded) return;
-            window._reviewsLoaded = true;
-            var s = document.createElement('script');
-            s.src = 'js/public/reviews.js';
-            s.async = false;
-            document.body.appendChild(s);
-        }
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(loadReviews, { timeout: 3000 });
-        } else if (document.readyState === 'complete') {
-            setTimeout(loadReviews, 1500);
-        } else {
-            window.addEventListener('load', function () {
-                setTimeout(loadReviews, 1500);
-            });
-        }
-    })();
-    </script>
     <script src="js/core/historial-visitas.js" defer></script>
     <script src="js/core/performance.js" defer></script>
-
-    <!-- Initialize Testimonials + Recently Viewed -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // reviewsSystem is lazy-loaded — wait for it to be available
-            if (typeof window.whenReady === 'function') {
-                window.whenReady(
-                    function () { return typeof reviewsSystem !== 'undefined'; },
-                    function () {
-                        reviewsSystem.renderTestimonialsSection('testimonials-section');
-                        var testSec = document.getElementById('testimonials-section');
-                        if (testSec) {
-                            requestAnimationFrame(function () {
-                                testSec.classList.add('loaded');
-                            });
-                        }
-                    },
-                    { timeout: 6000, label: 'reviewsSystem' }
-                );
-            } else if (typeof reviewsSystem !== 'undefined') {
-                // Fallback: components.js not loaded yet (very unlikely)
-                reviewsSystem.renderTestimonialsSection('testimonials-section');
-                var testSec = document.getElementById('testimonials-section');
-                if (testSec) {
-                    requestAnimationFrame(function () { testSec.classList.add('loaded'); });
-                }
-            }
-            // Recently Viewed section (localStorage-based, no auth needed)
-            initRecentlyViewed();
-        });
-
-        function initRecentlyViewed() {
-            var section = document.getElementById('recentlyViewedSection');
-            var track   = document.getElementById('rvTrack');
-            if (!section || !track || typeof vehicleHistory === 'undefined') return;
-            if (!vehicleHistory.hasHistory()) return;
-
-            // Wait for vehicleDB to load
-            var waitForDB = setInterval(function() {
-                if (typeof vehicleDB !== 'undefined' && vehicleDB.loaded) {
-                    clearInterval(waitForDB);
-                    renderRecentlyViewed(section, track);
-                }
-            }, 200);
-            // Timeout after 8s
-            setTimeout(function() { clearInterval(waitForDB); }, 8000);
-        }
-
-        function renderRecentlyViewed(section, track) {
-            var ids = vehicleHistory.getHistoryIds().slice(0, 8);
-            var vehicles = ids.map(function(id) { return vehicleDB.getVehicleById(id); }).filter(Boolean);
-            if (vehicles.length === 0) return;
-
-            track.innerHTML = vehicles.map(function(v) {
-                var price = v.precioOferta || v.precio;
-                var priceStr = new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', minimumFractionDigits:0 }).format(price);
-                var url = typeof getVehicleDetailUrl === 'function' ? getVehicleDetailUrl(v) : '#';
-                var hasOffer = v.precioOferta && v.precioOferta < v.precio;
-                var specStr = v.year + ' · ' + (v.kilometraje ? new Intl.NumberFormat('es-CO').format(v.kilometraje) + ' km' : v.tipo);
-                return '' +
-                    '<a href="' + url + '" class="rv-card">' +
-                        '<div class="rv-card-img">' +
-                            '<img src="' + (v.imagen || 'multimedia/vehicles/placeholder-car.jpg') + '" ' +
-                                 'alt="' + v.marca + ' ' + v.modelo + '" loading="lazy" ' +
-                                 'onerror="this.src=\'multimedia/vehicles/placeholder-car.jpg\'">' +
-                        '</div>' +
-                        (hasOffer ? '<span class="rv-badge-offer">Oferta</span>' : '') +
-                        '<div class="rv-card-body">' +
-                            '<p class="rv-card-name">' + v.marca + ' ' + v.modelo + '</p>' +
-                            '<div class="rv-card-meta">' +
-                                '<span class="rv-card-year">' + specStr + '</span>' +
-                                '<span class="rv-card-price">' + priceStr + '</span>' +
-                            '</div>' +
-                        '</div>' +
-                    '</a>';
-            }).join('');
-
-            section.style.display = '';
-            section.style.opacity = '0';
-            requestAnimationFrame(function() {
-                section.style.transition = 'opacity 0.4s ease';
-                section.style.opacity = '1';
-            });
-
-            // Carousel arrows
-            var prev = document.getElementById('rvPrev');
-            var next = document.getElementById('rvNext');
-            if (prev) prev.addEventListener('click', function() { track.scrollBy({ left: -280, behavior: 'smooth' }); });
-            if (next) next.addEventListener('click', function() { track.scrollBy({ left: 280, behavior: 'smooth' }); });
-
-            // Clear button
-            var clearBtn = document.getElementById('rvClearBtn');
-            if (clearBtn) {
-                clearBtn.addEventListener('click', function() {
-                    vehicleHistory.clearHistory();
-                    section.style.transition = 'opacity 0.3s ease';
-                    section.style.opacity = '0';
-                    setTimeout(function() { section.style.display = 'none'; }, 300);
-                    if (typeof toast !== 'undefined' && toast && toast.info) toast.info('Historial limpiado.');
-                });
-            }
-        }
-    </script>
 
     <!-- Cookie Consent — deferred to idle. The banner only appears
          after a UX delay anyway, so no point blocking initial parse. -->
@@ -1371,7 +1313,7 @@
     })();
     </script>
 
-        <script src="js/core/page-loader.js"></script>
+    <script src="js/core/page-loader.js"></script>
     <!-- Cache Manager - Handles SW updates and cache invalidation -->
     <script src="js/core/cache-manager.js" defer></script>
 </body>

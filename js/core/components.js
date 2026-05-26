@@ -463,7 +463,17 @@ function initializeHeader() {
     const body = document.body;
 
     if (!hamburger || !navMenu) {
-        console.error('Menu elements not found');
+        // Nav cinematic nuevo (index): el header/drawer son propiedad de
+        // js/public/home/home-chrome.js (toggle del drawer + máquina de
+        // scroll de 3 estados con .alt-nav--wheel/.alt-nav--gone). Esos ids
+        // (#hamburger/#navMenu) son del nav viejo y NO existen aquí, así que
+        // este initializeHeader no aplica. Salimos en silencio (no es un
+        // error): si NO saliéramos, instalaríamos un segundo scroll-listener
+        // (.sticky/.header--hidden) y un toggle de menú que chocarían con
+        // home-chrome.js (doble-binding). Las DEMÁS tareas de components.js
+        // (modal auth, Concierge, cookies, Lucide, forceCloseAllMenus,
+        // populateBrandsMenu, prefetch) viven fuera de esta función y no se
+        // ven afectadas.
         return;
     }
 

@@ -99,6 +99,10 @@ Detalle ampliado de cada pendiente → Largo Plazo `docs/99-HISTORIAL-ADR.md` §
 
 ---
 
+## 🔮 Contexto estratégico (afecta prioridades)
+
+- **REDISEÑO TOTAL en camino**: el cliente hizo un nuevo diseño con "Claude design" y planea **migrar toda la web** a ese diseño. → NO sobre-invertir en cosmética/estructura visual actual (CSS reorg, polish) que el rediseño reemplazará. Mejoras de bajo nivel (SEO meta, performance, backend, datos) SÍ sobreviven el rediseño. El cliente pasará el nuevo diseño "más adelante".
+
 ## 📝 Bitácora de sesión (efímera)
 
 > Notas de la sesión en curso que aún no son un ADR. Se vacían al consolidar.

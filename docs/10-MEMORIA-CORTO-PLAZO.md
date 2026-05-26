@@ -11,12 +11,17 @@
 
 ## 🎯 Foco actual
 
-- **Sin tarea activa en curso.** Últimas iniciativas cerradas y LIVE en producción:
-  **cerebro neuronal autónomo** (ADR §120/§121) + **reorganización modular de `js/`**
-  (ADR §119) + **SEO meta/hints** (Twitter/OG/noindex + preconnect).
-- **Próximo hito real**: el cliente prepara un **REDISEÑO TOTAL** de la web (ver
-  Contexto estratégico abajo). **En pausa** hasta que lo comparta — esa es la próxima
-  gran iniciativa, no hay free TODO de alto valor pendiente que no la duplique.
+- **🚀 REDISEÑO TOTAL — EN MARCHA** (ya no en pausa). El cliente compartió el tema nuevo
+  (HarmonyOS, hecho con Claude Design) en `altorra-cars-design-system/project/redesign/`
+  (está en **React**; se porta a **vanilla**). Fuentes reales: Manrope + Instrument Serif
+  + Cardo (NO Poppins). Spec Fase 1: `docs/superpowers/specs/2026-05-26-rediseno-index-fase1-design.md`.
+- **Fase 1 = SP-1 + SP-2 + SP-3** (ejecución vía subagentes, doble revisión):
+  - **SP-2** admin destacados (cutout fuera → usa `imagen`; +`featuredTag`; sin tope de 6) →
+    ✅ código completo + doble revisión OK. **Pendiente: commit del cliente + E2E navegador.**
+    Plan: `docs/superpowers/plans/2026-05-26-sp2-admin-destacados.md`.
+  - **SP-3** admin banners ricos (posición `home_promo`) → ⏳ siguiente (escribir plan + ejecutar).
+  - **SP-1** index nuevo (12 secciones + widgets, vanilla port, engancha data/lógica existentes) → ⏳ el grande, después.
+- **Diferidos**: SP-4 (motor recomendaciones + analytics) · SP-5 (resto de páginas + promover chrome global).
 
 ---
 

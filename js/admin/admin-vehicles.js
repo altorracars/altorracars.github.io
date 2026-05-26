@@ -732,14 +732,14 @@
         $('vehicleModal').classList.add('active');
     }
 
-    /* ── Contador unico de destacados (= banner) ── */
+    /* ── Contador unico de destacados (= La coleccion) ── */
     function updateFeaturedCounter() {
         var counter = $('featuredCounter');
         if (!counter) return;
         var editId = $('vId').value ? parseInt($('vId').value, 10) : null;
         var count = AP.vehicles.filter(function(v) { return v.destacado && v.id !== editId; }).length;
-        counter.textContent = '(' + count + '/6)';
-        counter.style.color = count >= 6 ? '#ef4444' : '#b89658';
+        counter.textContent = '(' + count + ' destacado' + (count !== 1 ? 's' : '') + ')';
+        counter.style.color = '#b89658';
     }
 
     /* ── Toggle 2-estados: Normal / Destacado ── */
@@ -930,7 +930,7 @@
             vPrioridad: $('vPrioridad').value, vCaracteristicas: collectAllFeatures().join('\n'), // §D/§E.4 — checkboxes + legacy
             vFeaturedWeek: $('vFeaturedWeek') ? $('vFeaturedWeek').checked : false,
             vFeaturedOrder: $('vFeaturedOrder') ? $('vFeaturedOrder').value : '',
-            vFeaturedCutoutPng: $('vFeaturedCutoutPng') ? $('vFeaturedCutoutPng').value : '',
+            vFeaturedTag: $('vFeaturedTag') ? $('vFeaturedTag').value : '',
             // §E.4 — concesionario/consigna se preservan en el borrador
             vConcesionario: $('vConcesionario') ? $('vConcesionario').value : '',
             vConsignaParticular: $('vConsignaParticular') ? $('vConsignaParticular').value : '',
@@ -998,8 +998,7 @@
         $('vPeritaje').checked = snap.vPeritaje !== false;
         if ($('vFeaturedWeek'))    $('vFeaturedWeek').checked = !!snap.vFeaturedWeek;
         if ($('vFeaturedOrder'))   $('vFeaturedOrder').value  = snap.vFeaturedOrder  || '';
-        if ($('vFeaturedCutoutPng')) $('vFeaturedCutoutPng').value = snap.vFeaturedCutoutPng || '';
-        renderCutoutPreview(snap.vFeaturedCutoutPng || '');
+        if ($('vFeaturedTag'))     $('vFeaturedTag').value     = snap.vFeaturedTag    || '';
         if (snap._images && snap._images.length) { AP.uploadedImageUrls = snap._images.slice(); renderUploadedImages(); }
         setDestaqueRadio(!!snap.vDestacado);
         // §E.4 — restaurar concesionario/consigna + toggle de campo consigna
@@ -1205,8 +1204,7 @@
         $('vOferta').checked = !!(v.oferta || v.precioOferta);
         if ($('vFeaturedWeek'))    $('vFeaturedWeek').checked = !!v.destacado;
         if ($('vFeaturedOrder'))   $('vFeaturedOrder').value  = v.featuredOrder  || '';
-        if ($('vFeaturedCutoutPng')) $('vFeaturedCutoutPng').value = v.featuredCutoutPng || '';
-        renderCutoutPreview(v.featuredCutoutPng || '');
+        if ($('vFeaturedTag'))     $('vFeaturedTag').value     = v.featuredTag    || '';
         $('vRevision').checked = v.revisionTecnica !== false;
         $('vPeritaje').checked = v.peritaje !== false;
         $('vPrioridad').value = v.prioridad || 0;
@@ -1411,7 +1409,7 @@
             featuredWeek: $('vDestacado').checked, /* siempre igual a destacado — campo legacy */
             prioridad: (function() { var ex = AP.vehicles.find(function(v) { return v.id === id; }); return ex ? (ex.prioridad || 0) : 0; })(),
             featuredOrder: $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value, 10) || null) : null,
-            featuredCutoutPng: $('vFeaturedCutoutPng') ? ($('vFeaturedCutoutPng').value.trim() || null) : null,
+            featuredTag: $('vFeaturedTag') ? ($('vFeaturedTag').value.trim() || null) : null,
             imagen: AP.uploadedImageUrls[0] || 'multimedia/vehicles/placeholder-car.jpg',
             imagenes: AP.uploadedImageUrls.length ? AP.uploadedImageUrls.slice() : ['multimedia/vehicles/placeholder-car.jpg'],
             caracteristicas: collectAllFeatures(),
@@ -1507,17 +1505,12 @@
             }
         }
 
-        // Limitar maximo 6 vehiculos destacados (= banner)
+        // Validar orden duplicado en la coleccion (sin tope de cantidad)
         if ($('vDestacado').checked) {
             var editId = $('vId').value ? parseInt($('vId').value, 10) : null;
             var otherDestacados = AP.vehicles.filter(function(v) {
                 return v.destacado && v.id !== editId;
             });
-            if (otherDestacados.length >= 6) {
-                AP.toast('Maximo 6 vehiculos destacados. Desmarca uno existente primero.', 'error');
-                return;
-            }
-
             // Detectar orden duplicado en banner
             var fwOrder = $('vFeaturedOrder') ? (parseInt($('vFeaturedOrder').value, 10) || null) : null;
             if (fwOrder !== null) {
@@ -1526,7 +1519,7 @@
                     var conflictName = ((orderConflict.marca || '') + ' ' + (orderConflict.modelo || '')).trim();
                     AP.toast(
                         'La posicion ' + fwOrder + ' ya esta asignada a "' + conflictName + '". ' +
-                        'Elige otra posicion (1-6) o deja el campo vacio para orden automatico.',
+                        'Elige otra posicion o deja el campo vacio para orden automatico.',
                         'error'
                     );
                     if ($('vFeaturedOrder')) $('vFeaturedOrder').classList.add('field-error');
@@ -1835,92 +1828,6 @@
         });
     }
 
-    // ========== CUTOUT PNG UPLOAD ==========
-    var cutoutFileInput = $('cutoutFileInput');
-    if (cutoutFileInput) {
-        cutoutFileInput.addEventListener('change', function() {
-            if (this.files.length) { handleCutoutFile(this.files[0]); this.value = ''; }
-        });
-    }
-    var cutoutUploadArea = $('cutoutUploadArea');
-    if (cutoutUploadArea) {
-        cutoutUploadArea.addEventListener('dragover', function(e) { e.preventDefault(); this.style.background = 'rgba(212,175,55,0.08)'; });
-        cutoutUploadArea.addEventListener('dragleave', function() { this.style.background = 'rgba(212,175,55,0.03)'; });
-        cutoutUploadArea.addEventListener('drop', function(e) {
-            e.preventDefault(); this.style.background = 'rgba(212,175,55,0.03)';
-            var f = e.dataTransfer.files[0];
-            if (f) handleCutoutFile(f);
-        });
-    }
-
-    function showCutoutError(msg) { var el = $('cutoutUploadError'); if (el) { el.textContent = msg; el.style.display = 'block'; } }
-
-    function handleCutoutFile(file) {
-        if (!window.storage) { showCutoutError('Firebase Storage no disponible. Usa la URL manual.'); return; }
-        if (file.type !== 'image/png') { showCutoutError('Solo se admiten archivos PNG (para transparencia).'); return; }
-        var maxBytes = 10 * 1024 * 1024;
-        if (file.size > maxBytes) { showCutoutError('El archivo es demasiado grande (max 10 MB).'); return; }
-        var errEl = $('cutoutUploadError'); if (errEl) errEl.style.display = 'none';
-        var prog = $('cutoutUploadProgress');
-        if (prog) { prog.style.display = 'block'; $('cutoutProgressFill').style.width = '0%'; $('cutoutUploadStatus').textContent = 'Subiendo cutout...'; }
-        uploadCutoutToStorage(file);
-    }
-
-    function uploadCutoutToStorage(file) {
-        if (!window.storage) { showCutoutError('Firebase Storage no disponible.'); return; }
-        var timestamp = Date.now();
-        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var path = 'cars/cutouts/' + timestamp + '_' + safeName;
-        try {
-            var ref = window.storage.ref(path);
-            ref.put(file).then(function(snapshot) {
-                $('cutoutProgressFill').style.width = '50%';
-                return snapshot.ref.getDownloadURL();
-            }).then(function(url) {
-                $('cutoutProgressFill').style.width = '100%';
-                $('cutoutUploadStatus').textContent = 'Subido correctamente';
-                setTimeout(function() { var p = $('cutoutUploadProgress'); if (p) p.style.display = 'none'; }, 1200);
-                var field = $('vFeaturedCutoutPng'); if (field) field.value = url;
-                renderCutoutPreview(url);
-                AP.toast('Cutout PNG subido');
-            }).catch(function(err) {
-                var p = $('cutoutUploadProgress'); if (p) p.style.display = 'none';
-                showCutoutError('Error al subir: ' + (err.message || err.code));
-            });
-        } catch(e) { showCutoutError('Error inesperado al subir cutout.'); }
-    }
-
-    function renderCutoutPreview(url) {
-        var area = $('cutoutPreviewArea');
-        var img  = $('cutoutPreviewImg');
-        if (!area || !img) return;
-        // F7.5: Block dangerous protocols
-        var trimmed = (url || '').trim().toLowerCase();
-        if (trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('multimedia/')) {
-            area.style.display = 'none';
-            return;
-        }
-        if (url && url.trim()) {
-            img.src = url.trim();
-            area.style.display = 'flex';
-        } else {
-            img.src = '';
-            area.style.display = 'none';
-        }
-    }
-
-    function clearCutoutPng() {
-        var field = $('vFeaturedCutoutPng'); if (field) field.value = '';
-        renderCutoutPreview('');
-        AP.toast('Imagen recortada eliminada', 'info');
-    }
-
-    // F7.5: Cutout preview listener (migrated from inline oninput)
-    var cutoutInput = $('vFeaturedCutoutPng');
-    if (cutoutInput) {
-        cutoutInput.addEventListener('input', function() { renderCutoutPreview(this.value); });
-    }
-
     // Auto-check "En Oferta" when precio oferta is entered (migrated from inline oninput)
     var precioOfertaInput = $('vPrecioOferta');
     if (precioOfertaInput) {
@@ -1959,15 +1866,6 @@
     AP.deriveTipoFromKm = deriveTipoFromKm;
     var kmInput = $('vKm');
     if (kmInput) kmInput.addEventListener('input', deriveTipoFromKm);
-
-    // Cutout buttons (migrated from inline onclick)
-    var btnCutoutClear = $('btnCutoutClear');
-    if (btnCutoutClear) btnCutoutClear.addEventListener('click', function() { clearCutoutPng(); });
-    var cutoutUploadArea = $('cutoutUploadArea');
-    if (cutoutUploadArea) cutoutUploadArea.addEventListener('click', function() {
-        var fi = $('cutoutFileInput');
-        if (fi) fi.click();
-    });
 
     // ========== CONCESIONARIO TOGGLE ==========
     function toggleConsignaField() {
@@ -2455,10 +2353,6 @@
         var vehicle = AP.vehicles.find(function(v) { return v.id === id; });
         if (!vehicle) return;
         var newVal = !vehicle.destacado; /* destacado is the single source of truth */
-        if (newVal) {
-            var count = AP.vehicles.filter(function(v) { return v.destacado; }).length;
-            if (count >= 6) { AP.toast('Maximo 6 vehiculos destacados en banner.', 'error'); return; }
-        }
         var auditUser = getAuditUser();
         var currentVersion = vehicle._version || 0;
         window.db.collection('vehiculos').doc(String(id)).update({
@@ -2630,8 +2524,6 @@
     AP.deleteDraftFromGallery = deleteDraftFromGallery;
     AP.toggleDestacado = toggleDestacadoFn;
     AP.showAuditTimeline = showAuditTimeline;
-    AP.clearCutoutPng = clearCutoutPng;
-    AP.renderCutoutPreview = renderCutoutPreview;
 
     // F6.4: Event delegation for vehicle table actions
     var vehicleActions = {

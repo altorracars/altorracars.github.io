@@ -160,7 +160,7 @@ Target = **Cloudflare Pages** (NO Vercel). Deploy en segundos + edge global. Pla
 
 ## §4 — Cache bump (OBLIGATORIO con cada cambio de comportamiento)
 
-- Bumpear `service-worker.js` `CACHE_VERSION` + `js/cache-manager.js` `APP_VERSION`.
+- Bumpear `service-worker.js` `CACHE_VERSION` + `js/core/cache-manager.js` `APP_VERSION`.
 - Formato `vYYYYMMDDHHMMSS`. **La versión vigente vive en el nodo de Corto Plazo** (`docs/10-MEMORIA-CORTO-PLAZO.md`). El siguiente bump debe ser MAYOR. Tras bumpear, actualiza ahí el valor.
 - Cliente final invalida con **Ctrl+Shift+R** la primera vez.
 - **Conflicto de merge recurrente** (auto-cron de main bumpea mientras tu rama está activa): receta canónica → `git fetch origin main` → `git merge origin/main` → `git checkout --ours` ambos archivos (preserva tu changelog) → bump a timestamp MAYOR que main → `node -c` → commit merge → push. (TODO-14, detalle en historial §82-§84/§90.14/§97).

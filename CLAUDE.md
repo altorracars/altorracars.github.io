@@ -112,7 +112,7 @@ Encabezado `## NN. ADR-NNN — <título>` + cita del cliente si reportó, y 7 pu
 
 - Crear commits SOLO cuando el usuario lo pida explícitamente.
 - `git add` archivos específicos (NUNCA `git add -A` / `.`).
-- Mensaje vía HEREDOC con footer `Co-Authored-By: Claude <noreply@anthropic.com>`.
+- **El cliente commitea** (GitHub Desktop/web): SIEMPRE entrégale el mensaje listo para copiar/pegar — **summary (título) + descripción**. Si commiteas tú: HEREDOC + footer `Co-Authored-By: Claude <noreply@anthropic.com>`.
 - NUNCA push sin pedido explícito. NUNCA `--amend`/`--no-verify`/`--no-gpg-sign` sin pedido.
 - NUNCA commitear secrets (.env, credentials.json).
 - Al cerrar un pendiente, marcar su `TODO-NN` (§5) como ✅ + link al §X.

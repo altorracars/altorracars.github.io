@@ -10,15 +10,15 @@
 
 | Señal | Valor (al 2026-05-26) |
 |---|---|
-| **Build** | 🟢 OK — todo fusionado y LIVE en producción (js reorg §119, cerebro §120/121, SEO, hints #04). |
-| **Cache version vigente** | `v20260526150000` (próximo bump → MAYOR, formato `vYYYYMMDDHHMMSS`, §4) |
-| **Branch activa** | `refactor/estructura` — sincronizada con `main` (el cliente fusiona por paso vía PR). |
-| **Producción (`main`)** | 🟢 web en vivo funciona; tiene todo el trabajo de la sesión. |
-| **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios sin deployar). |
+| **Build** | 🟡 REDISEÑO EN MARCHA (`refactor/estructura`). Admin: SP-2 (destacados+tag) + SP-3 (banners `home_promo`) ✅. Index: SP-1 T1-T3 ✅ (CSS/markup/chrome), **T4-T8 pendientes**. |
+| **Cache version vigente** | `v20260526150000` (SP-1 **T7** hará el próximo bump MAYOR, §4) |
+| **Branch activa** | `refactor/estructura` — **ADELANTE de `main`** por SP-2/SP-3/SP-1-WIP (3 commits sin fusionar). Cliente fusiona por PR. |
+| **Producción (`main`)** | 🟢 web en vivo OK con diseño VIEJO; aún NO tiene SP-2/SP-3/SP-1. |
+| **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios). |
 
 ## ⚠️ Flags de riesgo activos
-- Ninguno crítico. Conflicto cron↔cache al fusionar = patrón conocido, se resuelve solo (`git merge origin/main`, L-02).
-- **En PAUSA esperando el REDISEÑO TOTAL** del cliente (próxima gran iniciativa, ver `10` Contexto estratégico).
+- ⚠️ **NO fusionar SP-1 a `main` hasta T8** — el index está a medio cablear (sin data hasta T5). SP-2/SP-3 sí son fusionables (admin completo).
+- Conflicto cron↔cache al fusionar = patrón conocido (`git merge origin/main`, L-02).
 
 ## 🧩 Sub-sistemas (resumen)
-`js/` modular ✅ · CSS reorg ⏸️ (diferida a Vite) · cerebro autónomo §120/121 ✅ · SEO meta+schema+hints ✅ · bot/RBAC/Hub estables ✅
+`js/` modular ✅ · **rediseño index: `css/home/*` + `js/public/home/*` (WIP)** · cerebro autónomo ✅ · SEO ✅ · bot/RBAC/Hub estables ✅

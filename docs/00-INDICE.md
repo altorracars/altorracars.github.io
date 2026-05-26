@@ -5,8 +5,9 @@
 > nodo de Largo Plazo. Se consulta on-demand (Trigger de Error/Historia, ver
 > `CLAUDE.md §G`).
 >
-> **Cerebro completo**: 🧠 `CLAUDE.md` (router) · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP)
-> · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura) · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
+> **Cerebro completo**: 🧠 `CLAUDE.md` (router/identidad) · ⚡ `10-MEMORIA-CORTO-PLAZO.md` (WIP)
+> · 🗺️ `20-MEMORIA-ESPACIAL.md` (arquitectura) · 🧪 `30-LECCIONES.md` (experiencia/recetas)
+> · 🗂️ este (índice) · 📚 `99-HISTORIAL-ADR.md` (largo plazo).
 >
 > **Cómo usarlo (regla de oro anti-saturación)**:
 > 1. Busca aquí el § que necesitas y su línea de inicio.
@@ -16,6 +17,30 @@
 > Ejemplo: para el Plan §61 RBAC → línea 26879 → `Read docs/99-HISTORIAL-ADR.md offset=26879 limit=200`.
 >
 > Grep rápido: `grep -n "^## " docs/99-HISTORIAL-ADR.md` regenera este mapa.
+
+---
+
+## 🧭 Enrutamiento semántico (síntoma/tema → neurona) — CONSULTA ESTO PRIMERO
+
+> La sinapsis de recuperación rápida: ante una duda, NO escanees el cerebro. Busca
+> tu caso aquí y ve directo a la neurona. (Reflejo de Auto-mejora §G.4: si tu caso
+> no está, añádelo tras resolverlo.)
+
+| Tu situación / síntoma | Ve a |
+|---|---|
+| ¿Dónde vive un módulo / ruta / flujo / componente? | 🗺️ `20-ESPACIAL` |
+| Voy a mover/renombrar archivos, refactor de estructura | 🧪 `30-LECCIONES` L-04/L-05/L-06 + 🗺️ `20-ESPACIAL` |
+| Conflicto al fusionar / cache / cron `[skip ci]` | 🧪 `30-LECCIONES` L-02/L-03 + `CLAUDE.md §4` |
+| Errores `403` de Firebase / referer en localhost | 🧪 `30-LECCIONES` L-08 |
+| Validar si algo es código muerto antes de borrar | 🧪 `30-LECCIONES` L-09 + `_legacy/README.md` |
+| Bug recurrente / clicks bloqueados / `MutationObserver` | 📚 §35 + §17.12 + RCA §19 |
+| Performance (transitions, lazy, `<picture>`, LCP) | `CLAUDE.md §3.1` + 📚 §15/§16/§17 |
+| RBAC / roles / permisos / CEO | 📚 §61–§73 |
+| Bot ALTOR / Hub / concierge / IA | 📚 §57–§88 + 🗺️ `20-ESPACIAL` (js/concierge, js/ai) |
+| SEO / sitemap / indexación Google | `docs/SITEMAP-FIX.md` + 📚 §90 |
+| ¿Qué hay pendiente? estado del sprint | ⚡ `10-CORTO-PLAZO` (TODO-NN) |
+| Migración Cloudflare / Vite / dominio | `docs/PLAN-MIGRACION-ALTORRA.md` + TODO-01 |
+| El "por qué" de una decisión / detalle de un § | tabla "§ → línea" abajo → 📚 `99-HISTORIAL-ADR.md` |
 
 ---
 

@@ -98,31 +98,11 @@ Detalle profundo de cualquier subsistema → `docs/00-INDICE.md` + tramo corresp
 
 Cada cambio funcional se documenta con una sección numerada (§NN) que incluye:
 
-```
-## NN. ADR-NNN — <título corto descriptivo>
-
-> Cita verbatim del cliente (si reportó el problema/feature).
-
-### NN.1 Causa raíz (RCA §19)
-   Diagnóstico real verificado leyendo el código (no suposiciones).
-
-### NN.2 Solución estructural
-   Qué se cambió y por qué (de fondo, no parche).
-
-### NN.3 No-regresión
-   Qué se preservó intacto (IDs, funciones, callsites). node -c OK.
-
-### NN.4 Tests E2E
-   Tabla numerada de casos a validar post-merge.
-
-### NN.5 Anti-patterns evitados
-   Cruce con doctrinas §17/§19/§35/§37.
-
-### NN.6 Archivos modificados / INTACTOS
-   Lista exacta + afirmación de lo que NO se tocó.
-
-### NN.7 Doctrina aplicada + Cache bump
-```
+Encabezado `## NN. ADR-NNN — <título>` + cita del cliente si reportó, y 7 puntos:
+**NN.1** Causa raíz (RCA §19, verificada leyendo código) · **NN.2** Solución estructural (de fondo) ·
+**NN.3** No-regresión (IDs/funciones/callsites intactos, `node -c` OK) · **NN.4** Tests E2E ·
+**NN.5** Anti-patterns evitados (§17/§19/§35/§37) · **NN.6** Archivos modificados/INTACTOS ·
+**NN.7** Doctrina aplicada + cache bump.
 
 ### Reglas git (de §commit del proyecto)
 
@@ -269,9 +249,19 @@ fortalezca sin dañarse. Son VINCULANTES y se disparan durante el trabajo normal
   + Corto Plazo, verifica BARATO (sin escanear todo): ¿`05` desactualizado? ¿`10`
   sobre su cap? ¿tarea cerrada sin consolidar? Si sí, propón/ejecuta la limpieza
   ANTES de empezar la tarea nueva.
-- **Reflejo de Auto-mejora**: si detectas fricción (re-investigaste algo ya sabido,
-  una neurona dio info vieja, faltó un índice o lección), MEJORA el cerebro ahí
-  mismo: crea lo que faltaba. El cerebro aprende de sus propios tropiezos.
+- **Reflejo de Auto-mejora**: llena VACÍOS. Si detectas fricción (re-investigaste
+  algo ya sabido, faltó un índice o lección), MEJORA el cerebro ahí mismo: crea lo
+  que faltaba.
+- **Reflejo de Autocrítica (post-mortem del cerebro)** — distinto de Auto-mejora:
+  corrige DEFECTOS. Cuando el cerebro CAUSA o contribuye a un error (te dio info
+  vieja/equivocada, una regla te llevó a un mal paso, una neurona mal diseñada) o en
+  una revisión al cerrar algo grande → post-mortem breve: (1) nombra el DEFECTO del
+  cerebro (¿neurona stale? ¿regla mala? ¿routing errado? ¿sobre-fragmentación?),
+  (2) CORRÍGELO en su nodo (bajo el límite de guardián de abajo), (3) registra el
+  meta-aprendizaje en `30-LECCIONES` §"Meta: fallos del propio cerebro"; si el arreglo
+  es estructural (toca gobernanza) → ADR en `99` + flag en `05`. **Acotado**: solo ante
+  error/fricción real o revisión deliberada, NUNCA auto-duda en bucle (quema contexto).
+  *Un cerebro equivocado es peor que uno incompleto.*
 
 **🛡️ Límite de guardián (cuidado ante todo)**: los reflejos ENRIQUECEN, nunca
 borran a la ligera. Eliminar o reescribir conocimiento histórico exige certeza

@@ -57,7 +57,7 @@
     <link rel="preload" href="css/style.css" as="style">
     <link rel="preload" href="css/dark-theme.css" as="style">
     <link rel="preload" href="js/core/components.js" as="script">
-    <link rel="preload" href="js/database.js" as="script">
+    <link rel="preload" href="js/core/database.js" as="script">
     <!-- §91 Sprint 3A — LCP hero preload responsive AVIF/WebP.
          Browser que soporta AVIF descarga del primer preload (más liviano ~70%).
          Browser que NO soporta AVIF ignora ese, descarga del segundo preload WebP.
@@ -1150,8 +1150,8 @@
     <script src="js/toast.js" defer></script>
     <script src="js/public/contact-forms.js" defer></script>
     <script src="js/core/components.js" defer></script>
-    <script src="js/database.js" defer></script>
-    <script src="js/render.js" defer></script>
+    <script src="js/core/database.js" defer></script>
+    <script src="js/core/render.js" defer></script>
     <!-- Featured Week Banner — lazy load with multiple triggers for safety.
          The 31KB module is heavy. We DO NOT use IntersectionObserver here
          because #fw-banner has display:none initially (the JS shows it only
@@ -1195,7 +1195,7 @@
         });
     })();
     </script>
-    <script src="js/main.js" defer></script>
+    <script src="js/core/main.js" defer></script>
     <!-- Comparador — deferred to idle. Cards render fine without it
          (render.js uses defensive typeof check); user-triggered actions
          only fire after the script loads. -->
@@ -1373,6 +1373,6 @@
 
         <script src="js/page-loader.js"></script>
     <!-- Cache Manager - Handles SW updates and cache invalidation -->
-    <script src="js/cache-manager.js" defer></script>
+    <script src="js/core/cache-manager.js" defer></script>
 </body>
 </html>

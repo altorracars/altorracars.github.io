@@ -291,13 +291,13 @@ function loadAuthSystem() {
                 // 5. JS de auth — cargar después de tener el DOM del modal
                 if (!document.querySelector('script[src*="auth.js"]')) {
                     var script = document.createElement('script');
-                    script.src = 'js/auth.js';
+                    script.src = 'js/core/auth.js';
                     document.body.appendChild(script);
                 }
                 // 5b. Pillar D — realtime listener for solicitudes/citas
                 if (!document.querySelector('script[src*="solicitudes-watcher.js"]')) {
                     var swScript = document.createElement('script');
-                    swScript.src = 'js/solicitudes-watcher.js';
+                    swScript.src = 'js/core/solicitudes-watcher.js';
                     swScript.defer = true;
                     document.body.appendChild(swScript);
                 }
@@ -406,7 +406,7 @@ function loadAuthSystem() {
                 // Comm schema para que el Concierge pueda crear leads bien tipados
                 if (!document.querySelector('script[src*="comm-schema.js"]')) {
                     var schema = document.createElement('script');
-                    schema.src = 'js/comm-schema.js';
+                    schema.src = 'js/core/comm-schema.js';
                     schema.defer = true;
                     document.body.appendChild(schema);
                 }

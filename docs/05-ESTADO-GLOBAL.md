@@ -11,7 +11,7 @@
 | Señal | Valor (al 2026-05-26) |
 |---|---|
 | **Build** | 🟢 OK — todo fusionado y LIVE en producción (js reorg §119, cerebro §120/121, SEO, hints #04). |
-| **Cache version vigente** | `v20260526120000` (próximo bump → MAYOR, formato `vYYYYMMDDHHMMSS`, §4) |
+| **Cache version vigente** | `v20260526150000` (próximo bump → MAYOR, formato `vYYYYMMDDHHMMSS`, §4) |
 | **Branch activa** | `refactor/estructura` — sincronizada con `main` (el cliente fusiona por paso vía PR). |
 | **Producción (`main`)** | 🟢 web en vivo funciona; tiene todo el trabajo de la sesión. |
 | **Deploys backend pendientes** | Ninguno (firestore.rules / functions sin cambios sin deployar). |

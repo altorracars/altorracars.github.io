@@ -50,6 +50,7 @@
         renderBannerList('hero', 'heroBannersList');
         renderBannerList('promocional', 'promoBannersList');
         renderBannerList('categoria', 'catBannersList');
+        renderBannerList('home_promo', 'homePromoBannersList');
     }
 
     function renderBannerList(position, containerId) {
@@ -249,6 +250,17 @@
             bannerData.image = AP.bannerUploadedUrl;
         }
 
+        if (bannerData.position === 'home_promo') {
+            bannerData.badge = $('bannerBadge').value.trim();
+            bannerData.eyebrow = $('bannerEyebrow').value.trim();
+            bannerData.rateValue = $('bannerRateValue').value.trim();
+            bannerData.rateLabel = $('bannerRateLabel').value.trim();
+            bannerData.pills = [$('bannerPill1').value, $('bannerPill2').value, $('bannerPill3').value]
+                .map(function(p) { return (p || '').trim(); })
+                .filter(function(p) { return p; })
+                .slice(0, 3);
+        }
+
         var btn = $('saveBanner');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Guardando...';
@@ -291,6 +303,15 @@
         $('bannerLink').value = banner.link || '';
         $('bannerCta').value = banner.cta || '';
         $('bannerActive').checked = banner.active !== false;
+
+        $('bannerBadge').value = banner.badge || '';
+        $('bannerEyebrow').value = banner.eyebrow || '';
+        $('bannerRateValue').value = banner.rateValue || '';
+        $('bannerRateLabel').value = banner.rateLabel || '';
+        var _pills = banner.pills || [];
+        $('bannerPill1').value = _pills[0] || '';
+        $('bannerPill2').value = _pills[1] || '';
+        $('bannerPill3').value = _pills[2] || '';
 
         AP.bannerUploadedUrl = banner.image || '';
 
@@ -355,10 +376,11 @@
 
     // ========== CATEGORY FIELD TOGGLE ==========
     function toggleCategoryField() {
-        var group = $('bannerCatGroup');
-        if (group) {
-            group.style.display = $('bannerPosition').value === 'categoria' ? '' : 'none';
-        }
+        var pos = $('bannerPosition').value;
+        var catGroup = $('bannerCatGroup');
+        if (catGroup) catGroup.style.display = pos === 'categoria' ? '' : 'none';
+        var hpGroup = $('bannerHomePromoGroup');
+        if (hpGroup) hpGroup.style.display = pos === 'home_promo' ? '' : 'none';
     }
 
     // ========== TABS NAVIGATION ==========

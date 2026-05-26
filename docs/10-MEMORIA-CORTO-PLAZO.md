@@ -19,7 +19,7 @@
   - **SP-2** admin destacados (cutout fuera → usa `imagen`; +`featuredTag`; sin tope de 6) →
     ✅ código completo + doble revisión OK. **Pendiente: commit del cliente + E2E navegador.**
     Plan: `docs/superpowers/plans/2026-05-26-sp2-admin-destacados.md`.
-  - **SP-3** admin banners ricos (posición `home_promo`) → ⏳ siguiente (escribir plan + ejecutar).
+  - **SP-3** admin banners ricos (posición `home_promo`: badge/eyebrow/tasa/pills) → ✅ código completo + doble revisión OK. **Pendiente: commit + E2E.** Plan: `docs/superpowers/plans/2026-05-26-sp3-admin-banners.md`. (Nota diseño: si un banner pasa de `home_promo` a otra posición, los campos ricos quedan inertes en Firestore — aceptable, anotar en ADR.)
   - **SP-1** index nuevo (12 secciones + widgets, vanilla port, engancha data/lógica existentes) → ⏳ el grande, después.
 - **Diferidos**: SP-4 (motor recomendaciones + analytics) · SP-5 (resto de páginas + promover chrome global).
 
